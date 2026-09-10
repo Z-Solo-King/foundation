@@ -3,31 +3,31 @@ param(
     [string]$Message
 )
 
-Write-Host "Running tests..." -ForegroundColor Cyan
-python -m pytest
+$ErrorActionPreference = "Stop"
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Tests failed. Nothing was committed or pushed." -ForegroundColor Red
-    exit 1
+if (-not (Test-Path ".\.venv\Scripts\python.exe")) {
+    throw "Run this script from the ResearchIntelligence project root."
 }
 
-Write-Host "Tests passed. Staging changes..." -ForegroundColor Green
+Write-Host "Running tests..." -ForegroundColor Cyan
+& ".\.venv\Scripts\python.exe" -m pytest
+if ($LASTEXITCODE -ne 0) {
+    throw "Tests failed. Nothing will be committed or pushed."
+}
+
+Write-Host "Staging changes..." -ForegroundColor Cyan
 git add .
 
 Write-Host "Creating commit..." -ForegroundColor Cyan
 git commit -m $Message
-
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Commit failed." -ForegroundColor Red
-    exit 1
+    throw "Commit failed."
 }
 
 Write-Host "Pushing to GitHub..." -ForegroundColor Cyan
 git push
-
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Push failed." -ForegroundColor Red
-    exit 1
+    throw "Push failed."
 }
 
-Write-Host "Done." -ForegroundColor Green
+Write-Host "Checkpoint complete." -ForegroundColor Green
