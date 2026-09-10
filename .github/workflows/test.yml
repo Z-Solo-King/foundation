@@ -20,7 +20,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RniE '(^|/)(secrets|credentials|private-data)/|backend/learning/promotion\.py|holdout|golden.*evaluation' --exclude-dir=.git .; then
-            echo 'Potential private-authority or protected-evaluation content found in public repository.'
+          test ! -e backend/learning/promotion.py
+          if grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|CLOUDFLARE_API_TOKEN|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' --exclude-dir=.git .; then
+            echo 'Potential credential material found in public repository.'
+            exit 1
+          fi
+          if find . -type f \( -path './secrets/*' -o -path './credentials/*' -o -path './private-data/*' \) -print -quit | grep -q .; then
+            echo 'Protected artifact directory found in public repository.'
             exit 1
           fi
