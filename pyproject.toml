@@ -1,0 +1,5 @@
+[project]
+name = "research-intelligence-engine"
+version = "0.1.0"
+description = "Private research intelligence and engineering system"
+requires-python = ">=3.14"
