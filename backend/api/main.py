@@ -24,6 +24,8 @@ def readiness_endpoint() -> dict[str, Any]:
 def submit_research(request: ResearchRequest) -> APIResponse:
     try:
         request.validate()
+        if not request.strict_zero_cost_only:
+            return APIResponse(ok=False, error="strict $0 cost mode is mandatory: strict_zero_cost_only must be true")
         contract = ResearchContract(
             question=request.question,
             depth=request.depth or "standard",
@@ -41,7 +43,7 @@ def submit_research(request: ResearchRequest) -> APIResponse:
                 "stages": len(run.plan_stages),
                 "source_budget": run.plan.source_budget,
                 "evidence_budget": run.plan.evidence_budget,
-                "strict_zero_cost_only": request.strict_zero_cost_only,
+                "strict_zero_cost_only": True,
             },
         )
     except ValueError as e:
