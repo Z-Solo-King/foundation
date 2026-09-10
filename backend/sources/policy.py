@@ -9,6 +9,11 @@ class SourcePolicy:
     retain_content: bool = False
     max_requests: int = 5
 
+    def validate(self) -> None:
+        if self.max_requests < 0:
+            raise ValueError("max_requests must be non-negative")
+
 
 def evaluate_source(source: Source, policy: SourcePolicy) -> bool:
-    return policy.allowed and bool(source.url)
+    policy.validate()
+    return policy.allowed and bool(source.url.strip())
