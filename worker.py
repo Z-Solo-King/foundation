@@ -1,12 +1,15 @@
 """Cloudflare Python Worker entrypoint for the public-safe runtime."""
 
+import hashlib
 import hmac
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 from workers import Response, WorkerEntrypoint
 
 from backend.api.main import health_endpoint, readiness_endpoint, submit_research
 from backend.api.models import ResearchRequest
+from backend.sources.http import fetch_public_url
 
 
 def _bearer_token(request):
@@ -33,7 +36,7 @@ async def _json(request):
         return None
 
 
-async def _persist(env, run_id, req):
+async def _persist_run(env, run_id, req):
     await env.DB.prepare(
         """INSERT INTO research_runs
         (run_id, question, depth, require_citations, max_sources,
@@ -44,6 +47,55 @@ async def _persist(env, run_id, req):
         req.max_sources, req.max_evidence_items, int(req.strict_zero_cost_only),
         "planned", datetime.now(timezone.utc).isoformat()
     ).run()
+
+
+async def _ingest_sources(env, run_id, req):
+    results = []
+    for index, url in enumerate(req.source_urls[:req.max_sources]):
+        fetched = await fetch_public_url(url)
+        source_id = hashlib.sha256(fetched.final_url.encode()).hexdigest()[:32]
+        content_hash = hashlib.sha256(fetched.content).hexdigest()
+        version_id = hashlib.sha256((source_id + content_hash).encode()).hexdigest()[:32]
+        observation_id = f"{run_id}:obs:{index}"
+        family = urlparse(fetched.final_url).hostname or "unknown"
+        now = datetime.now(timezone.utc).isoformat()
+
+        await env.DB.prepare(
+            """INSERT OR IGNORE INTO sources
+            (source_id, url, source_family_id, origin_kind, first_observed_at, last_observed_at, access_state)
+            VALUES (?, ?, ?, ?, ?, ?, ?)"""
+        ).bind(source_id, fetched.final_url, family, "direct", now, now,
+               "accessible" if 200 <= fetched.status < 400 else "error").run()
+
+        artifact_ref = f"raw/{run_id}/{observation_id}/{content_hash}"
+        await env.ARTIFACTS.put(artifact_ref, fetched.content,
+                                httpMetadata={"contentType": fetched.content_type})
+
+        await env.DB.prepare(
+            """INSERT OR REPLACE INTO document_versions
+            (version_id, source_id, retrieved_at, etag, content_hash, artifact_ref, content_length)
+            VALUES (?, ?, ?, ?, ?, ?, ?)"""
+        ).bind(version_id, source_id, now, fetched.etag, content_hash,
+               artifact_ref, len(fetched.content)).run()
+
+        await env.DB.prepare(
+            """INSERT OR REPLACE INTO observations
+            (observation_id, run_id, source_id, version_id, observed_at,
+             retrieval_method, content_hash, integrity_state, access_state)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+        ).bind(observation_id, run_id, source_id, version_id, now, "http_fetch",
+               content_hash, "verified", "accessible").run()
+
+        results.append({
+            "url": fetched.final_url,
+            "status": fetched.status,
+            "source_id": source_id,
+            "observation_id": observation_id,
+            "version_id": version_id,
+            "content_hash": content_hash,
+            "bytes": len(fetched.content),
+        })
+    return results
 
 
 async def _control_plane_ready(env):
@@ -66,10 +118,9 @@ class Default(WorkerEntrypoint):
 
         if request.method == "GET" and path.endswith("/readiness"):
             base = readiness_endpoint()
-            if not base["ready"]:
-                return Response.json({**base, "control_plane": False}, status=503)
             control_ready = await _control_plane_ready(self.env)
-            return Response.json({**base, "control_plane": control_ready}, status=200 if control_ready else 503)
+            ready = base["ready"] and control_ready
+            return Response.json({**base, "control_plane": control_ready}, status=200 if ready else 503)
 
         if request.method == "POST" and path.endswith("/api/v1/research"):
             if not _authorized(request, self.env):
@@ -85,9 +136,10 @@ class Default(WorkerEntrypoint):
             if not result.ok:
                 return Response.json({"ok": False, "error": result.error}, status=400)
             try:
-                await _persist(self.env, result.run_id, req)
+                await _persist_run(self.env, result.run_id, req)
+                sources = await _ingest_sources(self.env, result.run_id, req) if req.source_urls else []
             except Exception as exc:
-                return Response.json({"ok": False, "error": f"persistence failure: {exc}"}, status=503)
-            return Response.json({"ok": True, "run_id": result.run_id, "metadata": result.metadata})
+                return Response.json({"ok": False, "error": f"execution/persistence failure: {exc}"}, status=503)
+            return Response.json({"ok": True, "run_id": result.run_id, "metadata": result.metadata, "sources": sources})
 
         return Response.json({"ok": False, "error": "not found"}, status=404)
