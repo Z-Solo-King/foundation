@@ -2,13 +2,15 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class Observation:
-    """Canonical observation record.
+    """Canonical observation record with backward-compatible construction.
 
-    Field order preserves the historical positional constructor contract while
-    allowing source_id to remain optional for lightweight evidence objects.
-    New callers should prefer keywords or ``create``.
+    Supported positional forms:
+      ``Observation(id, source_id, url, content, observed_at)`` (historical)
+      ``Observation(id, url, content, observed_at)`` (lightweight)
+
+    Keyword construction is preferred for new code.
     """
 
     observation_id: str
@@ -17,31 +19,51 @@ class Observation:
     observed_at: datetime
     source_id: str | None = None
 
+    def __init__(
+        self,
+        observation_id: str,
+        *args,
+        source_id: str | None = None,
+        source_url: str | None = None,
+        content: str | None = None,
+        observed_at: datetime | None = None,
+    ):
+        if args:
+            if any(value is not None for value in (source_id, source_url, content, observed_at)):
+                raise TypeError("ambiguous observation arguments")
+            if len(args) == 3:
+                source_url, content, observed_at = args
+            elif len(args) == 4:
+                source_id, source_url, content, observed_at = args
+            else:
+                raise TypeError("Observation expects 4 or 5 total positional arguments")
+        if source_url is None or content is None:
+            raise TypeError("source_url and content are required")
+        object.__setattr__(self, "observation_id", observation_id)
+        object.__setattr__(self, "source_url", source_url)
+        object.__setattr__(self, "content", content)
+        object.__setattr__(self, "observed_at", observed_at or datetime.now(timezone.utc))
+        object.__setattr__(self, "source_id", source_id)
+
     @classmethod
     def create(cls, observation_id, *args, source_id=None, source_url=None, content=None, observed_at=None):
         if args:
+            if any(value is not None for value in (source_url, content, source_id, observed_at)):
+                raise TypeError("ambiguous observation arguments")
             if len(args) == 2:
-                if source_url is not None or content is not None or source_id is not None:
-                    raise TypeError("ambiguous observation arguments")
                 source_url, content = args
             elif len(args) == 3:
-                if source_url is not None or content is not None or source_id is not None:
-                    raise TypeError("ambiguous observation arguments")
                 source_id, source_url, content = args
             elif len(args) == 4:
-                if any(value is not None for value in (source_url, content, source_id, observed_at)):
-                    raise TypeError("ambiguous observation arguments")
                 source_id, source_url, content, observed_at = args
             else:
                 raise TypeError("Observation.create expects 3, 4, or 5 positional arguments")
-        if source_url is None or content is None:
-            raise TypeError("source_url and content are required")
         return cls(
-            observation_id=observation_id,
+            observation_id,
+            source_id=source_id,
             source_url=source_url,
             content=content,
-            observed_at=observed_at or datetime.now(timezone.utc),
-            source_id=source_id,
+            observed_at=observed_at,
         )
 
 
