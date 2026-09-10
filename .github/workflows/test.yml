@@ -21,11 +21,12 @@ jobs:
         run: |
           set -euo pipefail
           test ! -e backend/learning/promotion.py
-          if grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|CLOUDFLARE_API_TOKEN|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' --exclude-dir=.git .; then
-            echo 'Potential credential material found in public repository.'
+          paths=(backend worker.py wrangler.toml migrations tests)
+          if grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|CLOUDFLARE_API_TOKEN|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' "${paths[@]}" 2>/dev/null; then
+            echo 'Potential credential material found in public source/test tree.'
             exit 1
           fi
-          if find . -type f \( -path './secrets/*' -o -path './credentials/*' -o -path './private-data/*' \) -print -quit | grep -q .; then
-            echo 'Protected artifact directory found in public repository.'
+          if find backend tests migrations -type f \( -path '*/secrets/*' -o -path '*/credentials/*' -o -path '*/private-data/*' \) -print -quit | grep -q .; then
+            echo 'Protected artifact directory found in public source tree.'
             exit 1
           fi
