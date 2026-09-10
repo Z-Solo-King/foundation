@@ -11,13 +11,11 @@ if (-not (Test-Path ".\.venv\Scripts\python.exe")) {
 
 Write-Host "Running tests..." -ForegroundColor Cyan
 & ".\.venv\Scripts\python.exe" -m pytest
-
 if ($LASTEXITCODE -ne 0) {
     throw "Tests failed. Nothing will be committed or pushed."
 }
 
 git add .
-
 $pending = git diff --cached --name-only
 
 if (-not $pending) {
@@ -27,14 +25,12 @@ if (-not $pending) {
 
 Write-Host "Creating commit..." -ForegroundColor Cyan
 git commit -m $Message
-
 if ($LASTEXITCODE -ne 0) {
     throw "Commit failed."
 }
 
 Write-Host "Pushing to GitHub..." -ForegroundColor Cyan
 git push
-
 if ($LASTEXITCODE -ne 0) {
     throw "Push failed."
 }
