@@ -1,6 +1,10 @@
 from dataclasses import dataclass
 
 
+class ResourceError(RuntimeError):
+    """Raised when a hard execution budget is exhausted."""
+
+
 @dataclass
 class ResourceBudget:
     requests: int = 100
@@ -10,9 +14,11 @@ class ResourceBudget:
     def consume(self, field: str, amount: int = 1):
         if amount < 0:
             raise ValueError("amount must not be negative")
+        if not hasattr(self, field):
+            raise ValueError(f"unknown resource field: {field}")
         current = getattr(self, field)
         if current < amount:
-            raise RuntimeError(f"resource budget exhausted: {field}")
+            raise ResourceError(f"resource budget exhausted: {field}")
         setattr(self, field, current - amount)
 
     def consume_requests(self, amount: int = 1):
