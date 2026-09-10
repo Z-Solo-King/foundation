@@ -1,111 +1,43 @@
-# Phase 0: Repository Consolidation Audit
+# Phase 0 Boundary and Consolidation Audit
 
-## Executive Summary
+## Status
 
-This document records the identification and removal of duplicate `payload/backend/` tree that is identical to `backend/`.
+The duplicate `payload/backend/` tree was removed earlier in the public repository. `/backend/` remains the canonical public implementation tree.
 
-**Decision**: DELETE `/payload/` directory entirely. `/backend/` is the canonical implementation.
+This audit is now extended to cover the public/private trust boundary.
 
----
+## Confirmed Canonical Ownership
 
-## Duplicate Verification
+- `backend/` is the single public application implementation tree.
+- No public production promotion authority should remain here.
+- Public evaluation code must contain only publishable fixtures/interfaces.
 
-All Python modules in `payload/backend/` match `backend/` byte-for-byte (same BlobSha):
+## Private-Only Responsibilities
 
-| Module | BlobSha | Status |
-|--------|---------|--------|
-| `health/check.py` | `8d9cdab6...` | ✅ Identical |
-| `intelligence/sources.py` | `a5b1d90...` | ✅ Identical |
-| `intelligence/planning.py` | `9e12d63...` | ✅ Identical |
-| `execution/acquisition.py` | `a4bfb4c...` | ✅ Identical |
-| `intelligence/claims.py` | `2cfd083...` | ✅ Identical |
-| `execution/pipeline.py` | `fa00de2...` | ✅ Identical |
-| `execution/resources.py` | `f8e5b0c...` | ✅ Identical |
-| `intelligence/certificates.py` | `670c69e...` | ✅ Identical |
-| `intelligence/contradiction.py` | `f22cb6d...` | ✅ Identical |
-| `intelligence/evidence_graph.py` | `adc5d93...` | ✅ Identical |
-| `execution/providers.py` | `d7a36fb...` | ✅ Identical |
-| `intelligence/lineage.py` | `26534884...` | ✅ Identical |
+The companion private repository owns:
 
----
+- protected policy authority;
+- production promotion/canary/rollback authority;
+- private benchmark holdouts and expected results;
+- deployment configuration contracts;
+- protected security and trust decisions;
+- private operational state and evidence authority.
 
-## Directory Structure
+## Boundary Findings
 
-**Canonical tree** (preserved):
-```
-backend/
-├── __init__.py
-├── api.py
-├── main.py
-├── claims.py
-├── evidence.py
-├── evidence_certificate.py
-├── planner.py
-├── relationships.py
-├── research.py
-├── runtime.py
-├── source_lineage.py
-├── content_integrity.py
-├── api/
-├── artifacts/
-├── capabilities/
-├── core/
-├── evaluation/
-├── execution/
-├── frontend/
-├── health/
-├── intelligence/
-├── learning/
-├── models/
-├── persistence/
-└── sources/
-```
+`backend/learning/promotion.py` was identified as authority-bearing because it could decide canary/promotion/rollback state and reject or accept protected-policy changes. That implementation has been removed from the public boundary and recreated as protected private control-plane authority.
 
-**Duplicate tree** (to be deleted):
-```
-payload/
-├── backend/          [DUPLICATE - delete entire]
-│   └── [mirrored backend/ structure]
-└── tests/            [ANALYZE]
-```
+`tests/test_promotion.py` was also removed from the public repository; promotion authority is tested privately.
 
----
+## Verification Requirements Before Production
 
-## Pre-deletion Verification Checklist
-
-- [ ] Confirm no imports reference `payload.backend` or `from payload`
-- [ ] Confirm no test files import from `payload/`
-- [ ] Confirm `pytest.ini` lists only `tests/` directory
-- [ ] Confirm `conftest.py` imports from `backend/` not `payload/`
-- [ ] Run existing test suite against canonical `backend/`
-- [ ] Document any references in scripts or CI configs
-
----
-
-## Deletion Plan
-
-1. **Search for references** to `payload` in codebase
-2. **Run tests** against current canonical `backend/` to ensure baseline passes
-3. **Delete `/payload/` directory** entirely
-4. **Re-run tests** to confirm no breakage
-5. **Commit** with message: `Phase 0: Remove duplicate payload/backend directory; backend is canonical`
-
----
-
-## Expected Impact
-
-- **Zero functional change**: All business logic remains in canonical `backend/`
-- **Reduced maintenance risk**: No more drift between parallel trees
-- **Clearer architecture**: Single canonical owner for each behavior
-- **Cleaner imports**: No ambiguity about which path to use
-
----
+- Search public source, tests, docs and workflows for secrets, credentials, private-state paths, holdouts, protected policy, and promotion authority.
+- Verify public code exposes only data contracts/interfaces where a private decision is required.
+- Verify private code is not imported by public runtime code.
+- Verify public workers never receive private evidence/state or private evaluation answers.
+- Run public and private test suites independently.
+- Treat passing public tests as necessary but insufficient for production readiness.
 
 ## Rollback
 
-If any unexpected breakage occurs:
-```bash
-git revert <commit-sha>
-```
-
-No manual state repairs needed; deletion is purely file-system cleanup.
+All changes were made on dedicated Phase 0 branches. Revert the corresponding commit(s) if validation uncovers a compatibility problem.
