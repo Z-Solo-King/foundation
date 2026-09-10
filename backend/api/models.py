@@ -6,13 +6,13 @@ from typing import Any, Literal
 
 @dataclass(frozen=True)
 class ResearchRequest:
-    """POST /api/v1/research request payload."""
     question: str
     depth: Literal["quick", "standard", "deep"] | None = None
     require_citations: bool = True
     max_sources: int = 20
     max_evidence_items: int = 100
     strict_zero_cost_only: bool = True
+    source_urls: tuple[str, ...] = ()
 
     def validate(self) -> None:
         if not self.question.strip():
@@ -21,11 +21,12 @@ class ResearchRequest:
             raise ValueError("budgets must be positive")
         if not self.strict_zero_cost_only:
             raise ValueError("strict $0 cost mode is mandatory: strict_zero_cost_only must be true")
+        if len(self.source_urls) > self.max_sources:
+            raise ValueError("source_urls exceeds max_sources")
 
 
 @dataclass(frozen=True)
 class APIResponse:
-    """Standard API response envelope."""
     ok: bool
     error: str | None = None
     run_id: str | None = None
