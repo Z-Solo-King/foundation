@@ -1,6 +1,5 @@
 """Tests for complete research execution pipeline."""
 
-from datetime import datetime, timezone
 from backend.execution.engine import create_run, start_research, add_observation, verify_and_add_claim, complete_research, summarize_research
 from backend.intelligence.contracts import ResearchContract, ResearchPlan
 from backend.intelligence.observations import Observation, EvidenceSpan
@@ -49,7 +48,7 @@ def test_summarize_research():
     run = start_research(create_run("run-1", contract, plan))
     obs = Observation.create("o1", "s1", "https://example.com", "The answer is 42.")
     run = add_observation(run, obs, ResourceBudget())
-    cert = create_certificate(obs, EvidenceSpan("o1", 16, 18))
+    cert = create_certificate(obs, EvidenceSpan("o1", 15, 17))
     run = verify_and_add_claim(run, Claim.create("c1", "The answer is 42."), (cert,), EvidenceVerifier(), {"s1": SourceLineage("s1", "family-a")})
     run = complete_research(run)
     summary = summarize_research(run)
