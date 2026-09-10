@@ -1,9 +1,7 @@
 from dataclasses import dataclass
 
-from backend.intelligence.certificates import EvidenceCertificate
-from backend.intelligence.claims import Claim
 from backend.intelligence.contracts import ResearchContract
-from backend.intelligence.observations import EvidenceSpan, Observation
+from backend.intelligence.observations import Observation
 from backend.intelligence.planning import create_plan
 from .resources import ResourceBudget
 
@@ -13,8 +11,6 @@ class ResearchRun:
     contract: ResearchContract
     plan_stages: tuple[str, ...]
     observations: tuple[Observation, ...] = ()
-    claims: tuple[Claim, ...] = ()
-    certificates: tuple[EvidenceCertificate, ...] = ()
 
 
 def start_run(contract: ResearchContract) -> ResearchRun:
@@ -28,10 +24,9 @@ def attach_observation(
     budget: ResourceBudget,
 ) -> ResearchRun:
     budget.consume_evidence()
+
     return ResearchRun(
         contract=run.contract,
         plan_stages=run.plan_stages,
         observations=run.observations + (observation,),
-        claims=run.claims,
-        certificates=run.certificates,
     )

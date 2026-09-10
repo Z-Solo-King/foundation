@@ -21,8 +21,8 @@ class Source:
     family_id: str | None = None
 
     def validate(self) -> None:
-        parsed = urlparse(self.url)
-        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        p = urlparse(self.url)
+        if p.scheme not in {"http", "https"} or not p.netloc:
             raise ValueError("source URL must be an absolute HTTP(S) URL")
 
 

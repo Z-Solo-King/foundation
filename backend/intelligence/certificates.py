@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-
 from .integrity import sha256_text
 from .observations import EvidenceSpan, Observation
 
@@ -16,43 +15,23 @@ class EvidenceCertificate:
     structurally_valid: bool
 
 
-def create_certificate(
-    observation: Observation,
-    span: EvidenceSpan,
-) -> EvidenceCertificate:
-    text = span.text_from(observation)
+def create_certificate(observation: Observation, span: EvidenceSpan) -> EvidenceCertificate:
     return EvidenceCertificate(
-        observation_id=observation.observation_id,
-        source_id=observation.source_id,
-        source_url=observation.source_url,
-        content_hash=sha256_text(observation.content),
-        span_start=span.start,
-        span_end=span.end,
-        span_text=text,
-        structurally_valid=True,
+        observation.observation_id, observation.source_id, observation.source_url,
+        sha256_text(observation.content), span.start, span.end,
+        span.text_from(observation), True
     )
 
 
-def verify_certificate(
-    observation: Observation,
-    certificate: EvidenceCertificate,
-) -> bool:
+def verify_certificate(observation: Observation, certificate: EvidenceCertificate) -> bool:
     if observation.observation_id != certificate.observation_id:
         return False
-    if observation.source_id != certificate.source_id:
-        return False
-    if observation.source_url != certificate.source_url:
+    if observation.source_id != certificate.source_id or observation.source_url != certificate.source_url:
         return False
     if sha256_text(observation.content) != certificate.content_hash:
         return False
-
-    span = EvidenceSpan(
-        observation_id=certificate.observation_id,
-        start=certificate.span_start,
-        end=certificate.span_end,
-    )
-
     try:
-        return span.text_from(observation) == certificate.span_text
+        return EvidenceSpan(certificate.observation_id, certificate.span_start,
+                            certificate.span_end).text_from(observation) == certificate.span_text
     except ValueError:
         return False

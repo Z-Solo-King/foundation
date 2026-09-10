@@ -7,14 +7,25 @@ class ResourceBudget:
     evidence_items: int = 100
     ai_calls: int = 10
 
+    def consume(self, field: str, amount: int = 1) -> None:
+        if amount < 0:
+            raise ValueError("amount must not be negative")
+
+        current = getattr(self, field)
+
+        if current < amount:
+            raise RuntimeError(f"resource budget exhausted: {field}")
+
+        setattr(self, field, current - amount)
+
     def consume_requests(self, amount: int = 1) -> None:
-        self._consume("requests", amount)
+        self.consume("requests", amount)
 
     def consume_evidence(self, amount: int = 1) -> None:
-        self._consume("evidence_items", amount)
+        self.consume("evidence_items", amount)
 
     def consume_ai_calls(self, amount: int = 1) -> None:
-        self._consume("ai_calls", amount)
+        self.consume("ai_calls", amount)
 
     def remaining(self) -> dict[str, int]:
         return {
@@ -22,11 +33,3 @@ class ResourceBudget:
             "evidence_items": self.evidence_items,
             "ai_calls": self.ai_calls,
         }
-
-    def _consume(self, name: str, amount: int) -> None:
-        if amount < 0:
-            raise ValueError("amount must not be negative")
-        current = getattr(self, name)
-        if current < amount:
-            raise RuntimeError(f"resource budget exhausted: {name}")
-        setattr(self, name, current - amount)

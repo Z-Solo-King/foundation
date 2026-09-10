@@ -16,6 +16,4 @@ class SourceLineage:
 
 
 def is_independent(first: SourceLineage, second: SourceLineage) -> bool:
-    if first.source_id == second.source_id:
-        return False
-    return first.family_id != second.family_id
+    return first.source_id != second.source_id and first.family_id != second.family_id

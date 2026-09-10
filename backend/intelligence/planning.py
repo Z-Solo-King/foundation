@@ -15,7 +15,9 @@ DEFAULT_STAGES = (
 
 def create_plan(contract: ResearchContract) -> ResearchPlan:
     contract.validate()
+
     stages = DEFAULT_STAGES
+
     if contract.depth == "quick":
         stages = (
             "define_question",
@@ -24,10 +26,14 @@ def create_plan(contract: ResearchContract) -> ResearchPlan:
             "verify_evidence",
             "synthesize_answer",
         )
+
     return ResearchPlan(
         question=contract.question,
         stages=stages,
         source_budget=contract.max_sources,
         evidence_budget=contract.max_evidence_items,
-        metadata={"depth": contract.depth},
+        metadata={
+            "depth": contract.depth,
+            "require_citations": str(contract.require_citations).lower(),
+        },
     )

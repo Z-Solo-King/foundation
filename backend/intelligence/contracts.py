@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
-
 ResearchDepth = Literal["quick", "standard", "deep"]
 
 
