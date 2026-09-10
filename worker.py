@@ -2,6 +2,7 @@
 
 import hashlib
 import hmac
+import json
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
@@ -36,17 +37,40 @@ async def _json(request):
         return None
 
 
-async def _persist_run(env, run_id, req):
+def _request_hash(payload):
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+async def _persist_run(env, run_id, req, request_hash=None, idempotency_key=None):
+    now = datetime.now(timezone.utc).isoformat()
     await env.DB.prepare(
         """INSERT INTO research_runs
         (run_id, question, depth, require_citations, max_sources,
-         max_evidence_items, strict_zero_cost_only, status, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+         max_evidence_items, strict_zero_cost_only, status, created_at, updated_at, version)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
     ).bind(
         run_id, req.question, req.depth or "standard", int(req.require_citations),
         req.max_sources, req.max_evidence_items, int(req.strict_zero_cost_only),
-        "planned", datetime.now(timezone.utc).isoformat()
+        "planned", now, now, 1
     ).run()
+    if idempotency_key:
+        await env.DB.prepare(
+            "INSERT INTO idempotency_keys (idempotency_key, run_id, request_hash, created_at) VALUES (?, ?, ?, ?)"
+        ).bind(idempotency_key, run_id, request_hash, now).run()
+
+
+async def _find_idempotent_run(env, idempotency_key, request_hash):
+    if not idempotency_key:
+        return None
+    row = await env.DB.prepare(
+        "SELECT run_id, request_hash FROM idempotency_keys WHERE idempotency_key = ?"
+    ).bind(idempotency_key).first()
+    if not row:
+        return None
+    if row["request_hash"] != request_hash:
+        raise ValueError("idempotency key was already used with a different request")
+    return row["run_id"]
 
 
 async def _ingest_sources(env, run_id, req):
@@ -135,8 +159,14 @@ class Default(WorkerEntrypoint):
             result = submit_research(req)
             if not result.ok:
                 return Response.json({"ok": False, "error": result.error}, status=400)
+
+            request_hash = _request_hash(payload)
+            idempotency_key = request.headers.get("Idempotency-Key")
             try:
-                await _persist_run(self.env, result.run_id, req)
+                existing_run = await _find_idempotent_run(self.env, idempotency_key, request_hash)
+                if existing_run:
+                    return Response.json({"ok": True, "run_id": existing_run, "idempotent_replay": True})
+                await _persist_run(self.env, result.run_id, req, request_hash, idempotency_key)
                 sources = await _ingest_sources(self.env, result.run_id, req) if req.source_urls else []
             except Exception as exc:
                 return Response.json({"ok": False, "error": f"execution/persistence failure: {exc}"}, status=503)
