@@ -122,6 +122,22 @@ async def _ingest_sources(env, run_id, req):
     return results
 
 
+async def _get_run(env, run_id):
+    run = await env.DB.prepare(
+        "SELECT * FROM research_runs WHERE run_id = ?"
+    ).bind(run_id).first()
+    if not run:
+        return None
+    observations = await env.DB.prepare(
+        """SELECT o.observation_id, o.source_id, o.version_id, o.observed_at,
+                  o.retrieval_method, o.content_hash, o.integrity_state,
+                  o.access_state, s.url, s.source_family_id
+           FROM observations o JOIN sources s ON s.source_id = o.source_id
+           WHERE o.run_id = ? ORDER BY o.observed_at ASC"""
+    ).bind(run_id).all()
+    return {"run": run, "observations": observations}
+
+
 async def _control_plane_ready(env):
     control = getattr(env, "CONTROL_PLANE", None)
     if control is None:
@@ -145,6 +161,18 @@ class Default(WorkerEntrypoint):
             control_ready = await _control_plane_ready(self.env)
             ready = base["ready"] and control_ready
             return Response.json({**base, "control_plane": control_ready}, status=200 if ready else 503)
+
+        if request.method == "GET" and "/api/v1/research/" in path:
+            if not _authorized(request, self.env):
+                return Response.json({"ok": False, "error": "unauthorized"}, status=401)
+            run_id = path.rsplit("/", 1)[-1]
+            try:
+                payload = await _get_run(self.env, run_id)
+            except Exception as exc:
+                return Response.json({"ok": False, "error": f"persistence failure: {exc}"}, status=503)
+            if payload is None:
+                return Response.json({"ok": False, "error": "run not found"}, status=404)
+            return Response.json({"ok": True, **payload})
 
         if request.method == "POST" and path.endswith("/api/v1/research"):
             if not _authorized(request, self.env):
