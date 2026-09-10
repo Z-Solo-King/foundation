@@ -16,6 +16,9 @@ bucket_name = "research-intelligence-artifacts"
 binding = "CONTROL_PLANE"
 service = "research-intelligence-engine-private"
 
+[secrets]
+required = ["AUTH_TOKEN"]
+
 [vars]
 ENVIRONMENT = "production"
 STRICT_ZERO_COST_ONLY = "true"
