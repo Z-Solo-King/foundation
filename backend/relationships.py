@@ -1,8 +1,5 @@
-from enum import StrEnum
+"""Compatibility exports for canonical evidence relationships."""
 
+from backend.intelligence.relationships import ClaimEvidence, EvidenceRelation
 
-class EvidenceRelation(StrEnum):
-    SUPPORTS = "supports"
-    REFUTES = "refutes"
-    QUALIFIES = "qualifies"
-    CONTEXTUALIZES = "contextualizes"
+__all__ = ["ClaimEvidence", "EvidenceRelation"]

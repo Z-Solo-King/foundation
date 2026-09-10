@@ -1,12 +1,8 @@
 from dataclasses import dataclass
-from enum import StrEnum
 
+from .evidence_graph import Relation
 
-class EvidenceRelation(StrEnum):
-    SUPPORTS = "supports"
-    REFUTES = "refutes"
-    QUALIFIES = "qualifies"
-    CONTEXTUALIZES = "contextualizes"
+EvidenceRelation = Relation
 
 
 @dataclass(frozen=True)
@@ -14,3 +10,6 @@ class ClaimEvidence:
     claim_id: str
     evidence_id: str
     relation: EvidenceRelation
+
+
+__all__ = ["ClaimEvidence", "EvidenceRelation"]

@@ -1,9 +1,5 @@
-from dataclasses import dataclass
-from typing import Literal
+"""Compatibility exports for canonical research contracts."""
 
+from backend.intelligence.contracts import ResearchContract, ResearchDepth, ResearchPlan
 
-@dataclass(frozen=True)
-class ResearchContract:
-    question: str
-    depth: Literal["quick", "standard", "deep"] = "standard"
-    require_citations: bool = True
+__all__ = ["ResearchContract", "ResearchDepth", "ResearchPlan"]

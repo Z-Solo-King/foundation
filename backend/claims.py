@@ -1,7 +1,5 @@
-from dataclasses import dataclass
+"""Compatibility exports for the canonical intelligence claim model."""
 
+from backend.intelligence.claims import Claim, ClaimVersion
 
-@dataclass(frozen=True)
-class Claim:
-    claim_id: str
-    text: str
+__all__ = ["Claim", "ClaimVersion"]
