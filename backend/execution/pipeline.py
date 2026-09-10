@@ -12,6 +12,11 @@ class PipelineRun:
     plan_stages: tuple[str, ...]
     observations: tuple[Observation, ...] = ()
 
+    @property
+    def plan(self):
+        """Compatibility view exposing the generated plan."""
+        return create_plan(self.contract)
+
 
 def start_run(contract):
     return PipelineRun(contract, create_plan(contract).stages)
@@ -19,8 +24,4 @@ def start_run(contract):
 
 def attach_observation(run, observation, budget: ResourceBudget):
     budget.consume_evidence()
-    return PipelineRun(
-        run.contract,
-        run.plan_stages,
-        run.observations + (observation,),
-    )
+    return PipelineRun(run.contract, run.plan_stages, run.observations + (observation,))
