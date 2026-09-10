@@ -1,5 +1,18 @@
 [project]
 name = "research-intelligence-engine"
 version = "0.1.0"
-description = "Private research intelligence and engineering system"
+description = "Public-safe research intelligence engine"
 requires-python = ">=3.14"
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "workers-py",
+  "workers-runtime-sdk",
+  "pytest",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-q"
