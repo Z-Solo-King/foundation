@@ -6,16 +6,16 @@ from datetime import datetime, timezone
 class Observation:
     """Canonical observation record.
 
-    Field order preserves the historical positional constructor contract:
-    ``(observation_id, source_id, source_url, content, observed_at)``.
+    Field order preserves the historical positional constructor contract while
+    allowing source_id to remain optional for lightweight evidence objects.
     New callers should prefer keywords or ``create``.
     """
 
     observation_id: str
-    source_id: str | None
     source_url: str
     content: str
     observed_at: datetime
+    source_id: str | None = None
 
     @classmethod
     def create(cls, observation_id, *args, source_id=None, source_url=None, content=None, observed_at=None):
@@ -38,10 +38,10 @@ class Observation:
             raise TypeError("source_url and content are required")
         return cls(
             observation_id=observation_id,
-            source_id=source_id,
             source_url=source_url,
             content=content,
             observed_at=observed_at or datetime.now(timezone.utc),
+            source_id=source_id,
         )
 
 
