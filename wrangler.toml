@@ -12,6 +12,10 @@ database_id = "REPLACE_WITH_D1_DATABASE_ID"
 binding = "ARTIFACTS"
 bucket_name = "research-intelligence-artifacts"
 
+[[services]]
+binding = "CONTROL_PLANE"
+service = "research-intelligence-engine-private"
+
 [vars]
 ENVIRONMENT = "production"
 STRICT_ZERO_COST_ONLY = "true"
