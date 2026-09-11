@@ -17,6 +17,13 @@ class SourceLineage:
     origin_fingerprint: str | None = None
     republisher_of: str | None = None
 
+    def __post_init__(self):
+        if self.lineage_type == "republished":
+            if not (self.origin_fingerprint or "").strip():
+                raise ValueError("republished lineage requires origin_fingerprint")
+            if not (self.parent_source_id or self.republisher_of):
+                raise ValueError("republished lineage must identify its origin")
+
     def validate(self) -> None:
         if not self.source_id.strip() or not self.family_id.strip():
             raise ValueError("source_id and family_id must not be empty")
@@ -30,7 +37,6 @@ class SourceLineage:
 
     @property
     def effective_origin(self) -> str:
-        """Return explicit origin when available; legacy family fallback otherwise."""
         value = (self.origin_fingerprint or "").strip()
         return value if value else f"family:{self.family_id.strip().lower()}"
 
