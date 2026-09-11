@@ -1,5 +1,5 @@
 from backend.content_integrity import sha256_text
-from backend.evidence import EvidenceSpan, Observation
+from backend.intelligence.observations import EvidenceSpan, Observation
 from backend.evidence_certificate import create_certificate, verify_certificate
 
 
