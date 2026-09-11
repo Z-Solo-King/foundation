@@ -1,7 +1,7 @@
 """Research synthesis layer.
 
 Produces user-facing answers from verified evidence and explicit uncertainty.
-Cites evidence chain; does not conflate epistemology with ontology.
+Cites the evidence chain and never allows corroboration to hide contradiction.
 """
 
 from dataclasses import dataclass
@@ -16,109 +16,92 @@ class SynthesisResult:
     """User-facing research result with evidence citations."""
     question: str
     answer: str
-    confidence: str  # high, medium, low, unknown
-    supported_by: tuple[str, ...] = ()  # claim IDs with CORROBORATED status
-    qualified_by: tuple[str, ...] = ()  # claim IDs with SUPPORTED/PARTIAL status
-    contradicted_by: tuple[str, ...] = ()  # claim IDs with CONTRADICTED status
-    unknown_aspects: tuple[str, ...] = ()  # aspects without evidence
+    confidence: str
+    supported_by: tuple[str, ...] = ()
+    qualified_by: tuple[str, ...] = ()
+    contradicted_by: tuple[str, ...] = ()
+    unknown_aspects: tuple[str, ...] = ()
     evidence_chain: tuple[dict[str, Any], ...] = ()
 
 
 class ResearchSynthesizer:
     """Synthesizes research results from verified claims."""
-    
-    def __init__(self):
-        pass
-    
+
     def synthesize(self, run: ResearchRun) -> SynthesisResult:
-        """Synthesize a final answer from verified claims.
-        
-        Args:
-            run: Completed research run with verified claims
-            
-        Returns:
-            SynthesisResult with answer, confidence, and evidence citations
-        """
+        """Synthesize all verified claims without suppressing contradictions."""
         if not run.verified_claims:
             return SynthesisResult(
                 question=run.contract.question,
                 answer="No evidence found to answer this question.",
                 confidence="unknown",
             )
-        
-        # Categorize claims by verification status
-        corroborated = []
-        supported = []
-        partial = []
-        contradicted = []
-        unknown = []
-        
+
+        corroborated: list[tuple[Any, Any]] = []
+        supported: list[tuple[Any, Any]] = []
+        partial: list[tuple[Any, Any]] = []
+        contradicted: list[tuple[Any, Any]] = []
+        unknown: list[tuple[Any, Any]] = []
+
         for claim, result in run.verified_claims:
-            entry = {
-                "text": claim.text,
-                "status": result.status,
-                "evidence_count": len(result.supporting_evidence),
-                "independent_sources": result.independent_corroboration_count,
-            }
-            
             if result.status == ClaimStatus.CORROBORATED:
-                corroborated.append(entry)
+                corroborated.append((claim, result))
             elif result.status == ClaimStatus.SUPPORTED:
-                supported.append(entry)
+                supported.append((claim, result))
             elif result.status == ClaimStatus.PARTIAL:
-                partial.append(entry)
+                partial.append((claim, result))
             elif result.status == ClaimStatus.CONTRADICTED:
-                contradicted.append(entry)
+                contradicted.append((claim, result))
             else:
-                unknown.append(entry)
-        
-        # Determine confidence level
-        if corroborated:
+                unknown.append((claim, result))
+
+        # Contradicted claims always lower confidence. A mixed result is never
+        # presented as high-confidence simply because one claim is corroborated.
+        if contradicted:
+            confidence = "low" if (corroborated or supported or partial) else "unknown"
+        elif corroborated:
             confidence = "high"
-            primary = corroborated
-        elif supported and not contradicted:
+        elif supported and not partial:
             confidence = "medium"
-            primary = supported
         elif partial:
             confidence = "low"
-            primary = partial
         else:
             confidence = "unknown"
-            primary = []
-        
-        # Build answer text
-        if primary:
-            answer_lines = [primary[0]["text"]]
-            if len(primary) > 1:
-                answer_lines.append(f"\nAdditional supporting evidence: {len(primary) - 1} claims")
-        else:
-            answer_lines = ["Evidence is insufficient or contradictory."]
-        
-        answer = "\n".join(answer_lines)
-        
-        # Build evidence chain
-        evidence_chain = []
+
+        answer_parts: list[str] = []
+        for claim, _ in corroborated + supported + partial:
+            answer_parts.append(claim.text)
+        if contradicted:
+            answer_parts.append(
+                "Contradictory evidence exists for: " + "; ".join(claim.text for claim, _ in contradicted)
+            )
+        if unknown:
+            answer_parts.append(
+                "Unresolved aspects: " + "; ".join(claim.text for claim, _ in unknown)
+            )
+        answer = "\n".join(answer_parts) if answer_parts else "Evidence is insufficient to answer this question."
+
+        evidence_chain: list[dict[str, Any]] = []
+        observations = {o.observation_id: o for o in run.observations}
         for claim, result in run.verified_claims:
             for cert in result.supporting_evidence:
-                obs = next(
-                    (o for o in run.observations if o.observation_id == cert.observation_id),
-                    None,
-                )
+                obs = observations.get(cert.observation_id)
                 if obs:
                     evidence_chain.append({
+                        "claim_id": claim.claim_id,
                         "claim": claim.text,
                         "source_url": obs.source_url,
                         "evidence_text": cert.span_text,
                         "retrieved_at": obs.observed_at.isoformat(),
+                        "verification_status": result.status,
                     })
-        
+
         return SynthesisResult(
             question=run.contract.question,
             answer=answer,
             confidence=confidence,
-            supported_by=tuple(c["text"][:50] for c in corroborated),
-            qualified_by=tuple(c["text"][:50] for c in supported + partial),
-            contradicted_by=tuple(c["text"][:50] for c in contradicted),
-            unknown_aspects=tuple(c["text"][:50] for c in unknown),
+            supported_by=tuple(claim.claim_id for claim, _ in corroborated),
+            qualified_by=tuple(claim.claim_id for claim, _ in supported + partial),
+            contradicted_by=tuple(claim.claim_id for claim, _ in contradicted),
+            unknown_aspects=tuple(claim.claim_id for claim, _ in unknown),
             evidence_chain=tuple(evidence_chain),
         )
