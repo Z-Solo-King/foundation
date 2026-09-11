@@ -1,11 +1,17 @@
 {
+  "family": "z-solo-king-github-family",
+  "family_contract": "docs/FAMILY_MEMBER.md",
+  "family_contract_version": "1",
   "name": "foundation",
+  "role": "public-contracts",
   "trust_level": "public",
   "determinism": "deterministic-first",
   "network_access": ["approved-http-sources"],
   "ai_usage": ["semantic-entailment-adjudication", "ambiguous-planning"],
   "promotion_authority": false,
-  "evidence_authority": "canonical-evidence-contracts",
+  "evidence_authority": "structural-contracts-only",
+  "trust_authority": false,
   "private_secrets": false,
+  "resource_governance": "operations",
   "protected_boundaries": ["privacy", "security", "billing", "retention", "promotion"]
 }
