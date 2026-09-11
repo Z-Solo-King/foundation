@@ -1,13 +1,9 @@
-"""Evidence verifier with contradiction detection and independence checking.
-
-Verification is deterministic first; structural certificate checks, temporal
-freshness, claim contradiction and source-family independence are evaluated
-before any AI involvement. Status precedence is explicit and fail-closed.
-"""
+"""Deterministic-first evidence verifier with semantic entailment and lineage checks."""
 
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 
+from backend.evaluation.entailment import EntailmentStatus, verify_claim_entailment
 from backend.intelligence.observations import Observation, EvidenceSpan
 from backend.intelligence.certificates import verify_certificate, EvidenceCertificate
 from backend.intelligence.lineage import SourceLineage, is_independent
@@ -16,7 +12,6 @@ from backend.intelligence.claims import Claim
 
 
 class ClaimStatus:
-    """Explicit claim epistemic states."""
     SUPPORTED = "supported"
     CORROBORATED = "corroborated"
     CONTRADICTED = "contradicted"
@@ -29,7 +24,6 @@ class ClaimStatus:
 
 @dataclass(frozen=True)
 class VerificationResult:
-    """Output of evidence verification."""
     claim_id: str
     status: str
     supporting_evidence: tuple[EvidenceCertificate, ...] = ()
@@ -40,101 +34,73 @@ class VerificationResult:
 
     def __post_init__(self):
         if self.verified_at is None:
-            object.__setattr__(self, 'verified_at', datetime.now(timezone.utc))
+            object.__setattr__(self, "verified_at", datetime.now(timezone.utc))
 
 
 class EvidenceVerifier:
-    """Verifies evidence spans, detects contradictions, checks independence."""
+    """Verifies evidence structurally and semantically before synthesis."""
 
     STALE_THRESHOLD = timedelta(days=30)
 
-    def __init__(self):
-        pass
-
     def verify_span(self, certificate: EvidenceCertificate, observation: Observation) -> bool:
-        """Verify that a certificate accurately represents an observation span."""
         return verify_certificate(observation, certificate)
 
     def check_contradiction(self, claim_a: Claim, claim_b: Claim) -> bool:
-        """Detect if two claims contradict each other."""
         return detect_contradiction(claim_a.text, claim_b.text) is not None
 
-    def check_independence(
-        self,
-        lineage_a: SourceLineage,
-        lineage_b: SourceLineage,
-    ) -> bool:
-        """Check if two sources are independent (different families)."""
+    def check_independence(self, lineage_a: SourceLineage, lineage_b: SourceLineage) -> bool:
         return is_independent(lineage_a, lineage_b)
 
     def is_stale(self, observation: Observation) -> bool:
-        """Check if an observation is older than STALE_THRESHOLD."""
-        age = datetime.now(timezone.utc) - observation.observed_at
-        return age > self.STALE_THRESHOLD
+        return datetime.now(timezone.utc) - observation.observed_at > self.STALE_THRESHOLD
 
-    def verify_claim(
-        self,
-        claim: Claim,
-        supporting_certs: tuple[EvidenceCertificate, ...],
-        observations: dict[str, Observation],
-        lineages: dict[str, SourceLineage],
-        other_claims: tuple[Claim, ...] = (),
-    ) -> VerificationResult:
-        """Comprehensive verification of a claim.
-
-        Steps:
-        1. Verify all certificate spans against observations.
-        2. Check for staleness.
-        3. Detect contradiction against other candidate claims.
-        4. Count independent corroboration (different families).
-        5. Apply explicit fail-closed status precedence.
-
-        ``verify_certificate`` establishes structural integrity only; it does
-        not prove semantic entailment between a claim and a span.
-        """
-        reasons = []
-        supporting = []
-        contradicting = []
-        independent_count = 0
+    def verify_claim(self, claim: Claim, supporting_certs: tuple[EvidenceCertificate, ...], observations: dict[str, Observation], lineages: dict[str, SourceLineage], other_claims: tuple[Claim, ...] = ()) -> VerificationResult:
+        reasons: list[str] = []
+        supporting: list[EvidenceCertificate] = []
+        contradicting: list[EvidenceCertificate] = []
+        valid_lineages: list[SourceLineage] = []
         status = ClaimStatus.UNKNOWN
 
         if not supporting_certs:
-            reasons.append("no evidence provided")
-            status = ClaimStatus.UNKNOWN
-            return VerificationResult(
-                claim.claim_id,
-                status,
-                (),
-                (),
-                0,
-                tuple(reasons),
-            )
+            return VerificationResult(claim.claim_id, ClaimStatus.UNKNOWN, reasons=("no evidence provided",))
 
-        # Step 1: Verify all certificate spans.
         for cert in supporting_certs:
             obs = observations.get(cert.observation_id)
             if not obs:
                 reasons.append(f"observation {cert.observation_id} not found (inaccessible)")
                 status = ClaimStatus.INACCESSIBLE
                 continue
-
             if not self.verify_span(cert, obs):
                 reasons.append(f"certificate span verification failed for {cert.observation_id}")
                 contradicting.append(cert)
                 status = ClaimStatus.CONTRADICTED
                 continue
 
+            span = EvidenceSpan(cert.observation_id, cert.span_start, cert.span_end)
+            entailment = verify_claim_entailment(claim.text, obs, span)
+            if entailment.status == EntailmentStatus.INVALID:
+                reasons.append(f"semantic evidence span invalid for {cert.observation_id}")
+                status = ClaimStatus.CONTRADICTED
+                contradicting.append(cert)
+                continue
+            if entailment.status == EntailmentStatus.UNSUPPORTED:
+                reasons.append(f"claim is not semantically supported by {cert.observation_id}: {entailment.reason}")
+                status = ClaimStatus.PARTIAL if status != ClaimStatus.CONTRADICTED else status
+                continue
+            if entailment.status == EntailmentStatus.AMBIGUOUS:
+                reasons.append(f"semantic entailment is ambiguous for {cert.observation_id}")
+                status = ClaimStatus.PARTIAL if status != ClaimStatus.CONTRADICTED else status
+                continue
             supporting.append(cert)
+            lineage = lineages.get(cert.source_id)
+            if lineage:
+                valid_lineages.append(lineage)
 
-        # Step 2: Check staleness.
-        stale_count = sum(
-            1 for cert in supporting if self.is_stale(observations[cert.observation_id])
-        )
+        stale_count = sum(1 for cert in supporting if self.is_stale(observations[cert.observation_id]))
         all_supporting_stale = bool(supporting) and stale_count == len(supporting)
         if stale_count:
             reasons.append(f"{stale_count} supporting observations are stale (>30 days)")
 
-        # Step 3: Detect contradictions among claim candidates.
         for other in other_claims:
             if other.claim_id == claim.claim_id:
                 continue
@@ -142,42 +108,30 @@ class EvidenceVerifier:
                 reasons.append(f"claim contradicts {other.claim_id}")
                 status = ClaimStatus.CONTRADICTED
 
-        # Step 4: Count independent corroboration.
-        seen_families = set()
-        for cert in supporting:
-            lineage = lineages.get(cert.source_id)
-            if lineage and lineage.family_id not in seen_families:
-                seen_families.add(lineage.family_id)
-                independent_count += 1
+        independent_lineages: list[SourceLineage] = []
+        for lineage in valid_lineages:
+            if not any(self.check_independence(lineage, existing) for existing in independent_lineages):
+                independent_lineages.append(lineage)
+        independent_count = len(independent_lineages)
 
         if independent_count == 0 and supporting:
-            reasons.append("supporting evidence comes from single source family")
+            reasons.append("supporting evidence has no independently originating corroboration")
         elif independent_count >= 2:
-            reasons.append(f"independent corroboration from {independent_count} families")
+            reasons.append(f"independent corroboration from {independent_count} origins")
         elif supporting:
-            reasons.append("supporting evidence comes from one source family")
+            reasons.append("supporting evidence comes from one origin")
 
-        # Step 5: Fail-closed precedence. Contradiction > inaccessible > stale >
-        # corroborated/support; partial is used only when some evidence is valid
-        # and some evidence is inaccessible/stale.
         if status == ClaimStatus.CONTRADICTED:
             final_status = ClaimStatus.CONTRADICTED
         elif not supporting:
             final_status = ClaimStatus.INACCESSIBLE if status == ClaimStatus.INACCESSIBLE else ClaimStatus.UNKNOWN
         elif all_supporting_stale:
             final_status = ClaimStatus.STALE
-        elif stale_count or status == ClaimStatus.INACCESSIBLE:
+        elif stale_count or status in {ClaimStatus.INACCESSIBLE, ClaimStatus.PARTIAL}:
             final_status = ClaimStatus.PARTIAL
         elif independent_count >= 2:
             final_status = ClaimStatus.CORROBORATED
         else:
             final_status = ClaimStatus.SUPPORTED
 
-        return VerificationResult(
-            claim.claim_id,
-            final_status,
-            tuple(supporting),
-            tuple(contradicting),
-            independent_count,
-            tuple(reasons),
-        )
+        return VerificationResult(claim.claim_id, final_status, tuple(supporting), tuple(contradicting), independent_count, tuple(reasons))
