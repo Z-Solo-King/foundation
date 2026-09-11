@@ -12,6 +12,7 @@ class EvidenceCertificate:
     span_start: int
     span_end: int
     span_text: str
+    structurally_valid: bool = True
 
 
 def create_certificate(
@@ -34,6 +35,9 @@ def verify_certificate(
     observation: Observation,
     certificate: EvidenceCertificate,
 ) -> bool:
+    if not certificate.structurally_valid:
+        return False
+
     if observation.observation_id != certificate.observation_id:
         return False
 
