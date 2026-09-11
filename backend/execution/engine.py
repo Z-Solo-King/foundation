@@ -9,14 +9,11 @@ from datetime import datetime, timezone
 from typing import Any
 
 from backend.intelligence.contracts import ResearchContract, ResearchPlan
-from backend.intelligence.observations import Observation, EvidenceSpan
+from backend.intelligence.observations import Observation
 from backend.intelligence.claims import Claim
-from backend.intelligence.certificates import create_certificate
 from backend.intelligence.lineage import SourceLineage
 from backend.intelligence.verifier import EvidenceVerifier, ClaimStatus
-from backend.execution.resources import ResourceBudget, ResourceError
-from backend.execution.providers import ProviderRegistry
-from backend.execution.router import ProviderRouter
+from backend.execution.resources import ResourceBudget
 
 
 @dataclass(frozen=True)
@@ -56,11 +53,7 @@ def start_research(run: ResearchRun) -> ResearchRun:
 
 
 def add_observation(run: ResearchRun, obs: Observation, budget: ResourceBudget) -> ResearchRun:
-    """Add an observation to the run and consume evidence budget.
-    
-    Raises:
-        ResourceError: If evidence budget exhausted
-    """
+    """Add an observation to the run and consume evidence budget."""
     budget.consume_evidence()
     return ResearchRun(
         run.run_id,
@@ -97,23 +90,16 @@ def verify_and_add_claim(
     verifier: EvidenceVerifier,
     lineages: dict[str, SourceLineage],
 ) -> ResearchRun:
-    """Verify a claim against observations and add to verified set.
-    
-    Args:
-        run: Current research run
-        claim: Claim to verify
-        evidence_certs: Tuple of EvidenceCertificate objects
-        verifier: EvidenceVerifier instance
-        lineages: Dict mapping source_id -> SourceLineage
-        
-    Returns:
-        Updated run with verified claim added
-    """
-    # Build observations dict from run
+    """Verify a claim against observations and prior claims and add to verified set."""
     obs_dict = {o.observation_id: o for o in run.observations}
-    
-    result = verifier.verify_claim(claim, evidence_certs, obs_dict, lineages)
-    
+    result = verifier.verify_claim(
+        claim,
+        evidence_certs,
+        obs_dict,
+        lineages,
+        other_claims=run.claims,
+    )
+
     return ResearchRun(
         run.run_id,
         run.contract,
@@ -145,11 +131,7 @@ def complete_research(run: ResearchRun, success: bool = True) -> ResearchRun:
 
 
 def summarize_research(run: ResearchRun) -> dict[str, Any]:
-    """Generate summary of research run.
-    
-    Returns:
-        Dict with statistics and key findings
-    """
+    """Generate summary of research run."""
     if not run.verified_claims:
         return {
             "run_id": run.run_id,
@@ -159,9 +141,9 @@ def summarize_research(run: ResearchRun) -> dict[str, Any]:
             "claims_verified": 0,
             "corroborated_claims": 0,
             "contradicted_claims": 0,
-            "findings": []
+            "findings": [],
         }
-    
+
     corroborated = sum(
         1 for _, result in run.verified_claims
         if result.status == ClaimStatus.CORROBORATED
@@ -170,7 +152,7 @@ def summarize_research(run: ResearchRun) -> dict[str, Any]:
         1 for _, result in run.verified_claims
         if result.status == ClaimStatus.CONTRADICTED
     )
-    
+
     findings = [
         {
             "claim": claim.text,
@@ -181,7 +163,7 @@ def summarize_research(run: ResearchRun) -> dict[str, Any]:
         }
         for claim, result in run.verified_claims
     ]
-    
+
     return {
         "run_id": run.run_id,
         "status": run.status,
