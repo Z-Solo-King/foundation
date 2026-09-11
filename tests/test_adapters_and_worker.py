@@ -105,7 +105,7 @@ class FakeHTTPResponse:
 
 
 @pytest.mark.asyncio
-async def test_public_http_validation_and_redirects(monkeypatch):
+async def test_public_http_validation_and_redirects():
     source_http.validate_url("https://example.com")
     for url in ("ftp://example.com", "http://127.0.0.1", "http://localhost", "https://user:pass@example.com", "https://example.com:8443"):
         with pytest.raises(ValueError):
@@ -119,47 +119,42 @@ async def test_public_http_validation_and_redirects(monkeypatch):
     async def fake_fetch(url, options):
         return next(responses)
 
-    monkeypatch.setattr(source_http, "fetch", fake_fetch)
-    result = await source_http.fetch_public_url("https://example.com/start")
+    result = await source_http.fetch_public_url("https://example.com/start", fetcher=fake_fetch)
     assert result.final_url == "https://example.com/next"
     assert result.content == b"hello"
 
     async def bad_redirect(url, options):
         return FakeHTTPResponse(302, {})
 
-    monkeypatch.setattr(source_http, "fetch", bad_redirect)
     with pytest.raises(RuntimeError, match="without Location"):
-        await source_http.fetch_public_url("https://example.com/start")
+        await source_http.fetch_public_url("https://example.com/start", fetcher=bad_redirect)
 
     async def huge(url, options):
         return FakeHTTPResponse(200, body=b"x" * (source_http.MAX_BYTES + 1))
 
-    monkeypatch.setattr(source_http, "fetch", huge)
     with pytest.raises(RuntimeError, match="size budget"):
-        await source_http.fetch_public_url("https://example.com/start")
+        await source_http.fetch_public_url("https://example.com/start", fetcher=huge)
 
 
 @pytest.mark.asyncio
-async def test_wikipedia_adapter_parses_results(monkeypatch):
+async def test_wikipedia_adapter_parses_results():
     payload = {"query": {"search": [{"title": "A", "pageid": 1, "snippet": "s"}, {"title": "", "pageid": 2}, {"title": "B", "pageid": None}]}}
 
     async def fake_fetch(url, options):
         return FakeHTTPResponse(200, payload=payload)
 
-    monkeypatch.setattr(wikipedia, "fetch", fake_fetch)
-    results = await wikipedia.wikipedia_search("query", 5)
+    results = await wikipedia._implementation("query", 5, fetcher=fake_fetch)
     assert len(results) == 1
     assert results[0].title == "A"
 
     async def failed_fetch(url, options):
         return FakeHTTPResponse(503)
 
-    monkeypatch.setattr(wikipedia, "fetch", failed_fetch)
     with pytest.raises(RuntimeError, match="HTTP 503"):
-        await wikipedia.wikipedia_search("query", 1)
+        await wikipedia._implementation("query", 1, fetcher=failed_fetch)
 
 
-async def test_cloudflare_persistence_helpers(monkeypatch):
+async def test_cloudflare_persistence_helpers():
     request = make_request(source_urls=("https://example.com",))
     assert len(request_fingerprint(request)) == 64
     db = FakeDB()
@@ -201,7 +196,7 @@ def test_d1_repository_all_paths():
     with pytest.raises(ValueError):
         repo.create_run(run)
     assert repo.get_run("missing") is None
-    updated = RunRecord("r1", "q2", "deep", "running", now, now, 2, 3, "{}").__class__("r1", "q2", "deep", "running", now, now, 2, 3, "{}")
+    updated = RunRecord("r1", "q2", "deep", "running", now, now, 2, 3, "{}")
     assert repo.update_run(updated).question == "q2"
     with pytest.raises(ValueError):
         repo.update_run(RunRecord("missing", "q", "standard", "planned", now, now, 1, 1, "{}"))
@@ -277,8 +272,6 @@ async def test_worker_helpers_and_source_ingestion(monkeypatch):
     ingested = await worker._ingest_sources(env, "run-1", request)
     assert ingested[0]["bytes"] == 3
 
-    db.statements.append(("lookup", FakeStatement({"run_id": "run-1"})))
-    # Exercise the control/readiness helper on both branches.
     assert await worker._control_plane_ready(SimpleNamespace(CONTROL_PLANE=None)) is False
 
     class Control:
