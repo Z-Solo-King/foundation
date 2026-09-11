@@ -34,7 +34,7 @@ def test_evaluation_harness_production_failure_and_success():
     for i in range(150):
         cat = categories[i % len(categories)]
         failing.register_case(BenchmarkCase(f"case-{i}", cat, "d", "q", "a"))
-        failing.record_result(f"case-{i}", EvaluationResult(f"case-{i}", i != 0))
+        failing.record_result(f"case-{i}", EvaluationResult(f"case-{i}", i >= 8))
     ready, reason = failing.production_readiness()
     assert ready is False and "pass rate" in reason
 
