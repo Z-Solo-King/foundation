@@ -2,7 +2,9 @@ import asyncio
 import builtins
 import hashlib
 import json
+import sys
 from datetime import date, datetime, timedelta, timezone
+from types import SimpleNamespace
 
 import pytest
 
@@ -51,6 +53,8 @@ def test_http_success_transport_and_wikipedia_worker_export(monkeypatch):
     assert result.content == b"hello"
     assert result.etag == "etag-1"
 
+    fake_workers = SimpleNamespace(fetch=lambda *_args, **_kwargs: None)
+    monkeypatch.setitem(sys.modules, "workers", fake_workers)
     assert callable(wikipedia._workers_fetch())
 
 
