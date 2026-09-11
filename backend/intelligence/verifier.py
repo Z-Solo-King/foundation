@@ -38,12 +38,7 @@ class VerificationResult:
 
 
 class EvidenceVerifier:
-    """Verifies evidence structurally and semantically before synthesis.
-
-    ``semantic_strict=False`` keeps the historical structural verifier behavior
-    for callers that need compatibility; strict production paths can require a
-    deterministic semantic result before evidence is accepted.
-    """
+    """Verifies evidence structurally and semantically before synthesis."""
 
     STALE_THRESHOLD = timedelta(days=30)
 
@@ -64,6 +59,7 @@ class EvidenceVerifier:
 
     def verify_claim(self, claim: Claim, supporting_certs: tuple[EvidenceCertificate, ...], observations: dict[str, Observation], lineages: dict[str, SourceLineage], other_claims: tuple[Claim, ...] = ()) -> VerificationResult:
         reasons: list[str] = []
+        semantic_reasons: list[str] = []
         supporting: list[EvidenceCertificate] = []
         contradicting: list[EvidenceCertificate] = []
         valid_lineages: list[SourceLineage] = []
@@ -91,18 +87,11 @@ class EvidenceVerifier:
                 contradicting.append(cert)
                 status = ClaimStatus.CONTRADICTED
                 continue
-            if entailment.status == EntailmentStatus.UNSUPPORTED:
-                reasons.append(f"claim is not semantically supported by {cert.observation_id}: {entailment.reason}")
+            if entailment.status in {EntailmentStatus.UNSUPPORTED, EntailmentStatus.AMBIGUOUS}:
+                semantic_reasons.append(f"semantic entailment for {cert.observation_id}: {entailment.reason}")
                 if self.semantic_strict:
                     status = ClaimStatus.PARTIAL if status != ClaimStatus.CONTRADICTED else status
                     continue
-                reasons.append("semantic result advisory; structural evidence retained")
-            elif entailment.status == EntailmentStatus.AMBIGUOUS:
-                reasons.append(f"semantic entailment is ambiguous for {cert.observation_id}")
-                if self.semantic_strict:
-                    status = ClaimStatus.PARTIAL if status != ClaimStatus.CONTRADICTED else status
-                    continue
-                reasons.append("ambiguous semantic result advisory; structural evidence retained")
             supporting.append(cert)
             lineage = lineages.get(cert.source_id)
             if lineage:
@@ -120,11 +109,15 @@ class EvidenceVerifier:
                 reasons.append(f"claim contradicts {other.claim_id}")
                 status = ClaimStatus.CONTRADICTED
 
+        origins: list[str] = []
         independent_lineages: list[SourceLineage] = []
         for lineage in valid_lineages:
+            origin = lineage.effective_origin
+            if origin not in origins:
+                origins.append(origin)
             if not any(self.check_independence(lineage, existing) for existing in independent_lineages):
                 independent_lineages.append(lineage)
-        independent_count = len(independent_lineages)
+        independent_count = len(origins)
 
         if independent_count == 0 and supporting:
             reasons.append("supporting evidence has no independently originating corroboration")
@@ -132,6 +125,9 @@ class EvidenceVerifier:
             reasons.append(f"independent corroboration from {independent_count} origins")
         elif supporting:
             reasons.append("supporting evidence comes from one origin")
+
+        if semantic_reasons:
+            reasons.extend(semantic_reasons)
 
         if status == ClaimStatus.CONTRADICTED:
             final_status = ClaimStatus.CONTRADICTED
