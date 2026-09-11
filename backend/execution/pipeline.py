@@ -1,27 +1,20 @@
-from dataclasses import dataclass
+"""Backward-compatible facade over the canonical research execution model.
 
+This module contains no independent execution state or business logic.  New code
+should import ``backend.execution.engine`` directly.
+"""
+
+from backend.execution.engine import ResearchRun, add_observation, create_run
+from backend.execution.resources import ResourceBudget
 from backend.intelligence.contracts import ResearchContract
-from backend.intelligence.observations import Observation
 from backend.intelligence.planning import create_plan
-from .resources import ResourceBudget
+
+PipelineRun = ResearchRun
 
 
-@dataclass(frozen=True)
-class PipelineRun:
-    contract: ResearchContract
-    plan_stages: tuple[str, ...]
-    observations: tuple[Observation, ...] = ()
-
-    @property
-    def plan(self):
-        """Compatibility view exposing the generated plan."""
-        return create_plan(self.contract)
+def start_run(contract: ResearchContract, run_id: str = "pipeline-compat") -> ResearchRun:
+    return create_run(run_id, contract, create_plan(contract))
 
 
-def start_run(contract):
-    return PipelineRun(contract, create_plan(contract).stages)
-
-
-def attach_observation(run, observation, budget: ResourceBudget):
-    budget.consume_evidence()
-    return PipelineRun(run.contract, run.plan_stages, run.observations + (observation,))
+def attach_observation(run: ResearchRun, observation, budget: ResourceBudget) -> ResearchRun:
+    return add_observation(run, observation, budget)
