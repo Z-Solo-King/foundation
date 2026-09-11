@@ -1,8 +1,13 @@
 {
-  "schema": 1,
-  "purpose": "Machine-readable navigation for humans and AI agents.",
+  "schema": 2,
+  "purpose": "Machine-readable navigation for humans and AI agents across the full Z-Solo-King family.",
   "repo": "foundation",
   "role": "public-contracts",
+  "family_ownership": {
+    "foundation": "public-safe research contracts, evidence primitives, deterministic planning, API boundary",
+    "operations": "private policy, resources, evaluation, promotion, trust boundary, chatbot control-plane knowledge",
+    "extractor-mapper": "private acquisition, extraction, mapping, and bounded execution"
+  },
   "source_of_truth": {
     "contracts": ["backend/intelligence/contracts.py", "backend/execution/engine.py"],
     "evidence": ["backend/evidence_certificate.py"],
@@ -10,8 +15,14 @@
     "api": ["backend/api/"],
     "resource_guard": ["backend/execution/resources.py"]
   },
-  "must_not_own": ["private policy authority", "global resource governance", "promotion", "credentials", "protected deployment topology"],
-  "design_rules": ["deterministic-first", "one canonical implementation per behavior", "small modules", "public-safe data only", "contracts before cross-repo implementation"],
+  "chatbot_boundary": {
+    "public_entrypoint": "backend.api.main.submit_research",
+    "role": "accept typed public-safe research requests; do not parse private policy or extraction implementation",
+    "private_owner": "operations/private/chatbot/",
+    "private_execution_owner": "extractor-mapper"
+  },
+  "must_not_own": ["private policy authority", "global resource governance", "promotion", "credentials", "protected deployment topology", "heavy extraction", "heavy product mapping"],
+  "design_rules": ["deterministic-first", "one canonical implementation per behavior", "small modules", "public-safe data only", "contracts before cross-repo implementation", "chatbot must use typed contracts rather than duplicate algorithms"],
   "hot_path_guidance": {
     "prefer": ["tuple/dict indexes", "bounded work", "stable typed contracts", "single-pass transforms"],
     "avoid": ["repeated list scans", "duplicate policy engines", "large monolithic modules", "large payloads in control envelopes"]
