@@ -7,7 +7,7 @@ obvious local/private targets before fetch.
 
 from dataclasses import dataclass
 from ipaddress import ip_address
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 from workers import fetch
 
@@ -59,8 +59,10 @@ async def fetch_public_url(url: str) -> FetchResult:
             location = response.headers.get("location")
             if not location:
                 raise RuntimeError("redirect without Location header")
-            validate_url(location)
-            current = location
+            # Relative Location values are normal HTTP and must be resolved
+            # against the current URL before the same safety policy is applied.
+            current = urljoin(current, location)
+            validate_url(current)
             continue
         raw = await response.arrayBuffer()
         content = bytes(raw)
