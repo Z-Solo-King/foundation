@@ -18,11 +18,7 @@ class SourceLineage:
     republisher_of: str | None = None
 
     def __post_init__(self):
-        if self.lineage_type == "republished":
-            if not (self.origin_fingerprint or "").strip():
-                raise ValueError("republished lineage requires origin_fingerprint")
-            if not (self.parent_source_id or self.republisher_of):
-                raise ValueError("republished lineage must identify its origin")
+        self.validate()
 
     def validate(self) -> None:
         if not self.source_id.strip() or not self.family_id.strip():
@@ -48,14 +44,14 @@ def origin_fingerprint(origin: str) -> str:
 
 
 def is_independent(first: SourceLineage, second: SourceLineage) -> bool:
-    first.validate()
-    second.validate()
     if first.source_id == second.source_id:
         return False
+    first.validate()
+    second.validate()
     if first.effective_origin == second.effective_origin:
         return False
-    if first.source_id in {second.parent_source_id, second.republisher_of}:
+    if first.parent_source_id == second.source_id or second.parent_source_id == first.source_id:
         return False
-    if second.source_id in {first.parent_source_id, first.republisher_of}:
+    if first.republisher_of == second.source_id or second.republisher_of == first.source_id:
         return False
     return True
