@@ -5,7 +5,7 @@ from backend.intelligence.verifier import EvidenceVerifier, ClaimStatus
 from backend.intelligence.certificates import create_certificate
 from backend.intelligence.observations import Observation, EvidenceSpan
 from backend.intelligence.claims import Claim
-from backend.intelligence.lineage import SourceLineage
+from backend.intelligence.lineage import SourceLineage, origin_fingerprint
 
 
 def test_verifier_no_evidence():
@@ -36,6 +36,27 @@ def test_verifier_corroborated_multiple_families():
     )
     assert result.status == ClaimStatus.CORROBORATED
     assert result.independent_corroboration_count == 2
+
+
+def test_verifier_does_not_count_republisher_as_independent():
+    verifier = EvidenceVerifier()
+    fingerprint = origin_fingerprint("https://primary.example/source")
+    obs1 = Observation.create("o1", "primary", "https://primary.example", "yes")
+    obs2 = Observation.create("o2", "republisher", "https://republisher.example", "yes")
+    cert1 = create_certificate(obs1, EvidenceSpan("o1", 0, 3))
+    cert2 = create_certificate(obs2, EvidenceSpan("o2", 0, 3))
+    result = verifier.verify_claim(
+        Claim.create("c1", "Test claim"), (cert1, cert2), {"o1": obs1, "o2": obs2},
+        {
+            "primary": SourceLineage("primary", "family-a", origin_fingerprint=fingerprint),
+            "republisher": SourceLineage(
+                "republisher", "family-b", parent_source_id="primary",
+                lineage_type="republished", origin_fingerprint=fingerprint,
+            ),
+        },
+    )
+    assert result.status == ClaimStatus.SUPPORTED
+    assert result.independent_corroboration_count == 1
 
 
 def test_verifier_stale_evidence():
