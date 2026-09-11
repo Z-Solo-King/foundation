@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: '3.14'
       - name: Install test tools
-        run: python -m pip install --upgrade pip pytest coverage workers-py workers-runtime-sdk
+        run: python -m pip install --upgrade pip pytest pytest-asyncio coverage workers-py workers-runtime-sdk
       - name: Compile every Python source
         run: python -m compileall -q backend worker.py
       - name: Run tests with line and branch coverage
