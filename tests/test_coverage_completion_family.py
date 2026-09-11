@@ -163,7 +163,7 @@ def test_entailment_harness_and_claim_validation():
     with pytest.raises(ValueError): ResearchContract("").validate()
     with pytest.raises(ValueError): ResearchContract("q", max_sources=0).validate()
     with pytest.raises(ValueError): ResearchContract("q", max_evidence_items=0).validate()
-    h = EvaluationHarness(); h._bootstrap_target = 2; h._promotion_threshold = 0.75
+    h = EvaluationHarness(); h._bootstrap_target = 2; h._promotion_threshold = 0.5
     c1 = BenchmarkCase("1", EvaluationCategory.RETRIEVAL, "d", "q", "a")
     c2 = BenchmarkCase("2", EvaluationCategory.SECURITY, "d", "q", "a")
     h.register_case(c1); h.register_case(c2)
@@ -197,7 +197,7 @@ def test_intelligence_certificates_observations_lineage_sources():
         cert.__class__(cert.observation_id, cert.source_id, cert.source_url, cert.content_hash, cert.span_start, cert.span_end, cert.span_text, False),
     ):
         assert verify_intel_certificate(obs, bad) is False
-    with pytest.raises(TypeError): Observation("o", "u", "c", "bad", "extra")
+    with pytest.raises(TypeError): Observation("o", "sid", "u", "c", "bad", "extra")
     with pytest.raises(TypeError): Observation.create("o", "u", "c", "x", "y", "z")
     with pytest.raises(ValueError): EvidenceSpan("x",0,1).validate(obs)
     with pytest.raises(ValueError): EvidenceSpan("o",-1,1).validate(obs)
@@ -221,7 +221,7 @@ def test_intelligence_certificates_observations_lineage_sources():
 
 def test_execution_adaptive_engine_router_synthesis():
     from backend.execution.acquisition import choose_method, reserve_acquisition, simulate_acquire, create_lineage
-    from backend.execution.adaptive import AcquisitionStrategy, choose_strategy
+    from backend.execution.adaptive import choose_strategy
     from backend.execution.engine import create_run, start_research, add_observation, add_claim, complete_research, transition_research, summarize_research
     from backend.execution.providers import ProviderCapability, ProviderRegistry
     from backend.execution.router import ProviderRouter
@@ -229,7 +229,6 @@ def test_execution_adaptive_engine_router_synthesis():
     from backend.execution.synthesis import ResearchSynthesizer
     from backend.intelligence.claims import Claim
     from backend.intelligence.contracts import ResearchContract, ResearchPlan
-    from backend.intelligence.lineage import SourceLineage
     from backend.intelligence.observations import Observation
     from backend.intelligence.sources import Source, SourcePolicy, SourceType
     contract = ResearchContract("q"); plan = ResearchPlan("q", ("a",), 1, 1); run = create_run("r", contract, plan)
@@ -247,20 +246,20 @@ def test_execution_adaptive_engine_router_synthesis():
     method = choose_method(source, SourcePolicy()); assert method.enabled
     assert reserve_acquisition(source, SourcePolicy(), ResourceBudget(requests=1)).enabled
     assert simulate_acquire(source, method, "o2", "c").content == "c" and create_lineage(source,"f").lineage_type == "origin"
-    reg = ProviderRegistry(); reg.register(ProviderCapability("p","x",enabled=False)); reg.register(ProviderCapability("free","x",priority=2)); reg.register(ProviderCapability("paid","x",free_eligible=False,priority=1))
+    reg = ProviderRegistry(); reg.register(ProviderCapability("p","x",enabled=False)); reg.register(ProviderCapability("free","x",priority=2)); reg.register(ProviderCapability("paid","x",free_eligible=False,priority=1)); reg.register(ProviderCapability("extract","extraction"))
     router = ProviderRouter(reg, ResourceBudget(inference_calls=1))
     assert router.route("missing").approved is False
     assert router.route("x").approved is True
-    disabled = ProviderRegistry(); disabled.register(ProviderCapability("d","y",enabled=False)); assert router.__class__(disabled, ResourceBudget()).route("y").approved is False
+    disabled = ProviderRegistry(); disabled.register(ProviderCapability("d","y",enabled=False)); assert ProviderRouter(disabled, ResourceBudget()).route("y").approved is False
     paid = ProviderRegistry(); paid.register(ProviderCapability("p","z",free_eligible=False)); assert ProviderRouter(paid, ResourceBudget()).route("z").approved is False
-    exhausted = ProviderRouter(reg, ResourceBudget(inference_calls=0)); assert exhausted.route("x").approved is False
+    exhausted = ProviderRouter(reg, ResourceBudget(inference_calls=0)); assert exhausted.route("extraction").approved is False
     class BrokenBudget:
         def remaining(self): raise ResourceError("broken")
         def consume_inference(self): pass
-    assert ProviderRouter(reg, BrokenBudget()).route("x").approved is False
+    assert ProviderRouter(reg, BrokenBudget()).route("extraction").approved is False
     assert ProviderRouter(reg, ResourceBudget(inference_calls=1)).execute("x", lambda: "ok") == "ok"
     with pytest.raises(PermissionError): ProviderRouter(reg, ResourceBudget()).execute("missing", lambda: "x")
-    with pytest.raises(ResourceError): ProviderRouter(reg, ResourceBudget(inference_calls=0)).execute("x", lambda: "x")
+    with pytest.raises(ResourceError): ProviderRouter(reg, ResourceBudget(inference_calls=0)).execute("extraction", lambda: "x")
     synth = ResearchSynthesizer(); result = synth.synthesize(run); assert result.confidence == "unknown"
 
 
@@ -293,6 +292,7 @@ def test_source_transport_and_wikipedia_boundaries(monkeypatch):
     class Resp:
         def __init__(self,status=200,headers=None,body=b"ok"): self.status=status; self.headers=headers or {}; self.body=body
         async def arrayBuffer(self): return self.body
+        async def json(self): return {}
     async def fetcher(url, opts): return Resp()
     got = asyncio.run(http.fetch_public_url("https://example.com", fetcher=fetcher)); assert got.status == 200
     redirects = iter([Resp(302,{"location":"/x"}), Resp(200,{},b"x")])
