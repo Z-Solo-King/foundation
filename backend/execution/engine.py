@@ -1,8 +1,4 @@
-"""Complete research execution pipeline.
-
-Connects planner -> acquisition -> observation -> evidence -> verification -> synthesis
-as one bounded vertical slice. All stages respect resource budgets and fail-closed constraints.
-"""
+"""Canonical bounded research execution state and lifecycle."""
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -27,6 +23,11 @@ class ResearchRun:
     verified_claims: tuple[tuple[Claim, Any], ...] = ()
     started_at: datetime | None = None
     completed_at: datetime | None = None
+
+    @property
+    def plan_stages(self) -> tuple[str, ...]:
+        """Compatibility view; execution owns the canonical ResearchPlan."""
+        return self.plan.stages
 
 
 def create_run(run_id: str, contract: ResearchContract, plan: ResearchPlan) -> ResearchRun:
