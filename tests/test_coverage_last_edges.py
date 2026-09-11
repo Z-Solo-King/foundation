@@ -3,10 +3,12 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 
-def test_entailment_ai_positive_adjudication():
+def test_entailment_ai_positive_and_negative_adjudication():
     from backend.evaluation.entailment import EntailmentResult, EntailmentStatus, adjudicate_ambiguous
     result = adjudicate_ambiguous(EntailmentResult(EntailmentStatus.AMBIGUOUS, 0.7, "ambiguous"), True)
     assert result.status == EntailmentStatus.SUPPORTED
+    rejected = adjudicate_ambiguous(EntailmentResult(EntailmentStatus.AMBIGUOUS, 0.7, "ambiguous"), False)
+    assert rejected.status == EntailmentStatus.UNSUPPORTED
 
 
 def test_engine_invalid_lifecycle_branches():
@@ -23,7 +25,7 @@ def test_engine_invalid_lifecycle_branches():
         complete_research(planned)
 
 
-def test_worker_task_validation_all_remaining_rejections(monkeypatch):
+def test_worker_task_and_result_validation_all_remaining_rejections(monkeypatch):
     from backend.execution.worker_boundary import WorkerTask, WorkerResult, WorkerTaskValidator
     validator = WorkerTaskValidator()
     base = validator.create_task("fetch", {}, "p")
@@ -54,14 +56,38 @@ def test_worker_task_validation_all_remaining_rejections(monkeypatch):
         assert ok is True and reason == "valid"
 
 
-def test_typed_contradiction_remaining_unknown_type():
+def test_worker_result_rejects_invalid_timestamp_and_execution_time():
+    from backend.execution.worker_boundary import WorkerResult, WorkerTaskValidator
+    validator = WorkerTaskValidator()
+    task = validator.create_task("fetch", {}, "p")
+    now = datetime.now(timezone.utc)
+    naive = WorkerResult(task.task_id, task.nonce, "failure", None, None, 1, "worker", now.replace(tzinfo=None))
+    assert validator.validate_result(task, naive, None)[0] is False
+    future = WorkerResult(task.task_id, task.nonce, "failure", None, None, 1, "worker", now + timedelta(minutes=6))
+    assert validator.validate_result(task, future, None)[0] is False
+    negative = WorkerResult(task.task_id, task.nonce, "failure", None, None, -1, "worker", now)
+    assert validator.validate_result(task, negative, None)[0] is False
+    missing_worker = WorkerResult(task.task_id, task.nonce, "failure", None, None, 1, "", now)
+    assert validator.validate_result(task, missing_worker, None)[0] is False
+
+
+def test_typed_contradiction_remaining_unknown_type_and_overlap_edges():
     from backend.intelligence.contradiction import TypedClaim, detect_typed_contradiction
     a = TypedClaim("a", "E", "P", "x", "unknown", unit=None, qualifier=None)
     b = TypedClaim("b", "E", "P", "y", "unknown", unit=None, qualifier=None)
     assert detect_typed_contradiction(a, b) is None
+    left = TypedClaim("left", "E", "P", 1, "numeric", valid_until=datetime(2026, 1, 1, tzinfo=timezone.utc), unit="kg")
+    right = TypedClaim("right", "E", "P", 2, "numeric", valid_from=datetime(2026, 2, 1, tzinfo=timezone.utc), unit="kg")
+    assert detect_typed_contradiction(left, right) is None
+    quantity = TypedClaim("q", "E", "P", 1, "quantity", unit=None)
+    quantity2 = TypedClaim("q2", "E", "P", 2, "quantity", unit=None)
+    assert detect_typed_contradiction(quantity, quantity2) is None
+    text_a = TypedClaim("t1", "E", "P", "a", "text", unit="kg", qualifier="x")
+    text_b = TypedClaim("t2", "E", "P", "b", "text", unit="lb", qualifier="x")
+    assert detect_typed_contradiction(text_a, text_b) is None
 
 
-def test_lineage_invalid_type_and_missing_origin_validation():
+def test_lineage_validation_guards():
     from backend.intelligence.lineage import SourceLineage
     with pytest.raises(ValueError):
         SourceLineage("s", "f", lineage_type="bogus").validate()
@@ -76,9 +102,13 @@ def test_observation_invalid_span_order_and_creation():
         EvidenceSpan("o", 3, 2).text_from(obs)
     with pytest.raises(ValueError):
         EvidenceSpan("wrong", 0, 1).text_from(obs)
+    with pytest.raises(TypeError):
+        Observation("o1", "sid", None, "text", datetime.now(timezone.utc))
+    with pytest.raises(TypeError):
+        Observation("o2", "sid", "https://e", None, datetime.now(timezone.utc))
 
 
-def test_verifier_inaccessible_and_semantic_rejection_branches():
+def test_verifier_inaccessible_semantic_and_contradicted_strict_paths():
     from backend.intelligence.claims import Claim
     from backend.intelligence.certificates import create_certificate
     from backend.intelligence.observations import EvidenceSpan, Observation
@@ -89,6 +119,9 @@ def test_verifier_inaccessible_and_semantic_rejection_branches():
     verifier = EvidenceVerifier(semantic_strict=True)
     result = verifier.verify_claim(claim, (cert,), {"o": obs}, {}, ())
     assert result.status in {ClaimStatus.PARTIAL, ClaimStatus.UNKNOWN, ClaimStatus.INACCESSIBLE}
+    bad = type(cert)(cert.observation_id, cert.source_id, cert.url, "bad-hash", cert.span_start, cert.span_end, cert.span_text, cert.structural_valid)
+    result2 = verifier.verify_claim(claim, (bad, cert), {"o": obs}, {}, ())
+    assert result2.status in {ClaimStatus.CONTRADICTED, ClaimStatus.PARTIAL, ClaimStatus.UNKNOWN, ClaimStatus.INACCESSIBLE}
 
 
 def test_http_invalid_runtime_and_redirect_without_location(monkeypatch):
