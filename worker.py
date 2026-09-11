@@ -83,32 +83,56 @@ async def _ingest_sources(env, run_id, req):
         observation_id = f"{run_id}:obs:{index}"
         family = urlparse(fetched.final_url).hostname or "unknown"
         now = datetime.now(timezone.utc).isoformat()
+        access_state = "accessible" if 200 <= fetched.status < 400 else "error"
 
         await env.DB.prepare(
-            """INSERT OR IGNORE INTO sources
+            """INSERT INTO sources
             (source_id, url, source_family_id, origin_kind, first_observed_at, last_observed_at, access_state)
-            VALUES (?, ?, ?, ?, ?, ?, ?)"""
-        ).bind(source_id, fetched.final_url, family, "direct", now, now,
-               "accessible" if 200 <= fetched.status < 400 else "error").run()
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(source_id) DO UPDATE SET
+              url = excluded.url,
+              source_family_id = excluded.source_family_id,
+              last_observed_at = excluded.last_observed_at,
+              access_state = excluded.access_state"""
+        ).bind(source_id, fetched.final_url, family, "direct", now, now, access_state).run()
 
         artifact_ref = f"raw/{run_id}/{observation_id}/{content_hash}"
-        await env.ARTIFACTS.put(artifact_ref, fetched.content,
-                                httpMetadata={"contentType": fetched.content_type})
+        await env.ARTIFACTS.put(
+            artifact_ref,
+            fetched.content,
+            httpMetadata={"contentType": fetched.content_type},
+        )
 
         await env.DB.prepare(
-            """INSERT OR REPLACE INTO document_versions
+            """INSERT INTO document_versions
             (version_id, source_id, retrieved_at, etag, content_hash, artifact_ref, content_length)
-            VALUES (?, ?, ?, ?, ?, ?, ?)"""
-        ).bind(version_id, source_id, now, fetched.etag, content_hash,
-               artifact_ref, len(fetched.content)).run()
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(version_id) DO UPDATE SET
+              source_id = excluded.source_id,
+              retrieved_at = excluded.retrieved_at,
+              etag = excluded.etag,
+              content_hash = excluded.content_hash,
+              artifact_ref = excluded.artifact_ref,
+              content_length = excluded.content_length"""
+        ).bind(version_id, source_id, now, fetched.etag, content_hash, artifact_ref, len(fetched.content)).run()
 
         await env.DB.prepare(
-            """INSERT OR REPLACE INTO observations
+            """INSERT INTO observations
             (observation_id, run_id, source_id, version_id, observed_at,
              retrieval_method, content_hash, integrity_state, access_state)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
-        ).bind(observation_id, run_id, source_id, version_id, now, "http_fetch",
-               content_hash, "verified", "accessible").run()
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(observation_id) DO UPDATE SET
+              source_id = excluded.source_id,
+              version_id = excluded.version_id,
+              observed_at = excluded.observed_at,
+              retrieval_method = excluded.retrieval_method,
+              content_hash = excluded.content_hash,
+              integrity_state = excluded.integrity_state,
+              access_state = excluded.access_state"""
+        ).bind(
+            observation_id, run_id, source_id, version_id, now,
+            "http_fetch", content_hash, "verified", access_state,
+        ).run()
 
         results.append({
             "url": fetched.final_url,
