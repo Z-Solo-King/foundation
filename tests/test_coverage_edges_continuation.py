@@ -1,4 +1,5 @@
 import asyncio
+import builtins
 from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
 
@@ -81,11 +82,13 @@ def test_harness_production_success_and_observation_edges():
     from backend.intelligence.observations import Observation
 
     h = EvaluationHarness()
+    h._production_target = 20
     h._promotion_threshold = 0.5
-    for i in range(10):
-        cid = f"retrieval-{i}"
-        h.register_case(BenchmarkCase(cid, EvaluationCategory.RETRIEVAL, "d", "q", "a"))
-        h.record_result(cid, EvaluationResult(cid, True))
+    for category in (EvaluationCategory.RETRIEVAL, EvaluationCategory.CITATIONS):
+        for i in range(10):
+            cid = f"{category.value}-{i}"
+            h.register_case(BenchmarkCase(cid, category, "d", "q", "a"))
+            h.record_result(cid, EvaluationResult(cid, True))
     ok, reason = h.production_readiness()
     assert ok is True and reason == "production gate passed"
     obs = Observation.create("o", "https://e", "x")
@@ -116,14 +119,14 @@ def test_lineage_contradiction_and_observation_remaining_edges():
     assert detect_typed_contradiction(claim("a", "same", "text", unit="a"), claim("b", "same", "text", unit="b")) is None
     assert detect_typed_contradiction(claim("a", "same", "text"), claim("b", "same", "text")) is None
     assert detect_typed_contradiction(claim("a", 1, "numeric", valid_until=datetime(2024, 1, 1)), claim("b", 2, "numeric", valid_from=datetime(2024, 1, 2))) is None
-    assert detect_typed_contradiction(claim("a", 1, "numeric"), claim("b", 2, "other",)) is None
+    assert detect_typed_contradiction(claim("a", 1, "numeric"), claim("b", 2, "other")) is None
     with pytest.raises(ValueError):
         SourceLineage("s", "f", lineage_type="republished").validate()
     rep = SourceLineage("s", "f", lineage_type="republished", origin_fingerprint="fp", parent_source_id="p")
     rep.validate()
 
 
-def test_http_host_and_wikipedia_runtime_paths(monkeypatch):
+def test_http_and_wikipedia_runtime_paths(monkeypatch):
     import backend.sources.http as http
     import backend.sources.wikipedia as wikipedia
 
@@ -132,16 +135,21 @@ def test_http_host_and_wikipedia_runtime_paths(monkeypatch):
     assert http._safe_host("192.168.1.1") is False
     assert http._safe_host("not-an-ip.example") is True
 
-    monkeypatch.setattr(http, "_workers_fetch", lambda: None)
-    # Exercise the URL validator branches before any actual transport is attempted.
     with pytest.raises(ValueError): http.validate_url("ftp://example.com")
     with pytest.raises(ValueError): http.validate_url("https://user:pass@example.com")
     with pytest.raises(ValueError): http.validate_url("https://example.com:8443")
     with pytest.raises(ValueError): http.validate_url("http://localhost")
 
-    monkeypatch.setattr(wikipedia, "_workers_fetch", lambda: (_ for _ in ()).throw(RuntimeError("runtime")))
+    original_import = builtins.__import__
+    def blocked_import(name, *args, **kwargs):
+        if name == "workers":
+            raise ImportError("blocked")
+        return original_import(name, *args, **kwargs)
+    monkeypatch.setattr(builtins, "__import__", blocked_import)
     with pytest.raises(RuntimeError, match="Cloudflare Workers runtime"):
-        asyncio.run(wikipedia._implementation("q", 1))
+        http._workers_fetch()
+    with pytest.raises(RuntimeError, match="Cloudflare Workers runtime"):
+        wikipedia._workers_fetch()
 
 
 def test_worker_result_replay_and_size_guards():
@@ -173,15 +181,14 @@ def test_worker_result_replay_and_size_guards():
 
 
 def test_verifier_strict_and_inaccessible_paths():
-    import hashlib
     from backend.intelligence.certificates import create_certificate
     from backend.intelligence.claims import Claim
     from backend.intelligence.observations import Observation, EvidenceSpan
     from backend.intelligence.lineage import SourceLineage
     from backend.intelligence.verifier import EvidenceVerifier, ClaimStatus
 
-    obs = Observation.create("o", "sid", "https://e", "unrelated evidence")
-    cert = create_certificate(obs, EvidenceSpan("o", 0, 19))
+    obs = Observation.create("o", "https://e", "unrelated evidence")
+    cert = create_certificate(obs, EvidenceSpan("o", 0, 18))
     claim = Claim.create("c", "banana")
 
     strict = EvidenceVerifier(semantic_strict=True)
@@ -192,8 +199,7 @@ def test_verifier_strict_and_inaccessible_paths():
     assert missing.status == ClaimStatus.INACCESSIBLE
     assert "inaccessible" in " ".join(missing.reasons)
 
-    contradicted = create_certificate(obs, EvidenceSpan("o", 0, 19))
-    bad = contradicted.__class__(contradicted.observation_id, contradicted.source_id, contradicted.source_url, "bad", contradicted.span_start, contradicted.span_end, contradicted.span_text, True)
+    bad = cert.__class__(cert.observation_id, cert.source_id, cert.source_url, "bad", cert.span_start, cert.span_end, cert.span_text, True)
     bad_result = strict.verify_claim(claim, (bad,), {"o": obs}, {})
     assert bad_result.status == ClaimStatus.CONTRADICTED
 
