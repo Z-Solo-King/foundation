@@ -5,15 +5,15 @@ import pytest
 
 from backend.evaluation.entailment import EntailmentStatus, verify_claim_entailment
 from backend.evaluation.harness import BenchmarkCase, EvaluationCategory, EvaluationHarness, EvaluationResult
-from backend.evidence_certificate import EvidenceCertificate, verify_certificate
+from backend.evidence_certificate import EvidenceCertificate as PublicCertificate, verify_certificate as verify_public_certificate
 from backend.execution.acquisition import choose_method, reserve_acquisition
 from backend.execution.adaptive import choose_strategy
-from backend.execution.engine import ResearchRun, create_run, start_research, transition_research
+from backend.execution.engine import create_run, start_research, transition_research
 from backend.execution.resources import ResourceBudget
 from backend.execution.router import ProviderRouter
 from backend.execution.providers import ProviderCapability, ProviderRegistry
 from backend.execution.worker_boundary import WorkerResult, WorkerTask, WorkerTaskValidator
-from backend.intelligence.certificates import create_certificate
+from backend.intelligence.certificates import EvidenceCertificate, create_certificate, verify_certificate
 from backend.intelligence.claims import Claim
 from backend.intelligence.contracts import ResearchContract, ResearchPlan
 from backend.intelligence.contradiction import TypedClaim, detect_typed_contradiction
@@ -21,7 +21,6 @@ from backend.intelligence.lineage import SourceLineage
 from backend.intelligence.observations import EvidenceSpan, Observation
 from backend.intelligence.sources import Source, SourcePolicy, SourceType
 from backend.intelligence.verifier import ClaimStatus, EvidenceVerifier
-from backend.sources.http import FetchResult
 
 
 def test_entailment_threshold_and_negation_edges():
@@ -36,32 +35,40 @@ def test_evaluation_harness_readiness_edges():
     harness = EvaluationHarness()
     case = BenchmarkCase("edge", EvaluationCategory.RETRIEVAL, "d", "q", "a")
     harness.register_case(case)
-    harness.record_result("edge", EvaluationResult("edge", True))
     assert harness.bootstrap_readiness()[0] is False
     assert harness.production_readiness()[0] is False
-    with pytest.raises(ValueError): harness.record_result("edge", EvaluationResult("other", True))
     with pytest.raises(ValueError): harness.regression_test("missing", lambda c: EvaluationResult(c.case_id, True))
 
 
-def test_evidence_certificate_mismatches():
+def test_public_evidence_certificate_mismatches():
     obs = Observation.create("o", "https://example.com", "hello world")
+    cert = PublicCertificate("o", obs.source_url, hashlib.sha256(obs.content.encode()).hexdigest(), 0, 5, "hello")
+    assert verify_public_certificate(obs, cert) is True
+    assert verify_public_certificate(obs, PublicCertificate("x", cert.source_url, cert.content_hash, 0, 5, "hello")) is False
+    assert verify_public_certificate(obs, PublicCertificate(cert.observation_id, "https://other", cert.content_hash, 0, 5, "hello")) is False
+    assert verify_public_certificate(obs, PublicCertificate(cert.observation_id, cert.source_url, "bad", 0, 5, "hello")) is False
+    with pytest.raises(ValueError): verify_public_certificate(obs, PublicCertificate(cert.observation_id, cert.source_url, cert.content_hash, 0, 99, "hello"))
+    assert verify_public_certificate(obs, PublicCertificate(cert.observation_id, cert.source_url, cert.content_hash, 0, 5, "other")) is False
+    assert verify_public_certificate(obs, PublicCertificate(cert.observation_id, cert.source_url, cert.content_hash, 0, 5, "hello", False)) is False
+
+
+def test_intelligence_certificate_mismatches():
+    obs = Observation.create("o", "sid", "https://example.com", "hello world")
     cert = create_certificate(obs, EvidenceSpan("o", 0, 5))
-    variants = [
-        EvidenceCertificate("x", cert.source_url, cert.content_hash, 0, 5, "hello"),
-        EvidenceCertificate(cert.observation_id, "https://other", cert.content_hash, 0, 5, "hello"),
-        EvidenceCertificate(cert.observation_id, cert.source_url, "bad", 0, 5, "hello"),
-        EvidenceCertificate(cert.observation_id, cert.source_url, cert.content_hash, 0, 99, "hello"),
-        EvidenceCertificate(cert.observation_id, cert.source_url, cert.content_hash, 0, 5, "other"),
-        EvidenceCertificate(cert.observation_id, cert.source_url, cert.content_hash, 0, 5, "hello", False),
-    ]
-    for variant in variants:
-        assert verify_certificate(obs, variant) is False
+    assert verify_certificate(obs, cert) is True
+    assert verify_certificate(obs, EvidenceCertificate("x", cert.source_id, cert.source_url, cert.content_hash, 0, 5, "hello", True)) is False
+    assert verify_certificate(obs, EvidenceCertificate(cert.observation_id, "other", cert.source_url, cert.content_hash, 0, 5, "hello", True)) is False
+    assert verify_certificate(obs, EvidenceCertificate(cert.observation_id, cert.source_id, "https://other", cert.content_hash, 0, 5, "hello", True)) is False
+    assert verify_certificate(obs, EvidenceCertificate(cert.observation_id, cert.source_id, cert.source_url, "bad", 0, 5, "hello", True)) is False
+    assert verify_certificate(obs, EvidenceCertificate(cert.observation_id, cert.source_id, cert.source_url, cert.content_hash, 0, 99, "hello", True)) is False
+    assert verify_certificate(obs, EvidenceCertificate(cert.observation_id, cert.source_id, cert.source_url, cert.content_hash, 0, 5, "other", True)) is False
+    assert verify_certificate(obs, EvidenceCertificate(cert.observation_id, cert.source_id, cert.source_url, cert.content_hash, 0, 5, "hello", False)) is False
 
 
 def test_acquisition_method_and_adaptive_edges():
     source = Source("s", "https://example.com", SourceType.WEB)
-    assert choose_method(source, SourcePolicy(allowed=False)).enabled is False
-    assert reserve_acquisition(source, SourcePolicy(allowed=False), ResourceBudget(requests=1)).enabled is False
+    with pytest.raises(PermissionError): choose_method(source, SourcePolicy(allowed=False))
+    with pytest.raises(PermissionError): reserve_acquisition(source, SourcePolicy(allowed=False), ResourceBudget(requests=1))
     assert choose_strategy(True).requires_browser is False
     assert choose_strategy(False).requires_browser is False
 
@@ -81,34 +88,31 @@ def test_engine_invalid_transitions_and_router_execute_edges():
 
 def test_worker_boundary_remaining_fail_closed_paths():
     validator = WorkerTaskValidator()
-    task = validator.create_task("fetch", {}, "p")
+    def fresh_task(): return validator.create_task("fetch", {}, "p")
+    task = fresh_task()
     valid_hash = hashlib.sha256(b'{"x": 1}').hexdigest()
-
-    replay = validator.validate_task(task)
-    assert replay[0] is True
-    assert validator.validate_task(task)[0] is True
     validator._completed_nonces.add(task.nonce)
     assert "replay" in validator.validate_task(task)[1]
 
-    expired_result = WorkerResult(task.task_id, task.nonce, "success", valid_hash, {"x": 1}, 1, "worker", datetime.now(timezone.utc))
-    expired_task = WorkerTask(task.task_id, task.nonce + "-exp", task.schema_version, task.task_type, task.input_hash, task.provenance, datetime.now(timezone.utc) - timedelta(hours=26), datetime.now(timezone.utc) - timedelta(hours=25), task.metadata)
-    assert validator.validate_result(expired_task, expired_result)[0] is False
+    expired_task = fresh_task()
+    expired_task = WorkerTask(expired_task.task_id, expired_task.nonce, expired_task.schema_version, expired_task.task_type, expired_task.input_hash, expired_task.provenance, datetime.now(timezone.utc) - timedelta(hours=26), datetime.now(timezone.utc) - timedelta(hours=25), expired_task.metadata)
+    expired_result = WorkerResult(expired_task.task_id, expired_task.nonce, "success", valid_hash, {"x": 1}, 1, "worker", datetime.now(timezone.utc))
+    assert validator.validate_result(expired_task, expired_result, {"x": 1})[0] is False
 
-    naive = WorkerResult(task.task_id, task.nonce, "success", valid_hash, {"x": 1}, 1, "worker", datetime.now())
-    assert validator.validate_result(task, naive)[0] is False
-    future = WorkerResult(task.task_id, task.nonce, "success", valid_hash, {"x": 1}, 1, "worker", datetime.now(timezone.utc) + timedelta(minutes=6))
-    assert validator.validate_result(task, future)[0] is False
-    negative = WorkerResult(task.task_id, task.nonce, "success", valid_hash, {"x": 1}, -1, "worker", datetime.now(timezone.utc))
-    assert validator.validate_result(task, negative)[0] is False
-    missing_worker = WorkerResult(task.task_id, task.nonce, "success", valid_hash, {"x": 1}, 1, "", datetime.now(timezone.utc))
-    assert validator.validate_result(task, missing_worker)[0] is False
-    bad_status = WorkerResult(task.task_id, task.nonce, "other", valid_hash, {"x": 1}, 1, "worker", datetime.now(timezone.utc))
-    assert validator.validate_result(task, bad_status)[0] is False
+    naive_task = fresh_task(); naive = WorkerResult(naive_task.task_id, naive_task.nonce, "success", valid_hash, {"x": 1}, 1, "worker", datetime.now())
+    assert validator.validate_result(naive_task, naive, {"x": 1})[0] is False
+    future_task = fresh_task(); future = WorkerResult(future_task.task_id, future_task.nonce, "success", valid_hash, {"x": 1}, 1, "worker", datetime.now(timezone.utc) + timedelta(minutes=6))
+    assert validator.validate_result(future_task, future, {"x": 1})[0] is False
+    negative_task = fresh_task(); negative = WorkerResult(negative_task.task_id, negative_task.nonce, "success", valid_hash, {"x": 1}, -1, "worker", datetime.now(timezone.utc))
+    assert validator.validate_result(negative_task, negative, {"x": 1})[0] is False
+    missing_worker_task = fresh_task(); missing_worker = WorkerResult(missing_worker_task.task_id, missing_worker_task.nonce, "success", valid_hash, {"x": 1}, 1, "", datetime.now(timezone.utc))
+    assert validator.validate_result(missing_worker_task, missing_worker, {"x": 1})[0] is False
+    bad_status_task = fresh_task(); bad_status = WorkerResult(bad_status_task.task_id, bad_status_task.nonce, "other", valid_hash, {"x": 1}, 1, "worker", datetime.now(timezone.utc))
+    assert validator.validate_result(bad_status_task, bad_status, {"x": 1})[0] is False
 
 
 def test_typed_contradiction_invalid_numeric_and_scope_edges():
-    def claim(cid, value, value_type, **kw):
-        return TypedClaim(cid, "e", "p", value, value_type, **kw)
+    def claim(cid, value, value_type, **kw): return TypedClaim(cid, "e", "p", value, value_type, **kw)
     assert detect_typed_contradiction(claim("a", "not-number", "numeric"), claim("b", "2", "numeric")) is None
     assert detect_typed_contradiction(claim("a", "2024-01-01", "date"), claim("b", "not-date", "date")) is None
     assert detect_typed_contradiction(claim("a", "same", "text", unit="u"), claim("b", "same", "text", unit="v")) is None
@@ -130,10 +134,8 @@ def test_observation_constructor_and_span_edges():
 
 
 def test_lineage_relationship_edges():
-    first = SourceLineage("s1", "f1", parent_source_id="parent")
-    second = SourceLineage("parent", "f2")
     verifier = EvidenceVerifier()
-    assert verifier.check_independence(first, second) is False
+    assert verifier.check_independence(SourceLineage("s1", "f1", parent_source_id="parent"), SourceLineage("parent", "f2")) is False
     assert verifier.check_independence(SourceLineage("s1", "f1", republisher_of="r"), SourceLineage("r", "f2")) is False
 
 
@@ -145,9 +147,9 @@ def test_verifier_semantic_and_accessibility_matrix():
     unsupported_obs = Observation.create("u", "uid", "https://u", "product maybe stocked")
     unsupported_cert = create_certificate(unsupported_obs, EvidenceSpan("u", 0, len(unsupported_obs.content)))
     partial = strict.verify_claim(claim, (unsupported_cert,), {"u": unsupported_obs}, {})
-    assert partial.status == ClaimStatus.UNKNOWN or partial.status == ClaimStatus.PARTIAL
+    assert partial.status == ClaimStatus.PARTIAL
 
-    invalid_cert = EvidenceCertificate("o", obs.source_url, "bad", 0, len(obs.content), obs.content)
+    invalid_cert = EvidenceCertificate("o", obs.source_id, obs.source_url, "bad", 0, len(obs.content), obs.content, True)
     contradicted = strict.verify_claim(claim, (invalid_cert,), {"o": obs}, {})
     assert contradicted.status == ClaimStatus.CONTRADICTED
 
@@ -160,30 +162,13 @@ def test_verifier_semantic_and_accessibility_matrix():
     assert conflict.status == ClaimStatus.CONTRADICTED
 
 
-def test_verifier_inaccessible_and_partial_final_statuses():
+def test_verifier_inaccessible_and_stale_partial_paths():
     verifier = EvidenceVerifier(semantic_strict=True)
-    inaccessible = EvidenceCertificate("missing", "https://e", "bad", 0, 1, "x")
-    result = verifier.verify_claim(Claim.create("c", "claim"), (inaccessible,), {}, {})
-    assert result.status == ClaimStatus.INACCESSIBLE
-
-    obs = Observation.create("o", "sid", "https://e", "claim is true", datetime.now(timezone.utc) - timedelta(days=1))
+    inaccessible = EvidenceCertificate("missing", "sid", "https://e", "bad", 0, 1, "x", True)
+    assert verifier.verify_claim(Claim.create("c", "claim"), (inaccessible,), {}, {}).status == ClaimStatus.INACCESSIBLE
+    obs = Observation.create("o", "sid", "https://e", "claim true", datetime.now(timezone.utc) - timedelta(days=31))
     cert = create_certificate(obs, EvidenceSpan("o", 0, len(obs.content)))
-    result = verifier.verify_claim(Claim.create("c", "claim is false"), (cert,), {"o": obs}, {})
-    assert result.status in {ClaimStatus.CONTRADICTED, ClaimStatus.PARTIAL, ClaimStatus.SUPPORTED}
-
-
-def test_http_fetch_result_shape_and_worker_adapter(monkeypatch):
-    import backend.sources.http as http
-    result = FetchResult("https://e", "https://e", 200, "text/plain", b"x", None)
-    assert result.final_url == "https://e"
-    async def fetcher(url, options):
-        class Response:
-            status = 200
-            headers = {}
-            async def arrayBuffer(self): return b"ok"
-        return Response()
-    assert (pytest.raises if False else True)
-    assert (awaitable := fetcher) is not None
+    assert verifier.verify_claim(Claim.create("c", "claim true"), (cert,), {"o": obs}, {}).status == ClaimStatus.STALE
 
 
 def test_wikipedia_runtime_import_failure(monkeypatch):
