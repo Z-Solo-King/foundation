@@ -104,22 +104,21 @@ class EvidenceVerifier:
                 reasons.append(f"claim contradicts {other.claim_id}")
                 status = ClaimStatus.CONTRADICTED
 
-        origins: list[str] = []
+        lineage_by_source = {lineage.source_id: lineage for lineage in valid_lineages}
         independent_lineages: list[SourceLineage] = []
-        for lineage in valid_lineages:
-            origin = lineage.effective_origin
-            if origin not in origins:
-                origins.append(origin)
-            if not any(self.check_independence(lineage, existing) for existing in independent_lineages):
+        for lineage in sorted(lineage_by_source.values(), key=lambda item: item.source_id):
+            if not independent_lineages or all(
+                self.check_independence(lineage, existing) for existing in independent_lineages
+            ):
                 independent_lineages.append(lineage)
-        independent_count = len(origins)
+        independent_count = len(independent_lineages)
 
         if independent_count == 0 and supporting:
             reasons.append("supporting evidence has no independently originating corroboration")
         elif independent_count >= 2:
-            reasons.append(f"independent corroboration from {independent_count} origins")
+            reasons.append(f"independent corroboration from {independent_count} sources")
         elif supporting:
-            reasons.append("supporting evidence comes from one origin")
+            reasons.append("supporting evidence comes from one source")
 
         if semantic_reasons:
             reasons.extend(semantic_reasons)
