@@ -152,7 +152,9 @@ class WorkerTaskValidator:
             if result.status == "success":
                 if output_data is None or result.output_hash is None:
                     return False, "successful result requires output data and output hash"
-                output_json = json.dumps(output_data, sort_keys=True, default=str, separators=(",", ":"))
+                # Preserve the established worker-result hash contract. The
+                # caller hashes the standard sorted JSON representation.
+                output_json = json.dumps(output_data, sort_keys=True, default=str)
                 computed_hash = hashlib.sha256(output_json.encode()).hexdigest()
                 if computed_hash != result.output_hash:
                     return False, "output hash mismatch (tampering detected)"
