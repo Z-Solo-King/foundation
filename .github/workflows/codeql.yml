@@ -15,21 +15,17 @@ permissions:
 
 jobs:
   analyze:
-    name: Analyze ${{ matrix.language }}
+    name: Analyze python
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [python, javascript-typescript]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Initialize CodeQL
         uses: github/codeql-action/init@c20e34f438d671fc35777cc9820dd7adf8252874
         with:
-          languages: ${{ matrix.language }}
+          languages: python
           queries: security-extended
       - name: Analyze
         uses: github/codeql-action/analyze@c20e34f438d671fc35777cc9820dd7adf8252874
         with:
-          category: /language:${{ matrix.language }}
+          category: /language:python
