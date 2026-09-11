@@ -14,6 +14,10 @@ class ResourceBudget:
     inference_calls: int | None = None
 
     def __post_init__(self):
+        for name in ("requests", "evidence_items", "ai_calls"):
+            value = getattr(self, name)
+            if value < 0:
+                raise ValueError(f"{name} must not be negative")
         if self.inference_calls is not None:
             if self.inference_calls < 0:
                 raise ValueError("inference_calls must not be negative")
@@ -26,7 +30,7 @@ class ResourceBudget:
     def consume(self, field: str, amount: int = 1):
         if amount < 0:
             raise ValueError("amount must not be negative")
-        if not hasattr(self, field):
+        if field not in {"requests", "evidence_items", "ai_calls"}:
             raise ValueError(f"unknown resource field: {field}")
         current = getattr(self, field)
         if current is None:
