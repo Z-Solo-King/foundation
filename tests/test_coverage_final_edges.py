@@ -19,7 +19,8 @@ def test_evaluation_harness_production_failure_and_success():
     for i in range(150):
         harness.register_case(BenchmarkCase(f"case-{i}", EvaluationCategory.RETRIEVAL, "d", "q", "a"))
     ready, reason = harness.production_readiness()
-    assert ready is False and "only 0 cases" in reason or "category" in reason
+    assert ready is False and "only 0 cases" in reason
+
     balanced = EvaluationHarness()
     categories = list(EvaluationCategory)
     for i in range(150):
@@ -27,8 +28,15 @@ def test_evaluation_harness_production_failure_and_success():
         balanced.register_case(BenchmarkCase(f"case-{i}", cat, "d", "q", "a"))
         balanced.record_result(f"case-{i}", EvaluationResult(f"case-{i}", True))
     ready, reason = balanced.production_readiness()
-    assert ready is False
-    assert "category" in reason or "pass rate" in reason
+    assert ready is True and reason == "production gate passed"
+
+    failing = EvaluationHarness()
+    for i in range(150):
+        cat = categories[i % len(categories)]
+        failing.register_case(BenchmarkCase(f"case-{i}", cat, "d", "q", "a"))
+        failing.record_result(f"case-{i}", EvaluationResult(f"case-{i}", i != 0))
+    ready, reason = failing.production_readiness()
+    assert ready is False and "pass rate" in reason
 
 
 def test_acquisition_no_enabled_method(monkeypatch):
