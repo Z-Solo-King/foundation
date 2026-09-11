@@ -259,7 +259,7 @@ def test_execution_adaptive_engine_router_synthesis():
     assert ProviderRouter(reg, BrokenBudget()).route("extraction").approved is False
     assert ProviderRouter(reg, ResourceBudget(inference_calls=1)).execute("x", lambda: "ok") == "ok"
     with pytest.raises(PermissionError): ProviderRouter(reg, ResourceBudget()).execute("missing", lambda: "x")
-    with pytest.raises(ResourceError): ProviderRouter(reg, ResourceBudget(inference_calls=0)).execute("extraction", lambda: "x")
+    with pytest.raises(PermissionError): ProviderRouter(reg, ResourceBudget(inference_calls=0)).execute("extraction", lambda: "x")
     synth = ResearchSynthesizer(); result = synth.synthesize(run); assert result.confidence == "unknown"
 
 
