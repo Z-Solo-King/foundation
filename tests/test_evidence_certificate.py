@@ -58,7 +58,6 @@ def test_explicitly_invalid_certificate_fails_closed():
     certificate = create_certificate(observation, span)
     invalid = certificate.__class__(
         certificate.observation_id,
-        certificate.source_id,
         certificate.source_url,
         certificate.content_hash,
         certificate.span_start,
