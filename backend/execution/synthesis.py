@@ -28,7 +28,7 @@ class ResearchSynthesizer:
     """Synthesizes research results from verified claims."""
 
     def synthesize(self, run: ResearchRun) -> SynthesisResult:
-        """Synthesize all verified claims without suppressing contradictions."""
+        """Synthesize verified claims; malformed statuses fail closed as unknown."""
         if not run.verified_claims:
             return SynthesisResult(
                 question=run.contract.question,
