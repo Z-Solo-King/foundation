@@ -1,9 +1,9 @@
-from backend.sources.model import Source, SourceType
-from backend.sources.policy import SourcePolicy, evaluate_source
+from backend.intelligence.sources import Source, SourcePolicy, SourceType, evaluate_source
 
 
 def test_source_policy():
     source = Source(
+        source_id="source-1",
         url="https://example.com",
         source_type=SourceType.WEB,
         title="Example",
