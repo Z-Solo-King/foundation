@@ -94,18 +94,19 @@ def test_worker_result_rejects_invalid_timestamp_and_execution_time():
     assert validator.validate_result(task, future, None)[0] is False
     negative = WorkerResult(task.task_id, task.nonce, "failure", None, None, -1, "worker", now)
     assert validator.validate_result(task, negative, None)[0] is False
-    missing_worker = WorkerResult(task.task_id, task.nonce, "failure", None, None, 1, "", now)
+    missing_worker = WorkerResult(task.task_id, task.nonce, "failure", None, None, 1, "worker", now).copy(worker_id="") if False else WorkerResult(task.task_id, task.nonce, "failure", None, None, 1, "", now)
     assert validator.validate_result(task, missing_worker, None)[0] is False
 
 
-def test_typed_contradiction_remaining_unknown_type_and_overlap_edges():
+def test_typed_contradiction_entity_predicate_and_version_guards():
     from backend.intelligence.contradiction import TypedClaim, detect_typed_contradiction
-    a = TypedClaim("a", "E", "P", "x", "unknown", unit=None, qualifier=None)
-    b = TypedClaim("b", "E", "P", "y", "unknown", unit=None, qualifier=None)
+    base = TypedClaim("a", "E", "P", "x", "text")
+    assert detect_typed_contradiction(base, TypedClaim("b", "F", "P", "x", "text")) is None
+    assert detect_typed_contradiction(base, TypedClaim("c", "E", "Q", "x", "text")) is None
+    assert detect_typed_contradiction(TypedClaim("d", "E", "P", "x", "text", version="1"), TypedClaim("e", "E", "P", "y", "text", version="2")) is None
+    a = TypedClaim("aa", "E", "P", "x", "unknown", unit=None, qualifier=None)
+    b = TypedClaim("bb", "E", "P", "y", "unknown", unit=None, qualifier=None)
     assert detect_typed_contradiction(a, b) is None
-    version_left = TypedClaim("vl", "E", "P", "x", "text", version="1")
-    version_right = TypedClaim("vr", "E", "P", "y", "text", version="2")
-    assert detect_typed_contradiction(version_left, version_right) is None
     left = TypedClaim("left", "E", "P", 1, "numeric", valid_until=datetime(2026, 1, 1, tzinfo=timezone.utc), unit="kg")
     right = TypedClaim("right", "E", "P", 2, "numeric", valid_from=datetime(2026, 2, 1, tzinfo=timezone.utc), unit="kg")
     assert detect_typed_contradiction(left, right) is None
