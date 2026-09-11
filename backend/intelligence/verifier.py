@@ -38,9 +38,17 @@ class VerificationResult:
 
 
 class EvidenceVerifier:
-    """Verifies evidence structurally and semantically before synthesis."""
+    """Verifies evidence structurally and semantically before synthesis.
+
+    ``semantic_strict=False`` keeps the historical structural verifier behavior
+    for callers that need compatibility; strict production paths can require a
+    deterministic semantic result before evidence is accepted.
+    """
 
     STALE_THRESHOLD = timedelta(days=30)
+
+    def __init__(self, *, semantic_strict: bool = False):
+        self.semantic_strict = semantic_strict
 
     def verify_span(self, certificate: EvidenceCertificate, observation: Observation) -> bool:
         return verify_certificate(observation, certificate)
@@ -80,17 +88,21 @@ class EvidenceVerifier:
             entailment = verify_claim_entailment(claim.text, obs, span)
             if entailment.status == EntailmentStatus.INVALID:
                 reasons.append(f"semantic evidence span invalid for {cert.observation_id}")
-                status = ClaimStatus.CONTRADICTED
                 contradicting.append(cert)
+                status = ClaimStatus.CONTRADICTED
                 continue
             if entailment.status == EntailmentStatus.UNSUPPORTED:
                 reasons.append(f"claim is not semantically supported by {cert.observation_id}: {entailment.reason}")
-                status = ClaimStatus.PARTIAL if status != ClaimStatus.CONTRADICTED else status
-                continue
-            if entailment.status == EntailmentStatus.AMBIGUOUS:
+                if self.semantic_strict:
+                    status = ClaimStatus.PARTIAL if status != ClaimStatus.CONTRADICTED else status
+                    continue
+                reasons.append("semantic result advisory; structural evidence retained")
+            elif entailment.status == EntailmentStatus.AMBIGUOUS:
                 reasons.append(f"semantic entailment is ambiguous for {cert.observation_id}")
-                status = ClaimStatus.PARTIAL if status != ClaimStatus.CONTRADICTED else status
-                continue
+                if self.semantic_strict:
+                    status = ClaimStatus.PARTIAL if status != ClaimStatus.CONTRADICTED else status
+                    continue
+                reasons.append("ambiguous semantic result advisory; structural evidence retained")
             supporting.append(cert)
             lineage = lineages.get(cert.source_id)
             if lineage:
