@@ -50,11 +50,7 @@ def add_claim(run: ResearchRun, claim: Claim) -> ResearchRun:
 
 
 def verify_and_add_claim(run: ResearchRun, claim: Claim, evidence_certs: tuple, verifier: EvidenceVerifier, lineages: dict[str, SourceLineage]) -> ResearchRun:
-    """Verify a claim against observations and prior claims and add to verified set.
-
-    Production orchestration should pass ``EvidenceVerifier(semantic_strict=True)``
-    so semantic entailment is a mandatory acceptance gate.
-    """
+    """Verify a claim against observations and prior claims and add to verified set."""
     obs_dict = {o.observation_id: o for o in run.observations}
     result = verifier.verify_claim(claim, evidence_certs, obs_dict, lineages, other_claims=run.claims)
     return ResearchRun(run.run_id, run.contract, run.plan, run.status, run.observations, run.claims, run.verified_claims + ((claim, result),), run.started_at, run.completed_at)
@@ -64,6 +60,19 @@ def complete_research(run: ResearchRun, success: bool = True) -> ResearchRun:
     if run.status != "running":
         raise ValueError(f"cannot complete run with status {run.status}")
     return ResearchRun(run.run_id, run.contract, run.plan, "completed" if success else "failed", run.observations, run.claims, run.verified_claims, run.started_at, datetime.now(timezone.utc))
+
+
+def transition_research(run: ResearchRun, status: str) -> ResearchRun:
+    """Apply supported lifecycle transitions without creating a second run model."""
+    if status not in {"planned", "running", "completed", "failed"}:
+        raise ValueError("invalid run status")
+    if status == run.status:
+        return run
+    if run.status == "planned" and status == "running":
+        return start_research(run)
+    if run.status == "running" and status in {"completed", "failed"}:
+        return complete_research(run, success=status == "completed")
+    raise ValueError(f"invalid or unsupported run transition: {run.status} -> {status}")
 
 
 def summarize_research(run: ResearchRun) -> dict[str, Any]:
