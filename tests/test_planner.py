@@ -1,5 +1,5 @@
 from backend.planner import create_plan
-from backend.research import ResearchContract
+from backend.intelligence.contracts import ResearchContract
 
 
 def test_create_plan():
