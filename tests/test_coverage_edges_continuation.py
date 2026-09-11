@@ -66,7 +66,7 @@ def test_entailment_remaining_statuses():
 
     obs = Observation.create("o", "https://e", "product is available now")
     assert verify_claim_entailment("product is available", obs, EvidenceSpan("o", 0, 23)).status == EntailmentStatus.SUPPORTED
-    assert verify_claim_entailment("product available now", obs, EvidenceSpan("o", 0, 23), supported_threshold=1.1).status == EntailmentStatus.AMBIGUOUS
+    assert verify_claim_entailment("product available", obs, EvidenceSpan("o", 0, 23), supported_threshold=1.1).status == EntailmentStatus.AMBIGUOUS
     assert verify_claim_entailment("banana", obs, EvidenceSpan("o", 0, 23)).status == EntailmentStatus.UNSUPPORTED
 
 
