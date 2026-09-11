@@ -1,5 +1,4 @@
 import asyncio
-from types import SimpleNamespace
 
 import pytest
 
@@ -7,7 +6,7 @@ import pytest
 def test_api_success_and_engine_lifecycle():
     from backend.api.main import submit_research
     from backend.api.models import ResearchRequest
-    from backend.execution.engine import create_run, start_research, complete_research, transition_research
+    from backend.execution.engine import create_run, complete_research, transition_research
     from backend.intelligence.contracts import ResearchContract, ResearchPlan
 
     response = submit_research(ResearchRequest("q"))
@@ -27,9 +26,8 @@ def test_acquisition_and_strategy_no_available(monkeypatch):
     import backend.execution.acquisition as acquisition
     import backend.execution.adaptive as adaptive
     from backend.execution.acquisition import choose_method
-    from backend.execution.adaptive import choose_strategy
+    from backend.execution.adaptive import choose_strategy, AcquisitionStrategy
     from backend.intelligence.sources import Source, SourcePolicy, SourceType
-    from backend.execution.adaptive import AcquisitionStrategy
 
     source = Source("s", "https://example.com", SourceType.WEB)
     monkeypatch.setattr(acquisition, "DEFAULT_METHODS", ())
@@ -53,10 +51,8 @@ def test_router_free_gate_and_non_consuming_execute():
     registry = ProviderRegistry()
     registry.register(ProviderCapability("paid", "x", free_eligible=False))
     router = ProviderRouter(registry, ResourceBudget(inference_calls=1))
-    denied_free = router.route("x")
-    assert denied_free.approved is False
-    allowed_paid = router.route("x", strict_zero_cost_only=False)
-    assert allowed_paid.approved is True
+    assert router.route("x").approved is False
+    assert router.route("x", strict_zero_cost_only=False).approved is True
     assert router.execute("x", lambda: "ok", consume_inference=False, strict_zero_cost_only=False) == "ok"
 
 
@@ -65,19 +61,20 @@ def test_entailment_remaining_statuses():
     from backend.intelligence.observations import EvidenceSpan, Observation
 
     obs = Observation.create("o", "https://e", "product is available now")
-    assert verify_claim_entailment("product is available", obs, EvidenceSpan("o", 0, 23)).status == EntailmentStatus.SUPPORTED
-    assert verify_claim_entailment("product available", obs, EvidenceSpan("o", 0, 23), supported_threshold=1.1).status == EntailmentStatus.AMBIGUOUS
-    assert verify_claim_entailment("banana", obs, EvidenceSpan("o", 0, 23)).status == EntailmentStatus.UNSUPPORTED
+    assert verify_claim_entailment("product is available", obs, EvidenceSpan("o", 0, 24)).status == EntailmentStatus.SUPPORTED
+    assert verify_claim_entailment("product available", obs, EvidenceSpan("o", 0, 24), supported_threshold=1.1).status == EntailmentStatus.AMBIGUOUS
+    assert verify_claim_entailment("banana", obs, EvidenceSpan("o", 0, 24)).status == EntailmentStatus.UNSUPPORTED
 
 
-def test_lineage_observation_and_http_edges(monkeypatch):
+def test_lineage_observation_and_http_edges():
+    from datetime import datetime, timezone
     from backend.intelligence.lineage import SourceLineage, is_independent
     from backend.intelligence.observations import Observation
     import backend.sources.http as http
 
     assert is_independent(SourceLineage("a", "f"), SourceLineage("b", "f")) is False
     assert is_independent(SourceLineage("a", "f1"), SourceLineage("b", "f2")) is True
-    now = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+    now = datetime.now(timezone.utc)
     assert Observation.create("o", "sid", "https://e", "x", now).observed_at == now
 
     for url in ("ftp://example.com", "https://user:pass@example.com", "https://example.com:8443"):
