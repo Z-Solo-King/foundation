@@ -43,13 +43,14 @@ class ResearchSynthesizer:
         unknown: list[tuple[Any, Any]] = []
 
         for claim, result in run.verified_claims:
-            if result.status == ClaimStatus.CORROBORATED:
+            status = getattr(result, "status", ClaimStatus.UNKNOWN)
+            if status == ClaimStatus.CORROBORATED:
                 corroborated.append((claim, result))
-            elif result.status == ClaimStatus.SUPPORTED:
+            elif status == ClaimStatus.SUPPORTED:
                 supported.append((claim, result))
-            elif result.status == ClaimStatus.PARTIAL:
+            elif status == ClaimStatus.PARTIAL:
                 partial.append((claim, result))
-            elif result.status == ClaimStatus.CONTRADICTED:
+            elif status == ClaimStatus.CONTRADICTED:
                 contradicted.append((claim, result))
             else:
                 unknown.append((claim, result))
@@ -92,7 +93,7 @@ class ResearchSynthesizer:
                         "source_url": obs.source_url,
                         "evidence_text": cert.span_text,
                         "retrieved_at": obs.observed_at.isoformat(),
-                        "verification_status": result.status,
+                        "verification_status": getattr(result, "status", ClaimStatus.UNKNOWN),
                     })
 
         return SynthesisResult(
