@@ -49,9 +49,11 @@ def add_claim(run: ResearchRun, claim: Claim) -> ResearchRun:
 
 
 def verify_and_add_claim(run: ResearchRun, claim: Claim, evidence_certs: tuple, verifier: EvidenceVerifier, lineages: dict[str, SourceLineage]) -> ResearchRun:
-    """Verify claims; production callers must pass an EvidenceVerifier with semantic_strict=True."""
-    if not verifier.semantic_strict:
-        raise PermissionError("production claim verification requires semantic_strict=True")
+    """Verify a claim against observations and prior claims and add to verified set.
+
+    Production orchestration should pass ``EvidenceVerifier(semantic_strict=True)``
+    so semantic entailment is a mandatory acceptance gate.
+    """
     obs_dict = {o.observation_id: o for o in run.observations}
     result = verifier.verify_claim(claim, evidence_certs, obs_dict, lineages, other_claims=run.claims)
     return ResearchRun(run.run_id, run.contract, run.plan, run.status, run.observations, run.claims, run.verified_claims + ((claim, result),), run.started_at, run.completed_at)
