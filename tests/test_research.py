@@ -1,4 +1,4 @@
-from backend.research import ResearchContract
+from backend.intelligence.contracts import ResearchContract
 
 
 def test_research_contract_defaults():
