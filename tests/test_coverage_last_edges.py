@@ -110,7 +110,8 @@ def test_observation_invalid_span_order_and_creation():
 
 def test_verifier_inaccessible_semantic_and_contradicted_strict_paths():
     from backend.intelligence.claims import Claim
-    from backend.intelligence.certificates import create_certificate
+    from backend.intelligence.certificates import create_certificate, EvidenceCertificate
+    from backend.intelligence.integrity import sha256_text
     from backend.intelligence.observations import EvidenceSpan, Observation
     from backend.intelligence.verifier import ClaimStatus, EvidenceVerifier
     claim = Claim.create("c", "text")
@@ -119,9 +120,10 @@ def test_verifier_inaccessible_semantic_and_contradicted_strict_paths():
     verifier = EvidenceVerifier(semantic_strict=True)
     result = verifier.verify_claim(claim, (cert,), {"o": obs}, {}, ())
     assert result.status in {ClaimStatus.PARTIAL, ClaimStatus.UNKNOWN, ClaimStatus.INACCESSIBLE}
-    bad = type(cert)(cert.observation_id, cert.source_id, cert.url, "bad-hash", cert.span_start, cert.span_end, cert.span_text, cert.structural_valid)
+    bad = EvidenceCertificate(cert.observation_id, cert.source_id, cert.source_url, "bad-hash", cert.span_start, cert.span_end, cert.span_text, cert.structurally_valid)
     result2 = verifier.verify_claim(claim, (bad, cert), {"o": obs}, {}, ())
     assert result2.status in {ClaimStatus.CONTRADICTED, ClaimStatus.PARTIAL, ClaimStatus.UNKNOWN, ClaimStatus.INACCESSIBLE}
+    assert sha256_text(obs.content) == cert.content_hash
 
 
 def test_http_invalid_runtime_and_redirect_without_location(monkeypatch):
