@@ -48,9 +48,9 @@ class WorkerTaskValidator:
     MAX_OUTPUT_SIZE_MB = 100
 
     def __init__(self):
-        # Validation alone must be repeatable. A nonce becomes terminally consumed
-        # only when a valid result is accepted.
-        self._active_nonces: set[str] = set()
+        # Validation is repeatable for the same task delivery. A nonce becomes
+        # terminally consumed only after a valid result is accepted.
+        self._active_tasks: dict[str, str] = {}
         self._completed_nonces: set[str] = set()
 
     def create_task(
@@ -93,7 +93,11 @@ class WorkerTaskValidator:
             return False, f"unsupported schema version {task.schema_version}"
         if task.task_type not in ("fetch", "browser", "pdf", "transcript", "evaluation"):
             return False, f"unknown task type {task.task_type}"
-        self._active_nonces.add(task.nonce)
+
+        active_task_id = self._active_tasks.get(task.nonce)
+        if active_task_id is not None and active_task_id != task.task_id:
+            return False, "nonce already active for another task (replay detected)"
+        self._active_tasks[task.nonce] = task.task_id
         return True, "valid"
 
     def validate_result(
@@ -109,6 +113,8 @@ class WorkerTaskValidator:
             return False, "task ID mismatch (tampering detected)"
         if result.nonce != task.nonce:
             return False, "nonce mismatch (tampering detected)"
+        if self._active_tasks.get(task.nonce) not in {None, task.task_id}:
+            return False, "nonce is bound to a different task (tampering detected)"
         if task.nonce in self._completed_nonces:
             return False, "nonce already completed (replay detected)"
         if now > task.expires_at + timedelta(hours=self.RESULT_EXPIRY_HOURS):
@@ -126,9 +132,7 @@ class WorkerTaskValidator:
             if len(output_json) > self.MAX_OUTPUT_SIZE_MB * 1024 * 1024:
                 return False, f"output exceeds {self.MAX_OUTPUT_SIZE_MB}MB limit"
 
-        # Only a structurally valid terminal result consumes the nonce, allowing
-        # duplicate task-delivery attempts to be retried before acceptance.
-        self._active_nonces.discard(task.nonce)
+        self._active_tasks.pop(task.nonce, None)
         self._completed_nonces.add(task.nonce)
         return True, "valid"
 
