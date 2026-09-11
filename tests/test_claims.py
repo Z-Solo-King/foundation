@@ -8,5 +8,6 @@ def test_claim_and_relationship():
         text="Evidence should be traceable.",
     )
 
+    assert claim.claim_id == "claim-001"
     assert claim.text == "Evidence should be traceable."
     assert EvidenceRelation.SUPPORTS.value == "supports"
