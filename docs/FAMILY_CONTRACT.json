@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "purpose": "Public-safe family ownership and boundary contract shared by foundation, operations, and extractor-mapper.",
+  "repositories": {
+    "foundation": {
+      "role": "public-contracts",
+      "owns": [
+        "public-safe contracts",
+        "research and evidence primitives",
+        "deterministic planning",
+        "public API boundary"
+      ],
+      "must_not_own": [
+        "protected policy authority",
+        "private resource governance",
+        "promotion or rollback authority",
+        "heavy acquisition/extraction",
+        "private product mapping"
+      ]
+    },
+    "extractor-mapper": {
+      "role": "bounded-execution",
+      "owns": [
+        "public acquisition",
+        "extraction",
+        "platform adapters",
+        "deterministic product mapping",
+        "bounded execution and replay"
+      ],
+      "must_not_own": [
+        "protected policy authority",
+        "global resource ledger",
+        "promotion decisions",
+        "private chatbot orchestration"
+      ]
+    },
+    "operations": {
+      "role": "protected-authority-and-control-plane",
+      "owns": [
+        "protected policy",
+        "resource governance",
+        "evaluation",
+        "promotion and rollback",
+        "private chatbot orchestration"
+      ],
+      "must_not_own": [
+        "heavy extraction implementation",
+        "heavy product mapping implementation",
+        "public contract implementations that belong to foundation"
+      ]
+    }
+  },
+  "dependency_rule": {
+    "contract_flow": "foundation -> extractor-mapper -> operations",
+    "rule": "The arrows describe contract and result flow, not unrestricted source imports.",
+    "public_to_private_rule": "foundation never depends on private repositories or protected implementation."
+  },
+  "single_owner_rule": "One repository is authoritative for each behavior. Compatibility exports may preserve old interfaces but may not duplicate algorithms.",
+  "change_method": [
+    "search all three repositories",
+    "identify the owning repository",
+    "locate the canonical symbol or contract",
+    "extend the owner",
+    "add the smallest consumer contract",
+    "add boundary regression coverage",
+    "run repository-local validation",
+    "run the family overlap audit when ownership or cross-repo structure changes",
+    "remove duplicate implementations after parity evidence"
+  ],
+  "non_negotiable_rules": [
+    "do not create a second authority for the same policy or resource",
+    "do not copy extraction or mapping algorithms into operations",
+    "do not move private policy into public foundation",
+    "do not put chatbot algorithms into extractor-mapper",
+    "do not make mapping perform network I/O",
+    "do not expose credentials, protected topology, or evaluation holdouts through public contracts",
+    "do not add new business logic to immutable legacy snapshots"
+  ],
+  "validation": {
+    "repository_local": "Each repository owns and runs its own compile, test, security, and contract checks.",
+    "family_overlap": "Operations owns the cross-repository overlap audit because it is the protected family control plane.",
+    "deep_audit": "The family overlap audit is periodic and exhaustive; local CI should remain bounded and deterministic."
+  }
+}
