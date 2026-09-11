@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from backend.evidence import EvidenceSpan, Observation
+from backend.intelligence.observations import EvidenceSpan, Observation
 from backend.content_integrity import sha256_text
 
 
