@@ -1,4 +1,4 @@
-from backend.evidence import EvidenceSpan, Observation
+from backend.intelligence.observations import EvidenceSpan, Observation
 
 
 def test_observation_and_evidence_span():
