@@ -104,13 +104,13 @@ class EvidenceVerifier:
                 reasons.append(f"claim contradicts {other.claim_id}")
                 status = ClaimStatus.CONTRADICTED
 
+        lineage_by_source = {lineage.source_id: lineage for lineage in valid_lineages}
         independent_lineages: list[SourceLineage] = []
-        for lineage in sorted(valid_lineages, key=lambda item: item.source_id):
-            if not any(lineage.source_id == existing.source_id for existing in independent_lineages):
-                if not independent_lineages or all(
-                    self.check_independence(lineage, existing) for existing in independent_lineages
-                ):
-                    independent_lineages.append(lineage)
+        for lineage in sorted(lineage_by_source.values(), key=lambda item: item.source_id):
+            if not independent_lineages or all(
+                self.check_independence(lineage, existing) for existing in independent_lineages
+            ):
+                independent_lineages.append(lineage)
         independent_count = len(independent_lineages)
 
         if independent_count == 0 and supporting:
