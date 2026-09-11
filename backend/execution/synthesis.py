@@ -25,13 +25,15 @@ class SynthesisResult:
 
 
 class ResearchSynthesizer:
-    """Synthesizes research results from verified claims."""
+    """Synthesizes verified claims and preserves uncertainty."""
 
     def synthesize(self, run: ResearchRun) -> SynthesisResult:
-        """Synthesize verified claims; malformed statuses fail closed as unknown."""
+        """Synthesize verified claims; malformed fields fail closed."""
+        contract = getattr(run, "contract", None)
+        question = getattr(contract, "question", "")
         if not run.verified_claims:
             return SynthesisResult(
-                question=run.contract.question,
+                question=question,
                 answer="No evidence found to answer this question.",
                 confidence="unknown",
             )
@@ -55,8 +57,6 @@ class ResearchSynthesizer:
             else:
                 unknown.append((claim, result))
 
-        # Contradicted claims always lower confidence. A mixed result is never
-        # presented as high-confidence simply because one claim is corroborated.
         if contradicted:
             confidence = "low" if (corroborated or supported or partial) else "unknown"
         elif corroborated:
@@ -97,7 +97,7 @@ class ResearchSynthesizer:
                     })
 
         return SynthesisResult(
-            question=run.contract.question,
+            question=question,
             answer=answer,
             confidence=confidence,
             supported_by=tuple(claim.claim_id for claim, _ in corroborated),
