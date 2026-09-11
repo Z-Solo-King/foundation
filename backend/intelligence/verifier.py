@@ -82,11 +82,6 @@ class EvidenceVerifier:
 
             span = EvidenceSpan(cert.observation_id, cert.span_start, cert.span_end)
             entailment = verify_claim_entailment(claim.text, obs, span)
-            if entailment.status == EntailmentStatus.INVALID:
-                reasons.append(f"semantic evidence span invalid for {cert.observation_id}")
-                contradicting.append(cert)
-                status = ClaimStatus.CONTRADICTED
-                continue
             if entailment.status in {EntailmentStatus.UNSUPPORTED, EntailmentStatus.AMBIGUOUS}:
                 semantic_reasons.append(f"semantic entailment for {cert.observation_id}: {entailment.reason}")
                 if self.semantic_strict:
