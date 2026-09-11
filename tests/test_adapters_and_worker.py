@@ -150,11 +150,16 @@ async def test_worker_helpers_and_source_ingestion(monkeypatch):
     request = make_request(source_urls=("https://example.com",))
     assert worker._bearer_token(SimpleNamespace(headers={"Authorization":"Bearer abc"})) == "abc"
     assert worker._bearer_token(SimpleNamespace(headers={"Authorization":"Basic abc"})) is None
+    assert worker._bearer_token(SimpleNamespace(headers={})) is None
     assert worker._authorized(SimpleNamespace(headers={}), SimpleNamespace(ENVIRONMENT="development", AUTH_TOKEN=None)) is True
+    assert worker._authorized(SimpleNamespace(headers={"Authorization":"Bearer good"}), SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="good")) is True
     assert worker._authorized(SimpleNamespace(headers={"Authorization":"Bearer bad"}), SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="good")) is False
     class Request:
         async def json(self): return {"ok":True}
     assert await worker._json(Request()) == {"ok":True}
+    class ListRequest:
+        async def json(self): return [1]
+    assert await worker._json(ListRequest()) is None
     class BadRequest:
         async def json(self): raise RuntimeError("bad json")
     assert await worker._json(BadRequest()) is None
@@ -162,6 +167,18 @@ async def test_worker_helpers_and_source_ingestion(monkeypatch):
     async def fake_public(url): return source_http.FetchResult(url,url,200,"text/plain",b"abc","e")
     monkeypatch.setattr(worker,"fetch_public_url",fake_public)
     ingested = await worker._ingest_sources(env,"run-1",request); assert ingested[0]["bytes"] == 3
+    request_error = make_request(source_urls=("https://example.com",))
+    async def error_public(url): return source_http.FetchResult(url,url,404,"text/plain",b"bad",None)
+    monkeypatch.setattr(worker,"fetch_public_url",error_public)
+    ingested_error = await worker._ingest_sources(env,"run-2",request_error); assert ingested_error[0]["status"] == 404
+    class RunDB:
+        def prepare(self, sql):
+            if sql.startswith("SELECT * FROM research_runs"):
+                return FakeStatement({"run_id":"r1","status":"running"})
+            return FakeStatement([{"observation_id":"o1","source_id":"s1"}])
+    run_payload = await worker._get_run(SimpleNamespace(DB=RunDB()), "r1")
+    assert run_payload["run"]["run_id"] == "r1" and run_payload["observations"][0]["observation_id"] == "o1"
+    assert await worker._get_run(SimpleNamespace(DB=FakeDB()), "missing") is None
     assert await worker._control_plane_ready(SimpleNamespace(CONTROL_PLANE=None)) is False
     class Control:
         async def fetch(self,url): return SimpleNamespace(status=200)
@@ -169,3 +186,44 @@ async def test_worker_helpers_and_source_ingestion(monkeypatch):
     class FailingControl:
         async def fetch(self,url): raise RuntimeError("down")
     assert await worker._control_plane_ready(SimpleNamespace(CONTROL_PLANE=FailingControl())) is False
+
+
+@pytest.mark.asyncio
+async def test_worker_http_all_branches(monkeypatch):
+    class Request:
+        def __init__(self, method, url, payload=None, headers=None): self.method=method; self.url=url; self._payload=payload; self.headers=headers or {}
+        async def json(self): return self._payload
+    class Control:
+        async def fetch(self, url): return SimpleNamespace(status=200)
+    env = SimpleNamespace(DB=FakeDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", CONTROL_PLANE=Control())
+    entry = worker.Default(); entry.env = env
+    unauthorized_get = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer bad"}))
+    assert "unauthorized" in str(unauthorized_get)
+    ready = await entry.fetch(Request("GET", "https://x/readiness")); assert ready
+    not_found = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer secret"})); assert not_found
+    class FailingDB(FakeDB):
+        def prepare(self, sql): raise RuntimeError("db down")
+    entry.env = SimpleNamespace(DB=FailingDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", CONTROL_PLANE=Control())
+    persistence_error = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer secret"})); assert persistence_error
+    entry.env = env
+    unauthorized_post = await entry.fetch(Request("POST", "https://x/api/v1/research", headers={"Authorization":"Bearer bad"})); assert unauthorized_post
+    invalid_json = await entry.fetch(Request("POST", "https://x/api/v1/research", payload=[], headers={"Authorization":"Bearer secret"})); assert invalid_json
+    bad_shape = await entry.fetch(Request("POST", "https://x/api/v1/research", payload={"unknown":1}, headers={"Authorization":"Bearer secret"})); assert bad_shape
+    monkeypatch.setattr(worker, "submit_research", lambda req: SimpleNamespace(ok=False, error="bad request"))
+    rejected = await entry.fetch(Request("POST", "https://x/api/v1/research", payload={"question":"q"}, headers={"Authorization":"Bearer secret"})); assert rejected
+    monkeypatch.setattr(worker, "submit_research", lambda req: SimpleNamespace(ok=True, run_id="r1", metadata={}))
+    class Persistence:
+        async def create_run(self, run_id, req): return run_id
+        async def create_run_idempotent(self, req, key): return "idempotent"
+    monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: Persistence())
+    no_sources = await entry.fetch(Request("POST", "https://x/api/v1/research", payload={"question":"q"}, headers={"Authorization":"Bearer secret"})); assert no_sources
+    with_key = await entry.fetch(Request("POST", "https://x/api/v1/research", payload={"question":"q"}, headers={"Authorization":"Bearer secret", "Idempotency-Key":"k"})); assert with_key
+    source_request = {"question":"q","source_urls":["https://example.com"]}
+    async def ok_public(url): return source_http.FetchResult(url,url,200,"text/plain",b"ok",None)
+    monkeypatch.setattr(worker, "fetch_public_url", ok_public)
+    with_sources = await entry.fetch(Request("POST", "https://x/api/v1/research", payload=source_request, headers={"Authorization":"Bearer secret"})); assert with_sources
+    class BrokenPersistence:
+        async def create_run(self, run_id, req): raise RuntimeError("persist")
+        async def create_run_idempotent(self, req, key): raise RuntimeError("persist")
+    monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: BrokenPersistence())
+    persistence_post_error = await entry.fetch(Request("POST", "https://x/api/v1/research", payload={"question":"q"}, headers={"Authorization":"Bearer secret"})); assert persistence_post_error
