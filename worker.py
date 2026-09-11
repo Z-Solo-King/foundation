@@ -10,6 +10,7 @@ from workers import Response, WorkerEntrypoint
 
 from backend.api.main import health_endpoint, readiness_endpoint, submit_research
 from backend.api.models import ResearchRequest
+from backend.persistence.cloudflare import CloudflarePersistence
 from backend.sources.http import fetch_public_url
 
 
@@ -58,19 +59,6 @@ async def _persist_run(env, run_id, req, request_hash=None, idempotency_key=None
         await env.DB.prepare(
             "INSERT INTO idempotency_keys (idempotency_key, run_id, request_hash, created_at) VALUES (?, ?, ?, ?)"
         ).bind(idempotency_key, run_id, request_hash, now).run()
-
-
-async def _find_idempotent_run(env, idempotency_key, request_hash):
-    if not idempotency_key:
-        return None
-    row = await env.DB.prepare(
-        "SELECT run_id, request_hash FROM idempotency_keys WHERE idempotency_key = ?"
-    ).bind(idempotency_key).first()
-    if not row:
-        return None
-    if row["request_hash"] != request_hash:
-        raise ValueError("idempotency key was already used with a different request")
-    return row["run_id"]
 
 
 async def _ingest_sources(env, run_id, req):
@@ -212,16 +200,17 @@ class Default(WorkerEntrypoint):
             if not result.ok:
                 return Response.json({"ok": False, "error": result.error}, status=400)
 
-            request_hash = _request_hash(payload)
+            persistence = CloudflarePersistence(self.env)
             idempotency_key = request.headers.get("Idempotency-Key")
             try:
-                existing_run = await _find_idempotent_run(self.env, idempotency_key, request_hash)
-                if existing_run:
-                    return Response.json({"ok": True, "run_id": existing_run, "idempotent_replay": True})
-                await _persist_run(self.env, result.run_id, req, request_hash, idempotency_key)
-                sources = await _ingest_sources(self.env, result.run_id, req) if req.source_urls else []
+                if idempotency_key:
+                    run_id = await persistence.create_run_idempotent(req, idempotency_key)
+                else:
+                    run_id = result.run_id
+                    await persistence.create_run(run_id, req)
+                sources = await _ingest_sources(self.env, run_id, req) if req.source_urls else []
             except Exception as exc:
                 return Response.json({"ok": False, "error": f"execution/persistence failure: {exc}"}, status=503)
-            return Response.json({"ok": True, "run_id": result.run_id, "metadata": result.metadata, "sources": sources})
+            return Response.json({"ok": True, "run_id": run_id, "metadata": result.metadata, "sources": sources})
 
         return Response.json({"ok": False, "error": "not found"}, status=404)
