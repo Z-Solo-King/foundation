@@ -116,3 +116,195 @@ def test_worker_http_entrypoint_all_paths():
     assert asyncio.run(entry.fetch(Req("GET", "https://x/api/v1/research/r")))
     assert asyncio.run(entry.fetch(Req("POST", "https://x/api/v1/research", [])))
     assert asyncio.run(entry.fetch(Req("POST", "https://x/api/v1/research", {"question":"q"})))
+
+
+def test_api_models_capabilities_and_serialization(monkeypatch):
+    from backend.api.main import api_response_to_json, submit_research
+    from backend.api.models import APIResponse, ResearchRequest
+    from backend.capabilities.model import Capability
+    from backend.capabilities.registry import CapabilityRegistry
+    assert Capability("x").remaining_today is None and Capability("x").usable() is True
+    assert Capability("x", enabled=False).usable() is False
+    assert Capability("x", daily_limit=2, used_today=3).remaining_today == 0
+    assert Capability("x", free_eligible=False).usable() is False
+    with pytest.raises(ValueError): ResearchRequest("").validate()
+    with pytest.raises(ValueError): ResearchRequest("q", max_sources=0).validate()
+    with pytest.raises(ValueError): ResearchRequest("q", max_evidence_items=0).validate()
+    with pytest.raises(ValueError): ResearchRequest("q", strict_zero_cost_only=False).validate()
+    with pytest.raises(ValueError): ResearchRequest("q", max_sources=1, source_urls=("a","b")).validate()
+    reg = CapabilityRegistry(); reg.register(Capability("a")); assert reg.get("a") and reg.usable("a") and reg.usable("missing") is False
+    assert len(reg.all()) == 1 and reg.snapshot() == (reg.get("a"),)
+    assert api_response_to_json(APIResponse(False, error="bad")) == '{"ok": false, "error": "bad"}'
+    assert "run_id" in api_response_to_json(APIResponse(True, run_id="r", metadata={"x":1}))
+    assert submit_research(ResearchRequest("q", strict_zero_cost_only=False)).ok is False
+    class Broken:
+        def validate(self): raise ValueError("bad")
+    assert submit_research(Broken()).ok is False
+    from backend.api import main as api_main
+    monkeypatch.setattr(api_main, "start_run", lambda contract: (_ for _ in ()).throw(RuntimeError("boom")))
+    assert "Internal error" in submit_research(ResearchRequest("q")).error
+
+
+def test_entailment_harness_and_claim_validation():
+    from backend.evaluation.entailment import EntailmentStatus, adjudicate_ambiguous, verify_claim_entailment
+    from backend.evaluation.harness import EvaluationCategory, EvaluationHarness, BenchmarkCase, EvaluationResult
+    from backend.intelligence.claims import Claim
+    from backend.intelligence.contracts import ResearchContract
+    from backend.intelligence.observations import Observation, EvidenceSpan
+    obs = Observation.create("o", "https://e", "The product is available now.")
+    assert verify_claim_entailment("", obs, EvidenceSpan("o",0,3)).status == EntailmentStatus.UNSUPPORTED
+    assert verify_claim_entailment("available", obs, EvidenceSpan("o",0,5)).status == EntailmentStatus.UNSUPPORTED
+    amb = verify_claim_entailment("product available", Observation.create("o2","https://e","product maybe available elsewhere"), EvidenceSpan("o2",0,32), supported_threshold=1.1)
+    assert amb.status == EntailmentStatus.AMBIGUOUS
+    assert adjudicate_ambiguous(amb, True).accepted is True and adjudicate_ambiguous(amb, False).accepted is False
+    assert adjudicate_ambiguous(verify_claim_entailment("available", obs, EvidenceSpan("o",0,31)), True).status != EntailmentStatus.AMBIGUOUS
+    with pytest.raises(ValueError): Claim.create("c", "")
+    assert Claim.create("c", "text").text == "text"
+    with pytest.raises(ValueError): ResearchContract("").validate()
+    with pytest.raises(ValueError): ResearchContract("q", max_sources=0).validate()
+    with pytest.raises(ValueError): ResearchContract("q", max_evidence_items=0).validate()
+    h = EvaluationHarness(); h._bootstrap_target = 2; h._promotion_threshold = 0.75
+    c1 = BenchmarkCase("1", EvaluationCategory.RETRIEVAL, "d", "q", "a")
+    c2 = BenchmarkCase("2", EvaluationCategory.SECURITY, "d", "q", "a")
+    h.register_case(c1); h.register_case(c2)
+    with pytest.raises(ValueError): h.register_case(c1)
+    with pytest.raises(ValueError): h.record_result("missing", EvaluationResult("missing", True))
+    h.record_result("1", EvaluationResult("1", True)); h.record_result("2", EvaluationResult("2", False))
+    assert h.summary_by_category()[str(EvaluationCategory.RETRIEVAL)]["pass_rate"] == 1.0
+    assert h.bootstrap_readiness()[0] is True
+    h.record_result("2", EvaluationResult("2", True)); assert h.bootstrap_readiness()[0] is True
+    h._bootstrap_target = 3; assert h.bootstrap_readiness()[0] is False
+    h._bootstrap_target = 2; h._promotion_threshold = 1.1; assert h.bootstrap_readiness()[0] is False
+    h._production_target = 1; h._promotion_threshold = 0.0; assert h.production_readiness()[0] is False
+    assert h.regression_test("1", lambda case: EvaluationResult(case.case_id, True)).passed is True
+    with pytest.raises(ValueError): h.regression_test("x", lambda case: EvaluationResult("x", True))
+
+
+def test_intelligence_certificates_observations_lineage_sources():
+    from backend.intelligence.certificates import create_certificate as create_intel_certificate, verify_certificate as verify_intel_certificate
+    from backend.intelligence.lineage import SourceLineage, origin_fingerprint, is_independent
+    from backend.intelligence.observations import Observation, EvidenceSpan
+    from backend.intelligence.sources import Source, SourcePolicy, SourceType, canonical_source_url, evaluate_source
+    obs = Observation.create("o", "sid", "https://Example.com", "hello evidence")
+    span = EvidenceSpan("o",0,5); cert = create_intel_certificate(obs, span)
+    assert verify_intel_certificate(obs, cert) is True
+    for bad in (
+        cert.__class__(cert.observation_id, "other", cert.source_url, cert.content_hash, cert.span_start, cert.span_end, cert.span_text, True),
+        cert.__class__(cert.observation_id, cert.source_id, "https://other", cert.content_hash, cert.span_start, cert.span_end, cert.span_text, True),
+        cert.__class__(cert.observation_id, cert.source_id, cert.source_url, "bad", cert.span_start, cert.span_end, cert.span_text, True),
+        cert.__class__(cert.observation_id, cert.source_id, cert.source_url, cert.content_hash, 0, 99, cert.span_text, True),
+        cert.__class__(cert.observation_id, cert.source_id, cert.source_url, cert.content_hash, cert.span_start, cert.span_end, "other", True),
+        cert.__class__(cert.observation_id, cert.source_id, cert.source_url, cert.content_hash, cert.span_start, cert.span_end, cert.span_text, False),
+    ):
+        assert verify_intel_certificate(obs, bad) is False
+    with pytest.raises(TypeError): Observation("o", "u", "c", "bad", "extra")
+    with pytest.raises(TypeError): Observation.create("o", "u", "c", "x", "y", "z")
+    with pytest.raises(ValueError): EvidenceSpan("x",0,1).validate(obs)
+    with pytest.raises(ValueError): EvidenceSpan("o",-1,1).validate(obs)
+    with pytest.raises(ValueError): EvidenceSpan("o",5,4).validate(obs)
+    with pytest.raises(ValueError): EvidenceSpan("o",0,99).validate(obs)
+    with pytest.raises(ValueError): SourceLineage("","f").validate()
+    with pytest.raises(ValueError): SourceLineage("s","f",lineage_type="bad").validate()
+    with pytest.raises(ValueError): SourceLineage("s","f",lineage_type="republished").validate()
+    rep = SourceLineage("s","f",parent_source_id="p",lineage_type="republished",origin_fingerprint="fp"); rep.validate(); assert rep.effective_origin == "fp"
+    assert SourceLineage("s","f").effective_origin == "family:f"
+    with pytest.raises(ValueError): origin_fingerprint("")
+    assert origin_fingerprint("Example.COM") == origin_fingerprint(" example.com ")
+    assert is_independent(SourceLineage("a","f1"), SourceLineage("b","f2")) is True
+    with pytest.raises(ValueError): canonical_source_url("bad")
+    assert canonical_source_url("https://EXAMPLE.com:443//a?utm_source=x&b=2") == "https://example.com/a?b=2"
+    source = Source("s","https://example.com","web",family_id="f"); source.validate(); assert source.lineage("fp").origin_fingerprint == "fp"
+    with pytest.raises(ValueError): Source("s","https://example.com",SourceType.WEB,lineage_type="bad").validate()
+    with pytest.raises(ValueError): Source("s","https://example.com",SourceType.WEB,lineage_type="republished").validate()
+    assert evaluate_source(source, SourcePolicy()) is True and evaluate_source(source, SourcePolicy(allowed=False)) is False and evaluate_source(source, SourcePolicy(max_requests=0)) is False
+
+
+def test_execution_adaptive_engine_router_synthesis():
+    from backend.execution.acquisition import choose_method, reserve_acquisition, simulate_acquire, create_lineage
+    from backend.execution.adaptive import AcquisitionStrategy, choose_strategy
+    from backend.execution.engine import create_run, start_research, add_observation, add_claim, complete_research, transition_research, summarize_research
+    from backend.execution.providers import ProviderCapability, ProviderRegistry
+    from backend.execution.router import ProviderRouter
+    from backend.execution.resources import ResourceBudget, ResourceError
+    from backend.execution.synthesis import ResearchSynthesizer
+    from backend.intelligence.claims import Claim
+    from backend.intelligence.contracts import ResearchContract, ResearchPlan
+    from backend.intelligence.lineage import SourceLineage
+    from backend.intelligence.observations import Observation
+    from backend.intelligence.sources import Source, SourcePolicy, SourceType
+    contract = ResearchContract("q"); plan = ResearchPlan("q", ("a",), 1, 1); run = create_run("r", contract, plan)
+    with pytest.raises(ValueError): start_research(start_research(run))
+    obs = Observation.create("o", "sid", "https://e", "evidence")
+    budget = ResourceBudget(evidence_items=1, requests=1, inference_calls=2)
+    run2 = add_observation(start_research(run), obs, budget); run2 = add_claim(run2, Claim.create("c","evidence")); assert len(run2.observations)==1 and len(run2.claims)==1
+    assert transition_research(run, "planned") is run
+    with pytest.raises(ValueError): transition_research(run, "bad")
+    with pytest.raises(ValueError): transition_research(run2, "planned")
+    assert complete_research(run2, False).status == "failed"
+    assert summarize_research(run)["claims_verified"] == 0
+    assert choose_strategy(True).requires_browser is False and choose_strategy(False).requires_browser is False
+    source = Source("s","https://example.com",SourceType.WEB)
+    method = choose_method(source, SourcePolicy()); assert method.enabled
+    assert reserve_acquisition(source, SourcePolicy(), ResourceBudget(requests=1)).enabled
+    assert simulate_acquire(source, method, "o2", "c").content == "c" and create_lineage(source,"f").lineage_type == "origin"
+    reg = ProviderRegistry(); reg.register(ProviderCapability("p","x",enabled=False)); reg.register(ProviderCapability("free","x",priority=2)); reg.register(ProviderCapability("paid","x",free_eligible=False,priority=1))
+    router = ProviderRouter(reg, ResourceBudget(inference_calls=1))
+    assert router.route("missing").approved is False
+    assert router.route("x").approved is True
+    disabled = ProviderRegistry(); disabled.register(ProviderCapability("d","y",enabled=False)); assert router.__class__(disabled, ResourceBudget()).route("y").approved is False
+    paid = ProviderRegistry(); paid.register(ProviderCapability("p","z",free_eligible=False)); assert ProviderRouter(paid, ResourceBudget()).route("z").approved is False
+    exhausted = ProviderRouter(reg, ResourceBudget(inference_calls=0)); assert exhausted.route("x").approved is False
+    class BrokenBudget:
+        def remaining(self): raise ResourceError("broken")
+        def consume_inference(self): pass
+    assert ProviderRouter(reg, BrokenBudget()).route("x").approved is False
+    assert ProviderRouter(reg, ResourceBudget(inference_calls=1)).execute("x", lambda: "ok") == "ok"
+    with pytest.raises(PermissionError): ProviderRouter(reg, ResourceBudget()).execute("missing", lambda: "x")
+    with pytest.raises(ResourceError): ProviderRouter(reg, ResourceBudget(inference_calls=0)).execute("x", lambda: "x")
+    synth = ResearchSynthesizer(); result = synth.synthesize(run); assert result.confidence == "unknown"
+
+
+def test_synthesis_status_matrix_and_entailment_negation():
+    from backend.execution.engine import ResearchRun
+    from backend.execution.synthesis import ResearchSynthesizer
+    from backend.intelligence.contracts import ResearchContract, ResearchPlan
+    from backend.intelligence.claims import Claim
+    from backend.intelligence.verifier import VerificationResult, ClaimStatus
+    from backend.intelligence.certificates import EvidenceCertificate
+    from backend.intelligence.observations import Observation
+    obs = Observation.create("o","sid","https://e","available evidence")
+    cert = EvidenceCertificate("o","sid","https://e",hashlib.sha256(obs.content.encode()).hexdigest(),0,9,"available",True)
+    def run(statuses):
+        vals=[]
+        for i,s in enumerate(statuses): vals.append((Claim.create(f"c{i}", f"claim {i}"), VerificationResult(f"c{i}",s,(cert,) if s in {ClaimStatus.CORROBORATED,ClaimStatus.SUPPORTED} else (),(),2 if s==ClaimStatus.CORROBORATED else 0,("reason",))))
+        return ResearchRun("r",ResearchContract("q"),ResearchPlan("q",(),1,1),verified_claims=tuple(vals),observations=(obs,))
+    for statuses, confidence in (((ClaimStatus.CORROBORATED,),"high"),((ClaimStatus.SUPPORTED,),"medium"),((ClaimStatus.PARTIAL,),"low"),((ClaimStatus.CONTRADICTED,),"unknown"),((ClaimStatus.SUPPORTED,ClaimStatus.CONTRADICTED),"low"),((ClaimStatus.UNKNOWN,),"unknown")):
+        assert ResearchSynthesizer().synthesize(run(statuses)).confidence == confidence
+    mixed = ResearchSynthesizer().synthesize(run((ClaimStatus.SUPPORTED,ClaimStatus.CONTRADICTED,ClaimStatus.UNKNOWN))); assert "Contradictory" in mixed.answer and "Unresolved" in mixed.answer
+
+
+def test_source_transport_and_wikipedia_boundaries(monkeypatch):
+    import backend.sources.http as http
+    import backend.sources.wikipedia as wikipedia
+    assert http._safe_host("example.com") is True and http._safe_host("127.0.0.1") is False
+    with pytest.raises(RuntimeError):
+        monkeypatch.setattr(http, "_workers_fetch", lambda: (_ for _ in ()).throw(RuntimeError("runtime")))
+        asyncio.run(http.fetch_public_url("https://example.com"))
+    class Resp:
+        def __init__(self,status=200,headers=None,body=b"ok"): self.status=status; self.headers=headers or {}; self.body=body
+        async def arrayBuffer(self): return self.body
+    async def fetcher(url, opts): return Resp()
+    got = asyncio.run(http.fetch_public_url("https://example.com", fetcher=fetcher)); assert got.status == 200
+    redirects = iter([Resp(302,{"location":"/x"}), Resp(200,{},b"x")])
+    got = asyncio.run(http.fetch_public_url("https://example.com", fetcher=lambda u,o: _next_async(redirects))); assert got.final_url.endswith("/x")
+    async def bad_redirect(u,o): return Resp(302,{})
+    with pytest.raises(RuntimeError): asyncio.run(http.fetch_public_url("https://example.com", fetcher=bad_redirect))
+    async def huge(u,o): return Resp(200,{},b"x"*(http.MAX_BYTES+1))
+    with pytest.raises(RuntimeError): asyncio.run(http.fetch_public_url("https://example.com", fetcher=huge))
+    async def _wiki(u,o): return Resp(200,{},b"")
+    monkeypatch.setattr(wikipedia, "_workers_fetch", lambda: _wiki)
+    assert asyncio.run(wikipedia._implementation("q",2,fetcher=_wiki)) == []
+
+
+async def _next_async(iterator):
+    return next(iterator)
