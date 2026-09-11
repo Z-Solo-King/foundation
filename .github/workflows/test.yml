@@ -20,7 +20,7 @@ jobs:
       - name: Compile every Python source
         run: python -m compileall -q backend worker.py
       - name: Run tests with line and branch coverage
-        run: coverage run --branch --source=backend --source=worker.py -m pytest tests/ -v
+        run: coverage run --branch --source=backend,worker.py -m pytest tests/ -v
       - name: Enforce complete production coverage
         run: coverage report --show-missing --fail-under=100
       - name: Public boundary scan
