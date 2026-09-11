@@ -5,7 +5,6 @@ This adapter is deliberately isolated so provider policy can enable/disable it.
 """
 
 from urllib.parse import urlencode
-from workers import fetch
 
 from .search import SearchResult, SearchAuthorization, search
 
@@ -17,7 +16,15 @@ WIKIPEDIA_AUTHORIZATION = SearchAuthorization(
 )
 
 
-async def _implementation(query: str, limit: int) -> list[SearchResult]:
+def _workers_fetch():
+    try:
+        from workers import fetch
+    except ImportError as exc:
+        raise RuntimeError("Cloudflare Workers runtime is required for Wikimedia search") from exc
+    return fetch
+
+
+async def _implementation(query: str, limit: int, *, fetcher=None) -> list[SearchResult]:
     params = urlencode({
         "action": "query",
         "list": "search",
@@ -28,7 +35,7 @@ async def _implementation(query: str, limit: int) -> list[SearchResult]:
         "origin": "*",
     })
     url = f"https://en.wikipedia.org/w/api.php?{params}"
-    response = await fetch(url, {"headers": {"User-Agent": "ResearchIntelligenceEngine/0.1"}})
+    response = await (fetcher or _workers_fetch())(url, {"headers": {"User-Agent": "ResearchIntelligenceEngine/0.1"}})
     if int(response.status) != 200:
         raise RuntimeError(f"Wikimedia search failed with HTTP {response.status}")
     payload = await response.json()
