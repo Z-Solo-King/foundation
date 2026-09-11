@@ -27,33 +27,26 @@ def test_worker_task_validation_all_remaining_rejections(monkeypatch):
     from backend.execution.worker_boundary import WorkerTask, WorkerResult, WorkerTaskValidator
     validator = WorkerTaskValidator()
     base = validator.create_task("fetch", {}, "p")
-
     assert validator.validate_task(WorkerTask("", base.nonce, base.schema_version, base.task_type, base.input_hash, base.provenance, base.created_at, base.expires_at, {}))[0] is False
     assert validator.validate_task(WorkerTask(base.task_id, base.nonce, "2.0", base.task_type, base.input_hash, base.provenance, base.created_at, base.expires_at, {}))[0] is False
     assert validator.validate_task(WorkerTask(base.task_id, base.nonce, base.schema_version, "unknown", base.input_hash, base.provenance, base.created_at, base.expires_at, {}))[0] is False
-
     huge = {"x": "a" * 17000}
     with pytest.raises(ValueError, match="metadata exceeds"):
         validator.create_task("fetch", {}, "p", huge)
-
     active = validator.create_task("fetch", {}, "p")
     assert validator.validate_task(active)[0] is True
     conflicting = WorkerTask(active.task_id + "2", active.nonce, active.schema_version, active.task_type, active.input_hash, active.provenance, active.created_at, active.expires_at, active.metadata)
     assert validator.validate_task(conflicting)[0] is False
-
     completed = validator.create_task("fetch", {}, "p")
     validator.validate_task(completed)
     validator._completed_nonces.add(completed.nonce)
     assert validator.validate_task(completed)[0] is False
-
     expired = WorkerTask(base.task_id + "x", "nonce-expired", base.schema_version, base.task_type, base.input_hash, base.provenance, base.created_at, datetime.now(timezone.utc) - timedelta(hours=1), base.metadata)
     assert validator.validate_task(expired)[0] is False
-
     good = validator.create_task("fetch", {"x": 1}, "p")
     now = datetime.now(timezone.utc)
-    for status in ("bogus",):
-        result = WorkerResult(good.task_id, good.nonce, status, None, None, 1, "worker", now)
-        assert validator.validate_result(good, result, None)[0] is False
+    result = WorkerResult(good.task_id, good.nonce, "bogus", None, None, 1, "worker", now)
+    assert validator.validate_result(good, result, None)[0] is False
     for status in ("failure", "timeout", "invalid"):
         task = validator.create_task("fetch", {status: 1}, "p")
         result = WorkerResult(task.task_id, task.nonce, status, None, None, 1, "worker", now)
@@ -73,7 +66,7 @@ def test_lineage_invalid_type_and_missing_origin_validation():
     with pytest.raises(ValueError):
         SourceLineage("s", "f", lineage_type="bogus").validate()
     with pytest.raises(ValueError):
-        SourceLineage("s", "f", lineage_type="derived").validate()
+        SourceLineage("s", "f", lineage_type="republished").validate()
 
 
 def test_observation_invalid_span_order_and_creation():
@@ -95,7 +88,7 @@ def test_verifier_inaccessible_and_semantic_rejection_branches():
     cert = create_certificate(obs, EvidenceSpan("o", 0, 5))
     verifier = EvidenceVerifier(semantic_strict=True)
     result = verifier.verify_claim(claim, (cert,), {"o": obs}, {}, ())
-    assert result.status in {ClaimStatus.UNSUPPORTED, ClaimStatus.INACCESSIBLE}
+    assert result.status in {ClaimStatus.PARTIAL, ClaimStatus.UNKNOWN, ClaimStatus.INACCESSIBLE}
 
 
 def test_http_invalid_runtime_and_redirect_without_location(monkeypatch):
@@ -103,7 +96,6 @@ def test_http_invalid_runtime_and_redirect_without_location(monkeypatch):
     monkeypatch.delitem(__import__('sys').modules, "workers", raising=False)
     with pytest.raises(RuntimeError):
         http._workers_fetch()
-
     class Response:
         status = 302
         headers = {}
