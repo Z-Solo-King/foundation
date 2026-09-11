@@ -1,5 +1,5 @@
-from backend.claims import Claim
-from backend.relationships import EvidenceRelation
+from backend.intelligence.claims import Claim
+from backend.intelligence.relationships import EvidenceRelation
 
 
 def test_claim_and_relationship():
