@@ -8,7 +8,7 @@ import pytest
 
 def test_resource_budget_all_paths():
     from backend.execution.resources import ResourceBudget, ResourceError
-    budget = ResourceBudget(requests=2, evidence_items=2, ai_calls=2, inference_calls=1)
+    budget = ResourceBudget(requests=2, evidence_items=2, ai_calls=3, inference_calls=1)
     assert budget.inference_remaining == 1
     assert budget.remaining()["inference_calls"] == 1
     budget.consume_requests(); budget.consume_evidence(); budget.consume_ai_calls(); budget.consume_inference()
@@ -30,7 +30,6 @@ def test_contradiction_typed_and_legacy_all_markers():
         assert detect_contradiction(neg, pos) is not None
     assert detect_contradiction("not available", "available") is not None
     assert detect_contradiction("available", "not available") is not None
-
     base = dict(entity="E", predicate="P", scope=None, valid_from=None, valid_until=None, unit="u", qualifier="q", version=None)
     def claim(cid, value, value_type, **changes):
         data = dict(base); data.update(changes)
@@ -59,7 +58,8 @@ def test_worker_boundary_fail_closed_all_branches():
     assert validator.validate_task(expired)[0] is False
     malformed = WorkerTask("", "", task.schema_version, task.task_type, task.input_hash, "", task.created_at, task.expires_at, task.metadata)
     assert "required" in validator.validate_task(malformed)[1]
-    backwards = WorkerTask(task.task_id, "nonce-b", task.schema_version, task.task_type, task.input_hash, task.provenance, task.expires_at, task.created_at, task.metadata)
+    now = datetime.now(timezone.utc)
+    backwards = WorkerTask(task.task_id, "nonce-b", task.schema_version, task.task_type, task.input_hash, task.provenance, now + timedelta(hours=2), now + timedelta(hours=1), task.metadata)
     assert "precedes" in validator.validate_task(backwards)[1]
     bad_schema = WorkerTask(task.task_id, "nonce-s", "2", task.task_type, task.input_hash, task.provenance, task.created_at, task.expires_at, task.metadata)
     assert validator.validate_task(bad_schema)[0] is False
@@ -95,7 +95,6 @@ def test_worker_boundary_fail_closed_all_branches():
 
 def test_worker_http_entrypoint_all_paths():
     import worker
-    from backend.api.models import ResearchRequest
     class Req:
         def __init__(self, method, url, payload=None, headers=None): self.method, self.url, self._payload, self.headers = method, url, payload, headers or {}
         async def json(self): return self._payload
