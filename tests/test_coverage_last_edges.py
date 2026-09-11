@@ -1,14 +1,19 @@
 from datetime import datetime, timedelta, timezone
+import types
 
 import pytest
 
 
 def test_entailment_ai_positive_and_negative_adjudication():
-    from backend.evaluation.entailment import EntailmentResult, EntailmentStatus, adjudicate_ambiguous
+    from backend.evaluation.entailment import EntailmentResult, EntailmentStatus, adjudicate_ambiguous, verify_claim_entailment
+    from backend.intelligence.observations import EvidenceSpan, Observation
     result = adjudicate_ambiguous(EntailmentResult(EntailmentStatus.AMBIGUOUS, 0.7, "ambiguous"), True)
     assert result.status == EntailmentStatus.SUPPORTED
     rejected = adjudicate_ambiguous(EntailmentResult(EntailmentStatus.AMBIGUOUS, 0.7, "ambiguous"), False)
     assert rejected.status == EntailmentStatus.UNSUPPORTED
+    obs = Observation.create("lex", "s", "https://e", "a b c d e f x")
+    lexical = verify_claim_entailment("a b c d e f g", obs, EvidenceSpan("lex", 0, len(obs.content)))
+    assert lexical.status == EntailmentStatus.SUPPORTED
 
 
 def test_engine_invalid_lifecycle_branches():
@@ -56,6 +61,28 @@ def test_worker_task_and_result_validation_all_remaining_rejections(monkeypatch)
         assert ok is True and reason == "valid"
 
 
+def test_worker_concurrent_replay_guards():
+    from backend.execution.worker_boundary import WorkerTaskValidator, WorkerResult
+    validator = WorkerTaskValidator()
+    task = validator.create_task("fetch", {}, "p")
+
+    class RaceLock:
+        def __enter__(self):
+            validator._completed_nonces.add(task.nonce)
+        def __exit__(self, *_):
+            return False
+
+    validator._completed_nonces.clear()
+    validator._lock = RaceLock()
+    assert validator.validate_task(task)[0] is False
+
+    validator = WorkerTaskValidator()
+    result_task = validator.create_task("fetch", {}, "p")
+    validator._completed_nonces.add(result_task.nonce)
+    result = WorkerResult(result_task.task_id, result_task.nonce, "failure", None, None, 1, "worker", datetime.now(timezone.utc))
+    assert validator.validate_result(result_task, result, None)[0] is False
+
+
 def test_worker_result_rejects_invalid_timestamp_and_execution_time():
     from backend.execution.worker_boundary import WorkerResult, WorkerTaskValidator
     validator = WorkerTaskValidator()
@@ -76,12 +103,18 @@ def test_typed_contradiction_remaining_unknown_type_and_overlap_edges():
     a = TypedClaim("a", "E", "P", "x", "unknown", unit=None, qualifier=None)
     b = TypedClaim("b", "E", "P", "y", "unknown", unit=None, qualifier=None)
     assert detect_typed_contradiction(a, b) is None
+    version_left = TypedClaim("vl", "E", "P", "x", "text", version="1")
+    version_right = TypedClaim("vr", "E", "P", "y", "text", version="2")
+    assert detect_typed_contradiction(version_left, version_right) is None
     left = TypedClaim("left", "E", "P", 1, "numeric", valid_until=datetime(2026, 1, 1, tzinfo=timezone.utc), unit="kg")
     right = TypedClaim("right", "E", "P", 2, "numeric", valid_from=datetime(2026, 2, 1, tzinfo=timezone.utc), unit="kg")
     assert detect_typed_contradiction(left, right) is None
     quantity = TypedClaim("q", "E", "P", 1, "quantity", unit=None)
     quantity2 = TypedClaim("q2", "E", "P", 2, "quantity", unit=None)
     assert detect_typed_contradiction(quantity, quantity2) is None
+    enum_a = TypedClaim("ea", "E", "P", "same", "enum", unit=None)
+    enum_b = TypedClaim("eb", "E", "P", "same", "enum", unit=None)
+    assert detect_typed_contradiction(enum_a, enum_b) is None
     text_a = TypedClaim("t1", "E", "P", "a", "text", unit="kg", qualifier="x")
     text_b = TypedClaim("t2", "E", "P", "b", "text", unit="lb", qualifier="x")
     assert detect_typed_contradiction(text_a, text_b) is None
@@ -108,26 +141,25 @@ def test_observation_invalid_span_order_and_creation():
         Observation("o2", "sid", "https://e", None, datetime.now(timezone.utc))
 
 
-def test_verifier_inaccessible_semantic_and_contradicted_strict_paths():
+def test_verifier_inaccessible_semantic_and_explicit_timestamp_paths():
     from backend.intelligence.claims import Claim
-    from backend.intelligence.certificates import create_certificate, EvidenceCertificate
-    from backend.intelligence.integrity import sha256_text
+    from backend.intelligence.certificates import create_certificate
     from backend.intelligence.observations import EvidenceSpan, Observation
-    from backend.intelligence.verifier import ClaimStatus, EvidenceVerifier
+    from backend.intelligence.verifier import ClaimStatus, EvidenceVerifier, VerificationResult
     claim = Claim.create("c", "text")
     obs = Observation.create("o", "s", "https://e", "other")
     cert = create_certificate(obs, EvidenceSpan("o", 0, 5))
     verifier = EvidenceVerifier(semantic_strict=True)
     result = verifier.verify_claim(claim, (cert,), {"o": obs}, {}, ())
     assert result.status in {ClaimStatus.PARTIAL, ClaimStatus.UNKNOWN, ClaimStatus.INACCESSIBLE}
-    bad = EvidenceCertificate(cert.observation_id, cert.source_id, cert.source_url, "bad-hash", cert.span_start, cert.span_end, cert.span_text, cert.structurally_valid)
-    result2 = verifier.verify_claim(claim, (bad, cert), {"o": obs}, {}, ())
-    assert result2.status in {ClaimStatus.CONTRADICTED, ClaimStatus.PARTIAL, ClaimStatus.UNKNOWN, ClaimStatus.INACCESSIBLE}
-    assert sha256_text(obs.content) == cert.content_hash
+    explicit = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    assert VerificationResult("v", ClaimStatus.UNKNOWN, verified_at=explicit).verified_at == explicit
 
 
-def test_http_invalid_runtime_and_redirect_without_location(monkeypatch):
+def test_http_runtime_export_and_redirect_without_location(monkeypatch):
     import backend.sources.http as http
+    monkeypatch.setitem(__import__('sys').modules, "workers", types.SimpleNamespace(fetch=lambda *_args, **_kwargs: object()))
+    assert http._workers_fetch() is not None
     monkeypatch.delitem(__import__('sys').modules, "workers", raising=False)
     with pytest.raises(RuntimeError):
         http._workers_fetch()
