@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "purpose": "Machine-readable navigation for humans and AI agents.",
+  "repo": "foundation",
+  "role": "public-contracts",
+  "source_of_truth": {
+    "contracts": ["backend/intelligence/contracts.py", "backend/execution/engine.py"],
+    "evidence": ["backend/evidence_certificate.py"],
+    "evaluation_primitives": ["backend/evaluation/"],
+    "api": ["backend/api/"],
+    "resource_guard": ["backend/execution/resources.py"]
+  },
+  "must_not_own": ["private policy authority", "global resource governance", "promotion", "credentials", "protected deployment topology"],
+  "design_rules": ["deterministic-first", "one canonical implementation per behavior", "small modules", "public-safe data only", "contracts before cross-repo implementation"],
+  "hot_path_guidance": {
+    "prefer": ["tuple/dict indexes", "bounded work", "stable typed contracts", "single-pass transforms"],
+    "avoid": ["repeated list scans", "duplicate policy engines", "large monolithic modules", "large payloads in control envelopes"]
+  },
+  "change_method": ["search family", "identify owner", "extend owner", "tighten contract", "add regression", "remove duplicate"]
+}
