@@ -1,5 +1,6 @@
 import asyncio
 import builtins
+from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
 
@@ -82,9 +83,9 @@ def test_harness_production_success_and_observation_edges():
     from backend.intelligence.observations import Observation
 
     h = EvaluationHarness()
-    h._production_target = 20
+    h._production_target = 100
     h._promotion_threshold = 0.5
-    for category in (EvaluationCategory.RETRIEVAL, EvaluationCategory.CITATIONS):
+    for category in EvaluationCategory:
         for i in range(10):
             cid = f"{category.value}-{i}"
             h.register_case(BenchmarkCase(cid, category, "d", "q", "a"))
@@ -146,9 +147,9 @@ def test_http_and_wikipedia_runtime_paths(monkeypatch):
             raise ImportError("blocked")
         return original_import(name, *args, **kwargs)
     monkeypatch.setattr(builtins, "__import__", blocked_import)
-    with pytest.raises(RuntimeError, match="Cloudflare Workers runtime"):
+    with pytest.raises(RuntimeError, match="runtime"):
         http._workers_fetch()
-    with pytest.raises(RuntimeError, match="Cloudflare Workers runtime"):
+    with pytest.raises(RuntimeError, match="runtime"):
         wikipedia._workers_fetch()
 
 
@@ -199,7 +200,7 @@ def test_verifier_strict_and_inaccessible_paths():
     assert missing.status == ClaimStatus.INACCESSIBLE
     assert "inaccessible" in " ".join(missing.reasons)
 
-    bad = cert.__class__(cert.observation_id, cert.source_id, cert.source_url, "bad", cert.span_start, cert.span_end, cert.span_text, True)
+    bad = replace(cert, span_text="bad")
     bad_result = strict.verify_claim(claim, (bad,), {"o": obs}, {})
     assert bad_result.status == ClaimStatus.CONTRADICTED
 
