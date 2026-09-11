@@ -10,7 +10,7 @@
   },
   "source_of_truth": {
     "contracts": ["backend/intelligence/contracts.py", "backend/execution/engine.py"],
-    "evidence": ["backend/evidence_certificate.py"],
+    "evidence": ["backend/evidence_certificate.py", "backend/evidence_selection.py"],
     "evaluation_primitives": ["backend/evaluation/"],
     "api": ["backend/api/"],
     "resource_guard": ["backend/execution/resources.py"]
@@ -22,10 +22,10 @@
     "private_execution_owner": "extractor-mapper"
   },
   "must_not_own": ["private policy authority", "global resource governance", "promotion", "credentials", "protected deployment topology", "heavy extraction", "heavy product mapping"],
-  "design_rules": ["deterministic-first", "one canonical implementation per behavior", "small modules", "public-safe data only", "contracts before cross-repo implementation", "chatbot must use typed contracts rather than duplicate algorithms"],
+  "design_rules": ["deterministic-first", "one canonical implementation per behavior", "small modules", "public-safe data only", "contracts before cross-repo implementation", "chatbot must use typed contracts rather than duplicate algorithms", "evidence selection is budgeted but caller-defined trust policy remains outside Foundation"],
   "hot_path_guidance": {
-    "prefer": ["tuple/dict indexes", "bounded work", "stable typed contracts", "single-pass transforms"],
-    "avoid": ["repeated list scans", "duplicate policy engines", "large monolithic modules", "large payloads in control envelopes"]
+    "prefer": ["tuple/dict indexes", "bounded work", "stable typed contracts", "single-pass transforms", "deduplicated evidence under explicit budgets"],
+    "avoid": ["repeated list scans", "duplicate policy engines", "large monolithic modules", "large payloads in control envelopes", "lossy evidence compression without explicit budget" ]
   },
   "change_method": ["search family", "identify owner", "extend owner", "tighten contract", "add regression", "remove duplicate"]
 }
