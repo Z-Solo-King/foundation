@@ -9,9 +9,6 @@ from dataclasses import dataclass
 from ipaddress import ip_address
 from urllib.parse import urljoin, urlparse
 
-from workers import fetch
-
-
 MAX_REDIRECTS = 3
 MAX_BYTES = 1_000_000
 
@@ -24,6 +21,15 @@ class FetchResult:
     content_type: str
     content: bytes
     etag: str | None
+
+
+def _workers_fetch():
+    """Load the Cloudflare runtime adapter only inside an actual Worker."""
+    try:
+        from workers import fetch
+    except ImportError as exc:
+        raise RuntimeError("Cloudflare Workers runtime is required for network acquisition") from exc
+    return fetch
 
 
 def _safe_host(hostname: str) -> bool:
@@ -49,18 +55,17 @@ def validate_url(url: str) -> None:
         raise ValueError("non-standard ports are not allowed")
 
 
-async def fetch_public_url(url: str) -> FetchResult:
+async def fetch_public_url(url: str, *, fetcher=None) -> FetchResult:
     validate_url(url)
+    fetcher = fetcher or _workers_fetch()
     current = url
     for _ in range(MAX_REDIRECTS + 1):
-        response = await fetch(current, {"redirect": "manual"})
+        response = await fetcher(current, {"redirect": "manual"})
         status = int(response.status)
         if status in {301, 302, 303, 307, 308}:
             location = response.headers.get("location")
             if not location:
                 raise RuntimeError("redirect without Location header")
-            # Relative Location values are normal HTTP and must be resolved
-            # against the current URL before the same safety policy is applied.
             current = urljoin(current, location)
             validate_url(current)
             continue
