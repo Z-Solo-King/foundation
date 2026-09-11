@@ -22,10 +22,17 @@ class SourceLineage:
             raise ValueError("source_id and family_id must not be empty")
         if self.lineage_type not in {"origin", "republished", "derived"}:
             raise ValueError("invalid lineage_type")
-        if not (self.origin_fingerprint or "").strip():
-            raise ValueError("origin_fingerprint must not be empty")
-        if self.lineage_type == "republished" and not (self.parent_source_id or self.republisher_of):
-            raise ValueError("republished lineage must identify its origin")
+        if self.lineage_type == "republished":
+            if not (self.origin_fingerprint or "").strip():
+                raise ValueError("republished lineage requires origin_fingerprint")
+            if not (self.parent_source_id or self.republisher_of):
+                raise ValueError("republished lineage must identify its origin")
+
+    @property
+    def effective_origin(self) -> str:
+        """Return explicit origin when available; legacy family fallback otherwise."""
+        value = (self.origin_fingerprint or "").strip()
+        return value if value else f"family:{self.family_id.strip().lower()}"
 
 
 def origin_fingerprint(origin: str) -> str:
@@ -39,7 +46,7 @@ def is_independent(first: SourceLineage, second: SourceLineage) -> bool:
     second.validate()
     if first.source_id == second.source_id:
         return False
-    if first.origin_fingerprint == second.origin_fingerprint:
+    if first.effective_origin == second.effective_origin:
         return False
     if first.source_id in {second.parent_source_id, second.republisher_of}:
         return False
