@@ -53,3 +53,35 @@ def test_verifier_inaccessible_observation():
     result = EvidenceVerifier().verify_claim(Claim.create("c1", "Test claim"), (cert,), {}, {})
     assert result.status == ClaimStatus.INACCESSIBLE
     assert "not found" in result.reasons[0]
+
+
+def test_verifier_contradictory_claims_fail_closed():
+    verifier = EvidenceVerifier()
+    obs = Observation.create("o1", "s1", "https://example.com", "Evidence")
+    cert = create_certificate(obs, EvidenceSpan("o1", 0, 8))
+    claim = Claim.create("c1", "feature is enabled")
+    opposing = Claim.create("c2", "feature is disabled")
+    result = verifier.verify_claim(
+        claim,
+        (cert,),
+        {"o1": obs},
+        {"s1": SourceLineage("s1", "family-a")},
+        other_claims=(opposing,),
+    )
+    assert result.status == ClaimStatus.CONTRADICTED
+    assert any("contradicts c2" in reason for reason in result.reasons)
+
+
+def test_verifier_stale_corroboration_does_not_override_stale():
+    old_time = datetime.now(timezone.utc) - timedelta(days=31)
+    obs1 = Observation("o1", "s1", "https://example.com", "old evidence", old_time)
+    obs2 = Observation("o2", "s2", "https://other.com", "old evidence", old_time)
+    cert1 = create_certificate(obs1, EvidenceSpan("o1", 0, 3))
+    cert2 = create_certificate(obs2, EvidenceSpan("o2", 0, 3))
+    result = EvidenceVerifier().verify_claim(
+        Claim.create("c1", "Test claim"),
+        (cert1, cert2),
+        {"o1": obs1, "o2": obs2},
+        {"s1": SourceLineage("s1", "family-a"), "s2": SourceLineage("s2", "family-b")},
+    )
+    assert result.status == ClaimStatus.STALE
