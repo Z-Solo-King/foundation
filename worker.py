@@ -38,29 +38,6 @@ async def _json(request):
         return None
 
 
-def _request_hash(payload):
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
-    return hashlib.sha256(encoded).hexdigest()
-
-
-async def _persist_run(env, run_id, req, request_hash=None, idempotency_key=None):
-    now = datetime.now(timezone.utc).isoformat()
-    await env.DB.prepare(
-        """INSERT INTO research_runs
-        (run_id, question, depth, require_citations, max_sources,
-         max_evidence_items, strict_zero_cost_only, status, created_at, updated_at, version)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
-    ).bind(
-        run_id, req.question, req.depth or "standard", int(req.require_citations),
-        req.max_sources, req.max_evidence_items, int(req.strict_zero_cost_only),
-        "planned", now, now, 1
-    ).run()
-    if idempotency_key:
-        await env.DB.prepare(
-            "INSERT INTO idempotency_keys (idempotency_key, run_id, request_hash, created_at) VALUES (?, ?, ?, ?)"
-        ).bind(idempotency_key, run_id, request_hash, now).run()
-
-
 async def _ingest_sources(env, run_id, req):
     results = []
     for index, url in enumerate(req.source_urls[:req.max_sources]):
