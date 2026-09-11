@@ -188,20 +188,22 @@ def test_verifier_strict_and_inaccessible_paths():
     from backend.intelligence.lineage import SourceLineage
     from backend.intelligence.verifier import EvidenceVerifier, ClaimStatus
 
-    obs = Observation.create("o", "https://e", "unrelated evidence")
-    cert = create_certificate(obs, EvidenceSpan("o", 0, 18))
+    good_obs = Observation.create("good", "sid", "https://e", "banana")
+    bad_obs = Observation.create("bad", "sid", "https://e", "unrelated evidence")
+    good_cert = create_certificate(good_obs, EvidenceSpan("good", 0, 6))
+    bad_cert = create_certificate(bad_obs, EvidenceSpan("bad", 0, 18))
     claim = Claim.create("c", "banana")
 
     strict = EvidenceVerifier(semantic_strict=True)
-    partial = strict.verify_claim(claim, (cert,), {"o": obs}, {"sid": SourceLineage("sid", "family")})
+    partial = strict.verify_claim(claim, (good_cert, bad_cert), {"good": good_obs, "bad": bad_obs}, {"sid": SourceLineage("sid", "family")})
     assert partial.status == ClaimStatus.PARTIAL
 
-    missing = strict.verify_claim(claim, (cert,), {}, {})
+    missing = strict.verify_claim(claim, (good_cert,), {}, {})
     assert missing.status == ClaimStatus.INACCESSIBLE
     assert "inaccessible" in " ".join(missing.reasons)
 
-    bad = replace(cert, span_text="bad")
-    bad_result = strict.verify_claim(claim, (bad,), {"o": obs}, {})
+    bad = replace(good_cert, span_text="bad")
+    bad_result = strict.verify_claim(claim, (bad,), {"good": good_obs}, {})
     assert bad_result.status == ClaimStatus.CONTRADICTED
 
     stale_obs = Observation.create("s", "sid", "https://e", "banana", datetime.now(timezone.utc) - timedelta(days=31))
