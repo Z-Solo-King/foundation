@@ -68,3 +68,18 @@ def test_router_disabled_provider():
     decision = router.route("search", strict_zero_cost_only=True)
     assert decision.approved is False
     assert "disabled" in decision.reason.lower()
+
+
+def test_resource_budget_rejects_negative_values_and_unknown_fields():
+    for kwargs, message in (
+        ({"requests": -1}, "requests must not be negative"),
+        ({"evidence_items": -1}, "evidence_items must not be negative"),
+        ({"ai_calls": -1}, "ai_calls must not be negative"),
+        ({"inference_calls": -1}, "inference_calls must not be negative"),
+    ):
+        with pytest.raises(ValueError, match=message):
+            ResourceBudget(**kwargs)
+
+    budget = ResourceBudget()
+    with pytest.raises(ValueError, match="unknown resource field"):
+        budget.consume("not_a_resource")
