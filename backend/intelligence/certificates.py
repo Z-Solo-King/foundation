@@ -30,6 +30,8 @@ def create_certificate(observation, span):
 
 
 def verify_certificate(observation, certificate):
+    if not certificate.structurally_valid:
+        return False
     if observation.observation_id != certificate.observation_id:
         return False
     if observation.source_id != certificate.source_id:
