@@ -10,6 +10,7 @@ dev = [
   "workers-py",
   "workers-runtime-sdk",
   "pytest",
+  "pytest-asyncio",
 ]
 
 [tool.pytest.ini_options]
