@@ -1,6 +1,6 @@
 import pytest
 
-from backend.source_lineage import SourceFamily, SourceLineage, is_independent
+from backend.intelligence.lineage import SourceFamily, SourceLineage, is_independent
 
 
 def lineage(source_id, family_id, origin, **kwargs):
