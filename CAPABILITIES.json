@@ -1,0 +1,11 @@
+{
+  "name": "foundation",
+  "trust_level": "public",
+  "determinism": "deterministic-first",
+  "network_access": ["approved-http-sources"],
+  "ai_usage": ["semantic-entailment-adjudication", "ambiguous-planning"],
+  "promotion_authority": false,
+  "evidence_authority": "canonical-evidence-contracts",
+  "private_secrets": false,
+  "protected_boundaries": ["privacy", "security", "billing", "retention", "promotion"]
+}
