@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from enum import StrEnum
-import hashlib
 import re
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+
+from backend.intelligence.lineage import SourceLineage, is_independent as sources_are_independent
 
 
 class SourceType(StrEnum):
@@ -32,35 +33,6 @@ def canonical_source_url(url: str) -> str:
     return urlunparse((parsed.scheme, netloc, path, "", query, ""))
 
 
-def source_origin_fingerprint(url: str, *, publisher_hint: str | None = None) -> str:
-    """Fingerprint the likely information origin, not merely the source ID."""
-    canonical = canonical_source_url(url)
-    parsed = urlparse(canonical)
-    origin = publisher_hint.strip().lower() if publisher_hint and publisher_hint.strip() else parsed.hostname.lower()
-    material = f"{origin}|{parsed.path.split('/')[1] if parsed.path.strip('/') else ''}"
-    return hashlib.sha256(material.encode()).hexdigest()
-
-
-@dataclass(frozen=True)
-class SourceLineage:
-    source_id: str
-    source_family: str
-    parent_source_id: str | None = None
-    lineage_type: str = "origin"
-    origin_fingerprint: str = ""
-    republisher_of: str | None = None
-
-    def validate(self) -> None:
-        if not self.source_id.strip() or not self.source_family.strip():
-            raise ValueError("source_id and source_family must not be empty")
-        if self.lineage_type not in {"origin", "republished", "derived"}:
-            raise ValueError("invalid lineage_type")
-        if not self.origin_fingerprint.strip():
-            raise ValueError("origin_fingerprint must not be empty")
-        if self.lineage_type == "republished" and not self.republisher_of and not self.parent_source_id:
-            raise ValueError("republished lineage must identify its origin")
-
-
 @dataclass(frozen=True)
 class Source:
     source_id: str
@@ -73,20 +45,16 @@ class Source:
     origin_fingerprint: str | None = None
 
     def validate(self):
-        canonical = canonical_source_url(self.url)
+        canonical_source_url(self.url)
         if self.lineage_type not in {"origin", "republished", "derived"}:
             raise ValueError("invalid lineage_type")
         if self.lineage_type == "republished" and not self.parent_source_id:
             raise ValueError("republished source requires parent_source_id")
-        fingerprint = self.origin_fingerprint or source_origin_fingerprint(canonical)
-        if not fingerprint:
-            raise ValueError("source origin fingerprint required")
 
-    def lineage(self) -> SourceLineage:
-        fingerprint = self.origin_fingerprint or source_origin_fingerprint(self.url)
+    def lineage(self, fingerprint: str) -> SourceLineage:
         return SourceLineage(
             source_id=self.source_id,
-            source_family=self.family_id or fingerprint,
+            family_id=self.family_id or fingerprint,
             parent_source_id=self.parent_source_id,
             lineage_type=self.lineage_type,
             origin_fingerprint=fingerprint,
@@ -106,16 +74,12 @@ def evaluate_source(source: Source, policy: SourcePolicy) -> bool:
     return policy.allowed and policy.max_requests > 0
 
 
-def sources_are_independent(left: SourceLineage, right: SourceLineage) -> bool:
-    """Compute independence from origin overlap rather than source-family IDs."""
-    left.validate()
-    right.validate()
-    if left.source_id == right.source_id:
-        return False
-    if left.origin_fingerprint == right.origin_fingerprint:
-        return False
-    if left.source_id in {right.parent_source_id, right.republisher_of}:
-        return False
-    if right.source_id in {left.parent_source_id, left.republisher_of}:
-        return False
-    return True
+__all__ = [
+    "SourceType",
+    "Source",
+    "SourcePolicy",
+    "SourceLineage",
+    "canonical_source_url",
+    "evaluate_source",
+    "sources_are_independent",
+]
