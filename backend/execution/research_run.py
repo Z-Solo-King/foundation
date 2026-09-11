@@ -7,10 +7,11 @@ legacy imports working without maintaining a second ResearchRun implementation.
 from backend.execution.engine import ResearchRun
 from backend.execution.engine import complete_research, create_run as create_engine_run, start_research
 from backend.intelligence.contracts import ResearchContract
+from backend.intelligence.planning import create_plan
 
 
 def create_run(run_id: str, contract: ResearchContract) -> ResearchRun:
-    return create_engine_run(run_id, contract, contract.to_plan() if hasattr(contract, "to_plan") else __import__("backend.intelligence.planning", fromlist=["create_plan"]).create_plan(contract))
+    return create_engine_run(run_id, contract, create_plan(contract))
 
 
 def transition(run: ResearchRun, status: str) -> ResearchRun:
