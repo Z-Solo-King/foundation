@@ -1,5 +1,5 @@
 {
-  "schema": 2,
+  "schema": 3,
   "purpose": "Public-safe family ownership and boundary contract for Foundation plus the private Operations system.",
   "repositories": {
     "foundation": {
@@ -47,9 +47,11 @@
   },
   "historical_repository": {
     "name": "extractor-mapper",
-    "status": "migration-source",
-    "role": "Historical source repository for the Operations extractor subsystem. It is not an independent privacy boundary.",
-    "retirement_rule": "Do not archive until all canonical implementation, tests, workflows, manifests, documentation and references have moved to Operations and the completion gates in operations/docs/REPOSITORY_CONSOLIDATION_PLAN.md are satisfied."
+    "status": "deleted-historical-source",
+    "role": "Historical source repository whose active implementation was consolidated into Operations. It is not an active dependency or privacy boundary.",
+    "retirement_state": "deleted",
+    "historical_material": "Selected migration material is retained under operations/archive/extractor-mapper/ as non-executable reference content.",
+    "runtime_or_ci_dependency": false
   },
   "dependency_rule": {
     "contract_flow": "foundation -> operations",
@@ -74,7 +76,7 @@
     "do not make mapping perform network I/O",
     "do not expose credentials, protected topology, or evaluation holdouts through public contracts",
     "do not add new business logic to immutable V175/V18 legacy snapshots",
-    "do not archive extractor-mapper before parity evidence and migration gates pass"
+    "do not treat the deleted extractor-mapper repository as an active dependency, runtime source, or CI target"
   ],
   "validation": {
     "repository_local": "Foundation validates public contracts and primitives; Operations validates its complete private execution/control system.",
