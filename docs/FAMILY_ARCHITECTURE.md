@@ -1,16 +1,15 @@
 # Family Architecture Rule
 
-This repository is one member of a three-repository system. The public-safe ownership contract is canonical in `docs/FAMILY_CONTRACT.json`.
+This repository is one member of a two-repository system. The public-safe ownership contract is canonical in `docs/FAMILY_CONTRACT.json`.
 
-- `foundation`: public contracts and reusable deterministic primitives.
-- `extractor-mapper`: private bounded execution and deterministic replay.
-- `operations`: protected policy, resource governance, verification, and promotion authority.
+- `foundation`: public contracts, evidence structures, research contracts, and reusable deterministic primitives.
+- `operations`: private control, acquisition, extraction, mapping, verification, evaluation, promotion, deployment, recovery, and chatbot orchestration.
 
 Dependency direction is one-way:
 
-`foundation -> extractor-mapper -> operations`
+`foundation -> operations`
 
-The arrows describe contract/result flow, not unrestricted imports. The public repository must not import private implementation, and execution code must not bypass protected Operations gates.
+The arrow describes public contract/result flow, not unrestricted imports. The public repository must not import private implementation, and Operations must not bypass its protected policy and resource gates.
 
 ## Single-owner rule
 
@@ -22,7 +21,7 @@ New modules belong under the layer that owns their responsibility. Do not create
 
 ## GitHub change order
 
-Use one coherent feature branch and one PR per owning repository. For a cross-repository change, merge in dependency order: `foundation` contract -> `extractor-mapper` implementation -> `operations` control-plane integration. Do not copy implementation between repositories to avoid a dependency.
+Use one coherent feature branch and one PR per owning repository. For a cross-repository change, merge in dependency order: `foundation` contract -> `operations` implementation/control-plane integration. Do not copy implementation between repositories to avoid a dependency.
 
 ## Change methodology
 
@@ -39,8 +38,12 @@ Use one coherent feature branch and one PR per owning repository. For a cross-re
 
 - Two resource ledgers for the same resource authority.
 - Two execution-run models with overlapping state.
-- A private repository reimplementing protected policy from Operations.
+- A public repository reimplementing protected policy from Operations.
 - A public repository making trust or promotion decisions.
 - Legacy snapshots receiving new business logic.
 - A compatibility facade that becomes a second implementation.
 - Synchronized copy-paste commits across repositories that should instead be a contract plus one owner.
+
+## Historical migration record
+
+The former `extractor-mapper` repository was consolidated into Operations and deleted. Selected historical migration material is retained only under `operations/archive/extractor-mapper/` as non-active reference material. It is not an active dependency, runtime source, CI target, or privacy boundary.
