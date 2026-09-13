@@ -1,22 +1,18 @@
 name: production-chatbot-deploy-smoke
 
 on:
-  push:
-    branches: [main]
+  workflow_run:
+    workflows: [public-tests]
+    types: [completed]
 
 permissions:
   contents: read
 
 jobs:
   public-chatbot-verify:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d
-        with:
-          version: 0.12.11
-      - name: Run chatbot diagnostic tests
-        run: uv run --with pytest --with pytest-asyncio pytest tests/test_chatbot_live_bridge.py tests/test_worker_diagnostics.py -q
       - name: Verify public Worker health
         run: |
           set -euo pipefail
