@@ -56,10 +56,10 @@ def test_remaining_field_route_and_pagination_boundaries():
 
 
 def test_remaining_observation_fingerprint_optional_timestamps_and_invalid_json():
-    obs = Observation("o", "https://x", "payload", obs_at := __import__("datetime").datetime.now(__import__("datetime").timezone.utc))
+    obs = Observation("o", "https://x", "payload", __import__("datetime").datetime.now(__import__("datetime").timezone.utc))
     assert obs.fingerprint()
     full = Observation(
-        "o2", "https://x", "payload", obs.observed_at, source_id="s", source_family_id="f", document_version_id="d",
+        "o2", source_url="https://x", content="payload", observed_at=obs.observed_at, source_id="s", source_family_id="f", document_version_id="d",
         retrieved_at=obs.observed_at, published_at=obs.observed_at, author="a", language="en", title="t",
         extraction_method="e", acquisition_method="a", raw_artifact_ref="r", normalized_sha256="n",
         policy_state="allowed", extractor_version="1",
@@ -88,7 +88,7 @@ def test_remaining_strategy_and_public_receipt_guards():
     metrics = StrategyMetrics(.9, .9, .9, .9, .9, .1, .1, .1)
     exp = StrategyExperiment("e", "b", "c", "fp", metrics, metrics)
     assert not candidate_beats_baseline(exp, {"correctness": .95})
-    receipt = StageReceipt("id", "req", "run", "method", "provider", "hash", 1)
+    receipt = StageReceipt("id", "req", "run", "method", "provider", "hash")
     assert receipt.validate() is None
     obs = TokenEfficiencyObservation(10, 5, 2, 1, 100, 20, 2, accepted=True)
     with pytest.raises(ValueError): TokenEfficiencyObservation(10, 5, 2, 1, 100, 20, 2, accepted=True, estimated_input_tokens=-1).validate()
