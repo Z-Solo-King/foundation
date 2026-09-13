@@ -4,6 +4,7 @@ import re
 from dataclasses import replace
 from typing import Iterable, Mapping, Sequence
 from .planner_models import Action, ClaimRequirement, Coverage, CoverageState, FactType, FieldRequirement, MethodCandidate, QueryCandidate, ResourceEnvelope, SourcePlan, SourceProfileHint, StopReason, TaskMode, TaskPlan
+from .route_memory import RouteKey, RouteState, apply_route_memory
 
 
 def classify_task(question: str, output_type: str = "") -> TaskMode:
@@ -129,8 +130,8 @@ def choose_stop_reason(coverage: Sequence[Coverage], budget_remaining: float, mi
     return None
 
 
-def build_task_plan(question: str, output_type: str="", claims: Sequence[str]|None=None, fields: Sequence[FieldRequirement]|None=None, languages: Sequence[str]=(), source_families: Sequence[str]=(), methods: Sequence[MethodCandidate]=(), envelope: ResourceEnvelope|None=None, max_queries: int=12)->TaskPlan:
-    mode=classify_task(question,output_type); claim_reqs=decompose_claims(question,claims); field_reqs=normalize_fields(fields); queries=generate_query_portfolio(question,claim_reqs,languages,source_families,max_queries); ranked=apply_field_preferences(methods,field_reqs)
+def build_task_plan(question: str, output_type: str="", claims: Sequence[str]|None=None, fields: Sequence[FieldRequirement]|None=None, languages: Sequence[str]=(), source_families: Sequence[str]=(), methods: Sequence[MethodCandidate]=(), envelope: ResourceEnvelope|None=None, max_queries: int=12, route_memory: Mapping[RouteKey, RouteState] | None = None, now: float = 0.0)->TaskPlan:
+    mode=classify_task(question,output_type); claim_reqs=decompose_claims(question,claims); field_reqs=normalize_fields(fields); queries=generate_query_portfolio(question,claim_reqs,languages,source_families,max_queries); ranked=apply_route_memory(apply_field_preferences(methods,field_reqs),route_memory,now)
     source_plans=tuple(SourcePlan(family,required=(family in ("official","primary"))) for family in source_families)
     field_ids=tuple(f.field_id for f in field_reqs)
     actions=tuple(Action(f"query-{i+1}","search",q.purpose,q.target_claim_ids,field_ids,estimated_cost=q.estimated_cost) for i,q in enumerate(queries))
@@ -142,9 +143,9 @@ def build_task_plan(question: str, output_type: str="", claims: Sequence[str]|No
     return TaskPlan(mode,tuple(claim_reqs),field_reqs,source_plans,queries,ranked,actions,env,metadata={"output_type":output_type,"planner":"deterministic-v1"})
 
 
-def create_task_plan(contract: object)->TaskPlan:
+def create_task_plan(contract: object, route_memory: Mapping[RouteKey, RouteState] | None = None, now: float = 0.0)->TaskPlan:
     contract.validate()
-    return build_task_plan(contract.question,contract.output_type,contract.claims_required,getattr(contract,"field_requirements",()),contract.languages,contract.source_families_required,envelope=contract.resource_envelope,max_queries=contract.max_search_actions)
+    return build_task_plan(contract.question,contract.output_type,contract.claims_required,getattr(contract,"field_requirements",()),contract.languages,contract.source_families_required,envelope=contract.resource_envelope,max_queries=contract.max_search_actions,route_memory=route_memory,now=now)
 
 
 __all__=["classify_task","infer_fact_type","decompose_claims","normalize_fields","generate_query_portfolio","method_utility","rank_methods","apply_source_profiles","apply_field_preferences","coverage_map","recovery_actions","choose_stop_reason","build_task_plan","create_task_plan"]
