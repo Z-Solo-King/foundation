@@ -43,7 +43,7 @@ def test_freshness_guard_and_reconciliation():
     with pytest.raises(ValueError): observation().is_fresh(100, -1)
     assert reconcile_limit(None, observation()).available_units == 5
     previous = observation(5, 100)
-    current = replace(previous, available_units=3, observation_id="obs-2")
+    current = replace(previous, available_units=3, observed_at=101, observation_id="obs-2")
     assert reconcile_limit(previous, current).confidence is LimitConfidence.VERIFIED
     same_time_conflict = replace(current, observed_at=100)
     contradictory = reconcile_limit(previous, same_time_conflict)
