@@ -1,6 +1,12 @@
 import pytest
 
-from backend.evidence_selection import EvidenceCandidate, estimate_tokens, select_evidence
+from backend.evidence_selection import (
+    ContextPacketBudget,
+    EvidenceCandidate,
+    build_context_packet,
+    estimate_tokens,
+    select_evidence,
+)
 
 
 def test_selection_prefers_higher_source_and_relevance_scores():
@@ -74,3 +80,37 @@ def test_selection_can_stop_on_item_limit_and_skip_overlong_candidate():
         max_tokens=2,
     )
     assert [candidate.evidence_id for candidate in selected] == ["short"]
+
+
+def test_context_packet_preserves_reserves_dedupes_and_hashes_deterministically():
+    candidates = (
+        EvidenceCandidate("a", "price", "₹100", "https://official.example", source_rank=5, estimated_tokens=2),
+        EvidenceCandidate("dup", "price", "  ₹100 ", "https://secondary.example", source_rank=1, estimated_tokens=2),
+        EvidenceCandidate("b", "weight", "1.2 kg", "https://official.example", source_rank=4, estimated_tokens=2),
+        EvidenceCandidate("c", "noise", "extra", "https://other.example", source_rank=1, estimated_tokens=4),
+    )
+    budget = ContextPacketBudget(total_tokens=10, answer_reserve_tokens=2, verification_reserve_tokens=2)
+    packet = build_context_packet(candidates, budget=budget, max_items=5)
+    assert [item.evidence_id for item in packet.selected] == ["a", "b"]
+    assert packet.evidence_tokens == 4
+    assert "dup" in packet.dropped_ids
+    assert "c" in packet.dropped_ids
+    assert packet.duplicate_count >= 1
+    assert 0 < packet.total_budget_used_ratio < 1
+    assert packet.content_hash == build_context_packet(candidates, budget=budget, max_items=5).content_hash
+    assert packet.prefix_cache_key == build_context_packet(candidates, budget=budget, max_items=5).prefix_cache_key
+
+
+def test_context_packet_budget_guards_and_zero_candidate_packet():
+    with pytest.raises(ValueError):
+        ContextPacketBudget(10, 5, 5).validate()
+    with pytest.raises(ValueError):
+        ContextPacketBudget(0).validate()
+    with pytest.raises(ValueError):
+        ContextPacketBudget(10, -1, 0).validate()
+    with pytest.raises(ValueError):
+        build_context_packet((), budget=ContextPacketBudget(10), max_items=0)
+    packet = build_context_packet((), budget=ContextPacketBudget(10, 2, 2), max_items=1)
+    assert packet.selected == ()
+    assert packet.evidence_tokens == 0
+    assert packet.total_budget_used_ratio == 0
