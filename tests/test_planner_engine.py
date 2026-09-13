@@ -17,6 +17,7 @@ from backend.intelligence.planner_models import (
     TaskMode,
 )
 from backend.intelligence.planner_runtime import plan_fingerprint, topological_order, validate_dag
+from backend.intelligence.route_memory import RouteKey, RouteState
 
 
 def test_classifies_common_modes():
@@ -54,6 +55,21 @@ def test_field_preferences_change_method_order():
     ranked = apply_field_preferences((api, structured), fields)
     assert ranked[0].method_id == "structured"
     assert apply_field_preferences((api, structured), ()) == (api, structured)
+
+
+def test_planner_excludes_blocked_empirical_routes_and_keeps_unseen_routes():
+    blocked = MethodCandidate("api", "source-a", "api", expected_success=.8)
+    unseen = MethodCandidate("feed", "source-b", "feed", expected_success=.7)
+    memory = {RouteKey("source-a", "api", "api"): RouteState(quarantined_until=500.0)}
+    plan = build_task_plan(
+        "facts",
+        methods=(blocked, unseen),
+        route_memory=memory,
+        now=100.0,
+        envelope=ResourceEnvelope(search_units=3, wall_seconds=20),
+        max_queries=3,
+    )
+    assert tuple(method.method_id for method in plan.methods) == ("feed",)
 
 
 def test_recovery_targets_gap_type():
