@@ -94,6 +94,7 @@ async def test_storage_diagnostic_verifies_round_trip_and_missing_artifacts(monk
 
 @pytest.mark.asyncio
 async def test_worker_http_diagnostic_routes_are_authenticated(monkeypatch):
+    monkeypatch.setattr(worker, "CloudflarePersistence", Persistence)
     env = SimpleNamespace(DB=DB(rows=[]), ENVIRONMENT="production", AUTH_TOKEN="secret", CONTROL_PLANE=Control())
     entry = worker.Default()
     entry.env = env
