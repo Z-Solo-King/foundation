@@ -1,6 +1,6 @@
 {
-  "schema": 4,
-  "purpose": "Canonical public-safe family ownership, dependency, governance, and change contract for the two active Z-Solo-King repositories.",
+  "schema": 5,
+  "purpose": "Canonical public-safe family ownership, dependency, governance, maintainability, AI-navigation, and change contract for the two active Z-Solo-King repositories.",
   "active_repositories": [
     "Z-Solo-King/foundation",
     "Z-Solo-King/operations"
@@ -67,6 +67,80 @@
     "generated_code": "Generated output is never a source of truth.",
     "legacy_code": "Historical snapshots are immutable references and cannot receive new business logic."
   },
+  "placement_rules": {
+    "rule": "Place code by responsibility, lifecycle, trust boundary, dependency direction, and testing ownership rather than by convenience or historical filename.",
+    "foundation_when": [
+      "behavior is public-safe and reusable without private credentials or protected policy",
+      "behavior is deterministic and stable enough to serve multiple private consumers",
+      "the contract must remain independently testable in public CI"
+    ],
+    "operations_when": [
+      "behavior requires protected policy, credentials, private topology, acquisition, private adapters, private evaluation, promotion, recovery, or orchestration",
+      "behavior is experimental, provider-specific, site-specific, or operationally volatile",
+      "behavior must remain private for trust or security reasons"
+    ],
+    "split_module_when": [
+      "two responsibilities have different owners, lifecycle, trust boundary, or test strategy",
+      "a module becomes difficult to reason about because unrelated policies or side effects share one execution path",
+      "splitting materially reduces change risk without creating another authority"
+    ],
+    "do_not_split_when": [
+      "the split would create artificial wrappers with no independent responsibility",
+      "it would duplicate shared state or force repeated orchestration between tiny files",
+      "the only benefit is shorter files rather than clearer ownership"
+    ],
+    "move_between_repositories_when": [
+      "the current repository violates the ownership boundary",
+      "the code can be relocated without exposing protected behavior or breaking a required public contract",
+      "parity/regression evidence proves the new owner is complete before the old implementation is removed"
+    ]
+  },
+  "maintainability": {
+    "principles": [
+      "one owner, one implementation",
+      "small cohesive modules rather than arbitrary fragmentation",
+      "typed contracts at boundaries",
+      "explicit invariants and failure semantics",
+      "side effects isolated from deterministic logic",
+      "compatibility shims remain thin and temporary",
+      "tests live with the owner and at cross-repository boundaries",
+      "historical code is immutable or clearly archived",
+      "comments explain why and constraints, not obvious syntax",
+      "every important subsystem has a compact machine-readable navigation entry"
+    ],
+    "change_safety": [
+      "measure before optimizing",
+      "change one canonical owner at a time",
+      "preserve rollback and recovery semantics for side effects",
+      "re-run affected boundary tests after moving code",
+      "remove old paths after parity evidence instead of carrying permanent duplicate implementations"
+    ]
+  },
+  "ai_navigation": {
+    "goal": "Make human and AI maintenance efficient, accurate, and low-token by resolving ownership before reading implementation detail.",
+    "navigation_order": [
+      "canonical family contract",
+      "repository AI_CODEMAP",
+      "relevant source-of-truth symbol/module",
+      "immediate consumers and tests",
+      "only then broader repository search when required"
+    ],
+    "token_efficiency": [
+      "prefer compact indexes, hashes, typed contracts, and bounded context over repeated full-file scans",
+      "retrieve only the architecture fragments relevant to the current task",
+      "do not copy repository documentation into runtime prompts when a canonical path/reference is sufficient",
+      "deduplicate repeated evidence before model reasoning under an explicit budget",
+      "separate navigation metadata from implementation payloads",
+      "use deterministic filters before semantic/model comparison"
+    ],
+    "accuracy": [
+      "never infer ownership from filename similarity when a canonical map exists",
+      "distinguish source of truth from compatibility/export paths",
+      "treat model knowledge as potentially stale for volatile facts",
+      "do not claim tool, file, repository, or execution access without evidence",
+      "preserve provenance and uncertainty across transformations"
+    ]
+  },
   "authority_matrix": {
     "public_contracts": "foundation",
     "deterministic_observed_data": "foundation",
@@ -106,7 +180,8 @@
     "run repository-local validation",
     "run the family overlap/ownership audit when structure or ownership changes",
     "remove obsolete compatibility or duplicate implementations after parity evidence",
-    "update this contract plus the affected codemap when ownership or dependency direction changes"
+    "update this contract plus the affected codemap when ownership or dependency direction changes",
+    "for maintenance/refactor requests, re-check placement, duplication, side effects, and AI navigation before declaring completion"
   ],
   "duplication_policy": {
     "required_checks": [
@@ -139,6 +214,7 @@
     "no duplicate deterministic public-core algorithm in Operations",
     "no new code in immutable legacy snapshots",
     "no private GitHub-hosted Actions dependency",
-    "no hidden third active repository or ownership boundary"
+    "no hidden third active repository or ownership boundary",
+    "architecture knowledge must reference canonical source rather than become a second architecture database"
   ]
 }
