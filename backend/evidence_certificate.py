@@ -47,6 +47,7 @@ def create_certificate(
     *,
     mapper_version: str | None = None,
     replay_fingerprint: str | None = None,
+    retention_state: str | None = None,
     temporal_scope_start: datetime | None = None,
     temporal_scope_end: datetime | None = None,
 ) -> EvidenceCertificate:
@@ -65,7 +66,7 @@ def create_certificate(
         source_family_id=observation.source_family_id,
         extractor_version=observation.extractor_version,
         mapper_version=mapper_version,
-        retention_state=observation.policy_state,
+        retention_state=retention_state,
         replay_fingerprint=replay_fingerprint,
     )
     certificate.validate()
@@ -83,23 +84,17 @@ def verify_certificate(
 
     if not certificate.structurally_valid:
         return False
-
     if observation.observation_id != certificate.observation_id:
         return False
-
     if observation.source_url != certificate.source_url:
         return False
-
     if sha256_text(observation.content) != certificate.content_hash:
         return False
-
     if observation.document_version_id != certificate.document_version_id:
         return False
     if observation.source_family_id != certificate.source_family_id:
         return False
     if observation.extractor_version != certificate.extractor_version:
-        return False
-    if observation.policy_state != certificate.retention_state:
         return False
 
     span = EvidenceSpan(
