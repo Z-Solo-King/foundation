@@ -90,5 +90,5 @@ def test_remaining_strategy_and_public_receipt_guards():
     assert not candidate_beats_baseline(exp, {"correctness": .95})
     StageReceipt("id", "req", "run", "method", "provider", "hash")
     obs = TokenEfficiencyObservation(10, 5, 2, 1, 100, 20, 2, accepted=True)
-    with pytest.raises(ValueError): TokenEfficiencyObservation(10, 5, 2, 1, 100, 20, 2, accepted=True, estimated_input_tokens=-1).validate()
+    with pytest.raises(ValueError): replace(obs, estimated_input_tokens=-1).validate()
     assert compare_efficiency(obs, obs, gate=EfficiencyGate())[0]
