@@ -17,32 +17,39 @@ jobs:
           version: 0.12.11
       - name: Run chatbot bridge tests
         run: uv run --with pytest --with pytest-asyncio pytest tests/test_chatbot_live_bridge.py tests/test_worker_diagnostics.py -q
-      - name: Resolve production Cloudflare account and D1 database
-        id: d1
-        shell: bash
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Verify deployed public Worker health
         run: |
           set -euo pipefail
-          test -n "${CLOUDFLARE_API_TOKEN}"
-          account_id="${CLOUDFLARE_ACCOUNT_ID:-}"
-          if [ -z "${account_id}" ]; then
-            accounts_json=$(curl -fsSL \
-              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-              -H 'Content-Type: application/json' \
-              'https://api.cloudflare.com/client/v4/accounts?per_page=100')
-            account_count=$(jq '.result | length' <<<"${accounts_json}")
-            test "${account_count}" = "1"
-            account_id=$(jq -r '.result[0].id' <<<"${accounts_json}")
-          fi
-          test -n "${account_id}" && test "${account_id}" != "null"
-          database_id=$(curl -fsSL \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+          curl -fsS https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/health | tee /tmp/health.json
+          jq -e '.ok == true' /tmp/health.json
+      - name: Verify deployed Cloudflare readiness and private binding
+        run: |
+          set -euo pipefail
+          status=$(curl -sS -o /tmp/readiness.json -w '%{http_code}' https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/readiness)
+          cat /tmp/readiness.json
+          test "$status" = "200"
+          jq -e '.ready == true and .control_plane == true' /tmp/readiness.json
+      - name: Execute deployed chatbot infrastructure verification
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "${AUTH_TOKEN}"
+          status=$(curl -sS -o /tmp/chatbot.json -w '%{http_code}' \
+            -X POST \
+            -H "Authorization: Bearer ${AUTH_TOKEN}" \
             -H 'Content-Type: application/json' \
-            "https://api.cloudflare.com/client/v4/accounts/${account_id}/d1/database" \
-            | jq -r '.result[] | select(.name == "research-intelligence") | .uuid' \
-            | head -n 1)
-          test -n "${database_id}" && test "${database_id}" != "null"
-          echo "account_id=${account_id}" >> "$GITHUB_OUTPUT"
-          echo "database_id=${database_id}" >> "$GITHUB_OUTPUT"
+            --data '{"operation":"infrastructure_verify"}' \
+            https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/api/v1/chatbot/diagnostic)
+          cat /tmp/chatbot.json
+          test "$status" = "200"
+          jq -e '
+            .ok == true and
+            .status == "ok" and
+            (.checks | map(select(.ok != true)) | length == 0) and
+            ([.checks[].name] | index("private_control_plane")) and
+            ([.checks[].name] | index("foundation_health")) and
+            ([.checks[].name] | index("cloudflare_readiness")) and
+            ([.checks[].name] | index("d1_research_run")) and
+            ([.checks[].name] | index("backblaze_b2_round_trip"))
+          ' /tmp/chatbot.json
