@@ -39,6 +39,11 @@ class Statement:
         return SimpleNamespace(results=self.value or [])
 
 
+class BrokenDB:
+    def prepare(self, sql):
+        raise RuntimeError("d1 unavailable")
+
+
 class Control:
     async def fetch(self, url, init=None):
         return SimpleNamespace(status=200, json=lambda: _json_value({"ok": True, "path": url}))
@@ -61,6 +66,20 @@ class Persistence:
         if key == "missing":
             return None
         return b"abc"
+
+    async def create_run(self, run_id, request):
+        return run_id
+
+    async def create_run_idempotent(self, request, idempotency_key):
+        return "run-idempotent"
+
+
+class BrokenPersistence(Persistence):
+    async def create_run(self, run_id, request):
+        raise RuntimeError("persistence down")
+
+    async def create_run_idempotent(self, request, idempotency_key):
+        raise RuntimeError("idempotency down")
 
 
 @pytest.mark.asyncio
@@ -93,7 +112,7 @@ async def test_storage_diagnostic_verifies_round_trip_and_missing_artifacts(monk
 
 
 @pytest.mark.asyncio
-async def test_worker_http_diagnostic_routes_are_authenticated(monkeypatch):
+async def test_worker_http_diagnostic_and_research_fail_closed_paths(monkeypatch):
     monkeypatch.setattr(worker, "CloudflarePersistence", Persistence)
     env = SimpleNamespace(DB=DB(rows=[]), ENVIRONMENT="production", AUTH_TOKEN="secret", CONTROL_PLANE=Control())
     entry = worker.Default()
@@ -101,10 +120,41 @@ async def test_worker_http_diagnostic_routes_are_authenticated(monkeypatch):
 
     unauthorized = await entry.fetch(Request("POST", "https://x/api/v1/chatbot/diagnostic", {"operation": "knowledge"}, {"Authorization": "Bearer bad"}))
     assert "unauthorized" in str(unauthorized)
+    invalid = await entry.fetch(Request("POST", "https://x/api/v1/chatbot/diagnostic", [], {"Authorization": "Bearer secret"}))
+    assert "invalid JSON object" in str(invalid)
     chatbot = await entry.fetch(Request("POST", "https://x/api/v1/chatbot/diagnostic", {"operation": "knowledge", "question": "Explain testing"}, {"Authorization": "Bearer secret"}))
     assert "ok" in str(chatbot)
 
+    storage_unauthorized = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {"run_id": "run-1"}, {"Authorization": "Bearer bad"}))
+    assert "unauthorized" in str(storage_unauthorized)
     no_run = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {}, {"Authorization": "Bearer secret"}))
     assert "run_id" in str(no_run)
     storage = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {"run_id": "run-1"}, {"Authorization": "Bearer secret"}))
     assert "artifacts" in str(storage)
+
+    missing = await entry.fetch(Request("GET", "https://x/api/v1/research/missing", None, {"Authorization": "Bearer secret"}))
+    assert "run not found" in str(missing)
+    persistence_error = worker.Default()
+    persistence_error.env = SimpleNamespace(DB=BrokenDB(), ENVIRONMENT="production", AUTH_TOKEN="secret", CONTROL_PLANE=Control())
+    failed_get = await persistence_error.fetch(Request("GET", "https://x/api/v1/research/run-1", None, {"Authorization": "Bearer secret"}))
+    assert "persistence failure" in str(failed_get)
+
+    invalid_research = await entry.fetch(Request("POST", "https://x/api/v1/research", [], {"Authorization": "Bearer secret"}))
+    assert "invalid JSON object" in str(invalid_research)
+    bad_shape = await entry.fetch(Request("POST", "https://x/api/v1/research", {"question": "x", "unexpected": True}, {"Authorization": "Bearer secret"}))
+    assert "unexpected" in str(bad_shape)
+    rejected = await entry.fetch(Request("POST", "https://x/api/v1/research", {"question": "x", "strict_zero_cost_only": False}, {"Authorization": "Bearer secret"}))
+    assert "strict $0 cost mode" in str(rejected)
+
+
+@pytest.mark.asyncio
+async def test_research_persistence_failures_and_idempotency(monkeypatch):
+    monkeypatch.setattr(worker, "CloudflarePersistence", BrokenPersistence)
+    entry = worker.Default()
+    entry.env = SimpleNamespace(DB=DB(), ENVIRONMENT="production", AUTH_TOKEN="secret", CONTROL_PLANE=Control())
+    request = Request("POST", "https://x/api/v1/research", {"question": "x", "source_urls": [], "strict_zero_cost_only": True}, {"Authorization": "Bearer secret"})
+    failed = await entry.fetch(request)
+    assert "execution/persistence failure" in str(failed)
+    request.headers["Idempotency-Key"] = "key-1"
+    failed_idempotent = await entry.fetch(request)
+    assert "execution/persistence failure" in str(failed_idempotent)
