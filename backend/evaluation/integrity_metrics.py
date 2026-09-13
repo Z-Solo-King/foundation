@@ -1,8 +1,4 @@
-"""Deterministic integrity metrics for poisoning and evidence-concentration detection.
-
-These metrics surface anomalies for evaluation and protected policy review. They never
-turn a metric into autonomous trust or promotion authority.
-"""
+"""Deterministic integrity metrics for poisoning and evidence-concentration detection."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -41,7 +37,6 @@ class IntegrityObservation:
             value = getattr(self, name)
             if value is not None and value < 0:
                 raise ValueError(f"{name} must be non-negative")
-        # Keep published-after-observed anomalies so the integrity metric can detect them.
 
 
 @dataclass(frozen=True)
@@ -82,7 +77,8 @@ def _concentration(values: Sequence[str]) -> float:
     minimum = 1.0 / len(set(values))
     if minimum >= 1.0:
         return 1.0
-    return min(1.0, max(0.0, (hhi - minimum) / (1.0 - minimum)))
+    score = (hhi - minimum) / (1.0 - minimum)
+    return 0.0 if abs(score) < 1e-12 else min(1.0, max(0.0, score))
 
 
 def calculate_integrity_metrics(observations: Sequence[IntegrityObservation]) -> IntegrityMetrics:
