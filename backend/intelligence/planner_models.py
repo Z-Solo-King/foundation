@@ -1,22 +1,20 @@
-"""Typed, immutable planner models used by the canonical research planner."""
 from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Mapping, Sequence
+from typing import Any, Mapping, Sequence
 
-class TaskMode(str, Enum):
-    FACT="fact"; SPECIFICATION="specification"; COMPARISON="comparison"; RECOMMENDATION="recommendation"; PRICE_AVAILABILITY="price_availability"; DIAGNOSIS="diagnosis"; TEMPORAL="temporal"; CONTRADICTION="contradiction"; COMMUNITY="community"; PRIMARY_SOURCE="primary_source"; ENTITY_RESOLUTION="entity_resolution"; DOCUMENT="document"; CODE="code"; DATA="data"; MEDIA="media"; MIXED="mixed"
-class FactType(str, Enum):
-    IDENTITY="identity"; AVAILABILITY="availability"; COMMERCIAL="commercial"; SPECIFICATION="specification"; CONFIGURATION="configuration"; TEMPORAL="temporal"; QUALITATIVE="qualitative"; NORMATIVE="normative"; RELATIONAL="relational"; DERIVED="derived"
-class CoverageState(str, Enum):
-    SATISFIED="satisfied"; PARTIAL="partial"; UNSUPPORTED="unsupported"; CONTRADICTED="contradicted"; STALE="stale"; INACCESSIBLE="inaccessible"; BLOCKED="blocked"; AMBIGUOUS="ambiguous"; DERIVED_ONLY="derived_only"
-class FailureClass(str, Enum):
-    EMPTY="empty"; NOT_FOUND="404"; FORBIDDEN="403"; RATE_LIMITED="429"; SERVER_ERROR="5xx"; CAPTCHA="captcha_challenge"; AUTH_REQUIRED="auth_required"; PARSER="parser_failure"; MALFORMED="malformed_payload"; TRANSPORT="transport_error"; ENCODING="encoding_error"; PARTIAL="partial_response"; UNKNOWN="unknown_failure"
-class PaginationKind(str, Enum):
-    PAGE="page"; OFFSET="offset"; CURSOR="cursor"; NEXT_LINK="next_link"; SITEMAP="sitemap"; ID_ENUMERATION="id_enumeration"
-class StopReason(str, Enum):
-    QUALITY_FLOOR="quality_floor_met"; LOW_INFORMATION_GAIN="low_information_gain"; BUDGET_EXHAUSTED="budget_exhausted"; WALL_TIME="wall_time_exhausted"; POLICY_BLOCKED="policy_blocked"; CAPABILITY_MISSING="capability_missing"; UNRESOLVED_CONTRADICTION="unresolved_contradiction"; USER_LIMIT="user_limit"; FAILED="failed"
-
+class TaskMode(Enum):
+    FACT="fact"; SPECIFICATION="specification"; COMPARISON="comparison"; RECOMMENDATION="recommendation"; PRICE_AVAILABILITY="price_availability"; TEMPORAL="temporal"; CONTRADICTION="contradiction"; DIAGNOSIS="diagnosis"; COMMUNITY="community"; PRIMARY_SOURCE="primary_source"; ENTITY_RESOLUTION="entity_resolution"; CODE="code"; DATA="data"; DOCUMENT="document"; MEDIA="media"; MIXED="mixed"
+class FactType(Enum):
+    IDENTITY="identity"; SPECIFICATION="specification"; COMMERCIAL="commercial"; AVAILABILITY="availability"; TEMPORAL="temporal"; RELATIONAL="relational"; QUALITATIVE="qualitative"; NORMATIVE="normative"
+class CoverageState(Enum):
+    SATISFIED="satisfied"; SUPPORTED="supported"; PARTIAL="partial"; UNSUPPORTED="unsupported"; CONTRADICTED="contradicted"; STALE="stale"; BLOCKED="blocked"; INACCESSIBLE="inaccessible"; AMBIGUOUS="ambiguous"
+class FailureClass(Enum):
+    TRANSPORT="transport"; TIMEOUT="timeout"; RATE_LIMIT="rate_limit"; AUTH="auth"; POLICY="policy"; PARSER="parser"; SCHEMA="schema"; EMPTY="empty"; NOT_FOUND="not_found"; BLOCKED="blocked"; QUOTA="quota"; FRESHNESS="freshness"; CONTRADICTION="contradiction"; LOW_YIELD="low_yield"
+class PaginationKind(Enum):
+    PAGE="page"; CURSOR="cursor"; OFFSET="offset"; TOKEN="token"; UNKNOWN="unknown"
+class StopReason(Enum):
+    QUALITY_FLOOR="quality_floor"; BUDGET_EXHAUSTED="budget_exhausted"; LOW_INFORMATION_GAIN="low_information_gain"; CONTRADICTION_OPEN="contradiction_open"; UNSATISFIED="unsatisfied"; COMPLETE="complete"
 @dataclass(frozen=True)
 class ClaimRequirement:
     claim_id: str; text: str; fact_type: FactType=FactType.IDENTITY; target_entities: tuple[str,...]=(); precision_required: str="normal"; freshness_seconds: int|None=None; minimum_evidence_strength: str="standard"; independence_required: int=0; contradiction_tolerance: str="must_resolve"; required_source_families: tuple[str,...]=()
@@ -35,9 +33,17 @@ class ResourceEnvelope:
     def validate(self)->None:
         for name,value in self.__dict__.items():
             if name=="recovery_reserve_ratio":
-                if not 0<=float(value)<1: raise ValueError("recovery_reserve_ratio must be in [0,1)")
-            elif int(value)<0: raise ValueError(f"{name} must be non-negative")
-        if self.concurrency<1: raise ValueError("concurrency must be positive")
+                ratio=float(value)
+                if ratio<0:
+                    raise ValueError("recovery_reserve_ratio must be in [0,1)")
+                if ratio>=1:
+                    raise ValueError("recovery_reserve_ratio must be in [0,1)")
+            else:
+                numeric=int(value)
+                if numeric<0:
+                    raise ValueError(f"{name} must be non-negative")
+        if self.concurrency<1:
+            raise ValueError("concurrency must be positive")
 @dataclass(frozen=True)
 class Coverage:
     claim_id: str; state: CoverageState; evidence_count: int=0; independent_origins: int=0; freshness_ok: bool=True; completeness: float=0.; reason: str=""
@@ -57,4 +63,5 @@ class TaskPlan:
 class SourceProfileHint:
     source_id: str; supported_representations: tuple[str,...]=(); preferred_method: str|None=None; pagination: str|None=None; known_failures: tuple[FailureClass,...]=(); concurrency_ceiling: int|None=None; health: float=1.; sample_size: int=0; last_success_at: str|None=None
 
-def as_sequence(value: Sequence[str]|None)->tuple[str,...]: return tuple(value or ())
+def as_sequence(value: Sequence[str]|None)->tuple[str,...]:
+    return tuple(value or ())
