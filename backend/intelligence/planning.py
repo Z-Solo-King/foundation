@@ -1,5 +1,5 @@
 from .contracts import ResearchContract, ResearchPlan
-from .planner_engine import build_task_plan
+from .planner_engine import create_task_plan
 from .planner_runtime import explain_plan, plan_fingerprint, topological_order, validate_dag
 
 DEFAULT_STAGES = (
@@ -14,24 +14,11 @@ DEFAULT_STAGES = (
 )
 
 
-def create_task_plan(contract: ResearchContract):
-    contract.validate()
-    return build_task_plan(
-        question=contract.question,
-        output_type=contract.output_type,
-        claims=contract.claims_required,
-        languages=contract.languages,
-        source_families=contract.source_families_required,
-        envelope=contract.resource_envelope,
-        max_queries=contract.max_search_actions,
-    )
-
-
 def create_plan(contract: ResearchContract) -> ResearchPlan:
     """Compatibility DTO plus canonical task plan metadata.
 
     Existing callers keep receiving ResearchPlan while richer callers can use
-    create_task_plan() to obtain the typed execution plan.
+    planner_engine.create_task_plan() to obtain the typed execution plan.
     """
     task = create_task_plan(contract)
     stages = DEFAULT_STAGES
