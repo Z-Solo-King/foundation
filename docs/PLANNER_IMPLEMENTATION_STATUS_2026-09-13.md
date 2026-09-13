@@ -7,17 +7,18 @@ This record ties the feature-first planner ledger to code without pretending the
 ### Contract and core models
 - Expanded ResearchContract with output, claim, freshness, language, source-family, evidence, contradiction, search/browser/AI and wall-time controls.
 - Typed task modes and fact types.
-- Typed claim requirements.
+- Typed claim and field requirements.
 - Coverage, failure, pagination and stop-state taxonomies.
 - Method candidates, source plans, actions and resource envelopes.
 
 ### Deterministic planning
 - Task classification with specification-task precedence.
 - Claim decomposition.
-- Bounded query portfolio generation.
+- Bounded query portfolio generation with language/source-family variants.
 - Query purpose/source-family/claim targeting.
 - Deterministic acquisition method utility scoring.
 - Source-profile-aware method ranking hook.
+- Field-preference-aware method ranking without bypassing normal utility scoring.
 - Gap-specific recovery actions.
 - Field-aware representation route scoring contracts.
 - Bounded pagination planning with expected-total limits.
@@ -27,10 +28,10 @@ This record ties the feature-first planner ledger to code without pretending the
 - Explicit action dependency DAG.
 - Cycle and missing-dependency validation.
 - Deterministic topological order.
-- Plan serialization/fingerprint.
+- Deterministic canonical plan serialization/fingerprint.
 - Explain-plan diagnostics.
 - Basic hard/soft stop logic.
-- Immutable replay bundle with contract/plan/context fingerprints.
+- Immutable replay bundle with contract/plan/context fingerprints including quota/freshness context.
 - Context-drift compatibility checks.
 
 ### Adaptive planning and learning
@@ -44,16 +45,17 @@ This record ties the feature-first planner ledger to code without pretending the
 ### Compatibility and boundary hardening
 - Existing `create_plan()` compatibility facade preserved.
 - Canonical `create_task_plan()` lives in `planner_engine`; the compatibility module delegates to it.
+- Field requirements now flow from ResearchContract into TaskPlan/action field IDs.
 - Legacy Observation positional constructors preserved while provenance/hash validation remains fail-closed.
 - CPython test bootstrap handles environments where `workers-py` is installed but no normal `workers` module exists.
 
 ## Still required before planner roadmap is complete
 
-1. Integrate field requirements directly into ResearchContract/TaskPlan and connect route selection to acquisition consumers.
+1. Connect field-aware route selection directly to the real acquisition consumers and source-route memory.
 2. Integrate pagination plans into actual acquisition execution, completeness certificates and source-level route memory.
-3. Add adaptive depth/de-escalation, recovery reserve accounting and negative route memory.
+3. Add adaptive depth/de-escalation, recovery reserve accounting and negative route memory/quarantine/cooldown.
 4. Bind replay bundles to canonical capability/source/policy version records and deterministic replay artifacts.
-5. Connect planner reservations to the protected runtime resource authority; planner-supplied envelopes must not become budget authority.
+5. Connect planner reservations to the protected Operations runtime resource authority; planner-supplied envelopes must not become budget authority. Operations PR #53 provides the adapter but remains unmerged and currently has no historical test CI until its new workflow is accepted.
 6. Build the planner golden corpus and property/metamorphic/differential/fuzz/replay suites; expand toward the 150–300 production corpus with adversarial cases.
 7. Integrate EvidenceCertificate, calibrated semantic entailment, independence, freshness, research-regret and poisoning/integrity metrics end-to-end.
 8. Implement shadow/canary planner strategy lifecycle, rollback and verified strategy-memory promotion.
