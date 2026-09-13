@@ -2,27 +2,41 @@
 
 Public contract core for the Z-Solo-King GitHub family.
 
-This repository contains public-safe contracts, schemas, reusable deterministic primitives, and the public CI evidence path. Protected execution, governance, evaluation holdouts, credentials, and promotion authority live outside this public repository.
+This repository contains public-safe contracts, schemas, reusable deterministic primitives, the public Worker boundary, and the public CI evidence path. Protected execution, governance, evaluation holdouts, credentials, and promotion authority live outside this public repository.
 
 ## Documentation first
 
-`docs/DOCUMENTATION_INDEX.md` is the canonical navigation contract for humans and AI agents working on Foundation. Start there when entering an unfamiliar session.
+For architecture continuity, the authoritative project-level documents are maintained in private Operations because they include protected planning/status context. The current order is:
 
-The recommended order is:
+1. `AI_CODEMAP.json`
+2. `docs/FAMILY_CONTRACT.json`
+3. `docs/FAMILY_ARCHITECTURE.md`
+4. `docs/PUBLIC_DETERMINISTIC_CORE.md`
+5. the relevant subsystem/workflow documentation
+6. `operations/docs/PROJECT_MASTER_PLAN_2026-09-13.md` when private repository access is available
+7. `operations/docs/PROJECT_STATUS_DONE_VS_LEFT_2026-09-13.md` when private repository access is available
 
-1. `README.md`
-2. `AI_CODEMAP.json`
-3. `docs/DOCUMENTATION_INDEX.md`
-4. `docs/FAMILY_CONTRACT.json`
-5. `docs/FAMILY_ARCHITECTURE.md`
-6. `docs/PUBLIC_DETERMINISTIC_CORE.md`
-7. the relevant subsystem/workflow documentation
+Historical chat archives are provenance, not a replacement for current repository source-of-truth documents.
 
 ## Public deterministic core
 
 `foundation_core/` is the canonical public implementation for deterministic observed-data routing, normalization, plausibility checks, and product mapping. See `docs/PUBLIC_DETERMINISTIC_CORE.md` for the exact boundary and maintenance rules.
 
 The private Operations repository consumes this package at a pinned public revision. Private compatibility imports may remain temporarily, but public code is the source of truth and must not be forked privately.
+
+## Public Worker boundary
+
+The public Worker is intentionally standalone with respect to readiness and public diagnostics:
+
+- `/health` is public runtime health;
+- `/readiness` verifies public runtime plus public D1 health and does not require the private control plane;
+- the public chatbot diagnostic exposes only the bounded public infrastructure verification operation;
+- no public route may dispatch arbitrary private control-plane operations;
+- private Operations may still call Foundation through its protected Service Binding when an authorized private verification path requires it.
+
+## Current storage boundary
+
+Foundation uses D1 for compact operational state and Backblaze B2 for bounded artifacts/object storage. The former R2 design is not the current artifact-store decision and must not be restored without a fresh cross-repository architecture/cost decision.
 
 ## AI / human navigation
 
