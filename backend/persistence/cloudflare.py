@@ -11,6 +11,14 @@ class IdempotencyConflictError(RuntimeError):
     """Raised when an idempotency key is reused for a different request."""
 
 
+_ALLOWED_TRANSITIONS = {
+    "planned": frozenset({"planned", "running", "failed"}),
+    "running": frozenset({"running", "completed", "failed"}),
+    "completed": frozenset({"completed"}),
+    "failed": frozenset({"failed", "running"}),
+}
+
+
 def request_fingerprint(request) -> str:
     payload = {
         "question": request.question,
@@ -49,6 +57,8 @@ class CloudflarePersistence:
         """Atomically claim an idempotency key and create its stable run."""
         if not idempotency_key or not idempotency_key.strip():
             raise ValueError("idempotency_key must not be empty")
+        if len(idempotency_key) > 256:
+            raise ValueError("idempotency_key exceeds maximum length")
         request_hash = request_fingerprint(request)
         run_id = f"run-{hashlib.sha256(idempotency_key.encode()).hexdigest()[:32]}"
         now = datetime.now(timezone.utc).isoformat()
@@ -87,8 +97,16 @@ class CloudflarePersistence:
         ).bind(run_id).first()
 
     async def set_run_status(self, run_id, status):
-        if status not in {"planned", "running", "completed", "failed"}:
+        if status not in _ALLOWED_TRANSITIONS:
             raise ValueError("invalid run status")
+        current = await self.get_run(run_id)
+        if not current:
+            raise ValueError(f"run {run_id} not found")
+        current_status = current.get("status") if isinstance(current, dict) else getattr(current, "status", None)
+        if current_status not in _ALLOWED_TRANSITIONS:
+            raise ValueError("stored run status is invalid")
+        if status not in _ALLOWED_TRANSITIONS[current_status]:
+            raise ValueError(f"invalid run transition: {current_status} -> {status}")
         await self.env.DB.prepare(
             "UPDATE research_runs SET status = ?, updated_at = ? WHERE run_id = ?"
         ).bind(status, datetime.now(timezone.utc).isoformat(), run_id).run()
