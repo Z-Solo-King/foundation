@@ -73,6 +73,8 @@ def route_activation_allowed(
 ) -> bool:
     """Allow activation only from a fresh verified limit observation with capacity."""
     guard.validate()
+    if now < 0:
+        return False
     if observation is None:
         return False
     observation.validate()
