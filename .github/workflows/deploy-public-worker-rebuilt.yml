@@ -18,21 +18,17 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v6.0.0
         with:
           node-version: 22
-      - name: Discover Cloudflare account
+      - name: Resolve Cloudflare account ID
         id: cloudflare
         env:
+          SECRET_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VARIABLE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
           test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo 'Missing CLOUDFLARE_API_TOKEN'; exit 1; }
-          accounts=$(curl -fsS \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-            -H 'Content-Type: application/json' \
-            'https://api.cloudflare.com/client/v4/accounts?per_page=50')
-          echo "$accounts" | jq -e '.success == true and (.result | length) >= 1' >/dev/null
-          account_count=$(jq '.result | length' <<<"$accounts")
-          echo "authorized Cloudflare accounts discovered: $account_count"
-          database_account_id=$(jq -r '.result[0].id // empty' <<<"$accounts")
-          test -n "$database_account_id"
-          echo "account_id=$database_account_id" >> "$GITHUB_OUTPUT"
+          account_id="${SECRET_ACCOUNT_ID:-${VARIABLE_ACCOUNT_ID:-}}"
+          echo "Cloudflare account ID configured=$( [[ -n "$account_id" ]] && echo yes || echo no )"
+          test -n "$account_id" || { echo 'Cloudflare account ID is not configured as a repository secret or variable'; exit 1; }
+          printf 'account_id=%s\n' "$account_id" >> "$GITHUB_OUTPUT"
