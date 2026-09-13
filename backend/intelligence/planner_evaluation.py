@@ -8,6 +8,18 @@ from dataclasses import dataclass
 from typing import Mapping
 
 
+QUALITY_METRICS = (
+    "task_coverage",
+    "claim_coverage",
+    "retrieval_recall",
+    "citation_entailment",
+    "primary_source_coverage",
+    "independent_origin_coverage",
+    "contradiction_recall",
+    "freshness",
+)
+
+
 @dataclass(frozen=True)
 class PlannerMetrics:
     task_coverage: float = 0.0
@@ -32,20 +44,27 @@ def safe_region(metrics: PlannerMetrics, floors: Mapping[str, float], maximums: 
     return True
 
 
+def quality_non_regression(baseline: PlannerMetrics, candidate: PlannerMetrics, tolerance: float = 0.0) -> bool:
+    return all(
+        getattr(candidate, metric) + tolerance >= getattr(baseline, metric)
+        for metric in QUALITY_METRICS
+    )
+
+
 def candidate_improves(baseline: PlannerMetrics, candidate: PlannerMetrics,
                        floors: Mapping[str, float]) -> bool:
     if not safe_region(candidate, floors):
         return False
-    quality = (candidate.task_coverage - baseline.task_coverage
-               + candidate.claim_coverage - baseline.claim_coverage
-               + candidate.retrieval_recall - baseline.retrieval_recall
-               + candidate.citation_entailment - baseline.citation_entailment
-               + candidate.primary_source_coverage - baseline.primary_source_coverage
-               + candidate.independent_origin_coverage - baseline.independent_origin_coverage
-               + candidate.contradiction_recall - baseline.contradiction_recall
-               + candidate.freshness - baseline.freshness)
-    efficiency = ((baseline.latency - candidate.latency)
-                  + (baseline.resource_consumption - candidate.resource_consumption)
-                  + (candidate.evidence_gain_per_unit - baseline.evidence_gain_per_unit))
-    regret = candidate.research_regret <= baseline.research_regret
-    return quality >= 0 and efficiency >= 0 and regret
+    if not quality_non_regression(baseline, candidate):
+        return False
+    quality_gain = sum(getattr(candidate, metric) - getattr(baseline, metric) for metric in QUALITY_METRICS)
+    efficiency_gain = (
+        baseline.latency - candidate.latency
+        + baseline.resource_consumption - candidate.resource_consumption
+        + candidate.evidence_gain_per_unit - baseline.evidence_gain_per_unit
+    )
+    regret_ok = candidate.research_regret <= baseline.research_regret
+    return (quality_gain > 0 or efficiency_gain > 0) and efficiency_gain >= 0 and regret_ok
+
+
+__all__ = ["PlannerMetrics", "QUALITY_METRICS", "safe_region", "quality_non_regression", "candidate_improves"]
