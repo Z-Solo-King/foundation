@@ -1,0 +1,14 @@
+name: scheduler-probe
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "public runner scheduler probe ${GITHUB_SHA}"
