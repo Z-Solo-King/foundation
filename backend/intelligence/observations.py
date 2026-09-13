@@ -36,6 +36,7 @@ class Observation:
     extractor_version: str | None = None
 
     def __init__(self, observation_id: str, *args, **kwargs):
+        source_id = source_url = content = observed_at = None
         positional = tuple(args)
         if positional:
             if any(key in kwargs for key in ("source_url", "content", "source_id", "observed_at")):
@@ -45,9 +46,6 @@ class Observation:
             elif len(positional) == 3:
                 source_url, content, observed_at = positional
             elif len(positional) == 2 and kwargs:
-                # Keyword-only enrichment (e.g. hash/quality) may accompany the
-                # compact source_url/content form; bare 2-argument construction
-                # remains rejected for legacy compatibility.
                 source_url, content = positional
             else:
                 raise TypeError("Observation expects 4 or 5 total positional arguments")
@@ -56,26 +54,25 @@ class Observation:
             source_url = kwargs.pop("source_url", None)
             content = kwargs.pop("content", None)
             observed_at = kwargs.pop("observed_at", None)
-        if positional and len(positional) == 4:
-            kwargs = dict(kwargs)
-        elif positional and len(positional) == 3:
-            kwargs = dict(kwargs)
+        if positional and len(positional) == 3:
             source_id = None
-        else:
-            kwargs = dict(kwargs)
-            source_id = locals().get("source_id", None)
+        observed_at = observed_at or datetime.now(timezone.utc)
         if source_url is None or content is None:
             raise TypeError("source_url and content are required")
-        observed_at = observed_at or datetime.now(timezone.utc)
         object.__setattr__(self, "observation_id", observation_id)
         object.__setattr__(self, "source_url", source_url)
         object.__setattr__(self, "content", content)
         object.__setattr__(self, "observed_at", observed_at)
-        for name in ("source_id", "source_family_id", "document_version_id", "retrieved_at", "published_at",
-                     "author", "language", "title", "structured_data", "evidence_spans", "extraction_method",
-                     "acquisition_method", "raw_artifact_ref", "content_sha256", "normalized_sha256", "quality",
-                     "provenance", "policy_state", "extractor_version"):
-            value = kwargs.pop(name, locals().get(name) if name == "source_id" else None)
+        defaults = {
+            "source_id": source_id, "source_family_id": None, "document_version_id": None,
+            "retrieved_at": None, "published_at": None, "author": None, "language": None,
+            "title": None, "structured_data": None, "evidence_spans": (), "extraction_method": None,
+            "acquisition_method": None, "raw_artifact_ref": None, "content_sha256": None,
+            "normalized_sha256": None, "quality": None, "provenance": {}, "policy_state": None,
+            "extractor_version": None,
+        }
+        for name, default in defaults.items():
+            value = kwargs.pop(name, default)
             if name == "evidence_spans":
                 value = tuple(value or ())
             if name == "provenance":
