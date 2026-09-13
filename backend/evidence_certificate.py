@@ -79,28 +79,26 @@ def verify_certificate(
 ) -> bool:
     try:
         certificate.validate()
+        if not certificate.structurally_valid:
+            return False
+        if observation.observation_id != certificate.observation_id:
+            return False
+        if observation.source_url != certificate.source_url:
+            return False
+        if sha256_text(observation.content) != certificate.content_hash:
+            return False
+        if observation.document_version_id != certificate.document_version_id:
+            return False
+        if observation.source_family_id != certificate.source_family_id:
+            return False
+        if observation.extractor_version != certificate.extractor_version:
+            return False
+
+        span = EvidenceSpan(
+            observation_id=certificate.observation_id,
+            start=certificate.span_start,
+            end=certificate.span_end,
+        )
+        return span.text_from(observation) == certificate.span_text
     except ValueError:
         return False
-
-    if not certificate.structurally_valid:
-        return False
-    if observation.observation_id != certificate.observation_id:
-        return False
-    if observation.source_url != certificate.source_url:
-        return False
-    if sha256_text(observation.content) != certificate.content_hash:
-        return False
-    if observation.document_version_id != certificate.document_version_id:
-        return False
-    if observation.source_family_id != certificate.source_family_id:
-        return False
-    if observation.extractor_version != certificate.extractor_version:
-        return False
-
-    span = EvidenceSpan(
-        observation_id=certificate.observation_id,
-        start=certificate.span_start,
-        end=certificate.span_end,
-    )
-
-    return span.text_from(observation) == certificate.span_text
