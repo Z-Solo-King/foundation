@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Mapping
 
-from .planner_models import FailureClass, SourceProfileHint
+from .planner_models import FailureClass, SourceProfileHint, coerce_failure_class
 
 
 @dataclass(frozen=True)
@@ -38,13 +38,17 @@ class SourceProfile:
     version: str = "1"
 
     def hint(self) -> SourceProfileHint:
-        failures = tuple(FailureClass(k) for k in self.failure_by_class if k in {f.value for f in FailureClass})
+        failures: list[FailureClass] = []
+        for raw in self.failure_by_class:
+            normalized = coerce_failure_class(raw)
+            if normalized is not None and normalized not in failures:
+                failures.append(normalized)
         return SourceProfileHint(
             source_id=self.source_id,
             supported_representations=self.supported_representations,
             preferred_method=self.preferred_method,
             pagination=self.pagination,
-            known_failures=failures,
+            known_failures=tuple(failures),
             concurrency_ceiling=self.concurrency_ceiling,
             health=self.health,
             sample_size=self.sample_size,
