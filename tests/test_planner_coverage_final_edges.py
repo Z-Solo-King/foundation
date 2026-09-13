@@ -10,7 +10,7 @@ from backend.intelligence.observations import Observation
 from backend.intelligence.pagination import PaginationKind, PaginationState
 from backend.intelligence.planner_engine import apply_source_profiles, build_task_plan, classify_task, create_task_plan, decompose_claims, generate_query_portfolio, infer_fact_type
 from backend.intelligence.planner_evaluation import PlannerMetrics, candidate_improves
-from backend.intelligence.planner_models import ClaimRequirement, FactType, MethodCandidate, ResourceEnvelope, SourceProfileHint, StopReason, TaskMode
+from backend.intelligence.planner_models import Action, ClaimRequirement, FactType, MethodCandidate, ResourceEnvelope, SourceProfileHint, StopReason, TaskMode
 from backend.intelligence.planner_runtime import choose_stop, explain_plan, plan_fingerprint, reserve, topological_order
 from backend.intelligence.source_profiles import SourceProfile
 from backend.intelligence.strategy_evaluation import StrategyExperiment, StrategyMetrics, candidate_beats_baseline
@@ -38,7 +38,7 @@ def test_remaining_contract_validation_and_empty_optional_paths():
     with pytest.raises(ValueError): ResearchContract("q", field_requirements=(FieldRequirement("x", ""),)).validate()
     with pytest.raises(ValueError): ResearchContract("q", field_requirements=(FieldRequirement("x", "x"), FieldRequirement("x", "x2"))).validate()
     assert ResearchContract("q", max_wall_time=0, resource_envelope=ResourceEnvelope(search_units=12)).validate() is None
-    assert ResearchContract("q", resource_envelope=ResourceEnvelope(recovery_reserve_ratio=0)).validate() is None
+    assert ResearchContract("q", max_search_actions=1, resource_envelope=ResourceEnvelope(search_units=1, recovery_reserve_ratio=0)).validate() is None
 
 
 def test_remaining_planner_branches_and_query_budget():
@@ -133,7 +133,8 @@ def test_remaining_runtime_stop_and_resource_paths():
     original = runtime.validate_dag
     try:
         runtime.validate_dag = lambda actions: None
-        with pytest.raises(ValueError): topological_order((plan.actions[0],))
+        cyclic = (Action("a", "x", "x", prerequisites=("b",)), Action("b", "x", "x", prerequisites=("a",)))
+        with pytest.raises(ValueError): topological_order(cyclic)
     finally:
         runtime.validate_dag = original
 
@@ -146,7 +147,7 @@ def test_remaining_stage_token_run_and_strategy_guards():
     StageReceipt("id", "req", "run", "method", "provider", "hash")
     obs = TokenEfficiencyObservation(10, 5, 2, 1, 100, 20, 2, accepted=True)
     with pytest.raises(ValueError): replace(obs, estimated_input_tokens=-1).validate()
-    bad = replace(obs, estimated_input_tokens=inf, total_estimated_tokens=inf)
+    bad = replace(obs, estimated_input_tokens=inf, estimated_output_tokens=inf)
     assert not compare_efficiency(obs, bad, gate=EfficiencyGate())[0]
     assert compare_efficiency(obs, obs, gate=EfficiencyGate())[0]
     assert _run_record().validate() is None
