@@ -86,6 +86,10 @@ def test_enriched_certificate_rejects_temporal_and_identity_guards():
     with pytest.raises(ValueError):
         replace(certificate, retention_state="x" * 4097).validate()
     with pytest.raises(ValueError):
+        replace(certificate, observation_id="").validate()
+    with pytest.raises(ValueError):
+        replace(certificate, source_url="").validate()
+    with pytest.raises(ValueError):
         verify_certificate(observation, replace(certificate, span_end=99_999))
     assert verify_certificate(observation, replace(certificate, span_start=-1)) is False
     assert verify_certificate(observation, replace(certificate, observation_id="other")) is False
