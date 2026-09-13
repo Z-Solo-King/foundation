@@ -62,6 +62,8 @@ def test_input_snapshot_rejects_missing_or_duplicate_benchmark_ids():
     with pytest.raises(ValueError):
         replace(make_inputs(), benchmark_ids=("case-1", "case-1")).validate()
     with pytest.raises(ValueError):
+        replace(make_inputs(), benchmark_ids=("case-1", "")).validate()
+    with pytest.raises(ValueError):
         replace(make_inputs(), candidate_fingerprint="").validate()
 
 
