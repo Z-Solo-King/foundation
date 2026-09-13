@@ -17,7 +17,7 @@ class Request:
 
 
 @pytest.mark.asyncio
-async def test_public_chatbot_infrastructure_route(monkeypatch):
+async def test_public_chatbot_infrastructure_route_requires_auth(monkeypatch):
     async def verify(env):
         return {"ok": True, "status": "ok", "checks": [{"name": "public_chatbot", "ok": True}]}, 200
 
@@ -28,10 +28,14 @@ async def test_public_chatbot_infrastructure_route(monkeypatch):
         AUTH_TOKEN="secret",
         CONTROL_PLANE=None,
     )
-    response = await entry.fetch(
+
+    unauthorized = await entry.fetch(Request({"operation": "infrastructure_verify_public_test"}))
+    assert "unauthorized" in str(unauthorized).lower()
+
+    authorized = await entry.fetch(
         Request(
             {"operation": "infrastructure_verify_public_test"},
             {"Authorization": "Bearer secret"},
         )
     )
-    assert "ok" in str(response)
+    assert "ok" in str(authorized)
