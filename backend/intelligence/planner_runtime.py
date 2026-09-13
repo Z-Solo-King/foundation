@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import asdict, dataclass
+from math import ceil
 from typing import Iterable, Mapping, Sequence
 
 from .planner_models import Action, ResourceEnvelope, StopReason, TaskPlan
@@ -76,14 +77,44 @@ def _add(a: ResourceEnvelope, b: ResourceEnvelope) -> ResourceEnvelope:
     return ResourceEnvelope(**values)
 
 
-def reserve(available: ResourceEnvelope, request: ResourceEnvelope) -> ResourceEnvelope:
+def recovery_holdback(available: ResourceEnvelope) -> ResourceEnvelope:
+    """Compute the protected recovery budget from the envelope's declared reserve ratio."""
+    available.validate()
+    ratio = available.recovery_reserve_ratio
+    values: dict[str, int | float] = {}
+    for name in available.__dataclass_fields__:
+        if name in {"recovery_reserve_ratio", "concurrency"}:
+            values[name] = getattr(available, name)
+            continue
+        values[name] = ceil(getattr(available, name) * ratio)
+    return ResourceEnvelope(**values)
+
+
+def operational_capacity(available: ResourceEnvelope) -> ResourceEnvelope:
+    """Return budget available for ordinary work after protecting recovery capacity."""
+    holdback = recovery_holdback(available)
+    values: dict[str, int | float] = {}
+    for name in available.__dataclass_fields__:
+        if name == "recovery_reserve_ratio":
+            values[name] = available.recovery_reserve_ratio
+            continue
+        if name == "concurrency":
+            values[name] = available.concurrency
+            continue
+        values[name] = max(0, getattr(available, name) - getattr(holdback, name))
+    return ResourceEnvelope(**values)
+
+
+def reserve(available: ResourceEnvelope, request: ResourceEnvelope, allow_recovery: bool = False) -> ResourceEnvelope:
+    """Reserve resources; ordinary work cannot consume the protected recovery reserve."""
     available.validate(); request.validate()
+    capacity = available if allow_recovery else operational_capacity(available)
     fields = {}
     for name in available.__dataclass_fields__:
         if name == "recovery_reserve_ratio":
             fields[name] = available.recovery_reserve_ratio
             continue
-        if getattr(request, name) > getattr(available, name):
+        if getattr(request, name) > getattr(capacity, name):
             raise ValueError(f"insufficient resource: {name}")
         fields[name] = getattr(available, name) - getattr(request, name)
     return ResourceEnvelope(**fields)
