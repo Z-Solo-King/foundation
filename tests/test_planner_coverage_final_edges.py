@@ -131,6 +131,7 @@ def test_remaining_evaluation_receipt_and_planner_evaluation_guards():
     faster = replace(base_metrics, latency=.5)
     assert candidate_improves(base_metrics, faster, {"task_coverage": .7})
     assert safe_region(base_metrics, {"task_coverage": .7}, {"latency": 2.0})
+    assert not safe_region(base_metrics, {"task_coverage": .7}, {"latency": .5})
 
 
 def test_remaining_runtime_stop_and_resource_paths():
@@ -154,6 +155,7 @@ def test_remaining_stage_token_run_and_strategy_guards():
     assert not candidate_beats_baseline(exp, {"correctness": .95})
     with pytest.raises(ValueError): StageReceipt("id", "req", "run", "method", "provider", "hash", parent_receipt_fingerprint=" ")
     with pytest.raises(ValueError): StageReceipt("id", "req", "run", "method", "provider", "hash", attempt=0)
+    with pytest.raises(ValueError): StageReceipt("id", "req", "run", "method", "x" * 65, "hash")
     StageReceipt("id", "req", "run", "method", "provider", "hash")
     obs = TokenEfficiencyObservation(10, 5, 2, 1, 100, 20, 2, accepted=True)
     with pytest.raises(ValueError): replace(obs, estimated_input_tokens=-1).validate()
@@ -163,3 +165,4 @@ def test_remaining_stage_token_run_and_strategy_guards():
     assert _run_record().validate() is None
     with pytest.raises(ValueError): _run_record(stage_request_fingerprint="other").validate()
     with pytest.raises(ValueError): ResourceEnvelope(recovery_reserve_ratio=.5, search_units=1, concurrency=0).validate()
+    with pytest.raises(ValueError): ResourceEnvelope(recovery_reserve_ratio=-.01).validate()
