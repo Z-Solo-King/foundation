@@ -69,8 +69,10 @@ async def _control_plane_chatbot_diagnostic(env, payload):
     if control is None:
         return {"ok": False, "error": "control plane service binding is unavailable"}, 503
     try:
+        operation = str(payload.get("operation", ""))
+        path = "/v1/diagnostics/infrastructure" if operation == "infrastructure_verify" else "/v1/diagnostics/chatbot"
         response = await control.fetch(
-            "https://control-plane/v1/diagnostics/chatbot",
+            f"https://control-plane{path}",
             {"method": "POST", "headers": {"Content-Type": "application/json"}, "body": json.dumps(payload)},
         )
         body = await response.json()
@@ -142,7 +144,6 @@ async def _ingest_sources(env, run_id, req):
               source_id = excluded.source_id,
               retrieved_at = excluded.retrieved_at,
               etag = excluded.etag,
-              content_hash = excluded.content_hash,
               artifact_ref = excluded.artifact_ref,
               content_length = excluded.content_length"""
         ).bind(version_id, source_id, now, fetched.etag, content_hash, artifact_ref, len(fetched.content)).run()
