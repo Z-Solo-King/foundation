@@ -32,8 +32,11 @@ def test_route_activation_rejects_wrong_identity_unknown_capacity_and_bad_guard(
     assert not route_activation_allowed(guard, replace(observation(), available_units=None), now=100)
     with pytest.raises(ValueError): RouteActivationGuard("", "search").validate()
     with pytest.raises(ValueError): RouteActivationGuard("search-api", "search", required_units=0).validate()
+    with pytest.raises(ValueError): RouteActivationGuard("search-api", "search", max_limit_age_seconds=-1).validate()
     with pytest.raises(ValueError): ServiceLimitObservation("", "search", 1, 1, source="p", observation_id="o").validate()
     with pytest.raises(ValueError): replace(observation(), observed_at=-1).validate()
+    with pytest.raises(ValueError): replace(observation(), available_units=-1).validate()
+    with pytest.raises(ValueError): replace(observation(), reset_at=-1).validate()
     with pytest.raises(ValueError): replace(observation(), reset_at=50).validate()
     with pytest.raises(ValueError): replace(observation(), confidence="verified").validate()
 
@@ -49,3 +52,5 @@ def test_freshness_guard_and_reconciliation():
     contradictory = reconcile_limit(previous, same_time_conflict)
     assert contradictory.confidence is LimitConfidence.CONTRADICTORY
     with pytest.raises(ValueError): reconcile_limit(previous, replace(current, service_id="other"))
+    current_unknown = replace(previous, available_units=None, observed_at=101, observation_id="obs-3")
+    assert reconcile_limit(previous, current_unknown).confidence is LimitConfidence.VERIFIED
