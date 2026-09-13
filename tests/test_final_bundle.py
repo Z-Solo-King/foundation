@@ -119,3 +119,5 @@ def test_artifact_manifest_kinds_and_guards():
         ArtifactManifest("a", "x", "txt", "0" * 64, manifest.created_at, "r", retention_seconds=-1).validate()
     with pytest.raises(ValueError):
         ArtifactManifest("a", "x", "txt", "0" * 64, manifest.created_at, "r", schema_version="").validate()
+    with pytest.raises(ValueError):
+        ArtifactManifest("a", "x", "txt", "0" * 64, manifest.created_at, "r", kind="data").validate()
