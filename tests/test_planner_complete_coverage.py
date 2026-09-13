@@ -34,7 +34,7 @@ from backend.intelligence.planner_models import (
     TaskMode,
     as_sequence,
 )
-from backend.intelligence.planner_runtime import BudgetLedger, _add, canonical_json, choose_stop, reserve, topological_order, validate_dag
+from backend.intelligence.planner_runtime import BudgetLedger, _add, canonical_json, choose_stop, operational_capacity, recovery_holdback, reserve, topological_order, validate_dag
 from backend.intelligence.replay import make_replay_bundle, replay_compatible
 from backend.intelligence.source_profiles import MethodObservation, SourceProfile, update_profile
 from backend.intelligence.strategy_evaluation import StrategyExperiment, StrategyMetrics, candidate_beats_baseline
@@ -108,7 +108,11 @@ def test_resource_runtime_and_dag_edges():
     assert BudgetLedger.empty().reserved.search_units == 0
     assert _add(env, ResourceEnvelope(search_units=1)).search_units == 6
     assert reserve(env, ResourceEnvelope(search_units=2)).search_units == 3
+    assert recovery_holdback(env).search_units == 1
+    assert operational_capacity(env).search_units == 4
+    assert reserve(env, ResourceEnvelope(search_units=5), allow_recovery=True).search_units == 0
     with pytest.raises(ValueError): reserve(env, ResourceEnvelope(search_units=6))
+    with pytest.raises(ValueError): reserve(env, ResourceEnvelope(search_units=5))
     with pytest.raises(ValueError): validate_dag((Action("a", "x", "x", prerequisites=("missing",)),))
     with pytest.raises(ValueError): validate_dag((Action("a", "x", "x"), Action("a", "x", "x")))
     with pytest.raises(ValueError): validate_dag((Action("a", "x", "x", prerequisites=("b",)), Action("b", "x", "x", prerequisites=("a",))))
