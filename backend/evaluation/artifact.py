@@ -1,7 +1,7 @@
 """Immutable evaluation-input and receipt binding primitives.
 
-This module proves that a receipt corresponds to a specific public evaluation input
-snapshot. It does not authorize promotion or production mutation.
+This module proves that a receipt corresponds to a specific public evaluation
+input snapshot. It does not authorize promotion or production mutation.
 """
 from __future__ import annotations
 
@@ -21,6 +21,8 @@ def _hash(value: object) -> str:
 class EvaluationInputSnapshot:
     contract_fingerprint: str
     plan_fingerprint: str
+    candidate_fingerprint: str
+    baseline_fingerprint: str
     capability_version: str
     policy_version: str
     source_profile_version: str
@@ -33,6 +35,8 @@ class EvaluationInputSnapshot:
         values = (
             self.contract_fingerprint,
             self.plan_fingerprint,
+            self.candidate_fingerprint,
+            self.baseline_fingerprint,
             self.capability_version,
             self.policy_version,
             self.source_profile_version,
@@ -54,6 +58,8 @@ class EvaluationInputSnapshot:
         return _hash({
             "contract_fingerprint": self.contract_fingerprint,
             "plan_fingerprint": self.plan_fingerprint,
+            "candidate_fingerprint": self.candidate_fingerprint,
+            "baseline_fingerprint": self.baseline_fingerprint,
             "capability_version": self.capability_version,
             "policy_version": self.policy_version,
             "source_profile_version": self.source_profile_version,
@@ -78,8 +84,8 @@ class EvaluationArtifact:
         if self.receipt.benchmark_count != len(self.inputs.benchmark_ids):
             raise ValueError("receipt benchmark_count must match immutable input snapshot")
         if not self.receipt.verify_binding(
-            candidate_fingerprint=self.inputs.contract_fingerprint,
-            baseline_fingerprint=self.inputs.plan_fingerprint,
+            candidate_fingerprint=self.inputs.candidate_fingerprint,
+            baseline_fingerprint=self.inputs.baseline_fingerprint,
             corpus_fingerprint=self.inputs.corpus_fingerprint,
             oracle_fingerprint=self.inputs.oracle_fingerprint,
             min_benchmark_count=len(self.inputs.benchmark_ids),
