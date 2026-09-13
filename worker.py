@@ -79,6 +79,34 @@ async def _control_plane_chatbot_diagnostic(env, payload):
         return {"ok": False, "error": f"control plane diagnostic failure: {exc}"}, 503
 
 
+async def _storage_diagnostic(env, run_id):
+    persistence = CloudflarePersistence(env)
+    rows = await env.DB.prepare(
+        """SELECT d.artifact_ref, d.content_hash, d.content_length
+           FROM document_versions d
+           JOIN observations o ON o.version_id = d.version_id
+           WHERE o.run_id = ? ORDER BY o.observed_at ASC"""
+    ).bind(run_id).all()
+    results = []
+    for row in rows.results:
+        key = row["artifact_ref"]
+        content = await persistence.get_artifact(key)
+        if content is None:
+            results.append({"artifact_ref": key, "ok": False, "error": "artifact not found"})
+            continue
+        actual_hash = hashlib.sha256(bytes(content)).hexdigest()
+        results.append({
+            "artifact_ref": key,
+            "ok": actual_hash == row["content_hash"] and len(content) == row["content_length"],
+            "expected_sha256": row["content_hash"],
+            "actual_sha256": actual_hash,
+            "expected_bytes": row["content_length"],
+            "actual_bytes": len(content),
+        })
+    ok = bool(results) and all(item["ok"] for item in results)
+    return {"ok": ok, "run_id": run_id, "artifacts": results}, 200 if ok else 503
+
+
 async def _ingest_sources(env, run_id, req):
     persistence = CloudflarePersistence(env)
     results = []
@@ -171,6 +199,18 @@ class Default(WorkerEntrypoint):
                 return Response.json({"ok": False, "error": "invalid JSON object"}, status=400)
             body, status = await _control_plane_chatbot_diagnostic(self.env, payload)
             return Response.json(body, status=status)
+
+        if request.method == "POST" and path.endswith("/api/v1/storage/diagnostic"):
+            if not _authorized(request, self.env):
+                return Response.json({"ok": False, "error": "unauthorized"}, status=401)
+            payload = await _json(request)
+            if payload is None or not payload.get("run_id"):
+                return Response.json({"ok": False, "error": "run_id is required"}, status=400)
+            try:
+                body, status = await _storage_diagnostic(self.env, str(payload["run_id"]))
+                return Response.json(body, status=status)
+            except Exception as exc:
+                return Response.json({"ok": False, "error": f"storage diagnostic failure: {exc}"}, status=503)
 
         if request.method == "GET" and "/api/v1/research/" in path:
             if not _authorized(request, self.env):
