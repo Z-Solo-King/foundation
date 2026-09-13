@@ -24,6 +24,8 @@ class DB:
     def prepare(self, sql):
         if "artifact_ref" in sql:
             return Statement(self.rows)
+        if "SELECT 1 AS ok" in sql:
+            return Statement({"ok": 1})
         if "sqlite_master" in sql:
             return Statement(self.rows)
         return Statement(self.run)
@@ -31,6 +33,8 @@ class DB:
 
 class DiagnosticDB:
     def prepare(self, sql):
+        if "SELECT 1 AS ok" in sql:
+            return Statement({"ok": 1})
         return Statement({"run_id": "diag-run"})
 
 
@@ -59,20 +63,6 @@ class Statement:
 class BrokenDB:
     def prepare(self, sql):
         raise RuntimeError("d1 unavailable")
-
-
-class Control:
-    async def fetch(self, url, init=None):
-        return SimpleNamespace(status=200, json=lambda: _json_value({"ok": True, "path": url}))
-
-
-class BrokenControl:
-    async def fetch(self, url, init=None):
-        raise RuntimeError("control down")
-
-
-async def _json_value(value):
-    return value
 
 
 class Persistence:
@@ -143,18 +133,7 @@ async def test_public_infrastructure_verify_fail_closed(monkeypatch):
     body, status = await worker._public_infrastructure_verify(SimpleNamespace(DB=BrokenDiagnosticDB()))
     assert status == 503
     assert body["ok"] is False
-    assert all(check["ok"] is False or check["name"] == "public_chatbot" for check in body["checks"])
-
-
-@pytest.mark.asyncio
-async def test_control_plane_chatbot_diagnostic_routes_success_and_failures(monkeypatch):
-    monkeypatch.setattr(worker, "CloudflarePersistence", Persistence)
-    body, status = await worker._control_plane_chatbot_diagnostic(SimpleNamespace(CONTROL_PLANE=Control()), {"operation": "knowledge", "question": "Explain testing"})
-    assert status == 200 and body["ok"] is True
-    body, status = await worker._control_plane_chatbot_diagnostic(SimpleNamespace(CONTROL_PLANE=None), {"operation": "knowledge", "question": "Explain testing"})
-    assert status == 503 and "service binding" in body["error"]
-    body, status = await worker._control_plane_chatbot_diagnostic(SimpleNamespace(CONTROL_PLANE=BrokenControl()), {"operation": "knowledge", "question": "Explain testing"})
-    assert status == 503 and "diagnostic failure" in body["error"]
+    assert any(check["name"] == "cloudflare_d1" and check["ok"] is False for check in body["checks"])
 
 
 @pytest.mark.asyncio
@@ -176,18 +155,19 @@ async def test_storage_diagnostic_verifies_round_trip_and_missing_artifacts(monk
 
 
 @pytest.mark.asyncio
-async def test_worker_http_diagnostic_and_research_fail_closed_paths(monkeypatch):
+async def test_worker_http_public_diagnostics_and_research_fail_closed_paths(monkeypatch):
     monkeypatch.setattr(worker, "CloudflarePersistence", Persistence)
-    env = SimpleNamespace(DB=DB(rows=[]), ENVIRONMENT="production", AUTH_TOKEN="secret", CONTROL_PLANE=Control())
+    env = SimpleNamespace(DB=DB(rows=[]), ENVIRONMENT="production", AUTH_TOKEN="secret")
     entry = worker.Default()
     entry.env = env
 
-    unauthorized = await entry.fetch(Request("POST", "https://x/api/v1/chatbot/diagnostic", {"operation": "knowledge"}, {"Authorization": "Bearer bad"}))
-    assert "unauthorized" in str(unauthorized)
-    invalid = await entry.fetch(Request("POST", "https://x/api/v1/chatbot/diagnostic", [], {"Authorization": "Bearer secret"}))
-    assert "invalid JSON object" in str(invalid)
-    chatbot = await entry.fetch(Request("POST", "https://x/api/v1/chatbot/diagnostic", {"operation": "knowledge", "question": "Explain testing"}, {"Authorization": "Bearer secret"}))
-    assert "ok" in str(chatbot)
+    public_invalid = await entry.fetch(Request("POST", "https://x/api/v1/chatbot/diagnostic", [], {}))
+    assert "invalid JSON object" in str(public_invalid)
+    unsupported = await entry.fetch(Request("POST", "https://x/api/v1/chatbot/diagnostic", {"operation": "knowledge"}, {}))
+    assert "unsupported public diagnostic operation" in str(unsupported)
+
+    public_test = await entry.fetch(Request("POST", "https://x/api/v1/chatbot/diagnostic", {"operation": "infrastructure_verify_public_test"}, {}))
+    assert "checks" in str(public_test)
 
     storage_unauthorized = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {"run_id": "run-1"}, {"Authorization": "Bearer bad"}))
     assert "unauthorized" in str(storage_unauthorized)
@@ -204,7 +184,7 @@ async def test_worker_http_diagnostic_and_research_fail_closed_paths(monkeypatch
     missing = await entry.fetch(Request("GET", "https://x/api/v1/research/missing", None, {"Authorization": "Bearer secret"}))
     assert "run not found" in str(missing)
     persistence_error = worker.Default()
-    persistence_error.env = SimpleNamespace(DB=BrokenDB(), ENVIRONMENT="production", AUTH_TOKEN="secret", CONTROL_PLANE=Control())
+    persistence_error.env = SimpleNamespace(DB=BrokenDB(), ENVIRONMENT="production", AUTH_TOKEN="secret")
     failed_get = await persistence_error.fetch(Request("GET", "https://x/api/v1/research/run-1", None, {"Authorization": "Bearer secret"}))
     assert "persistence failure" in str(failed_get)
 
@@ -220,7 +200,7 @@ async def test_worker_http_diagnostic_and_research_fail_closed_paths(monkeypatch
 async def test_research_persistence_failures_and_idempotency(monkeypatch):
     monkeypatch.setattr(worker, "CloudflarePersistence", BrokenPersistence)
     entry = worker.Default()
-    entry.env = SimpleNamespace(DB=DB(), ENVIRONMENT="production", AUTH_TOKEN="secret", CONTROL_PLANE=Control())
+    entry.env = SimpleNamespace(DB=DB(), ENVIRONMENT="production", AUTH_TOKEN="secret")
     request = Request("POST", "https://x/api/v1/research", {"question": "x", "source_urls": [], "strict_zero_cost_only": True}, {"Authorization": "Bearer secret"})
     failed = await entry.fetch(request)
     assert "execution/persistence failure" in str(failed)
