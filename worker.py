@@ -252,7 +252,6 @@ async def _ingest_sources(env, run_id, req):
               version_id = excluded.version_id,
               observed_at = excluded.observed_at,
               retrieval_method = excluded.retrieval_method,
-              retrieval_method = excluded.retrieval_method,
               content_hash = excluded.content_hash,
               integrity_state = excluded.integrity_state,
               access_state = excluded.access_state"""
