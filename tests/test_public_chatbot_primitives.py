@@ -78,7 +78,7 @@ def test_token_efficiency_gate_paths():
     with pytest.raises(ValueError):
         EfficiencyGate(2.0).validate()
     with pytest.raises(ValueError):
-        compare_efficiency(TokenEfficiencyObservation(1, 0, 1, 0, 0, 0, 0, accepted=True), baseline)
+        TokenEfficiencyObservation(1, 1, 1, 0, 1, 1, 0).validate()
 
 
 def test_run_record_validation_and_public_metadata():
