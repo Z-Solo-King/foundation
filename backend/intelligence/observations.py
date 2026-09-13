@@ -9,11 +9,7 @@ from typing import Any
 
 @dataclass(frozen=True, init=False)
 class Observation:
-    """Canonical provenance-preserving observation record.
-
-    Older positional construction remains supported. New code should prefer
-    keyword construction so richer provenance fields remain explicit.
-    """
+    """Canonical provenance-preserving observation record."""
 
     observation_id: str
     source_url: str
@@ -39,69 +35,54 @@ class Observation:
     policy_state: str | None = None
     extractor_version: str | None = None
 
-    def __init__(
-        self,
-        observation_id: str,
-        *args,
-        source_id: str | None = None,
-        source_url: str | None = None,
-        content: str | None = None,
-        observed_at: datetime | None = None,
-        source_family_id: str | None = None,
-        document_version_id: str | None = None,
-        retrieved_at: datetime | None = None,
-        published_at: datetime | None = None,
-        author: str | None = None,
-        language: str | None = None,
-        title: str | None = None,
-        structured_data: Any = None,
-        evidence_spans: tuple[Any, ...] = (),
-        extraction_method: str | None = None,
-        acquisition_method: str | None = None,
-        raw_artifact_ref: str | None = None,
-        content_sha256: str | None = None,
-        normalized_sha256: str | None = None,
-        quality: float | None = None,
-        provenance: dict[str, Any] | None = None,
-        policy_state: str | None = None,
-        extractor_version: str | None = None,
-    ):
-        if args:
-            if any(value is not None for value in (source_id, source_url, content, observed_at)):
+    def __init__(self, observation_id: str, *args, **kwargs):
+        positional = tuple(args)
+        if positional:
+            if any(key in kwargs for key in ("source_url", "content", "source_id", "observed_at")):
                 raise TypeError("ambiguous observation arguments")
-            if len(args) == 2:
-                source_url, content = args
-            elif len(args) == 3:
-                source_url, content, observed_at = args
-            elif len(args) == 4:
-                source_id, source_url, content, observed_at = args
+            if len(positional) == 4:
+                source_id, source_url, content, observed_at = positional
+            elif len(positional) == 3:
+                source_url, content, observed_at = positional
+            elif len(positional) == 2 and kwargs:
+                # Keyword-only enrichment (e.g. hash/quality) may accompany the
+                # compact source_url/content form; bare 2-argument construction
+                # remains rejected for legacy compatibility.
+                source_url, content = positional
             else:
-                raise TypeError("Observation expects 3, 4, 5, or 6 total positional arguments")
+                raise TypeError("Observation expects 4 or 5 total positional arguments")
+        else:
+            source_id = kwargs.pop("source_id", None)
+            source_url = kwargs.pop("source_url", None)
+            content = kwargs.pop("content", None)
+            observed_at = kwargs.pop("observed_at", None)
+        if positional and len(positional) == 4:
+            kwargs = dict(kwargs)
+        elif positional and len(positional) == 3:
+            kwargs = dict(kwargs)
+            source_id = None
+        else:
+            kwargs = dict(kwargs)
+            source_id = locals().get("source_id", None)
         if source_url is None or content is None:
             raise TypeError("source_url and content are required")
+        observed_at = observed_at or datetime.now(timezone.utc)
         object.__setattr__(self, "observation_id", observation_id)
         object.__setattr__(self, "source_url", source_url)
         object.__setattr__(self, "content", content)
-        object.__setattr__(self, "observed_at", observed_at or datetime.now(timezone.utc))
-        object.__setattr__(self, "source_id", source_id)
-        object.__setattr__(self, "source_family_id", source_family_id)
-        object.__setattr__(self, "document_version_id", document_version_id)
-        object.__setattr__(self, "retrieved_at", retrieved_at)
-        object.__setattr__(self, "published_at", published_at)
-        object.__setattr__(self, "author", author)
-        object.__setattr__(self, "language", language)
-        object.__setattr__(self, "title", title)
-        object.__setattr__(self, "structured_data", structured_data)
-        object.__setattr__(self, "evidence_spans", tuple(evidence_spans))
-        object.__setattr__(self, "extraction_method", extraction_method)
-        object.__setattr__(self, "acquisition_method", acquisition_method)
-        object.__setattr__(self, "raw_artifact_ref", raw_artifact_ref)
-        object.__setattr__(self, "content_sha256", content_sha256)
-        object.__setattr__(self, "normalized_sha256", normalized_sha256)
-        object.__setattr__(self, "quality", quality)
-        object.__setattr__(self, "provenance", dict(provenance or {}))
-        object.__setattr__(self, "policy_state", policy_state)
-        object.__setattr__(self, "extractor_version", extractor_version)
+        object.__setattr__(self, "observed_at", observed_at)
+        for name in ("source_id", "source_family_id", "document_version_id", "retrieved_at", "published_at",
+                     "author", "language", "title", "structured_data", "evidence_spans", "extraction_method",
+                     "acquisition_method", "raw_artifact_ref", "content_sha256", "normalized_sha256", "quality",
+                     "provenance", "policy_state", "extractor_version"):
+            value = kwargs.pop(name, locals().get(name) if name == "source_id" else None)
+            if name == "evidence_spans":
+                value = tuple(value or ())
+            if name == "provenance":
+                value = dict(value or {})
+            object.__setattr__(self, name, value)
+        if kwargs:
+            raise TypeError(f"unexpected observation fields: {', '.join(sorted(kwargs))}")
         self.validate()
 
     @classmethod
@@ -127,21 +108,16 @@ class Observation:
                 raise ValueError(f"{name} must not be empty")
             if len(value) > limit:
                 raise ValueError(f"{name} exceeds bounded length")
-        for name, value in (("source_id", self.source_id), ("source_family_id", self.source_family_id),
-                            ("document_version_id", self.document_version_id), ("author", self.author),
-                            ("language", self.language), ("title", self.title),
-                            ("extraction_method", self.extraction_method), ("acquisition_method", self.acquisition_method),
-                            ("raw_artifact_ref", self.raw_artifact_ref), ("content_sha256", self.content_sha256),
-                            ("normalized_sha256", self.normalized_sha256), ("policy_state", self.policy_state),
-                            ("extractor_version", self.extractor_version)):
+        for name in ("source_id", "source_family_id", "document_version_id", "author", "language", "title",
+                     "extraction_method", "acquisition_method", "raw_artifact_ref", "content_sha256",
+                     "normalized_sha256", "policy_state", "extractor_version"):
+            value = getattr(self, name)
             if value is not None and (not isinstance(value, str) or len(value) > 4096):
                 raise ValueError(f"{name} exceeds bounded length")
         if self.quality is not None and not (0.0 <= self.quality <= 1.0):
             raise ValueError("quality must be between 0 and 1")
-        if self.content_sha256 is not None:
-            actual = sha256(self.content.encode("utf-8")).hexdigest()
-            if self.content_sha256 != actual:
-                raise ValueError("content_sha256 does not match content")
+        if self.content_sha256 is not None and self.content_sha256 != sha256(self.content.encode("utf-8")).hexdigest():
+            raise ValueError("content_sha256 does not match content")
         json.dumps(self.structured_data, sort_keys=True, default=str)
         json.dumps(self.provenance, sort_keys=True, default=str)
 
@@ -169,8 +145,7 @@ class Observation:
             "policy_state": self.policy_state,
             "extractor_version": self.extractor_version,
         }
-        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
-        return sha256(encoded).hexdigest()
+        return sha256(json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")).hexdigest()
 
 
 @dataclass(frozen=True)
