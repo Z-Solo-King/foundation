@@ -1,18 +1,24 @@
 {
-  "schema": 5,
-  "purpose": "Machine-readable navigation and maintenance contract for humans and AI agents across the active Z-Solo-King family.",
+  "schema": 6,
+  "purpose": "Machine-readable navigation and maintenance contract for the public-safe Foundation repository within a two-repository family.",
   "repo": "foundation",
-  "role": "public-contracts",
+  "role": "public-contracts-and-deterministic-core",
+  "family_governance": {
+    "canonical_contract": "docs/FAMILY_CONTRACT.json",
+    "human_methodology": "docs/FAMILY_CHANGE_METHODOLOGY.md",
+    "rule": "Foundation documents may describe its own implementation, but family-wide ownership and dependency rules remain canonical in FAMILY_CONTRACT.json."
+  },
   "family_ownership": {
-    "foundation": "public-safe research contracts, evidence primitives, deterministic planning, public Worker boundary, and deterministic observed-data core",
-    "operations": "private policy, resources, evaluation, promotion, trust boundary, chatbot control-plane knowledge, private execution, and deployment",
-    "extractor-mapper": "deleted historical source; selected material is retained only in operations/archive/extractor-mapper/"
+    "foundation": "public-safe research contracts, evidence/result primitives, deterministic observed-data core, public Worker boundary, and public CI",
+    "operations": "private policy, resources, evaluation, promotion, trust boundary, chatbot control-plane knowledge, private execution, deployment, and private validation",
+    "extractor-mapper": "retired historical source only; selected material is retained under operations/archive/extractor-mapper/"
   },
   "project_documents": {
     "master_plan": "Z-Solo-King/operations:docs/PROJECT_MASTER_PLAN_2026-09-13.md",
     "status": "Z-Solo-King/operations:docs/PROJECT_STATUS_DONE_VS_LEFT_2026-09-13.md",
     "family_contract": "docs/FAMILY_CONTRACT.json",
     "family_architecture": "docs/FAMILY_ARCHITECTURE.md",
+    "family_change_methodology": "docs/FAMILY_CHANGE_METHODOLOGY.md",
     "public_core": "docs/PUBLIC_DETERMINISTIC_CORE.md"
   },
   "source_of_truth": {
@@ -29,7 +35,7 @@
     "module": "foundation_core",
     "installable": true,
     "private_consumer": "operations/pyproject.toml",
-    "pin_rule": "Operations consumes an explicit Foundation commit rather than an unpinned moving branch."
+    "pin_rule": "Operations consumes an explicit Foundation commit rather than an unpinned moving branch; implementation is never copy-pasted across repositories."
   },
   "public_worker_boundary": {
     "readiness": "public Worker runtime plus public D1 health; no private CONTROL_PLANE dependency",
@@ -47,15 +53,15 @@
   },
   "ci_boundary": {
     "public_ci": "Foundation GitHub-hosted standard runners",
-    "private_ci": "no GitHub-hosted private Actions in Operations",
+    "private_ci": "Operations has no GitHub-hosted private Actions dependency",
     "coverage_rule": "100% branch coverage for Foundation product sources under the public coverage gate",
     "private_evidence_rule": "Foundation CI does not certify private Operations runtime behavior"
   },
   "must_not_own": ["private policy authority", "global resource governance", "promotion", "credentials", "protected deployment topology", "heavy acquisition", "platform recovery", "private evaluation holdouts", "private chatbot execution"],
-  "design_rules": ["deterministic-first", "one canonical implementation per behavior", "small modules", "public-safe data only", "contracts before cross-repo implementation", "chatbot must use typed contracts rather than duplicate algorithms", "evidence selection is budgeted but caller-defined trust policy remains outside Foundation", "version cross-repository contracts", "validate before business logic", "generated artifacts are never sources of truth", "public files use ordinary descriptive names rather than deceptive or obfuscated naming", "private functionality is excluded by architecture and boundary scans", "public readiness remains independently testable from private control-plane availability"],
+  "design_rules": ["deterministic-first", "one canonical implementation per behavior", "small modules", "public-safe data only", "contracts before cross-repo implementation", "chatbot must use typed contracts rather than duplicate algorithms", "evidence selection is budgeted but caller-defined trust policy remains outside Foundation", "version cross-repository contracts", "validate before business logic", "generated artifacts are never sources of truth", "public files use ordinary descriptive names", "private functionality is excluded by architecture and boundary scans", "public readiness remains independently testable from private control-plane availability", "compatibility facades must re-export/adapt only and never become a second algorithm"] ,
   "hot_path_guidance": {
     "prefer": ["tuple/dict indexes", "bounded work", "stable typed contracts", "single-pass transforms", "deduplicated evidence under explicit budgets"],
     "avoid": ["repeated list scans", "duplicate policy engines", "large monolithic modules", "large payloads in control envelopes", "lossy evidence compression without explicit budget"]
   },
-  "change_method": ["read the current Operations master/status documents when available", "search the two active repositories", "identify owner", "extend owner", "tighten contract", "add regression", "remove duplicate", "preserve historical migration evidence in Operations archive when relevant"]
+  "change_method": ["read the canonical family contract and current Operations master/status documents when available", "search both active repositories", "identify owner", "extend owner", "tighten contract", "add owner regression", "add boundary regression for cross-repo changes", "remove obsolete duplicate", "run overlap/ownership audit when structure changes", "preserve historical migration evidence in Operations archive when relevant"]
 }
