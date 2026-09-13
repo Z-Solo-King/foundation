@@ -56,7 +56,7 @@ def submit_research(request: ResearchRequest) -> APIResponse:
     except ValueError as e:
         return APIResponse(ok=False, error=str(e))
     except Exception:
-        return APIResponse(ok=False, error="Internal research API error")
+        return APIResponse(ok=False, error="Internal error: research submission failed")
 
 
 def api_response_to_json(response: APIResponse) -> str:
