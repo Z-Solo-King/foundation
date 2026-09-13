@@ -42,8 +42,8 @@ jobs:
             echo 'Protected artifact directory found in public source tree.'
             exit 1
           fi
-          if grep -RniE 'operations|extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary' foundation_core 2>/dev/null; then
-            echo 'Private control-plane references found in public deterministic package.'
+          if grep -RniE 'operations|extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-private' foundation_core backend worker.py wrangler.toml 2>/dev/null; then
+            echo 'Private control-plane references found in public product source tree.'
             exit 1
           fi
       - name: Resolve production Cloudflare account and D1 database
@@ -90,10 +90,6 @@ preview_urls = false
 binding = "DB"
 database_name = "research-intelligence"
 database_id = "${D1_DATABASE_ID}"
-
-[[services]]
-binding = "CONTROL_PLANE"
-service = "research-intelligence-engine-private"
 
 [secrets]
 required = ["AUTH_TOKEN", "B2_KEY_ID", "B2_APPLICATION_KEY"]
