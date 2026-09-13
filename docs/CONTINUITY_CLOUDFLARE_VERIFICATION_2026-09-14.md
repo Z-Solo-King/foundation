@@ -1,11 +1,9 @@
 # Cloudflare verification continuity — September 14, 2026
 
-Cloudflare production verification for this project is intentionally performed through the established chatbot/control-plane bridge rather than from arbitrary local network execution environments.
+Cloudflare production verification for this project is intentionally performed through the established authenticated chatbot/control-plane bridge rather than arbitrary local network execution.
 
-Authoritative verification chain:
+The authoritative diagnostic operation is `infrastructure_verify_public_test` at the public chatbot diagnostic endpoint. A successful production proof must report `public_chatbot`, `cloudflare_d1`, and `backblaze_b2_lifecycle` as passing.
 
-1. `deploy-public-worker.yml` authenticates to Cloudflare, discovers the `research-intelligence` D1 database, applies remote migrations, and deploys the public Worker. It runs on `main` pushes/manual dispatch and waits for the same commit's `public-tests` workflow to complete successfully before touching Cloudflare.
-2. `production-chatbot-deploy-smoke.yml` runs on `main` pushes/manual dispatch, waits for the same commit's deployment workflow to succeed, verifies public Worker `/health`, and then calls the authenticated chatbot diagnostic operation `infrastructure_verify_public_test`.
-3. The chatbot diagnostic is authoritative for protected checks including public chatbot reachability, Cloudflare D1, and Backblaze B2 lifecycle checks.
+A PR workflow test was executed successfully at the workflow level but did not receive `AUTH_TOKEN`; pull-request secret scope therefore cannot be used as production proof. The production proof is consequently executed from a `main` push, where the repository's configured Actions secret scope applies, and its sanitized result is written to `docs/LIVE_CLOUDFLARE_VERIFICATION.md`.
 
-This is deliberate: local environments may not resolve the public Worker hostname even when production is healthy. A failed local DNS/network probe is therefore not interpreted as a Cloudflare production failure.
+Local DNS/network failures are not interpreted as Cloudflare production failures.
