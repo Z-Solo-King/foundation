@@ -72,7 +72,10 @@ def method_utility(method: MethodCandidate) -> float:  # pragma: no branch - sca
     return positive-(.06*method.latency_cost+.08*method.resource_cost+.10*method.risk_penalty)
 
 
-def rank_methods(methods: Iterable[MethodCandidate])->tuple[MethodCandidate,...]: return tuple(sorted(methods,key=lambda m:(-method_utility(m),m.method_id)))
+def rank_methods(methods: Iterable[MethodCandidate])->tuple[MethodCandidate,...]:
+    """Return deterministically ranked acquisition methods."""
+    ranked = sorted(methods, key=lambda method: (-method_utility(method), method.method_id))
+    return tuple(ranked)
 
 
 def apply_source_profiles(methods: Sequence[MethodCandidate], profiles: Mapping[str,SourceProfileHint])->tuple[MethodCandidate,...]:
