@@ -1,19 +1,28 @@
-"""Public deterministic utilities for observed-data normalization and mapping."""
+"""Public deterministic utilities for observed data and bounded execution."""
 
 from .field_routing import FIELD_ALIASES, FIELD_FAMILIES, RoutedField, route_field, route_fields
 from .normalization import normalize_specs, normalize_stock
 from .product_mapping import map_product
 from .quality import PlausibilitySignal, evaluate_price_spec_plausibility
+from .stage_receipt import StageReceipt, can_resume, fingerprint, validate_chain
+from .token_efficiency import EfficiencyGate, TokenEfficiencyObservation, compare_efficiency
 
 __all__ = [
     "FIELD_ALIASES",
     "FIELD_FAMILIES",
     "PlausibilitySignal",
     "RoutedField",
+    "StageReceipt",
+    "TokenEfficiencyObservation",
+    "EfficiencyGate",
+    "can_resume",
+    "compare_efficiency",
     "evaluate_price_spec_plausibility",
+    "fingerprint",
     "map_product",
     "normalize_specs",
     "normalize_stock",
     "route_field",
     "route_fields",
+    "validate_chain",
 ]
