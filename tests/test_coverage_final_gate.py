@@ -10,10 +10,7 @@ from tests.test_public_chatbot_primitives import _record, _receipt
 
 def test_run_record_remaining_validation_guards():
     with pytest.raises(ValueError):
-        ChatbotRunRecord(
-            schema_version="1", run_id="run", created_at="now", request_fingerprint="req",
-            intent={}, method_selected="deterministic", method_reason="test", stages=(),
-        ).validate()
+        _record(stages=()).validate()
     with pytest.raises(ValueError):
         _record(stages=(_receipt(), _receipt("fetch", "wrong"))).validate()
     mismatched = StageReceipt("other", "plan", "in", "out", "local")
