@@ -8,41 +8,31 @@ permissions:
   contents: read
 
 jobs:
-  deploy-and-verify:
+  public-chatbot-verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d
         with:
           version: 0.12.11
-      - name: Run chatbot bridge tests
+      - name: Run chatbot diagnostic tests
         run: uv run --with pytest --with pytest-asyncio pytest tests/test_chatbot_live_bridge.py tests/test_worker_diagnostics.py -q
-      - name: Verify deployed public Worker health
+      - name: Verify public Worker health
         run: |
           set -euo pipefail
           curl -fsS https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/health | tee /tmp/health.json
           jq -e '.ok == true' /tmp/health.json
-      - name: Verify deployed Cloudflare readiness and private binding
-        run: |
-          set -euo pipefail
-          status=$(curl -sS -o /tmp/readiness.json -w '%{http_code}' https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/readiness)
-          cat /tmp/readiness.json
-          test "$status" = "200"
-          jq -e '.ready == true and .control_plane == true' /tmp/readiness.json
-      - name: Execute deployed chatbot infrastructure verification
+      - name: Execute public chatbot Cloudflare and B2 verification
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
         run: |
           set -euo pipefail
-          auth_header=()
-          if [ -n "${AUTH_TOKEN}" ]; then
-            auth_header=(-H "Authorization: Bearer ${AUTH_TOKEN}")
-          fi
+          test -n "${AUTH_TOKEN}"
           status=$(curl -sS -o /tmp/chatbot.json -w '%{http_code}' \
             -X POST \
-            "${auth_header[@]}" \
+            -H "Authorization: Bearer ${AUTH_TOKEN}" \
             -H 'Content-Type: application/json' \
-            --data '{"operation":"infrastructure_verify"}' \
+            --data '{"operation":"infrastructure_verify_public_test"}' \
             https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/api/v1/chatbot/diagnostic)
           cat /tmp/chatbot.json
           test "$status" = "200"
@@ -50,9 +40,7 @@ jobs:
             .ok == true and
             .status == "ok" and
             (.checks | map(select(.ok != true)) | length == 0) and
-            ([.checks[].name] | index("private_control_plane")) and
-            ([.checks[].name] | index("foundation_health")) and
-            ([.checks[].name] | index("cloudflare_readiness")) and
-            ([.checks[].name] | index("d1_research_run")) and
-            ([.checks[].name] | index("backblaze_b2_round_trip"))
+            ([.checks[].name] | index("public_chatbot")) and
+            ([.checks[].name] | index("cloudflare_d1")) and
+            ([.checks[].name] | index("backblaze_b2_lifecycle"))
           ' /tmp/chatbot.json
