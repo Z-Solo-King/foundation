@@ -22,7 +22,21 @@ class DB:
         self.run = run
 
     def prepare(self, sql):
-        return Statement(self.rows if "artifact_ref" in sql else self.run)
+        if "artifact_ref" in sql:
+            return Statement(self.rows)
+        if "sqlite_master" in sql:
+            return Statement(self.rows)
+        return Statement(self.run)
+
+
+class DiagnosticDB:
+    def prepare(self, sql):
+        return Statement({"run_id": "diag-run"})
+
+
+class BrokenDiagnosticDB:
+    def prepare(self, sql):
+        raise RuntimeError("d1 unavailable")
 
 
 class Statement:
@@ -37,6 +51,9 @@ class Statement:
 
     async def all(self):
         return SimpleNamespace(results=self.value or [])
+
+    async def run(self):
+        return SimpleNamespace()
 
 
 class BrokenDB:
@@ -74,12 +91,59 @@ class Persistence:
         return "run-idempotent"
 
 
+class DiagnosticPersistence:
+    def __init__(self, env):
+        self.env = env
+        self.artifacts = {}
+        self.runs = {}
+
+    async def create_run(self, run_id, request):
+        self.runs[run_id] = {"run_id": run_id}
+        return run_id
+
+    async def get_run(self, run_id):
+        return self.runs.get(run_id)
+
+    async def put_artifact(self, key, content, content_type="application/octet-stream"):
+        self.artifacts[key] = bytes(content)
+        return {"key": key, "sha256": worker.hashlib.sha256(content).hexdigest(), "size": len(content)}
+
+    async def get_artifact(self, key):
+        return self.artifacts.get(key)
+
+    async def delete_artifact(self, key):
+        self.artifacts.pop(key, None)
+
+
+class BrokenDiagnosticPersistence(DiagnosticPersistence):
+    async def put_artifact(self, key, content, content_type="application/octet-stream"):
+        raise RuntimeError("b2 unavailable")
+
+
 class BrokenPersistence(Persistence):
     async def create_run(self, run_id, request):
         raise RuntimeError("persistence down")
 
     async def create_run_idempotent(self, request, idempotency_key):
         raise RuntimeError("idempotency down")
+
+
+@pytest.mark.asyncio
+async def test_public_infrastructure_verify_success(monkeypatch):
+    monkeypatch.setattr(worker, "CloudflarePersistence", DiagnosticPersistence)
+    body, status = await worker._public_infrastructure_verify(SimpleNamespace(DB=DiagnosticDB()))
+    assert status == 200
+    assert body["ok"] is True
+    assert {check["name"] for check in body["checks"]} == {"public_chatbot", "cloudflare_d1", "backblaze_b2_lifecycle"}
+
+
+@pytest.mark.asyncio
+async def test_public_infrastructure_verify_fail_closed(monkeypatch):
+    monkeypatch.setattr(worker, "CloudflarePersistence", BrokenDiagnosticPersistence)
+    body, status = await worker._public_infrastructure_verify(SimpleNamespace(DB=BrokenDiagnosticDB()))
+    assert status == 503
+    assert body["ok"] is False
+    assert all(check["ok"] is False or check["name"] == "public_chatbot" for check in body["checks"])
 
 
 @pytest.mark.asyncio
