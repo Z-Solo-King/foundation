@@ -8,7 +8,7 @@ from .planner_models import Action, ClaimRequirement, Coverage, CoverageState, F
 
 def classify_task(question: str, output_type: str = "") -> TaskMode:
     text=f"{question} {output_type}".lower()
-    if "spec" in text or "specification" in text: return TaskMode.SPECIFICATION
+    if "spec" in text: return TaskMode.SPECIFICATION
     signals={TaskMode.RECOMMENDATION:("recommend","best","which should","buy"),TaskMode.COMPARISON:("compare","versus","vs","difference"),TaskMode.TEMPORAL:("history","historical","changed","when","latest"),TaskMode.CONTRADICTION:("contradict","disagree","is it true","conflict"),TaskMode.PRICE_AVAILABILITY:("price","cost","stock","available"),TaskMode.DIAGNOSIS:("why","problem","error","broken","debug"),TaskMode.COMMUNITY:("reddit","forum","community","user experience","sentiment"),TaskMode.PRIMARY_SOURCE:("official","manufacturer","source of record","primary source"),TaskMode.ENTITY_RESOLUTION:("same product","same model","match","identify entity"),TaskMode.CODE:("code","repository","python","javascript","bug","pull request"),TaskMode.DATA:("dataset","csv","spreadsheet","columns","dataframe"),TaskMode.DOCUMENT:("document","pdf","report","contract"),TaskMode.MEDIA:("image","video","audio","transcript","frame")}
     matches=[mode for mode,words in signals.items() if any(w in text for w in words)]
     return TaskMode.MIXED if len(matches)>1 else (matches[0] if matches else TaskMode.FACT)
