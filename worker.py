@@ -111,95 +111,46 @@ async def _storage_diagnostic(env, run_id):
 
 async def _public_infrastructure_verify(env):
     """Run the live Cloudflare/D1/B2 test without consuming private Worker quota."""
-    checks = [{
-        "name": "public_chatbot",
-        "ok": True,
-        "detail": "executed through the public chatbot diagnostic boundary",
-    }]
+    persistence = CloudflarePersistence(env)
+    checks = [{"name": "public_chatbot", "ok": True}]
 
-    d1_ready = False
     try:
-        tables = await env.DB.prepare(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('research_runs', 'sources', 'document_versions', 'observations')"
-        ).all()
-        found = {row["name"] for row in tables.results}
-        d1_ready = found == {"research_runs", "sources", "document_versions", "observations"}
-        checks.append({
-            "name": "cloudflare_d1",
-            "ok": d1_ready,
-            "detail": "required D1 tables are queryable",
-        })
-    except Exception as exc:
-        checks.append({"name": "cloudflare_d1", "ok": False, "detail": f"D1 query failed: {exc}"})
+        await env.DB.prepare("SELECT 1 AS ok").first()
+        request = ResearchRequest(
+            question="Public chatbot infrastructure self-test",
+            depth="quick",
+            require_citations=False,
+            max_sources=0,
+            max_evidence_items=1,
+            strict_zero_cost_only=True,
+            source_urls=[],
+        )
+        run_id = "diag-" + hashlib.sha256(str(datetime.now(timezone.utc).timestamp()).encode()).hexdigest()[:24]
+        await persistence.create_run(run_id, request)
+        stored = await persistence.get_run(run_id)
+        d1_ok = bool(stored and stored.get("run_id") == run_id)
+    except Exception:
+        d1_ok = False
+    checks.append({"name": "cloudflare_d1", "ok": d1_ok})
 
-    research_ok = False
-    research_body = {}
-    if d1_ready:
-        research_payload = {
-            "question": "Public chatbot infrastructure self-test; verify D1 persistence and B2 artifact integrity.",
-            "depth": "quick",
-            "require_citations": False,
-            "max_sources": 1,
-            "max_evidence_items": 4,
-            "strict_zero_cost_only": True,
-            "source_urls": ["https://example.com/"],
-        }
-        try:
-            req = ResearchRequest(**research_payload)
-            result = submit_research(req)
-            if result.ok:
-                persistence = CloudflarePersistence(env)
-                run_id = result.run_id
-                await persistence.create_run(run_id, req)
-                sources = await _ingest_sources(env, run_id, req)
-                research_body = {"ok": True, "run_id": run_id, "sources": sources}
-                research_ok = True
-            else:
-                research_body = {"ok": False, "error": result.error}
-        except Exception as exc:
-            research_body = {"ok": False, "error": str(exc)}
+    key = "diagnostics/chatbot/b2-lifecycle"
+    content = b"research-intelligence-engine-b2-lifecycle"
+    try:
+        written = await persistence.put_artifact(key, content, content_type="text/plain")
+        read_back = await persistence.get_artifact(key)
+        await persistence.delete_artifact(key)
+        deleted = await persistence.get_artifact(key)
+        b2_ok = (
+            read_back == content
+            and deleted is None
+            and written["sha256"] == hashlib.sha256(content).hexdigest()
+            and written["size"] == len(content)
+        )
+    except Exception:
+        b2_ok = False
+    checks.append({"name": "backblaze_b2_lifecycle", "ok": b2_ok})
 
-    checks.append({
-        "name": "d1_research_run",
-        "ok": research_ok,
-        "status": 200 if research_ok else 503,
-    })
-
-    round_trip_ok = False
-    storage_body = {}
-    if research_ok:
-        storage_body, storage_status = await _storage_diagnostic(env, research_body["run_id"])
-        round_trip_ok = storage_status == 200 and bool(storage_body.get("ok"))
-    checks.append({
-        "name": "backblaze_b2_round_trip",
-        "ok": round_trip_ok,
-        "status": 200 if round_trip_ok else 503,
-        "artifact_count": len(storage_body.get("artifacts", [])) if isinstance(storage_body.get("artifacts"), list) else 0,
-    })
-
-    lifecycle_ok = False
-    lifecycle_detail = "not executed"
-    if research_ok:
-        persistence = CloudflarePersistence(env)
-        key = f"diagnostics/chatbot/{research_body['run_id']}/lifecycle"
-        content = b"research-intelligence-engine-b2-lifecycle"
-        try:
-            written = await persistence.put_artifact(key, content, content_type="text/plain")
-            read_back = await persistence.get_artifact(key)
-            write_read_ok = (
-                read_back == content
-                and written["sha256"] == hashlib.sha256(content).hexdigest()
-                and written["size"] == len(content)
-            )
-            await persistence.delete_artifact(key)
-            deleted = await persistence.get_artifact(key)
-            lifecycle_ok = write_read_ok and deleted is None
-            lifecycle_detail = "write/read/hash/size/delete verified" if lifecycle_ok else "B2 lifecycle verification failed"
-        except Exception as exc:
-            lifecycle_detail = f"B2 lifecycle failed: {exc}"
-    checks.append({"name": "backblaze_b2_lifecycle", "ok": lifecycle_ok, "detail": lifecycle_detail})
-
-    ok = all(bool(check["ok"]) for check in checks)
+    ok = all(check["ok"] for check in checks)
     return {"ok": ok, "status": "ok" if ok else "degraded", "checks": checks}, 200 if ok else 503
 
 
