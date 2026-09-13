@@ -1,0 +1,14 @@
+name: actions-trigger-sanity
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  sanity:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "actions trigger sanity ${GITHUB_SHA}"
