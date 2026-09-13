@@ -1,12 +1,19 @@
 {
-  "schema": 4,
-  "purpose": "Machine-readable navigation for humans and AI agents across the active Z-Solo-King family.",
+  "schema": 5,
+  "purpose": "Machine-readable navigation and maintenance contract for humans and AI agents across the active Z-Solo-King family.",
   "repo": "foundation",
   "role": "public-contracts",
   "family_ownership": {
-    "foundation": "public-safe research contracts, evidence primitives, deterministic planning, API boundary, and deterministic observed-data core",
-    "operations": "private policy, resources, evaluation, promotion, trust boundary, chatbot control-plane knowledge and complete private execution",
+    "foundation": "public-safe research contracts, evidence primitives, deterministic planning, public Worker boundary, and deterministic observed-data core",
+    "operations": "private policy, resources, evaluation, promotion, trust boundary, chatbot control-plane knowledge, private execution, and deployment",
     "extractor-mapper": "deleted historical source; selected material is retained only in operations/archive/extractor-mapper/"
+  },
+  "project_documents": {
+    "master_plan": "Z-Solo-King/operations:docs/PROJECT_MASTER_PLAN_2026-09-13.md",
+    "status": "Z-Solo-King/operations:docs/PROJECT_STATUS_DONE_VS_LEFT_2026-09-13.md",
+    "family_contract": "docs/FAMILY_CONTRACT.json",
+    "family_architecture": "docs/FAMILY_ARCHITECTURE.md",
+    "public_core": "docs/PUBLIC_DETERMINISTIC_CORE.md"
   },
   "source_of_truth": {
     "contracts": ["backend/intelligence/contracts.py", "backend/execution/engine.py"],
@@ -14,7 +21,8 @@
     "evaluation_primitives": ["backend/evaluation/"],
     "api": ["backend/api/"],
     "resource_guard": ["backend/execution/resources.py"],
-    "deterministic_observed_data": ["foundation_core/", "docs/PUBLIC_DETERMINISTIC_CORE.md"]
+    "deterministic_observed_data": ["foundation_core/", "docs/PUBLIC_DETERMINISTIC_CORE.md"],
+    "public_worker": ["worker.py", "wrangler.toml"]
   },
   "public_package": {
     "name": "research-intelligence-engine",
@@ -23,23 +31,31 @@
     "private_consumer": "operations/pyproject.toml",
     "pin_rule": "Operations consumes an explicit Foundation commit rather than an unpinned moving branch."
   },
+  "public_worker_boundary": {
+    "readiness": "public Worker runtime plus public D1 health; no private CONTROL_PLANE dependency",
+    "public_diagnostic": "bounded infrastructure verification only; no arbitrary private service dispatch",
+    "private_integration": "Operations may call Foundation through its protected Service Binding for authorized private verification",
+    "public_secrets": "no private credentials or private topology in source",
+    "artifact_store": "Backblaze B2",
+    "r2_status": "not_current_artifact_store"
+  },
   "chatbot_boundary": {
     "public_entrypoint": "backend.api.main.submit_research",
-    "role": "accept typed public-safe research requests; do not parse private policy or extraction implementation",
+    "role": "accept typed public-safe research requests; do not parse private policy or private extraction implementation",
     "private_owner": "operations/private/chatbot/",
     "private_execution_owner": "operations/extractor_mapper/"
   },
   "ci_boundary": {
     "public_ci": "Foundation GitHub-hosted standard runners",
-    "private_ci": "no GitHub Actions workflows in Operations",
+    "private_ci": "no GitHub-hosted private Actions in Operations",
     "coverage_rule": "100% branch coverage for Foundation product sources under the public coverage gate",
     "private_evidence_rule": "Foundation CI does not certify private Operations runtime behavior"
   },
   "must_not_own": ["private policy authority", "global resource governance", "promotion", "credentials", "protected deployment topology", "heavy acquisition", "platform recovery", "private evaluation holdouts", "private chatbot execution"],
-  "design_rules": ["deterministic-first", "one canonical implementation per behavior", "small modules", "public-safe data only", "contracts before cross-repo implementation", "chatbot must use typed contracts rather than duplicate algorithms", "evidence selection is budgeted but caller-defined trust policy remains outside Foundation", "version cross-repository contracts", "validate before business logic", "generated artifacts are never sources of truth", "public files use ordinary descriptive names rather than deceptive or obfuscated naming", "private functionality is excluded by architecture and boundary scans"],
+  "design_rules": ["deterministic-first", "one canonical implementation per behavior", "small modules", "public-safe data only", "contracts before cross-repo implementation", "chatbot must use typed contracts rather than duplicate algorithms", "evidence selection is budgeted but caller-defined trust policy remains outside Foundation", "version cross-repository contracts", "validate before business logic", "generated artifacts are never sources of truth", "public files use ordinary descriptive names rather than deceptive or obfuscated naming", "private functionality is excluded by architecture and boundary scans", "public readiness remains independently testable from private control-plane availability"],
   "hot_path_guidance": {
     "prefer": ["tuple/dict indexes", "bounded work", "stable typed contracts", "single-pass transforms", "deduplicated evidence under explicit budgets"],
     "avoid": ["repeated list scans", "duplicate policy engines", "large monolithic modules", "large payloads in control envelopes", "lossy evidence compression without explicit budget"]
   },
-  "change_method": ["search the two active repositories", "identify owner", "extend owner", "tighten contract", "add regression", "remove duplicate", "preserve historical migration evidence in Operations archive when relevant"]
+  "change_method": ["read the current Operations master/status documents when available", "search the two active repositories", "identify owner", "extend owner", "tighten contract", "add regression", "remove duplicate", "preserve historical migration evidence in Operations archive when relevant"]
 }
