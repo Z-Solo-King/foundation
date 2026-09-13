@@ -150,7 +150,6 @@ def apply_source_profiles(methods: Sequence[MethodCandidate], profiles: Mapping[
             continue
         if profile.supported_representations and method.representation not in profile.supported_representations:
             continue
-        ceiling = profile.concurrency_ceiling
         risk = method.risk_penalty + max(0.0, 0.5 - profile.health)
         expected_success = min(0.99, max(0.01, (method.expected_success + profile.health) / 2))
         if profile.sample_size < 5:
@@ -210,3 +209,33 @@ def build_task_plan(
     env.validate()
     return TaskPlan(mode, tuple(claim_reqs), source_plans, queries, ranked, actions, env,
                     metadata={"output_type": output_type, "planner": "deterministic-v1"})
+
+
+def create_task_plan(contract: object) -> TaskPlan:
+    """Build the canonical immutable task plan from a validated research contract."""
+    contract.validate()
+    return build_task_plan(
+        question=contract.question,
+        output_type=contract.output_type,
+        claims=contract.claims_required,
+        languages=contract.languages,
+        source_families=contract.source_families_required,
+        envelope=contract.resource_envelope,
+        max_queries=contract.max_search_actions,
+    )
+
+
+__all__ = [
+    "classify_task",
+    "infer_fact_type",
+    "decompose_claims",
+    "generate_query_portfolio",
+    "method_utility",
+    "rank_methods",
+    "apply_source_profiles",
+    "coverage_map",
+    "recovery_actions",
+    "choose_stop_reason",
+    "build_task_plan",
+    "create_task_plan",
+]
