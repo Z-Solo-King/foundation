@@ -4,7 +4,7 @@ import json
 import uuid
 from typing import Any
 
-from backend.api.models import ResearchRequest, APIResponse
+from backend.api.models import APIResponse, ResearchRequest
 from backend.health.check import check_health
 from backend.intelligence.contracts import ResearchContract
 from backend.execution.pipeline import start_run
@@ -12,8 +12,14 @@ from backend.execution.pipeline import start_run
 
 def health_endpoint() -> dict[str, Any]:
     health = check_health()
-    return {"ok": True, "status": health.status, "app": health.app,
-            "version": health.version, "environment": health.environment}
+    ok = health.status == "ok"
+    return {
+        "ok": ok,
+        "status": health.status,
+        "app": health.app,
+        "version": health.version,
+        "environment": health.environment,
+    }
 
 
 def readiness_endpoint() -> dict[str, Any]:
@@ -34,10 +40,11 @@ def submit_research(request: ResearchRequest) -> APIResponse:
             max_evidence_items=request.max_evidence_items,
         )
         contract.validate()
-        run = start_run(contract)
+        run_id = str(uuid.uuid4())
+        run = start_run(contract, run_id=run_id)
         return APIResponse(
             ok=True,
-            run_id=str(uuid.uuid4()),
+            run_id=run.run_id,
             metadata={
                 "question": run.contract.question,
                 "stages": len(run.plan_stages),
@@ -48,8 +55,8 @@ def submit_research(request: ResearchRequest) -> APIResponse:
         )
     except ValueError as e:
         return APIResponse(ok=False, error=str(e))
-    except Exception as e:
-        return APIResponse(ok=False, error=f"Internal error: {e}")
+    except Exception:
+        return APIResponse(ok=False, error="Internal research API error")
 
 
 def api_response_to_json(response: APIResponse) -> str:
