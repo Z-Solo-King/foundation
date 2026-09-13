@@ -155,7 +155,7 @@ async def test_public_infrastructure_verify_fail_closed(monkeypatch):
 async def test_public_infrastructure_verify_rejects_bad_d1(monkeypatch):
     monkeypatch.setattr(worker, "CloudflarePersistence", DiagnosticPersistence)
     body, status = await worker._public_infrastructure_verify(SimpleNamespace(DB=WrongD1DB()))
-    assert status == 200
+    assert status == 503
     assert body["ok"] is False
     assert any(check["name"] == "cloudflare_d1" and check["ok"] is False for check in body["checks"])
 
