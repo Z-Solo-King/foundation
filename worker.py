@@ -1,4 +1,4 @@
-"""Cloudflare Python Worker entrypoint for the public-safe runtime."""
+"""Cloudflare Python Worker entrypoint for the standalone public-safe runtime."""
 
 import hashlib
 import hmac
@@ -45,40 +45,18 @@ async def _health_payload():
 
 
 async def _readiness_payload(env):
+    """Standalone readiness: API plus public D1, with no private service dependency."""
     from backend.api.main import readiness_endpoint
 
     base = readiness_endpoint()
-    control_ready = await _control_plane_ready(env)
-    ready = base["ready"] and control_ready
-    return {**base, "control_plane": control_ready}, 200 if ready else 503
-
-
-async def _control_plane_ready(env):
-    control = getattr(env, "CONTROL_PLANE", None)
-    if control is None:
-        return False
+    database_ok = False
     try:
-        response = await control.fetch("https://control-plane/health")
-        return response.status == 200
+        row = await env.DB.prepare("SELECT 1 AS ok").first()
+        database_ok = bool(row and row["ok"] == 1)
     except Exception:
-        return False
-
-
-async def _control_plane_chatbot_diagnostic(env, payload):
-    control = getattr(env, "CONTROL_PLANE", None)
-    if control is None:
-        return {"ok": False, "error": "control plane service binding is unavailable"}, 503
-    try:
-        operation = str(payload.get("operation", ""))
-        path = "/v1/diagnostics/infrastructure" if operation == "infrastructure_verify" else "/v1/diagnostics/chatbot"
-        response = await control.fetch(
-            f"https://control-plane{path}",
-            {"method": "POST", "headers": {"Content-Type": "application/json"}, "body": json.dumps(payload)},
-        )
-        body = await response.json()
-        return body, response.status
-    except Exception as exc:
-        return {"ok": False, "error": f"control plane diagnostic failure: {exc}"}, 503
+        database_ok = False
+    ready = base["ready"] and database_ok
+    return {**base, "database": database_ok}, 200 if ready else 503
 
 
 async def _storage_diagnostic(env, run_id):
@@ -110,12 +88,15 @@ async def _storage_diagnostic(env, run_id):
 
 
 async def _public_infrastructure_verify(env):
-    """Run the live Cloudflare/D1/B2 test without consuming private Worker quota."""
+    """Run a bounded Cloudflare/D1/B2 lifecycle test without any private service call."""
     persistence = CloudflarePersistence(env)
     checks = [{"name": "public_chatbot", "ok": True}]
 
+    run_id = "diag-" + hashlib.sha256(str(datetime.now(timezone.utc).timestamp()).encode()).hexdigest()[:24]
     try:
-        await env.DB.prepare("SELECT 1 AS ok").first()
+        row = await env.DB.prepare("SELECT 1 AS ok").first()
+        if not row or row["ok"] != 1:
+            raise RuntimeError("D1 health query failed")
         request = ResearchRequest(
             question="Public chatbot infrastructure self-test",
             depth="quick",
@@ -125,7 +106,6 @@ async def _public_infrastructure_verify(env):
             strict_zero_cost_only=True,
             source_urls=[],
         )
-        run_id = "diag-" + hashlib.sha256(str(datetime.now(timezone.utc).timestamp()).encode()).hexdigest()[:24]
         await persistence.create_run(run_id, request)
         stored = await persistence.get_run(run_id)
         d1_ok = stored is not None
@@ -133,7 +113,7 @@ async def _public_infrastructure_verify(env):
         d1_ok = False
     checks.append({"name": "cloudflare_d1", "ok": d1_ok})
 
-    key = "diagnostics/chatbot/b2-lifecycle"
+    key = f"diagnostics/chatbot/b2-lifecycle/{run_id}"
     content = b"research-intelligence-engine-b2-lifecycle"
     try:
         written = await persistence.put_artifact(key, content, content_type="text/plain")
@@ -238,16 +218,13 @@ class Default(WorkerEntrypoint):
             return Response.json(payload, status=status)
 
         if request.method == "POST" and path.endswith("/api/v1/chatbot/diagnostic"):
-            if not _authorized(request, self.env):
-                return Response.json({"ok": False, "error": "unauthorized"}, status=401)
             payload = await _json(request)
             if payload is None:
                 return Response.json({"ok": False, "error": "invalid JSON object"}, status=400)
             if payload.get("operation") == "infrastructure_verify_public_test":
                 body, status = await _public_infrastructure_verify(self.env)
                 return Response.json(body, status=status)
-            body, status = await _control_plane_chatbot_diagnostic(self.env, payload)
-            return Response.json(body, status=status)
+            return Response.json({"ok": False, "error": "unsupported public diagnostic operation"}, status=400)
 
         if request.method == "POST" and path.endswith("/api/v1/storage/diagnostic"):
             if not _authorized(request, self.env):
