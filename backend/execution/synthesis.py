@@ -32,57 +32,64 @@ class ResearchSynthesizer:
         contract = getattr(run, "contract", None)
         question = getattr(contract, "question", "")
         if not run.verified_claims:
-            return SynthesisResult(
-                question=question,
-                answer="No evidence found to answer this question.",
-                confidence="unknown",
-            )
+            return SynthesisResult(question=question, answer="No evidence found to answer this question.", confidence="unknown")
+        groups = self._group_claims(run)
+        confidence = self._confidence(groups)
+        answer = self._build_answer(groups)
+        evidence_chain = self._evidence_chain(run)
+        return SynthesisResult(
+            question=question,
+            answer=answer,
+            confidence=confidence,
+            supported_by=tuple(claim.claim_id for claim, _ in groups[ClaimStatus.CORROBORATED]),
+            qualified_by=tuple(claim.claim_id for claim, _ in groups[ClaimStatus.SUPPORTED] + groups[ClaimStatus.PARTIAL]),
+            contradicted_by=tuple(claim.claim_id for claim, _ in groups[ClaimStatus.CONTRADICTED]),
+            unknown_aspects=tuple(claim.claim_id for claim, _ in groups[ClaimStatus.UNKNOWN]),
+            evidence_chain=tuple(evidence_chain),
+        )
 
-        corroborated: list[tuple[Any, Any]] = []
-        supported: list[tuple[Any, Any]] = []
-        partial: list[tuple[Any, Any]] = []
-        contradicted: list[tuple[Any, Any]] = []
-        unknown: list[tuple[Any, Any]] = []
-
+    @staticmethod
+    def _group_claims(run):
+        groups = {status: [] for status in (
+            ClaimStatus.CORROBORATED, ClaimStatus.SUPPORTED, ClaimStatus.PARTIAL,
+            ClaimStatus.CONTRADICTED, ClaimStatus.UNKNOWN,
+        )}
         for claim, result in run.verified_claims:
             status = getattr(result, "status", ClaimStatus.UNKNOWN)
-            if status == ClaimStatus.CORROBORATED:
-                corroborated.append((claim, result))
-            elif status == ClaimStatus.SUPPORTED:
-                supported.append((claim, result))
-            elif status == ClaimStatus.PARTIAL:
-                partial.append((claim, result))
-            elif status == ClaimStatus.CONTRADICTED:
-                contradicted.append((claim, result))
-            else:
-                unknown.append((claim, result))
+            groups.setdefault(status, []).append((claim, result))
+        return groups
 
+    @staticmethod
+    def _confidence(groups):
+        corroborated = groups[ClaimStatus.CORROBORATED]
+        supported = groups[ClaimStatus.SUPPORTED]
+        partial = groups[ClaimStatus.PARTIAL]
+        contradicted = groups[ClaimStatus.CONTRADICTED]
         if contradicted:
-            confidence = "low" if (corroborated or supported or partial) else "unknown"
-        elif corroborated:
-            confidence = "high"
-        elif supported and not partial:
-            confidence = "medium"
-        elif partial:
-            confidence = "low"
-        else:
-            confidence = "unknown"
+            return "low" if (corroborated or supported or partial) else "unknown"
+        if corroborated:
+            return "high"
+        if supported and not partial:
+            return "medium"
+        if partial:
+            return "low"
+        return "unknown"
 
-        answer_parts: list[str] = []
-        for claim, _ in corroborated + supported + partial:
-            answer_parts.append(claim.text)
+    @staticmethod
+    def _build_answer(groups):
+        answer_parts = [claim.text for claim, _ in groups[ClaimStatus.CORROBORATED] + groups[ClaimStatus.SUPPORTED] + groups[ClaimStatus.PARTIAL]]
+        contradicted = groups[ClaimStatus.CONTRADICTED]
+        unknown = groups[ClaimStatus.UNKNOWN]
         if contradicted:
-            answer_parts.append(
-                "Contradictory evidence exists for: " + "; ".join(claim.text for claim, _ in contradicted)
-            )
+            answer_parts.append("Contradictory evidence exists for: " + "; ".join(claim.text for claim, _ in contradicted))
         if unknown:
-            answer_parts.append(
-                "Unresolved aspects: " + "; ".join(claim.text for claim, _ in unknown)
-            )
-        answer = "\n".join(answer_parts) if answer_parts else "Evidence is insufficient to answer this question."
+            answer_parts.append("Unresolved aspects: " + "; ".join(claim.text for claim, _ in unknown))
+        return "\n".join(answer_parts) if answer_parts else "Evidence is insufficient to answer this question."
 
-        evidence_chain: list[dict[str, Any]] = []
+    @staticmethod
+    def _evidence_chain(run):
         observations = {o.observation_id: o for o in run.observations}
+        evidence_chain = []
         for claim, result in run.verified_claims:
             for cert in result.supporting_evidence:
                 obs = observations.get(cert.observation_id)
@@ -95,14 +102,4 @@ class ResearchSynthesizer:
                         "retrieved_at": obs.observed_at.isoformat(),
                         "verification_status": getattr(result, "status", ClaimStatus.UNKNOWN),
                     })
-
-        return SynthesisResult(
-            question=question,
-            answer=answer,
-            confidence=confidence,
-            supported_by=tuple(claim.claim_id for claim, _ in corroborated),
-            qualified_by=tuple(claim.claim_id for claim, _ in supported + partial),
-            contradicted_by=tuple(claim.claim_id for claim, _ in contradicted),
-            unknown_aspects=tuple(claim.claim_id for claim, _ in unknown),
-            evidence_chain=tuple(evidence_chain),
-        )
+        return evidence_chain

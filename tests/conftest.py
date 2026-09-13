@@ -11,7 +11,10 @@ def _install_workers_compat() -> None:
         importlib.import_module("workers")
         return
     except ModuleNotFoundError as exc:
-        if exc.name != "js":
+        # workers-py can be installed without exposing a normal CPython
+        # ``workers`` module; both that case and its JS-runtime dependency are
+        # expected in ordinary unit-test execution.
+        if exc.name not in {"workers", "js"}:
             raise
 
     workers = types.ModuleType("workers")

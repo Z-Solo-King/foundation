@@ -27,6 +27,26 @@ class EntailmentResult:
         return self.status == EntailmentStatus.SUPPORTED
 
 
+@dataclass(frozen=True)
+class SemanticCalibrationProfile:
+    version: str
+    raw_low: float = 0.0
+    raw_high: float = 1.0
+
+    def validate(self) -> None:
+        if not self.version.strip():
+            raise ValueError("calibration profile version must not be empty")
+        if not 0.0 <= self.raw_low < self.raw_high <= 1.0:
+            raise ValueError("raw calibration bounds must satisfy 0 <= low < high <= 1")
+
+
+def calibrate_semantic_score(raw_score: float, profile: SemanticCalibrationProfile) -> float:
+    profile.validate()
+    if not 0.0 <= raw_score <= 1.0:
+        raise ValueError("raw semantic score must be between 0 and 1")
+    return min(1.0, max(0.0, (raw_score - profile.raw_low) / (profile.raw_high - profile.raw_low)))
+
+
 def _tokens(text: str) -> list[str]:
     return [token.lower() for token in _TOKEN_RE.findall(text)]
 
@@ -87,3 +107,22 @@ def adjudicate_ambiguous(result: EntailmentResult, ai_supported: bool) -> Entail
     if ai_supported:
         return EntailmentResult(EntailmentStatus.SUPPORTED, result.score, "AI adjudicated ambiguous evidence as supporting")
     return EntailmentResult(EntailmentStatus.UNSUPPORTED, result.score, "AI adjudicated ambiguous evidence as insufficient")
+
+
+def adjudicate_semantic_score(
+    result: EntailmentResult,
+    raw_score: float,
+    profile: SemanticCalibrationProfile,
+    *,
+    ambiguous_threshold: float = 0.60,
+    supported_threshold: float = 0.85,
+) -> EntailmentResult:
+    """Use calibrated semantic scoring only to resolve an already-ambiguous result."""
+    if result.status != EntailmentStatus.AMBIGUOUS:
+        return result
+    calibrated = calibrate_semantic_score(raw_score, profile)
+    if calibrated >= supported_threshold:
+        return EntailmentResult(EntailmentStatus.SUPPORTED, calibrated, f"calibrated semantic adjudication ({profile.version})")
+    if calibrated >= ambiguous_threshold:
+        return EntailmentResult(EntailmentStatus.AMBIGUOUS, calibrated, f"calibrated semantic score remains ambiguous ({profile.version})")
+    return EntailmentResult(EntailmentStatus.UNSUPPORTED, calibrated, f"calibrated semantic score below support threshold ({profile.version})")
