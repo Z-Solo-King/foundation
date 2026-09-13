@@ -1,5 +1,6 @@
 from backend.intelligence.contracts import ResearchContract
 from backend.intelligence.planner_engine import (
+    apply_field_preferences,
     build_task_plan,
     classify_task,
     generate_query_portfolio,
@@ -10,9 +11,9 @@ from backend.intelligence.planner_models import (
     Coverage,
     CoverageState,
     FailureClass,
+    FieldRequirement,
     MethodCandidate,
     ResourceEnvelope,
-    StopReason,
     TaskMode,
 )
 from backend.intelligence.planner_runtime import plan_fingerprint, topological_order, validate_dag
@@ -44,6 +45,15 @@ def test_method_utility_rewards_quality_and_penalizes_risk():
     bad = MethodCandidate("bad", "s", "browser", expected_success=.5, expected_completeness=.4,
                           evidence_directness=.4, authority=.5, resource_cost=5, risk_penalty=2)
     assert method_utility(good) > method_utility(bad)
+
+
+def test_field_preferences_change_method_order():
+    api = MethodCandidate("api", "s", "api", expected_success=.8, evidence_directness=.8)
+    structured = MethodCandidate("structured", "s", "structured", expected_success=.8, evidence_directness=.8)
+    fields = (FieldRequirement("refresh", "refresh_rate", preferred_representations=("structured",)),)
+    ranked = apply_field_preferences((api, structured), fields)
+    assert ranked[0].method_id == "structured"
+    assert apply_field_preferences((api, structured), ()) == (api, structured)
 
 
 def test_recovery_targets_gap_type():
