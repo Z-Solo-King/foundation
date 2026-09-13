@@ -1,23 +1,191 @@
-import json
 from types import SimpleNamespace
 
 import pytest
 
 import worker
-from worker import Request
+
+
+class Request:
+    def __init__(self, method, url, payload=None, headers=None):
+        self.method = method
+        self.url = url
+        self._payload = payload
+        self.headers = headers or {}
+
+    async def json(self):
+        return self._payload
 
 
 class DB:
-    def __init__(self, rows):
-        self.rows = rows
+    def __init__(self, rows=None, run=None):
+        self.rows = rows or []
+        self.run = run
+
+    def prepare(self, sql):
+        if "artifact_ref" in sql:
+            return Statement(self.rows)
+        if "SELECT 1 AS ok" in sql:
+            return Statement({"ok": 1})
+        if "sqlite_master" in sql:
+            return Statement(self.rows)
+        return Statement(self.run)
+
+
+class DiagnosticDB:
+    def prepare(self, sql):
+        if "SELECT 1 AS ok" in sql:
+            return Statement({"ok": 1})
+        return Statement({"run_id": "diag-run"})
+
+
+class WrongD1DB:
+    def prepare(self, sql):
+        return Statement({"ok": 0}) if "SELECT 1 AS ok" in sql else Statement({"run_id": "diag-run"})
+
+
+class BrokenDiagnosticDB:
+    def prepare(self, sql):
+        raise RuntimeError("d1 unavailable")
+
+
+class Statement:
+    def __init__(self, value):
+        self.value = value
+
+    def bind(self, *args):
+        return self
+
+    async def first(self):
+        return self.value
+
+    async def all(self):
+        return SimpleNamespace(results=self.value or [])
+
+    async def run(self):
+        return SimpleNamespace()
+
+
+class BrokenDB:
+    def prepare(self, sql):
+        raise RuntimeError("d1 unavailable")
 
 
 class Persistence:
     def __init__(self, env):
         self.env = env
 
-    async def list_artifacts_for_run(self, run_id):
-        return list(self.env.DB.rows)
+    async def get_artifact(self, key):
+        if key == "missing":
+            return None
+        return b"abc"
+
+    async def create_run(self, run_id, request):
+        return run_id
+
+    async def create_run_idempotent(self, request, idempotency_key):
+        return "run-idempotent"
+
+
+class DiagnosticPersistence:
+    def __init__(self, env):
+        self.env = env
+        self.artifacts = {}
+        self.runs = {}
+
+    async def create_run(self, run_id, request):
+        self.runs[run_id] = {"run_id": run_id}
+        return run_id
+
+    async def get_run(self, run_id):
+        return self.runs.get(run_id)
+
+    async def put_artifact(self, key, content, content_type="application/octet-stream"):
+        self.artifacts[key] = bytes(content)
+        return {"key": key, "sha256": worker.hashlib.sha256(content).hexdigest(), "size": len(content)}
+
+    async def get_artifact(self, key):
+        return self.artifacts.get(key)
+
+    async def delete_artifact(self, key):
+        self.artifacts.pop(key, None)
+
+
+class BrokenDiagnosticPersistence(DiagnosticPersistence):
+    async def put_artifact(self, key, content, content_type="application/octet-stream"):
+        raise RuntimeError("b2 unavailable")
+
+
+class BrokenReadPersistence(DiagnosticPersistence):
+    async def get_artifact(self, key):
+        raise RuntimeError("b2 read unavailable")
+
+
+class BrokenDeletePersistence(DiagnosticPersistence):
+    async def delete_artifact(self, key):
+        raise RuntimeError("b2 delete unavailable")
+
+
+class BrokenPersistence(Persistence):
+    async def create_run(self, run_id, request):
+        raise RuntimeError("persistence down")
+
+    async def create_run_idempotent(self, request, idempotency_key):
+        raise RuntimeError("idempotency down")
+
+
+@pytest.mark.asyncio
+async def test_public_infrastructure_verify_success(monkeypatch):
+    monkeypatch.setattr(worker, "CloudflarePersistence", DiagnosticPersistence)
+    body, status = await worker._public_infrastructure_verify(SimpleNamespace(DB=DiagnosticDB()))
+    assert status == 200
+    assert body["ok"] is True
+    assert {check["name"] for check in body["checks"]} == {"public_chatbot", "cloudflare_d1", "backblaze_b2_lifecycle"}
+
+
+@pytest.mark.asyncio
+async def test_public_infrastructure_verify_fail_closed(monkeypatch):
+    monkeypatch.setattr(worker, "CloudflarePersistence", BrokenDiagnosticPersistence)
+    body, status = await worker._public_infrastructure_verify(SimpleNamespace(DB=BrokenDiagnosticDB()))
+    assert status == 503
+    assert body["ok"] is False
+    assert any(check["name"] == "cloudflare_d1" and check["ok"] is False for check in body["checks"])
+
+
+@pytest.mark.asyncio
+async def test_public_infrastructure_verify_rejects_bad_d1(monkeypatch):
+    monkeypatch.setattr(worker, "CloudflarePersistence", DiagnosticPersistence)
+    body, status = await worker._public_infrastructure_verify(SimpleNamespace(DB=WrongD1DB()))
+    assert status == 503
+    assert body["ok"] is False
+    assert any(check["name"] == "cloudflare_d1" and check["ok"] is False for check in body["checks"])
+
+
+@pytest.mark.asyncio
+async def test_public_infrastructure_verify_b2_failure_paths(monkeypatch):
+    monkeypatch.setattr(worker, "CloudflarePersistence", BrokenReadPersistence)
+    body, status = await worker._public_infrastructure_verify(SimpleNamespace(DB=DiagnosticDB()))
+    assert status == 503
+    assert any(check["name"] == "backblaze_b2_lifecycle" and check["ok"] is False for check in body["checks"])
+
+    monkeypatch.setattr(worker, "CloudflarePersistence", BrokenDeletePersistence)
+    body, status = await worker._public_infrastructure_verify(SimpleNamespace(DB=DiagnosticDB()))
+    assert status == 503
+    assert any(check["name"] == "backblaze_b2_lifecycle" and check["ok"] is False for check in body["checks"])
+
+
+@pytest.mark.asyncio
+async def test_readiness_payload_public_d1_paths():
+    ready, status = await worker._readiness_payload(SimpleNamespace(DB=DB()))
+    assert status == 200
+    assert ready["database"] is True
+
+    not_ready, status = await worker._readiness_payload(SimpleNamespace(DB=WrongD1DB()))
+    assert status == 503
+    assert not_ready["database"] is False
+
+    not_ready, status = await worker._readiness_payload(SimpleNamespace(DB=BrokenDiagnosticDB()))
+    assert status == 503
+    assert not_ready["database"] is False
 
 
 @pytest.mark.asyncio
@@ -68,3 +236,30 @@ async def test_worker_http_public_diagnostics_and_research_fail_closed_paths(mon
     monkeypatch.setattr(worker, "_storage_diagnostic", broken_storage)
     failed_storage = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {"run_id": "run-1"}, {"Authorization": "Bearer secret"}))
     assert "storage diagnostic failure" in str(failed_storage)
+
+    missing = await entry.fetch(Request("GET", "https://x/api/v1/research/missing", None, {"Authorization": "Bearer secret"}))
+    assert "run not found" in str(missing)
+    persistence_error = worker.Default()
+    persistence_error.env = SimpleNamespace(DB=BrokenDB(), ENVIRONMENT="production", AUTH_TOKEN="secret")
+    failed_get = await persistence_error.fetch(Request("GET", "https://x/api/v1/research/run-1", None, {"Authorization": "Bearer secret"}))
+    assert "persistence failure" in str(failed_get)
+
+    invalid_research = await entry.fetch(Request("POST", "https://x/api/v1/research", [], {"Authorization": "Bearer secret"}))
+    assert "invalid JSON object" in str(invalid_research)
+    bad_shape = await entry.fetch(Request("POST", "https://x/api/v1/research", {"question": "x", "unexpected": True}, {"Authorization": "Bearer secret"}))
+    assert "unexpected" in str(bad_shape)
+    rejected = await entry.fetch(Request("POST", "https://x/api/v1/research", {"question": "x", "strict_zero_cost_only": False}, {"Authorization": "Bearer secret"}))
+    assert "strict $0 cost mode" in str(rejected)
+
+
+@pytest.mark.asyncio
+async def test_research_persistence_failures_and_idempotency(monkeypatch):
+    monkeypatch.setattr(worker, "CloudflarePersistence", BrokenPersistence)
+    entry = worker.Default()
+    entry.env = SimpleNamespace(DB=DB(), ENVIRONMENT="production", AUTH_TOKEN="secret")
+    request = Request("POST", "https://x/api/v1/research", {"question": "x", "source_urls": [], "strict_zero_cost_only": True}, {"Authorization": "Bearer secret"})
+    failed = await entry.fetch(request)
+    assert "execution/persistence failure" in str(failed)
+    request.headers["Idempotency-Key"] = "key-1"
+    failed_idempotent = await entry.fetch(request)
+    assert "execution/persistence failure" in str(failed_idempotent)
