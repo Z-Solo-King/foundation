@@ -70,3 +70,13 @@ def test_strategy_lifecycle_rejects_invalid_transitions_and_values():
     with pytest.raises(ValueError): mark_promotable(canary, bad_canary)
     with pytest.raises(ValueError): mark_promoted(canary)
     with pytest.raises(ValueError): rollback(canary, "")
+
+
+def test_strategy_lifecycle_validation_and_candidate_gate_edges():
+    with pytest.raises(ValueError): StrategyLifecycle("s", "v1", StrategyStage.ROLLBACK, rollback_reason="").validate()
+    lifecycle = StrategyLifecycle("s", "v1", StrategyStage.CANARY, canary_fraction=.1)
+    with pytest.raises(ValueError): enter_canary(lifecycle, good := StrategyExperiment("e", "b", "c", "f", metrics(), metrics()), .1)
+    unregistered = StrategyExperiment("e", "b", "c", "f", metrics(), metrics(), pre_registered=False)
+    assert not candidate_beats_baseline(unregistered)
+    with pytest.raises(ValueError): enter_canary(StrategyLifecycle("s", "v1"), good, 1.1)
+    with pytest.raises(ValueError): rollback(StrategyLifecycle("s", "v1"), " ")
