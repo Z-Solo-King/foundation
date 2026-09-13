@@ -39,8 +39,6 @@ async def _json(request):
 
 
 async def _health_payload():
-    # Keep the health path dependency-light: importing the full execution graph
-    # is deferred until a route actually needs it.
     from backend.api.main import health_endpoint
 
     return health_endpoint()
@@ -53,6 +51,32 @@ async def _readiness_payload(env):
     control_ready = await _control_plane_ready(env)
     ready = base["ready"] and control_ready
     return {**base, "control_plane": control_ready}, 200 if ready else 503
+
+
+async def _control_plane_ready(env):
+    control = getattr(env, "CONTROL_PLANE", None)
+    if control is None:
+        return False
+    try:
+        response = await control.fetch("https://control-plane/health")
+        return response.status == 200
+    except Exception:
+        return False
+
+
+async def _control_plane_chatbot_diagnostic(env, payload):
+    control = getattr(env, "CONTROL_PLANE", None)
+    if control is None:
+        return {"ok": False, "error": "control plane service binding is unavailable"}, 503
+    try:
+        response = await control.fetch(
+            "https://control-plane/v1/diagnostics/chatbot",
+            {"method": "POST", "headers": {"Content-Type": "application/json"}, "body": json.dumps(payload)},
+        )
+        body = await response.json()
+        return body, response.status
+    except Exception as exc:
+        return {"ok": False, "error": f"control plane diagnostic failure: {exc}"}, 503
 
 
 async def _ingest_sources(env, run_id, req):
@@ -80,11 +104,7 @@ async def _ingest_sources(env, run_id, req):
         ).bind(source_id, fetched.final_url, family, "direct", now, now, access_state).run()
 
         artifact_ref = f"raw/{run_id}/{observation_id}/{content_hash}"
-        await persistence.put_artifact(
-            artifact_ref,
-            fetched.content,
-            content_type=fetched.content_type,
-        )
+        await persistence.put_artifact(artifact_ref, fetched.content, content_type=fetched.content_type)
 
         await env.DB.prepare(
             """INSERT INTO document_versions
@@ -112,27 +132,14 @@ async def _ingest_sources(env, run_id, req):
               content_hash = excluded.content_hash,
               integrity_state = excluded.integrity_state,
               access_state = excluded.access_state"""
-        ).bind(
-            observation_id, run_id, source_id, version_id, now,
-            "http_fetch", content_hash, "verified", access_state,
-        ).run()
+        ).bind(observation_id, run_id, source_id, version_id, now, "http_fetch", content_hash, "verified", access_state).run()
 
-        results.append({
-            "url": fetched.final_url,
-            "status": fetched.status,
-            "source_id": source_id,
-            "observation_id": observation_id,
-            "version_id": version_id,
-            "content_hash": content_hash,
-            "bytes": len(fetched.content),
-        })
+        results.append({"url": fetched.final_url, "status": fetched.status, "source_id": source_id, "observation_id": observation_id, "version_id": version_id, "content_hash": content_hash, "bytes": len(fetched.content)})
     return results
 
 
 async def _get_run(env, run_id):
-    run = await env.DB.prepare(
-        "SELECT * FROM research_runs WHERE run_id = ?"
-    ).bind(run_id).first()
+    run = await env.DB.prepare("SELECT * FROM research_runs WHERE run_id = ?").bind(run_id).first()
     if not run:
         return None
     observations = await env.DB.prepare(
@@ -145,17 +152,6 @@ async def _get_run(env, run_id):
     return {"run": run, "observations": observations}
 
 
-async def _control_plane_ready(env):
-    control = getattr(env, "CONTROL_PLANE", None)
-    if control is None:
-        return False
-    try:
-        response = await control.fetch("https://control-plane/health")
-        return response.status == 200
-    except Exception:
-        return False
-
-
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
         path = request.url.split("?", 1)[0]
@@ -166,6 +162,15 @@ class Default(WorkerEntrypoint):
         if request.method == "GET" and path.endswith("/readiness"):
             payload, status = await _readiness_payload(self.env)
             return Response.json(payload, status=status)
+
+        if request.method == "POST" and path.endswith("/api/v1/chatbot/diagnostic"):
+            if not _authorized(request, self.env):
+                return Response.json({"ok": False, "error": "unauthorized"}, status=401)
+            payload = await _json(request)
+            if payload is None:
+                return Response.json({"ok": False, "error": "invalid JSON object"}, status=400)
+            body, status = await _control_plane_chatbot_diagnostic(self.env, payload)
+            return Response.json(body, status=status)
 
         if request.method == "GET" and "/api/v1/research/" in path:
             if not _authorized(request, self.env):
