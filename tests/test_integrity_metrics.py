@@ -6,6 +6,8 @@ from backend.evaluation.integrity_metrics import (
     IntegrityObservation,
     IntegrityMetrics,
     TrustTier,
+    _concentration,
+    _hhi,
     calculate_integrity_metrics,
 )
 
@@ -33,16 +35,13 @@ def test_temporal_anomaly_and_zero_sample_paths():
 
 
 def test_integrity_observation_fail_closed_guards():
-    with pytest.raises(ValueError):
-        replace(IntegrityObservation("e", "o", "f"), origin_id="").validate()
-    with pytest.raises(ValueError):
-        replace(IntegrityObservation("e", "o", "f"), published_at=-1).validate()
-    with pytest.raises(ValueError):
-        replace(IntegrityObservation("e", "o", "f"), observed_at=-1).validate()
-    with pytest.raises(ValueError):
-        IntegrityObservation("e", "o", "f", trust_tier="ugc").validate()
-    invalid_metrics = replace(IntegrityMetrics(0, 0, 0, 0, 0, 0), sample_count=-1)
-    with pytest.raises(ValueError): invalid_metrics.validate()
+    with pytest.raises(ValueError): replace(IntegrityObservation("e", "o", "f"), origin_id="").validate()
+    with pytest.raises(ValueError): replace(IntegrityObservation("e", "o", "f"), evidence_id="").validate()
+    with pytest.raises(ValueError): replace(IntegrityObservation("e", "o", "f"), source_family_id="").validate()
+    with pytest.raises(ValueError): replace(IntegrityObservation("e", "o", "f"), published_at=-1).validate()
+    with pytest.raises(ValueError): replace(IntegrityObservation("e", "o", "f"), observed_at=-1).validate()
+    with pytest.raises(ValueError): IntegrityObservation("e", "o", "f", trust_tier="ugc").validate()
+    with pytest.raises(ValueError): replace(IntegrityMetrics(0, 0, 0, 0, 0, 0), sample_count=-1).validate()
     with pytest.raises(ValueError): replace(IntegrityMetrics(0, 0, 0, 0, 0, 0), ugc_ratio=2).validate()
 
 
@@ -53,8 +52,9 @@ def test_many_unique_origins_have_low_concentration_and_single_origin_is_maximal
 
 
 def test_integrity_metric_internal_branch_families():
-    with pytest.raises(ValueError):
-        calculate_integrity_metrics((IntegrityObservation("", "o", "f"),))
+    assert _hhi(()) == 0.0
+    assert _concentration(()) == 0.0
+    with pytest.raises(ValueError): calculate_integrity_metrics((IntegrityObservation("", "o", "f"),))
     disagreement = (
         IntegrityObservation("1", "o1", "f1", supports_claim=True),
         IntegrityObservation("2", "o2", "f2", supports_claim=False),
