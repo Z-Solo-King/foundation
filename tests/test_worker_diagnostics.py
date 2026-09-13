@@ -38,6 +38,11 @@ class DiagnosticDB:
         return Statement({"run_id": "diag-run"})
 
 
+class WrongD1DB:
+    def prepare(self, sql):
+        return Statement({"ok": 0}) if "SELECT 1 AS ok" in sql else Statement({"run_id": "diag-run"})
+
+
 class BrokenDiagnosticDB:
     def prepare(self, sql):
         raise RuntimeError("d1 unavailable")
@@ -110,6 +115,16 @@ class BrokenDiagnosticPersistence(DiagnosticPersistence):
         raise RuntimeError("b2 unavailable")
 
 
+class BrokenReadPersistence(DiagnosticPersistence):
+    async def get_artifact(self, key):
+        raise RuntimeError("b2 read unavailable")
+
+
+class BrokenDeletePersistence(DiagnosticPersistence):
+    async def delete_artifact(self, key):
+        raise RuntimeError("b2 delete unavailable")
+
+
 class BrokenPersistence(Persistence):
     async def create_run(self, run_id, request):
         raise RuntimeError("persistence down")
@@ -134,6 +149,43 @@ async def test_public_infrastructure_verify_fail_closed(monkeypatch):
     assert status == 503
     assert body["ok"] is False
     assert any(check["name"] == "cloudflare_d1" and check["ok"] is False for check in body["checks"])
+
+
+@pytest.mark.asyncio
+async def test_public_infrastructure_verify_rejects_bad_d1(monkeypatch):
+    monkeypatch.setattr(worker, "CloudflarePersistence", DiagnosticPersistence)
+    body, status = await worker._public_infrastructure_verify(SimpleNamespace(DB=WrongD1DB()))
+    assert status == 200
+    assert body["ok"] is False
+    assert any(check["name"] == "cloudflare_d1" and check["ok"] is False for check in body["checks"])
+
+
+@pytest.mark.asyncio
+async def test_public_infrastructure_verify_b2_failure_paths(monkeypatch):
+    monkeypatch.setattr(worker, "CloudflarePersistence", BrokenReadPersistence)
+    body, status = await worker._public_infrastructure_verify(SimpleNamespace(DB=DiagnosticDB()))
+    assert status == 503
+    assert any(check["name"] == "backblaze_b2_lifecycle" and check["ok"] is False for check in body["checks"])
+
+    monkeypatch.setattr(worker, "CloudflarePersistence", BrokenDeletePersistence)
+    body, status = await worker._public_infrastructure_verify(SimpleNamespace(DB=DiagnosticDB()))
+    assert status == 503
+    assert any(check["name"] == "backblaze_b2_lifecycle" and check["ok"] is False for check in body["checks"])
+
+
+@pytest.mark.asyncio
+async def test_readiness_payload_public_d1_paths():
+    ready, status = await worker._readiness_payload(SimpleNamespace(DB=DB()))
+    assert status == 200
+    assert ready["database"] is True
+
+    not_ready, status = await worker._readiness_payload(SimpleNamespace(DB=WrongD1DB()))
+    assert status == 503
+    assert not_ready["database"] is False
+
+    not_ready, status = await worker._readiness_payload(SimpleNamespace(DB=BrokenDiagnosticDB()))
+    assert status == 503
+    assert not_ready["database"] is False
 
 
 @pytest.mark.asyncio
