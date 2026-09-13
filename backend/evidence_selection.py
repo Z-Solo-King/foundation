@@ -142,18 +142,16 @@ def build_context_packet(
     seen: set[str] = set()
     duplicate_count = 0
     dropped: list[str] = []
-    selected_hashes = {_dedupe_key(item) for item in selected}
     for candidate in candidates:
         key = _dedupe_key(candidate)
         if key in seen:
             if candidate.evidence_id not in selected_ids:
                 duplicate_count += 1
+            if candidate.evidence_id not in selected_ids:
                 dropped.append(candidate.evidence_id)
             continue
         seen.add(key)
-        if candidate.evidence_id not in selected_ids and key in selected_hashes:
-            dropped.append(candidate.evidence_id)
-        elif candidate.evidence_id not in selected_ids:
+        if candidate.evidence_id not in selected_ids:
             dropped.append(candidate.evidence_id)
 
     evidence_tokens = sum(_candidate_tokens(item) for item in selected)
