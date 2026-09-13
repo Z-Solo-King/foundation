@@ -169,3 +169,19 @@ def test_run_record_validation_and_public_metadata():
 
 
 def test_run_record_bounds_and_chain_guards():
+    first = _receipt()
+    base = _record()
+    with pytest.raises(ValueError):
+        _record(requested_fields=tuple("x" for _ in range(129))).validate()
+    with pytest.raises(ValueError):
+        _record(sources=tuple({} for _ in range(129))).validate()
+    with pytest.raises(ValueError):
+        _record(artifacts=tuple({} for _ in range(257))).validate()
+    with pytest.raises(ValueError):
+        _record(learning_note="x" * 1025).validate()
+    broken = ChatbotRunRecord(**{**base.__dict__, "stages": ()})
+    with pytest.raises(ValueError):
+        broken.validate()
+    broken_chain = ChatbotRunRecord(**{**base.__dict__, "stages": (first, _receipt("fetch", "wrong"))})
+    with pytest.raises(ValueError):
+        broken_chain.validate()
