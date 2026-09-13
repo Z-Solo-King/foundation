@@ -19,28 +19,51 @@ jobs:
           version: 0.12.11
       - name: Run chatbot bridge tests
         run: uv run --with pytest --with pytest-asyncio pytest tests/test_chatbot_live_bridge.py tests/test_worker_diagnostics.py -q
-      - name: Probe Cloudflare account discovery
+      - name: Resolve D1 with Wrangler
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           set -euo pipefail
           test -n "${CLOUDFLARE_API_TOKEN}"
-          found=""
-          for endpoint in \
-            "https://api.cloudflare.com/client/v4/memberships" \
-            "https://api.cloudflare.com/client/v4/zones?per_page=1" \
-            "https://api.cloudflare.com/client/v4/user"; do
-            body=$(curl -sS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' "$endpoint")
-            candidate=$(jq -r '
-              .result[0].account.id //
-              .result[0].account_id //
-              .result.account.id //
-              empty
-            ' <<<"${body}" | head -n 1)
-            if [ -n "${candidate}" ] && [ "${candidate}" != "null" ]; then
-              found="${candidate}"
-              echo "Cloudflare account discovery succeeded via ${endpoint}"
-              break
-            fi
-          done
-          test -n "${found}"
+          npx wrangler@4.131.1 d1 list --json > /tmp/d1.json
+          jq -e 'length >= 1' /tmp/d1.json
+          jq -e 'any(.[]; .name == "research-intelligence")' /tmp/d1.json
+      - name: Verify deployed public Worker health
+        run: |
+          set -euo pipefail
+          curl -fsS https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/health | tee /tmp/health.json
+          jq -e '.ok == true' /tmp/health.json
+      - name: Verify deployed Cloudflare readiness and private binding
+        run: |
+          set -euo pipefail
+          status=$(curl -sS -o /tmp/readiness.json -w '%{http_code}' https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/readiness)
+          cat /tmp/readiness.json
+          test "$status" = "200"
+          jq -e '.ready == true and .control_plane == true' /tmp/readiness.json
+      - name: Execute deployed chatbot infrastructure verification
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          auth_header=()
+          if [ -n "${AUTH_TOKEN}" ]; then
+            auth_header=(-H "Authorization: Bearer ${AUTH_TOKEN}")
+          fi
+          status=$(curl -sS -o /tmp/chatbot.json -w '%{http_code}' \
+            -X POST \
+            "${auth_header[@]}" \
+            -H 'Content-Type: application/json' \
+            --data '{"operation":"infrastructure_verify"}' \
+            https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/api/v1/chatbot/diagnostic)
+          cat /tmp/chatbot.json
+          test "$status" = "200"
+          jq -e '
+            .ok == true and
+            .status == "ok" and
+            (.checks | map(select(.ok != true)) | length == 0) and
+            ([.checks[].name] | index("private_control_plane")) and
+            ([.checks[].name] | index("foundation_health")) and
+            ([.checks[].name] | index("cloudflare_readiness")) and
+            ([.checks[].name] | index("d1_research_run")) and
+            ([.checks[].name] | index("backblaze_b2_round_trip"))
+          ' /tmp/chatbot.json
