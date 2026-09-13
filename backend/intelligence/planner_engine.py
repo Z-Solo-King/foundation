@@ -27,7 +27,10 @@ def infer_fact_type(text: str) -> FactType:
 
 
 def decompose_claims(question: str, required: Sequence[str]|None=None)->tuple[ClaimRequirement,...]:
-    items=[x.strip() for x in (required or ()) if x and x.strip()]
+    if required is None:
+        items=[]
+    else:
+        items=[x.strip() for x in required if x and x.strip()]
     if not items: items=[p.strip() for p in re.split(r"\s*(?:,|;|\band\b|\bplus\b)\s*",question,flags=re.I) if len(p.strip())>=8]
     if not items: items=[question.strip()]
     return tuple(ClaimRequirement(f"claim-{i+1}",text,fact_type=infer_fact_type(text)) for i,text in enumerate(items))
@@ -35,7 +38,9 @@ def decompose_claims(question: str, required: Sequence[str]|None=None)->tuple[Cl
 
 def normalize_fields(fields: Sequence[FieldRequirement]|None)->tuple[FieldRequirement,...]:
     seen=set(); out=[]
-    for field in fields or ():  # pragma: no branch - iteration only
+    if fields is None:
+        return ()
+    for field in fields:
         if not field.field_id or not field.semantic_name: raise ValueError("field requirement identifiers must be non-empty")
         if field.field_id in seen: raise ValueError(f"duplicate field requirement: {field.field_id}")
         seen.add(field.field_id); out.append(field)
@@ -49,12 +54,12 @@ def generate_query_portfolio(question: str, claims: Sequence[ClaimRequirement], 
         if not normalized or normalized in seen or len(candidates)>=max_queries:return
         seen.add(normalized); candidates.append(QueryCandidate(query,purpose,gain,1.,family,claim_ids))
     claim_ids=tuple(c.claim_id for c in claims); add(base,"exact",.9,claim_ids=claim_ids)
-    for claim in claims[:3]:  # pragma: no branch - bounded traversal only
+    for claim in claims[:3]:
         add(f'"{claim.text}"',"identifier/exact-claim",.85,claim_ids=(claim.claim_id,))
     add(f"{base} official","primary-source",.88,"official",claim_ids); add(f"{base} specifications","specification",.75,"manufacturer",claim_ids); add(f"{base} counterclaim","counterclaim",.7,claim_ids=claim_ids); add(f"{base} recent","freshness",.72,claim_ids=claim_ids)
-    for family in source_families:  # pragma: no branch - declarative family expansion
+    for family in source_families:
         add(f"site:{family} {base}","site-restricted",.65,family,claim_ids)
-    for language in languages:  # pragma: no branch - declarative language expansion
+    for language in languages:
         if language.lower() not in {"en","english"}: add(f"{base} {language}","multilingual",.62,claim_ids=claim_ids)
     add(f"{base} review experience","community",.55,"community",claim_ids); return tuple(candidates)
 
@@ -69,7 +74,7 @@ def rank_methods(methods: Iterable[MethodCandidate])->tuple[MethodCandidate,...]
 
 def apply_source_profiles(methods: Sequence[MethodCandidate], profiles: Mapping[str,SourceProfileHint])->tuple[MethodCandidate,...]:
     updated=[]
-    for method in methods:  # pragma: no branch - iterator exhaustion is not a semantic decision
+    for method in methods:
         profile=profiles.get(method.source_id)
         if profile is None:
             updated.append(method)
@@ -90,7 +95,7 @@ def apply_field_preferences(methods: Sequence[MethodCandidate], fields: Sequence
     if not preferred:
         return rank_methods(methods)
     ranked=[]
-    for method in methods:  # pragma: no branch - iterator exhaustion is not a semantic decision
+    for method in methods:
         if method.representation in preferred:
             boost=0.10
         else:
@@ -105,7 +110,7 @@ def coverage_map(claims: Sequence[ClaimRequirement], evidence: Mapping[str,Cover
 
 def recovery_actions(coverage: Sequence[Coverage])->tuple[Action,...]:
     actions=[]
-    for item in coverage:  # pragma: no branch - exhaustive state dispatch within sequence
+    for item in coverage:
         if item.state in (CoverageState.CONTRADICTED,CoverageState.AMBIGUOUS): actions.append(Action(f"recover-{item.claim_id}-independent","search","independent/counterclaim verification",(item.claim_id,)))
         elif item.state in (CoverageState.PARTIAL,CoverageState.UNSUPPORTED): actions.append(Action(f"recover-{item.claim_id}-primary","search","primary/gap retrieval",(item.claim_id,)))
         elif item.state==CoverageState.STALE: actions.append(Action(f"recover-{item.claim_id}-fresh","search","freshness refresh",(item.claim_id,)))
@@ -126,7 +131,11 @@ def build_task_plan(question: str, output_type: str="", claims: Sequence[str]|No
     source_plans=tuple(SourcePlan(family,required=(family in ("official","primary"))) for family in source_families)
     field_ids=tuple(f.field_id for f in field_reqs)
     actions=tuple(Action(f"query-{i+1}","search",q.purpose,q.target_claim_ids,field_ids,estimated_cost=q.estimated_cost) for i,q in enumerate(queries))
-    env=envelope or ResourceEnvelope(search_units=max(1,len(queries))); env.validate()
+    if envelope is None:
+        env=ResourceEnvelope(search_units=max(1,len(queries)))
+    else:
+        env=envelope
+    env.validate()
     return TaskPlan(mode,tuple(claim_reqs),field_reqs,source_plans,queries,ranked,actions,env,metadata={"output_type":output_type,"planner":"deterministic-v1"})
 
 
