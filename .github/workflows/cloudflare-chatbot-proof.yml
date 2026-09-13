@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths-ignore:
       - docs/LIVE_CLOUDFLARE_VERIFICATION.md
+  pull_request:
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
@@ -38,7 +40,8 @@ jobs:
           ' /tmp/chatbot.json
           jq '{verified_at:(now|todate), ok, status, checks:[.checks[]|{name,ok,message}]}' /tmp/chatbot.json > /tmp/proof.json
 
-      - name: Commit sanitized verification proof
+      - name: Commit sanitized verification proof on main runs only
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -49,12 +52,7 @@ jobs:
           path='docs/LIVE_CLOUDFLARE_VERIFICATION.md'
           sha=$(gh api "/repos/${GITHUB_REPOSITORY}/contents/${path}" --jq '.sha' 2>/dev/null || true)
           if [[ -n "$sha" ]]; then
-            gh api --method PUT "/repos/${GITHUB_REPOSITORY}/contents/${path}" \
-              -f message='docs: record live chatbot-backed Cloudflare verification' \
-              -f content="$content" \
-              -f sha="$sha"
+            gh api --method PUT "/repos/${GITHUB_REPOSITORY}/contents/${path}" -f message='docs: record live chatbot-backed Cloudflare verification' -f content="$content" -f sha="$sha"
           else
-            gh api --method PUT "/repos/${GITHUB_REPOSITORY}/contents/${path}" \
-              -f message='docs: record live chatbot-backed Cloudflare verification' \
-              -f content="$content"
+            gh api --method PUT "/repos/${GITHUB_REPOSITORY}/contents/${path}" -f message='docs: record live chatbot-backed Cloudflare verification' -f content="$content"
           fi
