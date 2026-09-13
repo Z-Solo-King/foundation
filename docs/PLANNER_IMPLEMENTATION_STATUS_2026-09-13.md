@@ -10,6 +10,7 @@ This record ties the feature-first planner ledger to code without pretending the
 - Typed claim and field requirements.
 - Coverage, failure, pagination and stop-state taxonomies.
 - Method candidates, source plans, actions and resource envelopes.
+- `recovery_reserve_ratio` is now enforced by runtime resource reservation rather than remaining declarative only.
 
 ### Deterministic planning
 - Task classification with specification-task precedence.
@@ -24,6 +25,15 @@ This record ties the feature-first planner ledger to code without pretending the
 - Bounded pagination planning with expected-total limits.
 - Repeated-page and repeated-cursor detection.
 
+### Route memory and recovery
+- Deterministic route key/state model covering source + method + representation.
+- Exponential cooldown for retryable empirical failures.
+- Immediate quarantine for policy/auth/captcha-style empirical failures.
+- Threshold quarantine for repeated failures.
+- Explicit recovery transition and success reset.
+- Planner method selection now filters empirically quarantined/cooldown routes while retaining unseen and recovered routes.
+- Route memory remains empirical state only; it does not replace protected source policy or billing authority.
+
 ### Execution planning and replay
 - Explicit action dependency DAG.
 - Cycle and missing-dependency validation.
@@ -31,6 +41,7 @@ This record ties the feature-first planner ledger to code without pretending the
 - Deterministic canonical plan serialization/fingerprint.
 - Explain-plan diagnostics.
 - Basic hard/soft stop logic.
+- Protected recovery reserve accounting for ordinary resource reservation, with explicit recovery override.
 - Immutable replay bundle with contract/plan/context fingerprints including quota/freshness context.
 - Context-drift compatibility checks.
 
@@ -51,16 +62,14 @@ This record ties the feature-first planner ledger to code without pretending the
 
 ## Still required before planner roadmap is complete
 
-1. Connect field-aware route selection directly to the real acquisition consumers and source-route memory.
-2. Integrate pagination plans into actual acquisition execution, completeness certificates and source-level route memory.
-3. Add adaptive depth/de-escalation, recovery reserve accounting and negative route memory/quarantine/cooldown.
-4. Bind replay bundles to canonical capability/source/policy version records and deterministic replay artifacts.
-5. Connect planner reservations to the protected Operations runtime resource authority; planner-supplied envelopes must not become budget authority. Operations PR #53 provides the adapter but remains unmerged and currently has no historical test CI until its new workflow is accepted.
-6. Build the planner golden corpus and property/metamorphic/differential/fuzz/replay suites; expand toward the 150–300 production corpus with adversarial cases.
-7. Integrate EvidenceCertificate, calibrated semantic entailment, independence, freshness, research-regret and poisoning/integrity metrics end-to-end.
-8. Implement shadow/canary planner strategy lifecycle, rollback and verified strategy-memory promotion.
-9. Integrate the planner with Operations acquisition/extractor field-route consumers without duplicating policy ownership.
-10. Complete universal file/code/data/media planning contracts, sandboxed code execution and retention-aware artifact manifests.
+1. Integrate pagination plans into actual acquisition execution, completeness certificates and source-level route memory.
+2. Bind replay bundles to canonical capability/source/policy version records and deterministic replay artifacts.
+3. Connect planner reservations to the protected Operations runtime resource authority; planner-supplied envelopes must not become budget authority. Operations PR #53 provides the adapter but remains unmerged.
+4. Build the planner golden corpus and property/metamorphic/differential/fuzz/replay suites; expand toward the 150–300 production corpus with adversarial cases.
+5. Integrate EvidenceCertificate, calibrated semantic entailment, independence, freshness, research-regret and poisoning/integrity metrics end-to-end.
+6. Implement shadow/canary planner strategy lifecycle, rollback and verified strategy-memory promotion.
+7. Integrate the planner with Operations acquisition/extractor field-route consumers without duplicating policy ownership.
+8. Complete universal file/code/data/media planning contracts, sandboxed code execution and retention-aware artifact manifests.
 
 ## Deliberate boundaries
 
