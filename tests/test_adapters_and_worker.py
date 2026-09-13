@@ -118,10 +118,10 @@ async def test_cloudflare_persistence_helpers():
     await persistence.get_run("run-1")
     with pytest.raises(ValueError): await persistence.set_run_status("run-1", "bad")
     await persistence.set_run_status("run-1", "running")
-    db.run_rows["run-invalid"] = {"run_id": "run-invalid", "status": "bogus"}
-    with pytest.raises(ValueError, match="stored run status"): await persistence.set_run_status("run-invalid", "running")
-    db.run_rows["run-failed"] = {"run_id": "run-failed", "status": "completed"}
-    with pytest.raises(ValueError, match="invalid run transition"): await persistence.set_run_status("run-failed", "failed")
+    db.run_rows["run-1"]["status"] = "bogus"
+    with pytest.raises(ValueError, match="stored run status"): await persistence.set_run_status("run-1", "running")
+    db.run_rows["run-1"]["status"] = "completed"
+    with pytest.raises(ValueError, match="invalid run transition"): await persistence.set_run_status("run-1", "failed")
     result = await persistence.put_artifact("k", b"abc", "text/plain")
     assert result["size"] == 3 and await persistence.get_artifact("k") == b"abc" and await persistence.get_artifact("missing") is None
 
