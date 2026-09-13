@@ -17,7 +17,7 @@ jobs:
           version: 0.12.11
       - name: Run chatbot bridge tests
         run: uv run --with pytest --with pytest-asyncio pytest tests/test_chatbot_live_bridge.py tests/test_worker_diagnostics.py -q
-      - name: Resolve production D1 database id
+      - name: Resolve production Cloudflare account and D1 database
         id: d1
         shell: bash
         env:
@@ -26,12 +26,23 @@ jobs:
         run: |
           set -euo pipefail
           test -n "${CLOUDFLARE_API_TOKEN}"
-          test -n "${CLOUDFLARE_ACCOUNT_ID}"
+          account_id="${CLOUDFLARE_ACCOUNT_ID:-}"
+          if [ -z "${account_id}" ]; then
+            accounts_json=$(curl -fsSL \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              -H 'Content-Type: application/json' \
+              'https://api.cloudflare.com/client/v4/accounts?per_page=100')
+            account_count=$(jq '.result | length' <<<"${accounts_json}")
+            test "${account_count}" = "1"
+            account_id=$(jq -r '.result[0].id' <<<"${accounts_json}")
+          fi
+          test -n "${account_id}" && test "${account_id}" != "null"
           database_id=$(curl -fsSL \
             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             -H 'Content-Type: application/json' \
-            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database" \
+            "https://api.cloudflare.com/client/v4/accounts/${account_id}/d1/database" \
             | jq -r '.result[] | select(.name == "research-intelligence") | .uuid' \
             | head -n 1)
           test -n "${database_id}" && test "${database_id}" != "null"
+          echo "account_id=${account_id}" >> "$GITHUB_OUTPUT"
           echo "database_id=${database_id}" >> "$GITHUB_OUTPUT"
