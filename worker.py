@@ -218,6 +218,8 @@ class Default(WorkerEntrypoint):
             return Response.json(payload, status=status)
 
         if request.method == "POST" and path.endswith("/api/v1/chatbot/diagnostic"):
+            if not _authorized(request, self.env):
+                return Response.json({"ok": False, "error": "unauthorized"}, status=401)
             payload = await _json(request)
             if payload is None:
                 return Response.json({"ok": False, "error": "invalid JSON object"}, status=400)
