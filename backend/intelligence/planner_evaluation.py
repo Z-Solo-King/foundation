@@ -36,6 +36,22 @@ class PlannerMetrics:
     resource_consumption: float = 0.0
 
 
+def research_regret(chosen_quality: float, hindsight_best_quality: float) -> float:
+    """Measure lost attainable quality without allowing negative regret."""
+    if not 0.0 <= chosen_quality <= 1.0 or not 0.0 <= hindsight_best_quality <= 1.0:
+        raise ValueError("quality values must be between 0 and 1")
+    return max(0.0, hindsight_best_quality - chosen_quality)
+
+
+def evidence_gain_per_unit(gain: float, units: float) -> float:
+    """Normalize useful evidence gain by measured resource consumption."""
+    if gain < 0 or units < 0:
+        raise ValueError("gain and units must be non-negative")
+    if units == 0:
+        return gain
+    return gain / units
+
+
 def safe_region(metrics: PlannerMetrics, floors: Mapping[str, float], maximums: Mapping[str, float] | None = None) -> bool:
     if any(getattr(metrics, key) < value for key, value in floors.items()):
         return False
@@ -67,4 +83,12 @@ def candidate_improves(baseline: PlannerMetrics, candidate: PlannerMetrics,
     return (quality_gain > 0 or efficiency_gain > 0) and efficiency_gain >= 0 and regret_ok
 
 
-__all__ = ["PlannerMetrics", "QUALITY_METRICS", "safe_region", "quality_non_regression", "candidate_improves"]
+__all__ = [
+    "PlannerMetrics",
+    "QUALITY_METRICS",
+    "research_regret",
+    "evidence_gain_per_unit",
+    "safe_region",
+    "quality_non_regression",
+    "candidate_improves",
+]
