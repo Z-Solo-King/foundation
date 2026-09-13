@@ -60,14 +60,18 @@ class EvidenceVerifier:
     def verify_claim(self, claim, supporting_certs, observations, lineages, other_claims=()):
         if not supporting_certs:
             return VerificationResult(claim.claim_id, ClaimStatus.UNKNOWN, reasons=("no evidence provided",))
-        inspected = self._inspect_evidence(claim, supporting_certs, observations, lineages)
-        supporting, contradicting, reasons, semantic_reasons, valid_lineages, status = inspected
+        supporting, contradicting, reasons, semantic_reasons, valid_lineages, status = self._inspect_evidence(
+            claim, supporting_certs, observations, lineages
+        )
         stale_count = self._stale_count(supporting, observations, reasons)
         status = self._apply_claim_contradictions(claim, other_claims, status, reasons)
-        independent_count = self._independent_count(valid_lineages, reasons)
+        independent_count = self._independent_count(valid_lineages, reasons, supporting)
         reasons.extend(semantic_reasons)
-        final_status = self._final_status(status, supporting, stale_count, independent_count)
-        return VerificationResult(claim.claim_id, final_status, tuple(supporting), tuple(contradicting), independent_count, tuple(reasons))
+        return VerificationResult(
+            claim.claim_id,
+            self._final_status(status, supporting, stale_count, independent_count),
+            tuple(supporting), tuple(contradicting), independent_count, tuple(reasons),
+        )
 
     def _inspect_evidence(self, claim, certificates, observations, lineages):
         reasons, semantic_reasons, supporting, contradicting, valid_lineages = [], [], [], [], []
@@ -109,14 +113,14 @@ class EvidenceVerifier:
                 status = ClaimStatus.CONTRADICTED
         return status
 
-    def _independent_count(self, valid_lineages, reasons):
+    def _independent_count(self, valid_lineages, reasons, supporting):
         by_source = {lineage.source_id: lineage for lineage in valid_lineages}
         independent: list[SourceLineage] = []
         for lineage in sorted(by_source.values(), key=lambda item: item.source_id):
             if not independent or all(self.check_independence(lineage, existing) for existing in independent):
                 independent.append(lineage)
         count = len(independent)
-        if count == 0 and valid_lineages:
+        if count == 0 and (valid_lineages or supporting):
             reasons.append("supporting evidence has no independently originating corroboration")
         elif count >= 2:
             reasons.append(f"independent corroboration from {count} sources")
