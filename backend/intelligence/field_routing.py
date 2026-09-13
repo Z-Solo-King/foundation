@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Sequence
 
+from .planner_models import PaginationKind
+
 
 class Representation(str, Enum):
     API = "api"
@@ -17,15 +19,6 @@ class Representation(str, Enum):
     PDF_PAGE = "pdf_page"
     FRAME = "frame"
     TRANSCRIPT = "transcript"
-
-
-class PaginationKind(str, Enum):
-    PAGE = "page"
-    OFFSET = "offset"
-    CURSOR = "cursor"
-    NEXT_LINK = "next_link"
-    SITEMAP = "sitemap"
-    ID_ENUMERATION = "id_enumeration"
 
 
 @dataclass(frozen=True)
