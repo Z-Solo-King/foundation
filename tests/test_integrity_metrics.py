@@ -4,6 +4,7 @@ import pytest
 
 from backend.evaluation.integrity_metrics import (
     IntegrityObservation,
+    IntegrityMetrics,
     TrustTier,
     calculate_integrity_metrics,
 )
@@ -37,10 +38,27 @@ def test_integrity_observation_fail_closed_guards():
     with pytest.raises(ValueError):
         replace(IntegrityObservation("e", "o", "f"), published_at=-1).validate()
     with pytest.raises(ValueError):
+        replace(IntegrityObservation("e", "o", "f"), observed_at=-1).validate()
+    with pytest.raises(ValueError):
         IntegrityObservation("e", "o", "f", trust_tier="ugc").validate()
+    invalid_metrics = replace(IntegrityMetrics(0, 0, 0, 0, 0, 0), sample_count=-1)
+    with pytest.raises(ValueError): invalid_metrics.validate()
+    with pytest.raises(ValueError): replace(IntegrityMetrics(0, 0, 0, 0, 0, 0), ugc_ratio=2).validate()
 
 
 def test_many_unique_origins_have_low_concentration_and_single_origin_is_maximal():
     many = tuple(IntegrityObservation(str(i), f"origin-{i}", f"family-{i}") for i in range(5))
     assert calculate_integrity_metrics(many).retrieval_concentration == 0.0
     assert calculate_integrity_metrics((IntegrityObservation("e", "o", "f"),)).retrieval_concentration == 1.0
+
+
+def test_integrity_metric_internal_branch_families():
+    with pytest.raises(ValueError):
+        calculate_integrity_metrics((IntegrityObservation("", "o", "f"),))
+    disagreement = (
+        IntegrityObservation("1", "o1", "f1", supports_claim=True),
+        IntegrityObservation("2", "o2", "f2", supports_claim=False),
+    )
+    metrics = calculate_integrity_metrics(disagreement)
+    assert metrics.disagreement_rate == pytest.approx(0.5)
+    assert metrics.retrieval_concentration == 0.0
