@@ -14,9 +14,17 @@ from backend.intelligence.planner_models import ClaimRequirement, FactType, Meth
 from backend.intelligence.planner_runtime import choose_stop, explain_plan, plan_fingerprint, reserve, topological_order
 from backend.intelligence.source_profiles import SourceProfile
 from backend.intelligence.strategy_evaluation import StrategyExperiment, StrategyMetrics, candidate_beats_baseline
-from backend.run_record import RunRecord
-from backend.stage_receipt import StageReceipt
+from backend.run_record import ChatbotRunRecord, ResourceUsage, RunResult
+from backend.stage_receipt import StageReceipt, fingerprint
 from backend.token_efficiency import EfficiencyGate, TokenEfficiencyObservation, compare_efficiency
+
+
+def _run_record(request_fingerprint="req", stage_request_fingerprint="req"):
+    receipt = StageReceipt(stage_request_fingerprint, "plan", fingerprint("in"), fingerprint("out"), "method", "provider")
+    return ChatbotRunRecord(
+        "1", "run", "2026-09-13T00:00:00Z", request_fingerprint, {}, "method", "reason", (receipt,),
+        RunResult("success"), {"version": "test"}, ResourceUsage(),
+    )
 
 
 def test_remaining_contract_validation_and_empty_optional_paths():
@@ -72,7 +80,7 @@ def test_remaining_source_profile_paths():
         "s3": SourceProfileHint("s3", health=.8, sample_size=10),
     }
     ranked = apply_source_profiles(methods, profiles)
-    assert [m.method_id for m in ranked] == ["well_sampled", "missing", "sampled"] or ranked
+    assert ranked and {m.method_id for m in ranked} == {"missing", "sampled", "well_sampled"}
     assert SourceProfile("s", "family", sample_size=0).hint().sample_size == 0
 
 
@@ -141,5 +149,5 @@ def test_remaining_stage_token_run_and_strategy_guards():
     bad = replace(obs, estimated_input_tokens=inf, total_estimated_tokens=inf)
     assert not compare_efficiency(obs, bad, gate=EfficiencyGate())[0]
     assert compare_efficiency(obs, obs, gate=EfficiencyGate())[0]
-    record = RunRecord("r", "q", "planned", "c", "p", "s", "fp", "t")
-    assert record.validate() is None
+    assert _run_record().validate() is None
+    with pytest.raises(ValueError): _run_record(stage_request_fingerprint="other").validate()
