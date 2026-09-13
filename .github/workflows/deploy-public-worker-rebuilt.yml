@@ -12,4 +12,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "deployment workflow structure probe ${GITHUB_SHA}"
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v6.0.0
+        with:
+          node-version: 22
+      - run: echo "deployment action setup probe ${GITHUB_SHA}"
