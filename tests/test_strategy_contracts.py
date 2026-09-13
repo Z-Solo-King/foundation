@@ -43,19 +43,22 @@ def test_strategy_card_validation_and_utility():
     )
     card.validate()
     assert card.utility() > 0
-    for kwargs in (
-        {"strategy_id": " ", "owner": "x"},
-        {"strategy_id": "x", "owner": " "},
-        {"strategy_id": "x", "owner": "o", "expected_quality": 1.1},
-        {"strategy_id": "x", "owner": "o", "expected_completeness": -0.1},
-        {"strategy_id": "x", "owner": "o", "evidence_directness": 1.1},
-        {"strategy_id": "x", "owner": "o", "expected_latency_ms": -1},
-        {"strategy_id": "x", "owner": "o", "expected_resource_units": -1},
-        {"strategy_id": "x", "owner": "o", "risk_penalty": -1},
-        {"strategy_id": "x", "owner": "o", "token_multiplier": 0},
+    neutral = StrategyCard("html-v1", StrategyFamily.PARSER, "foundation", cache=CacheProfile(exact=False, prefix_reusable=False))
+    assert neutral.utility() > 0
+    base = {"strategy_id": "x", "family": StrategyFamily.QUERY, "owner": "o"}
+    for changes in (
+        {"strategy_id": " "},
+        {"owner": " "},
+        {"expected_quality": 1.1},
+        {"expected_completeness": -0.1},
+        {"evidence_directness": 1.1},
+        {"expected_latency_ms": -1},
+        {"expected_resource_units": -1},
+        {"risk_penalty": -1},
+        {"token_multiplier": 0},
     ):
         with pytest.raises(ValueError):
-            StrategyCard(**kwargs).validate()
+            StrategyCard(**{**base, **changes}).validate()
 
 
 def test_token_decision_matrix():
