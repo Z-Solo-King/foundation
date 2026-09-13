@@ -39,9 +39,16 @@ class B2ArtifactStore(ArtifactStore):
         self.key_id = key_id
         self.application_key = application_key
 
-    def _url(self, key: str) -> str:
-        if not key or key.startswith("/"):
+    @staticmethod
+    def _validate_key(key: str) -> None:
+        if not key or key.startswith("/") or "\\" in key:
             raise ValueError("artifact key must be a non-empty relative path")
+        segments = key.split("/")
+        if any(segment in {"", ".", ".."} for segment in segments):
+            raise ValueError("artifact key contains an invalid path segment")
+
+    def _url(self, key: str) -> str:
+        self._validate_key(key)
         return f"{self.endpoint}/{quote(self.bucket, safe='')}/{quote(key, safe='/~.-_')}"
 
     @staticmethod
