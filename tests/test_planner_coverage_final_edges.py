@@ -8,9 +8,9 @@ from backend.intelligence.contracts import ResearchContract
 from backend.intelligence.field_routing import FieldRequirement, PaginationPlan, Representation, RepresentationRoute, choose_routes
 from backend.intelligence.observations import Observation
 from backend.intelligence.pagination import PaginationKind, PaginationState
-from backend.intelligence.planner_engine import apply_source_profiles, build_task_plan, classify_task, create_task_plan, decompose_claims, generate_query_portfolio, infer_fact_type
+from backend.intelligence.planner_engine import apply_source_profiles, build_task_plan, classify_task, create_task_plan, decompose_claims, generate_query_portfolio, infer_fact_type, recovery_actions
 from backend.intelligence.planner_evaluation import PlannerMetrics, candidate_improves
-from backend.intelligence.planner_models import Action, ClaimRequirement, FactType, MethodCandidate, ResourceEnvelope, SourceProfileHint, StopReason, TaskMode
+from backend.intelligence.planner_models import Action, ClaimRequirement, Coverage, CoverageState, FactType, MethodCandidate, ResourceEnvelope, SourceProfileHint, StopReason, TaskMode
 from backend.intelligence.planner_runtime import choose_stop, explain_plan, plan_fingerprint, reserve, topological_order
 from backend.intelligence.source_profiles import SourceProfile
 from backend.intelligence.strategy_evaluation import StrategyExperiment, StrategyMetrics, candidate_beats_baseline
@@ -60,11 +60,13 @@ def test_remaining_planner_branches_and_query_budget():
     assert generate_query_portfolio("", claims=(), max_queries=0) == ()
     assert generate_query_portfolio("thing", claims=(ClaimRequirement("c", "thing"),), max_queries=1)[0].purpose == "exact"
     assert generate_query_portfolio("thing", claims=(), languages=("en", "english", "hi"), source_families=("official",), max_queries=12)
-    plan = build_task_plan("thing", envelope=ResourceEnvelope(search_units=1), max_queries=1)
+    assert len(generate_query_portfolio("thing", claims=(ClaimRequirement("c1", "thing"), ClaimRequirement("c2", "thing")), max_queries=2)) == 2
+    plan = build_task_plan("thing", envelope=ResourceEnvelope(search_units=1), max_queries=1, source_families=("official", "community"))
     assert plan_fingerprint(plan) == plan_fingerprint(plan)
     assert explain_plan(plan).startswith("mode=")
     contract_plan = create_task_plan(ResearchContract("thing", max_search_actions=2, resource_envelope=ResourceEnvelope(search_units=2)))
     assert contract_plan.envelope.search_units == 2
+    assert recovery_actions((Coverage("b", CoverageState.BLOCKED), Coverage("i", CoverageState.INACCESSIBLE)))
 
 
 def test_remaining_source_profile_paths():
@@ -110,6 +112,9 @@ def test_remaining_observation_and_certificate_guards():
     with pytest.raises(ValueError): replace(full, author=123).validate()
     with pytest.raises(ValueError): replace(full, title="x" * 4097).validate()
     with pytest.raises(ValueError): replace(full, content_sha256="0" * 64).validate()
+    with pytest.raises(ValueError): replace(full, observation_id="").validate()
+    with pytest.raises(ValueError): replace(full, source_url="x" * 4097).validate()
+    with pytest.raises(ValueError): replace(full, content="x" * 2_000_001).validate()
 
 
 def test_remaining_evaluation_receipt_and_planner_evaluation_guards():
@@ -122,6 +127,8 @@ def test_remaining_evaluation_receipt_and_planner_evaluation_guards():
     assert not candidate_improves(base_metrics, base_metrics, {"task_coverage": .7})
     worse = replace(base_metrics, research_regret=.3)
     assert not candidate_improves(base_metrics, worse, {"task_coverage": .7})
+    faster = replace(base_metrics, latency=.5)
+    assert candidate_improves(base_metrics, faster, {"task_coverage": .7})
 
 
 def test_remaining_runtime_stop_and_resource_paths():
@@ -144,6 +151,7 @@ def test_remaining_stage_token_run_and_strategy_guards():
     exp = StrategyExperiment("e", "b", "c", "fp", metrics, metrics)
     assert not candidate_beats_baseline(exp, {"correctness": .95})
     with pytest.raises(ValueError): StageReceipt("id", "req", "run", "method", "provider", "hash", parent_receipt_fingerprint=" ")
+    with pytest.raises(ValueError): StageReceipt("id", "req", "run", "method", "provider", "hash", attempt=0)
     StageReceipt("id", "req", "run", "method", "provider", "hash")
     obs = TokenEfficiencyObservation(10, 5, 2, 1, 100, 20, 2, accepted=True)
     with pytest.raises(ValueError): replace(obs, estimated_input_tokens=-1).validate()
@@ -152,3 +160,4 @@ def test_remaining_stage_token_run_and_strategy_guards():
     assert compare_efficiency(obs, obs, gate=EfficiencyGate())[0]
     assert _run_record().validate() is None
     with pytest.raises(ValueError): _run_record(stage_request_fingerprint="other").validate()
+    with pytest.raises(ValueError): ResourceEnvelope(recovery_reserve_ratio=.5, search_units=1, concurrency=0).validate()
