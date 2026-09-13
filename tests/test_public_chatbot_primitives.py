@@ -64,6 +64,8 @@ def test_stage_receipt_rejects_bounds():
         StageReceipt("req", "stage", "in", "out", "local", attempt=0)
     with pytest.raises(ValueError):
         StageReceipt("req", "stage", "in", "out", "local", parent_receipt_fingerprint="")
+    with pytest.raises(ValueError):
+        StageReceipt("req", "stage", "in", "out", "local", request_fingerprint="")
 
 
 def test_token_efficiency_observation_and_gate_guards():
@@ -123,6 +125,14 @@ def test_run_record_validation_and_public_metadata():
     metadata = record.to_public_metadata()
     assert metadata["run_id"] == "run-1"
     assert metadata["token_efficiency"]["total_estimated_tokens"] == 15
+    baseline_metadata = _record().to_public_metadata()
+    assert "evidence_selection" not in baseline_metadata
+    assert "token_efficiency" not in baseline_metadata
+
+    with pytest.raises(ValueError):
+        _record(run_id="").validate()
+    with pytest.raises(ValueError):
+        _record(request_fingerprint="").validate()
 
     for field in ("planned_context_units", "retained_evidence_units", "dropped_evidence_units", "duplicate_evidence_dropped", "selected_evidence_count", "source_count"):
         values = {"planned_context_units": 4, "retained_evidence_units": 1, "dropped_evidence_units": 1, "duplicate_evidence_dropped": 1, "selected_evidence_count": 1, "source_count": 1}
