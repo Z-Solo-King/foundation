@@ -19,15 +19,6 @@ jobs:
           version: 0.12.11
       - name: Run chatbot bridge tests
         run: uv run --with pytest --with pytest-asyncio pytest tests/test_chatbot_live_bridge.py tests/test_worker_diagnostics.py -q
-      - name: Resolve D1 with Wrangler
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          set -euo pipefail
-          test -n "${CLOUDFLARE_API_TOKEN}"
-          npx wrangler@4.131.1 d1 list --json > /tmp/d1.json
-          jq -e 'length >= 1' /tmp/d1.json
-          jq -e 'any(.[]; .name == "research-intelligence")' /tmp/d1.json
       - name: Verify deployed public Worker health
         run: |
           set -euo pipefail
@@ -40,30 +31,20 @@ jobs:
           cat /tmp/readiness.json
           test "$status" = "200"
           jq -e '.ready == true and .control_plane == true' /tmp/readiness.json
-      - name: Execute deployed chatbot infrastructure verification
-        env:
-          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+      - name: Exercise deployed D1 plus Backblaze B2 persistence path
         run: |
           set -euo pipefail
-          auth_header=()
-          if [ -n "${AUTH_TOKEN}" ]; then
-            auth_header=(-H "Authorization: Bearer ${AUTH_TOKEN}")
-          fi
-          status=$(curl -sS -o /tmp/chatbot.json -w '%{http_code}' \
+          status=$(curl -sS -o /tmp/research.json -w '%{http_code}' \
             -X POST \
-            "${auth_header[@]}" \
             -H 'Content-Type: application/json' \
-            --data '{"operation":"infrastructure_verify"}' \
-            https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/api/v1/chatbot/diagnostic)
-          cat /tmp/chatbot.json
+            --data '{"question":"Live D1/B2 integration verification","depth":"quick","require_citations":false,"max_sources":1,"max_evidence_items":4,"strict_zero_cost_only":true,"source_urls":["https://example.com/"]}' \
+            https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/api/v1/research)
+          cat /tmp/research.json
           test "$status" = "200"
-          jq -e '
-            .ok == true and
-            .status == "ok" and
-            (.checks | map(select(.ok != true)) | length == 0) and
-            ([.checks[].name] | index("private_control_plane")) and
-            ([.checks[].name] | index("foundation_health")) and
-            ([.checks[].name] | index("cloudflare_readiness")) and
-            ([.checks[].name] | index("d1_research_run")) and
-            ([.checks[].name] | index("backblaze_b2_round_trip"))
-          ' /tmp/chatbot.json
+          jq -e '.ok == true and (.run_id | length > 0) and (.sources | length == 1) and (.sources[0].status >= 200 and .sources[0].status < 400)' /tmp/research.json
+          run_id=$(jq -r '.run_id' /tmp/research.json)
+          status=$(curl -sS -o /tmp/run.json -w '%{http_code}' \
+            "https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/api/v1/research/${run_id}")
+          cat /tmp/run.json
+          test "$status" = "200"
+          jq -e '.ok == true and (.observations | length == 1) and .observations[0].integrity_state == "verified"' /tmp/run.json
