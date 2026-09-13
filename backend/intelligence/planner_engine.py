@@ -28,13 +28,16 @@ from .planner_models import (
 
 def classify_task(question: str, output_type: str = "") -> TaskMode:
     text = f"{question} {output_type}".lower()
+    if "spec" in text or "specification" in text:
+        # "official specifications" is still a specification task; source
+        # authority is a route requirement, not a distinct task mode.
+        return TaskMode.SPECIFICATION
     signals = {
         TaskMode.RECOMMENDATION: ("recommend", "best", "which should", "buy"),
         TaskMode.COMPARISON: ("compare", "versus", "vs", "difference"),
         TaskMode.TEMPORAL: ("history", "historical", "changed", "when", "latest"),
         TaskMode.CONTRADICTION: ("contradict", "disagree", "is it true", "conflict"),
         TaskMode.PRICE_AVAILABILITY: ("price", "cost", "stock", "available"),
-        TaskMode.SPECIFICATION: ("spec", "specification", "dimensions", "ports", "hz", "ram", "cpu"),
         TaskMode.DIAGNOSIS: ("why", "problem", "error", "broken", "debug"),
         TaskMode.COMMUNITY: ("reddit", "forum", "community", "user experience", "sentiment"),
         TaskMode.PRIMARY_SOURCE: ("official", "manufacturer", "source of record", "primary source"),
@@ -76,28 +79,19 @@ def decompose_claims(question: str, required: Sequence[str] | None = None) -> tu
         items = [p.strip() for p in pieces if len(p.strip()) >= 8]
     if not items:
         items = [question.strip()]
-    return tuple(
-        ClaimRequirement(
-            claim_id=f"claim-{i+1}",
-            text=text,
-            fact_type=infer_fact_type(text),
-        )
-        for i, text in enumerate(items)
-    )
+    return tuple(ClaimRequirement(claim_id=f"claim-{i+1}", text=text, fact_type=infer_fact_type(text))
+                   for i, text in enumerate(items))
 
 
-def generate_query_portfolio(
-    question: str,
-    claims: Sequence[ClaimRequirement],
-    languages: Sequence[str] = (),
-    source_families: Sequence[str] = (),
-    max_queries: int = 12,
-) -> tuple[QueryCandidate, ...]:
+def generate_query_portfolio(question: str, claims: Sequence[ClaimRequirement],
+                             languages: Sequence[str] = (), source_families: Sequence[str] = (),
+                             max_queries: int = 12) -> tuple[QueryCandidate, ...]:
     base = question.strip()
     candidates: list[QueryCandidate] = []
     seen: set[str] = set()
 
-    def add(query: str, purpose: str, gain: float, family: str | None = None, claim_ids: tuple[str, ...] = ()) -> None:
+    def add(query: str, purpose: str, gain: float, family: str | None = None,
+            claim_ids: tuple[str, ...] = ()) -> None:
         normalized = " ".join(query.split()).lower()
         if not normalized or normalized in seen or len(candidates) >= max_queries:
             return
@@ -124,15 +118,10 @@ def generate_query_portfolio(
 
 
 def method_utility(method: MethodCandidate) -> float:
-    positive = (
-        method.evidence_directness * 0.22
-        + method.authority * 0.18
-        + method.expected_success * 0.18
-        + method.expected_completeness * 0.16
-        + method.freshness * 0.08
-        + method.independence * 0.08
-        + method.information_gain * 0.10
-    )
+    positive = (method.evidence_directness * 0.22 + method.authority * 0.18
+                + method.expected_success * 0.18 + method.expected_completeness * 0.16
+                + method.freshness * 0.08 + method.independence * 0.08
+                + method.information_gain * 0.10)
     cost = 0.06 * method.latency_cost + 0.08 * method.resource_cost + 0.10 * method.risk_penalty
     return positive - cost
 
@@ -188,16 +177,10 @@ def choose_stop_reason(coverage: Sequence[Coverage], budget_remaining: float, mi
     return None
 
 
-def build_task_plan(
-    question: str,
-    output_type: str = "",
-    claims: Sequence[str] | None = None,
-    languages: Sequence[str] = (),
-    source_families: Sequence[str] = (),
-    methods: Sequence[MethodCandidate] = (),
-    envelope: ResourceEnvelope | None = None,
-    max_queries: int = 12,
-) -> TaskPlan:
+def build_task_plan(question: str, output_type: str = "", claims: Sequence[str] | None = None,
+                    languages: Sequence[str] = (), source_families: Sequence[str] = (),
+                    methods: Sequence[MethodCandidate] = (), envelope: ResourceEnvelope | None = None,
+                    max_queries: int = 12) -> TaskPlan:
     mode = classify_task(question, output_type)
     claim_reqs = decompose_claims(question, claims)
     queries = generate_query_portfolio(question, claim_reqs, languages, source_families, max_queries=max_queries)
@@ -214,28 +197,13 @@ def build_task_plan(
 def create_task_plan(contract: object) -> TaskPlan:
     """Build the canonical immutable task plan from a validated research contract."""
     contract.validate()
-    return build_task_plan(
-        question=contract.question,
-        output_type=contract.output_type,
-        claims=contract.claims_required,
-        languages=contract.languages,
-        source_families=contract.source_families_required,
-        envelope=contract.resource_envelope,
-        max_queries=contract.max_search_actions,
-    )
+    return build_task_plan(question=contract.question, output_type=contract.output_type,
+                           claims=contract.claims_required, languages=contract.languages,
+                           source_families=contract.source_families_required,
+                           envelope=contract.resource_envelope,
+                           max_queries=contract.max_search_actions)
 
 
-__all__ = [
-    "classify_task",
-    "infer_fact_type",
-    "decompose_claims",
-    "generate_query_portfolio",
-    "method_utility",
-    "rank_methods",
-    "apply_source_profiles",
-    "coverage_map",
-    "recovery_actions",
-    "choose_stop_reason",
-    "build_task_plan",
-    "create_task_plan",
-]
+__all__ = ["classify_task", "infer_fact_type", "decompose_claims", "generate_query_portfolio",
+           "method_utility", "rank_methods", "apply_source_profiles", "coverage_map",
+           "recovery_actions", "choose_stop_reason", "build_task_plan", "create_task_plan"]
