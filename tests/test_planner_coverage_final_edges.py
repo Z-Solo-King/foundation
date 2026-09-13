@@ -155,7 +155,7 @@ def test_remaining_stage_token_run_and_strategy_guards():
     assert not candidate_beats_baseline(exp, {"correctness": .95})
     with pytest.raises(ValueError): StageReceipt("id", "req", "run", "method", "provider", "hash", parent_receipt_fingerprint=" ")
     with pytest.raises(ValueError): StageReceipt("id", "req", "run", "method", "provider", "hash", attempt=0)
-    with pytest.raises(ValueError): StageReceipt("id", "req", "run", "method", "x" * 65, "hash")
+    with pytest.raises(ValueError): StageReceipt("id", "req", "run", "method", "x" * 97, "hash")
     StageReceipt("id", "req", "run", "method", "provider", "hash")
     obs = TokenEfficiencyObservation(10, 5, 2, 1, 100, 20, 2, accepted=True)
     with pytest.raises(ValueError): replace(obs, estimated_input_tokens=-1).validate()
