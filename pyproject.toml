@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "research-intelligence-engine"
 version = "0.2.0"
 description = "Public-safe research intelligence engine"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = []
 
 [tool.setuptools.packages.find]
