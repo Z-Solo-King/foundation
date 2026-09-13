@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from enum import Enum
-from typing import Mapping
+from typing import Mapping, Sequence
 
-from .planner_models import FailureClass
+from .planner_models import FailureClass, MethodCandidate
 
 
 class RouteDisposition(Enum):
@@ -93,6 +93,23 @@ def eligible(state: RouteState, now: float) -> bool:
     return disposition(state, now) in {RouteDisposition.ELIGIBLE, RouteDisposition.RECOVERING}
 
 
+def apply_route_memory(
+    methods: Sequence[MethodCandidate],
+    memory: Mapping[RouteKey, RouteState] | None,
+    now: float,
+) -> tuple[MethodCandidate, ...]:
+    """Filter empirically blocked routes without becoming a policy authority."""
+    if not memory:
+        return tuple(methods)
+    kept: list[MethodCandidate] = []
+    for method in methods:
+        key = RouteKey(method.source_id, method.method_id, method.representation)
+        state = memory.get(key)
+        if state is None or eligible(state, now):
+            kept.append(method)
+    return tuple(kept)
+
+
 def record_failure(
     state: RouteState,
     failure: FailureClass,
@@ -158,6 +175,7 @@ __all__ = [
     "cooldown_seconds",
     "disposition",
     "eligible",
+    "apply_route_memory",
     "record_failure",
     "record_success",
     "recover",
