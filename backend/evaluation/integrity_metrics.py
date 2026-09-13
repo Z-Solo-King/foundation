@@ -41,8 +41,7 @@ class IntegrityObservation:
             value = getattr(self, name)
             if value is not None and value < 0:
                 raise ValueError(f"{name} must be non-negative")
-        if self.published_at is not None and self.observed_at is not None and self.published_at > self.observed_at:
-            raise ValueError("published_at must not be after observed_at")
+        # Keep published-after-observed anomalies so the integrity metric can detect them.
 
 
 @dataclass(frozen=True)
@@ -79,7 +78,6 @@ def _hhi(values: Sequence[str]) -> float:
 def _concentration(values: Sequence[str]) -> float:
     if not values:
         return 0.0
-    # Normalize HHI from 1/N .. 1 into a [0, 1] anomaly-like concentration score.
     hhi = _hhi(values)
     minimum = 1.0 / len(set(values))
     if minimum >= 1.0:
