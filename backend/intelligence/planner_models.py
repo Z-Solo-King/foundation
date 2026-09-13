@@ -70,6 +70,15 @@ class FailureClass(str, Enum):
     UNKNOWN = "unknown_failure"
 
 
+class PaginationKind(str, Enum):
+    PAGE = "page"
+    OFFSET = "offset"
+    CURSOR = "cursor"
+    NEXT_LINK = "next_link"
+    SITEMAP = "sitemap"
+    ID_ENUMERATION = "id_enumeration"
+
+
 class StopReason(str, Enum):
     QUALITY_FLOOR = "quality_floor_met"
     LOW_INFORMATION_GAIN = "low_information_gain"
