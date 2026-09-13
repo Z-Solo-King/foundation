@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
-from .planner_models import ResourceEnvelope
+from .planner_models import FieldRequirement, ResourceEnvelope
 
 ResearchDepth = Literal["quick", "standard", "deep"]
 
@@ -15,6 +15,7 @@ class ResearchContract:
     max_evidence_items: int = 100
     output_type: str = "answer"
     claims_required: tuple[str, ...] = ()
+    field_requirements: tuple[FieldRequirement, ...] = ()
     freshness_requirement: int | None = None
     languages: tuple[str, ...] = ()
     source_families_required: tuple[str, ...] = ()
@@ -43,6 +44,13 @@ class ResearchContract:
             raise ValueError("max_evidence_items must be positive")
         if self.freshness_requirement is not None and self.freshness_requirement < 0:
             raise ValueError("freshness_requirement must be non-negative")
+        seen: set[str] = set()
+        for field_req in self.field_requirements:
+            if not field_req.field_id.strip() or not field_req.semantic_name.strip():
+                raise ValueError("field requirement identifiers must not be empty")
+            if field_req.field_id in seen:
+                raise ValueError(f"duplicate field requirement: {field_req.field_id}")
+            seen.add(field_req.field_id)
         self.resource_envelope.validate()
         if self.max_search_actions > self.resource_envelope.search_units:
             raise ValueError("max_search_actions exceeds resource envelope")
