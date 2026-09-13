@@ -1,5 +1,6 @@
 from .contracts import ResearchContract, ResearchPlan
-
+from .planner_engine import build_task_plan
+from .planner_runtime import explain_plan, plan_fingerprint, topological_order, validate_dag
 
 DEFAULT_STAGES = (
     "define_question",
@@ -13,10 +14,27 @@ DEFAULT_STAGES = (
 )
 
 
-def create_plan(contract: ResearchContract) -> ResearchPlan:
+def create_task_plan(contract: ResearchContract):
     contract.validate()
-    stages = DEFAULT_STAGES
+    return build_task_plan(
+        question=contract.question,
+        output_type=contract.output_type,
+        claims=contract.claims_required,
+        languages=contract.languages,
+        source_families=contract.source_families_required,
+        envelope=contract.resource_envelope,
+        max_queries=contract.max_search_actions,
+    )
 
+
+def create_plan(contract: ResearchContract) -> ResearchPlan:
+    """Compatibility DTO plus canonical task plan metadata.
+
+    Existing callers keep receiving ResearchPlan while richer callers can use
+    create_task_plan() to obtain the typed execution plan.
+    """
+    task = create_task_plan(contract)
+    stages = DEFAULT_STAGES
     if contract.depth == "quick":
         stages = (
             "define_question",
@@ -25,7 +43,7 @@ def create_plan(contract: ResearchContract) -> ResearchPlan:
             "verify_evidence",
             "synthesize_answer",
         )
-
+    validate_dag(task.actions)
     return ResearchPlan(
         question=contract.question,
         stages=stages,
@@ -34,5 +52,20 @@ def create_plan(contract: ResearchContract) -> ResearchPlan:
         metadata={
             "depth": contract.depth,
             "require_citations": str(contract.require_citations).lower(),
+            "task_mode": task.task_mode.value,
+            "plan_fingerprint": plan_fingerprint(task),
+            "plan_explain": explain_plan(task),
+            "query_count": str(len(task.queries)),
         },
     )
+
+
+__all__ = [
+    "DEFAULT_STAGES",
+    "create_plan",
+    "create_task_plan",
+    "explain_plan",
+    "plan_fingerprint",
+    "topological_order",
+    "validate_dag",
+]
