@@ -15,6 +15,11 @@ from backend.intelligence.route_memory import (
 )
 
 
+def test_success_rate_zero_and_positive():
+    assert RouteState().success_rate == 0.0
+    assert RouteState(attempts=2, successes=1).success_rate == 0.5
+
+
 def test_failure_backoff_quarantine_and_dispositions():
     state = RouteState()
     state = record_failure(state, FailureClass.TIMEOUT, 100.0)
@@ -25,6 +30,17 @@ def test_failure_backoff_quarantine_and_dispositions():
     assert disposition(state, 160.1) is RouteDisposition.QUARANTINED
     assert not eligible(state, 200.0)
     assert cooldown_seconds(state, FailureClass.POLICY) == 0.0
+
+
+def test_cooldown_validation_and_non_retryable_failure():
+    state = RouteState()
+    assert cooldown_seconds(state, FailureClass.EMPTY) == 0.0
+    with pytest.raises(ValueError):
+        cooldown_seconds(state, FailureClass.TIMEOUT, base=0)
+    with pytest.raises(ValueError):
+        cooldown_seconds(state, FailureClass.TIMEOUT, cap=0)
+    with pytest.raises(ValueError):
+        cooldown_seconds(state, FailureClass.TIMEOUT, base=20, cap=10)
 
 
 def test_policy_and_auth_failures_quarantine_immediately():
@@ -61,6 +77,6 @@ def test_route_identity_memory_isolated_and_validated():
     with pytest.raises(ValueError):
         record_failure(RouteState(), FailureClass.TIMEOUT, -1.0)
     with pytest.raises(ValueError):
-        cooldown_seconds(RouteState(), FailureClass.TIMEOUT, base=0)
-    with pytest.raises(ValueError):
         record_failure(RouteState(), FailureClass.TIMEOUT, 1.0, quarantine_after=0)
+    with pytest.raises(ValueError):
+        record_failure(RouteState(), FailureClass.TIMEOUT, 1.0, quarantine_seconds=0)
