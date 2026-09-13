@@ -1,5 +1,7 @@
+import pytest
+
 from backend.api import health_response
-from backend.artifacts.manifest import create_manifest
+from backend.artifacts.manifest import ArtifactKind, ArtifactManifest, create_manifest
 from backend.execution.acquisition import reserve_acquisition
 from backend.execution.capability import CapabilityRegistry, CapabilityState
 from backend.execution.providers import ProviderCapability, ProviderRegistry
@@ -93,3 +95,27 @@ def test_claim():
 def test_artifact():
     manifest = create_manifest("a1", "result.txt", "txt", b"hello", "run:r1")
     assert len(manifest.content_hash) == 64
+    assert manifest.size_bytes == 5
+    assert manifest.verify_content(b"hello")
+    assert not manifest.verify_content(b"hello!")
+
+
+def test_artifact_manifest_kinds_and_guards():
+    manifest = create_manifest(
+        "a2", "model.json", "json", b"{}", "run:r2",
+        kind=ArtifactKind.DATA, producer="planner", retention_seconds=60,
+        metadata={"schema": "v1"},
+    )
+    assert manifest.kind is ArtifactKind.DATA
+    assert manifest.producer == "planner"
+    assert manifest.retention_seconds == 60
+    with pytest.raises(ValueError):
+        ArtifactManifest("", "x", "txt", "0" * 64, manifest.created_at, "r").validate()
+    with pytest.raises(ValueError):
+        ArtifactManifest("a", "x", "txt", "bad", manifest.created_at, "r").validate()
+    with pytest.raises(ValueError):
+        ArtifactManifest("a", "x", "txt", "0" * 64, manifest.created_at, "r", size_bytes=-1).validate()
+    with pytest.raises(ValueError):
+        ArtifactManifest("a", "x", "txt", "0" * 64, manifest.created_at, "r", retention_seconds=-1).validate()
+    with pytest.raises(ValueError):
+        ArtifactManifest("a", "x", "txt", "0" * 64, manifest.created_at, "r", schema_version="").validate()
