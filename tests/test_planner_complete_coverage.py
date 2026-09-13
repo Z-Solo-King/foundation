@@ -83,7 +83,7 @@ def test_planner_task_modes_queries_profiles_and_plan():
         ("same product match", TaskMode.ENTITY_RESOLUTION),
         ("pdf document", TaskMode.DOCUMENT),
         ("video transcript", TaskMode.MEDIA),
-        ("csv dataframe", TaskMode.DATA),
+        ("csv spreadsheet", TaskMode.DATA),
         ("python repository bug", TaskMode.MIXED),
         ("simple fact", TaskMode.FACT),
     ):
