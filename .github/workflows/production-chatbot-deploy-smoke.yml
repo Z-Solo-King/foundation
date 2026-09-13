@@ -19,11 +19,16 @@ jobs:
           set -euo pipefail
           curl -fsS https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/health | tee /tmp/health.json
           jq -e '.ok == true' /tmp/health.json
+
       - name: Execute public chatbot Cloudflare and B2 verification
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
         run: |
           set -euo pipefail
+          test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub secret'; exit 1; }
           status=$(curl -sS -o /tmp/chatbot.json -w '%{http_code}' \
             -X POST \
+            -H "Authorization: Bearer ${AUTH_TOKEN}" \
             -H 'Content-Type: application/json' \
             --data '{"operation":"infrastructure_verify_public_test"}' \
             https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/api/v1/chatbot/diagnostic)
