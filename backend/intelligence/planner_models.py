@@ -1,4 +1,4 @@
-from __future__ import annotations
+from __future__
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Mapping, Sequence
@@ -10,11 +10,38 @@ class FactType(Enum):
 class CoverageState(Enum):
     SATISFIED="satisfied"; SUPPORTED="supported"; PARTIAL="partial"; UNSUPPORTED="unsupported"; CONTRADICTED="contradicted"; STALE="stale"; BLOCKED="blocked"; INACCESSIBLE="inaccessible"; AMBIGUOUS="ambiguous"
 class FailureClass(Enum):
-    TRANSPORT="transport"; TIMEOUT="timeout"; RATE_LIMIT="rate_limit"; AUTH="auth"; POLICY="policy"; PARSER="parser"; SCHEMA="schema"; EMPTY="empty"; NOT_FOUND="not_found"; BLOCKED="blocked"; QUOTA="quota"; FRESHNESS="freshness"; CONTRADICTION="contradiction"; LOW_YIELD="low_yield"
+    TRANSPORT="transport"; TIMEOUT="timeout"; RATE_LIMITED="429"; RATE_LIMIT="rate_limit"; AUTH="auth"; AUTH_REQUIRED="401"; FORBIDDEN="403"; CAPTCHA="captcha"; POLICY="policy"; PARSER="parser"; MALFORMED="malformed"; ENCODING="encoding_error"; SCHEMA="schema"; PARTIAL="partial"; EMPTY="empty"; NOT_FOUND="not_found"; BLOCKED="blocked"; QUOTA="quota"; FRESHNESS="freshness"; CONTRADICTION="contradiction"; LOW_YIELD="low_yield"
 class PaginationKind(Enum):
     PAGE="page"; CURSOR="cursor"; OFFSET="offset"; TOKEN="token"; UNKNOWN="unknown"
 class StopReason(Enum):
     QUALITY_FLOOR="quality_floor"; BUDGET_EXHAUSTED="budget_exhausted"; LOW_INFORMATION_GAIN="low_information_gain"; CONTRADICTION_OPEN="contradiction_open"; UNSATISFIED="unsatisfied"; COMPLETE="complete"
+
+_FAILURE_ALIASES: dict[str, FailureClass] = {
+    "404": FailureClass.NOT_FOUND,
+    "not_found": FailureClass.NOT_FOUND,
+    "future": FailureClass.FRESHNESS,
+    "freshness": FailureClass.FRESHNESS,
+    "429": FailureClass.RATE_LIMITED,
+    "rate_limit": FailureClass.RATE_LIMIT,
+    "401": FailureClass.AUTH_REQUIRED,
+    "403": FailureClass.FORBIDDEN,
+    "captcha": FailureClass.CAPTCHA,
+    "encoding_error": FailureClass.ENCODING,
+    "malformed": FailureClass.MALFORMED,
+    "partial": FailureClass.PARTIAL,
+}
+
+def coerce_failure_class(value: FailureClass | str | None) -> FailureClass | None:
+    if value is None:
+        return None
+    if isinstance(value, FailureClass):
+        return value
+    normalized = str(value).strip().lower()
+    try:
+        return FailureClass(normalized)
+    except ValueError:
+        return _FAILURE_ALIASES.get(normalized)
+
 @dataclass(frozen=True)
 class ClaimRequirement:
     claim_id: str; text: str; fact_type: FactType=FactType.IDENTITY; target_entities: tuple[str,...]=(); precision_required: str="normal"; freshness_seconds: int|None=None; minimum_evidence_strength: str="standard"; independence_required: int=0; contradiction_tolerance: str="must_resolve"; required_source_families: tuple[str,...]=()
