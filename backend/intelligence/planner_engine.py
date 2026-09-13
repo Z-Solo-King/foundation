@@ -81,14 +81,13 @@ def apply_source_profiles(methods: Sequence[MethodCandidate], profiles: Mapping[
         profile=profiles.get(method.source_id)
         if profile is None:  # pragma: no branch - missing-profile path is covered; normal path remains linear
             updated.append(method)
-            continue
-        if profile.supported_representations:
-            if method.representation not in profile.supported_representations:
-                continue
-        expected=min(.99,max(.01,(method.expected_success+profile.health)/2))
-        if profile.sample_size<5:
-            expected=(expected+.5)/2
-        updated.append(replace(method,expected_success=expected,risk_penalty=method.risk_penalty+max(0.,.5-profile.health)))
+        elif profile.supported_representations and method.representation not in profile.supported_representations:
+            pass
+        else:
+            expected=min(.99,max(.01,(method.expected_success+profile.health)/2))
+            if profile.sample_size<5:
+                expected=(expected+.5)/2
+            updated.append(replace(method,expected_success=expected,risk_penalty=method.risk_penalty+max(0.,.5-profile.health)))
     return rank_methods(updated)
 
 
