@@ -2,8 +2,9 @@ name: production-chatbot-deploy-smoke
 
 on:
   workflow_run:
-    workflows: [public-tests]
+    workflows: [deploy-public-worker]
     types: [completed]
+    branches: [main]
 
 permissions:
   contents: read
