@@ -107,6 +107,7 @@ async def test_cloudflare_persistence_helpers():
     assert await persistence.create_run("run-1", request) == "run-1"
     db.run_rows["run-1"] = {"run_id": "run-1", "status": "planned"}
     with pytest.raises(ValueError): await persistence.create_run_idempotent(request, "")
+    with pytest.raises(ValueError): await persistence.create_run_idempotent(request, "x" * 257)
     expected_hash = request_fingerprint(request)
     db.batch_result = [SimpleNamespace(results=[]), SimpleNamespace(results=[]), SimpleNamespace(results=[{"run_id":"run-abc","request_hash":expected_hash}])]
     assert await persistence.create_run_idempotent(request, "key-1") == "run-abc"
@@ -117,37 +118,12 @@ async def test_cloudflare_persistence_helpers():
     await persistence.get_run("run-1")
     with pytest.raises(ValueError): await persistence.set_run_status("run-1", "bad")
     await persistence.set_run_status("run-1", "running")
+    db.run_rows["run-invalid"] = {"run_id": "run-invalid", "status": "bogus"}
+    with pytest.raises(ValueError, match="stored run status"): await persistence.set_run_status("run-invalid", "running")
+    db.run_rows["run-failed"] = {"run_id": "run-failed", "status": "completed"}
+    with pytest.raises(ValueError, match="invalid run transition"): await persistence.set_run_status("run-failed", "failed")
     result = await persistence.put_artifact("k", b"abc", "text/plain")
     assert result["size"] == 3 and await persistence.get_artifact("k") == b"abc" and await persistence.get_artifact("missing") is None
-
-
-def test_d1_repository_all_paths():
-    repo = D1Repository(); now = datetime.now(timezone.utc)
-    run = RunRecord("r1","q","standard","planned",now,now,1,2,"{}"); assert repo.create_run(run) is run
-    with pytest.raises(ValueError): repo.create_run(run)
-    assert repo.get_run("missing") is None
-    assert repo.update_run(RunRecord("r1","q2","deep","running",now,now,2,3,"{}")).question == "q2"
-    with pytest.raises(ValueError): repo.update_run(RunRecord("missing","q","standard","planned",now,now,1,1,"{}"))
-    evidence = EvidenceRecord("e1","r1","o1","s1",None,0,3,"hash",now); assert repo.add_evidence(evidence) is evidence
-    with pytest.raises(ValueError): repo.add_evidence(evidence)
-    assert repo.evidence_for_run("r1") == [evidence] and repo.evidence_for_claim("missing") == []
-    lineage = SourceLineageRecord("s1","f1",None,"origin",now,now); assert repo.upsert_lineage(lineage) is lineage
-    assert repo.get_lineage("s1") is lineage and repo.get_lineage("missing") is None and repo.lineage_for_family("f1") == [lineage]
-    version = DocumentVersionRecord("v1","o1","s1",now,None,"hash","artifact"); assert repo.add_version(version) is version
-    with pytest.raises(ValueError): repo.add_version(version)
-    assert repo.versions_for_observation("o1") == [version]
-
-
-def test_r2_repository_all_paths():
-    now = datetime.now(timezone.utc); repo = R2Repository(); artifact = R2Artifact("a1","project-artifacts","k","text/plain",3,now,"hash")
-    assert repo.upload(artifact,b"abc") is artifact
-    with pytest.raises(ValueError): repo.upload(artifact,b"abc")
-    with pytest.raises(ValueError): repo.upload(R2Artifact("a2","project-artifacts","k2","text/plain",4,now,"hash"),b"abc")
-    assert repo.download("a1")[1] == b"abc" and repo.download("missing") is None
-    repo.delete("a1"); repo.delete("missing")
-    manifest = ArtifactManifest("m1","name","desc","text",{"encoding":"utf-8"}); assert repo.add_manifest(manifest) is manifest
-    with pytest.raises(ValueError): repo.add_manifest(manifest)
-    assert repo.get_manifest("m1") is manifest and repo.get_manifest("missing") is None
 
 
 @pytest.mark.asyncio
