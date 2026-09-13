@@ -1,0 +1,56 @@
+name: chatbot-cloudflare-proof-after-tests
+
+on:
+  workflow_run:
+    workflows: [public-tests]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute established chatbot infrastructure verification
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN'; exit 1; }
+          status=$(curl -sS -o /tmp/chatbot.json -w '%{http_code}' \
+            -X POST \
+            -H "Authorization: Bearer ${AUTH_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data '{"operation":"infrastructure_verify_public_test"}' \
+            https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/api/v1/chatbot/diagnostic)
+          test "$status" = "200"
+          jq -e '
+            .ok == true and
+            .status == "ok" and
+            (.checks | map(select(.ok != true)) | length == 0) and
+            ([.checks[].name] | index("public_chatbot")) and
+            ([.checks[].name] | index("cloudflare_d1")) and
+            ([.checks[].name] | index("backblaze_b2_lifecycle"))
+          ' /tmp/chatbot.json
+          jq '{verified_at:(now|todate), source:"chatbot-control-plane", ok, status, checks:[.checks[]|{name,ok,message}]}' /tmp/chatbot.json > /tmp/proof.json
+
+      - name: Commit sanitized verification proof
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          proof=$(cat /tmp/proof.json)
+          content=$(printf '# Live Cloudflare verification\n\nVerified through the established authenticated chatbot/control-plane bridge after public-tests run `%s`.\n\n```json\n%s\n```\n' "$SOURCE_RUN_ID" "$proof" | base64 -w0)
+          path='docs/LIVE_CLOUDFLARE_VERIFICATION.md'
+          sha=$(gh api "/repos/${GITHUB_REPOSITORY}/contents/${path}" --jq '.sha' 2>/dev/null || true)
+          if [[ -n "$sha" ]]; then
+            gh api --method PUT "/repos/${GITHUB_REPOSITORY}/contents/${path}" -f message='docs: record live chatbot-backed Cloudflare verification' -f content="$content" -f sha="$sha"
+          else
+            gh api --method PUT "/repos/${GITHUB_REPOSITORY}/contents/${path}" -f message='docs: record live chatbot-backed Cloudflare verification' -f content="$content"
+          fi
