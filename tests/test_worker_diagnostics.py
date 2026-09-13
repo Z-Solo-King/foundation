@@ -131,6 +131,11 @@ async def test_worker_http_diagnostic_and_research_fail_closed_paths(monkeypatch
     assert "run_id" in str(no_run)
     storage = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {"run_id": "run-1"}, {"Authorization": "Bearer secret"}))
     assert "artifacts" in str(storage)
+    async def broken_storage(*args, **kwargs):
+        raise RuntimeError("storage diagnostic exploded")
+    monkeypatch.setattr(worker, "_storage_diagnostic", broken_storage)
+    failed_storage = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {"run_id": "run-1"}, {"Authorization": "Bearer secret"}))
+    assert "storage diagnostic failure" in str(failed_storage)
 
     missing = await entry.fetch(Request("GET", "https://x/api/v1/research/missing", None, {"Authorization": "Bearer secret"}))
     assert "run not found" in str(missing)
