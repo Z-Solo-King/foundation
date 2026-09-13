@@ -24,7 +24,6 @@ from backend.intelligence.planner_models import (
     ClaimRequirement,
     Coverage,
     CoverageState,
-    FactType,
     FailureClass,
     FieldRequirement,
     MethodCandidate,
@@ -84,7 +83,7 @@ def test_planner_task_modes_queries_profiles_and_plan():
         ("pdf document", TaskMode.DOCUMENT),
         ("video transcript", TaskMode.MEDIA),
         ("csv spreadsheet", TaskMode.DATA),
-        ("python repository bug", TaskMode.MIXED),
+        ("python repository bug", TaskMode.CODE),
         ("simple fact", TaskMode.FACT),
     ):
         assert classify_task(text) == expected
