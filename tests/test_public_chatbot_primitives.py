@@ -165,7 +165,7 @@ def test_run_record_bounds_and_chain_guards():
     with pytest.raises(ValueError):
         _record(sources=tuple({} for _ in range(129))).validate()
     with pytest.raises(ValueError):
-        _record(artifacts=tuple({} for _ in range(257)).validate()
+        _record(artifacts=tuple({} for _ in range(257))).validate()
     with pytest.raises(ValueError):
         _record(learning_note="x" * 1025).validate()
     broken = ChatbotRunRecord(**{**base.__dict__, "stages": ()})
