@@ -9,26 +9,18 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
+  probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v6.0.0
         with:
           node-version: 22
-      - name: Resolve Cloudflare account ID
-        id: cloudflare
+      - name: Wrangler identity probe
         env:
-          SECRET_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          VARIABLE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
           test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo 'Missing CLOUDFLARE_API_TOKEN'; exit 1; }
-          account_id="${SECRET_ACCOUNT_ID:-${VARIABLE_ACCOUNT_ID:-}}"
-          echo "Cloudflare account ID configured=$( [[ -n "$account_id" ]] && echo yes || echo no )"
-          test -n "$account_id" || { echo 'Cloudflare account ID is not configured as a repository secret or variable'; exit 1; }
-          printf 'account_id=%s\n' "$account_id" >> "$GITHUB_OUTPUT"
+          npx wrangler@4.131.1 whoami
