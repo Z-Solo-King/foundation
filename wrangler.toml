@@ -10,10 +10,6 @@ binding = "DB"
 database_name = "REPLACE_WITH_PUBLIC_DATABASE_NAME"
 database_id = "REPLACE_WITH_D1_DATABASE_ID"
 
-[[services]]
-binding = "CONTROL_PLANE"
-service = "REPLACE_WITH_PRIVATE_CONTROL_PLANE_SERVICE"
-
 [secrets]
 required = ["AUTH_TOKEN", "B2_KEY_ID", "B2_APPLICATION_KEY"]
 
