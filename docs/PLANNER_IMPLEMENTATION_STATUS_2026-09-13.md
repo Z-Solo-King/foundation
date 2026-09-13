@@ -1,6 +1,14 @@
-# Planner implementation status — September 13, 2026
+# Planner / research-intelligence implementation status — September 13, 2026
 
-This record ties the feature-first planner ledger to code without pretending the entire roadmap is implemented.
+This record ties the September 2026 feature-first ledger to code and deployment boundaries. It deliberately distinguishes implemented deterministic primitives from still-unintegrated protected runtime work.
+
+## Platform already implemented
+
+- Cloudflare Workers public execution boundary is implemented.
+- Cloudflare D1 persistence is implemented and covered by repository tests.
+- Cloudflare R2 artifact persistence is implemented and covered by repository tests.
+- Public health/readiness/infrastructure diagnostics exist; live deployment evidence must still be rechecked after any redeploy.
+- Cloudflare implementation is not being duplicated in the planner branch.
 
 ## Implemented in planner PR #23
 
@@ -10,7 +18,7 @@ This record ties the feature-first planner ledger to code without pretending the
 - Typed claim and field requirements.
 - Coverage, failure, pagination and stop-state taxonomies.
 - Method candidates, source plans, actions and resource envelopes.
-- `recovery_reserve_ratio` is now enforced by runtime resource reservation rather than remaining declarative only.
+- `recovery_reserve_ratio` is enforced by runtime reservation rather than remaining declarative only.
 
 ### Deterministic planning
 - Task classification with specification-task precedence.
@@ -31,10 +39,10 @@ This record ties the feature-first planner ledger to code without pretending the
 - Immediate quarantine for policy/auth/captcha-style empirical failures.
 - Threshold quarantine for repeated failures.
 - Explicit recovery transition and success reset.
-- Planner method selection now filters empirically quarantined/cooldown routes while retaining unseen and recovered routes.
+- Planner method selection filters empirically quarantined/cooldown routes while retaining unseen and recovered routes.
 - Route memory remains empirical state only; it does not replace protected source policy or billing authority.
 
-### Execution planning and replay
+### Resource, replay and external-limit controls
 - Explicit action dependency DAG.
 - Cycle and missing-dependency validation.
 - Deterministic topological order.
@@ -44,32 +52,65 @@ This record ties the feature-first planner ledger to code without pretending the
 - Protected recovery reserve accounting for ordinary resource reservation, with explicit recovery override.
 - Immutable replay bundle with contract/plan/context fingerprints including quota/freshness context.
 - Context-drift compatibility checks.
+- External-service limit observations with explicit VERIFIED/STALE/UNKNOWN/CONTRADICTORY states.
+- Route activation guards require a fresh verified limit observation with sufficient observed capacity.
+- Unknown quota is never converted into an assumed free allowance.
 
-### Adaptive planning and learning
+### Token/context efficiency
+- Strategy cards combining evidence quality, completeness, latency, resources, risk, token multiplier, cacheability and retry economics.
+- Exact/prefix cache-aware token decisions.
+- Explicit verification/final-answer token reserves.
+- Deterministic context packets with evidence-token budgets, duplicate suppression, dropped-evidence accounting and stable content/prefix cache identities.
+
+### Evidence, evaluation and integrity
+- Immutable evaluation input snapshots with contract/plan/candidate/baseline/capability/policy/source-profile/corpus/oracle identities.
+- Evaluation artifacts bind receipts to immutable input snapshots and result fingerprints; they do not grant promotion authority.
+- Deterministic-first entailment remains the default; calibrated semantic scoring can adjudicate only already-ambiguous cases.
+- Semantic calibration profiles are versioned and bounds-validated.
+- Deterministic 150-case production corpus covering retrieval, extraction, contradiction, temporal, independence, citation, freshness, resource, security and architecture classes with adversarial/stale/poison/replay/lineage/recovery variants.
+- Integrity metrics for retrieval concentration, source-family concentration, temporal anomalies, disagreement and UGC ratio.
+- Integrity metrics are observational; they do not directly promote/reject sources.
+
+### Evidence certificates and research memory
+- EvidenceCertificate now preserves optional document version, temporal scope, source-family, extractor version, mapper version, retention state and replay fingerprint.
+- Certificate verification fail-closes on content, identity and provenance drift.
+- DocumentVersion is now first-class with parent version, extractor/mapper versions, retention state and deterministic fingerprint.
+- ClaimSnapshot preserves document-version/evidence lineage, revision number and parent snapshot while retaining legacy constructors.
+
+### Universal artifacts and code safety
+- ArtifactManifest supports file/code/data/document/media kinds with schema version, size, media type, producer, retention and metadata.
+- Artifact content hash and byte-size verification are deterministic.
+- Sandboxed CodeExecutionRequest/Result contracts explicitly require sandbox identity; uploaded code never implies execution.
+- Code execution policy requires bounded runtime/output/memory and rejects undeclared network access.
+- No code execution occurs in this public module.
+
+### Adaptive learning / strategy lifecycle
 - Replan triggers for gaps, contradictions, source degradation, capability/quota/policy/freshness changes and method failures.
 - Recovery action selection and failed-method filtering.
 - Replayable source/method profile observations.
 - Sample-size-aware method success/completeness updates.
 - Bounded multi-metric strategy comparison.
 - Per-metric quality non-regression guard so efficiency cannot hide a quality regression.
+- Shadow → canary → promotable → promoted lifecycle records with explicit rollback, while public evaluation remains non-authoritative for protected production promotion.
 
 ### Compatibility and boundary hardening
 - Existing `create_plan()` compatibility facade preserved.
-- Canonical `create_task_plan()` lives in `planner_engine`; the compatibility module delegates to it.
-- Field requirements now flow from ResearchContract into TaskPlan/action field IDs.
+- Canonical `create_task_plan()` lives in `planner_engine`; compatibility module delegates to it.
+- Field requirements flow from ResearchContract into TaskPlan/action field IDs.
 - Legacy Observation positional constructors preserved while provenance/hash validation remains fail-closed.
-- CPython test bootstrap handles environments where `workers-py` is installed but no normal `workers` module exists.
+- Public workers remain untrusted until trusted evaluation accepts their results.
 
-## Still required before planner roadmap is complete
+## Still required before the broader roadmap is complete
 
-1. Integrate pagination plans into actual acquisition execution, completeness certificates and source-level route memory.
-2. Bind replay bundles to canonical capability/source/policy version records and deterministic replay artifacts.
-3. Connect planner reservations to the protected Operations runtime resource authority; planner-supplied envelopes must not become budget authority. Operations PR #53 provides the adapter but remains unmerged.
-4. Build the planner golden corpus and property/metamorphic/differential/fuzz/replay suites; expand toward the 150–300 production corpus with adversarial cases.
-5. Integrate EvidenceCertificate, calibrated semantic entailment, independence, freshness, research-regret and poisoning/integrity metrics end-to-end.
-6. Implement shadow/canary planner strategy lifecycle, rollback and verified strategy-memory promotion.
-7. Integrate the planner with Operations acquisition/extractor field-route consumers without duplicating policy ownership.
-8. Complete universal file/code/data/media planning contracts, sandboxed code execution and retention-aware artifact manifests.
+1. Integrate pagination plans into actual Operations acquisition execution and completeness certificates.
+2. Bind replay bundles to canonical protected capability/source/policy version records and durable replay artifacts.
+3. Connect planner reservations to the protected Operations runtime resource authority. Operations PR #53 contains the adapter but is not merged because its GitHub Actions jobs currently suffer a repeatable `steps=null` / `BlobNotFound` log-artifact failure; that is not treated as a code-green result.
+4. Add 150–300 real-source golden cases in addition to the deterministic public 150-case corpus, plus property/metamorphic/differential/fuzz/replay suites.
+5. End-to-end integrate integrity metrics into publication/evaluation and research-regret measurements.
+6. Integrate the shadow/canary lifecycle with protected Operations promotion/rollback authority; public state must remain advisory.
+7. Integrate planner route memory, representation selection, pagination and limit guards with Operations acquisition/extractor consumers without duplicating policy ownership.
+8. Complete file/code/data/media planner execution adapters and sandbox implementations behind protected authority.
+9. Complete GitHub repository governance gaps: main ruleset, secret scanning/push protection, OIDC trust with Cloudflare, artifact attestations, and merge queue after `merge_group` checks are proven.
 
 ## Deliberate boundaries
 
@@ -83,4 +124,4 @@ This record ties the feature-first planner ledger to code without pretending the
 
 ## Validation rule
 
-A green unit suite proves implementation behavior only. Live provider, deployment, source-access and zero-cost claims require their own authoritative evidence gates.
+A green unit suite proves implementation behavior only. Live provider, deployment, source-access, zero-cost and protected-resource claims require their own authoritative evidence gates.
