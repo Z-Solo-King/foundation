@@ -17,3 +17,21 @@ jobs:
           version: 0.12.11
       - name: Run chatbot bridge tests
         run: uv run --with pytest --with pytest-asyncio pytest tests/test_chatbot_live_bridge.py tests/test_worker_diagnostics.py -q
+      - name: Resolve production D1 database id
+        id: d1
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "${CLOUDFLARE_API_TOKEN}"
+          test -n "${CLOUDFLARE_ACCOUNT_ID}"
+          database_id=$(curl -fsSL \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database" \
+            | jq -r '.result[] | select(.name == "research-intelligence") | .uuid' \
+            | head -n 1)
+          test -n "${database_id}" && test "${database_id}" != "null"
+          echo "database_id=${database_id}" >> "$GITHUB_OUTPUT"
