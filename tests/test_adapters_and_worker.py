@@ -179,13 +179,6 @@ async def test_worker_helpers_and_source_ingestion(monkeypatch):
     run_payload = await worker._get_run(SimpleNamespace(DB=RunDB()), "r1")
     assert run_payload["run"]["run_id"] == "r1" and run_payload["observations"][0]["observation_id"] == "o1"
     assert await worker._get_run(SimpleNamespace(DB=FakeDB()), "missing") is None
-    assert await worker._control_plane_ready(SimpleNamespace(CONTROL_PLANE=None)) is False
-    class Control:
-        async def fetch(self,url): return SimpleNamespace(status=200)
-    assert await worker._control_plane_ready(SimpleNamespace(CONTROL_PLANE=Control())) is True
-    class FailingControl:
-        async def fetch(self,url): raise RuntimeError("down")
-    assert await worker._control_plane_ready(SimpleNamespace(CONTROL_PLANE=FailingControl())) is False
 
 
 @pytest.mark.asyncio
@@ -193,9 +186,7 @@ async def test_worker_http_all_branches(monkeypatch):
     class Request:
         def __init__(self, method, url, payload=None, headers=None): self.method=method; self.url=url; self._payload=payload; self.headers=headers or {}
         async def json(self): return self._payload
-    class Control:
-        async def fetch(self, url): return SimpleNamespace(status=200)
-    env = SimpleNamespace(DB=FakeDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", CONTROL_PLANE=Control())
+    env = SimpleNamespace(DB=FakeDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret")
     entry = worker.Default(); entry.env = env
     unauthorized_get = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer bad"}))
     assert "unauthorized" in str(unauthorized_get)
@@ -203,7 +194,7 @@ async def test_worker_http_all_branches(monkeypatch):
     not_found = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer secret"})); assert not_found
     class FailingDB(FakeDB):
         def prepare(self, sql): raise RuntimeError("db down")
-    entry.env = SimpleNamespace(DB=FailingDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", CONTROL_PLANE=Control())
+    entry.env = SimpleNamespace(DB=FailingDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret")
     persistence_error = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer secret"})); assert persistence_error
     entry.env = env
     unauthorized_post = await entry.fetch(Request("POST", "https://x/api/v1/research", headers={"Authorization":"Bearer bad"})); assert unauthorized_post
