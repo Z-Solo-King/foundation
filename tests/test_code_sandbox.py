@@ -58,3 +58,15 @@ def test_result_numeric_guards_and_not_requested():
     with pytest.raises(ValueError):
         replace(CodeExecutionResult("req-1", CodeExecutionStatus.NOT_REQUESTED), runtime_seconds=-1).validate()
     CodeExecutionResult("req-1", CodeExecutionStatus.NOT_REQUESTED).validate()
+
+
+def test_result_provenance_and_request_policy_edges():
+    with pytest.raises(ValueError):
+        CodeExecutionResult("req-1", CodeExecutionStatus.CANCELLED).validate()
+    CodeExecutionResult("req-1", CodeExecutionStatus.CANCELLED, sandbox_ref="sandbox-1").validate()
+    with pytest.raises(ValueError):
+        replace(request(), entrypoint="").validate()
+    with pytest.raises(ValueError):
+        replace(request(), language="").validate()
+    with pytest.raises(ValueError):
+        replace(request(), artifact_ref="").validate()
