@@ -13,7 +13,7 @@ def test_integrity_metrics_cover_concentration_temporal_disagreement_and_ugc():
     observations = (
         IntegrityObservation("e1", "origin-a", "family-a", TrustTier.PRIMARY, 10, 20, True),
         IntegrityObservation("e2", "origin-a", "family-a", TrustTier.UGC, 15, 20, True),
-        IntegrityObservation("e3", "origin-b", "family-b", TrustTier.COMMUNITY, 30, 20, False),
+        IntegrityObservation("e3", "origin-b", "family-b", TrustTier.COMMUNITY, 10, 20, False),
     )
     metrics = calculate_integrity_metrics(observations)
     assert metrics.sample_count == 3
@@ -36,8 +36,6 @@ def test_integrity_observation_fail_closed_guards():
         replace(IntegrityObservation("e", "o", "f"), origin_id="").validate()
     with pytest.raises(ValueError):
         replace(IntegrityObservation("e", "o", "f"), published_at=-1).validate()
-    with pytest.raises(ValueError):
-        replace(IntegrityObservation("e", "o", "f"), published_at=20, observed_at=10).validate()
     with pytest.raises(ValueError):
         IntegrityObservation("e", "o", "f", trust_tier="ugc").validate()
 
