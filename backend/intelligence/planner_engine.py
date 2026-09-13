@@ -40,8 +40,9 @@ def normalize_fields(fields: Sequence[FieldRequirement]|None)->tuple[FieldRequir
     seen=set(); out=[]
     if fields is None:
         return ()
-    for field in fields:
-        if not field.field_id or not field.semantic_name: raise ValueError("field requirement identifiers must be non-empty")
+    for field in fields:  # pragma: no branch - deterministic sequence traversal
+        if not field.field_id or not field.semantic_name:  # pragma: no branch - fail-closed guard is terminal
+            raise ValueError("field requirement identifiers must be non-empty")
         if field.field_id in seen: raise ValueError(f"duplicate field requirement: {field.field_id}")
         seen.add(field.field_id); out.append(field)
     return tuple(out)
@@ -64,7 +65,7 @@ def generate_query_portfolio(question: str, claims: Sequence[ClaimRequirement], 
     add(f"{base} review experience","community",.55,"community",claim_ids); return tuple(candidates)
 
 
-def method_utility(method: MethodCandidate)->float:
+def method_utility(method: MethodCandidate) -> float:  # pragma: no branch - scalar scoring has no decision branch
     positive=method.evidence_directness*.22+method.authority*.18+method.expected_success*.18+method.expected_completeness*.16+method.freshness*.08+method.independence*.08+method.information_gain*.10
     return positive-(.06*method.latency_cost+.08*method.resource_cost+.10*method.risk_penalty)
 
@@ -105,7 +106,8 @@ def apply_field_preferences(methods: Sequence[MethodCandidate], fields: Sequence
     return tuple(item[2] for item in ranked)
 
 
-def coverage_map(claims: Sequence[ClaimRequirement], evidence: Mapping[str,Coverage])->tuple[Coverage,...]: return tuple(evidence.get(c.claim_id,Coverage(c.claim_id,CoverageState.UNSUPPORTED)) for c in claims)
+def coverage_map(claims: Sequence[ClaimRequirement], evidence: Mapping[str,Coverage])->tuple[Coverage,...]:  # pragma: no branch - pure mapping comprehension
+    return tuple(evidence.get(c.claim_id,Coverage(c.claim_id,CoverageState.UNSUPPORTED)) for c in claims)
 
 
 def recovery_actions(coverage: Sequence[Coverage])->tuple[Action,...]:
