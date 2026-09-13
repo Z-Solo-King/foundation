@@ -8,10 +8,15 @@ from .planner_models import Action, ClaimRequirement, Coverage, CoverageState, F
 
 def classify_task(question: str, output_type: str = "") -> TaskMode:
     text=f"{question} {output_type}".lower()
-    if "spec" in text: return TaskMode.SPECIFICATION
+    if "spec" in text:
+        return TaskMode.SPECIFICATION
     signals={TaskMode.RECOMMENDATION:("recommend","best","which should","buy"),TaskMode.COMPARISON:("compare","versus","vs","difference"),TaskMode.TEMPORAL:("history","historical","changed","when","latest"),TaskMode.CONTRADICTION:("contradict","disagree","is it true","conflict"),TaskMode.PRICE_AVAILABILITY:("price","cost","stock","available"),TaskMode.DIAGNOSIS:("why","problem","error","broken","debug"),TaskMode.COMMUNITY:("reddit","forum","community","user experience","sentiment"),TaskMode.PRIMARY_SOURCE:("official","manufacturer","source of record","primary source"),TaskMode.ENTITY_RESOLUTION:("same product","same model","match","identify entity"),TaskMode.CODE:("code","repository","python","javascript","bug","pull request"),TaskMode.DATA:("dataset","csv","spreadsheet","columns","dataframe"),TaskMode.DOCUMENT:("document","pdf","report","contract"),TaskMode.MEDIA:("image","video","audio","transcript","frame")}
     matches=[mode for mode,words in signals.items() if any(w in text for w in words)]
-    return TaskMode.MIXED if len(matches)>1 else (matches[0] if matches else TaskMode.FACT)
+    if len(matches)>1:
+        return TaskMode.MIXED
+    if matches:
+        return matches[0]
+    return TaskMode.FACT
 
 
 def infer_fact_type(text: str) -> FactType:
@@ -23,21 +28,27 @@ def infer_fact_type(text: str) -> FactType:
     if any(x in value for x in ("review","experience","feel","quality")): return FactType.QUALITATIVE
     if any(x in value for x in ("policy","terms","rule","regulation")): return FactType.NORMATIVE
     if any(x in value for x in ("model","sku","mpn","gtin","version","name")): return FactType.IDENTITY
-    return FactType.SPECIFICATION if any(x in value for x in ("spec","size","port","hz","memory","weight")) else FactType.IDENTITY
+    if any(x in value for x in ("spec","size","port","hz","memory","weight")):
+        return FactType.SPECIFICATION
+    return FactType.IDENTITY
 
 
 def decompose_claims(question: str, required: Sequence[str]|None=None)->tuple[ClaimRequirement,...]:
     items=[x.strip() for x in (required or ()) if x and x.strip()]
-    if not items: items=[p.strip() for p in re.split(r"\s*(?:,|;|\band\b|\bplus\b)\s*",question,flags=re.I) if len(p.strip())>=8]
-    if not items: items=[question.strip()]
+    if not items:
+        items=[p.strip() for p in re.split(r"\s*(?:,|;|\band\b|\bplus\b)\s*",question,flags=re.I) if len(p.strip())>=8]
+    if not items:
+        items=[question.strip()]
     return tuple(ClaimRequirement(f"claim-{i+1}",text,fact_type=infer_fact_type(text)) for i,text in enumerate(items))
 
 
 def normalize_fields(fields: Sequence[FieldRequirement]|None)->tuple[FieldRequirement,...]:
     seen=set(); out=[]
     for field in fields or ():
-        if not field.field_id or not field.semantic_name: raise ValueError("field requirement identifiers must be non-empty")
-        if field.field_id in seen: raise ValueError(f"duplicate field requirement: {field.field_id}")
+        if not field.field_id or not field.semantic_name:
+            raise ValueError("field requirement identifiers must be non-empty")
+        if field.field_id in seen:
+            raise ValueError(f"duplicate field requirement: {field.field_id}")
         seen.add(field.field_id); out.append(field)
     return tuple(out)
 
@@ -46,14 +57,21 @@ def generate_query_portfolio(question: str, claims: Sequence[ClaimRequirement], 
     base=question.strip(); candidates=[]; seen=set()
     def add(query,purpose,gain,family=None,claim_ids=()):
         normalized=" ".join(query.split()).lower()
-        if not normalized or normalized in seen or len(candidates)>=max_queries:return
-        seen.add(normalized); candidates.append(QueryCandidate(query,purpose,gain,1.,family,claim_ids))
+        if not normalized:
+            return
+        if normalized in seen:
+            return
+        if len(candidates)>=max_queries:
+            return
+        seen.add(normalized)
+        candidates.append(QueryCandidate(query,purpose,gain,1.,family,claim_ids))
     claim_ids=tuple(c.claim_id for c in claims); add(base,"exact",.9,claim_ids=claim_ids)
     for claim in claims[:3]: add(f'"{claim.text}"',"identifier/exact-claim",.85,claim_ids=(claim.claim_id,))
     add(f"{base} official","primary-source",.88,"official",claim_ids); add(f"{base} specifications","specification",.75,"manufacturer",claim_ids); add(f"{base} counterclaim","counterclaim",.7,claim_ids=claim_ids); add(f"{base} recent","freshness",.72,claim_ids=claim_ids)
     for family in source_families: add(f"site:{family} {base}","site-restricted",.65,family,claim_ids)
     for language in languages:
-        if language.lower() not in {"en","english"}: add(f"{base} {language}","multilingual",.62,claim_ids=claim_ids)
+        if language.lower() not in {"en","english"}:
+            add(f"{base} {language}","multilingual",.62,claim_ids=claim_ids)
     add(f"{base} review experience","community",.55,"community",claim_ids); return tuple(candidates)
 
 
@@ -69,21 +87,30 @@ def apply_source_profiles(methods: Sequence[MethodCandidate], profiles: Mapping[
     updated=[]
     for method in methods:
         profile=profiles.get(method.source_id)
-        if profile is None: updated.append(method); continue
-        if profile.supported_representations and method.representation not in profile.supported_representations: continue
-        expected=min(.99,max(.01,(method.expected_success+profile.health)/2)); expected=(expected+.5)/2 if profile.sample_size<5 else expected
+        if profile is None:
+            updated.append(method)
+            continue
+        if profile.supported_representations:
+            if method.representation not in profile.supported_representations:
+                continue
+        expected=min(.99,max(.01,(method.expected_success+profile.health)/2))
+        if profile.sample_size<5:
+            expected=(expected+.5)/2
         updated.append(replace(method,expected_success=expected,risk_penalty=method.risk_penalty+max(0.,.5-profile.health)))
     return rank_methods(updated)
 
 
 def apply_field_preferences(methods: Sequence[MethodCandidate], fields: Sequence[FieldRequirement]) -> tuple[MethodCandidate, ...]:
-    """Prefer representations explicitly requested by the contract without bypassing scoring."""
+    """Prefer representations explicitly requested by the contract without bypassing normal utility scoring."""
     preferred = {representation for field in fields for representation in field.preferred_representations}
     if not preferred:
         return rank_methods(methods)
     ranked=[]
     for method in methods:
-        boost = 0.10 if method.representation in preferred else 0.0
+        if method.representation in preferred:
+            boost=0.10
+        else:
+            boost=0.0
         ranked.append((-(method_utility(method) + boost), method.method_id, method))
     ranked.sort(key=lambda item: (item[0], item[1]))
     return tuple(item[2] for item in ranked)
