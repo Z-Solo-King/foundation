@@ -67,17 +67,16 @@ class Observation:
         extractor_version: str | None = None,
     ):
         if args:
-            if any(
-                value is not None
-                for value in (source_id, source_url, content, observed_at)
-            ):
+            if any(value is not None for value in (source_id, source_url, content, observed_at)):
                 raise TypeError("ambiguous observation arguments")
-            if len(args) == 3:
+            if len(args) == 2:
+                source_url, content = args
+            elif len(args) == 3:
                 source_url, content, observed_at = args
             elif len(args) == 4:
                 source_id, source_url, content, observed_at = args
             else:
-                raise TypeError("Observation expects 4 or 5 total positional arguments")
+                raise TypeError("Observation expects 3, 4, 5, or 6 total positional arguments")
         if source_url is None or content is None:
             raise TypeError("source_url and content are required")
         object.__setattr__(self, "observation_id", observation_id)
@@ -108,51 +107,33 @@ class Observation:
     @classmethod
     def create(cls, observation_id, *args, **kwargs):
         if args:
-            if any(
-                key in kwargs
-                for key in ("source_url", "content", "source_id", "observed_at")
-            ):
+            if any(key in kwargs for key in ("source_url", "content", "source_id", "observed_at")):
                 raise TypeError("ambiguous observation arguments")
             if len(args) == 2:
                 kwargs["source_url"], kwargs["content"] = args
             elif len(args) == 3:
                 kwargs["source_id"], kwargs["source_url"], kwargs["content"] = args
             elif len(args) == 4:
-                (
-                    kwargs["source_id"],
-                    kwargs["source_url"],
-                    kwargs["content"],
-                    kwargs["observed_at"],
-                ) = args
+                kwargs["source_id"], kwargs["source_url"], kwargs["content"], kwargs["observed_at"] = args
             else:
                 raise TypeError("Observation.create expects 3, 4, or 5 positional arguments")
         return cls(observation_id, **kwargs)
 
     def validate(self) -> None:
-        for name, value, limit in (
-            ("observation_id", self.observation_id, 128),
-            ("source_url", self.source_url, 4096),
-            ("content", self.content, 2_000_000),
-        ):
+        for name, value, limit in (("observation_id", self.observation_id, 128),
+                                    ("source_url", self.source_url, 4096),
+                                    ("content", self.content, 2_000_000)):
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"{name} must not be empty")
             if len(value) > limit:
                 raise ValueError(f"{name} exceeds bounded length")
-        for name, value in (
-            ("source_id", self.source_id),
-            ("source_family_id", self.source_family_id),
-            ("document_version_id", self.document_version_id),
-            ("author", self.author),
-            ("language", self.language),
-            ("title", self.title),
-            ("extraction_method", self.extraction_method),
-            ("acquisition_method", self.acquisition_method),
-            ("raw_artifact_ref", self.raw_artifact_ref),
-            ("content_sha256", self.content_sha256),
-            ("normalized_sha256", self.normalized_sha256),
-            ("policy_state", self.policy_state),
-            ("extractor_version", self.extractor_version),
-        ):
+        for name, value in (("source_id", self.source_id), ("source_family_id", self.source_family_id),
+                            ("document_version_id", self.document_version_id), ("author", self.author),
+                            ("language", self.language), ("title", self.title),
+                            ("extraction_method", self.extraction_method), ("acquisition_method", self.acquisition_method),
+                            ("raw_artifact_ref", self.raw_artifact_ref), ("content_sha256", self.content_sha256),
+                            ("normalized_sha256", self.normalized_sha256), ("policy_state", self.policy_state),
+                            ("extractor_version", self.extractor_version)):
             if value is not None and (not isinstance(value, str) or len(value) > 4096):
                 raise ValueError(f"{name} exceeds bounded length")
         if self.quality is not None and not (0.0 <= self.quality <= 1.0):
