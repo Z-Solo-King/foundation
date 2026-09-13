@@ -8,8 +8,8 @@ from backend.intelligence.contracts import ResearchContract
 from backend.intelligence.field_routing import FieldRequirement, PaginationPlan, Representation, RepresentationRoute, choose_routes
 from backend.intelligence.observations import Observation
 from backend.intelligence.pagination import PaginationKind, PaginationState
-from backend.intelligence.planner_engine import apply_source_profiles, build_task_plan, classify_task, create_task_plan, decompose_claims, generate_query_portfolio, infer_fact_type, recovery_actions
-from backend.intelligence.planner_evaluation import PlannerMetrics, candidate_improves
+from backend.intelligence.planner_engine import apply_source_profiles, build_task_plan, choose_stop_reason, classify_task, create_task_plan, decompose_claims, generate_query_portfolio, infer_fact_type, recovery_actions
+from backend.intelligence.planner_evaluation import PlannerMetrics, candidate_improves, safe_region
 from backend.intelligence.planner_models import Action, ClaimRequirement, Coverage, CoverageState, FactType, MethodCandidate, ResourceEnvelope, SourceProfileHint, StopReason, TaskMode
 from backend.intelligence.planner_runtime import choose_stop, explain_plan, plan_fingerprint, reserve, topological_order
 from backend.intelligence.source_profiles import SourceProfile
@@ -67,6 +67,7 @@ def test_remaining_planner_branches_and_query_budget():
     contract_plan = create_task_plan(ResearchContract("thing", max_search_actions=2, resource_envelope=ResourceEnvelope(search_units=2)))
     assert contract_plan.envelope.search_units == 2
     assert recovery_actions((Coverage("b", CoverageState.BLOCKED), Coverage("i", CoverageState.INACCESSIBLE)))
+    assert choose_stop_reason((Coverage("c", CoverageState.UNSUPPORTED),), 1.0) is None
 
 
 def test_remaining_source_profile_paths():
@@ -129,6 +130,7 @@ def test_remaining_evaluation_receipt_and_planner_evaluation_guards():
     assert not candidate_improves(base_metrics, worse, {"task_coverage": .7})
     faster = replace(base_metrics, latency=.5)
     assert candidate_improves(base_metrics, faster, {"task_coverage": .7})
+    assert safe_region(base_metrics, {"task_coverage": .7}, {"latency": 2.0})
 
 
 def test_remaining_runtime_stop_and_resource_paths():
