@@ -46,3 +46,27 @@ jobs:
             echo 'Private control-plane references found in public deterministic package.'
             exit 1
           fi
+      - name: Live deployed Cloudflare readiness and D1/B2 persistence probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev'
+          curl -fsS "$base/health" | tee /tmp/live-health.json
+          jq -e '.ok == true' /tmp/live-health.json
+          status=$(curl -sS -o /tmp/live-readiness.json -w '%{http_code}' "$base/readiness")
+          cat /tmp/live-readiness.json
+          test "$status" = "200"
+          jq -e '.ready == true and .control_plane == true' /tmp/live-readiness.json
+          status=$(curl -sS -o /tmp/live-research.json -w '%{http_code}' \
+            -X POST \
+            -H 'Content-Type: application/json' \
+            --data '{"question":"CI live D1/B2 integration probe","depth":"quick","require_citations":false,"max_sources":1,"max_evidence_items":4,"strict_zero_cost_only":true,"source_urls":["https://example.com/"]}' \
+            "$base/api/v1/research")
+          cat /tmp/live-research.json
+          test "$status" = "200"
+          jq -e '.ok == true and (.run_id | length > 0) and (.sources | length == 1)' /tmp/live-research.json
+          run_id=$(jq -r '.run_id' /tmp/live-research.json)
+          status=$(curl -sS -o /tmp/live-run.json -w '%{http_code}' "$base/api/v1/research/$run_id")
+          cat /tmp/live-run.json
+          test "$status" = "200"
+          jq -e '.ok == true and (.observations | length == 1) and .observations[0].integrity_state == "verified"' /tmp/live-run.json
