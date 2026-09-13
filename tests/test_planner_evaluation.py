@@ -1,7 +1,11 @@
+import pytest
+
 from backend.intelligence.planner_evaluation import (
     PlannerMetrics,
     candidate_improves,
+    evidence_gain_per_unit,
     quality_non_regression,
+    research_regret,
     safe_region,
 )
 
@@ -36,3 +40,14 @@ def test_single_quality_regression_blocks_promotion_even_when_other_metrics_gain
     )
     assert not quality_non_regression(baseline, candidate)
     assert not candidate_improves(baseline, candidate, {"task_coverage": .8})
+
+
+def test_research_regret_and_evidence_gain_are_bounded_and_fail_closed():
+    assert research_regret(.7, .9) == pytest.approx(.2)
+    assert research_regret(.9, .7) == 0.0
+    assert evidence_gain_per_unit(5, 2) == pytest.approx(2.5)
+    assert evidence_gain_per_unit(5, 0) == 5
+    with pytest.raises(ValueError): research_regret(-.1, .5)
+    with pytest.raises(ValueError): research_regret(.5, 1.1)
+    with pytest.raises(ValueError): evidence_gain_per_unit(-1, 1)
+    with pytest.raises(ValueError): evidence_gain_per_unit(1, -1)
