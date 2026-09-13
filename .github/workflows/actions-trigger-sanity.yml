@@ -3,9 +3,11 @@ name: actions-trigger-sanity
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   sanity:
