@@ -1,86 +1,144 @@
 {
-  "schema": 3,
-  "purpose": "Public-safe family ownership and boundary contract for Foundation plus the private Operations system.",
-  "repositories": {
+  "schema": 4,
+  "purpose": "Canonical public-safe family ownership, dependency, governance, and change contract for the two active Z-Solo-King repositories.",
+  "active_repositories": [
+    "Z-Solo-King/foundation",
+    "Z-Solo-King/operations"
+  ],
+  "historical_repositories": {
+    "extractor-mapper": {
+      "status": "retired_deleted",
+      "active_owner": false,
+      "runtime_dependency": false,
+      "ci_dependency": false,
+      "migration_material": "operations/archive/extractor-mapper/"
+    }
+  },
+  "ownership": {
     "foundation": {
-      "role": "public-contracts",
-      "visibility": "public",
+      "role": "public-contract-and-deterministic-core",
       "owns": [
-        "public-safe contracts",
-        "research and evidence primitives",
-        "deterministic planning",
-        "public API boundary",
-        "public evidence structures"
+        "public-safe contracts and schemas",
+        "public-safe evidence/result structures",
+        "reusable deterministic observed-data primitives",
+        "public request/run contract boundary",
+        "public Worker boundary and public readiness",
+        "public CI and public-safe regression coverage"
       ],
       "must_not_own": [
         "protected policy authority",
-        "private resource governance",
-        "promotion or rollback authority",
-        "heavy acquisition/extraction",
-        "private product mapping",
-        "private chatbot orchestration"
+        "private resource/quota authority",
+        "private acquisition or extraction implementation",
+        "private site/platform adapters",
+        "private chatbot orchestration",
+        "private evaluation holdouts",
+        "promotion/rollback authority",
+        "private credentials or protected topology"
       ]
     },
     "operations": {
-      "role": "private-control-and-execution",
-      "visibility": "private",
+      "role": "private-control-execution-and-governance",
       "owns": [
-        "protected policy",
-        "resource governance",
-        "acquisition",
-        "extraction",
-        "platform and site adapters",
-        "deterministic product mapping",
-        "bounded execution and replay",
-        "verification",
-        "evaluation",
-        "promotion and rollback",
+        "protected policy and governance",
+        "private resource authority",
+        "acquisition and extraction",
+        "private adapters and execution planning",
+        "private verification and evaluation",
+        "promotion, canary, rollback and release authority",
         "private chatbot orchestration",
-        "Cloudflare integration",
-        "private run records and operational telemetry"
+        "deployment and recovery",
+        "private telemetry and run records"
       ],
       "must_not_own": [
-        "public-only contract implementations that belong in foundation",
-        "public evidence definitions that are intentionally reusable without protected implementation"
+        "a second implementation of a Foundation-owned public deterministic primitive",
+        "a second authoritative public contract definition",
+        "public Worker readiness authority"
       ]
     }
   },
-  "historical_repository": {
-    "name": "extractor-mapper",
-    "status": "deleted-historical-source",
-    "role": "Historical source repository whose active implementation was consolidated into Operations. It is not an active dependency or privacy boundary.",
-    "retirement_state": "deleted",
-    "historical_material": "Selected migration material is retained under operations/archive/extractor-mapper/ as non-executable reference content.",
-    "runtime_or_ci_dependency": false
+  "dependency": {
+    "direction": "foundation_contract_to_operations_consumer",
+    "rule": "Foundation never depends on Operations source, private credentials, private runtime state, or protected implementation.",
+    "implementation_rule": "Operations may consume a pinned Foundation package/revision. Cross-repository reuse must use a versioned contract or the canonical Foundation package, never copy-paste source."
   },
-  "dependency_rule": {
-    "contract_flow": "foundation -> operations",
-    "rule": "The arrow describes public contract/result flow, not unrestricted source imports.",
-    "public_to_private_rule": "foundation never depends on private repositories or protected implementation."
+  "single_owner_rule": {
+    "rule": "Each behavior, policy, data model, registry, algorithm, and authority has exactly one canonical owner.",
+    "compatibility": "Compatibility modules may re-export or adapt a canonical implementation but must contain no second business algorithm or policy.",
+    "generated_code": "Generated output is never a source of truth.",
+    "legacy_code": "Historical snapshots are immutable references and cannot receive new business logic."
   },
-  "single_owner_rule": "One authoritative implementation owns each behavior. Internal subsystem boundaries do not create additional repository authorities.",
+  "authority_matrix": {
+    "public_contracts": "foundation",
+    "deterministic_observed_data": "foundation",
+    "public_worker_boundary": "foundation",
+    "public_ci": "foundation",
+    "private_policy": "operations",
+    "resource_governance": "operations",
+    "acquisition": "operations",
+    "extraction": "operations",
+    "private_adapters": "operations",
+    "private_mapping_extensions": "operations",
+    "chatbot_orchestration": "operations",
+    "verification": "operations",
+    "evaluation": "operations",
+    "promotion_and_rollback": "operations",
+    "deployment_and_recovery": "operations",
+    "private_run_records": "operations"
+  },
+  "boundary_rules": [
+    "Public source code must not reveal private credentials, private topology, private holdouts, or protected implementation details.",
+    "Mapping remains network-free; acquisition/network work belongs to Operations acquisition/execution paths.",
+    "Family-level resource accounting has one authority in operations/private/resource_ledger.py.",
+    "Family-level promotion authority has one owner in Operations.",
+    "Public readiness must work without the private control plane.",
+    "Operations may add stricter local fail-closed guards, but local guards must not become competing family policy authorities.",
+    "The retired extractor-mapper repository is historical material only and cannot become a third active ownership boundary."
+  ],
   "change_method": [
     "search both active repositories",
-    "identify the owning subsystem or contract",
-    "locate the canonical symbol or contract",
-    "extend the owner",
-    "add the smallest consumer contract",
-    "add boundary regression coverage",
+    "classify the requested behavior, policy, model, or contract",
+    "resolve the canonical owner from this contract and the repository codemap",
+    "inspect the existing implementation and consumers before adding code",
+    "extend the owner instead of creating a peer implementation",
+    "expose the smallest stable versioned contract needed by the consumer",
+    "add owner-level regression coverage",
+    "add boundary coverage when the change crosses repositories",
     "run repository-local validation",
-    "run the family overlap audit when ownership or structure changes",
-    "remove duplicate implementations after parity evidence"
+    "run the family overlap/ownership audit when structure or ownership changes",
+    "remove obsolete compatibility or duplicate implementations after parity evidence",
+    "update this contract plus the affected codemap when ownership or dependency direction changes"
   ],
-  "non_negotiable_rules": [
-    "do not create a second authority for the same policy or resource",
-    "do not move protected policy into public foundation",
-    "do not make mapping perform network I/O",
-    "do not expose credentials, protected topology, or evaluation holdouts through public contracts",
-    "do not add new business logic to immutable V175/V18 legacy snapshots",
-    "do not treat the deleted extractor-mapper repository as an active dependency, runtime source, or CI target"
-  ],
+  "duplication_policy": {
+    "required_checks": [
+      "exact file hash",
+      "normalized structural comparison",
+      "function/method fingerprint comparison",
+      "semantic review of high-similarity candidates",
+      "policy/authority overlap review",
+      "contract/model overlap review"
+    ],
+    "optimization": "Deep pairwise comparison is for periodic exhaustive audits; routine checks should use deterministic hashing, structural bucketing, dependency/ownership indexes, and targeted expensive comparison.",
+    "no_false_merge": "Similarity alone never authorizes merging. Ownership, behavior, side effects, trust boundary, and compatibility requirements must also agree."
+  },
   "validation": {
-    "repository_local": "Foundation validates public contracts and primitives; Operations validates its complete private execution/control system.",
-    "family_overlap": "Operations owns the cross-repository overlap audit because it is the protected family control plane.",
-    "deep_audit": "The family overlap audit is periodic and exhaustive; local CI remains bounded and deterministic."
-  }
+    "foundation": "Public CI validates public-safe contracts, deterministic primitives, boundary behavior, and security-relevant public paths.",
+    "operations": "Private validation is local, private-self-hosted, or another non-GitHub-hosted path and validates protected runtime, evaluation, promotion, and deployment behavior.",
+    "family": "Cross-repository overlap and ownership audits are run from Operations as the protected family control plane."
+  },
+  "cost_policy": {
+    "strict_zero_cost": true,
+    "private_github_hosted_actions": false,
+    "paid_fallback": false
+  },
+  "non_negotiable": [
+    "one canonical owner per behavior",
+    "no copy-paste across repositories for shared behavior",
+    "no private authority in Foundation",
+    "no duplicate family-level resource ledger",
+    "no duplicate family-level promotion policy",
+    "no duplicate deterministic public-core algorithm in Operations",
+    "no new code in immutable legacy snapshots",
+    "no private GitHub-hosted Actions dependency",
+    "no hidden third active repository or ownership boundary"
+  ]
 }
