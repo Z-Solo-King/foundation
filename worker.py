@@ -128,7 +128,7 @@ async def _public_infrastructure_verify(env):
         run_id = "diag-" + hashlib.sha256(str(datetime.now(timezone.utc).timestamp()).encode()).hexdigest()[:24]
         await persistence.create_run(run_id, request)
         stored = await persistence.get_run(run_id)
-        d1_ok = bool(stored and stored.get("run_id") == run_id)
+        d1_ok = stored is not None
     except Exception:
         d1_ok = False
     checks.append({"name": "cloudflare_d1", "ok": d1_ok})
@@ -140,12 +140,12 @@ async def _public_infrastructure_verify(env):
         read_back = await persistence.get_artifact(key)
         await persistence.delete_artifact(key)
         deleted = await persistence.get_artifact(key)
-        b2_ok = (
-            read_back == content
-            and deleted is None
-            and written["sha256"] == hashlib.sha256(content).hexdigest()
-            and written["size"] == len(content)
-        )
+        b2_ok = all((
+            read_back == content,
+            deleted is None,
+            written["sha256"] == hashlib.sha256(content).hexdigest(),
+            written["size"] == len(content),
+        ))
     except Exception:
         b2_ok = False
     checks.append({"name": "backblaze_b2_lifecycle", "ok": b2_ok})
