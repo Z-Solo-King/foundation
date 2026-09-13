@@ -126,6 +126,35 @@ async def test_cloudflare_persistence_helpers():
     assert result["size"] == 3 and await persistence.get_artifact("k") == b"abc" and await persistence.get_artifact("missing") is None
 
 
+def test_d1_repository_all_paths():
+    repo = D1Repository(); now = datetime.now(timezone.utc)
+    run = RunRecord("r1","q","standard","planned",now,now,1,2,"{}"); assert repo.create_run(run) is run
+    with pytest.raises(ValueError): repo.create_run(run)
+    assert repo.get_run("missing") is None
+    assert repo.update_run(RunRecord("r1","q2","deep","running",now,now,2,3,"{}")).question == "q2"
+    with pytest.raises(ValueError): repo.update_run(RunRecord("missing","q","standard","planned",now,now,1,1,"{}"))
+    evidence = EvidenceRecord("e1","r1","o1","s1",None,0,3,"hash",now); assert repo.add_evidence(evidence) is evidence
+    with pytest.raises(ValueError): repo.add_evidence(evidence)
+    assert repo.evidence_for_run("r1") == [evidence] and repo.evidence_for_claim("missing") == []
+    lineage = SourceLineageRecord("s1","f1",None,"origin",now,now); assert repo.upsert_lineage(lineage) is lineage
+    assert repo.get_lineage("s1") is lineage and repo.get_lineage("missing") is None and repo.lineage_for_family("f1") == [lineage]
+    version = DocumentVersionRecord("v1","o1","s1",now,None,"hash","artifact"); assert repo.add_version(version) is version
+    with pytest.raises(ValueError): repo.add_version(version)
+    assert repo.versions_for_observation("o1") == [version]
+
+
+def test_r2_repository_all_paths():
+    now = datetime.now(timezone.utc); repo = R2Repository(); artifact = R2Artifact("a1","project-artifacts","k","text/plain",3,now,"hash")
+    assert repo.upload(artifact,b"abc") is artifact
+    with pytest.raises(ValueError): repo.upload(artifact,b"abc")
+    with pytest.raises(ValueError): repo.upload(R2Artifact("a2","project-artifacts","k2","text/plain",4,now,"hash"),b"abc")
+    assert repo.download("a1")[1] == b"abc" and repo.download("missing") is None
+    repo.delete("a1"); repo.delete("missing")
+    manifest = ArtifactManifest("m1","name","desc","text",{"encoding":"utf-8"}); assert repo.add_manifest(manifest) is manifest
+    with pytest.raises(ValueError): repo.add_manifest(manifest)
+    assert repo.get_manifest("m1") is manifest and repo.get_manifest("missing") is None
+
+
 @pytest.mark.asyncio
 async def test_worker_helpers_and_source_ingestion(monkeypatch):
     request = make_request(source_urls=("https://example.com",))
@@ -192,7 +221,7 @@ async def test_worker_http_all_branches(monkeypatch):
     with_key = await entry.fetch(Request("POST", "https://x/api/v1/research", payload={"question":"q"}, headers={"Authorization":"Bearer secret", "Idempotency-Key":"k"})); assert with_key
     source_request = {"question":"q","source_urls":["https://example.com"]}
     async def ok_public(url): return source_http.FetchResult(url,url,200,"text/plain",b"ok",None)
-    monkeypatch.setattr(worker, "fetch_public_url", ok_public)
+    monkeypatch.setattr(worker,"fetch_public_url", ok_public)
     with_sources = await entry.fetch(Request("POST", "https://x/api/v1/research", payload=source_request, headers={"Authorization":"Bearer secret"})); assert with_sources
     class BrokenPersistence:
         async def create_run(self, run_id, req): raise RuntimeError("persist")
