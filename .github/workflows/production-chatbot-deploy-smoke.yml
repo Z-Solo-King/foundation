@@ -1,13 +1,10 @@
 name: production-chatbot-deploy-smoke
 
 on:
-  push:
-    branches: [main]
+  workflow_run:
+    workflows: [deploy-public-worker]
+    types: [completed]
   workflow_dispatch:
-
-concurrency:
-  group: production-deploy-smoke-main
-  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -15,29 +12,26 @@ permissions:
 
 jobs:
   public-chatbot-verify:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for Cloudflare deployment for this commit
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Select deployment revision
+        id: revision
         shell: bash
         run: |
           set -euo pipefail
-          for attempt in {1..60}; do
-            runs=$(gh api \
-              -H 'Accept: application/vnd.github+json' \
-              "/repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-public-worker.yml/runs?head_sha=${GITHUB_SHA}&per_page=20")
-            status=$(jq -r '.workflow_runs[0].status // "missing"' <<<"$runs")
-            conclusion=$(jq -r '.workflow_runs[0].conclusion // ""' <<<"$runs")
-            echo "deploy-public-worker status=${status} conclusion=${conclusion} attempt=${attempt}"
-            if [[ "$status" == "completed" ]]; then
-              [[ "$conclusion" == "success" ]] || { echo 'Cloudflare deployment did not succeed; refusing verification'; exit 1; }
-              exit 0
-            fi
-            sleep 10
-          done
-          echo 'Timed out waiting for Cloudflare deployment for this commit'
-          exit 1
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
+            sha='${{ github.event.workflow_run.head_sha }}'
+          else
+            sha='${GITHUB_SHA}'
+          fi
+          test -n "$sha"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout deployed revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.revision.outputs.sha }}
 
       - name: Verify public Worker health
         run: |
@@ -52,18 +46,9 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "${AUTH_TOKEN:-}" ]]; then
-            echo 'AUTH_TOKEN GitHub secret is not configured; authenticated D1/B2 proof is intentionally skipped.'
-            echo 'Production deployment and public Worker health were still verified.'
-            {
-              echo '### Authenticated infrastructure proof'
-              echo ''
-              echo 'Skipped: the GitHub Actions AUTH_TOKEN secret is not configured.'
-              echo ''
-              echo 'This is not treated as a production-runtime failure. Run the protected authenticated proof path after configuring the repository secret.'
-            } >> "$GITHUB_STEP_SUMMARY"
+            echo 'AUTH_TOKEN is not configured in this public-repo workflow context; authenticated D1/B2 verification is not claimed.'
             exit 0
           fi
-
           status=$(curl -sS -o /tmp/chatbot.json -w '%{http_code}' \
             -X POST \
             -H "Authorization: Bearer ${AUTH_TOKEN}" \
