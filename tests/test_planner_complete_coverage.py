@@ -77,7 +77,7 @@ def test_planner_generation_recovery_and_fields():
 def test_planner_task_modes_queries_profiles_and_plan():
     for text, expected in (
         ("specification ports", TaskMode.SPECIFICATION),
-        ("price and stock", TaskMode.MIXED),
+        ("price and best", TaskMode.MIXED),
         ("community experience", TaskMode.COMMUNITY),
         ("official source", TaskMode.PRIMARY_SOURCE),
         ("same product match", TaskMode.ENTITY_RESOLUTION),
@@ -120,7 +120,7 @@ def test_resource_runtime_and_dag_edges():
 
 def test_pagination_terminal_states():
     state = PaginationState(PaginationKind.PAGE)
-    progressed = state.observe(items=1, fingerprint="a", cursor="c", expected_total=3)
+    progressed = state.observe(items=1, fingerprint="a", cursor="c", expected_total=4)
     repeated = progressed.observe(items=1, fingerprint="a", cursor="c")
     empty = repeated.observe(items=0)
     partial = empty.observe(items=1, partial=True)
@@ -163,9 +163,22 @@ def test_model_and_contract_validation_edges():
     with pytest.raises(ValueError): ResearchContract("q", freshness_requirement=-1).validate()
     with pytest.raises(ValueError): ResearchContract("q", max_search_actions=5, resource_envelope=ResourceEnvelope(search_units=2)).validate()
     with pytest.raises(ValueError): ResearchContract("q", max_wall_time=50, resource_envelope=ResourceEnvelope(search_units=12, wall_seconds=20)).validate()
-    receipt = EvaluationReceipt(receipt_id="r", benchmark_id="b", benchmark_fingerprint="f", case_count=1, benchmark_count=1, metrics=(("x", 1.0),), model_id="m", strategy_id="s")
+    receipt = EvaluationReceipt(
+        receipt_id="r",
+        candidate_fingerprint="c",
+        baseline_fingerprint="b",
+        corpus_fingerprint="f",
+        oracle_fingerprint="o",
+        suite_version="1",
+        benchmark_count=1,
+        metrics=(("x", 1.0),),
+        passed=True,
+        created_at="t",
+        evaluator_version="e",
+        artifact_hash="a",
+    )
     assert receipt.fingerprint()
-    with pytest.raises(ValueError): replace(receipt, receipt_id="r2", metrics=(("x", nan),)).validate()
+    with pytest.raises(ValueError): replace(receipt, metrics=(("x", nan),)).validate()
 
 
 def test_observation_stage_and_token_edges():
