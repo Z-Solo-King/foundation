@@ -85,6 +85,9 @@ def test_enriched_certificate_rejects_temporal_and_identity_guards():
         replace(certificate, span_start=-1).validate()
     with pytest.raises(ValueError):
         replace(certificate, retention_state="x" * 4097).validate()
+    assert verify_certificate(observation, replace(certificate, span_start=-1)) is False
+    assert verify_certificate(observation, replace(certificate, span_end=99_999)) is False
+    assert verify_certificate(observation, replace(certificate, observation_id="other")) is False
 
 
 def test_certificate_detects_provenance_drift():
@@ -97,33 +100,9 @@ def test_certificate_detects_provenance_drift():
         extractor_version="extractor-v1",
     )
     certificate = create_certificate(observation, EvidenceSpan("obs-006", 18, 26), retention_state="retained")
-    changed_document = Observation(
-        observation_id="obs-006",
-        source_url="https://example.com",
-        content=observation.content,
-        observed_at=observation.observed_at,
-        document_version_id="doc-v2",
-        source_family_id="family-a",
-        extractor_version="extractor-v1",
-    )
-    changed_family = Observation(
-        observation_id="obs-006",
-        source_url="https://example.com",
-        content=observation.content,
-        observed_at=observation.observed_at,
-        document_version_id="doc-v1",
-        source_family_id="family-b",
-        extractor_version="extractor-v1",
-    )
-    changed_extractor = Observation(
-        observation_id="obs-006",
-        source_url="https://example.com",
-        content=observation.content,
-        observed_at=observation.observed_at,
-        document_version_id="doc-v1",
-        source_family_id="family-a",
-        extractor_version="extractor-v2",
-    )
+    changed_document = replace(observation, document_version_id="doc-v2")
+    changed_family = replace(observation, source_family_id="family-b")
+    changed_extractor = replace(observation, extractor_version="extractor-v2")
     assert not verify_certificate(changed_document, certificate)
     assert not verify_certificate(changed_family, certificate)
     assert not verify_certificate(changed_extractor, certificate)
