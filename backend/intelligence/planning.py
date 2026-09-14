@@ -22,6 +22,9 @@ def _source_families(question: str) -> tuple[str, ...]:
         "amazon": ("amazon", "buyer reviews", "verified buyer"),
         "flipkart": ("flipkart",),
         "youtube": ("youtube", "video review", "long-term review"),
+        "social_media": (
+            "social media", "twitter", "x.com", "instagram", "facebook", "tiktok", "meta ai", "threads",
+        ),
         "social_communities": ("social", "community", "forum"),
         "chinese_communities": (
             "chinese", "china", "bilibili", "zhihu", "baidu tieba", "tieba", "douban", "ptt",
