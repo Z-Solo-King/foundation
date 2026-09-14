@@ -123,31 +123,39 @@ jobs:
                   rows.append(json.loads(path.read_text(encoding='utf-8')))
 
           selected = sum(int(row.get('selected') or 0) for row in rows)
+          cycles = sum(int(row.get('cycles') or 0) for row in rows)
+          status_counts = {}
+          http_status_counts = {}
+          diagnostic_counts = {}
+          for row in rows:
+              for status, count in (row.get('status_counts') or {}).items():
+                  status_counts[status] = status_counts.get(status, 0) + int(count)
+              for status, count in (row.get('http_status_counts') or {}).items():
+                  http_status_counts[status] = http_status_counts.get(status, 0) + int(count)
+              for diagnostic, count in (row.get('diagnostic_counts') or {}).items():
+                  diagnostic_counts[diagnostic] = diagnostic_counts.get(diagnostic, 0) + int(count)
+
+          total_observations = sum(status_counts.values())
+          error_count = int(status_counts.get('error', 0))
           safe = {
-              'schema': 'autonomous-public-benchmark-summary/v4',
+              'schema': 'autonomous-public-benchmark-summary/v5',
               'run_id': '${{ github.run_id }}',
               'shard': ${{ matrix.shard }},
               'summaries': len(rows),
               'selected_targets': selected,
-              'cycles': sum(int(row.get('cycles') or 0) for row in rows),
-              'status_counts': {},
-              'http_status_counts': {},
-              'diagnostic_counts': {},
+              'cycles': cycles,
+              'total_observations': total_observations,
+              'error_rate': round(error_count / total_observations, 6) if total_observations else None,
+              'status_counts': status_counts,
+              'http_status_counts': http_status_counts,
+              'diagnostic_counts': diagnostic_counts,
           }
-          for row in rows:
-              for status, count in (row.get('status_counts') or {}).items():
-                  safe['status_counts'][status] = safe['status_counts'].get(status, 0) + int(count)
-              for status, count in (row.get('http_status_counts') or {}).items():
-                  safe['http_status_counts'][status] = safe['http_status_counts'].get(status, 0) + int(count)
-              for diagnostic, count in (row.get('diagnostic_counts') or {}).items():
-                  safe['diagnostic_counts'][diagnostic] = safe['diagnostic_counts'].get(diagnostic, 0) + int(count)
+
           Path('benchmark-summary.json').write_text(json.dumps(safe, indent=2), encoding='utf-8')
           print(json.dumps(safe, indent=2))
+          if selected <= 0:
+              raise SystemExit('No live benchmark summary was produced; benchmark infrastructure is invalid.')
           PY
-          if [ "${selected}" -le 0 ]; then
-            echo 'No live benchmark summary was produced; recording this as a benchmark infrastructure failure.'
-            exit 1
-          fi
 
       - name: Upload sanitized benchmark summary
         if: always()
