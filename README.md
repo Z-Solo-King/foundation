@@ -2,7 +2,7 @@
 
 Public contract core for the Z-Solo-King GitHub family.
 
-_Last verified: Cloudflare Git deploy test — 2026-09-14 (retry after credential fix)._
+_Last verified: Cloudflare Git deploy test — 2026-09-14 (retry after credential fix)._ 
 
 This repository contains public-safe contracts, schemas, reusable deterministic primitives, the public Worker boundary, and the public CI evidence path. Protected execution, governance, evaluation holdouts, credentials, and promotion authority live outside this public repository.
 
@@ -19,6 +19,12 @@ For architecture continuity, the authoritative project-level documents are maint
 7. `operations/docs/PROJECT_STATUS_DONE_VS_LEFT_2026-09-13.md` when private repository access is available
 
 Historical chat archives are provenance, not a replacement for current repository source-of-truth documents.
+
+## GitHub Actions usage rule
+
+**Private `Z-Solo-King/operations` GitHub Actions is restricted during the September 2026 quota period.** Until access becomes available again in October 2026, do not depend on private-repository Actions, private Actions minutes, or private Operations checkouts for automated GitHub-hosted execution. Use `foundation` as the GitHub-hosted execution owner for workloads that are safe to run publicly.
+
+October availability does not mean unlimited capacity. Before moving workloads back to `operations`, verify the actual current GitHub allowance and keep public execution as the default for workloads that can safely remain public. See `docs/GITHUB_ACTIONS_USAGE_POLICY.md`.
 
 ## Public deterministic core
 
