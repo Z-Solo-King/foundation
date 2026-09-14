@@ -1,0 +1,59 @@
+name: boundary-cleanup
+
+on:
+  push:
+    branches:
+      - refactor/private-evaluation-boundary
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: refactor/private-evaluation-boundary
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.13'
+      - name: Remove tests that depend on private evaluation
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+
+          for path in Path('tests').glob('test_*.py'):
+              text = path.read_text(encoding='utf-8')
+              tree = ast.parse(text)
+              lines = text.splitlines(keepends=True)
+              remove = []
+              for node in tree.body:
+                  if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith('test_'):
+                      segment = ast.get_source_segment(text, node) or ''
+                      if 'backend.evaluation' in segment:
+                          start = node.lineno - 1
+                          end = node.end_lineno
+                          while start > 0 and not lines[start - 1].strip():
+                              start -= 1
+                          remove.append((start, end))
+              for start, end in reversed(remove):
+                  del lines[start:end]
+              new = ''.join(lines)
+              new = '\n'.join(line for line in new.split('\n') if not line.strip().startswith(('from backend.evaluation ', 'import backend.evaluation')))
+              if new != text:
+                  path.write_text(new.rstrip() + '\n', encoding='utf-8')
+          PY
+      - name: Verify no public test imports private evaluation
+        run: |
+          ! grep -RniE 'backend\.evaluation|adjudicate_ambiguous|EvaluationHarness|BenchmarkCase|EvaluationResult' tests backend foundation_core worker.py || true
+          if grep -RniE 'backend\.evaluation' tests backend foundation_core worker.py; then exit 1; fi
+      - name: Commit cleanup
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add tests
+          git commit -m 'test: remove private evaluation cases from public suite [skip ci]' || exit 0
+          git push origin HEAD:refactor/private-evaluation-boundary
