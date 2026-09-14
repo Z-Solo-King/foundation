@@ -1,4 +1,4 @@
-name: codeql
+name: ci-deploy
 
 on:
   push:
@@ -9,13 +9,42 @@ on:
     - cron: "41 2 * * 3"
   workflow_dispatch:
 
-permissions:
-  contents: read
-  security-events: write
-
 jobs:
+  public_tests:
+    name: Public tests
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+      - name: Install test tools and package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pytest pytest-asyncio coverage workers-py workers-runtime-sdk
+      - name: Compile every Python source
+        run: python -m compileall -q backend foundation_core worker.py
+      - name: Verify package installation
+        run: python -c "import foundation_core; print(foundation_core.__all__)"
+      - name: Run product tests
+        run: coverage run --branch --source=backend,foundation_core,worker --omit='tests/*,backend/persistence/artifacts.py' -m pytest tests/ -v
+      - name: Enforce complete product coverage
+        run: coverage report --show-missing --fail-under=100 --omit='tests/*,backend/persistence/artifacts.py'
+      - name: Public boundary scan
+        run: |
+          set -euo pipefail
+          test ! -e backend/learning/promotion.py
+          ! grep -RniE 'operations|extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-private' foundation_core backend worker.py wrangler.toml migrations tests
+          ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' backend foundation_core worker.py wrangler.toml migrations tests
+
   analyze:
     name: Analyze python
+    permissions:
+      contents: read
+      security-events: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -29,3 +58,190 @@ jobs:
         uses: github/codeql-action/analyze@c20e34f438d671fc35777cc9820dd7adf8252874
         with:
           category: /language:python
+
+  deploy:
+    name: Deploy production Worker
+    needs: public_tests
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    concurrency:
+      group: public-worker-deploy
+      cancel-in-progress: false
+    steps:
+      - name: Decide whether this run may deploy production
+        id: guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ]]; then
+            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+            echo 'Production deployment enabled for main push.'
+          else
+            echo 'enabled=false' >> "$GITHUB_OUTPUT"
+            echo 'Production deployment disabled for this event.'
+          fi
+
+      - name: Checkout tested commit
+        if: steps.guard.outputs.enabled == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Python Worker tooling
+        if: steps.guard.outputs.enabled == 'true'
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+
+      - name: Install Python Worker tooling
+        if: steps.guard.outputs.enabled == 'true'
+        run: python -m pip install --upgrade pip workers-py
+
+      - name: Resolve Cloudflare account ID and verify token
+        if: steps.guard.outputs.enabled == 'true'
+        id: cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          SECRET_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VARIABLE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo 'Missing CLOUDFLARE_API_TOKEN GitHub secret'; exit 1; }
+          account_id="${SECRET_ACCOUNT_ID:-${VARIABLE_ACCOUNT_ID:-}}"
+          test -n "$account_id" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID: configure it as a repository secret or variable'; exit 1; }
+          curl -fsS \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            https://api.cloudflare.com/client/v4/user/tokens/verify \
+            | jq -e '.success == true and .result.status == "active"' >/dev/null
+          echo "account_id=$account_id" >> "$GITHUB_OUTPUT"
+
+      - name: Discover public D1 database
+        if: steps.guard.outputs.enabled == 'true'
+        id: d1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          databases=$(curl -fsS \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database")
+          database_id=$(jq -r '.result[] | select(.name == "research-intelligence") | .uuid' <<<"$databases" | head -n 1)
+          test -n "$database_id" && test "$database_id" != null
+          echo "database_id=$database_id" >> "$GITHUB_OUTPUT"
+
+      - name: Generate deployment config
+        if: steps.guard.outputs.enabled == 'true'
+        env:
+          D1_DATABASE_ID: ${{ steps.d1.outputs.database_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > wrangler.production.generated.toml <<EOF
+name = "research-intelligence-engine-public"
+main = "worker.py"
+compatibility_date = "2026-09-09"
+compatibility_flags = ["python_workers"]
+workers_dev = true
+preview_urls = false
+
+[[d1_databases]]
+binding = "DB"
+database_name = "research-intelligence"
+database_id = "${D1_DATABASE_ID}"
+
+[secrets]
+required = ["AUTH_TOKEN", "B2_KEY_ID", "B2_APPLICATION_KEY"]
+
+[vars]
+ENVIRONMENT = "production"
+STRICT_ZERO_COST_ONLY = "true"
+B2_BUCKET = "SoloKing"
+B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"
+EOF
+
+      - name: Validate generated deployment config
+        if: steps.guard.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q '^database_name = "research-intelligence"$' wrangler.production.generated.toml
+          database_id=$(sed -n 's/^database_id = "\(.*\)"$/\1/p' wrangler.production.generated.toml | head -n 1)
+          [[ "$database_id" =~ ^[0-9a-fA-F-]{36}$ ]] || { echo 'Generated config does not contain a valid D1 UUID'; exit 1; }
+
+      - name: Apply remote D1 migrations
+        if: steps.guard.outputs.enabled == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
+        run: npx wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
+
+      - name: Deploy public Worker
+        if: steps.guard.outputs.enabled == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
+        run: pywrangler deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}"
+
+  smoke:
+    name: Verify production Worker
+    needs: deploy
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide whether this run may verify production
+        id: guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ]]; then
+            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'enabled=false' >> "$GITHUB_OUTPUT"
+            echo 'Production verification disabled for this event.'
+          fi
+
+      - name: Verify public Worker health
+        if: steps.guard.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          curl -fsS https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/health | tee /tmp/health.json
+          jq -e '.ok == true and .status == "ok"' /tmp/health.json
+
+      - name: Verify public Worker readiness and D1
+        if: steps.guard.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          curl -fsS https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/readiness | tee /tmp/readiness.json
+          jq -e '.ready == true and .database == true' /tmp/readiness.json
+
+      - name: Verify authenticated Cloudflare and B2 lifecycle
+        if: steps.guard.outputs.enabled == 'true'
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub secret; refusing to claim full production verification'; exit 1; }
+          status=$(curl -sS -o /tmp/chatbot.json -w '%{http_code}' \
+            -X POST \
+            -H "Authorization: Bearer ${AUTH_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data '{"operation":"infrastructure_verify_public_test"}' \
+            https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/api/v1/chatbot/diagnostic)
+          cat /tmp/chatbot.json
+          test "$status" = "200"
+          jq -e '
+            .ok == true and
+            .status == "ok" and
+            (.checks | map(select(.ok != true)) | length == 0) and
+            ([.checks[].name] | index("public_chatbot")) and
+            ([.checks[].name] | index("cloudflare_d1")) and
+            ([.checks[].name] | index("backblaze_b2_lifecycle"))
+          ' /tmp/chatbot.json
