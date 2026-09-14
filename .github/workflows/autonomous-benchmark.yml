@@ -42,9 +42,10 @@ jobs:
           python -m benchmark.public_chatbot_runner chatbot-smoke
 
       - name: Test natural-language deep research queries
+        if: matrix.shard == 0
         run: |
           set -euo pipefail
-          rm -rf .runtime/chatbot-query-benchmark.json
+          rm -rf .runtime
           python -m benchmark.chatbot_query_benchmark \
             --input benchmark/chatbot-query-corpus.json \
             --output .runtime/chatbot-query-benchmark.json
@@ -84,7 +85,7 @@ jobs:
 
           selected = sum(int(row.get('selected') or 0) for row in rows)
           safe = {
-              'schema': 'autonomous-public-benchmark-summary/v3',
+              'schema': 'autonomous-public-benchmark-summary/v4',
               'run_id': '${{ github.run_id }}',
               'shard': ${{ matrix.shard }},
               'summaries': len(rows),
@@ -108,14 +109,20 @@ jobs:
           print(json.dumps(safe, indent=2))
           PY
 
-      - name: Upload sanitized benchmark summaries
+      - name: Upload sanitized benchmark summary
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: autonomous-benchmark-summary-shard-${{ matrix.shard }}
-          path: |
-            benchmark-summary.json
-            .runtime/chatbot-query-benchmark.json
+          path: benchmark-summary.json
+          retention-days: 1
+
+      - name: Upload deep-query benchmark
+        if: always() && matrix.shard == 0
+        uses: actions/upload-artifact@v4
+        with:
+          name: autonomous-chatbot-query-benchmark
+          path: .runtime/chatbot-query-benchmark.json
           retention-days: 1
 
       - name: Remove runtime artifacts
