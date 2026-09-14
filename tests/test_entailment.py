@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from backend.evaluation.entailment import EntailmentStatus, adjudicate_ambiguous, verify_claim_entailment
+from backend.intelligence.entailment import EntailmentStatus, verify_claim_entailment
 from backend.intelligence.observations import EvidenceSpan, Observation
 
 
@@ -29,10 +29,15 @@ def test_invalid_span_fails_closed():
     assert result.status == EntailmentStatus.INVALID
 
 
-def test_ambiguous_case_can_be_adjudicated_explicitly():
+def test_ambiguous_case_stays_ambiguous_without_private_adjudication():
     observation = obs("Product has a monthly price in India.")
     span = EvidenceSpan("o1", 0, len(observation.content))
-    result = verify_claim_entailment("Product costs $10 per month in India.", observation, span, ambiguous_threshold=0.4, supported_threshold=0.99)
+    result = verify_claim_entailment(
+        "Product costs $10 per month in India.",
+        observation,
+        span,
+        ambiguous_threshold=0.4,
+        supported_threshold=0.99,
+    )
     assert result.status == EntailmentStatus.AMBIGUOUS
-    assert adjudicate_ambiguous(result, True).accepted
-    assert not adjudicate_ambiguous(result, False).accepted
+    assert not result.accepted
