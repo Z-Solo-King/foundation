@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 
-from backend.evaluation.entailment import EntailmentStatus, verify_claim_entailment
+from backend.intelligence.entailment import EntailmentStatus, verify_claim_entailment
 from backend.intelligence.observations import Observation, EvidenceSpan
 from backend.intelligence.certificates import verify_certificate, EvidenceCertificate
 from backend.intelligence.lineage import SourceLineage, is_independent
