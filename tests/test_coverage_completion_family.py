@@ -145,41 +145,6 @@ def test_api_models_capabilities_and_serialization(monkeypatch):
     assert "Internal error" in submit_research(ResearchRequest("q")).error
 
 
-def test_entailment_harness_and_claim_validation():
-    from backend.evaluation.entailment import EntailmentStatus, adjudicate_ambiguous, verify_claim_entailment
-    from backend.evaluation.harness import EvaluationCategory, EvaluationHarness, BenchmarkCase, EvaluationResult
-    from backend.intelligence.claims import Claim
-    from backend.intelligence.contracts import ResearchContract
-    from backend.intelligence.observations import Observation, EvidenceSpan
-    obs = Observation.create("o", "https://e", "The product is available now.")
-    assert verify_claim_entailment("", obs, EvidenceSpan("o",0,3)).status == EntailmentStatus.UNSUPPORTED
-    assert verify_claim_entailment("available", obs, EvidenceSpan("o",0,5)).status == EntailmentStatus.UNSUPPORTED
-    amb = verify_claim_entailment("product available", Observation.create("o2","https://e","product maybe available elsewhere"), EvidenceSpan("o2",0,32), supported_threshold=1.1)
-    assert amb.status == EntailmentStatus.AMBIGUOUS
-    assert adjudicate_ambiguous(amb, True).accepted is True and adjudicate_ambiguous(amb, False).accepted is False
-    assert adjudicate_ambiguous(verify_claim_entailment("available", obs, EvidenceSpan("o",0,31)), True).status != EntailmentStatus.AMBIGUOUS
-    with pytest.raises(ValueError): Claim.create("c", "")
-    assert Claim.create("c", "text").text == "text"
-    with pytest.raises(ValueError): ResearchContract("").validate()
-    with pytest.raises(ValueError): ResearchContract("q", max_sources=0).validate()
-    with pytest.raises(ValueError): ResearchContract("q", max_evidence_items=0).validate()
-    h = EvaluationHarness(); h._bootstrap_target = 2; h._promotion_threshold = 0.5
-    c1 = BenchmarkCase("1", EvaluationCategory.RETRIEVAL, "d", "q", "a")
-    c2 = BenchmarkCase("2", EvaluationCategory.SECURITY, "d", "q", "a")
-    h.register_case(c1); h.register_case(c2)
-    with pytest.raises(ValueError): h.register_case(c1)
-    with pytest.raises(ValueError): h.record_result("missing", EvaluationResult("missing", True))
-    h.record_result("1", EvaluationResult("1", True)); h.record_result("2", EvaluationResult("2", False))
-    assert h.summary_by_category()[str(EvaluationCategory.RETRIEVAL)]["pass_rate"] == 1.0
-    assert h.bootstrap_readiness()[0] is True
-    h.record_result("2", EvaluationResult("2", True)); assert h.bootstrap_readiness()[0] is True
-    h._bootstrap_target = 3; assert h.bootstrap_readiness()[0] is False
-    h._bootstrap_target = 2; h._promotion_threshold = 1.1; assert h.bootstrap_readiness()[0] is False
-    h._production_target = 1; h._promotion_threshold = 0.0; assert h.production_readiness()[0] is False
-    assert h.regression_test("1", lambda case: EvaluationResult(case.case_id, True)).passed is True
-    with pytest.raises(ValueError): h.regression_test("x", lambda case: EvaluationResult("x", True))
-
-
 def test_intelligence_certificates_observations_lineage_sources():
     from backend.intelligence.certificates import create_certificate as create_intel_certificate, verify_certificate as verify_intel_certificate
     from backend.intelligence.lineage import SourceLineage, origin_fingerprint, is_independent

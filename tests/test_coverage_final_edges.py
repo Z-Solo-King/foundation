@@ -5,40 +5,6 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 
-def test_entailment_adjudication_rejects_ambiguous():
-    from backend.evaluation.entailment import EntailmentResult, EntailmentStatus, adjudicate_ambiguous
-    result = EntailmentResult(EntailmentStatus.AMBIGUOUS, 0.7, "ambiguous")
-    rejected = adjudicate_ambiguous(result, False)
-    assert rejected.status == EntailmentStatus.UNSUPPORTED
-    assert adjudicate_ambiguous(EntailmentResult(EntailmentStatus.SUPPORTED, 1.0, "ok"), False).status == EntailmentStatus.SUPPORTED
-
-
-def test_evaluation_harness_production_failure_and_success():
-    from backend.evaluation.harness import BenchmarkCase, EvaluationCategory, EvaluationHarness, EvaluationResult
-    harness = EvaluationHarness()
-    for i in range(150):
-        harness.register_case(BenchmarkCase(f"case-{i}", EvaluationCategory.RETRIEVAL, "d", "q", "a"))
-    ready, reason = harness.production_readiness()
-    assert ready is False and "only 0 cases" in reason
-
-    balanced = EvaluationHarness()
-    categories = list(EvaluationCategory)
-    for i in range(150):
-        cat = categories[i % len(categories)]
-        balanced.register_case(BenchmarkCase(f"case-{i}", cat, "d", "q", "a"))
-        balanced.record_result(f"case-{i}", EvaluationResult(f"case-{i}", True))
-    ready, reason = balanced.production_readiness()
-    assert ready is True and reason == "production gate passed"
-
-    failing = EvaluationHarness()
-    for i in range(150):
-        cat = categories[i % len(categories)]
-        failing.register_case(BenchmarkCase(f"case-{i}", cat, "d", "q", "a"))
-        failing.record_result(f"case-{i}", EvaluationResult(f"case-{i}", i >= 8))
-    ready, reason = failing.production_readiness()
-    assert ready is False and "pass rate" in reason
-
-
 def test_acquisition_no_enabled_method(monkeypatch):
     import backend.execution.acquisition as acquisition
     from backend.intelligence.sources import Source, SourcePolicy

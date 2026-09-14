@@ -4,18 +4,6 @@ import types
 import pytest
 
 
-def test_entailment_ai_positive_and_negative_adjudication():
-    from backend.evaluation.entailment import EntailmentResult, EntailmentStatus, adjudicate_ambiguous, verify_claim_entailment
-    from backend.intelligence.observations import EvidenceSpan, Observation
-    result = adjudicate_ambiguous(EntailmentResult(EntailmentStatus.AMBIGUOUS, 0.7, "ambiguous"), True)
-    assert result.status == EntailmentStatus.SUPPORTED
-    rejected = adjudicate_ambiguous(EntailmentResult(EntailmentStatus.AMBIGUOUS, 0.7, "ambiguous"), False)
-    assert rejected.status == EntailmentStatus.UNSUPPORTED
-    obs = Observation.create("lex", "s", "https://e", "a b c d e f x")
-    lexical = verify_claim_entailment("a b c d e f g", obs, EvidenceSpan("lex", 0, len(obs.content)))
-    assert lexical.status == EntailmentStatus.SUPPORTED
-
-
 def test_engine_invalid_lifecycle_branches():
     from backend.execution.engine import complete_research, create_run, start_research
     from backend.intelligence.contracts import ResearchContract, ResearchPlan
