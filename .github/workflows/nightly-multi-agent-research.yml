@@ -15,6 +15,9 @@ concurrency:
 
 env:
   PYTHONUNBUFFERED: "1"
+  RESEARCH_LLM_ENDPOINT: ${{ secrets.RESEARCH_LLM_ENDPOINT }}
+  RESEARCH_LLM_API_KEY: ${{ secrets.RESEARCH_LLM_API_KEY }}
+  RESEARCH_LLM_MODEL: ${{ secrets.RESEARCH_LLM_MODEL }}
 
 jobs:
   lane0-a:
