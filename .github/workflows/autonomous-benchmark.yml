@@ -114,31 +114,72 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           import json
+          from collections import Counter
           from pathlib import Path
 
           root = Path('.runtime/benchmarks')
           rows = []
+          receipts = []
           if root.exists():
               for path in root.glob('*/summary-*.json'):
                   rows.append(json.loads(path.read_text(encoding='utf-8')))
+              for path in root.glob('*/shard-*.jsonl'):
+                  with path.open(encoding='utf-8') as handle:
+                      for line in handle:
+                          if line.strip():
+                              receipts.append(json.loads(line))
 
           selected = sum(int(row.get('selected') or 0) for row in rows)
           cycles = sum(int(row.get('cycles') or 0) for row in rows)
-          status_counts = {}
-          http_status_counts = {}
-          diagnostic_counts = {}
+          status_counts = Counter()
+          http_status_counts = Counter()
+          diagnostic_counts = Counter()
+          target_counts = {}
           for row in rows:
-              for status, count in (row.get('status_counts') or {}).items():
-                  status_counts[status] = status_counts.get(status, 0) + int(count)
-              for status, count in (row.get('http_status_counts') or {}).items():
-                  http_status_counts[status] = http_status_counts.get(status, 0) + int(count)
-              for diagnostic, count in (row.get('diagnostic_counts') or {}).items():
-                  diagnostic_counts[diagnostic] = diagnostic_counts.get(diagnostic, 0) + int(count)
+              status_counts.update({k: int(v) for k, v in (row.get('status_counts') or {}).items()})
+              http_status_counts.update({k: int(v) for k, v in (row.get('http_status_counts') or {}).items()})
+              diagnostic_counts.update({k: int(v) for k, v in (row.get('diagnostic_counts') or {}).items()})
+          for receipt in receipts:
+              key = receipt.get('key') or receipt.get('url') or 'unknown'
+              entry = target_counts.setdefault(key, {
+                  'url': receipt.get('url', ''),
+                  'ok': 0,
+                  'empty': 0,
+                  'blocked': 0,
+                  'resource_limited': 0,
+                  'error': 0,
+                  'http_status_counts': {},
+                  'diagnostics': {},
+              })
+              status = receipt.get('status', 'error')
+              entry[status] = entry.get(status, 0) + 1
+              http_status = receipt.get('http_status')
+              if http_status:
+                  code = str(http_status)
+                  entry['http_status_counts'][code] = entry['http_status_counts'].get(code, 0) + 1
+              for diagnostic in receipt.get('diagnostics') or []:
+                  entry['diagnostics'][diagnostic] = entry['diagnostics'].get(diagnostic, 0) + 1
 
           total_observations = sum(status_counts.values())
           error_count = int(status_counts.get('error', 0))
+          target_failure_summary = []
+          for entry in target_counts.values():
+              observations = sum(entry.get(k, 0) for k in ('ok', 'empty', 'blocked', 'resource_limited', 'error'))
+              failures = entry.get('error', 0) + entry.get('blocked', 0) + entry.get('resource_limited', 0)
+              if failures:
+                  target_failure_summary.append({
+                      'url': entry['url'],
+                      'observations': observations,
+                      'failures': failures,
+                      'failure_rate': round(failures / observations, 6) if observations else None,
+                      'status_counts': {k: entry.get(k, 0) for k in ('ok', 'empty', 'blocked', 'resource_limited', 'error')},
+                      'http_status_counts': entry['http_status_counts'],
+                      'diagnostics': entry['diagnostics'],
+                  })
+          target_failure_summary.sort(key=lambda item: (-item['failure_rate'], item['url']))
+
           safe = {
-              'schema': 'autonomous-public-benchmark-summary/v5',
+              'schema': 'autonomous-public-benchmark-summary/v6',
               'run_id': '${{ github.run_id }}',
               'shard': ${{ matrix.shard }},
               'summaries': len(rows),
@@ -146,9 +187,10 @@ jobs:
               'cycles': cycles,
               'total_observations': total_observations,
               'error_rate': round(error_count / total_observations, 6) if total_observations else None,
-              'status_counts': status_counts,
-              'http_status_counts': http_status_counts,
-              'diagnostic_counts': diagnostic_counts,
+              'status_counts': dict(sorted(status_counts.items())),
+              'http_status_counts': dict(sorted(http_status_counts.items())),
+              'diagnostic_counts': dict(sorted(diagnostic_counts.items())),
+              'targets_with_failures': target_failure_summary,
           }
 
           Path('benchmark-summary.json').write_text(json.dumps(safe, indent=2), encoding='utf-8')
