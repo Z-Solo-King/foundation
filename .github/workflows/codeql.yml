@@ -145,7 +145,7 @@ jobs:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
         run: |
           set -euo pipefail
-          base='https://research-intelligence-engine-public.solo-king.workers.dev'
+          base='https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev'
           health=$(curl -fsS "$base/health")
           jq -e '.ok == true' <<<"$health" >/dev/null
           readiness=$(curl -fsS -o readiness.json -w '%{http_code}' "$base/readiness")
