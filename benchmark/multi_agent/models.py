@@ -110,6 +110,15 @@ class ProgramResult:
         signatures = {(str(row.get("claim", "")), str(row.get("source_url", row.get("url", "")))) for row in self.findings}
         return max(0.0, 1.0 - (len(signatures) / len(self.findings)))
 
+    @property
+    def answer_quality(self) -> float | None:
+        scores: list[float] = []
+        for finding in self.findings:
+            value = finding.get("answer_quality")
+            if isinstance(value, (int, float)):
+                scores.append(max(0.0, min(10.0, float(value))))
+        return round(sum(scores) / len(scores), 3) if scores else None
+
     def measurement(self) -> dict[str, object]:
         return {
             "allocated_agents": self.allocated_agents,
@@ -120,6 +129,7 @@ class ProgramResult:
             "useful_findings": self.useful_finding_count,
             "unique_sources": self.unique_source_count,
             "duplicate_rate": round(self.duplicate_rate, 4),
+            "answer_quality_0_to_10": self.answer_quality,
             "follow_up_questions": len(self.follow_up_questions),
         }
 
@@ -133,6 +143,8 @@ class CapacityComparison:
     def to_dict(self) -> dict[str, object]:
         low = self.low.measurement()
         high = self.high.measurement()
+        low_quality = low["answer_quality_0_to_10"]
+        high_quality = high["answer_quality_0_to_10"]
         return {
             "program_id": self.program_id,
             "low": low,
@@ -142,4 +154,5 @@ class CapacityComparison:
             "delta_useful_findings": int(high["useful_findings"]) - int(low["useful_findings"]),
             "delta_unique_sources": int(high["unique_sources"]) - int(low["unique_sources"]),
             "delta_duplicate_rate": round(float(high["duplicate_rate"]) - float(low["duplicate_rate"]), 4),
+            "delta_answer_quality_0_to_10": None if low_quality is None or high_quality is None else round(float(high_quality) - float(low_quality), 3),
         }
