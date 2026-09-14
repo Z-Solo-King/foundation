@@ -6,6 +6,10 @@ on:
     paths:
       - "benchmark/targets-20.json"
       - "benchmark/public_chatbot_runner.py"
+      - "benchmark/chatbot-query-corpus.json"
+      - "benchmark/chatbot_query_benchmark.py"
+      - "backend/intelligence/planning.py"
+      - "backend/intelligence/contracts.py"
       - ".github/workflows/autonomous-benchmark.yml"
   workflow_dispatch:
 
@@ -37,12 +41,22 @@ jobs:
           set -euo pipefail
           python -m benchmark.public_chatbot_runner chatbot-smoke
 
+      - name: Test natural-language deep research queries
+        run: |
+          set -euo pipefail
+          rm -rf .runtime/chatbot-query-benchmark.json
+          python -m benchmark.chatbot_query_benchmark \
+            --input benchmark/chatbot-query-corpus.json \
+            --output .runtime/chatbot-query-benchmark.json
+        env:
+          PYTHONUNBUFFERED: "1"
+
       - name: Run bounded public benchmark
         id: live_benchmark
         timeout-minutes: 19
         run: |
           set -euo pipefail
-          rm -rf .runtime
+          rm -rf .runtime/benchmarks
           python -m benchmark.public_chatbot_runner run \
             --input benchmark/targets-20.json \
             --output .runtime/benchmarks \
@@ -61,28 +75,32 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           import json
-          import sys
           from pathlib import Path
 
           root = Path('.runtime/benchmarks')
           rows = []
           for path in root.glob('*/summary-*.json'):
-              value = json.loads(path.read_text(encoding='utf-8'))
-              rows.append(value)
+              rows.append(json.loads(path.read_text(encoding='utf-8')))
 
           selected = sum(int(row.get('selected') or 0) for row in rows)
           safe = {
-              'schema': 'autonomous-public-benchmark-summary/v2',
+              'schema': 'autonomous-public-benchmark-summary/v3',
               'run_id': '${{ github.run_id }}',
               'shard': ${{ matrix.shard }},
               'summaries': len(rows),
               'selected_targets': selected,
               'cycles': sum(int(row.get('cycles') or 0) for row in rows),
               'status_counts': {},
+              'http_status_counts': {},
+              'diagnostic_counts': {},
           }
           for row in rows:
               for status, count in (row.get('status_counts') or {}).items():
                   safe['status_counts'][status] = safe['status_counts'].get(status, 0) + int(count)
+              for status, count in (row.get('http_status_counts') or {}).items():
+                  safe['http_status_counts'][status] = safe['http_status_counts'].get(status, 0) + int(count)
+              for diagnostic, count in (row.get('diagnostic_counts') or {}).items():
+                  safe['diagnostic_counts'][diagnostic] = safe['diagnostic_counts'].get(diagnostic, 0) + int(count)
           if not rows or selected <= 0:
               print(json.dumps(safe, indent=2))
               raise SystemExit('benchmark produced no selected targets or summary')
@@ -90,12 +108,14 @@ jobs:
           print(json.dumps(safe, indent=2))
           PY
 
-      - name: Upload sanitized summary
+      - name: Upload sanitized benchmark summaries
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: autonomous-benchmark-summary-shard-${{ matrix.shard }}
-          path: benchmark-summary.json
+          path: |
+            benchmark-summary.json
+            .runtime/chatbot-query-benchmark.json
           retention-days: 1
 
       - name: Remove runtime artifacts
