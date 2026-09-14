@@ -8,6 +8,7 @@ on:
       - "benchmark/public_chatbot_runner.py"
       - "benchmark/chatbot-query-corpus.json"
       - "benchmark/chatbot_query_benchmark.py"
+      - "benchmark/nightly/**"
       - "backend/intelligence/planning.py"
       - "backend/intelligence/contracts.py"
       - ".github/workflows/autonomous-benchmark.yml"
@@ -43,6 +44,38 @@ jobs:
         run: |
           set -euo pipefail
           python -m benchmark.public_chatbot_runner chatbot-smoke
+
+      - name: Validate nightly research tracking contract
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import tempfile
+          from pathlib import Path
+          from benchmark.nightly.research_ledger import can_visit, empty_ledger, record_visit
+
+          schema = json.loads(Path('benchmark/nightly/research-ledger.schema.json').read_text(encoding='utf-8'))
+          assert schema['properties']['visits']['items']['required']
+          ledger = empty_ledger('contract-test')
+          assert can_visit(ledger, 'T04-chatbot-research-benchmark', 'https://example.com/a')[0]
+          record_visit(
+              ledger,
+              task_id='T04-chatbot-research-benchmark',
+              url='https://example.com/a',
+              source_family='web_search',
+              purpose='contract test',
+              method='direct',
+              result='useful',
+          )
+          allowed, reason = can_visit(ledger, 'T04-chatbot-research-benchmark', 'https://example.com/a')
+          assert not allowed and reason == 'already_visited_for_task'
+          assert can_visit(ledger, 'T05-unreachable-evidence', 'https://example.com/a')[0]
+          with tempfile.TemporaryDirectory() as tmp:
+              p = Path(tmp) / 'ledger.json'
+              p.write_text(json.dumps(ledger, indent=2), encoding='utf-8')
+              assert json.loads(p.read_text(encoding='utf-8'))['visits'][0]['canonical_url'] == 'https://example.com/a'
+          print('nightly research tracking contract: PASS')
+          PY
 
       - name: Test natural-language deep research queries
         if: matrix.shard == 0
@@ -123,7 +156,7 @@ jobs:
           name: autonomous-benchmark-summary-shard-${{ matrix.shard }}
           path: benchmark-summary.json
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 30
 
       - name: Upload deep-query benchmark
         if: always() && matrix.shard == 0
@@ -132,7 +165,7 @@ jobs:
           name: autonomous-chatbot-query-benchmark
           path: .runtime/chatbot-query-benchmark.json
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 30
 
       - name: Remove runtime artifacts
         if: always()
