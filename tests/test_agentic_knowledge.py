@@ -34,7 +34,7 @@ def test_canonical_url_and_evidence_store():
     naive = evidence("naive", observed_at=datetime(2026, 9, 14, 12, 0))
     assert store.add(naive) is True
     assert store.is_fresh(naive, NOW) is True
-    auto_now = evidence("auto-now")
+    auto_now = evidence("auto-now", observed_at=datetime.now(timezone.utc))
     assert store.is_fresh(auto_now) is True
     with pytest.raises(ValueError):
         EvidenceRecord(evidence_id="bad", claim="a", entity="Widget", source_url="https://e.test", source_family="x", observed_at=NOW, freshness_ttl_seconds=-1)
