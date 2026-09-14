@@ -134,4 +134,4 @@ EOF
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
-        run: pywrangler deploy --config wrangler.production.generated.toml
+        run: pywrangler deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}"
