@@ -6,58 +6,33 @@
     <meta name="theme-color" content="#0b1020" />
     <title>My AI — Chat & Research</title>
     <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./queue.css" />
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
         <div class="sidebar-top">
           <button class="brand" data-action="new-chat" aria-label="New chat">
-            <span class="brand-mark">✦</span>
-            <span>My AI</span>
+            <span class="brand-mark">✦</span><span>My AI</span>
           </button>
           <button class="icon-button mobile-close" data-action="close-sidebar" aria-label="Close sidebar">×</button>
         </div>
-
-        <button class="new-chat-button" data-action="new-chat">
-          <span>＋</span>
-          <span>New chat</span>
-          <kbd>⌘ K</kbd>
-        </button>
-
-        <label class="search-box">
-          <span>⌕</span>
-          <input id="chat-search" type="search" placeholder="Search chats" autocomplete="off" />
-        </label>
-
+        <button class="new-chat-button" data-action="new-chat"><span>＋</span><span>New chat</span><kbd>⌘ K</kbd></button>
+        <label class="search-box"><span>⌕</span><input id="chat-search" type="search" placeholder="Search chats" autocomplete="off" /></label>
         <nav class="nav-section" aria-label="Workspace">
           <button class="nav-item active" data-view="chats"><span>◌</span><span>Chats</span></button>
           <button class="nav-item" data-view="projects"><span>▣</span><span>Projects</span></button>
           <button class="nav-item" data-view="saved"><span>☆</span><span>Saved</span></button>
         </nav>
-
         <div class="sidebar-label">Recent</div>
         <div class="chat-list" id="chat-list">
-          <button class="chat-row active" data-chat="pc-monitor">
-            <span class="chat-icon">P</span>
-            <span class="chat-copy"><strong>PC monitor shortlist</strong><small>Yesterday</small></span>
-          </button>
-          <button class="chat-row" data-chat="research-engine">
-            <span class="chat-icon purple">R</span>
-            <span class="chat-copy"><strong>Research engine UI</strong><small>Sep 13</small></span>
-          </button>
-          <button class="chat-row" data-chat="laptop-guide">
-            <span class="chat-icon green">L</span>
-            <span class="chat-copy"><strong>Laptop buying guide</strong><small>Sep 12</small></span>
-          </button>
+          <button class="chat-row active" data-chat="pc-monitor"><span class="chat-icon">P</span><span class="chat-copy"><strong>PC monitor shortlist</strong><small>Yesterday</small></span></button>
+          <button class="chat-row" data-chat="research-engine"><span class="chat-icon purple">R</span><span class="chat-copy"><strong>Research engine UI</strong><small>Sep 13</small></span></button>
+          <button class="chat-row" data-chat="laptop-guide"><span class="chat-icon green">L</span><span class="chat-copy"><strong>Laptop buying guide</strong><small>Sep 12</small></span></button>
         </div>
-
         <div class="sidebar-bottom">
           <button class="nav-item" data-view="settings"><span>⚙</span><span>Settings</span></button>
-          <button class="profile-card" data-action="profile">
-            <span class="avatar">S</span>
-            <span><strong>My account</strong><small>Personal workspace</small></span>
-            <span class="chevron">›</span>
-          </button>
+          <button class="profile-card" data-action="profile"><span class="avatar">S</span><span><strong>My account</strong><small>Personal workspace</small></span><span class="chevron">›</span></button>
         </div>
       </aside>
 
@@ -67,6 +42,7 @@
           <div class="mobile-title">PC monitor shortlist</div>
           <div class="topbar-actions">
             <button class="icon-button" data-action="search" aria-label="Search">⌕</button>
+            <button class="icon-button queue-top-button" data-action="open-queue" aria-label="Open message queue"><span>≡</span><span class="queue-count" id="queue-count">0</span></button>
             <button class="icon-button" data-action="share" aria-label="Share">↗</button>
             <button class="icon-button" data-action="more" aria-label="More">⋮</button>
           </div>
@@ -76,138 +52,56 @@
           <div class="conversation">
             <div class="conversation-scroll" id="conversation-scroll">
               <div class="date-divider"><span>Today</span></div>
-
-              <article class="message user-message">
-                <div class="message-bubble user-bubble">Find me a 27-inch 1440p monitor for around ₹30k. Prioritize high refresh rate and good sRGB coverage.</div>
-              </article>
-
+              <article class="message user-message"><div class="message-bubble user-bubble">Find me a 27-inch 1440p monitor for around ₹30k. Prioritize high refresh rate and good sRGB coverage.</div></article>
               <article class="message assistant-message">
-                <div class="assistant-avatar">✦</div>
-                <div class="message-content">
+                <div class="assistant-avatar">✦</div><div class="message-content">
                   <div class="message-meta"><strong>My AI</strong><span>10:42 PM</span></div>
-                  <div class="message-text">
-                    <p>For your budget, I would prioritize a 27-inch 1440p IPS panel with at least 165Hz, good sRGB coverage, and a useful stand. I found three strong candidates.</p>
-                  </div>
-
+                  <div class="message-text"><p>For your budget, I would prioritize a 27-inch 1440p IPS panel with at least 165Hz, good sRGB coverage, and a useful stand. I found three strong candidates.</p></div>
                   <div class="product-grid">
-                    <div class="product-card">
-                      <div class="product-top"><span class="product-badge">Best balance</span><button class="mini-action">☆</button></div>
-                      <h3>27″ 1440p IPS · 180Hz</h3>
-                      <p>High refresh rate · good colour coverage · ergonomic stand</p>
-                      <div class="product-price">₹28,499</div>
-                      <div class="product-meta"><span>India retailers</span><span>Verified specs</span></div>
-                      <div class="product-actions"><button>Compare</button><button>Open</button></div>
-                    </div>
-                    <div class="product-card">
-                      <div class="product-top"><span class="product-badge neutral">Colour pick</span><button class="mini-action">☆</button></div>
-                      <h3>27″ 1440p IPS · 165Hz</h3>
-                      <p>Strong sRGB · wide gamut · USB hub</p>
-                      <div class="product-price">₹30,999</div>
-                      <div class="product-meta"><span>India retailers</span><span>Verified specs</span></div>
-                      <div class="product-actions"><button>Compare</button><button>Open</button></div>
-                    </div>
+                    <div class="product-card"><div class="product-top"><span class="product-badge">Best balance</span><button class="mini-action">☆</button></div><h3>27″ 1440p IPS · 180Hz</h3><p>High refresh rate · good colour coverage · ergonomic stand</p><div class="product-price">₹28,499</div><div class="product-meta"><span>India retailers</span><span>Verified specs</span></div><div class="product-actions"><button>Compare</button><button>Open</button></div></div>
+                    <div class="product-card"><div class="product-top"><span class="product-badge neutral">Colour pick</span><button class="mini-action">☆</button></div><h3>27″ 1440p IPS · 165Hz</h3><p>Strong sRGB · wide gamut · USB hub</p><div class="product-price">₹30,999</div><div class="product-meta"><span>India retailers</span><span>Verified specs</span></div><div class="product-actions"><button>Compare</button><button>Open</button></div></div>
                   </div>
-
-                  <div class="citation-block">
-                    <div class="citation-heading"><span>Sources</span><button data-action="open-sources">View all 8</button></div>
-                    <div class="citation-row">
-                      <span class="source-dot">1</span><span>Retailer listings</span><span class="source-status">Price checked</span>
-                    </div>
-                    <div class="citation-row">
-                      <span class="source-dot">2</span><span>Manufacturer specifications</span><span class="source-status">Specs checked</span>
-                    </div>
-                    <div class="citation-row">
-                      <span class="source-dot">3</span><span>Community reviews</span><span class="source-status">Cross-checked</span>
-                    </div>
-                  </div>
-
-                  <div class="message-actions">
-                    <button data-action="copy">Copy</button>
-                    <button data-action="save">Save</button>
-                    <button data-action="regenerate">Regenerate</button>
-                    <button data-action="more-message">⋮</button>
-                  </div>
+                  <div class="citation-block"><div class="citation-heading"><span>Sources</span><button data-action="open-sources">View all 8</button></div><div class="citation-row"><span class="source-dot">1</span><span>Retailer listings</span><span class="source-status">Price checked</span></div><div class="citation-row"><span class="source-dot">2</span><span>Manufacturer specifications</span><span class="source-status">Specs checked</span></div><div class="citation-row"><span class="source-dot">3</span><span>Community reviews</span><span class="source-status">Cross-checked</span></div></div>
+                  <div class="message-actions"><button data-action="copy">Copy</button><button data-action="save">Save</button><button data-action="regenerate">Regenerate</button><button data-action="more-message">⋮</button></div>
                 </div>
               </article>
-
-              <article class="message user-message">
-                <div class="message-bubble user-bubble">Also check Reddit reviews and tell me which one has the fewest complaints.</div>
-              </article>
-
-              <article class="research-status">
-                <div class="research-status-head"><span class="pulse"></span><strong>Research in progress</strong><span class="status-time">Just now</span></div>
-                <div class="progress-track"><span style="width: 66%"></span></div>
-                <div class="research-steps">
-                  <span class="done">✓ Sources</span>
-                  <span class="done">✓ Retailers</span>
-                  <span class="active-step">◌ Community reviews</span>
-                  <span>○ Synthesis</span>
-                </div>
-                <button class="subtle-button" data-action="show-research">View research details</button>
-              </article>
+              <article class="message user-message"><div class="message-bubble user-bubble">Also check Reddit reviews and tell me which one has the fewest complaints.</div></article>
+              <article class="research-status"><div class="research-status-head"><span class="pulse"></span><strong>Research in progress</strong><span class="status-time">Just now</span></div><div class="progress-track"><span style="width: 66%"></span></div><div class="research-steps"><span class="done">✓ Sources</span><span class="done">✓ Retailers</span><span class="active-step">◌ Community reviews</span><span>○ Synthesis</span></div><button class="subtle-button" data-action="show-research">View research details</button></article>
             </div>
 
             <div class="composer-wrap">
-              <div class="mode-switch" role="tablist" aria-label="Mode">
-                <button class="mode active" data-mode="chat">Chat</button>
-                <button class="mode" data-mode="research">Research</button>
-              </div>
-              <div class="composer">
-                <button class="composer-icon" data-action="attachments" aria-label="Add attachment">＋</button>
-                <textarea id="prompt" rows="1" placeholder="Ask anything..."></textarea>
-                <button class="composer-icon" data-action="voice" aria-label="Voice input">◉</button>
-                <button class="send-button" data-action="send" aria-label="Send">↑</button>
-              </div>
-              <div class="composer-hint"><span>Chat is fast. Research checks sources and shows citations.</span><span>Enter to send · Shift+Enter for new line</span></div>
+              <div class="queued-inline" id="queued-inline" aria-live="polite" hidden></div>
+              <div class="mode-switch" role="tablist" aria-label="Mode"><button class="mode active" data-mode="chat">Chat</button><button class="mode" data-mode="research">Research</button></div>
+              <div class="composer"><button class="composer-icon" data-action="attachments" aria-label="Add attachment">＋</button><textarea id="prompt" rows="1" placeholder="Ask anything..."></textarea><button class="composer-icon" data-action="voice" aria-label="Voice input">◉</button><button class="send-button" data-action="send" aria-label="Send">↑</button></div>
+              <div class="composer-hint"><span id="composer-status">Chat is fast. Research checks sources and shows citations.</span><span>Enter to send · Shift+Enter for new line</span></div>
             </div>
           </div>
 
           <aside class="workspace" id="workspace" aria-label="Workspace">
-            <div class="workspace-header">
-              <div>
-                <span class="eyebrow">Workspace</span>
-                <h2>Research details</h2>
-              </div>
-              <button class="icon-button" data-action="close-workspace" aria-label="Close workspace">×</button>
-            </div>
+            <div class="workspace-header"><div><span class="eyebrow">Workspace</span><h2>Research details</h2></div><button class="icon-button" data-action="close-workspace" aria-label="Close workspace">×</button></div>
             <div class="workspace-tabs"><button class="workspace-tab active">Overview</button><button class="workspace-tab">Sources</button><button class="workspace-tab">Evidence</button></div>
             <div class="workspace-body">
-              <section class="workspace-card accent-card">
-                <div class="workspace-card-title"><span>Current task</span><span class="live-pill">LIVE</span></div>
-                <h3>Reddit review comparison</h3>
-                <p>Checking recent discussion for recurring complaints, support issues, panel uniformity and firmware concerns.</p>
-                <div class="metric-grid"><div><strong>12</strong><span>sources</span></div><div><strong>31</strong><span>evidence</span></div><div><strong>5</strong><span>checks</span></div></div>
-              </section>
-
-              <section class="workspace-card">
-                <div class="workspace-card-title"><span>Progress</span><span>66%</span></div>
-                <div class="detail-step done"><span>✓</span><div><strong>Discover sources</strong><small>Retailers, specifications and community results</small></div></div>
-                <div class="detail-step done"><span>✓</span><div><strong>Collect observations</strong><small>Normalize price and product identities</small></div></div>
-                <div class="detail-step active"><span>◌</span><div><strong>Verify community claims</strong><small>Checking repeated complaints across threads</small></div></div>
-                <div class="detail-step"><span>○</span><div><strong>Synthesize answer</strong><small>Rank findings and surface caveats</small></div></div>
-              </section>
-
-              <section class="workspace-card">
-                <div class="workspace-card-title"><span>Attachments</span><button class="text-button">Add</button></div>
-                <div class="file-card"><span class="file-icon">XLS</span><div><strong>monitor-guide.xlsx</strong><small>23 columns · price/spec data</small></div><button class="mini-action">›</button></div>
-                <div class="file-card"><span class="file-icon pdf">PDF</span><div><strong>review-notes.pdf</strong><small>18 pages · uploaded today</small></div><button class="mini-action">›</button></div>
-              </section>
+              <section class="workspace-card accent-card"><div class="workspace-card-title"><span>Current task</span><span class="live-pill">LIVE</span></div><h3>Reddit review comparison</h3><p>Checking recent discussion for recurring complaints, support issues, panel uniformity and firmware concerns.</p><div class="metric-grid"><div><strong>12</strong><span>sources</span></div><div><strong>31</strong><span>evidence</span></div><div><strong>5</strong><span>checks</span></div></div></section>
+              <section class="workspace-card"><div class="workspace-card-title"><span>Progress</span><span>66%</span></div><div class="detail-step done"><span>✓</span><div><strong>Discover sources</strong><small>Retailers, specifications and community results</small></div></div><div class="detail-step done"><span>✓</span><div><strong>Collect observations</strong><small>Normalize price and product identities</small></div></div><div class="detail-step active"><span>◌</span><div><strong>Verify community claims</strong><small>Checking repeated complaints across threads</small></div></div><div class="detail-step"><span>○</span><div><strong>Synthesize answer</strong><small>Rank findings and surface caveats</small></div></div></section>
+              <section class="workspace-card"><div class="workspace-card-title"><span>Attachments</span><button class="text-button">Add</button></div><div class="file-card"><span class="file-icon">XLS</span><div><strong>monitor-guide.xlsx</strong><small>23 columns · price/spec data</small></div><button class="mini-action">›</button></div><div class="file-card"><span class="file-icon pdf">PDF</span><div><strong>review-notes.pdf</strong><small>18 pages · uploaded today</small></div><button class="mini-action">›</button></div></section>
             </div>
           </aside>
         </section>
       </main>
 
+      <div class="message-queue" id="message-queue" aria-hidden="true">
+        <div class="queue-panel-header"><div><span class="eyebrow">Up next</span><h2>Message queue</h2></div><button class="icon-button" data-action="close-queue" aria-label="Close queue">×</button></div>
+        <p class="queue-description">Messages you send while My AI is busy wait here and run in order. They never interrupt the current response.</p>
+        <div class="queue-list" id="queue-list"></div>
+        <div class="queue-footer"><button data-action="clear-queue" class="queue-secondary">Clear all</button><span id="queue-footer-status">Nothing waiting</span></div>
+      </div>
+      <div class="queue-overlay" data-action="close-queue"></div>
       <div class="mobile-overlay" data-action="close-sidebar"></div>
+      <nav class="mobile-bottom-nav" aria-label="Mobile navigation"><button class="active" data-view="chats"><span>◌</span><small>Chats</small></button><button data-view="projects"><span>▣</span><small>Projects</small></button><button class="mobile-new" data-action="new-chat"><span>＋</span><small>New</small></button><button data-view="saved"><span>☆</span><small>Saved</small></button><button data-action="open-sidebar"><span>☰</span><small>More</small></button></nav>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>
 
-    <dialog class="settings-dialog" id="settings-dialog">
-      <div class="dialog-header"><div><span class="eyebrow">Settings</span><h2>Appearance</h2></div><button class="icon-button" data-action="close-settings">×</button></div>
-      <div class="settings-row"><div><strong>Theme</strong><small>Choose how the interface looks</small></div><div class="theme-options"><button data-theme="system">System</button><button data-theme="light">Light</button><button class="active" data-theme="dark">Dark</button></div></div>
-      <div class="settings-row"><div><strong>Accent</strong><small>Use a Telegram-style accent without changing layout</small></div><div class="accent-options"><button class="accent blue active" data-accent="blue" aria-label="Blue"></button><button class="accent violet" data-accent="violet" aria-label="Violet"></button><button class="accent green" data-accent="green" aria-label="Green"></button><button class="accent orange" data-accent="orange" aria-label="Orange"></button></div></div>
-      <div class="settings-row"><div><strong>Density</strong><small>More room or more information per screen</small></div><div class="theme-options"><button class="active" data-density="comfortable">Comfortable</button><button data-density="compact">Compact</button></div></div>
-    </dialog>
-
+    <dialog class="settings-dialog" id="settings-dialog"><div class="dialog-header"><div><span class="eyebrow">Settings</span><h2>Appearance</h2></div><button class="icon-button" data-action="close-settings">×</button></div><div class="settings-row"><div><strong>Theme</strong><small>Choose how the interface looks</small></div><div class="theme-options"><button data-theme="system">System</button><button data-theme="light">Light</button><button class="active" data-theme="dark">Dark</button></div></div><div class="settings-row"><div><strong>Accent</strong><small>Use a Telegram-style accent without changing layout</small></div><div class="accent-options"><button class="accent blue active" data-accent="blue" aria-label="Blue"></button><button class="accent violet" data-accent="violet" aria-label="Violet"></button><button class="accent green" data-accent="green" aria-label="Green"></button><button class="accent orange" data-accent="orange" aria-label="Orange"></button></div></div><div class="settings-row"><div><strong>Density</strong><small>More room or more information per screen</small></div><div class="theme-options"><button class="active" data-density="comfortable">Comfortable</button><button data-density="compact">Compact</button></div></div></dialog>
     <script src="./app.js"></script>
   </body>
 </html>
