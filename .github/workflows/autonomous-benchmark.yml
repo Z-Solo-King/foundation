@@ -39,20 +39,18 @@ jobs:
 
       - name: Run bounded public benchmark
         id: live_benchmark
-        continue-on-error: true
         timeout-minutes: 19
         run: |
           set -euo pipefail
           rm -rf .runtime
-          timeout "${BENCHMARK_MINUTES}m" \
-            python -m benchmark.public_chatbot_runner run \
-              --input benchmark/targets-20.json \
-              --output .runtime/benchmarks \
-              --run-id "github-${GITHUB_RUN_ID}-shard-${{ matrix.shard }}" \
-              --shards 4 \
-              --shard ${{ matrix.shard }} \
-              --workers 6 \
-              --duration-minutes "${BENCHMARK_MINUTES}"
+          python -m benchmark.public_chatbot_runner run \
+            --input benchmark/targets-20.json \
+            --output .runtime/benchmarks \
+            --run-id "github-${GITHUB_RUN_ID}-shard-${{ matrix.shard }}" \
+            --shards 4 \
+            --shard ${{ matrix.shard }} \
+            --workers 6 \
+            --duration-minutes "${BENCHMARK_MINUTES}"
         env:
           PYTHONUNBUFFERED: "1"
 
@@ -83,6 +81,8 @@ jobs:
           for row in rows:
               for status, count in (row.get('status_counts') or {}).items():
                   safe['status_counts'][status] = safe['status_counts'].get(status, 0) + int(count)
+          test "${safe[summaries]}" -gt 0
+          test "${safe[selected_targets]}" -gt 0
           Path('benchmark-summary.json').write_text(json.dumps(safe, indent=2), encoding='utf-8')
           print(json.dumps(safe, indent=2))
           PY
@@ -94,12 +94,6 @@ jobs:
           name: autonomous-benchmark-summary-shard-${{ matrix.shard }}
           path: benchmark-summary.json
           retention-days: 1
-
-      - name: Propagate benchmark failure
-        if: steps.live_benchmark.outcome == 'failure'
-        run: |
-          echo "Public benchmark shard failed or hit its execution timeout; the sanitized summary was still uploaded."
-          exit 1
 
       - name: Remove runtime artifacts
         if: always()
