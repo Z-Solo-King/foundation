@@ -23,6 +23,20 @@
     return true;
   };
 
+  function repairSavedOwnership() {
+    const chats = read(CHAT_KEY, []);
+    const saved = read(SAVED_KEY, []);
+    let changed = false;
+    const next = saved.map((item) => {
+      if (item.chatId) return item;
+      const owner = chats.find((chat) => chat.messages?.some((message) => message.id === item.messageId));
+      if (!owner) return item;
+      changed = true;
+      return { ...item, chatId: owner.id };
+    });
+    if (changed) write(SAVED_KEY, next);
+  }
+
   function openProject(projectId) {
     const chats = read(CHAT_KEY, []);
     const chat = chats.find((item) => item.projectId === projectId);
@@ -35,9 +49,9 @@
   }
 
   function openSaved(messageId) {
-    const saved = read(SAVED_KEY, []);
-    const item = saved.find((entry) => entry.messageId === messageId);
-    if (!item || !item.chatId) {
+    repairSavedOwnership();
+    const item = read(SAVED_KEY, []).find((entry) => entry.messageId === messageId);
+    if (!item?.chatId) {
       window.alert('This saved item is missing its owning chat.');
       return;
     }
@@ -76,6 +90,7 @@
   }
 
   function addSaveControls() {
+    repairSavedOwnership();
     document.querySelectorAll('#conversation-scroll article.message').forEach((article) => {
       const id = article.dataset.messageId;
       if (!id || article.querySelector('[data-save-message], [data-ui-guard-save]')) return;
@@ -86,7 +101,6 @@
       article.appendChild(button);
     });
 
-    if (document.body.contains(document.querySelector('[data-view="saved"].active'))) return;
     const savedItems = read(SAVED_KEY, []);
     if (!savedItems.length) return;
     const cards = document.querySelectorAll('#conversation-scroll .workspace-card');
