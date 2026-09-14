@@ -1,0 +1,64 @@
+name: nightly public invariants
+
+on:
+  schedule:
+    # 01:30 IST = 20:00 UTC on the previous day; inside the planned 01:00-09:00 IST window.
+    - cron: "0 20 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-public-invariants
+  cancel-in-progress: false
+
+jobs:
+  invariants:
+    name: Public invariant and regression checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Install public test dependencies
+        run: python -m pip install --disable-pip-version-check pytest pytest-asyncio workers-py workers-runtime-sdk
+
+      - name: Run full public regression suite
+        run: python -m pytest -q
+
+      - name: Validate frontend JavaScript syntax
+        run: node --check frontend/app.js
+
+      - name: Enforce browser secret boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -RniE 'AUTH_TOKEN|CLOUDFLARE_API_TOKEN|RESEARCH_LLM_API_KEY' frontend --exclude='*.map'
+          ! grep -RniE 'localStorage\\.(setItem|AUTH_TOKEN)|Bearer[[:space:]]+[A-Za-z0-9_-]{20,}' frontend --exclude='*.map'
+          echo 'frontend secret boundary: PASS'
+
+      - name: Validate planned overnight schedule
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'cron: "30 19 * * *"' .github/workflows/nightly-multi-agent-research.yml
+          grep -Fq 'cron: "45 19 * * *"' .github/workflows/autonomous-benchmark.yml
+          grep -Fq 'cron: "0 20 * * *"' .github/workflows/nightly-invariants.yml
+          echo 'overnight 01:00-09:00 IST schedule contract: PASS'
+
+      - name: Validate no competing Cloudflare deployment workflow was added
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RniE 'workers[[:space:]]+build|deploy[[:space:]]+hook|wrangler[[:space:]]+deploy' .github/workflows | grep -vE 'autonomous-benchmark|nightly-multi-agent-research|nightly-invariants'; then
+            echo 'Unexpected Cloudflare deployment workflow reference detected.'
+            exit 1
+          fi
+          echo 'deployment ownership boundary: PASS'
