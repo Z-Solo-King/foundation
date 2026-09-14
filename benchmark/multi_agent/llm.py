@@ -3,18 +3,14 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+from dataclasses import replace
 from urllib.request import Request, urlopen
 
 from .models import AgentResult, AgentSpec, ResearchProgram
 
 
 class OpenAICompatibleExecutor:
-    """Minimal provider-neutral chat adapter for an OpenAI-compatible endpoint.
-
-    It intentionally does not know any production secret names. The nightly workflow can
-    inject endpoint/key/model through environment variables without changing the public
-    repository's deployment secrets.
-    """
+    """Minimal provider-neutral chat adapter for an OpenAI-compatible endpoint."""
 
     def __init__(self, endpoint: str, api_key: str, model: str, timeout_seconds: int = 180) -> None:
         if not endpoint.startswith(("http://", "https://")):
@@ -35,7 +31,7 @@ class OpenAICompatibleExecutor:
             "source_families": list(agent.source_families),
             "shared_context": context,
             "output_contract": {
-                "findings": "array of concise evidence-backed findings",
+                "findings": "array of concise evidence-backed findings; include source URLs when actually known",
                 "follow_up_questions": "array of unresolved high-value questions",
                 "note": "brief quality/caveat note",
             },
@@ -67,7 +63,6 @@ class OpenAICompatibleExecutor:
         try:
             response = await asyncio.to_thread(call)
             content = str(response["choices"][0]["message"]["content"])
-            parsed: dict[str, object]
             try:
                 parsed = json.loads(content)
             except json.JSONDecodeError:
@@ -75,7 +70,11 @@ class OpenAICompatibleExecutor:
             findings = tuple(item for item in parsed.get("findings", []) if isinstance(item, dict))
             questions = tuple(str(item) for item in parsed.get("follow_up_questions", []) if str(item).strip())
             note = str(parsed.get("note", ""))
-            return AgentResult.now(agent.agent_id, "completed", note=note)._replace(findings=findings, follow_up_questions=questions)
+            return replace(
+                AgentResult.now(agent.agent_id, "completed", note=note),
+                findings=findings,
+                follow_up_questions=questions,
+            )
         except Exception as exc:
             return AgentResult.now(agent.agent_id, "failed", note=f"{type(exc).__name__}: {exc}")
 
