@@ -41,3 +41,17 @@ def test_ambiguous_case_stays_ambiguous_without_private_adjudication():
     )
     assert result.status == EntailmentStatus.AMBIGUOUS
     assert not result.accepted
+
+
+def test_insufficient_lexical_support_is_unsupported():
+    observation = obs("Only shipping information is listed.")
+    span = EvidenceSpan("o1", 0, len(observation.content))
+    result = verify_claim_entailment("Product costs $10 in India.", observation, span)
+    assert result.status == EntailmentStatus.UNSUPPORTED
+
+
+def test_empty_claim_or_evidence_is_unsupported():
+    observation = obs("")
+    span = EvidenceSpan("o1", 0, len(observation.content))
+    result = verify_claim_entailment("Product costs $10", observation, span)
+    assert result.status == EntailmentStatus.UNSUPPORTED
