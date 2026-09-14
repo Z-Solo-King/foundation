@@ -64,3 +64,6 @@ def test_empty_claim_or_evidence_is_unsupported():
     span = EvidenceSpan("o1", 0, len(observation.content))
     result = verify_claim_entailment("Product costs $10", observation, span)
     assert result.status == EntailmentStatus.UNSUPPORTED
+
+
+# Boundary-sync regression: this harmless edit forces GitHub to rebuild the PR merge ref.
