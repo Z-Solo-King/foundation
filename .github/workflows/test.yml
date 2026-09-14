@@ -1,3 +1,0 @@
-# RETIRED
-# Canonical CI, CodeQL, production deployment, and production smoke verification now live in .github/workflows/codeql.yml.
-# This file intentionally contains no active workflow trigger.
