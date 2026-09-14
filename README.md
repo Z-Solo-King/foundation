@@ -2,6 +2,8 @@
 
 Public contract core for the Z-Solo-King GitHub family.
 
+_Last verified: Cloudflare Git deploy test — 2026-09-14._
+
 This repository contains public-safe contracts, schemas, reusable deterministic primitives, the public Worker boundary, and the public CI evidence path. Protected execution, governance, evaluation holdouts, credentials, and promotion authority live outside this public repository.
 
 ## Documentation first
