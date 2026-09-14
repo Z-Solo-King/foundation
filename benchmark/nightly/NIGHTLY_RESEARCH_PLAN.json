@@ -1,0 +1,109 @@
+{
+  "schema": "nightly-research-plan/v1",
+  "timezone": "Asia/Kolkata",
+  "window": "01:00-09:00",
+  "source_novelty_policy": {
+    "dedupe_key": "task_id+canonical_url",
+    "prefer_unseen_domains": true,
+    "same_task_revisit_requires_reason": true,
+    "allowed_revisit_reasons": [
+      "freshness_expired",
+      "previous_failure_retry",
+      "contradiction_check",
+      "new_revision_or_region",
+      "material_question_change",
+      "high_churn_source"
+    ],
+    "same_claim_is_not_new_evidence": true
+  },
+  "nightly_tasks": [
+    {
+      "task_id": "T01-orchestration-health",
+      "window_ist": "01:00-01:40",
+      "category": "baseline",
+      "question": "What changed since the previous night and what failures or constraints must shape tonight's research?",
+      "source_families": ["github", "prior_ledger", "prior_benchmarks"],
+      "checklist": ["load_previous_ledger", "load_previous_failures", "load_open_followups", "select_new_work", "record_baseline_sha"]
+    },
+    {
+      "task_id": "T02-extractor-acquisition",
+      "window_ist": "01:40-02:40",
+      "category": "extraction",
+      "question": "What new acquisition methods or site-specific techniques improve product extraction?",
+      "source_families": ["retailers", "oem", "professional_reviews", "github", "web_search"],
+      "checklist": ["html", "jsonld", "embedded_state", "api", "graphql", "xhr_fetch", "sitemap", "feed", "pagination", "browser", "image_evidence", "blocking"]
+    },
+    {
+      "task_id": "T03-mapper-entity-intelligence",
+      "window_ist": "02:40-03:30",
+      "category": "mapping",
+      "question": "What techniques improve product identity, SKU, variant, specification and conflict resolution?",
+      "source_families": ["schema_org", "github", "technical_articles", "research_papers"],
+      "checklist": ["identity", "sku", "brand", "variants", "price_mrp", "stock", "specs", "units", "conflicts", "provenance", "confidence"]
+    },
+    {
+      "task_id": "T04-chatbot-research-benchmark",
+      "window_ist": "03:30-04:30",
+      "category": "research_quality",
+      "question": "Where does the chatbot miss important evidence compared with stronger research approaches?",
+      "source_families": ["amazon", "flipkart", "reddit", "youtube", "oem", "retailers", "professional_reviews", "social_communities", "chinese_communities"],
+      "checklist": ["buying_guides", "old_vs_new", "reviews", "warranty", "price_stock", "teardown", "regional", "contradictions", "hinglish", "citations"]
+    },
+    {
+      "task_id": "T05-unreachable-evidence",
+      "window_ist": "04:30-05:15",
+      "category": "restricted_evidence",
+      "question": "Which difficult or partially unreachable ecosystems contain evidence the normal path misses?",
+      "source_families": ["reddit", "amazon", "flipkart", "youtube", "bilibili", "zhihu", "baidu_tieba", "douban", "ptt", "x_twitter", "forums"],
+      "checklist": ["teardowns", "components", "firmware", "manufacturing_revision", "batch_difference", "long_term_failure", "blocked_source_logging"]
+    },
+    {
+      "task_id": "T06-temporal-review-intelligence",
+      "window_ist": "05:15-05:55",
+      "category": "temporal",
+      "question": "What changed over time, and which old evidence is now stale or misleading?",
+      "source_families": ["amazon", "flipkart", "reddit", "youtube", "oem", "retailers"],
+      "checklist": ["launch", "2024", "2025", "latest_3_6_months", "rating_trend", "failure_trend", "firmware", "revision", "price", "seller", "warranty"]
+    },
+    {
+      "task_id": "T07-search-and-models",
+      "window_ist": "05:55-06:35",
+      "category": "search_models",
+      "question": "Which search providers, retrieval methods and models find better evidence at lower cost?",
+      "source_families": ["search_provider_docs", "model_docs", "github", "benchmarks", "reddit", "technical_reviews"],
+      "checklist": ["recency", "multilingual", "reddit", "chinese", "obscure_sources", "query_expansion", "evidence_quality", "latency", "tokens", "cost"]
+    },
+    {
+      "task_id": "T08-github-infrastructure",
+      "window_ist": "06:35-07:15",
+      "category": "infrastructure",
+      "question": "What current GitHub/platform capabilities or limits should change the overnight design?",
+      "source_families": ["github_docs", "platform_docs", "github", "technical_articles"],
+      "checklist": ["actions", "concurrency", "scheduling", "artifacts", "cache", "permissions", "runner_availability", "quotas", "new_features"]
+    },
+    {
+      "task_id": "T09-architecture-archaeology",
+      "window_ist": "07:15-08:00",
+      "category": "alternatives",
+      "question": "What other open-source architectures solve similar problems better or differently?",
+      "source_families": ["github", "open_source_projects", "technical_articles", "research_papers", "community"],
+      "checklist": ["extractors", "mappers", "chatbots", "browser_agents", "llms", "gateways", "queues", "state", "observability", "retries", "caching"]
+    },
+    {
+      "task_id": "T10-performance-token-efficiency",
+      "window_ist": "08:00-08:40",
+      "category": "efficiency",
+      "question": "How can the research engine find more useful evidence with fewer tokens, calls and seconds?",
+      "source_families": ["benchmarks", "model_docs", "github", "technical_articles"],
+      "checklist": ["tokens_per_query", "tool_calls", "web_requests", "latency", "cache_hits", "evidence_per_token", "evidence_per_second", "cost_per_evidence", "model_routing"]
+    },
+    {
+      "task_id": "T11-synthesis-next-night",
+      "window_ist": "08:40-09:00",
+      "category": "synthesis",
+      "question": "What should change, what should be tested next, and which sites should explicitly not be revisited tomorrow?",
+      "source_families": ["night_ledger", "benchmark_results", "findings"],
+      "checklist": ["pass_fail", "regressions", "new_sources", "new_techniques", "platform_changes", "engineering_actions", "regression_tests", "next_tasks", "avoid_urls"]
+    }
+  ]
+}
