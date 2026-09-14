@@ -1,11 +1,11 @@
 {
   "name": "frontend",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Research Intelligence frontend",
   "main": "app.js",
   "scripts": {
-    "check": "node --check app.js",
-    "test": "node --check app.js"
+    "check": "node --check app.js && node --check ui_guards.js && node --check ui_contract_test.mjs",
+    "test": "node --check app.js && node --check ui_guards.js && node ui_contract_test.mjs"
   },
   "keywords": ["research", "chatbot", "frontend"],
   "license": "ISC",
