@@ -60,11 +60,24 @@ jobs:
           ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' backend foundation_core worker.py wrangler.toml migrations tests
 
   deploy:
-    name: Deployment gate
+    name: Deploy production Worker
     needs: public_tests
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    concurrency:
+      group: public-worker-production
+      cancel-in-progress: false
     steps:
+      - name: Checkout tested commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+      - name: Setup Python Worker tooling
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+      - name: Install Python Worker tooling
+        run: python -m pip install --upgrade pip workers-py
       - name: Verify Cloudflare credentials
         shell: bash
         env:
@@ -79,19 +92,7 @@ jobs:
             -H 'Content-Type: application/json' \
             https://api.cloudflare.com/client/v4/user/tokens/verify \
             | jq -e '.success == true and .result.status == "active"' >/dev/null
-      - name: Resolve public D1
-        shell: bash
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set -euo pipefail
-          curl -fsS \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-            -H 'Content-Type: application/json' \
-            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database" \
-            | jq -e '[.result[]? | select(.name == "research-intelligence")] | length == 1' >/dev/null
-      - name: Generate production Wrangler config
+      - name: Resolve public D1 and generate runner-only config
         shell: bash
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -103,7 +104,7 @@ jobs:
             -H 'Content-Type: application/json' \
             "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database")
           database_id=$(jq -r '[.result[]? | select(.name == "research-intelligence") | .uuid] | if length == 1 then .[0] else empty end' <<<"$databases")
-          test -n "$database_id"
+          test -n "$database_id" || { echo 'Expected exactly one research-intelligence D1 database'; exit 1; }
           printf '%s\n' \
             'name = "research-intelligence-engine-public"' \
             'main = "worker.py"' \
@@ -128,3 +129,16 @@ jobs:
             > wrangler.production.generated.toml
           grep -q '^database_name = "research-intelligence"$' wrangler.production.generated.toml
           grep -Eq '^database_id = "[0-9a-fA-F-]{36}"$' wrangler.production.generated.toml
+      - name: Apply remote D1 migrations
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
+      - name: Deploy public Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pywrangler deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}"
+      - name: Remove generated config
+        if: always()
+        run: rm -f wrangler.production.generated.toml
