@@ -38,6 +38,19 @@ def test_validate_task_success():
     assert reason == "valid"
 
 
+def test_validate_task_rejects_private_evaluation_type():
+    """Private evaluation semantics are not advertised by the public contract."""
+    validator = WorkerTaskValidator()
+    task = validator.create_task(
+        task_type="evaluation",
+        input_data={"case": "private"},
+        provenance="run-1",
+    )
+    is_valid, reason = validator.validate_task(task)
+    assert is_valid is False
+    assert "unknown public task type" in reason
+
+
 def test_validate_task_expired():
     """Expired task fails validation."""
     validator = WorkerTaskValidator()

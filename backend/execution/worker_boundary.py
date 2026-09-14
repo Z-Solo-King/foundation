@@ -4,6 +4,9 @@ Public GitHub workers are untrusted compute. All outputs are validated before
 acceptance. Task nonce, schema, task identity, artifact hash, provenance, and
 replay status are verified. Private evidence graph and research history are
 never exposed.
+
+Private Operations may reuse this validator, but private-only task semantics
+are not part of the public task-type contract.
 """
 
 import hashlib
@@ -12,6 +15,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from threading import RLock
 from typing import Any
+
+PUBLIC_TASK_TYPES = ("fetch", "browser", "pdf", "transcript")
 
 
 @dataclass(frozen=True)
@@ -42,7 +47,7 @@ class WorkerResult:
 
 
 class WorkerTaskValidator:
-    """Validates tasks and results from public workers."""
+    """Validates tasks and results for public worker execution."""
 
     TASK_EXPIRY_HOURS = 24
     RESULT_EXPIRY_HOURS = 1
@@ -104,8 +109,8 @@ class WorkerTaskValidator:
             return False, "nonce already completed (replay detected)"
         if task.schema_version != "1.0":
             return False, f"unsupported schema version {task.schema_version}"
-        if task.task_type not in ("fetch", "browser", "pdf", "transcript", "evaluation"):
-            return False, f"unknown task type {task.task_type}"
+        if task.task_type not in PUBLIC_TASK_TYPES:
+            return False, f"unknown public task type {task.task_type}"
         metadata_json = json.dumps(task.metadata, sort_keys=True, default=str, separators=(",", ":"))
         if len(metadata_json.encode("utf-8")) > self.MAX_METADATA_SIZE_BYTES:
             return False, "task metadata exceeds size limit"
@@ -152,8 +157,6 @@ class WorkerTaskValidator:
             if result.status == "success":
                 if output_data is None or result.output_hash is None:
                     return False, "successful result requires output data and output hash"
-                # Preserve the established worker-result hash contract. The
-                # caller hashes the standard sorted JSON representation.
                 output_json = json.dumps(output_data, sort_keys=True, default=str)
                 computed_hash = hashlib.sha256(output_json.encode()).hexdigest()
                 if computed_hash != result.output_hash:
