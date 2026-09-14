@@ -45,6 +45,22 @@ def test_evidence_upsert_get_and_export_extended_metadata():
     assert exported["region"] == "IN"
     assert exported["metadata"] == {"kind": "test"}
 
+    bare = EvidenceRecord(
+        evidence_id="bare",
+        claim="minimal",
+        entity="Widget",
+        source_url="https://example.com/bare",
+        source_family="retailer",
+        observed_at=NOW,
+    )
+    store.add(bare)
+    bare_export = next(row for row in store.export() if row["evidence_id"] == "bare")
+    assert bare_export["published_at"] is None
+    assert bare_export["revision"] is None
+    assert bare_export["region"] is None
+    assert bare_export["supports"] == []
+    assert bare_export["metadata"] == {}
+
 
 def test_planner_source_family_expansion_and_temporal_flag():
     plan = create_plan(
