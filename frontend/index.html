@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b1020" />
+    <title>Research Intelligence — Chat & Research</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
+        <div class="sidebar-top"><button class="brand" data-action="new-chat"><span class="brand-mark">✦</span><span>Research AI</span></button><button class="icon-button mobile-close" data-action="close-sidebar" aria-label="Close sidebar">×</button></div>
+        <button class="new-chat-button" data-action="new-chat">＋ <span>New chat</span><kbd>Ctrl K</kbd></button>
+        <label class="search-box">⌕ <input id="chat-search" type="search" placeholder="Search chats" autocomplete="off" /></label>
+        <nav class="nav-section" aria-label="Workspace">
+          <button class="nav-item active" data-view="chats">◌ <span>Chats</span></button>
+          <button class="nav-item" data-view="projects">▣ <span>Projects</span></button>
+          <button class="nav-item" data-view="saved">☆ <span>Saved</span></button>
+        </nav>
+        <div class="sidebar-label">Recent</div>
+        <div class="chat-list" id="chat-list"></div>
+        <div class="sidebar-bottom"><button class="nav-item" data-view="settings">⚙ <span>Settings</span></button><div class="connection-pill" id="connection-pill">Checking backend…</div></div>
+      </aside>
+
+      <main class="main-area">
+        <header class="topbar"><button class="icon-button menu-button" data-action="open-sidebar" aria-label="Open sidebar">☰</button><div class="mobile-title" id="mobile-title">New chat</div><div class="topbar-actions"><button class="icon-button" data-action="backend-check" aria-label="Backend status">●</button><button class="icon-button" data-action="open-queue" aria-label="Message queue">≡<span class="queue-count" id="queue-count" hidden>0</span></button></div></header>
+
+        <section class="chat-layout">
+          <div class="conversation">
+            <div class="conversation-scroll" id="conversation-scroll"><div class="empty-state" id="empty-state"><div class="empty-mark">✦</div><h1>What do you want to research?</h1><p>Use Chat for local conversation state. Use Research for real backend-backed source ingestion and run tracking.</p><div class="starter-grid"><button data-starter="Compare two products with verified specs and current prices">Compare products</button><button data-starter="Research the latest information and cite the sources">Research latest</button><button data-starter="Inspect a URL and show observed source records">Inspect a URL</button></div></div></div>
+            <div class="composer-wrap"><div class="mode-switch" role="tablist"><button class="mode active" data-mode="chat">Chat</button><button class="mode" data-mode="research">Research</button></div><div class="composer"><button class="composer-icon" data-action="attachments" aria-label="Add file">＋</button><textarea id="prompt" rows="1" placeholder="Ask anything…"></textarea><button class="composer-icon" data-action="voice" aria-label="Voice input">◉</button><button class="send-button" data-action="send" aria-label="Send">↑</button></div><div class="composer-hint"><span id="composer-status">Chat stays local in this frontend until a conversational backend exists.</span><span>Enter to send · Shift+Enter for new line</span></div></div>
+          </div>
+
+          <aside class="workspace" id="workspace" aria-label="Research workspace"><div class="workspace-header"><div><span class="eyebrow">Workspace</span><h2>Research run</h2></div><button class="icon-button" data-action="close-workspace" aria-label="Close workspace">×</button></div><div class="workspace-body" id="workspace-body"><div class="workspace-card"><strong>No active research run</strong><p>Switch to Research mode to submit a real run.</p></div></div></aside>
+        </section>
+      </main>
+
+      <aside class="message-queue" id="message-queue" aria-hidden="true"><div class="queue-header"><div><span class="eyebrow">Up next</span><h2>Message queue</h2></div><button class="icon-button" data-action="close-queue" aria-label="Close queue">×</button></div><p>Queued follow-ups are processed FIFO by the frontend. A real conversational backend is not implied.</p><div id="queue-list"></div><div class="queue-footer"><button class="secondary" data-action="clear-queue">Clear</button><span id="queue-status">Nothing waiting</span></div></aside>
+      <div class="queue-overlay" data-action="close-queue"></div><div class="mobile-overlay" data-action="close-sidebar"></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </div>
+    <script src="./app.js"></script>
+  </body>
+</html>
