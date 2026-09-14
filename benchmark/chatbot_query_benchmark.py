@@ -108,8 +108,14 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", default="benchmark/chatbot-query-corpus.json")
     parser.add_argument("--output", default=".runtime/chatbot-query-benchmark.json")
+    parser.add_argument(
+        "--allow-failures",
+        action="store_true",
+        help="record benchmark failures but exit successfully so downstream benchmark stages can continue",
+    )
     args = parser.parse_args()
-    return run(Path(args.input), Path(args.output))
+    result = run(Path(args.input), Path(args.output))
+    return 0 if args.allow_failures else result
 
 
 if __name__ == "__main__":
