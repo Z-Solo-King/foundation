@@ -33,11 +33,51 @@ jobs:
         with:
           ref: ${{ steps.revision.outputs.sha }}
 
+      - name: Verify active Cloudflare deployment provenance
+        if: github.event_name == 'workflow_run'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          SECRET_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VARIABLE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          EXPECTED_SHA: ${{ steps.revision.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo 'Missing CLOUDFLARE_API_TOKEN'; exit 1; }
+          account_id="${SECRET_ACCOUNT_ID:-${VARIABLE_ACCOUNT_ID:-}}"
+          test -n "$account_id" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID'; exit 1; }
+          expected="github:${EXPECTED_SHA}"
+
+          for attempt in {1..12}; do
+            deployments=$(curl -fsS \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              -H 'Content-Type: application/json' \
+              "https://api.cloudflare.com/client/v4/accounts/${account_id}/workers/scripts/research-intelligence-engine-public/deployments")
+            latest_message=$(jq -r '.result.deployments[0].annotations["workers/message"] // ""' <<<"$deployments")
+            latest_version=$(jq -r '.result.deployments[0].versions[0].version_id // ""' <<<"$deployments")
+            echo "latest_version=${latest_version} latest_message=${latest_message} attempt=${attempt}"
+            if [[ "$latest_message" == "$expected" && "$latest_version" =~ ^[0-9a-fA-F-]{36}$ ]]; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Active Cloudflare deployment did not advertise expected GitHub revision: $expected"
+          exit 1
+
       - name: Verify public Worker health
         run: |
           set -euo pipefail
           curl -fsS https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/health | tee /tmp/health.json
           jq -e '.ok == true' /tmp/health.json
+
+      - name: Verify public Worker readiness and D1
+        run: |
+          set -euo pipefail
+          status=$(curl -sS -o /tmp/readiness.json -w '%{http_code}' \
+            https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/readiness)
+          cat /tmp/readiness.json
+          test "$status" = "200"
+          jq -e '.ready == true and .database == true' /tmp/readiness.json
 
       - name: Execute authenticated Cloudflare and B2 verification when configured
         env:
@@ -46,7 +86,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "${AUTH_TOKEN:-}" ]]; then
-            echo 'AUTH_TOKEN is not configured in this public-repo workflow context; authenticated D1/B2 verification is not claimed.'
+            echo 'AUTH_TOKEN is not configured in this public-repo workflow context; authenticated B2 verification is not claimed.'
             exit 0
           fi
           status=$(curl -sS -o /tmp/chatbot.json -w '%{http_code}' \
