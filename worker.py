@@ -3,6 +3,7 @@
 import hashlib
 import hmac
 import json
+import re
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
@@ -12,6 +13,21 @@ from backend.api.main import submit_research
 from backend.api.models import ResearchRequest
 from backend.persistence.cloudflare import CloudflarePersistence
 from backend.sources.http import fetch_public_url
+
+_URL_RE = re.compile(r"https?://[^\s<>\"']+")
+
+
+def _extract_source_urls(question, explicit=()):
+    """Return a bounded, deterministic URL set for source inspection."""
+    candidates = list(explicit or ()) + _URL_RE.findall(question or "")
+    result = []
+    seen = set()
+    for raw in candidates:
+        url = raw.rstrip(".,);]}")
+        if url and url not in seen:
+            seen.add(url)
+            result.append(url)
+    return tuple(result)
 
 
 def _bearer_token(request):
@@ -188,7 +204,18 @@ async def _ingest_sources(env, run_id, req):
               access_state = excluded.access_state"""
         ).bind(observation_id, run_id, source_id, version_id, now, "http_fetch", content_hash, "verified", access_state).run()
 
-        results.append({"url": fetched.final_url, "status": fetched.status, "source_id": source_id, "observation_id": observation_id, "version_id": version_id, "content_hash": content_hash, "bytes": len(fetched.content)})
+        results.append({
+            "url": fetched.final_url,
+            "status": fetched.status,
+            "source_id": source_id,
+            "observation_id": observation_id,
+            "version_id": version_id,
+            "content_hash": content_hash,
+            "bytes": len(fetched.content),
+            "access_state": access_state,
+            "retrieval_method": "http_fetch",
+            "source_family_id": family,
+        })
     return results
 
 
@@ -203,7 +230,19 @@ async def _get_run(env, run_id):
            FROM observations o JOIN sources s ON s.source_id = o.source_id
            WHERE o.run_id = ? ORDER BY o.observed_at ASC"""
     ).bind(run_id).all()
-    return {"run": run, "observations": observations}
+    run_status = run.get("status") if isinstance(run, dict) else getattr(run, "status", None)
+    return {
+        "run": run,
+        "status": run_status or "unknown",
+        "observations": observations,
+        "result": None,
+        "synthesis_available": False,
+        "capabilities": {
+            "source_url_ingestion": True,
+            "general_web_discovery": False,
+            "evidence_synthesis": False,
+        },
+    }
 
 
 class Default(WorkerEntrypoint):
@@ -258,6 +297,10 @@ class Default(WorkerEntrypoint):
             payload = await _json(request)
             if payload is None:
                 return Response.json({"ok": False, "error": "invalid JSON object"}, status=400)
+            payload = dict(payload)
+            explicit_urls = payload.get("source_urls") or ()
+            question = str(payload.get("question") or "")
+            payload["source_urls"] = list(_extract_source_urls(question, explicit_urls))
             try:
                 req = ResearchRequest(**payload)
             except TypeError as exc:
@@ -274,9 +317,31 @@ class Default(WorkerEntrypoint):
                 else:
                     run_id = result.run_id
                     await persistence.create_run(run_id, req)
-                sources = await _ingest_sources(self.env, run_id, req) if req.source_urls else []
+
+                if not req.source_urls:
+                    return Response.json({
+                        "ok": True,
+                        "run_id": run_id,
+                        "metadata": {
+                            **result.metadata,
+                            "execution_mode": "awaiting_source_urls",
+                            "source_url_ingestion": True,
+                            "general_web_discovery": False,
+                            "evidence_synthesis": False,
+                            "next_action": "provide one or more permitted public HTTP(S) source URLs",
+                        },
+                        "sources": [],
+                    })
+
+                await persistence.set_run_status(run_id, "running")
+                sources = await _ingest_sources(self.env, run_id, req)
+                await persistence.set_run_status(run_id, "completed")
             except Exception as exc:
+                try:
+                    await persistence.set_run_status(run_id, "failed")
+                except Exception:
+                    pass
                 return Response.json({"ok": False, "error": f"execution/persistence failure: {exc}"}, status=503)
-            return Response.json({"ok": True, "run_id": run_id, "metadata": result.metadata, "sources": sources})
+            return Response.json({"ok": True, "run_id": run_id, "metadata": {**result.metadata, "execution_mode": "source_url_ingestion"}, "sources": sources})
 
         return Response.json({"ok": False, "error": "not found"}, status=404)
