@@ -15,17 +15,8 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toast.classList.remove('show'), 1700);
   };
-
-  const openSidebar = () => {
-    sidebar.classList.add('open');
-    overlay.classList.add('show');
-  };
-
-  const closeSidebar = () => {
-    sidebar.classList.remove('open');
-    overlay.classList.remove('show');
-  };
-
+  const openSidebar = () => { sidebar.classList.add('open'); overlay.classList.add('show'); };
+  const closeSidebar = () => { sidebar.classList.remove('open'); overlay.classList.remove('show'); };
   const openWorkspace = () => workspace.classList.add('open');
   const closeWorkspace = () => workspace.classList.remove('open');
 
@@ -80,11 +71,7 @@
 
   const handleAction = (action) => {
     switch (action) {
-      case 'new-chat':
-        closeSidebar();
-        showToast('New chat');
-        prompt.focus();
-        break;
+      case 'new-chat': closeSidebar(); showToast('New chat'); prompt.focus(); break;
       case 'open-sidebar': openSidebar(); break;
       case 'close-sidebar': closeSidebar(); break;
       case 'close-workspace': closeWorkspace(); break;
@@ -119,7 +106,11 @@
     const view = event.target.closest('[data-view]');
     if (view) {
       document.querySelectorAll('[data-view]').forEach((button) => button.classList.toggle('active', button === view));
-      showToast(`${view.innerText.trim()} view`);
+      if (view.dataset.view === 'settings') {
+        settingsDialog.showModal();
+      } else {
+        showToast(`${view.innerText.trim()} view`);
+      }
       closeSidebar();
     }
 
@@ -144,12 +135,10 @@
       sendMessage();
     }
   });
-
   prompt.addEventListener('input', () => {
     prompt.style.height = 'auto';
     prompt.style.height = `${Math.min(prompt.scrollHeight, 130)}px`;
   });
-
   search.addEventListener('input', filterChats);
 
   window.addEventListener('keydown', (event) => {
