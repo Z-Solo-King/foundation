@@ -1,0 +1,149 @@
+name: autonomous benchmark
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "benchmark/targets-20.json"
+      - ".github/workflows/autonomous-benchmark.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: autonomous-benchmark
+  cancel-in-progress: false
+
+env:
+  OPERATIONS_REF: feat/durable-benchmark-runner
+  BENCHMARK_MINUTES: "12"
+
+jobs:
+  benchmark:
+    name: Benchmark shard ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - name: Checkout public controller
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Verify private checkout credential
+        env:
+          OPERATIONS_READ_TOKEN: ${{ secrets.OPERATIONS_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "${OPERATIONS_READ_TOKEN:-}" || {
+            echo "Missing OPERATIONS_READ_TOKEN GitHub secret; this is required for the ephemeral private checkout."
+            exit 1
+          }
+
+      - name: Checkout private Operations ephemerally
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ env.OPERATIONS_REF }}
+          token: ${{ secrets.OPERATIONS_READ_TOKEN }}
+          path: operations
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Install private runner
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -e operations
+
+      - name: Test durable runner contract
+        run: |
+          set -euo pipefail
+          python -m pytest operations/tests/test_durable_runner.py -q
+
+      - name: Execute bounded live benchmark
+        continue-on-error: true
+        timeout-minutes: 13
+        run: |
+          set -euo pipefail
+          rm -rf .runtime
+          timeout "${BENCHMARK_MINUTES}m" \
+            python operations/scripts/durable_site_benchmark.py run \
+              --input benchmark/targets-20.json \
+              --output .runtime/benchmarks \
+              --run-id "github-${GITHUB_RUN_ID}-shard-${{ matrix.shard }}" \
+              --shards 4 \
+              --shard ${{ matrix.shard }} \
+              --workers 6 \
+              --retries 1
+        env:
+          PYTHONUNBUFFERED: "1"
+
+      - name: Build sanitized benchmark summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import statistics
+          from pathlib import Path
+
+          root = Path('.runtime/benchmarks')
+          rows = []
+          for path in root.glob('*/shards/shard-*.jsonl'):
+              for line in path.read_text(encoding='utf-8').splitlines():
+                  if line.strip():
+                      rows.append(json.loads(line))
+
+          counts = {}
+          elapsed = []
+          products = 0
+          pages = 0
+          bytes_read = 0
+          for row in rows:
+              status = str(row.get('status', 'unknown'))
+              counts[status] = counts.get(status, 0) + 1
+              elapsed.append(int(row.get('elapsed_ms') or 0))
+              products += len(row.get('products') or ())
+              pages += int(row.get('pages_fetched') or 0)
+              bytes_read += int(row.get('bytes_read') or 0)
+
+          safe = {
+              'schema': 'autonomous-benchmark-summary/v1',
+              'run_id': '${{ github.run_id }}',
+              'shard': ${{ matrix.shard }},
+              'targets_observed': len(rows),
+              'status_counts': counts,
+              'elapsed_ms': {
+                  'min': min(elapsed) if elapsed else 0,
+                  'median': int(statistics.median(elapsed)) if elapsed else 0,
+                  'max': max(elapsed) if elapsed else 0,
+                  'total': sum(elapsed),
+              },
+              'products_observed': products,
+              'pages_fetched': pages,
+              'bytes_read': bytes_read,
+          }
+          Path('benchmark-summary.json').write_text(json.dumps(safe, indent=2), encoding='utf-8')
+          print(json.dumps(safe, indent=2))
+          PY
+
+      - name: Upload sanitized summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: autonomous-benchmark-summary-shard-${{ matrix.shard }}
+          path: benchmark-summary.json
+          retention-days: 1
+
+      - name: Remove private checkout and raw receipts
+        if: always()
+        run: rm -rf operations .runtime
