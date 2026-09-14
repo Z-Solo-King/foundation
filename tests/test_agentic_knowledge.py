@@ -2,10 +2,11 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from backend.intelligence.agentic import ResearchAgent, ResearchTask, TaskObservation
+from backend.intelligence.agentic import ResearchAgent, ResearchTask, TaskObservation, research
 from backend.intelligence.contracts import ResearchContract
 from backend.intelligence.evidence import EvidenceKnowledgeStore, EvidenceRecord, canonical_url
 from backend.intelligence.knowledge import ResearchMemory, SourceVisit
+from backend.intelligence.planning import create_plan
 
 
 NOW = datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)
@@ -27,18 +28,39 @@ def evidence(evidence_id="e1", result="useful", ttl=3600):
 
 def test_canonical_url_and_evidence_store():
     assert canonical_url("HTTPS://Example.COM:443/a/") == "https://example.com/a/"
+    with pytest.raises(ValueError):
+        canonical_url("ftp://example.com/a")
     store = EvidenceKnowledgeStore()
     assert store.add(evidence()) is True
     assert store.add(evidence()) is False
     assert store.get("e1") is not None
     assert len(store.search("Widget X", ("battery",))) == 1
+    assert store.search("Widget X", ("missing",)) == []
+    assert store.search("Widget X", ("battery",), source_family="other") == []
     assert len(store.reusable("Widget X", ("battery",), NOW)) == 1
     assert len(store.stale("Widget X", ("battery",), NOW + timedelta(hours=2))) == 1
+    permanent = evidence("permanent", ttl=None)
+    assert store.add(permanent) is True
+    assert store.is_fresh(permanent, NOW + timedelta(days=99)) is True
+    expired = evidence("expired", ttl=-1)
+    with pytest.raises(ValueError):
+        EvidenceRecord(
+            evidence_id=expired.evidence_id,
+            claim=expired.claim,
+            entity=expired.entity,
+            source_url=expired.source_url,
+            source_family=expired.source_family,
+            observed_at=expired.observed_at,
+            freshness_ttl_seconds=-1,
+        )
+    assert store.export()
 
 
 def test_evidence_validation_and_contradictions():
     with pytest.raises(ValueError):
         EvidenceRecord(evidence_id="x", claim="", entity="Widget", source_url="https://e.test", source_family="x", observed_at=NOW)
+    with pytest.raises(ValueError):
+        EvidenceRecord(evidence_id="x", claim="a", entity="Widget", source_url="not-a-url", source_family="x", observed_at=NOW)
     with pytest.raises(ValueError):
         EvidenceRecord(evidence_id="x", claim="a", entity="Widget", source_url="https://e.test", source_family="x", observed_at=NOW, confidence=2)
     store = EvidenceKnowledgeStore()
@@ -65,7 +87,13 @@ def test_research_memory_visit_policy_and_roundtrip():
     assert memory.record_visit(visit) is False
     assert memory.should_visit("T1", "https://example.com/a", NOW) is False
     assert memory.should_visit("T1", "https://example.com/a", NOW + timedelta(days=2)) is True
-    assert memory.unseen_domains("T1", ["https://example.com/b", "https://new.example/b"]) == ["https://new.example/b"]
+    assert memory.unseen_domains("T1", ["https://example.com/b", "https://new.example/b", "https://new.example/b"]) == ["https://new.example/b"]
+    blocked = SourceVisit(task_id="T2", url="https://blocked.example", source_family="retailer", purpose="price", method="search", result="blocked", visited_at=NOW)
+    assert blocked.reusable(NOW) is False
+    permanent = SourceVisit(task_id="T3", url="https://fresh.example", source_family="retailer", purpose="price", method="search", result="useful", visited_at=NOW)
+    assert permanent.reusable(NOW + timedelta(days=1)) is True
+    with pytest.raises(ValueError):
+        SourceVisit(task_id="", url="https://e.test", source_family="x", purpose="x", method="x", result="failed", visited_at=NOW)
     memory.add_evidence(evidence())
     restored = ResearchMemory.from_json(memory.to_json())
     assert len(restored.prior_visits("T1")) == 1
@@ -74,11 +102,24 @@ def test_research_memory_visit_policy_and_roundtrip():
         ResearchMemory.from_json('{"schema":"unknown"}')
 
 
-def test_agent_without_executor_blocks():
+def test_agent_validation_and_terminal_states():
+    with pytest.raises(ValueError):
+        ResearchAgent(max_iterations=0)
     agent = ResearchAgent(max_iterations=2)
     state = agent.create_state(ResearchContract(question="test", depth="quick"))
-    next_state = agent.step(state)
-    assert next_state.status == "blocked"
+    assert agent._reuse(state.tasks[0]) is None
+    finished = agent.step(state)
+    assert finished.status == "blocked"
+    assert agent.step(ResearchAgent(executor=lambda *_: None).create_state(ResearchContract(question="test"))) is not None
+    done = agent.step(finished)
+    assert done == finished
+    executor_agent = ResearchAgent(executor=lambda task, store: TaskObservation(task.task_id, "completed"), max_iterations=32)
+    no_tasks = executor_agent.step(state.__class__(question=state.question, plan=state.plan, tasks=(), iterations=0))
+    assert no_tasks.status == "completed"
+    blocked_state = executor_agent.step(state.__class__(question=state.question, plan=state.plan, tasks=(), failed=("x",), iterations=0))
+    assert blocked_state.status == "blocked"
+    maxed = state.__class__(question=state.question, plan=state.plan, tasks=state.tasks, iterations=32)
+    assert executor_agent.step(maxed).status == "blocked"
 
 
 def test_agent_runs_and_spawns_followup():
@@ -99,11 +140,24 @@ def test_agent_runs_and_spawns_followup():
     assert agent.evidence.get("e2") is not None
 
 
-def test_agent_failure_and_iteration_guard():
-    def failing(task, store):
-        return TaskObservation(task_id=task.task_id, status="failed")
+def test_agent_blocked_failed_and_convenience_research():
+    def blocked(task, store):
+        return TaskObservation(task_id=task.task_id, status="blocked")
 
-    agent = ResearchAgent(executor=failing, max_iterations=1)
-    state = agent.run(agent.create_state(ResearchContract(question="test")))
+    agent = ResearchAgent(executor=blocked, max_iterations=2)
+    state = agent.run(agent.create_state(ResearchContract(question="test", depth="quick")))
     assert state.status == "blocked"
     assert state.failed
+
+    def successful(task, store):
+        return TaskObservation(task_id=task.task_id, status="completed")
+
+    result_state, result_store = research("test", successful, depth="quick")
+    assert result_state.status == "completed"
+    assert isinstance(result_store, EvidenceKnowledgeStore)
+
+
+def test_planning_quick_and_temporal_metadata():
+    quick = create_plan(ResearchContract(question="latest laptop review", depth="quick"))
+    assert len(quick.stages) == 5
+    assert quick.metadata["temporal_reconciliation"] == "true"
