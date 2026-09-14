@@ -54,20 +54,11 @@
 
     const saved = read(SAVED_KEY, []);
     const existing = saved.find((item) => item.messageId === messageId);
-    if (existing) {
-      write(SAVED_KEY, saved.filter((item) => item.messageId !== messageId));
-      message.meta = { ...(message.meta || {}), saved: false };
-    } else {
-      saved.unshift({
-        id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
-        messageId,
-        chatId,
-        text: message.text,
-        at: Date.now()
-      });
-      message.meta = { ...(message.meta || {}), saved: true };
-      write(SAVED_KEY, saved);
-    }
+    const nextSaved = existing
+      ? saved.filter((item) => item.messageId !== messageId)
+      : [{ id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`, messageId, chatId, text: message.text, at: Date.now() }, ...saved];
+    message.meta = { ...(message.meta || {}), saved: !existing };
+    write(SAVED_KEY, nextSaved);
     write(CHAT_KEY, chats);
     const node = document.querySelector(`[data-ui-guard-save="${CSS.escape(messageId)}"]`);
     if (node) node.textContent = existing ? 'Save' : 'Saved';
@@ -78,23 +69,35 @@
     if (!chatId) return;
     const chat = read(CHAT_KEY, []).find((item) => item.id === chatId);
     if (!chat) return;
-    const nodes = document.querySelectorAll('#conversation-scroll article.message');
-    nodes.forEach((node, index) => {
+    document.querySelectorAll('#conversation-scroll article.message').forEach((node, index) => {
       const message = chat.messages?.[index];
       if (message) node.dataset.messageId = message.id;
     });
   }
 
   function addSaveControls() {
-    const articles = document.querySelectorAll('#conversation-scroll article.message');
-    articles.forEach((article) => {
+    document.querySelectorAll('#conversation-scroll article.message').forEach((article) => {
       const id = article.dataset.messageId;
-      if (!id || article.querySelector('[data-ui-guard-save]')) return;
+      if (!id || article.querySelector('[data-save-message], [data-ui-guard-save]')) return;
       const button = document.createElement('button');
       button.className = 'secondary';
       button.dataset.uiGuardSave = id;
       button.textContent = 'Save';
       article.appendChild(button);
+    });
+
+    if (document.body.contains(document.querySelector('[data-view="saved"].active'))) return;
+    const savedItems = read(SAVED_KEY, []);
+    if (!savedItems.length) return;
+    const cards = document.querySelectorAll('#conversation-scroll .workspace-card');
+    savedItems.forEach((item) => {
+      const card = [...cards].find((node) => node.querySelector('strong')?.textContent === item.text);
+      if (!card || card.querySelector('[data-saved-message]')) return;
+      const button = document.createElement('button');
+      button.className = 'secondary';
+      button.dataset.savedMessage = item.messageId;
+      button.textContent = 'Open chat';
+      card.appendChild(button);
     });
   }
 
@@ -105,14 +108,12 @@
       openProject(project.dataset.project);
       return;
     }
-
     const saved = event.target.closest('[data-saved-message]');
     if (saved) {
       event.preventDefault();
       openSaved(saved.dataset.savedMessage);
       return;
     }
-
     const saveButton = event.target.closest('[data-ui-guard-save]');
     if (saveButton) {
       event.preventDefault();
