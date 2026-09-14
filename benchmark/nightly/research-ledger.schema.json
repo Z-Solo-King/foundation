@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Z-Solo-King/foundation/blob/main/benchmark/nightly/research-ledger.schema.json",
+  "title": "Nightly Research Ledger",
+  "type": "object",
+  "required": ["schema", "night_id", "started_at", "tasks", "visits", "findings", "next_tasks"],
+  "properties": {
+    "schema": { "const": "nightly-research-ledger/v1" },
+    "night_id": { "type": "string" },
+    "started_at": { "type": "string", "format": "date-time" },
+    "completed_at": { "type": ["string", "null"], "format": "date-time" },
+    "baseline_sha": { "type": ["string", "null"] },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["task_id", "question", "status"],
+        "properties": {
+          "task_id": { "type": "string" },
+          "question": { "type": "string" },
+          "category": { "type": "string" },
+          "status": { "enum": ["planned", "running", "complete", "partial", "blocked", "failed", "deferred"] },
+          "required_source_families": { "type": "array", "items": { "type": "string" } },
+          "freshness_window": { "type": ["string", "null"] },
+          "visited_count": { "type": "integer", "minimum": 0 },
+          "new_domain_count": { "type": "integer", "minimum": 0 },
+          "useful_finding_count": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "visits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["visit_id", "task_id", "canonical_url", "domain", "purpose", "method", "result", "visited_at", "revisit_policy"],
+        "properties": {
+          "visit_id": { "type": "string" },
+          "task_id": { "type": "string" },
+          "source_family": { "type": "string" },
+          "domain": { "type": "string" },
+          "canonical_url": { "type": "string", "format": "uri" },
+          "purpose": { "type": "string" },
+          "method": { "type": "string" },
+          "result": { "enum": ["useful", "duplicate", "blocked", "irrelevant", "stale", "contradictory", "failed"] },
+          "visited_at": { "type": "string", "format": "date-time" },
+          "finding_ids": { "type": "array", "items": { "type": "string" } },
+          "revisit_policy": { "enum": ["never_same_task_unless_new_question", "after_freshness_window", "retry_after_failure", "recheck_contradiction", "recheck_revision_or_region", "high_churn_source"] },
+          "next_eligible_at": { "type": ["string", "null"], "format": "date-time" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["finding_id", "task_id", "claim", "evidence_urls", "novelty", "confidence"],
+        "properties": {
+          "finding_id": { "type": "string" },
+          "task_id": { "type": "string" },
+          "claim": { "type": "string" },
+          "evidence_urls": { "type": "array", "items": { "type": "string", "format": "uri" } },
+          "novelty": { "enum": ["new", "confirming", "contradictory", "duplicate", "negative"] },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "engineering_action": { "type": ["string", "null"] },
+          "regression_test": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "next_tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["task_id", "reason", "priority"],
+        "properties": {
+          "task_id": { "type": "string" },
+          "reason": { "type": "string" },
+          "priority": { "enum": ["critical", "high", "medium", "low"] },
+          "preferred_new_source_families": { "type": "array", "items": { "type": "string" } },
+          "avoid_urls": { "type": "array", "items": { "type": "string", "format": "uri" } }
+        }
+      }
+    }
+  }
+}
