@@ -24,7 +24,6 @@
   "source_of_truth": {
     "contracts": ["backend/intelligence/contracts.py", "backend/execution/engine.py"],
     "evidence": ["backend/evidence_certificate.py", "backend/evidence_selection.py"],
-    "evaluation_primitives": ["backend/evaluation/"],
     "api": ["backend/api/"],
     "resource_guard": ["backend/execution/resources.py"],
     "deterministic_observed_data": ["foundation_core/", "docs/PUBLIC_DETERMINISTIC_CORE.md"],
@@ -58,7 +57,7 @@
     "private_evidence_rule": "Foundation CI does not certify private Operations runtime behavior"
   },
   "must_not_own": ["private policy authority", "global resource governance", "promotion", "credentials", "protected deployment topology", "heavy acquisition", "platform recovery", "private evaluation holdouts", "private chatbot execution"],
-  "design_rules": ["deterministic-first", "one canonical implementation per behavior", "small modules", "public-safe data only", "contracts before cross-repo implementation", "chatbot must use typed contracts rather than duplicate algorithms", "evidence selection is budgeted but caller-defined trust policy remains outside Foundation", "version cross-repository contracts", "validate before business logic", "generated artifacts are never sources of truth", "public files use ordinary descriptive names", "private functionality is excluded by architecture and boundary scans", "public readiness remains independently testable from private control-plane availability", "compatibility facades must re-export/adapt only and never become a second algorithm"] ,
+  "design_rules": ["deterministic-first", "one canonical implementation per behavior", "small modules", "public-safe data only", "contracts before cross-repo implementation", "chatbot must use typed contracts rather than duplicate algorithms", "evidence selection is budgeted but caller-defined trust policy remains outside Foundation", "version cross-repository contracts", "validate before business logic", "generated artifacts are never sources of truth", "public files use ordinary descriptive names", "private functionality is excluded by architecture and boundary scans", "public readiness remains independently testable from private control-plane availability", "compatibility facades must re-export/adapt only and never become a second algorithm"],
   "hot_path_guidance": {
     "prefer": ["tuple/dict indexes", "bounded work", "stable typed contracts", "single-pass transforms", "deduplicated evidence under explicit budgets"],
     "avoid": ["repeated list scans", "duplicate policy engines", "large monolithic modules", "large payloads in control envelopes", "lossy evidence compression without explicit budget"]

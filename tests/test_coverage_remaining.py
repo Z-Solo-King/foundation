@@ -9,18 +9,6 @@ from types import SimpleNamespace
 import pytest
 
 
-def test_harness_regression_paths():
-    from backend.evaluation.harness import BenchmarkCase, EvaluationCategory, EvaluationHarness, EvaluationResult
-
-    harness = EvaluationHarness()
-    case = BenchmarkCase("reg", EvaluationCategory.RETRIEVAL, "d", "q", "a")
-    harness.register_case(case)
-    result = harness.regression_test("reg", lambda c: EvaluationResult(c.case_id, True))
-    assert result.passed is True
-    with pytest.raises(ValueError):
-        harness.regression_test("missing", lambda c: EvaluationResult(c.case_id, True))
-
-
 def test_lineage_remaining_validation_and_observation_default_time():
     from backend.intelligence.lineage import SourceLineage
     from backend.intelligence.observations import Observation

@@ -68,35 +68,6 @@ def test_router_remaining_gate_and_non_consuming_execute(monkeypatch):
     assert denied.approved is False and "not free-eligible" in denied.reason
 
 
-def test_entailment_remaining_statuses():
-    from backend.evaluation.entailment import EntailmentStatus, verify_claim_entailment
-    from backend.intelligence.observations import EvidenceSpan, Observation
-
-    obs = Observation.create("o", "https://e", "product is available now")
-    assert verify_claim_entailment("product is available", obs, EvidenceSpan("o", 0, 24)).status == EntailmentStatus.SUPPORTED
-    assert verify_claim_entailment("product available", obs, EvidenceSpan("o", 0, 24), supported_threshold=1.1).status == EntailmentStatus.AMBIGUOUS
-    assert verify_claim_entailment("banana", obs, EvidenceSpan("o", 0, 24)).status == EntailmentStatus.UNSUPPORTED
-
-
-def test_harness_production_success_and_observation_edges():
-    from backend.evaluation.harness import EvaluationCategory, EvaluationHarness, BenchmarkCase, EvaluationResult
-    from backend.intelligence.observations import Observation
-
-    h = EvaluationHarness()
-    h._production_target = 100
-    h._promotion_threshold = 0.5
-    for category in EvaluationCategory:
-        for i in range(10):
-            cid = f"{category.value}-{i}"
-            h.register_case(BenchmarkCase(cid, category, "d", "q", "a"))
-            h.record_result(cid, EvaluationResult(cid, True))
-    ok, reason = h.production_readiness()
-    assert ok is True and reason == "production gate passed"
-    obs = Observation.create("o", "https://e", "x")
-    assert obs.observed_at.tzinfo is not None
-    assert Observation("o2", "https://e", "x", datetime.now(timezone.utc)).content == "x"
-
-
 def test_lineage_contradiction_and_observation_remaining_edges():
     from backend.intelligence.contradiction import TypedClaim, _as_date, _numeric, detect_contradiction, detect_typed_contradiction
     from backend.intelligence.lineage import SourceLineage

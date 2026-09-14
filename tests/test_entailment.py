@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from backend.evaluation.entailment import EntailmentStatus, adjudicate_ambiguous, verify_claim_entailment
+from backend.intelligence.entailment import EntailmentStatus, verify_claim_entailment
 from backend.intelligence.observations import EvidenceSpan, Observation
 
 
@@ -16,6 +16,15 @@ def test_exact_claim_is_supported():
     assert result.accepted
 
 
+def test_high_lexical_support_is_supported():
+    observation = obs("Product costs $10 per month in India currently.")
+    span = EvidenceSpan("o1", 0, len(observation.content))
+    result = verify_claim_entailment("Product costs $10 per month in India today", observation, span)
+    assert result.status == EntailmentStatus.SUPPORTED
+    assert result.accepted
+    assert result.score >= 0.85
+
+
 def test_negation_mismatch_is_unsupported():
     observation = obs("Product is not available in India.")
     span = EvidenceSpan("o1", 0, len(observation.content))
@@ -29,10 +38,29 @@ def test_invalid_span_fails_closed():
     assert result.status == EntailmentStatus.INVALID
 
 
-def test_ambiguous_case_can_be_adjudicated_explicitly():
+def test_ambiguous_case_stays_ambiguous_without_private_adjudication():
     observation = obs("Product has a monthly price in India.")
     span = EvidenceSpan("o1", 0, len(observation.content))
-    result = verify_claim_entailment("Product costs $10 per month in India.", observation, span, ambiguous_threshold=0.4, supported_threshold=0.99)
+    result = verify_claim_entailment(
+        "Product costs $10 per month in India.",
+        observation,
+        span,
+        ambiguous_threshold=0.4,
+        supported_threshold=0.99,
+    )
     assert result.status == EntailmentStatus.AMBIGUOUS
-    assert adjudicate_ambiguous(result, True).accepted
-    assert not adjudicate_ambiguous(result, False).accepted
+    assert not result.accepted
+
+
+def test_insufficient_lexical_support_is_unsupported():
+    observation = obs("Only shipping information is listed.")
+    span = EvidenceSpan("o1", 0, len(observation.content))
+    result = verify_claim_entailment("Product costs $10 in India.", observation, span)
+    assert result.status == EntailmentStatus.UNSUPPORTED
+
+
+def test_empty_claim_or_evidence_is_unsupported():
+    observation = obs("")
+    span = EvidenceSpan("o1", 0, len(observation.content))
+    result = verify_claim_entailment("Product costs $10", observation, span)
+    assert result.status == EntailmentStatus.UNSUPPORTED

@@ -1,4 +1,9 @@
-"""Deterministic-first semantic claim-to-evidence verification."""
+"""Public-safe deterministic claim-to-evidence entailment primitive.
+
+Private policy may adjudicate ambiguous results, but this module never owns
+that policy or any model/provider decision.
+"""
+from __future__ import annotations
 
 from dataclasses import dataclass
 import re
@@ -43,12 +48,7 @@ def verify_claim_entailment(
     ambiguous_threshold: float = 0.60,
     supported_threshold: float = 0.85,
 ) -> EntailmentResult:
-    """Verify that a cited span supports the claim without caller-supplied flags.
-
-    Exact normalized inclusion is accepted deterministically. Otherwise token
-    coverage is used as a conservative lexical signal. Ambiguous cases are
-    explicitly separated so an AI adjudicator can be invoked by policy.
-    """
+    """Return deterministic support status; ambiguous cases remain ambiguous."""
     try:
         evidence_text = span.text_from(observation)
     except ValueError as exc:
@@ -67,23 +67,10 @@ def verify_claim_entailment(
     claim_set = set(claim_tokens)
     evidence_set = set(evidence_tokens)
     coverage = len(claim_set & evidence_set) / len(claim_set)
-
-    claim_neg = _negations(claim_tokens)
-    evidence_neg = _negations(evidence_tokens)
-    if bool(claim_neg) != bool(evidence_neg):
+    if bool(_negations(claim_tokens)) != bool(_negations(evidence_tokens)):
         return EntailmentResult(EntailmentStatus.UNSUPPORTED, coverage, "negation polarity mismatch")
-
     if coverage >= supported_threshold:
         return EntailmentResult(EntailmentStatus.SUPPORTED, coverage, "high deterministic lexical support")
     if coverage >= ambiguous_threshold:
-        return EntailmentResult(EntailmentStatus.AMBIGUOUS, coverage, "ambiguous semantic support requires adjudication")
+        return EntailmentResult(EntailmentStatus.AMBIGUOUS, coverage, "ambiguous semantic support requires policy-authorized adjudication")
     return EntailmentResult(EntailmentStatus.UNSUPPORTED, coverage, "insufficient deterministic support")
-
-
-def adjudicate_ambiguous(result: EntailmentResult, ai_supported: bool) -> EntailmentResult:
-    """Convert an ambiguous result only after explicit policy-authorized AI review."""
-    if result.status != EntailmentStatus.AMBIGUOUS:
-        return result
-    if ai_supported:
-        return EntailmentResult(EntailmentStatus.SUPPORTED, result.score, "AI adjudicated ambiguous evidence as supporting")
-    return EntailmentResult(EntailmentStatus.UNSUPPORTED, result.score, "AI adjudicated ambiguous evidence as insufficient")
