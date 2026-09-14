@@ -2,7 +2,8 @@ name: nightly multi-agent research
 
 on:
   schedule:
-    - cron: "45 19 * * *"
+    # 01:00 IST = 19:30 UTC on the previous day.
+    - cron: "30 19 * * *"
   workflow_dispatch:
 
 permissions:
