@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .llm import configured_executor
 from .orchestrator import JsonlResearchReporter, MultiAgentCoordinator
 from .programs import PROGRAMS_BY_LANE
 
@@ -26,7 +27,9 @@ async def run(args: argparse.Namespace) -> None:
     end_slot = min(args.start_slot + args.slots, len(programs))
     selected = programs[args.start_slot:end_slot]
     reporter = JsonlResearchReporter(Path(args.output))
-    coordinator = MultiAgentCoordinator(global_active_agents=args.max_active_agents)
+    executor = None if args.dry_run else configured_executor()
+    coordinator = MultiAgentCoordinator(global_active_agents=args.max_active_agents, executor=executor)
+    mode = "dry-run" if args.dry_run or executor is None else "llm"
 
     for program in selected:
         started = datetime.now(timezone.utc)
@@ -38,7 +41,7 @@ async def run(args: argparse.Namespace) -> None:
             "started_at": started.isoformat(),
             "logical_agents": len(program.agent_specs),
             "max_active_agents": program.max_active_agents,
-            "dry_run": args.dry_run,
+            "mode": mode,
         }))
         result = await coordinator.run_program(
             program,
@@ -46,7 +49,7 @@ async def run(args: argparse.Namespace) -> None:
                 "night_date": started.date().isoformat(),
                 "lane": args.lane,
                 "slot": program.slot,
-                "dry_run": args.dry_run,
+                "mode": mode,
             },
         )
         reporter.append(result)
@@ -57,6 +60,7 @@ async def run(args: argparse.Namespace) -> None:
             "completed_agents": result.completed_agents,
             "failed_agents": result.failed_agents,
             "follow_up_questions": len(result.follow_up_questions),
+            "mode": mode,
         }))
 
 
