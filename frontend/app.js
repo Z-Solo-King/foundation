@@ -31,9 +31,9 @@
   const closeWorkspace = () => workspace.classList.remove('open');
   const openQueue = () => { queuePanel.classList.add('open'); queueOverlay.classList.add('show'); queuePanel.setAttribute('aria-hidden', 'false'); renderQueue(); };
   const closeQueue = () => { queuePanel.classList.remove('open'); queueOverlay.classList.remove('show'); queuePanel.setAttribute('aria-hidden', 'true'); };
-
   const scrollToBottom = () => conversation.scrollTo({ top: conversation.scrollHeight, behavior: 'smooth' });
   const activeMode = () => document.querySelector('.mode.active')?.dataset.mode || 'chat';
+  const escapeHtml = (value) => value.replace(/[&<>'"]/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char]));
 
   const appendUserMessage = (text, queued = false) => {
     const message = document.createElement('article');
@@ -73,8 +73,6 @@
     queueList.innerHTML = queue.map((item, index) => `<div class="queue-item"><div class="queue-number">${index + 1}</div><div class="queue-item-copy"><strong>${item.mode === 'research' ? 'Research' : 'Chat'}</strong><p>${escapeHtml(item.text)}</p></div><button class="queue-remove" data-remove-queue="${item.id}" aria-label="Remove queued message">×</button></div>`).join('');
   };
 
-  const escapeHtml = (value) => value.replace(/[&<>'"]/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char]));
-
   const simulateResponse = (item) => new Promise((resolve) => {
     const delay = item.mode === 'research' ? 1700 : 950;
     window.setTimeout(() => {
@@ -91,7 +89,6 @@
     while (queue.length) {
       const item = queue.shift();
       renderQueue();
-      appendUserMessage(item.text, false);
       await simulateResponse(item);
     }
     setBusy(false);
@@ -101,6 +98,7 @@
   const enqueueMessage = (text) => {
     const item = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, text, mode: activeMode() };
     queue.push(item);
+    appendUserMessage(text, processing);
     renderQueue();
     showToast(processing ? 'Added to message queue' : 'Starting response');
     void processQueue();
@@ -123,10 +121,11 @@
   };
 
   const copyAnswer = () => {
-    const text = document.querySelector('.assistant-message:last-of-type .message-text')?.innerText || document.querySelector('.assistant-message .message-text')?.innerText || '';
+    const text = document.querySelector('.queue-generated-answer:last-of-type .message-text')?.innerText || document.querySelector('.assistant-message .message-text')?.innerText || '';
     if (navigator.clipboard && text) navigator.clipboard.writeText(text).catch(() => {});
     showToast('Answer copied');
   };
+
   const setTheme = (theme) => {
     if (theme === 'system') root.removeAttribute('data-theme'); else root.dataset.theme = theme;
     document.querySelectorAll('[data-theme]').forEach((button) => button.classList.toggle('active', button.dataset.theme === theme));
