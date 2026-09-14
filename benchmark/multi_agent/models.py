@@ -39,6 +39,15 @@ class ResearchProgram:
         if not 1 <= self.agent_budget_hint <= len(self.agent_specs):
             raise ValueError("agent_budget_hint must be within the agent count")
 
+    @property
+    def max_active_agents(self) -> int:
+        """Backward-compatible name for the program's initial budget hint.
+
+        The scheduler does not use this as a hard concurrency limit; the global
+        scheduler budget and the per-program agent_budget_hint determine allocation.
+        """
+        return self.agent_budget_hint
+
 
 @dataclass(frozen=True)
 class AgentResult:

@@ -15,6 +15,20 @@ ROLE_TEMPLATES = (
     ("evaluator", "judge evidence quality, gaps, cost, latency, and the next best research action", 100),
 )
 
+CATEGORY_HINTS = {
+    "acquisition": 6,
+    "mapper": 7,
+    "chatbot": 8,
+    "search": 5,
+    "models": 5,
+    "agents": 7,
+    "architecture": 7,
+    "infrastructure": 6,
+    "performance": 6,
+    "alternatives": 6,
+    "evaluation": 4,
+}
+
 PROGRAM_DEFS: tuple[tuple[int, int, str, str, str, tuple[str, ...]], ...] = (
     (0, 0, "acquisition", "HTML and structured extraction", "How can product research maximize useful HTML, JSON-LD, embedded-state, and structured-data extraction without unnecessary browser work?", ("retailers", "oem", "web_search")),
     (0, 1, "acquisition", "Public API and XHR discovery", "Which bounded techniques best discover public REST, GraphQL, Fetch, and XHR evidence while respecting source policy and rate limits?", ("retailers", "web_search", "api")),
@@ -24,7 +38,6 @@ PROGRAM_DEFS: tuple[tuple[int, int, str, str, str, tuple[str, ...]], ...] = (
     (0, 5, "acquisition", "Robots, blocking, and resilience", "What patterns best distinguish allowed access, blocking, rate limiting, transient failure, and truthful fallback?", ("web_search", "retailers")),
     (0, 6, "acquisition", "Acquisition efficiency", "Which extraction strategy ordering, caching, deduplication, and bounded parallelism reduce requests and latency while preserving coverage?", ("retailers", "web_search")),
     (0, 7, "acquisition", "Cross-source acquisition benchmark", "Where does the current acquisition stack lose useful evidence compared with alternative open-source extraction approaches?", ("retailers", "oem", "professional_reviews", "web_search")),
-
     (1, 0, "mapper", "Product identity resolution", "How should the mapper resolve product identity, SKU, model, GTIN, variant, and bundle relationships across conflicting sources?", ("retailers", "amazon", "flipkart", "oem")),
     (1, 1, "mapper", "Specification normalization", "What compiler-like parsing and normalization techniques improve extraction of detailed hardware and product specifications?", ("retailers", "oem", "professional_reviews")),
     (1, 2, "mapper", "Price and stock intelligence", "How should current price, MRP, discount, availability, seller, and regional price evidence be reconciled over time?", ("retailers", "amazon", "flipkart", "price_stock")),
@@ -33,7 +46,6 @@ PROGRAM_DEFS: tuple[tuple[int, int, str, str, str, tuple[str, ...]], ...] = (
     (1, 5, "chatbot", "Adversarial review analysis", "How should the chatbot detect review spam, copied claims, seller-versus-product complaints, revision changes, and fake or weak evidence?", ("reddit", "amazon", "flipkart", "youtube", "social_communities")),
     (1, 6, "chatbot", "Unreachable evidence", "Which high-value evidence classes remain hard to retrieve, such as old pages, teardowns, PCB details, firmware issues, and regional reports?", ("reddit", "youtube", "teardown_evidence", "chinese_communities")),
     (1, 7, "chatbot", "Multilingual and regional research", "How should the chatbot broaden research across Hinglish, Chinese communities, PTT, Bilibili, Zhihu, Baidu Tieba, Douban, and regional terminology?", ("chinese_communities", "social_communities", "reddit")),
-
     (2, 0, "search", "Search-provider strategy", "Which query expansion, reranking, date filtering, source targeting, and multilingual search strategies produce more useful independent evidence?", ("web_search", "search_trends", "reddit", "chinese_communities")),
     (2, 1, "models", "Model routing and cost", "Which model-routing strategy assigns cheap models to simple tasks and stronger models to contradiction, multilingual, technical, and synthesis tasks?", ("web_search", "professional_reviews")),
     (2, 2, "agents", "Multi-agent architecture", "Which multi-agent decomposition patterns improve research quality without causing duplicated work, agent chatter, or runaway cost?", ("web_search", "professional_reviews")),
@@ -69,7 +81,7 @@ def _build(row: tuple[int, int, str, str, str, tuple[str, ...]]) -> ResearchProg
         title=title,
         question=question,
         agent_specs=_agents(program_id, title, source_families),
-        max_active_agents=6,
+        agent_budget_hint=CATEGORY_HINTS.get(category, 6),
     )
 
 
