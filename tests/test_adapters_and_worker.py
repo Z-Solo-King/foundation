@@ -121,6 +121,43 @@ async def test_cloudflare_persistence_helpers():
     assert result["size"] == 3 and await persistence.get_artifact("k") == b"abc" and await persistence.get_artifact("missing") is None
 
 
+@pytest.mark.asyncio
+async def test_cloudflare_persistence_idempotency_key_too_long():
+    """create_run_idempotent must reject keys over the maximum length."""
+    request = make_request(source_urls=("https://example.com",))
+    persistence = CloudflarePersistence(SimpleNamespace(DB=FakeDB(), ARTIFACTS=FakeArtifacts()))
+    with pytest.raises(ValueError, match="exceeds maximum length"):
+        await persistence.create_run_idempotent(request, "k" * 257)
+
+
+@pytest.mark.asyncio
+async def test_cloudflare_persistence_set_run_status_missing_run():
+    """set_run_status must fail closed when the run does not exist."""
+    persistence = CloudflarePersistence(SimpleNamespace(DB=FakeDB(), ARTIFACTS=FakeArtifacts()))
+    with pytest.raises(ValueError, match="not found"):
+        await persistence.set_run_status("missing-run", "running")
+
+
+@pytest.mark.asyncio
+async def test_cloudflare_persistence_set_run_status_invalid_stored_status():
+    """A corrupted/unrecognized stored status must not be treated as a valid transition source."""
+    db = FakeDB()
+    db.run_rows["run-bad"] = {"run_id": "run-bad", "status": "unknown-status"}
+    persistence = CloudflarePersistence(SimpleNamespace(DB=db, ARTIFACTS=FakeArtifacts()))
+    with pytest.raises(ValueError, match="stored run status is invalid"):
+        await persistence.set_run_status("run-bad", "running")
+
+
+@pytest.mark.asyncio
+async def test_cloudflare_persistence_set_run_status_invalid_transition():
+    """A terminal status (completed) must reject further transitions other than itself."""
+    db = FakeDB()
+    db.run_rows["run-1"] = {"run_id": "run-1", "status": "completed"}
+    persistence = CloudflarePersistence(SimpleNamespace(DB=db, ARTIFACTS=FakeArtifacts()))
+    with pytest.raises(ValueError, match="invalid run transition"):
+        await persistence.set_run_status("run-1", "running")
+
+
 def test_d1_repository_all_paths():
     repo = D1Repository(); now = datetime.now(timezone.utc)
     run = RunRecord("r1","q","standard","planned",now,now,1,2,"{}"); assert repo.create_run(run) is run
