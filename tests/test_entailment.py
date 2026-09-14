@@ -16,6 +16,15 @@ def test_exact_claim_is_supported():
     assert result.accepted
 
 
+def test_high_lexical_support_is_supported():
+    observation = obs("Product costs $10 per month in India currently.")
+    span = EvidenceSpan("o1", 0, len(observation.content))
+    result = verify_claim_entailment("Product costs $10 per month in India today", observation, span)
+    assert result.status == EntailmentStatus.SUPPORTED
+    assert result.accepted
+    assert result.score >= 0.85
+
+
 def test_negation_mismatch_is_unsupported():
     observation = obs("Product is not available in India.")
     span = EvidenceSpan("o1", 0, len(observation.content))
