@@ -152,3 +152,49 @@ EOF
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
         run: pywrangler deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}"
+
+  smoke:
+    name: Verify production Worker
+    needs: deploy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify health
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 8 --retry-delay 3 --retry-all-errors \
+            https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/health \
+            | tee /tmp/health.json
+          jq -e '.ok == true and .status == "ok"' /tmp/health.json
+      - name: Verify readiness and D1 connectivity
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 8 --retry-delay 3 --retry-all-errors \
+            https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/readiness \
+            | tee /tmp/readiness.json
+          jq -e '.ready == true and .database == true' /tmp/readiness.json
+      - name: Verify authenticated infrastructure checks
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub secret; refusing to claim full production verification'; exit 1; }
+          status=$(curl --silent --show-error -o /tmp/chatbot.json -w '%{http_code}' \
+            -X POST \
+            -H "Authorization: Bearer ${AUTH_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data '{"operation":"infrastructure_verify_public_test"}' \
+            https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev/api/v1/chatbot/diagnostic)
+          cat /tmp/chatbot.json
+          test "$status" = "200"
+          jq -e '
+            .ok == true and
+            .status == "ok" and
+            (.checks | map(select(.ok != true)) | length == 0) and
+            ([.checks[].name] | index("public_chatbot")) and
+            ([.checks[].name] | index("cloudflare_d1")) and
+            ([.checks[].name] | index("backblaze_b2_lifecycle"))
+          ' /tmp/chatbot.json
