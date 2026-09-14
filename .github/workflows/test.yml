@@ -38,7 +38,7 @@ jobs:
   deploy:
     name: Deploy production Worker
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     concurrency:
       group: public-worker-deploy
@@ -144,7 +144,7 @@ EOF
   smoke:
     name: Verify production Worker
     needs: deploy
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
       - name: Verify public Worker health
