@@ -33,7 +33,7 @@ def test_canonical_url_and_evidence_store():
     assert store.is_fresh(permanent, NOW + timedelta(days=99)) is True
     naive = evidence("naive", observed_at=datetime(2026, 9, 14, 12, 0))
     assert store.add(naive) is True
-    assert store.is_fresh(naive) is True
+    assert store.is_fresh(naive, NOW) is True
     auto_now = evidence("auto-now")
     assert store.is_fresh(auto_now) is True
     with pytest.raises(ValueError):
