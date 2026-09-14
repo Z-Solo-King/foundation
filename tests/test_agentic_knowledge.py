@@ -11,8 +11,8 @@ from backend.intelligence.planning import create_plan
 NOW = datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)
 
 
-def evidence(evidence_id="e1", result="useful", ttl=3600):
-    return EvidenceRecord(evidence_id=evidence_id, claim="battery lasts long", entity="Widget X", source_url="HTTPS://Example.COM/product#section", source_family="retailer", observed_at=NOW, result=result, confidence=0.8, freshness_ttl_seconds=ttl)
+def evidence(evidence_id="e1", result="useful", ttl=3600, observed_at=NOW, contradicts=()):
+    return EvidenceRecord(evidence_id=evidence_id, claim="battery lasts long", entity="Widget X", source_url="HTTPS://Example.COM/product#section", source_family="retailer", observed_at=observed_at, result=result, confidence=0.8, freshness_ttl_seconds=ttl, contradicts=contradicts)
 
 
 def test_canonical_url_and_evidence_store():
@@ -31,6 +31,11 @@ def test_canonical_url_and_evidence_store():
     permanent = evidence("permanent", ttl=None)
     assert store.add(permanent) is True
     assert store.is_fresh(permanent, NOW + timedelta(days=99)) is True
+    naive = evidence("naive", observed_at=datetime(2026, 9, 14, 12, 0))
+    assert store.add(naive) is True
+    assert store.is_fresh(naive) is True
+    auto_now = evidence("auto-now")
+    assert store.is_fresh(auto_now) is True
     with pytest.raises(ValueError):
         EvidenceRecord(evidence_id="bad", claim="a", entity="Widget", source_url="https://e.test", source_family="x", observed_at=NOW, freshness_ttl_seconds=-1)
     assert store.export()
@@ -45,7 +50,9 @@ def test_evidence_validation_and_contradictions():
         EvidenceRecord(evidence_id="x", claim="a", entity="Widget", source_url="https://e.test", source_family="x", observed_at=NOW, confidence=2)
     store = EvidenceKnowledgeStore()
     row = EvidenceRecord(evidence_id="c1", claim="battery is poor", entity="Widget X", source_url="https://e.test", source_family="review", observed_at=NOW, result="contradictory", contradicts=("e1",))
+    plain = evidence("plain", result="useful", contradicts=())
     store.add(row)
+    store.add(plain)
     assert store.contradictions("Widget X") == [row]
     assert store.is_fresh(row, NOW) is True
 
@@ -124,7 +131,22 @@ def test_agent_blocked_failed_and_convenience_research():
     assert isinstance(result_store, EvidenceKnowledgeStore)
 
 
+def test_agent_run_hits_max_iteration_guard():
+    def always_complete_one_step(task, store):
+        return TaskObservation(task_id=task.task_id, status="completed")
+
+    agent = ResearchAgent(executor=always_complete_one_step, max_iterations=1)
+    state = agent.run(agent.create_state(ResearchContract(question="test", depth="quick")))
+    assert state.status == "blocked"
+    assert state.iterations == 1
+
+
 def test_planning_quick_and_temporal_metadata():
     quick = create_plan(ResearchContract(question="latest laptop review", depth="quick"))
     assert len(quick.stages) == 5
     assert quick.metadata["temporal_reconciliation"] == "true"
+
+
+def test_planning_default_depth_path():
+    standard = create_plan(ResearchContract(question="laptop review", depth="standard"))
+    assert len(standard.stages) == 8
