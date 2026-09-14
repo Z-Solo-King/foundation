@@ -36,6 +36,8 @@ def test_evidence_upsert_get_and_export_extended_metadata():
     replacement = _record("one", claim="replacement")
     store.upsert(first)
     assert store.get("one").claim == "claim"
+    assert first.fingerprint
+    assert first.fingerprint != replacement.fingerprint
     store.upsert(replacement)
     assert store.get("one").claim == "replacement"
     exported = store.export()[0]
@@ -60,6 +62,11 @@ def test_evidence_upsert_get_and_export_extended_metadata():
     assert bare_export["region"] is None
     assert bare_export["supports"] == []
     assert bare_export["metadata"] == {}
+
+    other_entity = _record("other-entity")
+    object.__setattr__(other_entity, "entity", "Other Widget")
+    store.add(other_entity)
+    assert [row.evidence_id for row in store.search("Widget")] == ["one", "bare"]
 
 
 def test_planner_source_family_expansion_and_temporal_flag():
