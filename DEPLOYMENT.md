@@ -23,7 +23,7 @@ The canonical public deployment workflow is `.github/workflows/deploy-public-wor
 
 The post-deployment smoke/verification workflow is `.github/workflows/production-chatbot-deploy-smoke.yml`. It is intentionally separate from deployment but is triggered by successful completion of `deploy-public-worker` through `workflow_run`; it is not an independent push-triggered production verifier.
 
-The deployment workflow dynamically resolves the live D1 database ID from Cloudflare instead of relying on a stale hard-coded UUID. It runs the public test gate, applies the required D1 migration work, and deploys the Python Worker.
+The deployment workflow dynamically resolves the live D1 database ID from Cloudflare instead of relying on a stale hard-coded UUID. When the public Wrangler file still contains its bootstrap placeholder, the workflow persists the current non-secret D1 resource identifier into `wrangler.toml`; this keeps Cloudflare Workers Builds usable from the public repository without exposing credentials. It also generates the authoritative production config for the current deployment.
 
 The smoke workflow first verifies the public Worker health surface. Authenticated D1/B2 verification is only claimed when the required `AUTH_TOKEN` is available in that workflow context and the chatbot diagnostic returns successful checks for the public chatbot surface, Cloudflare D1 and Backblaze B2 lifecycle.
 
@@ -37,7 +37,7 @@ Foundation uses:
 - Backblaze B2 for current artifact storage under the strict zero-cost design;
 - no public route for arbitrary private control-plane dispatch.
 
-No B2 credentials, authentication tokens, private service names, or private database identifiers belong in Git.
+B2 credentials, authentication tokens, private service names, and private control-plane identifiers do not belong in Git. A Cloudflare D1 resource ID is a non-secret infrastructure identifier and may be committed to the public Worker configuration when required for the public Worker binding.
 
 ## Required deployment inputs
 
@@ -46,10 +46,9 @@ Supply these through the deployment environment or secret store rather than comm
 - `AUTH_TOKEN` where the authenticated verification path requires it;
 - `B2_KEY_ID`;
 - `B2_APPLICATION_KEY`;
-- the production D1 binding/configuration;
 - any protected Service Binding required by the private control-plane path.
 
-The public repository's committed Wrangler configuration intentionally keeps production identifiers/configuration sanitized. Production deployment generation must never commit credentials or stale resource IDs.
+The public repository's committed Wrangler configuration must contain the live public D1 binding once the deployment workflow has resolved it. Production credentials must never be committed.
 
 The non-secret B2 configuration is fixed to the zero-cost deployment target:
 
@@ -64,10 +63,10 @@ Smoke-test `/health` first. Treat `/readiness` according to the currently commit
 
 ## Important operational lessons
 
-- Never hard-code an obsolete D1 `database_id`; resolve or verify the current ID.
+- Never hard-code an obsolete D1 `database_id`; resolve it from Cloudflare and persist the current non-secret identifier when the public binding is unconfigured.
 - Never deploy a generated Wrangler config containing `REPLACE_WITH_*` placeholders.
 - For Python Workers use `pywrangler deploy`.
-- Keep secrets out of Git and handoff documents.
+- Keep credentials and authentication secrets out of Git and handoff documents.
 - Keep the strict `$0` policy fail-closed; do not add paid fallbacks to make deployment convenient.
 - Do not call Cloudflare production verification complete until the authenticated chatbot evidence is current.
 - Keep deployment and post-deployment verification as one explicit workflow chain: deployment first, smoke/verification second.
