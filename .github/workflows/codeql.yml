@@ -29,3 +29,32 @@ jobs:
         uses: github/codeql-action/analyze@v4
         with:
           category: /language:python
+
+  public_tests:
+    name: Public tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+      - name: Install test tools and package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pytest pytest-asyncio coverage workers-py workers-runtime-sdk
+      - name: Compile every Python source
+        run: python -m compileall -q backend foundation_core worker.py
+      - name: Verify package installation
+        run: python -c "import foundation_core; print(foundation_core.__all__)"
+      - name: Run product tests
+        run: coverage run --branch --source=backend,foundation_core,worker --omit='tests/*,backend/persistence/artifacts.py' -m pytest tests/ -v
+      - name: Enforce complete product coverage
+        run: coverage report --show-missing --fail-under=100 --omit='tests/*,backend/persistence/artifacts.py'
+      - name: Public boundary scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e backend/learning/promotion.py
+          ! grep -RniE 'operations|extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-private' foundation_core backend worker.py wrangler.toml migrations tests
+          ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' backend foundation_core worker.py wrangler.toml migrations tests
