@@ -1,0 +1,86 @@
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+from backend.intelligence.contracts import ResearchContract
+from backend.intelligence.planning import create_plan
+
+REQUIRED_DEEP_STAGES = {
+    "define_question",
+    "assess_constraints",
+    "discover_sources",
+    "collect_observations",
+    "map_evidence",
+    "verify_evidence",
+    "check_independence",
+    "synthesize_answer",
+}
+
+
+def load_queries(path: Path) -> list[dict[str, object]]:
+    value = json.loads(path.read_text(encoding="utf-8"))
+    rows = value.get("queries", []) if isinstance(value, dict) else value
+    if not isinstance(rows, list) or not rows:
+        raise ValueError("query corpus must contain a non-empty queries list")
+    return [row for row in rows if isinstance(row, dict) and row.get("id") and row.get("query")]
+
+
+def run(path: Path, output: Path) -> int:
+    rows = load_queries(path)
+    results: list[dict[str, object]] = []
+    failures = 0
+    for row in rows:
+        query = str(row["query"])
+        expected = {str(x) for x in row.get("required_sources", [])}
+        contract = ResearchContract(question=query, depth="deep", require_citations=True, max_sources=40, max_evidence_items=200)
+        try:
+            plan = create_plan(contract)
+            families = {x for x in plan.metadata.get("required_source_families", "").split(",") if x}
+            missing = sorted(expected - families)
+            stages_ok = REQUIRED_DEEP_STAGES.issubset(set(plan.stages))
+            temporal_expected = row.get("temporal") == "old_vs_new"
+            temporal_ok = plan.metadata.get("temporal_reconciliation") == "true" if temporal_expected else True
+            passed = stages_ok and not missing and temporal_ok
+            if not passed:
+                failures += 1
+            results.append({
+                "id": row["id"],
+                "category": row.get("category", ""),
+                "passed": passed,
+                "required_sources": sorted(expected),
+                "planned_sources": sorted(families),
+                "missing_sources": missing,
+                "temporal_expected": temporal_expected,
+                "temporal_planned": plan.metadata.get("temporal_reconciliation"),
+                "stages": list(plan.stages),
+            })
+        except Exception as exc:
+            failures += 1
+            results.append({"id": row["id"], "category": row.get("category", ""), "passed": False, "error": type(exc).__name__})
+
+    summary = {
+        "schema": "chatbot-research-query-benchmark/v1",
+        "queries": len(results),
+        "passed": len(results) - failures,
+        "failed": failures,
+        "pass_rate": round((len(results) - failures) / len(results), 4) if results else 0.0,
+        "results": results,
+    }
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(json.dumps(summary, indent=2, ensure_ascii=False))
+    return 0 if failures == 0 else 1
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", default="benchmark/chatbot-query-corpus.json")
+    parser.add_argument("--output", default=".runtime/chatbot-query-benchmark.json")
+    args = parser.parse_args()
+    return run(Path(args.input), Path(args.output))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
