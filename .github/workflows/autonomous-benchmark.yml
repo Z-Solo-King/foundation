@@ -17,13 +17,13 @@ concurrency:
 
 env:
   OPERATIONS_REF: feat/durable-benchmark-runner
-  BENCHMARK_MINUTES: "12"
+  BENCHMARK_MINUTES: "18"
 
 jobs:
   benchmark:
     name: Benchmark shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -63,15 +63,50 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e operations
 
-      - name: Test durable runner contract
+      - name: Test durable runner and chatbot contract
         run: |
           set -euo pipefail
-          python -m pytest operations/tests/test_durable_runner.py -q
+          python -m pytest \
+            operations/tests/test_durable_runner.py \
+            operations/tests/test_durable_input_guard.py \
+            operations/tests/test_durable_site_benchmark.py -q
+
+      - name: Run chatbot enqueue smoke test
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import tempfile
+          from pathlib import Path
+          from private.chatbot.durable_runner import DurableRunRequest, enqueue_run
+
+          with tempfile.TemporaryDirectory() as temp:
+              root = Path(temp)
+              corpus = root / "corpus"
+              inbox = root / "inbox"
+              corpus.mkdir()
+              (corpus / "sites.json").write_text(
+                  json.dumps(["https://example.com/"]), encoding="utf-8"
+              )
+              job = enqueue_run(
+                  DurableRunRequest(
+                      "sites.json", run_id=f"chatbot-smoke-${{ github.run_id }}-${{ matrix.shard }}"
+                  ),
+                  inbox=inbox,
+                  allowed_root=corpus,
+              )
+              payload = json.loads(job.read_text(encoding="utf-8"))
+              assert payload["run_id"].startswith("chatbot-smoke-")
+              assert Path(payload["input"]).resolve() == (corpus / "sites.json").resolve()
+              print(json.dumps({"chatbot_enqueue": "passed", "job": job.name}))
+          PY
 
       - name: Execute bounded live benchmark
         id: live_benchmark
         continue-on-error: true
-        timeout-minutes: 13
+        timeout-minutes: 19
         run: |
           set -euo pipefail
           rm -rf .runtime
