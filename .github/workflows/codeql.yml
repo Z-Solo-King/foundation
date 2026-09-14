@@ -92,34 +92,20 @@ jobs:
             -H 'Content-Type: application/json' \
             https://api.cloudflare.com/client/v4/user/tokens/verify \
             | jq -e '.success == true and .result.status == "active"' >/dev/null
-
           accounts=$(curl -fsS \
             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             -H 'Content-Type: application/json' \
             'https://api.cloudflare.com/client/v4/accounts?per_page=100')
-          account_ids=$(jq -r '.result[]?.id' <<<"$accounts")
-          test -n "$account_ids" || { echo 'Cloudflare token cannot list any accounts'; exit 1; }
-
-          matched_account=''
-          matched_database=''
-          match_count=0
-          while IFS= read -r account_id; do
-            [ -n "$account_id" ] || continue
-            databases=$(curl -fsS \
-              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-              -H 'Content-Type: application/json' \
-              "https://api.cloudflare.com/client/v4/accounts/${account_id}/d1/database")
-            while IFS= read -r database_id; do
-              [ -n "$database_id" ] || continue
-              matched_account="$account_id"
-              matched_database="$database_id"
-              match_count=$((match_count + 1))
-            done < <(jq -r '[.result[]? | select(.name == "research-intelligence") | .uuid] | .[]' <<<"$databases")
-          done <<<"$account_ids"
-
-          test "$match_count" -eq 1 || { echo "Expected exactly one Cloudflare account containing research-intelligence D1; found $match_count"; exit 1; }
-          echo "account_id=$matched_account" >> "$GITHUB_OUTPUT"
-          echo "database_id=$matched_database" >> "$GITHUB_OUTPUT"
+          account_id=$(jq -r 'if (.result | length) == 1 then .result[0].id else empty end' <<<"$accounts")
+          test -n "$account_id" || { echo 'Cloudflare token must expose exactly one account or CLOUDFLARE_ACCOUNT_ID must be provisioned in GitHub'; exit 1; }
+          databases=$(curl -fsS \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            "https://api.cloudflare.com/client/v4/accounts/${account_id}/d1/database")
+          database_id=$(jq -r '[.result[]? | select(.name == "research-intelligence") | .uuid] | if length == 1 then .[0] else empty end' <<<"$databases")
+          test -n "$database_id" || { echo 'Expected exactly one research-intelligence D1 database'; exit 1; }
+          echo "account_id=$account_id" >> "$GITHUB_OUTPUT"
+          echo "database_id=$database_id" >> "$GITHUB_OUTPUT"
       - name: Generate production Wrangler config
         env:
           D1_DATABASE_ID: ${{ steps.cloudflare.outputs.database_id }}
