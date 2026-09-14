@@ -1,3 +1,5 @@
+import pytest
+
 from backend.intelligence.claims import Claim
 from backend.intelligence.relationships import EvidenceRelation
 
@@ -11,3 +13,8 @@ def test_claim_and_relationship():
     assert claim.claim_id == "claim-001"
     assert claim.text == "Evidence should be traceable."
     assert EvidenceRelation.SUPPORTS.value == "supports"
+
+
+def test_claim_create_rejects_blank_text():
+    with pytest.raises(ValueError, match="claim text must not be empty"):
+        Claim.create("claim-blank", "   ")
