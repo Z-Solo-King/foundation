@@ -5,7 +5,6 @@ import hashlib
 import html.parser
 import json
 import os
-import re
 import socket
 import ssl
 import threading
@@ -13,9 +12,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from urllib.parse import urljoin, urlsplit, urlunsplit
+from urllib.parse import urlsplit, urlunsplit
 from urllib.request import Request, urlopen
-
 
 USER_AGENT = "ResearchIntelligenceEngine-Benchmark/2026.09"
 PRODUCT_HINTS = ("product", "itemprop=\"name\"", "productid", "sku", "add-to-cart", "price")
@@ -25,12 +23,10 @@ class _ProductParser(html.parser.HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.title_parts: list[str] = []
-        self.links: list[str] = []
         self.jsonld_blocks: list[str] = []
         self._in_title = False
         self._in_jsonld = False
         self._jsonld_parts: list[str] = []
-        self._capture_link = False
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         attr = dict(attrs)
@@ -39,8 +35,6 @@ class _ProductParser(html.parser.HTMLParser):
         if tag.lower() == "script" and attr.get("type", "").lower() == "application/ld+json":
             self._in_jsonld = True
             self._jsonld_parts = []
-        if tag.lower() == "a" and attr.get("href"):
-            self.links.append(attr["href"] or "")
 
     def handle_endtag(self, tag: str) -> None:
         if tag.lower() == "title":
@@ -119,13 +113,16 @@ def load_targets(path: Path) -> list[Target]:
             normalized = canonical_url(url)
         except ValueError:
             continue
-        unique.setdefault(target_key(normalized), Target(target_key(normalized), normalized, label))
+        key = target_key(normalized)
+        unique.setdefault(key, Target(key, normalized, label))
     if not unique:
         raise ValueError("no usable HTTP(S) targets found")
     return list(unique.values())
 
 
 def shard_for(key: str, shards: int) -> int:
+    if shards < 1:
+        raise ValueError("shards must be positive")
     return int(key[:16], 16) % shards
 
 
@@ -190,38 +187,55 @@ def fetch_target(target: Target, timeout: float = 20.0) -> Receipt:
 
 def run(input_path: str, output: str, run_id: str, shards: int, shard: int, workers: int, duration_minutes: int) -> int:
     targets = load_targets(Path(input_path))
+    if not 0 <= shard < shards:
+        raise ValueError(f"shard must be within [0, {shards})")
     selected = [t for t in targets if shard_for(t.key, shards) == shard]
     root = Path(output) / run_id
     root.mkdir(parents=True, exist_ok=True)
     receipt_path = root / f"shard-{shard}.jsonl"
+    summary_path = root / f"summary-{shard}.json"
     deadline = time.monotonic() + duration_minutes * 60
     lock = threading.Lock()
     counts = {"ok": 0, "empty": 0, "blocked": 0, "resource_limited": 0, "error": 0}
+    cycle = 0
+
     if not selected:
-        print(json.dumps({"run_id": run_id, "shard": shard, "selected": 0, "status_counts": counts}, sort_keys=True))
+        summary = {"run_id": run_id, "shard": shard, "shards": shards, "cycles": 0, "selected": 0, "status_counts": counts}
+        summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+        print(json.dumps(summary, sort_keys=True))
         return 0
 
-    # Repeat the finite corpus until the requested time window expires, while never exceeding the worker bound.
-    cycle = 0
-    with ThreadPoolExecutor(max_workers=max(1, min(workers, len(selected)))) as pool:
+    pool = ThreadPoolExecutor(max_workers=max(1, min(workers, len(selected))))
+    try:
+        # Stop scheduling new work at the deadline, but always allow the current cycle
+        # to finish so the final summary is persisted instead of being killed externally.
         while time.monotonic() < deadline:
             cycle += 1
             futures = {pool.submit(fetch_target, target): target for target in selected}
             for future in as_completed(futures):
                 receipt = future.result()
-                receipt = Receipt(run_id=run_id, shard=shard, shard_count=shards, **{k: getattr(receipt, k) for k in asdict(receipt) if k not in {"run_id", "shard", "shard_count"}})
+                receipt = Receipt(
+                    run_id=run_id,
+                    shard=shard,
+                    shard_count=shards,
+                    **{k: getattr(receipt, k) for k in asdict(receipt) if k not in {"run_id", "shard", "shard_count"}},
+                )
                 with lock:
                     with receipt_path.open("a", encoding="utf-8") as handle:
                         handle.write(json.dumps(asdict(receipt), ensure_ascii=False, separators=(",", ":")) + "\n")
                     counts[receipt.status] = counts.get(receipt.status, 0) + 1
+    finally:
+        pool.shutdown(wait=True, cancel_futures=True)
+
     summary = {"run_id": run_id, "shard": shard, "shards": shards, "cycles": cycle, "selected": len(selected), "status_counts": counts}
-    (root / f"summary-{shard}.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(json.dumps(summary, sort_keys=True))
     return 0
 
 
 def chatbot_enqueue_smoke() -> dict[str, object]:
     import tempfile
+
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         corpus = root / "corpus"
