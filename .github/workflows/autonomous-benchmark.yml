@@ -61,6 +61,7 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           import json
+          import sys
           from pathlib import Path
 
           root = Path('.runtime/benchmarks')
@@ -69,20 +70,22 @@ jobs:
               value = json.loads(path.read_text(encoding='utf-8'))
               rows.append(value)
 
+          selected = sum(int(row.get('selected') or 0) for row in rows)
           safe = {
               'schema': 'autonomous-public-benchmark-summary/v2',
               'run_id': '${{ github.run_id }}',
               'shard': ${{ matrix.shard }},
               'summaries': len(rows),
-              'selected_targets': sum(int(row.get('selected') or 0) for row in rows),
+              'selected_targets': selected,
               'cycles': sum(int(row.get('cycles') or 0) for row in rows),
               'status_counts': {},
           }
           for row in rows:
               for status, count in (row.get('status_counts') or {}).items():
                   safe['status_counts'][status] = safe['status_counts'].get(status, 0) + int(count)
-          test "${safe[summaries]}" -gt 0
-          test "${safe[selected_targets]}" -gt 0
+          if not rows or selected <= 0:
+              print(json.dumps(safe, indent=2))
+              raise SystemExit('benchmark produced no selected targets or summary')
           Path('benchmark-summary.json').write_text(json.dumps(safe, indent=2), encoding='utf-8')
           print(json.dumps(safe, indent=2))
           PY
