@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
   actions: read
 
 jobs:
@@ -87,28 +87,6 @@ jobs:
           test -n "$database_id" && test "$database_id" != null
           echo "database_id=$database_id" >> "$GITHUB_OUTPUT"
 
-      - name: Persist public D1 resource identifier
-        env:
-          D1_DATABASE_ID: ${{ steps.d1.outputs.database_id }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          current_id=$(sed -n 's/^database_id = "\(.*\)"$/\1/p' wrangler.toml | head -n 1)
-          current_name=$(sed -n 's/^database_name = "\(.*\)"$/\1/p' wrangler.toml | head -n 1)
-          test -n "$D1_DATABASE_ID"
-          if [[ "$current_id" != "$D1_DATABASE_ID" || "$current_name" != "research-intelligence" ]]; then
-            sed -i 's/database_name = "REPLACE_WITH_PUBLIC_DATABASE_NAME"/database_name = "research-intelligence"/' wrangler.toml
-            sed -i "s/database_id = \"REPLACE_WITH_D1_DATABASE_ID\"/database_id = \"${D1_DATABASE_ID}\"/" wrangler.toml
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add wrangler.toml
-            git commit -m "chore(cloudflare): persist public D1 binding identifier"
-            git push origin HEAD:main
-            echo 'Public D1 binding identifier updated in main; current run continues with generated production config.'
-          else
-            echo 'Public D1 binding identifier already matches live Cloudflare resource.'
-          fi
-
       - name: Generate deployment config
         env:
           D1_DATABASE_ID: ${{ steps.d1.outputs.database_id }}
@@ -137,6 +115,14 @@ STRICT_ZERO_COST_ONLY = "true"
 B2_BUCKET = "SoloKing"
 B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"
 EOF
+
+      - name: Validate generated deployment config
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q '^database_name = "research-intelligence"$' wrangler.production.generated.toml
+          database_id=$(sed -n 's/^database_id = "\(.*\)"$/\1/p' wrangler.production.generated.toml | head -n 1)
+          [[ "$database_id" =~ ^[0-9a-fA-F-]{36}$ ]] || { echo 'Generated config does not contain a valid D1 UUID'; exit 1; }
 
       - name: Apply remote D1 migrations
         env:
