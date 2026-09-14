@@ -18,6 +18,25 @@ REQUIRED_DEEP_STAGES = {
     "synthesize_answer",
 }
 
+SOURCE_ALIASES = {
+    "bilibili": "chinese_communities",
+    "zhihu": "chinese_communities",
+    "baidu_tieba": "chinese_communities",
+    "douban": "chinese_communities",
+    "ptt": "chinese_communities",
+    "social_communities": "social_communities",
+    "regional_communities": "social_communities",
+    "search_trends": "search_trends",
+    "retailers": "retailers",
+    "professional_reviews": "professional_reviews",
+    "price_stock": "price_stock",
+    "oem": "oem",
+    "amazon": "amazon",
+    "flipkart": "flipkart",
+    "reddit": "reddit",
+    "youtube": "youtube",
+}
+
 
 def load_queries(path: Path) -> list[dict[str, object]]:
     value = json.loads(path.read_text(encoding="utf-8"))
@@ -34,11 +53,12 @@ def run(path: Path, output: Path) -> int:
     for row in rows:
         query = str(row["query"])
         expected = {str(x) for x in row.get("required_sources", [])}
+        expected_families = {SOURCE_ALIASES.get(source, source) for source in expected}
         contract = ResearchContract(question=query, depth="deep", require_citations=True, max_sources=40, max_evidence_items=200)
         try:
             plan = create_plan(contract)
             families = {x for x in plan.metadata.get("required_source_families", "").split(",") if x}
-            missing = sorted(expected - families)
+            missing = sorted(expected_families - families)
             stages_ok = REQUIRED_DEEP_STAGES.issubset(set(plan.stages))
             temporal_expected = row.get("temporal") == "old_vs_new"
             temporal_ok = plan.metadata.get("temporal_reconciliation") == "true" if temporal_expected else True
@@ -50,8 +70,9 @@ def run(path: Path, output: Path) -> int:
                 "category": row.get("category", ""),
                 "passed": passed,
                 "required_sources": sorted(expected),
+                "required_source_families": sorted(expected_families),
                 "planned_sources": sorted(families),
-                "missing_sources": missing,
+                "missing_source_families": missing,
                 "temporal_expected": temporal_expected,
                 "temporal_planned": plan.metadata.get("temporal_reconciliation"),
                 "stages": list(plan.stages),
