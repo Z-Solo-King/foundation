@@ -7,12 +7,13 @@ import json
 import os
 import socket
 import ssl
-import threading
 import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
+from email.message import Message
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.parse import urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 
@@ -20,6 +21,9 @@ USER_AGENT = "ResearchIntelligenceEngine-Benchmark/2026.09"
 PRODUCT_HINTS = ("product", "itemprop=\"name\"", "productid", "sku", "add-to-cart", "price")
 TRANSIENT_HTTP = {408, 425, 429, 500, 502, 503, 504}
 MAX_ATTEMPTS = 2
+REQUEST_TIMEOUT_SECONDS = 20.0
+MAX_RESPONSE_BYTES = 2_000_000
+MIN_CYCLE_INTERVAL_SECONDS = 5.0
 
 
 class _ProductParser(html.parser.HTMLParser):
@@ -141,7 +145,9 @@ def _classify(status: int, body: bytes, diagnostics: list[str]) -> tuple[str, in
     title = " ".join(" ".join(parser.title_parts).split())[:300]
     if status in {401, 403}:
         result = "blocked"
-    elif status == 429 or status >= 500:
+    elif status == 429:
+        result = "resource_limited"
+    elif status >= 500:
         result = "error"
     elif 400 <= status < 500:
         result = "error"
@@ -154,7 +160,16 @@ def _classify(status: int, body: bytes, diagnostics: list[str]) -> tuple[str, in
     return result, len(body), title, product_candidates, jsonld, 1
 
 
-def fetch_target(target: Target, timeout: float = 20.0) -> Receipt:
+def _retry_after(headers: Message | None) -> float:
+    if headers is None:
+        return 0.0
+    try:
+        return min(max(float(headers.get("Retry-After", "0")), 0.0), 30.0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def fetch_target(target: Target, timeout: float = REQUEST_TIMEOUT_SECONDS) -> Receipt:
     started = time.perf_counter()
     diagnostics: list[str] = []
     last_status = 0
@@ -174,31 +189,25 @@ def fetch_target(target: Target, timeout: float = 20.0) -> Receipt:
             )
             with urlopen(request, timeout=timeout, context=ssl.create_default_context()) as response:
                 last_status = int(getattr(response, "status", 200))
-                last_body = response.read(2_000_000)
-            transient = last_status in TRANSIENT_HTTP
-            if transient and attempt < MAX_ATTEMPTS:
+                last_body = response.read(MAX_RESPONSE_BYTES)
+            if last_status in TRANSIENT_HTTP and attempt < MAX_ATTEMPTS:
                 diagnostics.append(f"retry:http-{last_status}")
                 time.sleep(0.25 * attempt)
                 continue
-            result, size, title, candidates, jsonld, pages = _classify(last_status, last_body, diagnostics)
-            return Receipt(
-                run_id="",
-                shard=0,
-                shard_count=1,
-                key=target.key,
-                url=target.url,
-                status=result,
-                http_status=last_status,
-                elapsed_ms=int((time.perf_counter() - started) * 1000),
-                bytes_read=size,
-                pages_fetched=pages,
-                title=title,
-                product_candidates=candidates,
-                jsonld_blocks=jsonld,
-                diagnostics=tuple(diagnostics),
-                recorded_at=int(time.time()),
-            )
-        except (TimeoutError, socket.timeout) as exc:
+            break
+        except HTTPError as exc:
+            last_status = int(exc.code)
+            try:
+                last_body = exc.read(MAX_RESPONSE_BYTES)
+                if last_status in {429, 503} and attempt < MAX_ATTEMPTS:
+                    retry_after = _retry_after(exc.headers)
+                    diagnostics.append(f"retry:http-{last_status}")
+                    time.sleep(retry_after or (0.5 * attempt))
+                    continue
+            finally:
+                exc.close()
+            break
+        except (TimeoutError, socket.timeout):
             final_error = "timeout"
             diagnostics.append(f"attempt-{attempt}:timeout")
             if attempt < MAX_ATTEMPTS:
@@ -215,7 +224,19 @@ def fetch_target(target: Target, timeout: float = 20.0) -> Receipt:
             diagnostics.append(f"attempt-{attempt}:{final_error}")
             break
 
-    result = "resource_limited" if final_error == "timeout" else "error"
+    if last_status:
+        result, size, title, candidates, jsonld, pages = _classify(last_status, last_body, diagnostics)
+    else:
+        result, size, title, candidates, jsonld, pages = (
+            "resource_limited" if final_error == "timeout" else "error",
+            len(last_body),
+            "",
+            0,
+            0,
+            0,
+        )
+
+    diagnostics.append(f"attempts-{attempt}")
     return Receipt(
         run_id="",
         shard=0,
@@ -225,11 +246,11 @@ def fetch_target(target: Target, timeout: float = 20.0) -> Receipt:
         status=result,
         http_status=last_status,
         elapsed_ms=int((time.perf_counter() - started) * 1000),
-        bytes_read=len(last_body),
-        pages_fetched=0,
-        title="",
-        product_candidates=0,
-        jsonld_blocks=0,
+        bytes_read=size,
+        pages_fetched=pages,
+        title=title,
+        product_candidates=candidates,
+        jsonld_blocks=jsonld,
         diagnostics=tuple(diagnostics),
         recorded_at=int(time.time()),
     )
@@ -251,7 +272,16 @@ def run(input_path: str, output: str, run_id: str, shards: int, shard: int, work
     cycle = 0
 
     if not selected:
-        summary = {"run_id": run_id, "shard": shard, "shards": shards, "cycles": 0, "selected": 0, "status_counts": counts, "http_status_counts": {}, "diagnostic_counts": {}}
+        summary = {
+            "run_id": run_id,
+            "shard": shard,
+            "shards": shards,
+            "cycles": 0,
+            "selected": 0,
+            "status_counts": counts,
+            "http_status_counts": {},
+            "diagnostic_counts": {},
+        }
         summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
         print(json.dumps(summary, sort_keys=True))
         return 0
@@ -260,6 +290,7 @@ def run(input_path: str, output: str, run_id: str, shards: int, shard: int, work
     try:
         while time.monotonic() < deadline:
             cycle += 1
+            cycle_started = time.monotonic()
             futures = {pool.submit(fetch_target, target): target for target in selected}
             for future in as_completed(futures):
                 receipt = future.result()
@@ -276,6 +307,9 @@ def run(input_path: str, output: str, run_id: str, shards: int, shard: int, work
                     http_counts[str(receipt.http_status)] += 1
                 for diagnostic in receipt.diagnostics:
                     diagnostic_counts[diagnostic] += 1
+            remaining = MIN_CYCLE_INTERVAL_SECONDS - (time.monotonic() - cycle_started)
+            if remaining > 0 and time.monotonic() < deadline:
+                time.sleep(min(remaining, max(0.0, deadline - time.monotonic())))
     finally:
         pool.shutdown(wait=True, cancel_futures=True)
 
@@ -288,6 +322,8 @@ def run(input_path: str, output: str, run_id: str, shards: int, shard: int, work
         "status_counts": counts,
         "http_status_counts": dict(sorted(http_counts.items())),
         "diagnostic_counts": dict(sorted(diagnostic_counts.items())),
+        "min_cycle_interval_seconds": MIN_CYCLE_INTERVAL_SECONDS,
+        "max_attempts": MAX_ATTEMPTS,
     }
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(json.dumps(summary, sort_keys=True))
