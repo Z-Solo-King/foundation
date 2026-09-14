@@ -33,8 +33,6 @@ class MultiAgentCoordinator:
     @staticmethod
     def _select_agents(program: ResearchProgram, budget: int) -> tuple[AgentSpec, ...]:
         budget = max(1, min(budget, len(program.agent_specs), 10))
-        # Preserve reconciliation/evaluation whenever the budget permits them; fill the
-        # remaining slots by priority so small teams still have high-value evidence roles.
         finals = [a for a in program.agent_specs if a.role in {"reconciler", "evaluator"}]
         evidence = [a for a in program.agent_specs if a.role not in {"reconciler", "evaluator"}]
         evidence.sort(key=lambda a: (-a.priority, a.agent_id))
@@ -49,9 +47,6 @@ class MultiAgentCoordinator:
             started = datetime.now(timezone.utc)
             try:
                 result = await self.executor(program, agent, context)
-                # Adapters may return precise timestamps; normalize missing/invalid durations.
-                if result.started_at > started:
-                    return result
                 return result
             except Exception as exc:
                 return AgentResult(agent.agent_id, "failed", started, datetime.now(timezone.utc), note=f"{type(exc).__name__}: {exc}")
@@ -108,51 +103,78 @@ class MultiAgentCoordinator:
         return result
 
     async def run_programs(self, programs: tuple[ResearchProgram, ...], *, context: dict[str, object] | None = None) -> list[ProgramResult]:
-        """Compatibility helper; use DynamicResearchScheduler for capacity-aware packing."""
-        return list(await asyncio.gather(*(self.run_program(program, context=context) for program in programs)))
+        scheduler = DynamicResearchScheduler(self)
+        return await scheduler.run(programs, context=context)
 
 
 class DynamicResearchScheduler:
-    """Greedy capacity packing with immediate capacity reuse as research completes."""
+    """Pack research programs into a hard global agent budget and refill capacity immediately."""
+
+    CATEGORY_BUDGETS = {
+        "acquisition": 6,
+        "mapper": 7,
+        "chatbot": 8,
+        "search": 5,
+        "models": 5,
+        "agents": 7,
+        "architecture": 7,
+        "infrastructure": 6,
+        "performance": 6,
+        "alternatives": 6,
+        "evaluation": 4,
+    }
 
     def __init__(self, coordinator: MultiAgentCoordinator) -> None:
         self.coordinator = coordinator
 
+    def estimate_agents(self, program: ResearchProgram) -> int:
+        return max(1, min(10, self.CATEGORY_BUDGETS.get(program.category, program.agent_budget_hint)))
+
     @staticmethod
     def _priority(program: ResearchProgram) -> tuple[int, int, str]:
-        return (program.agent_budget_hint, program.slot, program.program_id)
+        return (program.slot, program.agent_budget_hint, program.program_id)
 
     async def run(self, programs: tuple[ResearchProgram, ...], *, context: dict[str, object] | None = None) -> list[ProgramResult]:
         pending = list(sorted(programs, key=self._priority))
+        running: dict[asyncio.Task[ProgramResult], tuple[ResearchProgram, int]] = {}
+        used = 0
         results: list[ProgramResult] = []
-        capacity = self.coordinator.global_active_agents
-        while pending:
-            batch: list[tuple[ResearchProgram, int]] = []
-            remaining = capacity
-            skipped: list[ResearchProgram] = []
-            for program in pending:
-                needed = min(program.agent_budget_hint, len(program.agent_specs), 10)
-                if needed <= remaining:
-                    batch.append((program, needed))
-                    remaining -= needed
-                else:
-                    skipped.append(program)
-            if not batch:
-                # A single program is always allowed to consume the whole budget, but never >10.
-                program = min(pending, key=lambda p: (p.agent_budget_hint, p.program_id))
-                batch = [(program, min(program.agent_budget_hint, capacity, 10))]
-                skipped = [candidate for candidate in pending if candidate.program_id != program.program_id]
-            pending = skipped
-            wave = await asyncio.gather(*(
-                self.coordinator.run_program(program, context=context, agent_budget=budget)
-                for program, budget in batch
-            ))
-            results.extend(wave)
+
+        while pending or running:
+            made_progress = True
+            while pending and made_progress:
+                made_progress = False
+                for index, program in enumerate(pending):
+                    needed = self.estimate_agents(program)
+                    if needed <= self.coordinator.global_active_agents - used:
+                        pending.pop(index)
+                        task = asyncio.create_task(
+                            self.coordinator.run_program(program, context=context, agent_budget=needed)
+                        )
+                        running[task] = (program, needed)
+                        used += needed
+                        made_progress = True
+                        break
+
+            if not running:
+                # A valid program is always <=10 and the global limit is >=1.
+                program = pending.pop(0)
+                needed = min(self.estimate_agents(program), self.coordinator.global_active_agents, 10)
+                task = asyncio.create_task(self.coordinator.run_program(program, context=context, agent_budget=needed))
+                running[task] = (program, needed)
+                used += needed
+
+            done, _ = await asyncio.wait(tuple(running), return_when=asyncio.FIRST_COMPLETED)
+            for task in done:
+                program, reserved = running.pop(task)
+                used -= reserved
+                results.append(task.result())
+
         return results
 
 
 class CapacityExperiment:
-    """Run the same research at two agent budgets to measure marginal value."""
+    """Run the same research at two agent budgets to measure marginal value, time and duplication."""
 
     def __init__(self, coordinator: MultiAgentCoordinator) -> None:
         self.coordinator = coordinator
