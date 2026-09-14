@@ -3,8 +3,7 @@ import hashlib
 
 import pytest
 
-from backend.evaluation.entailment import EntailmentStatus, verify_claim_entailment
-from backend.evaluation.harness import BenchmarkCase, EvaluationCategory, EvaluationHarness, EvaluationResult
+from backend.intelligence.entailment import EntailmentStatus, verify_claim_entailment
 from backend.evidence_certificate import EvidenceCertificate as PublicCertificate, verify_certificate as verify_public_certificate
 from backend.execution.acquisition import choose_method, reserve_acquisition
 from backend.execution.adaptive import choose_strategy
@@ -30,18 +29,6 @@ def test_entailment_threshold_and_negation_edges():
     assert verify_claim_entailment("", obs, EvidenceSpan("o", 0, 0)).status == EntailmentStatus.UNSUPPORTED
     assert verify_claim_entailment("product maybe", obs, EvidenceSpan("o", 0, 7), supported_threshold=0.99, ambiguous_threshold=0.1).status == EntailmentStatus.AMBIGUOUS
     assert verify_claim_entailment("unrelated", obs, EvidenceSpan("o", 0, 18), supported_threshold=0.9, ambiguous_threshold=0.8).status == EntailmentStatus.UNSUPPORTED
-
-
-def test_evaluation_harness_readiness_edges():
-    harness = EvaluationHarness()
-    case = BenchmarkCase("edge", EvaluationCategory.RETRIEVAL, "d", "q", "a")
-    harness.register_case(case)
-    assert harness.bootstrap_readiness()[0] is False
-    assert harness.production_readiness()[0] is False
-    with pytest.raises(ValueError): harness.regression_test("missing", lambda c: EvaluationResult(c.case_id, True))
-    for i in range(10):
-        cid = f"prod-{i}"; harness.register_case(BenchmarkCase(cid, EvaluationCategory.SECURITY, "d", "q", "a")); harness.record_result(cid, EvaluationResult(cid, False))
-    assert harness.production_readiness()[0] is False
 
 
 def test_public_evidence_certificate_mismatches():
