@@ -31,6 +31,17 @@ class FakeDB:
         return self.batch_result
 
 
+class FakeArtifacts:
+    async def put(self, key, content, **kwargs):
+        return None
+
+    async def get(self, key):
+        return None
+
+    async def delete(self, key):
+        return None
+
+
 def request():
     return ResearchRequest(
         question="coverage regression",
@@ -44,7 +55,8 @@ def request():
 
 
 def persistence(db):
-    return CloudflarePersistence(SimpleNamespace(DB=db, ARTIFACTS=None))
+    # Avoid constructing a real B2 adapter. These tests target D1 lifecycle guards only.
+    return CloudflarePersistence(SimpleNamespace(DB=db, ARTIFACTS=FakeArtifacts()))
 
 
 @pytest.mark.asyncio
