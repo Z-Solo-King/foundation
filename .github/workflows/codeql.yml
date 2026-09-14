@@ -91,3 +91,40 @@ jobs:
             -H 'Content-Type: application/json' \
             "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database" \
             | jq -e '[.result[]? | select(.name == "research-intelligence")] | length == 1' >/dev/null
+      - name: Generate production Wrangler config
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          databases=$(curl -fsS \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database")
+          database_id=$(jq -r '[.result[]? | select(.name == "research-intelligence") | .uuid] | if length == 1 then .[0] else empty end' <<<"$databases")
+          test -n "$database_id"
+          cat > wrangler.production.generated.toml <<EOF
+name = "research-intelligence-engine-public"
+main = "worker.py"
+compatibility_date = "2026-09-09"
+compatibility_flags = ["python_workers"]
+workers_dev = true
+preview_urls = false
+
+[[d1_databases]]
+binding = "DB"
+database_name = "research-intelligence"
+database_id = "${database_id}"
+
+[secrets]
+required = ["AUTH_TOKEN", "B2_KEY_ID", "B2_APPLICATION_KEY"]
+
+[vars]
+ENVIRONMENT = "production"
+STRICT_ZERO_COST_ONLY = "true"
+B2_BUCKET = "SoloKing"
+B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"
+EOF
+          grep -q '^database_name = "research-intelligence"$' wrangler.production.generated.toml
+          grep -Eq '^database_id = "[0-9a-fA-F-]{36}"$' wrangler.production.generated.toml
