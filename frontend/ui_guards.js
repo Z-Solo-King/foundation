@@ -10,6 +10,8 @@
     catch { return fallback; }
   };
   const write = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+  const activeChatId = () => document.querySelector('[data-chat].active')?.dataset.chat || null;
+
   const reloadToChat = (chatId) => {
     const chats = read(CHAT_KEY, []);
     const index = chats.findIndex((chat) => chat.id === chatId);
@@ -35,35 +37,64 @@
   function openSaved(messageId) {
     const saved = read(SAVED_KEY, []);
     const item = saved.find((entry) => entry.messageId === messageId);
-    if (!item) return;
-    if (!reloadToChat(item.chatId)) {
-      window.alert('The saved message no longer has an available chat.');
+    if (!item || !item.chatId) {
+      window.alert('This saved item is missing its owning chat.');
+      return;
     }
+    reloadToChat(item.chatId);
+  }
+
+  function saveVisibleMessage(messageId) {
+    const chatId = activeChatId();
+    if (!chatId) return;
+    const chats = read(CHAT_KEY, []);
+    const chat = chats.find((item) => item.id === chatId);
+    const message = chat?.messages?.find((item) => item.id === messageId);
+    if (!message) return;
+
+    const saved = read(SAVED_KEY, []);
+    const existing = saved.find((item) => item.messageId === messageId);
+    if (existing) {
+      write(SAVED_KEY, saved.filter((item) => item.messageId !== messageId));
+      message.meta = { ...(message.meta || {}), saved: false };
+    } else {
+      saved.unshift({
+        id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
+        messageId,
+        chatId,
+        text: message.text,
+        at: Date.now()
+      });
+      message.meta = { ...(message.meta || {}), saved: true };
+      write(SAVED_KEY, saved);
+    }
+    write(CHAT_KEY, chats);
+    const node = document.querySelector(`[data-ui-guard-save="${CSS.escape(messageId)}"]`);
+    if (node) node.textContent = existing ? 'Save' : 'Saved';
+  }
+
+  function stampMessageIds() {
+    const chatId = activeChatId();
+    if (!chatId) return;
+    const chat = read(CHAT_KEY, []).find((item) => item.id === chatId);
+    if (!chat) return;
+    const nodes = document.querySelectorAll('#conversation-scroll article.message');
+    nodes.forEach((node, index) => {
+      const message = chat.messages?.[index];
+      if (message) node.dataset.messageId = message.id;
+    });
   }
 
   function addSaveControls() {
     const articles = document.querySelectorAll('#conversation-scroll article.message');
     articles.forEach((article) => {
-      if (article.querySelector('[data-ui-guard-save]')) return;
-      const bubble = article.querySelector('.message-bubble');
       const id = article.dataset.messageId;
-      if (!bubble || !id) return;
-      const controls = document.createElement('div');
-      controls.innerHTML = `<button class="secondary" data-ui-guard-save="${id}">Save</button>`;
-      article.appendChild(controls.firstElementChild);
-    });
-  }
-
-  function stampMessageIds() {
-    const chats = read(CHAT_KEY, []);
-    const activeId = chats[0]?.id;
-    if (!activeId) return;
-    const active = chats.find((chat) => chat.id === activeId);
-    if (!active) return;
-    const nodes = document.querySelectorAll('#conversation-scroll article.message');
-    nodes.forEach((node, index) => {
-      const message = active.messages?.[index];
-      if (message) node.dataset.messageId = message.id;
+      if (!id || article.querySelector('[data-ui-guard-save]')) return;
+      const button = document.createElement('button');
+      button.className = 'secondary';
+      button.dataset.uiGuardSave = id;
+      button.textContent = 'Save';
+      article.appendChild(button);
     });
   }
 
@@ -80,6 +111,12 @@
       event.preventDefault();
       openSaved(saved.dataset.savedMessage);
       return;
+    }
+
+    const saveButton = event.target.closest('[data-ui-guard-save]');
+    if (saveButton) {
+      event.preventDefault();
+      saveVisibleMessage(saveButton.dataset.uiGuardSave);
     }
   });
 
