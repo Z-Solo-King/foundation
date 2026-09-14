@@ -1,7 +1,9 @@
 (() => {
-  const state = { chats: [], activeChatId: null, queue: [], processing: false, research: null, backendOk: false, attachments: [] };
+  const state = {
+    chats: [], activeChatId: null, queue: [], processing: false, research: null, backendOk: false,
+    attachments: [], projects: [], activeProjectId: null, saved: [], view: 'chats', sessionToken: ''
+  };
   const $ = (id) => document.getElementById(id);
-  const root = document.documentElement;
   const sidebar = $('sidebar'), overlay = document.querySelector('.mobile-overlay');
   const workspace = $('workspace'), workspaceBody = $('workspace-body');
   const conversation = $('conversation-scroll'), prompt = $('prompt'), search = $('chat-search');
@@ -9,134 +11,43 @@
   const queuePanel = $('message-queue'), queueList = $('queue-list'), queueCount = $('queue-count'), queueStatus = $('queue-status');
   const toast = $('toast'), connectionPill = $('connection-pill'), mobileTitle = $('mobile-title');
   const API_BASE = (document.body.dataset.apiBase || '').replace(/\/$/, '');
-  const STORAGE_KEY = 'rie.frontend.chats.v1';
-
-  const showToast = (message) => { toast.textContent = message; toast.classList.add('show'); clearTimeout(showToast.timer); showToast.timer = setTimeout(() => toast.classList.remove('show'), 1800); };
-  const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-  const currentMode = () => document.querySelector('.mode.active')?.dataset.mode || 'chat';
-  const apiUrl = (path) => `${API_BASE}${path}`;
-  const saveChats = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(state.chats));
-  const loadChats = () => { try { state.chats = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { state.chats = []; } };
-
-  function newChat() {
-    const chat = { id: crypto.randomUUID?.() || `${Date.now()}`, title: 'New chat', messages: [], createdAt: Date.now() };
-    state.chats.unshift(chat); state.activeChatId = chat.id; state.research = null; saveChats(); render(); prompt.focus();
-  }
-  function activeChat() { return state.chats.find(c => c.id === state.activeChatId); }
-  function ensureChat() { if (!state.activeChatId || !activeChat()) newChat(); return activeChat(); }
-  function addMessage(role, text, meta = {}) { const chat = ensureChat(); chat.messages.push({ id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`, role, text, meta, at: Date.now() }); if (role === 'user' && chat.title === 'New chat') chat.title = text.slice(0, 48); saveChats(); }
-
-  function renderChats() {
-    const list = $('chat-list');
-    const q = search.value.trim().toLowerCase();
-    list.innerHTML = state.chats.filter(c => !q || c.title.toLowerCase().includes(q)).slice(0, 50).map(c => `<button class="chat-row ${c.id === state.activeChatId ? 'active' : ''}" data-chat="${c.id}"><span class="chat-icon">✦</span><span><strong>${escapeHtml(c.title)}</strong><small>${new Date(c.createdAt).toLocaleDateString()}</small></span></button>`).join('');
-  }
-  function renderConversation() {
-    const chat = activeChat();
-    mobileTitle.textContent = chat?.title || 'New chat';
-    if (!chat || chat.messages.length === 0) { conversation.innerHTML = ''; conversation.append(emptyState); emptyState.hidden = false; return; }
-    emptyState.hidden = true;
-    conversation.innerHTML = chat.messages.map(m => `<article class="message ${m.role === 'user' ? 'user-message' : 'assistant-message'}"><div class="message-bubble">${escapeHtml(m.text)}</div>${m.meta?.sources?.length ? `<div class="source-list">${m.meta.sources.map((s,i)=>`<div><span>${i+1}</span><a href="${escapeHtml(s.url || '#')}" target="_blank" rel="noreferrer">${escapeHtml(s.url || 'source')}</a><small>${escapeHtml(s.access_state || '')}</small></div>`).join('')}</div>` : ''}</article>`).join('');
-    conversation.scrollTop = conversation.scrollHeight;
-  }
-  function render() { renderChats(); renderConversation(); renderQueue(); renderResearch(); }
-
-  function renderQueue() { queueCount.textContent = state.queue.length; queueCount.hidden = !state.queue.length; queueStatus.textContent = state.queue.length ? `${state.queue.length} waiting` : 'Nothing waiting'; queueList.innerHTML = state.queue.map((q,i)=>`<div class="queue-item"><b>${i+1}</b><div><strong>${q.mode}</strong><p>${escapeHtml(q.text)}</p></div><button data-remove-queue="${q.id}">×</button></div>`).join(''); }
-  function openQueue() { queuePanel.classList.add('open'); queuePanel.setAttribute('aria-hidden','false'); document.querySelector('.queue-overlay').classList.add('show'); renderQueue(); }
-  function closeQueue() { queuePanel.classList.remove('open'); queuePanel.setAttribute('aria-hidden','true'); document.querySelector('.queue-overlay').classList.remove('show'); }
-  function openSidebar() { sidebar.classList.add('open'); overlay.classList.add('show'); }
-  function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('show'); }
-  function openWorkspace() { workspace.classList.add('open'); }
-  function closeWorkspace() { workspace.classList.remove('open'); }
-
-  async function backendCheck() {
-    if (!API_BASE) { setBackend(false, 'API base not configured'); return false; }
-    try { const r = await fetch(apiUrl('/readiness'), { headers: { Accept: 'application/json' } }); setBackend(r.ok, r.ok ? 'Backend ready' : `Backend ${r.status}`); return r.ok; }
-    catch { setBackend(false, 'Backend unavailable'); return false; }
-  }
-  function setBackend(ok, text) { state.backendOk = ok; connectionPill.textContent = text; connectionPill.classList.toggle('ok', ok); }
-
-  async function submitResearch(question) {
-    if (!API_BASE) throw new Error('Research API base is not configured');
-    const chat = ensureChat();
-    addMessage('user', question);
-    renderConversation();
-    const payload = { question, depth: 'standard', require_citations: true, max_sources: 8, max_evidence_items: 24, strict_zero_cost_only: true, source_urls: [] };
-    const response = await fetch(apiUrl('/api/v1/research'), { method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'}, body:JSON.stringify(payload) });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok || !body.ok) throw new Error(body.error || `Research request failed (${response.status})`);
-    state.research = { runId: body.run_id, status: 'submitted', metadata: body.metadata || {}, sources: body.sources || [] };
-    renderResearch();
-    addMessage('assistant', `Research run ${body.run_id} submitted. Tracking backend observations.`, { runId: body.run_id, sources: body.sources || [] });
-    renderConversation();
-    void pollResearch(body.run_id);
-    return body;
-  }
-
-  async function pollResearch(runId) {
-    if (!API_BASE) return;
-    for (let i = 0; i < 30; i++) {
-      await new Promise(r => setTimeout(r, 1500));
-      try {
-        const r = await fetch(apiUrl(`/api/v1/research/${encodeURIComponent(runId)}`), { headers:{Accept:'application/json'} });
-        if (!r.ok) throw new Error(`status ${r.status}`);
-        const body = await r.json();
-        state.research = { ...state.research, status:'observed', run:body.run, observations:body.observations || [] };
-        renderResearch();
-        const chat = activeChat();
-        if (chat && !chat.messages.some(m => m.meta?.runId === runId && m.meta?.final)) {
-          const observations = (body.observations || []).map(o => ({ url:o.url, access_state:o.access_state }));
-          addMessage('assistant', `Research run ${runId} returned ${observations.length} observed source record(s).`, { runId, sources:observations, final:true });
-          renderConversation();
-        }
-        return body;
-      } catch (err) { state.research = { ...state.research, status:'polling', error:String(err.message || err) }; renderResearch(); }
-    }
-    state.research = { ...state.research, status:'timeout' }; renderResearch();
-  }
-
-  function renderResearch() {
-    if (!state.research) { workspaceBody.innerHTML = '<div class="workspace-card"><strong>No active research run</strong><p>Switch to Research mode to submit a real run.</p></div>'; return; }
-    const r = state.research;
-    const obs = (r.observations || []).map(o => `<div class="evidence-row"><span>●</span><div><strong>${escapeHtml(o.url || 'source')}</strong><small>${escapeHtml(o.access_state || o.retrieval_method || 'observed')}</small></div></div>`).join('');
-    workspaceBody.innerHTML = `<section class="workspace-card accent-card"><div class="card-head"><span>Current task</span><b>${escapeHtml(r.status)}</b></div><h3>${escapeHtml(r.runId || 'pending')}</h3><p>Backend research lifecycle with bounded polling. Strict $0 mode remains enabled.</p></section><section class="workspace-card"><div class="card-head"><span>Evidence</span><span>${(r.observations||[]).length}</span></div>${obs || '<p>No observation records returned yet.</p>'}</section>`;
-  }
-
-  async function send() {
-    const text = prompt.value.trim(); if (!text) return; prompt.value=''; prompt.style.height='auto';
-    if (currentMode() === 'research') { try { composerStatus.textContent='Submitting research run…'; await submitResearch(text); composerStatus.textContent='Research run is being tracked in the workspace.'; } catch (e) { addMessage('assistant', `Research could not be submitted: ${e.message}`); renderConversation(); composerStatus.textContent='Research submission failed; inspect the backend status.'; } return; }
-    addMessage('user', text); addMessage('assistant', 'This local chat message is stored in this browser. Full conversational backend streaming is not yet exposed by Foundation.'); render();
-  }
-
-  function enqueue(text) { state.queue.push({id:crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`, text, mode:currentMode()}); renderQueue(); if (!state.processing) processQueue(); }
-  async function processQueue() { if (state.processing) return; state.processing=true; while(state.queue.length){ const item=state.queue.shift(); renderQueue(); if(item.mode==='research'){ try{ await submitResearch(item.text); } catch(e){ addMessage('assistant',`Queued research failed: ${e.message}`); renderConversation(); } } else { addMessage('user',item.text); addMessage('assistant','Queued local chat message processed. Full conversational backend streaming is not yet exposed.'); renderConversation(); } } state.processing=false; renderQueue(); }
-
-  function handleAction(action) {
-    if (action==='new-chat') return newChat();
-    if (action==='open-sidebar') return openSidebar();
-    if (action==='close-sidebar') return closeSidebar();
-    if (action==='open-queue') return openQueue();
-    if (action==='close-queue') return closeQueue();
-    if (action==='close-workspace') return closeWorkspace();
-    if (action==='backend-check') return backendCheck();
-    if (action==='attachments') { const input=document.createElement('input'); input.type='file'; input.multiple=true; input.onchange=()=>{state.attachments=[...input.files]; showToast(`${state.attachments.length} file(s) selected locally`);}; input.click(); return; }
-    if (action==='voice') { if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) { const Rec=window.SpeechRecognition||window.webkitSpeechRecognition; const rec=new Rec(); rec.lang='en-IN'; rec.onresult=e=>{prompt.value=e.results[0][0].transcript; prompt.dispatchEvent(new Event('input'));}; rec.start(); showToast('Listening…'); } else showToast('Voice input is not available in this browser'); return; }
-    if (action==='send') return send();
-    if (action==='clear-queue') { state.queue=[]; renderQueue(); return; }
-    if (action==='search') return openSidebar();
-  }
-
-  document.addEventListener('click', (event) => {
-    const action = event.target.closest('[data-action]'); if(action) { event.preventDefault(); handleAction(action.dataset.action); }
-    const chat = event.target.closest('[data-chat]'); if(chat){ state.activeChatId=chat.dataset.chat; closeSidebar(); render(); }
-    const starter = event.target.closest('[data-starter]'); if(starter){ document.querySelector('[data-mode="research"]').click(); prompt.value=starter.dataset.starter; prompt.focus(); }
-    const mode = event.target.closest('[data-mode]'); if(mode){ document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===mode)); composerStatus.textContent=mode.dataset.mode==='research'?'Research submits to the real Worker API and tracks the run.':'Chat stays local until a conversational backend exists.'; }
-    const remove = event.target.closest('[data-remove-queue]'); if(remove){ state.queue=state.queue.filter(q=>q.id!==remove.dataset.removeQueue); renderQueue(); }
-  });
-  prompt.addEventListener('keydown', e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault(); send();} });
-  prompt.addEventListener('input', ()=>{prompt.style.height='auto';prompt.style.height=`${Math.min(prompt.scrollHeight,130)}px`;});
-  search.addEventListener('input', renderChats);
-  window.addEventListener('keydown', e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();prompt.focus();} if(e.key==='Escape'){closeSidebar();closeQueue();closeWorkspace();}});
-
-  loadChats(); if(state.chats.length) state.activeChatId=state.chats[0].id; else newChat(); render(); backendCheck();
+  const CHAT_KEY='rie.frontend.chats.v2', PROJECT_KEY='rie.frontend.projects.v1', SAVED_KEY='rie.frontend.saved.v1', SETTINGS_KEY='rie.frontend.settings.v1';
+  const uuid=()=>crypto.randomUUID?.()||`${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const escapeHtml=(v)=>String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const currentMode=()=>document.querySelector('.mode.active')?.dataset.mode||'chat';
+  const apiUrl=(path)=>`${API_BASE}${path}`;
+  const showToast=(message)=>{toast.textContent=message;toast.classList.add('show');clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>toast.classList.remove('show'),1800);};
+  const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}catch{return fallback;}};
+  const save=()=>{localStorage.setItem(CHAT_KEY,JSON.stringify(state.chats));localStorage.setItem(PROJECT_KEY,JSON.stringify(state.projects));localStorage.setItem(SAVED_KEY,JSON.stringify(state.saved));};
+  function load(){state.chats=read(CHAT_KEY,[]);state.projects=read(PROJECT_KEY,[]);state.saved=read(SAVED_KEY,[]);if(state.chats.length)state.activeChatId=state.chats[0].id;}
+  function newChat(){const chat={id:uuid(),title:'New chat',messages:[],createdAt:Date.now(),projectId:state.activeProjectId||null};state.chats.unshift(chat);state.activeChatId=chat.id;state.research=null;state.view='chats';save();render();prompt.focus();}
+  function activeChat(){return state.chats.find(c=>c.id===state.activeChatId);}
+  function ensureChat(){if(!state.activeChatId||!activeChat())newChat();return activeChat();}
+  function addMessage(role,text,meta={}){const chat=ensureChat();const message={id:uuid(),role,text,meta,at:Date.now()};chat.messages.push(message);if(role==='user'&&chat.title==='New chat')chat.title=text.slice(0,48);save();return message;}
+  function renderChats(){const list=$('chat-list');const q=search.value.trim().toLowerCase();list.innerHTML=state.chats.filter(c=>!q||c.title.toLowerCase().includes(q)).slice(0,50).map(c=>`<button class="chat-row ${c.id===state.activeChatId?'active':''}" data-chat="${c.id}"><span class="chat-icon">✦</span><span><strong>${escapeHtml(c.title)}</strong><small>${new Date(c.createdAt).toLocaleDateString()}</small></span></button>`).join('');}
+  function renderConversation(){if(state.view!=='chats'){renderView();return;}const chat=activeChat();mobileTitle.textContent=chat?.title||'New chat';if(!chat||chat.messages.length===0){conversation.innerHTML='';conversation.append(emptyState);emptyState.hidden=false;return;}emptyState.hidden=true;conversation.innerHTML=chat.messages.map(m=>`<article class="message ${m.role==='user'?'user-message':'assistant-message'}"><div class="message-bubble">${escapeHtml(m.text)}</div><div>${m.meta?.saved?'<small>Saved</small> ':''}${m.meta?.runId?`<button class="secondary" data-save-message="${m.id}">${m.meta.saved?'Saved':'Save'}</button>`:''}</div>${m.meta?.sources?.length?`<div class="source-list">${m.meta.sources.map((s,i)=>`<div><span>${i+1}</span><a href="${escapeHtml(s.url||'#')}" target="_blank" rel="noreferrer">${escapeHtml(s.url||'source')}</a><small>${escapeHtml(s.access_state||'')}</small></div>`).join('')}</div>`:''}</article>`).join('');conversation.scrollTop=conversation.scrollHeight;}
+  function renderView(){mobileTitle.textContent=state.view[0].toUpperCase()+state.view.slice(1);emptyState.hidden=true;if(state.view==='projects'){conversation.innerHTML=`<div class="message"><h2>Projects</h2><p>Browser-local project organization until a server project API exists.</p><button class="new-chat-button" data-action="new-project">＋ New project</button>${state.projects.map(p=>`<div class="workspace-card" style="margin-top:10px"><div class="card-head"><strong>${escapeHtml(p.name)}</strong><button class="secondary" data-project="${p.id}">Open</button></div><p>${state.chats.filter(c=>c.projectId===p.id).length} chat(s)</p></div>`).join('')}</div>`;return;}if(state.view==='saved'){conversation.innerHTML=`<div class="message"><h2>Saved</h2><p>Saved locally in this browser.</p>${state.saved.length?state.saved.map(s=>`<div class="workspace-card" style="margin-top:10px"><strong>${escapeHtml(s.text)}</strong><small>${new Date(s.at).toLocaleString()}</small></div>`).join(''):'<div class="workspace-card">Nothing saved yet.</div>'}</div>`;return;}if(state.view==='settings'){conversation.innerHTML=`<div class="message"><h2>Settings</h2><div class="workspace-card"><strong>Backend</strong><p>${escapeHtml(API_BASE||'Not configured')}</p><p>Bearer tokens are session-memory only and are never persisted.</p><input id="session-token" type="password" placeholder="Optional short-lived session token" autocomplete="off" value="${escapeHtml(state.sessionToken)}"><div style="margin-top:8px"><button class="secondary" data-action="save-session-token">Use for this tab only</button> <button class="secondary" data-action="clear-session-token">Clear</button></div></div><div class="workspace-card" style="margin-top:10px"><strong>Data</strong><p>Chats, projects and saved items remain browser-local.</p><button class="secondary" data-action="export-data">Export</button> <button class="secondary" data-action="import-data">Import</button> <button class="secondary" data-action="clear-data">Clear local data</button></div></div>`;return;}}
+  function renderQueue(){queueCount.textContent=state.queue.length;queueCount.hidden=!state.queue.length;queueStatus.textContent=state.queue.length?`${state.queue.length} waiting`:'Nothing waiting';queueList.innerHTML=state.queue.map((q,i)=>`<div class="queue-item"><b>${i+1}</b><div><strong>${q.mode}</strong><p>${escapeHtml(q.text)}</p></div><button data-remove-queue="${q.id}">×</button></div>`).join('');}
+  function openQueue(){queuePanel.classList.add('open');queuePanel.setAttribute('aria-hidden','false');document.querySelector('.queue-overlay').classList.add('show');renderQueue();}
+  function closeQueue(){queuePanel.classList.remove('open');queuePanel.setAttribute('aria-hidden','true');document.querySelector('.queue-overlay').classList.remove('show');}
+  function openSidebar(){sidebar.classList.add('open');overlay.classList.add('show');} function closeSidebar(){sidebar.classList.remove('open');overlay.classList.remove('show');} function closeWorkspace(){workspace.classList.remove('open');}
+  async function backendCheck(){if(!API_BASE){setBackend(false,'API base not configured');return false;}try{const headers={Accept:'application/json'};if(state.sessionToken)headers.Authorization=`Bearer ${state.sessionToken}`;const r=await fetch(apiUrl('/readiness'),{headers});setBackend(r.ok,r.ok?'Backend ready':`Backend ${r.status}`);return r.ok;}catch{setBackend(false,'Backend unavailable');return false;}}
+  function setBackend(ok,text){state.backendOk=ok;connectionPill.textContent=text;connectionPill.classList.toggle('ok',ok);}
+  async function submitResearch(question, sourceUrls=[]){if(!API_BASE)throw new Error('Research API base is not configured');addMessage('user',question);renderConversation();const headers={'Content-Type':'application/json',Accept:'application/json'};if(state.sessionToken)headers.Authorization=`Bearer ${state.sessionToken}`;const payload={question,depth:'standard',require_citations:true,max_sources:8,max_evidence_items:24,strict_zero_cost_only:true,source_urls:sourceUrls.slice(0,8)};const response=await fetch(apiUrl('/api/v1/research'),{method:'POST',headers,body:JSON.stringify(payload)});const body=await response.json().catch(()=>({}));if(!response.ok||!body.ok)throw new Error(body.error||`Research request failed (${response.status})`);state.research={runId:body.run_id,status:'submitted',metadata:body.metadata||{},sources:body.sources||[]};renderResearch();addMessage('assistant',`Research run ${body.run_id} submitted. Tracking backend observations.`,{runId:body.run_id,sources:body.sources||[]});renderConversation();void pollResearch(body.run_id);return body;}
+  async function pollResearch(runId){if(!API_BASE)return;for(let i=0;i<30;i++){await new Promise(r=>setTimeout(r,1500));try{const headers={Accept:'application/json'};if(state.sessionToken)headers.Authorization=`Bearer ${state.sessionToken}`;const r=await fetch(apiUrl(`/api/v1/research/${encodeURIComponent(runId)}`),{headers});if(!r.ok)throw new Error(`status ${r.status}`);const body=await r.json();state.research={...state.research,status:'observed',run:body.run,observations:body.observations||[]};renderResearch();const chat=activeChat();if(chat&&!chat.messages.some(m=>m.meta?.runId===runId&&m.meta?.final)){const observations=(body.observations||[]).map(o=>({url:o.url,access_state:o.access_state}));addMessage('assistant',`Research run ${runId} returned ${observations.length} observed source record(s).`,{runId,sources:observations,final:true});renderConversation();}return body;}catch(err){state.research={...state.research,status:'polling',error:String(err.message||err)};renderResearch();}}state.research={...state.research,status:'timeout'};renderResearch();}
+  function renderResearch(){if(!state.research){workspaceBody.innerHTML='<div class="workspace-card"><strong>No active research run</strong><p>Switch to Research mode to submit a real run.</p></div>';return;}const r=state.research;const obs=(r.observations||[]).map(o=>`<div class="evidence-row"><span>●</span><div><strong>${escapeHtml(o.url||'source')}</strong><small>${escapeHtml(o.access_state||o.retrieval_method||'observed')}</small></div></div>`).join('');workspaceBody.innerHTML=`<section class="workspace-card accent-card"><div class="card-head"><span>Current task</span><b>${escapeHtml(r.status)}</b></div><h3>${escapeHtml(r.runId||'pending')}</h3><p>Backend research lifecycle with bounded polling. Strict $0 mode remains enabled.</p></section><section class="workspace-card"><div class="card-head"><span>Evidence</span><span>${(r.observations||[]).length}</span></div>${obs||'<p>No observation records returned yet.</p>'}</section>`;}
+  function render(){renderChats();renderConversation();renderQueue();renderResearch();}
+  async function send(){const text=prompt.value.trim();if(!text)return;const files=state.attachments.splice(0);prompt.value='';prompt.style.height='auto';if(currentMode()==='research'){try{composerStatus.textContent='Submitting research run…';await submitResearch(text);composerStatus.textContent='Research run is being tracked in the workspace.';}catch(e){addMessage('assistant',`Research could not be submitted: ${e.message}`);renderConversation();composerStatus.textContent='Research submission failed; inspect the backend status.';}return;}addMessage('user',text,{attachments:files.map(f=>({name:f.name,size:f.size,type:f.type}))});addMessage('assistant',API_BASE?'This message is stored locally. Switch to Research to run it against the real backend.':'This message is stored locally in this browser.');renderConversation();}
+  function enqueue(text){state.queue.push({id:uuid(),text,mode:currentMode()});renderQueue();if(!state.processing)processQueue();}
+  async function processQueue(){if(state.processing)return;state.processing=true;while(state.queue.length){const item=state.queue.shift();renderQueue();if(item.mode==='research'){try{await submitResearch(item.text);}catch(e){addMessage('assistant',`Queued research failed: ${e.message}`);renderConversation();}}else{addMessage('user',item.text);addMessage('assistant','Queued local chat message processed.');renderConversation();}}state.processing=false;renderQueue();}
+  function saveMessage(id){const chat=activeChat();const m=chat?.messages.find(x=>x.id===id);if(!m)return;const exists=state.saved.find(x=>x.messageId===id);if(exists){state.saved=state.saved.filter(x=>x.messageId!==id);m.meta={...m.meta,saved:false};}else{state.saved.unshift({id:uuid(),messageId:id,text:m.text,at:Date.now()});m.meta={...m.meta,saved:true};}save();renderConversation();showToast(exists?'Removed from saved':'Saved');}
+  function createProject(){const name=window.prompt('Project name');if(!name?.trim())return;const p={id:uuid(),name:name.trim(),createdAt:Date.now()};state.projects.unshift(p);state.activeProjectId=p.id;save();renderView();}
+  function assignProject(id){const chat=activeChat();if(!chat)return;chat.projectId=id;state.activeProjectId=id;save();showToast('Chat assigned to project');}
+  function exportData(){const payload={version:1,chats:state.chats,projects:state.projects,saved:state.saved,exportedAt:new Date().toISOString()};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='research-ai-local-data.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),0);}
+  function importData(){const input=document.createElement('input');input.type='file';input.accept='application/json';input.onchange=()=>{const file=input.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);state.chats=Array.isArray(data.chats)?data.chats:state.chats;state.projects=Array.isArray(data.projects)?data.projects:state.projects;state.saved=Array.isArray(data.saved)?data.saved:state.saved;state.activeChatId=state.chats[0]?.id||null;save();render();showToast('Imported local data');}catch{showToast('Invalid export file');}};reader.readAsText(file);};input.click();}
+  function clearData(){if(!window.confirm('Clear all browser-local chats, projects and saved items?'))return;localStorage.removeItem(CHAT_KEY);localStorage.removeItem(PROJECT_KEY);localStorage.removeItem(SAVED_KEY);state.chats=[];state.projects=[];state.saved=[];newChat();}
+  function handleAction(action){if(action==='new-chat')return newChat();if(action==='open-sidebar')return openSidebar();if(action==='close-sidebar')return closeSidebar();if(action==='open-queue')return openQueue();if(action==='close-queue')return closeQueue();if(action==='close-workspace')return closeWorkspace();if(action==='backend-check')return backendCheck();if(action==='new-project')return createProject();if(action==='save-session-token'){const input=$('session-token');state.sessionToken=input?.value.trim()||'';backendCheck();showToast(state.sessionToken?'Session token active for this tab':'Token cleared');return;}if(action==='clear-session-token'){state.sessionToken='';renderView();backendCheck();return;}if(action==='export-data')return exportData();if(action==='import-data')return importData();if(action==='clear-data')return clearData();if(action==='attachments'){const input=document.createElement('input');input.type='file';input.multiple=true;input.onchange=()=>{state.attachments=[...input.files];showToast(`${state.attachments.length} file(s) selected locally`);};input.click();return;}if(action==='voice'){if('webkitSpeechRecognition'in window||'SpeechRecognition'in window){const Rec=window.SpeechRecognition||window.webkitSpeechRecognition;const rec=new Rec();rec.lang='en-IN';rec.onresult=e=>{prompt.value=e.results[0][0].transcript;prompt.dispatchEvent(new Event('input'));};rec.start();showToast('Listening…');}else showToast('Voice input is not available in this browser');return;}if(action==='send')return send();if(action==='clear-queue'){state.queue=[];renderQueue();}}
+  document.addEventListener('click',(event)=>{const action=event.target.closest('[data-action]');if(action){event.preventDefault();handleAction(action.dataset.action);}const chat=event.target.closest('[data-chat]');if(chat){state.activeChatId=chat.dataset.chat;state.view='chats';closeSidebar();render();}const starter=event.target.closest('[data-starter]');if(starter){document.querySelector('[data-mode="research"]').click();prompt.value=starter.dataset.starter;prompt.focus();}const mode=event.target.closest('[data-mode]');if(mode){document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===mode));composerStatus.textContent=mode.dataset.mode==='research'?'Research submits to the real Worker API and tracks the run.':'Chat stays local until a conversational backend exists.';}const remove=event.target.closest('[data-remove-queue]');if(remove){state.queue=state.queue.filter(q=>q.id!==remove.dataset.removeQueue);renderQueue();}const view=event.target.closest('[data-view]');if(view){state.view=view.dataset.view;closeSidebar();if(state.view==='chats'&&!activeChat())newChat();render();}const saved=event.target.closest('[data-save-message]');if(saved)saveMessage(saved.dataset.saveMessage);const project=event.target.closest('[data-project]');if(project)assignProject(project.dataset.project);});
+  prompt.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});prompt.addEventListener('input',()=>{prompt.style.height='auto';prompt.style.height=`${Math.min(prompt.scrollHeight,130)}px`;});search.addEventListener('input',renderChats);window.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();prompt.focus();}if(e.key==='Escape'){closeSidebar();closeQueue();closeWorkspace();}});
+  load();if(!state.chats.length)newChat();render();backendCheck();
 })();
