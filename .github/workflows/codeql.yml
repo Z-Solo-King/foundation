@@ -1,3 +1,4 @@
+# Production CI, deployment and verification are owned by GitHub Actions.
 name: codeql
 
 on:
