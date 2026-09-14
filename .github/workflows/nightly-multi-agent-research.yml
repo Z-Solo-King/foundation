@@ -1,0 +1,123 @@
+name: nightly multi-agent research
+
+on:
+  schedule:
+    # 01:15 IST = 19:45 UTC (previous day), intentionally away from 01:00 load peak.
+    - cron: "45 19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-multi-agent-research
+  cancel-in-progress: false
+
+env:
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  lane0-a:
+    name: Lane 0 research hours 01-05 IST
+    runs-on: ubuntu-latest
+    timeout-minutes: 265
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
+        with:
+          python-version: "3.14"
+      - name: Run acquisition research programs 0-3
+        run: python -m benchmark.multi_agent.runner --lane 0 --start-slot 0 --slots 4 --output .runtime/lane-0-a.jsonl --max-active-agents 18
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nightly-research-lane0-a
+          path: .runtime/lane-0-a.jsonl
+          retention-days: 30
+
+  lane1-a:
+    name: Lane 1 research hours 01-05 IST
+    runs-on: ubuntu-latest
+    timeout-minutes: 265
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
+        with:
+          python-version: "3.14"
+      - name: Run mapper/chatbot research programs 0-3
+        run: python -m benchmark.multi_agent.runner --lane 1 --start-slot 0 --slots 4 --output .runtime/lane-1-a.jsonl --max-active-agents 18
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nightly-research-lane1-a
+          path: .runtime/lane-1-a.jsonl
+          retention-days: 30
+
+  lane2-a:
+    name: Lane 2 research hours 01-05 IST
+    runs-on: ubuntu-latest
+    timeout-minutes: 265
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
+        with:
+          python-version: "3.14"
+      - name: Run architecture/search research programs 0-3
+        run: python -m benchmark.multi_agent.runner --lane 2 --start-slot 0 --slots 4 --output .runtime/lane-2-a.jsonl --max-active-agents 18
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nightly-research-lane2-a
+          path: .runtime/lane-2-a.jsonl
+          retention-days: 30
+
+  lane0-b:
+    name: Lane 0 research hours 05-09 IST
+    needs: lane0-a
+    runs-on: ubuntu-latest
+    timeout-minutes: 265
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
+        with:
+          python-version: "3.14"
+      - name: Run acquisition research programs 4-7
+        run: python -m benchmark.multi_agent.runner --lane 0 --start-slot 4 --slots 4 --output .runtime/lane-0-b.jsonl --max-active-agents 18
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nightly-research-lane0-b
+          path: .runtime/lane-0-b.jsonl
+          retention-days: 30
+
+  lane1-b:
+    name: Lane 1 research hours 05-09 IST
+    needs: lane1-a
+    runs-on: ubuntu-latest
+    timeout-minutes: 265
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
+        with:
+          python-version: "3.14"
+      - name: Run mapper/chatbot research programs 4-7
+        run: python -m benchmark.multi_agent.runner --lane 1 --start-slot 4 --slots 4 --output .runtime/lane-1-b.jsonl --max-active-agents 18
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nightly-research-lane1-b
+          path: .runtime/lane-1-b.jsonl
+          retention-days: 30
+
+  lane2-b:
+    name: Lane 2 research hours 05-09 IST
+    needs: lane2-a
+    runs-on: ubuntu-latest
+    timeout-minutes: 265
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
+        with:
+          python-version: "3.14"
+      - name: Run architecture/search research programs 4-7
+        run: python -m benchmark.multi_agent.runner --lane 2 --start-slot 4 --slots 4 --output .runtime/lane-2-b.jsonl --max-active-agents 18
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nightly-research-lane2-b
+          path: .runtime/lane-2-b.jsonl
+          retention-days: 30
