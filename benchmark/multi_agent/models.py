@@ -25,7 +25,7 @@ class ResearchProgram:
     title: str
     question: str
     agent_specs: tuple[AgentSpec, ...]
-    max_active_agents: int = 6
+    agent_budget_hint: int = 6
 
     def __post_init__(self) -> None:
         if self.lane not in {0, 1, 2}:
@@ -34,10 +34,10 @@ class ResearchProgram:
             raise ValueError("slot must be between 0 and 7")
         if not self.program_id.strip() or not self.title.strip() or not self.question.strip():
             raise ValueError("program_id, title and question are required")
-        if not self.agent_specs or len(self.agent_specs) > 10:
+        if not 1 <= len(self.agent_specs) <= 10:
             raise ValueError("each program must contain 1-10 logical agents")
-        if not 1 <= self.max_active_agents <= len(self.agent_specs):
-            raise ValueError("max_active_agents must be within the agent count")
+        if not 1 <= self.agent_budget_hint <= len(self.agent_specs):
+            raise ValueError("agent_budget_hint must be within the agent count")
 
 
 @dataclass(frozen=True)
@@ -55,6 +55,10 @@ class AgentResult:
         current = datetime.now(timezone.utc)
         return cls(agent_id=agent_id, status=status, started_at=current, completed_at=current, note=note)
 
+    @property
+    def duration_seconds(self) -> float:
+        return max(0.0, (self.completed_at - self.started_at).total_seconds())
+
 
 @dataclass
 class ProgramResult:
@@ -64,6 +68,7 @@ class ProgramResult:
     started_at: datetime
     completed_at: datetime | None = None
     status: Literal["planned", "running", "completed", "partial", "blocked", "failed"] = "planned"
+    allocated_agents: int = 0
     agent_results: list[AgentResult] = field(default_factory=list)
     findings: list[dict[str, object]] = field(default_factory=list)
     follow_up_questions: list[str] = field(default_factory=list)
@@ -75,3 +80,66 @@ class ProgramResult:
     @property
     def failed_agents(self) -> int:
         return sum(row.status == "failed" for row in self.agent_results)
+
+    @property
+    def wall_clock_seconds(self) -> float:
+        end = self.completed_at or datetime.now(timezone.utc)
+        return max(0.0, (end - self.started_at).total_seconds())
+
+    @property
+    def agent_seconds(self) -> float:
+        return sum(row.duration_seconds for row in self.agent_results)
+
+    @property
+    def unique_source_count(self) -> int:
+        sources: set[str] = set()
+        for finding in self.findings:
+            source = finding.get("source_url") or finding.get("url")
+            if isinstance(source, str) and source:
+                sources.add(source)
+        return len(sources)
+
+    @property
+    def useful_finding_count(self) -> int:
+        return sum(1 for finding in self.findings if any(value not in (None, "", [], {}) for value in finding.values()))
+
+    @property
+    def duplicate_rate(self) -> float:
+        if not self.findings:
+            return 0.0
+        signatures = {(str(row.get("claim", "")), str(row.get("source_url", row.get("url", "")))) for row in self.findings}
+        return max(0.0, 1.0 - (len(signatures) / len(self.findings)))
+
+    def measurement(self) -> dict[str, object]:
+        return {
+            "allocated_agents": self.allocated_agents,
+            "completed_agents": self.completed_agents,
+            "failed_agents": self.failed_agents,
+            "wall_clock_seconds": round(self.wall_clock_seconds, 3),
+            "agent_seconds": round(self.agent_seconds, 3),
+            "useful_findings": self.useful_finding_count,
+            "unique_sources": self.unique_source_count,
+            "duplicate_rate": round(self.duplicate_rate, 4),
+            "follow_up_questions": len(self.follow_up_questions),
+        }
+
+
+@dataclass(frozen=True)
+class CapacityComparison:
+    program_id: str
+    low: ProgramResult
+    high: ProgramResult
+
+    def to_dict(self) -> dict[str, object]:
+        low = self.low.measurement()
+        high = self.high.measurement()
+        return {
+            "program_id": self.program_id,
+            "low": low,
+            "high": high,
+            "delta_wall_clock_seconds": round(float(high["wall_clock_seconds"]) - float(low["wall_clock_seconds"]), 3),
+            "delta_agent_seconds": round(float(high["agent_seconds"]) - float(low["agent_seconds"]), 3),
+            "delta_useful_findings": int(high["useful_findings"]) - int(low["useful_findings"]),
+            "delta_unique_sources": int(high["unique_sources"]) - int(low["unique_sources"]),
+            "delta_duplicate_rate": round(float(high["duplicate_rate"]) - float(low["duplicate_rate"]), 4),
+        }
