@@ -26,6 +26,12 @@ SOURCE_ALIASES = {
     "ptt": "chinese_communities",
     "social_communities": "social_communities",
     "regional_communities": "social_communities",
+    "social_media": "social_media",
+    "x_twitter": "social_media",
+    "instagram": "social_media",
+    "facebook": "social_media",
+    "tiktok": "social_media",
+    "meta_ai": "social_media",
     "search_trends": "search_trends",
     "retailers": "retailers",
     "professional_reviews": "professional_reviews",
@@ -62,7 +68,8 @@ def run(path: Path, output: Path) -> int:
             stages_ok = REQUIRED_DEEP_STAGES.issubset(set(plan.stages))
             temporal_expected = row.get("temporal") == "old_vs_new"
             temporal_ok = plan.metadata.get("temporal_reconciliation") == "true" if temporal_expected else True
-            passed = stages_ok and not missing and temporal_ok
+            citation_ok = plan.metadata.get("require_citations") == "true"
+            passed = stages_ok and citation_ok and not missing and temporal_ok
             if not passed:
                 failures += 1
             results.append({
@@ -75,6 +82,8 @@ def run(path: Path, output: Path) -> int:
                 "missing_source_families": missing,
                 "temporal_expected": temporal_expected,
                 "temporal_planned": plan.metadata.get("temporal_reconciliation"),
+                "citations_required": True,
+                "citations_planned": citation_ok,
                 "stages": list(plan.stages),
             })
         except Exception as exc:
@@ -82,7 +91,7 @@ def run(path: Path, output: Path) -> int:
             results.append({"id": row["id"], "category": row.get("category", ""), "passed": False, "error": type(exc).__name__})
 
     summary = {
-        "schema": "chatbot-research-query-benchmark/v1",
+        "schema": "chatbot-research-query-benchmark/v2",
         "queries": len(results),
         "passed": len(results) - failures,
         "failed": failures,
