@@ -1,6 +1,6 @@
 # Research Intelligence frontend
 
-This frontend is a production-oriented UI shell with a real integration for the Foundation research lifecycle and a deliberately local chat fallback.
+This frontend is a production-oriented UI shell with the real Foundation research lifecycle plus a complete browser-local personal workspace.
 
 ## Real backend integration
 
@@ -10,22 +10,35 @@ The UI uses the existing Foundation Worker contract:
 - `POST /api/v1/research` — submits a strict-$0 research request.
 - `GET /api/v1/research/{run_id}` — reads persisted run/source observations.
 
-Research results are never fabricated by the UI. The workspace displays the backend run identifier and returned observation records.
+Research results are never fabricated by the UI. The workspace displays backend run identifiers and returned observation records.
 
-## Browser boundary
+## Browser authentication boundary
 
-Production research requests require the Worker authorization contract. The frontend must **not** ship a long-lived bearer token in source code, localStorage, or a public bundle. A future deployment/authentication bridge must supply user-scoped authorization without exposing infrastructure secrets.
+Production research requests remain protected by the Worker authorization contract. The frontend never ships a long-lived infrastructure token in source code, localStorage, or the public bundle.
 
-Until that bridge exists, a browser client may correctly show `Backend unauthorized/unavailable`; this is preferable to weakening the Worker authorization gate.
+An optional **session-memory-only** bearer token can be entered from Settings for a controlled personal/browser session. It is stored only in JavaScript memory, is not written to localStorage, and disappears on reload. This is a compatibility bridge, not an identity provider, and should only be used with an appropriately scoped/short-lived session credential.
 
-## Local capabilities
+The production completion item remains a user-scoped authentication/session bridge backed by a real trust source (for example an authenticated same-origin gateway or identity provider). The Worker authorization contract is not weakened to make the browser public.
 
-- Chat history is persisted in browser localStorage and is explicitly labeled as local state.
-- FIFO follow-up queue is implemented locally.
-- File selection is local-only until a file-ingestion API is available.
-- Browser speech recognition is used opportunistically when supported; no provider claim is made.
-- Research mode uses the actual backend run/readback contract.
+## Local personal workspace
+
+- Browser-local chat history and search.
+- Browser-local Projects with chat assignment.
+- Browser-local Saved messages.
+- Local FIFO follow-up queue.
+- Local file selection and attachment metadata; files are **not uploaded** until an authenticated ingestion API exists.
+- Browser speech recognition when supported.
+- Export/import of browser-local chats, projects, and saved items.
+- Settings with backend status and session-memory-only token handling.
 
 ## Non-goals until backend contracts exist
 
-The frontend does not pretend to provide conversational token streaming, server-side chat history, persistent Projects/Saved state, authenticated file upload, or server-side voice transcription when those APIs are not currently exposed.
+The frontend does not pretend to provide:
+
+- conversational LLM token streaming;
+- server-side chat/project persistence;
+- authenticated file upload/ingestion;
+- server-side voice transcription;
+- an identity provider or login system.
+
+Those require backend/session contracts rather than UI-only behavior.
