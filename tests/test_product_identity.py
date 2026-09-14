@@ -31,6 +31,19 @@ def test_url_trailing_slash_normalization_is_accepted():
     assert "url" in result.matched_fields
 
 
+def test_relative_url_is_normalized_without_inventing_origin():
+    result = identity_matches({"url": "/product/widget/"}, {"url": "/product/widget"})
+    assert result.accepted
+
+
+def test_identity_mapping_value_is_supported():
+    result = identity_matches(
+        {"brand": {"name": "Acme"}, "sku": {"value": "ABC-123"}},
+        {"brand": "Acme", "sku": "ABC-123"},
+    )
+    assert result.accepted
+
+
 def test_brand_and_title_exact_match_is_accepted_without_strong_id():
     result = identity_matches(
         {"brand": "Acme", "title": "Widget 16GB"},
