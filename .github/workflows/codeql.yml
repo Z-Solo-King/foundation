@@ -79,3 +79,15 @@ jobs:
             -H 'Content-Type: application/json' \
             https://api.cloudflare.com/client/v4/user/tokens/verify \
             | jq -e '.success == true and .result.status == "active"' >/dev/null
+      - name: Resolve public D1
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          curl -fsS \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database" \
+            | jq -e '[.result[]? | select(.name == "research-intelligence")] | length == 1' >/dev/null
