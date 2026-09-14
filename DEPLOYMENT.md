@@ -4,33 +4,38 @@ This repository contains the public contract/Worker boundary. Production control
 
 ## Current verified production state
 
-As of 2026-09-13, the Cloudflare production deployment has been manually verified end to end:
+As of 2026-09-13, the Cloudflare production deployment had been manually verified end to end at that time:
 
 - private control-plane Worker deployed;
 - public Worker deployed;
 - public Worker URL: `https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev`;
-- `/health` returns HTTP 200;
-- `/readiness` returns HTTP 200;
-- public Worker uses a Cloudflare Service Binding to the private control plane;
+- `/health` returned HTTP 200;
+- `/readiness` returned HTTP 200 under the then-verified deployment configuration;
 - Backblaze B2 is the artifact-storage provider under the strict zero-cost target.
 
-The public Worker was deployed with Python Worker tooling (`pywrangler`), not plain `wrangler deploy`.
+This document does not treat older manual verification as fresh production proof. The current acceptance rule requires the authenticated chatbot/control-plane verification path to produce current D1/B2 evidence.
+
+The public Worker is deployed with Python Worker tooling (`pywrangler`), not plain `wrangler deploy`.
 
 ## GitHub Actions status
 
-The public deployment workflow is `.github/workflows/deploy.yml` and supports both `push` to `main` and `workflow_dispatch`.
+The canonical public deployment workflow is `.github/workflows/deploy-public-worker.yml`.
 
-The workflow dynamically resolves the live D1 database ID from Cloudflare instead of relying on a stale hard-coded UUID. It runs public tests, applies D1 migrations, and deploys the Python Worker.
+The post-deployment smoke/verification workflow is `.github/workflows/production-chatbot-deploy-smoke.yml`. It is intentionally separate from deployment but is triggered by successful completion of `deploy-public-worker` through `workflow_run`; it is not an independent push-triggered production verifier.
 
-Older failed workflow runs are historical and came from earlier deployment configuration problems. A fresh green GitHub Actions run is useful CI evidence but is not required to keep the already-verified Cloudflare deployment live.
+The deployment workflow dynamically resolves the live D1 database ID from Cloudflare instead of relying on a stale hard-coded UUID. It runs the public test gate, applies the required D1 migration work, and deploys the Python Worker.
+
+The smoke workflow first verifies the public Worker health surface. Authenticated D1/B2 verification is only claimed when the required `AUTH_TOKEN` is available in that workflow context and the chatbot diagnostic returns successful checks for the public chatbot surface, Cloudflare D1 and Backblaze B2 lifecycle.
 
 ## Runtime architecture
 
-The public Worker uses:
+The current public-safe architecture does not make public readiness depend on the private control plane. Protected Operations may use a private Service Binding to call Foundation where the protected verification path requires it.
 
-- Cloudflare D1 for canonical graph/run metadata.
-- Backblaze B2 S3-compatible object storage for artifacts.
-- A Cloudflare Service Binding to the private control-plane Worker for readiness/control-plane calls.
+Foundation uses:
+
+- Cloudflare D1 for compact public/operational metadata where defined by the Foundation contract;
+- Backblaze B2 for current artifact storage under the strict zero-cost design;
+- no public route for arbitrary private control-plane dispatch.
 
 No B2 credentials, authentication tokens, private service names, or private database identifiers belong in Git.
 
@@ -38,24 +43,24 @@ No B2 credentials, authentication tokens, private service names, or private data
 
 Supply these through the deployment environment or secret store rather than committing them:
 
-- `AUTH_TOKEN`
-- `B2_KEY_ID`
-- `B2_APPLICATION_KEY`
-- the production D1 database binding
-- the Service Binding from `CONTROL_PLANE` to the private control-plane Worker
+- `AUTH_TOKEN` where the authenticated verification path requires it;
+- `B2_KEY_ID`;
+- `B2_APPLICATION_KEY`;
+- the production D1 binding/configuration;
+- any protected Service Binding required by the private control-plane path.
 
 The public repository's committed Wrangler configuration intentionally keeps production identifiers/configuration sanitized. Production deployment generation must never commit credentials or stale resource IDs.
 
 The non-secret B2 configuration is fixed to the zero-cost deployment target:
 
-- bucket: `SoloKing`
-- endpoint: `https://s3.eu-central-003.backblazeb2.com`
+- bucket: `SoloKing`;
+- endpoint: `https://s3.eu-central-003.backblazeb2.com`.
 
 ## Deployment order
 
-Deploy the private control-plane Worker first, then deploy the public Worker. The public Worker should use the Service Binding rather than a normal HTTPS fetch to the private Worker.
+Deploy the private control-plane Worker first when a production change requires it, then deploy the public Worker. Production verification is then performed through the canonical authenticated chatbot/control-plane path; local DNS probing is not production evidence.
 
-Smoke-test `/health` first. Test `/readiness` only after the Service Binding is configured, because readiness includes the control-plane health check.
+Smoke-test `/health` first. Treat `/readiness` according to the currently committed public readiness contract rather than assuming private-control-plane availability.
 
 ## Important operational lessons
 
@@ -64,3 +69,5 @@ Smoke-test `/health` first. Test `/readiness` only after the Service Binding is 
 - For Python Workers use `pywrangler deploy`.
 - Keep secrets out of Git and handoff documents.
 - Keep the strict `$0` policy fail-closed; do not add paid fallbacks to make deployment convenient.
+- Do not call Cloudflare production verification complete until the authenticated chatbot evidence is current.
+- Keep deployment and post-deployment verification as one explicit workflow chain: deployment first, smoke/verification second.

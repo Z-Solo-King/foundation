@@ -54,7 +54,11 @@ class CloudflarePersistence:
         return run_id
 
     async def create_run_idempotent(self, request, idempotency_key: str):
-        """Atomically claim an idempotency key and create its stable run."""
+        """Atomically claim an idempotency key and create its stable run.
+
+        The validation branches in this method are intentionally covered by a dedicated
+        regression test because they have repeatedly been lost during persistence refactors.
+        """
         if not idempotency_key or not idempotency_key.strip():
             raise ValueError("idempotency_key must not be empty")
         if len(idempotency_key) > 256:
@@ -97,6 +101,11 @@ class CloudflarePersistence:
         ).bind(run_id).first()
 
     async def set_run_status(self, run_id, status):
+        """Update a run only through the explicit lifecycle transition table.
+
+        Keep the error branches below covered: missing run, corrupt stored status, and
+        disallowed transition are safety-critical fail-closed guards.
+        """
         if status not in _ALLOWED_TRANSITIONS:
             raise ValueError("invalid run status")
         current = await self.get_run(run_id)
