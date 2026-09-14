@@ -69,6 +69,7 @@ jobs:
           python -m pytest operations/tests/test_durable_runner.py -q
 
       - name: Execute bounded live benchmark
+        id: live_benchmark
         continue-on-error: true
         timeout-minutes: 13
         run: |
@@ -143,6 +144,12 @@ jobs:
           name: autonomous-benchmark-summary-shard-${{ matrix.shard }}
           path: benchmark-summary.json
           retention-days: 1
+
+      - name: Propagate benchmark failure
+        if: steps.live_benchmark.outcome == 'failure'
+        run: |
+          echo "Live benchmark shard failed or hit its execution timeout; the sanitized summary was still uploaded."
+          exit 1
 
       - name: Remove private checkout and raw receipts
         if: always()
