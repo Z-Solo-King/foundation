@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: '3.13'
       - name: Install test tools
-        run: python -m pip install --upgrade pip pytest
+        run: python -m pip install --upgrade pip pytest workers-py
       - name: Unit test budget checker
         run: python -m pytest -q tests/test_context_budget.py
       - name: Enforce context budget
