@@ -86,7 +86,7 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Checkout tested commit
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c18127327390b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
       - name: Setup Python Worker tooling
