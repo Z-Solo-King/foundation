@@ -12,9 +12,7 @@
   const BASE_DELAY_MS = 1500;
   const MAX_DELAY_MS = 10000;
 
-  const prompt = document.getElementById('prompt');
   const composerStatus = document.getElementById('composer-status');
-  const queuePanel = document.getElementById('message-queue');
 
   const readQueue = () => {
     try {
@@ -36,13 +34,8 @@
     return result;
   };
 
-  function setStatus(text) {
-    if (composerStatus) composerStatus.textContent = text;
-  }
-
-  function terminal(status) {
-    return new Set(['completed', 'complete', 'success', 'succeeded', 'failed', 'error', 'cancelled', 'canceled', 'blocked', 'partial']).has(String(status || '').toLowerCase());
-  }
+  const setStatus = (text) => { if (composerStatus) composerStatus.textContent = text; };
+  const terminal = (status) => new Set(['completed', 'complete', 'success', 'succeeded', 'failed', 'error', 'cancelled', 'canceled', 'blocked', 'partial']).has(String(status || '').toLowerCase());
 
   async function fetchRun(runId) {
     const response = await fetch(`${API_BASE}/api/v1/research/${encodeURIComponent(runId)}`, { headers: headers(false) });
@@ -52,18 +45,10 @@
   }
 
   function addFinalMessage(body, runId, chatId) {
-    const observations = (body.observations || body.sources || []).map((item) => ({
-      url: item.url,
-      title: item.title,
-      access_state: item.access_state || item.state,
-      retrieval_method: item.retrieval_method,
-      integrity_state: item.integrity_state,
-    }));
+    const observations = (body.observations || body.sources || []).map((item) => ({ url: item.url, title: item.title, access_state: item.access_state || item.state, retrieval_method: item.retrieval_method, integrity_state: item.integrity_state }));
     const answer = body.result?.answer || body.result?.text || body.result?.summary || body.answer || '';
     const status = String(body.status || '').toLowerCase();
-    const message = answer
-      ? `Research run ${runId} ${terminal(status) ? 'finished' : 'updated'}.\n\n${answer}`
-      : `Research run ${runId} finished with ${observations.length} observed source record(s); backend status: ${status || 'unknown'}.`;
+    const message = answer ? `Research run ${runId} ${terminal(status) ? 'finished' : 'updated'}.\n\n${answer}` : `Research run ${runId} finished with ${observations.length} observed source record(s); backend status: ${status || 'unknown'}.`;
     const chat = api.state.chats.find((item) => item.id === chatId);
     if (!chat || chat.messages?.some((item) => item.meta?.runId === runId && item.meta?.final)) return;
     api.addMessage('assistant', message, { runId, final: true, sources: observations }, chatId);
@@ -112,24 +97,11 @@
     api.setActiveChat(chatId);
     api.addMessage('user', item.text, { request_id: item.request_id }, chatId);
     setStatus('Submitting research run…');
-    const response = await fetch(`${API_BASE}/api/v1/research`, {
-      method: 'POST',
-      headers: headers(true, item.request_id),
-      body: JSON.stringify({
-        question: item.text,
-        depth: 'standard',
-        require_citations: true,
-        max_sources: 8,
-        max_evidence_items: 24,
-        strict_zero_cost_only: true,
-        source_urls: item.source_urls || [],
-      }),
-    });
+    const response = await fetch(`${API_BASE}/api/v1/research`, { method: 'POST', headers: headers(true, item.request_id), body: JSON.stringify({ question: item.text, depth: 'standard', require_citations: true, max_sources: 8, max_evidence_items: 24, strict_zero_cost_only: true, source_urls: item.source_urls || [] }) });
     const body = await response.json().catch(() => ({}));
     if (!response.ok || !body.ok) throw new Error(body.error || `Research request failed (${response.status})`);
     const runId = body.run_id;
-    const record = { run_id: runId, request_id: item.request_id, chat_id: chatId, status: 'submitted', created_at: Date.now(), stopped: false };
-    setActive(record);
+    setActive({ run_id: runId, request_id: item.request_id, chat_id: chatId, status: 'submitted', created_at: Date.now(), stopped: false });
     api.openWorkspace?.();
     api.workspaceView.render(body);
     setStatus(`Research run ${runId} is being tracked from backend state.`);
@@ -141,11 +113,11 @@
     if (!items.length || active()) return;
     const next = items[0];
     saveQueue(items.slice(1));
+    document.dispatchEvent(new Event('rie:queue-changed'));
     try {
       await submit(next);
     } catch (error) {
-      const message = `Queued research failed to submit: ${error.message || error}`;
-      api.addMessage('assistant', message, { request_id: next.request_id, error: true }, next.chat_id);
+      api.addMessage('assistant', `Queued research failed to submit: ${error.message || error}`, { request_id: next.request_id, error: true }, next.chat_id);
       setStatus('Queued research failed; the item was consumed once and can be re-queued explicitly.');
       document.dispatchEvent(new Event('rie:queue-changed'));
     }
@@ -155,8 +127,6 @@
     const item = { id: api.uuid(), request_id: api.uuid(), text: String(text || '').trim(), chat_id: chatId, source_urls: [], created_at: Date.now() };
     if (!item.text) return;
     saveQueue([...readQueue(), item]);
-    queuePanel?.classList.add('open');
-    queuePanel?.setAttribute('aria-hidden', 'false');
     setStatus('Follow-up queued FIFO; current research is not interrupted.');
     document.dispatchEvent(new Event('rie:queue-changed'));
     void submitNext();
@@ -164,10 +134,7 @@
 
   function recover() {
     const current = active();
-    if (!current?.run_id) {
-      void submitNext();
-      return;
-    }
+    if (!current?.run_id) { void submitNext(); return; }
     api.openWorkspace?.();
     setStatus(`Reconnecting to research run ${current.run_id}…`);
     void track(current.run_id, current.chat_id);
@@ -177,12 +144,8 @@
     if (event.detail?.mode !== 'research') return;
     const text = String(event.detail?.text || '').trim();
     if (!text) return;
-    if (active()) {
-      enqueue(text, currentChatId());
-      return;
-    }
-    const item = { id: api.uuid(), request_id: api.uuid(), text, chat_id: currentChatId(), source_urls: [], created_at: Date.now() };
-    void submit(item).catch((error) => {
+    if (active()) { enqueue(text, currentChatId()); return; }
+    void submit({ id: api.uuid(), request_id: api.uuid(), text, chat_id: currentChatId(), source_urls: [], created_at: Date.now() }).catch((error) => {
       api.addMessage('assistant', `Research could not be submitted: ${error.message || error}`, { error: true }, currentChatId());
       api.chatView.render();
       setStatus('Research submission failed; backend truth is unchanged.');
@@ -190,8 +153,17 @@
   });
 
   document.addEventListener('rie:composer-queue', (event) => {
-    if (event.detail?.mode !== 'research') return;
-    enqueue(event.detail?.text, currentChatId());
+    if (event.detail?.mode === 'research') enqueue(event.detail.text, currentChatId());
+  });
+  document.addEventListener('rie:queue-clear-requested', () => {
+    saveQueue([]);
+    document.dispatchEvent(new Event('rie:queue-changed'));
+  });
+  document.addEventListener('rie:queue-remove-requested', (event) => {
+    const id = event.detail?.id;
+    if (!id) return;
+    saveQueue(readQueue().filter((item) => item.id !== id));
+    document.dispatchEvent(new Event('rie:queue-changed'));
   });
 
   document.addEventListener('click', (event) => {
@@ -203,15 +175,10 @@
       const chat = api.state.chats.find((candidate) => candidate.messages?.some((message) => message.meta?.runId === runId));
       if (chat) api.setActiveChat(chat.id);
       setActive({ run_id: runId, request_id: item?.meta?.request_id || api.uuid(), chat_id: chat?.id || currentChatId(), status: 'reconnecting', created_at: Date.now(), stopped: false });
-      api.openWorkspace?.();
       recover();
       return;
     }
-    if (event.target.closest('[data-lifecycle-refresh]') || event.target.closest('[data-lifecycle-reconnect]')) {
-      event.preventDefault();
-      recover();
-      return;
-    }
+    if (event.target.closest('[data-lifecycle-refresh]') || event.target.closest('[data-lifecycle-reconnect]')) { event.preventDefault(); recover(); return; }
     if (event.target.closest('[data-lifecycle-stop]')) {
       event.preventDefault();
       const current = active();
@@ -225,7 +192,7 @@
 
   window.addEventListener('online', recover);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') recover(); });
-  window.addEventListener('storage', (event) => { if (event.key === QUEUE_KEY || event.key === ACTIVE_KEY) { document.dispatchEvent(new Event('rie:queue-changed')); recover(); } });
+  window.addEventListener('storage', (event) => { if (event.key === QUEUE_KEY || event.key === ACTIVE_KEY) { document.dispatchEvent(new Event('rie:queue-changed')); if (event.key === ACTIVE_KEY) recover(); } });
 
   api.researchLifecycle = Object.freeze({ recover, enqueue, submitNext, active, queue: readQueue });
   recover();
