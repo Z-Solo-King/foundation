@@ -1,0 +1,154 @@
+name: B2 repository backup
+
+on:
+  schedule:
+    # 02:00 IST = 20:30 UTC, inside the planned 01:00-09:00 overnight window.
+    - cron: "30 20 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/b2-repository-backup.yml'
+      - 'backup/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: b2-repository-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Mirror repositories to B2
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+      B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+      B2_BUCKET: ${{ secrets.B2_BUCKET }}
+      BACKUP_GITHUB_TOKEN: ${{ secrets.BACKUP_GITHUB_TOKEN }}
+    steps:
+      - name: Verify backup credentials and tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub secret'; exit 1; }
+          test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub secret'; exit 1; }
+          test -n "${B2_BUCKET:-}" || { echo 'Missing B2_BUCKET GitHub secret'; exit 1; }
+          test -n "${BACKUP_GITHUB_TOKEN:-}" || { echo 'Missing BACKUP_GITHUB_TOKEN GitHub secret'; exit 1; }
+          command -v git >/dev/null
+          command -v curl >/dev/null
+          echo 'backup prerequisites: PASS'
+
+      - name: Install Backblaze B2 CLI
+        run: python -m pip install --disable-pip-version-check --quiet b2
+
+      - name: Authorize B2 and verify bucket
+        shell: bash
+        run: |
+          set -euo pipefail
+          b2 account authorize "$B2_KEY_ID" "$B2_APPLICATION_KEY"
+          b2 ls "b2://$B2_BUCKET" >/dev/null
+          echo 'B2 authorization and bucket access: PASS'
+
+      - name: Mirror both repositories
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf backup-work backup-output remote-restore
+          mkdir -p backup-work backup-output remote-restore
+          for repo in foundation operations; do
+            git -c http.extraHeader="Authorization: Bearer ${BACKUP_GITHUB_TOKEN}" \
+              clone --mirror "https://github.com/Z-Solo-King/${repo}.git" "backup-work/${repo}.git"
+            git -C "backup-work/${repo}.git" fsck --full --no-dangling
+            sha=$(git -C "backup-work/${repo}.git" rev-parse --verify refs/heads/main)
+            refs=$(git -C "backup-work/${repo}.git" show-ref --head | wc -l)
+            test -n "$sha" && test "$refs" -gt 0
+            echo "${repo} mirror integrity: PASS (${sha}; ${refs} refs)"
+          done
+
+      - name: Create immutable archives and manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          timestamp=$(date -u +%Y%m%dT%H%M%SZ)
+          for repo in foundation operations; do
+            mirror="backup-work/${repo}.git"
+            sha=$(git -C "$mirror" rev-parse --verify refs/heads/main)
+            tree=$(git -C "$mirror" show -s --format=%T "$sha")
+            refs=$(git -C "$mirror" show-ref --head | wc -l)
+            archive="backup-output/${repo}-${sha}-${timestamp}.tar.gz"
+            tar -C backup-work -czf "$archive" "${repo}.git"
+            sha256=$(sha256sum "$archive" | cut -d' ' -f1)
+            size=$(stat -c '%s' "$archive")
+            jq -n \
+              --arg schema 'repository-backup/v2' \
+              --arg repository "Z-Solo-King/${repo}" \
+              --arg visibility "$(test "$repo" = foundation && echo public || echo private)" \
+              --arg ref main \
+              --arg commit "$sha" \
+              --arg tree "$tree" \
+              --arg created "$timestamp" \
+              --arg archive "$(basename "$archive")" \
+              --arg sha256 "$sha256" \
+              --arg size "$size" \
+              --arg refs "$refs" \
+              '{schema:$schema,repository:$repository,visibility:$visibility,ref:$ref,commit:$commit,tree:$tree,created_at:$created,archive:$archive,sha256:$sha256,size_bytes:($size|tonumber),ref_count:($refs|tonumber),restore_test:{local_git_fsck:true,main_ref_verified:true,remote_b2_restore_verified:false}}' \
+              > "backup-output/${repo}-${sha}-${timestamp}.json"
+            echo "${repo} archive: PASS"
+          done
+
+      - name: Upload archives and manifests to B2
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in backup-output/*.tar.gz backup-output/*.json; do
+            name="repository-backup/$(basename "$file")"
+            b2 file upload "$B2_BUCKET" "$file" "$name"
+            echo "uploaded: $name"
+          done
+          echo 'B2 upload: PASS'
+
+      - name: Verify B2 listing
+        shell: bash
+        run: |
+          set -euo pipefail
+          b2 ls --recursive "b2://$B2_BUCKET/repository-backup/" >/tmp/b2-list.txt
+          grep -q 'foundation-' /tmp/b2-list.txt
+          grep -q 'operations-' /tmp/b2-list.txt
+          echo 'B2 object listing: PASS'
+
+      - name: Verify remote restore and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r remote; do
+            case "$remote" in
+              *.tar.gz)
+                name=$(basename "$remote")
+                b2 file download "b2://$B2_BUCKET/$remote" "remote-restore/$name"
+                expected=$(sha256sum "backup-output/$name" | cut -d' ' -f1)
+                actual=$(sha256sum "remote-restore/$name" | cut -d' ' -f1)
+                test "$expected" = "$actual" || { echo "SHA-256 mismatch: $name"; exit 1; }
+                rm -rf remote-restore/extracted
+                mkdir -p remote-restore/extracted
+                tar -xzf "remote-restore/$name" -C remote-restore/extracted
+                repo_dir=$(find remote-restore/extracted -mindepth 1 -maxdepth 1 -type d -name '*.git' | head -n 1)
+                test -n "$repo_dir"
+                git -C "$repo_dir" fsck --full --no-dangling
+                test -n "$(git -C "$repo_dir" rev-parse --verify refs/heads/main)"
+                echo "remote restore: PASS: $name"
+                ;;
+            esac
+          done < <(grep '\.tar\.gz$' /tmp/b2-list.txt)
+          echo 'remote B2 restore verification: PASS'
+
+      - name: Write non-sensitive run summary
+        run: |
+          {
+            echo '### B2 repository backup'
+            echo
+            echo 'Foundation and Operations mirrors were created.'
+            echo 'B2 upload, object listing, SHA-256 verification, extraction, and Git integrity restore were checked.'
+          } >> "$GITHUB_STEP_SUMMARY"
