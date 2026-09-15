@@ -1,28 +1,24 @@
 # Foundation repository instructions
 
-## Role
-Foundation is the public-safe contract and research-primitives repository in the Z-Solo-King family.
-
-Own here: public-safe contracts, deterministic evidence/intelligence primitives, planning, API boundary, bounded public-worker behavior.
-Do not move private provider secrets, private policy authority, protected evaluation holdouts, heavy extraction, or heavy product mapping here.
+Foundation is the public-safe contract, deterministic research core and public Worker/API repository.
 
 ## Before changing code
-1. Search the family architecture and source-of-truth map.
-2. Search for existing implementations before adding a class/function/policy/DTO.
-3. Prefer one canonical implementation plus a thin compatibility facade when legacy imports require it.
-4. Preserve public/private boundaries.
-5. Add deterministic and regression tests for behavioral changes.
+1. Read `REPOSITORY_MAP.json` and the relevant ownership document.
+2. Search both active repositories for an existing implementation.
+3. Extend the canonical owner instead of creating a duplicate.
+4. Keep public/private boundaries intact.
+5. Add focused regression tests for behavior changes.
 
-## Correctness
-- Preserve explicit uncertainty and contradictions.
-- Validate hashes, provenance, schemas, budgets, replay state, and public-worker outputs at boundaries.
-- Do not infer that an HTTP/network failure is an empty successful result.
-- Keep deterministic code paths cheap: bounded work, indexed lookups, small immutable contracts.
+## Code and evidence
+- Keep deterministic logic independent from transport and persistence where practical.
+- Preserve unknown, blocked, contradictory, stale, partial and inferred states.
+- Do not turn network failures into successful empty results.
+- Keep public code free of private credentials, protected policy and private runtime details.
 
 ## Family ownership
-- Operations owns protected policy, global resource governance, evaluation, promotion, rollback, and chatbot control-plane policy.
-- Extractor-mapper owns acquisition, extraction, mapping, and heavy legacy engines.
-- Cross-repository duplication is a design defect unless it is a documented compatibility boundary.
+- Foundation owns public-safe contracts, deterministic evidence/intelligence primitives, planning, and the public Worker/API boundary.
+- Operations owns protected policy, resource governance, private acquisition/execution, evaluation, promotion, rollback/recovery, deployment/recovery and chatbot control.
+- Shared behavior uses the Foundation public contract/package; do not copy implementation across repositories.
 
 ## Validation
-Run the repository tests and boundary checks. For cross-family changes, inspect the corresponding owner repository before duplicating logic.
+Run the repository tests and boundary checks. For cross-repository changes, inspect the corresponding owner repository before changing the public contract.
