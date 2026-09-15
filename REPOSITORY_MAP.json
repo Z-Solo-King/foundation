@@ -1,0 +1,55 @@
+{
+  "schema_version": "repository-map/v1",
+  "repository": "Z-Solo-King/foundation",
+  "role": "public_safe_research_core",
+  "read_first": [
+    "README.md",
+    "docs/DOCUMENTATION_INDEX.md",
+    "docs/FAMILY_CONTRACT.json",
+    "docs/FAMILY_ARCHITECTURE.md",
+    "Z-Solo-King/operations:docs/CURRENT_SOURCE_OF_TRUTH.md"
+  ],
+  "canonical": {
+    "research_api": "backend/api/main.py",
+    "request_model": "backend/api/models.py",
+    "product_identity": "foundation_core/product_identity.py",
+    "product_mapping": "foundation_core/product_mapping.py",
+    "normalization": "foundation_core/normalization.py",
+    "field_routing": "foundation_core/field_routing.py",
+    "evidence_certificates": "backend/evidence_certificate.py",
+    "evidence_selection": "backend/evidence_selection.py",
+    "claims": "backend/intelligence/claims.py",
+    "execution": "backend/execution/engine.py",
+    "research_pipeline": "backend/execution/pipeline.py",
+    "public_worker_boundary": "backend/execution/worker_boundary.py",
+    "artifacts": "backend/artifacts/manifest.py",
+    "frontend": "frontend/app.js",
+    "frontend_contract": "frontend/lifecycle_controller.js",
+    "benchmarks": "benchmark/"
+  },
+  "boundary": {
+    "private_operations": "Z-Solo-King/operations",
+    "foundation_must_not_import_private_runtime": true,
+    "public_safe_only": true,
+    "private_user_memory_is_external": true,
+    "protected_policy_is_external": true
+  },
+  "maintenance": {
+    "validation_workflow": ".github/workflows/codeql.yml",
+    "public_tests": "tests/",
+    "deployment_workflow": ".github/workflows/codeql.yml",
+    "historical_code_is_not_runtime": true
+  },
+  "method": [
+    "validate contract",
+    "resolve target",
+    "acquire evidence",
+    "extract/observe",
+    "map deterministically",
+    "reconcile",
+    "verify",
+    "publish",
+    "snapshot"
+  ],
+  "operations_use": "Operations consumes Foundation contracts and public-safe results; it does not copy Foundation implementation authority."
+}
