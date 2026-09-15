@@ -1,1 +1,0 @@
-# Hashing behavior is covered by tests/test_evidence_certificate.py, the canonical certificate authority.
