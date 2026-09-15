@@ -4,15 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0b1020" />
-    <meta name="description" content="Research Intelligence frontend for evidence-backed research runs." />
-    <title>Research Intelligence — Chat & Research</title>
+    <meta name="description" content="Heroic AI — evidence-backed research and chat." />
+    <title>Heroic AI — Research & Chat</title>
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="./ui_overrides.css" />
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
-        <div class="sidebar-top"><button class="brand" data-action="new-chat" aria-label="Start a new chat"><span class="brand-mark">✦</span><span>Research AI</span></button><button class="icon-button mobile-close" data-action="close-sidebar" aria-label="Close sidebar">×</button></div>
+        <div class="sidebar-top"><button class="brand" data-action="new-chat" aria-label="Start a new chat"><span class="brand-mark">✦</span><span>Heroic AI</span></button><button class="icon-button mobile-close" data-action="close-sidebar" aria-label="Close sidebar">×</button></div>
         <button class="primary new-chat-button" data-action="new-chat">＋ <span>New chat</span><kbd>Ctrl K</kbd></button>
         <label class="search-box">⌕ <span class="sr-only">Search chats</span><input id="chat-search" type="search" placeholder="Search chats" autocomplete="off" /></label>
         <nav class="nav-section" aria-label="Workspace">
@@ -26,22 +26,21 @@
       </aside>
 
       <main class="main-area">
-        <header class="topbar"><button class="icon-button menu-button" data-action="open-sidebar" aria-label="Open sidebar">☰</button><div class="mobile-title" id="mobile-title">New chat</div><div class="topbar-actions"><button class="icon-button" data-action="backend-check" aria-label="Check backend status">●</button><button class="icon-button" data-action="toggle-workspace" aria-label="Show research workspace">▥</button><button class="icon-button" data-action="open-queue" aria-label="Open message queue">≡<span class="queue-count" id="queue-count" hidden>0</span></button></div></header>
+        <header class="topbar"><button class="icon-button menu-button" data-action="open-sidebar" aria-label="Open sidebar">☰</button><div class="mobile-title" id="mobile-title">New chat</div><div class="topbar-brand">Heroic AI</div><div class="topbar-actions"><button class="icon-button" data-action="backend-check" aria-label="Check backend status">●</button><button class="icon-button" data-action="toggle-workspace" aria-label="Show research workspace">▥</button><button class="icon-button" data-action="open-queue" aria-label="Open message queue">≡<span class="queue-count" id="queue-count" hidden>0</span></button></div></header>
 
         <section class="chat-layout">
           <div class="conversation">
-            <div class="conversation-scroll" id="conversation-scroll"><div class="empty-state" id="empty-state"><div class="empty-mark">✦</div><h1>What do you want to research?</h1><p>Chat keeps browser-local conversation state. Research submits the repository's real research contract and observes backend evidence and results without inventing completion.</p><div class="starter-grid"><button data-starter="Compare two products with verified specs and current prices">Compare products</button><button data-starter="Research the latest information and cite the sources">Research latest</button><button data-starter="Inspect a URL and show observed source records">Inspect a URL</button></div></div></div>
-            <div class="composer-wrap"><div class="mode-switch" role="tablist" aria-label="Conversation mode"><button class="mode active" data-mode="chat" role="tab" aria-selected="true">Chat</button><button class="mode" data-mode="research" role="tab" aria-selected="false" tabindex="-1">Research</button></div><div id="attachment-list" class="attachment-list" aria-live="polite"></div><div class="composer"><button class="composer-icon" data-action="attachments" aria-label="Add local file">＋</button><textarea id="prompt" rows="1" placeholder="Ask anything…" aria-label="Message"></textarea><button class="composer-icon" data-action="voice" aria-label="Voice input">◉</button><button class="queue-send" data-action="queue" aria-label="Queue research message" title="Queue research message (Ctrl/Cmd+Enter)">Queue</button><button class="send-button" data-action="send" aria-label="Send">↑</button></div><div class="composer-hint"><span id="composer-status">Chat stays local in this frontend until a conversational backend exists.</span><span>Enter to send · Shift+Enter for new line · Ctrl/Cmd+Enter to queue Research</span></div></div>
+            <div class="conversation-scroll" id="conversation-scroll"><div class="empty-state" id="empty-state"><div class="empty-mark">✦</div><h1>What do you want to research?</h1><p>Heroic AI keeps browser-local chat state and uses the real research contract for evidence-backed runs.</p><div class="starter-grid"><button data-starter="Compare two products with verified specs and current prices">Compare products</button><button data-starter="Research the latest information and cite the sources">Research latest</button><button data-starter="Inspect a URL and show observed source records">Inspect a URL</button></div></div></div>
+            <div class="composer-wrap"><div class="mode-switch" role="tablist" aria-label="Conversation mode"><button class="mode active" data-mode="chat" role="tab" aria-selected="true">Chat</button><button class="mode" data-mode="research" role="tab" aria-selected="false" tabindex="-1">Research</button></div><div id="attachment-list" class="attachment-list" aria-live="polite"></div><div class="composer"><button class="composer-icon" data-action="attachments" aria-label="Add local file">＋</button><textarea id="prompt" rows="1" placeholder="Ask Heroic AI…" aria-label="Message"></textarea><button class="composer-icon" data-action="voice" aria-label="Voice input">◉</button><button class="queue-send" data-action="queue" aria-label="Queue research" title="Queue research (Ctrl/Cmd+Enter)">Queue</button><button class="send-button" data-action="send" aria-label="Send">↑</button></div><div class="composer-hint"><span id="composer-status">Chat stays local in this frontend until a conversational backend exists.</span><span>Enter to send · Shift+Enter for new line · Ctrl/Cmd+Enter to queue</span></div></div>
           </div>
 
-          <aside class="workspace" id="workspace" aria-label="Research workspace"><div class="workspace-header"><div><span class="eyebrow">Workspace</span><h2>Research run</h2></div><button class="icon-button" data-action="close-workspace" aria-label="Close workspace">×</button></div><div class="workspace-body" id="workspace-body"><div class="workspace-card"><strong>No active research run</strong><p>Switch to Research mode to submit a real run.</p></div></div></aside>
+          <aside class="workspace" id="workspace" aria-label="Research workspace"><div class="workspace-header"><div><span class="eyebrow">Heroic AI</span><h2>Research workspace</h2></div><button class="icon-button" data-action="close-workspace" aria-label="Close workspace">×</button></div><div class="workspace-body" id="workspace-body"><div class="workspace-card"><strong>No active research run</strong><p>Switch to Research mode to submit a real run.</p></div></div></aside>
         </section>
       </main>
 
-      <aside class="message-queue" id="message-queue" aria-hidden="true"><div class="queue-header"><div><span class="eyebrow">Up next</span><h2>Research queue</h2></div><button class="icon-button" data-action="close-queue" aria-label="Close queue">×</button></div><p class="queue-description">Research follow-ups are durable browser-local queue items. They preserve FIFO order and never interrupt an active backend run.</p><div id="queue-list" class="queue-list"></div><div class="queue-footer"><button class="secondary" data-action="clear-queue">Clear</button><span id="queue-status">Nothing waiting</span></div></aside>
+      <aside class="message-queue" id="message-queue" aria-hidden="true"><div class="queue-header"><div><span class="eyebrow">Heroic AI</span><h2>Research queue</h2></div><button class="icon-button" data-action="close-queue" aria-label="Close queue">×</button></div><p class="queue-description">Research follow-ups are durable browser-local queue items. They preserve FIFO order and never interrupt an active backend run.</p><div id="queue-list" class="queue-list"></div><div class="queue-footer"><button class="secondary" data-action="clear-queue">Clear</button><span id="queue-status">Nothing waiting</span></div></aside>
       <div class="queue-overlay" data-action="close-queue"></div><div class="mobile-overlay" data-action="close-sidebar"></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>
-
     <script src="./feedback_contract.js"></script>
     <script src="./frontend_state.js"></script>
     <script src="./chat_store.js"></script>
