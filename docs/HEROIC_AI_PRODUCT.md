@@ -10,32 +10,14 @@ Research, extraction, comparison, file understanding, memory and model execution
 
 ```text
 User
-  |
-  v
-Heroic AI chat UI
-  |
-  v
-Typed chat request
-  |
-  +--> deterministic/local capability
-  |
-  +--> research capability
-  |       |
-  |       +--> source resolution
-  |       +--> acquisition
-  |       +--> extraction/mapping
-  |       +--> evidence/claim verification
-  |
-  +--> approved model capability
-  |
-  v
-Grounded response
-  |
-  +--> citations / evidence state
-  +--> uncertainty / blocked / partial state
-  +--> artifacts when applicable
-  +--> memory/learning signals when explicitly allowed
+  -> Heroic AI frontend
+  -> authenticated public chat contract
+  -> private Operations control plane
+  -> deterministic tools / evidence / approved model execution
+  -> grounded response + citations + lifecycle state + artifacts
 ```
+
+Research is one Heroic AI capability. The user should not need to understand the internal capability boundary just to use the assistant.
 
 ## Repository ownership
 
@@ -44,7 +26,7 @@ Foundation owns the public-safe contract and deterministic correctness surfaces.
 | Heroic AI capability | Foundation | Operations |
 | --- | --- | --- |
 | user-facing chat UI | canonical | consumes contract |
-| public request schema | canonical | consumes |
+| public chat request schema | canonical | consumes |
 | research/evidence semantics | canonical | orchestrates |
 | deterministic extraction/mapping primitives | canonical | consumes |
 | private chat routing | contract boundary | canonical |
@@ -56,14 +38,16 @@ Foundation owns the public-safe contract and deterministic correctness surfaces.
 ## Non-negotiable product rules
 
 1. Chat is the front door. Research is invoked because the user's request needs it.
-2. The UI must not invent answers when the conversational backend is unavailable.
-3. Model output is never evidence, policy, identity, access control, billing authority or promotion authority.
-4. Search visibility is not authorization; undocumented endpoints are not automatically executable.
-5. Unknown, blocked, partial, contradicted and stale states remain explicit.
-6. The public frontend never directly exposes private Operations credentials or private Worker access.
-7. A capability has one canonical owner; adapters may expose it but may not fork it.
-8. Every meaningful chat action should have an idempotency/replay boundary and an observable lifecycle state.
+2. The frontend never invents an assistant answer when the private conversational runtime is unavailable.
+3. The public `/api/v1/chat` contract is authenticated and uses an internal Operations service binding; the browser never receives a private Worker URL.
+4. Model output is never evidence, policy, identity, access control, billing authority or promotion authority.
+5. Search visibility is not authorization; undocumented endpoints are not automatically executable.
+6. Unknown, blocked, partial, contradicted and stale states remain explicit.
+7. Every protected chat action has an idempotency/replay boundary and an observable lifecycle state.
+8. A capability has one canonical owner; adapters may expose it but may not fork it.
 
-## Current product gap
+## Current product status
 
-The frontend is already branded and structured as Heroic AI, but Chat mode is still browser-local. The next runtime milestone is the authenticated public-to-private conversational path. Until that path has real end-to-end execution evidence, the product must not claim a fully operational conversational backend.
+The public Heroic AI chat contract is now implemented in Foundation and the frontend no longer fabricates a browser-local assistant reply. The public Worker proxies only through the configured private Operations service binding and fails closed with `chat_backend_unavailable` when that binding is absent.
+
+The remaining product-critical implementation is in Operations: `POST /v1/chat` must execute the routed capability/model path and return a versioned grounded response. Tracked in Operations issue #197. Until that path has current production-shaped execution evidence, Heroic AI must not be described as having a fully operational conversational backend.
