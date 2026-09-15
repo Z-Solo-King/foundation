@@ -48,6 +48,23 @@ jobs:
           echo 'backup prerequisites: PASS'
           echo "using bucket-scoped B2 S3 endpoint: ${B2_ENDPOINT}"
 
+      - name: Configure private GitHub clone credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/git-askpass.sh" <<'EOF'
+          #!/bin/sh
+          case "$1" in
+            *Username*) printf '%s\n' 'x-access-token' ;;
+            *Password*) printf '%s\n' "$BACKUP_GITHUB_TOKEN" ;;
+            *) printf '%s\n' '' ;;
+          esac
+          EOF
+          chmod 700 "$RUNNER_TEMP/git-askpass.sh"
+          echo "GIT_ASKPASS=$RUNNER_TEMP/git-askpass.sh" >> "$GITHUB_ENV"
+          echo 'GIT_TERMINAL_PROMPT=0' >> "$GITHUB_ENV"
+          echo 'private GitHub clone credential helper configured'
+
       - name: Mirror both repositories
         shell: bash
         run: |
@@ -55,8 +72,7 @@ jobs:
           rm -rf backup-work backup-output remote-restore
           mkdir -p backup-work backup-output remote-restore
           for repo in foundation operations; do
-            git -c http.extraHeader="Authorization: Bearer ${BACKUP_GITHUB_TOKEN}" \
-              clone --mirror "https://github.com/Z-Solo-King/${repo}.git" "backup-work/${repo}.git"
+            git clone --mirror "https://github.com/Z-Solo-King/${repo}.git" "backup-work/${repo}.git"
             git -C "backup-work/${repo}.git" fsck --full --no-dangling
             sha=$(git -C "backup-work/${repo}.git" rev-parse --verify refs/heads/main)
             refs=$(git -C "backup-work/${repo}.git" show-ref --head | wc -l)
