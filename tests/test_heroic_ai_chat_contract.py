@@ -32,16 +32,12 @@ class FakeOperations:
         return FakeUpstreamResponse()
 
 
-class FakeMissingOperations:
+class FakeMissingEnv:
     pass
 
 
 class FakeEnv:
     OPERATIONS = FakeOperations()
-
-
-class FakeMissingEnv:
-    pass
 
 
 @pytest.mark.asyncio
@@ -69,5 +65,5 @@ async def test_chat_boundary_fails_closed_without_private_binding():
 def test_chat_request_rejects_non_chat_mode_and_paid_mode():
     with pytest.raises(ValueError, match="mode=chat"):
         ChatRequest("c", "r", "hello", mode="research").validate()
-    with pytest.raises(ValueError, match="strict \$0"):
+    with pytest.raises(ValueError, match=r"strict \$0"):
         ChatRequest("c", "r", "hello", strict_zero_cost_only=False).validate()
