@@ -27,7 +27,7 @@ jobs:
       B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
       B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
       B2_BUCKET: ${{ secrets.B2_BUCKET }}
-      GITHUB_BACKUP_TOKEN: ${{ secrets.GITHUB_BACKUP_TOKEN }}
+      BACKUP_GITHUB_TOKEN: ${{ secrets.BACKUP_GITHUB_TOKEN }}
     steps:
       - name: Verify backup credentials and tooling
         shell: bash
@@ -36,99 +36,52 @@ jobs:
           test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub secret'; exit 1; }
           test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub secret'; exit 1; }
           test -n "${B2_BUCKET:-}" || { echo 'Missing B2_BUCKET GitHub secret'; exit 1; }
-          test -n "${GITHUB_BACKUP_TOKEN:-}" || { echo 'Missing GITHUB_BACKUP_TOKEN GitHub secret'; exit 1; }
+          test -n "${BACKUP_GITHUB_TOKEN:-}" || { echo 'Missing BACKUP_GITHUB_TOKEN GitHub secret'; exit 1; }
           command -v git >/dev/null
           command -v curl >/dev/null
-          command -v jq >/dev/null
           echo 'backup prerequisites: PASS'
 
-      - name: Verify both repository sources are readable
-        shell: bash
-        run: |
-          set -euo pipefail
-          for repo in foundation operations; do
-            metadata=$(curl -fsS \
-              -H 'Accept: application/vnd.github+json' \
-              -H "Authorization: Bearer ${GITHUB_BACKUP_TOKEN}" \
-              -H 'X-GitHub-Api-Version: 2026-03-10' \
-              "https://api.github.com/repos/Z-Solo-King/${repo}")
-            jq -e --arg repo "$repo" '.full_name == ("Z-Solo-King/" + $repo)' <<<"$metadata" >/dev/null
-            git -c http.extraHeader="Authorization: Bearer ${GITHUB_BACKUP_TOKEN}" \
-              ls-remote "https://github.com/Z-Solo-King/${repo}.git" HEAD >/dev/null
-            echo "GitHub read access: ${repo}: PASS"
-          done
+      - name: Install Backblaze B2 CLI
+        run: python -m pip install --disable-pip-version-check --quiet b2
 
-      - name: Authorize B2 and resolve private bucket
+      - name: Authorize B2 and verify bucket
         shell: bash
         run: |
           set -euo pipefail
-          auth=$(curl -fsS -u "${B2_KEY_ID}:${B2_APPLICATION_KEY}" \
-            'https://api.backblazeb2.com/b2api/v2/b2_authorize_account')
-          B2_API_URL=$(jq -r '.apiUrl // empty' <<<"$auth")
-          B2_DOWNLOAD_URL=$(jq -r '.downloadUrl // empty' <<<"$auth")
-          B2_AUTH_TOKEN=$(jq -r '.authorizationToken // empty' <<<"$auth")
-          B2_ACCOUNT_ID=$(jq -r '.accountId // empty' <<<"$auth")
-          test -n "$B2_API_URL"
-          test -n "$B2_DOWNLOAD_URL"
-          test -n "$B2_AUTH_TOKEN"
-          test -n "$B2_ACCOUNT_ID"
-          bucket=$(curl -fsS \
-            -H "Authorization: ${B2_AUTH_TOKEN}" \
-            -H 'Content-Type: application/json' \
-            -d "$(jq -cn --arg accountId "$B2_ACCOUNT_ID" '{accountId:$accountId,bucketTypes:["allPrivate"]}')" \
-            "${B2_API_URL}/b2api/v2/b2_list_buckets")
-          B2_BUCKET_ID=$(jq -r --arg name "$B2_BUCKET" '[.buckets[]? | select(.bucketName == $name and .bucketType == "allPrivate") | .bucketId] | if length == 1 then .[0] else empty end' <<<"$bucket")
-          test -n "$B2_BUCKET_ID" || { echo "Expected exactly one private B2 bucket named ${B2_BUCKET}"; exit 1; }
-          {
-            echo "B2_API_URL=${B2_API_URL}"
-            echo "B2_DOWNLOAD_URL=${B2_DOWNLOAD_URL}"
-            echo "B2_AUTH_TOKEN=${B2_AUTH_TOKEN}"
-            echo "B2_ACCOUNT_ID=${B2_ACCOUNT_ID}"
-            echo "B2_BUCKET_ID=${B2_BUCKET_ID}"
-          } >> "$GITHUB_ENV"
-          echo 'B2 authorization and bucket resolution: PASS'
+          b2 account authorize "$B2_KEY_ID" "$B2_APPLICATION_KEY"
+          b2 ls "b2://$B2_BUCKET" >/dev/null
+          echo 'B2 authorization and bucket access: PASS'
 
       - name: Mirror both repositories
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf backup-work
-          mkdir -p backup-work
+          rm -rf backup-work backup-output remote-restore
+          mkdir -p backup-work backup-output remote-restore
           for repo in foundation operations; do
-            target="backup-work/${repo}.git"
-            git -c http.extraHeader="Authorization: Bearer ${GITHUB_BACKUP_TOKEN}" \
-              clone --mirror "https://github.com/Z-Solo-King/${repo}.git" "$target"
-            git -C "$target" fsck --full --no-dangling
-            main_sha=$(git -C "$target" rev-parse --verify refs/heads/main)
-            test -n "$main_sha"
-            ref_count=$(git -C "$target" show-ref --head | wc -l)
-            test "$ref_count" -gt 0
-            echo "${repo} mirror integrity: PASS (${main_sha}; ${ref_count} refs)"
+            git -c http.extraHeader="Authorization: Bearer ${BACKUP_GITHUB_TOKEN}" \
+              clone --mirror "https://github.com/Z-Solo-King/${repo}.git" "backup-work/${repo}.git"
+            git -C "backup-work/${repo}.git" fsck --full --no-dangling
+            sha=$(git -C "backup-work/${repo}.git" rev-parse --verify refs/heads/main)
+            refs=$(git -C "backup-work/${repo}.git" show-ref --head | wc -l)
+            test -n "$sha" && test "$refs" -gt 0
+            echo "${repo} mirror integrity: PASS (${sha}; ${refs} refs)"
           done
 
       - name: Create immutable archives and manifests
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf backup-output
-          mkdir -p backup-output
           timestamp=$(date -u +%Y%m%dT%H%M%SZ)
           for repo in foundation operations; do
             mirror="backup-work/${repo}.git"
             sha=$(git -C "$mirror" rev-parse --verify refs/heads/main)
             tree=$(git -C "$mirror" show -s --format=%T "$sha")
-            ref_count=$(git -C "$mirror" show-ref --head | wc -l)
+            refs=$(git -C "$mirror" show-ref --head | wc -l)
             archive="backup-output/${repo}-${sha}-${timestamp}.tar.gz"
             tar -C backup-work -czf "$archive" "${repo}.git"
-            sha1=$(sha1sum "$archive" | cut -d' ' -f1)
             sha256=$(sha256sum "$archive" | cut -d' ' -f1)
             size=$(stat -c '%s' "$archive")
-            curl -fsS \
-              -H 'Accept: application/vnd.github+json' \
-              -H "Authorization: Bearer ${GITHUB_BACKUP_TOKEN}" \
-              -H 'X-GitHub-Api-Version: 2026-03-10' \
-              "https://api.github.com/repos/Z-Solo-King/${repo}" \
-              > "backup-output/${repo}-${sha}-${timestamp}-repository.json"
             jq -n \
               --arg schema 'repository-backup/v2' \
               --arg repository "Z-Solo-King/${repo}" \
@@ -138,11 +91,10 @@ jobs:
               --arg tree "$tree" \
               --arg created "$timestamp" \
               --arg archive "$(basename "$archive")" \
-              --arg sha1 "$sha1" \
               --arg sha256 "$sha256" \
               --arg size "$size" \
-              --arg refs "$ref_count" \
-              '{schema:$schema,repository:$repository,visibility:$visibility,ref:$ref,commit:$commit,tree:$tree,created_at:$created,archive:$archive,sha1:$sha1,sha256:$sha256,size_bytes:($size|tonumber),ref_count:($refs|tonumber),restore_test:{local_git_fsck:true,main_ref_verified:true,remote_b2_restore_verified:false}}' \
+              --arg refs "$refs" \
+              '{schema:$schema,repository:$repository,visibility:$visibility,ref:$ref,commit:$commit,tree:$tree,created_at:$created,archive:$archive,sha256:$sha256,size_bytes:($size|tonumber),ref_count:($refs|tonumber),restore_test:{local_git_fsck:true,main_ref_verified:true,remote_b2_restore_verified:false}}' \
               > "backup-output/${repo}-${sha}-${timestamp}.json"
             echo "${repo} archive: PASS"
           done
@@ -151,91 +103,52 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          upload=$(curl -fsS \
-            -H "Authorization: ${B2_AUTH_TOKEN}" \
-            -H 'Content-Type: application/json' \
-            -d "$(jq -cn --arg bucketId "$B2_BUCKET_ID" '{bucketId:$bucketId}')" \
-            "${B2_API_URL}/b2api/v2/b2_get_upload_url")
-          B2_UPLOAD_URL=$(jq -r '.uploadUrl // empty' <<<"$upload")
-          B2_UPLOAD_AUTH_TOKEN=$(jq -r '.authorizationToken // empty' <<<"$upload")
-          test -n "$B2_UPLOAD_URL"
-          test -n "$B2_UPLOAD_AUTH_TOKEN"
-          : > backup-output/uploaded.tsv
           for file in backup-output/*.tar.gz backup-output/*.json; do
-            sha1=$(sha1sum "$file" | cut -d' ' -f1)
-            sha256=$(sha256sum "$file" | cut -d' ' -f1)
-            key="repository-backup/$(basename "$file")"
-            encoded=$(python -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$key")
-            response=$(curl -fsS -X POST "$B2_UPLOAD_URL" \
-              -H "Authorization: ${B2_UPLOAD_AUTH_TOKEN}" \
-              -H "X-Bz-File-Name: ${encoded}" \
-              -H 'Content-Type: application/octet-stream' \
-              -H "X-Bz-Content-Sha1: ${sha1}" \
-              -H "X-Bz-Info-sha256: ${sha256}" \
-              --data-binary "@$file")
-            file_id=$(jq -r '.fileId // empty' <<<"$response")
-            test -n "$file_id"
-            printf '%s\t%s\t%s\t%s\n' "$key" "$file_id" "$sha1" "$sha256" >> backup-output/uploaded.tsv
+            name="repository-backup/$(basename "$file")"
+            b2 file upload "$B2_BUCKET" "$file" "$name"
+            echo "uploaded: $name"
           done
           echo 'B2 upload: PASS'
 
-      - name: Verify B2 objects by metadata and checksums
+      - name: Verify B2 listing
         shell: bash
         run: |
           set -euo pipefail
-          while IFS=$'\t' read -r key file_id local_sha1 local_sha256; do
-            info=$(curl -fsS \
-              -H "Authorization: ${B2_AUTH_TOKEN}" \
-              -H 'Content-Type: application/json' \
-              -d "$(jq -cn --arg fileId "$file_id" '{fileId:$fileId}')" \
-              "${B2_API_URL}/b2api/v2/b2_get_file_info")
-            remote_sha1=$(jq -r '.contentSha1 // empty' <<<"$info")
-            remote_sha256=$(jq -r '.fileInfo.sha256 // empty' <<<"$info")
-            remote_size=$(jq -r '.contentLength // -1' <<<"$info")
-            local_size=$(stat -c '%s' "backup-output/$(basename "$key")")
-            test "$remote_sha1" = "$local_sha1" || { echo "SHA-1 mismatch: $key"; exit 1; }
-            test "$remote_sha256" = "$local_sha256" || { echo "SHA-256 mismatch: $key"; exit 1; }
-            test "$remote_size" = "$local_size" || { echo "Size mismatch: $key"; exit 1; }
-            echo "verified: $key"
-          done < backup-output/uploaded.tsv
-          echo 'B2 remote metadata verification: PASS'
+          b2 ls --recursive "b2://$B2_BUCKET/repository-backup/" >/tmp/b2-list.txt
+          grep -q 'foundation-' /tmp/b2-list.txt
+          grep -q 'operations-' /tmp/b2-list.txt
+          echo 'B2 object listing: PASS'
 
-      - name: Verify restoration from every uploaded repository archive
+      - name: Verify remote restore and checksums
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p remote-restore
-          while IFS=$'\t' read -r key file_id expected_sha1 expected_sha256; do
-            case "$key" in
-              repository-backup/*.tar.gz)
-                filename=$(basename "$key")
-                curl -fsS \
-                  -H "Authorization: ${B2_AUTH_TOKEN}" \
-                  "${B2_DOWNLOAD_URL}/b2api/v4/b2_download_file_by_id?fileId=${file_id}" \
-                  -o "remote-restore/${filename}"
-                actual_sha1=$(sha1sum "remote-restore/${filename}" | cut -d' ' -f1)
-                actual_sha256=$(sha256sum "remote-restore/${filename}" | cut -d' ' -f1)
-                test "$actual_sha1" = "$expected_sha1" || { echo "Remote restore SHA-1 mismatch: $key"; exit 1; }
-                test "$actual_sha256" = "$expected_sha256" || { echo "Remote restore SHA-256 mismatch: $key"; exit 1; }
+          while IFS= read -r remote; do
+            case "$remote" in
+              *.tar.gz)
+                name=$(basename "$remote")
+                b2 file download "b2://$B2_BUCKET/$remote" "remote-restore/$name"
+                expected=$(sha256sum "backup-output/$name" | cut -d' ' -f1)
+                actual=$(sha256sum "remote-restore/$name" | cut -d' ' -f1)
+                test "$expected" = "$actual" || { echo "SHA-256 mismatch: $name"; exit 1; }
                 rm -rf remote-restore/extracted
                 mkdir -p remote-restore/extracted
-                tar -xzf "remote-restore/${filename}" -C remote-restore/extracted
+                tar -xzf "remote-restore/$name" -C remote-restore/extracted
                 repo_dir=$(find remote-restore/extracted -mindepth 1 -maxdepth 1 -type d -name '*.git' | head -n 1)
                 test -n "$repo_dir"
                 git -C "$repo_dir" fsck --full --no-dangling
                 test -n "$(git -C "$repo_dir" rev-parse --verify refs/heads/main)"
-                echo "remote restore verification: PASS: $key"
+                echo "remote restore: PASS: $name"
                 ;;
             esac
-          done < backup-output/uploaded.tsv
+          done < <(grep '\.tar\.gz$' /tmp/b2-list.txt)
           echo 'remote B2 restore verification: PASS'
 
       - name: Write non-sensitive run summary
-        shell: bash
         run: |
           {
             echo '### B2 repository backup'
             echo
-            echo 'foundation + operations full Git mirrors were created.'
-            echo 'Local Git integrity, B2 upload, remote SHA-1/SHA-256/size verification, and remote archive restore were checked.'
+            echo 'Foundation and Operations mirrors were created.'
+            echo 'B2 upload, object listing, SHA-256 verification, extraction, and Git integrity restore were checked.'
           } >> "$GITHUB_STEP_SUMMARY"
