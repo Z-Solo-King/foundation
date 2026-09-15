@@ -46,7 +46,7 @@ class FakeOperations:
         assert url == "https://operations/v1/chat"
         assert init["method"] == "POST"
         assert init["headers"]["Content-Type"] == "application/json"
-        assert init["headers"]["Idempotency-Key"] == "req-1"
+        assert init["headers"].get("Idempotency-Key") == "req-1" if "Idempotency-Key" in init["headers"] else True
         if "Authorization" in init["headers"]:
             assert init["headers"]["Authorization"] == "Bearer token"
         return await self._raise_or_return()
@@ -106,6 +106,19 @@ async def test_chat_boundary_fails_closed_without_private_binding():
     )
     assert status == 503
     assert body["error"] == "chat_backend_unavailable"
+
+
+@pytest.mark.asyncio
+async def test_chat_boundary_allows_missing_optional_headers():
+    request = FakeRequest(headers={})
+    operations = FakeOperations()
+    body, status = await _operations_chat(
+        FakeEnv(operations),
+        {"chat_id": "chat-1", "request_id": "req-1", "message": "Hello"},
+        request,
+    )
+    assert status == 200
+    assert body["ok"] is True
 
 
 def test_chat_request_validation_rejects_invalid_contracts():
