@@ -161,6 +161,8 @@ def test_certificate_rejects_non_string_source_id():
 
 
 def test_certificate_rejects_invalid_positional_arity_and_mixed_arguments():
+    with pytest.raises(TypeError, match="expects 6, 7 or 8 positional"):
+        EvidenceCertificate("obs", "a", "b", "c", "d")
     with pytest.raises(ValueError):
         EvidenceCertificate("obs")
     with pytest.raises(TypeError, match="either positional or named"):
