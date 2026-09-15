@@ -37,10 +37,11 @@
         </section>
       </main>
 
-      <aside class="message-queue" id="message-queue" aria-hidden="true"><div class="queue-header"><div><span class="eyebrow">Up next</span><h2>Message queue</h2></div><button class="icon-button" data-action="close-queue" aria-label="Close queue">×</button></div><p class="queue-description">Queue stores follow-ups locally until you explicitly process them. Research items still use the real Worker API.</p><div id="queue-list"></div><div class="queue-footer"><button class="secondary" data-action="clear-queue">Clear</button><button class="primary compact" data-action="process-queue">Process queue</button><span id="queue-status">Nothing waiting</span></div></aside>
+      <aside class="message-queue" id="message-queue" aria-hidden="true"><div class="queue-header"><div><span class="eyebrow">Up next</span><h2>Message queue</h2></div><button class="icon-button" data-action="close-queue" aria-label="Close queue">×</button></div><p class="queue-description">Research follow-ups are durable browser-local queue items. They preserve FIFO order and never interrupt an active backend run.</p><div id="queue-list"></div><div class="queue-footer"><button class="secondary" data-action="clear-queue">Clear</button><button class="primary compact" data-action="process-queue">Process queue</button><span id="queue-status">Nothing waiting</span></div></aside>
       <div class="queue-overlay" data-action="close-queue"></div><div class="mobile-overlay" data-action="close-sidebar"></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>
     <script src="./app.js"></script>
     <script src="./ui_guards.js"></script>
+    <script src="./lifecycle_controller.js"></script>
   </body>
 </html>
