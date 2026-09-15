@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
 
@@ -44,14 +44,20 @@ jobs:
           ! grep -RniE 'localStorage\\.(setItem|AUTH_TOKEN)|Bearer[[:space:]]+[A-Za-z0-9_-]{20,}' frontend --exclude='*.map'
           echo 'frontend secret boundary: PASS'
 
-      - name: Validate planned overnight schedule
+      - name: Validate planned overnight schedule and coverage
         shell: bash
         run: |
           set -euo pipefail
           grep -Fq 'cron: "30 19 * * *"' .github/workflows/nightly-multi-agent-research.yml
+          grep -Fq 'matrix:' .github/workflows/nightly-multi-agent-research.yml
+          grep -Fq 'lane: 0' .github/workflows/nightly-multi-agent-research.yml
+          grep -Fq 'lane: 1' .github/workflows/nightly-multi-agent-research.yml
+          grep -Fq 'lane: 2' .github/workflows/nightly-multi-agent-research.yml
+          grep -Fq 'assert completed == expected' .github/workflows/nightly-multi-agent-research.yml
+          grep -Fq "assert summary['program_count'] == 24" .github/workflows/nightly-multi-agent-research.yml
           grep -Fq 'cron: "45 19 * * *"' .github/workflows/autonomous-benchmark.yml
           grep -Fq 'cron: "0 20 * * *"' .github/workflows/nightly-invariants.yml
-          echo 'overnight 01:00-09:00 IST schedule contract: PASS'
+          echo 'overnight 01:00-09:00 IST schedule and 24-program coverage contract: PASS'
 
       - name: Validate no competing Cloudflare deployment workflow was added
         shell: bash

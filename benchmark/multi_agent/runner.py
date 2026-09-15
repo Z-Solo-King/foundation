@@ -13,6 +13,7 @@ from .programs import NIGHTLY_PROGRAMS
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run capacity-aware nightly multi-agent research")
+    parser.add_argument("--lane", type=int, choices=range(3), help="run exactly one nightly research lane")
     parser.add_argument("--start-slot", type=int, choices=range(8), default=0)
     parser.add_argument("--slots", type=int, choices=range(1, 9), default=8)
     parser.add_argument("--output", default=".runtime/multi-agent/research.jsonl")
@@ -23,7 +24,19 @@ def parse_args() -> argparse.Namespace:
 
 
 async def run(args: argparse.Namespace) -> None:
-    selected = tuple(program for program in NIGHTLY_PROGRAMS if args.start_slot <= program.slot < min(8, args.start_slot + args.slots))
+    lane = getattr(args, "lane", None)
+    if lane is not None:
+        selected = tuple(program for program in NIGHTLY_PROGRAMS if program.lane == lane)
+    else:
+        selected = tuple(
+            program
+            for program in NIGHTLY_PROGRAMS
+            if args.start_slot <= program.slot < min(8, args.start_slot + args.slots)
+        )
+
+    if not selected:
+        raise RuntimeError("Nightly research selection is empty")
+
     reporter = JsonlResearchReporter(Path(args.output))
     executor = None if args.dry_run else configured_executor()
     if executor is None and not args.dry_run:
@@ -33,7 +46,11 @@ async def run(args: argparse.Namespace) -> None:
         )
     coordinator = MultiAgentCoordinator(global_active_agents=args.global_capacity, executor=executor)
     mode = "dry-run" if args.dry_run else "llm"
-    context = {"night_date": datetime.now(timezone.utc).date().isoformat(), "mode": mode}
+    context = {
+        "night_date": datetime.now(timezone.utc).date().isoformat(),
+        "mode": mode,
+        "lane": lane,
+    }
 
     if args.compare:
         experiment = CapacityExperiment(coordinator)
@@ -54,6 +71,7 @@ async def run(args: argparse.Namespace) -> None:
     print(json.dumps({
         "event": "research_window_started",
         "global_capacity": args.global_capacity,
+        "lane": lane,
         "programs": len(selected),
         "mode": mode,
     }))
