@@ -1,6 +1,6 @@
 # Heroic AI — Foundation
 
-Public application contract and deterministic core for **Heroic AI**, the project's chatbot-first research assistant.
+Public application contract and deterministic core for **Heroic AI**, the chatbot-first research assistant.
 
 Heroic AI is the product. Research is one of its capabilities, not a separate product. Foundation owns the public-safe request/evidence contracts, deterministic research primitives, public frontend boundary, and canonical public deployment path. Operations owns private chatbot orchestration, protected policy/resource authority, private memory, model/provider execution and promotion.
 
@@ -20,7 +20,7 @@ Live repository state and fresh GitHub evidence override dated continuity notes.
 ```text
 User
   -> Heroic AI frontend
-  -> public chat/research contract
+  -> authenticated public chat/research contract
   -> private Operations control plane
   -> deterministic tools / evidence / approved model execution
   -> grounded response + citations + state + artifacts
