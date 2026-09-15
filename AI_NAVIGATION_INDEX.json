@@ -37,7 +37,7 @@
   "maintenance": {
     "validation": ".github/workflows/codeql.yml",
     "public_tests": "tests/",
-    "deployment_owner": ".github/workflows/deploy-public-worker.yml",
+    "deployment_owner": ".github/workflows/codeql.yml",
     "archive_code_is_not_runtime": true
   },
   "method": [
