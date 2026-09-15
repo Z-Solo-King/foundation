@@ -20,7 +20,7 @@
           <button class="nav-item" data-view="saved" aria-current="false">☆ <span>Saved</span></button>
         </nav>
         <div class="sidebar-label">Recent</div>
-        <div class="chat-list" id="chat-list"></div>
+        <div class="chat-list" id="chat-list" aria-live="polite"></div>
         <div class="sidebar-bottom"><button class="nav-item" data-view="settings" aria-current="false">⚙ <span>Settings</span></button><button class="connection-pill" id="connection-pill" data-action="backend-check" title="Check backend status">Checking backend…</button></div>
       </aside>
 
@@ -29,18 +29,24 @@
 
         <section class="chat-layout">
           <div class="conversation">
-            <div class="conversation-scroll" id="conversation-scroll"><div class="empty-state" id="empty-state"><div class="empty-mark">✦</div><h1>What do you want to research?</h1><p>Chat keeps local conversation state. Research submits the repository’s real research contract and tracks the run, evidence, and user-facing result when returned by the backend.</p><div class="starter-grid"><button data-starter="Compare two products with verified specs and current prices">Compare products</button><button data-starter="Research the latest information and cite the sources">Research latest</button><button data-starter="Inspect a URL and show observed source records">Inspect a URL</button></div></div></div>
-            <div class="composer-wrap"><div class="mode-switch" role="tablist" aria-label="Conversation mode"><button class="mode active" data-mode="chat" role="tab" aria-selected="true">Chat</button><button class="mode" data-mode="research" role="tab" aria-selected="false" tabindex="-1">Research</button></div><div id="attachment-list" class="attachment-list" aria-live="polite"></div><div class="composer"><button class="composer-icon" data-action="attachments" aria-label="Add local file">＋</button><textarea id="prompt" rows="1" placeholder="Ask anything…" aria-label="Message"></textarea><button class="composer-icon" data-action="voice" aria-label="Voice input">◉</button><button class="queue-send" data-action="queue" aria-label="Queue message" title="Queue message (Ctrl/Cmd+Enter)">Queue</button><button class="send-button" data-action="send" aria-label="Send">↑</button></div><div class="composer-hint"><span id="composer-status">Chat stays local in this frontend until a conversational backend exists.</span><span>Enter to send · Shift+Enter for new line · Ctrl/Cmd+Enter to queue</span></div></div>
+            <div class="conversation-scroll" id="conversation-scroll"><div class="empty-state" id="empty-state"><div class="empty-mark">✦</div><h1>What do you want to research?</h1><p>Chat keeps browser-local conversation state. Research submits the repository's real research contract and observes backend evidence and results without inventing completion.</p><div class="starter-grid"><button data-starter="Compare two products with verified specs and current prices">Compare products</button><button data-starter="Research the latest information and cite the sources">Research latest</button><button data-starter="Inspect a URL and show observed source records">Inspect a URL</button></div></div></div>
+            <div class="composer-wrap"><div class="mode-switch" role="tablist" aria-label="Conversation mode"><button class="mode active" data-mode="chat" role="tab" aria-selected="true">Chat</button><button class="mode" data-mode="research" role="tab" aria-selected="false" tabindex="-1">Research</button></div><div id="attachment-list" class="attachment-list" aria-live="polite"></div><div class="composer"><button class="composer-icon" data-action="attachments" aria-label="Add local file">＋</button><textarea id="prompt" rows="1" placeholder="Ask anything…" aria-label="Message"></textarea><button class="composer-icon" data-action="voice" aria-label="Voice input">◉</button><button class="queue-send" data-action="queue" aria-label="Queue research message" title="Queue research message (Ctrl/Cmd+Enter)">Queue</button><button class="send-button" data-action="send" aria-label="Send">↑</button></div><div class="composer-hint"><span id="composer-status">Chat stays local in this frontend until a conversational backend exists.</span><span>Enter to send · Shift+Enter for new line · Ctrl/Cmd+Enter to queue Research</span></div></div>
           </div>
 
           <aside class="workspace" id="workspace" aria-label="Research workspace"><div class="workspace-header"><div><span class="eyebrow">Workspace</span><h2>Research run</h2></div><button class="icon-button" data-action="close-workspace" aria-label="Close workspace">×</button></div><div class="workspace-body" id="workspace-body"><div class="workspace-card"><strong>No active research run</strong><p>Switch to Research mode to submit a real run.</p></div></div></aside>
         </section>
       </main>
 
-      <aside class="message-queue" id="message-queue" aria-hidden="true"><div class="queue-header"><div><span class="eyebrow">Up next</span><h2>Message queue</h2></div><button class="icon-button" data-action="close-queue" aria-label="Close queue">×</button></div><p class="queue-description">Research follow-ups are durable browser-local queue items. They preserve FIFO order and never interrupt an active backend run.</p><div id="queue-list"></div><div class="queue-footer"><button class="secondary" data-action="clear-queue">Clear</button><span id="queue-status">Nothing waiting</span></div></aside>
+      <aside class="message-queue" id="message-queue" aria-hidden="true"><div class="queue-header"><div><span class="eyebrow">Up next</span><h2>Research queue</h2></div><button class="icon-button" data-action="close-queue" aria-label="Close queue">×</button></div><p class="queue-description">Research follow-ups are durable browser-local queue items. They preserve FIFO order and never interrupt an active backend run.</p><div id="queue-list" class="queue-list"></div><div class="queue-footer"><button class="secondary" data-action="clear-queue">Clear</button><span id="queue-status">Nothing waiting</span></div></aside>
       <div class="queue-overlay" data-action="close-queue"></div><div class="mobile-overlay" data-action="close-sidebar"></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>
+
     <script src="./feedback_contract.js"></script>
+    <script src="./frontend_state.js"></script>
+    <script src="./chat_store.js"></script>
+    <script src="./chat_view.js"></script>
+    <script src="./workspace_view.js"></script>
+    <script src="./composer.js"></script>
     <script src="./app.js"></script>
     <script src="./ui_guards.js"></script>
     <script src="./lifecycle_controller.js"></script>
