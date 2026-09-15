@@ -1,3 +1,11 @@
+"""Validated authority-policy scaffold; not currently wired into the execution pipeline.
+
+Runtime evidence authority is owned by the active verification path. This module
+is retained as a tested planning primitive until the tracked integration work
+explicitly connects it to execution/publication. It must not be treated as a
+second live authority source.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

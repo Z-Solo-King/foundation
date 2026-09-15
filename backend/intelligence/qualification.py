@@ -1,3 +1,10 @@
+"""Evidence-qualification scaffold; not currently wired into live publication.
+
+The receipt model is retained as a tested planning primitive. Runtime evidence
+qualification remains owned by the active verification/publication path until
+explicit integration work establishes one canonical authority.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
