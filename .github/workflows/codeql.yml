@@ -104,7 +104,7 @@ jobs:
           databases=$(curl -fsS \
             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             -H 'Content-Type: application/json' \
-            "https://api.github.com/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database")
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database")
           database_id=$(jq -r '[.result[]? | select(.name == "research-intelligence") | .uuid] | if length == 1 then .[0] else empty end' <<<"$databases")
           test -n "$database_id" || { echo 'Expected exactly one research-intelligence D1 database'; exit 1; }
           printf '%s\n' \
