@@ -16,13 +16,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EXCLUDED = {".git", ".venv", "__pycache__", "archive"}
+PROTECTED_PRIVATE_MARKERS = ("research-intelligence-engine-private",)
 FORBIDDEN_PRIVATE_MARKERS = (
     "private.chatbot",
     "resource_ledger",
     "promotion.py",
     "operations/",
     "extractor_mapper",
-    "research-intelligence-engine-private",
 )
 NETWORK_MODULES = {"requests", "httpx", "urllib", "aiohttp"}
 
@@ -63,9 +63,12 @@ def _is_policy_configuration(relative: str) -> bool:
 
 def secret_findings(path: Path, source: str) -> list[Finding]:
     relative = rel(path)
-    if _is_test(relative) or _is_policy_configuration(relative):
+    if _is_test(relative) or _is_policy_configuration(relative) or relative == "scripts/public_security_lint.py":
         return []
     findings = []
+    for marker in PROTECTED_PRIVATE_MARKERS:
+        if marker in source:
+            findings.append(Finding(relative, "private-marker", f"public source contains protected marker {marker}"))
     if re.search(r"Authorization\s*[:=]\s*[`\"']Bearer\s+[A-Za-z0-9._-]{20,}", source):
         findings.append(Finding(relative, "credential-literal", "public source contains a hard-coded bearer credential"))
     if re.search(r"(?i)(?:api[_-]?key|access[_-]?key|secret|password|token)\s*[:=]\s*[\"'][A-Za-z0-9_./+=:-]{24,}[\"']", source):
