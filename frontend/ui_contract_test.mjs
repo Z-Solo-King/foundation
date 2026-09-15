@@ -14,6 +14,7 @@ const queue = read('lifecycle_queue_controls.js');
 const styles = read('styles.css');
 const guards = read('ui_guards.js');
 
+assert.match(html, /Heroic AI/);
 for (const module of ['frontend_state.js', 'chat_store.js', 'chat_view.js', 'workspace_view.js', 'composer.js', 'app.js', 'lifecycle_controller.js', 'lifecycle_queue_controls.js']) assert.ok(html.includes(`./${module}`), `missing script: ${module}`);
 for (const viewName of ['chats', 'projects', 'saved', 'settings']) assert.ok(html.includes(`data-view="${viewName}"`));
 for (const action of ['new-chat', 'backend-check', 'open-queue', 'toggle-workspace', 'attachments', 'voice', 'queue', 'send']) assert.ok(html.includes(`data-action="${action}"`));
@@ -45,4 +46,4 @@ assert.match(styles, /focus-visible/);
 assert.match(styles, /prefers-reduced-motion/);
 assert.match(guards, /repairSavedOwnership/);
 
-console.log('frontend UI architecture and contract checks passed');
+console.log('Heroic AI frontend architecture and contract checks passed');
