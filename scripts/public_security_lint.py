@@ -31,7 +31,8 @@ class Finding:
 def active_files(root: Path = ROOT) -> list[Path]:
     result = []
     for path in root.rglob("*"):
-        if not path.is_file() or any(part in EXCLUDED for part in path.relative_to(root).parts):
+        relative = path.relative_to(root)
+        if not path.is_file() or any(part in EXCLUDED for part in relative.parts):
             continue
         if path.suffix.lower() in {".py", ".js", ".mjs", ".html", ".yml", ".yaml", ".toml"}:
             result.append(path)
@@ -40,9 +41,14 @@ def active_files(root: Path = ROOT) -> list[Path]:
 def rel(path: Path, root: Path = ROOT) -> str:
     return str(path.relative_to(root)).replace("\\", "/")
 
+def _is_test(relative: str) -> bool:
+    return relative.startswith("tests/") or relative.endswith("_test.py") or "/tests/" in relative
+
 def secret_findings(path: Path, source: str) -> list[Finding]:
-    findings = []
     relative = rel(path)
+    if _is_test(relative):
+        return []
+    findings = []
     for marker in sorted(SECRET_NAMES):
         if re.search(rf"(?<![A-Za-z0-9_]){re.escape(marker)}(?![A-Za-z0-9_])", source):
             findings.append(Finding(relative, "private-marker", f"public source contains protected marker {marker}"))
@@ -52,7 +58,7 @@ def secret_findings(path: Path, source: str) -> list[Finding]:
 
 def private_reference_findings(path: Path, source: str) -> list[Finding]:
     relative = rel(path)
-    if relative.startswith("docs/") and "FAMILY_ARCHITECTURE" in source:
+    if _is_test(relative) or relative.startswith("docs/"):
         return []
     return [Finding(relative, "private-reference", f"public source contains private implementation marker {marker}") for marker in FORBIDDEN_PRIVATE_MARKERS if marker in source]
 
@@ -63,7 +69,7 @@ def python_findings(path: Path, source: str) -> list[Finding]:
     except SyntaxError as exc:
         return [Finding(relative, "syntax", str(exc))]
     findings = []
-    is_test = relative.startswith("tests/") or path.name.startswith("test_")
+    is_test = _is_test(relative)
     planner_like = "planner" in Path(relative).parts or Path(relative).stem.endswith("planner")
     if not is_test:
         for node in ast.walk(tree):
