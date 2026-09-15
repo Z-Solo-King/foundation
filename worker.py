@@ -1,6 +1,8 @@
 """Cloudflare Python Worker entrypoint for the standalone public-safe runtime."""
 from __future__ import annotations
 
+import hashlib  # Compatibility export used by legacy worker diagnostics tests.
+
 from workers import Response, WorkerEntrypoint
 
 from backend.api.main import submit_research
