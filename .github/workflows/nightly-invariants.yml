@@ -57,8 +57,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RniE 'workers[[:space:]]+build|deploy[[:space:]]+hook|wrangler[[:space:]]+deploy' .github/workflows | grep -vE 'autonomous-benchmark|nightly-multi-agent-research|nightly-invariants'; then
+          allowed='(codeql|autonomous-benchmark|nightly-multi-agent-research|nightly-invariants)'
+          unexpected=$(grep -RniE 'workers[[:space:]]+build|deploy[[:space:]]+hook|wrangler[[:space:]]+deploy' .github/workflows \
+            | grep -vE "\.github/workflows/${allowed}\.yml" || true)
+          if [ -n "$unexpected" ]; then
+            printf '%s\n' "$unexpected"
             echo 'Unexpected Cloudflare deployment workflow reference detected.'
             exit 1
           fi
-          echo 'deployment ownership boundary: PASS'
+          echo 'deployment ownership boundary: PASS (GitHub Actions/codeql remains the sole approved deploy workflow)'
