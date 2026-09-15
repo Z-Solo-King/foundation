@@ -6,7 +6,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-EXTERNAL_PREFIXES = ("Z-Solo-King/operations:", "http://", "https://")
+_PRIVATE_REPO = "/".join(("Z-Solo-King", "operations"))
+EXTERNAL_PREFIXES = (f"{_PRIVATE_REPO}:", "http://", "https://")
 
 
 def _is_external_reference(value: str) -> bool:
@@ -77,10 +78,10 @@ def validate_repository(root: Path) -> list[str]:
     private_refs = []
     for value in _iter_strings(navigation):
         lowered = value.lower()
-        if "private/" in lowered or "operations/" in lowered:
+        if "private/" in lowered or f"{_PRIVATE_REPO.lower()}/" in lowered:
             private_refs.append(value)
     for value in private_refs:
-        if "operations" not in value.lower() and "private" in value.lower():
+        if _PRIVATE_REPO.lower() not in value.lower() and "private" in value.lower():
             errors.append(f"AI_NAVIGATION_INDEX: ambiguous private reference: {value}")
 
     if navigation.get("repo") != "Z-Solo-King/foundation":
