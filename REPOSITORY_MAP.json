@@ -15,6 +15,8 @@
     "chat_product_ui": "frontend/index.html",
     "chat_frontend_lifecycle": "frontend/app.js",
     "research_lifecycle": "frontend/lifecycle_controller.js",
+    "public_chat_contract": "backend/api/models.py:ChatRequest",
+    "public_worker_chat_boundary": "worker.py:/api/v1/chat",
     "public_research_api": "backend/api/main.py",
     "request_model": "backend/api/models.py",
     "product_identity": "foundation_core/product_identity.py",
@@ -47,8 +49,8 @@
   },
   "method": [
     "accept Heroic AI request",
+    "authenticate and route through public/private boundary",
     "classify chat/research capability",
-    "route through the canonical public/private boundary",
     "reserve governed resources",
     "acquire/observe permitted evidence when required",
     "deterministically extract/map/verify",
