@@ -1,32 +1,32 @@
 # Documentation Hygiene
 
-**Scope:** `foundation` public repository  
-**Status:** normative documentation rule, current 2026-09-16
+**Scope:** `foundation` public repository
+**Status:** normative, current
 
-## Canonical-source rules
+## Canonical sources
 
-- `docs/DOCUMENTATION_INDEX.md` is the navigation source.
-- `DEPLOYMENT.md` and `.github/workflows/codeql.yml` are the source for public deployment mechanics.
-- `docs/FAMILY_CONTRACT.json` and `docs/FAMILY_ARCHITECTURE.md` define public/private ownership.
-- `AI_CODEMAP.json` defines machine-readable ownership and canonical modules.
-- Live repository state and fresh runtime evidence override dated handoffs, continuity notes, old PR descriptions and chat transcripts.
+- `docs/DOCUMENTATION_INDEX.md` is the documentation index.
+- `REPOSITORY_MAP.json` describes ownership and canonical modules.
+- `DEPLOYMENT.md` and `.github/workflows/codeql.yml` describe the public deployment path.
+- `docs/FAMILY_CONTRACT.json` and `docs/FAMILY_ARCHITECTURE.md` define the family boundary.
+- Live repository state and fresh execution evidence override dated handoffs, old pull requests and chat notes.
 
 ## Dated documents
 
-Dated documents are retained for provenance, incident history, or design history. They must clearly state whether they are historical or current. A historical document must not use present-tense language that implies current production certification.
+Dated documents are retained for provenance, incident history or design history. They must state whether they are historical or current. Historical documents must not imply current production certification.
 
-## Status-language rules
+## Evidence language
 
-Use precise labels such as `implemented`, `tested`, `merged`, `deployment-attempted`, `runtime-verified`, `blocked`, or `historical`. Do not use `production-ready`, `verified`, or `complete` when the evidence only proves source-level behavior.
+Use precise states such as `implemented`, `tested`, `merged`, `deployment-attempted`, `runtime-verified`, `blocked` and `historical`. Do not use `production-ready`, `verified` or `complete` when the available evidence proves only source-level behavior.
 
 ## Deployment claims
 
-Never record a production success without execution evidence tied to the deployed revision. Secret availability, workflow source, or existence of a deployment script is not deployment evidence.
+Never record production success without execution evidence tied to the deployed revision. A secret, workflow file or deployment script is not deployment evidence.
 
-## Repository-boundary rules
+## Repository boundary
 
-Public documentation must not disclose private credentials, private control-plane internals, or protected runtime policy values. Describe protected mechanisms at the contract/boundary level only.
+Public documentation must not disclose private credentials, private control-plane internals or protected runtime policy values. Describe protected mechanisms at the contract and boundary level.
 
-## Maintenance rule
+## Maintenance
 
-When a canonical contract, workflow owner, repository boundary, or production gate changes, update the canonical document and this hygiene policy in the same change set when the rule itself changes. Avoid creating a new dated plan for a correction that belongs in an existing canonical document.
+When a contract, workflow owner, repository boundary or production gate changes, update the affected canonical document in the same change set. Do not create a new dated plan when an existing canonical document can be corrected.

@@ -1,12 +1,13 @@
 {
-  "schema_version": "ai-navigation-index/v1",
-  "repo": "Z-Solo-King/foundation",
+  "schema_version": "repository-map/v1",
+  "repository": "Z-Solo-King/foundation",
   "role": "public_safe_research_core",
   "read_first": [
     "README.md",
-    "Z-Solo-King/operations:docs/CURRENT_SOURCE_OF_TRUTH.md",
-    "docs/ARCHITECTURE_PATTERNS.md",
-    "Z-Solo-King/operations:docs/REQUIREMENT_COVERAGE_MATRIX_2026-09-15.md"
+    "docs/DOCUMENTATION_INDEX.md",
+    "docs/FAMILY_CONTRACT.json",
+    "docs/FAMILY_ARCHITECTURE.md",
+    "Z-Solo-King/operations:docs/CURRENT_SOURCE_OF_TRUTH.md"
   ],
   "canonical": {
     "research_api": "backend/api/main.py",
@@ -18,7 +19,6 @@
     "evidence_certificates": "backend/evidence_certificate.py",
     "evidence_selection": "backend/evidence_selection.py",
     "claims": "backend/intelligence/claims.py",
-    "authority": "backend/intelligence/authority.py",
     "execution": "backend/execution/engine.py",
     "research_pipeline": "backend/execution/pipeline.py",
     "public_worker_boundary": "backend/execution/worker_boundary.py",
@@ -35,10 +35,10 @@
     "protected_policy_is_external": true
   },
   "maintenance": {
-    "validation": ".github/workflows/codeql.yml",
+    "validation_workflow": ".github/workflows/codeql.yml",
     "public_tests": "tests/",
-    "deployment_owner": ".github/workflows/codeql.yml",
-    "archive_code_is_not_runtime": true
+    "deployment_workflow": ".github/workflows/codeql.yml",
+    "historical_code_is_not_runtime": true
   },
   "method": [
     "validate contract",
@@ -51,5 +51,5 @@
     "publish",
     "snapshot"
   ],
-  "chatbot_use": "Operations may consume Foundation contracts and results; it does not copy Foundation implementation authority."
+  "operations_use": "Operations consumes Foundation contracts and public-safe results; it does not copy Foundation implementation authority."
 }

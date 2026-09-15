@@ -7,10 +7,10 @@ Foundation contains public-safe contracts, schemas, deterministic primitives, th
 ## Read first
 
 1. `docs/DOCUMENTATION_INDEX.md`
-2. `docs/FAMILY_CONTRACT.json`
-3. `docs/FAMILY_ARCHITECTURE.md`
-4. `docs/PUBLIC_DETERMINISTIC_CORE.md`
-5. relevant subsystem/workflow documentation
+2. `REPOSITORY_MAP.json`
+3. `docs/FAMILY_CONTRACT.json`
+4. `docs/FAMILY_ARCHITECTURE.md`
+5. `docs/PUBLIC_DETERMINISTIC_CORE.md`
 
 Live repository state and fresh GitHub evidence override dated continuity notes.
 
