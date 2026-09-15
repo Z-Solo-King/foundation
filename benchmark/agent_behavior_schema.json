@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent Behavior Benchmark Observation",
+  "type": "object",
+  "required": ["run_id", "provider", "model", "task_id"],
+  "additionalProperties": false,
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1},
+    "provider": {"type": "string", "minLength": 1},
+    "model": {"type": "string", "minLength": 1},
+    "task_id": {"type": "string", "minLength": 1},
+    "input_tokens": {"type": "integer", "minimum": 0},
+    "output_tokens": {"type": "integer", "minimum": 0},
+    "cached_tokens": {"type": "integer", "minimum": 0},
+    "thinking_tokens": {"type": "integer", "minimum": 0},
+    "tool_calls": {"type": "integer", "minimum": 0},
+    "useful_tool_calls": {"type": "integer", "minimum": 0},
+    "relevant_sources": {"type": "integer", "minimum": 0},
+    "sources_used": {"type": "integer", "minimum": 0},
+    "files_read": {"type": "integer", "minimum": 0},
+    "duplicate_actions": {"type": "integer", "minimum": 0},
+    "irrelevant_actions": {"type": "integer", "minimum": 0},
+    "compaction_events": {"type": "integer", "minimum": 0},
+    "context_peak_tokens": {"type": "integer", "minimum": 0},
+    "required_claims": {"type": "integer", "minimum": 0},
+    "supported_claims": {"type": "integer", "minimum": 0},
+    "correct_claims": {"type": "integer", "minimum": 0},
+    "missed_requirements": {"type": "integer", "minimum": 0},
+    "unsupported_claims": {"type": "integer", "minimum": 0},
+    "self_corrections": {"type": "integer", "minimum": 0},
+    "successful_actions": {"type": "integer", "minimum": 0}
+  }
+}
