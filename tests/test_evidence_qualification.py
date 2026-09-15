@@ -168,3 +168,35 @@ def test_invalid_certificate_fails_closed():
     )
     assert receipt.qualified is False
     assert "evidence certificate verification failed" in receipt.reasons
+
+
+def test_naive_observed_at_is_normalized_to_utc_for_freshness():
+    now = datetime(2026, 9, 15, 12, 0, 0, tzinfo=timezone.utc)
+    observed = datetime(2026, 9, 15, 11, 59, 58)
+    observation = Observation.create(
+        observation_id="obs-qual-naive",
+        source_url="https://example.com/product",
+        content="The product has 16 GB RAM.",
+        observed_at=observed,
+    )
+    certificate = create_certificate(observation, EvidenceSpan("obs-qual-naive", 4, 22))
+    record = EvidenceRecord(
+        evidence_id="ev-qual-naive",
+        claim="RAM capacity",
+        entity="Product X",
+        source_url="https://example.com/product",
+        source_family="manufacturer",
+        observed_at=observed,
+        freshness_ttl_seconds=10,
+    )
+    receipt = create_qualification_receipt(
+        record,
+        observation,
+        certificate,
+        field_authority="manufacturer_declaration",
+        authority_allowed=True,
+        evaluation_passed=True,
+        now=now,
+    )
+    assert receipt.freshness_ok is True
+    assert receipt.qualified is True
