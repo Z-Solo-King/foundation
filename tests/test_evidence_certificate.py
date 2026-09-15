@@ -128,7 +128,7 @@ def test_certificate_rejects_blank_content_hash():
 def test_certificate_rejects_non_integer_span_bounds():
     with pytest.raises(TypeError, match="span_start"):
         EvidenceCertificate("obs", "https://example.com", "a" * 64, "0", 1, "x")
-    with pytest.raises(TypeError, match="span_start"):
+    with pytest.raises(TypeError, match="span_end"):
         EvidenceCertificate("obs", "https://example.com", "a" * 64, 0, "1", "x")
 
 
