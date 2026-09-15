@@ -46,8 +46,9 @@ def test_production_deployment_has_one_owner():
 
 
 def test_required_ci_contract_supports_merge_group():
-    codeql = texts = _workflow_texts()["codeql.yml"]
-    frontend = texts
+    texts = _workflow_texts()
+    codeql = texts["codeql.yml"]
+    frontend = texts["frontend-ui.yml"]
     assert "merge_group:" in codeql
     assert "types: [checks_requested]" in codeql
     assert "name: Public tests" in codeql
