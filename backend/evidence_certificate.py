@@ -30,17 +30,19 @@ class EvidenceCertificate:
         source_id: str | None = None,
     ) -> None:
         # Legacy public form: (observation_id, source_url, content_hash,
-        # span_start, span_end, span_text, structurally_valid).
+        # span_start, span_end, span_text[, structurally_valid]).
         # Legacy intelligence form additionally inserted source_id after the ID.
         if args:
             if any(value is not None for value in (source_url, content_hash, span_start, span_end, span_text)):
                 raise TypeError("certificate fields must use either positional or named arguments")
-            if len(args) == 6:
+            if len(args) == 5:
+                source_url, content_hash, span_start, span_end, span_text = args
+            elif len(args) == 6:
                 source_url, content_hash, span_start, span_end, span_text, structurally_valid = args
             elif len(args) == 7:
                 source_id, source_url, content_hash, span_start, span_end, span_text, structurally_valid = args
             else:
-                raise TypeError("EvidenceCertificate expects 7 or 8 positional values")
+                raise TypeError("EvidenceCertificate expects 6, 7 or 8 positional values")
 
         if not isinstance(observation_id, str) or not observation_id:
             raise ValueError("observation_id is required")
