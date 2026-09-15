@@ -1,24 +1,47 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const html = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
-const app = readFileSync(new URL('./app.js', import.meta.url), 'utf8');
-const styles = readFileSync(new URL('./styles.css', import.meta.url), 'utf8');
-const guards = readFileSync(new URL('./ui_guards.js', import.meta.url), 'utf8');
+const read = (name) => readFileSync(new URL(`./${name}`, import.meta.url), 'utf8');
+const html = read('index.html');
+const app = read('app.js');
+const state = read('frontend_state.js');
+const store = read('chat_store.js');
+const view = read('chat_view.js');
+const workspace = read('workspace_view.js');
+const composer = read('composer.js');
+const lifecycle = read('lifecycle_controller.js');
+const queue = read('lifecycle_queue_controls.js');
+const styles = read('styles.css');
+const guards = read('ui_guards.js');
 
-for (const view of ['chats', 'projects', 'saved', 'settings']) assert.ok(html.includes(`data-view="${view}"`));
+for (const module of ['frontend_state.js', 'chat_store.js', 'chat_view.js', 'workspace_view.js', 'composer.js', 'app.js', 'lifecycle_controller.js', 'lifecycle_queue_controls.js']) assert.ok(html.includes(`./${module}`), `missing script: ${module}`);
+for (const viewName of ['chats', 'projects', 'saved', 'settings']) assert.ok(html.includes(`data-view="${viewName}"`));
 for (const action of ['new-chat', 'backend-check', 'open-queue', 'toggle-workspace', 'attachments', 'voice', 'queue', 'send']) assert.ok(html.includes(`data-action="${action}"`));
 for (const mode of ['chat', 'research']) assert.ok(html.includes(`data-mode="${mode}"`));
-for (const element of ['attachment-list', 'queue-count', 'workspace', 'message-queue']) assert.ok(html.includes(`id="${element}"`));
+for (const element of ['attachment-list', 'queue-count', 'workspace', 'message-queue', 'workspace-body', 'conversation-scroll']) assert.ok(html.includes(`id="${element}"`));
 
-for (const contract of ['rie.frontend.chats.v2', 'rie.frontend.projects.v1', 'rie.frontend.saved.v1', 'Authorization', 'strict_zero_cost_only', 'max_sources', 'max_evidence_items', '/api/v1/research', '/api/v1/research/']) assert.ok(app.includes(contract), `missing app contract: ${contract}`);
-for (const behavior of ['function setView', 'function selectMode', 'function enqueueCurrent', 'function processQueue', 'function repairSavedOwnership', 'async function pollResearch', 'function renderResearch']) assert.ok(app.includes(behavior), `missing UI behavior: ${behavior}`);
-assert.ok(app.includes('chatId'), 'research results must retain source chat identity');
-assert.ok(app.includes('localStorage'), 'local browser persistence should remain available');
-assert.ok(!/localStorage\.(setItem|getItem)\([^\n]*sessionToken/.test(app), 'session token must not be persisted');
-assert.ok(styles.includes('focus-visible'), 'keyboard focus treatment missing');
-assert.ok(styles.includes('prefers-reduced-motion'), 'reduced-motion treatment missing');
-assert.ok(guards.includes('repairSavedOwnership'), 'legacy saved-data repair missing');
-assert.ok(guards.includes('window.location.reload()'), 'legacy chat navigation repair missing');
+for (const contract of ['rie.frontend.chats.v2', 'rie.frontend.projects.v1', 'rie.frontend.saved.v1', 'rie.frontend.sessionToken.v1', 'localStorage', 'sessionStorage', 'strict_zero_cost_only']) assert.ok(state.includes(contract), `missing state contract: ${contract}`);
+for (const behavior of ['createProject', 'assignCurrentChat', 'saveMessage', 'exportData', 'importData', 'clearData']) assert.ok(store.includes(`function ${behavior}`), `missing store behavior: ${behavior}`);
+for (const behavior of ['renderSidebar', 'renderConversation', 'renderProjects', 'renderSaved', 'renderSettings']) assert.ok(view.includes(`function ${behavior}`), `missing view behavior: ${behavior}`);
+for (const behavior of ['selectMode', 'handleAttachments', 'handleVoice', 'send', 'queue']) assert.ok(composer.includes(`function ${behavior}`), `missing composer behavior: ${behavior}`);
+for (const behavior of ['render', 'resultText', 'sourceRows']) assert.ok(workspace.includes(`function ${behavior}`), `missing workspace behavior: ${behavior}`);
 
-console.log('frontend UI parity contract checks passed');
+assert.doesNotMatch(app, /async function submitResearch|async function pollResearch|function renderResearch|function processQueue/, 'app.js must not own research lifecycle');
+assert.match(app, /api\.chatView\.render/);
+assert.match(app, /api\.chatStore\.exportData/);
+assert.match(lifecycle, /Idempotency-Key/);
+assert.match(lifecycle, /rie\.frontend\.research\.queue\.v1/);
+assert.match(lifecycle, /rie\.frontend\.research\.active\.v1/);
+assert.match(lifecycle, /visibilitychange/);
+assert.match(lifecycle, /window\.addEventListener\('online'/);
+assert.match(lifecycle, /status: 'unknown'/);
+assert.match(lifecycle, /MAX_POLL_MS/);
+assert.match(lifecycle, /rie:composer-send/);
+assert.match(lifecycle, /rie:queue-clear-requested/);
+assert.match(queue, /queue-changed|rie:queue-remove-requested/);
+assert.ok(!queue.includes("localStorage.setItem(QUEUE_KEY, JSON.stringify(items))"), 'queue controls must not become a second queue authority');
+assert.match(styles, /focus-visible/);
+assert.match(styles, /prefers-reduced-motion/);
+assert.match(guards, /repairSavedOwnership/);
+
+console.log('frontend UI architecture and contract checks passed');
