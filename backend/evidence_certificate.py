@@ -1,7 +1,11 @@
 from dataclasses import dataclass, field
+import hashlib
 
-from backend.content_integrity import sha256_text
 from backend.intelligence.observations import EvidenceSpan, Observation
+
+
+def _content_hash(content: str) -> str:
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 
 @dataclass(frozen=True, init=False)
@@ -74,7 +78,7 @@ def create_certificate(
     return EvidenceCertificate(
         observation_id=observation.observation_id,
         source_url=observation.source_url,
-        content_hash=sha256_text(observation.content),
+        content_hash=_content_hash(observation.content),
         span_start=span.start,
         span_end=span.end,
         span_text=text,
@@ -94,7 +98,7 @@ def verify_certificate(
         return False
     if certificate.source_id is not None and observation.source_id != certificate.source_id:
         return False
-    if sha256_text(observation.content) != certificate.content_hash:
+    if _content_hash(observation.content) != certificate.content_hash:
         return False
 
     span = EvidenceSpan(
