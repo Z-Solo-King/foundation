@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import hashlib  # Compatibility export used by legacy worker diagnostics tests.
+import json
 
 from workers import Response, WorkerEntrypoint
 
 from backend.api.main import submit_research
-from backend.api.models import ResearchRequest
+from backend.api.models import ChatRequest, ResearchRequest
 from backend.persistence.cloudflare import CloudflarePersistence
 from backend.sources.http import fetch_public_url
 from backend.worker_auth import authorized, bearer_token, extract_source_urls, json_object
@@ -56,6 +57,40 @@ async def _get_run(env, run_id):
     return await get_run(env, run_id)
 
 
+async def _operations_chat(env, payload, request):
+    """Proxy Heroic AI chat only through the configured private service binding.
+
+    The public Worker never exposes a private Worker URL to the browser. When the
+    binding is absent, the contract fails closed instead of inventing a browser-local
+    assistant response.
+    """
+    operations = getattr(env, "OPERATIONS", None)
+    if operations is None:
+        return {"ok": False, "error": "chat_backend_unavailable", "status": "unavailable"}, 503
+    headers = {"Content-Type": "application/json"}
+    token = _bearer_token(request)
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    idempotency_key = request.headers.get("Idempotency-Key")
+    if idempotency_key:
+        headers["Idempotency-Key"] = idempotency_key
+    try:
+        upstream = await operations.fetch(
+            "https://operations/v1/chat",
+            {
+                "method": "POST",
+                "headers": headers,
+                "body": json.dumps(payload),
+            },
+        )
+        body = await upstream.json()
+        if not isinstance(body, dict):
+            return {"ok": False, "error": "invalid_private_chat_response"}, 503
+        return body, upstream.status
+    except Exception:
+        return {"ok": False, "error": "chat_backend_unavailable", "status": "unavailable"}, 503
+
+
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
         path = request.url.split("?", 1)[0]
@@ -66,6 +101,27 @@ class Default(WorkerEntrypoint):
         if request.method == "GET" and path.endswith("/readiness"):
             payload, status = await _readiness_payload(self.env)
             return Response.json(payload, status=status)
+
+        if request.method == "POST" and path.endswith("/api/v1/chat"):
+            if not _authorized(request, self.env):
+                return Response.json({"ok": False, "error": "unauthorized"}, status=401)
+            payload = await _json(request)
+            if payload is None:
+                return Response.json({"ok": False, "error": "invalid JSON object"}, status=400)
+            try:
+                req = ChatRequest(
+                    chat_id=str(payload["chat_id"]),
+                    request_id=str(payload["request_id"]),
+                    message=str(payload["message"]),
+                    mode=str(payload.get("mode", "chat")),
+                    strict_zero_cost_only=bool(payload.get("strict_zero_cost_only", True)),
+                    metadata={str(k): str(v) for k, v in dict(payload.get("metadata") or {}).items()},
+                )
+                req.validate()
+            except (KeyError, TypeError, ValueError) as exc:
+                return Response.json({"ok": False, "error": str(exc)}, status=400)
+            body, status = await _operations_chat(self.env, {**payload, "mode": "chat", "strict_zero_cost_only": True}, request)
+            return Response.json(body, status=status)
 
         if request.method == "POST" and path.endswith("/api/v1/chatbot/diagnostic"):
             if not _authorized(request, self.env):
