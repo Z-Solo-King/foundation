@@ -48,6 +48,6 @@ Foundation owns the public-safe contract and deterministic correctness surfaces.
 
 ## Current product status
 
-The public Heroic AI chat contract is now implemented in Foundation and the frontend no longer fabricates a browser-local assistant reply. The public Worker proxies only through the configured private Operations service binding and fails closed with `chat_backend_unavailable` when that binding is absent.
+The public Heroic AI chat contract is implemented in Foundation. The frontend sends Chat mode through `/api/v1/chat` and no longer fabricates a browser-local assistant answer. The public Worker proxies only through the configured private Operations service binding and fails closed with `chat_backend_unavailable` when that binding is absent.
 
-The remaining product-critical implementation is in Operations: `POST /v1/chat` must execute the routed capability/model path and return a versioned grounded response. Tracked in Operations issue #197. Until that path has current production-shaped execution evidence, Heroic AI must not be described as having a fully operational conversational backend.
+The remaining product-critical implementation is in Operations issue #197: `POST /v1/chat` must execute the routed capability/model path and return a versioned grounded response. Until that path has current production-shaped execution evidence, Heroic AI must not be described as having a fully operational conversational backend.
