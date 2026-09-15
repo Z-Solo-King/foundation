@@ -86,18 +86,10 @@
     const response = await fetch(api.apiUrl('/api/v1/chat'), {
       method: 'POST',
       headers: { ...api.authHeaders(true), 'Idempotency-Key': requestId },
-      body: JSON.stringify({
-        chat_id: chatId,
-        request_id: requestId,
-        message: text,
-        mode: 'chat',
-        strict_zero_cost_only: true,
-      }),
+      body: JSON.stringify({ chat_id: chatId, request_id: requestId, message: text, mode: 'chat', strict_zero_cost_only: true }),
     });
     const body = await response.json().catch(() => ({}));
-    if (!response.ok || !body.ok) {
-      throw new Error(body.error || `Heroic AI chat request failed (${response.status})`);
-    }
+    if (!response.ok || !body.ok) throw new Error(body.error || `Heroic AI chat request failed (${response.status})`);
     const answer = body.response?.text || body.answer;
     if (!answer) throw new Error('Heroic AI returned no response text');
     api.addMessage('assistant', answer, {
@@ -123,7 +115,7 @@
   document.addEventListener('rie:composer-queue', (event) => {
     const { text, mode } = event.detail || {};
     if (!text || mode === 'research') return;
-    api.addMessage('assistant', 'Chat messages are sent to the conversational backend directly; use Queue for Research mode follow-ups.', { informational: true }, api.state.activeChatId);
+    api.addMessage('assistant', 'Chat messages use the canonical Heroic AI conversational lifecycle; Queue is reserved for Research capability follow-ups.', { informational: true }, api.state.activeChatId);
     api.chatView.render();
   });
 
