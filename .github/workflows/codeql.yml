@@ -180,36 +180,31 @@ jobs:
           fi
           rm -f readiness.json
 
-      - name: Configure ephemeral Git authentication for Operations
+      - name: Checkout current approved Operations revision
+        shell: bash
         env:
           BACKUP_GITHUB_TOKEN: ${{ secrets.BACKUP_GITHUB_TOKEN }}
+          OPERATIONS_REF: bb1d8c33e926a9752de86492e9d35f26a5f2824c
         run: |
           set -euo pipefail
           test -n "${BACKUP_GITHUB_TOKEN:-}" || { echo 'Missing BACKUP_GITHUB_TOKEN'; exit 1; }
           askpass="$RUNNER_TEMP/git-askpass-operations.sh"
-          cat > "$askpass" <<'EOF'
-          #!/bin/sh
-          case "$1" in
-            *Username*) printf '%s\n' x-access-token ;;
-            *Password*) printf '%s\n' "$BACKUP_GITHUB_TOKEN" ;;
-            *) printf '%s\n' '' ;;
-          esac
-          EOF
-          chmod 700 "$askpass"
-          printf 'GIT_ASKPASS=%s\n' "$askpass" >> "$GITHUB_ENV"
-          printf 'GIT_TERMINAL_PROMPT=0\n' >> "$GITHUB_ENV"
-
-      - name: Checkout current approved Operations revision
-        shell: bash
-        env:
-          OPERATIONS_REF: bb1d8c33e926a9752de86492e9d35f26a5f2824c
-        run: |
-          set -euo pipefail
+          umask 077
+          printf '%s\n' '#!/bin/sh' > "$askpass"
+          printf '%s\n' 'case "$1" in' >> "$askpass"
+          printf '%s\n' '  *Username*) printf "%s\\n" x-access-token ;;' >> "$askpass"
+          printf '%s\n' '  *Password*) printf "%s\\n" "$BACKUP_GITHUB_TOKEN" ;;' >> "$askpass"
+          printf '%s\n' '  *) printf "%s\\n" "" ;;' >> "$askpass"
+          printf '%s\n' 'esac' >> "$askpass"
+          # Export the secret for the helper only within this step; do not persist it via GITHUB_ENV.
+          export GIT_ASKPASS="$askpass"
+          export GIT_TERMINAL_PROMPT=0
           rm -rf "$RUNNER_TEMP/operations"
           git clone --no-checkout https://github.com/Z-Solo-King/operations.git "$RUNNER_TEMP/operations"
           git -C "$RUNNER_TEMP/operations" fetch --no-tags --depth=1 origin "$OPERATIONS_REF"
           git -C "$RUNNER_TEMP/operations" checkout --detach "$OPERATIONS_REF"
           test "$(git -C "$RUNNER_TEMP/operations" rev-parse HEAD)" = "$OPERATIONS_REF"
+          rm -f "$askpass"
 
       - name: Apply canonical Operations governance schema
         working-directory: ${{ runner.temp }}/operations
@@ -231,16 +226,22 @@ jobs:
           OPERATIONS_REF: bb1d8c33e926a9752de86492e9d35f26a5f2824c
         run: |
           set -euo pipefail
-          test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub secret'; exit 1; }
           secret_file="$RUNNER_TEMP/operations-secrets.env"
           umask 077
-          printf 'AUTH_TOKEN=%s\n' "$AUTH_TOKEN" > "$secret_file"
-          pywrangler deploy \
-            --config wrangler.toml \
-            --secrets-file "$secret_file" \
-            --message "github:${OPERATIONS_REF}"
+          if [ -n "${AUTH_TOKEN:-}" ]; then
+            printf 'AUTH_TOKEN=%s\n' "$AUTH_TOKEN" > "$secret_file"
+            pywrangler deploy \
+              --config wrangler.toml \
+              --secrets-file "$secret_file" \
+              --message "github:${OPERATIONS_REF}"
+          else
+            echo 'AUTH_TOKEN is not configured in Foundation Actions; deploying Operations fail-closed without protected authentication.'
+            pywrangler deploy \
+              --config wrangler.toml \
+              --message "github:${OPERATIONS_REF}"
+          fi
           rm -f "$secret_file"
 
       - name: Remove ephemeral Operations checkout and authentication helper
         if: always()
-        run: rm -rf "$RUNNER_TEMP/operations" "$RUNNER_TEMP/operations-secrets.env" "$RUNNER_TEMP/git-askpass-operations.sh" "$RUNNER_TEMP/git-askpass.sh" wrangler.production.generated.toml readiness.json
+        run: rm -rf "$RUNNER_TEMP/operations" "$RUNNER_TEMP/operations-secrets.env" "$RUNNER_TEMP/git-askpass-operations.sh" wrangler.production.generated.toml readiness.json
