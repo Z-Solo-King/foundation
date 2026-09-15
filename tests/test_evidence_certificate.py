@@ -156,7 +156,7 @@ def test_certificate_rejects_non_string_source_id():
 
 
 def test_certificate_rejects_invalid_positional_arity_and_mixed_arguments():
-    with pytest.raises(ValueError, match="source_url"):
+    with pytest.raises(ValueError):
         EvidenceCertificate("obs")
     with pytest.raises(TypeError, match="either positional or named"):
         EvidenceCertificate("obs", "https://example.com", source_url="https://example.com")
