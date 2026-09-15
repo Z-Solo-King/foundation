@@ -1,3 +1,5 @@
+"""Claim/evidence relationship scaffold; not currently wired as a runtime authority."""
+
 from dataclasses import dataclass
 
 from .evidence_graph import Relation
