@@ -25,7 +25,9 @@ def test_checkpoint_validation_rejects_blank_digest_nonhex_and_nonpositive_seque
         ReplayCheckpoint("planned", "0" * 64, 0).validate()
 
 
-def test_bundle_validation_rejects_blank_identity_and_invalid_input_digest():
+def test_bundle_validation_rejects_wrong_schema_blank_identity_and_invalid_input_digest():
+    with pytest.raises(ValueError, match="unsupported replay bundle schema"):
+        ReplayBundle("research-replay-bundle/other", "run", "req", (), "0" * 64, ()).validate()
     with pytest.raises(ValueError, match="run_id and request_fingerprint"):
         ReplayBundle("research-replay-bundle/v1", "", "req", (), "0" * 64, ()).validate()
     with pytest.raises(ValueError, match="run_id and request_fingerprint"):
@@ -57,9 +59,10 @@ def test_corrupt_artifact_digest_rejected():
         build_replay_bundle(run_id="run-1", request_fingerprint="req-1", immutable_inputs={}, checkpoints=(ReplayCheckpoint("planned", "0" * 64, 1),), artifact_digests=("z" * 64,))
 
 
-def test_requested_resume_checkpoint_must_exist():
+def test_requested_resume_checkpoint_must_exist_or_be_supported():
     bundle = build_replay_bundle(run_id="run-1", request_fingerprint="req-1", immutable_inputs={}, checkpoints=(ReplayCheckpoint("planned", "0" * 64, 1),))
     with pytest.raises(ValueError, match="not present"):
         replay_from_checkpoint(bundle, expected_inputs={}, last_completed_stage="verified")
     with pytest.raises(ValueError, match="unsupported completed stage"):
         replay_from_checkpoint(bundle, expected_inputs={}, last_completed_stage="unknown-stage")
+    assert replay_from_checkpoint(bundle, expected_inputs={}, last_completed_stage="planned") == "planned"
