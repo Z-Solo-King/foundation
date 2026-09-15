@@ -52,6 +52,15 @@ def _identity(record: Mapping[str, object]) -> dict[str, str | None]:
         "brand": _field(record, "brand"),
         "variant_id": _field(record, "variant_id") or _field(record, "variant") or _field(record, "id"),
         "title": _field(record, "title") or _field(record, "name") or _field(record, "product_name"),
+        "region": _field(record, "region"),
+        "storage": _field(record, "storage"),
+        "color": _field(record, "color"),
+        "cpu": _field(record, "cpu"),
+        "gpu": _field(record, "gpu"),
+        "display_size": _field(record, "display_size"),
+        "seller": _field(record, "seller"),
+        "condition": _field(record, "condition"),
+        "bundle_type": _field(record, "bundle_type"),
     }
 
 
@@ -59,10 +68,21 @@ def identity_matches(target: Mapping[str, object], candidate: Mapping[str, objec
     expected = _identity(target)
     observed = _identity(candidate)
     strong = ("sku", "mpn", "gtin", "variant_id")
+    dimensions = (
+        "region",
+        "storage",
+        "color",
+        "cpu",
+        "gpu",
+        "display_size",
+        "seller",
+        "condition",
+        "bundle_type",
+    )
     matched: list[str] = []
     conflicts: list[str] = []
 
-    for field in ("url", *strong, "brand"):
+    for field in ("url", *strong, "brand", *dimensions):
         expected_value = expected[field]
         observed_value = observed[field]
         if expected_value and observed_value:

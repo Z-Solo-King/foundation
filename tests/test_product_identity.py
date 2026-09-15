@@ -72,3 +72,81 @@ def test_variant_id_mismatch_is_rejected():
     )
     assert not result.accepted
     assert "variant_id" in result.conflicts
+
+
+def test_matching_variant_dimensions_are_preserved():
+    dimensions = {
+        "region": "IN",
+        "storage": "1TB",
+        "color": "black",
+        "cpu": "Core Ultra 7",
+        "gpu": "RTX 5070",
+        "display_size": "16",
+        "seller": "Acme Retail",
+        "condition": "new",
+        "bundle_type": "single",
+    }
+    result = identity_matches(
+        {"sku": "ABC", **dimensions},
+        {"sku": "ABC", **dimensions},
+    )
+    assert result.accepted
+    assert all(field in result.matched_fields for field in dimensions)
+
+
+def test_region_mismatch_rejects_exact_sku_candidate():
+    result = identity_matches(
+        {"sku": "ABC", "region": "IN"},
+        {"sku": "ABC", "region": "US"},
+    )
+    assert not result.accepted
+    assert "region" in result.conflicts
+
+
+def test_storage_mismatch_rejects_exact_sku_candidate():
+    result = identity_matches(
+        {"sku": "ABC", "storage": "1TB"},
+        {"sku": "ABC", "storage": "512GB"},
+    )
+    assert not result.accepted
+    assert "storage" in result.conflicts
+
+
+def test_display_and_compute_variant_mismatch_rejects_candidate():
+    result = identity_matches(
+        {
+            "sku": "ABC",
+            "color": "black",
+            "cpu": "Core Ultra 7",
+            "gpu": "RTX 5070",
+            "display_size": "16",
+        },
+        {
+            "sku": "ABC",
+            "color": "white",
+            "cpu": "Core Ultra 5",
+            "gpu": "RTX 5060",
+            "display_size": "14",
+        },
+    )
+    assert not result.accepted
+    assert set(result.conflicts) == {"color", "cpu", "gpu", "display_size"}
+
+
+def test_seller_condition_and_bundle_mismatch_rejects_candidate():
+    result = identity_matches(
+        {
+            "sku": "ABC",
+            "seller": "Acme Retail",
+            "condition": "new",
+            "bundle_type": "single",
+        },
+        {
+            "sku": "ABC",
+            "seller": "Other Retail",
+            "condition": "renewed",
+            "bundle_type": "bundle",
+        },
+    )
+    assert not result.accepted
+    assert set(result.conflicts) == {"seller", "condition", "bundle_type"}
