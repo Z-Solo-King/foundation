@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
   id-token: write
   attestations: write
@@ -108,24 +109,63 @@ jobs:
             --input .runtime/artifacts/nightly-a.jsonl .runtime/artifacts/nightly-b.jsonl \
             --output .runtime/nightly-project-improvement.json \
             --run-id "${GITHUB_RUN_ID}"
-      - name: Validate summary contract
+      - name: Download previous successful nightly baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          previous_run="$(gh run list \
+            --workflow nightly-multi-agent-research.yml \
+            --status success \
+            --limit 20 \
+            --json databaseId \
+            --jq 'map(select(.databaseId != (env.GITHUB_RUN_ID|tonumber))) | .[0].databaseId // empty')"
+          if [ -z "$previous_run" ]; then
+            echo 'No previous successful nightly run is available; producing NO_BASELINE.'
+            exit 0
+          fi
+          mkdir -p .runtime/previous
+          if ! gh run download "$previous_run" --name nightly-project-improvement --dir .runtime/previous; then
+            echo 'Previous nightly run exists but has no downloadable project-improvement artifact; producing NO_BASELINE.'
+            rm -rf .runtime/previous
+          fi
+      - name: Compare current run with previous baseline
+        run: |
+          python -m benchmark.multi_agent.baseline \
+            --current .runtime/nightly-project-improvement.json \
+            --previous .runtime/previous/nightly-project-improvement.json \
+            --output .runtime/nightly-baseline.json
+      - name: Validate summary and baseline contracts
         shell: python
         run: |
           import json
           from pathlib import Path
-          payload = json.loads(Path('.runtime/nightly-project-improvement.json').read_text())
-          assert payload['schema'] == 'project-improvement-research/v1'
-          assert payload['research_mode'] == 'project_improvement'
-          assert payload['project_snapshot']['revision']
-          assert payload['program_count'] > 0
-          assert 'improvement_signals' in payload
-          assert payload['evidence_policy']['llm_findings'] == 'candidate_only_until_acquisition_receipt'
+          summary = json.loads(Path('.runtime/nightly-project-improvement.json').read_text())
+          baseline = json.loads(Path('.runtime/nightly-baseline.json').read_text())
+          assert summary['schema'] == 'project-improvement-research/v1'
+          assert summary['research_mode'] == 'project_improvement'
+          assert summary['project_snapshot']['revision']
+          assert summary['program_count'] > 0
+          assert 'improvement_signals' in summary
+          assert summary['evidence_policy']['llm_findings'] == 'candidate_only_until_acquisition_receipt'
+          assert baseline['schema'] == 'project-improvement-baseline/v1'
+          assert baseline['decision'] in {'NO_BASELINE', 'IMPROVED', 'REGRESSED', 'STABLE'}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: nightly-project-improvement
           path: .runtime/nightly-project-improvement.json
           retention-days: 30
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-project-improvement-baseline
+          path: .runtime/nightly-baseline.json
+          retention-days: 30
       - name: Attest project improvement summary
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: .runtime/nightly-project-improvement.json
+      - name: Attest project improvement baseline
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: .runtime/nightly-baseline.json
