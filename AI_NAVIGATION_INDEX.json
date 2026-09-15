@@ -5,7 +5,7 @@
   "read_first": [
     "README.md",
     "Z-Solo-King/operations:docs/CURRENT_SOURCE_OF_TRUTH.md",
-    "docs/ARCHITECTURE_RULES.md",
+    "docs/ARCHITECTURE_PATTERNS.md",
     "Z-Solo-King/operations:docs/REQUIREMENT_COVERAGE_MATRIX_2026-09-15.md"
   ],
   "canonical": {
