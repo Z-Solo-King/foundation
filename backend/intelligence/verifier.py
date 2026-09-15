@@ -54,8 +54,22 @@ class EvidenceVerifier:
     def check_independence(self, lineage_a: SourceLineage, lineage_b: SourceLineage) -> bool:
         return is_independent(lineage_a, lineage_b)
 
-    def is_stale(self, observation: Observation) -> bool:
-        return datetime.now(timezone.utc) - observation.observed_at > self.STALE_THRESHOLD
+    def is_stale(self, observation: Observation, *, now: datetime | None = None) -> bool:
+        current = now or datetime.now(timezone.utc)
+        observed = observation.observed_at
+        if observed.tzinfo is None:
+            observed = observed.replace(tzinfo=timezone.utc)
+        ttl = observation.freshness_ttl_seconds
+        if ttl is None:
+            ttl = int(self.STALE_THRESHOLD.total_seconds())
+        return (current - observed).total_seconds() > ttl
+
+    @staticmethod
+    def _freshness_reason(observation: Observation) -> str:
+        ttl = observation.freshness_ttl_seconds
+        if ttl is None:
+            return ">30 days"
+        return f">{ttl} seconds"
 
     def _collect_evidence(self, claim, supporting_certs, observations, lineages):
         reasons = []
@@ -120,7 +134,11 @@ class EvidenceVerifier:
         stale_count = sum(1 for cert in supporting if self.is_stale(observations[cert.observation_id]))
         all_supporting_stale = bool(supporting) and stale_count == len(supporting)
         if stale_count:
-            reasons.append(f"{stale_count} supporting observations are stale (>30 days)")
+            stale_observations = [observations[cert.observation_id] for cert in supporting if self.is_stale(observations[cert.observation_id])]
+            if all(obs.freshness_ttl_seconds is None for obs in stale_observations):
+                reasons.append(f"{stale_count} supporting observations are stale (>30 days)")
+            else:
+                reasons.append(f"{stale_count} supporting observations are stale under their configured freshness TTL")
         for other in other_claims:
             if other.claim_id == claim.claim_id:
                 continue
