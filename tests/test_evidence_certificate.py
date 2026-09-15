@@ -1,3 +1,5 @@
+import pytest
+
 from backend.content_integrity import sha256_text
 from backend.intelligence.observations import EvidenceSpan, Observation
 from backend.evidence_certificate import EvidenceCertificate, create_certificate, verify_certificate
@@ -106,3 +108,55 @@ def test_explicitly_invalid_certificate_fails_closed():
         False,
     )
     assert verify_certificate(observation, invalid) is False
+
+
+def test_certificate_rejects_blank_observation_id():
+    with pytest.raises(ValueError, match="observation_id"):
+        EvidenceCertificate("", "https://example.com", "a" * 64, 0, 1, "x")
+
+
+def test_certificate_rejects_blank_source_url():
+    with pytest.raises(ValueError, match="source_url"):
+        EvidenceCertificate("obs", "", "a" * 64, 0, 1, "x")
+
+
+def test_certificate_rejects_blank_content_hash():
+    with pytest.raises(ValueError, match="content_hash"):
+        EvidenceCertificate("obs", "https://example.com", "", 0, 1, "x")
+
+
+def test_certificate_rejects_non_integer_span_bounds():
+    with pytest.raises(TypeError, match="span_start"):
+        EvidenceCertificate("obs", "https://example.com", "a" * 64, "0", 1, "x")
+    with pytest.raises(TypeError, match="span_start"):
+        EvidenceCertificate("obs", "https://example.com", "a" * 64, 0, "1", "x")
+
+
+def test_certificate_rejects_non_string_span_text():
+    with pytest.raises(TypeError, match="span_text"):
+        EvidenceCertificate("obs", "https://example.com", "a" * 64, 0, 1, 123)
+
+
+def test_certificate_rejects_non_boolean_validity():
+    with pytest.raises(TypeError, match="structurally_valid"):
+        EvidenceCertificate("obs", "https://example.com", "a" * 64, 0, 1, "x", 1)
+
+
+def test_certificate_rejects_non_string_source_id():
+    with pytest.raises(TypeError, match="source_id"):
+        EvidenceCertificate(
+            "obs",
+            "https://example.com",
+            "a" * 64,
+            0,
+            1,
+            "x",
+            source_id=1,
+        )
+
+
+def test_certificate_rejects_invalid_positional_arity_and_mixed_arguments():
+    with pytest.raises(TypeError, match="expects"):
+        EvidenceCertificate("obs")
+    with pytest.raises(TypeError, match="either positional or named"):
+        EvidenceCertificate("obs", "https://example.com", source_url="https://example.com")
