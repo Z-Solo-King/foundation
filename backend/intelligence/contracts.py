@@ -11,6 +11,8 @@ class ResearchContract:
     require_citations: bool = True
     max_sources: int = 20
     max_evidence_items: int = 100
+    query_category: str | None = None
+    required_source_families: tuple[str, ...] = ()
 
     def validate(self):
         if not self.question.strip():
@@ -19,6 +21,10 @@ class ResearchContract:
             raise ValueError("max_sources must be positive")
         if self.max_evidence_items < 1:
             raise ValueError("max_evidence_items must be positive")
+        if any(not family.strip() for family in self.required_source_families):
+            raise ValueError("required_source_families must contain non-empty names")
+        if len(set(self.required_source_families)) != len(self.required_source_families):
+            raise ValueError("required_source_families must not contain duplicates")
 
 
 @dataclass(frozen=True)
