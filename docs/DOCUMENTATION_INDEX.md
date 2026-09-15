@@ -1,83 +1,50 @@
 # Foundation Documentation Index
 
-Status: **current on 2026-09-13**  
-Role: public-safe contract, evidence and deterministic-core repository
+**Status:** Current as of 2026-09-16  
+**Repository role:** public-safe contract, evidence, deterministic-core and public Worker/CI owner
 
 ## Read-first order
 
-1. `README.md` — public purpose and boundary.
+1. `README.md` — public purpose and boundaries.
 2. `AI_CODEMAP.json` — machine-readable ownership and canonical modules.
 3. `docs/DOCUMENTATION_INDEX.md` — this navigation contract.
-4. `docs/FAMILY_CONTRACT.json` — machine-readable family boundary.
-5. `docs/FAMILY_ARCHITECTURE.md` — dependency direction and repository ownership.
-6. `docs/PUBLIC_DETERMINISTIC_CORE.md` — exact public-safe implementation boundary.
-7. `docs/RUN_RECORD_PUBLIC_BOUNDARY.md` — metadata that may cross into the public layer.
-8. `DEPLOYMENT.md` and workflow definitions — current public runtime/CI operation.
+4. `docs/DOCUMENTATION_HYGIENE.md` — documentation maintenance rules.
+5. `docs/FAMILY_CONTRACT.json` — machine-readable family boundary.
+6. `docs/FAMILY_ARCHITECTURE.md` — ownership and dependency direction.
+7. `docs/PUBLIC_DETERMINISTIC_CORE.md` — public-safe implementation boundary.
+8. `docs/RUN_RECORD_PUBLIC_BOUNDARY.md` — public/private run-record boundary.
+9. `DEPLOYMENT.md` and `.github/workflows/codeql.yml` — canonical public deployment path.
+
+## Current audited head
+
+Foundation `main`: `73dac355789671d27d5d84697fc937293d9d665c`.
+
+This index is navigation, not production evidence. Runtime claims require fresh execution evidence tied to the deployed revision.
 
 ## Canonical responsibilities
 
-Foundation owns:
+Foundation owns public-safe contracts and schemas, deterministic observed-data/evidence primitives, the public API/Worker and frontend boundary, and the canonical public CI/deployment workflow.
 
-- public-safe contracts and schemas;
-- deterministic observed-data primitives;
-- public evidence structures and verification-safe representations;
-- public API/Worker boundary code;
-- public CI evidence for safe deterministic code.
-
-Foundation does not own:
-
-- private acquisition policy;
-- provider credentials;
-- protected resource/quota authority;
-- private chatbot orchestration;
-- private evaluation holdouts;
-- promotion/rollback authority;
-- private deployment control.
-
-## Main documentation groups
-
-### Architecture
-
-- `docs/FAMILY_CONTRACT.json`
-- `docs/FAMILY_ARCHITECTURE.md`
-- `docs/FAMILY_MEMBER.md`
-- `docs/FAMILY_CHANGE_METHODOLOGY.md`
-- `docs/ARCHITECTURE_METHODS_2026-09-12.md`
-- `docs/ARCHITECTURE_PATTERNS.md`
-
-### Deterministic core
-
-- `docs/PUBLIC_DETERMINISTIC_CORE.md`
-- `docs/EVIDENCE_SELECTION_AND_CONTEXT_DENSITY.md`
-- `foundation_core/`
-
-### Public evidence/run boundary
-
-- `docs/RUN_RECORD_PUBLIC_BOUNDARY.md`
-- `docs/contracts/`
-
-### Repository/security controls
-
-- `docs/REPO_CONTROL_PATTERNS.md`
-- `.github/copilot-instructions.md`
-- `.github/workflows/`
+Foundation does not own private acquisition policy, provider credentials/runtime, protected resource/quota authority, private chatbot orchestration, private holdouts, promotion/rollback authority, or private runtime deployment control.
 
 ## Relationship with Operations
 
-The active family has two repositories:
-
 ```text
-Foundation (public-safe contracts/deterministic core)
-                 ↓
-Operations (private orchestration/policy/execution)
+Foundation (public-safe contracts + deterministic core + public Worker/CI)
+                              |
+                         typed/service boundary
+                              v
+Operations (private policy + orchestration + acquisition + protected execution)
 ```
 
-Operations consumes the pinned Foundation deterministic core through its synchronization process. Foundation must remain independent of Operations and must never import private code or protected policy.
+Operations may consume Foundation contracts and public-safe service surfaces. Foundation must remain independent of Operations source and private authority.
+
+## Current deployment-documentation rule
+
+The canonical public deployment workflow is `.github/workflows/codeql.yml`. The latest audited Foundation production attempt is not treated as successful end-to-end production proof because the private Operations checkout was rejected by the GitHub Actions credential. Older successful smoke claims must not be copied forward as current proof.
 
 ## Documentation update rule
 
-Any change that affects a public contract, schema, deterministic algorithm, public/private boundary, workflow ownership, or dependency direction must update this index or the affected canonical document in the same change set.
+Changes to public contracts, schemas, deterministic algorithms, public/private boundaries, deployment ownership, workflow behavior, or dependency direction must update the affected canonical document in the same change set.
 
-Public documentation must describe what is safe to expose. Private implementation details belong in Operations.
-
-When external facts are referenced—such as GitHub Actions behavior or platform APIs—verify current first-party documentation before encoding them as policy.
+Dated continuity/handoff documents are historical unless explicitly marked current. Repository state, current `main` heads, current PRs/workflows, and fresh runtime evidence override historical notes.
