@@ -179,6 +179,70 @@ jobs:
             echo 'AUTH_TOKEN GitHub secret not configured; authenticated infrastructure diagnostic skipped.'
           fi
           rm -f readiness.json
-      - name: Remove generated config
+
+      - name: Configure ephemeral Git authentication for Operations
+        env:
+          BACKUP_GITHUB_TOKEN: ${{ secrets.BACKUP_GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "${BACKUP_GITHUB_TOKEN:-}" || { echo 'Missing BACKUP_GITHUB_TOKEN'; exit 1; }
+          askpass="$RUNNER_TEMP/git-askpass-operations.sh"
+          cat > "$askpass" <<'EOF'
+          #!/bin/sh
+          case "$1" in
+            *Username*) printf '%s\n' x-access-token ;;
+            *Password*) printf '%s\n' "$BACKUP_GITHUB_TOKEN" ;;
+            *) printf '%s\n' '' ;;
+          esac
+          EOF
+          chmod 700 "$askpass"
+          printf 'GIT_ASKPASS=%s\n' "$askpass" >> "$GITHUB_ENV"
+          printf 'GIT_TERMINAL_PROMPT=0\n' >> "$GITHUB_ENV"
+
+      - name: Checkout exact merged Operations revision
+        shell: bash
+        env:
+          OPERATIONS_REF: cf28a28cb40de527aff1cd87f96e103669635f70
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/operations"
+          git clone --no-checkout https://github.com/Z-Solo-King/operations.git "$RUNNER_TEMP/operations"
+          git -C "$RUNNER_TEMP/operations" fetch --no-tags --depth=1 origin "$OPERATIONS_REF"
+          git -C "$RUNNER_TEMP/operations" checkout --detach "$OPERATIONS_REF"
+          test "$(git -C "$RUNNER_TEMP/operations" rev-parse HEAD)" = "$OPERATIONS_REF"
+
+      - name: Apply canonical Operations governance schema
+        working-directory: ${{ runner.temp }}/operations
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
+            --file=docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql \
+            --config=wrangler.toml
+
+      - name: Deploy exact Operations Worker revision
+        working-directory: ${{ runner.temp }}/operations
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          OPERATIONS_REF: cf28a28cb40de527aff1cd87f96e103669635f70
+        run: |
+          set -euo pipefail
+          pywrangler deploy --config wrangler.toml --message "github:${OPERATIONS_REF}"
+
+      - name: Synchronize shared Operations authentication secret
+        working-directory: ${{ runner.temp }}/operations
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub secret'; exit 1; }
+          printf '%s' "$AUTH_TOKEN" | npx --yes wrangler@4.131.1 secret put AUTH_TOKEN --config wrangler.toml
+
+      - name: Remove ephemeral Operations checkout and authentication helper
         if: always()
-        run: rm -f wrangler.production.generated.toml readiness.json
+        run: rm -rf "$RUNNER_TEMP/operations" "$RUNNER_TEMP/git-askpass-operations.sh" "$RUNNER_TEMP/git-askpass.sh" wrangler.production.generated.toml readiness.json
