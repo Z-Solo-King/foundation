@@ -1,3 +1,10 @@
+"""Research-memory scaffold; not currently wired into the live execution path.
+
+This module is retained as a validated planning primitive for future durable
+research-memory integration. It must not be treated as a second memory or
+persistence authority while the active pipeline remains elsewhere.
+"""
+
 from __future__ import annotations
 
 import json
