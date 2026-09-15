@@ -47,7 +47,9 @@ class FakeOperations:
         assert init["method"] == "POST"
         assert init["headers"]["Content-Type"] == "application/json"
         assert init["headers"]["Idempotency-Key"] == "req-1"
-        return self._raise_or_return()
+        if "Authorization" in init["headers"]:
+            assert init["headers"]["Authorization"] == "Bearer token"
+        return await self._raise_or_return()
 
     async def _raise_or_return(self):
         if self.error:
