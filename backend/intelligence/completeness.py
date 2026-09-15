@@ -1,3 +1,10 @@
+"""Pagination-completeness scaffold; not currently wired into the live execution path.
+
+The tested receipt model is retained for planned/validated completeness semantics.
+Production publication must continue to use the canonical active pipeline until
+this primitive is deliberately integrated under existing authority boundaries.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
