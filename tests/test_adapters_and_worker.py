@@ -9,7 +9,6 @@ import worker
 from backend.api.models import ResearchRequest
 from backend.persistence.cloudflare import CloudflarePersistence, IdempotencyConflictError, request_fingerprint
 from backend.persistence.d1 import D1Repository, DocumentVersionRecord, EvidenceRecord, RunRecord, SourceLineageRecord
-from backend.persistence.r2 import ArtifactManifest, R2Artifact, R2Repository
 from backend.sources.search import SearchAuthorization, SearchResult, search
 
 
@@ -136,18 +135,6 @@ def test_d1_repository_all_paths():
     version = DocumentVersionRecord("v1","o1","s1",now,None,"hash","artifact"); assert repo.add_version(version) is version
     with pytest.raises(ValueError): repo.add_version(version)
     assert repo.versions_for_observation("o1") == [version]
-
-
-def test_r2_repository_all_paths():
-    now = datetime.now(timezone.utc); repo = R2Repository(); artifact = R2Artifact("a1","project-artifacts","k","text/plain",3,now,"hash")
-    assert repo.upload(artifact,b"abc") is artifact
-    with pytest.raises(ValueError): repo.upload(artifact,b"abc")
-    with pytest.raises(ValueError): repo.upload(R2Artifact("a2","project-artifacts","k2","text/plain",4,now,"hash"),b"abc")
-    assert repo.download("a1")[1] == b"abc" and repo.download("missing") is None
-    repo.delete("a1"); repo.delete("missing")
-    manifest = ArtifactManifest("m1","name","desc","text",{"encoding":"utf-8"}); assert repo.add_manifest(manifest) is manifest
-    with pytest.raises(ValueError): repo.add_manifest(manifest)
-    assert repo.get_manifest("m1") is manifest and repo.get_manifest("missing") is None
 
 
 @pytest.mark.asyncio

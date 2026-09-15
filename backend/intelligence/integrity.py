@@ -1,10 +1,10 @@
-"""Compatibility exports for content-integrity helpers.
+"""Canonical content-hash helper used by evidence verification."""
 
-The canonical implementation lives in ``backend.content_integrity``.
-Keep this module as a thin compatibility surface so existing imports do not
-create a second implementation.
-"""
+import hashlib
 
-from backend.content_integrity import sha256_text, verify_content_hash
 
-__all__ = ["sha256_text", "verify_content_hash"]
+def sha256_text(content: str) -> str:
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+
+__all__ = ["sha256_text"]

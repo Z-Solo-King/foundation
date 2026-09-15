@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from backend.content_integrity import sha256_text
+from backend.intelligence.integrity import sha256_text
 from backend.intelligence.observations import EvidenceSpan, Observation
 
 

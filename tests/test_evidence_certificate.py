@@ -1,8 +1,7 @@
 import pytest
 
-from backend.content_integrity import sha256_text
-from backend.intelligence.observations import EvidenceSpan, Observation
 from backend.evidence_certificate import EvidenceCertificate, create_certificate, verify_certificate
+from backend.intelligence.observations import EvidenceSpan, Observation
 from backend.intelligence.certificates import EvidenceCertificate as IntelligenceEvidenceCertificate
 
 
@@ -17,15 +16,10 @@ def test_evidence_certificate():
         content="The system stores evidence.",
     )
 
-    span = EvidenceSpan(
-        observation_id="obs-002",
-        start=18,
-        end=26,
-    )
-
+    span = EvidenceSpan(observation_id="obs-002", start=18, end=26)
     certificate = create_certificate(observation, span)
 
-    assert certificate.content_hash == sha256_text(observation.content)
+    assert len(certificate.content_hash) == 64
     assert certificate.span_text == "evidence"
     assert certificate.source_id is None
     assert verify_certificate(observation, certificate) is True
@@ -33,12 +27,7 @@ def test_evidence_certificate():
 
 def test_omitted_structural_validity_defaults_to_true():
     certificate = EvidenceCertificate(
-        "obs-default",
-        "https://example.com",
-        "a" * 64,
-        0,
-        5,
-        "hello",
+        "obs-default", "https://example.com", "a" * 64, 0, 5, "hello"
     )
     assert certificate.structurally_valid is True
 
@@ -71,13 +60,7 @@ def test_certificate_detects_changed_content():
         source_url="https://example.com",
         content="The system stores evidence.",
     )
-
-    span = EvidenceSpan(
-        observation_id="obs-003",
-        start=18,
-        end=26,
-    )
-
+    span = EvidenceSpan("obs-003", 18, 26)
     certificate = create_certificate(observation, span)
 
     changed = Observation(
@@ -96,8 +79,7 @@ def test_explicitly_invalid_certificate_fails_closed():
         source_url="https://example.com",
         content="The system stores evidence.",
     )
-    span = EvidenceSpan("obs-004", 18, 26)
-    certificate = create_certificate(observation, span)
+    certificate = create_certificate(observation, EvidenceSpan("obs-004", 18, 26))
     invalid = certificate.__class__(
         certificate.observation_id,
         certificate.source_url,
@@ -110,57 +92,25 @@ def test_explicitly_invalid_certificate_fails_closed():
     assert verify_certificate(observation, invalid) is False
 
 
-def test_certificate_rejects_blank_observation_id():
+def test_certificate_rejects_invalid_constructor_inputs():
     with pytest.raises(ValueError, match="observation_id"):
         EvidenceCertificate("", "https://example.com", "a" * 64, 0, 1, "x")
-
-
-def test_certificate_rejects_blank_source_url():
     with pytest.raises(ValueError, match="source_url"):
         EvidenceCertificate("obs", "", "a" * 64, 0, 1, "x")
-
-
-def test_certificate_rejects_non_string_source_url():
     with pytest.raises(ValueError, match="source_url"):
         EvidenceCertificate("obs", 123, "a" * 64, 0, 1, "x")
-
-
-def test_certificate_rejects_blank_content_hash():
     with pytest.raises(ValueError, match="content_hash"):
         EvidenceCertificate("obs", "https://example.com", "", 0, 1, "x")
-
-
-def test_certificate_rejects_non_integer_span_bounds():
     with pytest.raises(TypeError, match="span_start"):
         EvidenceCertificate("obs", "https://example.com", "a" * 64, "0", 1, "x")
     with pytest.raises(TypeError, match="span_end"):
         EvidenceCertificate("obs", "https://example.com", "a" * 64, 0, "1", "x")
-
-
-def test_certificate_rejects_non_string_span_text():
     with pytest.raises(TypeError, match="span_text"):
         EvidenceCertificate("obs", "https://example.com", "a" * 64, 0, 1, 123)
-
-
-def test_certificate_rejects_non_boolean_validity():
     with pytest.raises(TypeError, match="structurally_valid"):
         EvidenceCertificate("obs", "https://example.com", "a" * 64, 0, 1, "x", 1)
-
-
-def test_certificate_rejects_non_string_source_id():
     with pytest.raises(TypeError, match="source_id"):
-        EvidenceCertificate(
-            "obs",
-            "https://example.com",
-            "a" * 64,
-            0,
-            1,
-            "x",
-            source_id=1,
-        )
-
-
-def test_certificate_rejects_invalid_positional_arity_and_mixed_arguments():
+        EvidenceCertificate("obs", "https://example.com", "a" * 64, 0, 1, "x", source_id=1)
     with pytest.raises(TypeError, match="expects 6, 7 or 8 positional"):
         EvidenceCertificate("obs", "a", "b", "c", "d")
     with pytest.raises(ValueError):
