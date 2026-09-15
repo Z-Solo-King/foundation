@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections import Counter
 from pathlib import Path
 
 from backend.intelligence.contracts import ResearchContract
@@ -39,6 +40,8 @@ def run(path: Path, output: Path, allow_failures: bool = False) -> int:
     rows = load_queries(path)
     results: list[dict[str, object]] = []
     failures = 0
+    category_failures: Counter[str] = Counter()
+    source_family_failures: Counter[str] = Counter()
     for row in rows:
         query = str(row["query"])
         expected = {str(x) for x in row.get("required_sources", [])}
@@ -64,6 +67,15 @@ def run(path: Path, output: Path, allow_failures: bool = False) -> int:
             passed = stages_ok and citation_ok and not missing and temporal_ok
             if not passed:
                 failures += 1
+                category_failures[str(row.get("category", "unknown"))] += 1
+                for family in missing:
+                    source_family_failures[family] += 1
+                if not stages_ok:
+                    source_family_failures["__missing_required_stage__"] += 1
+                if not citation_ok:
+                    source_family_failures["__citations_not_planned__"] += 1
+                if not temporal_ok:
+                    source_family_failures["__temporal_reconciliation_missing__"] += 1
             results.append({
                 "id": row["id"],
                 "category": row.get("category", ""),
@@ -80,9 +92,21 @@ def run(path: Path, output: Path, allow_failures: bool = False) -> int:
             })
         except Exception as exc:
             failures += 1
+            category_failures[str(row.get("category", "unknown"))] += 1
+            source_family_failures[f"__exception__:{type(exc).__name__}"] += 1
             results.append({"id": row["id"], "category": row.get("category", ""), "passed": False, "error": type(exc).__name__})
 
-    summary = {"schema": "chatbot-research-query-benchmark/v3", "queries": len(results), "passed": len(results) - failures, "failed": failures, "pass_rate": round((len(results) - failures) / len(results), 4) if results else 0.0, "results": results}
+    summary = {
+        "schema": "chatbot-research-query-benchmark/v4",
+        "queries": len(results),
+        "passed": len(results) - failures,
+        "failed": failures,
+        "pass_rate": round((len(results) - failures) / len(results), 4) if results else 0.0,
+        "failure_categories": dict(sorted(category_failures.items())),
+        "failure_causes": dict(sorted(source_family_failures.items())),
+        "strict": not allow_failures,
+        "results": results,
+    }
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
     print(json.dumps(summary, indent=2, ensure_ascii=False))
@@ -93,7 +117,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", default="benchmark/chatbot-query-corpus.json")
     parser.add_argument("--output", default=".runtime/chatbot-query-benchmark.json")
-    parser.add_argument("--allow-failures", action="store_true", help="record research gaps without failing the acquisition runner")
+    parser.add_argument("--allow-failures", action="store_true", help="record research gaps without failing the benchmark")
     args = parser.parse_args()
     return run(Path(args.input), Path(args.output), args.allow_failures)
 

@@ -23,12 +23,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
+        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4
         with:
           languages: python
           queries: security-extended
       - name: Analyze
-        uses: github/codeql-action/analyze@v4
+        uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4
         with:
           category: /language:python
 
@@ -40,6 +40,10 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.14'
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
       - name: Install test tools and package
         run: |
           python -m pip install --upgrade pip
@@ -53,6 +57,13 @@ jobs:
         run: coverage run --branch --source=backend,foundation_core,worker --omit='tests/*,backend/persistence/artifacts.py' -m pytest tests/ -v
       - name: Enforce complete product coverage
         run: coverage report --show-missing --fail-under=100 --omit='tests/*,backend/persistence/artifacts.py'
+      - name: Run deterministic natural-language research benchmark
+        run: python -m benchmark.chatbot_query_benchmark --input benchmark/chatbot-query-corpus.json --output .runtime/chatbot-query-benchmark.json
+      - name: Run frontend UI contract
+        working-directory: frontend
+        run: npm test
+      - name: Public workflow policy tests
+        run: python -m pytest -q tests/test_workflow_policy.py
       - name: Public boundary scan
         shell: bash
         run: |

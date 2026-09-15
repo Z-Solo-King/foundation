@@ -1,0 +1,57 @@
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+WORKFLOW_ROOT = Path(__file__).parents[1] / ".github" / "workflows"
+SHA_REF = re.compile(r"^[0-9a-f]{40}$")
+
+
+def _workflow_texts() -> dict[str, str]:
+    return {
+        path.name: path.read_text(encoding="utf-8")
+        for path in sorted(WORKFLOW_ROOT.glob("*.y*ml"))
+    }
+
+
+def test_all_third_party_actions_are_sha_pinned():
+    violations = []
+    for name, text in _workflow_texts().items():
+        for line_no, line in enumerate(text.splitlines(), 1):
+            stripped = line.strip()
+            if not stripped.startswith("uses:"):
+                continue
+            ref = stripped.split("@", 1)[-1].split("#", 1)[0].strip()
+            action = stripped.split("uses:", 1)[1].split("@", 1)[0].strip()
+            if action.startswith("./") or action.startswith("docker://"):
+                continue
+            if not SHA_REF.fullmatch(ref):
+                violations.append(f"{name}:{line_no}:{action}@{ref}")
+    assert not violations, "Unpinned third-party GitHub Actions:\n" + "\n".join(violations)
+
+
+def test_production_deployment_has_one_owner():
+    texts = _workflow_texts()
+    deployers = [name for name, text in texts.items() if "pywrangler deploy" in text]
+    assert deployers == ["codeql.yml"], deployers
+
+    forbidden = re.compile(r"(?i)(workers\s+build|deploy\s+hook|deploy_hook|workers-builds)")
+    violations = [
+        f"{name}:{line_no}:{line.strip()}"
+        for name, text in texts.items()
+        for line_no, line in enumerate(text.splitlines(), 1)
+        if forbidden.search(line)
+    ]
+    assert not violations, "Competing Cloudflare deployment references:\n" + "\n".join(violations)
+
+
+def test_required_ci_contract_supports_merge_group():
+    texts = _workflow_texts()
+    codeql = texts["codeql.yml"]
+    frontend = texts["frontend-ui.yml"]
+    assert "merge_group:" in codeql
+    assert "types: [checks_requested]" in codeql
+    assert "name: Public tests" in codeql
+    assert "name: Analyze python" in codeql
+    assert "npm test" in codeql
+    assert "merge_group:" in frontend
