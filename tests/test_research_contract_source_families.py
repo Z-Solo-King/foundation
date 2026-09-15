@@ -33,15 +33,16 @@ def test_research_contract_rejects_duplicate_source_families() -> None:
         contract.validate()
 
 
-def test_planner_handles_missing_category_and_blank_explicit_entries() -> None:
+def test_planner_handles_missing_category_and_normalizes_explicit_entries() -> None:
     contract = ResearchContract(
         question="basic product research",
-        required_source_families=("", "reddit"),
+        required_source_families=("  reddit  ", "youtube"),
     )
     plan = create_plan(contract)
     families = set(plan.metadata["required_source_families"].split(","))
-    assert "" not in families
     assert "reddit" in families
+    assert "youtube" in families
+    assert "  reddit  " not in families
     assert plan.metadata["query_category"] == ""
 
 
