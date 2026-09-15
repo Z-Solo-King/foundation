@@ -40,10 +40,12 @@
       <aside class="message-queue" id="message-queue" aria-hidden="true"><div class="queue-header"><div><span class="eyebrow">Up next</span><h2>Message queue</h2></div><button class="icon-button" data-action="close-queue" aria-label="Close queue">×</button></div><p class="queue-description">Research follow-ups are durable browser-local queue items. They preserve FIFO order and never interrupt an active backend run.</p><div id="queue-list"></div><div class="queue-footer"><button class="secondary" data-action="clear-queue">Clear</button><span id="queue-status">Nothing waiting</span></div></aside>
       <div class="queue-overlay" data-action="close-queue"></div><div class="mobile-overlay" data-action="close-sidebar"></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>
+    <script src="./feedback_contract.js"></script>
     <script src="./app.js"></script>
     <script src="./ui_guards.js"></script>
     <script src="./lifecycle_controller.js"></script>
     <script src="./lifecycle_queue_controls.js"></script>
     <script src="./session_bridge.js"></script>
+    <script src="./feedback_bridge.js"></script>
   </body>
 </html>
