@@ -29,6 +29,18 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
         with:
           python-version: "3.14"
+      - name: Require live research executor configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${RESEARCH_LLM_ENDPOINT:-}" || { echo 'Missing RESEARCH_LLM_ENDPOINT; refusing silent dry-run.'; exit 1; }
+          test -n "${RESEARCH_LLM_API_KEY:-}" || { echo 'Missing RESEARCH_LLM_API_KEY; refusing silent dry-run.'; exit 1; }
+          test -n "${RESEARCH_LLM_MODEL:-}" || { echo 'Missing RESEARCH_LLM_MODEL; refusing silent dry-run.'; exit 1; }
+          case "$RESEARCH_LLM_ENDPOINT" in
+            http://*|https://*) ;;
+            *) echo 'RESEARCH_LLM_ENDPOINT must be HTTP(S).'; exit 1 ;;
+          esac
+          echo 'live research executor configuration: PASS'
       - name: Run adaptive research and capacity comparisons
         run: python -m benchmark.multi_agent.runner --start-slot 0 --slots 4 --global-capacity 20 --compare --output .runtime/nightly-a.jsonl
       - uses: actions/upload-artifact@v4
