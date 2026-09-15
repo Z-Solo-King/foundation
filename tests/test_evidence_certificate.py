@@ -1,6 +1,11 @@
 from backend.content_integrity import sha256_text
 from backend.intelligence.observations import EvidenceSpan, Observation
-from backend.evidence_certificate import create_certificate, verify_certificate
+from backend.evidence_certificate import EvidenceCertificate, create_certificate, verify_certificate
+from backend.intelligence.certificates import EvidenceCertificate as IntelligenceEvidenceCertificate
+
+
+def test_evidence_certificate_is_canonical_across_import_paths():
+    assert IntelligenceEvidenceCertificate is EvidenceCertificate
 
 
 def test_evidence_certificate():
@@ -20,7 +25,30 @@ def test_evidence_certificate():
 
     assert certificate.content_hash == sha256_text(observation.content)
     assert certificate.span_text == "evidence"
+    assert certificate.source_id is None
     assert verify_certificate(observation, certificate) is True
+
+
+def test_source_id_compatibility_remains_bound_when_present():
+    observation = Observation.create(
+        observation_id="obs-002-source",
+        source_id="source-1",
+        source_url="https://example.com",
+        content="The system stores evidence.",
+    )
+    span = EvidenceSpan("obs-002-source", 18, 26)
+    certificate = create_certificate(observation, span)
+    assert certificate.source_id == "source-1"
+    assert verify_certificate(observation, certificate) is True
+
+    wrong_source = Observation(
+        observation_id=observation.observation_id,
+        source_id="source-2",
+        source_url=observation.source_url,
+        content=observation.content,
+        observed_at=observation.observed_at,
+    )
+    assert verify_certificate(wrong_source, certificate) is False
 
 
 def test_certificate_detects_changed_content():
