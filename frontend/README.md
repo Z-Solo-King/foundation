@@ -1,4 +1,4 @@
-# Research Intelligence frontend
+# Heroic AI frontend
 
 This frontend is a production-oriented UI shell with the real Foundation research lifecycle plus a complete browser-local personal workspace.
 
@@ -20,7 +20,7 @@ The frontend has one owner per behavior:
 
 ## Real backend integration
 
-The UI uses the existing Foundation Worker contract:
+Heroic AI uses the existing Foundation Worker contract:
 
 - `GET /readiness` — readiness check.
 - `POST /api/v1/research` — submits a strict-$0 research request.
