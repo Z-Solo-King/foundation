@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from threading import RLock
 
 
 class ResourceError(RuntimeError):
@@ -12,6 +13,7 @@ class ResourceBudget:
     ai_calls: int = 10
     # Compatibility alias used by router and legacy plan contracts.
     inference_calls: int | None = None
+    _lock: RLock = field(default_factory=RLock, init=False, repr=False, compare=False)
 
     def __post_init__(self):
         for name in ("requests", "evidence_items", "ai_calls"):
@@ -25,19 +27,21 @@ class ResourceBudget:
 
     @property
     def inference_remaining(self) -> int:
-        return self.ai_calls
+        with self._lock:
+            return self.ai_calls
 
     def consume(self, field: str, amount: int = 1):
         if amount < 0:
             raise ValueError("amount must not be negative")
         if field not in {"requests", "evidence_items", "ai_calls"}:
             raise ValueError(f"unknown resource field: {field}")
-        current = getattr(self, field)
-        if current is None:
-            raise ValueError(f"resource field {field} is not configured")
-        if current < amount:
-            raise ResourceError(f"resource budget exhausted: {field}")
-        setattr(self, field, current - amount)
+        with self._lock:
+            current = getattr(self, field)
+            if current is None:
+                raise ValueError(f"resource field {field} is not configured")
+            if current < amount:
+                raise ResourceError(f"resource budget exhausted: {field}")
+            setattr(self, field, current - amount)
 
     def consume_requests(self, amount: int = 1):
         self.consume("requests", amount)
@@ -52,9 +56,10 @@ class ResourceBudget:
         self.consume("ai_calls", amount)
 
     def remaining(self):
-        return {
-            "requests": self.requests,
-            "evidence_items": self.evidence_items,
-            "ai_calls": self.ai_calls,
-            "inference_calls": self.ai_calls,
-        }
+        with self._lock:
+            return {
+                "requests": self.requests,
+                "evidence_items": self.evidence_items,
+                "ai_calls": self.ai_calls,
+                "inference_calls": self.ai_calls,
+            }

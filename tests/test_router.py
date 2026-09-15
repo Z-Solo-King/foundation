@@ -1,9 +1,11 @@
 """Tests for provider routing."""
 
+from concurrent.futures import ThreadPoolExecutor
+
 import pytest
 from backend.execution.router import ProviderRouter, RoutingDecision
 from backend.execution.providers import ProviderRegistry, ProviderCapability
-from backend.execution.resources import ResourceBudget
+from backend.execution.resources import ResourceBudget, ResourceError
 
 
 def test_router_no_provider():
@@ -83,3 +85,21 @@ def test_resource_budget_rejects_negative_values_and_unknown_fields():
     budget = ResourceBudget()
     with pytest.raises(ValueError, match="unknown resource field"):
         budget.consume("not_a_resource")
+
+
+def test_resource_budget_consumption_is_atomic_under_concurrency():
+    """Only one concurrent consumer can spend a one-unit budget."""
+    budget = ResourceBudget(requests=1)
+
+    def consume_once() -> bool:
+        try:
+            budget.consume_requests()
+        except ResourceError:
+            return False
+        return True
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = list(executor.map(lambda _: consume_once(), range(8)))
+
+    assert sum(results) == 1
+    assert budget.requests == 0
