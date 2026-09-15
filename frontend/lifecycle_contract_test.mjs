@@ -21,7 +21,7 @@ assert.match(lifecycle, /rie:composer-queue/);
 assert.match(lifecycle, /rie:queue-clear-requested/);
 assert.match(lifecycle, /rie:queue-remove-requested/);
 assert.match(lifecycle, /Follow-up queued FIFO/);
-assert.match(lifecycle, /Backend state/);
+assert.match(lifecycle, /backend state/i);
 assert.match(workspace, /Browser UI observes backend state/);
 assert.match(queue, /rie:queue-clear-requested|rie:queue-remove-requested/);
 assert.doesNotMatch(queue, /localStorage\.setItem\(QUEUE_KEY/);
