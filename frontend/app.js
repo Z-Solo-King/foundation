@@ -73,15 +73,13 @@
     if (start) {
       event.preventDefault();
       const prompt = document.getElementById('prompt');
-      if (prompt) { prompt.value = start.dataset.starter || ''; api.composer.resize(); prompt.focus(); }
-      return;
+      if (prompt) { prompt.value = start.dataset.starter || ''; api.composer.selectMode('research'); api.composer.resize(); prompt.focus(); }
     }
   });
 
-  document.addEventListener('rie:composer-send', async (event) => {
+  document.addEventListener('rie:composer-send', (event) => {
     const { text, mode } = event.detail || {};
-    if (!text) return;
-    if (mode === 'research') return;
+    if (!text || mode === 'research') return;
     api.addMessage('user', text);
     api.addMessage('assistant', 'Chat mode is browser-local in this public frontend. Switch to Research mode to submit the real backend research contract.');
     api.chatView.render();
@@ -89,19 +87,10 @@
 
   document.addEventListener('rie:composer-queue', (event) => {
     const { text, mode } = event.detail || {};
-    if (!text) return;
-    if (mode !== 'research') {
-      api.addMessage('user', text);
-      api.addMessage('assistant', 'Queueing is currently reserved for Research mode so queued work always targets the canonical backend lifecycle.');
-      api.chatView.render();
-      return;
-    }
-    const item = { id: api.uuid(), request_id: api.uuid(), text, chat_id: api.state.activeChatId, source_urls: [], created_at: Date.now() };
-    const queue = api.read('rie.frontend.research.queue.v1', []);
-    api.write('rie.frontend.research.queue.v1', [...(Array.isArray(queue) ? queue : []), item]);
-    document.dispatchEvent(new Event('rie:queue-changed'));
-    api.composer.setStatus('Follow-up queued FIFO; current research is not interrupted.');
-    document.dispatchEvent(new CustomEvent('rie:research-queue-requested'));
+    if (!text || mode === 'research') return;
+    api.addMessage('user', text);
+    api.addMessage('assistant', 'Queueing is currently reserved for Research mode so queued work always targets the canonical backend lifecycle.');
+    api.chatView.render();
   });
 
   document.addEventListener('rie:mode-changed', (event) => {
