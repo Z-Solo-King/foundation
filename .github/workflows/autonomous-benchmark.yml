@@ -162,6 +162,10 @@ jobs:
 
           total_observations = sum(status_counts.values())
           error_count = int(status_counts.get('error', 0))
+          blocked_count = int(status_counts.get('blocked', 0))
+          resource_limited_count = int(status_counts.get('resource_limited', 0))
+          operational_failure_count = error_count + blocked_count + resource_limited_count
+          usable_count = int(status_counts.get('ok', 0))
           target_failure_summary = []
           for entry in target_counts.values():
               observations = sum(entry.get(k, 0) for k in ('ok', 'empty', 'blocked', 'resource_limited', 'error'))
@@ -179,7 +183,7 @@ jobs:
           target_failure_summary.sort(key=lambda item: (-item['failure_rate'], item['url']))
 
           safe = {
-              'schema': 'autonomous-public-benchmark-summary/v6',
+              'schema': 'autonomous-public-benchmark-summary/v7',
               'run_id': '${{ github.run_id }}',
               'shard': ${{ matrix.shard }},
               'summaries': len(rows),
@@ -187,6 +191,15 @@ jobs:
               'cycles': cycles,
               'total_observations': total_observations,
               'error_rate': round(error_count / total_observations, 6) if total_observations else None,
+              'operational_failure_rate': round(operational_failure_count / total_observations, 6) if total_observations else None,
+              'usable_observation_rate': round(usable_count / total_observations, 6) if total_observations else None,
+              'failure_counts': {
+                  'error': error_count,
+                  'blocked': blocked_count,
+                  'resource_limited': resource_limited_count,
+                  'operational_failure': operational_failure_count,
+                  'usable': usable_count,
+              },
               'status_counts': dict(sorted(status_counts.items())),
               'http_status_counts': dict(sorted(http_status_counts.items())),
               'diagnostic_counts': dict(sorted(diagnostic_counts.items())),
@@ -201,7 +214,7 @@ jobs:
 
       - name: Upload sanitized benchmark summary
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: autonomous-benchmark-summary-shard-${{ matrix.shard }}
           path: benchmark-summary.json
@@ -210,7 +223,7 @@ jobs:
 
       - name: Upload deep-query benchmark
         if: always() && matrix.shard == 0
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: autonomous-chatbot-query-benchmark
           path: .runtime/chatbot-query-benchmark.json
