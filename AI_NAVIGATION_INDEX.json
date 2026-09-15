@@ -4,9 +4,9 @@
   "role": "public_safe_research_core",
   "read_first": [
     "README.md",
-    "docs/CURRENT_SOURCE_OF_TRUTH.md",
+    "Z-Solo-King/operations:docs/CURRENT_SOURCE_OF_TRUTH.md",
     "docs/ARCHITECTURE_RULES.md",
-    "docs/REQUIREMENT_COVERAGE_MATRIX_2026-09-15.md"
+    "Z-Solo-King/operations:docs/REQUIREMENT_COVERAGE_MATRIX_2026-09-15.md"
   ],
   "canonical": {
     "research_api": "backend/api/main.py",
