@@ -43,10 +43,11 @@ class FakeOperations:
         self.error = error
 
     async def fetch(self, url, init):
-        assert url == "https://operations/v1/chat"
+        assert url == "https://chat/v1/chat"
         assert init["method"] == "POST"
         assert init["headers"]["Content-Type"] == "application/json"
-        assert init["headers"].get("Idempotency-Key") == "req-1" if "Idempotency-Key" in init["headers"] else True
+        if "Idempotency-Key" in init["headers"]:
+            assert init["headers"]["Idempotency-Key"] == "req-1"
         if "Authorization" in init["headers"]:
             assert init["headers"]["Authorization"] == "Bearer token"
         return await self._raise_or_return()
