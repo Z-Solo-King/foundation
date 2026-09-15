@@ -4,9 +4,9 @@
   "role": "public_safe_research_core",
   "read_first": [
     "README.md",
-    "docs/CURRENT_SOURCE_OF_TRUTH.md",
-    "docs/ARCHITECTURE_RULES.md",
-    "docs/REQUIREMENT_COVERAGE_MATRIX_2026-09-15.md"
+    "Z-Solo-King/operations:docs/CURRENT_SOURCE_OF_TRUTH.md",
+    "docs/ARCHITECTURE_PATTERNS.md",
+    "Z-Solo-King/operations:docs/REQUIREMENT_COVERAGE_MATRIX_2026-09-15.md"
   ],
   "canonical": {
     "research_api": "backend/api/main.py",
@@ -15,14 +15,14 @@
     "product_mapping": "foundation_core/product_mapping.py",
     "normalization": "foundation_core/normalization.py",
     "field_routing": "foundation_core/field_routing.py",
-    "evidence_certificates": "evidence_certificate.py",
-    "evidence_selection": "evidence_selection.py",
-    "claims": "intelligence/claims.py",
-    "authority": "intelligence/authority.py",
-    "execution": "execution/engine.py",
-    "research_pipeline": "execution/pipeline.py",
-    "public_worker_boundary": "execution/worker_boundary.py",
-    "artifacts": "artifacts/manifest.py",
+    "evidence_certificates": "backend/evidence_certificate.py",
+    "evidence_selection": "backend/evidence_selection.py",
+    "claims": "backend/intelligence/claims.py",
+    "authority": "backend/intelligence/authority.py",
+    "execution": "backend/execution/engine.py",
+    "research_pipeline": "backend/execution/pipeline.py",
+    "public_worker_boundary": "backend/execution/worker_boundary.py",
+    "artifacts": "backend/artifacts/manifest.py",
     "frontend": "frontend/app.js",
     "frontend_contract": "frontend/lifecycle_controller.js",
     "benchmarks": "benchmark/"
@@ -37,7 +37,7 @@
   "maintenance": {
     "validation": ".github/workflows/codeql.yml",
     "public_tests": "tests/",
-    "deployment_owner": ".github/workflows/codeql.yml",
+    "deployment_owner": ".github/workflows/deploy-public-worker.yml",
     "archive_code_is_not_runtime": true
   },
   "method": [
