@@ -39,7 +39,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `research-intelligence-local-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+    link.download = `heroic-ai-local-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
     document.body.append(link);
     link.click();
     link.remove();
@@ -77,19 +77,53 @@
     }
   });
 
+  async function submitChat(text, chatId = api.state.activeChatId) {
+    if (!api.API_BASE) throw new Error('Heroic AI API base is not configured');
+    if (!chatId) throw new Error('No active Heroic AI chat is available');
+    const requestId = api.uuid();
+    api.addMessage('user', text, { request_id: requestId, pending: true }, chatId);
+    api.chatView.render();
+    const response = await fetch(api.apiUrl('/api/v1/chat'), {
+      method: 'POST',
+      headers: { ...api.authHeaders(true), 'Idempotency-Key': requestId },
+      body: JSON.stringify({
+        chat_id: chatId,
+        request_id: requestId,
+        message: text,
+        mode: 'chat',
+        strict_zero_cost_only: true,
+      }),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || !body.ok) {
+      throw new Error(body.error || `Heroic AI chat request failed (${response.status})`);
+    }
+    const answer = body.response?.text || body.answer;
+    if (!answer) throw new Error('Heroic AI returned no response text');
+    api.addMessage('assistant', answer, {
+      request_id: requestId,
+      response_id: body.response?.response_id || body.response_id || null,
+      status: body.response?.status || body.status || 'completed',
+      sources: body.response?.sources || body.sources || [],
+    }, chatId);
+    document.dispatchEvent(new CustomEvent('rie:chat-response', { detail: { chatId, requestId, body } }));
+    api.chatView.render();
+    return body;
+  }
+
   document.addEventListener('rie:composer-send', (event) => {
     const { text, mode } = event.detail || {};
     if (!text || mode === 'research') return;
-    api.addMessage('user', text);
-    api.addMessage('assistant', 'Chat mode is browser-local in this public frontend. Switch to Research mode to submit the real backend research contract.');
-    api.chatView.render();
+    void submitChat(String(text).trim()).catch((error) => {
+      api.addMessage('assistant', `Heroic AI could not complete this message: ${error.message || error}`, { error: true }, api.state.activeChatId);
+      api.chatView.render();
+    });
   });
 
   document.addEventListener('rie:composer-queue', (event) => {
     const { text, mode } = event.detail || {};
     if (!text || mode === 'research') return;
-    api.addMessage('user', text);
-    api.addMessage('assistant', 'Queueing is currently reserved for Research mode so queued work always targets the canonical backend lifecycle.');
+    api.addMessage('assistant', 'Chat messages are sent to the conversational backend directly; use Queue for Research mode follow-ups.', { informational: true }, api.state.activeChatId);
     api.chatView.render();
   });
 
@@ -102,6 +136,7 @@
   api.importLocalData = importLocalData;
   api.openWorkspace = openWorkspace;
   api.closeWorkspace = closeWorkspace;
+  api.submitChat = submitChat;
 
   api.load();
   api.chatView.render();
