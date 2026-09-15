@@ -1,6 +1,9 @@
 """Tests for evidence verification."""
 
 from datetime import datetime, timezone, timedelta
+
+import pytest
+
 from backend.intelligence.verifier import EvidenceVerifier, ClaimStatus
 from backend.intelligence.certificates import create_certificate
 from backend.intelligence.observations import Observation, EvidenceSpan
@@ -66,6 +69,53 @@ def test_verifier_stale_evidence():
     result = EvidenceVerifier().verify_claim(Claim.create("c1", "Test claim"), (cert,), {"o1": obs}, {"s1": SourceLineage("s1", "family-a")})
     assert result.status == ClaimStatus.STALE
     assert "stale" in result.reasons[0].lower()
+
+
+def test_verifier_uses_per_observation_freshness_ttl():
+    now = datetime.now(timezone.utc)
+    fresh = Observation.create(
+        "fresh", "s1", "https://example.com/fresh", "Current evidence", now - timedelta(hours=2),
+        freshness_ttl_seconds=4 * 60 * 60,
+    )
+    stale = Observation.create(
+        "stale", "s2", "https://example.com/stale", "Old evidence", now - timedelta(hours=2),
+        freshness_ttl_seconds=60 * 60,
+    )
+    verifier = EvidenceVerifier()
+    assert verifier.is_stale(fresh, now=now) is False
+    assert verifier.is_stale(stale, now=now) is True
+
+    fresh_cert = create_certificate(fresh, EvidenceSpan("fresh", 0, 7))
+    stale_cert = create_certificate(stale, EvidenceSpan("stale", 0, 3))
+    result = verifier.verify_claim(
+        Claim.create("c1", "Test claim"),
+        (fresh_cert, stale_cert),
+        {"fresh": fresh, "stale": stale},
+        {"s1": SourceLineage("s1", "family-a"), "s2": SourceLineage("s2", "family-b")},
+    )
+    assert result.status == ClaimStatus.PARTIAL
+    assert "configured freshness TTL" in " ".join(result.reasons)
+
+
+def test_observation_rejects_negative_freshness_ttl():
+    with pytest.raises(ValueError, match="must not be negative"):
+        Observation.create("o1", "https://example.com", "content", freshness_ttl_seconds=-1)
+
+
+def test_verifier_handles_naive_observation_time_with_explicit_clock():
+    observed = datetime(2026, 1, 1, 0, 0, 0)
+    now = datetime(2026, 1, 1, 0, 0, 30, tzinfo=timezone.utc)
+    obs = Observation.create(
+        "o1", "https://example.com", "content", observed_at=observed, freshness_ttl_seconds=60,
+    )
+    assert EvidenceVerifier().is_stale(obs, now=now) is False
+
+
+def test_verifier_rejects_ambiguous_and_invalid_observation_forms():
+    with pytest.raises(TypeError, match="ambiguous observation arguments"):
+        Observation("o1", "https://example.com", "content", source_url="https://other.example")
+    with pytest.raises(TypeError, match="expects 4 or 5 total positional arguments"):
+        Observation("o1", "a", "b", "c", "d", "e")
 
 
 def test_verifier_inaccessible_observation():
