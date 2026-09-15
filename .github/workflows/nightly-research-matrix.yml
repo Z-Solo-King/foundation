@@ -1,0 +1,173 @@
+name: nightly research 20-job matrix
+
+on:
+  schedule:
+    # 00:05 IST = 18:35 UTC on the previous day.
+    - cron: "35 18 * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  id-token: write
+  attestations: write
+  artifact-metadata: write
+
+concurrency:
+  group: nightly-research-matrix
+  cancel-in-progress: false
+
+env:
+  PYTHONUNBUFFERED: "1"
+  RESEARCH_LLM_ENDPOINT: ${{ secrets.RESEARCH_LLM_ENDPOINT }}
+  RESEARCH_LLM_API_KEY: ${{ secrets.RESEARCH_LLM_API_KEY }}
+  RESEARCH_LLM_MODEL: ${{ secrets.RESEARCH_LLM_MODEL }}
+
+jobs:
+  research:
+    name: "Research ${{ matrix.id }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include:
+          - {id: html-structured, program: lane0-slot0, agents: 4, tag: html-structured, focus: "Benchmark HTML, JSON-LD, embedded state, microdata and structured product extraction. Find what a deterministic extractor commonly misses and which bounded fallback signals improve recall without browser escalation."}
+          - {id: api-xhr, program: lane0-slot1, agents: 8, tag: api-xhr, focus: "Research public REST, GraphQL, Fetch and XHR discovery techniques. Separate documented/public endpoints from guessed or inaccessible endpoints and identify safe evidence patterns that improve acquisition."}
+          - {id: hydration-browser, program: lane0-slot2, agents: 6, tag: hydration-browser, focus: "Compare HTML-only, hydration-state parsing and browser escalation. Identify measurable signals for when browser work is worth its cost and failure cases where escalation adds no useful evidence."}
+          - {id: pagination-feeds, program: lane0-slot3, agents: 4, tag: pagination-feeds, focus: "Research deep pagination, variants, sitemap, RSS/feed and catalog traversal techniques. Focus on completeness, termination, deduplication and avoiding duplicate requests."}
+          - {id: image-intelligence, program: lane0-slot4, agents: 6, tag: image-intelligence, focus: "Research image-based product identity and specification clues. Determine what can be safely inferred, how to preserve provenance, and how to avoid visual hallucination or variant confusion."}
+          - {id: access-resilience, program: lane0-slot5, agents: 4, tag: access-resilience, focus: "Research robots, rate limits, bot blocking, transient errors, redirects and inaccessible pages. Build a taxonomy for truthful fallback and fail-closed behavior without bypassing controls."}
+          - {id: acquisition-efficiency, program: lane0-slot6, agents: 8, tag: acquisition-efficiency, focus: "Find better request ordering, caching, deduplication, bounded concurrency and representation selection for faster research. Quantify useful evidence per request and per second where public evidence permits."}
+          - {id: identity-resolution, program: lane1-slot0, agents: 10, tag: identity-resolution, focus: "Stress product identity resolution across model numbers, SKUs, GTINs, variants and bundles. Research entity-resolution and compiler-style normalization methods and adversarial identity collisions."}
+          - {id: spec-normalization, program: lane1-slot1, agents: 8, tag: spec-normalization, focus: "Research detailed product-spec extraction and normalization techniques across inconsistent tables, labels and units. Compare parser/compiler-inspired approaches and identify regression cases."}
+          - {id: price-stock, program: lane1-slot2, agents: 6, tag: price-stock, focus: "Research current price, MRP, discounts, seller, stock, regional pricing and time-series reconciliation. Identify stale-price, marketplace-seller and availability traps and the evidence needed to publish safely."}
+          - {id: contradiction-reconciliation, program: lane1-slot3, agents: 10, tag: contradiction-reconciliation, focus: "Research independence-aware contradiction handling: copied claims, republishing, firmware/revision changes, regional variants and genuine disagreement. Propose evidence graphs and calibrated confidence improvements."}
+          - {id: review-intelligence, program: lane1-slot4, agents: 4, tag: review-intelligence, focus: "Compare launch reviews, ownership reports and current 3-6 month reports. Research methods to prevent stale reviews from dominating current recommendations and identify change-point signals."}
+          - {id: multilingual-regional, program: lane1-slot7, agents: 8, tag: multilingual-regional, focus: "Research multilingual and regional evidence across English, Hinglish and Chinese/community sources including Reddit, PTT, Bilibili, Zhihu, Baidu Tieba and Douban. Focus on terminology expansion, translation drift and source independence."}
+          - {id: vcs-platforms, program: lane2-slot3, agents: 6, tag: vcs-platforms, focus: "Compare GitHub, GitLab, Bitbucket, Azure DevOps, Gitea, Forgejo, SourceHut and Oracle Cloud DevOps from a research-engineering perspective: CI, Actions/pipelines, artifacts, security, APIs, runners, self-hosting, pricing/limits and real practitioner pain points."}
+          - {id: ai-ecosystem, program: lane2-slot1, agents: 10, tag: ai-ecosystem, focus: "Compare Grok, Meta AI, Gemini, DeepSeek, Perplexity, Brave AI/Leo, GitHub Copilot, ChatGPT and Claude. Cross-check official documentation, reputable websites, Reddit and GitHub user discussions for reasoning style, coding, research, search/tool use, context, token efficiency, reliability, pricing and common failure modes."}
+          - {id: coding-ecosystems, program: lane2-slot6, agents: 7, tag: coding-ecosystems, focus: "Research how the engine's acquisition, parsing, orchestration and benchmarking choices compare across Python, JavaScript/TypeScript, Go, Rust, Java, C#, C/C++, PHP, Ruby, Kotlin, Swift, SQL and shell ecosystems. Identify faster or safer implementation patterns worth benchmarking."}
+          - {id: previous-failures, program: lane2-slot7, agents: 4, tag: previous-failures, focus: "Audit prior-night benchmark blind spots and likely failures: missing real browsing/tool execution, single-provider bias, weak causal capacity comparisons, insufficient holdouts, duplicated research, token accounting gaps, UI-only simulation, inaccessible evidence, stale sources and unverifiable claims. Turn each gap into a concrete regression experiment."}
+          - {id: ai-style-human-reviews, program: lane1-slot5, agents: 8, tag: ai-style-human-reviews, focus: "Research practical user-visible style differences among leading AI assistants using Reddit, GitHub issues/discussions, independent reviews and official material. Separate anecdotal preference from reproducible behavior, and classify strengths such as concise coding, deep research, citations, creativity, browsing, correction and refusal behavior."}
+          - {id: ui-lifecycle, program: lane2-slot2, agents: 2, tag: ui-lifecycle, focus: "Test the chatbot UI/lifecycle architecture for duplicate transport ownership, queue FIFO, reconnect, session restoration, idempotency, mobile behavior, accessibility, citation rendering, error recovery and long-running research. Identify failures that backend benchmarks miss."}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - name: Require live research executor configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${RESEARCH_LLM_ENDPOINT:-}" || { echo 'Missing RESEARCH_LLM_ENDPOINT; refusing silent dry-run.'; exit 1; }
+          test -n "${RESEARCH_LLM_API_KEY:-}" || { echo 'Missing RESEARCH_LLM_API_KEY; refusing silent dry-run.'; exit 1; }
+          test -n "${RESEARCH_LLM_MODEL:-}" || { echo 'Missing RESEARCH_LLM_MODEL; refusing silent dry-run.'; exit 1; }
+          case "$RESEARCH_LLM_ENDPOINT" in http://*|https://*) ;; *) echo 'RESEARCH_LLM_ENDPOINT must be HTTP(S).'; exit 1 ;; esac
+      - name: Run isolated research experiment
+        run: |
+          mkdir -p .runtime/matrix
+          python -m benchmark.multi_agent.runner_matrix \
+            --program-id "${{ matrix.program }}" \
+            --agent-budget "${{ matrix.agents }}" \
+            --global-capacity 20 \
+            --focus "${{ matrix.focus }}" \
+            --tag "${{ matrix.tag }}" \
+            --output ".runtime/matrix/${{ matrix.tag }}.jsonl"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-matrix-${{ matrix.id }}
+          path: .runtime/matrix/${{ matrix.tag }}.jsonl
+          retention-days: 30
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: .runtime/matrix/${{ matrix.tag }}.jsonl
+
+  aggregate:
+    name: Aggregate 19 research jobs and compare baseline
+    needs: research
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: nightly-matrix-*
+          path: .runtime/matrix
+          merge-multiple: true
+      - name: Build auditable nightly matrix report
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime/report .runtime/previous
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for path in sorted(Path('.runtime/matrix').glob('*.jsonl')):
+              for line in path.read_text(encoding='utf-8').splitlines():
+                  if line.strip(): rows.append(json.loads(line))
+          failures=[r for r in rows if r.get('status')!='completed']
+          report={
+              'schema':'nightly-research-matrix/v1',
+              'run_id':'${{ github.run_id }}',
+              'job_count':19,
+              'completed':len(rows)-len(failures),
+              'failed_or_partial':len(failures),
+              'experiments':rows,
+              'failure_experiments':[r.get('program_id') for r in failures],
+              'coverage':{
+                  'ai_ecosystem_comparison':True,
+                  'vcs_platform_comparison':True,
+                  'capacity_arms':[1,2,4,6,7,8,10],
+                  'previous_failure_research':True,
+                  'ui_lifecycle':True,
+                  'multilingual':True,
+              },
+          }
+          Path('.runtime/report/nightly-matrix.json').write_text(json.dumps(report,indent=2,ensure_ascii=False),encoding='utf-8')
+          md=['# Nightly Research 20-Job Matrix','',f"Completed: {report['completed']} / 19",f"Failed or partial: {report['failed_or_partial']}",'']
+          md.append('| Experiment | Agents | Status | Findings | Follow-ups |')
+          md.append('|---|---:|---|---:|---:|')
+          for r in rows:
+              md.append(f"| {r['program_id']} | {r['allocated_agents']} | {r['status']} | {len(r.get('findings',[]))} | {len(r.get('follow_up_questions',[]))} |")
+          Path('.runtime/report/nightly-matrix.md').write_text('\n'.join(md)+'\n',encoding='utf-8')
+          PY
+          previous_run="$(gh run list --workflow nightly-research-matrix.yml --status success --limit 10 --json databaseId --jq 'map(select(.databaseId != (env.GITHUB_RUN_ID|tonumber))) | .[0].databaseId // empty')"
+          if [ -n "$previous_run" ]; then
+            gh run download "$previous_run" --name nightly-research-report --dir .runtime/previous || true
+          fi
+      - name: Compare with previous successful matrix where available
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          current=json.loads(Path('.runtime/report/nightly-matrix.json').read_text())
+          previous=[]
+          p=Path('.runtime/previous/nightly-matrix.json')
+          if p.exists(): previous=json.loads(p.read_text()).get('experiments',[])
+          current_ids={r['program_id'] for r in current['experiments']}
+          previous_ids={r['program_id'] for r in previous}
+          current['baseline']={
+              'status':'AVAILABLE' if previous else 'NO_BASELINE',
+              'previous_experiment_count':len(previous),
+              'new_experiments':sorted(current_ids-previous_ids),
+              'missing_from_current':sorted(previous_ids-current_ids),
+          }
+          Path('.runtime/report/nightly-matrix.json').write_text(json.dumps(current,indent=2,ensure_ascii=False))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-research-report
+          path: .runtime/report/
+          retention-days: 30
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: .runtime/report/nightly-matrix.json
