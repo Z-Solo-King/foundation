@@ -7,6 +7,8 @@ from tools.validate_ai_navigation import validate_repository
 def test_ai_navigation_metadata_matches_repository_tree():
     root = Path(__file__).resolve().parents[1]
     assert validate_repository(root) == []
+    assert (root / "AI_NAVIGATION_INDEX.json").exists()
+    assert not (root / "AI_CODEMAP.json").exists()
 
 
 def test_ai_navigation_marks_external_documents_explicitly():
