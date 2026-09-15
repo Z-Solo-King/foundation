@@ -20,7 +20,8 @@ for (const action of ['new-chat', 'backend-check', 'open-queue', 'toggle-workspa
 for (const mode of ['chat', 'research']) assert.ok(html.includes(`data-mode="${mode}"`));
 for (const element of ['attachment-list', 'queue-count', 'workspace', 'message-queue', 'workspace-body', 'conversation-scroll']) assert.ok(html.includes(`id="${element}"`));
 
-for (const contract of ['rie.frontend.chats.v2', 'rie.frontend.projects.v1', 'rie.frontend.saved.v1', 'rie.frontend.sessionToken.v1', 'localStorage', 'sessionStorage', 'strict_zero_cost_only']) assert.ok(state.includes(contract), `missing state contract: ${contract}`);
+for (const contract of ['rie.frontend.chats.v2', 'rie.frontend.projects.v1', 'rie.frontend.saved.v1', 'rie.frontend.sessionToken.v1', 'localStorage', 'sessionStorage']) assert.ok(state.includes(contract), `missing state contract: ${contract}`);
+for (const contract of ['strict_zero_cost_only', 'max_sources', 'max_evidence_items', '/api/v1/research', '/api/v1/research/']) assert.ok(lifecycle.includes(contract), `missing research contract: ${contract}`);
 for (const behavior of ['createProject', 'assignCurrentChat', 'saveMessage', 'exportData', 'importData', 'clearData']) assert.ok(store.includes(`function ${behavior}`), `missing store behavior: ${behavior}`);
 for (const behavior of ['renderSidebar', 'renderConversation', 'renderProjects', 'renderSaved', 'renderSettings']) assert.ok(view.includes(`function ${behavior}`), `missing view behavior: ${behavior}`);
 for (const behavior of ['selectMode', 'handleAttachments', 'handleVoice', 'send', 'queue']) assert.ok(composer.includes(`function ${behavior}`), `missing composer behavior: ${behavior}`);
