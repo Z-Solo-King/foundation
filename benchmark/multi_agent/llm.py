@@ -62,16 +62,25 @@ class OpenAICompatibleExecutor:
 
         try:
             response = await asyncio.to_thread(call)
-            content = str(response["choices"][0]["message"]["content"])
-            try:
-                parsed = json.loads(content)
-            except json.JSONDecodeError:
-                parsed = {"note": content}
-            findings = tuple(item for item in parsed.get("findings", []) if isinstance(item, dict))
-            questions = tuple(str(item) for item in parsed.get("follow_up_questions", []) if str(item).strip())
-            note = str(parsed.get("note", ""))
+            content = response["choices"][0]["message"]["content"]
+            if not isinstance(content, str) or not content.strip():
+                raise ValueError("LLM response content is missing or empty")
+            parsed = json.loads(content)
+            if not isinstance(parsed, dict):
+                raise ValueError("LLM response must be a JSON object")
+            findings_raw = parsed.get("findings", [])
+            questions_raw = parsed.get("follow_up_questions", [])
+            note_raw = parsed.get("note", "")
+            if not isinstance(findings_raw, list) or not all(isinstance(item, dict) for item in findings_raw):
+                raise ValueError("LLM findings must be an array of objects")
+            if not isinstance(questions_raw, list) or not all(isinstance(item, str) for item in questions_raw):
+                raise ValueError("LLM follow_up_questions must be an array of strings")
+            if not isinstance(note_raw, str):
+                raise ValueError("LLM note must be a string")
+            findings = tuple(findings_raw)
+            questions = tuple(item for item in questions_raw if item.strip())
             return replace(
-                AgentResult.now(agent.agent_id, "completed", note=note),
+                AgentResult.now(agent.agent_id, "completed", note=note_raw),
                 findings=findings,
                 follow_up_questions=questions,
             )
