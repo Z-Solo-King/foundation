@@ -10,7 +10,7 @@ def test_canonical_url_normalizes_scheme_host_port_and_path() -> None:
 
 
 def test_canonical_url_rejects_non_http_absolute_urls() -> None:
-    with pytest.raises(ValueError, match="source URL must be absolute HTTP\(S\)"):
+    with pytest.raises(ValueError, match=r"source URL must be absolute HTTP\(S\)"):
         canonical_url("relative/path")
 
 
