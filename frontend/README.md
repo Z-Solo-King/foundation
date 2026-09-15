@@ -46,5 +46,3 @@ Those require backend/session contracts rather than UI-only behavior.
 ## Research lifecycle ownership
 
 `lifecycle_controller.js` is the canonical owner of Research-mode transport, polling, reconnect/recovery, durable research queueing, active-run state, and idempotency. `app.js` remains the general UI/bootstrap boundary. `lifecycle_queue_controls.js` owns queue presentation controls and `session_bridge.js` owns the browser session bridge.
-
-Research-mode interactions are intercepted by the canonical lifecycle controller so the runtime has one Research transport/queue/active-run owner. Broader `app.js` decomposition remains tracked under #114.
