@@ -43,28 +43,15 @@ def _check_path(root: Path, value: str, errors: list[str], source: str) -> None:
 
 def validate_repository(root: Path) -> list[str]:
     errors: list[str] = []
-    codemap_path = root / "AI_CODEMAP.json"
     navigation_path = root / "AI_NAVIGATION_INDEX.json"
 
-    for path in (codemap_path, navigation_path):
-        if not path.exists():
-            errors.append(f"missing navigation metadata: {path.name}")
-
-    if errors:
-        return errors
-
-    try:
-        codemap = json.loads(codemap_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        return [f"AI_CODEMAP.json: invalid JSON: {exc}"]
+    if not navigation_path.exists():
+        return ["missing navigation metadata: AI_NAVIGATION_INDEX.json"]
 
     try:
         navigation = json.loads(navigation_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         return [f"AI_NAVIGATION_INDEX.json: invalid JSON: {exc}"]
-
-    for value in _iter_strings(codemap.get("source_of_truth", {})):
-        _check_path(root, value, errors, "AI_CODEMAP.source_of_truth")
 
     for value in _iter_strings(navigation.get("read_first", [])):
         _check_path(root, value, errors, "AI_NAVIGATION_INDEX.read_first")
