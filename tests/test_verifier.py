@@ -106,7 +106,11 @@ def test_verifier_handles_naive_observation_time_with_explicit_clock():
     observed = datetime(2026, 1, 1, 0, 0, 0)
     now = datetime(2026, 1, 1, 0, 0, 30, tzinfo=timezone.utc)
     obs = Observation.create(
-        "o1", "https://example.com", "content", observed_at=observed, freshness_ttl_seconds=60,
+        "o1",
+        source_url="https://example.com",
+        content="content",
+        observed_at=observed,
+        freshness_ttl_seconds=60,
     )
     assert EvidenceVerifier().is_stale(obs, now=now) is False
 
