@@ -5,9 +5,6 @@ import hashlib
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
-from backend.models import ResearchRequest
-
-
 async def ingest_sources(env, run_id, req, *, fetcher, persistence_cls):
     persistence = persistence_cls(env)
     results = []
@@ -42,7 +39,7 @@ async def ingest_sources(env, run_id, req, *, fetcher, persistence_cls):
               etag = excluded.etag,
               artifact_ref = excluded.artifact_ref,
               content_length = excluded.content_length"""
-        ).bind(version_id, source_id, now, fetched.etag, artifact_ref, len(fetched.content)).run()
+        ).bind(version_id, source_id, now, fetched.etag, content_hash, artifact_ref, len(fetched.content)).run()
         await env.DB.prepare(
             """INSERT INTO observations
             (observation_id, run_id, source_id, version_id, observed_at,
@@ -70,7 +67,6 @@ async def ingest_sources(env, run_id, req, *, fetcher, persistence_cls):
             "source_family_id": family,
         })
     return results
-
 
 async def get_run(env, run_id):
     run = await env.DB.prepare("SELECT * FROM research_runs WHERE run_id = ?").bind(run_id).first()
