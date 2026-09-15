@@ -28,6 +28,11 @@ jobs:
       B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
       B2_BUCKET: ${{ secrets.B2_BUCKET }}
       BACKUP_GITHUB_TOKEN: ${{ secrets.BACKUP_GITHUB_TOKEN }}
+      B2_ENDPOINT: https://s3.eu-central-003.backblazeb2.com
+      AWS_ACCESS_KEY_ID: ${{ secrets.B2_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_EC2_METADATA_DISABLED: 'true'
     steps:
       - name: Verify backup credentials and tooling
         shell: bash
@@ -38,19 +43,10 @@ jobs:
           test -n "${B2_BUCKET:-}" || { echo 'Missing B2_BUCKET GitHub secret'; exit 1; }
           test -n "${BACKUP_GITHUB_TOKEN:-}" || { echo 'Missing BACKUP_GITHUB_TOKEN GitHub secret'; exit 1; }
           command -v git >/dev/null
-          command -v curl >/dev/null
+          command -v python >/dev/null
+          command -v aws >/dev/null || { echo 'AWS CLI is unavailable on the runner'; exit 1; }
           echo 'backup prerequisites: PASS'
-
-      - name: Install Backblaze B2 CLI
-        run: python -m pip install --disable-pip-version-check --quiet b2
-
-      - name: Authorize B2 and verify bucket
-        shell: bash
-        run: |
-          set -euo pipefail
-          b2 account authorize "$B2_KEY_ID" "$B2_APPLICATION_KEY"
-          b2 ls "b2://$B2_BUCKET" >/dev/null
-          echo 'B2 authorization and bucket access: PASS'
+          echo "using bucket-scoped B2 S3 endpoint: ${B2_ENDPOINT}"
 
       - name: Mirror both repositories
         shell: bash
@@ -73,6 +69,7 @@ jobs:
         run: |
           set -euo pipefail
           timestamp=$(date -u +%Y%m%dT%H%M%SZ)
+          : > backup-output/uploaded.tsv
           for repo in foundation operations; do
             mirror="backup-work/${repo}.git"
             sha=$(git -C "$mirror" rev-parse --verify refs/heads/main)
@@ -82,55 +79,96 @@ jobs:
             tar -C backup-work -czf "$archive" "${repo}.git"
             sha256=$(sha256sum "$archive" | cut -d' ' -f1)
             size=$(stat -c '%s' "$archive")
-            jq -n \
-              --arg schema 'repository-backup/v2' \
-              --arg repository "Z-Solo-King/${repo}" \
-              --arg visibility "$(test "$repo" = foundation && echo public || echo private)" \
-              --arg ref main \
-              --arg commit "$sha" \
-              --arg tree "$tree" \
-              --arg created "$timestamp" \
-              --arg archive "$(basename "$archive")" \
-              --arg sha256 "$sha256" \
-              --arg size "$size" \
-              --arg refs "$refs" \
-              '{schema:$schema,repository:$repository,visibility:$visibility,ref:$ref,commit:$commit,tree:$tree,created_at:$created,archive:$archive,sha256:$sha256,size_bytes:($size|tonumber),ref_count:($refs|tonumber),restore_test:{local_git_fsck:true,main_ref_verified:true,remote_b2_restore_verified:false}}' \
-              > "backup-output/${repo}-${sha}-${timestamp}.json"
-            echo "${repo} archive: PASS"
+            manifest="backup-output/${repo}-${sha}-${timestamp}.json"
+            python - "$manifest" "$repo" "$sha" "$tree" "$timestamp" "$(basename "$archive")" "$sha256" "$size" "$refs" <<'PY'
+import json
+import sys
+
+path, repo, commit, tree, created, archive, sha256, size, refs = sys.argv[1:]
+record = {
+    "schema": "repository-backup/v2",
+    "repository": f"Z-Solo-King/{repo}",
+    "visibility": "public" if repo == "foundation" else "private",
+    "ref": "main",
+    "commit": commit,
+    "tree": tree,
+    "created_at": created,
+    "archive": archive,
+    "sha256": sha256,
+    "size_bytes": int(size),
+    "ref_count": int(refs),
+    "restore_test": {
+        "local_git_fsck": True,
+        "main_ref_verified": True,
+        "remote_b2_restore_verified": False,
+    },
+}
+with open(path, "w", encoding="utf-8") as handle:
+    json.dump(record, handle, sort_keys=True, separators=(",", ":"))
+PY
+            printf '%s\t%s\t%s\t%s\n' \
+              "repository-backup/$(basename "$archive")" "$archive" "$sha256" "$size" \
+              >> backup-output/uploaded.tsv
+            printf '%s\t%s\t%s\t%s\n' \
+              "repository-backup/$(basename "$manifest")" "$manifest" "$(sha256sum "$manifest" | cut -d' ' -f1)" "$(stat -c '%s' "$manifest")" \
+              >> backup-output/uploaded.tsv
+            echo "${repo} archive + manifest: PASS"
           done
 
       - name: Upload archives and manifests to B2
         shell: bash
         run: |
           set -euo pipefail
-          for file in backup-output/*.tar.gz backup-output/*.json; do
-            name="repository-backup/$(basename "$file")"
-            b2 file upload "$B2_BUCKET" "$file" "$name"
-            echo "uploaded: $name"
-          done
+          while IFS=$'\t' read -r key file _sha256 _size; do
+            aws s3api put-object \
+              --bucket "$B2_BUCKET" \
+              --key "$key" \
+              --body "$file" \
+              --endpoint-url "$B2_ENDPOINT" \
+              --content-type application/octet-stream \
+              >/dev/null
+            echo "uploaded: $key"
+          done < backup-output/uploaded.tsv
           echo 'B2 upload: PASS'
 
-      - name: Verify B2 listing
+      - name: Verify uploaded object metadata and size
         shell: bash
         run: |
           set -euo pipefail
-          b2 ls --recursive "b2://$B2_BUCKET/repository-backup/" >/tmp/b2-list.txt
-          grep -q 'foundation-' /tmp/b2-list.txt
-          grep -q 'operations-' /tmp/b2-list.txt
-          echo 'B2 object listing: PASS'
+          while IFS=$'\t' read -r key file expected_sha256 expected_size; do
+            metadata=$(aws s3api head-object \
+              --bucket "$B2_BUCKET" \
+              --key "$key" \
+              --endpoint-url "$B2_ENDPOINT")
+            remote_size=$(python - "$metadata" <<'PY'
+import json
+import sys
+print(json.loads(sys.argv[1])["ContentLength"])
+PY
+)
+            test "$remote_size" = "$expected_size" || { echo "Size mismatch: $key"; exit 1; }
+            local_sha256=$(sha256sum "$file" | cut -d' ' -f1)
+            test "$local_sha256" = "$expected_sha256" || { echo "Local SHA-256 changed: $key"; exit 1; }
+            echo "verified: $key"
+          done < backup-output/uploaded.tsv
+          echo 'B2 object metadata/size verification: PASS'
 
-      - name: Verify remote restore and checksums
+      - name: Verify remote restore from every repository archive
         shell: bash
         run: |
           set -euo pipefail
-          while IFS= read -r remote; do
-            case "$remote" in
-              *.tar.gz)
-                name=$(basename "$remote")
-                b2 file download "b2://$B2_BUCKET/$remote" "remote-restore/$name"
-                expected=$(sha256sum "backup-output/$name" | cut -d' ' -f1)
-                actual=$(sha256sum "remote-restore/$name" | cut -d' ' -f1)
-                test "$expected" = "$actual" || { echo "SHA-256 mismatch: $name"; exit 1; }
+          while IFS=$'\t' read -r key _file expected_sha256 _size; do
+            case "$key" in
+              repository-backup/*.tar.gz)
+                name=$(basename "$key")
+                aws s3api get-object \
+                  --bucket "$B2_BUCKET" \
+                  --key "$key" \
+                  "remote-restore/$name" \
+                  --endpoint-url "$B2_ENDPOINT" \
+                  >/dev/null
+                actual_sha256=$(sha256sum "remote-restore/$name" | cut -d' ' -f1)
+                test "$actual_sha256" = "$expected_sha256" || { echo "Remote SHA-256 mismatch: $key"; exit 1; }
                 rm -rf remote-restore/extracted
                 mkdir -p remote-restore/extracted
                 tar -xzf "remote-restore/$name" -C remote-restore/extracted
@@ -141,7 +179,7 @@ jobs:
                 echo "remote restore: PASS: $name"
                 ;;
             esac
-          done < <(grep '\.tar\.gz$' /tmp/b2-list.txt)
+          done < backup-output/uploaded.tsv
           echo 'remote B2 restore verification: PASS'
 
       - name: Write non-sensitive run summary
@@ -150,5 +188,5 @@ jobs:
             echo '### B2 repository backup'
             echo
             echo 'Foundation and Operations mirrors were created.'
-            echo 'B2 upload, object listing, SHA-256 verification, extraction, and Git integrity restore were checked.'
+            echo 'Bucket-scoped B2 S3 upload, object metadata/size verification, SHA-256 restore verification, extraction, and Git integrity were checked.'
           } >> "$GITHUB_STEP_SUMMARY"
