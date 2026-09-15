@@ -1,30 +1,45 @@
-# Foundation
+# Heroic AI — Foundation
 
-Public contract core for the Z-Solo-King GitHub family.
+Public application contract and deterministic core for **Heroic AI**, the project's chatbot-first research assistant.
 
-Foundation contains public-safe contracts, schemas, deterministic primitives, the public Worker/frontend boundary and public CI/deployment evidence path. Protected execution, governance, credentials, private evaluation and promotion authority live in Operations.
+Heroic AI is the product. Research is one of its capabilities, not a separate product. Foundation owns the public-safe request/evidence contracts, deterministic research primitives, public frontend boundary, and canonical public deployment path. Operations owns private chatbot orchestration, protected policy/resource authority, private memory, model/provider execution and promotion.
 
 ## Read first
 
-1. `docs/DOCUMENTATION_INDEX.md`
-2. `REPOSITORY_MAP.json`
-3. `docs/FAMILY_CONTRACT.json`
-4. `docs/FAMILY_ARCHITECTURE.md`
-5. `docs/PUBLIC_DETERMINISTIC_CORE.md`
+1. `docs/HEROIC_AI_PRODUCT.md`
+2. `README.md`
+3. `docs/DOCUMENTATION_INDEX.md`
+4. `REPOSITORY_MAP.json`
+5. `docs/FAMILY_CONTRACT.json`
+6. `docs/FAMILY_ARCHITECTURE.md`
 
 Live repository state and fresh GitHub evidence override dated continuity notes.
 
-## GitHub Actions
+## Heroic AI product boundary
 
-Foundation owns the public GitHub-hosted execution surface. Private Operations is deliberately not a GitHub-hosted runtime dependency.
+```text
+User
+  -> Heroic AI frontend
+  -> public chat/research contract
+  -> private Operations control plane
+  -> deterministic tools / evidence / approved model execution
+  -> grounded response + citations + state + artifacts
+```
+
+The frontend must never become a second authority. Private policy, memory, provider secrets, resource governance and promotion remain in Operations. Public research/evidence semantics remain in Foundation.
+
+## Public capabilities
+
+- conversational chat contract and lifecycle boundary;
+- research runs and evidence-backed answers;
+- deterministic extraction/mapping/normalization;
+- citations, uncertainty and provenance contracts;
+- files/artifacts and research workspace UI;
+- public health/readiness and canonical production deployment.
 
 ## Deterministic core
 
-`foundation_core/` is the canonical public implementation for deterministic observed-data routing, normalization, plausibility checks and product mapping. Operations consumes it at a pinned public revision.
-
-## Public Worker
-
-The Worker remains standalone for `/health` and `/readiness`. Public routes cannot dispatch arbitrary private control-plane operations. Authorized private verification may use the protected service boundary.
+`foundation_core/` is the canonical public implementation for deterministic observed-data routing, normalization, plausibility checks and product mapping. Operations consumes it through the declared public boundary and does not copy its implementation authority.
 
 ## Storage
 
