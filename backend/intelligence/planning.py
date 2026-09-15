@@ -12,10 +12,29 @@ DEFAULT_STAGES = (
     "synthesize_answer",
 )
 
+CATEGORY_REQUIRED_SOURCE_FAMILIES: dict[str, tuple[str, ...]] = {
+    "buying_guide": ("amazon", "flipkart", "reddit", "retailers", "oem"),
+    "best_product": ("amazon", "flipkart", "reddit", "retailers", "professional_reviews"),
+    "deep_hardware": ("reddit", "amazon", "flipkart", "chinese_communities"),
+    "temporal_reconciliation": ("amazon", "flipkart", "reddit", "youtube", "oem", "social_communities"),
+    "review_forensics": ("amazon", "flipkart", "reddit"),
+    "cross_source": ("amazon", "flipkart", "reddit", "youtube", "social_communities"),
+    "social_media": ("reddit", "social_media", "youtube", "amazon", "flipkart"),
+    "restricted_evidence": ("reddit", "chinese_communities", "social_communities", "social_media"),
+    "build": ("retailers", "amazon", "flipkart", "reddit", "oem"),
+    "hinglish": ("amazon", "flipkart", "reddit", "retailers"),
+    "follow_up": ("reddit", "amazon", "flipkart", "youtube"),
+    "hardware_revision": ("oem", "reddit", "chinese_communities", "youtube", "retailers"),
+    "service": ("oem", "amazon", "flipkart", "reddit", "retailers"),
+    "trending": ("search_trends", "amazon", "flipkart", "reddit", "retailers"),
+}
 
-def _source_families(question: str) -> tuple[str, ...]:
+
+def _source_families(question: str, category: str | None = None, explicit: tuple[str, ...] = ()) -> tuple[str, ...]:
     text = question.casefold()
     families: set[str] = {"web_search", "retailers", "oem"}
+    families.update(CATEGORY_REQUIRED_SOURCE_FAMILIES.get(category or "", ()))
+    families.update(item.strip() for item in explicit if item.strip())
 
     keyword_groups = {
         "reddit": ("reddit", "subreddit", "owner reports", "ownership"),
@@ -56,10 +75,17 @@ def create_plan(contract: ResearchContract) -> ResearchPlan:
             "synthesize_answer",
         )
 
+    source_families = _source_families(
+        contract.question,
+        category=contract.query_category,
+        explicit=contract.required_source_families,
+    )
     metadata = {
         "depth": contract.depth,
         "require_citations": str(contract.require_citations).lower(),
-        "required_source_families": ",".join(_source_families(contract.question)),
+        "required_source_families": ",".join(source_families),
+        "required_source_families_origin": "explicit+category+question",
+        "query_category": contract.query_category or "",
         "temporal_reconciliation": str(
             any(term in contract.question.casefold() for term in (
                 "old vs new", "older reviews", "latest", "recent", "2024", "2025", "2026", "revision",
