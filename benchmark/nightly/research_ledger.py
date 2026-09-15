@@ -5,21 +5,16 @@ import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlsplit
+
+from foundation_core.normalization import canonical_url as _canonical_url
 
 SCHEMA = "nightly-research-ledger/v1"
 
 
 def canonical_url(value: str) -> str:
-    parts = urlsplit(value.strip())
-    if parts.scheme.lower() not in {"http", "https"} or not parts.hostname:
-        raise ValueError(f"unsupported URL: {value!r}")
-    scheme = parts.scheme.lower()
-    host = parts.hostname.lower()
-    port = parts.port
-    netloc = host if not port or (scheme, port) in {("http", 80), ("https", 443)} else f"{host}:{port}"
-    path = parts.path or "/"
-    return urlunsplit((scheme, netloc, path, parts.query, ""))
+    """Compatibility wrapper preserving the ledger's historical error text."""
+    return _canonical_url(value, error_message=f"unsupported URL: {value!r}")
 
 
 def visit_key(task_id: str, url: str) -> str:
