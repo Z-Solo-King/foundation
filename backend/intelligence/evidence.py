@@ -4,20 +4,10 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from hashlib import sha256
 from typing import Literal
-from urllib.parse import urlsplit, urlunsplit
+
+from foundation_core.normalization import canonical_url
 
 ResultKind = Literal["useful", "duplicate", "blocked", "irrelevant", "stale", "contradictory", "failed"]
-
-
-def canonical_url(value: str) -> str:
-    parts = urlsplit(value.strip())
-    if parts.scheme.lower() not in {"http", "https"} or not parts.hostname:
-        raise ValueError("source URL must be absolute HTTP(S)")
-    scheme = parts.scheme.lower()
-    host = parts.hostname.lower()
-    port = parts.port
-    netloc = host if not port or (scheme, port) in {("http", 80), ("https", 443)} else f"{host}:{port}"
-    return urlunsplit((scheme, netloc, parts.path or "/", parts.query, ""))
 
 
 @dataclass(frozen=True)

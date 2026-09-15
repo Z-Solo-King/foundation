@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from ipaddress import ip_address
 from urllib.parse import urljoin, urlparse
 
+from backend.core.workers_runtime import workers_fetch
+
 MAX_REDIRECTS = 3
 MAX_BYTES = 1_000_000
 
@@ -24,12 +26,8 @@ class FetchResult:
 
 
 def _workers_fetch():
-    """Load the Cloudflare runtime adapter only inside an actual Worker."""
-    try:
-        from workers import fetch
-    except ImportError as exc:
-        raise RuntimeError("Cloudflare Workers runtime is required for network acquisition") from exc
-    return fetch
+    """Compatibility shim for tests and callers that patch this adapter."""
+    return workers_fetch("network acquisition")
 
 
 def _safe_host(hostname: str) -> bool:

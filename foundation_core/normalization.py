@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 import re
+from urllib.parse import urlsplit, urlunsplit
 
 _STOCK_RULES = (
     (("instock", "in stock", "available", "/instock", "in-stock", "in_stock", "add to cart", "add-to-cart", "addtocart"), "In Stock"),
@@ -36,6 +37,18 @@ def normalize_specs(value: object) -> Mapping[str, object]:
                 result[str(item[0])] = item[1]
         return result
     return {}
+
+
+def canonical_url(value: str, *, error_message: str = "source URL must be absolute HTTP(S)") -> str:
+    """Canonicalize an already-observed absolute HTTP(S) URL deterministically."""
+    parts = urlsplit(value.strip())
+    if parts.scheme.lower() not in {"http", "https"} or not parts.hostname:
+        raise ValueError(error_message)
+    scheme = parts.scheme.lower()
+    host = parts.hostname.lower()
+    port = parts.port
+    netloc = host if not port or (scheme, port) in {("http", 80), ("https", 443)} else f"{host}:{port}"
+    return urlunsplit((scheme, netloc, parts.path or "/", parts.query, ""))
 
 
 def _clean_text(value: object) -> str:

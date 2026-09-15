@@ -6,6 +6,7 @@ This adapter is deliberately isolated so provider policy can enable/disable it.
 
 from urllib.parse import urlencode
 
+from backend.core.workers_runtime import workers_fetch
 from .search import SearchResult, SearchAuthorization, search
 
 WIKIPEDIA_AUTHORIZATION = SearchAuthorization(
@@ -17,11 +18,8 @@ WIKIPEDIA_AUTHORIZATION = SearchAuthorization(
 
 
 def _workers_fetch():
-    try:
-        from workers import fetch
-    except ImportError as exc:
-        raise RuntimeError("Cloudflare Workers runtime is required for Wikimedia search") from exc
-    return fetch
+    """Compatibility shim for tests and callers that patch this adapter."""
+    return workers_fetch("Wikimedia search")
 
 
 async def _implementation(query: str, limit: int, *, fetcher=None) -> list[SearchResult]:

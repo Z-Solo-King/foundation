@@ -14,8 +14,10 @@ from dataclasses import asdict, dataclass
 from email.message import Message
 from pathlib import Path
 from urllib.error import HTTPError
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
+
+from foundation_core.normalization import canonical_url as _canonical_url
 
 USER_AGENT = "ResearchIntelligenceEngine-Benchmark/2026.09"
 PRODUCT_HINTS = ("product", "itemprop=\"name\"", "productid", "sku", "add-to-cart", "price")
@@ -86,14 +88,8 @@ class Receipt:
 
 
 def canonical_url(value: str) -> str:
-    parts = urlsplit(value.strip())
-    if parts.scheme.lower() not in {"http", "https"} or not parts.hostname:
-        raise ValueError(f"unsupported URL: {value!r}")
-    scheme = parts.scheme.lower()
-    host = parts.hostname.lower()
-    port = parts.port
-    netloc = host if not port or (scheme, port) in {("http", 80), ("https", 443)} else f"{host}:{port}"
-    return urlunsplit((scheme, netloc, parts.path or "/", parts.query, ""))
+    """Compatibility wrapper preserving the benchmark's historical error text."""
+    return _canonical_url(value, error_message=f"unsupported URL: {value!r}")
 
 
 def target_key(url: str) -> str:
