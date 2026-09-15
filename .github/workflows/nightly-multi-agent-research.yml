@@ -59,10 +59,58 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
         with:
           python-version: "3.14"
+      - name: Require live research executor configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${RESEARCH_LLM_ENDPOINT:-}" || { echo 'Missing RESEARCH_LLM_ENDPOINT; refusing silent dry-run.'; exit 1; }
+          test -n "${RESEARCH_LLM_API_KEY:-}" || { echo 'Missing RESEARCH_LLM_API_KEY; refusing silent dry-run.'; exit 1; }
+          test -n "${RESEARCH_LLM_MODEL:-}" || { echo 'Missing RESEARCH_LLM_MODEL; refusing silent dry-run.'; exit 1; }
+          echo 'live research executor configuration: PASS'
       - name: Run adaptive research and capacity comparisons
         run: python -m benchmark.multi_agent.runner --start-slot 4 --slots 4 --global-capacity 20 --compare --output .runtime/nightly-b.jsonl
       - uses: actions/upload-artifact@v4
         with:
           name: nightly-research-b
           path: .runtime/nightly-b.jsonl
+          retention-days: 30
+
+  project-summary:
+    name: Build project improvement evidence report
+    needs: [research-a, research-b]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
+        with:
+          python-version: "3.14"
+      - name: Download research artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: nightly-research-*
+          path: .runtime/artifacts
+          merge-multiple: true
+      - name: Build auditable project research summary
+        run: |
+          python -m benchmark.multi_agent.project_research \
+            --input .runtime/artifacts/nightly-a.jsonl .runtime/artifacts/nightly-b.jsonl \
+            --output .runtime/nightly-project-improvement.json \
+            --run-id "${GITHUB_RUN_ID}"
+      - name: Validate summary contract
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          payload = json.loads(Path('.runtime/nightly-project-improvement.json').read_text())
+          assert payload['schema'] == 'project-improvement-research/v1'
+          assert payload['research_mode'] == 'project_improvement'
+          assert payload['project_snapshot']['revision']
+          assert payload['program_count'] > 0
+          assert 'improvement_signals' in payload
+          assert payload['evidence_policy']['llm_findings'] == 'candidate_only_until_acquisition_receipt'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nightly-project-improvement
+          path: .runtime/nightly-project-improvement.json
           retention-days: 30
