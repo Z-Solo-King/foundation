@@ -18,7 +18,6 @@
     "evidence_certificates": "backend/evidence_certificate.py",
     "evidence_selection": "backend/evidence_selection.py",
     "claims": "backend/intelligence/claims.py",
-    "authority": "backend/intelligence/authority.py",
     "execution": "backend/execution/engine.py",
     "research_pipeline": "backend/execution/pipeline.py",
     "public_worker_boundary": "backend/execution/worker_boundary.py",
@@ -26,6 +25,13 @@
     "frontend": "frontend/app.js",
     "frontend_contract": "frontend/lifecycle_controller.js",
     "benchmarks": "benchmark/"
+  },
+  "planned_scaffolds": {
+    "authority": "backend/intelligence/authority.py",
+    "completeness": "backend/intelligence/completeness.py",
+    "qualification": "backend/intelligence/qualification.py",
+    "knowledge": "backend/intelligence/knowledge.py",
+    "relationships": "backend/intelligence/relationships.py"
   },
   "boundary": {
     "private_operations": "Z-Solo-King/operations",
