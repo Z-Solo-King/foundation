@@ -1,0 +1,135 @@
+from __future__ import annotations
+
+from collections import Counter
+from pathlib import Path
+import argparse
+import json
+
+SCHEMA = "project-improvement-baseline/v1"
+
+
+def _count_status(payload: dict[str, object], status: str) -> int:
+    counts = payload.get("status_counts", {})
+    return int(counts.get(status, 0)) if isinstance(counts, dict) else 0
+
+
+def _useful_findings(payload: dict[str, object]) -> int:
+    total = 0
+    programs = payload.get("programs", [])
+    if not isinstance(programs, list):
+        return 0
+    for program in programs:
+        if not isinstance(program, dict):
+            continue
+        measurement = program.get("measurement", {})
+        if isinstance(measurement, dict):
+            total += int(measurement.get("useful_findings", 0) or 0)
+    return total
+
+
+def _high_signal_count(payload: dict[str, object]) -> int:
+    signals = payload.get("improvement_signals", [])
+    if not isinstance(signals, list):
+        return 0
+    return sum(1 for signal in signals if isinstance(signal, dict) and signal.get("severity") == "high")
+
+
+def _signal_types(payload: dict[str, object]) -> Counter[str]:
+    signals = payload.get("improvement_signals", [])
+    if not isinstance(signals, list):
+        return Counter()
+    return Counter(str(signal.get("type")) for signal in signals if isinstance(signal, dict) and signal.get("type"))
+
+
+def compare(current: dict[str, object], previous: dict[str, object] | None) -> dict[str, object]:
+    if previous is None:
+        return {
+            "schema": SCHEMA,
+            "available": False,
+            "decision": "NO_BASELINE",
+            "reason": "no prior completed nightly project-improvement summary was available",
+            "current_research_id": current.get("research_id"),
+            "current_revision": (current.get("project_snapshot") or {}).get("revision"),
+        }
+
+    current_completed = _count_status(current, "completed")
+    previous_completed = _count_status(previous, "completed")
+    current_useful = _useful_findings(current)
+    previous_useful = _useful_findings(previous)
+    current_high = _high_signal_count(current)
+    previous_high = _high_signal_count(previous)
+    current_execution = str(current.get("execution_state", ""))
+    previous_execution = str(previous.get("execution_state", ""))
+    current_types = _signal_types(current)
+    previous_types = _signal_types(previous)
+
+    regressed = (
+        (current_execution != "completed" and previous_execution == "completed")
+        or current_completed < previous_completed
+        or current_useful < previous_useful
+        or current_high > previous_high
+    )
+    improved = (
+        current_execution == "completed" and previous_execution != "completed"
+    ) or current_completed > previous_completed or current_useful > previous_useful or current_high < previous_high
+
+    if regressed:
+        decision = "REGRESSED"
+    elif improved:
+        decision = "IMPROVED"
+    else:
+        decision = "STABLE"
+
+    added_signal_types = sorted(set(current_types) - set(previous_types))
+    resolved_signal_types = sorted(set(previous_types) - set(current_types))
+    return {
+        "schema": SCHEMA,
+        "available": True,
+        "decision": decision,
+        "current_research_id": current.get("research_id"),
+        "previous_research_id": previous.get("research_id"),
+        "current_revision": (current.get("project_snapshot") or {}).get("revision"),
+        "previous_revision": (previous.get("project_snapshot") or {}).get("revision"),
+        "metrics": {
+            "completed_programs_delta": current_completed - previous_completed,
+            "useful_findings_delta": current_useful - previous_useful,
+            "high_severity_signals_delta": current_high - previous_high,
+            "program_count_delta": int(current.get("program_count", 0) or 0) - int(previous.get("program_count", 0) or 0),
+        },
+        "signal_type_changes": {
+            "added": added_signal_types,
+            "resolved": resolved_signal_types,
+        },
+        "rules": {
+            "regression": "execution degradation, fewer completed programs, fewer useful findings, or more high-severity improvement signals",
+            "improvement": "recovery to completed execution, more completed programs, more useful findings, or fewer high-severity improvement signals",
+            "tie_break": "REGRESSED takes precedence over IMPROVED when both conditions are true",
+        },
+    }
+
+
+def load_summary(path: Path) -> dict[str, object]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("schema") != "project-improvement-research/v1":
+        raise ValueError("unsupported project-improvement summary schema")
+    return payload
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Compare the current nightly project research against the prior baseline")
+    parser.add_argument("--current", required=True)
+    parser.add_argument("--previous", required=False, default="")
+    parser.add_argument("--output", required=True)
+    args = parser.parse_args()
+    current = load_summary(Path(args.current))
+    previous = load_summary(Path(args.previous)) if args.previous and Path(args.previous).exists() else None
+    result = compare(current, previous)
+    output = Path(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps({"event": "project_research_baseline", "schema": SCHEMA, "decision": result["decision"], "available": result["available"]}, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
