@@ -79,14 +79,12 @@ jobs:
 
       - name: Test natural-language deep research queries
         if: matrix.shard == 0
-        continue-on-error: true
         run: |
           set -euo pipefail
           rm -rf .runtime
           python -m benchmark.chatbot_query_benchmark \
             --input benchmark/chatbot-query-corpus.json \
-            --output .runtime/chatbot-query-benchmark.json \
-            --allow-failures
+            --output .runtime/chatbot-query-benchmark.json
         env:
           PYTHONUNBUFFERED: "1"
 
@@ -183,7 +181,7 @@ jobs:
           target_failure_summary.sort(key=lambda item: (-item['failure_rate'], item['url']))
 
           safe = {
-              'schema': 'autonomous-public-benchmark-summary/v7',
+              'schema': 'autonomous-public-benchmark-summary/v8',
               'run_id': '${{ github.run_id }}',
               'shard': ${{ matrix.shard }},
               'summaries': len(rows),
@@ -214,7 +212,7 @@ jobs:
 
       - name: Upload sanitized benchmark summary
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: autonomous-benchmark-summary-shard-${{ matrix.shard }}
           path: benchmark-summary.json
@@ -223,7 +221,7 @@ jobs:
 
       - name: Upload deep-query benchmark
         if: always() && matrix.shard == 0
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: autonomous-chatbot-query-benchmark
           path: .runtime/chatbot-query-benchmark.json
