@@ -3,13 +3,13 @@
 This repository is one member of a two-repository system. The public-safe ownership contract is canonical in `docs/FAMILY_CONTRACT.json`.
 
 - `foundation`: public contracts, evidence structures, research contracts, and reusable deterministic primitives.
-- `operations`: private control, acquisition, extraction, mapping, verification, evaluation, promotion, deployment, recovery, and chatbot orchestration.
+- `operations`: private control, acquisition, extraction, mapping, verification, evaluation, promotion, private runtime orchestration, and recovery.
 
 Dependency direction is one-way:
 
-`foundation -> operations`
+`foundation public contract/core -> operations consumer`
 
-The arrow describes public contract/result flow, not unrestricted imports. The public repository must not import private implementation, and Operations must not bypass its protected policy and resource gates.
+Operations may consume the pinned public `foundation_core` package or the public Foundation service contract. Foundation must not import Operations source, private credentials, private runtime state, or protected implementation.
 
 ## Single-owner rule
 
@@ -46,4 +46,4 @@ Use one coherent feature branch and one PR per owning repository. For a cross-re
 
 ## Historical migration record
 
-The former `extractor-mapper` repository was consolidated into Operations and deleted. Selected historical migration material is retained only under `operations/archive/extractor-mapper/` as non-active reference material. It is not an active dependency, runtime source, CI target, or privacy boundary.
+The former `extractor-mapper` repository was consolidated into Operations and deleted. Its migration facts are retained in current documentation only. The retired repository and any former `operations/archive/extractor-mapper/` snapshot are not active runtime, CI, package, import, or ownership boundaries and must not be recreated.
