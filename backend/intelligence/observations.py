@@ -10,7 +10,8 @@ class Observation:
       ``Observation(id, source_id, url, content, observed_at)`` (historical)
       ``Observation(id, url, content, observed_at)`` (lightweight)
 
-    Keyword construction is preferred for new code.
+    Keyword construction is preferred for new code. ``freshness_ttl_seconds``
+    is evidence-specific; when omitted, the verifier uses its canonical default.
     """
 
     observation_id: str
@@ -18,6 +19,7 @@ class Observation:
     content: str
     observed_at: datetime
     source_id: str | None = None
+    freshness_ttl_seconds: int | None = None
 
     def __init__(
         self,
@@ -27,6 +29,7 @@ class Observation:
         source_url: str | None = None,
         content: str | None = None,
         observed_at: datetime | None = None,
+        freshness_ttl_seconds: int | None = None,
     ):
         if args:
             if any(value is not None for value in (source_id, source_url, content, observed_at)):
@@ -39,14 +42,17 @@ class Observation:
                 raise TypeError("Observation expects 4 or 5 total positional arguments")
         if source_url is None or content is None:
             raise TypeError("source_url and content are required")
+        if freshness_ttl_seconds is not None and freshness_ttl_seconds < 0:
+            raise ValueError("freshness_ttl_seconds must not be negative")
         object.__setattr__(self, "observation_id", observation_id)
         object.__setattr__(self, "source_url", source_url)
         object.__setattr__(self, "content", content)
         object.__setattr__(self, "observed_at", observed_at or datetime.now(timezone.utc))
         object.__setattr__(self, "source_id", source_id)
+        object.__setattr__(self, "freshness_ttl_seconds", freshness_ttl_seconds)
 
     @classmethod
-    def create(cls, observation_id, *args, source_id=None, source_url=None, content=None, observed_at=None):
+    def create(cls, observation_id, *args, source_id=None, source_url=None, content=None, observed_at=None, freshness_ttl_seconds=None):
         if args:
             if any(value is not None for value in (source_url, content, source_id, observed_at)):
                 raise TypeError("ambiguous observation arguments")
@@ -64,6 +70,7 @@ class Observation:
             source_url=source_url,
             content=content,
             observed_at=observed_at,
+            freshness_ttl_seconds=freshness_ttl_seconds,
         )
 
 
