@@ -8,6 +8,9 @@ on:
 
 permissions:
   contents: read
+  id-token: write
+  attestations: write
+  artifact-metadata: write
 
 concurrency:
   group: nightly-multi-agent-research
@@ -43,11 +46,15 @@ jobs:
           echo 'live research executor configuration: PASS'
       - name: Run adaptive research and capacity comparisons
         run: python -m benchmark.multi_agent.runner --start-slot 0 --slots 4 --global-capacity 20 --compare --output .runtime/nightly-a.jsonl
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: nightly-research-a
           path: .runtime/nightly-a.jsonl
           retention-days: 30
+      - name: Attest research-a artifact
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: .runtime/nightly-a.jsonl
 
   research-b:
     name: Dynamic research hours 05-09 IST
@@ -69,11 +76,15 @@ jobs:
           echo 'live research executor configuration: PASS'
       - name: Run adaptive research and capacity comparisons
         run: python -m benchmark.multi_agent.runner --start-slot 4 --slots 4 --global-capacity 20 --compare --output .runtime/nightly-b.jsonl
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: nightly-research-b
           path: .runtime/nightly-b.jsonl
           retention-days: 30
+      - name: Attest research-b artifact
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: .runtime/nightly-b.jsonl
 
   project-summary:
     name: Build project improvement evidence report
@@ -109,8 +120,12 @@ jobs:
           assert payload['program_count'] > 0
           assert 'improvement_signals' in payload
           assert payload['evidence_policy']['llm_findings'] == 'candidate_only_until_acquisition_receipt'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: nightly-project-improvement
           path: .runtime/nightly-project-improvement.json
           retention-days: 30
+      - name: Attest project improvement summary
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: .runtime/nightly-project-improvement.json
