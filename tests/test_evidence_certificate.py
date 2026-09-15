@@ -29,6 +29,18 @@ def test_evidence_certificate():
     assert verify_certificate(observation, certificate) is True
 
 
+def test_omitted_structural_validity_defaults_to_true():
+    certificate = EvidenceCertificate(
+        "obs-default",
+        "https://example.com",
+        "a" * 64,
+        0,
+        5,
+        "hello",
+    )
+    assert certificate.structurally_valid is True
+
+
 def test_source_id_compatibility_remains_bound_when_present():
     observation = Observation.create(
         observation_id="obs-002-source",
