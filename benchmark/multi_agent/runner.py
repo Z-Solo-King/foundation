@@ -24,8 +24,9 @@ def parse_args() -> argparse.Namespace:
 
 
 async def run(args: argparse.Namespace) -> None:
-    if args.lane is not None:
-        selected = tuple(program for program in NIGHTLY_PROGRAMS if program.lane == args.lane)
+    lane = getattr(args, "lane", None)
+    if lane is not None:
+        selected = tuple(program for program in NIGHTLY_PROGRAMS if program.lane == lane)
     else:
         selected = tuple(
             program
@@ -48,7 +49,7 @@ async def run(args: argparse.Namespace) -> None:
     context = {
         "night_date": datetime.now(timezone.utc).date().isoformat(),
         "mode": mode,
-        "lane": args.lane,
+        "lane": lane,
     }
 
     if args.compare:
@@ -70,7 +71,7 @@ async def run(args: argparse.Namespace) -> None:
     print(json.dumps({
         "event": "research_window_started",
         "global_capacity": args.global_capacity,
-        "lane": args.lane,
+        "lane": lane,
         "programs": len(selected),
         "mode": mode,
     }))
@@ -89,7 +90,6 @@ async def run(args: argparse.Namespace) -> None:
     incomplete = [result.program_id for result in results if result.status != "completed"]
     if incomplete:
         raise RuntimeError(f"Nightly research produced incomplete programs: {', '.join(incomplete)}")
-
 
 
 def main() -> int:
