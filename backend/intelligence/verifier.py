@@ -64,13 +64,6 @@ class EvidenceVerifier:
             ttl = int(self.STALE_THRESHOLD.total_seconds())
         return (current - observed).total_seconds() > ttl
 
-    @staticmethod
-    def _freshness_reason(observation: Observation) -> str:
-        ttl = observation.freshness_ttl_seconds
-        if ttl is None:
-            return ">30 days"
-        return f">{ttl} seconds"
-
     def _collect_evidence(self, claim, supporting_certs, observations, lineages):
         reasons = []
         semantic_reasons = []
