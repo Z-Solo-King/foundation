@@ -43,7 +43,16 @@ def run(path: Path, output: Path, allow_failures: bool = False) -> int:
         query = str(row["query"])
         expected = {str(x) for x in row.get("required_sources", [])}
         expected_families = {SOURCE_ALIASES.get(source, source) for source in expected}
-        contract = ResearchContract(question=query, depth="deep", require_citations=True, max_sources=40, max_evidence_items=200)
+        category = str(row.get("category", "")) or None
+        contract = ResearchContract(
+            question=query,
+            depth="deep",
+            require_citations=True,
+            max_sources=40,
+            max_evidence_items=200,
+            query_category=category,
+            required_source_families=tuple(sorted(expected_families)),
+        )
         try:
             plan = create_plan(contract)
             families = {x for x in plan.metadata.get("required_source_families", "").split(",") if x}
@@ -55,12 +64,25 @@ def run(path: Path, output: Path, allow_failures: bool = False) -> int:
             passed = stages_ok and citation_ok and not missing and temporal_ok
             if not passed:
                 failures += 1
-            results.append({"id": row["id"], "category": row.get("category", ""), "passed": passed, "required_sources": sorted(expected), "required_source_families": sorted(expected_families), "planned_sources": sorted(families), "missing_source_families": missing, "temporal_expected": temporal_expected, "temporal_planned": plan.metadata.get("temporal_reconciliation"), "citations_required": True, "citations_planned": citation_ok, "stages": list(plan.stages)})
+            results.append({
+                "id": row["id"],
+                "category": row.get("category", ""),
+                "passed": passed,
+                "required_sources": sorted(expected),
+                "required_source_families": sorted(expected_families),
+                "planned_sources": sorted(families),
+                "missing_source_families": missing,
+                "temporal_expected": temporal_expected,
+                "temporal_planned": plan.metadata.get("temporal_reconciliation"),
+                "citations_required": True,
+                "citations_planned": citation_ok,
+                "stages": list(plan.stages),
+            })
         except Exception as exc:
             failures += 1
             results.append({"id": row["id"], "category": row.get("category", ""), "passed": False, "error": type(exc).__name__})
 
-    summary = {"schema": "chatbot-research-query-benchmark/v2", "queries": len(results), "passed": len(results) - failures, "failed": failures, "pass_rate": round((len(results) - failures) / len(results), 4) if results else 0.0, "results": results}
+    summary = {"schema": "chatbot-research-query-benchmark/v3", "queries": len(results), "passed": len(results) - failures, "failed": failures, "pass_rate": round((len(results) - failures) / len(results), 4) if results else 0.0, "results": results}
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
     print(json.dumps(summary, indent=2, ensure_ascii=False))
