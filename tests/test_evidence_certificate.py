@@ -120,6 +120,11 @@ def test_certificate_rejects_blank_source_url():
         EvidenceCertificate("obs", "", "a" * 64, 0, 1, "x")
 
 
+def test_certificate_rejects_non_string_source_url():
+    with pytest.raises(ValueError, match="source_url"):
+        EvidenceCertificate("obs", 123, "a" * 64, 0, 1, "x")
+
+
 def test_certificate_rejects_blank_content_hash():
     with pytest.raises(ValueError, match="content_hash"):
         EvidenceCertificate("obs", "https://example.com", "", 0, 1, "x")
