@@ -26,8 +26,12 @@ class RunRecord:
 
 
 @dataclass(frozen=True)
-class EvidenceRecord:
-    """Persisted evidence span linkage in D1."""
+class EvidenceLinkageRecord:
+    """Persisted evidence-span linkage row in D1.
+
+    This is deliberately distinct from the domain-level ``EvidenceRecord`` used by
+    the intelligence layer. ``EvidenceRecord`` remains a compatibility alias only.
+    """
     evidence_id: str
     run_id: str
     observation_id: str
@@ -37,6 +41,11 @@ class EvidenceRecord:
     span_end: int
     content_hash: str
     created_at: datetime
+
+
+# Compatibility alias for older persistence callers. New code should use
+# EvidenceLinkageRecord so the persistence/domain distinction is explicit.
+EvidenceRecord = EvidenceLinkageRecord
 
 
 @dataclass(frozen=True)
@@ -67,7 +76,7 @@ class D1Repository:
 
     def __init__(self):
         self._runs: dict[str, RunRecord] = {}
-        self._evidence: dict[str, EvidenceRecord] = {}
+        self._evidence: dict[str, EvidenceLinkageRecord] = {}
         self._lineage: dict[str, SourceLineageRecord] = {}
         self._versions: dict[str, DocumentVersionRecord] = {}
 
@@ -89,18 +98,18 @@ class D1Repository:
         """Retrieve a run record by ID."""
         return self._runs.get(run_id)
 
-    def add_evidence(self, record: EvidenceRecord) -> EvidenceRecord:
+    def add_evidence(self, record: EvidenceLinkageRecord) -> EvidenceLinkageRecord:
         """Insert evidence linkage."""
         if record.evidence_id in self._evidence:
             raise ValueError(f"evidence {record.evidence_id} already exists")
         self._evidence[record.evidence_id] = record
         return record
 
-    def evidence_for_run(self, run_id: str) -> list[EvidenceRecord]:
+    def evidence_for_run(self, run_id: str) -> list[EvidenceLinkageRecord]:
         """Retrieve all evidence for a run."""
         return [e for e in self._evidence.values() if e.run_id == run_id]
 
-    def evidence_for_claim(self, claim_id: str) -> list[EvidenceRecord]:
+    def evidence_for_claim(self, claim_id: str) -> list[EvidenceLinkageRecord]:
         """Retrieve all evidence supporting a claim."""
         return [e for e in self._evidence.values() if e.claim_id == claim_id]
 
