@@ -16,7 +16,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--start-slot", type=int, choices=range(8), default=0)
     parser.add_argument("--slots", type=int, choices=range(1, 9), default=8)
     parser.add_argument("--output", default=".runtime/multi-agent/research.jsonl")
-    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--dry-run", action="store_true", help="explicitly run deterministic simulation without an LLM")
     parser.add_argument("--global-capacity", type=int, default=20)
     parser.add_argument("--compare", action="store_true", help="run a 5-vs-10 agent scaling comparison for two different research programs")
     return parser.parse_args()
@@ -26,8 +26,13 @@ async def run(args: argparse.Namespace) -> None:
     selected = tuple(program for program in NIGHTLY_PROGRAMS if args.start_slot <= program.slot < min(8, args.start_slot + args.slots))
     reporter = JsonlResearchReporter(Path(args.output))
     executor = None if args.dry_run else configured_executor()
+    if executor is None and not args.dry_run:
+        raise RuntimeError(
+            "Live research executor is not configured. Set RESEARCH_LLM_ENDPOINT, "
+            "RESEARCH_LLM_API_KEY, and RESEARCH_LLM_MODEL, or explicitly pass --dry-run."
+        )
     coordinator = MultiAgentCoordinator(global_active_agents=args.global_capacity, executor=executor)
-    mode = "dry-run" if args.dry_run or executor is None else "llm"
+    mode = "dry-run" if args.dry_run else "llm"
     context = {"night_date": datetime.now(timezone.utc).date().isoformat(), "mode": mode}
 
     if args.compare:
@@ -38,6 +43,11 @@ async def run(args: argparse.Namespace) -> None:
             reporter.append(comparison.high)
             reporter.append_capacity_comparison(comparison)
             print(json.dumps({"event": "capacity_comparison", **comparison.to_dict()}))
+            if comparison.low.status != "completed" or comparison.high.status != "completed":
+                raise RuntimeError(
+                    f"Capacity comparison for {program.program_id} did not complete successfully: "
+                    f"low={comparison.low.status}, high={comparison.high.status}"
+                )
         selected = selected[2:]
 
     scheduler = DynamicResearchScheduler(coordinator)
@@ -58,6 +68,10 @@ async def run(args: argparse.Namespace) -> None:
             "measurement": result.measurement(),
             "mode": mode,
         }))
+
+    incomplete = [result.program_id for result in results if result.status != "completed"]
+    if incomplete:
+        raise RuntimeError(f"Nightly research produced incomplete programs: {', '.join(incomplete)}")
 
 
 def main() -> int:
