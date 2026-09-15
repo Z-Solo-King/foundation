@@ -199,10 +199,10 @@ jobs:
           printf 'GIT_ASKPASS=%s\n' "$askpass" >> "$GITHUB_ENV"
           printf 'GIT_TERMINAL_PROMPT=0\n' >> "$GITHUB_ENV"
 
-      - name: Checkout exact merged Operations revision
+      - name: Checkout current approved Operations revision
         shell: bash
         env:
-          OPERATIONS_REF: cf28a28cb40de527aff1cd87f96e103669635f70
+          OPERATIONS_REF: 3effcf6586c13a82a6cb0f5b4eda0ae0ef36648f3
         run: |
           set -euo pipefail
           rm -rf "$RUNNER_TEMP/operations"
@@ -227,7 +227,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          OPERATIONS_REF: cf28a28cb40de527aff1cd87f96e103669635f70
+          OPERATIONS_REF: 3effcf6586c13a82a6cb0f5b4eda0ae0ef36648f3
         run: |
           set -euo pipefail
           pywrangler deploy --config wrangler.toml --message "github:${OPERATIONS_REF}"
