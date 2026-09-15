@@ -39,7 +39,14 @@ def active_files(root: Path = ROOT) -> list[Path]:
     return sorted(result)
 
 def rel(path: Path, root: Path = ROOT) -> str:
-    return str(path.relative_to(root)).replace("\\", "/")
+    """Return a stable repo-relative path, or a readable external path for tests."""
+    base = root.resolve()
+    candidate = path if path.is_absolute() else base / path
+    candidate = candidate.resolve()
+    try:
+        return str(candidate.relative_to(base)).replace("\\", "/")
+    except ValueError:
+        return candidate.as_posix()
 
 def _is_test(relative: str) -> bool:
     return relative.startswith("tests/") or relative.endswith("_test.py") or "/tests/" in relative
