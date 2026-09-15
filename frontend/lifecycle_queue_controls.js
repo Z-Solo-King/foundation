@@ -11,7 +11,7 @@
   const readQueue = () => {
     try {
       const value = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-      return Array.isArray(value) ? value.filter((item) => item && item.id && item.text) : [];
+      return Array.isArray(value) ? value.filter((item) => item && item.id && item.request_id && item.text) : [];
     } catch {
       return [];
     }
@@ -20,14 +20,11 @@
 
   function render() {
     const items = readQueue();
-    if (queueCount) {
-      queueCount.textContent = String(items.length);
-      queueCount.hidden = items.length === 0;
-    }
+    if (queueCount) { queueCount.textContent = String(items.length); queueCount.hidden = items.length === 0; }
     if (queueStatus) queueStatus.textContent = items.length ? `${items.length} waiting` : 'Nothing waiting';
     if (queueList) {
       queueList.innerHTML = items.length
-        ? items.map((item, index) => `<div class="queue-item"><b>${index + 1}</b><div><strong>Research</strong><p>${escapeHtml(item.text)}</p></div><button data-lifecycle-remove-queue="${item.id}" aria-label="Remove queued research">×</button></div>`).join('')
+        ? items.map((item, index) => `<div class="queue-item"><b>${index + 1}</b><div><strong>Research</strong><p>${escapeHtml(item.text)}</p></div><button data-lifecycle-remove-queue="${escapeHtml(item.id)}" aria-label="Remove queued research">×</button></div>`).join('')
         : '<div class="queue-empty">Queue is empty.</div>';
     }
   }
@@ -38,7 +35,6 @@
     overlay?.classList.add('show');
     render();
   }
-
   function close() {
     panel?.classList.remove('open');
     panel?.setAttribute('aria-hidden', 'true');
@@ -46,39 +42,22 @@
   }
 
   document.addEventListener('click', (event) => {
-    const openButton = event.target.closest('[data-action="open-queue"]');
-    if (openButton) {
-      event.preventDefault();
-      event.stopPropagation();
-      open();
+    if (event.target.closest('[data-action="open-queue"]')) { event.preventDefault(); event.stopPropagation(); open(); return; }
+    if (event.target.closest('[data-action="clear-queue"]')) {
+      event.preventDefault(); event.stopPropagation();
+      document.dispatchEvent(new Event('rie:queue-clear-requested'));
       return;
     }
-
-    const clearButton = event.target.closest('[data-action="clear-queue"]');
-    if (clearButton) {
-      event.preventDefault();
-      event.stopPropagation();
-      localStorage.removeItem(QUEUE_KEY);
-      render();
+    const remove = event.target.closest('[data-lifecycle-remove-queue]');
+    if (remove) {
+      event.preventDefault(); event.stopPropagation();
+      document.dispatchEvent(new CustomEvent('rie:queue-remove-requested', { detail: { id: remove.dataset.lifecycleRemoveQueue } }));
       return;
     }
-
-    const removeButton = event.target.closest('[data-lifecycle-remove-queue]');
-    if (removeButton) {
-      event.preventDefault();
-      event.stopPropagation();
-      const items = readQueue().filter((item) => item.id !== removeButton.dataset.lifecycleRemoveQueue);
-      localStorage.setItem(QUEUE_KEY, JSON.stringify(items));
-      render();
-      return;
-    }
-
     if (event.target.closest('[data-action="close-queue"]')) close();
-  }, true);
+  }, false);
 
-  window.addEventListener('storage', (event) => {
-    if (event.key === QUEUE_KEY) render();
-  });
-
+  document.addEventListener('rie:queue-changed', render);
+  window.addEventListener('storage', (event) => { if (event.key === QUEUE_KEY) render(); });
   render();
 })();
