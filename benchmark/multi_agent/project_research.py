@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 from collections import Counter
 from datetime import datetime, timezone
@@ -30,7 +31,7 @@ def collect_project_snapshot(root: Path) -> dict[str, object]:
     tracked = _git(root, "ls-files")
     files = [line for line in tracked.splitlines() if line]
     return {
-        "repository": "${GITHUB_REPOSITORY}" if not revision else None,
+        "repository": os.getenv("GITHUB_REPOSITORY", "local"),
         "revision": revision,
         "branch": branch,
         "commit_subject": commit_subject,
@@ -78,6 +79,7 @@ def _program_record(row: ProgramResult, snapshot: dict[str, object]) -> dict[str
 
 
 def _improvement_signals(programs: Iterable[dict[str, object]]) -> list[dict[str, object]]:
+    programs = tuple(programs)
     by_program = {str(row["program_id"]): row for row in programs}
     signals: list[dict[str, object]] = []
 
@@ -106,8 +108,6 @@ def _improvement_signals(programs: Iterable[dict[str, object]]) -> list[dict[str
                 "decision": "WATCH",
             })
 
-    # These are bounded engineering consequences of the observed research architecture,
-    # not claims that external research has already been executed.
     if any(str(row["program_id"]).startswith("lane1-slot") for row in programs):
         signals.append({
             "type": "acquisition_bridge",
@@ -147,8 +147,6 @@ def build_summary(program_results: Iterable[ProgramResult], root: Path, *, run_i
 
 
 def load_jsonl(paths: Iterable[Path]) -> list[ProgramResult]:
-    # Summary-only CLI intentionally accepts the JSONL representation written by the reporter.
-    # This keeps the nightly artifact portable without coupling the summarizer to GitHub APIs.
     from .models import AgentResult
     from datetime import datetime
 
