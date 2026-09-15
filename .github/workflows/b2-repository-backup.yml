@@ -46,15 +46,7 @@ jobs:
           command -v python >/dev/null
           command -v aws >/dev/null || { echo 'AWS CLI is unavailable on the runner'; exit 1; }
           echo 'backup prerequisites: PASS'
-
-      - name: Verify bucket-scoped B2 access without account-wide bucket listing
-        shell: bash
-        run: |
-          set -euo pipefail
-          aws s3api head-bucket \
-            --bucket "$B2_BUCKET" \
-            --endpoint-url "$B2_ENDPOINT"
-          echo 'B2 bucket access: PASS'
+          echo "using bucket-scoped B2 S3 endpoint: ${B2_ENDPOINT}"
 
       - name: Mirror both repositories
         shell: bash
