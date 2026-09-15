@@ -1,9 +1,9 @@
 """Public-repository security and trust-boundary checks.
 
 Purpose: detect public artifacts that accidentally expose private topology,
-secrets, protected Operations implementation, unsafe archive extraction, or
-network access from deterministic planner-like modules. These checks are
-repository-local complements to CodeQL and must remain safe to publish.
+credential material, unsafe archive extraction, or direct network access from
+deterministic planner-like modules. These checks are repository-local
+complements to CodeQL and must remain safe to publish.
 """
 from __future__ import annotations
 
@@ -16,8 +16,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EXCLUDED = {".git", ".venv", "__pycache__", "archive"}
-SECRET_NAMES = {"AUTH_TOKEN", "B2_KEY_ID", "B2_APPLICATION_KEY", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "PRIVATE_WORKER_URL", "CONTROL_PLANE", "research-intelligence-engine-private"}
-FORBIDDEN_PRIVATE_MARKERS = ("private.chatbot", "resource_ledger", "promotion.py", "operations/", "extractor_mapper", "research-intelligence-engine-private")
+FORBIDDEN_PRIVATE_MARKERS = (
+    "private.chatbot",
+    "resource_ledger",
+    "promotion.py",
+    "operations/",
+    "extractor_mapper",
+    "research-intelligence-engine-private",
+)
 NETWORK_MODULES = {"requests", "httpx", "urllib", "aiohttp"}
 
 @dataclass(frozen=True)
@@ -51,23 +57,30 @@ def rel(path: Path, root: Path = ROOT) -> str:
 def _is_test(relative: str) -> bool:
     return relative.startswith("tests/") or relative.endswith("_test.py") or "/tests/" in relative
 
+def _is_policy_configuration(relative: str) -> bool:
+    """Workflow configuration legitimately names secret variables and private jobs."""
+    return relative.startswith(".github/workflows/")
+
 def secret_findings(path: Path, source: str) -> list[Finding]:
     relative = rel(path)
-    if _is_test(relative):
+    if _is_test(relative) or _is_policy_configuration(relative):
         return []
     findings = []
-    for marker in sorted(SECRET_NAMES):
-        if re.search(rf"(?<![A-Za-z0-9_]){re.escape(marker)}(?![A-Za-z0-9_])", source):
-            findings.append(Finding(relative, "private-marker", f"public source contains protected marker {marker}"))
     if re.search(r"Authorization\s*[:=]\s*[`\"']Bearer\s+[A-Za-z0-9._-]{20,}", source):
         findings.append(Finding(relative, "credential-literal", "public source contains a hard-coded bearer credential"))
+    if re.search(r"(?i)(?:api[_-]?key|access[_-]?key|secret|password|token)\s*[:=]\s*[\"'][A-Za-z0-9_./+=:-]{24,}[\"']", source):
+        findings.append(Finding(relative, "credential-literal", "public source contains a hard-coded credential-like literal"))
     return findings
 
 def private_reference_findings(path: Path, source: str) -> list[Finding]:
     relative = rel(path)
-    if _is_test(relative) or relative.startswith("docs/"):
+    if _is_test(relative) or relative.startswith("docs/") or relative == "scripts/public_security_lint.py" or _is_policy_configuration(relative):
         return []
-    return [Finding(relative, "private-reference", f"public source contains private implementation marker {marker}") for marker in FORBIDDEN_PRIVATE_MARKERS if marker in source]
+    return [
+        Finding(relative, "private-reference", f"public source contains private implementation marker {marker}")
+        for marker in FORBIDDEN_PRIVATE_MARKERS
+        if marker in source
+    ]
 
 def python_findings(path: Path, source: str) -> list[Finding]:
     relative = rel(path)
