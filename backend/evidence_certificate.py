@@ -29,9 +29,6 @@ class EvidenceCertificate:
         structurally_valid: bool = True,
         source_id: str | None = None,
     ) -> None:
-        # Legacy public form: (observation_id, source_url, content_hash,
-        # span_start, span_end, span_text[, structurally_valid]).
-        # Legacy intelligence form additionally inserted source_id after the ID.
         if args:
             if any(value is not None for value in (source_url, content_hash, span_start, span_end, span_text)):
                 raise TypeError("certificate fields must use either positional or named arguments")
@@ -100,12 +97,9 @@ def verify_certificate(
     if sha256_text(observation.content) != certificate.content_hash:
         return False
 
-    try:
-        span = EvidenceSpan(
-            observation_id=certificate.observation_id,
-            start=certificate.span_start,
-            end=certificate.span_end,
-        )
-        return span.text_from(observation) == certificate.span_text
-    except ValueError:
-        return False
+    span = EvidenceSpan(
+        observation_id=certificate.observation_id,
+        start=certificate.span_start,
+        end=certificate.span_end,
+    )
+    return span.text_from(observation) == certificate.span_text
