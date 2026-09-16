@@ -51,8 +51,9 @@ jobs:
           test -n "${RESEARCH_LLM_API_KEY:-}" || { echo 'Missing RESEARCH_LLM_API_KEY; refusing silent dry-run.'; exit 1; }
           test -n "${RESEARCH_LLM_MODEL:-}" || { echo 'Missing RESEARCH_LLM_MODEL; refusing silent dry-run.'; exit 1; }
           case "$RESEARCH_LLM_ENDPOINT" in
-            http://*|https://*) ;;
-            *) echo 'RESEARCH_LLM_ENDPOINT must be HTTP(S).'; exit 1 ;;
+            https://*) ;;
+            http://*) echo 'RESEARCH_LLM_ENDPOINT must use HTTPS for scheduled research execution.'; exit 1 ;;
+            *) echo 'RESEARCH_LLM_ENDPOINT must be HTTPS.'; exit 1 ;;
           esac
           echo "live research executor configuration: PASS"
       - name: Run complete research lane
@@ -85,6 +86,44 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: .runtime/nightly-lane-${{ matrix.lane }}.jsonl
+      - name: Record nightly research runtime status
+        if: ${{ always() }}
+        shell: python
+        env:
+          LANE: ${{ matrix.lane }}
+          JOB_STATUS: ${{ job.status }}
+          EXECUTOR_ENDPOINT: ${{ secrets.RESEARCH_LLM_ENDPOINT }}
+          EXECUTOR_KEY: ${{ secrets.RESEARCH_LLM_API_KEY }}
+          EXECUTOR_MODEL: ${{ secrets.RESEARCH_LLM_MODEL }}
+        run: |
+          import json
+          import os
+          from pathlib import Path
+
+          Path('.runtime').mkdir(parents=True, exist_ok=True)
+          endpoint = os.environ.get('EXECUTOR_ENDPOINT', '')
+          key = os.environ.get('EXECUTOR_KEY', '')
+          model = os.environ.get('EXECUTOR_MODEL', '')
+          payload = {
+              'schema': 'nightly-research-runtime-status/v1',
+              'lane': int(os.environ['LANE']),
+              'job_status': os.environ.get('JOB_STATUS', ''),
+              'live_executor_configured': bool(endpoint and key and model),
+              'endpoint_configured': bool(endpoint),
+              'api_key_configured': bool(key),
+              'model_configured': bool(model),
+              'research_executed': Path(f".runtime/nightly-lane-{os.environ['LANE']}.jsonl").exists(),
+              'note': 'This diagnostic contains configuration presence only; it never records secret values.',
+          }
+          Path(f".runtime/nightly-research-runtime-status-lane-{os.environ['LANE']}.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: ${{ always() }}
+        with:
+          name: nightly-research-runtime-status-${{ matrix.lane }}
+          path: .runtime/nightly-research-runtime-status-lane-${{ matrix.lane }}.json
+          retention-days: 30
 
   project-summary:
     name: Build nightly Heroic AI improvement evidence
@@ -171,3 +210,56 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: .runtime/nightly-baseline.json
+
+  runtime-diagnostic:
+    name: Publish nightly research runtime diagnosis
+    if: ${{ always() }}
+    needs: research
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download lane runtime status artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        continue-on-error: true
+        with:
+          pattern: nightly-research-runtime-status-*
+          path: .runtime/runtime-status
+          merge-multiple: true
+      - name: Build runtime diagnosis
+        shell: python
+        env:
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path('.runtime/runtime-status')
+          rows = []
+          if root.exists():
+              for path in sorted(root.glob('nightly-research-runtime-status-lane-*.json')):
+                  rows.append(json.loads(path.read_text(encoding='utf-8')))
+          configured = bool(rows) and all(row.get('live_executor_configured') for row in rows)
+          executed = bool(rows) and all(row.get('research_executed') for row in rows)
+          diagnosis = {
+              'schema': 'nightly-research-runtime-diagnosis/v1',
+              'run_id': int(os.environ['RUN_ID']),
+              'run_attempt': int(os.environ['RUN_ATTEMPT']),
+              'lane_count_observed': len(rows),
+              'live_executor_configured': configured,
+              'research_executed': executed,
+              'research_findings_available': executed,
+              'status': 'research_available' if executed else 'runtime_blocked_before_research',
+              'lanes': rows,
+          }
+          Path('.runtime').mkdir(parents=True, exist_ok=True)
+          Path('.runtime/nightly-research-runtime-diagnosis.json').write_text(
+              json.dumps(diagnosis, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-research-runtime-diagnosis
+          path: .runtime/nightly-research-runtime-diagnosis.json
+          retention-days: 30
