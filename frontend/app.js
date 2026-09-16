@@ -72,17 +72,47 @@
       .map((message) => ({ role: message.role, text: String(message.text).slice(0, 12000) }));
   }
 
+  async function consumeChatStream(response, onEvent) {
+    if (!response.body) throw new Error('Heroic AI stream is unavailable in this browser');
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    const dispatch = (block) => {
+      const lines = block.split(/\r?\n/);
+      let eventName = 'message';
+      let data = '';
+      for (const line of lines) {
+        if (line.startsWith('event:')) eventName = line.slice(6).trim();
+        else if (line.startsWith('data:')) data += `${line.slice(5).trim()}\n`;
+      }
+      if (!data) return;
+      const payload = JSON.parse(data.trim());
+      onEvent(eventName, payload);
+    };
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const blocks = buffer.split(/\r?\n\r?\n/);
+      buffer = blocks.pop() || '';
+      blocks.filter(Boolean).forEach(dispatch);
+    }
+    buffer += decoder.decode();
+    if (buffer.trim()) dispatch(buffer);
+  }
+
   async function submitChat(text, chatId = api.state.activeChatId) {
     if (!api.API_BASE) throw new Error('Heroic AI API base is not configured');
     if (!chatId) throw new Error('No active Heroic AI chat is available');
     const requestId = api.uuid();
     const userMessage = api.addMessage('user', text, { request_id: requestId, pending: true }, chatId);
+    const assistantMessage = api.addMessage('assistant', '', { request_id: requestId, pending: true, streaming: true }, chatId);
     api.state.submitting = true;
     api.chatView.render();
     try {
-      const response = await fetch(api.apiUrl('/api/v1/chat'), {
+      const response = await fetch(api.apiUrl('/api/v1/chat/stream'), {
         method: 'POST',
-        headers: { ...api.authHeaders(true), 'Idempotency-Key': requestId },
+        headers: { ...api.authHeaders(true), Accept: 'text/event-stream', 'Idempotency-Key': requestId },
         body: JSON.stringify({
           chat_id: chatId,
           request_id: requestId,
@@ -92,29 +122,44 @@
           history: conversationHistory(chatId),
         }),
       });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok || !body.ok) throw new Error(body.error || `Heroic AI chat request failed (${response.status})`);
-      const answer = body.response?.text || body.answer;
-      if (!answer) throw new Error('Heroic AI returned no response text');
-      api.updateMessage(userMessage.id, { meta: { ...(userMessage.meta || {}), pending: false } });
-      api.addMessage('assistant', answer, {
-        request_id: requestId,
-        response_id: body.response?.response_id || body.response_id || null,
-        status: body.response?.status || body.status || 'completed',
-        operation: body.response?.operation || null,
-        generation_status: body.response?.generation_status || null,
-        provider: body.response?.provider || null,
-        sources: body.response?.sources || body.sources || [],
-      }, chatId);
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || `Heroic AI chat request failed (${response.status})`);
+      }
+      let answer = '';
+      let responseId = null;
+      let terminal = false;
+      await consumeChatStream(response, (event, payload) => {
+        if (event === 'start') {
+          responseId = payload.response_id || null;
+          api.updateMessage(assistantMessage.id, { meta: { ...assistantMessage.meta, response_id: responseId, status: 'streaming', pending: true, streaming: true } });
+        } else if (event === 'delta') {
+          answer += String(payload.text || '');
+          api.updateMessage(assistantMessage.id, { text: answer, meta: { ...assistantMessage.meta, response_id: responseId, status: 'streaming', pending: true, streaming: true } });
+          api.chatView.renderConversation();
+        } else if (event === 'done') {
+          terminal = true;
+          responseId = payload.response_id || responseId;
+          api.updateMessage(assistantMessage.id, { text: answer, meta: { ...assistantMessage.meta, response_id: responseId, status: payload.status || 'completed', pending: false, streaming: false } });
+          api.updateMessage(userMessage.id, { meta: { ...(userMessage.meta || {}), pending: false } });
+        }
+      });
+      if (!terminal) throw new Error('Heroic AI stream ended without a completion event');
+      const body = { ok: true, request_id: requestId, chat_id: chatId, response: { response_id: responseId, status: 'completed', text: answer } };
       document.dispatchEvent(new CustomEvent('rie:chat-response', { detail: { chatId, requestId, body } }));
       return body;
     } catch (error) {
       api.updateMessage(userMessage.id, { meta: { ...(userMessage.meta || {}), pending: false, error: true } });
+      api.updateMessage(assistantMessage.id, { meta: { ...(assistantMessage.meta || {}), pending: false, streaming: false, error: true }, text: answerOrFallback(assistantMessage.text, error) });
       throw error;
     } finally {
       api.state.submitting = false;
       api.chatView.render();
     }
+  }
+
+  function answerOrFallback(text, error) {
+    return text || `Heroic AI could not complete this message: ${error.message || error}`;
   }
 
   function openWorkspace() { workspace?.classList.add('open'); }
@@ -134,10 +179,7 @@
   document.addEventListener('rie:composer-send', (event) => {
     const { text, mode } = event.detail || {};
     if (!text || mode === 'research') return;
-    void submitChat(String(text).trim()).catch((error) => {
-      api.addMessage('assistant', `Heroic AI could not complete this message: ${error.message || error}`, { error: true }, api.state.activeChatId);
-      api.chatView.render();
-    });
+    void submitChat(String(text).trim()).catch(() => {});
   });
 
   document.addEventListener('rie:composer-queue', (event) => {
