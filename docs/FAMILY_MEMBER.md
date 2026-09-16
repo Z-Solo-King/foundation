@@ -2,7 +2,7 @@
 
 ## Role
 
-`foundation` is the public contract and reusable-primitives member of the three-repository family.
+`foundation` is the public contract and reusable-primitives member of the two-repository active family.
 
 ## Owns
 
@@ -20,7 +20,9 @@
 
 ## Family flow
 
-`foundation contract -> extractor-mapper execution -> untrusted result -> operations gate`
+`foundation contract -> operations private execution/acquisition -> untrusted result -> operations gate`
+
+The former `Z-Solo-King/extractor-mapper` repository is historical. Its runtime implementation was consolidated into `operations/extractor_mapper/`; that internal Operations package is active and remains private. Foundation must not describe the retired repository as a third active family member.
 
 Foundation may define what a valid object means structurally. It must not decide whether an execution result is trusted, promotable, or production-authoritative.
 
