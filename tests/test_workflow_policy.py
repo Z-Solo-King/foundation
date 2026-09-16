@@ -86,7 +86,7 @@ def test_operations_checkout_uses_github_app_installation_credential():
     assert "OPERATIONS_READ_TOKEN" not in deployment
 
 
-def test_frontend_ui_keeps_one_job_and_guards_release_to_main_push():
+def test_frontend_ui_keeps_one_job_and_guards_release_to_main_push_or_manual_dispatch():
     frontend = _workflow_texts()[PRODUCTION_WORKFLOW]
     assert "name: frontend-ui" in frontend
     assert "jobs:" in frontend
@@ -94,7 +94,9 @@ def test_frontend_ui_keeps_one_job_and_guards_release_to_main_push():
     assert "needs:" not in frontend
     assert "uses: ./.github/workflows/production-release-reusable.yml" not in frontend
     assert "gh workflow run" not in frontend
-    assert "if: github.event_name == 'push' && github.ref == 'refs/heads/main'" in frontend
+    assert "workflow_dispatch:" in frontend
+    release_guard = "if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'"
+    assert frontend.count(release_guard) == 3
     assert "working-directory: ${{ github.workspace }}" in frontend
     assert "actions: write" not in frontend
 

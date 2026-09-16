@@ -3,6 +3,7 @@ name: frontend-ui
 on:
   push:
     branches: [main]
+  workflow_dispatch:
   pull_request:
     branches: [main]
     paths:
@@ -33,13 +34,13 @@ jobs:
         run: npm test
 
       - name: Setup Python for production release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.14'
 
       - name: Resolve Operations GitHub App installation
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         working-directory: ${{ github.workspace }}
         env:
           OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
@@ -74,7 +75,7 @@ PY
           rm -f "$key_file" "$jwt_file"
 
       - name: Run canonical production release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         working-directory: ${{ github.workspace }}
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
