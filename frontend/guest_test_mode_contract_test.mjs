@@ -26,9 +26,13 @@ assert(guest.includes("result_state: 'TEST_ONLY'"), 'guest responses must be mar
 assert(guest.includes("generation_status: 'deterministic_test'"), 'guest responses must identify deterministic test generation');
 assert(guest.includes('pending: false'), 'guest lifecycle must clear pending state');
 assert(guest.includes('streaming: false'), 'guest lifecycle must terminate streaming state');
-assert(guest.includes('String(text).slice(0, 1200)'), 'guest echo must cap user text');
-assert(app.includes("if (!String(text || '').trim()) throw new Error('Message is required');"), 'guest direct-call input guard is missing');
-assert(app.includes("if (String(text).length > 12_000) throw new Error('Message exceeds the 12000 character limit');"), 'guest direct-call length guard is missing');
+assert(guest.includes('normalizedText.slice(0, 1200)'), 'guest echo must cap normalized user text');
+assert(app.includes("if (!normalizedText) throw new Error('Message is required');"), 'guest direct-call input guard is missing');
+assert(app.includes("if (normalizedText.length > 12_000) throw new Error('Message exceeds the 12000 character limit');"), 'guest direct-call length guard is missing');
+assert(state.includes('function newChat()'), 'new chat state lifecycle is missing');
+assert(state.includes("title: 'New chat'"), 'new chats must start with the canonical title');
+assert(state.includes('setActiveChat(chat.id)'), 'new chats must become the active chat');
+assert(app.includes("document.dispatchEvent(new CustomEvent('rie:chat-response'"), 'chat response event bridge is missing');
 assert(product.includes('Guest Test mode'), 'product documentation must describe Guest Test mode');
 assert(!product.includes('frontend never invents assistant answers when the private runtime is unavailable.'), 'product documentation still contains the superseded guest-mode contradiction');
 
