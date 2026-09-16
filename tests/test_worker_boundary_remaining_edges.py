@@ -29,14 +29,17 @@ def test_worker_boundary_remaining_result_and_replay_guards():
     assert validator.validate_task(completed)[0] is False
 
     now = datetime.now(timezone.utc)
-    good = validator.create_task("fetch", {"x": 1}, "p")
     for status in ("failure", "timeout", "invalid"):
-        result = WorkerResult(good.task_id, good.nonce, status, None, None, 1, "worker", now)
-        ok, reason = validator.validate_result(good, result, None)
+        terminal = validator.create_task("fetch", {"status": status}, "p")
+        assert validator.validate_task(terminal)[0] is True
+        result = WorkerResult(terminal.task_id, terminal.nonce, status, None, None, 1, "worker", now)
+        ok, reason = validator.validate_result(terminal, result, None)
         assert ok is True and reason == "valid"
 
-    bad_status = WorkerResult(good.task_id, good.nonce, "bogus", None, None, 1, "worker", now)
-    assert validator.validate_result(good, bad_status, None)[0] is False
+    bad_status = validator.create_task("fetch", {"bad": True}, "p")
+    assert validator.validate_task(bad_status)[0] is True
+    invalid_result = WorkerResult(bad_status.task_id, bad_status.nonce, "bogus", None, None, 1, "worker", now)
+    assert validator.validate_result(bad_status, invalid_result, None)[0] is False
 
     expired = validator.create_task("fetch", {}, "p")
     expired_task = WorkerTask(expired.task_id, expired.nonce, expired.schema_version, expired.task_type, expired.input_hash, expired.provenance, expired.created_at, now - timedelta(hours=2), expired.metadata)
@@ -63,12 +66,12 @@ def test_worker_boundary_remaining_result_and_replay_guards():
     assert ok is False and "exceeds" in reason
     validator.MAX_OUTPUT_SIZE_MB = original_limit
 
-    naive = WorkerResult(good.task_id, good.nonce, "failure", None, None, 1, "worker", now.replace(tzinfo=None))
-    assert validator.validate_result(good, naive, None)[0] is False
-    negative = WorkerResult(good.task_id, good.nonce, "failure", None, None, -1, "worker", now)
-    assert validator.validate_result(good, negative, None)[0] is False
-    missing_worker = WorkerResult(good.task_id, good.nonce, "failure", None, None, 1, "", now)
-    assert validator.validate_result(good, missing_worker, None)[0] is False
+    naive = WorkerResult(future.task_id, future.nonce, "failure", None, None, 1, "worker", now.replace(tzinfo=None))
+    assert validator.validate_result(future, naive, None)[0] is False
+    negative = WorkerResult(future.task_id, future.nonce, "failure", None, None, -1, "worker", now)
+    assert validator.validate_result(future, negative, None)[0] is False
+    missing_worker = WorkerResult(future.task_id, future.nonce, "failure", None, None, 1, "", now)
+    assert validator.validate_result(future, missing_worker, None)[0] is False
 
     validator._active_tasks[active.nonce] = "different-task"
     active_result = WorkerResult(active.task_id, active.nonce, "failure", None, None, 1, "worker", now)
