@@ -47,3 +47,7 @@ The current explicitly approved Operations production revision is:
 `cf28a28cb40de527aff1cd87f96e103669635f70`
 
 This is a signed Operations commit implementing the durable D1 governance runtime. The deployment workflow must not silently substitute a newer Operations `main` commit without a new explicit approval change.
+
+## Credential rotation boundary
+
+`OPERATIONS_READ_TOKEN` is a dedicated GitHub repository-read credential. It is intentionally independent from Backblaze B2 application credentials, Cloudflare credentials, and application `AUTH_TOKEN`. Rotating or replacing one provider's credential must not require changing another provider's secret name or value.
