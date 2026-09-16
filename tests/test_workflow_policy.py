@@ -60,6 +60,16 @@ def test_canonical_operations_production_pin_is_single_and_current():
     assert '"github:${OPERATIONS_REF}"' in codeql
 
 
+def test_operations_checkout_uses_dedicated_github_credential():
+    codeql = _workflow_texts()["codeql.yml"]
+    assert "OPERATIONS_READ_TOKEN: ${{ secrets.OPERATIONS_READ_TOKEN }}" in codeql
+    assert "BACKUP_GITHUB_TOKEN" not in codeql
+    assert "B2_APPLICATION_KEY" in codeql
+    assert "OPERATIONS_READ_TOKEN" in codeql
+    assert "api.github.com/repos/${OPERATIONS_REPOSITORY}" in codeql
+    assert "OPERATIONS_READ_TOKEN cannot access the expected private Operations repository." in codeql
+
+
 def test_required_ci_contract_supports_merge_group():
     texts = _workflow_texts()
     codeql = texts["codeql.yml"]
