@@ -88,6 +88,8 @@ def test_frontend_ui_keeps_one_job_and_guards_release_to_main_push():
 def test_production_script_is_fail_closed_and_asserts_frontend_assets():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert "set -euo pipefail" in deployment
+    assert "python -m pip install pytest pytest-asyncio coverage workers-py workers-runtime-sdk uv" in deployment
+    assert "uv --version" in deployment
     assert "health=$(curl -fsS" in deployment
     assert "readiness=$(curl -fsS" in deployment
     assert "<title>Heroic AI — Chat & Research</title>" in deployment
