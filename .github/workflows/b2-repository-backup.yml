@@ -1,6 +1,6 @@
 name: B2 repository backup
 
-'on':
+on:
   push:
     branches:
       - main
