@@ -242,6 +242,7 @@ print(json.load(open(sys.argv[1], encoding='utf-8'))['token'])
 PY
 )
           test -n "$github_app_token"
+          echo "::add-mask::$github_app_token"
           echo 'GITHUB_APP_TOKEN<<EOF' >> "$GITHUB_ENV"
           printf '%s\n' "$github_app_token" >> "$GITHUB_ENV"
           echo 'EOF' >> "$GITHUB_ENV"
@@ -261,8 +262,6 @@ PY
 
       - name: Checkout current approved Operations revision
         shell: bash
-        env:
-          GITHUB_APP_TOKEN: ${{ env.GITHUB_APP_TOKEN }}
         run: |
           set -euo pipefail
           test -n "${GITHUB_APP_TOKEN:-}" || { echo 'GitHub App installation token was not generated'; exit 1; }
