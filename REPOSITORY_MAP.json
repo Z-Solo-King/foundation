@@ -42,9 +42,9 @@
     "research_is_a_heroic_ai_capability": true
   },
   "maintenance": {
-    "validation_workflow": ".github/workflows/codeql.yml",
+    "validation_workflow": ".github/workflows/required-pr-checks.yml",
     "public_tests": "tests/",
-    "deployment_workflow": ".github/workflows/codeql.yml",
+    "deployment_workflow": ".github/workflows/production-release.yml",
     "historical_code_is_not_runtime": true
   },
   "method": [
