@@ -6,7 +6,6 @@
 
   const prompt = document.getElementById('prompt');
   const modeButtons = [...document.querySelectorAll('.mode')];
-  const attachmentList = document.getElementById('attachment-list');
   const composerStatus = document.getElementById('composer-status');
   const workspace = document.getElementById('workspace');
 
@@ -42,33 +41,6 @@
     if (!prompt) return;
     prompt.style.height = 'auto';
     prompt.style.height = `${Math.min(prompt.scrollHeight, 150)}px`;
-  }
-
-  function addAttachmentChip(name) {
-    if (!attachmentList) return;
-    const chip = document.createElement('span');
-    chip.className = 'attachment-chip';
-    chip.dataset.attachment = name;
-    chip.textContent = name;
-    attachmentList.append(chip);
-  }
-
-  function handleAttachments() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = true;
-    input.accept = '*/*';
-    input.addEventListener('change', () => {
-      const files = [...(input.files || [])];
-      if (!files.length) return;
-      if (api.state.mode !== 'research') {
-        setStatus('Attachments are selected locally; this chat contract does not upload file contents yet.');
-      } else {
-        setStatus('Attachments are selected locally; the public research contract does not upload file contents yet.');
-      }
-      files.forEach((file) => addAttachmentChip(file.name));
-    }, { once: true });
-    input.click();
   }
 
   function handleVoice() {
@@ -115,7 +87,6 @@
   document.addEventListener('click', (event) => {
     const mode = event.target.closest('[data-mode]');
     if (mode) { event.preventDefault(); selectMode(mode.dataset.mode); return; }
-    if (event.target.closest('[data-action="attachments"]')) { event.preventDefault(); handleAttachments(); return; }
     if (event.target.closest('[data-action="voice"]')) { event.preventDefault(); handleVoice(); return; }
     if (event.target.closest('[data-action="send"]')) { event.preventDefault(); send(); return; }
     if (event.target.closest('[data-action="queue"]')) { event.preventDefault(); queue(); return; }
