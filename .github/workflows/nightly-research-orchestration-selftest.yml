@@ -1,0 +1,84 @@
+name: nightly research orchestration self-test
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/nightly-multi-agent-research.yml
+      - .github/workflows/nightly-research-orchestration-selftest.yml
+      - benchmark/multi_agent/**
+      - tests/test_nightly_research_matrix.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+group: nightly-research-orchestration-selftest
+
+jobs:
+  lane-isolation:
+    name: Lane isolation test ${{ matrix.lane }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: [0, 1, 2]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Simulate lane runtime
+        id: runtime
+        continue-on-error: true
+        shell: bash
+        env:
+          LANE: ${{ matrix.lane }}
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime
+          if [ "$LANE" = "0" ]; then
+            echo 'intentionally failing lane 0 to prove sibling isolation'
+            exit 91
+          fi
+          echo "lane $LANE completed independently"
+      - name: Materialize test result
+        if: ${{ always() }}
+        shell: bash
+        env:
+          LANE: ${{ matrix.lane }}
+          OUTCOME: ${{ steps.runtime.outcome }}
+        run: |
+          mkdir -p .runtime
+          printf '{"lane":%s,"runtime_outcome":"%s"}\n' "$LANE" "$OUTCOME" > ".runtime/lane-${LANE}.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: ${{ always() }}
+        with:
+          name: nightly-research-orchestration-lane-${{ matrix.lane }}
+          path: .runtime/lane-${{ matrix.lane }}.json
+
+  verify-isolation:
+    name: Verify independent lane execution
+    if: ${{ always() }}
+    needs: lane-isolation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download lane artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: nightly-research-orchestration-lane-*
+          path: .runtime
+          merge-multiple: true
+      - name: Assert all three lanes executed
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+
+          rows = []
+          for lane in range(3):
+              path = Path(f'.runtime/lane-{lane}.json')
+              assert path.exists(), f'missing lane {lane} artifact'
+              rows.append(json.loads(path.read_text()))
+          by_lane = {row['lane']: row['runtime_outcome'] for row in rows}
+          assert set(by_lane) == {0, 1, 2}
+          assert by_lane[0] == 'failure', by_lane
+          assert by_lane[1] == 'success', by_lane
+          assert by_lane[2] == 'success', by_lane
+          print('PASS: lane 0 failure did not cancel or skip lanes 1 and 2')
