@@ -9,7 +9,7 @@ SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
 CANONICAL_OPERATIONS_REF = "cf28a28cb40de527aff1cd87f96e103669635f70"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
-PRODUCTION_WORKFLOW = "production-release-final.yml"
+PRODUCTION_WORKFLOW = "production-release-reusable.yml"
 
 
 def _workflow_texts() -> dict[str, str]:
@@ -69,6 +69,22 @@ def test_operations_checkout_uses_github_app_installation_credential():
     assert "GITHUB_APP_TOKEN" in deployment
     assert "api.github.com/repos/${OPERATIONS_REPOSITORY}" in deployment
     assert "OPERATIONS_READ_TOKEN" not in deployment
+
+
+def test_reusable_production_workflow_has_no_direct_push_trigger():
+    deployment = _workflow_texts()[PRODUCTION_WORKFLOW]
+    assert "workflow_call:" in deployment
+    assert "push:" not in deployment
+    assert "workflow_dispatch:" not in deployment
+
+
+def test_frontend_ui_calls_production_only_after_contract_success():
+    frontend = _workflow_texts()["frontend-ui.yml"]
+    assert "actions: write" not in frontend
+    assert "uses: ./.github/workflows/production-release-reusable.yml" in frontend
+    assert "needs: contract" in frontend
+    assert "secrets: inherit" in frontend
+    assert "gh workflow run" not in frontend
 
 
 def test_required_pr_checks_emit_the_branch_protection_contract():
