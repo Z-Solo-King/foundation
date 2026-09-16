@@ -2,8 +2,8 @@
 
 This repository is one member of a two-repository system. The public-safe ownership contract is canonical in `docs/FAMILY_CONTRACT.json`.
 
-- `foundation`: public contracts, evidence structures, research contracts, and reusable deterministic primitives.
-- `operations`: private control, acquisition, extraction, mapping, verification, evaluation, promotion, private runtime orchestration, and recovery.
+- `foundation`: public contracts, evidence structures, research contracts, reusable deterministic primitives, canonical public CI and production deployment/backup ownership.
+- `operations`: private control, acquisition, extraction, mapping, verification, evaluation, promotion, private runtime orchestration, protected runtime configuration and recovery.
 
 Dependency direction is one-way:
 
@@ -15,7 +15,17 @@ Operations may consume the pinned public `foundation_core` package or the public
 
 The same behavior may not have multiple authoritative implementations. A compatibility module may expose an old API over the canonical owner, but it may not contain another copy of the algorithm.
 
-This applies to code, policy logic, process methodology, DTOs, registries, state models, routing rules, result-state semantics, resource accounting, provider eligibility, evaluation gates, promotion/rollback, trust/identity checks and deployment ownership.
+This applies to code, policy logic, process methodology, DTOs, registries, state models, routing rules, result-state semantics, resource accounting, provider eligibility, evaluation gates, promotion/rollback, trust/identity checks, credential purpose and deployment ownership.
+
+## Credential and backup boundary
+
+Credential and backup policy is canonical in `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md`.
+
+Foundation owns the GitHub production deployment workflow and the repository backup workflow. `OPERATIONS_READ_TOKEN` is the purpose-specific credential for reading the private Operations revision during production deployment. `BACKUP_GITHUB_TOKEN` is a separate GitHub read credential used by the B2 backup workflow to mirror repository Git data.
+
+Backblaze B2 is artifact/backup storage authority only. `B2_KEY_ID`, `B2_APPLICATION_KEY` and `B2_BUCKET` belong to the B2 boundary and are never substitutes for GitHub credentials. B2 does not own application identity, authorization, routing, resource governance, evidence, deployment approval or result-state semantics.
+
+Backup manifests are evidence records only. Secret values must never appear in manifests or durable handoff records. Backup integrity, GitHub CI, Cloudflare deployment and application runtime are separate evidence classes.
 
 ## Repository structure rule
 
@@ -55,6 +65,8 @@ Move between repositories only when ownership requires it. Preserve contracts an
 - A public repository making trust or promotion decisions.
 - Legacy snapshots receiving new business logic.
 - Compatibility facades containing competing business logic.
+- Shared or ambiguously named credentials used for unrelated authorities.
+- Treating B2 backup success as application or deployment certification.
 - Synchronized copy-paste commits across repositories that should instead be a contract plus one owner.
 - Large modules with mixed ownership that cannot be reasoned about or tested independently.
 - AI token reduction that silently removes constraints, failure states or evidence requirements.
