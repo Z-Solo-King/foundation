@@ -9,7 +9,7 @@ cleanup() {
   rm -rf "$RUNNER_TEMP/operations" "$RUNNER_TEMP/operations-secrets.env" \
     "$RUNNER_TEMP/git-askpass-operations.sh" "$RUNNER_TEMP/operations-app.pem" \
     "$RUNNER_TEMP/github-app-jwt.txt" "$RUNNER_TEMP/github-app-installation.json" \
-    wrangler.production.generated.toml health.json readiness.json frontend.html \
+    "$RUNNER_TEMP/github-app-installation-meta.json" wrangler.production.generated.toml health.json readiness.json frontend.html \
     /tmp/styles.css /tmp/app.js /tmp/composer.js /tmp/lifecycle_controller.js
 }
 trap cleanup EXIT
@@ -79,7 +79,6 @@ grep -q '^binding = "ASSETS"$' wrangler.production.generated.toml
 npx --yes wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
 pywrangler deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}"
 
-# Endpoint-specific smoke diagnostics. Never let curl's -f hide which URL failed.
 health_status=$(curl -sS -o health.json -w '%{http_code}' "$BASE_URL/health")
 echo "GET /health -> HTTP ${health_status}"
 cat health.json
@@ -124,7 +123,12 @@ umask 077
 printf '%s\n' "$OPERATIONS_APP_PRIVATE_KEY" > "$key_file"
 chmod 600 "$key_file"
 python - "$OPERATIONS_APP_ID" "$key_file" > "$RUNNER_TEMP/github-app-jwt.txt" <<'PY'
-import base64, json, subprocess, sys, time
+import base64
+import json
+import subprocess
+import sys
+import time
+
 app_id, key_file = sys.argv[1:]
 def b64url(value):
     return base64.urlsafe_b64encode(value).rstrip(b'=').decode('ascii')
@@ -136,10 +140,33 @@ proc = subprocess.run(["openssl", "dgst", "-sha256", "-sign", key_file], input=u
 print(unsigned.decode() + "." + b64url(proc.stdout))
 PY
 app_jwt=$(cat "$RUNNER_TEMP/github-app-jwt.txt")
-installation_response=$(curl -fsS -X POST -H 'Accept: application/vnd.github+json' \
-  -H "Authorization: Bearer ${app_jwt}" -H 'X-GitHub-Api-Version: 2022-11-28' \
+
+# Verify that the supplied installation id actually belongs to the supplied App.
+# Print only safe status/error metadata; never print credentials or access tokens.
+installation_meta_status=$(curl -sS -o "$RUNNER_TEMP/github-app-installation-meta.json" -w '%{http_code}' \
+  -H 'Accept: application/vnd.github+json' \
+  -H "Authorization: Bearer ${app_jwt}" \
+  -H 'X-GitHub-Api-Version: 2022-11-28' \
+  "https://api.github.com/app/installations/${OPERATIONS_APP_INSTALLATION_ID}")
+echo "GET GitHub App installation metadata -> HTTP ${installation_meta_status}"
+if [ "$installation_meta_status" != '200' ]; then
+  jq -c '{message,errors,documentation_url}' "$RUNNER_TEMP/github-app-installation-meta.json" || cat "$RUNNER_TEMP/github-app-installation-meta.json"
+  echo 'The OPERATIONS_APP_INSTALLATION_ID does not resolve for OPERATIONS_APP_ID, or the App does not have access to that installation.'
+  exit 1
+fi
+
+installation_response_status=$(curl -sS -o "$RUNNER_TEMP/github-app-installation.json" -w '%{http_code}' \
+  -X POST \
+  -H 'Accept: application/vnd.github+json' \
+  -H "Authorization: Bearer ${app_jwt}" \
+  -H 'X-GitHub-Api-Version: 2022-11-28' \
   "https://api.github.com/app/installations/${OPERATIONS_APP_INSTALLATION_ID}/access_tokens")
-printf '%s\n' "$installation_response" > "$RUNNER_TEMP/github-app-installation.json"
+echo "POST GitHub App installation token -> HTTP ${installation_response_status}"
+if [ "$installation_response_status" != '201' ]; then
+  jq -c '{message,errors,documentation_url}' "$RUNNER_TEMP/github-app-installation.json" || cat "$RUNNER_TEMP/github-app-installation.json"
+  exit 1
+fi
+
 github_app_token=$(python - "$RUNNER_TEMP/github-app-installation.json" <<'PY'
 import json, sys
 print(json.load(open(sys.argv[1], encoding='utf-8'))['token'])
@@ -148,12 +175,21 @@ PY
 test -n "$github_app_token"
 echo "::add-mask::$github_app_token"
 
-repo_response=$(curl -fsS -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${github_app_token}" \
+repo_status=$(curl -sS -o "$RUNNER_TEMP/operations-repo-response.json" -w '%{http_code}' \
+  -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${github_app_token}" \
   -H 'X-GitHub-Api-Version: 2022-11-28' "https://api.github.com/repos/${OPERATIONS_REPOSITORY}")
-jq -e --arg repo "$OPERATIONS_REPOSITORY" '.full_name == $repo and .private == true' <<<"$repo_response" >/dev/null
-ref_response=$(curl -fsS -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${github_app_token}" \
+echo "GET Operations repository -> HTTP ${repo_status}"
+test "$repo_status" = '200' || { jq -c '{message,errors,documentation_url}' "$RUNNER_TEMP/operations-repo-response.json" || cat "$RUNNER_TEMP/operations-repo-response.json"; exit 1; }
+jq -e --arg repo "$OPERATIONS_REPOSITORY" '.full_name == $repo and .private == true' "$RUNNER_TEMP/operations-repo-response.json" >/dev/null
+
+ref_status=$(curl -sS -o "$RUNNER_TEMP/operations-ref-response.json" -w '%{http_code}' \
+  -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${github_app_token}" \
   -H 'X-GitHub-Api-Version: 2022-11-28' "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/git/commits/${OPERATIONS_REF}")
-jq -e --arg expected "$OPERATIONS_REF" '.sha == $expected' <<<"$ref_response" >/dev/null
+echo "GET Operations approved commit -> HTTP ${ref_status}"
+test "$ref_status" = '200' || { jq -c '{message,errors,documentation_url}' "$RUNNER_TEMP/operations-ref-response.json" || cat "$RUNNER_TEMP/operations-ref-response.json"; exit 1; }
+jq -e --arg expected "$OPERATIONS_REF" '.sha == $expected' "$RUNNER_TEMP/operations-ref-response.json" >/dev/null
+
+echo "private Operations access: PASS (${OPERATIONS_REF})"
 
 askpass="$RUNNER_TEMP/git-askpass-operations.sh"
 cat > "$askpass" <<'EOF'
