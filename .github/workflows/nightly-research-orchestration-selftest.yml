@@ -12,7 +12,9 @@ on:
 permissions:
   contents: read
 
-group: nightly-research-orchestration-selftest
+concurrency:
+  group: nightly-research-orchestration-selftest
+  cancel-in-progress: false
 
 jobs:
   lane-isolation:
