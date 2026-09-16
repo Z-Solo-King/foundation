@@ -81,6 +81,5 @@ PY
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
-          OPERATIONS_APP_INSTALLATION_ID: ${{ env.OPERATIONS_APP_INSTALLATION_ID }}
           OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
         run: bash scripts/production_release.sh
