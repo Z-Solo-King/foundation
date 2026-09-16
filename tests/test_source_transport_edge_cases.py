@@ -1,6 +1,7 @@
 import asyncio
 import builtins
 import sys
+import types
 from types import SimpleNamespace
 import pytest
 
