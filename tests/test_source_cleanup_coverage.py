@@ -56,7 +56,7 @@ async def test_readiness_payload_database_exception_fails_closed():
 @pytest.mark.asyncio
 async def test_storage_diagnostic_missing_artifact_fails_closed():
     body, status = await storage_diagnostic(
-        SimpleNamespace(DB=_RowsDB([{"artifact_ref": "missing", "content_hash": "x", "content_length": 1}])),
+        SimpleNamespace(DB=_RowsDB([{"artifact_ref": "missing", "content_hash": "x", "content_length": 1}])) ,
         "run-1",
         persistence_cls=lambda env: _Persistence(artifacts={"missing": None}),
     )
@@ -101,6 +101,9 @@ class _Request:
         self.url = url
         self.headers = headers or {}
 
+    async def json(self):
+        return None
+
 
 @pytest.mark.asyncio
 async def test_dashboard_binding_missing_invalid_and_exception_paths():
@@ -121,3 +124,18 @@ async def test_dashboard_binding_missing_invalid_and_exception_paths():
     )
     assert status == 503
     assert body["error"] == "dashboard_backend_unavailable"
+
+
+@pytest.mark.asyncio
+async def test_dashboard_route_covers_auth_and_private_proxy():
+    entry = worker.Default()
+    entry.env = SimpleNamespace(
+        AUTH_TOKEN="secret",
+        OPERATIONS=_Binding(_Response(200, {"ok": True, "dashboard": {"healthy": True}})),
+    )
+
+    unauthorized = await entry.fetch(_Request(headers={}))
+    assert "unauthorized" in str(unauthorized)
+
+    authorized = await entry.fetch(_Request(headers={"Authorization": "Bearer secret"}))
+    assert "dashboard" in str(authorized)
