@@ -39,7 +39,7 @@ assert.match(view, /url\.protocol === 'http:' \|\| url\.protocol === 'https:'/);
 assert.match(view, /source-label/);
 assert.match(dashboard, /const safeExternalUrl =/);
 assert.match(dashboard, /url\.protocol === 'http:' \|\| url\.protocol === 'https:'/);
-assert.match(dashboard, /function safeLink/);
+assert.match(dashboard, /const safeLink =/);
 assert.doesNotMatch(app, /async function submitResearch|async function pollResearch|function renderResearch|function processQueue/, 'app.js must not own research lifecycle');
 assert.match(app, /api\.chatView\.render/);
 assert.match(app, /api\.chatStore\.exportData/);
