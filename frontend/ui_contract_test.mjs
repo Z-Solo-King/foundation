@@ -33,6 +33,9 @@ for (const behavior of ['renderSidebar', 'renderConversation', 'renderProjects',
 for (const behavior of ['selectMode', 'handleAttachments', 'handleVoice', 'send', 'queue']) assert.ok(composer.includes(`function ${behavior}`), `missing composer behavior: ${behavior}`);
 for (const behavior of ['render', 'resultText', 'sourceRows']) assert.ok(workspace.includes(`function ${behavior}`), `missing workspace behavior: ${behavior}`);
 
+assert.match(view, /const safeSourceUrl =/);
+assert.match(view, /url\.protocol === 'http:' \|\| url\.protocol === 'https:'/);
+assert.match(view, /source-label/);
 assert.doesNotMatch(app, /async function submitResearch|async function pollResearch|function renderResearch|function processQueue/, 'app.js must not own research lifecycle');
 assert.match(app, /api\.chatView\.render/);
 assert.match(app, /api\.chatStore\.exportData/);
