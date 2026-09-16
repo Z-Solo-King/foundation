@@ -123,3 +123,10 @@ class ResearchAgent:
         if current.status == "running":
             current = AgentState(**{**current.__dict__, "status": "blocked"})
         return current
+
+
+def research(request: str, executor: Callable[[ResearchTask, EvidenceKnowledgeStore], TaskObservation], depth: str = "standard") -> tuple[AgentState, EvidenceKnowledgeStore]:
+    contract = ResearchContract(question=request, depth=depth)  # type: ignore[arg-type]
+    agent = ResearchAgent(executor=executor)
+    state = agent.run(agent.create_state(contract))
+    return state, agent.evidence
