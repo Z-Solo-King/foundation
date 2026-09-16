@@ -70,6 +70,13 @@ def test_operations_checkout_uses_dedicated_github_credential():
     assert "OPERATIONS_READ_TOKEN cannot access the expected private Operations repository." in codeql
 
 
+def test_operations_credential_has_explicit_purpose_in_deployment_docs():
+    deployment = (Path(__file__).parents[1] / "docs" / "DEPLOYMENT.md").read_text(encoding="utf-8")
+    assert "`OPERATIONS_READ_TOKEN`" in deployment
+    assert "Backblaze B2 credentials are separate" in deployment
+    assert "must never be stored in or substituted for `OPERATIONS_READ_TOKEN`" in deployment
+
+
 def test_required_ci_contract_supports_merge_group():
     texts = _workflow_texts()
     codeql = texts["codeql.yml"]
