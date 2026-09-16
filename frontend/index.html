@@ -8,6 +8,7 @@
     <title>Heroic AI — Chat & Research</title>
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="./ui_overrides.css" />
+    <link rel="stylesheet" href="./dashboard.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -19,6 +20,7 @@
           <button class="nav-item active" data-view="chats" aria-current="page">◌ <span>Chats</span></button>
           <button class="nav-item" data-view="projects" aria-current="false">▣ <span>Projects</span></button>
           <button class="nav-item" data-view="saved" aria-current="false">☆ <span>Saved</span></button>
+          <button class="nav-item" data-action="open-system-dashboard">▤ <span>System dashboard</span></button>
         </nav>
         <div class="sidebar-label">Recent</div>
         <div class="chat-list" id="chat-list" aria-live="polite"></div>
@@ -26,7 +28,7 @@
       </aside>
 
       <main class="main-area">
-        <header class="topbar"><button class="icon-button menu-button" data-action="open-sidebar" aria-label="Open sidebar">☰</button><div class="mobile-title" id="mobile-title">New chat</div><div class="topbar-brand">Heroic AI</div><div class="topbar-actions"><button class="icon-button" data-action="backend-check" aria-label="Check backend status">●</button><button class="icon-button" data-action="toggle-workspace" aria-label="Show research workspace">▥</button><button class="icon-button" data-action="open-queue" aria-label="Open message queue">≡<span class="queue-count" id="queue-count" hidden>0</span></button></div></header>
+        <header class="topbar"><button class="icon-button menu-button" data-action="open-sidebar" aria-label="Open sidebar">☰</button><div class="mobile-title" id="mobile-title">New chat</div><div class="topbar-brand">Heroic AI</div><div class="topbar-actions"><button class="icon-button" data-action="backend-check" aria-label="Check backend status">●</button><button class="icon-button" data-action="open-system-dashboard" aria-label="Open system dashboard">▤</button><button class="icon-button" data-action="toggle-workspace" aria-label="Show research workspace">▥</button><button class="icon-button" data-action="open-queue" aria-label="Open message queue">≡<span class="queue-count" id="queue-count" hidden>0</span></button></div></header>
 
         <section class="chat-layout">
           <div class="conversation">
@@ -39,6 +41,12 @@
       </main>
 
       <aside class="message-queue" id="message-queue" aria-hidden="true"><div class="queue-header"><div><span class="eyebrow">Heroic AI</span><h2>Research queue</h2></div><button class="icon-button" data-action="close-queue" aria-label="Close queue">×</button></div><p class="queue-description">Research follow-ups are durable browser-local queue items. They preserve FIFO order and never interrupt an active backend run.</p><div id="queue-list" class="queue-list"></div><div class="queue-footer"><button class="secondary" data-action="clear-queue">Clear</button><span id="queue-status">Nothing waiting</span></div></aside>
+      <section class="system-dashboard" id="system-dashboard" aria-label="Heroic AI system dashboard" aria-hidden="true">
+        <div class="dashboard-shell">
+          <header class="dashboard-header"><div><span class="eyebrow">Heroic AI</span><h2>System dashboard</h2><p class="dashboard-subtitle">GitHub, Cloudflare, Backblaze B2, jobs, usage, incidents and resource telemetry.</p></div><div class="dashboard-actions"><button class="secondary" data-action="refresh-system-dashboard">Refresh</button><button class="icon-button dashboard-close" data-action="close-system-dashboard" aria-label="Close system dashboard">×</button></div></header>
+          <div id="system-dashboard-body" class="dashboard-refreshing"><p class="dashboard-empty">Loading operational telemetry…</p></div>
+        </div>
+      </section>
       <div class="queue-overlay" data-action="close-queue"></div><div class="mobile-overlay" data-action="close-sidebar"></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>
     <script src="./feedback_contract.js"></script>
@@ -48,6 +56,7 @@
     <script src="./workspace_view.js"></script>
     <script src="./composer.js"></script>
     <script src="./app.js"></script>
+    <script src="./dashboard.js"></script>
     <script src="./ui_guards.js"></script>
     <script src="./lifecycle_controller.js"></script>
     <script src="./lifecycle_queue_controls.js"></script>
