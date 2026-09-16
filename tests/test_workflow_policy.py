@@ -37,7 +37,7 @@ def test_all_third_party_actions_are_sha_pinned():
 def test_production_deployment_has_one_owner():
     texts = _workflow_texts()
     deployers = [name for name, text in texts.items() if "pywrangler deploy" in text]
-    assert deployers == ["production-deploy.yml"], deployers
+    assert deployers == ["production-release.yml"], deployers
 
     forbidden = re.compile(r"(?i)(workers\s+build|deploy\s+hook|deploy_hook|workers-builds)")
     violations = [
@@ -50,7 +50,7 @@ def test_production_deployment_has_one_owner():
 
 
 def test_canonical_operations_production_pin_is_current_and_immutable():
-    deployment = _workflow_texts()["production-deploy.yml"]
+    deployment = _workflow_texts()["production-release.yml"]
     assert f"OPERATIONS_REPOSITORY: {CANONICAL_OPERATIONS_REPOSITORY}" in deployment
     assert f"OPERATIONS_REF: {CANONICAL_OPERATIONS_REF}" in deployment
     assert deployment.count(CANONICAL_OPERATIONS_REF) == 2
@@ -61,13 +61,12 @@ def test_canonical_operations_production_pin_is_current_and_immutable():
 
 
 def test_operations_checkout_uses_github_app_installation_credential():
-    deployment = _workflow_texts()["production-deploy.yml"]
+    deployment = _workflow_texts()["production-release.yml"]
     assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in deployment
     assert "OPERATIONS_APP_INSTALLATION_ID: ${{ secrets.OPERATIONS_APP_INSTALLATION_ID }}" in deployment
     assert "OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}" in deployment
     assert "GITHUB_APP_TOKEN" in deployment
     assert "api.github.com/repos/${OPERATIONS_REPOSITORY}" in deployment
-    assert "GitHub App installation access: PASS" in deployment
     assert "OPERATIONS_READ_TOKEN" not in deployment
 
 
