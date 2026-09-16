@@ -10,8 +10,10 @@
     saved: 'rie.frontend.saved.v1',
     session: 'rie.frontend.sessionToken.v1',
     activeChat: 'rie.frontend.research.activeChat.v1',
+    guestTest: 'rie.frontend.guestTestMode.v1',
   });
 
+  const queryMode = new URLSearchParams(window.location.search).get('mode')?.toLowerCase();
   const state = {
     chats: [],
     projects: [],
@@ -23,6 +25,7 @@
     backendOk: false,
     backendText: 'Checking backend…',
     submitting: false,
+    guestTestMode: queryMode === 'test' || queryMode === 'guest' || sessionStorage.getItem(keys.guestTest) === '1',
   };
 
   const read = (key, fallback) => {
@@ -45,6 +48,18 @@
     if (token()) headers.Authorization = `Bearer ${token()}`;
     return headers;
   };
+
+  function enableGuestTestMode() {
+    state.guestTestMode = true;
+    sessionStorage.setItem(keys.guestTest, '1');
+    return true;
+  }
+
+  function disableGuestTestMode() {
+    state.guestTestMode = false;
+    sessionStorage.removeItem(keys.guestTest);
+    return false;
+  }
 
   function load() {
     state.chats = read(keys.chats, []).filter(Boolean);
@@ -135,6 +150,8 @@
     apiUrl,
     token,
     authHeaders,
+    enableGuestTestMode,
+    disableGuestTestMode,
     load,
     persist,
     activeChat,

@@ -17,6 +17,22 @@ def test_chat_ui_calls_canonical_chat_route_and_clears_pending_state():
     assert "Heroic AI" in view
 
 
+def test_guest_test_mode_is_explicit_and_network_free():
+    state = Path("frontend/frontend_state.js").read_text(encoding="utf-8")
+    app = Path("frontend/app.js").read_text(encoding="utf-8")
+    assert "guestTestMode" in state
+    assert "enableGuestTestMode" in state
+    assert "disableGuestTestMode" in state
+    assert "submitGuestTestChat" in app
+    assert "guest_test: true" in app
+    assert "deterministic simulation" in app
+    guest_start = app.index("async function submitGuestTestChat")
+    guest_end = app.index("async function consumeChatStream")
+    guest_block = app[guest_start:guest_end]
+    assert "fetch(" not in guest_block
+    assert "Authorization" not in guest_block
+
+
 def test_session_settings_are_functional():
     view = Path("frontend/chat_view.js").read_text(encoding="utf-8")
     assert 'data-action="save-session-token"' in view
