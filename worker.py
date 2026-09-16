@@ -1,7 +1,6 @@
 """Cloudflare Python Worker entrypoint for the standalone public-safe runtime."""
 from __future__ import annotations
 
-import hashlib  # Compatibility export used by legacy worker diagnostics tests.
 import json
 
 from workers import Response, WorkerEntrypoint
@@ -105,6 +104,37 @@ async def _operations_chat_stream(env, payload, request):
         return None, {"ok": False, "error": "chat_backend_unavailable"}, 503
 
 
+async def _operations_chatbot_diagnostic(env):
+    """Exercise the private chatbot routing/diagnostic boundary without provider execution."""
+    operations = getattr(env, "OPERATIONS", None)
+    if operations is None:
+        return {"ok": False, "error": "chat_backend_unavailable", "status": "unavailable"}, 503
+    try:
+        upstream = await operations.fetch(
+            "https://private/v1/diagnostics/chatbot",
+            {
+                "method": "POST",
+                "headers": {"Content-Type": "application/json"},
+                "body": json.dumps({
+                    "operation": "infrastructure_verify",
+                    "question": "Infrastructure diagnostic only; do not execute a model provider.",
+                }),
+            },
+        )
+        body = await upstream.json()
+        healthy = upstream.status == 200 and isinstance(body, dict) and bool(body.get("ok")) and bool(body.get("chatbot", {}).get("allowed"))
+        return {
+            "ok": healthy,
+            "status": "ok" if healthy else "degraded",
+            "response_status": upstream.status,
+            "chatbot": body.get("chatbot") if isinstance(body, dict) else None,
+            "provider_policy": body.get("provider_policy") if isinstance(body, dict) else None,
+            "error": None if healthy else (body.get("error") if isinstance(body, dict) else "invalid_private_chatbot_diagnostic"),
+        }, 200 if healthy else 503
+    except Exception as exc:
+        return {"ok": False, "status": "degraded", "error": f"chatbot diagnostic binding failure: {exc}"}, 503
+
+
 async def _operations_dashboard(env, request):
     """Read-only telemetry proxy for the Heroic AI system dashboard."""
     operations = getattr(env, "OPERATIONS", None)
@@ -182,7 +212,11 @@ class Default(WorkerEntrypoint):
                 return Response.json({"ok": False, "error": "invalid JSON object"}, status=400)
             if payload.get("operation") == "infrastructure_verify_public_test":
                 body, status = await _public_infrastructure_verify(self.env)
-                return Response.json(body, status=status)
+                private_body, private_status = await _operations_chatbot_diagnostic(self.env)
+                body["checks"].append({"name": "public_chatbot", "ok": private_body.get("ok", False), "status": private_status, "detail": private_body.get("error") or "private chatbot diagnostic completed"})
+                body["ok"] = all(bool(check.get("ok")) for check in body["checks"])
+                body["status"] = "ok" if body["ok"] else "degraded"
+                return Response.json(body, status=200 if body["ok"] else 503)
             return Response.json({"ok": False, "error": "unsupported public diagnostic operation"}, status=400)
 
         if request.method == "POST" and path.endswith("/api/v1/storage/diagnostic"):
