@@ -41,6 +41,8 @@ The frontend must never become a second authority. Private policy, memory, provi
 
 `foundation_core/` is the canonical public implementation for deterministic observed-data routing, normalization, plausibility checks and product mapping. Operations consumes it through the declared public boundary and does not copy its implementation authority.
 
-## Storage
+## Storage and backup boundary
 
 D1 is used for compact operational state. Backblaze B2 is the artifact/object-storage path. The former R2 design is retired.
+
+The canonical repository-backup workflow is `.github/workflows/b2-repository-backup.yml`. It mirrors both `foundation` and private `operations` to B2, uses `BACKUP_GITHUB_TOKEN` only for GitHub repository access, uses the separate B2 credentials for storage access, verifies uploaded metadata/SHA-256 integrity, and performs archive extraction plus Git integrity checks from the remote B2 objects. A successful workflow execution is required before claiming live backup/restore health; repository source inspection alone is not production backup evidence.
