@@ -63,6 +63,15 @@
     fileInput.click();
   }
 
+  function conversationHistory(chatId) {
+    const chat = api.state.chats.find((item) => item.id === chatId);
+    if (!chat) return [];
+    return (chat.messages || [])
+      .filter((message) => (message.role === 'user' || message.role === 'assistant') && message.text)
+      .slice(-20)
+      .map((message) => ({ role: message.role, text: String(message.text).slice(0, 12000) }));
+  }
+
   async function submitChat(text, chatId = api.state.activeChatId) {
     if (!api.API_BASE) throw new Error('Heroic AI API base is not configured');
     if (!chatId) throw new Error('No active Heroic AI chat is available');
@@ -74,7 +83,14 @@
       const response = await fetch(api.apiUrl('/api/v1/chat'), {
         method: 'POST',
         headers: { ...api.authHeaders(true), 'Idempotency-Key': requestId },
-        body: JSON.stringify({ chat_id: chatId, request_id: requestId, message: text, mode: 'chat', strict_zero_cost_only: true }),
+        body: JSON.stringify({
+          chat_id: chatId,
+          request_id: requestId,
+          message: text,
+          mode: 'chat',
+          strict_zero_cost_only: true,
+          history: conversationHistory(chatId),
+        }),
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok || !body.ok) throw new Error(body.error || `Heroic AI chat request failed (${response.status})`);
@@ -86,6 +102,8 @@
         response_id: body.response?.response_id || body.response_id || null,
         status: body.response?.status || body.status || 'completed',
         operation: body.response?.operation || null,
+        generation_status: body.response?.generation_status || null,
+        provider: body.response?.provider || null,
         sources: body.response?.sources || body.sources || [],
       }, chatId);
       document.dispatchEvent(new CustomEvent('rie:chat-response', { detail: { chatId, requestId, body } }));

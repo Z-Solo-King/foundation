@@ -33,6 +33,7 @@ class ChatRequest:
     mode: Literal["chat"] = "chat"
     strict_zero_cost_only: bool = True
     metadata: dict[str, str] = field(default_factory=dict)
+    history: tuple[dict[str, str], ...] = ()
 
     def validate(self) -> None:
         if not self.chat_id.strip():
@@ -49,6 +50,17 @@ class ChatRequest:
             raise ValueError("strict $0 cost mode is mandatory: strict_zero_cost_only must be true")
         if len(self.metadata) > 32:
             raise ValueError("metadata exceeds the supported field count")
+        if len(self.history) > 20:
+            raise ValueError("history exceeds the supported turn count")
+        for turn in self.history:
+            if not isinstance(turn, dict):
+                raise ValueError("history entries must be objects")
+            if turn.get("role") not in {"user", "assistant", "system"}:
+                raise ValueError("history role must be user, assistant or system")
+            if not str(turn.get("text", "")).strip():
+                raise ValueError("history text must not be empty")
+            if len(str(turn.get("text", ""))) > 12_000:
+                raise ValueError("history text exceeds the supported length")
 
 
 @dataclass(frozen=True)
