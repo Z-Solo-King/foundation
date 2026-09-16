@@ -84,3 +84,51 @@ def test_http_success_transport_and_wikipedia_worker_export(monkeypatch):
     async def fetcher(_url,_opts): return Response()
     result=asyncio.run(http.fetch_public_url("https://example.com",fetcher=fetcher)); assert result.status==200 and result.content==b"hello" and result.etag=="etag-1"
     fake_workers=SimpleNamespace(fetch=lambda *_args,**_kwargs: None); monkeypatch.setitem(sys.modules,"workers",fake_workers); assert callable(wikipedia._workers_fetch())
+
+
+def test_dns_preflight_rejects_private_addresses_and_allows_public(monkeypatch):
+    import backend.sources.http as http
+
+    async def resolver(hostname, record_type):
+        assert hostname == "example.com"
+        return ["192.168.1.10"] if record_type == "A" else []
+
+    async def fetcher(_url, _opts):
+        raise AssertionError("private target must be rejected before transport")
+
+    with pytest.raises(ValueError, match="non-public"):
+        asyncio.run(http.fetch_public_url("https://example.com", fetcher=fetcher, dns_resolver=resolver))
+
+    async def public_resolver(_hostname, record_type):
+        return ["93.184.216.34"] if record_type == "A" else []
+
+    class Response:
+        status = 200
+        headers = {}
+
+        async def arrayBuffer(self):
+            return b"ok"
+
+    async def good_fetcher(_url, _opts):
+        return Response()
+
+    result = asyncio.run(http.fetch_public_url("https://example.com", fetcher=good_fetcher, dns_resolver=public_resolver))
+    assert result.status == 200
+
+
+def test_dns_preflight_rechecks_each_redirect(monkeypatch):
+    import backend.sources.http as http
+    redirects = iter([
+        SimpleNamespace(status=302, headers={"location": "https://internal.example/next"}),
+    ])
+
+    async def fetcher(_url, _opts):
+        return next(redirects)
+
+    async def resolver(hostname, record_type):
+        if hostname == "example.com":
+            return ["93.184.216.34"] if record_type == "A" else []
+        return ["10.0.0.8"] if record_type == "A" else []
+
+    with pytest.raises(ValueError, match="non-public"):
+        asyncio.run(http.fetch_public_url("https://example.com", fetcher=fetcher, dns_resolver=resolver))
