@@ -104,11 +104,11 @@ def test_production_script_preserves_static_asset_binding_and_diagnostic_smokes(
     assert "python -m pip install pytest pytest-asyncio coverage workers-py workers-runtime-sdk uv" in deployment
     assert "uv --version" in deployment
     assert 'binding = "ASSETS"' in deployment
-    assert 'GET / -> HTTP' in deployment
-    assert 'GET /styles.css -> HTTP' in deployment
-    assert 'GET /app.js -> HTTP' in deployment
-    assert 'GET /composer.js -> HTTP' in deployment
-    assert 'GET /lifecycle_controller.js -> HTTP' in deployment
+    assert 'health_status=$(curl -sS -o health.json' in deployment
+    assert 'readiness=$(curl -sS -o readiness.json' in deployment
+    assert 'ui=$(curl -sS -o frontend.html' in deployment
+    assert 'for asset in styles.css app.js composer.js lifecycle_controller.js; do' in deployment
+    assert 'echo "GET /${asset} -> HTTP ${asset_status}"' in deployment
     assert "<title>Heroic AI — Chat & Research</title>" in deployment
 
 
