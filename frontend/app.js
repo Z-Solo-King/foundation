@@ -97,9 +97,14 @@
   }
 
   async function submitGuestTestChat(text, chatId) {
+    const normalizedText = String(text || '').trim();
+    if (!normalizedText) throw new Error('Message is required');
+    if (normalizedText.length > 12_000) throw new Error('Message exceeds the 12000 character limit');
+    if (!chatId) throw new Error('No active Heroic AI chat is available');
+
     const requestId = api.uuid();
     const responseId = `guest-test-${requestId}`;
-    const userMessage = api.addMessage('user', text, { request_id: requestId, guest_test: true, pending: true }, chatId);
+    const userMessage = api.addMessage('user', normalizedText, { request_id: requestId, guest_test: true, pending: true }, chatId);
     const assistantMessage = api.addMessage('assistant', '', { request_id: requestId, response_id: responseId, guest_test: true, pending: true, streaming: true }, chatId);
     api.state.submitting = true;
     api.chatView.render();
@@ -117,7 +122,7 @@
       const deltas = [
         'Guest test mode is active. ',
         'This is a local deterministic simulation of the authenticated chat lifecycle; no credentials, private binding, model provider, or remote request are used. ',
-        `Echo: ${String(text).slice(0, 1200)}`,
+        `Echo: ${normalizedText.slice(0, 1200)}`,
       ];
       let answer = '';
       for (const delta of deltas) {
