@@ -25,6 +25,7 @@ for (const module of ['frontend_state.js', 'chat_store.js', 'chat_view.js', 'wor
 for (const viewName of ['chats', 'projects', 'saved', 'settings']) assert.ok(html.includes(`data-view=\"${viewName}\"`));
 for (const action of ['new-chat', 'backend-check', 'open-queue', 'toggle-workspace', 'voice', 'queue', 'send']) assert.ok(html.includes(`data-action=\"${action}\"`));
 assert.doesNotMatch(html, /data-action=\"attachments\"|attachment-list|Add local file/, 'the UI must not expose a non-functional attachment control');
+assert.match(html, /id=\"queue-button\"/);
 for (const mode of ['chat', 'research']) assert.ok(html.includes(`data-mode=\"${mode}\"`));
 for (const element of ['queue-count', 'workspace', 'message-queue', 'workspace-body', 'conversation-scroll']) assert.ok(html.includes(`id=\"${element}\"`));
 
@@ -34,6 +35,9 @@ for (const behavior of ['createProject', 'assignCurrentChat', 'saveMessage', 'ex
 for (const behavior of ['renderSidebar', 'renderConversation', 'renderProjects', 'renderSaved', 'renderSettings']) assert.ok(view.includes(`function ${behavior}`), `missing view behavior: ${behavior}`);
 for (const behavior of ['selectMode', 'handleVoice', 'send', 'queue']) assert.ok(composer.includes(`function ${behavior}`), `missing composer behavior: ${behavior}`);
 assert.doesNotMatch(composer, /handleAttachments|data-action=\"attachments\"/, 'composer must not retain the removed attachment action');
+assert.match(composer, /queueButton\.hidden = !researchMode/);
+assert.match(composer, /queueButton\.disabled = !researchMode/);
+assert.match(composer, /event\.detail\?\.mode !== 'research'/);
 for (const behavior of ['render', 'resultText', 'sourceRows']) assert.ok(workspace.includes(`function ${behavior}`), `missing view behavior: ${behavior}`);
 
 assert.match(view, /const safeSourceUrl =/);

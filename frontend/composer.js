@@ -7,6 +7,7 @@
   const prompt = document.getElementById('prompt');
   const modeButtons = [...document.querySelectorAll('.mode')];
   const composerStatus = document.getElementById('composer-status');
+  const queueButton = document.getElementById('queue-button');
   const workspace = document.getElementById('workspace');
 
   function setStatus(text, tone = '') {
@@ -16,6 +17,7 @@
   }
 
   function renderMode() {
+    const researchMode = api.state.mode === 'research';
     modeButtons.forEach((button) => {
       const active = button.dataset.mode === api.state.mode;
       button.classList.toggle('active', active);
@@ -23,8 +25,14 @@
       button.tabIndex = active ? 0 : -1;
     });
     if (prompt) {
-      prompt.placeholder = api.state.mode === 'research' ? 'What should the engine research and verify?' : 'Ask Heroic AI…';
-      prompt.setAttribute('aria-label', api.state.mode === 'research' ? 'Research question' : 'Message');
+      prompt.placeholder = researchMode ? 'What should the engine research and verify?' : 'Ask Heroic AI…';
+      prompt.setAttribute('aria-label', researchMode ? 'Research question' : 'Message');
+    }
+    if (queueButton) {
+      queueButton.hidden = !researchMode;
+      queueButton.disabled = !researchMode;
+      queueButton.setAttribute('aria-hidden', researchMode ? 'false' : 'true');
+      queueButton.title = researchMode ? 'Queue research (Ctrl/Cmd+Enter)' : 'Queue is available in Research mode';
     }
   }
 
@@ -77,6 +85,7 @@
   }
 
   function queue() {
+    if (api.state.mode !== 'research' || queueButton?.disabled) return;
     const text = prompt?.value.trim() || '';
     if (!text) return;
     prompt.value = '';
