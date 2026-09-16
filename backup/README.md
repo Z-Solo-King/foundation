@@ -66,3 +66,5 @@ The workflow must perform:
 6. confirmation that the expected `main` reference exists.
 
 A valid repository archive is evidence of Git-data recoverability. Full disaster-recovery certification remains a separate acceptance class.
+
+<!-- GitHub App deployment-auth boundary verified 2026-09-16; no B2 credential reuse. -->
