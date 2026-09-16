@@ -60,12 +60,15 @@ def test_canonical_operations_production_pin_is_current_and_immutable():
     assert '"github:${OPERATIONS_REF}"' in codeql
 
 
-def test_operations_checkout_uses_dedicated_github_credential():
+def test_operations_checkout_uses_github_app_installation_credential():
     codeql = _workflow_texts()["codeql.yml"]
-    assert "OPERATIONS_READ_TOKEN: ${{ secrets.OPERATIONS_READ_TOKEN }}" in codeql
-    assert "BACKUP_GITHUB_TOKEN" not in codeql
+    assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in codeql
+    assert "OPERATIONS_APP_INSTALLATION_ID: ${{ secrets.OPERATIONS_APP_INSTALLATION_ID }}" in codeql
+    assert "OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}" in codeql
+    assert "GITHUB_APP_TOKEN" in codeql
     assert "api.github.com/repos/${OPERATIONS_REPOSITORY}" in codeql
-    assert "OPERATIONS_READ_TOKEN cannot access the expected private Operations repository." in codeql
+    assert "GitHub App installation access: PASS" in codeql
+    assert "OPERATIONS_READ_TOKEN" not in codeql
 
 
 def test_backup_workflow_separates_github_and_b2_credentials():
@@ -86,7 +89,9 @@ def test_credential_policy_documents_the_separation():
     backup = (root / "backup" / "README.md").read_text(encoding="utf-8")
 
     for secret in (
-        "OPERATIONS_READ_TOKEN",
+        "OPERATIONS_APP_ID",
+        "OPERATIONS_APP_INSTALLATION_ID",
+        "OPERATIONS_APP_PRIVATE_KEY",
         "BACKUP_GITHUB_TOKEN",
         "B2_KEY_ID",
         "B2_APPLICATION_KEY",
@@ -97,7 +102,7 @@ def test_credential_policy_documents_the_separation():
 
     assert "B2 credentials are secrets and never belong in Git" in deployment
     assert "`BACKUP_GITHUB_TOKEN` is a GitHub read credential" in backup
-    assert "Production deployment uses `OPERATIONS_READ_TOKEN`, not `BACKUP_GITHUB_TOKEN`." in backup
+    assert "Production deployment uses the GitHub App installation credential, not `BACKUP_GITHUB_TOKEN`." in backup
     assert CANONICAL_OPERATIONS_REF in deployment
 
 
