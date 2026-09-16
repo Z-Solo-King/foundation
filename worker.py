@@ -151,7 +151,7 @@ class Default(WorkerEntrypoint):
                 return Response.json({"ok": False, "error": str(exc)}, status=400)
             upstream, body, status = await _operations_chat_stream(self.env, payload, request)
             if upstream is not None:
-                return Response(upstream.body, status=upstream.status, headers={"Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+                return upstream
             return Response.json(body, status=status)
 
         if request.method == "POST" and path.endswith("/api/v1/chat"):
