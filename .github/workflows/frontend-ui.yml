@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 jobs:
   contract:
@@ -31,3 +32,29 @@ jobs:
           package-manager-cache: false
       - name: Syntax and contract tests
         run: npm test
+
+      - name: Dispatch canonical production workflow
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run production-publish.yml --repo "$GITHUB_REPOSITORY" --ref main
+          for attempt in $(seq 1 12); do
+            run_json=$(gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow production-publish.yml \
+              --branch main \
+              --limit 1 \
+              --json databaseId,status,conclusion,event,headSha)
+            database_id=$(jq -r '.[0].databaseId // empty' <<<"$run_json")
+            head_sha=$(jq -r '.[0].headSha // empty' <<<"$run_json")
+            event=$(jq -r '.[0].event // empty' <<<"$run_json")
+            if [ "$head_sha" = "$GITHUB_SHA" ] && [ "$event" = "workflow_dispatch" ] && [ -n "$database_id" ]; then
+              echo "PRODUCTION_PUBLISH_DISPATCHED=$database_id"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo 'Production publish workflow dispatch was not observed for the current main SHA'
+          exit 1
