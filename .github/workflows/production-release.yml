@@ -8,7 +8,7 @@ on:
     branches: [main]
     paths:
       - 'frontend/**'
-      - '.github/workflows/production-ui-contract.yml'
+      - '.github/workflows/production-release.yml'
   merge_group:
     types: [checks_requested]
 
