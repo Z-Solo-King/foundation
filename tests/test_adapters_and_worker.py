@@ -178,15 +178,19 @@ async def test_worker_http_all_branches(monkeypatch):
     class Request:
         def __init__(self, method, url, payload=None, headers=None): self.method=method; self.url=url; self._payload=payload; self.headers=headers or {}
         async def json(self): return self._payload
-    env = SimpleNamespace(DB=FakeDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret")
+    class FakeAssets:
+        async def fetch(self, request): return "STATIC_ASSET_RESPONSE"
+    env = SimpleNamespace(DB=FakeDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets())
     entry = worker.Default(); entry.env = env
+    asset_response = await entry.fetch(Request("GET", "https://x/"))
+    assert asset_response == "STATIC_ASSET_RESPONSE"
     unauthorized_get = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer bad"}))
     assert "unauthorized" in str(unauthorized_get)
     ready = await entry.fetch(Request("GET", "https://x/readiness")); assert ready
     not_found = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer secret"})); assert not_found
     class FailingDB(FakeDB):
         def prepare(self, sql): raise RuntimeError("db down")
-    entry.env = SimpleNamespace(DB=FailingDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret")
+    entry.env = SimpleNamespace(DB=FailingDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets())
     persistence_error = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer secret"})); assert persistence_error
     entry.env = env
     unauthorized_post = await entry.fetch(Request("POST", "https://x/api/v1/research", headers={"Authorization":"Bearer bad"})); assert unauthorized_post
