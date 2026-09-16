@@ -39,3 +39,11 @@ A credential failure stops the deployment before any Operations deployment step.
 ## Evidence and closure
 
 A successful repository-side change does not prove production deployment. Deployment issue closure requires an actual successful post-merge Foundation Actions run proving the complete chain. Cloudflare production state, D1 bindings, Worker bindings, scheduled triggers, and live runtime behavior are verified separately in the Cloudflare-only operational context.
+
+## Current approved production revision
+
+The current explicitly approved Operations production revision is:
+
+`cf28a28cb40de527aff1cd87f96e103669635f70`
+
+This is a signed Operations commit implementing the durable D1 governance runtime. The deployment workflow must not silently substitute a newer Operations `main` commit without a new explicit approval change.
