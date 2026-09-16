@@ -67,26 +67,36 @@
     if (!api.API_BASE) throw new Error('Heroic AI API base is not configured');
     if (!chatId) throw new Error('No active Heroic AI chat is available');
     const requestId = api.uuid();
-    api.addMessage('user', text, { request_id: requestId, pending: true }, chatId);
+    const userMessage = api.addMessage('user', text, { request_id: requestId, pending: true }, chatId);
+    api.state.submitting = true;
     api.chatView.render();
-    const response = await fetch(api.apiUrl('/api/v1/chat'), {
-      method: 'POST',
-      headers: { ...api.authHeaders(true), 'Idempotency-Key': requestId },
-      body: JSON.stringify({ chat_id: chatId, request_id: requestId, message: text, mode: 'chat', strict_zero_cost_only: true }),
-    });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok || !body.ok) throw new Error(body.error || `Heroic AI chat request failed (${response.status})`);
-    const answer = body.response?.text || body.answer;
-    if (!answer) throw new Error('Heroic AI returned no response text');
-    api.addMessage('assistant', answer, {
-      request_id: requestId,
-      response_id: body.response?.response_id || body.response_id || null,
-      status: body.response?.status || body.status || 'completed',
-      sources: body.response?.sources || body.sources || [],
-    }, chatId);
-    document.dispatchEvent(new CustomEvent('rie:chat-response', { detail: { chatId, requestId, body } }));
-    api.chatView.render();
-    return body;
+    try {
+      const response = await fetch(api.apiUrl('/api/v1/chat'), {
+        method: 'POST',
+        headers: { ...api.authHeaders(true), 'Idempotency-Key': requestId },
+        body: JSON.stringify({ chat_id: chatId, request_id: requestId, message: text, mode: 'chat', strict_zero_cost_only: true }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.ok) throw new Error(body.error || `Heroic AI chat request failed (${response.status})`);
+      const answer = body.response?.text || body.answer;
+      if (!answer) throw new Error('Heroic AI returned no response text');
+      api.updateMessage(userMessage.id, { meta: { ...(userMessage.meta || {}), pending: false } });
+      api.addMessage('assistant', answer, {
+        request_id: requestId,
+        response_id: body.response?.response_id || body.response_id || null,
+        status: body.response?.status || body.status || 'completed',
+        operation: body.response?.operation || null,
+        sources: body.response?.sources || body.sources || [],
+      }, chatId);
+      document.dispatchEvent(new CustomEvent('rie:chat-response', { detail: { chatId, requestId, body } }));
+      return body;
+    } catch (error) {
+      api.updateMessage(userMessage.id, { meta: { ...(userMessage.meta || {}), pending: false, error: true } });
+      throw error;
+    } finally {
+      api.state.submitting = false;
+      api.chatView.render();
+    }
   }
 
   function openWorkspace() { workspace?.classList.add('open'); }
@@ -99,7 +109,7 @@
     if (start) {
       event.preventDefault();
       const prompt = document.getElementById('prompt');
-      if (prompt) { prompt.value = start.dataset.starter || ''; api.composer.selectMode('research'); api.composer.resize(); prompt.focus(); }
+      if (prompt) { prompt.value = start.dataset.starter || ''; api.composer.selectMode(start.dataset.starter?.toLowerCase().includes('research') ? 'research' : 'chat'); api.composer.resize(); prompt.focus(); }
     }
   });
 
