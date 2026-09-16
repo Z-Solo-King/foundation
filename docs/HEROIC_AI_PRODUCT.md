@@ -35,15 +35,16 @@ Foundation owns the public-safe request/evidence contracts and deterministic cor
 ## Rules
 
 1. Chat is the front door; research is a capability selected because a request needs evidence.
-2. The frontend never invents assistant answers when the private runtime is unavailable.
-3. `/api/v1/chat` is authenticated and proxies only through an internal Operations service binding; the browser never receives a private Worker URL.
-4. Model output is never authoritative evidence, policy, identity, access control, billing authority or promotion authority.
-5. Unknown, blocked, partial, contradicted and stale states remain explicit.
-6. Every protected chat action has an idempotency/replay boundary and lifecycle state.
-7. Each capability has one canonical owner.
+2. Production Chat mode never fabricates an assistant answer in the browser when the private runtime is unavailable.
+3. Guest Test mode is an explicit browser-local test harness only; its deterministic simulated responses are marked `TEST_ONLY` and are never production or model output.
+4. `/api/v1/chat` is authenticated and proxies only through an internal Operations service binding; the browser never receives a private Worker URL.
+5. Model output is never authoritative evidence, policy, identity, access control, billing authority or promotion authority.
+6. Unknown, blocked, partial, contradicted and stale states remain explicit.
+7. Every protected chat action has an idempotency/replay boundary and lifecycle state.
+8. Each capability has one canonical owner.
 
 ## Current status
 
-Foundation contains the public Heroic AI chat contract and the frontend sends Chat mode through it instead of fabricating a browser-local reply. The public Worker fails closed with `chat_backend_unavailable` when the Operations service binding is not configured.
+Foundation contains the public Heroic AI chat contract and the frontend sends Chat mode through the authenticated canonical lifecycle. Guest Test mode exists solely for local UI/lifecycle verification when authenticated/private execution is unavailable. The public Worker fails closed with `chat_backend_unavailable` when the Operations service binding is not configured.
 
 Operations issue #197 remains the canonical private conversational-executor implementation and acceptance tracker. Production-shaped execution evidence is still required before Heroic AI can be considered a fully operational conversational backend.
