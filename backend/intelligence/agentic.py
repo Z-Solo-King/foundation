@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from typing import Callable, Literal
 
 from .contracts import ResearchContract, ResearchPlan
@@ -43,7 +42,7 @@ class AgentState:
 
 
 class ResearchAgent:
-    """Bounded planner-executor-evaluator loop with durable knowledge reuse hooks.
+    """Bounded planner-executor-evaluator loop with durable evidence storage.
 
     The controller intentionally does not perform network I/O. Adapters supply observations.
     This keeps policy, credentials, rate limits and acquisition implementation outside the
@@ -69,11 +68,6 @@ class ResearchAgent:
             for index, stage in enumerate(plan.stages, start=1)
         )
         return AgentState(question=contract.question, plan=plan, tasks=tasks)
-
-    def _reuse(self, task: ResearchTask) -> ResearchTask | None:
-        # Reuse is deliberately driven by the executor/task adapter. The controller only
-        # changes work when an adapter provides entity/claim evidence or marks a task done.
-        return None
 
     def step(self, state: AgentState) -> AgentState:
         if state.status != "running":
@@ -129,10 +123,3 @@ class ResearchAgent:
         if current.status == "running":
             current = AgentState(**{**current.__dict__, "status": "blocked"})
         return current
-
-
-def research(request: str, executor: Callable[[ResearchTask, EvidenceKnowledgeStore], TaskObservation], depth: str = "standard") -> tuple[AgentState, EvidenceKnowledgeStore]:
-    contract = ResearchContract(question=request, depth=depth)  # type: ignore[arg-type]
-    agent = ResearchAgent(executor=executor)
-    state = agent.run(agent.create_state(contract))
-    return state, agent.evidence
