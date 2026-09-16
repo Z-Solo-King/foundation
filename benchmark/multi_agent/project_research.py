@@ -78,6 +78,35 @@ def _program_record(row: ProgramResult, snapshot: dict[str, object]) -> dict[str
     }
 
 
+def _summary_metrics(programs: tuple[dict[str, object], ...]) -> dict[str, object]:
+    findings = [
+        finding
+        for row in programs
+        for finding in (row.get("findings") or ())
+        if isinstance(finding, dict)
+    ]
+    source_families = Counter(
+        str(finding["source_family"]) for finding in findings if finding.get("source_family")
+    )
+    acquisition_methods = Counter(
+        str(finding["acquisition_method"]) for finding in findings if finding.get("acquisition_method")
+    )
+    evidence_states = Counter(str(finding.get("evidence_status", "unknown")) for finding in findings)
+    follow_ups = sum(len(row.get("follow_up_questions") or ()) for row in programs)
+    return {
+        "programs_completed": sum(1 for row in programs if row.get("status") == "completed"),
+        "programs_failed_or_partial": sum(1 for row in programs if row.get("status") != "completed"),
+        "follow_up_questions": follow_ups,
+        "findings": len(findings),
+        "source_families": dict(sorted(source_families.items())),
+        "acquisition_methods": dict(sorted(acquisition_methods.items())),
+        "evidence_states": dict(sorted(evidence_states.items())),
+        "candidate_unverified_findings": evidence_states.get("candidate_unverified", 0),
+        "model_observations": evidence_states.get("model_observation", 0),
+        "accepted_external_evidence": 0,
+    }
+
+
 def _improvement_signals(programs: Iterable[dict[str, object]]) -> list[dict[str, object]]:
     programs = tuple(programs)
     by_program = {str(row["program_id"]): row for row in programs}
@@ -108,14 +137,33 @@ def _improvement_signals(programs: Iterable[dict[str, object]]) -> list[dict[str
                 "decision": "WATCH",
             })
 
-    if any(str(row["program_id"]).startswith("lane1-slot") for row in programs):
+    lane1 = [row for row in programs if str(row["program_id"]).startswith("lane1-slot")]
+    if lane1:
         signals.append({
             "type": "acquisition_bridge",
             "program_id": "lane1",
             "severity": "high",
-            "reason": "chatbot and mapper programs require a real acquisition/evidence path before their findings can become accepted evidence",
+            "reason": "extraction/mapping findings require a real acquisition/evidence receipt before model observations can become accepted evidence",
             "decision": "IMPLEMENT",
-            "related_issue": "operations#79",
+            "related_area": "operations.chatbot_and_acquisition",
+        })
+
+    metrics = _summary_metrics(programs)
+    if metrics["follow_up_questions"]:
+        signals.append({
+            "type": "follow_up_backlog",
+            "program_id": "nightly",
+            "severity": "medium",
+            "reason": f"{metrics['follow_up_questions']} follow-up questions were generated and should feed the next-run selection policy",
+            "decision": "SCHEDULE",
+        })
+    if metrics["model_observations"] and not metrics["candidate_unverified_findings"]:
+        signals.append({
+            "type": "provenance_gap",
+            "program_id": "nightly",
+            "severity": "high",
+            "reason": "nightly output contains model observations without candidate source URLs",
+            "decision": "IMPLEMENT",
         })
 
     return signals
@@ -125,6 +173,7 @@ def build_summary(program_results: Iterable[ProgramResult], root: Path, *, run_i
     snapshot = collect_project_snapshot(root)
     rows = [_program_record(row, snapshot) for row in program_results]
     status_counts = Counter(str(row["status"]) for row in rows)
+    metrics = _summary_metrics(tuple(rows))
     return {
         "schema": SCHEMA,
         "research_id": f"nightly-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}",
@@ -140,6 +189,7 @@ def build_summary(program_results: Iterable[ProgramResult], root: Path, *, run_i
         "project_snapshot": snapshot,
         "program_count": len(rows),
         "status_counts": dict(status_counts),
+        "metrics": metrics,
         "programs": rows,
         "improvement_signals": _improvement_signals(rows),
         "next_action_rule": "Only IMPLEMENT items that pass deterministic tests, security/policy checks, and regression comparison against baseline.",
