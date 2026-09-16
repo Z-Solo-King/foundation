@@ -1,10 +1,10 @@
 # Deployment
 
-Foundation owns the single production deployment workflow in `.github/workflows/heroic-ai-production-release.yml`. Its workflow name is `Heroic AI production release`. The workflow deploys the public Worker and, after the public deployment succeeds, deploys the explicitly approved private Operations revision.
+Foundation owns the single production deployment workflow in `.github/workflows/heroic-ai-production-release-v4.yml`. Its workflow name is `Heroic AI production release`. The workflow deploys the public Worker and, after the public deployment succeeds, deploys the explicitly approved private Operations revision.
 
 ## Production authority
 
-- Public Worker deployment authority: `.github/workflows/heroic-ai-production-release.yml`
+- Public Worker deployment authority: `.github/workflows/heroic-ai-production-release-v4.yml`
 - Private Operations repository: `Z-Solo-King/operations`
 - Approved Operations production revision is pinned in `scripts/production_release.sh` and validated by the workflow policy.
 - The Operations production revision is immutable for a deployment run; the workflow fails closed if the expected pin changes.
@@ -20,7 +20,7 @@ The deployment workflow uses separate credential authorities. Do not reuse stora
 - `CLOUDFLARE_ACCOUNT_ID`: Cloudflare account identifier.
 - `AUTH_TOKEN`: application authentication secret, when protected authenticated smoke verification is enabled.
 
-`OPERATIONS_APP_INSTALLATION_ID` is **not** a stored production secret authority. The workflow resolves the current installation from the GitHub App at runtime.
+`OPERATIONS_APP_INSTALLATION_ID` is **not** a stored production secret authority. The release script resolves the current installation from the GitHub App at runtime.
 
 Backblaze B2 credentials are separate application/runtime credentials. They must never be stored in or substituted for the Operations GitHub App credentials.
 
@@ -29,7 +29,7 @@ Backblaze B2 credentials are separate application/runtime credentials. They must
 The canonical workflow performs the following in order:
 
 1. pass Foundation public tests and static analysis;
-2. resolve the installed Operations GitHub App installation from the App JWT;
+2. resolve the installed Operations GitHub App installation from the App JWT inside the canonical release script;
 3. deploy the tested Foundation public Worker;
 4. run public production smoke checks;
 5. fetch and verify the exact approved Operations revision using the short-lived installation credential;
