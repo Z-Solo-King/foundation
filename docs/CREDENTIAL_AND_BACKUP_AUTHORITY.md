@@ -14,7 +14,9 @@ The governing rule is: **a credential is named and scoped by the authority it se
 
 | Credential / resource | Canonical purpose | Authority | Must not be used for |
 | --- | --- | --- | --- |
-| `OPERATIONS_READ_TOKEN` | Read private `Z-Solo-King/operations` for the canonical Foundation production deployment | Foundation deployment workflow | B2, Cloudflare, arbitrary repository writes |
+| `OPERATIONS_APP_ID` | Identify the GitHub App used by Foundation deployment | GitHub App / Foundation deployment | B2, Cloudflare, arbitrary repository writes |
+| `OPERATIONS_APP_INSTALLATION_ID` | Select the GitHub App installation authorized for private Operations | GitHub App / Foundation deployment | B2, Cloudflare, arbitrary repository access |
+| `OPERATIONS_APP_PRIVATE_KEY` | Sign the short-lived GitHub App JWT used to mint an Operations installation token | GitHub App / Foundation deployment | B2, Cloudflare, general repository writes |
 | `BACKUP_GITHUB_TOKEN` | Read/mirror `foundation` and private `operations` for repository backup | Foundation B2 backup workflow | B2, Cloudflare, production deployment |
 | `B2_KEY_ID` | Authenticate the backup workflow to the configured B2 S3 API | Backblaze B2 | GitHub, Cloudflare |
 | `B2_APPLICATION_KEY` | B2 backup/restore application credential | Backblaze B2 | GitHub, Cloudflare |
@@ -37,15 +39,16 @@ The backup workflow validates the GitHub credential against the private Operatio
 
 ## Production Operations credential
 
-Production deployment uses `OPERATIONS_READ_TOKEN` for private Operations checkout. It is intentionally separate from `BACKUP_GITHUB_TOKEN`, even where an underlying administrative identity could technically hold both permissions.
+Production deployment uses a short-lived GitHub App installation token minted from the purpose-specific App secrets. The App is installed only on the private Operations repository with read-only Contents permission. It is intentionally separate from `BACKUP_GITHUB_TOKEN`.
 
 Before checkout, deployment must fail closed unless:
 
-1. the secret is present;
-2. GitHub accepts the credential;
-3. the credential can read `Z-Solo-King/operations`;
-4. the exact approved immutable Operations revision is readable;
-5. checkout verifies the expected commit SHA.
+1. the App ID, installation ID, and private key secrets are present;
+2. a valid short-lived App JWT is generated;
+3. GitHub accepts the installation-token exchange;
+4. the installation token can read `Z-Solo-King/operations`;
+5. the exact approved immutable Operations revision is readable;
+6. checkout verifies the expected commit SHA.
 
 A B2 credential must never be accepted as an Operations GitHub credential.
 

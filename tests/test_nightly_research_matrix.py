@@ -1,14 +1,13 @@
-from benchmark.multi_agent.programs import NIGHTLY_PROGRAMS
+from pathlib import Path
+
+WORKFLOW = Path(__file__).parents[1] / ".github" / "workflows" / "nightly-multi-agent-research.yml"
 
 
-def test_nightly_matrix_has_three_complete_lanes():
-    assert len(NIGHTLY_PROGRAMS) == 24
-    for lane in range(3):
-        programs = [program for program in NIGHTLY_PROGRAMS if program.lane == lane]
-        assert len(programs) == 8
-        assert {program.slot for program in programs} == set(range(8))
-
-
-def test_nightly_matrix_program_ids_are_unique():
-    ids = [program.program_id for program in NIGHTLY_PROGRAMS]
-    assert len(ids) == len(set(ids))
+def test_nightly_workflow_uses_pinned_private_operations_matrix():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
+    assert "OPERATIONS_RESEARCH_REF: 48ef452e3be16d6117cc42b1968a1094de4974f4" in text
+    assert "private.multi_agent.runner" in text
+    assert "private.multi_agent.project_research" in text
+    assert "nightly-lane-${{ matrix.lane }}" in text
+    assert "lane: 0" in text and "lane: 1" in text and "lane: 2" in text

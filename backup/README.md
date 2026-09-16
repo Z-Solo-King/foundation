@@ -31,9 +31,9 @@ The workflow validates the B2 credentials against the configured bucket separate
 
 ## Deployment credential is separate
 
-Production deployment uses `OPERATIONS_READ_TOKEN`, not `BACKUP_GITHUB_TOKEN`.
+Production deployment uses the purpose-specific GitHub App installation credential set (`OPERATIONS_APP_ID`, `OPERATIONS_APP_INSTALLATION_ID`, `OPERATIONS_APP_PRIVATE_KEY`), not `BACKUP_GITHUB_TOKEN`.
 
-`OPERATIONS_READ_TOKEN` exists specifically for the canonical Foundation production workflow to read the approved private Operations revision. Separation prevents a backup credential from becoming an undeclared deployment credential and makes purpose/scope failures explicit.
+The App is installed with read-only Contents access on the private Operations repository. The production workflow mints a short-lived installation token and uses it only for the approved Operations checkout. The App key and generated token are never printed or stored in the backup artifact set.
 
 The normative credential and backup policy is `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md`.
 
@@ -50,7 +50,7 @@ The workflow creates for each repository:
 - local Git integrity evidence;
 - remote B2 restore evidence.
 
-Backup manifests contain non-secret provenance only. They must never contain tokens, B2 application keys, Cloudflare credentials, authentication headers, or other secret values.
+Backup manifests contain non-secret provenance only. They must never contain tokens, B2 application keys, Cloudflare credentials, authentication headers, GitHub App private keys, or other secret values.
 
 ## Verification standard
 
@@ -66,3 +66,5 @@ The workflow must perform:
 6. confirmation that the expected `main` reference exists.
 
 A valid repository archive is evidence of Git-data recoverability. Full disaster-recovery certification remains a separate acceptance class.
+
+<!-- GitHub App deployment-auth boundary verified 2026-09-16; no B2 credential reuse. -->
