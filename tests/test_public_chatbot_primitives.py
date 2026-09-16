@@ -74,6 +74,8 @@ def test_token_efficiency_observation_and_gate_guards():
     assert TokenEfficiencyObservation(0, 0, 0, 0, 0, 0, 0).evidence_retention_ratio == 1.0
     assert TokenEfficiencyObservation(**base_values).cache_hit_ratio == 0.25
     assert TokenEfficiencyObservation(**base_values).total_estimated_tokens == 150
+    assert TokenEfficiencyObservation(**{**base_values, "estimated_cached_input_tokens": 90}).cached_input_ratio == 0.9
+    assert TokenEfficiencyObservation(**base_values).context_amplification_ratio == 3.0
     assert TokenEfficiencyObservation(**base_values).token_density() > 0
     assert TokenEfficiencyObservation(**{**base_values, "accepted": False}).token_density() == 0
     assert TokenEfficiencyObservation(**{**base_values, "estimated_input_tokens": 0, "estimated_output_tokens": 0}).token_density() == 0
@@ -85,6 +87,8 @@ def test_token_efficiency_observation_and_gate_guards():
             TokenEfficiencyObservation(**values).validate()
     with pytest.raises(ValueError):
         TokenEfficiencyObservation(1, 1, 1, 0, 1, 1, 0).validate()
+    with pytest.raises(ValueError):
+        TokenEfficiencyObservation(**{**base_values, "estimated_cached_input_tokens": 101}).validate()
     for field in ("max_input_token_growth_ratio", "max_total_token_growth_ratio", "min_cache_hit_ratio"):
         values = {"max_input_token_growth_ratio": 0.1, "max_total_token_growth_ratio": 0.1, "min_cache_hit_ratio": 0.0}
         values[field] = 1.1
@@ -126,9 +130,8 @@ def test_run_record_validation_and_public_metadata():
     metadata = record.to_public_metadata()
     assert metadata["run_id"] == "run-1"
     assert metadata["token_efficiency"]["total_estimated_tokens"] == 15
-    baseline_metadata = _record().to_public_metadata()
-    assert "evidence_selection" not in baseline_metadata
-    assert "token_efficiency" not in baseline_metadata
+    assert "evidence_selection" not in _record().to_public_metadata()
+    assert "token_efficiency" not in _record().to_public_metadata()
 
     with pytest.raises(ValueError):
         _record(run_id="").validate()
@@ -169,8 +172,6 @@ def test_run_record_validation_and_public_metadata():
 
 
 def test_run_record_bounds_and_chain_guards():
-    first = _receipt()
-    base = _record()
     with pytest.raises(ValueError):
         _record(requested_fields=tuple("x" for _ in range(129))).validate()
     with pytest.raises(ValueError):
