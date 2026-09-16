@@ -3,13 +3,15 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-WORKFLOW_ROOT = Path(__file__).parents[1] / ".github" / "workflows"
+ROOT = Path(__file__).parents[1]
+WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
 CANONICAL_OPERATIONS_REF = "cf28a28cb40de527aff1cd87f96e103669635f70"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
-PRODUCTION_WORKFLOW = "production-release-reusable.yml"
+PRODUCTION_WORKFLOW = "frontend-ui.yml"
+PRODUCTION_SCRIPT = ROOT / "scripts" / "production_release.sh"
 
 
 def _workflow_texts() -> dict[str, str]:
@@ -37,8 +39,9 @@ def test_all_third_party_actions_are_sha_pinned():
 
 def test_production_deployment_has_one_owner():
     texts = _workflow_texts()
-    deployers = [name for name, text in texts.items() if "pywrangler deploy" in text]
-    assert deployers == [PRODUCTION_WORKFLOW], deployers
+    assert "bash scripts/production_release.sh" in texts[PRODUCTION_WORKFLOW]
+    assert "pywrangler deploy" in PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert all("pywrangler deploy" not in text for name, text in texts.items() if name != PRODUCTION_WORKFLOW)
 
     forbidden = re.compile(r"(?i)(workers\s+build|deploy\s+hook|deploy_hook|workers-builds)")
     violations = [
@@ -51,40 +54,44 @@ def test_production_deployment_has_one_owner():
 
 
 def test_canonical_operations_production_pin_is_current_and_immutable():
-    deployment = _workflow_texts()[PRODUCTION_WORKFLOW]
-    assert f"OPERATIONS_REPOSITORY: {CANONICAL_OPERATIONS_REPOSITORY}" in deployment
-    assert f"OPERATIONS_REF: {CANONICAL_OPERATIONS_REF}" in deployment
-    assert deployment.count(CANONICAL_OPERATIONS_REF) == 2
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert f'OPERATIONS_REPOSITORY="{CANONICAL_OPERATIONS_REPOSITORY}"' in deployment
+    assert f'OPERATIONS_REF="{CANONICAL_OPERATIONS_REF}"' in deployment
+    assert deployment.count(CANONICAL_OPERATIONS_REF) == 3
     assert LEGACY_OPERATIONS_REF not in deployment
-    assert "OPERATIONS_REF:" not in deployment.split("jobs:", 1)[1]
     assert 'git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git"' in deployment
     assert '"github:${OPERATIONS_REF}"' in deployment
 
 
 def test_operations_checkout_uses_github_app_installation_credential():
-    deployment = _workflow_texts()[PRODUCTION_WORKFLOW]
-    assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in deployment
-    assert "OPERATIONS_APP_INSTALLATION_ID: ${{ secrets.OPERATIONS_APP_INSTALLATION_ID }}" in deployment
-    assert "OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}" in deployment
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert "OPERATIONS_APP_ID" in deployment
+    assert "OPERATIONS_APP_INSTALLATION_ID" in deployment
+    assert "OPERATIONS_APP_PRIVATE_KEY" in deployment
     assert "GITHUB_APP_TOKEN" in deployment
     assert "api.github.com/repos/${OPERATIONS_REPOSITORY}" in deployment
     assert "OPERATIONS_READ_TOKEN" not in deployment
 
 
-def test_reusable_production_workflow_has_no_direct_push_trigger():
-    deployment = _workflow_texts()[PRODUCTION_WORKFLOW]
-    assert "workflow_call:" in deployment
-    assert "push:" not in deployment
-    assert "workflow_dispatch:" not in deployment
-
-
-def test_frontend_ui_calls_production_only_after_contract_success():
-    frontend = _workflow_texts()["frontend-ui.yml"]
-    assert "actions: write" not in frontend
-    assert "uses: ./.github/workflows/production-release-reusable.yml" in frontend
-    assert "needs: contract" in frontend
-    assert "secrets: inherit" in frontend
+def test_frontend_ui_keeps_one_job_and_guards_release_to_main_push():
+    frontend = _workflow_texts()[PRODUCTION_WORKFLOW]
+    assert "jobs:" in frontend
+    assert "contract:" in frontend
+    assert "needs:" not in frontend
+    assert "uses: ./.github/workflows/production-release-reusable.yml" not in frontend
     assert "gh workflow run" not in frontend
+    assert "if: github.event_name == 'push' && github.ref == 'refs/heads/main'" in frontend
+    assert "actions: write" not in frontend
+
+
+def test_production_script_is_fail_closed_and_asserts_frontend_assets():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert "set -euo pipefail" in deployment
+    assert "health=$(curl -fsS" in deployment
+    assert "readiness=$(curl -fsS" in deployment
+    assert "<title>Heroic AI — Chat & Research</title>" in deployment
+    for asset in ("styles.css", "app.js", "composer.js", "lifecycle_controller.js"):
+        assert asset in deployment
 
 
 def test_required_pr_checks_emit_the_branch_protection_contract():
@@ -111,10 +118,9 @@ def test_backup_workflow_separates_github_and_b2_credentials():
 
 
 def test_credential_policy_documents_the_separation():
-    root = Path(__file__).parents[1]
-    policy = (root / "docs" / "CREDENTIAL_AND_BACKUP_AUTHORITY.md").read_text(encoding="utf-8")
-    deployment = (root / "DEPLOYMENT.md").read_text(encoding="utf-8")
-    backup = (root / "backup" / "README.md").read_text(encoding="utf-8")
+    policy = (ROOT / "docs" / "CREDENTIAL_AND_BACKUP_AUTHORITY.md").read_text(encoding="utf-8")
+    deployment = (ROOT / "DEPLOYMENT.md").read_text(encoding="utf-8")
+    backup = (ROOT / "backup" / "README.md").read_text(encoding="utf-8")
 
     for secret in (
         "OPERATIONS_APP_ID",
@@ -143,7 +149,7 @@ def test_backup_manifests_cannot_claim_remote_restore_without_test():
 def test_required_ci_contract_supports_merge_group():
     texts = _workflow_texts()
     required = texts["required-pr-checks.yml"]
-    frontend = texts["frontend-ui.yml"]
+    frontend = texts[PRODUCTION_WORKFLOW]
     assert "merge_group:" in required
     assert "types: [checks_requested]" in required
     assert "name: Public tests" in required
