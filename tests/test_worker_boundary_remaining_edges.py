@@ -53,7 +53,7 @@ def test_worker_boundary_remaining_result_and_replay_guards():
     ok, reason = validator.validate_result(missing_success, missing_result, None)
     assert ok is False and "output data" in reason
 
-    monkeypatch_size = validator.MAX_OUTPUT_SIZE_MB
+    original_limit = validator.MAX_OUTPUT_SIZE_MB
     validator.MAX_OUTPUT_SIZE_MB = 0
     oversized = validator.create_task("fetch", {}, "p")
     payload = {"x": 1}
@@ -61,7 +61,7 @@ def test_worker_boundary_remaining_result_and_replay_guards():
     oversized_result = WorkerResult(oversized.task_id, oversized.nonce, "success", digest, payload, 1, "worker", now)
     ok, reason = validator.validate_result(oversized, oversized_result, payload)
     assert ok is False and "exceeds" in reason
-    validator.MAX_OUTPUT_SIZE_MB = monkeypatch_size
+    validator.MAX_OUTPUT_SIZE_MB = original_limit
 
     naive = WorkerResult(good.task_id, good.nonce, "failure", None, None, 1, "worker", now.replace(tzinfo=None))
     assert validator.validate_result(good, naive, None)[0] is False
@@ -70,7 +70,6 @@ def test_worker_boundary_remaining_result_and_replay_guards():
     missing_worker = WorkerResult(good.task_id, good.nonce, "failure", None, None, 1, "", now)
     assert validator.validate_result(good, missing_worker, None)[0] is False
 
-    active._dummy = None
     validator._active_tasks[active.nonce] = "different-task"
     active_result = WorkerResult(active.task_id, active.nonce, "failure", None, None, 1, "worker", now)
     ok, reason = validator.validate_result(active, active_result, None)
