@@ -1,0 +1,17 @@
+name: production-job-graph-probe
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  probe:
+    name: Production job graph probe
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe runner
+        run: echo 'production job graph probe: PASS'
