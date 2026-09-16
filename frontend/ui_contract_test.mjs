@@ -28,6 +28,14 @@ for (const behavior of ['renderSidebar', 'renderConversation', 'renderProjects',
 for (const behavior of ['selectMode', 'handleAttachments', 'handleVoice', 'send', 'queue']) assert.ok(composer.includes(`function ${behavior}`), `missing composer behavior: ${behavior}`);
 for (const behavior of ['render', 'resultText', 'sourceRows']) assert.ok(workspace.includes(`function ${behavior}`), `missing workspace behavior: ${behavior}`);
 
+assert.match(view, /const safeSourceUrl =/);
+assert.match(view, /url\.protocol === 'http:' \|\| url\.protocol === 'https:'/);
+assert.match(view, /source-label/);
+assert.match(app, /\/api\/v1\/chat\/stream/);
+assert.match(app, /Idempotency-Key/);
+assert.match(app, /consumeChatStream/);
+assert.match(app, /event === 'delta'/);
+assert.match(app, /event === 'done'/);
 assert.doesNotMatch(app, /async function submitResearch|async function pollResearch|function renderResearch|function processQueue/, 'app.js must not own research lifecycle');
 assert.match(app, /api\.chatView\.render/);
 assert.match(app, /api\.chatStore\.exportData/);
