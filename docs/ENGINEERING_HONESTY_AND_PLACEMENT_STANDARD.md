@@ -91,9 +91,14 @@ to tell from the wording alone which claims in a doc are verified and which
 are intended/aspirational.
 
 **Practical tell:** if a sentence would need to change after actually running
-the code, it's a factual claim and must be checkable. If it would still be
-true regardless of what the code does today, it's a design intent and should
-be worded as one.
+the code, it's a factual claim and must be checkable. If it would still be true
+regardless of what the code does today, it's a design intent and should be
+worded as one.
+
+**Revision scope:** when a statement depends on code, workflow, issue, or
+runtime state, identify the repository revision or execution date that supports
+it. This prevents a once-correct statement from becoming misleading after the
+implementation changes.
 
 ## Practical checklist
 
@@ -104,3 +109,4 @@ be worded as one.
       convenient when it was written?
 - [ ] Does this doc/comment state anything as settled fact that hasn't
       actually been verified against current repository state?
+- [ ] For revision-sensitive claims, is the supporting revision or date clear?
