@@ -4,13 +4,13 @@
 **Owner:** Foundation deployment/backup boundary  
 **Applies to:** `foundation` and the private `operations` repository
 
-## 1. Purpose
+## Purpose
 
 This is the canonical policy for credential purpose, secret separation, repository backup authentication, Backblaze B2 authority, backup artifacts, restore evidence, and remediation records.
 
 The governing rule is: **a credential is named and scoped by the authority it serves; storage credentials are never repository credentials; repository credentials are never B2 credentials.**
 
-## 2. Credential and authority map
+## Credential and authority map
 
 | Credential / resource | Canonical purpose | Authority | Must not be used for |
 | --- | --- | --- | --- |
@@ -25,7 +25,7 @@ The governing rule is: **a credential is named and scoped by the authority it se
 
 Never substitute one credential for another because the workflows run in the same GitHub repository or job.
 
-## 3. Backup GitHub credential
+## Backup GitHub credential
 
 `BACKUP_GITHUB_TOKEN` is a **GitHub credential** despite its historical name. It exists so the backup workflow can mirror repository Git data. It has no relationship to the B2 secret values except that the same backup workflow consumes both credential families.
 
@@ -33,9 +33,9 @@ B2 credentials authenticate only to B2. The GitHub token authenticates only to G
 
 The backup workflow must use an ephemeral `GIT_ASKPASS` helper, disable interactive prompts, remove the helper during cleanup, and never print token values.
 
-The backup workflow must validate the GitHub credential against the private Operations repository through the GitHub API before cloning. It must validate B2 credentials separately against the configured B2 bucket. Passing both checks proves credential-purpose separation, not production or disaster-recovery certification.
+The backup workflow validates the GitHub credential against the private Operations repository before cloning and validates B2 credentials separately against the configured B2 bucket. Passing both checks proves credential-purpose separation, not production or disaster-recovery certification.
 
-## 4. Production Operations credential
+## Production Operations credential
 
 Production deployment uses `OPERATIONS_READ_TOKEN` for private Operations checkout. It is intentionally separate from `BACKUP_GITHUB_TOKEN`, even where an underlying administrative identity could technically hold both permissions.
 
@@ -49,7 +49,7 @@ Before checkout, deployment must fail closed unless:
 
 A B2 credential must never be accepted as an Operations GitHub credential.
 
-## 5. Backblaze B2 authority
+## Backblaze B2 authority
 
 Backblaze B2 is the authoritative artifact/backup storage provider under the strict zero-cost target.
 
@@ -62,7 +62,7 @@ These are non-secret configuration facts. `B2_KEY_ID` and `B2_APPLICATION_KEY` a
 
 B2 stores backup/artifact material. It does not own identity, authorization, routing, resource limits, research evidence, model eligibility, deployment approval, or application result state.
 
-## 6. Backup artifact requirements
+## Backup artifact requirements
 
 The canonical backup workflow mirrors both active repositories:
 
@@ -83,19 +83,19 @@ A backup is verified only after:
 
 Upload success alone is not restore certification.
 
-## 7. Backup manifest evidence rules
+## Backup manifest evidence rules
 
 Backup manifests are evidence records, not policy authority. They must never contain tokens, secret values, application keys, authentication headers, or Cloudflare credentials.
 
 A field such as `remote_b2_restore_verified` may be `true` only when the corresponding remote restore test actually ran and passed. Never invent a healthy, zero, empty, or successful value.
 
-## 8. Disaster recovery distinction
+## Disaster recovery distinction
 
 Repository backup integrity and disaster-recovery certification are separate evidence classes. A valid archive proves recoverability of Git data only; full disaster recovery requires documented restoration of required operational dependencies and an explicit certification record.
 
 GitHub CI success, B2 backup success, Cloudflare deployment success, and application runtime success must never be conflated.
 
-## 9. Rotation and incident handling
+## Rotation and incident handling
 
 When a credential is shared across purposes, incorrectly named, rejected, exposed, or suspected to have insufficient scope:
 
@@ -108,13 +108,13 @@ When a credential is shared across purposes, incorrectly named, rejected, expose
 
 A failed authentication event is evidence about the credential path; it is not evidence that the target repository or B2 is unavailable.
 
-## 10. Documentation ownership
+## Documentation ownership
 
 This document owns credential-purpose and backup-boundary policy. `DEPLOYMENT.md` owns deployment procedure. `backup/README.md` and `.github/workflows/b2-repository-backup.yml` own backup execution details. Private runtime configuration remains owned by Operations.
 
 Do not create competing credential-policy documents. Cross-repository records should reference this standard.
 
-## 11. Required change record
+## Required change record
 
 Any material credential, backup, retention, restore, deployment-access, or secret-scope change must record:
 
