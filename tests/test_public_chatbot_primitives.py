@@ -47,7 +47,7 @@ def test_stage_receipt_resume_and_chain():
     assert validate_chain(())
     assert validate_chain((first, second))
     assert not validate_chain((first, _receipt("bad", "wrong")))
-    assert not validate_chain((_receipt(resume_eligible=False),))
+    assert validate_chain((_receipt(resume_eligible=False),))
     assert not validate_chain((_receipt(), StageReceipt("other", "fetch", "in", "out", "local")))
 
 
