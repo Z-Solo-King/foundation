@@ -4,30 +4,73 @@ This repository contains the public contract/Worker boundary. Production control
 
 ## Current verified production state
 
-As of 2026-09-13, the Cloudflare production deployment had been manually verified end to end at that time:
+Historical production verification is retained as historical evidence only. The 2026-09-13 manual verification is not current certification.
 
-- private control-plane Worker deployed;
-- public Worker deployed;
-- public Worker URL: `https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev`;
-- `/health` returned HTTP 200;
-- `/readiness` returned HTTP 200 under the then-verified deployment configuration;
-- Backblaze B2 is the artifact-storage provider under the strict zero-cost target.
-
-This document does not treat older manual verification as fresh production proof. The current acceptance rule requires current authenticated verification evidence from the approved runtime path.
+Current acceptance requires fresh authenticated evidence from the approved GitHub deployment path and, where applicable, separate Cloudflare production verification.
 
 The public Worker is deployed with Python Worker tooling (`pywrangler`), not plain `wrangler deploy`.
 
-## GitHub Actions status
+## Canonical production workflow
 
-The canonical public production deployment workflow is `.github/workflows/codeql.yml`.
+The canonical Foundation production deployment workflow is `.github/workflows/codeql.yml`. It contains the single `pywrangler deploy` production owner and runs the public deployment only after `Public tests` succeeds on a push to `main`.
 
-It is intentionally named `codeql.yml` for historical compatibility, but it is also the repository's required CI workflow and contains the **only** `pywrangler deploy` production deployment job. The deployment job runs only after `Public tests` succeed and only on pushes to `main`.
+The same workflow performs the public post-deployment smoke checks. There is no second public production deployment workflow.
 
-The same deployment job performs the post-deployment smoke checks. There is no separate `deploy-public-worker.yml` or `production-chatbot-deploy-smoke.yml` workflow in the current repository.
+The workflow dynamically resolves the live D1 database ID and writes a runner-only Wrangler configuration. Generated configuration is removed during cleanup. Credentials are never committed.
 
-The deployment job dynamically resolves the live D1 database ID from Cloudflare and generates a runner-only production Wrangler configuration; it removes the generated configuration after deployment. Credentials are never committed.
+The workflow also owns the protected Operations handoff. Production is pinned to the explicitly approved immutable Operations revision:
 
-The smoke stage always verifies the public Worker `/health` and `/readiness` surfaces. The authenticated infrastructure diagnostic is only claimed when `AUTH_TOKEN` is available and the diagnostic confirms the public chatbot surface, Cloudflare D1 and Backblaze B2 lifecycle checks.
+`cf28a28cb40de527aff1cd87f96e103669635f70`
+
+The private Operations checkout uses the purpose-specific GitHub Actions secret `OPERATIONS_READ_TOKEN`. This secret is for reading the private Operations repository for deployment; it is not a B2 credential and must not be reused as one.
+
+The canonical credential and backup policy is `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md`.
+
+## Credential boundaries
+
+| Secret | Purpose | Owner | Not interchangeable with |
+| --- | --- | --- | --- |
+| `OPERATIONS_READ_TOKEN` | Read private Operations for production deployment | Foundation deployment workflow | `BACKUP_GITHUB_TOKEN`, B2 secrets, Cloudflare secrets |
+| `BACKUP_GITHUB_TOKEN` | Read/mirror both repositories for B2 backup | Foundation backup workflow | `OPERATIONS_READ_TOKEN`, B2 secrets |
+| `B2_KEY_ID` | B2 API authentication | B2 backup boundary | GitHub tokens, Cloudflare tokens |
+| `B2_APPLICATION_KEY` | B2 backup/restore authorization | B2 backup boundary | GitHub tokens, Cloudflare tokens |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare deployment/API access | Cloudflare deployment boundary | GitHub tokens, B2 secrets |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account identifier | Cloudflare deployment boundary | GitHub tokens, B2 secrets |
+| `AUTH_TOKEN` | Application/runtime authentication where required | Application/runtime boundary | GitHub tokens, B2 secrets |
+
+Do not infer credential purpose from the fact that multiple secrets are consumed by one workflow. Each secret has an independent authority and scope.
+
+## Operations deployment gate
+
+Before the private Operations checkout, the workflow must fail closed unless the deployment credential is present and accepted by GitHub for `Z-Solo-King/operations`.
+
+The checkout must then fetch and verify the exact approved revision `cf28a28cb40de527aff1cd87f96e103669635f70`. The workflow must not silently track `operations/main`, substitute an older pin, or deploy a mutable branch reference.
+
+A successful public Worker deployment does not prove that Operations was deployed. Operations deployment, D1 governance application, protected configuration and private runtime verification remain separately evidenced.
+
+## Backblaze B2 boundary
+
+Backblaze B2 is the authoritative artifact/backup storage provider under the strict zero-cost target.
+
+Current target:
+
+- bucket: `SoloKing`;
+- endpoint: `https://s3.eu-central-003.backblazeb2.com`.
+
+B2 credentials are secrets and never belong in Git, documentation, backup manifests, or logs. B2 stores artifact/backup material; it is not an authority for identity, authorization, routing, policy, resource governance, evidence, deployment approval, or application result state.
+
+The repository backup workflow is `.github/workflows/b2-repository-backup.yml`; execution detail is documented in `backup/README.md` and policy in `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md`.
+
+## Backup artifact and restore policy
+
+The canonical backup workflow mirrors both active repositories:
+
+- `Z-Solo-King/foundation`;
+- `Z-Solo-King/operations`.
+
+It creates immutable Git mirror archives and manifests containing non-secret provenance. Backup verification requires remote B2 download, SHA-256 comparison, extraction, `git fsck --full --no-dangling`, and confirmation of the expected `main` reference.
+
+A successful upload is not disaster-recovery certification. Backup integrity, GitHub CI, Cloudflare deployment and application runtime are distinct evidence classes.
 
 ## Runtime architecture
 
@@ -39,38 +82,22 @@ Foundation uses:
 - Backblaze B2 for current artifact storage under the strict zero-cost design;
 - no public route for arbitrary private control-plane dispatch.
 
-B2 credentials, authentication tokens, private service names, and private control-plane identifiers do not belong in Git. A Cloudflare D1 resource ID is a non-secret infrastructure identifier and may be committed to the public Worker configuration when required for the public Worker binding.
-
-## Required deployment inputs
-
-Supply these through the deployment environment or secret store rather than committing them:
-
-- `CLOUDFLARE_API_TOKEN`;
-- `CLOUDFLARE_ACCOUNT_ID`;
-- `AUTH_TOKEN` where the authenticated verification path requires it;
-- `B2_KEY_ID`;
-- `B2_APPLICATION_KEY`;
-- any protected Service Binding required by the private control-plane path.
-
-Production credentials must never be committed.
-
-The generated production config uses the current zero-cost B2 target:
-
-- bucket: `SoloKing`;
-- endpoint: `https://s3.eu-central-003.backblazeb2.com`.
-
 ## Deployment order
 
-The Foundation production workflow owns the public Worker deployment. Private Operations activation and runtime verification remain separate concerns and must not create a second GitHub deployment owner.
+The Foundation production workflow owns the deployment path. Private Operations activation must not create a second GitHub deployment owner.
 
-Smoke-test `/health` first. Treat `/readiness` according to the currently committed public readiness contract rather than assuming private-control-plane availability.
+The public path is validated first. The protected Operations handoff is then validated against the exact approved revision. Cloudflare production state is verified separately by the dedicated Cloudflare-side procedure.
 
-## Important operational lessons
+## Important operational rules
 
 - Never hard-code an obsolete D1 `database_id`; resolve it from Cloudflare at deployment time.
 - Never deploy a generated Wrangler config containing `REPLACE_WITH_*` placeholders.
-- For Python Workers use `pywrangler deploy`.
-- Keep credentials and authentication secrets out of Git and handoff documents.
+- Use `pywrangler deploy` for Python Workers.
+- Never commit credential values.
+- Never put GitHub tokens, B2 keys, Cloudflare tokens, or application authentication tokens into backup manifests or handoff records.
+- Do not reuse `BACKUP_GITHUB_TOKEN` as the production Operations deployment credential.
+- Do not reuse B2 credentials as GitHub credentials.
 - Keep the strict `$0` policy fail-closed; do not add paid fallbacks to make deployment convenient.
-- Do not call Cloudflare production verification complete until current authenticated evidence exists.
-- Keep deployment and post-deployment verification in the same canonical workflow chain.
+- Do not claim Cloudflare production or application certification without current evidence.
+- Keep deployment and its public post-deployment verification in the canonical workflow chain.
+- Record material deployment, credential, backup, scope and evidence changes in the canonical policy/record documents.
