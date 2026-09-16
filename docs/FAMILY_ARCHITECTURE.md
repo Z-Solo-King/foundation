@@ -2,7 +2,7 @@
 
 This repository is one member of a two-repository system. The public-safe ownership contract is canonical in `docs/FAMILY_CONTRACT.json`.
 
-- `foundation`: public contracts, evidence structures, research contracts, reusable deterministic primitives, canonical public CI and production deployment ownership.
+- `foundation`: public contracts, evidence structures, research contracts, reusable deterministic primitives, canonical public CI and production deployment/backup ownership.
 - `operations`: private control, acquisition, extraction, mapping, verification, evaluation, promotion, private runtime orchestration, protected runtime configuration and recovery.
 
 Dependency direction is one-way:
