@@ -54,10 +54,9 @@ async def test_readiness_payload_database_exception_fails_closed():
 
 
 @pytest.mark.asyncio
-async def test_storage_diagnostic_missing_artifact_fails_closed(monkeypatch):
-    monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: _Persistence(artifacts={"missing": None}))
+async def test_storage_diagnostic_missing_artifact_fails_closed():
     body, status = await storage_diagnostic(
-        SimpleNamespace(DB=_RowsDB([{"artifact_ref": "missing", "content_hash": "x", "content_length": 1}]),
+        SimpleNamespace(DB=_RowsDB([{"artifact_ref": "missing", "content_hash": "x", "content_length": 1}])),
         "run-1",
         persistence_cls=lambda env: _Persistence(artifacts={"missing": None}),
     )
