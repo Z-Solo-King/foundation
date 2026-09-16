@@ -136,6 +136,40 @@ def test_public_worker_chat_stream_route_validates_payload():
     assert response.status == 400
 
 
+def test_public_worker_chat_stream_route_returns_invalid_json_for_non_object_body():
+    import worker
+
+    class Request:
+        method = "POST"
+        url = "https://example/api/v1/chat/stream"
+        headers = {"Authorization": "Bearer secret"}
+
+        async def json(self):
+            return "not an object"
+
+    instance = worker.Default()
+    instance.env = SimpleNamespace(AUTH_TOKEN="secret")
+    response = asyncio.run(instance.fetch(Request()))
+    assert response.status == 400
+
+
+def test_public_worker_chat_stream_route_returns_private_unavailable_response_without_binding():
+    import worker
+
+    class Request:
+        method = "POST"
+        url = "https://example/api/v1/chat/stream"
+        headers = {"Authorization": "Bearer secret"}
+
+        async def json(self):
+            return {"chat_id": "c1", "request_id": "r1", "message": "hello", "strict_zero_cost_only": True}
+
+    instance = worker.Default()
+    instance.env = SimpleNamespace(AUTH_TOKEN="secret")
+    response = asyncio.run(instance.fetch(Request()))
+    assert response.status == 503
+
+
 def test_public_worker_chat_stream_route_proxies_private_sse():
     import worker
 
