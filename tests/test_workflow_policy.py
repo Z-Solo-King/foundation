@@ -110,6 +110,8 @@ def test_production_script_preserves_static_asset_binding_and_diagnostic_smokes(
     assert 'for asset in styles.css app.js composer.js lifecycle_controller.js; do' in deployment
     assert 'echo "GET /${asset} -> HTTP ${asset_status}"' in deployment
     assert "<title>Heroic AI — Chat & Research</title>" in deployment
+    assert 'GET GitHub App installation metadata -> HTTP' in deployment
+    assert 'POST GitHub App installation token -> HTTP' in deployment
 
 
 def test_required_pr_checks_emit_the_branch_protection_contract():
