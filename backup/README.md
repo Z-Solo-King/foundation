@@ -31,9 +31,11 @@ The workflow validates the B2 credentials against the configured bucket separate
 
 ## Deployment credential is separate
 
-Production deployment uses the purpose-specific GitHub App installation credential set (`OPERATIONS_APP_ID`, `OPERATIONS_APP_INSTALLATION_ID`, `OPERATIONS_APP_PRIVATE_KEY`), not `BACKUP_GITHUB_TOKEN`.
+Production deployment uses the purpose-specific GitHub App installation credential set (`OPERATIONS_APP_ID`, `OPERATIONS_APP_PRIVATE_KEY`), not `BACKUP_GITHUB_TOKEN`.
 
-The App is installed with read-only Contents access on the private Operations repository. The production workflow mints a short-lived installation token and uses it only for the approved Operations checkout. The App key and generated token are never printed or stored in the backup artifact set.
+The production workflow resolves the installed Operations App dynamically and mints a short-lived installation token for the approved Operations checkout. `OPERATIONS_APP_INSTALLATION_ID` is **not** a stored production secret authority.
+
+The App is installed with read-only Contents access on the private Operations repository. The App key and generated token are never printed or stored in the backup artifact set.
 
 The normative credential and backup policy is `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md`.
 
