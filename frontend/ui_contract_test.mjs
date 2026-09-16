@@ -23,15 +23,21 @@ assert.match(html, /object-src 'none'/);
 assert.match(html, /frame-ancestors 'none'/);
 for (const module of ['frontend_state.js', 'chat_store.js', 'chat_view.js', 'workspace_view.js', 'composer.js', 'app.js', 'dashboard.js', 'lifecycle_controller.js', 'lifecycle_queue_controls.js']) assert.ok(html.includes(`./${module}`), `missing script: ${module}`);
 for (const viewName of ['chats', 'projects', 'saved', 'settings']) assert.ok(html.includes(`data-view=\"${viewName}\"`));
-for (const action of ['new-chat', 'backend-check', 'open-queue', 'toggle-workspace', 'attachments', 'voice', 'queue', 'send']) assert.ok(html.includes(`data-action=\"${action}\"`));
+for (const action of ['new-chat', 'backend-check', 'open-queue', 'toggle-workspace', 'voice', 'queue', 'send']) assert.ok(html.includes(`data-action=\"${action}\"`));
+assert.doesNotMatch(html, /data-action=\"attachments\"|attachment-list|Add local file/, 'the UI must not expose a non-functional attachment control');
+assert.match(html, /id=\"queue-button\"/);
 for (const mode of ['chat', 'research']) assert.ok(html.includes(`data-mode=\"${mode}\"`));
-for (const element of ['attachment-list', 'queue-count', 'workspace', 'message-queue', 'workspace-body', 'conversation-scroll']) assert.ok(html.includes(`id=\"${element}\"`));
+for (const element of ['queue-count', 'workspace', 'message-queue', 'workspace-body', 'conversation-scroll']) assert.ok(html.includes(`id=\"${element}\"`));
 
 for (const contract of ['rie.frontend.chats.v2', 'rie.frontend.projects.v1', 'rie.frontend.saved.v1', 'rie.frontend.sessionToken.v1', 'localStorage', 'sessionStorage']) assert.ok(state.includes(contract), `missing state contract: ${contract}`);
 for (const contract of ['strict_zero_cost_only', 'max_sources', 'max_evidence_items', '/api/v1/research', '/api/v1/research/']) assert.ok(lifecycle.includes(contract), `missing research contract: ${contract}`);
 for (const behavior of ['createProject', 'assignCurrentChat', 'saveMessage', 'exportData', 'importData', 'clearData']) assert.ok(store.includes(`function ${behavior}`), `missing store behavior: ${behavior}`);
 for (const behavior of ['renderSidebar', 'renderConversation', 'renderProjects', 'renderSaved', 'renderSettings']) assert.ok(view.includes(`function ${behavior}`), `missing view behavior: ${behavior}`);
-for (const behavior of ['selectMode', 'handleAttachments', 'handleVoice', 'send', 'queue']) assert.ok(composer.includes(`function ${behavior}`), `missing composer behavior: ${behavior}`);
+for (const behavior of ['selectMode', 'handleVoice', 'send', 'queue']) assert.ok(composer.includes(`function ${behavior}`), `missing composer behavior: ${behavior}`);
+assert.doesNotMatch(composer, /handleAttachments|data-action=\"attachments\"/, 'composer must not retain the removed attachment action');
+assert.match(composer, /queueButton\.hidden = !researchMode/);
+assert.match(composer, /queueButton\.disabled = !researchMode/);
+assert.match(lifecycle, /event\.detail\?\.mode !== 'research'/);
 for (const behavior of ['render', 'resultText', 'sourceRows']) assert.ok(workspace.includes(`function ${behavior}`), `missing view behavior: ${behavior}`);
 
 assert.match(view, /const safeSourceUrl =/);
