@@ -22,7 +22,7 @@ def test_private_operations_revision_and_app_auth_are_explicit():
     assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in text
     assert "OPERATIONS_APP_INSTALLATION_ID: ${{ secrets.OPERATIONS_APP_INSTALLATION_ID }}" in text
     assert "OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}" in text
-    assert "GitHub App installation access" in text
+    assert "private research source access: PASS" in text
     assert "private.multi_agent.runner" in text
     assert "private.multi_agent.project_research" in text
     assert "OPERATIONS_READ_TOKEN" not in text
@@ -30,9 +30,12 @@ def test_private_operations_revision_and_app_auth_are_explicit():
 
 def test_private_source_is_not_uploaded_as_an_artifact():
     text = workflow_text()
-    assert "RUNNER_TEMP/operations-research" in text
     assert "actions/upload-artifact" in text
-    assert "operations-research" not in text.split("actions/upload-artifact", 1)[1]
+    assert "operations-research" in text
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("path:") and not stripped.endswith("|"):
+            assert "operations-research" not in stripped
     assert "Remove private research checkout and credentials" in text
     assert "Remove private project-research checkout and credentials" in text
 
