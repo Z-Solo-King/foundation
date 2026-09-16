@@ -57,7 +57,7 @@ async def _get_run(env, run_id):
     return await get_run(env, run_id)
 
 
-async def _chat_headers(request):
+def _chat_headers(request):
     headers = {"Content-Type": "application/json"}
     token = _bearer_token(request)
     if token:
@@ -73,7 +73,7 @@ async def _operations_chat(env, payload, request):
     operations = getattr(env, "OPERATIONS", None)
     if operations is None:
         return {"ok": False, "error": "chat_backend_unavailable", "status": "unavailable"}, 503
-    headers = await _chat_headers(request)
+    headers = _chat_headers(request)
     try:
         upstream = await operations.fetch(
             "https://chat/v1/chat",
@@ -96,7 +96,7 @@ async def _operations_chat_stream(env, payload, request):
     operations = getattr(env, "OPERATIONS", None)
     if operations is None:
         return None, {"ok": False, "error": "chat_backend_unavailable", "status": "unavailable"}, 503
-    headers = await _chat_headers(request)
+    headers = _chat_headers(request)
     try:
         upstream = await operations.fetch(
             "https://chat/v1/chat/stream",
