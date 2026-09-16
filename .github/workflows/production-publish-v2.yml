@@ -1,13 +1,13 @@
 name: Foundation production release
 
 on:
-  workflow_run:
-    workflows: ["frontend-ui"]
-    types: [completed]
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
 env:
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
@@ -16,16 +16,49 @@ env:
 jobs:
   release:
     name: Test and deploy production
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     concurrency:
       group: public-worker-production
       cancel-in-progress: false
     steps:
+      - name: Wait for frontend UI contract on this commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 60); do
+            runs=$(gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow frontend-ui.yml \
+              --branch main \
+              --limit 20 \
+              --json databaseId,status,conclusion,headSha,event)
+            matching=$(jq -c --arg sha "$GITHUB_SHA" '[.[] | select(.headSha == $sha and .event == "push")] | sort_by(.databaseId) | reverse | .[0] // empty' <<<"$runs")
+            if [ -n "$matching" ]; then
+              status=$(jq -r '.status' <<<"$matching")
+              conclusion=$(jq -r '.conclusion // empty' <<<"$matching")
+              echo "Frontend UI contract status=$status conclusion=${conclusion:-pending}"
+              if [ "$status" = 'completed' ] && [ "$conclusion" = 'success' ]; then
+                exit 0
+              fi
+              if [ "$status" = 'completed' ] && [ "$conclusion" != 'success' ]; then
+                echo 'Frontend UI contract failed for this release commit'
+                exit 1
+              fi
+            else
+              echo 'Waiting for matching frontend-ui push run...'
+            fi
+            sleep 10
+          done
+          echo 'Timed out waiting for the matching frontend-ui contract run'
+          exit 1
+
       - name: Checkout exact release commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -75,7 +108,7 @@ jobs:
           set -euo pipefail
           test ! -e backend/learning/promotion.py
           ! grep -RniE 'operations|extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-private' foundation_core backend worker.py wrangler.toml migrations tests
-          ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' backend foundation_core worker.py wrangler.toml migrations tests
+          ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' foundation_core backend worker.py wrangler.toml migrations tests
 
       - name: Verify Cloudflare credentials
         shell: bash
@@ -132,7 +165,7 @@ jobs:
             'B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"' \
             > wrangler.production.generated.toml
           grep -q '^database_name = "research-intelligence"$' wrangler.production.generated.toml
-          grep -Eq '^database_id = "[0-9a-fA-F-]{36}$"' wrangler.production.generated.toml || true
+          grep -Eq '^database_id = "[0-9a-fA-F-]{36}$' wrangler.production.generated.toml || true
           grep -q '^directory = "./frontend"$' wrangler.production.generated.toml
 
       - name: Apply remote D1 migrations
