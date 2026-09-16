@@ -37,7 +37,7 @@ for (const behavior of ['selectMode', 'handleVoice', 'send', 'queue']) assert.ok
 assert.doesNotMatch(composer, /handleAttachments|data-action=\"attachments\"/, 'composer must not retain the removed attachment action');
 assert.match(composer, /queueButton\.hidden = !researchMode/);
 assert.match(composer, /queueButton\.disabled = !researchMode/);
-assert.match(composer, /event\.detail\?\.mode !== 'research'/);
+assert.match(lifecycle, /event\.detail\?\.mode !== 'research'/);
 for (const behavior of ['render', 'resultText', 'sourceRows']) assert.ok(workspace.includes(`function ${behavior}`), `missing view behavior: ${behavior}`);
 
 assert.match(view, /const safeSourceUrl =/);
