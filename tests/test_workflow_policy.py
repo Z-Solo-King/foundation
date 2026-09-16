@@ -66,38 +66,44 @@ def test_canonical_operations_production_pin_is_current_and_immutable():
 
 
 def test_operations_installation_is_discovered_from_app_jwt():
-    frontend = _workflow_texts()[PRODUCTION_WORKFLOW]
+    workflow = _workflow_texts()[PRODUCTION_WORKFLOW]
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     helper = INSTALLATION_HELPER.read_text(encoding="utf-8")
-    assert "Resolve Operations GitHub App installation" in frontend
-    assert "scripts/resolve_operations_installation.py" in frontend
-    assert "OPERATIONS_APP_JWT" in helper
-    assert "api.github.com/app/installations" in helper
+    assert 'OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}' in workflow
+    assert 'OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}' in workflow
+    assert "OPERATIONS_APP_INSTALLATION_ID" not in workflow
+    assert "OPERATIONS_APP_JWT" in deployment
+    assert "resolve_operations_installation.py" in deployment
+    assert "api.github.com/app/installations" in deployment
     assert 'EXPECTED_ACCOUNT = "Z-Solo-King"' in helper
-    assert "OPERATIONS_APP_INSTALLATION_ID: ${{ secrets.OPERATIONS_APP_INSTALLATION_ID }}" not in frontend
 
 
 def test_operations_checkout_uses_github_app_installation_credential():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert "OPERATIONS_APP_ID" in deployment
-    assert "OPERATIONS_APP_INSTALLATION_ID" in deployment
     assert "OPERATIONS_APP_PRIVATE_KEY" in deployment
     assert "GITHUB_APP_TOKEN" in deployment
     assert "api.github.com/repos/${OPERATIONS_REPOSITORY}" in deployment
     assert "OPERATIONS_READ_TOKEN" not in deployment
 
 
-def test_frontend_ui_keeps_one_job_and_guards_release_to_main_push_or_manual_dispatch():
+def test_production_release_has_one_minimal_main_push_job():
     frontend = _workflow_texts()[PRODUCTION_WORKFLOW]
     assert "name: Heroic AI production release" in frontend
-    assert "jobs:" in frontend
-    assert "contract:" in frontend
-    assert "needs:" not in frontend
-    assert "uses: ./.github/workflows/production-release-reusable.yml" not in frontend
-    assert "gh workflow run" not in frontend
+    assert "push:" in frontend
+    assert "branches: [main]" in frontend
     assert "workflow_dispatch:" in frontend
-    release_guard = "if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'"
-    assert frontend.count(release_guard) == 3
-    assert "working-directory: ${{ github.workspace }}" in frontend
+    assert "jobs:" in frontend
+    assert "release:" in frontend
+    assert "runs-on: ubuntu-latest" in frontend
+    assert "actions/checkout@" in frontend
+    assert "actions/setup-python@" in frontend
+    assert "bash scripts/production_release.sh" in frontend
+    assert "pull_request:" not in frontend
+    assert "merge_group:" not in frontend
+    assert "if:" not in frontend
+    assert "needs:" not in frontend
+    assert "gh workflow run" not in frontend
     assert "actions: write" not in frontend
 
 
@@ -182,12 +188,9 @@ def test_backup_manifests_cannot_claim_remote_restore_without_test():
 
 
 def test_required_ci_contract_supports_merge_group():
-    texts = _workflow_texts()
-    required = texts["required-pr-checks.yml"]
-    frontend = texts[PRODUCTION_WORKFLOW]
+    required = _workflow_texts()["required-pr-checks.yml"]
     assert "merge_group:" in required
     assert "types: [checks_requested]" in required
     assert "name: Public tests" in required
     assert "name: Analyze python" in required
     assert "npm test" in required
-    assert "merge_group:" in frontend

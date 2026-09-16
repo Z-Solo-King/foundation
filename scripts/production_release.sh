@@ -17,7 +17,6 @@ trap cleanup EXIT
 test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo 'Missing CLOUDFLARE_API_TOKEN GitHub secret'; exit 1; }
 test -n "${CLOUDFLARE_ACCOUNT_ID:-}" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID GitHub secret'; exit 1; }
 test -n "${OPERATIONS_APP_ID:-}" || { echo 'Missing OPERATIONS_APP_ID GitHub Actions secret'; exit 1; }
-test -n "${OPERATIONS_APP_INSTALLATION_ID:-}" || { echo 'Missing OPERATIONS_APP_INSTALLATION_ID GitHub Actions secret'; exit 1; }
 test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIVATE_KEY GitHub Actions secret'; exit 1; }
 test "$OPERATIONS_REF" = 'cf28a28cb40de527aff1cd87f96e103669635f70'
 
@@ -141,17 +140,20 @@ print(unsigned.decode() + "." + b64url(proc.stdout))
 PY
 app_jwt=$(cat "$RUNNER_TEMP/github-app-jwt.txt")
 
-# Verify that the supplied installation id actually belongs to the supplied App.
-# Print only safe status/error metadata; never print credentials or access tokens.
+# Resolve the current installation dynamically; do not depend on a stored installation-id secret.
+installation_id=$(OPERATIONS_APP_JWT="$app_jwt" python scripts/resolve_operations_installation.py)
+test -n "$installation_id"
+echo "Resolved Operations GitHub App installation: PASS"
+
+# Verify that the resolved installation belongs to the supplied App, and mint a short-lived token.
 installation_meta_status=$(curl -sS -o "$RUNNER_TEMP/github-app-installation-meta.json" -w '%{http_code}' \
   -H 'Accept: application/vnd.github+json' \
   -H "Authorization: Bearer ${app_jwt}" \
   -H 'X-GitHub-Api-Version: 2022-11-28' \
-  "https://api.github.com/app/installations/${OPERATIONS_APP_INSTALLATION_ID}")
+  "https://api.github.com/app/installations/${installation_id}")
 echo "GET GitHub App installation metadata -> HTTP ${installation_meta_status}"
 if [ "$installation_meta_status" != '200' ]; then
   jq -c '{message,errors,documentation_url}' "$RUNNER_TEMP/github-app-installation-meta.json" || cat "$RUNNER_TEMP/github-app-installation-meta.json"
-  echo 'The OPERATIONS_APP_INSTALLATION_ID does not resolve for OPERATIONS_APP_ID, or the App does not have access to that installation.'
   exit 1
 fi
 
@@ -160,7 +162,7 @@ installation_response_status=$(curl -sS -o "$RUNNER_TEMP/github-app-installation
   -H 'Accept: application/vnd.github+json' \
   -H "Authorization: Bearer ${app_jwt}" \
   -H 'X-GitHub-Api-Version: 2022-11-28' \
-  "https://api.github.com/app/installations/${OPERATIONS_APP_INSTALLATION_ID}/access_tokens")
+  "https://api.github.com/app/installations/${installation_id}/access_tokens")
 echo "POST GitHub App installation token -> HTTP ${installation_response_status}"
 if [ "$installation_response_status" != '201' ]; then
   jq -c '{message,errors,documentation_url}' "$RUNNER_TEMP/github-app-installation.json" || cat "$RUNNER_TEMP/github-app-installation.json"
