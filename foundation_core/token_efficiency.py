@@ -17,6 +17,7 @@ class TokenEfficiencyObservation:
     cache_hits: int = 0
     deterministic_steps: int = 0
     accepted: bool = False
+    estimated_cached_input_tokens: int = 0
 
     def validate(self) -> None:
         for name, value in self.__dict__.items():
@@ -24,6 +25,8 @@ class TokenEfficiencyObservation:
                 raise ValueError(f"{name} must be non-negative")
         if self.retained_evidence_units + self.dropped_evidence_units > self.planned_context_units:
             raise ValueError("evidence units exceed planned context units")
+        if self.estimated_cached_input_tokens > self.estimated_input_tokens:
+            raise ValueError("cached input tokens cannot exceed input tokens")
 
     @property
     def evidence_retention_ratio(self) -> float:
@@ -35,8 +38,21 @@ class TokenEfficiencyObservation:
         return self.cache_hits / max(1, self.model_calls)
 
     @property
+    def cached_input_ratio(self) -> float:
+        return self.estimated_cached_input_tokens / max(1, self.estimated_input_tokens)
+
+    @property
     def total_estimated_tokens(self) -> int:
         return self.estimated_input_tokens + self.estimated_output_tokens
+
+    @property
+    def context_amplification_ratio(self) -> float:
+        """Measure prompt+output tokens consumed per output token produced.
+
+        A high cache-hit rate can still hide growing context. Tracking this
+        ratio exposes that failure mode without claiming a quality judgment.
+        """
+        return self.total_estimated_tokens / max(1, self.estimated_output_tokens)
 
     def token_density(self) -> float:
         if not self.accepted or self.total_estimated_tokens == 0:
