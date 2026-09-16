@@ -53,9 +53,11 @@ def test_canonical_operations_production_pin_is_single_and_current():
     codeql = _workflow_texts()["codeql.yml"]
     assert f"OPERATIONS_REPOSITORY: {CANONICAL_OPERATIONS_REPOSITORY}" in codeql
     assert f"OPERATIONS_REF: {CANONICAL_OPERATIONS_REF}" in codeql
-    assert codeql.count(CANONICAL_OPERATIONS_REF) == 4
+    assert codeql.count(CANONICAL_OPERATIONS_REF) == 2
     assert "bb1d8c33e926a9752de86492e9d35f26a5f2824c" not in codeql
     assert "OPERATIONS_REF:" not in codeql.split("jobs:", 1)[1]
+    assert 'git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git"' in codeql
+    assert '"github:${OPERATIONS_REF}"' in codeql
 
 
 def test_required_ci_contract_supports_merge_group():
