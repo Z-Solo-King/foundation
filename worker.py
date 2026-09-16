@@ -48,8 +48,6 @@ async def _public_infrastructure_verify(env):
 
 
 async def _ingest_sources(env, run_id, req):
-    # Keep dependency injection at the compatibility boundary so existing tests can
-    # monkeypatch this module's fetcher/persistence symbols without changing semantics.
     return await ingest_sources(env, run_id, req, fetcher=fetch_public_url, persistence_cls=CloudflarePersistence)
 
 
@@ -230,6 +228,7 @@ class Default(WorkerEntrypoint):
 
             persistence = CloudflarePersistence(self.env)
             idempotency_key = request.headers.get("Idempotency-Key")
+            run_id = None
             try:
                 if idempotency_key:
                     run_id = await persistence.create_run_idempotent(req, idempotency_key)
@@ -242,16 +241,14 @@ class Default(WorkerEntrypoint):
                 sources = await _ingest_sources(self.env, run_id, req)
                 await persistence.set_run_status(run_id, "completed")
             except Exception as exc:
-                try:
-                    await persistence.set_run_status(run_id, "failed")
-                except Exception:
-                    pass
+                if run_id is not None:
+                    try:
+                        await persistence.set_run_status(run_id, "failed")
+                    except Exception:
+                        pass
                 return Response.json({"ok": False, "error": f"execution/persistence failure: {exc}"}, status=503)
             return Response.json({"ok": True, "run_id": run_id, "metadata": {**result.metadata, "execution_mode": "source_url_ingestion"}, "sources": sources})
 
-        # API routes are handled above; delegate everything else to Cloudflare's
-        # Static Assets binding so index.html and the SPA fallback are served by
-        # the asset subsystem instead of being turned into a JSON 404.
         assets = getattr(self.env, "ASSETS", None)
         if assets is not None:
             return await assets.fetch(request)
