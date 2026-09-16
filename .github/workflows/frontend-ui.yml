@@ -14,6 +14,10 @@ on:
 permissions:
   contents: read
 
+env:
+  OPERATIONS_REPOSITORY: Z-Solo-King/operations
+  OPERATIONS_REF: cf28a28cb40de527aff1cd87f96e103669635f70
+
 jobs:
   contract:
     name: Frontend UI contract
@@ -31,3 +35,295 @@ jobs:
           package-manager-cache: false
       - name: Syntax and contract tests
         run: npm test
+
+  production:
+    name: Production gate and deploy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: contract
+    runs-on: ubuntu-latest
+    concurrency:
+      group: public-worker-production
+      cancel-in-progress: false
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Install test tools and package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pytest pytest-asyncio coverage workers-py workers-runtime-sdk
+
+      - name: Compile every Python source
+        run: python -m compileall -q backend foundation_core worker.py
+
+      - name: Verify package installation
+        run: python -c "import foundation_core; print(foundation_core.__all__)"
+
+      - name: Run product tests
+        run: coverage run --branch --source=backend,foundation_core,worker --omit='tests/*,backend/persistence/artifacts.py' -m pytest tests/ -v
+
+      - name: Enforce complete product coverage
+        run: coverage report --show-missing --fail-under=100 --omit='tests/*,backend/persistence/artifacts.py'
+
+      - name: Run deterministic natural-language research benchmark
+        run: python -m benchmark.chatbot_query_benchmark --input benchmark/chatbot-query-corpus.json --output .runtime/chatbot-query-benchmark.json
+
+      - name: Run frontend UI contract
+        working-directory: frontend
+        run: npm test
+
+      - name: Public workflow policy tests
+        run: python -m pytest -q tests/test_workflow_policy.py
+
+      - name: Public trust-boundary security lint
+        run: python scripts/public_security_lint.py --strict
+
+      - name: Public boundary scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e backend/learning/promotion.py
+          ! grep -RniE 'operations|extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-private' foundation_core backend worker.py wrangler.toml migrations tests
+          ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' backend foundation_core worker.py wrangler.toml migrations tests
+
+      - name: Verify Cloudflare credentials
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo 'Missing CLOUDFLARE_API_TOKEN GitHub secret'; exit 1; }
+          test -n "${CLOUDFLARE_ACCOUNT_ID:-}" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID GitHub secret. Add it in GitHub Actions settings; do not commit it.'; exit 1; }
+          curl -fsS \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            https://api.cloudflare.com/client/v4/user/tokens/verify \
+            | jq -e '.success == true and .result.status == "active"' >/dev/null
+
+      - name: Resolve public D1 and generate runner-only config
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          databases=$(curl -fsS \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database")
+          database_id=$(jq -r '[.result[]? | select(.name == "research-intelligence") | .uuid] | if length == 1 then .[0] else empty end' <<<"$databases")
+          test -n "$database_id" || { echo 'Expected exactly one research-intelligence D1 database'; exit 1; }
+          printf '%s\n' \
+            'name = "research-intelligence-engine-public"' \
+            'main = "worker.py"' \
+            'compatibility_date = "2026-09-09"' \
+            'compatibility_flags = ["python_workers"]' \
+            'workers_dev = true' \
+            'preview_urls = false' \
+            '' \
+            '[assets]' \
+            'directory = "./frontend"' \
+            'not_found_handling = "single-page-application"' \
+            '' \
+            '[[d1_databases]]' \
+            'binding = "DB"' \
+            'database_name = "research-intelligence"' \
+            "database_id = \"${database_id}\"" \
+            '' \
+            '[secrets]' \
+            'required = ["AUTH_TOKEN", "B2_KEY_ID", "B2_APPLICATION_KEY"]' \
+            '' \
+            '[vars]' \
+            'ENVIRONMENT = "production"' \
+            'STRICT_ZERO_COST_ONLY = "true"' \
+            'B2_BUCKET = "SoloKing"' \
+            'B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"' \
+            > wrangler.production.generated.toml
+          grep -q '^database_name = "research-intelligence"$' wrangler.production.generated.toml
+          grep -Eq '^database_id = "[0-9a-fA-F-]{36}"$' wrangler.production.generated.toml
+          grep -q '^directory = "./frontend"$' wrangler.production.generated.toml
+
+      - name: Apply remote D1 migrations
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
+
+      - name: Deploy public Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pywrangler deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}"
+
+      - name: Production smoke checks
+        shell: bash
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          base='https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev'
+          health=$(curl -fsS "$base/health")
+          jq -e '.ok == true' <<<"$health" >/dev/null
+          readiness=$(curl -fsS -o readiness.json -w '%{http_code}' "$base/readiness")
+          test "$readiness" = '200'
+          jq -e '.ready == true and .database == true' readiness.json >/dev/null
+          ui=$(curl -fsS -o frontend.html -w '%{http_code}' "$base/")
+          test "$ui" = '200'
+          grep -q '<title>Heroic AI — Chat & Research</title>' frontend.html
+          test -s frontend.html
+          for asset in styles.css app.js composer.js lifecycle_controller.js; do
+            asset_status=$(curl -fsS -o "/tmp/${asset}" -w '%{http_code}' "$base/${asset}")
+            test "$asset_status" = '200'
+            test -s "/tmp/${asset}"
+          done
+          if [ -n "${AUTH_TOKEN:-}" ]; then
+            diagnostic=$(curl -fsS \
+              -H "Authorization: Bearer ${AUTH_TOKEN}" \
+              -H 'Content-Type: application/json' \
+              -d '{"operation":"infrastructure_verify_public_test"}' \
+              "$base/api/v1/chatbot/diagnostic")
+            jq -e '.ok == true and .status == "ok" and .checks.public_chatbot == true and .checks.cloudflare_d1 == true and .checks.backblaze_b2_lifecycle == true' <<<"$diagnostic" >/dev/null
+          else
+            echo 'AUTH_TOKEN GitHub secret not configured; authenticated infrastructure diagnostic skipped.'
+          fi
+
+      - name: Authenticate to GitHub App installation
+        shell: bash
+        env:
+          OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
+          OPERATIONS_APP_INSTALLATION_ID: ${{ secrets.OPERATIONS_APP_INSTALLATION_ID }}
+          OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "${OPERATIONS_APP_ID:-}" || { echo 'Missing OPERATIONS_APP_ID GitHub Actions secret'; exit 1; }
+          test -n "${OPERATIONS_APP_INSTALLATION_ID:-}" || { echo 'Missing OPERATIONS_APP_INSTALLATION_ID GitHub Actions secret'; exit 1; }
+          test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIVATE_KEY GitHub Actions secret'; exit 1; }
+          key_file="$RUNNER_TEMP/operations-app.pem"
+          umask 077
+          printf '%s\n' "$OPERATIONS_APP_PRIVATE_KEY" > "$key_file"
+          chmod 600 "$key_file"
+          python - "$OPERATIONS_APP_ID" "$key_file" > "$RUNNER_TEMP/github-app-jwt.txt" <<'PY'
+import base64
+import json
+import subprocess
+import sys
+import time
+
+app_id, key_file = sys.argv[1:]
+
+def b64url(value):
+    return base64.urlsafe_b64encode(value).rstrip(b'=').decode('ascii')
+
+now = int(time.time())
+header = {"alg": "RS256", "typ": "JWT"}
+payload = {"iat": now - 60, "exp": now + 540, "iss": app_id}
+unsigned = f"{b64url(json.dumps(header, separators=(',', ':')).encode())}.{b64url(json.dumps(payload, separators=(',', ':')).encode())}".encode()
+proc = subprocess.run(
+    ["openssl", "dgst", "-sha256", "-sign", key_file],
+    input=unsigned,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    check=True,
+)
+print(unsigned.decode() + "." + b64url(proc.stdout))
+PY
+          app_jwt=$(cat "$RUNNER_TEMP/github-app-jwt.txt")
+          installation_response=$(curl -fsS \
+            -X POST \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer ${app_jwt}" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/app/installations/${OPERATIONS_APP_INSTALLATION_ID}/access_tokens")
+          printf '%s\n' "$installation_response" > "$RUNNER_TEMP/github-app-installation.json"
+          github_app_token=$(python - "$RUNNER_TEMP/github-app-installation.json" <<'PY'
+import json
+import sys
+print(json.load(open(sys.argv[1], encoding='utf-8'))['token'])
+PY
+)
+          test -n "$github_app_token"
+          echo "::add-mask::$github_app_token"
+          echo "GITHUB_APP_TOKEN=$github_app_token" >> "$GITHUB_ENV"
+          repo_response=$(curl -fsS \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer ${github_app_token}" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${OPERATIONS_REPOSITORY}")
+          jq -e --arg repo "$OPERATIONS_REPOSITORY" '.full_name == $repo and .private == true' <<<"$repo_response" >/dev/null
+          ref_response=$(curl -fsS \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer ${github_app_token}" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/git/commits/${OPERATIONS_REF}")
+          jq -e --arg expected "$OPERATIONS_REF" '.sha == $expected' <<<"$ref_response" >/dev/null
+
+      - name: Checkout approved Operations revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${OPERATIONS_REF}" = 'cf28a28cb40de527aff1cd87f96e103669635f70'
+          askpass="$RUNNER_TEMP/git-askpass-operations.sh"
+          umask 077
+          cat > "$askpass" <<'EOF'
+#!/bin/sh
+case "$1" in
+  *Username*) printf '%s\n' x-access-token ;;
+  *Password*) printf '%s\n' "$GITHUB_APP_TOKEN" ;;
+  *) printf '%s\n' '' ;;
+esac
+EOF
+          chmod 700 "$askpass"
+          export GIT_ASKPASS="$askpass"
+          export GIT_TERMINAL_PROMPT=0
+          rm -rf "$RUNNER_TEMP/operations"
+          git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git" "$RUNNER_TEMP/operations"
+          git -C "$RUNNER_TEMP/operations" fetch --no-tags --depth=1 origin "$OPERATIONS_REF"
+          git -C "$RUNNER_TEMP/operations" checkout --detach "$OPERATIONS_REF"
+          test "$(git -C "$RUNNER_TEMP/operations" rev-parse HEAD)" = "$OPERATIONS_REF"
+
+      - name: Apply canonical Operations governance schema
+        shell: bash
+        working-directory: ${{ runner.temp }}/operations
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote --file=docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql --config=wrangler.toml
+
+      - name: Deploy approved Operations revision
+        shell: bash
+        working-directory: ${{ runner.temp }}/operations
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          secret_file="$RUNNER_TEMP/operations-secrets.env"
+          umask 077
+          if [ -n "${AUTH_TOKEN:-}" ]; then
+            printf 'AUTH_TOKEN=%s\n' "$AUTH_TOKEN" > "$secret_file"
+            pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}"
+          else
+            echo 'AUTH_TOKEN is not configured in Foundation Actions; deploying Operations without protected authentication.'
+            pywrangler deploy --config wrangler.toml --message "github:${OPERATIONS_REF}"
+          fi
+
+      - name: Cleanup ephemeral release files
+        if: always()
+        shell: bash
+        run: rm -rf "$RUNNER_TEMP/operations" "$RUNNER_TEMP/operations-secrets.env" "$RUNNER_TEMP/git-askpass-operations.sh" "$RUNNER_TEMP/operations-app.pem" "$RUNNER_TEMP/github-app-jwt.txt" "$RUNNER_TEMP/github-app-installation.json" wrangler.production.generated.toml readiness.json frontend.html /tmp/styles.css /tmp/app.js /tmp/composer.js /tmp/lifecycle_controller.js
