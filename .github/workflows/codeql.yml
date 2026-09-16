@@ -134,6 +134,10 @@ jobs:
             'workers_dev = true' \
             'preview_urls = false' \
             '' \
+            '[assets]' \
+            'directory = "./frontend"' \
+            'not_found_handling = "single-page-application"' \
+            '' \
             '[[d1_databases]]' \
             'binding = "DB"' \
             'database_name = "research-intelligence"' \
@@ -150,6 +154,7 @@ jobs:
             > wrangler.production.generated.toml
           grep -q '^database_name = "research-intelligence"$' wrangler.production.generated.toml
           grep -Eq '^database_id = "[0-9a-fA-F-]{36}"$' wrangler.production.generated.toml
+          grep -q '^directory = "./frontend"$' wrangler.production.generated.toml
       - name: Apply remote D1 migrations
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -172,6 +177,15 @@ jobs:
           readiness=$(curl -fsS -o readiness.json -w '%{http_code}' "$base/readiness")
           test "$readiness" = '200'
           jq -e '.ready == true and .database == true' readiness.json >/dev/null
+          ui=$(curl -fsS -o frontend.html -w '%{http_code}' "$base/")
+          test "$ui" = '200'
+          grep -q '<title>Heroic AI — Chat & Research</title>' frontend.html
+          test -s frontend.html
+          for asset in styles.css app.js composer.js lifecycle_controller.js; do
+            asset_status=$(curl -fsS -o "/tmp/${asset}" -w '%{http_code}' "$base/${asset}")
+            test "$asset_status" = '200'
+            test -s "/tmp/${asset}"
+          done
           if [ -n "${AUTH_TOKEN:-}" ]; then
             diagnostic=$(curl -fsS \
               -H "Authorization: Bearer ${AUTH_TOKEN}" \
@@ -182,7 +196,7 @@ jobs:
           else
             echo 'AUTH_TOKEN GitHub secret not configured; authenticated infrastructure diagnostic skipped.'
           fi
-          rm -f readiness.json
+          rm -f readiness.json frontend.html /tmp/styles.css /tmp/app.js /tmp/composer.js /tmp/lifecycle_controller.js
 
       - name: Authenticate to GitHub App installation
         shell: bash
@@ -322,4 +336,4 @@ EOF
 
       - name: Remove ephemeral Operations checkout and authentication helper
         if: always()
-        run: rm -rf "$RUNNER_TEMP/operations" "$RUNNER_TEMP/operations-secrets.env" "$RUNNER_TEMP/git-askpass-operations.sh" "$RUNNER_TEMP/operations-app.pem" "$RUNNER_TEMP/github-app-jwt.txt" "$RUNNER_TEMP/github-app-installation.json" wrangler.production.generated.toml readiness.json
+        run: rm -rf "$RUNNER_TEMP/operations" "$RUNNER_TEMP/operations-secrets.env" "$RUNNER_TEMP/git-askpass-operations.sh" "$RUNNER_TEMP/operations-app.pem" "$RUNNER_TEMP/github-app-jwt.txt" "$RUNNER_TEMP/github-app-installation.json" wrangler.production.generated.toml readiness.json frontend.html /tmp/styles.css /tmp/app.js /tmp/composer.js /tmp/lifecycle_controller.js
