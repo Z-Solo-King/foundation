@@ -6,9 +6,9 @@ from pathlib import Path
 WORKFLOW_ROOT = Path(__file__).parents[1] / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
-
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
 CANONICAL_OPERATIONS_REF = "cf28a28cb40de527aff1cd87f96e103669635f70"
+LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 
 
 def _workflow_texts() -> dict[str, str]:
@@ -49,12 +49,12 @@ def test_production_deployment_has_one_owner():
     assert not violations, "Competing Cloudflare deployment references:\n" + "\n".join(violations)
 
 
-def test_canonical_operations_production_pin_is_single_and_current():
+def test_canonical_operations_production_pin_is_current_and_immutable():
     codeql = _workflow_texts()["codeql.yml"]
     assert f"OPERATIONS_REPOSITORY: {CANONICAL_OPERATIONS_REPOSITORY}" in codeql
     assert f"OPERATIONS_REF: {CANONICAL_OPERATIONS_REF}" in codeql
     assert codeql.count(CANONICAL_OPERATIONS_REF) == 2
-    assert "bb1d8c33e926a9752de86492e9d35f26a5f2824c" not in codeql
+    assert LEGACY_OPERATIONS_REF not in codeql
     assert "OPERATIONS_REF:" not in codeql.split("jobs:", 1)[1]
     assert 'git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git"' in codeql
     assert '"github:${OPERATIONS_REF}"' in codeql
@@ -64,18 +64,46 @@ def test_operations_checkout_uses_dedicated_github_credential():
     codeql = _workflow_texts()["codeql.yml"]
     assert "OPERATIONS_READ_TOKEN: ${{ secrets.OPERATIONS_READ_TOKEN }}" in codeql
     assert "BACKUP_GITHUB_TOKEN" not in codeql
-    assert "B2_APPLICATION_KEY" in codeql
-    assert "OPERATIONS_READ_TOKEN" in codeql
     assert "api.github.com/repos/${OPERATIONS_REPOSITORY}" in codeql
     assert "OPERATIONS_READ_TOKEN cannot access the expected private Operations repository." in codeql
 
 
-def test_operations_credential_has_explicit_purpose_in_deployment_docs():
-    deployment = (Path(__file__).parents[1] / "docs" / "DEPLOYMENT.md").read_text(encoding="utf-8")
-    assert "`OPERATIONS_READ_TOKEN`" in deployment
-    assert "Backblaze B2 credentials are separate" in deployment
-    assert "must never be stored in or substituted for `OPERATIONS_READ_TOKEN`" in deployment
+def test_backup_workflow_separates_github_and_b2_credentials():
+    backup = _workflow_texts()["b2-repository-backup.yml"]
+    assert "BACKUP_GITHUB_TOKEN: ${{ secrets.BACKUP_GITHUB_TOKEN }}" in backup
+    assert "B2_KEY_ID: ${{ secrets.B2_KEY_ID }}" in backup
+    assert "B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}" in backup
+    assert "https://api.github.com/repos/Z-Solo-King/operations" in backup
+    assert "B2 credential/bucket check: PASS" in backup
+    assert "OPERATIONS_READ_TOKEN" not in backup
+
+
+def test_credential_policy_documents_the_separation():
+    root = Path(__file__).parents[1]
+    policy = (root / "docs" / "CREDENTIAL_AND_BACKUP_AUTHORITY.md").read_text(encoding="utf-8")
+    deployment = (root / "DEPLOYMENT.md").read_text(encoding="utf-8")
+    backup = (root / "backup" / "README.md").read_text(encoding="utf-8")
+
+    for secret in (
+        "OPERATIONS_READ_TOKEN",
+        "BACKUP_GITHUB_TOKEN",
+        "B2_KEY_ID",
+        "B2_APPLICATION_KEY",
+        "CLOUDFLARE_API_TOKEN",
+        "AUTH_TOKEN",
+    ):
+        assert secret in policy
+
+    assert "B2 credentials are secrets and never belong in Git" in deployment
+    assert "`BACKUP_GITHUB_TOKEN` is a GitHub read credential" in backup
+    assert "Production deployment uses `OPERATIONS_READ_TOKEN`" in backup
     assert CANONICAL_OPERATIONS_REF in deployment
+
+
+def test_backup_manifests_cannot_claim_remote_restore_without_test():
+    workflow = _workflow_texts()["b2-repository-backup.yml"]
+    assert '"remote_b2_restore_verified": False' in workflow
+    assert "remote B2 restore verification: PASS" in workflow
 
 
 def test_required_ci_contract_supports_merge_group():
