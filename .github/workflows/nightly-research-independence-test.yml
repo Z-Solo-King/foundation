@@ -1,0 +1,68 @@
+name: nightly research independence test
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/nightly-multi-agent-research.yml'
+      - '.github/workflows/nightly-research-independence-test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  lane:
+    name: Simulated research lane ${{ matrix.lane }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: [0, 1, 2]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Execute isolated lane simulation
+        id: run
+        continue-on-error: true
+        env:
+          LANE: ${{ matrix.lane }}
+        shell: bash
+        run: |
+          set -u
+          mkdir -p .runtime
+          echo "lane=${LANE}" > ".runtime/lane-${LANE}.txt"
+          if [ "$LANE" = "0" ]; then
+            echo "intentional isolated failure" >> ".runtime/lane-${LANE}.txt"
+            exit 1
+          fi
+          echo "lane completed" >> ".runtime/lane-${LANE}.txt"
+      - name: Publish lane result
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-independence-lane-${{ matrix.lane }}
+          path: .runtime/lane-${{ matrix.lane }}.txt
+          retention-days: 7
+
+  verify:
+    name: Verify sibling lanes survived
+    if: ${{ always() }}
+    needs: lane
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download lane artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: nightly-independence-lane-*
+          path: .runtime/results
+          merge-multiple: true
+      - name: Assert isolation contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .runtime/results/lane-0.txt
+          test -f .runtime/results/lane-1.txt
+          test -f .runtime/results/lane-2.txt
+          grep -q 'intentional isolated failure' .runtime/results/lane-0.txt
+          grep -q 'lane completed' .runtime/results/lane-1.txt
+          grep -q 'lane completed' .runtime/results/lane-2.txt
+          echo 'independence contract: PASS; lane 0 failed without preventing lanes 1 and 2 from running'
