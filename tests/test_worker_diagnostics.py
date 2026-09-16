@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+import hashlib
 
 import pytest
 
@@ -101,7 +102,7 @@ class DiagnosticPersistence:
 
     async def put_artifact(self, key, content, content_type="application/octet-stream"):
         self.artifacts[key] = bytes(content)
-        return {"key": key, "sha256": worker.hashlib.sha256(content).hexdigest(), "size": len(content)}
+        return {"key": key, "sha256": hashlib.sha256(content).hexdigest(), "size": len(content)}
 
     async def get_artifact(self, key):
         return self.artifacts.get(key)
@@ -139,7 +140,7 @@ async def test_public_infrastructure_verify_success(monkeypatch):
     body, status = await worker._public_infrastructure_verify(SimpleNamespace(DB=DiagnosticDB()))
     assert status == 200
     assert body["ok"] is True
-    assert {check["name"] for check in body["checks"]} == {"public_chatbot", "cloudflare_d1", "backblaze_b2_lifecycle"}
+    assert {check["name"] for check in body["checks"]} == {"cloudflare_d1", "backblaze_b2_lifecycle"}
 
 
 @pytest.mark.asyncio
