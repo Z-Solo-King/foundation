@@ -10,12 +10,11 @@ The frontend has one owner per behavior:
 - `chat_store.js` — browser-local chat/project/saved persistence and export/import validation.
 - `chat_view.js` — sidebar, conversation, Projects, Saved, Settings rendering.
 - `workspace_view.js` — research-run status, answer, evidence, metadata, capability and metric rendering.
-- `composer.js` — Chat/Research mode, input, attachments, voice and composer events.
+- `composer.js` — Chat/Research mode, input, voice and composer events.
 - `lifecycle_controller.js` — **sole Research transport/lifecycle authority**: submission, Idempotency-Key, polling, reconnect, active-run state and durable FIFO queue data.
 - `lifecycle_queue_controls.js` — queue presentation/open/clear/remove controls only; it does not own queue state.
 - `app.js` — bootstrap/orchestration only. It must not implement a second Research transport, polling loop, queue, or active-run state.
 - `ui_guards.js` — compatibility repair only.
-- `session_bridge.js` — short-lived browser-tab session credential bridge.
 - `feedback_bridge.js` / `feedback_contract.js` — feedback UI boundary.
 
 ## Real backend integration
@@ -62,4 +61,4 @@ Those require backend/session contracts rather than UI-only behavior.
 
 ## Research lifecycle ownership
 
-`lifecycle_controller.js` is the canonical owner of Research-mode transport, polling, reconnect/recovery, durable research queueing, active-run state, and idempotency. `app.js` remains the general UI/bootstrap boundary. `lifecycle_queue_controls.js` owns queue presentation controls and `session_bridge.js` owns the browser session bridge.
+`lifecycle_controller.js` is the canonical owner of Research-mode transport, polling, reconnect/recovery, durable research queueing, active-run state, and idempotency. `app.js` remains the general UI/bootstrap boundary. `lifecycle_queue_controls.js` owns queue presentation controls only.
