@@ -10,7 +10,7 @@ SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
 CANONICAL_OPERATIONS_REF = "cf28a28cb40de527aff1cd87f96e103669635f70"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
-PRODUCTION_WORKFLOW = "production-release.yml"
+PRODUCTION_WORKFLOW = "heroic-ai-production-release.yml"
 PRODUCTION_SCRIPT = ROOT / "scripts" / "production_release.sh"
 WRANGLER = ROOT / "wrangler.toml"
 INSTALLATION_HELPER = ROOT / "scripts" / "resolve_operations_installation.py"
@@ -88,7 +88,7 @@ def test_operations_checkout_uses_github_app_installation_credential():
 
 def test_frontend_ui_keeps_one_job_and_guards_release_to_main_push_or_manual_dispatch():
     frontend = _workflow_texts()[PRODUCTION_WORKFLOW]
-    assert "name: frontend-ui" in frontend
+    assert "name: Heroic AI production release" in frontend
     assert "jobs:" in frontend
     assert "contract:" in frontend
     assert "needs:" not in frontend
