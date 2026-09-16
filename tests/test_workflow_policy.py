@@ -37,7 +37,7 @@ def test_all_third_party_actions_are_sha_pinned():
 def test_production_deployment_has_one_owner():
     texts = _workflow_texts()
     deployers = [name for name, text in texts.items() if "pywrangler deploy" in text]
-    assert deployers == ["codeql.yml"], deployers
+    assert deployers == ["production-deploy.yml"], deployers
 
     forbidden = re.compile(r"(?i)(workers\s+build|deploy\s+hook|deploy_hook|workers-builds)")
     violations = [
@@ -50,25 +50,25 @@ def test_production_deployment_has_one_owner():
 
 
 def test_canonical_operations_production_pin_is_current_and_immutable():
-    codeql = _workflow_texts()["codeql.yml"]
-    assert f"OPERATIONS_REPOSITORY: {CANONICAL_OPERATIONS_REPOSITORY}" in codeql
-    assert f"OPERATIONS_REF: {CANONICAL_OPERATIONS_REF}" in codeql
-    assert codeql.count(CANONICAL_OPERATIONS_REF) == 2
-    assert LEGACY_OPERATIONS_REF not in codeql
-    assert "OPERATIONS_REF:" not in codeql.split("jobs:", 1)[1]
-    assert 'git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git"' in codeql
-    assert '"github:${OPERATIONS_REF}"' in codeql
+    deployment = _workflow_texts()["production-deploy.yml"]
+    assert f"OPERATIONS_REPOSITORY: {CANONICAL_OPERATIONS_REPOSITORY}" in deployment
+    assert f"OPERATIONS_REF: {CANONICAL_OPERATIONS_REF}" in deployment
+    assert deployment.count(CANONICAL_OPERATIONS_REF) == 3
+    assert LEGACY_OPERATIONS_REF not in deployment
+    assert "OPERATIONS_REF:" not in deployment.split("jobs:", 1)[1]
+    assert 'git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git"' in deployment
+    assert '"github:${OPERATIONS_REF}"' in deployment
 
 
 def test_operations_checkout_uses_github_app_installation_credential():
-    codeql = _workflow_texts()["codeql.yml"]
-    assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in codeql
-    assert "OPERATIONS_APP_INSTALLATION_ID: ${{ secrets.OPERATIONS_APP_INSTALLATION_ID }}" in codeql
-    assert "OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}" in codeql
-    assert "GITHUB_APP_TOKEN" in codeql
-    assert "api.github.com/repos/${OPERATIONS_REPOSITORY}" in codeql
-    assert "GitHub App installation access: PASS" in codeql
-    assert "OPERATIONS_READ_TOKEN" not in codeql
+    deployment = _workflow_texts()["production-deploy.yml"]
+    assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in deployment
+    assert "OPERATIONS_APP_INSTALLATION_ID: ${{ secrets.OPERATIONS_APP_INSTALLATION_ID }}" in deployment
+    assert "OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}" in deployment
+    assert "GITHUB_APP_TOKEN" in deployment
+    assert "api.github.com/repos/${OPERATIONS_REPOSITORY}" in deployment
+    assert "GitHub App installation access: PASS" in deployment
+    assert "OPERATIONS_READ_TOKEN" not in deployment
 
 
 def test_required_pr_checks_emit_the_branch_protection_contract():
