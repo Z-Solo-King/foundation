@@ -6,14 +6,33 @@
 
   const connectionPill = document.getElementById('connection-pill');
   const workspace = document.getElementById('workspace');
+  const composerHint = document.querySelector('.composer-hint');
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
   fileInput.accept = 'application/json,.json';
   fileInput.hidden = true;
   document.body.append(fileInput);
 
+  const guestTestButton = document.createElement('button');
+  guestTestButton.type = 'button';
+  guestTestButton.className = 'secondary guest-test-button';
+  guestTestButton.textContent = api.state.guestTestMode ? 'Exit guest test mode' : 'Guest test mode';
+  guestTestButton.setAttribute('aria-pressed', String(Boolean(api.state.guestTestMode)));
+  if (composerHint) composerHint.prepend(guestTestButton);
+
+  function syncGuestTestButton() {
+    guestTestButton.textContent = api.state.guestTestMode ? 'Exit guest test mode' : 'Guest test mode';
+    guestTestButton.setAttribute('aria-pressed', String(Boolean(api.state.guestTestMode)));
+    guestTestButton.title = api.state.guestTestMode
+      ? 'Return to the authenticated Heroic AI backend'
+      : 'Run a local deterministic chat lifecycle without credentials or network calls';
+  }
+
   async function checkBackend() {
-    if (!api.API_BASE) {
+    if (api.state.guestTestMode) {
+      api.state.backendOk = false;
+      api.state.backendText = 'Guest test mode · local only';
+    } else if (!api.API_BASE) {
       api.state.backendOk = false;
       api.state.backendText = 'API not configured';
     } else {
@@ -30,6 +49,7 @@
       connectionPill.textContent = api.state.backendText;
       connectionPill.classList.toggle('ok', api.state.backendOk);
     }
+    syncGuestTestButton();
     api.chatView.render();
     return api.state.backendOk;
   }
@@ -72,6 +92,85 @@
       .map((message) => ({ role: message.role, text: String(message.text).slice(0, 12000) }));
   }
 
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  async function submitGuestTestChat(text, chatId) {
+    const requestId = api.uuid();
+    const responseId = `guest-test-${requestId}`;
+    const userMessage = api.addMessage('user', text, { request_id: requestId, guest_test: true, pending: true }, chatId);
+    const assistantMessage = api.addMessage('assistant', '', { request_id: requestId, response_id: responseId, guest_test: true, pending: true, streaming: true }, chatId);
+    api.state.submitting = true;
+    api.chatView.render();
+
+    try {
+      api.updateMessage(assistantMessage.id, {
+        meta: {
+          ...assistantMessage.meta,
+          status: 'streaming',
+          pending: true,
+          streaming: true,
+          guest_test: true,
+        },
+      });
+      const deltas = [
+        'Guest test mode is active. ',
+        'This is a local deterministic simulation of the authenticated chat lifecycle; no credentials, private binding, model provider, or remote request are used. ',
+        `Echo: ${String(text).slice(0, 1200)}`,
+      ];
+      let answer = '';
+      for (const delta of deltas) {
+        await sleep(15);
+        answer += delta;
+        api.updateMessage(assistantMessage.id, {
+          text: answer,
+          meta: {
+            ...assistantMessage.meta,
+            response_id: responseId,
+            status: 'streaming',
+            pending: true,
+            streaming: true,
+            guest_test: true,
+          },
+        });
+        api.chatView.renderConversation();
+      }
+      api.updateMessage(assistantMessage.id, {
+        text: answer,
+        meta: {
+          ...assistantMessage.meta,
+          response_id: responseId,
+          status: 'completed',
+          pending: false,
+          streaming: false,
+          guest_test: true,
+          result_state: 'TEST_ONLY',
+        },
+      });
+      api.updateMessage(userMessage.id, { meta: { ...(userMessage.meta || {}), pending: false, guest_test: true } });
+      const body = {
+        ok: true,
+        request_id: requestId,
+        chat_id: chatId,
+        response: {
+          response_id: responseId,
+          status: 'completed',
+          result_state: 'TEST_ONLY',
+          generation_status: 'deterministic_test',
+          guest_test: true,
+          text: answer,
+          sources: [],
+        },
+      };
+      document.dispatchEvent(new CustomEvent('rie:chat-response', { detail: { chatId, requestId, body } }));
+      return body;
+    } finally {
+      api.state.submitting = false;
+      api.chatView.render();
+    }
+  }
+
   async function consumeChatStream(response, onEvent) {
     if (!response.body) throw new Error('Heroic AI stream is unavailable in this browser');
     const reader = response.body.getReader();
@@ -102,8 +201,9 @@
   }
 
   async function submitChat(text, chatId = api.state.activeChatId) {
-    if (!api.API_BASE) throw new Error('Heroic AI API base is not configured');
     if (!chatId) throw new Error('No active Heroic AI chat is available');
+    if (api.state.guestTestMode) return submitGuestTestChat(text, chatId);
+    if (!api.API_BASE) throw new Error('Heroic AI API base is not configured');
     const requestId = api.uuid();
     const userMessage = api.addMessage('user', text, { request_id: requestId, pending: true }, chatId);
     const assistantMessage = api.addMessage('assistant', '', { request_id: requestId, pending: true, streaming: true }, chatId);
@@ -166,6 +266,15 @@
   function closeWorkspace() { workspace?.classList.remove('open'); }
 
   document.addEventListener('click', (event) => {
+    if (event.target.closest('.guest-test-button')) {
+      event.preventDefault();
+      if (api.state.guestTestMode) api.disableGuestTestMode();
+      else api.enableGuestTestMode();
+      syncGuestTestButton();
+      void checkBackend();
+      api.chatView.toast(api.state.guestTestMode ? 'Guest test mode enabled. No network or credentials are used.' : 'Guest test mode disabled. Authenticated backend mode restored.');
+      return;
+    }
     if (event.target.closest('[data-action="toggle-workspace"]')) { event.preventDefault(); openWorkspace(); return; }
     if (event.target.closest('[data-action="close-workspace"]')) { event.preventDefault(); closeWorkspace(); return; }
     const start = event.target.closest('[data-starter]');
@@ -199,9 +308,11 @@
   api.openWorkspace = openWorkspace;
   api.closeWorkspace = closeWorkspace;
   api.submitChat = submitChat;
+  api.submitGuestTestChat = submitGuestTestChat;
 
   api.load();
   api.chatView.render();
+  syncGuestTestButton();
   void checkBackend();
   document.getElementById('prompt')?.focus();
 })();
