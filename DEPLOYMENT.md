@@ -22,7 +22,13 @@ The workflow also owns the protected Operations handoff. Production is pinned to
 
 `cf28a28cb40de527aff1cd87f96e103669635f70`
 
-The private Operations checkout uses the purpose-specific GitHub Actions secret `OPERATIONS_READ_TOKEN`. This secret is for reading the private Operations repository for deployment; it is not a B2 credential and must not be reused as one.
+The private Operations checkout uses the purpose-specific GitHub App installation credential set:
+
+- `OPERATIONS_APP_ID`;
+- `OPERATIONS_APP_INSTALLATION_ID`;
+- `OPERATIONS_APP_PRIVATE_KEY`.
+
+The workflow mints a short-lived installation token at runtime, verifies access to the private Operations repository and exact approved revision, then uses that token for checkout. The generated token and key material are masked/removed and never printed. These credentials are for the Foundation deployment handoff only; they are not B2 or Cloudflare credentials.
 
 The canonical credential and backup policy is `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md`.
 
@@ -30,8 +36,10 @@ The canonical credential and backup policy is `docs/CREDENTIAL_AND_BACKUP_AUTHOR
 
 | Secret | Purpose | Owner | Not interchangeable with |
 | --- | --- | --- | --- |
-| `OPERATIONS_READ_TOKEN` | Read private Operations for production deployment | Foundation deployment workflow | `BACKUP_GITHUB_TOKEN`, B2 secrets, Cloudflare secrets |
-| `BACKUP_GITHUB_TOKEN` | Read/mirror both repositories for B2 backup | Foundation backup workflow | `OPERATIONS_READ_TOKEN`, B2 secrets |
+| `OPERATIONS_APP_ID` | Identify the GitHub App used for private Operations deployment access | Foundation deployment workflow | B2 secrets, Cloudflare secrets |
+| `OPERATIONS_APP_INSTALLATION_ID` | Select the installed read-only Operations authorization | Foundation deployment workflow | B2 secrets, Cloudflare secrets |
+| `OPERATIONS_APP_PRIVATE_KEY` | Sign the short-lived GitHub App JWT | Foundation deployment workflow | B2 secrets, Cloudflare secrets |
+| `BACKUP_GITHUB_TOKEN` | Read/mirror both repositories for B2 backup | Foundation backup workflow | Operations deployment credentials, B2 secrets |
 | `B2_KEY_ID` | B2 API authentication | B2 backup boundary | GitHub tokens, Cloudflare tokens |
 | `B2_APPLICATION_KEY` | B2 backup/restore authorization | B2 backup boundary | GitHub tokens, Cloudflare tokens |
 | `CLOUDFLARE_API_TOKEN` | Cloudflare deployment/API access | Cloudflare deployment boundary | GitHub tokens, B2 secrets |
@@ -42,7 +50,7 @@ Do not infer credential purpose from the fact that multiple secrets are consumed
 
 ## Operations deployment gate
 
-Before the private Operations checkout, the workflow must fail closed unless the deployment credential is present and accepted by GitHub for `Z-Solo-King/operations`.
+Before the private Operations checkout, the workflow must fail closed unless the GitHub App credentials are present, the App JWT is valid, the installation-token exchange succeeds, and the resulting installation token can read `Z-Solo-King/operations`.
 
 The checkout must then fetch and verify the exact approved revision `cf28a28cb40de527aff1cd87f96e103669635f70`. The workflow must not silently track `operations/main`, substitute an older pin, or deploy a mutable branch reference.
 
