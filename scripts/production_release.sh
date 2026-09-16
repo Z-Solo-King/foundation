@@ -9,7 +9,7 @@ cleanup() {
   rm -rf "$RUNNER_TEMP/operations" "$RUNNER_TEMP/operations-secrets.env" \
     "$RUNNER_TEMP/git-askpass-operations.sh" "$RUNNER_TEMP/operations-app.pem" \
     "$RUNNER_TEMP/github-app-jwt.txt" "$RUNNER_TEMP/github-app-installation.json" \
-    wrangler.production.generated.toml readiness.json frontend.html \
+    wrangler.production.generated.toml health.json readiness.json frontend.html \
     /tmp/styles.css /tmp/app.js /tmp/composer.js /tmp/lifecycle_controller.js
 }
 trap cleanup EXIT
@@ -55,6 +55,7 @@ printf '%s\n' \
   '' \
   '[assets]' \
   'directory = "./frontend"' \
+  'binding = "ASSETS"' \
   'not_found_handling = "single-page-application"' \
   '' \
   '[[d1_databases]]' \
@@ -74,27 +75,46 @@ printf '%s\n' \
 
 grep -q '^database_name = "research-intelligence"$' wrangler.production.generated.toml
 grep -q '^directory = "./frontend"$' wrangler.production.generated.toml
+grep -q '^binding = "ASSETS"$' wrangler.production.generated.toml
 npx --yes wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
 pywrangler deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}"
 
-health=$(curl -fsS "$BASE_URL/health")
-jq -e '.ok == true' <<<"$health" >/dev/null
-readiness=$(curl -fsS -o readiness.json -w '%{http_code}' "$BASE_URL/readiness")
+# Endpoint-specific smoke diagnostics. Never let curl's -f hide which URL failed.
+health_status=$(curl -sS -o health.json -w '%{http_code}' "$BASE_URL/health")
+echo "GET /health -> HTTP ${health_status}"
+cat health.json
+test "$health_status" = '200'
+jq -e '.ok == true' health.json >/dev/null
+
+readiness=$(curl -sS -o readiness.json -w '%{http_code}' "$BASE_URL/readiness")
+echo "GET /readiness -> HTTP ${readiness}"
+cat readiness.json
 test "$readiness" = '200'
 jq -e '.ready == true and .database == true' readiness.json >/dev/null
-ui=$(curl -fsS -o frontend.html -w '%{http_code}' "$BASE_URL/")
+
+ui=$(curl -sS -o frontend.html -w '%{http_code}' "$BASE_URL/")
+echo "GET / -> HTTP ${ui}"
 test "$ui" = '200'
 grep -q '<title>Heroic AI — Chat & Research</title>' frontend.html
 test -s frontend.html
+
 for asset in styles.css app.js composer.js lifecycle_controller.js; do
-  asset_status=$(curl -fsS -o "/tmp/${asset}" -w '%{http_code}' "$BASE_URL/${asset}")
+  asset_status=$(curl -sS -o "/tmp/${asset}" -w '%{http_code}' "$BASE_URL/${asset}")
+  echo "GET /${asset} -> HTTP ${asset_status}"
   test "$asset_status" = '200'
   test -s "/tmp/${asset}"
 done
+
 if [ -n "${AUTH_TOKEN:-}" ]; then
-  diagnostic=$(curl -fsS -H "Authorization: Bearer ${AUTH_TOKEN}" -H 'Content-Type: application/json' \
-    -d '{"operation":"infrastructure_verify_public_test"}' "$BASE_URL/api/v1/chatbot/diagnostic")
-  jq -e '.ok == true and .status == "ok" and .checks.public_chatbot == true and .checks.cloudflare_d1 == true and .checks.backblaze_b2_lifecycle == true' <<<"$diagnostic" >/dev/null
+  diagnostic_status=$(curl -sS -o diagnostic.json -w '%{http_code}' \
+    -H "Authorization: Bearer ${AUTH_TOKEN}" \
+    -H 'Content-Type: application/json' \
+    -d '{"operation":"infrastructure_verify_public_test"}' \
+    "$BASE_URL/api/v1/chatbot/diagnostic")
+  echo "POST /api/v1/chatbot/diagnostic -> HTTP ${diagnostic_status}"
+  cat diagnostic.json
+  test "$diagnostic_status" = '200'
+  jq -e '.ok == true and .status == "ok" and .checks.public_chatbot == true and .checks.cloudflare_d1 == true and .checks.backblaze_b2_lifecycle == true' diagnostic.json >/dev/null
 else
   echo 'AUTH_TOKEN GitHub secret not configured; authenticated infrastructure diagnostic skipped.'
 fi
