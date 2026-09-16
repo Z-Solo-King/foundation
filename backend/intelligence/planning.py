@@ -12,6 +12,24 @@ DEFAULT_STAGES = (
     "synthesize_answer",
 )
 
+SOURCE_FAMILY_ALIASES: dict[str, str] = {
+    "bilibili": "chinese_communities",
+    "zhihu": "chinese_communities",
+    "baidu_tieba": "chinese_communities",
+    "douban": "chinese_communities",
+    "ptt": "chinese_communities",
+    "regional_communities": "social_communities",
+    "forums": "social_communities",
+    "social": "social_communities",
+    "social_media": "social_media",
+    "x_twitter": "social_media",
+    "twitter": "social_media",
+    "instagram": "social_media",
+    "facebook": "social_media",
+    "tiktok": "social_media",
+    "meta_ai": "social_media",
+}
+
 CATEGORY_REQUIRED_SOURCE_FAMILIES: dict[str, tuple[str, ...]] = {
     "buying_guide": ("amazon", "flipkart", "reddit", "retailers", "oem"),
     "best_product": ("amazon", "flipkart", "reddit", "retailers", "professional_reviews"),
@@ -30,11 +48,16 @@ CATEGORY_REQUIRED_SOURCE_FAMILIES: dict[str, tuple[str, ...]] = {
 }
 
 
+def _canonical_source_family(value: str) -> str:
+    normalized = value.strip().casefold()
+    return SOURCE_FAMILY_ALIASES.get(normalized, normalized)
+
+
 def _source_families(question: str, category: str | None = None, explicit: tuple[str, ...] = ()) -> tuple[str, ...]:
     text = question.casefold()
     families: set[str] = {"web_search", "retailers", "oem"}
-    families.update(CATEGORY_REQUIRED_SOURCE_FAMILIES.get(category or "", ()))
-    families.update(item.strip() for item in explicit if item.strip())
+    families.update(_canonical_source_family(item) for item in CATEGORY_REQUIRED_SOURCE_FAMILIES.get(category or "", ()))
+    families.update(_canonical_source_family(item) for item in explicit if item.strip())
 
     keyword_groups = {
         "reddit": ("reddit", "subreddit", "owner reports", "ownership"),
@@ -57,7 +80,7 @@ def _source_families(question: str, category: str | None = None, explicit: tuple
     }
     for family, terms in keyword_groups.items():
         if any(term in text for term in terms):
-            families.add(family)
+            families.add(_canonical_source_family(family))
 
     return tuple(sorted(families))
 
