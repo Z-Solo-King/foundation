@@ -75,6 +75,7 @@ def test_operations_credential_has_explicit_purpose_in_deployment_docs():
     assert "`OPERATIONS_READ_TOKEN`" in deployment
     assert "Backblaze B2 credentials are separate" in deployment
     assert "must never be stored in or substituted for `OPERATIONS_READ_TOKEN`" in deployment
+    assert CANONICAL_OPERATIONS_REF in deployment
 
 
 def test_required_ci_contract_supports_merge_group():
