@@ -1,16 +1,12 @@
 name: B2 repository backup
 
-on:
-  schedule:
-    # 02:00 IST = 20:30 UTC, inside the planned overnight window.
-    - cron: "30 20 * * *"
-  workflow_dispatch:
+'on':
   push:
-    branches: [main]
-    paths:
-      - '.github/workflows/b2-repository-backup.yml'
-      - 'backup/**'
-      - 'docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md'
+    branches:
+      - main
+  workflow_dispatch:
+  schedule:
+    - cron: "30 20 * * *"
 
 permissions:
   contents: read
@@ -19,9 +15,15 @@ concurrency:
   group: b2-repository-backup
   cancel-in-progress: false
 
+env:
+  B2_ENDPOINT: https://s3.eu-central-003.backblazeb2.com
+  AWS_DEFAULT_REGION: us-east-1
+  AWS_EC2_METADATA_DISABLED: 'true'
+
 jobs:
   backup:
     name: Mirror repositories to B2
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -35,7 +37,7 @@ jobs:
           command -v aws >/dev/null || { echo 'AWS CLI is unavailable on the runner'; exit 1; }
           echo 'backup tools: PASS'
 
-      - name: Verify GitHub backup credential
+      - name: Verify required GitHub backup credential
         shell: bash
         env:
           BACKUP_GITHUB_TOKEN: ${{ secrets.BACKUP_GITHUB_TOKEN }}
@@ -50,31 +52,29 @@ jobs:
           visibility=$(python - "$response" <<'PY'
 import json
 import sys
-print(json.loads(sys.argv[1]).get("visibility", ""))
+print(json.loads(sys.argv[1]).get('visibility', ''))
 PY
 )
           test "$visibility" = 'private' || { echo 'BACKUP_GITHUB_TOKEN is not authorized for the private Operations repository'; exit 1; }
           echo 'BACKUP_GITHUB_TOKEN purpose check: PASS (GitHub repository access)'
 
-      - name: Verify B2 backup credentials
+      - name: Verify required B2 credentials
         shell: bash
         env:
           B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
           B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
           B2_BUCKET: ${{ secrets.B2_BUCKET }}
-          B2_ENDPOINT: https://s3.eu-central-003.backblazeb2.com
           AWS_ACCESS_KEY_ID: ${{ secrets.B2_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_APPLICATION_KEY }}
-          AWS_DEFAULT_REGION: us-east-1
-          AWS_EC2_METADATA_DISABLED: 'true'
         run: |
           set -euo pipefail
           test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub secret'; exit 1; }
           test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub secret'; exit 1; }
           test -n "${B2_BUCKET:-}" || { echo 'Missing B2_BUCKET GitHub secret'; exit 1; }
-          metadata=$(aws s3api head-bucket \
+          aws s3api head-bucket \
             --bucket "$B2_BUCKET" \
-            --endpoint-url "$B2_ENDPOINT" 2>&1) || { echo 'B2 bucket credential/bucket check failed'; echo "$metadata"; exit 1; }
+            --endpoint-url "$B2_ENDPOINT" \
+            >/dev/null
           echo 'B2 credential/bucket check: PASS'
 
       - name: Configure private GitHub clone credentials
@@ -85,12 +85,14 @@ PY
           set -euo pipefail
           askpass="$RUNNER_TEMP/git-askpass-backup.sh"
           umask 077
-          printf '%s\n' '#!/bin/sh' > "$askpass"
-          printf '%s\n' 'case "$1" in' >> "$askpass"
-          printf '%s\n' '  *Username*) printf "%s\\n" x-access-token ;;' >> "$askpass"
-          printf '%s\n' '  *Password*) printf "%s\\n" "$BACKUP_GITHUB_TOKEN" ;;' >> "$askpass"
-          printf '%s\n' '  *) printf "%s\\n" "" ;;' >> "$askpass"
-          printf '%s\n' 'esac' >> "$askpass"
+          cat > "$askpass" <<'EOF'
+#!/bin/sh
+case "$1" in
+  *Username*) printf '%s\n' x-access-token ;;
+  *Password*) printf '%s\n' "$BACKUP_GITHUB_TOKEN" ;;
+  *) printf '%s\n' '' ;;
+esac
+EOF
           chmod 700 "$askpass"
           echo "GIT_ASKPASS=$askpass" >> "$GITHUB_ENV"
           echo 'GIT_TERMINAL_PROMPT=0' >> "$GITHUB_ENV"
@@ -133,31 +135,31 @@ import sys
 
 path, repo, commit, tree, created, archive, sha256, size, refs = sys.argv[1:]
 record = {
-    "schema": "repository-backup/v2",
-    "repository": f"Z-Solo-King/{repo}",
-    "visibility": "public" if repo == "foundation" else "private",
-    "ref": "main",
-    "commit": commit,
-    "tree": tree,
-    "created_at": created,
-    "archive": archive,
-    "sha256": sha256,
-    "size_bytes": int(size),
-    "ref_count": int(refs),
+    'schema': 'repository-backup/v2',
+    'repository': f'Z-Solo-King/{repo}',
+    'visibility': 'public' if repo == 'foundation' else 'private',
+    'ref': 'main',
+    'commit': commit,
+    'tree': tree,
+    'created_at': created,
+    'archive': archive,
+    'sha256': sha256,
+    'size_bytes': int(size),
+    'ref_count': int(refs),
     "restore_test": {
         "local_git_fsck": True,
         "main_ref_verified": True,
         "remote_b2_restore_verified": False,
     },
 }
-with open(path, "w", encoding="utf-8") as handle:
-    json.dump(record, handle, sort_keys=True, separators=(",", ":"))
+with open(path, 'w', encoding='utf-8') as handle:
+    json.dump(record, handle, sort_keys=True, separators=(',', ':'))
 PY
-            printf '%s\t%s\t%s\t%s\n' \
-              "repository-backup/$(basename "$archive")" "$archive" "$sha256" "$size" \
+            printf 'repository-backup/%s\t%s\t%s\t%s\n' \
+              "$(basename "$archive")" "$archive" "$sha256" "$size" \
               >> backup-output/uploaded.tsv
-            printf '%s\t%s\t%s\t%s\n' \
-              "repository-backup/$(basename "$manifest")" "$manifest" "$(sha256sum "$manifest" | cut -d' ' -f1)" "$(stat -c '%s' "$manifest")" \
+            printf 'repository-backup/%s\t%s\t%s\t%s\n' \
+              "$(basename "$manifest")" "$manifest" "$(sha256sum "$manifest" | cut -d' ' -f1)" "$(stat -c '%s' "$manifest")" \
               >> backup-output/uploaded.tsv
             echo "${repo} archive + manifest: PASS"
           done
@@ -168,11 +170,8 @@ PY
           B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
           B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
           B2_BUCKET: ${{ secrets.B2_BUCKET }}
-          B2_ENDPOINT: https://s3.eu-central-003.backblazeb2.com
           AWS_ACCESS_KEY_ID: ${{ secrets.B2_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_APPLICATION_KEY }}
-          AWS_DEFAULT_REGION: us-east-1
-          AWS_EC2_METADATA_DISABLED: 'true'
         run: |
           set -euo pipefail
           while IFS=$'\t' read -r key file _sha256 _size; do
@@ -193,11 +192,8 @@ PY
           B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
           B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
           B2_BUCKET: ${{ secrets.B2_BUCKET }}
-          B2_ENDPOINT: https://s3.eu-central-003.backblazeb2.com
           AWS_ACCESS_KEY_ID: ${{ secrets.B2_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_APPLICATION_KEY }}
-          AWS_DEFAULT_REGION: us-east-1
-          AWS_EC2_METADATA_DISABLED: 'true'
         run: |
           set -euo pipefail
           while IFS=$'\t' read -r key file expected_sha256 expected_size; do
@@ -208,7 +204,7 @@ PY
             remote_size=$(python - "$metadata" <<'PY'
 import json
 import sys
-print(json.loads(sys.argv[1])["ContentLength"])
+print(json.loads(sys.argv[1])['ContentLength'])
 PY
 )
             test "$remote_size" = "$expected_size" || { echo "Size mismatch: $key"; exit 1; }
@@ -224,17 +220,15 @@ PY
           B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
           B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
           B2_BUCKET: ${{ secrets.B2_BUCKET }}
-          B2_ENDPOINT: https://s3.eu-central-003.backblazeb2.com
           AWS_ACCESS_KEY_ID: ${{ secrets.B2_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_APPLICATION_KEY }}
-          AWS_DEFAULT_REGION: us-east-1
-          AWS_EC2_METADATA_DISABLED: 'true'
         run: |
           set -euo pipefail
           while IFS=$'\t' read -r key _file expected_sha256 _size; do
             case "$key" in
               repository-backup/*.tar.gz)
                 name=$(basename "$key")
+                mkdir -p remote-restore
                 aws s3api get-object \
                   --bucket "$B2_BUCKET" \
                   --key "$key" \
