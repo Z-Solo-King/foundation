@@ -114,7 +114,7 @@ def test_credential_policy_documents_the_separation():
 
     assert "B2 credentials are secrets and never belong in Git" in deployment
     assert "`BACKUP_GITHUB_TOKEN` is a GitHub read credential" in backup
-    assert "Production deployment uses the GitHub App installation credential, not `BACKUP_GITHUB_TOKEN`." in backup
+    assert "Production deployment uses the purpose-specific GitHub App installation credential set" in backup
     assert CANONICAL_OPERATIONS_REF in deployment
 
 
