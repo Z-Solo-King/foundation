@@ -62,7 +62,7 @@ def test_chat_stream_proxy_preserves_sse_response():
     class Request:
         headers = {"Authorization": "Bearer user", "Idempotency-Key": "req-2"}
 
-    upstream, body, status = asyncio.run(worker._operations_chat(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request(), stream=True))
+    upstream, body, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request()))
     assert upstream.status == 200
     assert body is None
     assert status == 200
