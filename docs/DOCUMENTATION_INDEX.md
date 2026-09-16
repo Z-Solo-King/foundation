@@ -11,9 +11,10 @@
 4. `docs/DOCUMENTATION_HYGIENE.md` — documentation maintenance rules.
 5. `docs/FAMILY_CONTRACT.json` — family ownership contract.
 6. `docs/FAMILY_ARCHITECTURE.md` — repository roles and dependency direction.
-7. `docs/PUBLIC_DETERMINISTIC_CORE.md` — public implementation boundary.
-8. `docs/RUN_RECORD_PUBLIC_BOUNDARY.md` — public/private run-record boundary.
-9. `DEPLOYMENT.md` and `.github/workflows/codeql.yml` — public deployment path.
+7. `docs/FAMILY_SYNC_STANDARD.md` — uniform cross-repository synchronization, status and evidence format.
+8. `docs/PUBLIC_DETERMINISTIC_CORE.md` — public implementation boundary.
+9. `docs/RUN_RECORD_PUBLIC_BOUNDARY.md` — public/private run-record boundary.
+10. `DEPLOYMENT.md` and `.github/workflows/codeql.yml` — public deployment path.
 
 ## Source of truth
 
