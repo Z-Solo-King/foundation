@@ -12,6 +12,7 @@ CANONICAL_OPERATIONS_REF = "cf28a28cb40de527aff1cd87f96e103669635f70"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 PRODUCTION_WORKFLOW = "frontend-ui.yml"
 PRODUCTION_SCRIPT = ROOT / "scripts" / "production_release.sh"
+WRANGLER = ROOT / "wrangler.toml"
 
 
 def _workflow_texts() -> dict[str, str]:
@@ -85,16 +86,30 @@ def test_frontend_ui_keeps_one_job_and_guards_release_to_main_push():
     assert "actions: write" not in frontend
 
 
-def test_production_script_is_fail_closed_and_asserts_frontend_assets():
+def test_public_worker_static_assets_binding_is_declared():
+    wrangler = WRANGLER.read_text(encoding="utf-8")
+    assert '[assets]' in wrangler
+    assert 'directory = "./frontend"' in wrangler
+    assert 'binding = "ASSETS"' in wrangler
+    assert 'not_found_handling = "single-page-application"' in wrangler
+
+    worker = (ROOT / "worker.py").read_text(encoding="utf-8")
+    assert 'getattr(self.env, "ASSETS", None)' in worker
+    assert "return await assets.fetch(request)" in worker
+
+
+def test_production_script_preserves_static_asset_binding_and_diagnostic_smokes():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert "set -euo pipefail" in deployment
     assert "python -m pip install pytest pytest-asyncio coverage workers-py workers-runtime-sdk uv" in deployment
     assert "uv --version" in deployment
-    assert "health=$(curl -fsS" in deployment
-    assert "readiness=$(curl -fsS" in deployment
+    assert 'binding = "ASSETS"' in deployment
+    assert 'health_status=$(curl -sS -o health.json' in deployment
+    assert 'readiness=$(curl -sS -o readiness.json' in deployment
+    assert 'ui=$(curl -sS -o frontend.html' in deployment
+    assert 'for asset in styles.css app.js composer.js lifecycle_controller.js; do' in deployment
+    assert 'echo "GET /${asset} -> HTTP ${asset_status}"' in deployment
     assert "<title>Heroic AI — Chat & Research</title>" in deployment
-    for asset in ("styles.css", "app.js", "composer.js", "lifecycle_controller.js"):
-        assert asset in deployment
 
 
 def test_required_pr_checks_emit_the_branch_protection_contract():

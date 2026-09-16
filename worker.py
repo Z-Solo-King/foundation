@@ -249,4 +249,10 @@ class Default(WorkerEntrypoint):
                 return Response.json({"ok": False, "error": f"execution/persistence failure: {exc}"}, status=503)
             return Response.json({"ok": True, "run_id": run_id, "metadata": {**result.metadata, "execution_mode": "source_url_ingestion"}, "sources": sources})
 
+        # API routes are handled above; delegate everything else to Cloudflare's
+        # Static Assets binding so index.html and the SPA fallback are served by
+        # the asset subsystem instead of being turned into a JSON 404.
+        assets = getattr(self.env, "ASSETS", None)
+        if assets is not None:
+            return await assets.fetch(request)
         return Response.json({"ok": False, "error": "not found"}, status=404)
