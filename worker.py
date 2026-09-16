@@ -48,8 +48,6 @@ async def _public_infrastructure_verify(env):
 
 
 async def _ingest_sources(env, run_id, req):
-    # Keep dependency injection at the compatibility boundary so existing tests can
-    # monkeypatch this module's fetcher/persistence symbols without changing semantics.
     return await ingest_sources(env, run_id, req, fetcher=fetch_public_url, persistence_cls=CloudflarePersistence)
 
 
@@ -57,7 +55,7 @@ async def _get_run(env, run_id):
     return await get_run(env, run_id)
 
 
-async def _chat_headers(request):
+def _chat_headers(request):
     headers = {"Content-Type": "application/json"}
     token = _bearer_token(request)
     if token:
@@ -68,24 +66,35 @@ async def _chat_headers(request):
     return headers
 
 
-async def _operations_chat(env, payload, request, stream=False):
-    """Proxy Heroic AI chat only through the configured private service binding."""
+async def _operations_chat(env, payload, request):
+    """Proxy synchronous Heroic AI chat through the configured private binding."""
+    operations = getattr(env, "OPERATIONS", None)
+    if operations is None:
+        return {"ok": False, "error": "chat_backend_unavailable", "status": "unavailable"}, 503
+    try:
+        upstream = await operations.fetch(
+            "https://chat/v1/chat",
+            {"method": "POST", "headers": _chat_headers(request), "body": json.dumps(payload)},
+        )
+        body = await upstream.json()
+        if not isinstance(body, dict):
+            return {"ok": False, "error": "invalid_private_chat_response"}, 503
+        return body, upstream.status
+    except Exception:
+        return {"ok": False, "error": "chat_backend_unavailable"}, 503
+
+
+async def _operations_chat_stream(env, payload, request):
+    """Proxy the private chatbot's SSE stream without exposing its topology."""
     operations = getattr(env, "OPERATIONS", None)
     if operations is None:
         return None, {"ok": False, "error": "chat_backend_unavailable", "status": "unavailable"}, 503
-    headers = await _chat_headers(request)
-    target = "https://chat/v1/chat/stream" if stream else "https://chat/v1/chat"
     try:
         upstream = await operations.fetch(
-            target,
-            {"method": "POST", "headers": headers, "body": json.dumps(payload)},
+            "https://chat/v1/chat/stream",
+            {"method": "POST", "headers": _chat_headers(request), "body": json.dumps(payload)},
         )
-        if stream:
-            return upstream, None, upstream.status
-        body = await upstream.json()
-        if not isinstance(body, dict):
-            return None, {"ok": False, "error": "invalid_private_chat_response"}, 503
-        return None, body, upstream.status
+        return upstream, None, upstream.status
     except Exception:
         return None, {"ok": False, "error": "chat_backend_unavailable"}, 503
 
@@ -140,7 +149,7 @@ class Default(WorkerEntrypoint):
                 req.validate()
             except (TypeError, ValueError) as exc:
                 return Response.json({"ok": False, "error": str(exc)}, status=400)
-            upstream, body, status = await _operations_chat(self.env, payload, request, stream=True)
+            upstream, body, status = await _operations_chat_stream(self.env, payload, request)
             if upstream is not None:
                 return Response(upstream.body, status=upstream.status, headers={"Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
             return Response.json(body, status=status)
@@ -156,7 +165,7 @@ class Default(WorkerEntrypoint):
                 req.validate()
             except (TypeError, ValueError) as exc:
                 return Response.json({"ok": False, "error": str(exc)}, status=400)
-            _, body, status = await _operations_chat(self.env, payload, request)
+            body, status = await _operations_chat(self.env, payload, request)
             return Response.json(body, status=status)
 
         if request.method == "POST" and path.endswith("/api/v1/chatbot/diagnostic"):
