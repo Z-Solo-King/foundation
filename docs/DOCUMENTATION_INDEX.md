@@ -14,7 +14,7 @@
 7. `docs/FAMILY_SYNC_STANDARD.md` — uniform cross-repository synchronization, status and evidence format.
 8. `docs/PUBLIC_DETERMINISTIC_CORE.md` — public implementation boundary.
 9. `docs/RUN_RECORD_PUBLIC_BOUNDARY.md` — public/private run-record boundary.
-10. `DEPLOYMENT.md` and `.github/workflows/codeql.yml` — public deployment path.
+10. `DEPLOYMENT.md` and `.github/workflows/heroic-ai-production-release.yml` — public deployment path.
 
 ## Source of truth
 
@@ -46,8 +46,8 @@ The generic filenames must not be recreated merely to collect edge cases. Test r
 
 ## Deployment documentation
 
-`DEPLOYMENT.md` is the detailed deployment guide. It records the approved workflow and the evidence rules for distinguishing a deployment attempt from current production verification.
+`DEPLOYMENT.md` is the detailed deployment guide. It records `.github/workflows/heroic-ai-production-release.yml` and the evidence rules for distinguishing a deployment attempt from current production verification.
 
 ## Documentation updates
 
-When contracts, ownership, workflows, dependency direction or production gates change, update the affected canonical document in the same change set. Mark dated continuity material as historical.
+When contracts, ownership, workflows, dependency direction or production gates change, update the affected canonical document in the same change set. Mark dated continuity material as historical. When a production workflow filename or ownership boundary changes, update both this navigation entry and `DEPLOYMENT.md` in the same PR.
