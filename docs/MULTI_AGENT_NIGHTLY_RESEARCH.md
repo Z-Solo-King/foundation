@@ -1,46 +1,31 @@
 # Multi-agent nightly research
 
+Heroic AI is the product. This workflow is the bounded overnight maintenance and learning capability behind it.
+
 ## Capacity model
 
-The nightly research system is intentionally split into three independent research lanes.
-Each lane contains eight one-hour research programs, giving 24 distinct program slots per night.
-Each program has exactly 10 logical agent roles:
+The nightly research system runs three independent lanes in parallel. Each lane contains eight research programs, giving 24 distinct program slots per night.
 
-1. research lead
-2. source discovery
-3. primary evidence
-4. secondary evidence
-5. adversarial research
-6. temporal analysis
-7. technical analysis
-8. community/regional research
-9. reconciliation
-10. evaluation
+Each program has ten logical roles: research lead, source discovery, primary evidence, secondary evidence, adversarial research, temporal analysis, technical analysis, community/regional research, reconciliation, and evaluation. Logical roles are capacity units, not one GitHub Actions job per role.
 
-The first eight agents form the evidence phase. Reconciliation and evaluation consume the combined evidence and produce gaps/follow-up questions.
-
-The program-level cap is 6 simultaneously active agents per lane. The coordinator also has a global cap of 18 active agent tasks. This allows three research programs to run concurrently without turning each logical agent into a separate GitHub Actions job.
+Lane capacities are 6, 6 and 8 active agents. The aggregate cap is 20 active agent tasks. This stays within the intended runner envelope without turning every logical agent into a separate job.
 
 ## GitHub Actions layout
 
-GitHub's current standard hosted-runner concurrency for the Free plan is 20 concurrent jobs, while an individual job can run for up to 6 hours. Standard hosted runners are free in public repositories. The nightly workflow therefore uses six jobs total: three lanes for 01:00-05:00 IST followed by three dependent jobs for 05:00-09:00 IST.
+The scheduled workflow starts at **01:00 IST** (`19:30 UTC` on the previous day) and starts all three lanes in parallel. Each lane validates exactly eight program IDs (`laneN-slot0` through `laneN-slot7`). A final summary combines the three lane artifacts and rejects the run unless all 24 programs are present.
 
-This is deliberately different from a 30-runner design: the 30-agent figure is a logical-agent capacity target, not a GitHub runner count.
+Each lane has a bounded job timeout so the run is intended to finish before the **09:00 IST** maintenance-window boundary. There is no serial 01:00-05:00 / 05:00-09:00 dependency; the former scheduler could extend past the window.
+
+The scheduled workflow fails closed when live executor configuration is missing. It does not silently substitute a deterministic dry-run.
 
 ## AI boundary
 
-`benchmark/multi_agent/llm.py` provides a provider-neutral OpenAI-compatible chat adapter. It is only used when these environment variables are present:
+`benchmark/multi_agent/llm.py` provides a provider-neutral live executor adapter. It is only invoked when the scheduled workflow receives an explicit endpoint, API key and model through GitHub Actions secrets. The adapter does not claim that an LLM browsed a source; retrieval must be injected explicitly and remain subject to existing source-policy and cost gates.
 
-- `RESEARCH_LLM_ENDPOINT`
-- `RESEARCH_LLM_API_KEY`
-- `RESEARCH_LLM_MODEL`
+## Research flow
 
-No production secrets are created or modified by this repository change. Without those variables, the scheduler uses its deterministic orchestration executor so CI can validate the multi-agent contract without making paid or unverified model calls.
+`3 parallel lanes -> 8 programs/lane -> 24 programs/night -> bounded logical agents -> evidence -> reconciliation/evaluation -> improvement findings -> follow-up queue`
 
-The adapter does not claim that an LLM has browsed a source. Actual web/search/retrieval adapters must be injected explicitly and must obey the research engine's existing source policy and cost gates.
+The target output includes benchmark regressions, ecosystem/platform knowledge, new techniques, alternatives, regression-test candidates, and cost/token-efficiency observations.
 
-## Nightly research flow
-
-`3 lanes -> 8 programs/lane -> 24 programs/night -> 10 logical agents/program -> 8 evidence agents in parallel -> reconciler + evaluator -> findings -> follow-up questions -> next-night research queue`
-
-The target output is not only an answer. Every program should yield benchmark regressions, new ecosystem/platform knowledge, new techniques, alternatives, new regression-test candidates, and cost/token-efficiency observations.
+For the exact schedule, artifact contract, coverage assertions and acceptance gates, see `docs/NIGHTLY_RESEARCH_RUNBOOK.md` and `.github/workflows/nightly-multi-agent-research.yml`.
