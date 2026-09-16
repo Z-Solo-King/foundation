@@ -43,6 +43,31 @@ def test_chat_proxy_forwards_auth_and_idempotency():
     assert options["headers"]["Idempotency-Key"] == "req-1"
 
 
+def test_chat_stream_proxy_preserves_sse_response():
+    import worker
+
+    class Body:
+        pass
+
+    class Response:
+        status = 200
+        body = Body()
+
+    class Binding:
+        async def fetch(self, url, options):
+            assert url == "https://chat/v1/chat/stream"
+            assert options["headers"]["Idempotency-Key"] == "req-2"
+            return Response()
+
+    class Request:
+        headers = {"Authorization": "Bearer user", "Idempotency-Key": "req-2"}
+
+    upstream, body, status = asyncio.run(worker._operations_chat(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request(), stream=True))
+    assert upstream.status == 200
+    assert body is None
+    assert status == 200
+
+
 def test_public_worker_chat_route_requires_auth_and_validates_payload():
     import worker
 
