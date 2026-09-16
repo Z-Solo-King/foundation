@@ -74,6 +74,7 @@ def test_backup_workflow_separates_github_and_b2_credentials():
     assert "B2_KEY_ID: ${{ secrets.B2_KEY_ID }}" in backup
     assert "B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}" in backup
     assert "https://api.github.com/repos/Z-Solo-King/operations" in backup
+    assert "BACKUP_GITHUB_TOKEN purpose check: PASS (GitHub repository access)" in backup
     assert "B2 credential/bucket check: PASS" in backup
     assert "OPERATIONS_READ_TOKEN" not in backup
 
@@ -96,7 +97,7 @@ def test_credential_policy_documents_the_separation():
 
     assert "B2 credentials are secrets and never belong in Git" in deployment
     assert "`BACKUP_GITHUB_TOKEN` is a GitHub read credential" in backup
-    assert "Production deployment uses `OPERATIONS_READ_TOKEN`" in backup
+    assert "Production deployment uses `OPERATIONS_READ_TOKEN`, not `BACKUP_GITHUB_TOKEN`." in backup
     assert CANONICAL_OPERATIONS_REF in deployment
 
 
