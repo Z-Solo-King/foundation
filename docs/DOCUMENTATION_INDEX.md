@@ -50,4 +50,4 @@ The generic filenames must not be recreated merely to collect edge cases. Test r
 
 ## Documentation updates
 
-When contracts, ownership, workflows, dependency direction or production gates change, update the affected canonical document in the same change set. Mark dated continuity material as historical.
+When contracts, ownership, workflows, dependency direction or production gates change, update the affected canonical document in the same change set. Mark dated continuity material as historical. When a production workflow filename or ownership boundary changes, update both this navigation entry and `DEPLOYMENT.md` in the same PR.
