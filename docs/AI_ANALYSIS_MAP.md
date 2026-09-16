@@ -10,7 +10,20 @@ Compact routing index for human and AI repository analysis. Read this before ope
 4. `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md` for credential, B2, backup and evidence questions
 5. `docs/AI_AUDIT_AND_VERIFICATION_STANDARD.md` for audit questions
 6. `docs/FAMILY_CONTRACT.json` for public-contract questions
-7. Then open the canonical implementation and focused tests.
+7. Then open the canonical implementation and focused feature-owned tests.
+
+## Focused test navigation
+
+- Execution/resource/provider/research lifecycle: `tests/test_execution_edge_cases.py`
+- Worker-task/result/replay boundaries: `tests/test_worker_boundary_edge_cases.py`
+- Evidence/claims/lineage/verification: `tests/test_intelligence_edge_cases.py`
+- Public HTTP/Wikipedia transport boundary: `tests/test_source_transport_edge_cases.py`
+- Public API/capability validation: `tests/test_api_capability_edge_cases.py`
+- Public worker HTTP entrypoint: `tests/test_worker_entrypoint_edge_cases.py`
+- Run-record/stage-receipt/token-efficiency contracts: `tests/test_run_record_edge_cases.py`
+- Public persistence/product-mapping edges: `tests/test_public_core_edge_cases.py`
+
+The former `test_coverage_*` files were broad aggregators. They were audited by content and removed only after their branch assertions were relocated to feature-owned suites. Do not recreate generic coverage aggregators.
 
 ## High-analysis-cost areas
 
@@ -28,7 +41,7 @@ Compact routing index for human and AI repository analysis. Read this before ope
 ## Analysis rules
 
 - Prefer canonical source over compatibility exports.
-- Prefer focused tests over broad test-suite reading.
+- Prefer focused feature-owned tests over broad suite reading.
 - Separate workflow state, source state, and runtime state.
 - Do not infer missing behavior from file size or workflow length.
 - Structural refactors require regression coverage and required checks.

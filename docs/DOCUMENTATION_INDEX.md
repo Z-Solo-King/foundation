@@ -38,6 +38,12 @@ Operations private control plane
 
 Operations may consume Foundation contracts and public-safe services. Foundation remains independent of Operations source and private authority.
 
+## Feature-owned test navigation
+
+Coverage tests belong beside the behavior they verify. The audited generic `tests/test_coverage_*` aggregators have been replaced by focused suites named for their owners: execution, worker boundary, intelligence/evidence, source transport, API/capabilities, Worker entrypoint, run-record/token-efficiency contracts, and public-core persistence/product mapping.
+
+The generic filenames must not be recreated merely to collect edge cases. Test relocation is valid only when assertions are preserved and the owning production boundary is clear.
+
 ## Deployment documentation
 
 `DEPLOYMENT.md` is the detailed deployment guide. It records the approved workflow and the evidence rules for distinguishing a deployment attempt from current production verification.
