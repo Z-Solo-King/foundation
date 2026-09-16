@@ -74,12 +74,13 @@ def can_resume(receipt: StageReceipt, *, request_fingerprint: str, input_fingerp
 
 
 def validate_chain(receipts: tuple[StageReceipt, ...]) -> bool:
+    """Validate structural receipt linkage without imposing per-stage resumability."""
     if not receipts:
         return True
     request = receipts[0].request_fingerprint
     previous = None
     for receipt in receipts:
-        if receipt.request_fingerprint != request or not receipt.resume_eligible:
+        if receipt.request_fingerprint != request:
             return False
         if previous is not None and receipt.parent_receipt_fingerprint != previous:
             return False
