@@ -7,7 +7,20 @@
   const el = {
     sidebar: document.getElementById('sidebar'), sidebarOverlay: document.querySelector('.mobile-overlay'), conversation: document.getElementById('conversation-scroll'), emptyState: document.getElementById('empty-state'), chatList: document.getElementById('chat-list'), search: document.getElementById('chat-search'), mobileTitle: document.getElementById('mobile-title'), toast: document.getElementById('toast'), connectionPill: document.getElementById('connection-pill'),
   };
-  const renderSources = (sources = []) => sources.map((source, index) => `<div class="source-row"><span>${index + 1}</span><a href="${api.escapeHtml(source.url || '#')}" target="_blank" rel="noopener noreferrer">${api.escapeHtml(source.title || source.url || 'source')}</a><small>${api.escapeHtml(source.access_state || source.state || source.retrieval_method || 'observed')}</small></div>`).join('');
+  const safeSourceUrl = (value) => {
+    try {
+      const url = new URL(String(value || ''), window.location.origin);
+      return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : '';
+    } catch {
+      return '';
+    }
+  };
+  const renderSources = (sources = []) => sources.map((source, index) => {
+    const safeUrl = safeSourceUrl(source.url);
+    const title = source.title || source.url || 'source';
+    const label = api.escapeHtml(title);
+    return `<div class="source-row"><span>${index + 1}</span>${safeUrl ? `<a href="${api.escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer">${label}</a>` : `<span class="source-label">${label}</span>`}<small>${api.escapeHtml(source.access_state || source.state || source.retrieval_method || 'observed')}</small></div>`;
+  }).join('');
   function toast(message) { if (!el.toast) return; el.toast.textContent = message; el.toast.classList.add('show'); clearTimeout(toast.timer); toast.timer = setTimeout(() => el.toast.classList.remove('show'), 2400); }
 
   function renderSidebar() {
