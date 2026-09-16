@@ -62,9 +62,9 @@ class Binding:
 
 
 class Request:
-    def __init__(self, headers=None):
-        self.method = "GET"
-        self.url = "https://example.invalid/api/v1/dashboard"
+    def __init__(self, method="GET", url="https://example.invalid/api/v1/dashboard", headers=None):
+        self.method = method
+        self.url = url
         self.headers = headers or {}
 
     async def json(self):
@@ -95,5 +95,27 @@ async def test_dashboard_route_auth_and_proxy_paths():
     entry.env = SimpleNamespace(AUTH_TOKEN="secret", OPERATIONS=Binding(Response(200, {"ok": True, "dashboard": {"healthy": True}})))
     unauthorized = await entry.fetch(Request())
     assert "unauthorized" in str(unauthorized)
-    authorized = await entry.fetch(Request({"Authorization": "Bearer secret"}))
+    authorized = await entry.fetch(Request(headers={"Authorization": "Bearer secret"}))
     assert "dashboard" in str(authorized)
+
+
+@pytest.mark.asyncio
+async def test_private_chatbot_diagnostic_paths():
+    body, status = await worker._operations_chatbot_diagnostic(SimpleNamespace())
+    assert status == 503 and body["error"] == "chat_backend_unavailable"
+
+    healthy = {"ok": True, "chatbot": {"allowed": True}, "provider_policy": {"strict_zero_cost_only": True}}
+    body, status = await worker._operations_chatbot_diagnostic(SimpleNamespace(OPERATIONS=Binding(Response(200, healthy))))
+    assert status == 200 and body["ok"] is True
+    assert body["chatbot"]["allowed"] is True
+
+    malformed = await worker._operations_chatbot_diagnostic(SimpleNamespace(OPERATIONS=Binding(Response(200, []))))
+    assert malformed[1] == 503
+    assert malformed[0]["error"] == "invalid_private_chatbot_diagnostic"
+
+    rejected = await worker._operations_chatbot_diagnostic(SimpleNamespace(OPERATIONS=Binding(Response(503, {"ok": False, "error": "unavailable"}))))
+    assert rejected[1] == 503
+    assert rejected[0]["response_status"] == 503
+    failed = await worker._operations_chatbot_diagnostic(SimpleNamespace(OPERATIONS=Binding(error=RuntimeError("binding failed"))))
+    assert failed[1] == 503
+    assert "binding failure" in failed[0]["error"]
