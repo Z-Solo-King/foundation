@@ -13,6 +13,7 @@ LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 PRODUCTION_WORKFLOW = "frontend-ui.yml"
 PRODUCTION_SCRIPT = ROOT / "scripts" / "production_release.sh"
 WRANGLER = ROOT / "wrangler.toml"
+INSTALLATION_HELPER = ROOT / "scripts" / "resolve_operations_installation.py"
 
 
 def _workflow_texts() -> dict[str, str]:
@@ -62,6 +63,17 @@ def test_canonical_operations_production_pin_is_current_and_immutable():
     assert LEGACY_OPERATIONS_REF not in deployment
     assert 'git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git"' in deployment
     assert '"github:${OPERATIONS_REF}"' in deployment
+
+
+def test_operations_installation_is_discovered_from_app_jwt():
+    frontend = _workflow_texts()[PRODUCTION_WORKFLOW]
+    helper = INSTALLATION_HELPER.read_text(encoding="utf-8")
+    assert "Resolve Operations GitHub App installation" in frontend
+    assert "scripts/resolve_operations_installation.py" in frontend
+    assert "OPERATIONS_APP_JWT" in helper
+    assert "api.github.com/app/installations" in helper
+    assert 'EXPECTED_ACCOUNT = "Z-Solo-King"' in helper
+    assert "OPERATIONS_APP_INSTALLATION_ID: ${{ secrets.OPERATIONS_APP_INSTALLATION_ID }}" not in frontend
 
 
 def test_operations_checkout_uses_github_app_installation_credential():
