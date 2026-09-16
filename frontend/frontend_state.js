@@ -1,7 +1,9 @@
 (() => {
   'use strict';
 
-  const API_BASE = (document.body.dataset.apiBase || '').replace(/\/$/, '');
+  // Same-origin is the normal deployment path. An explicit data-api-base still wins
+  // for split frontend/API deployments and test harnesses.
+  const API_BASE = (document.body.dataset.apiBase || window.location.origin || '').replace(/\/$/, '');
   const keys = Object.freeze({
     chats: 'rie.frontend.chats.v2',
     projects: 'rie.frontend.projects.v1',
@@ -20,6 +22,7 @@
     mode: 'chat',
     backendOk: false,
     backendText: 'Checking backend…',
+    submitting: false,
   };
 
   const read = (key, fallback) => {
