@@ -1,8 +1,11 @@
 import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const state = fs.readFileSync('frontend/frontend_state.js', 'utf8');
-const app = fs.readFileSync('frontend/app.js', 'utf8');
-const product = fs.readFileSync('docs/HEROIC_AI_PRODUCT.md', 'utf8');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const state = fs.readFileSync(path.join(ROOT, 'frontend', 'frontend_state.js'), 'utf8');
+const app = fs.readFileSync(path.join(ROOT, 'frontend', 'app.js'), 'utf8');
+const product = fs.readFileSync(path.join(ROOT, 'docs', 'HEROIC_AI_PRODUCT.md'), 'utf8');
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
