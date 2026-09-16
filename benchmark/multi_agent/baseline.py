@@ -27,6 +27,16 @@ def _useful_findings(payload: dict[str, object]) -> int:
     return total
 
 
+def _metric(payload: dict[str, object], key: str) -> int:
+    metrics = payload.get("metrics", {})
+    if isinstance(metrics, dict):
+        try:
+            return int(metrics.get(key, 0) or 0)
+        except (TypeError, ValueError):
+            return 0
+    return 0
+
+
 def _high_signal_count(payload: dict[str, object]) -> int:
     signals = payload.get("improvement_signals", [])
     if not isinstance(signals, list):
@@ -43,7 +53,14 @@ def _signal_types(payload: dict[str, object]) -> Counter[str]:
 
 def compare(current: dict[str, object], previous: dict[str, object] | None) -> dict[str, object]:
     if previous is None:
-        return {"schema": SCHEMA, "available": False, "decision": "NO_BASELINE", "reason": "no prior completed nightly project-improvement summary was available", "current_research_id": current.get("research_id"), "current_revision": (current.get("project_snapshot") or {}).get("revision")}
+        return {
+            "schema": SCHEMA,
+            "available": False,
+            "decision": "NO_BASELINE",
+            "reason": "no prior completed nightly project-improvement summary was available",
+            "current_research_id": current.get("research_id"),
+            "current_revision": (current.get("project_snapshot") or {}).get("revision"),
+        }
     current_completed = _count_status(current, "completed")
     previous_completed = _count_status(previous, "completed")
     current_useful = _useful_findings(current)
@@ -54,15 +71,61 @@ def compare(current: dict[str, object], previous: dict[str, object] | None) -> d
     previous_execution = str(previous.get("execution_state", ""))
     current_types = _signal_types(current)
     previous_types = _signal_types(previous)
-    regressed = ((current_execution != "completed" and previous_execution == "completed") or current_completed < previous_completed or current_useful < previous_useful or current_high > previous_high)
-    improved = ((current_execution == "completed" and previous_execution != "completed") or current_completed > previous_completed or current_useful > previous_useful or current_high < previous_high)
+
+    current_followups = _metric(current, "follow_up_questions")
+    previous_followups = _metric(previous, "follow_up_questions")
+    current_candidate = _metric(current, "candidate_unverified_findings")
+    previous_candidate = _metric(previous, "candidate_unverified_findings")
+    current_model = _metric(current, "model_observations")
+    previous_model = _metric(previous, "model_observations")
+
+    regressed = (
+        (current_execution != "completed" and previous_execution == "completed")
+        or current_completed < previous_completed
+        or current_useful < previous_useful
+        or current_high > previous_high
+        or current_followups > previous_followups * 2 + 5
+    )
+    improved = (
+        (current_execution == "completed" and previous_execution != "completed")
+        or current_completed > previous_completed
+        or current_useful > previous_useful
+        or current_high < previous_high
+        or current_candidate > previous_candidate and current_model <= previous_model
+    )
     if regressed:
         decision = "REGRESSED"
     elif improved:
         decision = "IMPROVED"
     else:
         decision = "STABLE"
-    return {"schema": SCHEMA, "available": True, "decision": decision, "current_research_id": current.get("research_id"), "previous_research_id": previous.get("research_id"), "current_revision": (current.get("project_snapshot") or {}).get("revision"), "previous_revision": (previous.get("project_snapshot") or {}).get("revision"), "metrics": {"completed_programs_delta": current_completed - previous_completed, "useful_findings_delta": current_useful - previous_useful, "high_severity_signals_delta": current_high - previous_high, "program_count_delta": int(current.get("program_count", 0) or 0) - int(previous.get("program_count", 0) or 0)}, "signal_type_changes": {"added": sorted(set(current_types) - set(previous_types)), "resolved": sorted(set(previous_types) - set(current_types))}, "rules": {"regression": "execution degradation, fewer completed programs, fewer useful findings, or more high-severity improvement signals", "improvement": "recovery to completed execution, more completed programs, more useful findings, or fewer high-severity improvement signals", "tie_break": "REGRESSED takes precedence over IMPROVED when both conditions are true"}}
+    return {
+        "schema": SCHEMA,
+        "available": True,
+        "decision": decision,
+        "current_research_id": current.get("research_id"),
+        "previous_research_id": previous.get("research_id"),
+        "current_revision": (current.get("project_snapshot") or {}).get("revision"),
+        "previous_revision": (previous.get("project_snapshot") or {}).get("revision"),
+        "metrics": {
+            "completed_programs_delta": current_completed - previous_completed,
+            "useful_findings_delta": current_useful - previous_useful,
+            "high_severity_signals_delta": current_high - previous_high,
+            "follow_up_questions_delta": current_followups - previous_followups,
+            "candidate_unverified_findings_delta": current_candidate - previous_candidate,
+            "model_observations_delta": current_model - previous_model,
+            "program_count_delta": int(current.get("program_count", 0) or 0) - int(previous.get("program_count", 0) or 0),
+        },
+        "signal_type_changes": {
+            "added": sorted(set(current_types) - set(previous_types)),
+            "resolved": sorted(set(previous_types) - set(current_types)),
+        },
+        "rules": {
+            "regression": "execution degradation, fewer completed programs, fewer useful findings, more high-severity signals, or an excessive growth in follow-up backlog",
+            "improvement": "recovery to completed execution, more completed programs, more useful findings, fewer high-severity signals, or more candidate evidence with fewer model-only observations",
+            "tie_break": "REGRESSED takes precedence over IMPROVED when both conditions are true",
+        },
+    }
 
 
 def load_summary(path: Path) -> dict[str, object]:
