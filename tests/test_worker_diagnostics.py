@@ -205,7 +205,11 @@ async def test_worker_private_chatbot_diagnostic_checks_binding_boundary(monkeyp
 @pytest.mark.asyncio
 async def test_worker_http_public_diagnostics_and_research_fail_closed_paths(monkeypatch):
     monkeypatch.setattr(worker, "CloudflarePersistence", Persistence)
-    monkeypatch.setattr(worker, "_operations_chatbot_diagnostic", lambda env: ({"ok": True, "status": "ok"}, 200))
+
+    async def healthy_chatbot(_env):
+        return {"ok": True, "status": "ok"}, 200
+
+    monkeypatch.setattr(worker, "_operations_chatbot_diagnostic", healthy_chatbot)
     env = SimpleNamespace(DB=DB(rows=[]), ENVIRONMENT="production", AUTH_TOKEN="secret")
     entry = worker.Default()
     entry.env = env
