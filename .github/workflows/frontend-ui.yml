@@ -155,7 +155,7 @@ jobs:
             'B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"' \
             > wrangler.production.generated.toml
           grep -q '^database_name = "research-intelligence"$' wrangler.production.generated.toml
-          grep -Eq '^database_id = "[0-9a-fA-F-]{36}$' wrangler.production.generated.toml
+          grep -Eq '^database_id = "[0-9a-fA-F-]{36}"$' wrangler.production.generated.toml
           grep -q '^directory = "./frontend"$' wrangler.production.generated.toml
 
       - name: Apply remote D1 migrations
