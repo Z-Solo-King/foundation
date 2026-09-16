@@ -1,6 +1,8 @@
 (() => {
   'use strict';
 
+  const api = window.RIEFrontend;
+  if (!api) return;
   const QUEUE_KEY = 'rie.frontend.research.queue.v1';
   const panel = document.getElementById('message-queue');
   const overlay = document.querySelector('.queue-overlay');
@@ -16,7 +18,6 @@
       return [];
     }
   };
-  const escapeHtml = (value) => String(value ?? '').replace(/[&<>\"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
   function render() {
     const items = readQueue();
@@ -24,7 +25,7 @@
     if (queueStatus) queueStatus.textContent = items.length ? `${items.length} waiting` : 'Nothing waiting';
     if (queueList) {
       queueList.innerHTML = items.length
-        ? items.map((item, index) => `<div class="queue-item"><b>${index + 1}</b><div><strong>Research</strong><p>${escapeHtml(item.text)}</p></div><button data-lifecycle-remove-queue="${escapeHtml(item.id)}" aria-label="Remove queued research">×</button></div>`).join('')
+        ? items.map((item, index) => `<div class="queue-item"><b>${index + 1}</b><div><strong>Research</strong><p>${api.escapeHtml(item.text)}</p></div><button data-lifecycle-remove-queue="${api.escapeHtml(item.id)}" aria-label="Remove queued research">×</button></div>`).join('')
         : '<div class="queue-empty">Queue is empty.</div>';
     }
   }
