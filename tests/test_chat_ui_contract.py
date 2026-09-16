@@ -20,12 +20,20 @@ def test_chat_ui_calls_canonical_chat_route_and_clears_pending_state():
 def test_guest_test_mode_is_explicit_and_network_free():
     state = Path("frontend/frontend_state.js").read_text(encoding="utf-8")
     app = Path("frontend/app.js").read_text(encoding="utf-8")
+    contract = Path("frontend/guest_test_mode_contract_test.mjs").read_text(encoding="utf-8")
+    product = Path("docs/HEROIC_AI_PRODUCT.md").read_text(encoding="utf-8")
     assert "guestTestMode" in state
     assert "enableGuestTestMode" in state
     assert "disableGuestTestMode" in state
     assert "submitGuestTestChat" in app
     assert "guest_test: true" in app
     assert "deterministic simulation" in app
+    assert "Message is required" in app
+    assert "12000 character limit" in app
+    assert "guest_test_mode_contract_test: PASS" in contract
+    assert "Guest Test mode" in product
+    assert "TEST_ONLY" in app
+    assert "deterministic_test" in app
     guest_start = app.index("async function submitGuestTestChat")
     guest_end = app.index("async function consumeChatStream")
     guest_block = app[guest_start:guest_end]
