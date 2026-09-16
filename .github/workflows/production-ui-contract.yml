@@ -1,0 +1,85 @@
+name: frontend-ui
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/production-ui-contract.yml'
+  merge_group:
+    types: [checks_requested]
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: Frontend UI contract
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Syntax and contract tests
+        run: npm test
+
+      - name: Setup Python for production release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+
+      - name: Resolve Operations GitHub App installation
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: ${{ github.workspace }}
+        env:
+          OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
+          OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "${OPERATIONS_APP_ID:-}" || { echo 'Missing OPERATIONS_APP_ID GitHub Actions secret'; exit 1; }
+          test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIVATE_KEY GitHub Actions secret'; exit 1; }
+          key_file="$RUNNER_TEMP/operations-app-resolution.pem"
+          jwt_file="$RUNNER_TEMP/operations-app-resolution-jwt.txt"
+          umask 077
+          printf '%s\n' "$OPERATIONS_APP_PRIVATE_KEY" > "$key_file"
+          chmod 600 "$key_file"
+          python - "$OPERATIONS_APP_ID" "$key_file" > "$jwt_file" <<'PY'
+import base64, json, subprocess, sys, time
+
+app_id, key_file = sys.argv[1:]
+def b64url(value):
+    return base64.urlsafe_b64encode(value).rstrip(b'=').decode('ascii')
+now = int(time.time())
+header = {"alg": "RS256", "typ": "JWT"}
+payload = {"iat": now - 60, "exp": now + 540, "iss": app_id}
+unsigned = f"{b64url(json.dumps(header, separators=(',', ':')).encode())}.{b64url(json.dumps(payload, separators=(',', ':')).encode())}".encode()
+proc = subprocess.run(["openssl", "dgst", "-sha256", "-sign", key_file], input=unsigned, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+print(unsigned.decode() + "." + b64url(proc.stdout))
+PY
+          app_jwt=$(cat "$jwt_file")
+          installation_id=$(OPERATIONS_APP_JWT="$app_jwt" python scripts/resolve_operations_installation.py)
+          test -n "$installation_id"
+          echo 'Resolved Operations GitHub App installation: PASS'
+          echo "OPERATIONS_APP_INSTALLATION_ID=$installation_id" >> "$GITHUB_ENV"
+          rm -f "$key_file" "$jwt_file"
+
+      - name: Run canonical production release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: ${{ github.workspace }}
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
+          OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+        run: bash scripts/production_release.sh
