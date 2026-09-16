@@ -57,16 +57,7 @@ async def _get_run(env, run_id):
     return await get_run(env, run_id)
 
 
-async def _operations_chat(env, payload, request):
-    """Proxy Heroic AI chat only through the configured private service binding.
-
-    The public Worker never exposes a private Worker URL to the browser. When the
-    binding is absent, the contract fails closed instead of inventing a browser-local
-    assistant response.
-    """
-    operations = getattr(env, "OPERATIONS", None)
-    if operations is None:
-        return {"ok": False, "error": "chat_backend_unavailable", "status": "unavailable"}, 503
+async def _chat_headers(request):
     headers = {"Content-Type": "application/json"}
     token = _bearer_token(request)
     if token:
@@ -74,21 +65,29 @@ async def _operations_chat(env, payload, request):
     idempotency_key = request.headers.get("Idempotency-Key")
     if idempotency_key:
         headers["Idempotency-Key"] = idempotency_key
+    return headers
+
+
+async def _operations_chat(env, payload, request, stream=False):
+    """Proxy Heroic AI chat only through the configured private service binding."""
+    operations = getattr(env, "OPERATIONS", None)
+    if operations is None:
+        return None, {"ok": False, "error": "chat_backend_unavailable", "status": "unavailable"}, 503
+    headers = await _chat_headers(request)
+    target = "https://chat/v1/chat/stream" if stream else "https://chat/v1/chat"
     try:
         upstream = await operations.fetch(
-            "https://chat/v1/chat",
-            {
-                "method": "POST",
-                "headers": headers,
-                "body": json.dumps(payload),
-            },
+            target,
+            {"method": "POST", "headers": headers, "body": json.dumps(payload)},
         )
+        if stream:
+            return upstream, None, upstream.status
         body = await upstream.json()
         if not isinstance(body, dict):
-            return {"ok": False, "error": "invalid_private_chat_response"}, 503
-        return body, upstream.status
+            return None, {"ok": False, "error": "invalid_private_chat_response"}, 503
+        return None, body, upstream.status
     except Exception:
-        return {"ok": False, "error": "chat_backend_unavailable"}, 503
+        return None, {"ok": False, "error": "chat_backend_unavailable"}, 503
 
 
 async def _operations_dashboard(env, request):
@@ -130,6 +129,22 @@ class Default(WorkerEntrypoint):
             body, status = await _operations_dashboard(self.env, request)
             return Response.json(body, status=status)
 
+        if request.method == "POST" and path.endswith("/api/v1/chat/stream"):
+            if not _authorized(request, self.env):
+                return Response.json({"ok": False, "error": "unauthorized"}, status=401)
+            payload = await _json(request)
+            if payload is None:
+                return Response.json({"ok": False, "error": "invalid JSON object"}, status=400)
+            try:
+                req = ChatRequest(**payload)
+                req.validate()
+            except (TypeError, ValueError) as exc:
+                return Response.json({"ok": False, "error": str(exc)}, status=400)
+            upstream, body, status = await _operations_chat(self.env, payload, request, stream=True)
+            if upstream is not None:
+                return Response(upstream.body, status=upstream.status, headers={"Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+            return Response.json(body, status=status)
+
         if request.method == "POST" and path.endswith("/api/v1/chat"):
             if not _authorized(request, self.env):
                 return Response.json({"ok": False, "error": "unauthorized"}, status=401)
@@ -141,7 +156,7 @@ class Default(WorkerEntrypoint):
                 req.validate()
             except (TypeError, ValueError) as exc:
                 return Response.json({"ok": False, "error": str(exc)}, status=400)
-            body, status = await _operations_chat(self.env, payload, request)
+            _, body, status = await _operations_chat(self.env, payload, request)
             return Response.json(body, status=status)
 
         if request.method == "POST" and path.endswith("/api/v1/chatbot/diagnostic"):
