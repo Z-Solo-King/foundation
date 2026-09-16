@@ -91,6 +91,28 @@ async def _operations_chat(env, payload, request):
         return {"ok": False, "error": "chat_backend_unavailable"}, 503
 
 
+async def _operations_dashboard(env, request):
+    """Read-only telemetry proxy for the Heroic AI system dashboard."""
+    operations = getattr(env, "OPERATIONS", None)
+    if operations is None:
+        return {"ok": False, "error": "dashboard_backend_unavailable", "status": "unavailable"}, 503
+    headers = {"Content-Type": "application/json"}
+    token = _bearer_token(request)
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    try:
+        upstream = await operations.fetch(
+            "https://private/v1/dashboard",
+            {"method": "GET", "headers": headers},
+        )
+        body = await upstream.json()
+        if not isinstance(body, dict):
+            return {"ok": False, "error": "invalid_private_dashboard_response"}, 503
+        return body, upstream.status
+    except Exception:
+        return {"ok": False, "error": "dashboard_backend_unavailable"}, 503
+
+
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
         path = request.url.split("?", 1)[0]
@@ -101,6 +123,12 @@ class Default(WorkerEntrypoint):
         if request.method == "GET" and path.endswith("/readiness"):
             payload, status = await _readiness_payload(self.env)
             return Response.json(payload, status=status)
+
+        if request.method == "GET" and path.endswith("/api/v1/dashboard"):
+            if not _authorized(request, self.env):
+                return Response.json({"ok": False, "error": "unauthorized"}, status=401)
+            body, status = await _operations_dashboard(self.env, request)
+            return Response.json(body, status=status)
 
         if request.method == "POST" and path.endswith("/api/v1/chat"):
             if not _authorized(request, self.env):
