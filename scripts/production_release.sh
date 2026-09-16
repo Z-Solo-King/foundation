@@ -23,7 +23,8 @@ test "$OPERATIONS_REF" = 'cf28a28cb40de527aff1cd87f96e103669635f70'
 
 python -m pip install --upgrade pip
 python -m pip install -e .
-python -m pip install pytest pytest-asyncio coverage workers-py workers-runtime-sdk
+python -m pip install pytest pytest-asyncio coverage workers-py workers-runtime-sdk uv
+uv --version
 python -m compileall -q backend foundation_core worker.py
 python -c "import foundation_core; print(foundation_core.__all__)"
 coverage run --branch --source=backend,foundation_core,worker --omit='tests/*,backend/persistence/artifacts.py' -m pytest tests/ -v
