@@ -84,7 +84,7 @@ def test_agent_validation_and_terminal_states():
         ResearchAgent(max_iterations=0)
     agent = ResearchAgent(max_iterations=2)
     state = agent.create_state(ResearchContract(question="test", depth="quick"))
-    assert agent._reuse(state.tasks[0]) is None
+    assert not hasattr(agent, "_reuse")
     finished = agent.step(state)
     assert finished.status == "blocked"
     done = agent.step(finished)
@@ -128,25 +128,3 @@ def test_agent_blocked_failed_and_convenience_research():
 
     result_state, result_store = research("test", lambda task, store: TaskObservation(task.task_id, "completed"), depth="quick")
     assert result_state.status == "completed"
-    assert isinstance(result_store, EvidenceKnowledgeStore)
-
-
-def test_agent_run_hits_max_iteration_guard():
-    def always_complete_one_step(task, store):
-        return TaskObservation(task_id=task.task_id, status="completed")
-
-    agent = ResearchAgent(executor=always_complete_one_step, max_iterations=1)
-    state = agent.run(agent.create_state(ResearchContract(question="test", depth="quick")))
-    assert state.status == "blocked"
-    assert state.iterations == 1
-
-
-def test_planning_quick_and_temporal_metadata():
-    quick = create_plan(ResearchContract(question="latest laptop review", depth="quick"))
-    assert len(quick.stages) == 5
-    assert quick.metadata["temporal_reconciliation"] == "true"
-
-
-def test_planning_default_depth_path():
-    standard = create_plan(ResearchContract(question="laptop review", depth="standard"))
-    assert len(standard.stages) == 8

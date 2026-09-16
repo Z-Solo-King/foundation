@@ -46,15 +46,19 @@ async def storage_diagnostic(env, run_id, *, persistence_cls):
 
 
 async def public_infrastructure_verify(env, *, persistence_cls):
-    """Run bounded public D1/B2 lifecycle verification without private service calls."""
+    """Run bounded public D1/B2 lifecycle verification.
+
+    The private chatbot binding is checked separately by the Worker route through
+    the private diagnostic boundary; this helper intentionally has no private-binding dependency.
+    """
     persistence = persistence_cls(env)
-    checks = [{"name": "public_chatbot", "ok": True}]
+    checks = []
     run_id = "diag-" + hashlib.sha256(str(datetime.now(timezone.utc).timestamp()).encode()).hexdigest()[:24]
     try:
         row = await env.DB.prepare("SELECT 1 AS ok").first()
         if not row or row["ok"] != 1:
             raise RuntimeError("D1 health query failed")
-        request = ResearchRequest(question="Public chatbot infrastructure self-test", depth="quick", require_citations=False, max_sources=0, max_evidence_items=1, strict_zero_cost_only=True, source_urls=[])
+        request = ResearchRequest(question="Public infrastructure self-test", depth="quick", require_citations=False, max_sources=0, max_evidence_items=1, strict_zero_cost_only=True, source_urls=[])
         await persistence.create_run(run_id, request)
         stored = await persistence.get_run(run_id)
         d1_ok = stored is not None

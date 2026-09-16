@@ -1,7 +1,6 @@
 """Cloudflare Python Worker entrypoint for the standalone public-safe runtime."""
 from __future__ import annotations
 
-import hashlib  # Compatibility export used by legacy worker diagnostics tests.
 import json
 
 from workers import Response, WorkerEntrypoint
@@ -75,11 +74,7 @@ async def _operations_chat(env, payload, request):
     try:
         upstream = await operations.fetch(
             "https://chat/v1/chat",
-            {
-                "method": "POST",
-                "headers": headers,
-                "body": json.dumps(payload),
-            },
+            {"method": "POST", "headers": headers, "body": json.dumps(payload)},
         )
         body = await upstream.json()
         if not isinstance(body, dict):
@@ -105,6 +100,34 @@ async def _operations_chat_stream(env, payload, request):
         return None, {"ok": False, "error": "chat_backend_unavailable"}, 503
 
 
+async def _operations_chatbot_diagnostic(env):
+    """Exercise the private chatbot routing/diagnostic boundary without provider execution."""
+    operations = getattr(env, "OPERATIONS", None)
+    if operations is None:
+        return {"ok": False, "error": "chat_backend_unavailable", "status": "unavailable"}, 503
+    try:
+        upstream = await operations.fetch(
+            "https://private/v1/diagnostics/chatbot",
+            {
+                "method": "POST",
+                "headers": {"Content-Type": "application/json"},
+                "body": json.dumps({"operation": "infrastructure_verify", "question": "Infrastructure diagnostic only; do not execute a model provider."}),
+            },
+        )
+        body = await upstream.json()
+        healthy = upstream.status == 200 and isinstance(body, dict) and bool(body.get("ok")) and bool(body.get("chatbot", {}).get("allowed"))
+        return {
+            "ok": healthy,
+            "status": "ok" if healthy else "degraded",
+            "response_status": upstream.status,
+            "chatbot": body.get("chatbot") if isinstance(body, dict) else None,
+            "provider_policy": body.get("provider_policy") if isinstance(body, dict) else None,
+            "error": None if healthy else (body.get("error") if isinstance(body, dict) else "invalid_private_chatbot_diagnostic"),
+        }, 200 if healthy else 503
+    except Exception as exc:
+        return {"ok": False, "status": "degraded", "error": f"chatbot diagnostic binding failure: {exc}"}, 503
+
+
 async def _operations_dashboard(env, request):
     """Read-only telemetry proxy for the Heroic AI system dashboard."""
     operations = getattr(env, "OPERATIONS", None)
@@ -115,10 +138,7 @@ async def _operations_dashboard(env, request):
     if token:
         headers["Authorization"] = f"Bearer {token}"
     try:
-        upstream = await operations.fetch(
-            "https://private/v1/dashboard",
-            {"method": "GET", "headers": headers},
-        )
+        upstream = await operations.fetch("https://private/v1/dashboard", {"method": "GET", "headers": headers})
         body = await upstream.json()
         if not isinstance(body, dict):
             return {"ok": False, "error": "invalid_private_dashboard_response"}, 503
@@ -133,17 +153,14 @@ class Default(WorkerEntrypoint):
 
         if request.method == "GET" and path.endswith("/health"):
             return Response.json(await _health_payload())
-
         if request.method == "GET" and path.endswith("/readiness"):
             payload, status = await _readiness_payload(self.env)
             return Response.json(payload, status=status)
-
         if request.method == "GET" and path.endswith("/api/v1/dashboard"):
             if not _authorized(request, self.env):
                 return Response.json({"ok": False, "error": "unauthorized"}, status=401)
             body, status = await _operations_dashboard(self.env, request)
             return Response.json(body, status=status)
-
         if request.method == "POST" and path.endswith("/api/v1/chat/stream"):
             if not _authorized(request, self.env):
                 return Response.json({"ok": False, "error": "unauthorized"}, status=401)
@@ -156,10 +173,7 @@ class Default(WorkerEntrypoint):
             except (TypeError, ValueError) as exc:
                 return Response.json({"ok": False, "error": str(exc)}, status=400)
             upstream, body, status = await _operations_chat_stream(self.env, payload, request)
-            if upstream is not None:
-                return upstream
-            return Response.json(body, status=status)
-
+            return upstream if upstream is not None else Response.json(body, status=status)
         if request.method == "POST" and path.endswith("/api/v1/chat"):
             if not _authorized(request, self.env):
                 return Response.json({"ok": False, "error": "unauthorized"}, status=401)
@@ -173,7 +187,6 @@ class Default(WorkerEntrypoint):
                 return Response.json({"ok": False, "error": str(exc)}, status=400)
             body, status = await _operations_chat(self.env, payload, request)
             return Response.json(body, status=status)
-
         if request.method == "POST" and path.endswith("/api/v1/chatbot/diagnostic"):
             if not _authorized(request, self.env):
                 return Response.json({"ok": False, "error": "unauthorized"}, status=401)
@@ -182,9 +195,12 @@ class Default(WorkerEntrypoint):
                 return Response.json({"ok": False, "error": "invalid JSON object"}, status=400)
             if payload.get("operation") == "infrastructure_verify_public_test":
                 body, status = await _public_infrastructure_verify(self.env)
-                return Response.json(body, status=status)
+                private_body, private_status = await _operations_chatbot_diagnostic(self.env)
+                body["checks"].append({"name": "public_chatbot", "ok": private_body.get("ok", False), "status": private_status, "detail": private_body.get("error") or "private chatbot diagnostic completed"})
+                body["ok"] = all(bool(check.get("ok")) for check in body["checks"])
+                body["status"] = "ok" if body["ok"] else "degraded"
+                return Response.json(body, status=200 if body["ok"] else 503)
             return Response.json({"ok": False, "error": "unsupported public diagnostic operation"}, status=400)
-
         if request.method == "POST" and path.endswith("/api/v1/storage/diagnostic"):
             if not _authorized(request, self.env):
                 return Response.json({"ok": False, "error": "unauthorized"}, status=401)
@@ -196,7 +212,6 @@ class Default(WorkerEntrypoint):
                 return Response.json(body, status=status)
             except Exception as exc:
                 return Response.json({"ok": False, "error": f"storage diagnostic failure: {exc}"}, status=503)
-
         if request.method == "GET" and "/api/v1/research/" in path:
             if not _authorized(request, self.env):
                 return Response.json({"ok": False, "error": "unauthorized"}, status=401)
@@ -208,7 +223,6 @@ class Default(WorkerEntrypoint):
             if payload is None:
                 return Response.json({"ok": False, "error": "run not found"}, status=404)
             return Response.json({"ok": True, **payload})
-
         if request.method == "POST" and path.endswith("/api/v1/research"):
             if not _authorized(request, self.env):
                 return Response.json({"ok": False, "error": "unauthorized"}, status=401)
@@ -225,7 +239,6 @@ class Default(WorkerEntrypoint):
             result = submit_research(req)
             if not result.ok:
                 return Response.json({"ok": False, "error": result.error}, status=400)
-
             persistence = CloudflarePersistence(self.env)
             idempotency_key = request.headers.get("Idempotency-Key")
             run_id = None
@@ -248,7 +261,6 @@ class Default(WorkerEntrypoint):
                         pass
                 return Response.json({"ok": False, "error": f"execution/persistence failure: {exc}"}, status=503)
             return Response.json({"ok": True, "run_id": run_id, "metadata": {**result.metadata, "execution_mode": "source_url_ingestion"}, "sources": sources})
-
         assets = getattr(self.env, "ASSETS", None)
         if assets is not None:
             return await assets.fetch(request)
