@@ -230,6 +230,7 @@ class Default(WorkerEntrypoint):
 
             persistence = CloudflarePersistence(self.env)
             idempotency_key = request.headers.get("Idempotency-Key")
+            run_id = None
             try:
                 if idempotency_key:
                     run_id = await persistence.create_run_idempotent(req, idempotency_key)
@@ -242,10 +243,14 @@ class Default(WorkerEntrypoint):
                 sources = await _ingest_sources(self.env, run_id, req)
                 await persistence.set_run_status(run_id, "completed")
             except Exception as exc:
-                try:
-                    await persistence.set_run_status(run_id, "failed")
-                except Exception:
-                    pass
+                # run_id may still be None here if create_run/create_run_idempotent
+                # itself raised before a run was ever created; only attempt to
+                # record a failure status for a run that actually exists.
+                if run_id is not None:
+                    try:
+                        await persistence.set_run_status(run_id, "failed")
+                    except Exception:
+                        pass
                 return Response.json({"ok": False, "error": f"execution/persistence failure: {exc}"}, status=503)
             return Response.json({"ok": True, "run_id": run_id, "metadata": {**result.metadata, "execution_mode": "source_url_ingestion"}, "sources": sources})
 
