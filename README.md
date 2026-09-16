@@ -12,8 +12,11 @@ Heroic AI is the product. Research is one of its capabilities, not a separate pr
 4. `REPOSITORY_MAP.json`
 5. `docs/FAMILY_CONTRACT.json`
 6. `docs/FAMILY_ARCHITECTURE.md`
+7. `docs/AI_AUDIT_AND_VERIFICATION_STANDARD.md`
 
 Live repository state and fresh GitHub evidence override dated continuity notes.
+
+AI-assisted maintenance must follow the AI audit standard before making negative claims, closing issues, merging PRs, or declaring CI/runtime work complete.
 
 ## Heroic AI product boundary
 
