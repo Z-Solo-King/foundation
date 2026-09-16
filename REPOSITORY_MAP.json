@@ -1,8 +1,10 @@
 {
   "schema_version": "repository-map/v1",
   "repository": "Z-Solo-King/foundation",
-  "role": "public_safe_research_core",
+  "role": "public_product_boundary_for_heroic_ai",
+  "product": "Heroic AI",
   "read_first": [
+    "docs/HEROIC_AI_PRODUCT.md",
     "README.md",
     "docs/DOCUMENTATION_INDEX.md",
     "docs/FAMILY_CONTRACT.json",
@@ -10,7 +12,12 @@
     "Z-Solo-King/operations:docs/CURRENT_SOURCE_OF_TRUTH.md"
   ],
   "canonical": {
-    "research_api": "backend/api/main.py",
+    "chat_product_ui": "frontend/index.html",
+    "chat_frontend_lifecycle": "frontend/app.js",
+    "research_lifecycle": "frontend/lifecycle_controller.js",
+    "public_chat_contract_module": "backend/api/models.py",
+    "public_worker_chat_boundary": "worker.py",
+    "public_research_api": "backend/api/main.py",
     "request_model": "backend/api/models.py",
     "product_identity": "foundation_core/product_identity.py",
     "product_mapping": "foundation_core/product_mapping.py",
@@ -23,8 +30,6 @@
     "research_pipeline": "backend/execution/pipeline.py",
     "public_worker_boundary": "backend/execution/worker_boundary.py",
     "artifacts": "backend/artifacts/manifest.py",
-    "frontend": "frontend/app.js",
-    "frontend_contract": "frontend/lifecycle_controller.js",
     "benchmarks": "benchmark/"
   },
   "boundary": {
@@ -32,7 +37,9 @@
     "foundation_must_not_import_private_runtime": true,
     "public_safe_only": true,
     "private_user_memory_is_external": true,
-    "protected_policy_is_external": true
+    "protected_policy_is_external": true,
+    "heroic_ai_is_the_user_facing_product": true,
+    "research_is_a_heroic_ai_capability": true
   },
   "maintenance": {
     "validation_workflow": ".github/workflows/codeql.yml",
@@ -41,15 +48,15 @@
     "historical_code_is_not_runtime": true
   },
   "method": [
-    "validate contract",
-    "resolve target",
-    "acquire evidence",
-    "extract/observe",
-    "map deterministically",
-    "reconcile",
-    "verify",
-    "publish",
-    "snapshot"
+    "accept Heroic AI request",
+    "authenticate and route through public/private boundary",
+    "classify chat/research capability",
+    "reserve governed resources",
+    "acquire/observe permitted evidence when required",
+    "deterministically extract/map/verify",
+    "produce grounded response state",
+    "publish citations/uncertainty",
+    "persist only through the owning boundary"
   ],
-  "operations_use": "Operations consumes Foundation contracts and public-safe results; it does not copy Foundation implementation authority."
+  "operations_use": "Operations is the private control plane for Heroic AI. It consumes Foundation contracts and public-safe results; it does not copy Foundation implementation authority."
 }
