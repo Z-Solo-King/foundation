@@ -71,6 +71,18 @@ def test_operations_checkout_uses_github_app_installation_credential():
     assert "OPERATIONS_READ_TOKEN" not in codeql
 
 
+def test_required_pr_checks_emit_the_branch_protection_contract():
+    required = _workflow_texts()["required-pr-checks.yml"]
+    assert "pull_request:" in required
+    assert "merge_group:" in required
+    assert "types: [checks_requested]" in required
+    assert "name: Public tests" in required
+    assert "name: Analyze python" in required
+    assert "pywrangler deploy" not in required
+    assert "CLOUDFLARE_API_TOKEN" not in required
+    assert "B2_KEY_ID" not in required
+
+
 def test_backup_workflow_separates_github_and_b2_credentials():
     backup = _workflow_texts()["b2-repository-backup.yml"]
     assert "BACKUP_GITHUB_TOKEN: ${{ secrets.BACKUP_GITHUB_TOKEN }}" in backup
@@ -114,11 +126,11 @@ def test_backup_manifests_cannot_claim_remote_restore_without_test():
 
 def test_required_ci_contract_supports_merge_group():
     texts = _workflow_texts()
-    codeql = texts["codeql.yml"]
+    required = texts["required-pr-checks.yml"]
     frontend = texts["frontend-ui.yml"]
-    assert "merge_group:" in codeql
-    assert "types: [checks_requested]" in codeql
-    assert "name: Public tests" in codeql
-    assert "name: Analyze python" in codeql
-    assert "npm test" in codeql
+    assert "merge_group:" in required
+    assert "types: [checks_requested]" in required
+    assert "name: Public tests" in required
+    assert "name: Analyze python" in required
+    assert "npm test" in required
     assert "merge_group:" in frontend
