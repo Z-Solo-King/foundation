@@ -13,7 +13,6 @@ on:
 
 permissions:
   contents: read
-  actions: write
 
 jobs:
   contract:
@@ -32,27 +31,10 @@ jobs:
           package-manager-cache: false
       - name: Syntax and contract tests
         run: npm test
-      - name: Dispatch final production workflow
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          gh workflow run production-release-final.yml --repo "$GITHUB_REPOSITORY" --ref main
-          for attempt in $(seq 1 12); do
-            run_json=$(gh run list \
-              --repo "$GITHUB_REPOSITORY" \
-              --workflow production-release-final.yml \
-              --branch main \
-              --limit 10 \
-              --json databaseId,event,headSha,status,conclusion)
-            matching=$(jq -c --arg sha "$GITHUB_SHA" '[.[] | select(.headSha == $sha and .event == "workflow_dispatch")] | sort_by(.databaseId) | reverse | .[0] // empty' <<<"$run_json")
-            if [ -n "$matching" ]; then
-              database_id=$(jq -r '.databaseId' <<<"$matching")
-              echo "PRODUCTION_RELEASE_DISPATCHED=$database_id"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo 'Final production workflow dispatch was not observed for current main SHA'
-          exit 1
+
+  production:
+    name: Production release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: contract
+    uses: ./.github/workflows/production-release-reusable.yml
+    secrets: inherit
