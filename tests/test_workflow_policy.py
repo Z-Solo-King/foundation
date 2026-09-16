@@ -53,7 +53,7 @@ def test_canonical_operations_production_pin_is_current_and_immutable():
     deployment = _workflow_texts()["production-deploy.yml"]
     assert f"OPERATIONS_REPOSITORY: {CANONICAL_OPERATIONS_REPOSITORY}" in deployment
     assert f"OPERATIONS_REF: {CANONICAL_OPERATIONS_REF}" in deployment
-    assert deployment.count(CANONICAL_OPERATIONS_REF) == 3
+    assert deployment.count(CANONICAL_OPERATIONS_REF) == 2
     assert LEGACY_OPERATIONS_REF not in deployment
     assert "OPERATIONS_REF:" not in deployment.split("jobs:", 1)[1]
     assert 'git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git"' in deployment
