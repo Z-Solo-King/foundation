@@ -1,12 +1,12 @@
 # Deployment
 
-Foundation owns the single production deployment workflow in `.github/workflows/codeql.yml`. That workflow deploys the public Worker and, after the public deployment succeeds, deploys the explicitly approved private Operations revision.
+Foundation owns the single production deployment workflow in `.github/workflows/production-release.yml`. Its workflow name remains `frontend-ui`. The workflow deploys the public Worker and, after the public deployment succeeds, deploys the explicitly approved private Operations revision.
 
 ## Production authority
 
-- Public Worker deployment authority: `.github/workflows/codeql.yml`
+- Public Worker deployment authority: `.github/workflows/production-release.yml`
 - Private Operations repository: `Z-Solo-King/operations`
-- Approved Operations production revision is pinned in the workflow as `OPERATIONS_REF`.
+- Approved Operations production revision is pinned in `scripts/production_release.sh` and validated by the workflow policy.
 - The Operations production revision is immutable for a deployment run; the workflow fails closed if the expected pin changes.
 - Operations remains a private runtime/control-plane repository and is not deployed by a separate GitHub-hosted Operations workflow.
 
@@ -14,25 +14,28 @@ Foundation owns the single production deployment workflow in `.github/workflows/
 
 The deployment workflow uses separate credential authorities. Do not reuse storage/provider credentials for GitHub repository access.
 
-- `OPERATIONS_READ_TOKEN`: GitHub credential authorized to read the private `Z-Solo-King/operations` repository and the pinned production commit.
+- `OPERATIONS_APP_ID`: GitHub App identifier used to resolve the installed Operations repository authorization at runtime.
+- `OPERATIONS_APP_PRIVATE_KEY`: GitHub App private key used only to mint the short-lived installation credential for the approved Operations checkout.
 - `CLOUDFLARE_API_TOKEN`: Cloudflare API credential required by the canonical deployment workflow.
 - `CLOUDFLARE_ACCOUNT_ID`: Cloudflare account identifier.
 - `AUTH_TOKEN`: application authentication secret, when protected authenticated smoke verification is enabled.
 
-Backblaze B2 credentials are separate application/runtime credentials. They must never be stored in or substituted for `OPERATIONS_READ_TOKEN`.
+`OPERATIONS_APP_INSTALLATION_ID` is **not** a stored production secret authority. The workflow resolves the current installation from the GitHub App at runtime.
+
+Backblaze B2 credentials are separate application/runtime credentials. They must never be stored in or substituted for the Operations GitHub App credentials.
 
 ## Operations deployment sequence
 
 The canonical workflow performs the following in order:
 
 1. pass Foundation public tests and static analysis;
-2. deploy the tested Foundation public Worker;
-3. run public production smoke checks;
-4. validate `OPERATIONS_READ_TOKEN` against the expected private Operations repository and approved commit through the GitHub API;
-5. fetch and verify the exact approved Operations revision;
+2. resolve the installed Operations GitHub App installation from the App JWT;
+3. deploy the tested Foundation public Worker;
+4. run public production smoke checks;
+5. fetch and verify the exact approved Operations revision using the short-lived installation credential;
 6. apply the canonical Operations resource-governance D1 schema;
 7. deploy the exact Operations Worker revision;
-8. remove the ephemeral checkout, temporary authentication helper, and generated configuration.
+8. remove the ephemeral checkout, temporary authentication helper, private key material and generated configuration.
 
 A credential failure stops the deployment before any Operations deployment step. A wrong credential must not be silently retried with a B2 or other provider credential.
 
@@ -50,4 +53,4 @@ This is a signed Operations commit implementing the durable D1 governance runtim
 
 ## Credential rotation boundary
 
-`OPERATIONS_READ_TOKEN` is a dedicated GitHub repository-read credential. It is intentionally independent from Backblaze B2 application credentials, Cloudflare credentials, and application `AUTH_TOKEN`. Rotating or replacing one provider's credential must not require changing another provider's secret name or value.
+`OPERATIONS_APP_ID` and `OPERATIONS_APP_PRIVATE_KEY` are dedicated GitHub App deployment credentials. They are intentionally independent from Backblaze B2 application credentials, Cloudflare credentials, and application `AUTH_TOKEN`. The resolved installation token is short-lived and generated only for the approved Operations checkout.
