@@ -31,7 +31,11 @@
       const runButton = message.meta?.runId ? `<button class="secondary" data-open-run="${api.escapeHtml(message.meta.runId)}">Open run</button>` : '';
       const saveLabel = message.meta?.saved ? 'Saved' : 'Save';
       const sources = Array.isArray(message.meta?.sources) && message.meta.sources.length ? `<div class="source-list" aria-label="Sources">${renderSources(message.meta.sources)}</div>` : '';
-      return `<article class="message ${message.role === 'user' ? 'user-message' : 'assistant-message'}" data-message-id="${api.escapeHtml(message.id)}"><div class="message-meta"><span>${message.role === 'user' ? 'You' : 'Research AI'}</span><time datetime="${new Date(message.at || Date.now()).toISOString()}">${new Date(message.at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div><div class="message-bubble">${api.escapeHtml(message.text)}</div><div class="message-actions"><button class="secondary" data-save-message="${api.escapeHtml(message.id)}" aria-label="${saveLabel} message">${saveLabel}</button>${runButton}</div>${sources}</article>`;
+      const pending = message.meta?.pending ? '<span class="message-state">Sending…</span>' : '';
+      const error = message.meta?.error ? '<span class="message-state error">Request failed</span>' : '';
+      const operation = message.meta?.operation ? `<span class="message-state">${api.escapeHtml(message.meta.operation)}</span>` : '';
+      const label = message.role === 'user' ? 'You' : 'Heroic AI';
+      return `<article class="message ${message.role === 'user' ? 'user-message' : 'assistant-message'} ${message.meta?.error ? 'message-error' : ''}" data-message-id="${api.escapeHtml(message.id)}"><div class="message-meta"><span>${label}</span><time datetime="${new Date(message.at || Date.now()).toISOString()}">${new Date(message.at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>${pending}${error}${operation}</div><div class="message-bubble">${api.escapeHtml(message.text)}</div><div class="message-actions"><button class="secondary" data-save-message="${api.escapeHtml(message.id)}" aria-label="${saveLabel} message">${saveLabel}</button>${runButton}</div>${sources}</article>`;
     }).join('');
     el.conversation.scrollTop = el.conversation.scrollHeight;
   }
@@ -51,7 +55,6 @@
     const tokenPresent = Boolean(api.token());
     return `<div class="message view-panel"><div class="view-heading"><div><span class="eyebrow">Configuration</span><h2>Settings</h2><p>Browser-local controls for this frontend surface.</p></div></div><section class="workspace-card"><div class="card-head"><strong>Backend</strong><span class="status-dot ${api.state.backendOk ? 'ok' : ''}">${api.escapeHtml(api.state.backendText)}</span></div><p class="mono">${api.escapeHtml(api.API_BASE || 'Not configured')}</p><p class="muted">Session authentication is held only in session storage for this browser session.</p><label class="field-label" for="session-token">Session token</label><input id="session-token" type="password" placeholder="${tokenPresent ? 'Token already set for this session' : 'Optional short-lived token'}" autocomplete="off" value=""><div class="card-actions"><button class="secondary" data-action="save-session-token">Use for this tab</button><button class="secondary" data-action="clear-session-token">Clear</button><button class="secondary" data-action="backend-check">Check backend</button></div></section><section class="workspace-card"><div class="card-head"><strong>Local data</strong><span>${api.state.chats.length} chats · ${api.state.projects.length} projects · ${api.state.saved.length} saved</span></div><p class="muted">Exports are versioned local data only. Imports are schema-validated before replacing local state.</p><div class="card-actions"><button class="secondary" data-action="export-data">Export</button><button class="secondary" data-action="import-data">Import</button><button class="danger" data-action="clear-data">Clear local data</button></div></section></div>`;
   }
-
   function renderView() {
     if (api.state.view === 'chats') return renderConversation();
     if (el.mobileTitle) el.mobileTitle.textContent = api.state.view[0].toUpperCase() + api.state.view.slice(1);
@@ -61,7 +64,7 @@
   }
   function render() {
     renderSidebar(); renderView();
-    document.querySelectorAll('[data-view]').forEach((node) => { const active = node.dataset.view === api.state.view; node.classList.toggle('active', active); node.setAttribute('aria-current', active ? 'page' : 'false'); });
+    document.querySelectorAll('[data-view]').forEach((node) => { const active = node.dataset.view === api.state.view; node.classList.toggle('active', active); node.setAttribute('aria-current', active ? 'true' : 'false'); });
   }
   function openSidebar() { el.sidebar?.classList.add('open'); el.sidebarOverlay?.classList.add('show'); }
   function closeSidebar() { el.sidebar?.classList.remove('open'); el.sidebarOverlay?.classList.remove('show'); }
@@ -91,6 +94,25 @@
     if (event.target.closest('[data-action="export-data"]')) { event.preventDefault(); api.exportLocalData?.(); return; }
     if (event.target.closest('[data-action="import-data"]')) { event.preventDefault(); api.importLocalData?.(); return; }
     if (event.target.closest('[data-action="clear-data"]')) { event.preventDefault(); if (window.confirm('Clear chats, projects and saved items from this browser?')) { api.chatStore.clearData(); render(); } return; }
+    if (event.target.closest('[data-action="save-session-token"]')) {
+      event.preventDefault();
+      const input = document.getElementById('session-token');
+      const value = input?.value.trim() || '';
+      if (!value) { toast('Enter a session token first.'); return; }
+      sessionStorage.setItem(api.keys.session, value);
+      document.dispatchEvent(new Event('rie:session-changed'));
+      void api.checkBackend?.();
+      toast('Session token stored for this tab.');
+      return;
+    }
+    if (event.target.closest('[data-action="clear-session-token"]')) {
+      event.preventDefault();
+      sessionStorage.removeItem(api.keys.session);
+      document.dispatchEvent(new Event('rie:session-changed'));
+      void api.checkBackend?.();
+      toast('Session token cleared.');
+      return;
+    }
   }, false);
 
   el.search?.addEventListener('input', renderSidebar);
