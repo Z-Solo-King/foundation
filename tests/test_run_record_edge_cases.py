@@ -17,6 +17,25 @@ def test_stage_receipt_bounded_length_guard():
     with pytest.raises(ValueError): StageReceipt("r"*129,"stage","in","out","local")
 
 
+def test_non_resumable_stage_stays_structurally_valid():
+    first = StageReceipt("request", "plan", "in", "out", "local", resume_eligible=False)
+    second = StageReceipt(
+        "request",
+        "fetch",
+        "out",
+        "next",
+        "local",
+        parent_receipt_fingerprint=first.fingerprint(),
+    )
+    record = ChatbotRunRecord(
+        request_fingerprint="request",
+        mode="chat",
+        stages=(first, second),
+        status="completed",
+    )
+    assert record.validate() is True
+
+
 def test_token_efficiency_nonfinite_growth_guard():
     baseline=TokenEfficiencyObservation(10,1,0,0,1,0,1,0,0,True)
     candidate=TokenEfficiencyObservation(10,1,0,0,math.inf,0,1,0,0,True)
