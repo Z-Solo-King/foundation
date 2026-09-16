@@ -24,7 +24,7 @@
       button.tabIndex = active ? 0 : -1;
     });
     if (prompt) {
-      prompt.placeholder = api.state.mode === 'research' ? 'What should the engine research and verify?' : 'Ask anything…';
+      prompt.placeholder = api.state.mode === 'research' ? 'What should the engine research and verify?' : 'Ask Heroic AI…';
       prompt.setAttribute('aria-label', api.state.mode === 'research' ? 'Research question' : 'Message');
     }
   }
@@ -34,7 +34,7 @@
     api.state.mode = mode;
     renderMode();
     if (mode === 'research') workspace?.classList.add('open');
-    setStatus(mode === 'research' ? 'Research uses the canonical backend lifecycle and evidence contract.' : 'Chat stays browser-local until a conversational backend exists.');
+    setStatus(mode === 'research' ? 'Research uses the canonical backend lifecycle and evidence contract.' : 'Chat uses the authenticated Heroic AI backend and canonical Operations routing.');
     document.dispatchEvent(new CustomEvent('rie:mode-changed', { detail: { mode } }));
   }
 
@@ -62,9 +62,9 @@
       const files = [...(input.files || [])];
       if (!files.length) return;
       if (api.state.mode !== 'research') {
-        setStatus('Attachments are selected locally; no chat backend upload is implied.');
+        setStatus('Attachments are selected locally; this chat contract does not upload file contents yet.');
       } else {
-        setStatus('Attachments selected locally. Research upload support is not claimed by the current public contract.');
+        setStatus('Attachments are selected locally; the public research contract does not upload file contents yet.');
       }
       files.forEach((file) => addAttachmentChip(file.name));
     }, { once: true });
