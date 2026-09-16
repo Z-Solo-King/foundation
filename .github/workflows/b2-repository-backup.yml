@@ -1,6 +1,6 @@
 name: B2 repository backup
 
-'on':
+on:
   push:
     branches:
       - main
@@ -145,10 +145,10 @@ record = {
     'sha256': sha256,
     'size_bytes': int(size),
     'ref_count': int(refs),
-    "restore_test": {
-        "local_git_fsck": True,
-        "main_ref_verified": True,
-        "remote_b2_restore_verified": False,
+    'restore_test': {
+        'local_git_fsck': True,
+        'main_ref_verified': True,
+        'remote_b2_restore_verified': False,
     },
 }
 with open(path, 'w', encoding='utf-8') as handle:
