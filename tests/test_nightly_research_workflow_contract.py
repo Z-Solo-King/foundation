@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 WORKFLOW = Path(__file__).parents[1] / ".github" / "workflows" / "nightly-multi-agent-research.yml"
 
 
@@ -14,6 +13,28 @@ def test_matrix_is_fail_fast_false_and_has_three_lanes():
     assert "lane: 0" in text
     assert "lane: 1" in text
     assert "lane: 2" in text
+
+
+def test_private_operations_revision_and_app_auth_are_explicit():
+    text = workflow_text()
+    assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
+    assert "OPERATIONS_RESEARCH_REF: 48ef452e3be16d6117cc42b1968a1094de4974f4" in text
+    assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in text
+    assert "OPERATIONS_APP_INSTALLATION_ID: ${{ secrets.OPERATIONS_APP_INSTALLATION_ID }}" in text
+    assert "OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}" in text
+    assert "GitHub App installation access" in text
+    assert "private.multi_agent.runner" in text
+    assert "private.multi_agent.project_research" in text
+    assert "OPERATIONS_READ_TOKEN" not in text
+
+
+def test_private_source_is_not_uploaded_as_an_artifact():
+    text = workflow_text()
+    assert "RUNNER_TEMP/operations-research" in text
+    assert "actions/upload-artifact" in text
+    assert "operations-research" not in text.split("actions/upload-artifact", 1)[1]
+    assert "Remove private research checkout and credentials" in text
+    assert "Remove private project-research checkout and credentials" in text
 
 
 def test_lane_status_and_artifact_steps_are_always_run():
