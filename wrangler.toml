@@ -5,6 +5,10 @@ compatibility_flags = ["python_workers"]
 workers_dev = true
 preview_urls = false
 
+[assets]
+directory = "./frontend"
+not_found_handling = "single-page-application"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "REPLACE_WITH_PUBLIC_DATABASE_NAME"
