@@ -5,6 +5,12 @@ on:
     # 01:00 IST = 19:30 UTC on the previous day.
     - cron: "30 19 * * *"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Explicit deterministic dry-run for manual testing only"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   actions: read
@@ -43,7 +49,20 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
+      - name: Research mode
+        id: mode
+        shell: bash
+        run: |
+          if [[ "${{ inputs.dry_run || false }}" == "true" ]]; then
+            echo "mode=dry-run" >> "$GITHUB_OUTPUT"
+            echo "Manual explicit dry-run requested; no live findings are being produced."
+          else
+            echo "mode=live" >> "$GITHUB_OUTPUT"
+            echo "Scheduled/live research mode selected."
+          fi
       - name: Require live research executor configuration
+        id: preflight
+        if: ${{ steps.mode.outputs.mode == 'live' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -56,12 +75,23 @@ jobs:
           esac
           echo "live research executor configuration: PASS"
       - name: Run complete research lane
+        id: run_lane
+        shell: bash
         run: |
-          python -m benchmark.multi_agent.runner \
-            --lane "${{ matrix.lane }}" \
-            --global-capacity "${{ matrix.capacity }}" \
+          set -euo pipefail
+          mkdir -p .runtime
+          args=(
+            --lane "${{ matrix.lane }}"
+            --global-capacity "${{ matrix.capacity }}"
             --output ".runtime/nightly-lane-${{ matrix.lane }}.jsonl"
-      - name: Validate lane coverage
+          )
+          if [[ "${{ steps.mode.outputs.mode }}" == "dry-run" ]]; then
+            args+=(--dry-run)
+          fi
+          python -m benchmark.multi_agent.runner "${args[@]}"
+      - name: Validate live lane coverage
+        id: validate
+        if: ${{ steps.mode.outputs.mode == 'live' }}
         shell: python
         env:
           LANE: ${{ matrix.lane }}
@@ -71,24 +101,80 @@ jobs:
           from pathlib import Path
 
           lane = int(os.environ['LANE'])
-          rows = [json.loads(line) for line in Path(f'.runtime/nightly-lane-{lane}.jsonl').read_text().splitlines() if line.strip()]
+          path = Path(f'.runtime/nightly-lane-{lane}.jsonl')
+          rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
           completed = {row['program_id'] for row in rows if row.get('status') == 'completed' and 'program_id' in row}
           expected = {f'lane{lane}-slot{slot}' for slot in range(8)}
           assert completed == expected, f'lane {lane} coverage mismatch: expected {expected}, got {completed}'
           print(f'lane {lane}: 8/8 programs completed')
+      - name: Materialize truthful lane status
+        if: ${{ always() }}
+        shell: python
+        env:
+          LANE: ${{ matrix.lane }}
+          MODE: ${{ steps.mode.outputs.mode || 'unknown' }}
+          PREFLIGHT: ${{ steps.preflight.outcome || 'skipped' }}
+          RUN_LANE: ${{ steps.run_lane.outcome || 'skipped' }}
+          VALIDATE: ${{ steps.validate.outcome || 'skipped' }}
+        run: |
+          import json
+          import os
+          from pathlib import Path
+
+          lane = int(os.environ['LANE'])
+          mode = os.environ['MODE']
+          preflight = os.environ['PREFLIGHT']
+          run_lane = os.environ['RUN_LANE']
+          validate = os.environ['VALIDATE']
+          output = Path(f'.runtime/nightly-lane-{lane}.jsonl')
+          rows = [json.loads(line) for line in output.read_text().splitlines() if line.strip()] if output.exists() else []
+          expected = [f'lane{lane}-slot{slot}' for slot in range(8)]
+
+          if mode == 'live' and preflight != 'success':
+              lane_state = 'blocked_before_execution'
+              rows = rows or [{'program_id': program_id, 'status': 'blocked_before_execution', 'mode': 'live'} for program_id in expected]
+          elif mode == 'dry-run' and run_lane == 'success':
+              lane_state = 'dry_run'
+          elif run_lane == 'success' and validate == 'success':
+              lane_state = 'live_research_executed'
+          elif run_lane == 'skipped':
+              lane_state = 'blocked_before_execution'
+          else:
+              lane_state = 'lane_failure'
+
+          status = {
+              'schema': 'nightly-research-lane-status/v1',
+              'run_id': os.environ['GITHUB_RUN_ID'],
+              'lane': lane,
+              'mode': mode,
+              'state': lane_state,
+              'preflight': preflight,
+              'runner': run_lane,
+              'validation': validate,
+              'program_count': len(rows),
+              'programs': [row.get('program_id') for row in rows if row.get('program_id')],
+          }
+          Path(f'.runtime/nightly-lane-{lane}-status.json').write_text(json.dumps(status, indent=2) + '\n')
+          if not output.exists():
+              output.write_text(''.join(json.dumps(row) + '\n' for row in rows))
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: ${{ always() }}
         with:
           name: nightly-research-lane-${{ matrix.lane }}
-          path: .runtime/nightly-lane-${{ matrix.lane }}.jsonl
+          path: |
+            .runtime/nightly-lane-${{ matrix.lane }}.jsonl
+            .runtime/nightly-lane-${{ matrix.lane }}-status.json
           retention-days: 30
       - name: Attest lane artifact
+        if: ${{ steps.run_lane.outcome == 'success' && steps.validate.outcome == 'success' }}
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: .runtime/nightly-lane-${{ matrix.lane }}.jsonl
 
   project-summary:
-    name: Build nightly Heroic AI improvement evidence
+    name: Diagnose nightly Heroic AI research
     needs: research
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -102,7 +188,48 @@ jobs:
           pattern: nightly-research-lane-*
           path: .runtime/artifacts
           merge-multiple: true
-      - name: Build auditable project research summary
+      - name: Build truthful nightly diagnosis
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+
+          statuses = []
+          for lane in range(3):
+              path = Path(f'.runtime/artifacts/nightly-lane-{lane}-status.json')
+              statuses.append(json.loads(path.read_text()))
+
+          states = {item['state'] for item in statuses}
+          if 'lane_failure' in states:
+              aggregate = 'lane_specific_failure'
+          elif 'blocked_before_execution' in states:
+              aggregate = 'blocked_before_execution'
+          elif states == {'dry_run'}:
+              aggregate = 'dry_run'
+          elif states == {'live_research_executed'}:
+              aggregate = 'live_research_executed'
+          else:
+              aggregate = 'partial_or_mixed'
+
+          diagnosis = {
+              'schema': 'nightly-research-diagnosis/v1',
+              'run_id': '${{ github.run_id }}',
+              'aggregate_state': aggregate,
+              'research_job_result': '${{ needs.research.result }}',
+              'lanes': statuses,
+              'real_research_findings_allowed': aggregate == 'live_research_executed' and '${{ inputs.dry_run || false }}' != 'true',
+              'historical_dry_run_findings_are_real_research': False,
+              'evidence_rule': 'LLM output is candidate-only until deterministic acquisition/evidence receipt qualification.',
+          }
+          Path('.runtime/nightly-diagnosis.json').write_text(json.dumps(diagnosis, indent=2) + '\n')
+          print(json.dumps(diagnosis, indent=2))
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-diagnosis
+          path: .runtime/nightly-diagnosis.json
+          retention-days: 30
+      - name: Build project research only from complete live research
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
         run: |
           python -m benchmark.multi_agent.project_research \
             --input \
@@ -111,7 +238,8 @@ jobs:
               .runtime/artifacts/nightly-lane-2.jsonl \
             --output .runtime/nightly-project-improvement.json \
             --run-id "${GITHUB_RUN_ID}"
-      - name: Validate complete nightly coverage
+      - name: Validate and publish complete-live project research
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
         shell: python
         run: |
           import json
@@ -124,6 +252,7 @@ jobs:
           assert 'improvement_signals' in summary
           assert summary['evidence_policy']['llm_findings'] == 'candidate_only_until_acquisition_receipt'
       - name: Download previous successful nightly baseline
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -132,20 +261,30 @@ jobs:
           previous_run="$(gh run list --workflow nightly-multi-agent-research.yml --status success --limit 20 --json databaseId --jq 'map(select(.databaseId != (env.GITHUB_RUN_ID|tonumber))) | .[0].databaseId // empty')"
           if [ -z "$previous_run" ]; then
             echo 'No previous successful nightly run is available; producing NO_BASELINE.'
+            mkdir -p .runtime/previous
+            printf '%s\n' '{"decision":"NO_BASELINE"}' > .runtime/previous/nightly-baseline-placeholder.json
             exit 0
           fi
           mkdir -p .runtime/previous
           if ! gh run download "$previous_run" --name nightly-project-improvement --dir .runtime/previous; then
             echo 'Previous nightly run exists but has no downloadable project-improvement artifact; producing NO_BASELINE.'
             rm -rf .runtime/previous
+            mkdir -p .runtime/previous
           fi
       - name: Compare current run with previous baseline
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
         run: |
-          python -m benchmark.multi_agent.baseline \
-            --current .runtime/nightly-project-improvement.json \
-            --previous .runtime/previous/nightly-project-improvement.json \
-            --output .runtime/nightly-baseline.json
+          previous='.runtime/previous/nightly-project-improvement.json'
+          if [[ ! -f "$previous" ]]; then
+            printf '%s\n' '{"schema":"project-improvement-baseline/v1","decision":"NO_BASELINE"}' > .runtime/nightly-baseline.json
+          else
+            python -m benchmark.multi_agent.baseline \
+              --current .runtime/nightly-project-improvement.json \
+              --previous "$previous" \
+              --output .runtime/nightly-baseline.json
+          fi
       - name: Validate baseline contract
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
         shell: python
         run: |
           import json
@@ -154,20 +293,39 @@ jobs:
           assert baseline['schema'] == 'project-improvement-baseline/v1'
           assert baseline['decision'] in {'NO_BASELINE', 'IMPROVED', 'REGRESSED', 'STABLE'}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
         with:
           name: nightly-project-improvement
           path: .runtime/nightly-project-improvement.json
           retention-days: 30
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
         with:
           name: nightly-project-improvement-baseline
           path: .runtime/nightly-baseline.json
           retention-days: 30
       - name: Attest project improvement summary
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: .runtime/nightly-project-improvement.json
       - name: Attest project improvement baseline
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: .runtime/nightly-baseline.json
+
+  final-gate:
+    name: Preserve truthful nightly result
+    needs: [research, project-summary]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify research and diagnosis outcomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "research=${{ needs.research.result }}"
+          echo "diagnosis=${{ needs.project-summary.result }}"
+          test "${{ needs.project-summary.result }}" = "success" || { echo 'Nightly diagnosis failed.'; exit 1; }
+          test "${{ needs.research.result }}" = "success" || { echo 'One or more research lanes failed/blocked; truthful nightly result remains failed.'; exit 1; }
