@@ -9,6 +9,7 @@ SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
 CANONICAL_OPERATIONS_REF = "cf28a28cb40de527aff1cd87f96e103669635f70"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
+PRODUCTION_WORKFLOW = "production-release-v2.yml"
 
 
 def _workflow_texts() -> dict[str, str]:
@@ -37,7 +38,7 @@ def test_all_third_party_actions_are_sha_pinned():
 def test_production_deployment_has_one_owner():
     texts = _workflow_texts()
     deployers = [name for name, text in texts.items() if "pywrangler deploy" in text]
-    assert deployers == ["frontend-ui.yml"], deployers
+    assert deployers == [PRODUCTION_WORKFLOW], deployers
 
     forbidden = re.compile(r"(?i)(workers\s+build|deploy\s+hook|deploy_hook|workers-builds)")
     violations = [
@@ -50,7 +51,7 @@ def test_production_deployment_has_one_owner():
 
 
 def test_canonical_operations_production_pin_is_current_and_immutable():
-    deployment = _workflow_texts()["frontend-ui.yml"]
+    deployment = _workflow_texts()[PRODUCTION_WORKFLOW]
     assert f"OPERATIONS_REPOSITORY: {CANONICAL_OPERATIONS_REPOSITORY}" in deployment
     assert f"OPERATIONS_REF: {CANONICAL_OPERATIONS_REF}" in deployment
     assert deployment.count(CANONICAL_OPERATIONS_REF) == 2
@@ -61,7 +62,7 @@ def test_canonical_operations_production_pin_is_current_and_immutable():
 
 
 def test_operations_checkout_uses_github_app_installation_credential():
-    deployment = _workflow_texts()["frontend-ui.yml"]
+    deployment = _workflow_texts()[PRODUCTION_WORKFLOW]
     assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in deployment
     assert "OPERATIONS_APP_INSTALLATION_ID: ${{ secrets.OPERATIONS_APP_INSTALLATION_ID }}" in deployment
     assert "OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}" in deployment
