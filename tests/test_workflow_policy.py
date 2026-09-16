@@ -81,6 +81,7 @@ def test_frontend_ui_keeps_one_job_and_guards_release_to_main_push():
     assert "uses: ./.github/workflows/production-release-reusable.yml" not in frontend
     assert "gh workflow run" not in frontend
     assert "if: github.event_name == 'push' && github.ref == 'refs/heads/main'" in frontend
+    assert "working-directory: ${{ github.workspace }}" in frontend
     assert "actions: write" not in frontend
 
 
