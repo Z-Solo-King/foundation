@@ -33,6 +33,8 @@ B2 credentials authenticate only to B2. The GitHub token authenticates only to G
 
 The backup workflow must use an ephemeral `GIT_ASKPASS` helper, disable interactive prompts, remove the helper during cleanup, and never print token values.
 
+The backup workflow must validate the GitHub credential against the private Operations repository through the GitHub API before cloning. It must validate B2 credentials separately against the configured B2 bucket. Passing both checks proves credential-purpose separation, not production or disaster-recovery certification.
+
 ## 4. Production Operations credential
 
 Production deployment uses `OPERATIONS_READ_TOKEN` for private Operations checkout. It is intentionally separate from `BACKUP_GITHUB_TOKEN`, even where an underlying administrative identity could technically hold both permissions.
