@@ -4,7 +4,7 @@ The scheduled Foundation workflow mirrors both active repositories to the author
 
 ## Credential separation
 
-The backup workflow uses two independent credential families:
+The backup workflow uses two independent credential families.
 
 ### GitHub repository credential
 
@@ -15,7 +15,7 @@ The backup workflow uses two independent credential families:
 
 It is **not** a B2 credential and must not contain or be substituted with a B2 key or application key.
 
-The workflow now validates this credential against the GitHub API before cloning the private Operations repository. It then uses an ephemeral `GIT_ASKPASS` helper for Git authentication and removes the helper during cleanup.
+The workflow validates this credential against the GitHub API before cloning the private Operations repository. It then uses an ephemeral `GIT_ASKPASS` helper for Git authentication and removes the helper during cleanup.
 
 ### Backblaze B2 credentials
 
@@ -27,7 +27,7 @@ Current B2 endpoint:
 
 `https://s3.eu-central-003.backblazeb2.com`
 
-These credentials authenticate only to B2. They are never valid substitutes for GitHub authentication.
+The workflow validates the B2 credentials against the configured bucket separately from the GitHub credential check. These B2 credentials authenticate only to B2 and are never valid substitutes for GitHub authentication.
 
 ## Deployment credential is separate
 
