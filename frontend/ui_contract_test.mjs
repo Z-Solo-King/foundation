@@ -15,6 +15,11 @@ const styles = read('styles.css');
 const guards = read('ui_guards.js');
 
 assert.match(html, /Heroic AI/);
+assert.match(html, /Content-Security-Policy/);
+assert.match(html, /default-src 'self'/);
+assert.match(html, /script-src 'self'/);
+assert.match(html, /object-src 'none'/);
+assert.match(html, /frame-ancestors 'none'/);
 for (const module of ['frontend_state.js', 'chat_store.js', 'chat_view.js', 'workspace_view.js', 'composer.js', 'app.js', 'lifecycle_controller.js', 'lifecycle_queue_controls.js']) assert.ok(html.includes(`./${module}`), `missing script: ${module}`);
 for (const viewName of ['chats', 'projects', 'saved', 'settings']) assert.ok(html.includes(`data-view="${viewName}"`));
 for (const action of ['new-chat', 'backend-check', 'open-queue', 'toggle-workspace', 'attachments', 'voice', 'queue', 'send']) assert.ok(html.includes(`data-action="${action}"`));
