@@ -44,7 +44,7 @@
   "maintenance": {
     "validation_workflow": ".github/workflows/required-pr-checks.yml",
     "public_tests": "tests/",
-    "deployment_workflow": ".github/workflows/heroic-ai-production-release.yml",
+    "deployment_workflow": ".github/workflows/heroic-ai-production-release-v4.yml",
     "historical_code_is_not_runtime": true
   },
   "method": [
