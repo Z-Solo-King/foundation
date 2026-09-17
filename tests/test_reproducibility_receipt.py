@@ -61,9 +61,9 @@ def test_incompatible_configuration_or_corpus_rejects_baseline():
     assert any("corpus_version" in reason for reason in reasons)
 
 
-def test_non_completed_baseline_is_not_comparable():
-    current = receipt()
+def test_incomplete_previous_baseline_is_not_comparable():
+    current = receipt(execution_state="partial")
     previous = receipt(execution_state="partial")
     compatible, reasons = ensure_compatible(current, previous)
     assert compatible is False
-    assert "baseline comparison requires completed execution states" in reasons
+    assert "baseline comparison requires a completed previous execution state" in reasons
