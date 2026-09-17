@@ -17,6 +17,7 @@ from urllib.error import HTTPError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
+from benchmark.evidence_tier import EvidenceTier, parse_evidence_tier
 from foundation_core.normalization import canonical_url as _canonical_url
 
 USER_AGENT = "ResearchIntelligenceEngine-Benchmark/2026.09"
@@ -26,6 +27,7 @@ MAX_ATTEMPTS = 2
 REQUEST_TIMEOUT_SECONDS = 20.0
 MAX_RESPONSE_BYTES = 2_000_000
 MIN_CYCLE_INTERVAL_SECONDS = 5.0
+EVIDENCE_TIER = parse_evidence_tier(EvidenceTier.LIVE_SOURCE_ACQUISITION.value)
 
 
 class _ProductParser(html.parser.HTMLParser):
@@ -297,7 +299,7 @@ def run(input_path: str, output: str, run_id: str, shards: int, shard: int, work
 
     if not selected:
         summary = {
-            "schema": "autonomous-public-benchmark-summary/v9",
+            "schema": "autonomous-public-benchmark-summary/v10",
             "run_id": run_id,
             "shard": shard,
             "shards": shards,
@@ -305,6 +307,8 @@ def run(input_path: str, output: str, run_id: str, shards: int, shard: int, work
             "selected": 0,
             "selected_targets": 0,
             "observations": 0,
+            "evidence": EVIDENCE_TIER.to_dict(),
+            "evidence_rule": "Live HTTP acquisition measures transport and structural page signals only; it does not certify provider behavior, field-level correctness or production capability.",
             "status_counts": counts,
             "http_status_counts": {},
             "diagnostic_counts": {},
@@ -316,6 +320,7 @@ def run(input_path: str, output: str, run_id: str, shards: int, shard: int, work
                 "observations_with_product_candidates": 0,
                 "observations_with_jsonld": 0,
                 "field_level_correctness_oracle": False,
+                "evidence_scope": "transport_and_structural_signals_only",
             },
             "targets_with_failures": [],
         }
@@ -392,7 +397,7 @@ def run(input_path: str, output: str, run_id: str, shards: int, shard: int, work
             targets_with_failures.append(target_rows)
 
     summary = {
-        "schema": "autonomous-public-benchmark-summary/v9",
+        "schema": "autonomous-public-benchmark-summary/v10",
         "run_id": run_id,
         "shard": shard,
         "shards": shards,
@@ -400,6 +405,8 @@ def run(input_path: str, output: str, run_id: str, shards: int, shard: int, work
         "selected": len(selected),
         "selected_targets": len(selected),
         "observations": observations,
+        "evidence": EVIDENCE_TIER.to_dict(),
+        "evidence_rule": "Live HTTP acquisition measures transport and structural page signals only; it does not certify provider behavior, field-level correctness or production capability.",
         "status_counts": counts,
         "http_status_counts": dict(sorted(http_counts.items())),
         "diagnostic_counts": dict(sorted(diagnostic_counts.items())),
@@ -415,7 +422,7 @@ def run(input_path: str, output: str, run_id: str, shards: int, shard: int, work
             "bytes_read_total": total_bytes,
             "product_candidates_total": total_product_candidates,
             "jsonld_blocks_total": total_jsonld_blocks,
-            "observations_with_product_candidates": sum(1 for value in target_stats.values() if any(value["product_candidates"] for _ in [0])),
+            "observations_with_product_candidates": sum(1 for value in target_stats.values() if int(value["product_candidates"]) > 0),
             "observations_with_jsonld": sum(1 for value in target_stats.values() if int(value["jsonld_blocks"]) > 0),
             "field_level_correctness_oracle": False,
             "evidence_scope": "transport_and_structural_signals_only",
