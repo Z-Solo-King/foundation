@@ -6,11 +6,11 @@
   "repositories": {
     "foundation": {
       "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup",
-      "last_audited_main_sha": "d31db88f65dc923e3cdf861fd0087beffbf21045"
+      "last_audited_main_sha": "88e16810febede7e0d7fa663638794e10d213712"
     },
     "operations": {
       "role": "private-control-plane-research-orchestration",
-      "last_audited_main_sha": "10272e8d1c3a2a786143d59f246c19737337e1df",
+      "last_audited_main_sha": "7ca856c4be291140e52625ff9b73b234f1dc103e",
       "approved_production_revision": "cf28a28cb40de527aff1cd87f96e103669635f70",
       "nightly_research_revision": "b6a519742e57e7e68db64ab10535d76372bcbdb1"
     }
@@ -39,8 +39,16 @@
     "public_admission": "Foundation PR #484 merged to main with required CI green; earlier #460 and #483 are superseded/closed",
     "source_url_security": "Foundation PR #482 merged to main with green required CI",
     "execution_identity": "Foundation PR #488 merged to main as the current contract lineage replacing stale #485/#394",
+    "nightly_pin_repair": "Foundation PR #491 merged; canonical pin-repair workflow now targets Operations main observed revision 10272e8d1c3a2a786143d59f246c19737337e1df",
+    "zero_cost_provider_gate": "Operations PRs #392/#393/#394 merged; unknown/paid/stale/missing billing or quota state now fails closed across canonical selector, quota policy, chat runtime and private research runtime; Operations issue #353 completed",
+    "provider_output_admission": "Operations PR #395 merged; canonical bounded provider-output normalization and identity/partial/tool/usage checks are shared by chatbot and private research runtime",
+    "provider_fanout_limits": "Operations PR #396 merged; provider-derived research structure is bounded by depth/collection limits, finding/follow-up ceilings and duplicate coalescing; broader tool/streaming execution fan-out remains governed separately",
+    "durable_recovery_accounting": "Operations PR #398 merged; durable consume/release transitions report whether the current actor won and expiry reconciliation counts actual releases only",
+    "deadline_retry_and_execution_governance": "Operations PR #402 merged as 532b90ecfe7a876b4477ab8cb2097b18bcf62b70; consolidated repository implementation for #377/#383/#384 now propagates one monotonic parent deadline through multi-agent research, provider/model calls, HTTP and retry backoff; binds durable reservations to execution identity; caps leases by parent deadline; adds identity-bound heartbeat and recovery; and retains immutable decision-snapshot enforcement",
+    "terminalization_governance": "Operations PR #403 merged as 7ca856c4be291140e52625ff9b73b234f1dc103e; the canonical chat idempotency authority now binds terminalization and abandon to durable attempt identity, records terminal/result/side-effect identities, prevents stale reclaimed workers from overwriting current executions, and binds chat model execution identity to request_id:attempt_id; Operations issue #385 remains open for broader runtime/L4 acceptance",
+    "deadline_governance_issue_state": "Operations issues #377/#383/#384 remain open pending explicit acceptance/CI evidence; the merged implementation does not claim L4 runtime certification",
     "stage_receipt_correctness": "Foundation PR #461 remains a separate implementation stream",
-    "provider_output_admission": "Operations provider-response admission implementation is merged; structural fan-out/streaming/deadline/retry/concurrency remain governed by Operations contracts",
+    "nightly_timeout": "Foundation issue #487 remains open; nightly research lane still requires timeout below the six-hour GitHub Actions ceiling",
     "runtime_evidence": "Repository CI remains L3; private/runtime/production gates remain L4 and are not inferred from source"
   },
   "documentation_rule": "Dated plans and handoffs are historical context. Current merged source, current tests/CI, current source-of-truth documents, and explicit runtime evidence determine present status."
