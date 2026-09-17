@@ -5,6 +5,8 @@ import hmac
 import re
 from typing import Any
 
+from backend.json_admission import validate_json_shape
+
 _URL_RE = re.compile(r"https?://[^\s<>\"']+")
 MAX_PUBLIC_JSON_BODY_BYTES = 1_048_576
 
@@ -60,6 +62,11 @@ async def json_object(request: Any):
             return None
     try:
         value = await request.json()
-        return value if isinstance(value, dict) else None
+        if not isinstance(value, dict):
+            return None
+        validate_json_shape(value)
+        return value
+    except (TypeError, ValueError):
+        return None
     except Exception:
         return None
