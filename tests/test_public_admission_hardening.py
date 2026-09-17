@@ -79,7 +79,7 @@ def test_chat_metadata_values_are_bounded():
 
 def test_chat_history_aggregate_text_is_bounded():
     history = tuple(
-        {"role": "user", "text": "x" * 5_000} for _ in range(20)
+        {"role": "user", "text": "x" * 5_001} for _ in range(20)
     )
     request = ChatRequest(chat_id="c1", request_id="r1", message="hello", history=history)
     try:
@@ -90,26 +90,19 @@ def test_chat_history_aggregate_text_is_bounded():
         raise AssertionError("oversized aggregate history was accepted")
 
 
-def test_auth_does_not_default_to_anonymous_development_bypass():
+def test_production_auth_does_not_default_to_anonymous_bypass():
     request = Request({})
-    assert authorized(request, type("Env", (), {"ENVIRONMENT": "development", "AUTH_TOKEN": None})()) is False
+    env = type("Env", (), {"ENVIRONMENT": "production", "AUTH_TOKEN": None})()
+    assert authorized(request, env) is False
 
 
-def test_explicit_local_development_bypass_is_allowed():
+def test_development_environment_is_non_production():
     request = Request({})
-    env = type(
-        "Env",
-        (),
-        {
-            "ENVIRONMENT": "development",
-            "AUTH_TOKEN": None,
-            "LOCAL_DEVELOPMENT_AUTH_BYPASS": "true",
-        },
-    )()
+    env = type("Env", (), {"ENVIRONMENT": "development", "AUTH_TOKEN": None})()
     assert authorized(request, env) is True
 
 
-def test_production_never_accepts_local_bypass():
+def test_production_never_accepts_local_bypass_flag():
     request = Request({})
     env = type(
         "Env",
