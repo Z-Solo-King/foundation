@@ -81,7 +81,7 @@ class Request:
         self.method = "POST"
         self.url = "https://example.com/api/v1/research/publish"
         self._payload = payload
-        self.headers = {"Authorization": authorization}
+        self.headers = {"Authorization": authorization, "Content-Type": "application/json"}
 
     async def json(self):
         return self._payload
@@ -103,4 +103,4 @@ async def test_publish_endpoint_requires_auth_and_run_id():
     assert "run_id is required" in str(missing_run)
 
     published = await entry.fetch(Request({"run_id": "run-1", "package": package()}))
-    assert published
+    assert published.status == 200
