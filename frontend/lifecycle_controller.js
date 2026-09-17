@@ -92,8 +92,9 @@
 
   async function submit(item) {
     if (!API_BASE) throw new Error('Research API base is not configured');
-    const chatId = item.chat_id || currentChatId();
-    if (!chatId) throw new Error('No active chat is available for this research run');
+    // A first-use research submission can legitimately have no active chat yet.
+    // Mirror the existing chat send path by creating one before adding the user message.
+    const chatId = item.chat_id || currentChatId() || api.ensureChat().id;
     api.setActiveChat(chatId);
     api.addMessage('user', item.text, { request_id: item.request_id }, chatId);
     setStatus('Submitting research run…');
