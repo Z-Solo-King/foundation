@@ -96,10 +96,12 @@ def test_production_auth_does_not_default_to_anonymous_bypass():
     assert authorized(request, env) is False
 
 
-def test_development_environment_is_non_production():
+def test_development_environment_requires_explicit_local_bypass():
     request = Request({})
     env = type("Env", (), {"ENVIRONMENT": "development", "AUTH_TOKEN": None})()
-    assert authorized(request, env) is True
+    assert authorized(request, env) is False
+    enabled = type("Env", (), {"ENVIRONMENT": "development", "AUTH_TOKEN": None, "LOCAL_DEVELOPMENT_AUTH_BYPASS": "true"})()
+    assert authorized(request, enabled) is True
 
 
 def test_production_never_accepts_local_bypass_flag():
