@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github/workflows/nightly-multi-agent-research.yml"
 SHA_REF = re.compile(r"OPERATIONS_RESEARCH_REF:\s*([0-9a-f]{40})")
+UPLOAD_STEP = re.compile(r"(?ms)^      - uses: actions/upload-artifact@.*?(?=^      - |\Z)")
 
 
 def test_nightly_private_checkout_boundary_is_explicit() -> None:
@@ -21,15 +22,13 @@ def test_nightly_private_checkout_boundary_is_explicit() -> None:
 
 def test_nightly_artifacts_never_target_private_checkout() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
-    upload_markers = [
-        block.split("- uses: actions/upload-artifact", 1)[-1]
-        for block in text.split("- uses: actions/upload-artifact")
-        if "nightly-research-lane-" in block
-    ]
-    assert upload_markers, "nightly research lane artifacts must remain explicit"
-    for block in upload_markers:
-        assert "$RUNNER_TEMP/operations-research" not in block
-        assert "private-agent" not in block.lower()
+    upload_steps = UPLOAD_STEP.findall(text)
+    lane_steps = [step for step in upload_steps if "name: nightly-research-lane-" in step]
+    assert lane_steps, "nightly research lane artifacts must remain explicit"
+    for step in lane_steps:
+        path_section = step.split("path:", 1)[1] if "path:" in step else ""
+        assert "$RUNNER_TEMP/operations-research" not in path_section
+        assert "private-agent" not in path_section.lower()
 
 
 def test_public_boundary_validator_is_part_of_repository_contract() -> None:
