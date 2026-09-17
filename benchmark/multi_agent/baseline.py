@@ -117,7 +117,7 @@ def compare(current: dict[str, object], previous: dict[str, object] | None) -> d
             "regression": "execution degradation, fewer completed programs, fewer useful findings, or more high-severity improvement signals",
             "improvement": "recovery to completed execution, more completed programs, more useful findings, or fewer high-severity improvement signals",
             "tie_break": "REGRESSED takes precedence over IMPROVED when both conditions are true",
-            "compatibility": "baseline comparison requires matching repository, suite/version, configuration, corpus and evidence tier, with completed execution states",
+            "compatibility": "baseline comparison requires matching repository, suite/version, configuration, corpus and evidence tier; the previous baseline must be completed, while a partial current run may be classified as REGRESSED",
         },
     }
 
