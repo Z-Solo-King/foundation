@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: heroic-ai-production-release
+  cancel-in-progress: false
+
 jobs:
   release:
     name: Canonical Heroic AI production release
@@ -32,5 +36,8 @@ jobs:
           OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
         run: |
           set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "Z-Solo-King/foundation" || { echo 'Production release is restricted to the canonical Foundation repository'; exit 1; }
           test "$GITHUB_REF" = "refs/heads/main" || { echo 'Production release is restricted to main'; exit 1; }
+          test "$GITHUB_EVENT_NAME" != "pull_request" || { echo 'Privileged production release cannot run from pull_request'; exit 1; }
+          test "$GITHUB_EVENT_NAME" != "pull_request_target" || { echo 'Privileged production release cannot run from pull_request_target'; exit 1; }
           bash scripts/production_release.sh
