@@ -74,7 +74,12 @@ def test_chat_stream_proxy_preserves_sse_response():
     class Request:
         headers = {"Authorization": "Bearer user", "Idempotency-Key": "req-2"}
 
-    upstream, body, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request()))
+    binding = Binding()
+    payload, status = asyncio.run(worker._operations_chat(SimpleNamespace(OPERATIONS=binding), {"message": "hello"}, Request()))
+    assert status == 200
+    assert payload["ok"] is True
+
+    upstream, body, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(OPERATIONS=binding), {"message": "hello"}, Request()))
     assert upstream.status == 200
     assert body is None
     assert status == 200
@@ -132,7 +137,7 @@ def test_public_worker_chat_stream_route_validates_payload():
 
     instance = worker.Default()
     instance.env = SimpleNamespace(AUTH_TOKEN="secret")
-    response = asyncio.run(instance.fetch(Request({"Authorization": "Bearer secret"}, {"message": "hello"})))
+    response = asyncio.run(instance.fetch(Request({"Authorization": "Bearer secret", "Content-Type": "application/json"}, {"message": "hello"})))
     assert response.status == 400
 
 
@@ -142,7 +147,7 @@ def test_public_worker_chat_stream_route_returns_invalid_json_for_non_object_bod
     class Request:
         method = "POST"
         url = "https://example/api/v1/chat/stream"
-        headers = {"Authorization": "Bearer secret"}
+        headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
 
         async def json(self):
             return "not an object"
@@ -159,7 +164,7 @@ def test_public_worker_chat_stream_route_returns_private_unavailable_response_wi
     class Request:
         method = "POST"
         url = "https://example/api/v1/chat/stream"
-        headers = {"Authorization": "Bearer secret"}
+        headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
 
         async def json(self):
             return {"chat_id": "c1", "request_id": "r1", "message": "hello", "strict_zero_cost_only": True}
@@ -190,7 +195,7 @@ def test_public_worker_chat_stream_route_proxies_private_sse():
     class Request:
         method = "POST"
         url = "https://example/api/v1/chat/stream"
-        headers = {"Authorization": "Bearer secret", "Idempotency-Key": "r1"}
+        headers = {"Authorization": "Bearer secret", "Idempotency-Key": "r1", "Content-Type": "application/json"}
 
         async def json(self):
             return {"chat_id": "c1", "request_id": "r1", "message": "hello", "strict_zero_cost_only": True}
@@ -222,5 +227,5 @@ def test_public_worker_chat_route_requires_auth_and_validates_payload():
 
     invalid = worker.Default()
     invalid.env = SimpleNamespace(AUTH_TOKEN="secret")
-    response = asyncio.run(invalid.fetch(Request({"Authorization": "Bearer secret"}, {"message": "hello"})))
+    response = asyncio.run(invalid.fetch(Request({"Authorization": "Bearer secret", "Content-Type": "application/json"}, {"message": "hello"})))
     assert response.status == 400
