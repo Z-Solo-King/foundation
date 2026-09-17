@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 
 SCHEMA = "benchmark-reproducibility/v1"
 _FORBIDDEN_KEY_PARTS = ("password", "secret", "token", "private_key", "api_key", "authorization", "prompt")
+_ALLOWED_EXECUTION_STATES = {"completed", "partial_or_failed"}
 
 
 @dataclass(frozen=True)
@@ -106,10 +107,11 @@ def parse_receipt(value: object) -> ReproducibilityReceipt:
 
 
 def ensure_compatible(current: object, previous: object) -> tuple[bool, list[str]]:
-    """Check whether a current result can be compared to the previous baseline.
+    """Check whether two artifacts share a reproducible comparison identity.
 
-    The previous artifact must be a completed baseline. The current artifact may
-    be partial/failed because degradation itself is a meaningful regression signal.
+    A completed run can be compared with either a completed or valid partial
+    prior run. This permits truthful recovery comparisons while still rejecting
+    missing/unknown execution state.
     """
     current_receipt = parse_receipt(current)
     previous_receipt = parse_receipt(previous)
@@ -127,8 +129,10 @@ def ensure_compatible(current: object, previous: object) -> tuple[bool, list[str
         right = getattr(previous_receipt, field)
         if left != right:
             errors.append(f"incompatible {field}: current={left!r} previous={right!r}")
-    if previous_receipt.execution_state != "completed":
-        errors.append("baseline comparison requires a completed previous execution state")
+    if current_receipt.execution_state not in _ALLOWED_EXECUTION_STATES:
+        errors.append(f"unsupported current execution state: {current_receipt.execution_state!r}")
+    if previous_receipt.execution_state not in _ALLOWED_EXECUTION_STATES:
+        errors.append(f"unsupported previous execution state: {previous_receipt.execution_state!r}")
     return not errors, errors
 
 
