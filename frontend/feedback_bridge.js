@@ -15,6 +15,11 @@
   function addControls(message) {
     if (message.dataset.feedbackReady === 'true') return;
     if (!message.classList.contains('assistant-message')) return;
+    // Error/failure messages (backend unavailable, unauthorized, request
+    // failed, etc.) are system-generated notices, not model answers. Asking
+    // "Was this helpful?" about a raw error string doesn't make sense and
+    // was showing up on every failed request.
+    if (message.classList.contains('message-error')) return;
     const actions = message.querySelector('.message-actions');
     if (!actions) return;
     const positive = document.createElement('button');
