@@ -1,61 +1,47 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT_AUDIT_SNAPSHOT",
-  "audited_at": "2026-09-17",
+  "audited_at": "2026-09-18",
   "authority": "Foundation docs/FAMILY_SYNC_STANDARD.md",
   "repositories": {
     "foundation": {
       "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup",
-      "last_audited_main_sha": "c775abff67948c6e8a772deefa2fd214fdc9d758"
+      "last_audited_main_sha": "d31db88f65dc923e3cdf861fd0087beffbf21045"
     },
     "operations": {
-      "role": "private-control-plane-runtime-research-orchestration",
-      "last_audited_main_sha": "b1f0023c6ad36f04d32c2a21fbb54a9cda565af9",
+      "role": "private-control-plane-research-orchestration",
+      "last_audited_main_sha": "10272e8d1c3a2a786143d59f246c19737337e1df",
       "approved_production_revision": "cf28a28cb40de527aff1cd87f96e103669635f70",
       "nightly_research_revision": "b6a519742e57e7e68db64ab10535d76372bcbdb1"
     }
   },
+  "family_boundary": {
+    "active_repository_count": 2,
+    "active_repositories": ["foundation", "operations"],
+    "historical_repositories": ["extractor-mapper"],
+    "note": "The standalone extractor/mapper repository is historical and is not part of the current active family boundary."
+  },
   "evidence_boundary": {
+    "L0": "hypothesis",
     "L1": "source inspected",
     "L2": "repository inspection including callers/tests/ownership",
     "L3": "current GitHub Actions execution",
     "L4": "approved runtime/production execution"
   },
-  "current_open_gates": [
-    "foundation#22",
-    "foundation#27",
-    "foundation#57",
-    "foundation#58",
-    "foundation#157",
-    "foundation#154",
-    "foundation#259",
-    "foundation#263",
-    "foundation#329",
-    "foundation#330",
-    "foundation#331",
-    "operations#269",
-    "operations#271",
-    "operations#272",
-    "operations#273",
-    "operations#274",
-    "operations#275",
-    "operations#277",
-    "operations#278",
-    "operations#279"
-  ],
   "sync_rules": {
     "main_sha_is_audit_observation": true,
     "live_main_out_ranks_recorded_sha": true,
     "cloudflare_runtime_is_external_to_github_only_sync": true,
-    "production_revision_is_separate_from_operations_main": true
+    "production_revision_is_separate_from_operations_main": true,
+    "current_github_state_out_ranks_issue_tracker_summaries": true
   },
   "known_current_reconciliation": {
-    "research_public_path": "source_url_ingestion_only; general_web_discovery=false; evidence_synthesis=false",
-    "chat_provider_governance": "canonical ProviderRuntime selection plus durable MODEL_CALLS governance implemented in Operations main",
-    "chat_privacy_boundary": "explicit DataClass and external-provider authorization enforced before provider execution",
-    "multi_agent_model_transport": "separate research adapter exists; not yet unified with canonical ProviderRuntime/privacy/MODEL_CALLS governance",
-    "identity_gate": "wired into Operations generic extraction mapping",
-    "evidence_graph": "schema and verification primitives exist; full production research traversal remains open",
-    "artifact_manifest": "canonical complete immutable lineage implementation remains open"
-  }
+    "public_admission": "Foundation PR #484 merged to main with required CI green; earlier #460 and #483 are superseded/closed",
+    "source_url_security": "Foundation PR #482 merged to main with green required CI",
+    "execution_identity": "Foundation PR #488 merged to main as the current contract lineage replacing stale #485/#394",
+    "stage_receipt_correctness": "Foundation PR #461 remains a separate implementation stream",
+    "provider_output_admission": "Operations provider-response admission implementation is merged; structural fan-out/streaming/deadline/retry/concurrency remain governed by Operations contracts",
+    "runtime_evidence": "Repository CI remains L3; private/runtime/production gates remain L4 and are not inferred from source"
+  },
+  "documentation_rule": "Dated plans and handoffs are historical context. Current merged source, current tests/CI, current source-of-truth documents, and explicit runtime evidence determine present status."
 }
