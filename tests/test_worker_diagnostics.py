@@ -167,7 +167,6 @@ async def test_public_infrastructure_verify_b2_failure_paths(monkeypatch):
     body, status = await worker._public_infrastructure_verify(SimpleNamespace(DB=DiagnosticDB()))
     assert status == 503
     assert any(check["name"] == "backblaze_b2_lifecycle" and check["ok"] is False for check in body["checks"])
-
     monkeypatch.setattr(worker, "CloudflarePersistence", BrokenDeletePersistence)
     body, status = await worker._public_infrastructure_verify(SimpleNamespace(DB=DiagnosticDB()))
     assert status == 503
@@ -179,11 +178,9 @@ async def test_readiness_payload_public_d1_paths():
     ready, status = await worker._readiness_payload(SimpleNamespace(DB=DB()))
     assert status == 200
     assert ready["database"] is True
-
     not_ready, status = await worker._readiness_payload(SimpleNamespace(DB=WrongD1DB()))
     assert status == 503
     assert not_ready["database"] is False
-
     not_ready, status = await worker._readiness_payload(SimpleNamespace(DB=BrokenDiagnosticDB()))
     assert status == 503
     assert not_ready["database"] is False
@@ -201,7 +198,6 @@ async def test_storage_diagnostic_verifies_round_trip_and_missing_artifacts(monk
     assert body["ok"] is False
     assert body["artifacts"][0]["actual_bytes"] == 3
     assert body["artifacts"][1]["error"] == "artifact not found"
-
     good_rows = [{"artifact_ref": "good", "content_hash": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", "content_length": 3}]
     body, status = await worker._storage_diagnostic(SimpleNamespace(DB=DB(rows=good_rows)), "run-2")
     assert status == 200 and body["ok"] is True
@@ -211,54 +207,44 @@ async def test_storage_diagnostic_verifies_round_trip_and_missing_artifacts(monk
 async def test_worker_http_public_diagnostics_and_research_fail_closed_paths(monkeypatch):
     monkeypatch.setattr(worker, "CloudflarePersistence", Persistence)
     env = SimpleNamespace(DB=DB(rows=[]), ENVIRONMENT="production", AUTH_TOKEN="secret")
-    entry = worker.Default()
-    entry.env = env
-
+    entry = worker.Default(); entry.env = env
     unauthorized = await entry.fetch(Request("POST", "https://x/api/v1/chatbot/diagnostic", [], {}))
     assert "unauthorized" in str(unauthorized)
-
-    auth_headers = {"Authorization": "Bearer secret"}
+    auth_headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
     public_invalid = await entry.fetch(Request("POST", "https://x/api/v1/chatbot/diagnostic", [], auth_headers))
     assert "invalid JSON object" in str(public_invalid)
     unsupported = await entry.fetch(Request("POST", "https://x/api/v1/chatbot/diagnostic", {"operation": "knowledge"}, auth_headers))
     assert "unsupported public diagnostic operation" in str(unsupported)
-
     public_test = await entry.fetch(Request("POST", "https://x/api/v1/chatbot/diagnostic", {"operation": "infrastructure_verify_public_test"}, auth_headers))
     assert "checks" in str(public_test)
-
-    storage_unauthorized = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {"run_id": "run-1"}, {"Authorization": "Bearer bad"}))
+    storage_unauthorized = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {"run_id": "run-1"}, {"Authorization": "Bearer bad", "Content-Type": "application/json"}))
     assert "unauthorized" in str(storage_unauthorized)
-    no_run = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {}, {"Authorization": "Bearer secret"}))
+    no_run = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {}, auth_headers))
     assert "run_id" in str(no_run)
-    storage = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {"run_id": "run-1"}, {"Authorization": "Bearer secret"}))
+    storage = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {"run_id": "run-1"}, auth_headers))
     assert "artifacts" in str(storage)
-    async def broken_storage(*args, **kwargs):
-        raise RuntimeError("storage diagnostic exploded")
+    async def broken_storage(*args, **kwargs): raise RuntimeError("storage diagnostic exploded")
     monkeypatch.setattr(worker, "_storage_diagnostic", broken_storage)
-    failed_storage = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {"run_id": "run-1"}, {"Authorization": "Bearer secret"}))
+    failed_storage = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {"run_id": "run-1"}, auth_headers))
     assert "storage diagnostic failure" in str(failed_storage)
-
     missing = await entry.fetch(Request("GET", "https://x/api/v1/research/missing", None, {"Authorization": "Bearer secret"}))
     assert "run not found" in str(missing)
-    persistence_error = worker.Default()
-    persistence_error.env = SimpleNamespace(DB=BrokenDB(), ENVIRONMENT="production", AUTH_TOKEN="secret")
+    persistence_error = worker.Default(); persistence_error.env = SimpleNamespace(DB=BrokenDB(), ENVIRONMENT="production", AUTH_TOKEN="secret")
     failed_get = await persistence_error.fetch(Request("GET", "https://x/api/v1/research/run-1", None, {"Authorization": "Bearer secret"}))
     assert "persistence failure" in str(failed_get)
-
-    invalid_research = await entry.fetch(Request("POST", "https://x/api/v1/research", [], {"Authorization": "Bearer secret"}))
+    invalid_research = await entry.fetch(Request("POST", "https://x/api/v1/research", [], auth_headers))
     assert "invalid JSON object" in str(invalid_research)
-    bad_shape = await entry.fetch(Request("POST", "https://x/api/v1/research", {"question": "x", "unexpected": True}, {"Authorization": "Bearer secret"}))
+    bad_shape = await entry.fetch(Request("POST", "https://x/api/v1/research", {"question": "x", "unexpected": True}, auth_headers))
     assert "unexpected" in str(bad_shape)
-    rejected = await entry.fetch(Request("POST", "https://x/api/v1/research", {"question": "x", "strict_zero_cost_only": False}, {"Authorization": "Bearer secret"}))
+    rejected = await entry.fetch(Request("POST", "https://x/api/v1/research", {"question": "x", "strict_zero_cost_only": False}, auth_headers))
     assert "strict $0 cost mode" in str(rejected)
 
 
 @pytest.mark.asyncio
 async def test_research_persistence_failures_and_idempotency(monkeypatch):
     monkeypatch.setattr(worker, "CloudflarePersistence", BrokenPersistence)
-    entry = worker.Default()
-    entry.env = SimpleNamespace(DB=DB(), ENVIRONMENT="production", AUTH_TOKEN="secret")
-    request = Request("POST", "https://x/api/v1/research", {"question": "x", "source_urls": [], "strict_zero_cost_only": True}, {"Authorization": "Bearer secret"})
+    entry = worker.Default(); entry.env = SimpleNamespace(DB=DB(), ENVIRONMENT="production", AUTH_TOKEN="secret")
+    request = Request("POST", "https://x/api/v1/research", {"question": "x", "source_urls": [], "strict_zero_cost_only": True}, {"Authorization": "Bearer secret", "Content-Type": "application/json"})
     failed = await entry.fetch(request)
     assert "execution/persistence failure" in str(failed)
     request.headers["Idempotency-Key"] = "key-1"
