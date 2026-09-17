@@ -37,11 +37,11 @@ def _load(path: Path) -> Any:
 
 
 def _find_named_artifacts(root: Path, filename: str) -> list[Path]:
-    """Find artifact files, including the hidden .runtime output directory explicitly."""
+    """Find artifact files, explicitly traversing hidden runtime outputs."""
     candidates: set[Path] = set()
-    runtime_path = root / ".runtime" / filename
-    if runtime_path.is_file():
-        candidates.add(runtime_path)
+    runtime_dir = root / ".runtime"
+    if runtime_dir.is_dir():
+        candidates.update(path for path in runtime_dir.rglob(filename) if path.is_file())
     candidates.update(path for path in root.rglob(filename) if path.is_file())
     return sorted(candidates)
 
@@ -125,7 +125,7 @@ def validate_repository(root: Path) -> dict[str, Any]:
         scorecard = _load(scorecard_paths[0])
         schema = str(scorecard.get("schema", ""))
         if not schema.startswith("autonomous-research-scorecard/"):
-            errors.append(f"unsupported scorecard schema: {schema!r}")
+            errors.append(f"unsupported scorecard artifact schema: {schema!r}")
         structural = scorecard.get("structural_signals") or {}
         oracle_claim = structural.get("field_level_correctness_oracle") is True
         field_level_scope = structural.get("evidence_scope") == "field_level_correctness"
