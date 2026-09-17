@@ -75,11 +75,11 @@ def test_negative_absolute_floor_is_rejected():
 
 def test_context_amplification_gate_rejects_balloons():
     baseline = obs(input_tokens=100, output_tokens=100)
-    candidate = obs(input_tokens=900, output_tokens=100)
+    candidate = obs(input_tokens=190, output_tokens=100)
     gate = EfficiencyGate(
-        max_input_token_growth_ratio=10.0,
-        max_total_token_growth_ratio=10.0,
-        max_context_amplification_ratio=5.0,
+        max_input_token_growth_ratio=1.0,
+        max_total_token_growth_ratio=1.0,
+        max_context_amplification_ratio=2.0,
     )
 
     accepted, reason = compare_efficiency(baseline, candidate, gate=gate)
@@ -90,7 +90,7 @@ def test_context_amplification_gate_rejects_balloons():
 
 def test_context_amplification_gate_allows_bounded_candidate():
     baseline = obs(input_tokens=100, output_tokens=100)
-    candidate = obs(input_tokens=110, output_tokens=100)
+    candidate = obs(input_tokens=90, output_tokens=100)
     gate = EfficiencyGate(max_context_amplification_ratio=3.0)
 
     accepted, reason = compare_efficiency(baseline, candidate, gate=gate)
