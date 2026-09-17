@@ -36,6 +36,16 @@ def _load(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _find_named_artifacts(root: Path, filename: str) -> list[Path]:
+    """Find artifact files, including the hidden .runtime output directory explicitly."""
+    candidates: set[Path] = set()
+    runtime_path = root / ".runtime" / filename
+    if runtime_path.is_file():
+        candidates.add(runtime_path)
+    candidates.update(path for path in root.rglob(filename) if path.is_file())
+    return sorted(candidates)
+
+
 def validate_repository(root: Path) -> dict[str, Any]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -97,7 +107,7 @@ def validate_repository(root: Path) -> dict[str, Any]:
     if len(project_rows) < len(PROJECT_CATEGORIES):
         warnings.append("multiple project categories are not represented by distinct queries")
 
-    benchmark_paths = sorted(root.rglob("chatbot-query-benchmark.json"))
+    benchmark_paths = _find_named_artifacts(root, "chatbot-query-benchmark.json")
     if benchmark_paths:
         benchmark = _load(benchmark_paths[0])
         schema = str(benchmark.get("schema", ""))
@@ -110,17 +120,20 @@ def validate_repository(root: Path) -> dict[str, Any]:
         if int(coverage.get("project_query_count") or 0) < len(PROJECT_CATEGORIES):
             errors.append("benchmark artifact reports incomplete project-query coverage")
 
-    scorecard_paths = sorted(root.rglob("research-scorecard.json"))
+    scorecard_paths = _find_named_artifacts(root, "research-scorecard.json")
     if scorecard_paths:
         scorecard = _load(scorecard_paths[0])
         schema = str(scorecard.get("schema", ""))
         if not schema.startswith("autonomous-research-scorecard/"):
             errors.append(f"unsupported scorecard schema: {schema!r}")
         structural = scorecard.get("structural_signals") or {}
-        if structural.get("field_level_correctness_oracle") is True:
-            errors.append("scorecard must not claim field-level correctness without an explicit oracle")
-        if structural.get("evidence_scope") == "field_level_correctness":
-            errors.append("invalid scorecard evidence scope")
+        oracle_claim = structural.get("field_level_correctness_oracle") is True
+        field_level_scope = structural.get("evidence_scope") == "field_level_correctness"
+        if oracle_claim or field_level_scope:
+            errors.append(
+                "field-level correctness claims require an explicit verified oracle; "
+                "transport and structural benchmark signals are not product-field correctness"
+            )
 
     return _report(errors, warnings)
 
