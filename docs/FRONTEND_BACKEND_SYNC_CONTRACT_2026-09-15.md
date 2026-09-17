@@ -1,5 +1,7 @@
 # Frontend ↔ Backend Sync Contract — 2026-09-15
 
+**Status:** current — please confirm against latest API/frontend state before relying on this for new work
+
 ## Purpose
 
 The browser UI is a contract consumer of the Foundation backend. A frontend feature MUST either:
