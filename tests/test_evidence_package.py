@@ -43,6 +43,12 @@ def test_missing_lineage_is_rejected():
         parse_trusted_package({**signed.__dict__, "source_versions": ()}, b"test-key")
 
 
+def test_blank_lineage_identifier_is_rejected():
+    signed = package()
+    with pytest.raises(ValueError, match="lineage identifiers"):
+        parse_trusted_package({**signed.__dict__, "source_versions": ("",)}, b"test-key")
+
+
 def test_digest_tampering_is_rejected():
     signed = package()
     with pytest.raises(ValueError, match="digest"):
