@@ -65,11 +65,9 @@ class EfficiencyGate:
     max_input_token_growth_ratio: float = 0.10
     max_total_token_growth_ratio: float = 0.10
     min_cache_hit_ratio: float = 0.0
-    # Output-floor controls are intentionally configurable rather than assigned
-    # an arbitrary production threshold. A caller that has a benchmark-derived
-    # floor can opt in without changing the global quality/evidence authorities.
     min_output_tokens: int = 0
     min_output_ratio: float = 0.0
+    max_context_amplification_ratio: float | None = None
 
     def validate(self) -> None:
         for name, value in (
@@ -82,6 +80,10 @@ class EfficiencyGate:
                 raise ValueError(f"{name} must be between 0 and 1")
         if self.min_output_tokens < 0:
             raise ValueError("min_output_tokens must be non-negative")
+        if self.max_context_amplification_ratio is not None and (
+            not isfinite(self.max_context_amplification_ratio) or self.max_context_amplification_ratio <= 0
+        ):
+            raise ValueError("max_context_amplification_ratio must be finite and positive when configured")
 
     def output_floor(self, baseline: TokenEfficiencyObservation) -> int:
         """Return the configured minimum acceptable candidate output size."""
@@ -117,6 +119,8 @@ def compare_efficiency(
         return False, "candidate total-token growth exceeds gate"
     if candidate.cache_hit_ratio < gate.min_cache_hit_ratio:
         return False, "candidate cache-hit ratio is below gate"
+    if gate.max_context_amplification_ratio is not None and candidate.context_amplification_ratio > gate.max_context_amplification_ratio:
+        return False, "candidate context amplification exceeds gate"
     if candidate.total_estimated_tokens <= baseline.total_estimated_tokens:
         floor = gate.output_floor(baseline)
         if floor and candidate.estimated_output_tokens < floor:
