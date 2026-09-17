@@ -15,6 +15,10 @@ binding = "DB"
 database_name = "REPLACE_WITH_PUBLIC_DATABASE_NAME"
 database_id = "REPLACE_WITH_D1_DATABASE_ID"
 
+[[services]]
+binding = "OPERATIONS"
+service = "research-intelligence-engine-private"
+
 [secrets]
 required = ["AUTH_TOKEN", "B2_KEY_ID", "B2_APPLICATION_KEY"]
 
