@@ -14,7 +14,7 @@ The standalone extractor/mapper repository is historical context and is not part
 ## Current observed branch tips
 
 - Foundation `main`: `88e16810febede7e0d7fa663638794e10d213712`
-- Operations `main`: `532b90ecfe7a876b4477ab8cb2097b18bcf62b70`
+- Operations `main`: `7ca856c4be291140e52625ff9b73b234f1dc103e`
 - Approved Operations production revision: `cf28a28cb40de527aff1cd87f96e103669635f70`
 - Nightly Operations revision: `b6a519742e57e7e68db64ab10535d76372bcbdb1`
 
@@ -36,7 +36,7 @@ Foundation PR #488 merged to `main` after being rebuilt from the post-#484 base.
 
 ### Nightly Operations pin repair
 
-Foundation PR #491 merged to `main`. The canonical pin-repair workflow now targets the current audited Operations main revision. This does not itself prove that the private nightly runtime has executed that revision.
+Foundation PR #491 merged to `main`. The canonical pin-repair workflow now targets the current audited Operations main revision at the time of that merge. This does not itself prove that the private nightly runtime has executed the current Operations main.
 
 ### Zero-cost provider gate
 
@@ -59,6 +59,12 @@ Operations PR #398 merged an idempotency correction for durable reservation reco
 Operations PR #402 merged as `532b90ecfe7a876b4477ab8cb2097b18bcf62b70`. It is the consolidated repository implementation for Operations issues #377, #383 and #384: one monotonic parent deadline now propagates through multi-agent scheduling/phases/agents, governed research providers, model-call governance, HTTP timeout and retry backoff; immutable decision snapshots remain enforced at protected execution; durable reservations carry execution identity through the existing idempotency-key authority; lease duration is capped by parent remaining time; late consumption is rejected; identity-bound heartbeat and recovery are implemented; and adversarial regression coverage was added.
 
 The three issues remain open pending explicit acceptance/CI evidence. The merge does not claim Cloudflare/private-runtime/L4 production certification.
+
+### Single terminalization and side-effect commit semantics
+
+Operations PR #403 merged as `7ca856c4be291140e52625ff9b73b234f1dc103e`. The canonical `DurableChatIdempotency` authority now assigns durable attempt identities, rotates them on lease reclaim, requires the current attempt for terminalization and abandonment, records deterministic terminal/result/side-effect commit identities, makes identical duplicate terminalization idempotent, rejects conflicting terminal outcomes, blocks stale reclaimed workers from overwriting current execution, and binds chat model execution identity to `request_id:attempt_id`.
+
+Operations issue #385 remains open because the repository implementation currently covers the canonical chat execution boundary; broader queue/job/provider/recovery surfaces and L3/L4 runtime race evidence remain acceptance work.
 
 ### Stage receipt correctness
 
