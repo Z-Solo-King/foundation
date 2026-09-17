@@ -252,6 +252,28 @@ def fetch_target(target: Target, timeout: float = REQUEST_TIMEOUT_SECONDS) -> Re
     )
 
 
+def _percentile(values: list[int], percentile: float) -> int | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    rank = max(0, min(len(ordered) - 1, int((len(ordered) - 1) * percentile)))
+    return ordered[rank]
+
+
+def _target_entry() -> dict[str, object]:
+    return {
+        "url": "",
+        "observations": 0,
+        "failures": 0,
+        "status_counts": Counter(),
+        "http_status_counts": Counter(),
+        "diagnostics": Counter(),
+        "elapsed_ms": [],
+        "product_candidates": 0,
+        "jsonld_blocks": 0,
+    }
+
+
 def run(input_path: str, output: str, run_id: str, shards: int, shard: int, workers: int, duration_minutes: int) -> int:
     targets = load_targets(Path(input_path))
     if not 0 <= shard < shards:
@@ -265,18 +287,37 @@ def run(input_path: str, output: str, run_id: str, shards: int, shard: int, work
     counts = {"ok": 0, "empty": 0, "blocked": 0, "resource_limited": 0, "error": 0}
     http_counts: Counter[str] = Counter()
     diagnostic_counts: Counter[str] = Counter()
+    target_stats: dict[str, dict[str, object]] = {}
+    elapsed_values: list[int] = []
+    total_bytes = 0
+    total_product_candidates = 0
+    total_jsonld_blocks = 0
+    observations = 0
     cycle = 0
 
     if not selected:
         summary = {
+            "schema": "autonomous-public-benchmark-summary/v9",
             "run_id": run_id,
             "shard": shard,
             "shards": shards,
             "cycles": 0,
             "selected": 0,
+            "selected_targets": 0,
+            "observations": 0,
             "status_counts": counts,
             "http_status_counts": {},
             "diagnostic_counts": {},
+            "measurement": {
+                "elapsed_ms": {"min": None, "median": None, "p95": None, "max": None},
+                "bytes_read_total": 0,
+                "product_candidates_total": 0,
+                "jsonld_blocks_total": 0,
+                "observations_with_product_candidates": 0,
+                "observations_with_jsonld": 0,
+                "field_level_correctness_oracle": False,
+            },
+            "targets_with_failures": [],
         }
         summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
         print(json.dumps(summary, sort_keys=True))
@@ -298,28 +339,92 @@ def run(input_path: str, output: str, run_id: str, shards: int, shard: int, work
                 )
                 with receipt_path.open("a", encoding="utf-8") as handle:
                     handle.write(json.dumps(asdict(receipt), ensure_ascii=False, separators=(",", ":")) + "\n")
+                observations += 1
                 counts[receipt.status] = counts.get(receipt.status, 0) + 1
+                elapsed_values.append(receipt.elapsed_ms)
+                total_bytes += receipt.bytes_read
+                total_product_candidates += receipt.product_candidates
+                total_jsonld_blocks += receipt.jsonld_blocks
                 if receipt.http_status:
                     http_counts[str(receipt.http_status)] += 1
                 for diagnostic in receipt.diagnostics:
                     diagnostic_counts[diagnostic] += 1
+
+                entry = target_stats.setdefault(receipt.url, _target_entry())
+                entry["url"] = receipt.url
+                entry["observations"] = int(entry["observations"]) + 1
+                entry["failures"] = int(entry["failures"]) + int(receipt.status != "ok")
+                entry["status_counts"].update({receipt.status: 1})
+                if receipt.http_status:
+                    entry["http_status_counts"].update({str(receipt.http_status): 1})
+                entry["diagnostics"].update(receipt.diagnostics)
+                entry["elapsed_ms"].append(receipt.elapsed_ms)
+                entry["product_candidates"] = int(entry["product_candidates"]) + receipt.product_candidates
+                entry["jsonld_blocks"] = int(entry["jsonld_blocks"]) + receipt.jsonld_blocks
             remaining = MIN_CYCLE_INTERVAL_SECONDS - (time.monotonic() - cycle_started)
             if remaining > 0 and time.monotonic() < deadline:
                 time.sleep(min(remaining, max(0.0, deadline - time.monotonic())))
     finally:
         pool.shutdown(wait=True, cancel_futures=True)
 
+    targets_with_failures = []
+    for entry in target_stats.values():
+        target_rows = {
+            "url": entry["url"],
+            "observations": int(entry["observations"]),
+            "failures": int(entry["failures"]),
+            "failure_rate": round(int(entry["failures"]) / int(entry["observations"]), 6) if entry["observations"] else None,
+            "status_counts": dict(sorted(entry["status_counts"].items())),
+            "http_status_counts": dict(sorted(entry["http_status_counts"].items())),
+            "diagnostics": dict(sorted(entry["diagnostics"].items())),
+            "measurement": {
+                "elapsed_ms": {
+                    "min": _percentile(entry["elapsed_ms"], 0.0),
+                    "median": _percentile(entry["elapsed_ms"], 0.5),
+                    "p95": _percentile(entry["elapsed_ms"], 0.95),
+                    "max": _percentile(entry["elapsed_ms"], 1.0),
+                },
+                "product_candidates_total": int(entry["product_candidates"]),
+                "jsonld_blocks_total": int(entry["jsonld_blocks"]),
+            },
+        }
+        if int(entry["failures"]) > 0:
+            targets_with_failures.append(target_rows)
+
     summary = {
+        "schema": "autonomous-public-benchmark-summary/v9",
         "run_id": run_id,
         "shard": shard,
         "shards": shards,
         "cycles": cycle,
         "selected": len(selected),
+        "selected_targets": len(selected),
+        "observations": observations,
         "status_counts": counts,
         "http_status_counts": dict(sorted(http_counts.items())),
         "diagnostic_counts": dict(sorted(diagnostic_counts.items())),
         "min_cycle_interval_seconds": MIN_CYCLE_INTERVAL_SECONDS,
         "max_attempts": MAX_ATTEMPTS,
+        "measurement": {
+            "elapsed_ms": {
+                "min": _percentile(elapsed_values, 0.0),
+                "median": _percentile(elapsed_values, 0.5),
+                "p95": _percentile(elapsed_values, 0.95),
+                "max": _percentile(elapsed_values, 1.0),
+            },
+            "bytes_read_total": total_bytes,
+            "product_candidates_total": total_product_candidates,
+            "jsonld_blocks_total": total_jsonld_blocks,
+            "observations_with_product_candidates": sum(1 for value in target_stats.values() if any(value["product_candidates"] for _ in [0])),
+            "observations_with_jsonld": sum(1 for value in target_stats.values() if int(value["jsonld_blocks"]) > 0),
+            "field_level_correctness_oracle": False,
+            "evidence_scope": "transport_and_structural_signals_only",
+        },
+        "targets_with_failures": sorted(targets_with_failures, key=lambda item: (-float(item["failure_rate"] or 0), str(item["url"]))),
+        "measurement_gaps": [
+            "no oracle-backed product-field precision/recall",
+            "product_candidates and JSON-LD counts are structural hints, not correctness judgments",
+        ],
     }
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(json.dumps(summary, sort_keys=True))
