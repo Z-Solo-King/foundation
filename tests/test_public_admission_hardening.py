@@ -70,6 +70,82 @@ def test_chat_history_aggregate_text_is_bounded():
         raise AssertionError("oversized aggregate history was accepted")
 
 
+def test_research_numeric_budget_types_are_strict():
+    for field in ("max_sources", "max_evidence_items"):
+        request = ResearchRequest(question="test", strict_zero_cost_only=True, **{field: True})
+        try:
+            request.validate()
+        except ValueError as exc:
+            assert "must be an integer" in str(exc)
+        else:
+            raise AssertionError(f"boolean {field} was accepted as an integer")
+
+
+def test_research_budgets_must_be_positive():
+    for field in ("max_sources", "max_evidence_items"):
+        request = ResearchRequest(question="test", strict_zero_cost_only=True, **{field: 0})
+        try:
+            request.validate()
+        except ValueError as exc:
+            assert "positive" in str(exc)
+        else:
+            raise AssertionError(f"zero {field} was accepted")
+
+
+def test_research_source_url_entries_must_be_nonempty_strings():
+    for value in ("", "   ", 123):
+        request = ResearchRequest(question="test", source_urls=(value,), strict_zero_cost_only=True)
+        try:
+            request.validate()
+        except ValueError as exc:
+            assert "source_urls entries" in str(exc)
+        else:
+            raise AssertionError("invalid source URL entry was accepted")
+
+
+def test_chat_metadata_keys_and_values_must_be_strings():
+    invalid_key = ChatRequest(chat_id="c1", request_id="r1", message="hello", metadata={123: "value"})
+    try:
+        invalid_key.validate()
+    except ValueError as exc:
+        assert "metadata key" in str(exc)
+    else:
+        raise AssertionError("non-string metadata key was accepted")
+
+    invalid_value = ChatRequest(chat_id="c1", request_id="r1", message="hello", metadata={"k": 123})
+    try:
+        invalid_value.validate()
+    except ValueError as exc:
+        assert "metadata value" in str(exc)
+    else:
+        raise AssertionError("non-string metadata value was accepted")
+
+
+def test_chat_history_text_is_bounded_before_aggregate_check():
+    request = ChatRequest(
+        chat_id="c1",
+        request_id="r1",
+        message="hello",
+        history=({"role": "user", "text": "x" * 12_001},),
+    )
+    try:
+        request.validate()
+    except ValueError as exc:
+        assert "history text" in str(exc)
+    else:
+        raise AssertionError("oversized history turn was accepted")
+
+
+def test_public_chat_message_is_bounded():
+    request = ChatRequest(chat_id="c1", request_id="r1", message="x" * 16_385)
+    try:
+        request.validate()
+    except ValueError as exc:
+        assert "message" in str(exc)
+    else:
+        raise AssertionError("oversized chat message was accepted")
+
+
 def test_production_auth_does_not_default_to_anonymous_bypass():
     request = Request({})
     env = type("Env", (), {"ENVIRONMENT": "production", "AUTH_TOKEN": None})()
