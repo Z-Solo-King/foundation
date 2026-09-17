@@ -65,6 +65,9 @@ def test_chat_stream_proxy_preserves_sse_response():
         status = 200
         body = Body()
 
+        async def json(self):
+            return {"ok": True, "response": {"text": "hello"}}
+
     class Binding:
         async def fetch(self, url, options):
             assert url == "https://chat/v1/chat/stream"
