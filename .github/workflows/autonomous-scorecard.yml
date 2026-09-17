@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - benchmark/autonomous_scorecard.py
-      - tests/test_autonomous_scorecard.py
+      - benchmark/test_autonomous_scorecard.py
       - .github/workflows/autonomous-scorecard.yml
   workflow_dispatch:
   schedule:
@@ -32,7 +32,7 @@ jobs:
           python -m pip install -e .
           python -m pip install pytest
       - name: Run scorecard tests
-        run: python -m pytest -q tests/test_autonomous_scorecard.py --confcutdir=benchmark
+        run: python -m pytest -q benchmark/test_autonomous_scorecard.py --confcutdir=benchmark
 
   live:
     name: Score latest autonomous run
