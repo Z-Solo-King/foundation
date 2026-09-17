@@ -13,7 +13,7 @@ def test_frontend_ux_layers_are_wired_in_safe_order():
 def test_markdown_renderer_is_dependency_free_and_safe():
     text = (ROOT / "frontend/markdown_renderer.js").read_text(encoding="utf-8")
     assert "api.escapeHtml" in text
-    assert "http://" in text and "https://" in text
+    assert "https?:\\/\\/" in text
     assert "<strong>" in text and "<em>" in text
     assert "code-block" in text
     assert "highlightCode" in text
