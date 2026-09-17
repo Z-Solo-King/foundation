@@ -114,7 +114,7 @@ def test_rejected_trigger_is_blocked():
         ({"created_jobs": -1}, "job counts cannot be negative"),
         ({"created_jobs": 4}, "created_jobs cannot exceed expected_jobs"),
         ({"created_jobs": 2, "completed_jobs": 3}, "completed_jobs cannot exceed created_jobs"),
-        ({"created_jobs": 2, "failed_jobs": 3}, "failed_jobs cannot exceed created_jobs"),
+        ({"created_jobs": 2, "completed_jobs": 2, "failed_jobs": 3}, "failed_jobs cannot exceed created_jobs"),
     ],
 )
 def test_invalid_counts_raise(changes, message):
