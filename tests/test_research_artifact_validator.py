@@ -9,6 +9,16 @@ from benchmark.research_artifact_validator import validate_repository
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def _copy_catalog_tree(destination: Path) -> None:
+    catalog = json.loads((ROOT / "benchmark/research_artifact_catalog.json").read_text(encoding="utf-8"))
+    for row in catalog["artifacts"]:
+        relative = row["path"]
+        source = ROOT / relative
+        target = destination / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+
+
 def test_repository_research_artifact_contract_is_valid() -> None:
     report = validate_repository(ROOT)
     assert report["valid"] is True, report["errors"]
@@ -33,22 +43,7 @@ def test_validator_rejects_project_query_without_github() -> None:
 
 
 def test_validator_rejects_false_field_level_correctness_claim(tmp_path) -> None:
-    for relative in [
-        "benchmark/research_artifact_catalog.json",
-        "benchmark/chatbot-query-corpus.json",
-        "benchmark/chatbot_query_benchmark.py",
-        "benchmark/public_chatbot_runner.py",
-        "benchmark/nightly/NIGHTLY_RESEARCH_PLAN.json",
-        "benchmark/nightly/research-ledger.schema.json",
-        "benchmark/nightly/research_ledger.py",
-        "benchmark/autonomous_scorecard.py",
-        "benchmark/multi_agent/baseline.py",
-    ]:
-        source = ROOT / relative
-        target = tmp_path / relative
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
-
+    _copy_catalog_tree(tmp_path)
     (tmp_path / ".runtime").mkdir()
     (tmp_path / ".runtime/research-scorecard.json").write_text(
         json.dumps(
