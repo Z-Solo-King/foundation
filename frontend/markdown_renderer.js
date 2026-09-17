@@ -29,7 +29,7 @@
 
     const keyword = /\b(?:const|let|var|function|return|async|await|if|else|for|while|do|class|extends|new|try|catch|throw|import|from|export|default|def|in|with|as|True|False|None|null|true|false|SELECT|FROM|WHERE|INSERT|UPDATE|DELETE|JOIN|ON|AND|OR)\b/g;
     const number = /\b\d+(?:\.\d+)?\b/g;
-    const tokenPattern = /(\/\*[\s\S]*?\*\/|\/\/[^\n]*|#[^\n]*|&quot;[^&]*?&quot;|'[^'\n]*')/g;
+    const tokenPattern = /(\/\*[\s\S]*?\*\/|\/\/[^\n]*|#[^\n]*|"[^"\n]*"|'[^'\n]*')/g;
     const held = [];
     const hold = (html) => {
       const token = `@@HL_${held.length}@@`;
