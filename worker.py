@@ -71,8 +71,20 @@ async def _publish_evidence(env, run_id, package):
     digest = package_digest(package)
     published_at = datetime.now(timezone.utc).isoformat()
     serialized = json.dumps(package, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    await env.DB.prepare("""INSERT INTO research_publications (run_id, package_digest, package_json, published_at) VALUES (?, ?, ?, ?) ON CONFLICT(run_id) DO UPDATE SET package_digest = excluded.package_digest, package_json = excluded.package_json, published_at = excluded.published_at""").bind(run_id, digest, serialized, published_at).run()
-    return {"ok": True, "run_id": run_id, "publication_state": "published", "package_digest": digest, "published_at": published_at}, 200
+    result = await env.DB.prepare(
+        "INSERT INTO research_publications (run_id, package_digest, package_json, published_at) VALUES (?, ?, ?, ?)"
+    ).bind(run_id, digest, serialized, published_at).run()
+    publication_id = None
+    if isinstance(result, dict):
+        publication_id = result.get("meta", {}).get("last_row_id")
+    return {
+        "ok": True,
+        "run_id": run_id,
+        "publication_id": publication_id,
+        "publication_state": "published",
+        "package_digest": digest,
+        "published_at": published_at,
+    }, 200
 
 
 def _chat_headers(request):
