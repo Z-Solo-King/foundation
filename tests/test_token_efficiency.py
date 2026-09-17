@@ -73,6 +73,39 @@ def test_negative_absolute_floor_is_rejected():
         raise AssertionError("negative output floor should fail validation")
 
 
+def test_context_amplification_gate_rejects_balloons():
+    baseline = obs(input_tokens=100, output_tokens=100)
+    candidate = obs(input_tokens=900, output_tokens=100)
+    gate = EfficiencyGate(max_context_amplification_ratio=5.0)
+
+    accepted, reason = compare_efficiency(baseline, candidate, gate=gate)
+
+    assert not accepted
+    assert reason == "candidate context amplification exceeds gate"
+
+
+def test_context_amplification_gate_allows_bounded_candidate():
+    baseline = obs(input_tokens=100, output_tokens=100)
+    candidate = obs(input_tokens=200, output_tokens=100)
+    gate = EfficiencyGate(max_context_amplification_ratio=3.0)
+
+    accepted, reason = compare_efficiency(baseline, candidate, gate=gate)
+
+    assert accepted
+    assert reason == "candidate accepted with non-increasing token use"
+
+
+def test_context_amplification_gate_requires_finite_positive_limit():
+    for value in (0.0, -1.0, float("inf")):
+        gate = EfficiencyGate(max_context_amplification_ratio=value)
+        try:
+            gate.validate()
+        except ValueError as exc:
+            assert "max_context_amplification_ratio" in str(exc)
+        else:
+            raise AssertionError("invalid amplification limit should fail validation")
+
+
 def test_output_floor_configuration_is_validated():
     gate = EfficiencyGate(min_output_ratio=1.1)
     try:
