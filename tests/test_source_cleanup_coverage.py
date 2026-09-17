@@ -118,4 +118,4 @@ async def test_private_chatbot_diagnostic_paths():
     assert rejected[0]["response_status"] == 503
     failed = await worker._operations_chatbot_diagnostic(SimpleNamespace(OPERATIONS=Binding(error=RuntimeError("binding failed"))))
     assert failed[1] == 503
-    assert "binding failure" in failed[0]["error"]
+    assert failed[0]["error"] == "chatbot diagnostic failure"
