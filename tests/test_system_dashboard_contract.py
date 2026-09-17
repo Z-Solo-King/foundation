@@ -127,6 +127,6 @@ def test_public_worker_dashboard_route_requires_auth_and_proxies():
     assert response.status == 401
 
     authorized = worker.Default()
-    authorized.env = SimpleNamespace(AUTH_TOKEN=None, OPERATIONS=Binding())
+    authorized.env = SimpleNamespace(AUTH_TOKEN=None, ENVIRONMENT="development", LOCAL_DEVELOPMENT_AUTH_BYPASS="true", OPERATIONS=Binding())
     response = asyncio.run(authorized.fetch(Request({"Authorization": "Bearer user"})))
     assert response.status == 200
