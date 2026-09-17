@@ -9,6 +9,7 @@ SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
 CANONICAL_OPERATIONS_REF = "cf28a28cb40de527aff1cd87f96e103669635f70"
+CANONICAL_OPERATIONS_SERVICE = "research-intelligence-engine-private"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 PRODUCTION_WORKFLOW = "heroic-ai-production-release.yml"
 PRODUCTION_SCRIPT = ROOT / "scripts" / "production_release.sh"
@@ -63,6 +64,15 @@ def test_canonical_operations_production_pin_is_current_and_immutable():
     assert LEGACY_OPERATIONS_REF not in deployment
     assert 'git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git"' in deployment
     assert '"github:${OPERATIONS_REF}"' in deployment
+
+
+def test_production_generates_private_operations_service_binding():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert f'OPERATIONS_SERVICE_NAME="{CANONICAL_OPERATIONS_SERVICE}"' in deployment
+    assert "'[[services]]'" in deployment
+    assert "'binding = \"OPERATIONS\"'" in deployment
+    assert '"service = \\\"${OPERATIONS_SERVICE_NAME}\\\""' in deployment
+    assert 'grep -q \'^service = "${OPERATIONS_SERVICE_NAME}"$\'' in deployment
 
 
 def test_operations_installation_is_discovered_from_app_jwt():
