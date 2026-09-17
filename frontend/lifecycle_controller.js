@@ -92,8 +92,13 @@
 
   async function submit(item) {
     if (!API_BASE) throw new Error('Research API base is not configured');
-    const chatId = item.chat_id || currentChatId();
-    if (!chatId) throw new Error('No active chat is available for this research run');
+    // A brand-new session has no chat yet (state.chats is empty, activeChatId is
+    // null). The chat-mode path never hits this because api.addMessage() falls
+    // back to api.ensureChat() internally. Research mode had no equivalent
+    // fallback and threw here instead, so the very first research submission
+    // in a fresh session always failed with "No active chat is available for
+    // this research run" even though nothing was actually wrong.
+    const chatId = item.chat_id || currentChatId() || api.ensureChat().id;
     api.setActiveChat(chatId);
     api.addMessage('user', item.text, { request_id: item.request_id }, chatId);
     setStatus('Submitting research run…');
