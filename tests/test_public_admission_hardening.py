@@ -42,6 +42,8 @@ def test_research_admission_rejects_finite_ceiling_and_bad_urls():
         ResearchRequest("q", max_evidence_items=MAX_RESEARCH_EVIDENCE_ITEMS + 1).validate()
     with pytest.raises(ValueError, match="non-empty strings"):
         ResearchRequest("q", source_urls=("",)).validate()
+    with pytest.raises(ValueError, match="non-empty strings"):
+        ResearchRequest("q", source_urls=(123,)).validate()
     with pytest.raises(ValueError, match="source URL exceeds"):
         ResearchRequest("q", source_urls=("x" * (MAX_SOURCE_URL_LENGTH + 1),)).validate()
 
@@ -49,8 +51,12 @@ def test_research_admission_rejects_finite_ceiling_and_bad_urls():
 def test_chat_admission_rejects_metadata_and_history_amplification():
     with pytest.raises(ValueError, match="metadata key"):
         ChatRequest("c", "r", "m", metadata={"x" * (MAX_METADATA_KEY_LENGTH + 1): "v"}).validate()
+    with pytest.raises(ValueError, match="metadata key"):
+        ChatRequest("c", "r", "m", metadata={1: "v"}).validate()
     with pytest.raises(ValueError, match="metadata value"):
         ChatRequest("c", "r", "m", metadata={"k": "x" * (MAX_METADATA_VALUE_LENGTH + 1)}).validate()
+    with pytest.raises(ValueError, match="metadata value"):
+        ChatRequest("c", "r", "m", metadata={"k": 1}).validate()
     with pytest.raises(ValueError, match="history role"):
         ChatRequest("c", "r", "m", history=({"role": "system", "text": "x"},)).validate()
     with pytest.raises(ValueError, match="history text exceeds"):
