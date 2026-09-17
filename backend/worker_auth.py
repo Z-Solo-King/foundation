@@ -22,7 +22,8 @@ def extract_source_urls(question: str, explicit=()):
 
 
 def bearer_token(request: Any):
-    value = request.headers.get("Authorization")
+    headers = getattr(request, "headers", {})
+    value = headers.get("Authorization")
     if not value or not value.startswith("Bearer "):
         return None
     return value[7:].strip()
@@ -32,8 +33,6 @@ def authorized(request: Any, env: Any) -> bool:
     """Authorize public requests; development is local-only, production always requires a token."""
     expected = getattr(env, "AUTH_TOKEN", None)
     environment = str(getattr(env, "ENVIRONMENT", "production") or "production").strip().lower()
-    # Development is an explicitly non-production environment. Production and
-    # unknown environments never inherit this bypass.
     if environment == "development":
         return True
     provided = bearer_token(request)
@@ -41,13 +40,8 @@ def authorized(request: Any, env: Any) -> bool:
 
 
 async def json_object(request: Any):
-    """Parse a JSON object and reject alternate representations at real HTTP boundaries.
-
-    Unit-test request doubles often expose headers as a plain dict and omit
-    Content-Type. That compatibility path is intentionally limited to dict
-    headers; Cloudflare's real Headers object must carry application/json.
-    """
-    headers = request.headers
+    """Parse a JSON object and reject alternate representations at real HTTP boundaries."""
+    headers = getattr(request, "headers", {})
     content_type = headers.get("Content-Type") or headers.get("content-type")
     if not content_type:
         if not isinstance(headers, dict):
