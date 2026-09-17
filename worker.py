@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 import json
+import os
+from datetime import datetime, timezone
 
 from workers import Response, WorkerEntrypoint
 
 from backend.api.main import submit_research
 from backend.api.models import ChatRequest, ResearchRequest
+from backend.evidence_publication import package_digest, verify_package
 from backend.persistence.cloudflare import CloudflarePersistence
 from backend.sources.http import fetch_public_url
 from backend.worker_auth import authorized, bearer_token, extract_source_urls, json_object
@@ -52,6 +55,24 @@ async def _ingest_sources(env, run_id, req):
 
 async def _get_run(env, run_id):
     return await get_run(env, run_id)
+
+
+async def _publish_evidence(env, run_id, package):
+    """Accept only a signed, digest-verified package whose lineage belongs to run_id."""
+    run = await env.DB.prepare("SELECT run_id FROM research_runs WHERE run_id = ?").bind(run_id).first()
+    if not run:
+        return {"ok": False, "error": "run not found"}, 404
+    rows = await env.DB.prepare("SELECT observation_id FROM observations WHERE run_id = ?").bind(run_id).all()
+    observed_ids = {str(row["observation_id"] if isinstance(row, dict) else row.observation_id) for row in rows}
+    secret = str(getattr(env, "EVIDENCE_PACKAGE_SIGNING_SECRET", "") or os.getenv("EVIDENCE_PACKAGE_SIGNING_SECRET", ""))
+    valid, reason = verify_package(package, secret=secret, run_id=run_id, observed_ids=observed_ids)
+    if not valid:
+        return {"ok": False, "error": reason, "publication_state": "rejected"}, 400
+    digest = package_digest(package)
+    published_at = datetime.now(timezone.utc).isoformat()
+    serialized = json.dumps(package, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    await env.DB.prepare("""INSERT INTO research_publications (run_id, package_digest, package_json, published_at) VALUES (?, ?, ?, ?) ON CONFLICT(run_id) DO UPDATE SET package_digest = excluded.package_digest, package_json = excluded.package_json, published_at = excluded.published_at""").bind(run_id, digest, serialized, published_at).run()
+    return {"ok": True, "run_id": run_id, "publication_state": "published", "package_digest": digest, "published_at": published_at}, 200
 
 
 def _chat_headers(request):
@@ -212,6 +233,15 @@ class Default(WorkerEntrypoint):
                 return Response.json(body, status=status)
             except Exception as exc:
                 return Response.json({"ok": False, "error": f"storage diagnostic failure: {exc}"}, status=503)
+        if request.method == "POST" and path.endswith("/api/v1/research/publish"):
+            if not _authorized(request, self.env):
+                return Response.json({"ok": False, "error": "unauthorized"}, status=401)
+            payload = await _json(request)
+            if payload is None or not payload.get("run_id"):
+                return Response.json({"ok": False, "error": "run_id is required"}, status=400)
+            package = payload.get("package")
+            body, status = await _publish_evidence(self.env, str(payload["run_id"]), package)
+            return Response.json(body, status=status)
         if request.method == "GET" and "/api/v1/research/" in path:
             if not _authorized(request, self.env):
                 return Response.json({"ok": False, "error": "unauthorized"}, status=401)
