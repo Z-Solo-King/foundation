@@ -30,10 +30,11 @@ def bearer_token(request: Any):
 
 
 def authorized(request: Any, env: Any) -> bool:
-    """Authorize public requests; development is local-only, production always requires a token."""
+    """Authorize public requests; development bypass is explicit and local-only."""
     expected = getattr(env, "AUTH_TOKEN", None)
     environment = str(getattr(env, "ENVIRONMENT", "production") or "production").strip().lower()
-    if environment == "development":
+    bypass = str(getattr(env, "LOCAL_DEVELOPMENT_AUTH_BYPASS", "") or "").strip().lower() == "true"
+    if environment == "development" and bypass:
         return True
     provided = bearer_token(request)
     return bool(expected and provided and hmac.compare_digest(provided, expected))
