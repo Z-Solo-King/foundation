@@ -47,6 +47,8 @@ def test_research_admission_rejects_finite_ceiling_and_bad_urls():
     with pytest.raises(ValueError, match="source URL exceeds"):
         ResearchRequest("q", source_urls=("x" * (MAX_SOURCE_URL_LENGTH + 1),)).validate()
 
+    ResearchRequest("q", source_urls=("https://example.com/a", "https://example.org/b")).validate()
+
 
 def test_chat_admission_rejects_metadata_and_history_amplification():
     with pytest.raises(ValueError, match="metadata key"):
@@ -61,6 +63,13 @@ def test_chat_admission_rejects_metadata_and_history_amplification():
         ChatRequest("c", "r", "m", history=({"role": "system", "text": "x"},)).validate()
     with pytest.raises(ValueError, match="history text exceeds"):
         ChatRequest("c", "r", "m", history=({"role": "user", "text": "x" * (MAX_HISTORY_TEXT_LENGTH + 1)},)).validate()
+
+    valid_history = (
+        {"role": "user", "text": "first"},
+        {"role": "assistant", "text": "second"},
+    )
+    ChatRequest("c", "r", "m", history=valid_history).validate()
+
     history = tuple(
         {"role": "user" if index % 2 == 0 else "assistant", "text": "x" * 12_000}
         for index in range(9)
