@@ -10,7 +10,7 @@
     },
     "operations": {
       "role": "private-control-plane-research-orchestration",
-      "last_audited_main_sha": "5e5e04e2d6ef7efb2f8fc7f24ff920f23e641069",
+      "last_audited_main_sha": "f2d78dcc228b4392578f86fcfeed3374f0177546",
       "approved_production_revision": "cf28a28cb40de527aff1cd87f96e103669635f70",
       "nightly_research_revision": "b6a519742e57e7e68db64ab10535d76372bcbdb1"
     }
@@ -44,6 +44,7 @@
     "provider_output_admission": "Operations PR #395 merged; canonical bounded provider-output normalization and identity/partial/tool/usage checks are shared by chatbot and private research runtime",
     "provider_fanout_limits": "Operations PR #396 merged; provider-derived research structure is bounded by depth/collection limits, finding/follow-up ceilings and duplicate coalescing; broader tool/streaming execution fan-out remains governed separately",
     "durable_recovery_accounting": "Operations PR #398 merged; durable consume/release transitions report whether the current actor won and expiry reconciliation counts actual releases only",
+    "deadline_retry_slice": "Operations PR #400 merged; private research provider retries share one monotonic parent deadline and HTTP calls use remaining time instead of resetting the full timeout per attempt",
     "stage_receipt_correctness": "Foundation PR #461 remains a separate implementation stream",
     "nightly_timeout": "Foundation issue #487 remains open; nightly research lane still requires timeout below the six-hour GitHub Actions ceiling",
     "runtime_evidence": "Repository CI remains L3; private/runtime/production gates remain L4 and are not inferred from source"
