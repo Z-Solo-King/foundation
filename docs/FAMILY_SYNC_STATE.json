@@ -4,58 +4,13 @@
   "audited_at": "2026-09-17",
   "authority": "Foundation docs/FAMILY_SYNC_STANDARD.md",
   "repositories": {
-    "foundation": {
-      "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup",
-      "last_audited_main_sha": "c775abff67948c6e8a772deefa2fd214fdc9d758"
-    },
-    "operations": {
-      "role": "private-control-plane-runtime-research-orchestration",
-      "last_audited_main_sha": "b1f0023c6ad36f04d32c2a21fbb54a9cda565af9",
-      "approved_production_revision": "cf28a28cb40de527aff1cd87f96e103669635f70",
-      "nightly_research_revision": "b6a519742e57e7e68db64ab10535d76372bcbdb1"
-    }
+    "foundation": {"role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup", "last_audited_main_sha": "a8ae322110a79cd93a2f71bdf38d72bf70a4321b"},
+    "operations": {"role": "private-control-plane-runtime-research-orchestration", "last_audited_main_sha": "7415c55f0c23eb8a3d57725611b6e741a1dc2453", "approved_production_revision": "cf28a28cb40de527aff1cd87f96e103669635f70", "nightly_research_revision": "b6a519742e57e7e68db64ab10535d76372bcbdb1"}
   },
-  "evidence_boundary": {
-    "L1": "source inspected",
-    "L2": "repository inspection including callers/tests/ownership",
-    "L3": "current GitHub Actions execution",
-    "L4": "approved runtime/production execution"
-  },
-  "current_open_gates": [
-    "foundation#22",
-    "foundation#27",
-    "foundation#57",
-    "foundation#58",
-    "foundation#157",
-    "foundation#154",
-    "foundation#259",
-    "foundation#263",
-    "foundation#329",
-    "foundation#330",
-    "foundation#331",
-    "operations#269",
-    "operations#271",
-    "operations#272",
-    "operations#273",
-    "operations#274",
-    "operations#275",
-    "operations#277",
-    "operations#278",
-    "operations#279"
-  ],
-  "sync_rules": {
-    "main_sha_is_audit_observation": true,
-    "live_main_out_ranks_recorded_sha": true,
-    "cloudflare_runtime_is_external_to_github_only_sync": true,
-    "production_revision_is_separate_from_operations_main": true
-  },
-  "known_current_reconciliation": {
-    "research_public_path": "source_url_ingestion_only; general_web_discovery=false; evidence_synthesis=false",
-    "chat_provider_governance": "canonical ProviderRuntime selection plus durable MODEL_CALLS governance implemented in Operations main",
-    "chat_privacy_boundary": "explicit DataClass and external-provider authorization enforced before provider execution",
-    "multi_agent_model_transport": "separate research adapter exists; not yet unified with canonical ProviderRuntime/privacy/MODEL_CALLS governance",
-    "identity_gate": "wired into Operations generic extraction mapping",
-    "evidence_graph": "schema and verification primitives exist; full production research traversal remains open",
-    "artifact_manifest": "canonical complete immutable lineage implementation remains open"
-  }
+  "family_boundary": {"active_repository_count": 2, "active_repositories": ["foundation", "operations"], "historical_repositories": ["extractor-mapper"], "note": "The standalone extractor/mapper repository is not part of the current active family boundary."},
+  "evidence_boundary": {"L0": "hypothesis", "L1": "source inspected", "L2": "repository inspection including callers/tests/ownership", "L3": "current GitHub Actions execution", "L4": "approved runtime/production execution"},
+  "current_open_gates": ["foundation#27", "foundation#57", "foundation#58", "foundation#154", "foundation#157", "foundation#259", "foundation#263", "operations#119", "operations#120", "operations#132", "operations#145", "operations#155", "operations#164", "operations#181", "operations#197", "operations#322", "operations#323", "operations#329", "operations#331", "operations#333", "operations#334", "operations#335", "operations#336", "operations#338", "operations#339", "operations#340", "operations#341", "operations#343", "operations#344", "operations#345", "operations#346", "operations#347", "operations#348", "operations#349", "operations#350", "operations#351", "operations#352", "operations#353", "operations#354", "operations#355", "operations#356", "operations#357", "operations#358", "operations#359", "operations#370", "operations#372", "operations#374", "operations#376", "operations#377", "operations#378", "operations#379", "operations#380", "operations#381", "operations#382", "operations#383", "operations#384", "operations#385", "operations#386", "foundation#391", "foundation#392", "foundation#393", "foundation#395", "foundation#397", "foundation#398", "foundation#399", "foundation#400", "foundation#401", "foundation#402", "foundation#403", "foundation#404", "foundation#405", "foundation#406", "foundation#407", "foundation#408", "foundation#409", "foundation#410", "foundation#411", "foundation#412", "foundation#413", "foundation#435", "foundation#436", "foundation#438", "foundation#440", "foundation#442", "foundation#443", "foundation#446", "foundation#447", "foundation#448", "foundation#449", "foundation#450", "foundation#451", "foundation#452", "foundation#453", "foundation#454", "foundation#455", "foundation#456", "foundation#457", "foundation#458"],
+  "sync_rules": {"main_sha_is_audit_observation": true, "live_main_out_ranks_recorded_sha": true, "cloudflare_runtime_is_external_to_github_only_sync": true, "production_revision_is_separate_from_operations_main": true, "current_github_state_out_ranks_issue_tracker_summaries": true},
+  "known_current_reconciliation": {"research_public_path": "source_url_ingestion_only; general_web_discovery=false; evidence_synthesis=false", "chat_provider_governance": "canonical ProviderRuntime selection plus durable MODEL_CALLS governance implemented in Operations main", "chat_privacy_boundary": "explicit DataClass and external-provider authorization enforced before provider execution", "multi_agent_model_transport": "current repository implementation remains subject to canonical provider/privacy/resource governance; runtime acceptance is separate", "evidence_graph": "schema and verification primitives exist; full production research traversal remains open", "foundation_pr_460": "open implementation PR; latest required product-test run failed while compile/package-install/CodeQL stages passed", "operations_pr_389": "merged provider-response admission implementation; follow-up fan-out/runtime integration remains governed by existing contracts"},
+  "documentation_rule": "Dated plans and handoffs are historical context. Current merged source, current tests/CI, current source-of-truth documents, and explicit runtime evidence determine present status."
 }
