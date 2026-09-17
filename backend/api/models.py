@@ -4,6 +4,17 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 
+MAX_RESEARCH_SOURCES = 500
+MAX_RESEARCH_EVIDENCE_ITEMS = 5_000
+MAX_SOURCE_URL_LENGTH = 8_192
+MAX_METADATA_FIELDS = 32
+MAX_METADATA_KEY_LENGTH = 128
+MAX_METADATA_VALUE_LENGTH = 4_096
+MAX_HISTORY_TURNS = 20
+MAX_HISTORY_TEXT_LENGTH = 12_000
+MAX_HISTORY_TOTAL_TEXT_LENGTH = 100_000
+
+
 @dataclass(frozen=True)
 class ResearchRequest:
     question: str
@@ -17,12 +28,25 @@ class ResearchRequest:
     def validate(self) -> None:
         if not self.question.strip():
             raise ValueError("question required and must not be empty")
+        if not isinstance(self.max_sources, int) or isinstance(self.max_sources, bool):
+            raise ValueError("max_sources must be an integer")
+        if not isinstance(self.max_evidence_items, int) or isinstance(self.max_evidence_items, bool):
+            raise ValueError("max_evidence_items must be an integer")
         if self.max_sources < 1 or self.max_evidence_items < 1:
             raise ValueError("budgets must be positive")
+        if self.max_sources > MAX_RESEARCH_SOURCES:
+            raise ValueError("max_sources exceeds the supported safety ceiling")
+        if self.max_evidence_items > MAX_RESEARCH_EVIDENCE_ITEMS:
+            raise ValueError("max_evidence_items exceeds the supported safety ceiling")
         if not self.strict_zero_cost_only:
             raise ValueError("strict $0 cost mode is mandatory: strict_zero_cost_only must be true")
         if len(self.source_urls) > self.max_sources:
             raise ValueError("source_urls exceeds max_sources")
+        for url in self.source_urls:
+            if not isinstance(url, str) or not url.strip():
+                raise ValueError("source_urls entries must be non-empty strings")
+            if len(url) > MAX_SOURCE_URL_LENGTH:
+                raise ValueError("source URL exceeds the supported length")
 
 
 @dataclass(frozen=True)
@@ -48,19 +72,29 @@ class ChatRequest:
             raise ValueError("Heroic AI public chat contract accepts mode=chat only")
         if not self.strict_zero_cost_only:
             raise ValueError("strict $0 cost mode is mandatory: strict_zero_cost_only must be true")
-        if len(self.metadata) > 32:
+        if len(self.metadata) > MAX_METADATA_FIELDS:
             raise ValueError("metadata exceeds the supported field count")
-        if len(self.history) > 20:
+        for key, value in self.metadata.items():
+            if not isinstance(key, str) or len(key) > MAX_METADATA_KEY_LENGTH:
+                raise ValueError("metadata key exceeds the supported length")
+            if not isinstance(value, str) or len(value) > MAX_METADATA_VALUE_LENGTH:
+                raise ValueError("metadata value exceeds the supported length")
+        if len(self.history) > MAX_HISTORY_TURNS:
             raise ValueError("history exceeds the supported turn count")
+        total_history_text = 0
         for turn in self.history:
             if not isinstance(turn, dict):
                 raise ValueError("history entries must be objects")
-            if turn.get("role") not in {"user", "assistant", "system"}:
-                raise ValueError("history role must be user, assistant or system")
-            if not str(turn.get("text", "")).strip():
+            if turn.get("role") not in {"user", "assistant"}:
+                raise ValueError("history role must be user or assistant")
+            text = str(turn.get("text", ""))
+            if not text.strip():
                 raise ValueError("history text must not be empty")
-            if len(str(turn.get("text", ""))) > 12_000:
+            if len(text) > MAX_HISTORY_TEXT_LENGTH:
                 raise ValueError("history text exceeds the supported length")
+            total_history_text += len(text)
+        if total_history_text > MAX_HISTORY_TOTAL_TEXT_LENGTH:
+            raise ValueError("history exceeds the supported aggregate text length")
 
 
 @dataclass(frozen=True)
