@@ -12,13 +12,17 @@
 5. `docs/FAMILY_CONTRACT.json` — family ownership contract.
 6. `docs/FAMILY_ARCHITECTURE.md` — repository roles and dependency direction.
 7. `docs/FAMILY_SYNC_STANDARD.md` — uniform cross-repository synchronization, status and evidence format.
-8. `docs/PUBLIC_DETERMINISTIC_CORE.md` — public implementation boundary.
-9. `docs/RUN_RECORD_PUBLIC_BOUNDARY.md` — public/private run-record boundary.
-10. `DEPLOYMENT.md` and `.github/workflows/heroic-ai-production-release.yml` — public deployment path.
+8. `docs/FAMILY_SYNC_STATE.json` — latest recorded family synchronization snapshot.
+9. `docs/REQUIREMENT_COVERAGE_RECONCILIATION_2026-09-17.md` — current implementation-vs-plan reconciliation.
+10. `docs/PUBLIC_DETERMINISTIC_CORE.md` — public implementation boundary.
+11. `docs/RUN_RECORD_PUBLIC_BOUNDARY.md` — public/private run-record boundary.
+12. `DEPLOYMENT.md` and `.github/workflows/heroic-ai-production-release.yml` — public deployment path.
 
 ## Source of truth
 
-The current `main` tree, current pull requests/workflows and fresh execution evidence outrank dated plans, handoffs and chat notes. This index is navigation, not a commit or production-status record.
+The current `main` tree, current pull requests/workflows and fresh execution evidence outrank dated plans, handoffs and chat notes. `docs/FAMILY_SYNC_STATE.json` records the last audit observation; its SHA values must be compared with the live branch tips before making a fresh current-state claim.
+
+This index is navigation, not a commit or production-status record.
 
 ## Responsibilities
 
@@ -51,3 +55,5 @@ The generic filenames must not be recreated merely to collect edge cases. Subsys
 ## Documentation updates
 
 When contracts, ownership, workflows, dependency direction or production gates change, update the affected canonical document in the same change set. Mark dated continuity material as historical. When a production workflow filename or ownership boundary changes, update both this navigation entry and `DEPLOYMENT.md` in the same PR.
+
+For family-wide synchronization changes, update `FAMILY_SYNC_STATE.json` and the affected Operations source-of-truth/navigation records in the same coordinated change set.
