@@ -10,7 +10,7 @@
     },
     "operations": {
       "role": "private-control-plane-research-orchestration",
-      "last_audited_main_sha": "532b90ecfe7a876b4477ab8cb2097b18bcf62b70",
+      "last_audited_main_sha": "7ca856c4be291140e52625ff9b73b234f1dc103e",
       "approved_production_revision": "cf28a28cb40de527aff1cd87f96e103669635f70",
       "nightly_research_revision": "b6a519742e57e7e68db64ab10535d76372bcbdb1"
     }
@@ -45,7 +45,8 @@
     "provider_fanout_limits": "Operations PR #396 merged; provider-derived research structure is bounded by depth/collection limits, finding/follow-up ceilings and duplicate coalescing; broader tool/streaming execution fan-out remains governed separately",
     "durable_recovery_accounting": "Operations PR #398 merged; durable consume/release transitions report whether the current actor won and expiry reconciliation counts actual releases only",
     "deadline_retry_and_execution_governance": "Operations PR #402 merged as 532b90ecfe7a876b4477ab8cb2097b18bcf62b70; consolidated repository implementation for #377/#383/#384 now propagates one monotonic parent deadline through multi-agent research, provider/model calls, HTTP and retry backoff; binds durable reservations to execution identity; caps leases by parent deadline; adds identity-bound heartbeat and recovery; and retains immutable decision-snapshot enforcement",
-    "deadline_governance_issue_state": "Operations issues #377/#383/#384 remain open pending explicit acceptance/CI evidence; the merged PR establishes the repository implementation but does not claim L4 runtime certification",
+    "terminalization_governance": "Operations PR #403 merged as 7ca856c4be291140e52625ff9b73b234f1dc103e; the canonical chat idempotency authority now binds terminalization and abandon to durable attempt identity, records terminal/result/side-effect identities, prevents stale reclaimed workers from overwriting current executions, and binds chat model execution identity to request_id:attempt_id; Operations issue #385 remains open for broader runtime/L4 acceptance",
+    "deadline_governance_issue_state": "Operations issues #377/#383/#384 remain open pending explicit acceptance/CI evidence; the merged implementation does not claim L4 runtime certification",
     "stage_receipt_correctness": "Foundation PR #461 remains a separate implementation stream",
     "nightly_timeout": "Foundation issue #487 remains open; nightly research lane still requires timeout below the six-hour GitHub Actions ceiling",
     "runtime_evidence": "Repository CI remains L3; private/runtime/production gates remain L4 and are not inferred from source"
