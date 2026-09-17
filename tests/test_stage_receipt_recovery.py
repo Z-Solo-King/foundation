@@ -49,6 +49,11 @@ def test_receipt_rejects_invalid_timestamp():
         receipt(created_at="not-a-timestamp")
 
 
+def test_receipt_rejects_non_string_timestamp():
+    with pytest.raises(ValueError, match="timestamp"):
+        receipt(created_at=123)  # type: ignore[arg-type]
+
+
 def test_receipt_requires_timezone_when_expiry_is_configured():
     with pytest.raises(ValueError, match="timezone"):
         receipt(
