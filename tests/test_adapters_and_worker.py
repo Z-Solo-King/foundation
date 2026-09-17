@@ -104,7 +104,7 @@ async def test_cloudflare_persistence_helpers():
     assert len(request_fingerprint(request)) == 64
     db = FakeDB(); artifacts = FakeArtifacts(); persistence = CloudflarePersistence(SimpleNamespace(DB=db, ARTIFACTS=artifacts))
     assert await persistence.create_run("run-1", request) == "run-1"
-    db.run_rows["run-1"] = {"run_id": "run-1", "status": "planned"}
+    db.run_rows["run-1"] = {"run_id": "run-1", "status":"planned"}
     with pytest.raises(ValueError): await persistence.create_run_idempotent(request, "")
     expected_hash = request_fingerprint(request)
     db.batch_result = [SimpleNamespace(results=[]), SimpleNamespace(results=[]), SimpleNamespace(results=[{"run_id":"run-abc","request_hash":expected_hash}])]
@@ -143,7 +143,7 @@ async def test_worker_helpers_and_source_ingestion(monkeypatch):
     assert worker._bearer_token(SimpleNamespace(headers={"Authorization":"Bearer abc"})) == "abc"
     assert worker._bearer_token(SimpleNamespace(headers={"Authorization":"Basic abc"})) is None
     assert worker._bearer_token(SimpleNamespace(headers={})) is None
-    assert worker._authorized(SimpleNamespace(headers={}), SimpleNamespace(ENVIRONMENT="development", AUTH_TOKEN=None)) is True
+    assert worker._authorized(SimpleNamespace(headers={}), SimpleNamespace(ENVIRONMENT="development", AUTH_TOKEN=None, LOCAL_DEVELOPMENT_AUTH_BYPASS="true")) is True
     assert worker._authorized(SimpleNamespace(headers={"Authorization":"Bearer good"}), SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="good")) is True
     assert worker._authorized(SimpleNamespace(headers={"Authorization":"Bearer bad"}), SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="good")) is False
     class Request:
@@ -155,7 +155,7 @@ async def test_worker_helpers_and_source_ingestion(monkeypatch):
     class BadRequest:
         async def json(self): raise RuntimeError("bad json")
     assert await worker._json(BadRequest()) is None
-    db = FakeDB(); artifacts = FakeArtifacts(); env = SimpleNamespace(DB=db, ARTIFACTS=artifacts, ENVIRONMENT="development", AUTH_TOKEN=None)
+    db = FakeDB(); artifacts = FakeArtifacts(); env = SimpleNamespace(DB=db, ARTIFACTS=artifacts, ENVIRONMENT="development", AUTH_TOKEN=None, LOCAL_DEVELOPMENT_AUTH_BYPASS="true")
     async def fake_public(url): return source_http.FetchResult(url,url,200,"text/plain",b"abc","e")
     monkeypatch.setattr(worker,"fetch_public_url",fake_public)
     ingested = await worker._ingest_sources(env,"run-1",request); assert ingested[0]["bytes"] == 3
@@ -165,8 +165,7 @@ async def test_worker_helpers_and_source_ingestion(monkeypatch):
     ingested_error = await worker._ingest_sources(env,"run-2",request_error); assert ingested_error[0]["status"] == 404
     class RunDB:
         def prepare(self, sql):
-            if sql.startswith("SELECT * FROM research_runs"):
-                return FakeStatement({"run_id":"r1","status":"running"})
+            if sql.startswith("SELECT * FROM research_runs"): return FakeStatement({"run_id":"r1","status":"running"})
             return FakeStatement([{"observation_id":"o1","source_id":"s1"}])
     run_payload = await worker._get_run(SimpleNamespace(DB=RunDB()), "r1")
     assert run_payload["run"]["run_id"] == "r1" and run_payload["observations"][0]["observation_id"] == "o1"
@@ -184,8 +183,7 @@ async def test_worker_http_all_branches(monkeypatch):
     entry = worker.Default(); entry.env = env
     asset_response = await entry.fetch(Request("GET", "https://x/"))
     assert asset_response == "STATIC_ASSET_RESPONSE"
-    unauthorized_get = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer bad"}))
-    assert "unauthorized" in str(unauthorized_get)
+    unauthorized_get = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer bad"})); assert "unauthorized" in str(unauthorized_get)
     ready = await entry.fetch(Request("GET", "https://x/readiness")); assert ready
     not_found = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer secret"})); assert not_found
     class FailingDB(FakeDB):
