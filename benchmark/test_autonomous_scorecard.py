@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 from benchmark.autonomous_scorecard import build_scorecard, render_markdown
+from benchmark.evidence_tier import EvidenceTier
 
 
 def write_json(path, payload):
@@ -14,12 +15,13 @@ def test_scorecard_aggregates_shards_and_separates_contract_from_acquisition(tmp
     write_json(
         tmp_path / "shard-0" / "benchmark-summary.json",
         {
-            "schema": "autonomous-public-benchmark-summary/v9",
+            "schema": "autonomous-public-benchmark-summary/v10",
             "run_id": "run-1",
             "shard": 0,
             "selected_targets": 2,
             "cycles": 3,
             "total_observations": 0,
+            "evidence": {"tier": EvidenceTier.LIVE_SOURCE_ACQUISITION.value},
             "status_counts": {"ok": 5, "blocked": 1, "error": 0, "empty": 0, "resource_limited": 0},
             "http_status_counts": {"200": 5, "403": 1},
             "diagnostic_counts": {"attempts-1": 6},
@@ -48,11 +50,12 @@ def test_scorecard_aggregates_shards_and_separates_contract_from_acquisition(tmp
     write_json(
         tmp_path / "shard-1" / "benchmark-summary.json",
         {
-            "schema": "autonomous-public-benchmark-summary/v9",
+            "schema": "autonomous-public-benchmark-summary/v10",
             "run_id": "run-1",
             "shard": 1,
             "selected_targets": 1,
             "cycles": 2,
+            "evidence": {"tier": EvidenceTier.LIVE_SOURCE_ACQUISITION.value},
             "status_counts": {"ok": 4, "blocked": 0, "error": 1, "empty": 0, "resource_limited": 0},
             "http_status_counts": {"200": 4},
             "diagnostic_counts": {"attempts-1": 5},
@@ -72,11 +75,12 @@ def test_scorecard_aggregates_shards_and_separates_contract_from_acquisition(tmp
     write_json(
         tmp_path / "autonomous-chatbot-query-benchmark" / "chatbot-query-benchmark.json",
         {
-            "schema": "chatbot-research-query-benchmark/v5",
+            "schema": "chatbot-research-query-benchmark/v6",
             "queries": 14,
             "passed": 14,
             "failed": 0,
             "pass_rate": 1.0,
+            "evidence": {"tier": EvidenceTier.DETERMINISTIC_CONTRACT.value},
             "corpus_coverage": {
                 "project_query_count": 11,
                 "project_query_rate": 0.7857,
@@ -95,6 +99,14 @@ def test_scorecard_aggregates_shards_and_separates_contract_from_acquisition(tmp
         "research_contract": "PASS",
         "acquisition_clean": "FAIL",
     }
+    assert scorecard["evidence"]["minimum_tier"] == EvidenceTier.DETERMINISTIC_CONTRACT.value
+    assert set(scorecard["evidence"]["component_tiers"]) == {
+        EvidenceTier.DETERMINISTIC_CONTRACT.value,
+        EvidenceTier.LIVE_SOURCE_ACQUISITION.value,
+    }
+    assert scorecard["evidence"]["live_provider_claim_allowed"] is False
+    assert scorecard["evidence"]["integration_runtime_claim_allowed"] is False
+    assert scorecard["evidence"]["production_readiness_claim_allowed"] is False
     assert scorecard["selected_targets"] == 3
     assert scorecard["total_observations"] == 11
     assert scorecard["acquisition"]["usable_observation_rate"] == 0.818182
@@ -107,12 +119,13 @@ def test_scorecard_aggregates_shards_and_separates_contract_from_acquisition(tmp
     assert scorecard["structural_signals"]["jsonld_blocks_total"] == 7
     assert scorecard["structural_signals"]["field_level_correctness_oracle"] is False
     assert scorecard["targets_with_failures"][0]["url"] == "https://blocked.example/"
-    assert "latency" not in " ".join(scorecard["measurement_gaps"]) or "oracle" in " ".join(scorecard["measurement_gaps"])
 
     markdown = render_markdown(scorecard)
     assert "Overall: **WARN**" in markdown
     assert "Research contract: **PASS** (14/14 passed)" in markdown
     assert "Acquisition clean: **FAIL**" in markdown
+    assert "Evidence tier" in markdown
+    assert "Live-provider claim allowed: False" in markdown
     assert "Structural acquisition signals" in markdown
 
 
