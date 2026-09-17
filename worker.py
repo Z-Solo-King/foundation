@@ -145,8 +145,8 @@ async def _operations_chatbot_diagnostic(env):
             "provider_policy": body.get("provider_policy") if isinstance(body, dict) else None,
             "error": None if healthy else (body.get("error") if isinstance(body, dict) else "invalid_private_chatbot_diagnostic"),
         }, 200 if healthy else 503
-    except Exception as exc:
-        return {"ok": False, "status": "degraded", "error": f"chatbot diagnostic binding failure: {exc}"}, 503
+    except Exception:
+        return {"ok": False, "status": "degraded", "error": "chatbot diagnostic failure"}, 503
 
 
 async def _operations_dashboard(env, request):
@@ -231,8 +231,8 @@ class Default(WorkerEntrypoint):
             try:
                 body, status = await _storage_diagnostic(self.env, str(payload["run_id"]))
                 return Response.json(body, status=status)
-            except Exception as exc:
-                return Response.json({"ok": False, "error": f"storage diagnostic failure: {exc}"}, status=503)
+            except Exception:
+                return Response.json({"ok": False, "error": "storage diagnostic failure"}, status=503)
         if request.method == "POST" and path.endswith("/api/v1/research/publish"):
             if not _authorized(request, self.env):
                 return Response.json({"ok": False, "error": "unauthorized"}, status=401)
@@ -248,8 +248,8 @@ class Default(WorkerEntrypoint):
             run_id = path.rsplit("/", 1)[-1]
             try:
                 payload = await _get_run(self.env, run_id)
-            except Exception as exc:
-                return Response.json({"ok": False, "error": f"persistence failure: {exc}"}, status=503)
+            except Exception:
+                return Response.json({"ok": False, "error": "persistence failure"}, status=503)
             if payload is None:
                 return Response.json({"ok": False, "error": "run not found"}, status=404)
             return Response.json({"ok": True, **payload})
@@ -283,13 +283,13 @@ class Default(WorkerEntrypoint):
                 await persistence.set_run_status(run_id, "running")
                 sources = await _ingest_sources(self.env, run_id, req)
                 await persistence.set_run_status(run_id, "completed")
-            except Exception as exc:
+            except Exception:
                 if run_id is not None:
                     try:
                         await persistence.set_run_status(run_id, "failed")
                     except Exception:
                         pass
-                return Response.json({"ok": False, "error": f"execution/persistence failure: {exc}"}, status=503)
+                return Response.json({"ok": False, "error": "execution/persistence failure"}, status=503)
             return Response.json({"ok": True, "run_id": run_id, "metadata": {**result.metadata, "execution_mode": "source_url_ingestion"}, "sources": sources})
         assets = getattr(self.env, "ASSETS", None)
         if assets is not None:
