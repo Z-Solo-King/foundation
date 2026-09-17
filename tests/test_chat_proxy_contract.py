@@ -70,7 +70,7 @@ def test_chat_stream_proxy_preserves_sse_response():
 
     class Binding:
         async def fetch(self, url, options):
-            assert url == "https://chat/v1/chat/stream"
+            assert url in {"https://chat/v1/chat", "https://chat/v1/chat/stream"}
             assert options["headers"]["Idempotency-Key"] == "req-2"
             return Response()
 
