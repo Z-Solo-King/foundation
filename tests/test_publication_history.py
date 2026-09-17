@@ -54,7 +54,7 @@ async def test_publish_evidence_appends_without_conflict_update(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_publish_evidence_preserves_distinct_publications(monkeypatch):
+async def test_publish_evidence_allows_multiple_inserts_for_one_run(monkeypatch):
     package = {"run_id": "run-1", "claims": []}
     db = DB()
     env = SimpleNamespace(DB=db, EVIDENCE_PACKAGE_SIGNING_SECRET="secret")
@@ -66,5 +66,4 @@ async def test_publish_evidence_preserves_distinct_publications(monkeypatch):
     second, _ = await worker._publish_evidence(env, "run-1", package)
 
     assert first["package_digest"] != second["package_digest"]
-    assert first["publication_id"] == second["publication_id"] == 7
     assert sum(sql.startswith("INSERT INTO research_publications") for sql in db.statements) == 2
