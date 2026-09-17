@@ -7,6 +7,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
+from benchmark.evidence_tier import EvidenceTier, parse_evidence_tier
 
 STATUS_KEYS = ("ok", "empty", "blocked", "resource_limited", "error")
 
@@ -29,6 +30,13 @@ def _weighted_average(values: list[tuple[int, int]]) -> float | None:
 
 def collect_summary_files(root: Path) -> list[Path]:
     return sorted(root.rglob("benchmark-summary.json")) + sorted(root.rglob("summary-*.json"))
+
+
+def _tier_rank(value: str) -> int:
+    try:
+        return parse_evidence_tier(value).rank
+    except ValueError:
+        return -1
 
 
 def build_scorecard(root: Path) -> dict[str, Any]:
@@ -57,12 +65,24 @@ def build_scorecard(root: Path) -> dict[str, Any]:
     shards: list[int] = []
     measurement_gaps: set[str] = set()
     measurement_rows: list[dict[str, Any]] = []
+    component_tiers: set[str] = set()
 
     for path in summary_paths:
         row = _read_json(path)
         schema = str(row.get("schema", ""))
         if not schema.startswith("autonomous-public-benchmark-summary/"):
             continue
+        evidence = row.get("evidence")
+        if isinstance(evidence, dict) and isinstance(evidence.get("tier"), str):
+            tier = evidence["tier"]
+            if tier in {item.value for item in EvidenceTier}:
+                component_tiers.add(tier)
+            else:
+                measurement_gaps.add(f"benchmark artifact declares unsupported evidence tier: {tier}")
+        else:
+            component_tiers.add("legacy_untyped")
+            measurement_gaps.add("one or more acquisition artifacts predate the explicit evidence-tier contract")
+
         run_id = str(row.get("run_id") or "")
         if run_id:
             run_ids.add(run_id)
@@ -78,7 +98,7 @@ def build_scorecard(root: Path) -> dict[str, Any]:
         if isinstance(measurement, dict):
             measurement_rows.append(measurement)
         else:
-            measurement_gaps.add("benchmark summary does not expose structural or latency measurements")
+            measurement_gaps.add("sanitized benchmark summary does not expose structural or latency measurements")
 
         failures = row.get("targets_with_failures") or []
         for target in failures:
@@ -90,15 +110,9 @@ def build_scorecard(root: Path) -> dict[str, Any]:
             observations = int(target.get("observations") or 0)
             entry["observations"] += observations
             entry["failures"] += int(target.get("failures") or 0)
-            entry["status_counts"].update(
-                {str(k): int(v) for k, v in (target.get("status_counts") or {}).items()}
-            )
-            entry["http_status_counts"].update(
-                {str(k): int(v) for k, v in (target.get("http_status_counts") or {}).items()}
-            )
-            entry["diagnostics"].update(
-                {str(k): int(v) for k, v in (target.get("diagnostics") or {}).items()}
-            )
+            entry["status_counts"].update({str(k): int(v) for k, v in (target.get("status_counts") or {}).items()})
+            entry["http_status_counts"].update({str(k): int(v) for k, v in (target.get("http_status_counts") or {}).items()})
+            entry["diagnostics"].update({str(k): int(v) for k, v in (target.get("diagnostics") or {}).items()})
 
     measurement_observations = sum(int(row.get("observations", 0) or 0) for row in measurement_rows)
     product_candidates = sum(int(row.get("product_candidates_total", 0) or 0) for row in measurement_rows)
@@ -151,6 +165,18 @@ def build_scorecard(root: Path) -> dict[str, Any]:
     corpus_coverage = (query_result or {}).get("corpus_coverage") or {}
 
     query_schema = str((query_result or {}).get("schema") or "")
+    query_evidence = (query_result or {}).get("evidence")
+    query_tier = None
+    if isinstance(query_evidence, dict) and isinstance(query_evidence.get("tier"), str):
+        if query_evidence["tier"] in {item.value for item in EvidenceTier}:
+            query_tier = query_evidence["tier"]
+            component_tiers.add(query_tier)
+        else:
+            measurement_gaps.add(f"query benchmark declares unsupported evidence tier: {query_evidence['tier']}")
+    else:
+        component_tiers.add("legacy_untyped")
+        measurement_gaps.add("deep-query benchmark artifact predates the explicit evidence-tier contract")
+
     if query_result is None:
         measurement_gaps.add("deep-query benchmark artifact was not published with this run")
     elif not query_schema.startswith("chatbot-research-query-benchmark/"):
@@ -161,6 +187,22 @@ def build_scorecard(root: Path) -> dict[str, Any]:
     contract_status = "PASS" if query_result is not None and query_total > 0 and query_failed == 0 and query_passed == query_total else "FAIL"
     acquisition_clean_status = "PASS" if clean_failures == 0 else "FAIL"
     overall_status = "PASS" if execution_pass and contract_status == "PASS" and acquisition_clean_status == "PASS" else "WARN"
+
+    typed_component_tiers = sorted(
+        (tier for tier in component_tiers if tier != "legacy_untyped"),
+        key=_tier_rank,
+    )
+    minimum_tier = typed_component_tiers[0] if typed_component_tiers else "legacy_untyped"
+    evidence = {
+        "component_tiers": sorted(component_tiers),
+        "minimum_tier": minimum_tier,
+        "research_contract_tier": query_tier,
+        "live_provider_claim_allowed": False,
+        "integration_runtime_claim_allowed": False,
+        "production_readiness_claim_allowed": False,
+        "field_level_correctness_oracle": False,
+        "rule": "Aggregate scorecards cannot claim a stronger tier than their individual artifacts; transport/structural signals remain distinct from correctness and production readiness.",
+    }
 
     target_rows = []
     for entry in targets.values():
@@ -180,12 +222,13 @@ def build_scorecard(root: Path) -> dict[str, Any]:
     target_rows.sort(key=lambda item: (-float(item["failure_rate"] or 0), item["url"]))
 
     return {
-        "schema": "autonomous-research-scorecard/v2",
+        "schema": "autonomous-research-scorecard/v3",
         "run_ids": sorted(run_ids),
         "shards": shard_expected,
         "selected_targets": selected_targets,
         "cycles": cycles,
         "total_observations": total_observations,
+        "evidence": evidence,
         "status": {
             "overall": overall_status,
             "execution": "PASS" if execution_pass else "FAIL",
@@ -239,6 +282,7 @@ def render_markdown(scorecard: dict[str, Any]) -> str:
     contract = scorecard["research_contract"]
     acquisition = scorecard["acquisition"]
     structural = scorecard["structural_signals"]
+    evidence = scorecard["evidence"]
     lines = [
         "# Autonomous Research Scorecard",
         "",
@@ -246,6 +290,15 @@ def render_markdown(scorecard: dict[str, Any]) -> str:
         f"Execution: **{status['execution']}**",
         f"Research contract: **{status['research_contract']}** ({contract['passed']}/{contract['queries']} passed)",
         f"Acquisition clean: **{status['acquisition_clean']}**",
+        "",
+        "## Evidence tier",
+        "",
+        f"- Minimum aggregate tier: {evidence['minimum_tier']}",
+        f"- Component tiers: {', '.join(evidence['component_tiers'])}",
+        "- Live-provider claim allowed: False",
+        "- Integration-runtime claim allowed: False",
+        "- Production-readiness claim allowed: False",
+        "- Field-level correctness oracle: False",
         "",
         "## Research contract coverage",
         "",

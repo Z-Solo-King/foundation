@@ -15,7 +15,14 @@
       "kind": "benchmark_runner",
       "reusable_evidence": false,
       "research_value": "High",
-      "description": "Turns the query corpus into deterministic research-plan contract checks and records coverage/failure causes."
+      "description": "Turns the query corpus into deterministic research-plan contract checks and records coverage/failure causes with explicit evidence-tier semantics."
+    },
+    {
+      "path": "benchmark/evidence_tier.py",
+      "kind": "evidence_tier_contract",
+      "reusable_evidence": false,
+      "research_value": "High",
+      "description": "Canonical benchmark execution-tier semantics preventing deterministic or simulated results from being interpreted as live-provider, integration-runtime or production evidence."
     },
     {
       "path": "benchmark/public_chatbot_runner.py",
@@ -95,7 +102,8 @@
     "Transport success must not be treated as product-field precision or recall.",
     "Structural product-candidate or JSON-LD signals are hints about page shape, not proof that extracted product fields are correct.",
     "Current project state must be tied to a revision and timestamp before being reused as a current claim.",
-    "A regression result must name the compared baseline; NO_BASELINE is a truthful state, not a pass."
+    "A regression result must name the compared baseline; NO_BASELINE is a truthful state, not a pass.",
+    "Every benchmark artifact must carry an explicit execution evidence tier; lower-tier evidence cannot certify higher-tier runtime or production claims."
   ],
   "search_priorities": [
     "project-specific research questions",

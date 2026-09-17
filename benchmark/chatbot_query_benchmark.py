@@ -7,6 +7,7 @@ from pathlib import Path
 
 from backend.intelligence.contracts import ResearchContract
 from backend.intelligence.planning import create_plan
+from benchmark.evidence_tier import EvidenceTier, parse_evidence_tier
 
 REQUIRED_DEEP_STAGES = {
     "define_question",
@@ -42,7 +43,22 @@ def load_queries(path: Path) -> list[dict[str, object]]:
     return [row for row in rows if isinstance(row, dict) and row.get("id") and row.get("query")]
 
 
-def run(path: Path, output: Path, allow_failures: bool = False) -> int:
+def run(
+    path: Path,
+    output: Path,
+    allow_failures: bool = False,
+    evidence_tier: str = EvidenceTier.DETERMINISTIC_CONTRACT.value,
+) -> int:
+    evidence = parse_evidence_tier(evidence_tier)
+    # This benchmark exercises deterministic research planning only. A caller
+    # cannot label it as live/integration/production evidence without changing
+    # the benchmark implementation to actually exercise that environment.
+    if evidence.tier is not EvidenceTier.DETERMINISTIC_CONTRACT:
+        raise ValueError(
+            "chatbot_query_benchmark executes deterministic research-plan contracts only; "
+            "use a runtime-aware benchmark runner for live-provider/integration/production tiers"
+        )
+
     rows = load_queries(path)
     results: list[dict[str, object]] = []
     failures = 0
@@ -116,11 +132,13 @@ def run(path: Path, output: Path, allow_failures: bool = False) -> int:
 
     total = len(results)
     summary = {
-        "schema": "chatbot-research-query-benchmark/v5",
+        "schema": "chatbot-research-query-benchmark/v6",
         "queries": total,
         "passed": total - failures,
         "failed": failures,
         "pass_rate": round((total - failures) / total, 4) if total else 0.0,
+        "evidence": evidence.to_dict(),
+        "evidence_rule": "This runner proves deterministic research-plan contract coverage only; it does not certify live provider, integration runtime or production behavior.",
         "corpus_coverage": {
             "category_count": len(categories),
             "categories": dict(sorted(categories.items())),
@@ -146,8 +164,9 @@ def main() -> int:
     parser.add_argument("--input", default="benchmark/chatbot-query-corpus.json")
     parser.add_argument("--output", default=".runtime/chatbot-query-benchmark.json")
     parser.add_argument("--allow-failures", action="store_true", help="record research gaps without failing the benchmark")
+    parser.add_argument("--evidence-tier", default=EvidenceTier.DETERMINISTIC_CONTRACT.value)
     args = parser.parse_args()
-    return run(Path(args.input), Path(args.output), args.allow_failures)
+    return run(Path(args.input), Path(args.output), args.allow_failures, args.evidence_tier)
 
 
 if __name__ == "__main__":
