@@ -61,6 +61,11 @@ def test_missing_trust_key_is_rejected():
         parse_trusted_package(signed.__dict__, b"")
 
 
+def test_non_object_package_is_rejected():
+    with pytest.raises(ValueError, match="must be an object"):
+        parse_trusted_package([], b"test-key")
+
+
 def test_invalid_schema_identity_and_synthesis_are_rejected():
     signed = package()
     for field, value, message in (
