@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import re
 from pathlib import Path
@@ -32,7 +33,7 @@ _ALLOWED_STATUS = frozenset({"completed", "partial", "blocked", "failed"})
 _SECRET_PATTERN = re.compile(
     r"(?i)(?:api[_-]?key|access[_-]?token|private[_-]?key|password|authorization)\s*[:=]\s*\S+"
 )
-_PRIVATE_HOSTS = frozenset({"localhost", "127.0.0.1", "::1", "host.docker.internal"})
+_PRIVATE_HOSTS = frozenset({"localhost", "host.docker.internal"})
 
 
 def _safe_text(value: object, *, field: str, required: bool = False) -> str | None:
@@ -57,8 +58,15 @@ def _safe_public_url(value: object) -> str | None:
     parsed = urlparse(text)
     if parsed.scheme not in {"http", "https"} or not parsed.hostname:
         raise ValueError("source_url must be an absolute HTTP(S) URL")
-    if parsed.hostname.lower() in _PRIVATE_HOSTS:
+    hostname = parsed.hostname.lower().rstrip(".")
+    if hostname in _PRIVATE_HOSTS:
         raise ValueError("source_url points to a private/local host")
+    try:
+        address = ipaddress.ip_address(hostname)
+    except ValueError:
+        address = None
+    if address is not None and (address.is_private or address.is_loopback or address.is_link_local or address.is_reserved or address.is_multicast):
+        raise ValueError("source_url points to a private/reserved host")
     return text
 
 
