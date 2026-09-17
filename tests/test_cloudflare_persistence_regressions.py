@@ -126,3 +126,97 @@ async def test_create_run_idempotent_uses_different_run_identity_for_different_s
     a = execution_scope_fingerprint(hashlib.sha256(b"a").hexdigest(), "research", IDEMPOTENCY_CONTRACT_REVISION)
     b = execution_scope_fingerprint(hashlib.sha256(b"b").hexdigest(), "research", IDEMPOTENCY_CONTRACT_REVISION)
     assert a != b
+
+
+@pytest.mark.asyncio
+async def test_create_run_idempotent_accepts_explicit_scope():
+    p = persistence(FakeDB())
+    subject = "subject-a"
+    db = p.env.DB
+    db.batch_result[2] = SimpleNamespace(results=[{
+        "run_id": "run-explicit",
+        "request_hash": "ignored",
+        "subject_fingerprint": subject,
+        "capability": "chat",
+        "contract_revision": "chat/v3",
+    }])
+    assert await p.create_run_idempotent(
+        request(), "explicit-key", subject_fingerprint=subject, capability="chat", contract_revision="chat/v3"
+    ) == "run-explicit"
+
+
+@pytest.mark.asyncio
+async def test_create_run_idempotent_rejects_empty_scope_values():
+    cases = (
+        {"subject_fingerprint": "   "},
+        {"capability": ""},
+        {"contract_revision": "   "},
+    )
+    for kwargs in cases:
+        with pytest.raises(ValueError):
+            await persistence(FakeDB()).create_run_idempotent(request(), "scope-key", **kwargs)
+
+
+@pytest.mark.asyncio
+async def test_create_run_idempotent_rejects_missing_claim_row():
+    with pytest.raises(RuntimeError, match="claim was not persisted"):
+        await persistence(FakeDB(), token="token-a").create_run_idempotent(request(), "missing-row")
+
+
+@pytest.mark.asyncio
+async def test_create_run_idempotent_rejects_legacy_request_conflict():
+    db = FakeDB()
+    db.batch_result[2] = SimpleNamespace(results=[{
+        "run_id": "run-existing",
+        "request_hash": "different",
+    }])
+    with pytest.raises(IdempotencyConflictError, match="different request"):
+        await persistence(db).create_run_idempotent(request(), "legacy-key")
+
+
+@pytest.mark.asyncio
+async def test_create_run_idempotent_rejects_scoped_request_hash_conflict():
+    db = FakeDB()
+    db.batch_result[2] = SimpleNamespace(results=[{
+        "run_id": "run-existing",
+        "request_hash": "different",
+        "subject_fingerprint": "subject-a",
+        "capability": "research",
+        "contract_revision": IDEMPOTENCY_CONTRACT_REVISION,
+    }])
+    with pytest.raises(IdempotencyConflictError, match="execution scope"):
+        await persistence(db, token="token-a").create_run_idempotent(request(), "scoped-key")
+
+
+@pytest.mark.asyncio
+async def test_create_run_idempotent_rejects_scoped_identity_mismatch_with_matching_hash():
+    import hashlib
+    from backend.persistence.cloudflare import execution_scope_fingerprint, request_fingerprint
+
+    subject = hashlib.sha256(b"token-a").hexdigest()
+    scope = execution_scope_fingerprint(subject, "research", IDEMPOTENCY_CONTRACT_REVISION)
+    request_hash = hashlib.sha256(f"{request_fingerprint(request())}:{scope}".encode()).hexdigest()
+    db = FakeDB()
+    db.batch_result[2] = SimpleNamespace(results=[{
+        "run_id": "run-existing",
+        "request_hash": request_hash,
+        "subject_fingerprint": subject,
+        "capability": "other-capability",
+        "contract_revision": IDEMPOTENCY_CONTRACT_REVISION,
+    }])
+    with pytest.raises(IdempotencyConflictError, match="execution scope"):
+        await persistence(db, token="token-a").create_run_idempotent(request(), "scope-mismatch")
+
+
+@pytest.mark.asyncio
+async def test_create_run_idempotent_supports_non_dict_database_rows():
+    import hashlib
+    from backend.persistence.cloudflare import execution_scope_fingerprint, request_fingerprint
+
+    subject = hashlib.sha256(b"token-a").hexdigest()
+    scope = execution_scope_fingerprint(subject, "research", IDEMPOTENCY_CONTRACT_REVISION)
+    request_hash = hashlib.sha256(f"{request_fingerprint(request())}:{scope}".encode()).hexdigest()
+    row = ("run-tuple", request_hash, subject, "research", IDEMPOTENCY_CONTRACT_REVISION)
+    db = FakeDB()
+    db.batch_result[2] = SimpleNamespace(results=[row])
+    assert await persistence(db, token="token-a").create_run_idempotent(request(), "tuple-key") == "run-tuple"
