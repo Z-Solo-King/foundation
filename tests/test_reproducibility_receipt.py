@@ -25,3 +25,14 @@ def test_production_cannot_hide_non_execution():
     value = receipt(evidence_tier="PRODUCTION", execution_state="UNKNOWN")
     with pytest.raises(ValueError, match="production"):
         value.validate()
+
+@pytest.mark.parametrize("field,value,message", [
+    ("schema", "bad", "unsupported"),
+    ("repository", "", "required"),
+    ("workflow_run_id", "", "required"),
+    ("evidence_tier", "L9", "invalid evidence"),
+    ("execution_state", "BROKEN", "invalid execution"),
+])
+def test_invalid_receipt_metadata_is_rejected(field, value, message):
+    with pytest.raises(ValueError, match=message):
+        receipt(**{field: value}).validate()
