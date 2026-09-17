@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 from backend.api.main import health_endpoint, readiness_endpoint
 from backend.api.models import ResearchRequest
+from backend.worker_auth import auth_mode, auth_readiness_error
 
 
 def health_payload():
@@ -20,8 +21,12 @@ async def readiness_payload(env):
         database_ok = bool(row and row["ok"] == 1)
     except Exception:
         database_ok = False
-    ready = base["ready"] and database_ok
-    return {**base, "database": database_ok}, 200 if ready else 503
+    auth_error = auth_readiness_error(env)
+    ready = base["ready"] and database_ok and auth_error is None
+    payload = {**base, "database": database_ok, "auth_mode": auth_mode(env)}
+    if auth_error:
+        payload["auth_error"] = auth_error
+    return payload, 200 if ready else 503
 
 
 async def storage_diagnostic(env, run_id, *, persistence_cls):
