@@ -52,11 +52,11 @@ class StageReceipt:
             raise ValueError("attempt must be positive")
         for name, value in (("created_at", self.created_at), ("expires_at", self.expires_at)):
             if value is not None:
-                if len(value) > 64:
-                    raise ValueError(f"{name} exceeds bounded length")
+                if not isinstance(value, str) or len(value) > 64:
+                    raise ValueError(f"{name} must be a bounded ISO-8601 timestamp")
                 try:
                     datetime.fromisoformat(value.replace("Z", "+00:00"))
-                except ValueError as exc:
+                except (TypeError, ValueError) as exc:
                     raise ValueError(f"{name} must be an ISO-8601 timestamp") from exc
         if self.created_at and self.expires_at:
             created = datetime.fromisoformat(self.created_at.replace("Z", "+00:00"))
