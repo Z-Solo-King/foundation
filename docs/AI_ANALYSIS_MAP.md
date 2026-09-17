@@ -10,7 +10,10 @@ Compact routing index for human and AI repository analysis. Read this before ope
 4. `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md` for credential, B2, backup and evidence questions
 5. `docs/AI_AUDIT_AND_VERIFICATION_STANDARD.md` for audit questions
 6. `docs/FAMILY_CONTRACT.json` for public-contract questions
-7. Then open the canonical implementation and focused feature-owned tests.
+7. `docs/FAMILY_SYNC_STANDARD.md` for cross-repository synchronization, status, ownership and evidence rules
+8. `docs/FAMILY_SYNC_STATE.json` for the latest recorded family synchronization snapshot
+9. `docs/REQUIREMENT_COVERAGE_RECONCILIATION_2026-09-17.md` for the latest implementation-vs-plan reconciliation
+10. Then open the canonical implementation and focused feature-owned tests.
 
 ## Focused test navigation
 
@@ -29,7 +32,7 @@ The former `test_coverage_*` files were broad aggregators. They were audited by 
 
 `.github/workflows/nightly-multi-agent-research.yml` contains orchestration, matrix lanes, preflight policy, artifact handling, diagnosis, baseline comparison, attestation, and final gating. For narrow questions inspect the relevant job first, then the invoked benchmark module. Research logic belongs in the benchmark package.
 
-`.github/workflows/codeql.yml` is the single production deployment owner. `.github/workflows/autonomous-benchmark.yml` is benchmark orchestration. `.github/workflows/b2-repository-backup.yml` is the repository backup/B2 evidence boundary. These are orchestration/evidence boundaries, not application runtime modules.
+`.github/workflows/heroic-ai-production-release.yml` is the single production deployment owner. `.github/workflows/codeql.yml` is security analysis only. `.github/workflows/autonomous-benchmark.yml` is benchmark orchestration. `.github/workflows/b2-repository-backup.yml` is the repository backup/B2 evidence boundary. These are orchestration/evidence boundaries, not application runtime modules.
 
 ## Credential boundary
 
@@ -47,3 +50,5 @@ The former `test_coverage_*` files were broad aggregators. They were audited by 
 - Structural refactors require regression coverage and required checks.
 - Package boundaries and compatibility exports are part of the public contract.
 - Current code/docs/PR/workflow evidence outranks dated plans and chat history.
+- A `main` SHA recorded in a sync document is an audit observation, not a replacement for the actual current branch tip.
+- Never treat source existence as L3/L4 runtime evidence.

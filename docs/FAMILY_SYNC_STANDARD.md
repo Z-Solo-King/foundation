@@ -34,6 +34,12 @@ For a current fact, use this precedence:
 
 A lower layer must not override a higher layer.
 
+## Current synchronization record
+
+`docs/FAMILY_SYNC_STATE.json` is the uniform machine-readable audit snapshot for the family. Its `last_audited_main_sha` fields are observations of the branch tips at audit time; they are not authoritative aliases for the branch tips and become stale by design when `main` advances.
+
+The current-state documents must therefore record both the observed branch SHA and the audit timestamp. A stale recorded SHA is a documentation synchronization finding, not evidence that the branch has reverted.
+
 ## Required current-state record
 
 Every current-state document that records repository or family state should use these sections in this order when applicable:
@@ -129,11 +135,12 @@ When source ownership, contract, policy, workflow, evidence class, credential pu
 1. update the canonical owner document in the same change set when practical;
 2. update the AI navigation map if the canonical path changed;
 3. update the current source-of-truth record if current state changed;
-4. update affected issue/PR records;
-5. remove or mark superseded records that now contradict current state;
-6. retain historical material only when it preserves useful provenance.
+4. update the family sync snapshot when the audit state changes;
+5. update affected issue/PR records;
+6. remove or mark superseded records that now contradict current state;
+7. retain historical material only when it preserves useful provenance.
 
-Do not create duplicate policy documents merely to describe a new conversation.
+Do not create duplicate policy documents merely to describe a new conversation. Dated audit snapshots are allowed when they are explicitly historical or are the single current reconciliation record for a defined audit date.
 
 ## Uniform test/coverage rules
 
@@ -148,6 +155,8 @@ A coverage claim must identify:
 - any excluded runtime/platform boundary.
 
 A configured 100% gate is not evidence of a 100% executed result until CI actually runs and passes it.
+
+Requirement coverage and execution coverage are separate claims: a requirement may be fully classified while its implementation or runtime certification remains `BLOCKED`, `DEFERRED`, or `EXTERNAL`.
 
 ## Uniform runtime/prod truth rules
 
@@ -170,7 +179,8 @@ Use the exact canonical names for cross-repository concepts:
 - `B2_BUCKET`;
 - `AI Analysis Map`;
 - `Current Source of Truth`;
-- `Family Documentation Index`.
+- `Family Documentation Index`;
+- `Family Sync State`.
 
 Do not introduce aliases for the same authority unless a compatibility contract requires one.
 
@@ -185,7 +195,7 @@ Every material AI-generated change must remain understandable from repository so
 A family synchronization pass is complete only when:
 
 - repository roles agree;
-- current main SHAs agree with current-state documents;
+- current main SHAs are recorded as audit observations in the sync state;
 - canonical owners and paths agree with source;
 - policies/rules agree with implementation;
 - tests describe the same contracts as the source;
