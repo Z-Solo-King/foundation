@@ -107,4 +107,4 @@ def test_custom_transport_without_resolver_uses_only_url_validation(monkeypatch)
     monkeypatch.setattr(http, "_dns_over_https", should_not_run)
     result = asyncio.run(http.fetch_public_url("https://example.com", fetcher=fetcher))
     assert result.status == 200
-    assert calls == ["https://example.com"]
+    assert calls == ["https://example.com/"]
