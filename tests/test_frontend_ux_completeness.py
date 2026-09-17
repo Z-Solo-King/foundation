@@ -16,6 +16,8 @@ def test_markdown_renderer_is_dependency_free_and_safe():
     assert "http://" in text and "https://" in text
     assert "<strong>" in text and "<em>" in text
     assert "code-block" in text
+    assert "highlightCode" in text
+    assert "code-keyword" in text
     assert "api.renderMarkdown" in text
 
 
