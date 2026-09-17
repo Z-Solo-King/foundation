@@ -4,7 +4,6 @@ import hashlib
 import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any
 
 SCHEMA = "benchmark-reproducibility/v1"
 _FORBIDDEN_KEY_PARTS = ("password", "secret", "token", "private_key", "api_key", "authorization", "prompt")
@@ -107,6 +106,11 @@ def parse_receipt(value: object) -> ReproducibilityReceipt:
 
 
 def ensure_compatible(current: object, previous: object) -> tuple[bool, list[str]]:
+    """Check whether a current result can be compared to the previous baseline.
+
+    The previous artifact must be a completed baseline. The current artifact may
+    be partial/failed because degradation itself is a meaningful regression signal.
+    """
     current_receipt = parse_receipt(current)
     previous_receipt = parse_receipt(previous)
     errors: list[str] = []
@@ -123,8 +127,8 @@ def ensure_compatible(current: object, previous: object) -> tuple[bool, list[str
         right = getattr(previous_receipt, field)
         if left != right:
             errors.append(f"incompatible {field}: current={left!r} previous={right!r}")
-    if current_receipt.execution_state != "completed" or previous_receipt.execution_state != "completed":
-        errors.append("baseline comparison requires completed execution states")
+    if previous_receipt.execution_state != "completed":
+        errors.append("baseline comparison requires a completed previous execution state")
     return not errors, errors
 
 
