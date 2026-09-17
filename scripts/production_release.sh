@@ -3,6 +3,7 @@ set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
 OPERATIONS_REF="cf28a28cb40de527aff1cd87f96e103669635f70"
+OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
 cleanup() {
@@ -19,6 +20,8 @@ test -n "${CLOUDFLARE_ACCOUNT_ID:-}" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID Gi
 test -n "${OPERATIONS_APP_ID:-}" || { echo 'Missing OPERATIONS_APP_ID GitHub Actions secret'; exit 1; }
 test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIVATE_KEY GitHub Actions secret'; exit 1; }
 test "$OPERATIONS_REF" = 'cf28a28cb40de527aff1cd87f96e103669635f70'
+
+after_install_marker=''
 
 python -m pip install --upgrade pip
 python -m pip install -e .
@@ -62,6 +65,10 @@ printf '%s\n' \
   'database_name = "research-intelligence"' \
   "database_id = \"${database_id}\"" \
   '' \
+  '[[services]]' \
+  'binding = "OPERATIONS"' \
+  "service = \"${OPERATIONS_SERVICE_NAME}\"" \
+  '' \
   '[secrets]' \
   'required = ["AUTH_TOKEN", "B2_KEY_ID", "B2_APPLICATION_KEY"]' \
   '' \
@@ -75,6 +82,7 @@ printf '%s\n' \
 grep -q '^database_name = "research-intelligence"$' wrangler.production.generated.toml
 grep -q '^directory = "./frontend"$' wrangler.production.generated.toml
 grep -q '^binding = "ASSETS"$' wrangler.production.generated.toml
+grep -q '^service = "${OPERATIONS_SERVICE_NAME}"$' wrangler.production.generated.toml
 npx --yes wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
 pywrangler deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}"
 
