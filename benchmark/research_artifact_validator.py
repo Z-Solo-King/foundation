@@ -46,6 +46,22 @@ def _find_named_artifacts(root: Path, filename: str) -> list[Path]:
     return sorted(candidates)
 
 
+def _scorecard_evidence_boundary_errors(scorecard: dict[str, Any]) -> list[str]:
+    """Return explicit violations of the benchmark-vs-correctness evidence boundary."""
+    errors: list[str] = []
+    structural = scorecard.get("structural_signals") or {}
+    if not isinstance(structural, dict):
+        structural = {}
+    oracle_claim = structural.get("field_level_correctness_oracle") is True
+    field_level_scope = structural.get("evidence_scope") == "field_level_correctness"
+    if oracle_claim or field_level_scope:
+        errors.append(
+            "field-level correctness claims require an explicit verified oracle; "
+            "transport and structural benchmark signals are not product-field correctness"
+        )
+    return errors
+
+
 def validate_repository(root: Path) -> dict[str, Any]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -126,14 +142,7 @@ def validate_repository(root: Path) -> dict[str, Any]:
         schema = str(scorecard.get("schema", ""))
         if not schema.startswith("autonomous-research-scorecard/"):
             errors.append(f"unsupported scorecard artifact schema: {schema!r}")
-        structural = scorecard.get("structural_signals") or {}
-        oracle_claim = structural.get("field_level_correctness_oracle") is True
-        field_level_scope = structural.get("evidence_scope") == "field_level_correctness"
-        if oracle_claim or field_level_scope:
-            errors.append(
-                "field-level correctness claims require an explicit verified oracle; "
-                "transport and structural benchmark signals are not product-field correctness"
-            )
+        errors.extend(_scorecard_evidence_boundary_errors(scorecard))
 
     return _report(errors, warnings)
 
