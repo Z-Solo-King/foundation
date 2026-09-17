@@ -1,8 +1,44 @@
 from benchmark.multi_agent.baseline import compare
+from benchmark.reproducibility import make_receipt
 
 
-def _summary(*, completed=2, useful=4, high=1, execution="completed", signals=None):
-    return {"schema": "project-improvement-research/v1", "research_id": "nightly-current", "execution_state": execution, "program_count": completed, "status_counts": {"completed": completed}, "project_snapshot": {"revision": "current-sha"}, "programs": [{"measurement": {"useful_findings": useful}}], "improvement_signals": signals if signals is not None else [{"type": "gap", "severity": "high"}] * high}
+def _reproducibility():
+    return make_receipt(
+        repository="Z-Solo-King/foundation",
+        revision="current-sha",
+        artifact_id="nightly-current",
+        suite="nightly-project-improvement",
+        suite_version="v1",
+        configuration={
+            "suite": "nightly-project-improvement",
+            "suite_version": "v1",
+            "research_mode": "project_improvement",
+            "program_count": 2,
+            "scheduler_contract": "dynamic_research_scheduler/v1",
+        },
+        evidence_tier="live_provider",
+        corpus_id="nightly_program_matrix",
+        corpus_version="matrix-v1",
+        execution_state="completed",
+        generated_at="2026-09-17T00:00:00Z",
+    )
+
+
+def _summary(*, completed=2, useful=4, high=1, execution="completed", signals=None, artifact_id="nightly-current"):
+    reproducibility = _reproducibility()
+    reproducibility["artifact_id"] = artifact_id
+    reproducibility["execution_state"] = execution
+    return {
+        "schema": "project-improvement-research/v1",
+        "research_id": artifact_id,
+        "execution_state": execution,
+        "program_count": completed,
+        "status_counts": {"completed": completed},
+        "project_snapshot": {"revision": "current-sha"},
+        "programs": [{"measurement": {"useful_findings": useful}}],
+        "improvement_signals": signals if signals is not None else [{"type": "gap", "severity": "high"}] * high,
+        "reproducibility": reproducibility,
+    }
 
 
 def test_missing_baseline_is_explicit():
