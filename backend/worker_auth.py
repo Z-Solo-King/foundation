@@ -5,6 +5,8 @@ import hmac
 import re
 from typing import Any
 
+from backend.json_admission import validate_json_shape
+
 _URL_RE = re.compile(r"https?://[^\s<>\"']+")
 
 
@@ -40,6 +42,11 @@ def authorized(request: Any, env: Any) -> bool:
 async def json_object(request: Any):
     try:
         value = await request.json()
-        return value if isinstance(value, dict) else None
+        if not isinstance(value, dict):
+            return None
+        validate_json_shape(value)
+        return value
+    except (TypeError, ValueError):
+        return None
     except Exception:
         return None
