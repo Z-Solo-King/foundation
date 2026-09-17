@@ -44,8 +44,9 @@ def test_validator_rejects_project_query_without_github() -> None:
 
 def test_validator_rejects_false_field_level_correctness_claim(tmp_path) -> None:
     _copy_catalog_tree(tmp_path)
-    (tmp_path / ".runtime").mkdir()
-    (tmp_path / ".runtime/research-scorecard.json").write_text(
+    scorecard_path = tmp_path / ".runtime" / "scorecard" / "research-scorecard.json"
+    scorecard_path.parent.mkdir(parents=True, exist_ok=True)
+    scorecard_path.write_text(
         json.dumps(
             {
                 "schema": "autonomous-research-scorecard/v2",
