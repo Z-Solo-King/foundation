@@ -19,12 +19,33 @@
 .queue-item button:hover{background:var(--surface2);color:var(--text)}
 .composer-hint [data-tone="error"]{color:#ffb0b7}
 .composer-hint [data-tone="success"]{color:var(--success)}
+.ux-icon{display:inline-flex;width:16px;height:16px;align-items:center;justify-content:center;vertical-align:middle;flex:0 0 auto}
+.ux-icon svg,.icon-button>svg,.brand-mark svg,.empty-mark svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ux-brand-icon{display:grid!important;place-items:center}.ux-brand-icon svg{width:18px;height:18px}
+.composer-icon>svg,.send-button>svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.send-button:disabled{opacity:.45;cursor:not-allowed}
+.ux-stop{background:rgba(239,111,121,.08);color:#ffb0b7}
+.ux-stop:hover{background:rgba(239,111,121,.14)}
+.ux-counter{margin-left:auto;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ux-counter.warn{color:#f0c36a}
+.ux-counter.error{color:#ffb0b7;font-weight:700}
+.message-bubble p{margin:0 0 9px}.message-bubble p:last-child{margin-bottom:0}
+.message-bubble h1,.message-bubble h2,.message-bubble h3,.message-bubble h4,.message-bubble h5,.message-bubble h6{margin:0 0 9px;line-height:1.25}
+.message-bubble ul,.message-bubble ol{margin:0 0 9px;padding-left:22px}.message-bubble li{margin:3px 0}
+.message-bubble blockquote{margin:8px 0;padding:6px 10px;border-left:3px solid var(--accent);color:var(--muted);background:rgba(91,156,255,.05)}
+.message-bubble code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;padding:2px 4px;border-radius:5px;background:rgba(255,255,255,.06)}
+.message-bubble .code-block{display:block;max-width:100%;overflow:auto;margin:8px 0;padding:10px;border-radius:10px;background:#070a11;border:1px solid var(--border);white-space:pre;tab-size:2}
+.message-bubble .code-block code{padding:0;background:transparent;white-space:inherit}
+.message-bubble a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.message-bubble strong{font-weight:750}.message-bubble em{font-style:italic}.message-bubble del{opacity:.8}
 @media(max-width:760px){
   .topbar-actions .icon-button{width:34px;height:34px}
   .message-meta{font-size:9px}
   .source-row{grid-template-columns:18px minmax(0,1fr);}
   .source-row small{grid-column:2}
   .workspace-card{padding:11px}
+  .composer-hint{font-size:8px}
 }
 @media(min-width:761px) and (max-width:1180px){.workspace{width:min(430px,92vw)}}
-@media(prefers-reduced-motion:reduce){.workspace,.sidebar,.message-queue,.toast{transition:none!important}}
+@media(prefers-reduced-motion:reduce){.workspace,.sidebar,.message-queue,.toast{transition:none!important}
+}
