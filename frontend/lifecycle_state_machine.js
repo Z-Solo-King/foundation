@@ -1,6 +1,7 @@
 (() => {
   'use strict';
 
+  // Backend state is authoritative. Unknown/missing/illegal state transitions fail closed to UNKNOWN.
   const STATES = Object.freeze([
     'NEW_CHAT',
     'SUBMITTING',
