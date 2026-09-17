@@ -7,7 +7,7 @@
 
 - `docs/DOCUMENTATION_INDEX.md` is the documentation index.
 - `REPOSITORY_MAP.json` describes ownership and canonical modules.
-- `DEPLOYMENT.md` and `.github/workflows/codeql.yml` describe the public deployment path.
+- `DEPLOYMENT.md` and `.github/workflows/heroic-ai-production-release.yml` describe the public deployment path.
 - `docs/FAMILY_CONTRACT.json` and `docs/FAMILY_ARCHITECTURE.md` define the family boundary.
 - Live repository state and fresh execution evidence override dated handoffs, old pull requests and chat notes.
 
