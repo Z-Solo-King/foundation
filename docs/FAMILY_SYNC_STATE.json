@@ -1,0 +1,47 @@
+{
+  "schema_version": "family-sync-state/v1",
+  "status": "CURRENT_AUDIT_SNAPSHOT",
+  "audited_at": "2026-09-17",
+  "authority": "Foundation docs/FAMILY_SYNC_STANDARD.md",
+  "repositories": {
+    "foundation": {
+      "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup",
+      "last_audited_main_sha": "e91123ade520b4fe2017ffd4e9cd8433ed56fa07"
+    },
+    "operations": {
+      "role": "private-control-plane-runtime-research-orchestration",
+      "last_audited_main_sha": "a36868df86575e3b8abd857035af657dc84e3f6a",
+      "approved_production_revision": "cf28a28cb40de527aff1cd87f96e103669635f70",
+      "nightly_research_revision": "b6a519742e57e7e68db64ab10535d76372bcbdb1"
+    }
+  },
+  "evidence_boundary": {
+    "L1": "source inspected",
+    "L2": "repository inspection including callers/tests/ownership",
+    "L3": "current GitHub Actions execution",
+    "L4": "approved runtime/production execution"
+  },
+  "current_open_gates": [
+    "foundation#22",
+    "foundation#27",
+    "foundation#57",
+    "foundation#58",
+    "foundation#157",
+    "foundation#154",
+    "foundation#263"
+  ],
+  "sync_rules": {
+    "main_sha_is_audit_observation": true,
+    "live_main_out_ranks_recorded_sha": true,
+    "cloudflare_runtime_is_external_to_github_only_sync": true,
+    "production_revision_is_separate_from_operations_main": true
+  },
+  "known_current_reconciliation": {
+    "research_public_path": "source_url_ingestion_only; general_web_discovery=false; evidence_synthesis=false",
+    "chat_provider_governance": "canonical durable MODEL_CALLS path implemented",
+    "multi_agent_model_transport": "separate research adapter exists; not yet unified with canonical chatbot provider runtime",
+    "identity_gate": "wired into Operations generic extraction mapping",
+    "evidence_graph": "schema and verification primitives exist; full production research traversal remains open",
+    "artifact_manifest": "minimal hash/provenance manifest; full immutable lineage metadata remains open"
+  }
+}
