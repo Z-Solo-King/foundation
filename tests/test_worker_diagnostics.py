@@ -12,6 +12,8 @@ class Request:
         self.url = url
         self._payload = payload
         self.headers = headers or {}
+        if method == "POST" and payload is not None:
+            self.headers.setdefault("Content-Type", "application/json")
 
     async def json(self):
         return self._payload
