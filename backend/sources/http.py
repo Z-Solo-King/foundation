@@ -12,7 +12,7 @@ DNS resolution and network connection. Resolution failures fail closed.
 
 from dataclasses import dataclass
 from ipaddress import ip_address
-from urllib.parse import quote, urljoin, urlparse
+from urllib.parse import quote, urljoin, urlparse, urlunparse
 
 from backend.core.workers_runtime import workers_fetch
 
@@ -51,9 +51,11 @@ def _safe_host(hostname: str) -> bool:
         return True
 
 
-def validate_url(url: str) -> None:
+def canonicalize_url(url: str) -> str:
+    """Return the security-safe canonical URL identity used for acquisition."""
     parsed = urlparse(url)
-    if parsed.scheme not in {"http", "https"}:
+    scheme = parsed.scheme.lower()
+    if scheme not in {"http", "https"}:
         raise ValueError("only http and https URLs are allowed")
     if parsed.username or parsed.password:
         raise ValueError("userinfo in URL is not allowed")
@@ -61,20 +63,23 @@ def validate_url(url: str) -> None:
         raise ValueError("target host is not allowed")
     if parsed.port is not None and parsed.port not in {80, 443}:
         raise ValueError("non-standard ports are not allowed")
+    host = parsed.hostname.lower().rstrip(".")
+    if parsed.port is None or (scheme == "http" and parsed.port == 80) or (scheme == "https" and parsed.port == 443):
+        netloc = host
+    else:
+        netloc = f"{host}:{parsed.port}"
+    path = parsed.path or "/"
+    return urlunparse((scheme, netloc, path, parsed.params, parsed.query, ""))
+
+
+def validate_url(url: str) -> None:
+    canonicalize_url(url)
 
 
 async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
     fetcher = _workers_fetch()
     url = f"{DNS_OVER_HTTPS_ENDPOINT}?name={quote(hostname, safe='')}&type={record_type}"
-    response = await fetcher(
-        url,
-        {
-            "headers": {
-                "Accept": "application/dns-json",
-                "Cache-Control": "no-store",
-            }
-        },
-    )
+    response = await fetcher(url, {"headers": {"Accept": "application/dns-json", "Cache-Control": "no-store"}})
     if int(response.status) != 200:
         raise RuntimeError(f"DNS resolution failed for {hostname}")
     payload = await response.json()
@@ -92,14 +97,13 @@ async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
 
 
 async def _validate_public_destination(url: str, *, resolver=None) -> None:
-    validate_url(url)
-    hostname = urlparse(url).hostname
+    canonical = canonicalize_url(url)
+    hostname = urlparse(canonical).hostname
     assert hostname is not None
     resolve = resolver or _dns_over_https
     addresses = []
     for record_type in ("A", "AAAA"):
-        resolved = await resolve(hostname, record_type)
-        addresses.extend(resolved)
+        addresses.extend(await resolve(hostname, record_type))
     if not addresses:
         raise ValueError("target host did not resolve to a public address")
     try:
@@ -113,12 +117,16 @@ async def _validate_public_destination(url: str, *, resolver=None) -> None:
 async def fetch_public_url(url: str, *, fetcher=None, dns_resolver=None) -> FetchResult:
     custom_transport = fetcher is not None
     fetcher = fetcher or _workers_fetch()
-    current = url
+    original = canonicalize_url(url)
+    current = original
+    original_scheme = urlparse(original).scheme
     for _ in range(MAX_REDIRECTS + 1):
         if not custom_transport or dns_resolver is not None:
             await _validate_public_destination(current, resolver=dns_resolver)
         else:
-            validate_url(current)
+            current = canonicalize_url(current)
+        if original_scheme == "https" and urlparse(current).scheme != "https":
+            raise ValueError("https to http redirect downgrade is not allowed")
         response = await fetcher(current, {"redirect": "manual"})
         status = int(response.status)
         if status in {301, 302, 303, 307, 308}:
@@ -127,13 +135,12 @@ async def fetch_public_url(url: str, *, fetcher=None, dns_resolver=None) -> Fetc
                 raise RuntimeError("redirect without Location header")
             current = urljoin(current, location)
             continue
-        raw = await response.arrayBuffer()
-        content = bytes(raw)
+        content = bytes(await response.arrayBuffer())
         if len(content) > MAX_BYTES:
             raise RuntimeError("response exceeds acquisition size budget")
         return FetchResult(
-            url=url,
-            final_url=current,
+            url=original,
+            final_url=canonicalize_url(current),
             status=status,
             content_type=response.headers.get("content-type", "application/octet-stream"),
             content=content,
