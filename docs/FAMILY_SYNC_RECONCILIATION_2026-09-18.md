@@ -14,7 +14,7 @@ The standalone extractor/mapper repository is historical context and is not part
 ## Current observed branch tips
 
 - Foundation `main`: `88e16810febede7e0d7fa663638794e10d213712`
-- Operations `main`: `f2d78dcc228b4392578f86fcfeed3374f0177546`
+- Operations `main`: `532b90ecfe7a876b4477ab8cb2097b18bcf62b70`
 - Approved Operations production revision: `cf28a28cb40de527aff1cd87f96e103669635f70`
 - Nightly Operations revision: `b6a519742e57e7e68db64ab10535d76372bcbdb1`
 
@@ -36,11 +36,11 @@ Foundation PR #488 merged to `main` after being rebuilt from the post-#484 base.
 
 ### Nightly Operations pin repair
 
-Foundation PR #491 merged to `main`. The canonical pin-repair workflow now targets the current audited Operations main revision instead of the obsolete Operations revision. This does not itself prove that the private nightly runtime has executed that revision.
+Foundation PR #491 merged to `main`. The canonical pin-repair workflow now targets the current audited Operations main revision. This does not itself prove that the private nightly runtime has executed that revision.
 
 ### Zero-cost provider gate
 
-Operations PRs #392, #393 and #394 merged the hard $0/no-paid-fallback admission path into the canonical provider selector, dynamic quota policy, public chat runtime state adapter and private research runtime state adapter. Operations issue #353 is now completed.
+Operations PRs #392, #393 and #394 merged the hard $0/no-paid-fallback admission path into the canonical provider selector, dynamic quota policy, public chat runtime state adapter and private research runtime state adapter. Operations issue #353 is completed.
 
 ### Provider-output admission
 
@@ -52,11 +52,13 @@ Operations PR #396 merged the structural-amplification layer for private researc
 
 ### Durable recovery accounting
 
-Operations PR #398 merged an idempotency correction for durable reservation recovery. Consume/release now report whether the current transition actually won, and expired-reservation reconciliation counts actual releases only. The remaining lease-heartbeat/parent-deadline acceptance for Operations #384 is still open.
+Operations PR #398 merged an idempotency correction for durable reservation recovery. Consume/release now report whether the current transition actually won, and expired-reservation reconciliation counts actual releases only.
 
-### Deadline retry slice
+### Deadline, immutable identity and lease-recovery bundle
 
-Operations PR #400 merged a bounded deadline improvement for private research provider execution. Retries share one monotonic parent deadline, backoff cannot continue beyond remaining time, and each HTTP attempt receives only the remaining deadline rather than a fresh full timeout. Queue, streaming, browser and persistence deadline propagation remain separate acceptance work.
+Operations PR #402 merged as `532b90ecfe7a876b4477ab8cb2097b18bcf62b70`. It is the consolidated repository implementation for Operations issues #377, #383 and #384: one monotonic parent deadline now propagates through multi-agent scheduling/phases/agents, governed research providers, model-call governance, HTTP timeout and retry backoff; immutable decision snapshots remain enforced at protected execution; durable reservations carry execution identity through the existing idempotency-key authority; lease duration is capped by parent remaining time; late consumption is rejected; identity-bound heartbeat and recovery are implemented; and adversarial regression coverage was added.
+
+The three issues remain open pending explicit acceptance/CI evidence. The merge does not claim Cloudflare/private-runtime/L4 production certification.
 
 ### Stage receipt correctness
 
