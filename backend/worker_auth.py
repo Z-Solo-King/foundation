@@ -1,6 +1,7 @@
 """Public Worker request/authentication helpers."""
 from __future__ import annotations
 
+import hashlib
 import hmac
 import re
 from typing import Any
@@ -8,6 +9,7 @@ from typing import Any
 from backend.json_admission import validate_json_shape
 
 _URL_RE = re.compile(r"https?://[^\s<>\"']+")
+MAX_PUBLIC_JSON_BODY_BYTES = 1_048_576
 
 
 def extract_source_urls(question: str, explicit=()):
@@ -28,6 +30,14 @@ def bearer_token(request: Any):
     if not value or not value.startswith("Bearer "):
         return None
     return value[7:].strip()
+
+
+def authenticated_subject_fingerprint(request: Any):
+    """Derive a non-secret principal fingerprint from the already-authenticated bearer token."""
+    token = bearer_token(request)
+    if not token:
+        return None
+    return hashlib.sha256(token.encode()).hexdigest()
 
 
 def authorized(request: Any, env: Any) -> bool:
