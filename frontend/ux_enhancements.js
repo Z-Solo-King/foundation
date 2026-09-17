@@ -41,9 +41,9 @@
       ['.menu-button', 'menu'], ['.mobile-close', 'close'], ['[data-action="open-sidebar"]', 'menu'],
       ['[data-action="close-sidebar"]', 'close'], ['[data-action="open-system-dashboard"]', 'dashboard'],
       ['[data-action="toggle-workspace"]', 'workspace'], ['[data-action="open-queue"]', 'queue'],
-      ['[data-action="voice"]', 'mic'], ['[data-action="send"]', 'send'],
-      ['[data-action="close-workspace"]', 'close'], ['[data-action="close-queue"]', 'close'],
-      ['[data-action="backend-check"]', 'check'],
+      ['[data-action="voice"]', 'mic'], ['[data-action="send"]', 'send'], ['.new-chat-button', 'chat'],
+      ['.search-box', 'search'], ['[data-action="close-workspace"]', 'close'], ['[data-action="close-queue"]', 'close'],
+      ['[data-action="backend-check"]:not(.connection-pill)', 'check'],
     ];
     iconMap.forEach(([selector, name]) => root.querySelectorAll(selector).forEach((node) => {
       if (!node.querySelector('.ux-icon')) setIcon(node, name);
@@ -59,7 +59,8 @@
 
   window.fetch = (input, init = {}) => {
     const url = typeof input === 'string' ? input : input?.url || '';
-    if (activeController && String(url).includes('/api/v1/chat/stream') && String(init.method || input?.method || 'GET').toUpperCase() === 'POST') {
+    if (String(url).includes('/api/v1/chat/stream') && String(init.method || input?.method || 'GET').toUpperCase() === 'POST') {
+      activeController = new AbortController();
       return originalFetch(input, { ...init, signal: activeController.signal });
     }
     return originalFetch(input, init);
@@ -149,7 +150,7 @@
 
   function syncStopButton() {
     const button = document.querySelector('.ux-stop');
-    if (button) button.hidden = !Boolean(activeController);
+    if (button) button.hidden = !Boolean(activeController) || !api.state.submitting;
   }
 
   function copyText(text, button) {
@@ -185,8 +186,7 @@
         actions.append(copy);
       }
       if (message.classList.contains('message-error')) {
-        const userMessage = [...(api.activeChat?.()?.messages || [])].reverse().find((item) => item.role === 'user' && item.meta?.request_id === message.querySelector('[data-request-id]')?.dataset.requestId);
-        const candidate = userMessage || [...(api.activeChat?.()?.messages || [])].reverse().find((item) => item.role === 'user' && item.text);
+        const candidate = [...(api.activeChat?.()?.messages || [])].reverse().find((item) => item.role === 'user' && item.text);
         if (candidate?.text) {
           const retry = document.createElement('button');
           retry.className = 'secondary ux-retry'; retry.type = 'button'; retry.textContent = 'Retry'; retry.title = 'Retry this request';
@@ -223,8 +223,7 @@
       const guest = document.createElement('button');
       guest.className = 'secondary'; guest.type = 'button'; guest.textContent = 'Guest test mode'; guest.dataset.authGuidance = 'guest';
       guest.addEventListener('click', () => {
-        api.enableGuestTestMode?.();
-        document.querySelector('.guest-test-button')?.click();
+        if (!api.state.guestTestMode) document.querySelector('.guest-test-button')?.click();
       });
       actions.append(settings, guest);
     });
