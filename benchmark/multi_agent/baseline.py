@@ -5,6 +5,8 @@ from pathlib import Path
 import argparse
 import json
 
+from benchmark.reproducibility import ensure_compatible
+
 SCHEMA = "project-improvement-baseline/v1"
 
 
@@ -41,9 +43,32 @@ def _signal_types(payload: dict[str, object]) -> Counter[str]:
     return Counter(str(signal.get("type")) for signal in signals if isinstance(signal, dict) and signal.get("type"))
 
 
+def _no_baseline(current: dict[str, object], reason: str, **extra: object) -> dict[str, object]:
+    result = {
+        "schema": SCHEMA,
+        "available": False,
+        "decision": "NO_BASELINE",
+        "reason": reason,
+        "current_research_id": current.get("research_id"),
+        "current_revision": (current.get("project_snapshot") or {}).get("revision"),
+    }
+    result.update(extra)
+    return result
+
+
 def compare(current: dict[str, object], previous: dict[str, object] | None) -> dict[str, object]:
     if previous is None:
-        return {"schema": SCHEMA, "available": False, "decision": "NO_BASELINE", "reason": "no prior completed nightly project-improvement summary was available", "current_research_id": current.get("research_id"), "current_revision": (current.get("project_snapshot") or {}).get("revision")}
+        return _no_baseline(current, "no prior completed nightly project-improvement summary was available")
+    try:
+        compatible, compatibility_errors = ensure_compatible(
+            current.get("reproducibility"),
+            previous.get("reproducibility"),
+        )
+    except ValueError as exc:
+        return _no_baseline(current, "missing or invalid reproducibility metadata", compatibility_errors=[str(exc)])
+    if not compatible:
+        return _no_baseline(current, "current and previous artifacts are not reproducibly comparable", compatibility_errors=compatibility_errors)
+
     current_completed = _count_status(current, "completed")
     previous_completed = _count_status(previous, "completed")
     current_useful = _useful_findings(current)
@@ -62,7 +87,39 @@ def compare(current: dict[str, object], previous: dict[str, object] | None) -> d
         decision = "IMPROVED"
     else:
         decision = "STABLE"
-    return {"schema": SCHEMA, "available": True, "decision": decision, "current_research_id": current.get("research_id"), "previous_research_id": previous.get("research_id"), "current_revision": (current.get("project_snapshot") or {}).get("revision"), "previous_revision": (previous.get("project_snapshot") or {}).get("revision"), "metrics": {"completed_programs_delta": current_completed - previous_completed, "useful_findings_delta": current_useful - previous_useful, "high_severity_signals_delta": current_high - previous_high, "program_count_delta": int(current.get("program_count", 0) or 0) - int(previous.get("program_count", 0) or 0)}, "signal_type_changes": {"added": sorted(set(current_types) - set(previous_types)), "resolved": sorted(set(previous_types) - set(current_types))}, "rules": {"regression": "execution degradation, fewer completed programs, fewer useful findings, or more high-severity improvement signals", "improvement": "recovery to completed execution, more completed programs, more useful findings, or fewer high-severity improvement signals", "tie_break": "REGRESSED takes precedence over IMPROVED when both conditions are true"}}
+    return {
+        "schema": SCHEMA,
+        "available": True,
+        "decision": decision,
+        "current_research_id": current.get("research_id"),
+        "previous_research_id": previous.get("research_id"),
+        "current_revision": (current.get("project_snapshot") or {}).get("revision"),
+        "previous_revision": (previous.get("project_snapshot") or {}).get("revision"),
+        "reproducibility": {
+            "suite": (current.get("reproducibility") or {}).get("suite"),
+            "suite_version": (current.get("reproducibility") or {}).get("suite_version"),
+            "evidence_tier": (current.get("reproducibility") or {}).get("evidence_tier"),
+            "corpus_id": (current.get("reproducibility") or {}).get("corpus_id"),
+            "corpus_version": (current.get("reproducibility") or {}).get("corpus_version"),
+            "configuration_digest": (current.get("reproducibility") or {}).get("configuration_digest"),
+        },
+        "metrics": {
+            "completed_programs_delta": current_completed - previous_completed,
+            "useful_findings_delta": current_useful - previous_useful,
+            "high_severity_signals_delta": current_high - previous_high,
+            "program_count_delta": int(current.get("program_count", 0) or 0) - int(previous.get("program_count", 0) or 0),
+        },
+        "signal_type_changes": {
+            "added": sorted(set(current_types) - set(previous_types)),
+            "resolved": sorted(set(previous_types) - set(current_types)),
+        },
+        "rules": {
+            "regression": "execution degradation, fewer completed programs, fewer useful findings, or more high-severity improvement signals",
+            "improvement": "recovery to completed execution, more completed programs, more useful findings, or fewer high-severity improvement signals",
+            "tie_break": "REGRESSED takes precedence over IMPROVED when both conditions are true",
+            "compatibility": "baseline comparison requires matching repository, suite/version, configuration, corpus and evidence tier, with completed execution states",
+        },
+    }
 
 
 def load_summary(path: Path) -> dict[str, object]:
