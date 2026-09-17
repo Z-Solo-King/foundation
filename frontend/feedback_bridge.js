@@ -15,6 +15,9 @@
   function addControls(message) {
     if (message.dataset.feedbackReady === 'true') return;
     if (!message.classList.contains('assistant-message')) return;
+    // Error notices are system-generated failures, not model answers. Do not
+    // present answer-quality feedback controls for raw error messages.
+    if (message.classList.contains('message-error')) return;
     const actions = message.querySelector('.message-actions');
     if (!actions) return;
     const positive = document.createElement('button');
