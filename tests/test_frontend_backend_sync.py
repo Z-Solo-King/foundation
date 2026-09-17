@@ -72,7 +72,7 @@ async def test_worker_extracts_bounded_urls_and_reports_capability_boundary(monk
     class Request:
         method = "POST"
         url = "https://worker/api/v1/research"
-        headers = {"Authorization": "Bearer secret"}
+        headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
 
         async def json(self):
             return {"question": "Inspect https://example.com", "strict_zero_cost_only": True}
@@ -93,7 +93,7 @@ async def test_worker_stays_honest_when_no_source_urls_are_available(monkeypatch
     class Request:
         method = "POST"
         url = "https://worker/api/v1/research"
-        headers = {"Authorization": "Bearer secret"}
+        headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
 
         async def json(self):
             return {"question": "General question", "strict_zero_cost_only": True}
