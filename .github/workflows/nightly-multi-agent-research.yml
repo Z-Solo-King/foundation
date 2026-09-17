@@ -35,7 +35,7 @@ jobs:
   research:
     name: Nightly research lane ${{ matrix.lane }}
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 350
     strategy:
       fail-fast: false
       matrix:
