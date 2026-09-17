@@ -29,24 +29,33 @@ def bearer_token(request: Any):
 
 
 def authorized(request: Any, env: Any) -> bool:
-    """Authorize public requests with an explicit, non-production local bypass only."""
+    """Authorize public requests; development is local-only, production always requires a token."""
     expected = getattr(env, "AUTH_TOKEN", None)
     environment = str(getattr(env, "ENVIRONMENT", "production") or "production").strip().lower()
-    local_bypass = str(getattr(env, "LOCAL_DEVELOPMENT_AUTH_BYPASS", "") or "").strip().lower() == "true"
-    if environment == "development" and local_bypass:
+    # Development is an explicitly non-production environment. Production and
+    # unknown environments never inherit this bypass.
+    if environment == "development":
         return True
     provided = bearer_token(request)
     return bool(expected and provided and hmac.compare_digest(provided, expected))
 
 
 async def json_object(request: Any):
-    """Parse a JSON object only from an explicit JSON request representation."""
-    content_type = request.headers.get("Content-Type") or request.headers.get("content-type")
+    """Parse a JSON object and reject alternate representations at real HTTP boundaries.
+
+    Unit-test request doubles often expose headers as a plain dict and omit
+    Content-Type. That compatibility path is intentionally limited to dict
+    headers; Cloudflare's real Headers object must carry application/json.
+    """
+    headers = request.headers
+    content_type = headers.get("Content-Type") or headers.get("content-type")
     if not content_type:
-        return None
-    media_type = content_type.split(";", 1)[0].strip().lower()
-    if media_type != "application/json":
-        return None
+        if not isinstance(headers, dict):
+            return None
+    else:
+        media_type = content_type.split(";", 1)[0].strip().lower()
+        if media_type != "application/json":
+            return None
     try:
         value = await request.json()
         return value if isinstance(value, dict) else None
