@@ -1,6 +1,6 @@
 -- Replace the run-keyed publication row with an append-only publication history.
 -- The legacy table is retained for rollback/audit purposes; new writes use the
--- versioned table below and can never overwrite an earlier publication.
+-- new publication identity and can never overwrite an earlier publication.
 ALTER TABLE research_publications RENAME TO research_publications_legacy;
 
 CREATE TABLE research_publications (
@@ -18,5 +18,5 @@ ORDER BY published_at, run_id;
 
 CREATE INDEX idx_research_publications_run_id
     ON research_publications(run_id);
-CREATE INDEX idx_research_publications_published_at
+CREATE INDEX idx_research_publications_history_published_at
     ON research_publications(published_at);
