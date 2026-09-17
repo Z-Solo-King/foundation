@@ -47,11 +47,7 @@ class TokenEfficiencyObservation:
 
     @property
     def context_amplification_ratio(self) -> float:
-        """Measure prompt+output tokens consumed per output token produced.
-
-        A high cache-hit rate can still hide growing context. Tracking this
-        ratio exposes that failure mode without claiming a quality judgment.
-        """
+        """Measure total tokens consumed per output token produced."""
         return self.total_estimated_tokens / max(1, self.estimated_output_tokens)
 
     def token_density(self) -> float:
@@ -65,15 +61,20 @@ class EfficiencyGate:
     max_input_token_growth_ratio: float = 0.10
     max_total_token_growth_ratio: float = 0.10
     min_cache_hit_ratio: float = 0.0
+    min_output_tokens_ratio: float = 0.0
+    max_context_amplification_ratio: float | None = None
 
     def validate(self) -> None:
         for name, value in (
             ("max_input_token_growth_ratio", self.max_input_token_growth_ratio),
             ("max_total_token_growth_ratio", self.max_total_token_growth_ratio),
             ("min_cache_hit_ratio", self.min_cache_hit_ratio),
+            ("min_output_tokens_ratio", self.min_output_tokens_ratio),
         ):
             if not 0.0 <= value <= 1.0:
                 raise ValueError(f"{name} must be between 0 and 1")
+        if self.max_context_amplification_ratio is not None and self.max_context_amplification_ratio < 1.0:
+            raise ValueError("max_context_amplification_ratio must be at least 1")
 
 
 def compare_efficiency(
@@ -93,6 +94,10 @@ def compare_efficiency(
         return False, "candidate is not accepted"
     if baseline.estimated_input_tokens <= 0 or baseline.total_estimated_tokens <= 0:
         return False, "baseline token measurements must be positive"
+    if baseline.estimated_output_tokens <= 0:
+        return False, "baseline output-token measurement must be positive"
+    if candidate.estimated_output_tokens < baseline.estimated_output_tokens * gate.min_output_tokens_ratio:
+        return False, "candidate output-token count is below the minimum floor"
 
     input_growth = (candidate.estimated_input_tokens - baseline.estimated_input_tokens) / baseline.estimated_input_tokens
     total_growth = (candidate.total_estimated_tokens - baseline.total_estimated_tokens) / baseline.total_estimated_tokens
@@ -104,6 +109,8 @@ def compare_efficiency(
         return False, "candidate total-token growth exceeds gate"
     if candidate.cache_hit_ratio < gate.min_cache_hit_ratio:
         return False, "candidate cache-hit ratio is below gate"
+    if gate.max_context_amplification_ratio is not None and candidate.context_amplification_ratio > gate.max_context_amplification_ratio:
+        return False, "candidate context amplification exceeds gate"
     if candidate.total_estimated_tokens <= baseline.total_estimated_tokens:
         return True, "candidate accepted with non-increasing token use"
     if candidate.evidence_retention_ratio > baseline.evidence_retention_ratio:
