@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
@@ -21,14 +22,21 @@ def _ratio(numerator: int, denominator: int) -> float | None:
     return round(numerator / denominator, 6) if denominator else None
 
 
+def _weighted_average(values: list[tuple[int, int]]) -> float | None:
+    total_weight = sum(weight for _, weight in values)
+    return round(sum(value * weight for value, weight in values) / total_weight, 3) if total_weight else None
+
+
 def collect_summary_files(root: Path) -> list[Path]:
-    return sorted(root.rglob("benchmark-summary.json"))
+    return sorted(root.rglob("benchmark-summary.json")) + sorted(root.rglob("summary-*.json"))
 
 
 def build_scorecard(root: Path) -> dict[str, Any]:
-    summary_paths = collect_summary_files(root)
+    raw_summary_paths = collect_summary_files(root)
+    # Avoid double-counting when an artifact contains both naming conventions.
+    summary_paths = sorted({path.resolve() for path in raw_summary_paths})
     if not summary_paths:
-        raise ValueError(f"no benchmark-summary.json files found under {root}")
+        raise ValueError(f"no benchmark summary files found under {root}")
 
     status_counts: Counter[str] = Counter()
     http_counts: Counter[str] = Counter()
@@ -48,12 +56,13 @@ def build_scorecard(root: Path) -> dict[str, Any]:
     run_ids: set[str] = set()
     shards: list[int] = []
     measurement_gaps: set[str] = set()
+    measurement_rows: list[dict[str, Any]] = []
 
     for path in summary_paths:
         row = _read_json(path)
         schema = str(row.get("schema", ""))
         if not schema.startswith("autonomous-public-benchmark-summary/"):
-            raise ValueError(f"unexpected benchmark summary schema in {path}: {schema!r}")
+            continue
         run_id = str(row.get("run_id") or "")
         if run_id:
             run_ids.add(run_id)
@@ -65,9 +74,16 @@ def build_scorecard(root: Path) -> dict[str, Any]:
         status_counts.update({str(k): int(v) for k, v in (row.get("status_counts") or {}).items()})
         http_counts.update({str(k): int(v) for k, v in (row.get("http_status_counts") or {}).items()})
         diagnostic_counts.update({str(k): int(v) for k, v in (row.get("diagnostic_counts") or {}).items()})
+        measurement = row.get("measurement")
+        if isinstance(measurement, dict):
+            measurement_rows.append(measurement)
+        else:
+            measurement_gaps.add("benchmark summary does not expose structural or latency measurements")
 
         failures = row.get("targets_with_failures") or []
         for target in failures:
+            if not isinstance(target, dict):
+                continue
             url = str(target.get("url") or "")
             entry = targets[url]
             entry["url"] = url
@@ -84,15 +100,37 @@ def build_scorecard(root: Path) -> dict[str, Any]:
                 {str(k): int(v) for k, v in (target.get("diagnostics") or {}).items()}
             )
 
+    measurement_observations = sum(int(row.get("observations", 0) or 0) for row in measurement_rows)
+    product_candidates = sum(int(row.get("product_candidates_total", 0) or 0) for row in measurement_rows)
+    jsonld_blocks = sum(int(row.get("jsonld_blocks_total", 0) or 0) for row in measurement_rows)
+    product_observations = sum(int(row.get("observations_with_product_candidates", 0) or 0) for row in measurement_rows)
+    jsonld_observations = sum(int(row.get("observations_with_jsonld", 0) or 0) for row in measurement_rows)
+    latency_means: list[tuple[int, int]] = []
+    p95_values: list[int] = []
+    for row in measurement_rows:
+        latency = row.get("elapsed_ms")
+        if not isinstance(latency, dict):
+            continue
+        median = latency.get("median")
+        p95 = latency.get("p95")
+        observations = int(row.get("observations", 0) or 0)
+        if isinstance(median, (int, float)) and observations:
+            latency_means.append((int(median), observations))
+        if isinstance(p95, (int, float)):
+            p95_values.append(int(p95))
+
+    if not measurement_rows:
         measurement_gaps.update(
             {
-                "sanitized benchmark artifacts do not expose latency percentiles",
-                "sanitized benchmark artifacts do not aggregate product-candidate counts",
-                "sanitized benchmark artifacts do not aggregate JSON-LD extraction counts",
-                "live benchmark validates transport/content hints, not field-level product correctness",
-                "no oracle-backed product-field recall/precision score is present in this run",
+                "sanitized benchmark artifacts do not expose latency measurements",
+                "sanitized benchmark artifacts do not expose product-candidate counts",
+                "sanitized benchmark artifacts do not expose JSON-LD counts",
             }
         )
+    if measurement_rows and all(not bool(row.get("field_level_correctness_oracle")) for row in measurement_rows):
+        measurement_gaps.add("no oracle-backed product-field recall/precision score is present in this run")
+    measurement_gaps.add("product-candidate and JSON-LD counts are structural hints, not correctness judgments")
+    measurement_gaps.add("live benchmark validates transport/content structure, not field-level product correctness")
 
     total_observations = sum(status_counts.values())
     ok = int(status_counts.get("ok", 0))
@@ -106,11 +144,17 @@ def build_scorecard(root: Path) -> dict[str, Any]:
     query_result = None
     query_paths = sorted(root.rglob("chatbot-query-benchmark.json"))
     if query_paths:
-        # One deep-query artifact is expected. Prefer the first deterministic path.
         query_result = _read_json(query_paths[0])
     query_total = int((query_result or {}).get("queries") or 0)
     query_passed = int((query_result or {}).get("passed") or 0)
     query_failed = int((query_result or {}).get("failed") or 0)
+    corpus_coverage = (query_result or {}).get("corpus_coverage") or {}
+
+    query_schema = str((query_result or {}).get("schema") or "")
+    if query_result is None:
+        measurement_gaps.add("deep-query benchmark artifact was not published with this run")
+    elif not query_schema.startswith("chatbot-research-query-benchmark/"):
+        measurement_gaps.add("deep-query benchmark artifact uses an unexpected schema")
 
     shard_expected = sorted(set(shards))
     execution_pass = bool(total_observations > 0 and shard_expected)
@@ -136,7 +180,7 @@ def build_scorecard(root: Path) -> dict[str, Any]:
     target_rows.sort(key=lambda item: (-float(item["failure_rate"] or 0), item["url"]))
 
     return {
-        "schema": "autonomous-research-scorecard/v1",
+        "schema": "autonomous-research-scorecard/v2",
         "run_ids": sorted(run_ids),
         "shards": shard_expected,
         "selected_targets": selected_targets,
@@ -149,10 +193,16 @@ def build_scorecard(root: Path) -> dict[str, Any]:
             "acquisition_clean": acquisition_clean_status,
         },
         "research_contract": {
+            "schema": query_schema or None,
             "queries": query_total,
             "passed": query_passed,
             "failed": query_failed,
             "pass_rate": _ratio(query_passed, query_total),
+            "project_query_count": int(corpus_coverage.get("project_query_count") or 0),
+            "project_query_rate": corpus_coverage.get("project_query_rate"),
+            "category_count": int(corpus_coverage.get("category_count") or 0),
+            "source_family_count": int(corpus_coverage.get("source_family_count") or 0),
+            "temporal_modes": dict(corpus_coverage.get("temporal_modes") or {}),
         },
         "acquisition": {
             "usable_observation_rate": _ratio(ok, total_observations),
@@ -166,6 +216,19 @@ def build_scorecard(root: Path) -> dict[str, Any]:
             "http_status_counts": dict(sorted(http_counts.items())),
             "diagnostic_counts": dict(sorted(diagnostic_counts.items())),
         },
+        "structural_signals": {
+            "observations_measured": measurement_observations,
+            "observations_with_product_candidates": product_observations,
+            "product_candidate_observation_rate": _ratio(product_observations, measurement_observations),
+            "product_candidates_total": product_candidates,
+            "observations_with_jsonld": jsonld_observations,
+            "jsonld_observation_rate": _ratio(jsonld_observations, measurement_observations),
+            "jsonld_blocks_total": jsonld_blocks,
+            "weighted_median_latency_ms": _weighted_average(latency_means),
+            "max_shard_p95_latency_ms": max(p95_values) if p95_values else None,
+            "evidence_scope": "transport_and_structural_signals_only" if measurement_rows else "transport_only",
+            "field_level_correctness_oracle": False,
+        },
         "targets_with_failures": target_rows,
         "measurement_gaps": sorted(measurement_gaps),
     }
@@ -175,6 +238,7 @@ def render_markdown(scorecard: dict[str, Any]) -> str:
     status = scorecard["status"]
     contract = scorecard["research_contract"]
     acquisition = scorecard["acquisition"]
+    structural = scorecard["structural_signals"]
     lines = [
         "# Autonomous Research Scorecard",
         "",
@@ -182,6 +246,13 @@ def render_markdown(scorecard: dict[str, Any]) -> str:
         f"Execution: **{status['execution']}**",
         f"Research contract: **{status['research_contract']}** ({contract['passed']}/{contract['queries']} passed)",
         f"Acquisition clean: **{status['acquisition_clean']}**",
+        "",
+        "## Research contract coverage",
+        "",
+        f"- Project queries: {contract['project_query_count']} ({contract['project_query_rate']})",
+        f"- Query categories: {contract['category_count']}",
+        f"- Source families: {contract['source_family_count']}",
+        f"- Temporal modes: {contract['temporal_modes']}",
         "",
         "## Acquisition performance",
         "",
@@ -194,6 +265,17 @@ def render_markdown(scorecard: dict[str, Any]) -> str:
         f"- Blocked rate: {acquisition['blocked_rate']}",
         f"- Resource-limited rate: {acquisition['resource_limited_rate']}",
         f"- Empty rate: {acquisition['empty_rate']}",
+        "",
+        "## Structural acquisition signals",
+        "",
+        f"- Measured observations: {structural['observations_measured']}",
+        f"- Product-candidate observation rate: {structural['product_candidate_observation_rate']}",
+        f"- Product-candidate hints: {structural['product_candidates_total']}",
+        f"- JSON-LD observation rate: {structural['jsonld_observation_rate']}",
+        f"- JSON-LD blocks: {structural['jsonld_blocks_total']}",
+        f"- Weighted median latency (shard medians): {structural['weighted_median_latency_ms']} ms",
+        f"- Maximum shard-local p95 latency: {structural['max_shard_p95_latency_ms']} ms",
+        f"- Evidence scope: {structural['evidence_scope']}",
         "",
         "## Measurement gaps",
         "",

@@ -18,6 +18,34 @@
       "description": "Turns the query corpus into deterministic research-plan contract checks and records coverage/failure causes."
     },
     {
+      "path": "benchmark/public_chatbot_runner.py",
+      "kind": "acquisition_benchmark_runner",
+      "reusable_evidence": false,
+      "research_value": "High",
+      "description": "Produces per-observation transport and structural signals such as latency, response bytes, product-candidate hints and JSON-LD counts. These are not field-level correctness evidence."
+    },
+    {
+      "path": "benchmark/autonomous_scorecard.py",
+      "kind": "performance_scorecard",
+      "reusable_evidence": false,
+      "research_value": "High",
+      "description": "Aggregates autonomous benchmark shards, research-contract coverage and structural acquisition signals while preserving explicit correctness measurement gaps."
+    },
+    {
+      "path": "benchmark/research_artifact_validator.py",
+      "kind": "evidence_boundary_validator",
+      "reusable_evidence": false,
+      "research_value": "High",
+      "description": "Executable validation of artifact classification, project-query coverage and the boundary between transport/structural signals and field-level correctness."
+    },
+    {
+      "path": "benchmark/multi_agent/baseline.py",
+      "kind": "research_regression_comparator",
+      "reusable_evidence": false,
+      "research_value": "High",
+      "description": "Compares nightly project-research summaries and reports explicit NO_BASELINE, IMPROVED, REGRESSED or STABLE decisions."
+    },
+    {
       "path": "benchmark/nightly/NIGHTLY_RESEARCH_PLAN.json",
       "kind": "nightly_research_plan",
       "reusable_evidence": false,
@@ -29,7 +57,7 @@
       "kind": "evidence_schema",
       "reusable_evidence": true,
       "research_value": "High",
-      "description": "Structured schema for tasks, source visits, findings, novelty, confidence, engineering actions and next tasks."
+      "description": "Structured schema for tasks, source visits, findings, novelty, confidence, engineering actions and next tasks. It defines how evidence can become reusable; it is not itself empirical evidence."
     },
     {
       "path": "benchmark/nightly/research_ledger.py",
@@ -37,13 +65,6 @@
       "reusable_evidence": false,
       "research_value": "High",
       "description": "Canonical URL/task deduplication and explicit revisit-reason enforcement for nightly research."
-    },
-    {
-      "path": "benchmark/autonomous_scorecard.py",
-      "kind": "performance_scorecard",
-      "reusable_evidence": false,
-      "research_value": "High",
-      "description": "Aggregates autonomous benchmark shards and separates research-contract success from acquisition cleanliness and measurement gaps."
     },
     {
       "path": "benchmark/model_behavior_corpus.json",
@@ -72,7 +93,9 @@
     "A benchmark summary is operational evidence, not field-level product correctness unless an oracle is present.",
     "A finding becomes reusable evidence only when it has a source URL, task context, novelty classification and bounded confidence.",
     "Transport success must not be treated as product-field precision or recall.",
-    "Current project state must be tied to a revision and timestamp before being reused as a current claim."
+    "Structural product-candidate or JSON-LD signals are hints about page shape, not proof that extracted product fields are correct.",
+    "Current project state must be tied to a revision and timestamp before being reused as a current claim.",
+    "A regression result must name the compared baseline; NO_BASELINE is a truthful state, not a pass."
   ],
   "search_priorities": [
     "project-specific research questions",

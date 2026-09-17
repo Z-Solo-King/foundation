@@ -18,6 +18,9 @@ def test_research_artifact_catalog_is_structured_and_truthful() -> None:
     required = {
         "benchmark/chatbot-query-corpus.json",
         "benchmark/chatbot_query_benchmark.py",
+        "benchmark/public_chatbot_runner.py",
+        "benchmark/research_artifact_validator.py",
+        "benchmark/multi_agent/baseline.py",
         "benchmark/nightly/NIGHTLY_RESEARCH_PLAN.json",
         "benchmark/nightly/research-ledger.schema.json",
         "benchmark/nightly/research_ledger.py",
@@ -28,7 +31,7 @@ def test_research_artifact_catalog_is_structured_and_truthful() -> None:
         assert (ROOT / path).exists(), path
         assert isinstance(row["reusable_evidence"], bool)
         assert row["research_value"] in {"High", "Medium", "Low"}
-    assert len(catalog["reusable_evidence_rules"]) >= 4
+    assert len(catalog["reusable_evidence_rules"]) >= 6
 
 
 def test_project_research_corpus_has_broad_project_coverage() -> None:

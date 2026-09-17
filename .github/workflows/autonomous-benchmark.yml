@@ -112,8 +112,16 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           import json
+          import math
           from collections import Counter
           from pathlib import Path
+
+          def percentile(values, fraction):
+              if not values:
+                  return None
+              ordered = sorted(values)
+              index = max(0, min(len(ordered) - 1, math.ceil(fraction * len(ordered)) - 1))
+              return ordered[index]
 
           root = Path('.runtime/benchmarks')
           rows = []
@@ -127,12 +135,18 @@ jobs:
                           if line.strip():
                               receipts.append(json.loads(line))
 
-          selected = sum(int(row.get('selected') or 0) for row in rows)
+          selected = sum(int(row.get('selected') or row.get('selected_targets') or 0) for row in rows)
           cycles = sum(int(row.get('cycles') or 0) for row in rows)
           status_counts = Counter()
           http_status_counts = Counter()
           diagnostic_counts = Counter()
           target_counts = {}
+          latency_values = []
+          bytes_read_total = 0
+          product_candidates_total = 0
+          jsonld_blocks_total = 0
+          observations_with_product_candidates = 0
+          observations_with_jsonld = 0
           for row in rows:
               status_counts.update({k: int(v) for k, v in (row.get('status_counts') or {}).items()})
               http_status_counts.update({k: int(v) for k, v in (row.get('http_status_counts') or {}).items()})
@@ -151,6 +165,15 @@ jobs:
               })
               status = receipt.get('status', 'error')
               entry[status] = entry.get(status, 0) + 1
+              elapsed = int(receipt.get('elapsed_ms') or 0)
+              latency_values.append(elapsed)
+              bytes_read_total += int(receipt.get('bytes_read') or 0)
+              product_candidates = int(receipt.get('product_candidates') or 0)
+              jsonld_blocks = int(receipt.get('jsonld_blocks') or 0)
+              product_candidates_total += product_candidates
+              jsonld_blocks_total += jsonld_blocks
+              observations_with_product_candidates += int(product_candidates > 0)
+              observations_with_jsonld += int(jsonld_blocks > 0)
               http_status = receipt.get('http_status')
               if http_status:
                   code = str(http_status)
@@ -181,7 +204,7 @@ jobs:
           target_failure_summary.sort(key=lambda item: (-item['failure_rate'], item['url']))
 
           safe = {
-              'schema': 'autonomous-public-benchmark-summary/v8',
+              'schema': 'autonomous-public-benchmark-summary/v9',
               'run_id': '${{ github.run_id }}',
               'shard': ${{ matrix.shard }},
               'summaries': len(rows),
@@ -201,7 +224,27 @@ jobs:
               'status_counts': dict(sorted(status_counts.items())),
               'http_status_counts': dict(sorted(http_status_counts.items())),
               'diagnostic_counts': dict(sorted(diagnostic_counts.items())),
+              'measurement': {
+                  'observations': total_observations,
+                  'elapsed_ms': {
+                      'min': percentile(latency_values, 0.0),
+                      'median': percentile(latency_values, 0.5),
+                      'p95': percentile(latency_values, 0.95),
+                      'max': percentile(latency_values, 1.0),
+                  },
+                  'bytes_read_total': bytes_read_total,
+                  'product_candidates_total': product_candidates_total,
+                  'jsonld_blocks_total': jsonld_blocks_total,
+                  'observations_with_product_candidates': observations_with_product_candidates,
+                  'observations_with_jsonld': observations_with_jsonld,
+                  'field_level_correctness_oracle': False,
+                  'evidence_scope': 'transport_and_structural_signals_only',
+              },
               'targets_with_failures': target_failure_summary,
+              'measurement_gaps': [
+                  'no oracle-backed product-field precision/recall',
+                  'product-candidates and JSON-LD counts are structural hints, not correctness judgments',
+              ],
           }
 
           Path('benchmark-summary.json').write_text(json.dumps(safe, indent=2), encoding='utf-8')

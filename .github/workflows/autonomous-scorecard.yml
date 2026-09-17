@@ -6,6 +6,11 @@ on:
     paths:
       - benchmark/autonomous_scorecard.py
       - benchmark/test_autonomous_scorecard.py
+      - benchmark/public_chatbot_runner.py
+      - benchmark/chatbot_query_benchmark.py
+      - benchmark/chatbot-query-corpus.json
+      - benchmark/research_artifact_validator.py
+      - benchmark/research_artifact_catalog.json
       - .github/workflows/autonomous-scorecard.yml
   workflow_dispatch:
   schedule:
@@ -33,6 +38,8 @@ jobs:
           python -m pip install pytest
       - name: Run scorecard tests
         run: python -m pytest -q benchmark/test_autonomous_scorecard.py --confcutdir=benchmark
+      - name: Validate research artifact boundary
+        run: python -m benchmark.research_artifact_validator
 
   live:
     name: Score latest autonomous run
