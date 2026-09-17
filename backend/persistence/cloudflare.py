@@ -69,7 +69,7 @@ class CloudflarePersistence:
         self,
         request,
         idempotency_key: str,
-        subject_fingerprint: str = "legacy",
+        subject_fingerprint: str | None = None,
         capability: str = "research",
         contract_revision: str = IDEMPOTENCY_CONTRACT_REVISION,
     ):
@@ -78,6 +78,9 @@ class CloudflarePersistence:
             raise ValueError("idempotency_key must not be empty")
         if len(idempotency_key) > 256:
             raise ValueError("idempotency_key exceeds maximum length")
+        if subject_fingerprint is None:
+            auth_token = getattr(self.env, "AUTH_TOKEN", None)
+            subject_fingerprint = hashlib.sha256(str(auth_token).encode()).hexdigest() if auth_token else "legacy"
         if not isinstance(subject_fingerprint, str) or not subject_fingerprint.strip():
             raise ValueError("subject_fingerprint must not be empty")
         if not isinstance(capability, str) or not capability.strip():
@@ -121,9 +124,9 @@ class CloudflarePersistence:
         if row is None:
             raise RuntimeError("idempotency claim was not persisted")
         stored_hash = row.get("request_hash") if isinstance(row, dict) else row["request_hash"]
-        stored_subject = row.get("subject_fingerprint", "legacy") if isinstance(row, dict) else row.get("subject_fingerprint", "legacy")
-        stored_capability = row.get("capability", "research") if isinstance(row, dict) else row.get("capability", "research")
-        stored_revision = row.get("contract_revision", "v1") if isinstance(row, dict) else row.get("contract_revision", "v1")
+        stored_subject = row.get("subject_fingerprint", "legacy") if isinstance(row, dict) else "legacy"
+        stored_capability = row.get("capability", "research") if isinstance(row, dict) else "research"
+        stored_revision = row.get("contract_revision", "v1") if isinstance(row, dict) else "v1"
         if stored_hash != request_hash or (stored_subject, stored_capability, stored_revision) != (subject_fingerprint, capability, contract_revision):
             raise IdempotencyConflictError("idempotency key was already used outside its execution scope")
         return row["run_id"]
