@@ -14,7 +14,7 @@ The standalone extractor/mapper repository is historical context and is not part
 ## Current observed branch tips
 
 - Foundation `main`: `88e16810febede7e0d7fa663638794e10d213712`
-- Operations `main`: `5e5e04e2d6ef7efb2f8fc7f24ff920f23e641069`
+- Operations `main`: `f2d78dcc228b4392578f86fcfeed3374f0177546`
 - Approved Operations production revision: `cf28a28cb40de527aff1cd87f96e103669635f70`
 - Nightly Operations revision: `b6a519742e57e7e68db64ab10535d76372bcbdb1`
 
@@ -53,6 +53,10 @@ Operations PR #396 merged the structural-amplification layer for private researc
 ### Durable recovery accounting
 
 Operations PR #398 merged an idempotency correction for durable reservation recovery. Consume/release now report whether the current transition actually won, and expired-reservation reconciliation counts actual releases only. The remaining lease-heartbeat/parent-deadline acceptance for Operations #384 is still open.
+
+### Deadline retry slice
+
+Operations PR #400 merged a bounded deadline improvement for private research provider execution. Retries share one monotonic parent deadline, backoff cannot continue beyond remaining time, and each HTTP attempt receives only the remaining deadline rather than a fresh full timeout. Queue, streaming, browser and persistence deadline propagation remain separate acceptance work.
 
 ### Stage receipt correctness
 
