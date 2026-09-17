@@ -13,8 +13,8 @@ The standalone extractor/mapper repository is historical context and is not part
 
 ## Current observed branch tips
 
-- Foundation `main`: `d31db88f65dc923e3cdf861fd0087beffbf21045`
-- Operations `main`: `10272e8d1c3a2a786143d59f246c19737337e1df`
+- Foundation `main`: `88e16810febede7e0d7fa663638794e10d213712`
+- Operations `main`: `5e5e04e2d6ef7efb2f8fc7f24ff920f23e641069`
 - Approved Operations production revision: `cf28a28cb40de527aff1cd87f96e103669635f70`
 - Nightly Operations revision: `b6a519742e57e7e68db64ab10535d76372bcbdb1`
 
@@ -34,13 +34,33 @@ Foundation PR #482 merged to `main` with required CI green. URL canonicalization
 
 Foundation PR #488 merged to `main` after being rebuilt from the post-#484 base. The contract defines deterministic identity inputs and explicitly prevents identity from becoming an authorization, resource, evidence or publication authority.
 
+### Nightly Operations pin repair
+
+Foundation PR #491 merged to `main`. The canonical pin-repair workflow now targets the current audited Operations main revision instead of the obsolete Operations revision. This does not itself prove that the private nightly runtime has executed that revision.
+
+### Zero-cost provider gate
+
+Operations PRs #392, #393 and #394 merged the hard $0/no-paid-fallback admission path into the canonical provider selector, dynamic quota policy, public chat runtime state adapter and private research runtime state adapter. Operations issue #353 is now completed.
+
+### Provider-output admission
+
+Operations PR #395 merged one canonical bounded provider-output normalizer used by both chatbot and private research execution. It rejects oversized, malformed, partial/truncated, identity-mismatched, structured/tool-call and invalid-usage output before downstream interpretation.
+
+### Provider-derived fan-out limits
+
+Operations PR #396 merged the structural-amplification layer for private research output: bounded JSON depth/collection width, bounded findings/follow-up counts and deterministic duplicate coalescing. Tool-dispatch, streaming and broader parent-budget integration remain separate governed contracts.
+
+### Durable recovery accounting
+
+Operations PR #398 merged an idempotency correction for durable reservation recovery. Consume/release now report whether the current transition actually won, and expired-reservation reconciliation counts actual releases only. The remaining lease-heartbeat/parent-deadline acceptance for Operations #384 is still open.
+
 ### Stage receipt correctness
 
 Foundation PR #461 remains a separate implementation stream for stage-receipt expiry and cumulative resource-chain validation. It does not create a second ResourceLedger authority.
 
-### Nightly Operations pin
+### Nightly timeout gate
 
-Foundation PR #486 remains open and stale against the latest Foundation `main`; its one-line pin update is still pending protected-check acceptance. Foundation issue #487 tracks the separate requirement to keep the nightly research lane timeout below the six-hour GitHub Actions ceiling.
+Foundation issue #487 remains open. The nightly research lane still uses the six-hour ceiling and requires a lower timeout while preserving its existing authentication, live preflight, lane coverage, artifact, attestation, diagnosis and final-gate semantics.
 
 ## Evidence boundary
 
