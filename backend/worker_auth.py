@@ -45,12 +45,10 @@ async def json_object(request: Any):
     headers = getattr(request, "headers", {})
     content_type = headers.get("Content-Type") or headers.get("content-type")
     if not content_type:
-        if not isinstance(headers, dict):
-            return None
-    else:
-        media_type = content_type.split(";", 1)[0].strip().lower()
-        if media_type != "application/json":
-            return None
+        return None
+    media_type = content_type.split(";", 1)[0].strip().lower()
+    if media_type != "application/json":
+        return None
     try:
         value = await request.json()
         return value if isinstance(value, dict) else None
