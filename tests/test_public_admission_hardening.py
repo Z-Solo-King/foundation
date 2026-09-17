@@ -55,10 +55,11 @@ def test_chat_admission_rejects_metadata_and_history_amplification():
         ChatRequest("c", "r", "m", history=({"role": "system", "text": "x"},)).validate()
     with pytest.raises(ValueError, match="history text exceeds"):
         ChatRequest("c", "r", "m", history=({"role": "user", "text": "x" * (MAX_HISTORY_TEXT_LENGTH + 1)},)).validate()
-    history = (
-        {"role": "user", "text": "x" * (MAX_HISTORY_TOTAL_TEXT_LENGTH // 2)},
-        {"role": "assistant", "text": "x" * (MAX_HISTORY_TOTAL_TEXT_LENGTH // 2 + 1)},
+    history = tuple(
+        {"role": "user" if index % 2 == 0 else "assistant", "text": "x" * 12_000}
+        for index in range(9)
     )
+    assert sum(len(turn["text"]) for turn in history) > MAX_HISTORY_TOTAL_TEXT_LENGTH
     with pytest.raises(ValueError, match="aggregate text"):
         ChatRequest("c", "r", "m", history=history).validate()
 
@@ -71,8 +72,6 @@ def test_auth_requires_explicit_development_bypass():
 
 
 def test_json_admission_rejects_missing_wrong_and_oversized_content_type():
-    env = type("Env", (), {"AUTH_TOKEN": "secret"})()
-    assert env.AUTH_TOKEN == "secret"
     assert asyncio.run(json_object(Request({"ok": True}, {}))) is None
     assert asyncio.run(json_object(Request({"ok": True}, {"Content-Type": "text/plain"}))) is None
     assert asyncio.run(json_object(Request({"ok": True}, {"Content-Type": "application/json", "Content-Length": str(MAX_PUBLIC_JSON_BODY_BYTES + 1)}))) is None
