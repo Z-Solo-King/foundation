@@ -24,9 +24,15 @@ class Statement:
         return {"success": True, "meta": {"last_row_id": 7}}
 
 
+class NonDictStatement(Statement):
+    async def run(self):
+        return None
+
+
 class DB:
-    def __init__(self):
+    def __init__(self, non_dict_insert=False):
         self.statements = []
+        self.non_dict_insert = non_dict_insert
 
     def prepare(self, sql):
         self.statements.append(sql)
@@ -34,7 +40,7 @@ class DB:
             return Statement({"run_id": "run-1"})
         if sql.startswith("SELECT observation_id FROM observations"):
             return Statement([])
-        return Statement()
+        return NonDictStatement() if self.non_dict_insert else Statement()
 
 
 @pytest.mark.asyncio
@@ -67,3 +73,18 @@ async def test_publish_evidence_allows_multiple_inserts_for_one_run(monkeypatch)
 
     assert first["package_digest"] != second["package_digest"]
     assert sum(sql.startswith("INSERT INTO research_publications") for sql in db.statements) == 2
+
+
+@pytest.mark.asyncio
+async def test_publish_evidence_handles_insert_result_without_metadata(monkeypatch):
+    package = {"run_id": "run-1", "claims": []}
+    db = DB(non_dict_insert=True)
+    env = SimpleNamespace(DB=db, EVIDENCE_PACKAGE_SIGNING_SECRET="secret")
+    monkeypatch.setattr(worker, "verify_package", lambda *args, **kwargs: (True, None))
+    monkeypatch.setattr(worker, "package_digest", lambda value: "digest-1")
+
+    body, status = await worker._publish_evidence(env, "run-1", package)
+
+    assert status == 200
+    assert body["publication_id"] is None
+    assert body["publication_state"] == "published"
