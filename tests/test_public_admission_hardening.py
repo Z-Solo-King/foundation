@@ -103,6 +103,46 @@ def test_research_source_url_entries_must_be_nonempty_strings():
             raise AssertionError("invalid source URL entry was accepted")
 
 
+def test_research_evidence_budget_has_finite_safety_ceiling():
+    request = ResearchRequest(question="test", max_evidence_items=5_001, strict_zero_cost_only=True)
+    try:
+        request.validate()
+    except ValueError as exc:
+        assert "safety ceiling" in str(exc)
+    else:
+        raise AssertionError("oversized evidence budget was accepted")
+
+
+def test_research_valid_source_url_exercises_nonterminal_url_branch():
+    request = ResearchRequest(
+        question="test",
+        max_sources=1,
+        source_urls=("https://example.com/valid",),
+        strict_zero_cost_only=True,
+    )
+    request.validate()
+
+
+def test_chat_metadata_valid_value_exercises_nonterminal_metadata_branch():
+    request = ChatRequest(
+        chat_id="c1",
+        request_id="r1",
+        message="hello",
+        metadata={"k": "value"},
+    )
+    request.validate()
+
+
+def test_chat_history_valid_turn_exercises_nonterminal_text_branch():
+    request = ChatRequest(
+        chat_id="c1",
+        request_id="r1",
+        message="hello",
+        history=({"role": "user", "text": "hello"},),
+    )
+    request.validate()
+
+
 def test_chat_metadata_keys_and_values_must_be_strings():
     invalid_key = ChatRequest(chat_id="c1", request_id="r1", message="hello", metadata={123: "value"})
     try:
