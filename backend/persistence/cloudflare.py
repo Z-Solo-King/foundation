@@ -71,7 +71,7 @@ class CloudflarePersistence:
         idempotency_key: str,
         subject_fingerprint: str | None = None,
         capability: str = "research",
-        contract_revision: str = IDEMPOTENCY_CONTRACT_REVISION,
+        contract_revision: str | None = None,
     ):
         """Atomically claim an idempotency key within an authenticated execution scope."""
         if not idempotency_key or not idempotency_key.strip():
@@ -80,7 +80,14 @@ class CloudflarePersistence:
             raise ValueError("idempotency_key exceeds maximum length")
         if subject_fingerprint is None:
             auth_token = getattr(self.env, "AUTH_TOKEN", None)
-            subject_fingerprint = hashlib.sha256(str(auth_token).encode()).hexdigest() if auth_token else "legacy"
+            if auth_token:
+                subject_fingerprint = hashlib.sha256(str(auth_token).encode()).hexdigest()
+                contract_revision = contract_revision or IDEMPOTENCY_CONTRACT_REVISION
+            else:
+                subject_fingerprint = "legacy"
+                contract_revision = contract_revision or "v1"
+        else:
+            contract_revision = contract_revision or IDEMPOTENCY_CONTRACT_REVISION
         if not isinstance(subject_fingerprint, str) or not subject_fingerprint.strip():
             raise ValueError("subject_fingerprint must not be empty")
         if not isinstance(capability, str) or not capability.strip():
@@ -88,9 +95,7 @@ class CloudflarePersistence:
         if not isinstance(contract_revision, str) or not contract_revision.strip():
             raise ValueError("contract_revision must not be empty")
         scope_fingerprint = execution_scope_fingerprint(subject_fingerprint, capability, contract_revision)
-        request_hash = hashlib.sha256(
-            f"{request_fingerprint(request)}:{scope_fingerprint}".encode()
-        ).hexdigest()
+        request_hash = hashlib.sha256(f"{request_fingerprint(request)}:{scope_fingerprint}".encode()).hexdigest()
         run_id = f"run-{hashlib.sha256(f'{scope_fingerprint}:{idempotency_key}'.encode()).hexdigest()[:32]}"
         now = datetime.now(timezone.utc).isoformat()
         claim = self.env.DB.prepare(
@@ -98,10 +103,7 @@ class CloudflarePersistence:
             (idempotency_key, run_id, request_hash, created_at, subject_fingerprint, capability, contract_revision)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(idempotency_key) DO NOTHING"""
-        ).bind(
-            idempotency_key, run_id, request_hash, now,
-            subject_fingerprint, capability, contract_revision,
-        )
+        ).bind(idempotency_key, run_id, request_hash, now, subject_fingerprint, capability, contract_revision)
         create = self.env.DB.prepare(
             """INSERT INTO research_runs
             (run_id, question, depth, require_citations, max_sources,
@@ -118,7 +120,6 @@ class CloudflarePersistence:
             """SELECT run_id, request_hash, subject_fingerprint, capability, contract_revision
             FROM idempotency_keys WHERE idempotency_key = ?"""
         ).bind(idempotency_key)
-
         result = await self.env.DB.batch([claim, create, lookup])
         row = result[2].results[0] if result[2].results else None
         if row is None:
@@ -132,9 +133,7 @@ class CloudflarePersistence:
         return row["run_id"]
 
     async def get_run(self, run_id):
-        return await self.env.DB.prepare(
-            "SELECT * FROM research_runs WHERE run_id = ?"
-        ).bind(run_id).first()
+        return await self.env.DB.prepare("SELECT * FROM research_runs WHERE run_id = ?").bind(run_id).first()
 
     async def set_run_status(self, run_id, status):
         """Update a run only through the explicit lifecycle transition table."""
@@ -148,9 +147,7 @@ class CloudflarePersistence:
             raise ValueError("stored run status is invalid")
         if status not in _ALLOWED_TRANSITIONS[current_status]:
             raise ValueError(f"invalid run transition: {current_status} -> {status}")
-        await self.env.DB.prepare(
-            "UPDATE research_runs SET status = ?, updated_at = ? WHERE run_id = ?"
-        ).bind(status, datetime.now(timezone.utc).isoformat(), run_id).run()
+        await self.env.DB.prepare("UPDATE research_runs SET status = ?, updated_at = ? WHERE run_id = ?").bind(status, datetime.now(timezone.utc).isoformat(), run_id).run()
 
     async def put_artifact(self, key, content, content_type="application/octet-stream"):
         digest = hashlib.sha256(content).hexdigest()
