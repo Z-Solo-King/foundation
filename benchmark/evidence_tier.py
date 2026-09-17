@@ -9,6 +9,7 @@ class EvidenceTier(str, Enum):
 
     DETERMINISTIC_CONTRACT = "deterministic_contract"
     SIMULATED_PROVIDER = "simulated_provider"
+    LIVE_SOURCE_ACQUISITION = "live_source_acquisition"
     LIVE_PROVIDER = "live_provider"
     INTEGRATION_RUNTIME = "integration_runtime"
     PRODUCTION = "production"
@@ -17,9 +18,10 @@ class EvidenceTier(str, Enum):
 _ORDER = {
     EvidenceTier.DETERMINISTIC_CONTRACT: 0,
     EvidenceTier.SIMULATED_PROVIDER: 1,
-    EvidenceTier.LIVE_PROVIDER: 2,
-    EvidenceTier.INTEGRATION_RUNTIME: 3,
-    EvidenceTier.PRODUCTION: 4,
+    EvidenceTier.LIVE_SOURCE_ACQUISITION: 2,
+    EvidenceTier.LIVE_PROVIDER: 3,
+    EvidenceTier.INTEGRATION_RUNTIME: 4,
+    EvidenceTier.PRODUCTION: 5,
 }
 
 
@@ -33,8 +35,20 @@ class EvidenceTierContract:
 
     @property
     def provider_execution(self) -> str:
-        if self.tier in {EvidenceTier.DETERMINISTIC_CONTRACT, EvidenceTier.SIMULATED_PROVIDER}:
+        if self.tier in {
+            EvidenceTier.DETERMINISTIC_CONTRACT,
+            EvidenceTier.SIMULATED_PROVIDER,
+            EvidenceTier.LIVE_SOURCE_ACQUISITION,
+        }:
             return "not_live"
+        return "live"
+
+    @property
+    def source_acquisition(self) -> str:
+        if self.tier is EvidenceTier.DETERMINISTIC_CONTRACT:
+            return "not_executed"
+        if self.tier is EvidenceTier.SIMULATED_PROVIDER:
+            return "simulated"
         return "live"
 
     @property
@@ -52,6 +66,8 @@ class EvidenceTierContract:
             return True
         if normalized in {"simulated_provider", "mocked_provider"}:
             return self.rank >= _ORDER[EvidenceTier.SIMULATED_PROVIDER]
+        if normalized in {"live_source_acquisition", "source_retrieval", "transport"}:
+            return self.rank >= _ORDER[EvidenceTier.LIVE_SOURCE_ACQUISITION]
         if normalized in {"live_provider", "provider_availability", "provider_latency", "provider_fallback"}:
             return self.rank >= _ORDER[EvidenceTier.LIVE_PROVIDER]
         if normalized in {"integration_runtime", "end_to_end_runtime"}:
@@ -72,12 +88,14 @@ class EvidenceTierContract:
             "tier": self.tier.value,
             "rank": self.rank,
             "provider_execution": self.provider_execution,
+            "source_acquisition": self.source_acquisition,
             "integration_execution": self.integration_execution,
             "production_execution": self.production_execution,
             "production_readiness_claim_allowed": self.production_execution,
             "claim_policy": {
                 "contract_coverage": self.allows("contract_coverage"),
                 "simulated_provider": self.allows("simulated_provider"),
+                "live_source_acquisition": self.allows("live_source_acquisition"),
                 "live_provider": self.allows("live_provider"),
                 "integration_runtime": self.allows("integration_runtime"),
                 "production": self.allows("production"),
