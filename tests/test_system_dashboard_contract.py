@@ -28,10 +28,7 @@ def test_dashboard_does_not_store_provider_secrets_in_frontend():
 
 def test_dashboard_proxy_fails_closed_without_binding():
     import worker
-
-    class Request:
-        headers = {}
-
+    class Request: headers = {}
     payload, status = asyncio.run(worker._operations_dashboard(SimpleNamespace(), Request()))
     assert status == 503
     assert payload["error"] == "dashboard_backend_unavailable"
@@ -39,24 +36,13 @@ def test_dashboard_proxy_fails_closed_without_binding():
 
 def test_dashboard_proxy_forwards_auth_and_returns_payload():
     import worker
-
     class Response:
         status = 200
-
-        async def json(self):
-            return {"ok": True, "schema": "heroic-ai-ops-dashboard/v1", "status": "ok"}
-
+        async def json(self): return {"ok": True, "schema": "heroic-ai-ops-dashboard/v1", "status": "ok"}
     class Binding:
-        def __init__(self):
-            self.calls = []
-
-        async def fetch(self, url, options):
-            self.calls.append((url, options))
-            return Response()
-
-    class Request:
-        headers = {"Authorization": "Bearer dashboard"}
-
+        def __init__(self): self.calls = []
+        async def fetch(self, url, options): self.calls.append((url, options)); return Response()
+    class Request: headers = {"Authorization": "Bearer dashboard"}
     binding = Binding()
     payload, status = asyncio.run(worker._operations_dashboard(SimpleNamespace(OPERATIONS=binding), Request()))
     assert status == 200
@@ -68,20 +54,12 @@ def test_dashboard_proxy_forwards_auth_and_returns_payload():
 
 def test_dashboard_proxy_rejects_invalid_private_response():
     import worker
-
     class Response:
         status = 200
-
-        async def json(self):
-            return ["invalid"]
-
+        async def json(self): return ["invalid"]
     class Binding:
-        async def fetch(self, url, options):
-            return Response()
-
-    class Request:
-        headers = {}
-
+        async def fetch(self, url, options): return Response()
+    class Request: headers = {}
     payload, status = asyncio.run(worker._operations_dashboard(SimpleNamespace(OPERATIONS=Binding()), Request()))
     assert status == 503
     assert payload["error"] == "invalid_private_dashboard_response"
@@ -89,14 +67,9 @@ def test_dashboard_proxy_rejects_invalid_private_response():
 
 def test_dashboard_proxy_handles_binding_error():
     import worker
-
     class Binding:
-        async def fetch(self, url, options):
-            raise RuntimeError("binding unavailable")
-
-    class Request:
-        headers = {}
-
+        async def fetch(self, url, options): raise RuntimeError("binding unavailable")
+    class Request: headers = {}
     payload, status = asyncio.run(worker._operations_dashboard(SimpleNamespace(OPERATIONS=Binding()), Request()))
     assert status == 503
     assert payload["error"] == "dashboard_backend_unavailable"
@@ -104,29 +77,15 @@ def test_dashboard_proxy_handles_binding_error():
 
 def test_public_worker_dashboard_route_requires_auth_and_proxies():
     import worker
-
     class Request:
         def __init__(self, headers):
-            self.method = "GET"
-            self.url = "https://example/api/v1/dashboard"
-            self.headers = headers
-
+            self.method = "GET"; self.url = "https://example/api/v1/dashboard"; self.headers = headers
     class Response:
         status = 200
-
-        async def json(self):
-            return {"ok": True, "status": "ok"}
-
+        async def json(self): return {"ok": True, "status": "ok"}
     class Binding:
-        async def fetch(self, url, options):
-            return Response()
-
-    unauthorized = worker.Default()
-    unauthorized.env = SimpleNamespace(AUTH_TOKEN="secret", OPERATIONS=Binding())
-    response = asyncio.run(unauthorized.fetch(Request({})))
-    assert response.status == 401
-
-    authorized = worker.Default()
-    authorized.env = SimpleNamespace(AUTH_TOKEN=None, OPERATIONS=Binding())
-    response = asyncio.run(authorized.fetch(Request({"Authorization": "Bearer user"})))
-    assert response.status == 200
+        async def fetch(self, url, options): return Response()
+    unauthorized = worker.Default(); unauthorized.env = SimpleNamespace(AUTH_TOKEN="secret", OPERATIONS=Binding())
+    response = asyncio.run(unauthorized.fetch(Request({}))); assert response.status == 401
+    authorized = worker.Default(); authorized.env = SimpleNamespace(ENVIRONMENT="development", AUTH_TOKEN=None, LOCAL_DEVELOPMENT_AUTH_BYPASS="true", OPERATIONS=Binding())
+    response = asyncio.run(authorized.fetch(Request({}))); assert response.status == 200
