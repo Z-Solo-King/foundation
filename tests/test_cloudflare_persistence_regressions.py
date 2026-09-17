@@ -1,8 +1,15 @@
 from types import SimpleNamespace
+import hashlib
 
 import pytest
 
-from backend.persistence.cloudflare import CloudflarePersistence, IDEMPOTENCY_CONTRACT_REVISION, IdempotencyConflictError
+from backend.persistence.cloudflare import (
+    CloudflarePersistence,
+    IDEMPOTENCY_CONTRACT_REVISION,
+    IdempotencyConflictError,
+    execution_scope_fingerprint,
+    request_fingerprint,
+)
 from backend.api.models import ResearchRequest
 
 
@@ -103,16 +110,14 @@ async def test_create_run_idempotent_binds_authenticated_scope():
 
 @pytest.mark.asyncio
 async def test_create_run_idempotent_replays_same_scoped_request():
+    subject = hashlib.sha256(b"token-a").hexdigest()
+    scope = execution_scope_fingerprint(subject, "research", IDEMPOTENCY_CONTRACT_REVISION)
+    request_hash = hashlib.sha256(f"{request_fingerprint(request())}:{scope}".encode()).hexdigest()
     p = persistence(FakeDB(), token="token-a")
-    from backend.persistence.cloudflare import request_fingerprint, execution_scope_fingerprint
-    scope = execution_scope_fingerprint(
-        __import__("hashlib").sha256(b"token-a").hexdigest(), "research", IDEMPOTENCY_CONTRACT_REVISION
-    )
-    request_hash = __import__("hashlib").sha256(f"{request_fingerprint(request())}:{scope}".encode()).hexdigest()
     p.env.DB.batch_result[2] = SimpleNamespace(results=[{
         "run_id": "run-scoped",
         "request_hash": request_hash,
-        "subject_fingerprint": __import__("hashlib").sha256(b"token-a").hexdigest(),
+        "subject_fingerprint": subject,
         "capability": "research",
         "contract_revision": IDEMPOTENCY_CONTRACT_REVISION,
     }])
@@ -121,8 +126,6 @@ async def test_create_run_idempotent_replays_same_scoped_request():
 
 @pytest.mark.asyncio
 async def test_create_run_idempotent_uses_different_run_identity_for_different_subjects():
-    from backend.persistence.cloudflare import execution_scope_fingerprint
-    import hashlib
     a = execution_scope_fingerprint(hashlib.sha256(b"a").hexdigest(), "research", IDEMPOTENCY_CONTRACT_REVISION)
     b = execution_scope_fingerprint(hashlib.sha256(b"b").hexdigest(), "research", IDEMPOTENCY_CONTRACT_REVISION)
     assert a != b
@@ -132,8 +135,7 @@ async def test_create_run_idempotent_uses_different_run_identity_for_different_s
 async def test_create_run_idempotent_accepts_explicit_scope():
     p = persistence(FakeDB())
     subject = "subject-a"
-    db = p.env.DB
-    db.batch_result[2] = SimpleNamespace(results=[{
+    p.env.DB.batch_result[2] = SimpleNamespace(results=[{
         "run_id": "run-explicit",
         "request_hash": "ignored",
         "subject_fingerprint": subject,
@@ -190,9 +192,6 @@ async def test_create_run_idempotent_rejects_scoped_request_hash_conflict():
 
 @pytest.mark.asyncio
 async def test_create_run_idempotent_rejects_scoped_identity_mismatch_with_matching_hash():
-    import hashlib
-    from backend.persistence.cloudflare import execution_scope_fingerprint, request_fingerprint
-
     subject = hashlib.sha256(b"token-a").hexdigest()
     scope = execution_scope_fingerprint(subject, "research", IDEMPOTENCY_CONTRACT_REVISION)
     request_hash = hashlib.sha256(f"{request_fingerprint(request())}:{scope}".encode()).hexdigest()
@@ -210,9 +209,6 @@ async def test_create_run_idempotent_rejects_scoped_identity_mismatch_with_match
 
 @pytest.mark.asyncio
 async def test_create_run_idempotent_supports_non_dict_database_rows():
-    import hashlib
-    from backend.persistence.cloudflare import execution_scope_fingerprint, request_fingerprint
-
     subject = hashlib.sha256(b"token-a").hexdigest()
     scope = execution_scope_fingerprint(subject, "research", IDEMPOTENCY_CONTRACT_REVISION)
     request_hash = hashlib.sha256(f"{request_fingerprint(request())}:{scope}".encode()).hexdigest()
