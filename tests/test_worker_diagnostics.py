@@ -256,6 +256,21 @@ async def test_worker_http_public_diagnostics_and_research_fail_closed_paths(mon
 
 
 @pytest.mark.asyncio
+async def test_storage_diagnostic_http_exception_is_sanitized(monkeypatch):
+    entry = worker.Default()
+    entry.env = SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret")
+
+    async def broken_storage(*args, **kwargs):
+        raise RuntimeError("private diagnostic internals")
+
+    monkeypatch.setattr(worker, "_storage_diagnostic", broken_storage)
+    response = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {"run_id": "run-1"}, {"Authorization": "Bearer secret"}))
+    assert response.status == 503
+    assert "storage diagnostic failure" in str(response)
+    assert "private diagnostic internals" not in str(response)
+
+
+@pytest.mark.asyncio
 async def test_research_persistence_failures_and_idempotency(monkeypatch):
     monkeypatch.setattr(worker, "CloudflarePersistence", BrokenPersistence)
     entry = worker.Default()
