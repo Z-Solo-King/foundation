@@ -79,3 +79,6 @@ async def test_fetch_public_url_revalidates_each_redirect_destination():
     result = await source_http.fetch_public_url("https://example.com/start", fetcher=fetcher)
     assert calls == ["https://example.com/start", "https://example.com/next"]
     assert result.final_url == "https://example.com/next"
+
+
+# CI synchronization marker for the current main base.
