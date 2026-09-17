@@ -75,3 +75,16 @@ async def test_ingest_sources_batches_d1_writes_once_for_all_successful_sources(
     assert len(db.batched[0]) == 6
     assert len(db.prepared) == 6
     assert all(statement.bindings for statement in db.batched[0])
+
+
+@pytest.mark.asyncio
+async def test_ingest_sources_with_no_sources_skips_empty_batch() -> None:
+    db = FakeDB()
+    env = SimpleNamespace(DB=db)
+    request = SimpleNamespace(source_urls=(), max_sources=2)
+
+    results = await ingest_sources(env, "run-empty", request, fetcher=FakeFetcher(), persistence_cls=FakePersistence)
+
+    assert results == []
+    assert db.prepared == []
+    assert db.batched == []
