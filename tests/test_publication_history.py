@@ -50,9 +50,7 @@ async def test_publish_evidence_appends_without_conflict_update(monkeypatch):
     env = SimpleNamespace(DB=db, EVIDENCE_PACKAGE_SIGNING_SECRET="secret")
     monkeypatch.setattr(worker, "verify_package", lambda *args, **kwargs: (True, None))
     monkeypatch.setattr(worker, "package_digest", lambda value: "digest-1")
-
     body, status = await worker._publish_evidence(env, "run-1", package)
-
     assert status == 200
     assert body["publication_id"] == 7
     insert = next(sql for sql in db.statements if sql.startswith("INSERT INTO research_publications"))
@@ -67,10 +65,8 @@ async def test_publish_evidence_allows_multiple_inserts_for_one_run(monkeypatch)
     monkeypatch.setattr(worker, "verify_package", lambda *args, **kwargs: (True, None))
     digests = iter(("digest-1", "digest-2"))
     monkeypatch.setattr(worker, "package_digest", lambda value: next(digests))
-
     first, _ = await worker._publish_evidence(env, "run-1", package)
     second, _ = await worker._publish_evidence(env, "run-1", package)
-
     assert first["package_digest"] != second["package_digest"]
     assert sum(sql.startswith("INSERT INTO research_publications") for sql in db.statements) == 2
 
@@ -82,9 +78,10 @@ async def test_publish_evidence_handles_insert_result_without_metadata(monkeypat
     env = SimpleNamespace(DB=db, EVIDENCE_PACKAGE_SIGNING_SECRET="secret")
     monkeypatch.setattr(worker, "verify_package", lambda *args, **kwargs: (True, None))
     monkeypatch.setattr(worker, "package_digest", lambda value: "digest-1")
-
     body, status = await worker._publish_evidence(env, "run-1", package)
-
     assert status == 200
     assert body["publication_id"] is None
     assert body["publication_state"] == "published"
+
+
+# CI synchronization marker: publication-history changes are tested on the current main base.
