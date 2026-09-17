@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 SCHEMA = "benchmark-reproducibility/v1"
 _FORBIDDEN_KEY_PARTS = ("password", "secret", "token", "private_key", "api_key", "authorization", "prompt")
-_ALLOWED_EXECUTION_STATES = {"completed", "partial_or_failed"}
+_ALLOWED_EXECUTION_STATES = {"completed", "partial", "partial_or_failed", "failed", "cancelled", "unknown"}
 
 
 @dataclass(frozen=True)
@@ -60,6 +60,8 @@ class ReproducibilityReceipt:
         )
         if any(not isinstance(value, str) or not value.strip() for value in values):
             raise ValueError("reproducibility receipt contains missing required metadata")
+        if self.execution_state not in _ALLOWED_EXECUTION_STATES:
+            raise ValueError(f"unsupported execution state: {self.execution_state!r}")
         if self.workflow_id is not None and not self.workflow_id.strip():
             raise ValueError("workflow_id cannot be blank")
         if self.workflow_run_id is not None and not self.workflow_run_id.strip():
@@ -109,9 +111,9 @@ def parse_receipt(value: object) -> ReproducibilityReceipt:
 def ensure_compatible(current: object, previous: object) -> tuple[bool, list[str]]:
     """Check whether two artifacts share a reproducible comparison identity.
 
-    A completed run can be compared with either a completed or valid partial
-    prior run. This permits truthful recovery comparisons while still rejecting
-    missing/unknown execution state.
+    The current artifact may be partial or failed because degradation is a
+    meaningful regression signal. The prior artifact must be a completed run or
+    a valid partial-or-failed baseline produced by the canonical nightly flow.
     """
     current_receipt = parse_receipt(current)
     previous_receipt = parse_receipt(previous)
@@ -131,8 +133,8 @@ def ensure_compatible(current: object, previous: object) -> tuple[bool, list[str
             errors.append(f"incompatible {field}: current={left!r} previous={right!r}")
     if current_receipt.execution_state not in _ALLOWED_EXECUTION_STATES:
         errors.append(f"unsupported current execution state: {current_receipt.execution_state!r}")
-    if previous_receipt.execution_state not in _ALLOWED_EXECUTION_STATES:
-        errors.append(f"unsupported previous execution state: {previous_receipt.execution_state!r}")
+    if previous_receipt.execution_state not in {"completed", "partial_or_failed"}:
+        errors.append("baseline comparison requires a completed previous execution state")
     return not errors, errors
 
 
