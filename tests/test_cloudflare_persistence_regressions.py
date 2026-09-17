@@ -133,11 +133,13 @@ async def test_create_run_idempotent_uses_different_run_identity_for_different_s
 
 @pytest.mark.asyncio
 async def test_create_run_idempotent_accepts_explicit_scope():
-    p = persistence(FakeDB())
     subject = "subject-a"
+    scope = execution_scope_fingerprint(subject, "chat", "chat/v3")
+    request_hash = hashlib.sha256(f"{request_fingerprint(request())}:{scope}".encode()).hexdigest()
+    p = persistence(FakeDB())
     p.env.DB.batch_result[2] = SimpleNamespace(results=[{
         "run_id": "run-explicit",
-        "request_hash": "ignored",
+        "request_hash": request_hash,
         "subject_fingerprint": subject,
         "capability": "chat",
         "contract_revision": "chat/v3",
