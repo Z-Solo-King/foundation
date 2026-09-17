@@ -58,16 +58,10 @@ class CloudflarePersistence:
              max_evidence_items, strict_zero_cost_only, status, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
         ).bind(
-            run_id,
-            request.question,
-            request.depth or "standard",
-            int(request.require_citations),
-            request.max_sources,
-            request.max_evidence_items,
-            int(request.strict_zero_cost_only),
-            "planned",
-            now,
-            now,
+            run_id, request.question, request.depth or "standard",
+            int(request.require_citations), request.max_sources,
+            request.max_evidence_items, int(request.strict_zero_cost_only),
+            "planned", now, now,
         ).run()
         return run_id
 
@@ -120,13 +114,8 @@ class CloudflarePersistence:
             VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(idempotency_key) DO NOTHING"""
         ).bind(
-            idempotency_key,
-            run_id,
-            request_hash,
-            now,
-            subject_fingerprint,
-            capability,
-            contract_revision,
+            idempotency_key, run_id, request_hash, now,
+            subject_fingerprint, capability, contract_revision,
         )
         create = self.env.DB.prepare(
             """INSERT INTO research_runs
@@ -135,16 +124,10 @@ class CloudflarePersistence:
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(run_id) DO NOTHING"""
         ).bind(
-            run_id,
-            request.question,
-            request.depth or "standard",
-            int(request.require_citations),
-            request.max_sources,
-            request.max_evidence_items,
-            int(request.strict_zero_cost_only),
-            "planned",
-            now,
-            now,
+            run_id, request.question, request.depth or "standard",
+            int(request.require_citations), request.max_sources,
+            request.max_evidence_items, int(request.strict_zero_cost_only),
+            "planned", now, now,
         )
         lookup = self.env.DB.prepare(
             """SELECT run_id, request_hash, subject_fingerprint,
@@ -157,31 +140,31 @@ class CloudflarePersistence:
         if row is None:
             raise RuntimeError("idempotency claim was not persisted")
 
+        if isinstance(row, dict):
+            stored_hash = row.get("request_hash")
+            stored_scope = (
+                row.get("subject_fingerprint", "legacy"),
+                row.get("capability", "research"),
+                row.get("contract_revision", "v1"),
+            )
+            stored_run_id = row.get("run_id")
+        else:
+            stored_hash = row[1]
+            stored_scope = (row[2], row[3], row[4])
+            stored_run_id = row[0]
+
         if legacy_mode:
-            if row["request_hash"] != request_hash:
+            if stored_hash != request_hash:
                 raise IdempotencyConflictError(
                     "idempotency key was already used for a different request"
                 )
-        else:
-            if isinstance(row, dict):
-                stored_hash = row.get("request_hash")
-                stored_scope = (
-                    row.get("subject_fingerprint", "legacy"),
-                    row.get("capability", "research"),
-                    row.get("contract_revision", "v1"),
-                )
-            else:
-                stored_hash = row[1]
-                stored_scope = (row[2], row[3], row[4])
-            if stored_hash != request_hash or stored_scope != (
-                subject_fingerprint,
-                capability,
-                contract_revision,
-            ):
-                raise IdempotencyConflictError(
-                    "idempotency key was already used outside its execution scope"
-                )
-        return row["run_id"] if isinstance(row, dict) else row[0]
+        elif stored_hash != request_hash or stored_scope != (
+            subject_fingerprint, capability, contract_revision
+        ):
+            raise IdempotencyConflictError(
+                "idempotency key was already used outside its execution scope"
+            )
+        return stored_run_id
 
     async def get_run(self, run_id):
         return await self.env.DB.prepare(
