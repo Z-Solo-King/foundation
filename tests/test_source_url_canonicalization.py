@@ -19,6 +19,7 @@ class Response:
         ("HTTPS://EXAMPLE.COM.:443/path#fragment", "https://example.com/path"),
         ("http://EXAMPLE.COM:80", "http://example.com/"),
         ("https://example.com", "https://example.com/"),
+        ("https://example.com:80/path", "https://example.com:80/path"),
     ],
 )
 def test_canonicalize_url_normalizes_security_neutral_variants(source, expected):
