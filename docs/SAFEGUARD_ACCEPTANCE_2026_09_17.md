@@ -1,0 +1,1 @@
+Deterministic safeguard implementation for issues 371–374 is covered by stage-receipt expiry/resource budgets and token-efficiency output/context gates with regression tests. Runtime evidence remains separate.
