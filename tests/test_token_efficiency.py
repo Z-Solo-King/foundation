@@ -52,6 +52,27 @@ def test_absolute_floor_handles_small_baseline():
     assert reason == "candidate output size is below configured floor"
 
 
+def test_output_floor_zero_keeps_non_increasing_path():
+    baseline = obs(output_tokens=100)
+    candidate = obs(input_tokens=80, output_tokens=1)
+    gate = EfficiencyGate()
+
+    accepted, reason = compare_efficiency(baseline, candidate, gate=gate)
+
+    assert accepted
+    assert reason == "candidate accepted with non-increasing token use"
+
+
+def test_negative_absolute_floor_is_rejected():
+    gate = EfficiencyGate(min_output_tokens=-1)
+    try:
+        gate.validate()
+    except ValueError as exc:
+        assert "min_output_tokens" in str(exc)
+    else:
+        raise AssertionError("negative output floor should fail validation")
+
+
 def test_output_floor_configuration_is_validated():
     gate = EfficiencyGate(min_output_ratio=1.1)
     try:
