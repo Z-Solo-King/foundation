@@ -6,9 +6,11 @@ import json
 
 from backend.persistence.artifacts import artifact_store_from_env
 
+IDEMPOTENCY_CONTRACT_REVISION = "research-idempotency/v2"
+
 
 class IdempotencyConflictError(RuntimeError):
-    """Raised when an idempotency key is reused for a different request."""
+    """Raised when an idempotency key is reused outside its execution scope."""
 
 
 _ALLOWED_TRANSITIONS = {
@@ -33,6 +35,16 @@ def request_fingerprint(request) -> str:
     return hashlib.sha256(encoded.encode()).hexdigest()
 
 
+def execution_scope_fingerprint(subject_fingerprint: str, capability: str, contract_revision: str) -> str:
+    scope = {
+        "subject_fingerprint": subject_fingerprint,
+        "capability": capability,
+        "contract_revision": contract_revision,
+    }
+    encoded = json.dumps(scope, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(encoded.encode()).hexdigest()
+
+
 class CloudflarePersistence:
     def __init__(self, env):
         self.env = env
@@ -53,24 +65,40 @@ class CloudflarePersistence:
         ).run()
         return run_id
 
-    async def create_run_idempotent(self, request, idempotency_key: str):
-        """Atomically claim an idempotency key and create its stable run.
-
-        The validation branches in this method are intentionally covered by a dedicated
-        regression test because they have repeatedly been lost during persistence refactors.
-        """
+    async def create_run_idempotent(
+        self,
+        request,
+        idempotency_key: str,
+        subject_fingerprint: str = "legacy",
+        capability: str = "research",
+        contract_revision: str = IDEMPOTENCY_CONTRACT_REVISION,
+    ):
+        """Atomically claim an idempotency key within an authenticated execution scope."""
         if not idempotency_key or not idempotency_key.strip():
             raise ValueError("idempotency_key must not be empty")
         if len(idempotency_key) > 256:
             raise ValueError("idempotency_key exceeds maximum length")
-        request_hash = request_fingerprint(request)
-        run_id = f"run-{hashlib.sha256(idempotency_key.encode()).hexdigest()[:32]}"
+        if not isinstance(subject_fingerprint, str) or not subject_fingerprint.strip():
+            raise ValueError("subject_fingerprint must not be empty")
+        if not isinstance(capability, str) or not capability.strip():
+            raise ValueError("capability must not be empty")
+        if not isinstance(contract_revision, str) or not contract_revision.strip():
+            raise ValueError("contract_revision must not be empty")
+        scope_fingerprint = execution_scope_fingerprint(subject_fingerprint, capability, contract_revision)
+        request_hash = hashlib.sha256(
+            f"{request_fingerprint(request)}:{scope_fingerprint}".encode()
+        ).hexdigest()
+        run_id = f"run-{hashlib.sha256(f'{scope_fingerprint}:{idempotency_key}'.encode()).hexdigest()[:32]}"
         now = datetime.now(timezone.utc).isoformat()
         claim = self.env.DB.prepare(
-            """INSERT INTO idempotency_keys(idempotency_key, run_id, request_hash, created_at)
-            VALUES (?, ?, ?, ?)
+            """INSERT INTO idempotency_keys
+            (idempotency_key, run_id, request_hash, created_at, subject_fingerprint, capability, contract_revision)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(idempotency_key) DO NOTHING"""
-        ).bind(idempotency_key, run_id, request_hash, now)
+        ).bind(
+            idempotency_key, run_id, request_hash, now,
+            subject_fingerprint, capability, contract_revision,
+        )
         create = self.env.DB.prepare(
             """INSERT INTO research_runs
             (run_id, question, depth, require_citations, max_sources,
@@ -84,15 +112,20 @@ class CloudflarePersistence:
             "planned", now, now,
         )
         lookup = self.env.DB.prepare(
-            "SELECT run_id, request_hash FROM idempotency_keys WHERE idempotency_key = ?"
+            """SELECT run_id, request_hash, subject_fingerprint, capability, contract_revision
+            FROM idempotency_keys WHERE idempotency_key = ?"""
         ).bind(idempotency_key)
 
         result = await self.env.DB.batch([claim, create, lookup])
         row = result[2].results[0] if result[2].results else None
         if row is None:
             raise RuntimeError("idempotency claim was not persisted")
-        if row["request_hash"] != request_hash:
-            raise IdempotencyConflictError("idempotency key was already used for a different request")
+        stored_hash = row.get("request_hash") if isinstance(row, dict) else row["request_hash"]
+        stored_subject = row.get("subject_fingerprint", "legacy") if isinstance(row, dict) else row.get("subject_fingerprint", "legacy")
+        stored_capability = row.get("capability", "research") if isinstance(row, dict) else row.get("capability", "research")
+        stored_revision = row.get("contract_revision", "v1") if isinstance(row, dict) else row.get("contract_revision", "v1")
+        if stored_hash != request_hash or (stored_subject, stored_capability, stored_revision) != (subject_fingerprint, capability, contract_revision):
+            raise IdempotencyConflictError("idempotency key was already used outside its execution scope")
         return row["run_id"]
 
     async def get_run(self, run_id):
@@ -101,11 +134,7 @@ class CloudflarePersistence:
         ).bind(run_id).first()
 
     async def set_run_status(self, run_id, status):
-        """Update a run only through the explicit lifecycle transition table.
-
-        Keep the error branches below covered: missing run, corrupt stored status, and
-        disallowed transition are safety-critical fail-closed guards.
-        """
+        """Update a run only through the explicit lifecycle transition table."""
         if status not in _ALLOWED_TRANSITIONS:
             raise ValueError("invalid run status")
         current = await self.get_run(run_id)
