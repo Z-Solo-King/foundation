@@ -14,8 +14,15 @@ class _Stmt:
 
 
 class _DB:
+    def __init__(self):
+        self.batches = []
+
     def prepare(self, _sql):
         return _Stmt()
+
+    async def batch(self, statements):
+        self.batches.append(statements)
+        return None
 
 
 class _Persistence:
@@ -52,3 +59,5 @@ async def test_ingest_sources_keeps_successful_sources_when_one_fetch_fails():
     assert calls == ["https://example.test/good", "https://example.test/bad"]
     assert results[0]["status"] == 200
     assert results[1] == {"url": "https://example.test/bad", "status": "error", "error": "blocked host"}
+    assert len(env.DB.batches) == 1
+    assert len(env.DB.batches[0]) == 3
