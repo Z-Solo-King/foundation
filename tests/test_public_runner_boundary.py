@@ -66,12 +66,13 @@ def test_rejects_credential_like_text(tmp_path: Path) -> None:
 
 
 def test_rejects_private_source_host(tmp_path: Path) -> None:
-    record = _record()
-    record["findings"][0]["source_url"] = "http://127.0.0.1/private"  # type: ignore[index]
-    path = tmp_path / "lane.jsonl"
-    path.write_text(json.dumps(record) + "\n", encoding="utf-8")
-    with pytest.raises(ValueError, match="private/local host"):
-        validate_jsonl(path, expected_lane=0)
+    for host in ("127.0.0.1", "10.0.0.1", "192.168.1.10", "169.254.1.1", "::1"):
+        record = _record()
+        record["findings"][0]["source_url"] = f"http://[{host}]/private" if ":" in host else f"http://{host}/private"  # type: ignore[index]
+        path = tmp_path / "lane.jsonl"
+        path.write_text(json.dumps(record) + "\n", encoding="utf-8")
+        with pytest.raises(ValueError, match="private"):
+            validate_jsonl(path, expected_lane=0)
 
 
 def test_rejects_schema_and_duplicate_programs(tmp_path: Path) -> None:
