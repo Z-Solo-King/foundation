@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const source = fs.readFileSync(new URL('./lifecycle_state_machine.js', import.meta.url), 'utf8');
+const context = { window: {}, console };
+vm.runInNewContext(source, context);
+const machine = context.window.RIEFrontend.lifecycleStateMachine;
+assert.deepEqual(machine.STATES, ['NEW_CHAT','SUBMITTING','QUEUED','RUNNING','STREAMING','COMPLETE','PARTIAL','BLOCKED','REJECTED','UNAVAILABLE','UNKNOWN','RECONNECTING','RESUMED','REPLAYED','AUTH_EXPIRED']);
+assert.equal(machine.normalize('completed'), 'COMPLETE');
+assert.equal(machine.normalize('auth-expired'), 'AUTH_EXPIRED');
+assert.equal(machine.normalize('not-a-state'), null);
+assert.equal(machine.canTransition('QUEUED','RUNNING'), true);
+assert.equal(machine.canTransition('COMPLETE','RUNNING'), false);
+assert.equal(machine.advance('COMPLETE','running'), 'UNKNOWN');
+assert.equal(machine.advance('RUNNING',undefined), 'UNKNOWN');
+assert.equal(machine.fromBackend({status:'queued'}), 'QUEUED');
+assert.equal(machine.fromBackend({}), 'UNKNOWN');
+console.log('frontend lifecycle state machine: PASS');
