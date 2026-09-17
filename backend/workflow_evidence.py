@@ -137,7 +137,13 @@ def _receipt(observation: WorkflowExecutionObservation, state: EvidenceState, re
 
 
 def compose_workflow_evidence(observation: WorkflowExecutionObservation) -> dict[str, object]:
-    """Compose a truthful receipt without inferring an unobserved root cause."""
+    """Compose execution evidence from observations only.
+
+    This contract deliberately distinguishes control-plane uncertainty from
+    runner/application failure: an accepted trigger with zero observed jobs is
+    UNKNOWN, not FAILED. No branch may invent a root cause that was not directly
+    observed. Only COMPLETE receipts may authorize production claims.
+    """
     observation.validate()
     state, reason = _resolve_state(observation)
     return _receipt(observation, state, reason)
