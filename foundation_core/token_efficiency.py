@@ -65,6 +65,7 @@ class EfficiencyGate:
     max_input_token_growth_ratio: float = 0.10
     max_total_token_growth_ratio: float = 0.10
     min_cache_hit_ratio: float = 0.0
+    max_context_amplification_ratio: float | None = None
 
     def validate(self) -> None:
         for name, value in (
@@ -74,6 +75,9 @@ class EfficiencyGate:
         ):
             if not 0.0 <= value <= 1.0:
                 raise ValueError(f"{name} must be between 0 and 1")
+        if self.max_context_amplification_ratio is not None:
+            if self.max_context_amplification_ratio <= 0.0 or not isfinite(self.max_context_amplification_ratio):
+                raise ValueError("max_context_amplification_ratio must be finite and greater than 0")
 
 
 def compare_efficiency(
@@ -104,6 +108,8 @@ def compare_efficiency(
         return False, "candidate total-token growth exceeds gate"
     if candidate.cache_hit_ratio < gate.min_cache_hit_ratio:
         return False, "candidate cache-hit ratio is below gate"
+    if gate.max_context_amplification_ratio is not None and candidate.context_amplification_ratio > gate.max_context_amplification_ratio:
+        return False, "candidate context amplification exceeds gate"
     if candidate.total_estimated_tokens <= baseline.total_estimated_tokens:
         return True, "candidate accepted with non-increasing token use"
     if candidate.evidence_retention_ratio > baseline.evidence_retention_ratio:
