@@ -40,9 +40,9 @@ Operations may consume Foundation contracts and public-safe services. Foundation
 
 ## Feature-owned test navigation
 
-Coverage tests belong beside the behavior they verify. The audited generic `tests/test_coverage_*` aggregators have been replaced by focused suites named for their owners: execution, worker boundary, intelligence/evidence, source transport, API/capabilities, Worker entrypoint, run-record/token-efficiency contracts, and public-core persistence/product mapping.
+Coverage tests are maintained in the flat top-level `tests/` tree and organized by owning production boundary/subsystem rather than physically colocated beside source modules. The audited generic `tests/test_coverage_*` aggregators have been replaced by focused owner-named suites covering execution, worker boundary, intelligence/evidence, source transport, API/capabilities, Worker entrypoint, run-record/token-efficiency contracts, and public-core persistence/product mapping.
 
-The generic filenames must not be recreated merely to collect edge cases. Test relocation is valid only when assertions are preserved and the owning production boundary is clear.
+The generic filenames must not be recreated merely to collect edge cases. Subsystem-scoped suites such as `test_edge_cases.py`, `test_execution_edge_cases.py`, and `test_intelligence_edge_cases.py` are acceptable when their assertions remain tied to a clearly identified production owner. Test relocation is optional; the required invariant is clear ownership and preserved assertions, not physical directory colocation.
 
 ## Deployment documentation
 
