@@ -36,6 +36,7 @@
 .message-bubble code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;padding:2px 4px;border-radius:5px;background:rgba(255,255,255,.06)}
 .message-bubble .code-block{display:block;max-width:100%;overflow:auto;margin:8px 0;padding:10px;border-radius:10px;background:#070a11;border:1px solid var(--border);white-space:pre;tab-size:2}
 .message-bubble .code-block code{padding:0;background:transparent;white-space:inherit}
+.message-bubble .code-keyword{color:#8fb7ff}.message-bubble .code-string{color:#8fd1a9}.message-bubble .code-number{color:#e9bd78}.message-bubble .code-comment{color:#78849a}
 .message-bubble a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .message-bubble strong{font-weight:750}.message-bubble em{font-style:italic}.message-bubble del{opacity:.8}
 @media(max-width:760px){
