@@ -140,21 +140,21 @@ def test_public_worker_chat_route_validation_and_fail_closed_paths():
         pass
 
     invalid_json = AuthorizedWorker()
-    invalid_json.env = SimpleNamespace(AUTH_TOKEN=None, OPERATIONS=Binding())
+    invalid_json.env = SimpleNamespace(AUTH_TOKEN=None, ENVIRONMENT="development", LOCAL_DEVELOPMENT_AUTH_BYPASS="true", OPERATIONS=Binding())
     response = asyncio.run(invalid_json.fetch(Request(None)))
     assert response.status == 400
 
     malformed = AuthorizedWorker()
-    malformed.env = SimpleNamespace(AUTH_TOKEN=None, OPERATIONS=Binding())
+    malformed.env = SimpleNamespace(AUTH_TOKEN=None, ENVIRONMENT="development", LOCAL_DEVELOPMENT_AUTH_BYPASS="true", OPERATIONS=Binding())
     response = asyncio.run(malformed.fetch(Request({**payload, "mode": "research"})))
     assert response.status == 400
 
     unavailable = AuthorizedWorker()
-    unavailable.env = SimpleNamespace(AUTH_TOKEN=None)
+    unavailable.env = SimpleNamespace(AUTH_TOKEN=None, ENVIRONMENT="development", LOCAL_DEVELOPMENT_AUTH_BYPASS="true")
     response = asyncio.run(unavailable.fetch(Request(payload)))
     assert response.status == 503
 
     success = AuthorizedWorker()
-    success.env = SimpleNamespace(AUTH_TOKEN=None, OPERATIONS=Binding())
+    success.env = SimpleNamespace(AUTH_TOKEN=None, ENVIRONMENT="development", LOCAL_DEVELOPMENT_AUTH_BYPASS="true", OPERATIONS=Binding())
     response = asyncio.run(success.fetch(Request(payload, {"Idempotency-Key": "request"})))
     assert response.status == 200
