@@ -90,7 +90,12 @@ class Request:
 @pytest.mark.asyncio
 async def test_publish_endpoint_requires_auth_and_run_id():
     entry = worker.Default()
-    entry.env = SimpleNamespace(DB=DB(), EVIDENCE_PACKAGE_SIGNING_SECRET="secret")
+    entry.env = SimpleNamespace(
+        DB=DB(),
+        EVIDENCE_PACKAGE_SIGNING_SECRET="secret",
+        ENVIRONMENT="production",
+        AUTH_TOKEN="secret",
+    )
     unauthorized = await entry.fetch(Request({"run_id": "run-1", "package": package()}, "Bearer wrong"))
     assert "unauthorized" in str(unauthorized)
 
