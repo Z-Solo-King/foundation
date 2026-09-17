@@ -1,0 +1,93 @@
+name: autonomous research scorecard
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - benchmark/autonomous_scorecard.py
+      - tests/test_autonomous_scorecard.py
+      - .github/workflows/autonomous-scorecard.yml
+  workflow_dispatch:
+  schedule:
+    - cron: '15 20 * * *' # 01:45 Asia/Kolkata
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  unit:
+    name: Scorecard unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+      - name: Install package and test tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pytest
+      - name: Run scorecard tests
+        run: python -m pytest -q tests/test_autonomous_scorecard.py
+
+  live:
+    name: Score latest autonomous run
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Find latest successful autonomous benchmark
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/autonomous-benchmark.yml/runs?status=success&per_page=20" --jq '.workflow_runs[0].id // empty')"
+          test -n "$run_id"
+          echo "AUTONOMOUS_RUN_ID=$run_id" >> "$GITHUB_ENV"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/$run_id" --jq '{id,head_sha,event,created_at,updated_at,conclusion}' | tee .runtime-autonomous-run.json
+      - name: Download benchmark artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime/autonomous-artifacts
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${AUTONOMOUS_RUN_ID}/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.expired == false) | .name' \
+            | while IFS= read -r name; do
+                test -n "$name"
+                mkdir -p ".runtime/autonomous-artifacts/$name"
+                gh run download "$AUTONOMOUS_RUN_ID" --name "$name" --dir ".runtime/autonomous-artifacts/$name"
+              done
+      - name: Build scorecard
+        run: |
+          mkdir -p .runtime/scorecard
+          python -m benchmark.autonomous_scorecard \
+            --root .runtime/autonomous-artifacts \
+            --json-output .runtime/scorecard/research-scorecard.json \
+            --markdown-output .runtime/scorecard/research-scorecard.md
+      - name: Publish scorecard artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: autonomous-research-scorecard
+          path: |
+            .runtime-autonomous-run.json
+            .runtime/scorecard/research-scorecard.json
+            .runtime/scorecard/research-scorecard.md
+          if-no-files-found: error
+      - name: Print scorecard
+        run: cat .runtime/scorecard/research-scorecard.md
