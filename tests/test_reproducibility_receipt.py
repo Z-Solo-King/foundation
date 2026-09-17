@@ -28,5 +28,6 @@ def test_incompatible_baseline_is_rejected():
 
 
 def test_production_cannot_hide_non_execution():
+    value = receipt(evidence_tier="PRODUCTION", execution_state="UNKNOWN")
     with pytest.raises(ValueError, match="production"):
-        receipt(evidence_tier="PRODUCTION", execution_state="UNKNOWN")
+        value.validate()
