@@ -563,3 +563,42 @@ async def test_worker_research_success_missing_lease_runs_through_finally(monkey
     assert response.status == 200
     assert persistence.created == ["run-full"]
     assert persistence.statuses == [("run-full", "running"), ("run-full", "completed")]
+
+class ReplayDB(FakeDB):
+    def prepare(self, query):
+        statement = super().prepare(query)
+        if query.lstrip().startswith("SELECT subject_fingerprint, route"):
+            async def existing_row():
+                return {"subject_fingerprint": "subject-1", "route": "chat"}
+            statement.first = existing_row
+        return statement
+
+
+@pytest.mark.asyncio
+async def test_d1_store_allows_same_scope_idempotent_replay_without_new_lease():
+    db = ReplayDB()
+    store = D1AdmissionStore(db)
+    decision, lease = await store.acquire(
+        subject_fingerprint="subject-1",
+        route=AdmissionRoute.CHAT,
+        policy=AdmissionPolicy(),
+        event_id="event-1",
+        now=120,
+    )
+    assert decision.allowed is True
+    assert lease is None
+    assert "idempotent replay" in decision.reason
+
+
+@pytest.mark.asyncio
+async def test_d1_store_rejects_event_id_reuse_across_scope():
+    db = ReplayDB()
+    store = D1AdmissionStore(db)
+    with pytest.raises(ValueError, match="different admission scope"):
+        await store.acquire(
+            subject_fingerprint="subject-2",
+            route=AdmissionRoute.CHAT,
+            policy=AdmissionPolicy(),
+            event_id="event-1",
+            now=120,
+        )
