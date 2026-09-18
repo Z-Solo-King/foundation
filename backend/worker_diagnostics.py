@@ -8,8 +8,12 @@ from backend.api.main import health_endpoint, readiness_endpoint
 from backend.api.models import ResearchRequest
 
 
-def health_payload():
-    return health_endpoint()
+def health_payload(env=None):
+    payload = health_endpoint()
+    environment = getattr(env, "ENVIRONMENT", None) if env is not None else None
+    if environment:
+        payload["environment"] = str(environment)
+    return payload
 
 
 async def readiness_payload(env):
