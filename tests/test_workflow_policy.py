@@ -145,7 +145,9 @@ def test_production_script_preserves_static_asset_binding_and_diagnostic_smokes(
     assert 'GET GitHub App installation metadata -> HTTP' in deployment
     assert 'POST GitHub App installation token -> HTTP' in deployment
 
-\n\ndef test_private_operations_deployment_verifies_cloudflare_provenance():
+
+
+def test_private_operations_deployment_verifies_cloudflare_provenance():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments' in deployment
     assert 'workers/scripts/${OPERATIONS_SERVICE_NAME}/versions/' in deployment
