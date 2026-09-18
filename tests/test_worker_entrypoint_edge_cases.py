@@ -149,3 +149,63 @@ def test_worker_research_uses_scoped_persistence_adapter(monkeypatch):
     response = asyncio.run(entry.fetch(Request()))
     assert response.status == 200
     assert persistence.created[0] == "r-scope"
+
+
+def test_public_read_cursor_signing_uses_auth_secret_not_subject_fingerprint():
+    import asyncio
+    import hashlib
+    import worker
+    from backend.public_read_cursor import encode_cursor
+
+    class Req:
+        method = "GET"
+        url = "https://x/api/v1/research/run-1?limit=1"
+        headers = {"Authorization": "Bearer token"}
+        async def json(self):
+            return {}
+
+    class Statement:
+        def __init__(self, sql):
+            self.sql = sql
+        def bind(self, *args):
+            self.args = args
+            return self
+        async def first(self):
+            if "FROM research_runs" in self.sql:
+                return {
+                    "run_id": "run-1",
+                    "status": "completed",
+                    "created_at": "2026-09-18T03:00:00+00:00",
+                    "updated_at": "2026-09-18T03:10:00+00:00",
+                    "depth": "standard",
+                    "require_citations": 1,
+                    "max_sources": 20,
+                    "max_evidence_items": 100,
+                }
+            return None
+        async def all(self):
+            return []
+
+    class DB:
+        def prepare(self, sql):
+            return Statement(sql)
+
+    class Art:
+        async def put(self, *args, **kwargs):
+            pass
+
+    subject = hashlib.sha256(b"token").hexdigest()
+    cursor = encode_cursor(
+        secret=subject,
+        subject_fingerprint=subject,
+        run_id="run-1",
+        snapshot_id="2026-09-18T03:10:00+00:00",
+        offset=0,
+        expires_at=2_000_000_000,
+    )
+    req = Req()
+    req.url = "https://x/api/v1/research/run-1?limit=1&cursor=" + cursor
+    instance = worker.Default()
+    instance.env = SimpleNamespace(DB=DB(), ARTIFACTS=Art(), ENVIRONMENT="production", AUTH_TOKEN="token", CONTROL_PLANE=None)
+    response = asyncio.run(instance.fetch(req))
+    assert response.status == 400
