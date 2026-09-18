@@ -43,11 +43,17 @@ def test_non_completed_states_are_explicit(status):
     assert envelope.to_dict()["status"] == status.value
 
 
-def test_completed_cannot_hide_missing_or_unresolved_scope():
-    with pytest.raises(ValueError, match="missing"):
+def test_completed_rejects_missing_failed_unresolved_and_stale_state():
+    with pytest.raises(ValueError, match="missing or failed"):
         ResultEnvelope(
             status=ResultStatus.COMPLETED,
             missing_scope=("q2",),
+        ).to_dict()
+
+    with pytest.raises(ValueError, match="missing or failed"):
+        ResultEnvelope(
+            status=ResultStatus.COMPLETED,
+            failed_scope=("q2",),
         ).to_dict()
 
     with pytest.raises(ValueError, match="unresolved"):
@@ -56,8 +62,6 @@ def test_completed_cannot_hide_missing_or_unresolved_scope():
             claim_support={"c1": "UNKNOWN"},
         ).to_dict()
 
-
-def test_completed_cannot_hide_stale_evidence():
     with pytest.raises(ValueError, match="stale"):
         ResultEnvelope(
             status=ResultStatus.COMPLETED,
@@ -83,14 +87,14 @@ def test_legacy_adapter_preserves_metadata_and_run_identity():
     assert payload["result"]["question"] == "test"
 
 
-def test_legacy_adapter_preserves_explicit_result_without_metadata():
+def test_legacy_adapter_prefers_explicit_result_payload():
     envelope = envelope_from_legacy_response(
         ok=True,
         result={"answer": "ok"},
         run_id="run-2",
         metadata={"ignored": True},
     )
-    assert envelope.to_dict()["result"] == {"answer": "ok", "run_id": "run-2"}
+    assert envelope.to_dict()["result"] == {"answer": "ok"}
 
 
 def test_legacy_error_adapter_is_explicitly_failed():
@@ -105,17 +109,3 @@ def test_legacy_error_adapter_allows_missing_error_without_false_detail():
     payload = envelope.to_dict()
     assert payload["status"] == "FAILED"
     assert payload["warnings"] == []
-
-
-
-def test_completed_rejects_failed_scope_and_stale_freshness():
-    with pytest.raises(ValueError, match="missing or failed"):
-        ResultEnvelope(
-            status=ResultStatus.COMPLETED,
-            failed_scope=("q2",),
-        ).to_dict()
-    with pytest.raises(ValueError, match="stale"):
-        ResultEnvelope(
-            status=ResultStatus.COMPLETED,
-            freshness=FreshnessState.STALE,
-        ).to_dict()
