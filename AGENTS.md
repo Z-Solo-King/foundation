@@ -185,3 +185,96 @@ Issue count is a metric, not the goal. Do not close an issue merely because code
 ### Maintainer handoff
 
 Every substantive issue update should leave the canonical files, completed acceptance items, remaining items, current PR/commit, and blocker/evidence state discoverable without chat history.
+## Hard-case protocol v3 — runtime, control-plane and external-evidence issues
+
+The final queue is not homogeneous. Treat every issue as an acceptance graph rather than a code task.
+
+### Acceptance graph
+
+For every hard issue, explicitly separate:
+- R0 repository contract — source, schemas, tests and invariants;
+- R1 CI evidence — required checks and reproducible fixtures;
+- R2 integration evidence — real repository/service boundary;
+- R3 control-plane evidence — GitHub/Cloudflare/admin admission, permissions, bindings or deployment workflow;
+- R4 production/runtime evidence — approved live execution, restart/recovery, real providers/sources and production state.
+
+Never promote evidence between levels.
+
+### Hard-gate routing
+
+When an issue has R3/R4 acceptance:
+1. implement every missing R0/R1 contract that can be proven locally;
+2. record the exact remaining R3/R4 observation needed;
+3. search for a supported connector/API path to obtain that evidence;
+4. if the required control plane is unavailable, leave the issue open with a machine-checkable evidence recipe;
+5. continue another lane immediately.
+
+Do not repeatedly rewrite repository code when the missing acceptance is outside the repository.
+
+### Control-plane diagnostic discipline
+
+For zero-job, rejected-trigger, missing-binding, permissions, merge-queue, deployment or secret failures:
+- distinguish trigger admission, graph admission, job creation, execution, artifact/downstream reachability and diagnostic availability;
+- never infer a root cause from “zero jobs” alone;
+- never change permissions, timeouts, triggers or deployment authority without causal evidence;
+- preserve a known-good probe workflow as the control experiment;
+- compare the failing workflow against the known-good control and record the exact difference.
+
+### Runtime certification discipline
+
+A runtime result must identify:
+- environment;
+- endpoint/workflow;
+- exact code/config revision;
+- execution/request identity;
+- start/end time;
+- relevant policy/resource snapshot;
+- result state;
+- provenance/digests;
+- observed side effects;
+- failure or missing-evidence reason.
+
+Never close a runtime issue from source code plus CI alone.
+
+### External-source evidence
+
+For real-source/oracle/browser/network issues:
+- use bounded representative fixtures before live execution;
+- keep source identity, timestamp, contract version and input/output digests;
+- distinguish unavailable source, blocked source, stale source, partial extraction and true negative;
+- never turn network silence or tool failure into “no data”;
+- never place holdout/oracle data into public CI merely to make a check green.
+
+### Cross-repository hard gate
+
+Foundation may define public-safe contracts and read approved metadata. Operations retains protected runtime/policy/resource/evaluation authority. For a cross-repository change, verify both contract compatibility and canonical authority ownership.
+
+A private Operations dependency must use the existing approved credential/deployment path. Do not create a new token, mirror private implementation into Foundation, or bypass the boundary for convenience.
+
+### Production/deployment gate
+
+Treat deployment as a separate authority chain:
+PR -> required checks -> canonical Foundation release workflow -> pinned Operations revision -> Cloudflare deployment -> live endpoint verification
+
+A merged PR is not a deployment. A successful deployment workflow is not necessarily runtime certification. Never claim a live revision until endpoint/version/provenance evidence is actually observed.
+
+### Hard-issue decomposition
+
+Before starting a difficult issue, create a short checklist of:
+contract -> implementation -> focused tests -> CI -> integration -> control-plane -> runtime -> production.
+
+Mark every rung as pass, missing, or not applicable. This prevents solving the same repository layer repeatedly while the actual blocker lives elsewhere.
+
+### Safe closure rule
+
+Close only when the issue's own acceptance graph has no unproven required rung. If only optional or future enhancements remain, state that explicitly and close. If a required rung is externally blocked, keep it open.
+
+### Terminality test
+
+A queue is finished only when every remaining issue is one of:
+- externally blocked with exact missing evidence documented;
+- duplicate/superseded with canonical owner identified;
+- roadmap/future work whose acceptance is explicitly deferred;
+- awaiting an unavailable platform/admin operation.
+
+Do not label an issue complete merely because no further code change is obvious.
