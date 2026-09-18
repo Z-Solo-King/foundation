@@ -21,7 +21,9 @@ def test_source_transport_and_wikipedia_boundaries(monkeypatch):
     assert asyncio.run(http.fetch_public_url("https://example.com", fetcher=fetcher)).status == 200
     redirects = iter([Resp(302,{"location":"/x"}), Resp(200,{},b"x")])
     async def nxt(_u,_o): return next(redirects)
-    assert asyncio.run(http.fetch_public_url("https://example.com", fetcher=nxt)).final_url.endswith("/x")
+    result = asyncio.run(http.fetch_public_url("https://example.com", fetcher=nxt))
+    assert result.final_url.endswith("/x")
+    assert result.redirect_chain == ("https://example.com/", "https://example.com/x")
     async def bad_redirect(_u,_o): return Resp(302,{})
     with pytest.raises(RuntimeError): asyncio.run(http.fetch_public_url("https://example.com", fetcher=bad_redirect))
     async def huge(_u,_o): return Resp(200,{},b"x"*(http.MAX_BYTES+1))
