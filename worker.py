@@ -510,6 +510,7 @@ class Default(WorkerEntrypoint):
             subject_fingerprint = authenticated_subject_fingerprint(request) or "development-local"
             idempotency_key = request.headers.get("Idempotency-Key")
             run_id = None
+            phase = "create_run"
             try:
                 if idempotency_key:
                     run_id = await persistence.create_run_idempotent(req, idempotency_key, subject_fingerprint=subject_fingerprint)
@@ -522,8 +523,11 @@ class Default(WorkerEntrypoint):
                         await persistence.create_run(run_id, req)
                 if not req.source_urls:
                     return _authenticated_json({"ok": True, "run_id": run_id, "metadata": {**result.metadata, "execution_mode": "awaiting_source_urls", "source_url_ingestion": True, "general_web_discovery": False, "evidence_synthesis": False, "next_action": "provide one or more permitted public HTTP(S) source URLs"}, "sources": []})
+                phase = "set_running"
                 await persistence.set_run_status(run_id, "running")
+                phase = "ingest"
                 sources = await _ingest_sources(self.env, run_id, req)
+                phase = "set_completed"
                 await persistence.set_run_status(run_id, "completed")
             except Exception as exc:
                 if run_id is not None:
@@ -531,7 +535,12 @@ class Default(WorkerEntrypoint):
                         await persistence.set_run_status(run_id, "failed")
                     except Exception:
                         pass
-                return _authenticated_json({"ok": False, "error": f"execution/persistence failure: {exc}"}, status=503)
+                return _authenticated_json({
+                    "ok": False,
+                    "error": "execution/persistence failure",
+                    "phase": phase,
+                    "error_class": type(exc).__name__,
+                }, status=503)
             finally:
                 if lease is not None:
                     await D1AdmissionStore(self.env.DB).release(lease)
