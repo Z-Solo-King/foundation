@@ -101,10 +101,6 @@ def _numeric_pair(left: TypedClaim, right: TypedClaim) -> tuple[Decimal, Decimal
     b = _normalize_quantity(right.value, right.unit)
     if a is not None and b is not None and a[0] == b[0]:
         return a[1], b[1]
-    if (left.unit or "") .strip().casefold() == (right.unit or "").strip().casefold():
-        raw_a, raw_b = _numeric(left.value), _numeric(right.value)
-        if raw_a is not None and raw_b is not None:
-            return raw_a, raw_b
     return None
 
 
