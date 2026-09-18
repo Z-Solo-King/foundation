@@ -1,34 +1,33 @@
 # Foundation Documentation Index
 
-**Status:** current repository guidance
-**Repository role:** public-safe contract, evidence, deterministic core and public Worker/CI owner
+**Status:** public-safe current documentation
+**Repository role:** Heroic AI public product boundary, deterministic core, public API/Worker, frontend and canonical public deployment owner
 
-## Read first
+## Public documentation
 
 1. `README.md`
-2. `REPOSITORY_MAP.json`
-3. `docs/CURRENT_SOURCE_OF_TRUTH.md`
-4. `docs/AI_AGENT_HANDOFF.md`
-5. `docs/AI_AUDIT_AND_VERIFICATION_STANDARD.md`
-6. `docs/FAMILY_MAINTAINABILITY_STANDARD.md`
-7. `docs/FAMILY_CONTRACT.json`
-8. `docs/FAMILY_ARCHITECTURE.md`
-9. `docs/FAMILY_SYNC_STANDARD.md`
-10. `docs/FAMILY_SYNC_STATE.json`
-11. `docs/RESEARCH_EVIDENCE_CONTRACTS.md`
-12. `docs/EXECUTION_AND_UI_CONTRACT.md`
-13. `docs/FRONTEND_BACKEND_SYNC_CONTRACT.md`
-14. `docs/MULTI_AGENT_NIGHTLY_RESEARCH.md`
-15. `docs/PUBLIC_DETERMINISTIC_CORE.md`
-16. `DEPLOYMENT.md`
-17. `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md`
+2. `docs/HEROIC_AI_PRODUCT.md`
+3. `docs/PUBLIC_DETERMINISTIC_CORE.md`
+4. `docs/EXECUTION_AND_UI_CONTRACT.md`
+5. `docs/FRONTEND_BACKEND_SYNC_CONTRACT.md`
+6. `docs/RESEARCH_EVIDENCE_CONTRACTS.md`
+7. `docs/RUN_RECORD_PUBLIC_BOUNDARY.md`
+8. `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md`
+9. `docs/DEPLOYMENT.md`
+10. `docs/FAMILY_CONTRACT.json`
+11. `docs/FAMILY_ARCHITECTURE.md`
+12. `docs/FAMILY_MEMBER.md`
 
-## Source of truth
+## Boundary
 
-Live `main`, current PR/issue/workflow state and fresh execution evidence outrank dated plans and chat notes. `FAMILY_SYNC_STATE.json` is an audit observation, not a permanent branch alias.
+Foundation documentation is intentionally public-safe. Protected chatbot policy, private provider/runtime logic, resource governance, memory/feedback, evaluation/promotion, private operational state and AI maintenance methodology live in the private Operations repository.
 
-## Documentation lifecycle
+The public repository must not become a mirror of private Operations documentation.
 
-The current documentation surface intentionally contains a small canonical core plus topic-specific contracts that have independent machine/runtime meaning. Dated audits and handoffs are retained only when they preserve unique evidence or provenance.
+## Current source of truth
 
-Do not create another current-status, continuation, or duplicate policy document merely because a conversation changes.
+The live `main` tree, current PR/issue/workflow state and fresh execution evidence are authoritative. Internal continuation/handoff/state documents are intentionally maintained only in private Operations.
+
+## Lifecycle
+
+Keep public documents focused on product behavior, stable public contracts, deployment/backup boundaries and public/private ownership. Put exploratory, operational, sensitive or future-only material in Operations.
