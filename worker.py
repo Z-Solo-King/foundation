@@ -319,7 +319,8 @@ class Default(WorkerEntrypoint):
                 upstream, body, status = await _operations_chat_stream(self.env, payload, request)
                 return _public_sse_response(upstream) if upstream is not None else Response.json(body, status=status)
             finally:
-                await D1AdmissionStore(self.env.DB).release(lease)
+                if lease is not None:
+                    await D1AdmissionStore(self.env.DB).release(lease)
         if request.method == "POST" and path.endswith("/api/v1/chat"):
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
@@ -341,7 +342,8 @@ class Default(WorkerEntrypoint):
                 body, status = await _operations_chat(self.env, payload, request)
                 return _authenticated_json(body, status=status)
             finally:
-                await D1AdmissionStore(self.env.DB).release(lease)
+                if lease is not None:
+                    await D1AdmissionStore(self.env.DB).release(lease)
         if request.method == "POST" and path.endswith("/api/v1/chatbot/diagnostic"):
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
@@ -427,7 +429,8 @@ class Default(WorkerEntrypoint):
                 return denied
             result = submit_research(req)
             if not result.ok:
-                await D1AdmissionStore(self.env.DB).release(lease)
+                if lease is not None:
+                    await D1AdmissionStore(self.env.DB).release(lease)
                 return _authenticated_json({"ok": False, "error": result.error}, status=400)
             persistence = CloudflarePersistence(self.env)
             subject_fingerprint = authenticated_subject_fingerprint(request) or "development-local"
@@ -456,7 +459,8 @@ class Default(WorkerEntrypoint):
                         pass
                 return _authenticated_json({"ok": False, "error": f"execution/persistence failure: {exc}"}, status=503)
             finally:
-                await D1AdmissionStore(self.env.DB).release(lease)
+                if lease is not None:
+                    await D1AdmissionStore(self.env.DB).release(lease)
             return _authenticated_json({"ok": True, "run_id": run_id, "metadata": {**result.metadata, "execution_mode": "source_url_ingestion"}, "sources": sources})
         assets = getattr(self.env, "ASSETS", None)
         if assets is not None:
