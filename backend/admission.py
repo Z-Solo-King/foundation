@@ -31,7 +31,11 @@ class AdmissionPolicy:
     max_concurrent_per_subject: int = 2
     max_concurrent_global: int = 20
     retry_after_seconds: int = 5
-    protected_routes: tuple[AdmissionRoute, ...] = (AdmissionRoute.CHAT, AdmissionRoute.RESEARCH, AdmissionRoute.STREAM)
+    protected_routes: tuple[AdmissionRoute, ...] = (
+        AdmissionRoute.CHAT,
+        AdmissionRoute.RESEARCH,
+        AdmissionRoute.STREAM,
+    )
 
     def validate(self) -> None:
         if self.version != ADMISSION_CONTRACT_VERSION:
@@ -81,6 +85,61 @@ class AdmissionDecision:
         return str(self.retry_after_seconds) if self.retry_after_seconds > 0 else None
 
 
+def _reject_or_accept_without_authority(
+    policy: AdmissionPolicy,
+    route: AdmissionRoute,
+) -> AdmissionDecision:
+    if route in policy.protected_routes:
+        return AdmissionDecision(
+            AdmissionOutcome.AUTHORITY_UNAVAILABLE,
+            route,
+            False,
+            "admission authority is unavailable for a protected route",
+            policy.retry_after_seconds,
+        )
+    return AdmissionDecision(
+        AdmissionOutcome.ACCEPTED,
+        route,
+        True,
+        "admission authority is unavailable but route is unprotected",
+    )
+
+
+def _limit_decision(
+    outcome: AdmissionOutcome,
+    route: AdmissionRoute,
+    reason: str,
+    retry_after: int,
+) -> AdmissionDecision:
+    return AdmissionDecision(outcome, route, False, reason, retry_after)
+
+
+def _first_limit_decision(
+    *,
+    policy: AdmissionPolicy,
+    snapshot: AdmissionSnapshot,
+    route: AdmissionRoute,
+) -> AdmissionDecision | None:
+    checks = (
+        (snapshot.global_requests >= policy.max_requests_global,
+         AdmissionOutcome.RATE_LIMITED,
+         "global admission request ceiling reached"),
+        (snapshot.subject_requests >= policy.max_requests_per_subject,
+         AdmissionOutcome.RATE_LIMITED,
+         "subject admission request ceiling reached"),
+        (snapshot.global_concurrent >= policy.max_concurrent_global,
+         AdmissionOutcome.CONCURRENCY_LIMITED,
+         "global admission concurrency ceiling reached"),
+        (snapshot.subject_concurrent >= policy.max_concurrent_per_subject,
+         AdmissionOutcome.CONCURRENCY_LIMITED,
+         "subject admission concurrency ceiling reached"),
+    )
+    for exceeded, outcome, reason in checks:
+        if exceeded:
+            return _limit_decision(outcome, route, reason, policy.retry_after_seconds)
+    return None
+
+
 def decide_admission(
     *,
     policy: AdmissionPolicy,
@@ -93,7 +152,6 @@ def decide_admission(
     snapshot.validate()
     if not subject_fingerprint.strip():
         raise ValueError("subject_fingerprint is required")
-
     if duplicate:
         return AdmissionDecision(
             AdmissionOutcome.DUPLICATE,
@@ -101,56 +159,11 @@ def decide_admission(
             False,
             "duplicate request is suppressed by the existing idempotency authority",
         )
-
     if not snapshot.authority_available:
-        if route in policy.protected_routes:
-            return AdmissionDecision(
-                AdmissionOutcome.AUTHORITY_UNAVAILABLE,
-                route,
-                False,
-                "admission authority is unavailable for a protected route",
-                policy.retry_after_seconds,
-            )
-        return AdmissionDecision(
-            AdmissionOutcome.ACCEPTED,
-            route,
-            True,
-            "admission authority is unavailable but route is unprotected",
-        )
-
-    if snapshot.global_requests >= policy.max_requests_global:
-        return AdmissionDecision(
-            AdmissionOutcome.RATE_LIMITED,
-            route,
-            False,
-            "global admission request ceiling reached",
-            policy.retry_after_seconds,
-        )
-    if snapshot.subject_requests >= policy.max_requests_per_subject:
-        return AdmissionDecision(
-            AdmissionOutcome.RATE_LIMITED,
-            route,
-            False,
-            "subject admission request ceiling reached",
-            policy.retry_after_seconds,
-        )
-    if snapshot.global_concurrent >= policy.max_concurrent_global:
-        return AdmissionDecision(
-            AdmissionOutcome.CONCURRENCY_LIMITED,
-            route,
-            False,
-            "global admission concurrency ceiling reached",
-            policy.retry_after_seconds,
-        )
-    if snapshot.subject_concurrent >= policy.max_concurrent_per_subject:
-        return AdmissionDecision(
-            AdmissionOutcome.CONCURRENCY_LIMITED,
-            route,
-            False,
-            "subject admission concurrency ceiling reached",
-            policy.retry_after_seconds,
-        )
-
+        return _reject_or_accept_without_authority(policy, route)
+    limited = _first_limit_decision(policy=policy, snapshot=snapshot, route=route)
+    if limited is not None:
+        return limited
     return AdmissionDecision(
         AdmissionOutcome.ACCEPTED,
         route,
