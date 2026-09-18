@@ -19,6 +19,12 @@ L__
 ## Acceptance gate
 <!-- Exact condition that must pass before this work is called complete. -->
 
+## Canonical-owner and lifecycle checks
+- [ ] Canonical owner identified; no parallel authority introduced.
+- [ ] Existing canonical document updated instead of creating a duplicate.
+- [ ] Dynamic GitHub/runtime facts were re-checked live before making claims.
+- [ ] Historical/archive material is clearly non-authoritative.
+
 ## Scope boundaries
 - [ ] No production/runtime claim without L4 evidence.
 - [ ] No secret value or secret validity inferred from source.
