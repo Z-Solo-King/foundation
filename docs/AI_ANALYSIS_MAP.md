@@ -6,14 +6,15 @@ Compact routing index for human and AI repository analysis. Read this before ope
 
 1. `README.md`
 2. `REPOSITORY_MAP.json`
-3. `DEPLOYMENT.md` for deployment questions
-4. `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md` for credential, B2, backup and evidence questions
-5. `docs/AI_AUDIT_AND_VERIFICATION_STANDARD.md` for audit questions
-6. `docs/FAMILY_CONTRACT.json` for public-contract questions
-7. `docs/FAMILY_SYNC_STANDARD.md` for cross-repository synchronization, status, ownership and evidence rules
-8. `docs/FAMILY_SYNC_STATE.json` for the latest recorded family synchronization snapshot
-9. `docs/REQUIREMENT_COVERAGE_RECONCILIATION_2026-09-17.md` for the latest implementation-vs-plan reconciliation
-10. Then open the canonical implementation and focused feature-owned tests.
+3. `docs/CURRENT_SOURCE_OF_TRUTH.md` — living current-state, issue-gate and evidence summary
+4. `docs/AI_AGENT_HANDOFF.md` — compact continuation handoff
+5. `DEPLOYMENT.md` for deployment questions
+6. `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md` for credential, B2, backup and evidence questions
+7. `docs/AI_AUDIT_AND_VERIFICATION_STANDARD.md` for audit questions
+8. `docs/FAMILY_CONTRACT.json` for public-contract questions
+9. `docs/FAMILY_SYNC_STANDARD.md` for cross-repository synchronization, status, ownership and evidence rules
+10. `docs/FAMILY_SYNC_STATE.json` for the latest recorded family synchronization snapshot
+11. Then open the canonical implementation and focused feature-owned tests.
 
 ## Focused test navigation
 
@@ -26,13 +27,13 @@ Compact routing index for human and AI repository analysis. Read this before ope
 - Run-record/stage-receipt/token-efficiency contracts: `tests/test_run_record_edge_cases.py`
 - Public persistence/product-mapping edges: `tests/test_public_core_edge_cases.py`
 
-The former `test_coverage_*` files were broad aggregators. They were audited by content and removed only after their branch assertions were relocated to feature-owned suites. Do not recreate generic coverage aggregators.
+Former broad coverage aggregators were removed after their useful assertions were relocated to owner-named suites. Do not recreate generic coverage aggregators.
 
 ## High-analysis-cost areas
 
-`.github/workflows/nightly-multi-agent-research.yml` contains orchestration, matrix lanes, preflight policy, artifact handling, diagnosis, baseline comparison, attestation, and final gating. For narrow questions inspect the relevant job first, then the invoked benchmark module. Research logic belongs in the benchmark package.
+`.github/workflows/nightly-multi-agent-research.yml` contains orchestration, matrix lanes, preflight policy, artifact handling, diagnosis, baseline comparison, attestation and final gating. For narrow questions inspect the relevant job first, then the invoked benchmark module.
 
-`.github/workflows/heroic-ai-production-release.yml` is the single production deployment owner. `.github/workflows/codeql.yml` is security analysis only. `.github/workflows/autonomous-benchmark.yml` is benchmark orchestration. `.github/workflows/b2-repository-backup.yml` is the repository backup/B2 evidence boundary. These are orchestration/evidence boundaries, not application runtime modules.
+`.github/workflows/heroic-ai-production-release.yml` is the single production deployment owner. `.github/workflows/codeql.yml` is security analysis only. `.github/workflows/autonomous-benchmark.yml` is benchmark orchestration. `.github/workflows/b2-repository-backup.yml` is the repository backup/B2 evidence boundary.
 
 ## Credential boundary
 
@@ -45,10 +46,8 @@ The former `test_coverage_*` files were broad aggregators. They were audited by 
 
 - Prefer canonical source over compatibility exports.
 - Prefer focused feature-owned tests over broad suite reading.
-- Separate workflow state, source state, and runtime state.
-- Do not infer missing behavior from file size or workflow length.
-- Structural refactors require regression coverage and required checks.
-- Package boundaries and compatibility exports are part of the public contract.
+- Separate workflow state, source state and runtime state.
 - Current code/docs/PR/workflow evidence outranks dated plans and chat history.
 - A `main` SHA recorded in a sync document is an audit observation, not a replacement for the actual current branch tip.
 - Never treat source existence as L3/L4 runtime evidence.
+- Historical material should be opened only when a question requires provenance or historical context.
