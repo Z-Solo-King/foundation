@@ -107,3 +107,8 @@ def test_json_admission_accepts_json_charset_and_handles_shapes_and_parse_errors
 def test_authenticated_response_size_guard_constant_is_explicit():
     from backend.worker_auth import MAX_PUBLIC_JSON_BODY_BYTES
     assert MAX_PUBLIC_JSON_BODY_BYTES == 1_048_576
+
+
+def test_authenticated_response_size_guard_constant_is_explicit():
+    from backend.worker_auth import MAX_PUBLIC_JSON_BODY_BYTES
+    assert MAX_PUBLIC_JSON_BODY_BYTES == 1_048_576
