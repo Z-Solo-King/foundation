@@ -17,16 +17,17 @@ def test_chat_proxy_forwards_auth_and_idempotency():
         async def json(self): return {"ok": True, "response": {"text": "hello"}}
     class Binding:
         def __init__(self): self.calls = []
-        async def fetch(self, url, options): self.calls.append((url, options)); return Response()
+        async def fetch(self, request): self.calls.append(request); return Response()
     class Request: headers = {"Authorization": "Bearer user", "Idempotency-Key": "req-1"}
     binding = Binding()
     payload, status = asyncio.run(worker._operations_chat(SimpleNamespace(OPERATIONS=binding), {"message": "hello"}, Request()))
     assert status == 200
     assert payload["ok"] is True
-    url, options = binding.calls[0]
-    assert url == "https://chat/v1/chat"
-    assert options["headers"]["Authorization"] == "Bearer user"
-    assert options["headers"]["Idempotency-Key"] == "req-1"
+    request = binding.calls[0]
+    assert request.url == "https://chat/v1/chat"
+    assert request.method == "POST"
+    assert request.headers.get("Authorization") == "Bearer user"
+    assert request.headers.get("Idempotency-Key") == "req-1"
 
 
 def test_chat_stream_proxy_fails_closed_without_operations_binding():
@@ -45,9 +46,10 @@ def test_chat_stream_proxy_preserves_sse_response():
         status = 200
         body = Body()
     class Binding:
-        async def fetch(self, url, options):
-            assert url == "https://chat/v1/chat/stream"
-            assert options["headers"]["Idempotency-Key"] == "req-2"
+        async def fetch(self, request):
+            assert request.url == "https://chat/v1/chat/stream"
+            assert request.method == "POST"
+            assert request.headers.get("Idempotency-Key") == "req-2"
             return Response()
     class Request: headers = {"Authorization": "Bearer user", "Idempotency-Key": "req-2"}
     upstream, body, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request()))
@@ -59,7 +61,7 @@ def test_chat_stream_proxy_preserves_sse_response():
 def test_chat_stream_proxy_handles_binding_error():
     import worker
     class Binding:
-        async def fetch(self, url, options): raise RuntimeError("binding unavailable")
+        async def fetch(self, request): raise RuntimeError("binding unavailable")
     class Request: headers = {}
     upstream, payload, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request()))
     assert upstream is None
@@ -116,10 +118,11 @@ def test_public_worker_chat_stream_route_proxies_private_sse():
         status = 200
         body = Body()
     class Binding:
-        async def fetch(self, url, options):
-            assert url == "https://chat/v1/chat/stream"
-            assert options["headers"]["Authorization"] == "Bearer secret"
-            assert options["headers"]["Idempotency-Key"] == "r1"
+        async def fetch(self, request):
+            assert request.url == "https://chat/v1/chat/stream"
+            assert request.method == "POST"
+            assert request.headers.get("Authorization") == "Bearer secret"
+            assert request.headers.get("Idempotency-Key") == "r1"
             return Response()
     class Request:
         method = "POST"; url = "https://example/api/v1/chat/stream"; headers = {"Authorization": "Bearer secret", "Idempotency-Key": "r1", "Content-Type": "application/json"}
