@@ -74,6 +74,23 @@ Foundation PR #461 remains a separate implementation stream for stage-receipt ex
 
 Foundation issue #487 remains open. The nightly research lane still uses the six-hour ceiling and requires a lower timeout while preserving its existing authentication, live preflight, lane coverage, artifact, attestation, diagnosis and final-gate semantics.
 
+### Cloudflare runtime bootstrap — 2026-09-18
+
+The existing private Worker `research-intelligence-engine-private` now has a real configuration deployment reported as version `15` (version ID `5ee4364d-b26a-4a6e-b2e8-22e9129e1fdc`; deployment ID `61b1a4fe-be10-441a-9307-8301b5e3e94`). The reported configuration includes:
+
+- `OPERATIONS_DB` -> canonical D1 `research-intelligence`;
+- `FOUNDATION` -> `research-intelligence-engine-public`;
+- `ENVIRONMENT=production`;
+- `STRICT_ZERO_COST_ONLY=true`;
+- cron `*/15 * * * *`;
+- protected governance scope/window/lease metadata.
+
+The configuration upload created the v15 deployment. It must **not** be interpreted as proof that the approved Operations application revision is running. Foundation's canonical production script currently pins Operations at `3afbde926880b91e3e660ee2d35daa5334e542bf`.
+
+The protected application inputs `RESOURCE_LIMITS_JSON`, `RESOURCE_RESERVATIONS_JSON` and private `AUTH_TOKEN` remain unestablished. The two resource-policy payloads have no authoritative recoverable values and must not be guessed. The existing public `AUTH_TOKEN` value is not readable from Cloudflare; one controlled rotation is required to synchronize the single canonical application token.
+
+No second Worker, D1, Build path, Deploy Hook or alternate deployment authority was introduced.
+
 ## Evidence boundary
 
 - `L0` — hypothesis
