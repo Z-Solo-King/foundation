@@ -17,7 +17,8 @@
 9. **Archives are inert.** Retired code/workflows/tests may be preserved under Operations `private/archives/`; archived material is not a runtime owner and must not be imported as active implementation.
 10. **Evidence tiers remain distinct.** Source/repository/CI/control-plane/runtime/production evidence must never be upgraded by wording.
 11. **Minimal change discipline.** Search both repositories, identify the owner, inspect callers/side effects, make the smallest coherent change, add focused regression, then remove obsolete duplicates.
-12. **No chat-driven proliferation.** A conversation limit, model change, or new agent does not justify another handoff/status/guidance document. Consolidate durable knowledge into the existing owner.
+12. **Dynamic state is not documentation authority.** Do not maintain copied open-issue counts, branch tips, PR queues, deployment status or mutable runtime configuration as if they were current truth. Record observations with timestamps/revisions and always re-check live state before acting.
+13. **No chat-driven proliferation.** A conversation limit, model change, or new agent does not justify another handoff/status/guidance document. Consolidate durable knowledge into the existing owner.
 
 ## Canonical living private-document roles
 
@@ -32,6 +33,8 @@ Operations maintains one canonical document for each of these roles:
 - chatbot contract → `docs/CHATBOT_BOUNDARY.md`
 
 Model/vendor-specific guidance is not a canonical role.
+
+Current-state documents must identify their observation time and explicitly defer mutable facts to live repository/runtime state.
 
 ## Disallowed recurrence patterns
 
