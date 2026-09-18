@@ -142,9 +142,9 @@ class ResearchContract:
             raise ValueError("child contract cannot expand max_sources")
         if child.max_evidence_items > self.max_evidence_items:
             raise ValueError("child contract cannot expand max_evidence_items")
-        if self.deadline_ms is not None and (child.deadline_ms is None or child.deadline_ms > self.deadline_ms):
+        if self.deadline_ms is not None and child.deadline_ms > self.deadline_ms:
             raise ValueError("child contract cannot relax the parent deadline")
-        if self.execution_budget_units is not None and (child.execution_budget_units is None or child.execution_budget_units > self.execution_budget_units):
+        if self.execution_budget_units is not None and child.execution_budget_units > self.execution_budget_units:
             raise ValueError("child contract cannot expand the parent execution budget")
         child.validate()
         return child
