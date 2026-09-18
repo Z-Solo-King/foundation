@@ -73,8 +73,7 @@ async def get_run(
     if limit < 1 or limit > MAX_PUBLIC_READ_PAGE_SIZE:
         raise ValueError("public read page size is invalid")
     run = await env.DB.prepare(
-        """SELECT run_id, status, created_at, updated_at, depth, require_citations,
-        max_sources, max_evidence_items FROM research_runs
+        """SELECT * FROM research_runs
         WHERE run_id = ? AND subject_fingerprint = ?"""
     ).bind(run_id, subject_fingerprint).first()
     if not run:
