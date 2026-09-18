@@ -63,7 +63,7 @@ class Statement:
         return SimpleNamespace(results=self.value or [])
 
     async def run(self):
-        return SimpleNamespace()
+        return {"meta": {"changes": 1}}
 
 
 class BrokenDB:

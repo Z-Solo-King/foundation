@@ -16,7 +16,7 @@ from backend.sources.search import SearchAuthorization, SearchResult, search
 class FakeStatement:
     def __init__(self, value=None): self.value, self.bound = value, ()
     def bind(self, *args): self.bound = args; return self
-    async def run(self): return self.value or {"success": True}
+    async def run(self): return self.value or {"success": True, "meta": {"changes": 1}}
     async def first(self): return self.value
     async def all(self): return self.value or []
 

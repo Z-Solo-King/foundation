@@ -16,7 +16,7 @@ class FakeStatement:
         return self
 
     async def run(self):
-        return {"success": True}
+        return {"success": True, "meta": {"changes": 1}}
 
     async def first(self):
         return self.value
