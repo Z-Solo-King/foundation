@@ -274,17 +274,21 @@ async def _operations_chat_stream(env, payload, request):
         return None, {"ok": False, "error": "chat_backend_unavailable"}, 503
 
 
-async def _operations_chatbot_diagnostic(env):
+async def _operations_chatbot_diagnostic(env, request=None):
     """Exercise the private chatbot routing/diagnostic boundary without provider execution."""
     operations = getattr(env, "OPERATIONS", None)
     if operations is None:
         return {"ok": False, "error": "chat_backend_unavailable", "status": "unavailable"}, 503
     try:
+        headers = {"Content-Type": "application/json"}
+        token = _bearer_token(request) if request is not None else None
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
         upstream = await operations.fetch(
             _service_request(
                 "https://private/v1/diagnostics/chatbot",
                 method="POST",
-                headers={"Content-Type": "application/json"},
+                headers=headers,
                 body=json.dumps({"operation": "infrastructure_verify", "question": "Infrastructure diagnostic only; do not execute a model provider."}),
             )
         )
@@ -389,7 +393,7 @@ class Default(WorkerEntrypoint):
                 return _authenticated_json({"ok": False, "error": "invalid JSON object"}, status=400)
             if payload.get("operation") == "infrastructure_verify_public_test":
                 body, status = await _public_infrastructure_verify(self.env)
-                private_body, private_status = await _operations_chatbot_diagnostic(self.env)
+                private_body, private_status = await _operations_chatbot_diagnostic(self.env, request)
                 body["checks"].append({"name": "public_chatbot", "ok": private_body.get("ok", False), "status": private_status, "detail": private_body.get("error") or "private chatbot diagnostic completed"})
                 body["ok"] = all(bool(check.get("ok")) for check in body["checks"])
                 body["status"] = "ok" if body["ok"] else "degraded"
