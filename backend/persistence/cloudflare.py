@@ -88,11 +88,11 @@ async def _claim_idempotent_run(env, request, idempotency_key, subject_fingerpri
         request.max_sources, request.max_evidence_items, int(request.strict_zero_cost_only),
         "planned", now, now,
     )
-    # Cloudflare Python Workers D1 reliably supports the serial prepare/bind/run/first
-    # pattern used by the chat idempotency authority. Keep the INSERT ... DO NOTHING
-    # semantics for concurrency, but avoid mixing INSERT and SELECT in a D1 batch.
-    await claim.run()
+    # research_runs is the parent row for idempotency_keys (FK on run_id).
+    # Create the deterministic run first, then claim the key, then read the canonical claim.
+    # Keep both INSERTs idempotent so concurrent callers converge on one durable run/claim.
     await create.run()
+    await claim.run()
     row = await env.DB.prepare(
         """SELECT run_id, request_hash, subject_fingerprint,
         capability, contract_revision FROM idempotency_keys
