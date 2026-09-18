@@ -10,9 +10,9 @@
     },
     "operations": {
       "role": "private-control-plane-research-orchestration",
-      "last_audited_main_sha": "4bc21b96f13cf14b3767a6eabfc0a70d496d94e3",
-      "approved_production_revision": "4bc21b96f13cf14b3767a6eabfc0a70d496d94e3",
-      "nightly_research_revision": "4bc21b96f13cf14b3767a6eabfc0a70d496d94e3"
+      "last_audited_main_sha": "3afbde926880b91e3e660ee2d35daa5334e542bf",
+      "approved_production_revision": "3afbde926880b91e3e660ee2d35daa5334e542bf",
+      "nightly_research_revision": "3afbde926880b91e3e660ee2d35daa5334e542bf"
     }
   },
   "family_boundary": {
