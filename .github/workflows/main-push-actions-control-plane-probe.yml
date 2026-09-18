@@ -3,6 +3,8 @@ name: main push Actions control-plane probe
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -11,6 +13,7 @@ permissions:
 jobs:
   probe:
     name: Main push Actions probe
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,3 +26,86 @@ jobs:
           test -n "${GITHUB_SHA}"
           echo "main push Actions probe: runner job created"
           echo "sha=${GITHUB_SHA}"
+
+  live-runtime:
+    name: Live production runtime acceptance
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      BASE_URL: https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev
+      AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+      RUN_ID: ${{ github.run_id }}
+    steps:
+      - name: Require protected runtime credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${AUTH_TOKEN:-}" || { echo 'AUTH_TOKEN secret is required for live runtime acceptance'; exit 1; }
+
+      - name: Public health and readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          health=$(curl -sS --max-time 20 -o health.json -w '%{http_code}' "${BASE_URL}/health")
+          readiness=$(curl -sS --max-time 20 -o readiness.json -w '%{http_code}' "${BASE_URL}/readiness")
+          echo "health=${health} readiness=${readiness}"
+          test "$health" = 200
+          test "$readiness" = 200
+          jq -e '.ok == true' health.json >/dev/null
+          jq -e '.ready == true and .database == true' readiness.json >/dev/null
+
+      - name: Authenticated infrastructure diagnostic
+        shell: bash
+        run: |
+          set -euo pipefail
+          status=$(curl -sS --max-time 45 -o diagnostic.json -w '%{http_code}'             -H "Authorization: Bearer ${AUTH_TOKEN}"             -H 'Content-Type: application/json'             -d '{"operation":"infrastructure_verify_public_test"}'             "${BASE_URL}/api/v1/chatbot/diagnostic")
+          echo "diagnostic=${status}"
+          test "$status" = 200
+          jq -e '.ok == true and .status == "ok" and any(.checks[]?; .name == "public_chatbot" and .ok == true)' diagnostic.json >/dev/null
+
+      - name: Authenticated chat and idempotent replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          key="live-runtime-${RUN_ID}"
+          jq -n             --arg chat_id "${key}"             --arg request_id "live-runtime-request-${RUN_ID}"             '{chat_id:$chat_id,request_id:$request_id,message:"Explain the public Foundation to private Operations boundary in one sentence.",mode:"chat",strict_zero_cost_only:true}'             > chat.json
+          status=$(curl -sS --max-time 90 -o chat-response.json -w '%{http_code}'             -H "Authorization: Bearer ${AUTH_TOKEN}"             -H 'Content-Type: application/json'             -H "Idempotency-Key: ${key}"             --data @chat.json             "${BASE_URL}/api/v1/chat")
+          replay=$(curl -sS --max-time 45 -o chat-replay.json -w '%{http_code}'             -H "Authorization: Bearer ${AUTH_TOKEN}"             -H 'Content-Type: application/json'             -H "Idempotency-Key: ${key}"             --data @chat.json             "${BASE_URL}/api/v1/chat")
+          echo "chat=${status} replay=${replay}"
+          test "$status" = 200
+          test "$replay" = 200
+          jq -e '.ok == true and (.response.result_state == "COMPLETE" or .response.result_state == "PARTIAL")' chat-response.json >/dev/null
+          jq -e '.ok == true and .response.result_state != "BLOCKED"' chat-replay.json >/dev/null
+
+      - name: Authenticated SSE lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -n             --arg chat_id "live-stream-${RUN_ID}"             --arg request_id "live-stream-request-${RUN_ID}"             '{chat_id:$chat_id,request_id:$request_id,message:"Return one sentence describing the service boundary.",mode:"chat",strict_zero_cost_only:true}' > stream.json
+          status=$(curl -sS --no-buffer --max-time 90 -D stream.headers -o stream.txt -w '%{http_code}'             -H "Authorization: Bearer ${AUTH_TOKEN}"             -H 'Content-Type: application/json'             -H "Idempotency-Key: live-stream-${RUN_ID}"             --data @stream.json             "${BASE_URL}/api/v1/chat/stream")
+          echo "stream=${status}"
+          test "$status" = 200
+          grep -qi '^Content-Type: text/event-stream' stream.headers
+          grep -q '^event: start' stream.txt
+          grep -q '^event: done' stream.txt
+
+      - name: Authenticated research execution and readback
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -n '{question:"Runtime acceptance: ingest one permitted public source and return grounded state.",depth:"quick",require_citations:true,max_sources:1,max_evidence_items:4,strict_zero_cost_only:true,source_urls:["https://example.com/"]}' > research.json
+          status=$(curl -sS --max-time 90 -o research-response.json -w '%{http_code}'             -H "Authorization: Bearer ${AUTH_TOKEN}"             -H 'Content-Type: application/json'             -H "Idempotency-Key: live-research-${RUN_ID}"             --data @research.json             "${BASE_URL}/api/v1/research")
+          test "$status" = 200
+          run_id=$(jq -r '.run_id // empty' research-response.json)
+          test -n "$run_id"
+          read_status=$(curl -sS --max-time 45 -o research-read.json -w '%{http_code}'             -H "Authorization: Bearer ${AUTH_TOKEN}"             -H "Authorization: Bearer ${AUTH_TOKEN}"             "${BASE_URL}/api/v1/research/${run_id}")
+          echo "research=${status} readback=${read_status}"
+          test "$read_status" = 200
+          jq -e --arg run_id "$run_id" '.ok == true and .run_id == $run_id' research-read.json >/dev/null
+
+      - name: Acceptance receipt
+        shell: bash
+        run: |
+          echo "LIVE_RUNTIME_ACCEPTANCE=PASS"
+          echo "commit=${GITHUB_SHA}"
