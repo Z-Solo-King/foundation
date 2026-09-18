@@ -145,7 +145,7 @@ def test_worker_research_uses_scoped_persistence_adapter(monkeypatch):
             return {"question": "No source", "strict_zero_cost_only": True}
 
     entry = worker.Default()
-    entry.env = __import__("types").SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret")
+    entry.env = __import__("types").SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret", DB=DB())
     response = asyncio.run(entry.fetch(Request()))
     assert response.status == 200
     assert persistence.created[0] == "r-scope"
