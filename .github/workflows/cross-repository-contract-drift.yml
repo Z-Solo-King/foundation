@@ -34,13 +34,11 @@ jobs:
         with:
           path: foundation
 
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: Z-Solo-King/operations
-          ref: main
-          path: operations
-          persist-credentials: false
+      - name: Fetch Operations capability catalog
+        run: |
+          set -euo pipefail
+          mkdir -p operations
+          curl --fail --silent --show-error --location             https://raw.githubusercontent.com/Z-Solo-King/operations/main/CAPABILITIES.json             --output operations/CAPABILITIES.json
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
