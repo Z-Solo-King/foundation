@@ -89,14 +89,9 @@ async def _publish_evidence(env, run_id, package):
 
 def _authenticated_json(payload, *, status=200):
     """Return an authenticated API response that cannot be shared or reused by caches."""
-    return Response(
-        json.dumps(payload, ensure_ascii=False),
-        status=status,
-        headers={
-            "Content-Type": "application/json",
-            "Cache-Control": "private, no-store, max-age=0, must-revalidate",
-        },
-    )
+    response = Response.json(payload, status=status)
+    response.headers.set("Cache-Control", "private, no-store, max-age=0, must-revalidate")
+    return response
 
 
 def _chat_headers(request):
