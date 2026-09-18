@@ -15,6 +15,8 @@ def test_manifest_defaults_are_versioned_and_backward_compatible():
     assert manifest.policy_version is None
     assert manifest.result_digest == manifest.content_hash
     assert len(manifest.reproducibility_id) == 64
+    auto_created = create_manifest("a0", "auto.json", "json", b"payload", "research")
+    assert auto_created.created_at.tzinfo is not None
 
 
 def test_manifest_records_full_execution_provenance():
@@ -105,7 +107,7 @@ def test_artifact_manifest_dataclass_preserves_existing_positional_shape():
         "a3",
         "out.txt",
         "text",
-        "hash",
+        "a" * 64,
         NOW,
         "source",
     )
@@ -170,3 +172,15 @@ def test_manifest_rejects_invalid_optional_fingerprints_and_state_values():
             ArtifactManifest(**base, **{field: "bad"})
     with pytest.raises(ValueError):
         ArtifactManifest(**base, source_fingerprints=("bad",))
+
+def test_manifest_factory_defaults_result_digest_to_content_hash_when_empty():
+    manifest = create_manifest(
+        "a4",
+        "out.json",
+        "json",
+        b"payload",
+        "source",
+        result_digest="",
+        created_at=NOW,
+    )
+    assert manifest.result_digest == manifest.content_hash
