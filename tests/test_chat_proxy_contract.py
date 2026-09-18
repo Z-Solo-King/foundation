@@ -134,7 +134,9 @@ def test_public_worker_chat_stream_returns_private_non_200(monkeypatch):
         return {"ok": False, "error": "chat_backend_unavailable"}, 503
 
     monkeypatch.setattr(worker, "_operations_chat_stream", backend)
-    monkeypatch.setattr(worker, "_public_admit", lambda *args, **kwargs: asyncio.sleep(0, result=(type("D", (), {"allowed": True})(), None)))
+    async def admit(*args, **kwargs):
+        return type("Decision", (), {"allowed": True})(), None
+    monkeypatch.setattr(worker, "_public_admit", admit)
 
     class Request:
         method = "POST"
