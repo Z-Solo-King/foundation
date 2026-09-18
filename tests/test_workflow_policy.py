@@ -8,7 +8,7 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "2e280e418787189a3f1aabd59778c3e5ac949c4b"
+CANONICAL_OPERATIONS_REF = "4bc21b96f13cf14b3767a6eabfc0a70d496d94e3"
 CANONICAL_OPERATIONS_SERVICE = "research-intelligence-engine-private"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 PRODUCTION_WORKFLOW = "heroic-ai-production-release.yml"
