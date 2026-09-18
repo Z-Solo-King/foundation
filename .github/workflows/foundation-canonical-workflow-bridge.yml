@@ -109,10 +109,10 @@ jobs:
             exit 1
           fi
 
-          case "$OPERATIONS_REF" in
-            main|[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ;;
-            *) echo 'operations_ref must be main or a 40-character commit SHA'; exit 1 ;;
-          esac
+          if [[ "$OPERATIONS_REF" != "main" && ! "$OPERATIONS_REF" =~ ^[0-9a-f]{40}$ ]]; then
+            echo 'operations_ref must be main or a 40-character commit SHA'
+            exit 1
+          fi
 
           payload=$(jq -n --arg ref "$FOUNDATION_REF" '{ref: $ref}')
           case "$TARGET" in
