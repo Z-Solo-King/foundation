@@ -1,11 +1,33 @@
 """Bound decoded JSON structure before endpoint/model processing."""
 from __future__ import annotations
 
+import json
+
 MAX_JSON_DEPTH = 32
 MAX_JSON_COLLECTION_ITEMS = 1_024
+MAX_JSON_STRING_CHARS = 131_072
 
 
-def validate_json_shape(value, *, max_depth=MAX_JSON_DEPTH, max_collection_items=MAX_JSON_COLLECTION_ITEMS):
+def _reject_duplicate_keys(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("JSON object contains duplicate fields")
+        result[key] = value
+    return result
+
+
+def parse_bounded_json(text: str):
+    return json.loads(text, object_pairs_hook=_reject_duplicate_keys)
+
+
+def validate_json_shape(
+    value,
+    *,
+    max_depth=MAX_JSON_DEPTH,
+    max_collection_items=MAX_JSON_COLLECTION_ITEMS,
+    max_string_chars=MAX_JSON_STRING_CHARS,
+):
     """Reject pathological decoded JSON without truncating accepted payloads."""
     if not isinstance(max_depth, int) or max_depth < 1:
         raise ValueError("max_depth must be a positive integer")
