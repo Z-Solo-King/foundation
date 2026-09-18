@@ -1,84 +1,74 @@
 # Family Maintainability Standard
 
-**Status:** normative; current
+**Status:** normative; current  
 **Scope:** Foundation + Operations
 
 ## Goal
 
-All active code must remain understandable, maintainable, updateable, fixable and safely removable by both humans and AI agents.
+Active code and documentation must remain understandable, maintainable, safely changeable and safely removable by humans and AI agents.
 
 ## Single owner
 
-Every behavior, policy, algorithm, registry, state model, process and authority has exactly one canonical owner. Consumers use a typed/versioned contract, adapter or service boundary rather than copying implementation.
+Every behavior, policy, algorithm, registry, state model and process has one canonical owner. Consumers use typed/versioned contracts, adapters or service boundaries rather than copying implementation.
 
-## Module contract
+## Change sequence
 
-A non-trivial module should make its purpose and contract discoverable from its source and nearby tests:
+`search both repositories -> identify owner -> inspect consumers/side effects -> extend owner -> minimal stable contract -> focused owner/boundary tests -> validation -> update canonical docs -> remove obsolete duplicate`
 
-- responsibility and non-responsibilities;
-- inputs and outputs;
-- invariants and validation rules;
-- failure/unknown/partial behavior;
-- side effects and external dependencies;
-- canonical authority used by the module;
-- compatibility/deprecation status where applicable;
-- tests that protect the behavior.
+## Module placement and splitting
 
-Do not add comments that merely restate code. Explain non-obvious reasoning, invariants and ownership.
+Split by responsibility, not arbitrary size:
 
-## Change methodology
+1. what changes together;
+2. caller/hot-path/setup boundary;
+3. trust/authority boundary;
+4. I/O versus pure computation.
 
-Before implementing a material change:
+Soft design ceilings are trip-wires, not targets:
 
-1. Search both repositories for existing behavior and related tests.
-2. Identify the canonical owner and existing authority.
-3. Reuse or extend the owner before creating a new module.
-4. Keep the public/private boundary explicit.
-5. Prefer the smallest stable contract that solves the consumer need.
-6. Add owner-level tests and boundary/contract tests for cross-repository behavior.
-7. Run the appropriate repository validation and family overlap checks.
-8. Update the canonical documentation when ownership, contracts, policy or methodology changes.
+- function/method ~40 lines;
+- module ~400 lines;
+- class ~200 lines or 10 public methods;
+- function signature ~5 parameters.
 
-## Splitting and moving code
+Crossing a ceiling is a prompt to inspect cohesion, not proof of a defect. Characterize behavior before structural extraction and keep extraction separate from bug fixes.
 
-Split a module when responsibilities, lifecycle, ownership or change frequency are materially independent. Do not split only to reduce line count.
+## Plain-language and engineering honesty
 
-Move code between repositories only when ownership requires the move. Before moving, identify imports, entrypoints, state, tests, contracts and compatibility requirements. After migration, remove the old implementation once parity evidence shows it is no longer required.
+A config field that can only ever legally have one value is dead flexibility or an invariant, not genuine configurability.
 
-## Duplicate-prevention rules
+A claim such as canonical, authoritative or complete must be checkable against current repository state or explicitly marked as intended/unverified.
 
-Never introduce a second implementation of:
+Comments should explain why an invariant exists, not restate code.
 
-- authorization/policy decisions;
-- identity or trust validation;
+## Duplication prevention
+
+Never introduce a second authority for:
+
+- authorization/policy;
+- identity/trust;
 - resource/quota accounting;
-- routing/intent authority;
+- routing/intent;
 - result-state semantics;
-- provider eligibility policy;
-- evaluation/promotion decisions;
+- provider eligibility;
+- evaluation/promotion;
 - deployment ownership;
-- deterministic Foundation-owned product/evidence algorithms.
+- deterministic Foundation algorithms.
 
-Compatibility facades may preserve an API, but business logic remains in the canonical owner.
+Compatibility facades may translate names/shapes but must not repeat business logic.
 
-## AI maintainability and token efficiency
+## Documentation lifecycle
 
-AI agents should prefer precise navigation and canonical references over repeatedly loading large duplicated context. Use repository maps, ownership indexes, contracts and focused tests to locate the correct implementation.
+Do not create a new plan because a new conversation happened.
 
-Token efficiency must never be achieved by omitting required constraints, evidence, failure states or ownership information. Prefer compact canonical records, structured contracts and generated/test fixtures over copied explanatory prose or duplicate code.
+Living documents should carry current architecture, ownership, contracts and methods. Dated records are historical unless they preserve unique evidence/decisions. Proposed, experimental, deferred, rejected, superseded and obsolete material must have explicit lifecycle state.
 
-AI-generated changes must be explainable from the owning source, tests and linked documentation without relying on the original chat transcript.
+At milestones inspect for duplicate documents, stale plans, dead code/tests, obsolete compatibility paths and abandoned branches/issues where supported.
 
-## Removal and deprecation
+## Removal discipline
 
-At substantial milestones inspect for dead code, unreachable paths, obsolete feature flags, stale compatibility shims, duplicate tests, generic coverage files, superseded documents and abandoned branches/PRs where controls permit cleanup.
+Before deleting code or docs, check references/imports/entrypoints/tests and preserve Git history. Delete only after the unique current value has been transferred to the canonical owner.
 
-Remove only after checking imports, runtime entrypoints, tests and documented dependencies. Preserve Git history and record the reason when deletion could otherwise be ambiguous.
+## AI efficiency
 
-## Documentation rule
-
-Do not create a new plan, policy or guide merely because a new conversation occurred. Update the canonical owner document when possible. Deferred, experimental, rejected and future-use material must have an explicit lifecycle state and revisit condition.
-
-## Completion standard
-
-A maintainability change is complete only when ownership is singular, consumers are understood, tests cover the relevant contract, documentation is current, obsolete paths are removed or explicitly retained as compatibility/history, and no unsupported duplicate authority remains.
+Use maps, contracts, focused tests and canonical references rather than repeatedly loading duplicated context. Token efficiency must never omit required constraints or evidence.
