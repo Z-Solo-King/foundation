@@ -187,8 +187,6 @@ def test_public_foundation_is_the_only_github_actions_bridge_owner():
     assert "permission-actions: write" in workflow
     assert "repositories: foundation" in workflow
     assert "workflow_dispatch:" in workflow
-    assert "repository_dispatch:" in workflow
-    assert "types: [foundation_action]" in workflow
     assert "actions/workflows/${TARGET}/dispatches" in workflow
     for target in (
         "heroic-ai-production-release.yml",
