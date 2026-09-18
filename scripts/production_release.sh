@@ -341,13 +341,17 @@ stream_status=$(curl -sS --no-buffer --max-time 90 \
   -d "${stream_payload}" \
   "${BASE_URL}/api/v1/chat/stream")
 echo "POST /api/v1/chat/stream -> HTTP ${stream_status}"
+echo '--- live-stream.headers ---'
+cat "$RUNNER_TEMP/live-stream.headers" || true
+echo '--- live-stream.body ---'
+cat "$RUNNER_TEMP/live-stream.txt" || true
+echo '--- end live-stream diagnostics ---'
 test "$stream_status" = '200'
 grep -qi '^Content-Type: text/event-stream' "$RUNNER_TEMP/live-stream.headers"
 grep -q '^event: start' "$RUNNER_TEMP/live-stream.txt"
 grep -q '^event: done' "$RUNNER_TEMP/live-stream.txt"
 grep -q '"result_state":' "$RUNNER_TEMP/live-stream.txt"
 echo "Live SSE lifecycle acceptance: PASS"
-
 live_research_payload=$(jq -nc \
   '{question:"Production runtime acceptance: verify the public research path can ingest a permitted source without inventing facts.",depth:"quick",require_citations:true,max_sources:1,max_evidence_items:4,strict_zero_cost_only:true,source_urls:["https://example.com/"]}')
 live_research_status=$(curl -sS --max-time 90 \
