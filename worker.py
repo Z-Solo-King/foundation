@@ -119,12 +119,11 @@ async def _operations_chat(env, payload, request):
 
 def _public_sse_response(upstream):
     """Expose only the public SSE headers while preserving the upstream body stream."""
-    headers = {
-        "Content-Type": "text/event-stream; charset=utf-8",
-        "Cache-Control": "no-store, no-cache, max-age=0, must-revalidate",
-        "X-Content-Type-Options": "nosniff",
-    }
-    return Response(upstream.body, status=int(upstream.status), headers=headers)
+    response = Response(upstream.body, status=int(upstream.status))
+    response.headers.set("Content-Type", "text/event-stream; charset=utf-8")
+    response.headers.set("Cache-Control", "no-store, no-cache, max-age=0, must-revalidate")
+    response.headers.set("X-Content-Type-Options", "nosniff")
+    return response
 
 
 async def _operations_chat_stream(env, payload, request):
