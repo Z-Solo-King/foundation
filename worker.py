@@ -18,6 +18,7 @@ from backend.persistence.cloudflare import CloudflarePersistence
 from backend.public_read_cursor import PublicReadCursorError
 from backend.sources.http import fetch_public_url
 from backend.worker_auth import MAX_PUBLIC_JSON_BODY_BYTES, authenticated_subject_fingerprint, authorized, bearer_token, extract_source_urls, json_object
+from backend.sse_transport import buffered_sse_events, readable_sse_stream
 from backend.worker_diagnostics import health_payload, public_infrastructure_verify, readiness_payload, storage_diagnostic
 from backend.worker_research import get_run, ingest_sources
 
@@ -345,8 +346,35 @@ class Default(WorkerEntrypoint):
             if denied is not None:
                 return denied
             try:
-                upstream, body, status = await _operations_chat_stream(self.env, payload, request)
-                return _public_sse_response(upstream) if upstream is not None else Response.json(body, status=status)
+                body, status = await _operations_chat(self.env, payload, request)
+                if status != 200:
+                    return _authenticated_json(body, status=status)
+                response = body.get("response") if isinstance(body, dict) else None
+                if not isinstance(response, dict):
+                    return _authenticated_json({"ok": False, "error": "invalid_private_chat_response"}, status=503)
+                response_id = str(response.get("response_id", "") or "")
+                if not response_id:
+                    return _authenticated_json({"ok": False, "error": "stream_execution_identity_missing"}, status=503)
+                result_state = str(response.get("result_state", "BLOCKED")).upper()
+                if result_state == "BLOCKED":
+                    return _authenticated_json(body, status=status)
+                events = buffered_sse_events(
+                    str(response.get("text", "") or ""),
+                    response_id=response_id,
+                    result_state=result_state,
+                    usage=response.get("usage") if isinstance(response.get("usage"), dict) else None,
+                )
+                stream = readable_sse_stream(events)
+                return Response(
+                    stream,
+                    headers={
+                        "Content-Type": "text/event-stream; charset=utf-8",
+                        "Cache-Control": "no-store, no-cache, max-age=0, must-revalidate",
+                        "X-Content-Type-Options": "nosniff",
+                    },
+                )
+            except (TypeError, ValueError, RuntimeError) as exc:
+                return _authenticated_json({"ok": False, "error": "sse_transport_unavailable", "detail": str(exc)[:240]}, status=503)
             finally:
                 if lease is not None:
                     await D1AdmissionStore(self.env.DB).release(lease)
