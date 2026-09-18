@@ -42,7 +42,7 @@ async def _existing_event(db: Any, event_id: str) -> dict[str, Any] | None:
     if result is None:
         return None
     if isinstance(result, dict):
-        return result
+        return result if "event_id" in result else None
     rows = getattr(result, "results", None)
     if rows is not None:
         rows = list(rows or ())
