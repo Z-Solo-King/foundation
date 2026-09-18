@@ -1,0 +1,156 @@
+name: B2 restore verification
+
+on:
+  schedule:
+    - cron: "30 20 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: b2-restore-verification
+  cancel-in-progress: false
+
+env:
+  B2_ENDPOINT: https://s3.eu-central-003.backblazeb2.com
+  AWS_DEFAULT_REGION: us-east-1
+  AWS_EC2_METADATA_DISABLED: 'true'
+
+jobs:
+  restore-verify:
+    name: Verify latest B2 repository restores
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Verify required B2 credentials
+        shell: bash
+        env:
+          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+          B2_BUCKET: ${{ secrets.B2_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub secret'; exit 1; }
+          test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub secret'; exit 1; }
+          test -n "${B2_BUCKET:-}" || { echo 'Missing B2_BUCKET GitHub secret'; exit 1; }
+          aws s3api head-bucket --bucket "$B2_BUCKET" --endpoint-url "$B2_ENDPOINT" >/dev/null
+          echo 'B2 credential/bucket check: PASS'
+
+      - name: Restore and verify latest archive for each repository
+        shell: bash
+        env:
+          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+          B2_BUCKET: ${{ secrets.B2_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+        run: |
+          set -euo pipefail
+          rm -rf restore-check
+          mkdir -p restore-check
+
+          for repo in foundation operations; do
+            python - "$repo" "$B2_BUCKET" "$B2_ENDPOINT" <<'PY'
+import json
+import os
+import subprocess
+import sys
+
+repo, bucket, endpoint = sys.argv[1:]
+prefix = "repository-backup/"
+raw = subprocess.check_output([
+    "aws", "s3api", "list-objects-v2",
+    "--bucket", bucket,
+    "--prefix", prefix,
+    "--endpoint-url", endpoint,
+    "--output", "json",
+], text=True)
+items = json.loads(raw).get("Contents", [])
+manifests = [
+    item for item in items
+    if item["Key"].endswith(".json")
+    and item["Key"].startswith(f"{prefix}{repo}-")
+]
+if not manifests:
+    raise SystemExit(f"No backup manifest found for {repo}")
+latest = max(manifests, key=lambda item: item["LastModified"])
+key = latest["Key"]
+name = os.path.basename(key)
+path = os.path.join("restore-check", name)
+subprocess.check_call([
+    "aws", "s3api", "get-object",
+    "--bucket", bucket, "--key", key, path,
+    "--endpoint-url", endpoint,
+], stdout=subprocess.DEVNULL)
+manifest = json.load(open(path, encoding="utf-8"))
+if manifest.get("repository") != f"Z-Solo-King/{repo}":
+    raise SystemExit(f"Manifest repository mismatch: {key}")
+archive = manifest.get("archive")
+commit = manifest.get("commit")
+expected_sha = manifest.get("sha256")
+if not archive or not commit or not expected_sha:
+    raise SystemExit(f"Incomplete restore manifest: {key}")
+print(json.dumps({
+    "repo": repo,
+    "manifest": key,
+    "archive": archive,
+    "commit": commit,
+}, sort_keys=True))
+open(f"restore-check/{repo}.meta", "w", encoding="utf-8").write(
+    json.dumps({"manifest": key, "archive": archive, "commit": commit, "sha256": expected_sha})
+)
+PY
+
+            meta="restore-check/$repo.meta"
+            archive=$(python - "$meta" <<'PY'
+import json, sys
+print(json.load(open(sys.argv[1], encoding="utf-8"))["archive"])
+PY
+)
+            expected_sha=$(python - "$meta" <<'PY'
+import json, sys
+print(json.load(open(sys.argv[1], encoding="utf-8"))["sha256"])
+PY
+)
+            expected_commit=$(python - "$meta" <<'PY'
+import json, sys
+print(json.load(open(sys.argv[1], encoding="utf-8"))["commit"])
+PY
+)
+
+            aws s3api get-object               --bucket "$B2_BUCKET"               --key "repository-backup/$archive"               "restore-check/$archive"               --endpoint-url "$B2_ENDPOINT"               >/dev/null
+
+            actual_sha=$(sha256sum "restore-check/$archive" | cut -d' ' -f1)
+            test "$actual_sha" = "$expected_sha" || {
+              echo "SHA-256 mismatch for $repo: expected $expected_sha got $actual_sha"
+              exit 1
+            }
+
+            rm -rf "restore-check/$repo"
+            mkdir -p "restore-check/$repo"
+            tar -xzf "restore-check/$archive" -C "restore-check/$repo"
+
+            repo_dir=$(find "restore-check/$repo" -mindepth 1 -maxdepth 2 -type d -name "$repo.git" | head -n 1)
+            test -n "$repo_dir" || { echo "Restored Git mirror missing for $repo"; exit 1; }
+
+            git -C "$repo_dir" fsck --full --no-dangling
+            restored_commit=$(git -C "$repo_dir" rev-parse --verify refs/heads/main)
+            test "$restored_commit" = "$expected_commit" || {
+              echo "HEAD mismatch for $repo: expected $expected_commit got $restored_commit"
+              exit 1
+            }
+            echo "$repo restore verification: PASS ($restored_commit)"
+          done
+
+      - name: Write verification summary
+        if: always()
+        run: |
+          {
+            echo '### B2 restore verification'
+            echo
+            echo 'Latest Foundation and Operations archives were independently downloaded from B2.'
+            echo 'Manifest identity, archive SHA-256, Git extraction, fsck, and archived main HEAD were verified.'
+          } >> "$GITHUB_STEP_SUMMARY"
