@@ -79,12 +79,12 @@ async def _claim_idempotent_run(env, request, idempotency_key, subject_fingerpri
     ).bind(idempotency_key, run_id, request_hash, now, subject_fingerprint, capability, contract_revision)
     create = env.DB.prepare(
         """INSERT INTO research_runs
-        (run_id, question, depth, require_citations, max_sources,
+        (run_id, subject_fingerprint, question, depth, require_citations, max_sources,
          max_evidence_items, strict_zero_cost_only, status, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(run_id) DO NOTHING"""
     ).bind(
-        run_id, request.question, request.depth or "standard", int(request.require_citations),
+        run_id, subject_fingerprint, request.question, request.depth or "standard", int(request.require_citations),
         request.max_sources, request.max_evidence_items, int(request.strict_zero_cost_only),
         "planned", now, now,
     )
@@ -131,6 +131,23 @@ class CloudflarePersistence:
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
         ).bind(
             run_id, request.question, request.depth or "standard",
+            int(request.require_citations), request.max_sources,
+            request.max_evidence_items, int(request.strict_zero_cost_only),
+            "planned", now, now,
+        ).run()
+        return run_id
+
+    async def create_run_scoped(self, run_id, request, subject_fingerprint: str):
+        if not isinstance(subject_fingerprint, str) or not subject_fingerprint.strip():
+            raise ValueError("subject_fingerprint must not be empty")
+        now = datetime.now(timezone.utc).isoformat()
+        await self.env.DB.prepare(
+            """INSERT INTO research_runs
+            (run_id, subject_fingerprint, question, depth, require_citations, max_sources,
+             max_evidence_items, strict_zero_cost_only, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+        ).bind(
+            run_id, subject_fingerprint, request.question, request.depth or "standard",
             int(request.require_citations), request.max_sources,
             request.max_evidence_items, int(request.strict_zero_cost_only),
             "planned", now, now,
