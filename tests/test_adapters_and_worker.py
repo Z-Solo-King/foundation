@@ -229,3 +229,8 @@ async def test_worker_http_all_branches(monkeypatch):
         async def create_run_idempotent(self, req, key, **kwargs): raise RuntimeError("persist")
     monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: BrokenPersistence())
     persistence_post_error = await entry.fetch(Request("POST", "https://x/api/v1/research", payload={"question":"q"}, headers={"Authorization":"Bearer secret", "Content-Type":"application/json"})); assert persistence_post_error
+
+
+def test_authenticated_json_response_is_not_cacheable():
+    response = worker._authenticated_json({"ok": True})
+    assert response.headers.get("Cache-Control") == "private, no-store, max-age=0, must-revalidate"
