@@ -278,3 +278,26 @@ A queue is finished only when every remaining issue is one of:
 - awaiting an unavailable platform/admin operation.
 
 Do not label an issue complete merely because no further code change is obvious.
+
+## Hard-case addendum — job-graph and cross-repo Actions failures
+
+### Job-graph-before-creation failures (e.g. workflow fails before any job appears)
+1. Diff the failing workflow YAML against the last known-good run of the same file, not just the same workflow name.
+2. Check in order: YAML syntax/schema validity, `on:` trigger admission (event type, branch filter, path filter),
+   required top-level permissions block, and reusable/called-workflow reference resolution.
+3. A "zero jobs" result is a graph-admission failure, not an execution failure — never route it as a runtime/test bug.
+4. Record the exact rejected trigger and required-check name; this belongs in R1/R3, not R0.
+
+### Cross-repository Actions access (Foundation workflow → private Operations)
+1. Verify the credential/token path is the existing approved one (PAT, GitHub App install, or OIDC) — do not mint a new token.
+2. Confirm the private repo's access policy (org settings, repo visibility, Actions permissions) explicitly allows the calling workflow's identity.
+3. Treat this as R3 control-plane evidence: implement everything provable locally (R0/R1), then hold the issue open with the exact
+   missing grant/setting named, rather than iterating on workflow code.
+
+### Meta-tracker issues
+A meta-tracker (issue that only aggregates sub-issues) is never itself "actionable" work. Close or update it only by
+reconciling its checklist against the real state of its linked issues — never by direct implementation against the tracker.
+
+### Low-cost hygiene lane
+Trivial, zero-risk items (stale branch deletion, dead workflow removal) should be pulled into any open discovery lane
+opportunistically, since they never compete for file surface with active work.
