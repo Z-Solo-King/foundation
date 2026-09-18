@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 import re
 from typing import Any
 
@@ -61,6 +62,7 @@ async def json_object(request: Any):
     media_type = content_type.split(";", 1)[0].strip().lower()
     if media_type != "application/json":
         return None
+
     content_length = headers.get("Content-Length") or headers.get("content-length")
     if content_length is not None:
         try:
@@ -69,13 +71,26 @@ async def json_object(request: Any):
             return None
         if declared_bytes < 0 or declared_bytes > MAX_PUBLIC_JSON_BODY_BYTES:
             return None
+
     try:
-        value = await request.json()
+        array_buffer = getattr(request, "arrayBuffer", None)
+        if callable(array_buffer):
+            raw = await array_buffer()
+            raw_bytes = bytes(raw)
+            if len(raw_bytes) > MAX_PUBLIC_JSON_BODY_BYTES:
+                return None
+            value = json.loads(raw_bytes.decode("utf-8"))
+        else:
+            # Keep compatibility with repository test doubles that expose only
+            # request.json(), while deployed Workers use the actual body bytes
+            # when available.
+            value = await request.json()
+
         if not isinstance(value, dict):
             return None
         validate_json_shape(value)
         return value
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, UnicodeError, json.JSONDecodeError):
         return None
     except Exception:
         return None
