@@ -247,19 +247,46 @@ def _public_sse_response(upstream):
     )
 
 
-async def _operations_chat_stream(env, payload, request):
-    """Proxy the private chatbot's SSE stream without exposing its topology."""
-    operations = getattr(env, "OPERATIONS", None)
-    if operations is None:
-        return None, {"ok": False, "error": "chat_backend_unavailable", "status": "unavailable"}, 503
-    headers = _chat_headers(request)
-    try:
-        upstream = await operations.fetch(
-            _service_request("https://chat/v1/chat/stream", method="POST", headers=headers, body=json.dumps(payload))
+def _chat_sse_body(body):
+    """Build bounded SSE frames at the public edge from a completed private JSON response."""
+    response = body.get("response") if isinstance(body, dict) else None
+    if not isinstance(response, dict):
+        raise ValueError("invalid_private_chat_response")
+    response_id = str(response.get("response_id", "")).strip()
+    if not response_id:
+        raise ValueError("stream_execution_identity_missing")
+    result_state = str(response.get("result_state", "BLOCKED")).upper()
+    if result_state == "BLOCKED":
+        raise ValueError("blocked_chat_stream")
+    text = str(response.get("text", ""))
+    events = [
+        f"event: start\ndata: {json.dumps({'response_id': response_id, 'status': 'streaming', 'generation': response.get('generation_status', 'unknown')}, separators=(',', ':'))}\n\n"
+    ]
+    for offset in range(0, len(text), 256):
+        chunk = text[offset:offset + 256]
+        events.append(
+            f"event: delta\ndata: {json.dumps({'text': chunk}, separators=(',', ':'))}\n\n"
         )
-        return upstream, None, upstream.status
-    except Exception:
-        return None, {"ok": False, "error": "chat_backend_unavailable"}, 503
+    usage = response.get("usage")
+    if isinstance(usage, dict):
+        events.append(
+            f"event: usage\ndata: {json.dumps({'input_tokens': usage.get('input_tokens'), 'output_tokens': usage.get('output_tokens')}, separators=(',', ':'))}\n\n"
+        )
+    output_digest = __import__("hashlib").sha256(text.encode("utf-8")).hexdigest()
+    status = "completed" if result_state == "COMPLETE" else "partial"
+    events.append(
+        f"event: done\ndata: {json.dumps({'response_id': response_id, 'status': status, 'result_state': result_state, 'output_digest': output_digest}, separators=(',', ':'))}\n\n"
+    )
+    payload = "".join(events)
+    if len(payload.encode("utf-8")) > MAX_PUBLIC_JSON_BODY_BYTES:
+        raise ValueError("stream response exceeds supported size")
+    return payload
+
+
+async def _operations_chat_stream(env, payload, request):
+    """Obtain the proven JSON chat result; SSE framing stays at the public edge."""
+    body, status = await _operations_chat(env, payload, request)
+    return body, status
 
 
 async def _operations_chatbot_diagnostic(env, request=None):
@@ -345,8 +372,22 @@ class Default(WorkerEntrypoint):
             if denied is not None:
                 return denied
             try:
-                upstream, body, status = await _operations_chat_stream(self.env, payload, request)
-                return _public_sse_response(upstream) if upstream is not None else Response.json(body, status=status)
+                body, status = await _operations_chat_stream(self.env, payload, request)
+                if status != 200:
+                    return _authenticated_json(body, status=status)
+                try:
+                    stream_body = _chat_sse_body(body)
+                except ValueError as exc:
+                    return _authenticated_json({"ok": False, "error": str(exc)}, status=503)
+                return Response(
+                    stream_body,
+                    status=200,
+                    headers={
+                        "Content-Type": "text/event-stream; charset=utf-8",
+                        "Cache-Control": "no-store, no-cache, max-age=0, must-revalidate",
+                        "X-Content-Type-Options": "nosniff",
+                    },
+                )
             finally:
                 if lease is not None:
                     await D1AdmissionStore(self.env.DB).release(lease)
