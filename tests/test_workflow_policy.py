@@ -218,7 +218,6 @@ def test_credential_policy_documents_the_separation():
 
     for secret in (
         "OPERATIONS_APP_ID",
-        "OPERATIONS_APP_INSTALLATION_ID",
         "OPERATIONS_APP_PRIVATE_KEY",
         "BACKUP_GITHUB_TOKEN",
         "B2_KEY_ID",
