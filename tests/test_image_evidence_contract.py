@@ -82,3 +82,24 @@ def test_selective_routing_is_deterministic_and_budget_bounded():
     assert select_image_modes(request, budget_units=0) == ()
     with pytest.raises(ValueError):
         ImageEvidenceRequest("bad").validate()
+
+
+def test_image_observation_validation_rejects_missing_id_and_bad_fingerprint():
+    with pytest.raises(ValueError, match="observation_id"):
+        ImageObservation("", ImageEvidenceMode.OCR, ImageEvidenceStatus.UNKNOWN, None, None, None, fingerprint()).validate()
+    with pytest.raises(ValueError, match="image_fingerprint"):
+        ImageObservation("o", ImageEvidenceMode.OCR, ImageEvidenceStatus.UNKNOWN, None, None, None, "bad").validate()
+
+
+def test_image_request_validation_rejects_non_positive_limits_and_empty_modes():
+    with pytest.raises(ValueError, match="limits"):
+        ImageEvidenceRequest(fingerprint(), max_bytes=0).validate()
+    with pytest.raises(ValueError, match="limits"):
+        ImageEvidenceRequest(fingerprint(), max_observations=0).validate()
+    with pytest.raises(ValueError, match="at least one"):
+        ImageEvidenceRequest(fingerprint(), allowed_modes=()).validate()
+
+
+def test_image_result_validation_rejects_bad_root_fingerprint():
+    with pytest.raises(ValueError, match="image_fingerprint"):
+        ImageEvidenceResult(IMAGE_EVIDENCE_CONTRACT_VERSION, "bad", ()).validate()
