@@ -118,8 +118,6 @@ def expires_at(observed_at, policy: SourceAccessPolicy):
     if observed_at.tzinfo is None:
         raise ValueError("observed_at must be timezone-aware")
     seconds = retention_seconds(policy)
-    if seconds is None:
-        raise ValueError("unknown retention cannot expire deterministically")
     return observed_at.astimezone(timezone.utc) + timedelta(seconds=seconds)
 
 
