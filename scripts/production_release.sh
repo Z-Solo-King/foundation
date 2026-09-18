@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="0b89ee3dca7d686205e49b7bb5b2806b72f2b57b"
+OPERATIONS_REF="90e3c692bfd43da25d08bf5d47a6a6c5167e0f7f"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
@@ -19,7 +19,7 @@ test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo 'Missing CLOUDFLARE_API_TOKEN GitH
 test -n "${CLOUDFLARE_ACCOUNT_ID:-}" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID GitHub secret'; exit 1; }
 test -n "${OPERATIONS_APP_ID:-}" || { echo 'Missing OPERATIONS_APP_ID GitHub Actions secret'; exit 1; }
 test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIVATE_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = '0b89ee3dca7d686205e49b7bb5b2806b72f2b57b'
+test "$OPERATIONS_REF" = '90e3c692bfd43da25d08bf5d47a6a6c5167e0f7f'
 
 after_install_marker=''
 
