@@ -38,8 +38,8 @@ async def _json(request):
     return await json_object(request)
 
 
-async def _health_payload():
-    return health_payload()
+async def _health_payload(env=None):
+    return health_payload(env)
 
 
 async def _readiness_payload(env):
@@ -289,7 +289,7 @@ class Default(WorkerEntrypoint):
         path = request.url.split("?", 1)[0]
 
         if request.method == "GET" and path.endswith("/health"):
-            return Response.json(await _health_payload())
+            return Response.json(await _health_payload(self.env))
         if request.method == "GET" and path.endswith("/readiness"):
             payload, status = await _readiness_payload(self.env)
             return Response.json(payload, status=status)

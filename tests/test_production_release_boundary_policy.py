@@ -18,3 +18,9 @@ def test_operations_binding_is_generated_but_private_service_name_stays_out_of_w
     assert 'OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"' in text
     assert 'binding = "OPERATIONS"' in text
     assert "research-intelligence-engine-private" not in worker
+
+
+
+def test_production_health_check_requires_production_environment():
+    text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
+    assert '.ok == true and .environment == "production"' in text

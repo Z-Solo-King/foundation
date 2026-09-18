@@ -250,3 +250,15 @@ async def test_research_persistence_failures_and_idempotency(monkeypatch):
     request.headers["Idempotency-Key"] = "key-1"
     failed_idempotent = await entry.fetch(request)
     assert "execution/persistence failure" in str(failed_idempotent)
+
+
+@pytest.mark.asyncio
+async def test_health_payload_uses_worker_environment_binding():
+    payload = await worker._health_payload(SimpleNamespace(ENVIRONMENT="production"))
+    assert payload["environment"] == "production"
+
+
+@pytest.mark.asyncio
+async def test_health_payload_preserves_default_environment_without_binding():
+    payload = await worker._health_payload()
+    assert payload["environment"] == "development"
