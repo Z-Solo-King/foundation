@@ -168,7 +168,7 @@ async def test_worker_chat_and_stream_release_admission_lease(monkeypatch):
     assert chat_response.status == 200
 
     stream_response = await entry.fetch(
-        Request("POST", "https://x/api/v1/chat/stream", payload, {"Authorization": "Bearer secret"})
+        Request("POST", "https://x/api/v1/chat/stream", payload, {"Authorization": "Bearer secret", "Content-Type": "application/json"})
     )
     assert stream_response.status == 200
     assert tracker.released == [lease, lease]
@@ -212,7 +212,7 @@ async def test_worker_research_uses_legacy_create_run_fallback(monkeypatch):
     lease = object()
     persistence = Persistence()
     monkeypatch.setattr(worker, "D1AdmissionStore", lambda db: tracker)
-    monkeypatch.setattr(worker, "_public_admit", lambda env, route, subject, event_id: accepted_admission(lease))
+    async def admit(*args, **kwargs): return accepted_admission(lease)\n    monkeypatch.setattr(worker, "_public_admit", admit)
     monkeypatch.setattr(
         worker,
         "submit_research",
