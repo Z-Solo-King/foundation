@@ -6,8 +6,13 @@ on:
     paths:
       - 'benchmark/release_quality_gate.py'
       - 'benchmark/vector_scorecard.py'
+      - 'benchmark/performance_workloads.py'
       - 'backend/performance_metrics.py'
+      - 'backend/performance_report.py'
       - 'tests/test_release_quality_gate.py'
+      - 'tests/test_performance_metrics.py'
+      - 'tests/test_performance_report.py'
+      - 'tests/test_performance_workloads.py'
       - '.github/workflows/release-quality-regression.yml'
   merge_group:
     types: [checks_requested]
@@ -27,5 +32,10 @@ jobs:
       - name: Install test runner
         run: python -m pip install --disable-pip-version-check pytest
 
-      - name: Run deterministic release-quality contract
-        run: python -m pytest -q tests/test_release_quality_gate.py
+      - name: Run deterministic release-quality and performance contracts
+        run: |
+          python -m pytest -q             tests/test_release_quality_gate.py             tests/test_performance_metrics.py             tests/test_performance_report.py             tests/test_performance_workloads.py
+
+      - name: Emit reproducible performance workload report
+        run: |
+          python -m benchmark.performance_workloads
