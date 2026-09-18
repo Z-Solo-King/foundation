@@ -204,3 +204,12 @@ def test_required_ci_contract_supports_merge_group():
     assert "name: Public tests" in required
     assert "name: Analyze python" in required
     assert "npm test" in required
+
+
+def test_operations_installation_discovery_surfaces_failures():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    helper = INSTALLATION_HELPER.read_text(encoding="utf-8")
+    assert 'installation_status=$?' in deployment
+    assert 'GitHub App installation discovery failed' in deployment
+    assert '2>/dev/null || true' in deployment
+    assert 'file=sys.stderr' in helper

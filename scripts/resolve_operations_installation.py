@@ -32,17 +32,17 @@ def main() -> int:
         body = exc.read().decode("utf-8", "replace")
         try:
             payload = json.loads(body)
-            print(json.dumps({k: payload.get(k) for k in ("message", "errors", "documentation_url")}))
+            print(json.dumps({k: payload.get(k) for k in ("message", "errors", "documentation_url")}), file=sys.stderr)
         except json.JSONDecodeError:
-            print(f"GitHub App installation discovery failed: HTTP {exc.code}")
+            print(f"GitHub App installation discovery failed: HTTP {exc.code}", file=sys.stderr)
         return 1
     matches = [item for item in installations if (item.get("account") or {}).get("login") == EXPECTED_ACCOUNT]
     if len(matches) != 1:
-        print(f"Expected exactly one GitHub App installation for {EXPECTED_ACCOUNT}; found {len(matches)}")
+        print(f"Expected exactly one GitHub App installation for {EXPECTED_ACCOUNT}; found {len(matches)}", file=sys.stderr)
         return 1
     installation_id = matches[0].get("id")
     if not isinstance(installation_id, int) or installation_id <= 0:
-        print("Resolved GitHub App installation has an invalid id")
+        print("Resolved GitHub App installation has an invalid id", file=sys.stderr)
         return 1
     print(installation_id)
     return 0

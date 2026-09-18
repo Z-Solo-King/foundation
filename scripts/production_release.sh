@@ -166,9 +166,21 @@ PY
 app_jwt=$(cat "$RUNNER_TEMP/github-app-jwt.txt")
 
 # Resolve the current installation dynamically; do not depend on a stored installation-id secret.
-installation_id=$(OPERATIONS_APP_JWT="$app_jwt" python scripts/resolve_operations_installation.py)
-test -n "$installation_id"
-echo "Resolved Operations GitHub App installation: PASS"
+installation_output="$RUNNER_TEMP/github-app-installation-discovery.txt"
+installation_error="$RUNNER_TEMP/github-app-installation-discovery.err"
+set +e
+OPERATIONS_APP_JWT="$app_jwt" python scripts/resolve_operations_installation.py >"$installation_output" 2>"$installation_error"
+installation_status=$?
+set -e
+if [ "$installation_status" -ne 0 ]; then
+  echo "GitHub App installation discovery failed (exit $installation_status)"
+  cat "$installation_error" 2>/dev/null || true
+  cat "$installation_output" 2>/dev/null || true
+  exit 1
+fi
+installation_id="$(tr -d "\r\n" < "$installation_output")"
+test -n "$installation_id" || { echo "GitHub App installation discovery returned an empty installation id"; exit 1; }
+echo "Resolved Operations GitHub App installation: PASS ($installation_id)"
 
 # Verify that the resolved installation belongs to the supplied App, and mint a short-lived token.
 installation_meta_status=$(curl -sS -o "$RUNNER_TEMP/github-app-installation-meta.json" -w '%{http_code}' \
