@@ -124,7 +124,7 @@ class B2ArtifactStore(ArtifactStore):
         if not (200 <= response.status < 300):
             detail = await response.text()
             raise RuntimeError(f"B2 GET failed ({response.status}): {detail[:500]}")
-        return bytes(await response.arrayBuffer())
+        return await response.bytes()
 
     async def delete(self, key: str) -> None:
         response = await self._request("DELETE", key)
