@@ -19,6 +19,8 @@ on:
       - '.github/workflows/cross-repository-contract-drift.yml'
   merge_group:
     types: [checks_requested]
+  schedule:
+    - cron: "17 2 * * *"
   workflow_dispatch:
 
 permissions:
@@ -125,6 +127,22 @@ PY
               -H 'X-GitHub-Api-Version: 2022-11-28' \
               "https://api.github.com/repos/${OPERATIONS_REPOSITORY}") >/dev/null
           test -s operations/CAPABILITIES.json
+          # Operations is source/runtime only. GitHub Actions ownership lives in Foundation.
+          workflow_status=$(curl -sS -o "$RUNNER_TEMP/operations-workflows.json" -w '%{http_code}' \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer ${github_app_token}" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/contents/.github/workflows?ref=main")
+          echo "Operations .github/workflows -> HTTP ${workflow_status}"
+          if [[ "${workflow_status}" == "404" ]]; then
+            echo 'private Operations GitHub Actions boundary: PASS (no workflow directory)'
+          elif [[ "${workflow_status}" == "200" ]] && jq -e 'length == 0' "$RUNNER_TEMP/operations-workflows.json" >/dev/null 2>&1; then
+            echo 'private Operations GitHub Actions boundary: PASS (workflow directory empty)'
+          else
+            echo 'private Operations GitHub Actions boundary: FAIL'
+            jq -c 'map({name,path,type})' "$RUNNER_TEMP/operations-workflows.json" 2>/dev/null || cat "$RUNNER_TEMP/operations-workflows.json"
+            exit 1
+          fi
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
