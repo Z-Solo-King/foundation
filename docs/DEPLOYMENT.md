@@ -65,6 +65,11 @@ The public workflow `.github/workflows/operations-centralized-validation.yml` is
 
 Scheduled and manual validation happen on Foundation runners. Operations itself has no GitHub Actions execution surface.
 
+## Production re-release rule
+
+When production runtime provenance or the deployed private Operations revision must be refreshed, the supported mechanism is a normal merge to `main`. The canonical `.github/workflows/heroic-ai-production-release.yml` is push-to-`main` owned and runs `scripts/production_release.sh`.
+
+Do not create a second deployment workflow, direct Cloudflare deployment path, private Operations Actions workflow, or manual Cloudflare Build/Deploy Hook to refresh production.
 ## Evidence and closure
 
 A successful repository-side change does not prove production deployment. Deployment issue closure requires an actual successful post-merge Foundation Actions run proving the complete chain. Cloudflare production state, D1 bindings, Worker bindings, scheduled triggers, and live runtime behavior are verified separately in the Cloudflare-only operational context.
