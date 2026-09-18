@@ -105,7 +105,7 @@ Source inspection and repository tests do not substitute for approved runtime/L4
 
 Keep runtime-only issues open until required evidence exists. Never fabricate deployments, secrets, bindings, production responses, or acceptance receipts.
 
-Operations may be private; never expose protected topology, credentials, evaluation holdouts, or private runtime implementation through Foundation.
+Operations repository visibility is not the security boundary; the Operations control plane remains protected. Never expose protected topology, credentials, evaluation holdouts, private runtime state, or protected implementation details through Foundation.
 
 ## Cross-repository order
 
