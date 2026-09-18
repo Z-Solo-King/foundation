@@ -43,6 +43,10 @@ async def _existing_event(db: Any, event_id: str) -> dict[str, Any] | None:
         return None
     if isinstance(result, dict):
         return result
+    rows = getattr(result, "results", None)
+    if rows is not None:
+        rows = list(rows or ())
+        return rows[0] if rows else None
     return {
         "event_id": getattr(result, "event_id", event_id),
         "window_start": getattr(result, "window_start", None),
