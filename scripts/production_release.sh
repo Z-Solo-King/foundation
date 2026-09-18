@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="d8825f5ce9c917a780c962f9773de6bb4446997f"
+OPERATIONS_REF="0b89ee3dca7d686205e49b7bb5b2806b72f2b57b"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
@@ -19,7 +19,7 @@ test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo 'Missing CLOUDFLARE_API_TOKEN GitH
 test -n "${CLOUDFLARE_ACCOUNT_ID:-}" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID GitHub secret'; exit 1; }
 test -n "${OPERATIONS_APP_ID:-}" || { echo 'Missing OPERATIONS_APP_ID GitHub Actions secret'; exit 1; }
 test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIVATE_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = 'd8825f5ce9c917a780c962f9773de6bb4446997f'
+test "$OPERATIONS_REF" = '0b89ee3dca7d686205e49b7bb5b2806b72f2b57b'
 
 after_install_marker=''
 
@@ -248,6 +248,12 @@ git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git" "$RUNN
 git -C "$RUNNER_TEMP/operations" fetch --no-tags --depth=1 origin "$OPERATIONS_REF"
 git -C "$RUNNER_TEMP/operations" checkout --detach "$OPERATIONS_REF"
 test "$(git -C "$RUNNER_TEMP/operations" rev-parse HEAD)" = "$OPERATIONS_REF"
+
+# Materialize the pinned public Foundation deterministic core locally.
+# Cloudflare Python Workers must bundle local Worker-compatible modules rather
+# than resolve a Git URL package during the Worker build.
+python "$RUNNER_TEMP/operations/scripts/sync_public_core.py"
+test -f "$RUNNER_TEMP/operations/foundation_core/__init__.py"
 
 npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
   --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql" \
