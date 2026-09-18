@@ -47,6 +47,12 @@ Thumbsdb
 
 # Project specific
 *.log
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+credentials/
 local_state/
 cloudflare_config.json
 payload/
