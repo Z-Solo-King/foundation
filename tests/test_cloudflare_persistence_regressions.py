@@ -238,3 +238,9 @@ async def test_create_run_persists_subject_scope():
     await persistence(db).create_run_scoped("run-subject", request(), "subject-a")
     assert db.statement.args[0] == "run-subject"
     assert db.statement.args[1] == "subject-a"
+
+
+@pytest.mark.asyncio
+async def test_create_run_scoped_rejects_empty_subject():
+    with pytest.raises(ValueError, match="subject_fingerprint"):
+        await persistence(FakeDB()).create_run_scoped("run-subject", request(), " ")
