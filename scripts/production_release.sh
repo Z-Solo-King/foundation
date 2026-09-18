@@ -374,6 +374,9 @@ live_research_status=$(curl -sS --max-time 90 \
   -d "${live_research_payload}" \
   "${BASE_URL}/api/v1/research")
 echo "POST /api/v1/research -> HTTP ${live_research_status}"
+echo '--- live-research.body ---'
+cat "$RUNNER_TEMP/live-research.json" || true
+echo '--- end live-research diagnostics ---'
 test "$live_research_status" = '200'
 jq -e '.ok == true and (.run_id | type == "string" and length > 0)' \
   "$RUNNER_TEMP/live-research.json" >/dev/null
