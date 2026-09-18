@@ -67,3 +67,22 @@ def test_non_strict_requirement_allows_unknown_timestamp():
         now=NOW,
     )
     assert result is FreshnessState.FRESH
+
+
+
+def test_negative_freshness_requirement_is_rejected():
+    with pytest.raises(ValueError, match="max_age"):
+        FreshnessRequirement(max_age=timedelta(seconds=-1)).validate()
+
+
+def test_observed_timestamp_wins_over_published_timestamp():
+    evidence = EvidenceTime(
+        observed_at=NOW - timedelta(minutes=5),
+        published_at=NOW - timedelta(days=2),
+    )
+    result = classify_freshness(
+        evidence,
+        FreshnessRequirement(max_age=timedelta(hours=1)),
+        now=NOW,
+    )
+    assert result is FreshnessState.FRESH
