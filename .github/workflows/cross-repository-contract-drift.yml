@@ -127,6 +127,65 @@ PY
               -H 'X-GitHub-Api-Version: 2022-11-28' \
               "https://api.github.com/repos/${OPERATIONS_REPOSITORY}") >/dev/null
           test -s operations/CAPABILITIES.json
+
+      - name: Enforce private Operations structural policy
+        shell: bash
+        env:
+          OPERATIONS_REPOSITORY: Z-Solo-King/operations
+          OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
+          OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          key_file="$RUNNER_TEMP/operations-app.pem"
+          jwt_file="$RUNNER_TEMP/operations-app-jwt.txt"
+          umask 077
+          printf '%s\n' "$OPERATIONS_APP_PRIVATE_KEY" > "$key_file"
+          chmod 600 "$key_file"
+          python - "$OPERATIONS_APP_ID" "$key_file" > "$jwt_file" <<'PY'
+import base64, json, subprocess, sys, time
+app_id, key_file = sys.argv[1:]
+enc = lambda value: base64.urlsafe_b64encode(value).rstrip(b"=").decode()
+now = int(time.time())
+header = {"alg": "RS256", "typ": "JWT"}
+payload = {"iat": now - 60, "exp": now + 540, "iss": app_id}
+unsigned = f"{enc(json.dumps(header, separators=(",", ":")).encode())}.{enc(json.dumps(payload, separators=(",", ":")).encode())}".encode()
+signed = subprocess.run(["openssl", "dgst", "-sha256", "-sign", key_file], input=unsigned, stdout=subprocess.PIPE, check=True).stdout
+print(unsigned.decode() + "." + enc(signed))
+PY
+          app_jwt="$(cat "$jwt_file")"
+          installation_id="$(OPERATIONS_APP_JWT="$app_jwt" python scripts/resolve_operations_installation.py)"
+          token_response=$(curl -fsS -X POST             -H 'Accept: application/vnd.github+json'             -H "Authorization: Bearer ${app_jwt}"             -H 'X-GitHub-Api-Version: 2022-11-28'             "https://api.github.com/app/installations/${installation_id}/access_tokens")
+          github_app_token="$(python -c 'import json,sys; print(json.loads(sys.stdin.read())["token"])' <<<"$token_response")"
+          echo "::add-mask::$github_app_token"
+          tree_response=$(curl -fsS             -H 'Accept: application/vnd.github+json'             -H "Authorization: Bearer ${github_app_token}"             -H 'X-GitHub-Api-Version: 2022-11-28'             "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/git/trees/main?recursive=1")
+          printf '%s\n' "$tree_response" > "$RUNNER_TEMP/operations-tree.json"
+          test "$(jq -r '.truncated // false' "$RUNNER_TEMP/operations-tree.json")" = "false"
+
+          forbidden_docs='AI_AGENT_HANDOFF.md AI_ANALYSIS_MAP.md CLAUDE_GUIDANCE.md CODE_OWNERSHIP_AND_PLACEMENT.md AI_AUDIT_AND_VERIFICATION_STANDARD.md AI_GOVERNANCE_STANDARD.md FAMILY_ARCHITECTURE.md FAMILY_DOCUMENTATION_INDEX.md GOVERNANCE_KNOWLEDGE_TAXONOMY.md LIMITATION_KNOWLEDGE_STANDARD.md'
+          for legacy in $forbidden_docs; do
+            if jq -e --arg name "$legacy" '[.tree[] | select(.type=="blob" and (.path|startswith("docs/")) and (.path|endswith($name)))] | length > 0' "$RUNNER_TEMP/operations-tree.json" >/dev/null; then
+              echo "FAIL: retired Operations guidance document exists: $legacy"
+              exit 1
+            fi
+          done
+
+          for required in CURRENT_SOURCE_OF_TRUTH.md AGENT_MAINTENANCE_GUIDE.md FAMILY_OPERATING_MODEL.md GOVERNANCE_AND_EVIDENCE_STANDARD.md KNOWLEDGE_LIFECYCLE_STANDARD.md FUTURE_KNOWLEDGE_CATALOG.md CHATBOT_BOUNDARY.md; do
+            jq -e --arg name "$required" '[.tree[] | select(.type=="blob" and (.path=="docs/"+$name))] | length == 1' "$RUNNER_TEMP/operations-tree.json" >/dev/null || {
+              echo "FAIL: required canonical Operations document missing: $required"
+              exit 1
+            }
+          done
+
+          workflow_count="$(jq '[.tree[] | select(.type=="blob" and (.path|startswith(".github/workflows/")))] | length' "$RUNNER_TEMP/operations-tree.json")"
+          test "$workflow_count" -eq 0
+
+          benchmark_count="$(jq '[.tree[] | select(.type=="blob" and (.path|startswith("benchmark/")))] | length' "$RUNNER_TEMP/operations-tree.json")"
+          test "$benchmark_count" -eq 0
+
+          archive_ok="$(jq '[.tree[] | select(.type=="blob" and (.path|contains("/archives/")) and ((.path|startswith("private/archives/"))|not))] | length' "$RUNNER_TEMP/operations-tree.json")"
+          test "$archive_ok" -eq 0
+
+          echo 'private Operations structural policy: PASS'
           # Operations is source/runtime only. GitHub Actions ownership lives in Foundation.
           workflow_status=$(curl -sS -o "$RUNNER_TEMP/operations-workflows.json" -w '%{http_code}' \
             -H 'Accept: application/vnd.github+json' \
