@@ -95,3 +95,13 @@ def test_published_timestamp_can_satisfy_unbounded_freshness():
         now=NOW,
     )
     assert result is FreshnessState.FRESH
+
+
+
+def test_observed_timestamp_with_unbounded_freshness_is_fresh():
+    result = classify_freshness(
+        EvidenceTime(observed_at=NOW - timedelta(days=30)),
+        FreshnessRequirement(max_age=None),
+        now=NOW,
+    )
+    assert result is FreshnessState.FRESH
