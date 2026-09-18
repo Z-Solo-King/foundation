@@ -81,7 +81,7 @@ def test_capability_and_lane_validation_are_strict():
     with pytest.raises(ValueError):
         AcquisitionLane("", AcquisitionLaneKind.STATIC_FETCH, "static", 1).validate()
     with pytest.raises(ValueError):
-        AcquisitionLane("bad", AcquisitionLaneKind.BROWSER, "browser", 1, requires_browser=False).validate()
+        AcquisitionLane("bad", AcquisitionLaneKind.STATIC_FETCH, "static", 1, requires_browser=True).validate()
     with pytest.raises(ValueError):
         AcquisitionLane("bad", AcquisitionLaneKind.STATIC_FETCH, "static", 0).validate()
     with pytest.raises(ValueError):
