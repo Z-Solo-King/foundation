@@ -190,7 +190,7 @@ def test_centralized_operations_validation_owns_private_repo_ci():
     assert "repositories: operations" in workflow
     assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in workflow
     assert "python -m pytest tests -q" in workflow
-    assert "contents/.github/workflows?ref=main" in workflow
+    assert "contents/.github/workflows?ref=${OPERATIONS_REF}" in workflow
     assert "private Operations GitHub Actions boundary: FAIL" in workflow
 
 def test_private_operations_automation_guard_is_in_public_foundation_ci():
