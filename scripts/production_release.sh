@@ -250,7 +250,39 @@ npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
   --config="$RUNNER_TEMP/operations/wrangler.toml"
 secret_file="$RUNNER_TEMP/operations-secrets.env"
 printf 'AUTH_TOKEN=%s\n' "$AUTH_TOKEN" > "$secret_file"
-(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}")
+(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}")
+# Fail closed unless the active Cloudflare Operations deployment points to the
+# version carrying the exact canonical GitHub provenance annotation.
+operations_deployments_status=$(curl -sS -o "$RUNNER_TEMP/operations-deployments.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments" || true)
+echo "GET Operations deployments -> HTTP ${operations_deployments_status}"
+test "$operations_deployments_status" = '200' || {
+  jq -c '{message,errors}' "$RUNNER_TEMP/operations-deployments.json" 2>/dev/null || cat "$RUNNER_TEMP/operations-deployments.json"
+  exit 1
+}
+operations_version_id=$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id' "$RUNNER_TEMP/operations-deployments.json" | head -n1)
+test -n "$operations_version_id" || { echo 'No 100% active Operations Worker version found'; exit 1; }
+
+operations_version_status=$(curl -sS -o "$RUNNER_TEMP/operations-version.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/versions/${operations_version_id}" || true)
+echo "GET Operations active version -> HTTP ${operations_version_status}"
+test "$operations_version_status" = '200' || {
+  jq -c '{message,errors}' "$RUNNER_TEMP/operations-version.json" 2>/dev/null || cat "$RUNNER_TEMP/operations-version.json"
+  exit 1
+}
+jq -e --arg expected "github:${OPERATIONS_REF}" '.
+  (.result.annotations."workers/message" == $expected)
+  or (.result.annotations."workers/tag" == $expected)
+' "$RUNNER_TEMP/operations-version.json" >/dev/null || {
+  echo "Active Operations Worker provenance does not match canonical revision ${OPERATIONS_REF}"
+  jq -c '.result | {id,number,source,annotations}' "$RUNNER_TEMP/operations-version.json" 2>/dev/null || true
+  exit 1
+}
+echo "Operations Cloudflare provenance: PASS (github:${OPERATIONS_REF})"
 
 # Run the broader authenticated infrastructure diagnostic only after both deployments succeed.
 if [ -n "${AUTH_TOKEN:-}" ]; then
