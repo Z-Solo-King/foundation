@@ -86,6 +86,16 @@ def _normalize_quantity(value: object, unit: str | None) -> tuple[str, Decimal] 
     return dimension, numeric * factor
 
 
+def _normalized_tolerance(claim: TypedClaim) -> Decimal:
+    tolerance = claim.tolerance or Decimal("0")
+    if not claim.unit:
+        return tolerance
+    spec = _UNIT_FACTORS.get(claim.unit.strip().casefold())
+    if spec is None:
+        return tolerance
+    return tolerance * spec[1]
+
+
 def _numeric_pair(left: TypedClaim, right: TypedClaim) -> tuple[Decimal, Decimal] | None:
     a = _normalize_quantity(left.value, left.unit)
     b = _normalize_quantity(right.value, right.unit)
@@ -109,7 +119,7 @@ def detect_typed_contradiction(left: TypedClaim, right: TypedClaim) -> Contradic
     if left.value_type == right.value_type == "numeric":
         pair = _numeric_pair(left, right)
         if pair is not None:
-            tolerance = max(left.tolerance or Decimal("0"), right.tolerance or Decimal("0"))
+            tolerance = max(_normalized_tolerance(left), _normalized_tolerance(right))
             if abs(pair[0] - pair[1]) > tolerance:
                 return Contradiction(left.claim_id, right.claim_id, "numeric values differ beyond tolerance", left.predicate)
 
