@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from datetime import datetime, timezone
 
 from backend.api.main import health_endpoint, readiness_endpoint
@@ -77,8 +78,16 @@ async def public_infrastructure_verify(env, *, persistence_cls):
         await persistence.delete_artifact(key)
         deleted = await persistence.get_artifact(key)
         b2_ok = all((read_back == content, deleted is None, written["sha256"] == hashlib.sha256(content).hexdigest(), written["size"] == len(content)))
-    except Exception:
+    except Exception as exc:
         b2_ok = False
-    checks.append({"name": "backblaze_b2_lifecycle", "ok": b2_ok})
+        message = str(exc)
+        match = re.search(r"B2 (?:PUT|GET|DELETE) failed \\((\\d{3})\\)", message)
+        b2_error = f"b2_http_{match.group(1)}" if match else type(exc).__name__
+    else:
+        b2_error = None
+    b2_check = {"name": "backblaze_b2_lifecycle", "ok": b2_ok}
+    if b2_error:
+        b2_check["error_class"] = b2_error
+    checks.append(b2_check)
     ok = all(check["ok"] for check in checks)
     return {"ok": ok, "status": "ok" if ok else "degraded", "checks": checks}, 200 if ok else 503
