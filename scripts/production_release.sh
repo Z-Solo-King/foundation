@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="90e3c692bfd43da25d08bf5d47a6a6c5167e0f7f"
+OPERATIONS_REF="6bbc5a6b25ca607090a062dd853eb5defc09564f"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
@@ -19,7 +19,7 @@ test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo 'Missing CLOUDFLARE_API_TOKEN GitH
 test -n "${CLOUDFLARE_ACCOUNT_ID:-}" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID GitHub secret'; exit 1; }
 test -n "${OPERATIONS_APP_ID:-}" || { echo 'Missing OPERATIONS_APP_ID GitHub Actions secret'; exit 1; }
 test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIVATE_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = '90e3c692bfd43da25d08bf5d47a6a6c5167e0f7f'
+test "$OPERATIONS_REF" = '6bbc5a6b25ca607090a062dd853eb5defc09564f'
 
 after_install_marker=''
 
@@ -219,7 +219,7 @@ repo_status=$(curl -sS -o "$RUNNER_TEMP/operations-repo-response.json" -w '%{htt
   -H 'X-GitHub-Api-Version: 2022-11-28' "https://api.github.com/repos/${OPERATIONS_REPOSITORY}")
 echo "GET Operations repository -> HTTP ${repo_status}"
 test "$repo_status" = '200' || { jq -c '{message,errors,documentation_url}' "$RUNNER_TEMP/operations-repo-response.json" || cat "$RUNNER_TEMP/operations-repo-response.json"; exit 1; }
-jq -e --arg repo "$OPERATIONS_REPOSITORY" '.full_name == $repo and .private == true' "$RUNNER_TEMP/operations-repo-response.json" >/dev/null
+jq -e --arg repo "$OPERATIONS_REPOSITORY" '.full_name == $repo and .private == false' "$RUNNER_TEMP/operations-repo-response.json" >/dev/null
 
 ref_status=$(curl -sS -o "$RUNNER_TEMP/operations-ref-response.json" -w '%{http_code}' \
   -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${github_app_token}" \
