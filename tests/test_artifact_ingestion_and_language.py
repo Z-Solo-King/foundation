@@ -123,3 +123,11 @@ def test_alignment_requires_provenance_for_positive_states():
         ClaimLanguageAlignment("a", "c1", "c2", "tr-1", "zh", "en", "bad", True).validate()
     with pytest.raises(ValueError):
         ClaimLanguageAlignment("a", "c1", "c2", "tr-1", "zh", "en", "aligned", False).validate()
+
+
+def test_artifact_extraction_validation_rejects_missing_identity_and_media_type():
+    spec = adapter()
+    with pytest.raises(ValueError, match="artifact_id"):
+        ArtifactExtractionResult("", content_fingerprint("x"), content_fingerprint("y"), "text/html", ArtifactIngestionState.EXTRACTED, spec).validate()
+    with pytest.raises(ValueError, match="media_type"):
+        ArtifactExtractionResult("a", content_fingerprint("x"), content_fingerprint("y"), " ", ArtifactIngestionState.EXTRACTED, spec).validate()
