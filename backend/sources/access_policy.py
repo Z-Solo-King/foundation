@@ -40,6 +40,7 @@ class SourceAccessPolicy:
     raw_content_allowed: bool = False
     disclosure_class: DisclosureClass = DisclosureClass.PUBLIC_SAFE
     revalidation_required: bool = True
+    revalidation_after_seconds: int | None = None
 
     def validate(self) -> None:
         if self.policy_version != SOURCE_ACCESS_POLICY_VERSION:
@@ -58,6 +59,8 @@ class SourceAccessPolicy:
             raise ValueError("public-safe disclosure cannot retain unrestricted raw content")
         if self.retention_class is RetentionClass.NONE and self.raw_content_allowed:
             raise ValueError("raw content cannot be retained when retention is none")
+        if self.revalidation_after_seconds is not None and self.revalidation_after_seconds < 0:
+            raise ValueError("revalidation_after_seconds must be non-negative")
 
 
 @dataclass(frozen=True)
@@ -96,3 +99,74 @@ def decide_source_access(
         decision = SourceAccessDecision(True, "source acquisition allowed by policy", policy.retention_class, policy.disclosure_class, policy.revalidation_required)
     decision.validate()
     return decision
+
+
+def retention_seconds(policy: SourceAccessPolicy) -> int | None:
+    policy.validate()
+    return {
+        RetentionClass.NONE: 0,
+        RetentionClass.EPHEMERAL: 0,
+        RetentionClass.SHORT: 86_400,
+        RetentionClass.STANDARD: 7 * 86_400,
+        RetentionClass.UNKNOWN: None,
+    }[policy.retention_class]
+
+
+def expires_at(observed_at, policy: SourceAccessPolicy):
+    from datetime import timedelta, timezone
+    policy.validate()
+    if observed_at.tzinfo is None:
+        raise ValueError("observed_at must be timezone-aware")
+    seconds = retention_seconds(policy)
+    return observed_at.astimezone(timezone.utc) + timedelta(seconds=seconds)
+
+
+def revalidation_due(observed_at, policy: SourceAccessPolicy):
+    from datetime import timedelta, timezone
+    policy.validate()
+    if observed_at.tzinfo is None:
+        raise ValueError("observed_at must be timezone-aware")
+    if not policy.revalidation_required:
+        return None
+    return observed_at.astimezone(timezone.utc) + timedelta(
+        seconds=policy.revalidation_after_seconds if policy.revalidation_after_seconds is not None else 86_400
+    )
+
+
+def resolve_source_policy_conflict(policies: tuple[SourceAccessPolicy, ...] | list[SourceAccessPolicy]) -> SourceAccessPolicy:
+    if not policies:
+        raise ValueError("at least one source policy is required")
+    for policy in policies:
+        policy.validate()
+    if all(policy == policies[0] for policy in policies[1:]):
+        return policies[0]
+    access_rank = {
+        AccessClass.RESTRICTED: 4,
+        AccessClass.AUTHENTICATED: 3,
+        AccessClass.PUBLIC: 2,
+        AccessClass.UNKNOWN: 0,
+    }
+    disclosure_rank = {
+        DisclosureClass.FORBIDDEN: 4,
+        DisclosureClass.PRIVATE_ONLY: 3,
+        DisclosureClass.METADATA_ONLY: 2,
+        DisclosureClass.PUBLIC_SAFE: 1,
+    }
+    retention_rank = {
+        RetentionClass.NONE: 4,
+        RetentionClass.EPHEMERAL: 3,
+        RetentionClass.SHORT: 2,
+        RetentionClass.STANDARD: 1,
+        RetentionClass.UNKNOWN: 0,
+    }
+    return max(
+        policies,
+        key=lambda policy: (
+            access_rank[policy.access_class],
+            disclosure_rank[policy.disclosure_class],
+            retention_rank[policy.retention_class],
+            policy.requires_authentication,
+            policy.robots_restriction,
+            not policy.raw_content_allowed,
+        ),
+    )
