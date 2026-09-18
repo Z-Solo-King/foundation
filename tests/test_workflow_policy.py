@@ -72,7 +72,7 @@ def test_production_generates_private_operations_service_binding():
     assert "'[[services]]'" in deployment
     assert "'binding = \"OPERATIONS\"'" in deployment
     assert '"service = \\\"${OPERATIONS_SERVICE_NAME}\\\""' in deployment
-    assert 'grep -q \'^service = "${OPERATIONS_SERVICE_NAME}"$\'' in deployment
+    assert 'grep -q "^service = \\\"${OPERATIONS_SERVICE_NAME}\\\"$" wrangler.production.generated.toml' in deployment
 
 
 def test_operations_installation_is_discovered_from_app_jwt():
