@@ -16,8 +16,19 @@ def ctx(**kwargs):
 
 
 def test_identical_conditions_are_comparable():
-    left = Measurement(Decimal("1000"), ctx(unit="ms", methodology="tool-v1", population="n=10"))
-    right = Measurement(Decimal("1"), ctx(unit="s", methodology="tool-v1", population="n=10"))
+    common = dict(
+        unit="ms",
+        variant="v1",
+        region="global",
+        environment="linux",
+        software_revision="sw-1",
+        methodology="tool-v1",
+        tool_version="tool-1",
+        workload="steady",
+        population="n=10",
+    )
+    left = Measurement(Decimal("1000"), ctx(**common))
+    right = Measurement(Decimal("1"), ctx(**{**common, "unit": "s"}))
     result = classify_comparability(left, right)
     assert result.state is ComparabilityState.COMPARABLE
     assert result.normalized_delta == 0
