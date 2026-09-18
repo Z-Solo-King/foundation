@@ -14,7 +14,7 @@ from backend.governance.contract_drift import (
 
 BASE_CAPABILITIES = {
     "family": "z-solo-king-github-family",
-    "family_contract": "docs/FAMILY_MEMBER.md",
+    "family_contract": "docs/FAMILY_CONTRACT.json",
     "family_contract_version": "1",
     "name": "foundation",
     "role": "public-contracts",

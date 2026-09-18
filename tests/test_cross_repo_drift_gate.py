@@ -8,7 +8,7 @@ from tools.check_cross_repo_drift import compare_active_family_catalogs
 def foundation():
     return {
         "family": "z-solo-king-github-family",
-        "family_contract": "docs/FAMILY_MEMBER.md",
+        "family_contract": "docs/FAMILY_CONTRACT.json",
         "family_contract_version": "1",
         "name": "foundation",
         "role": "public-contracts",
@@ -22,7 +22,7 @@ def foundation():
 def operations():
     return {
         "family": "z-solo-king-github-family",
-        "family_contract": "docs/FAMILY_MEMBER.md",
+        "family_contract": "docs/FAMILY_CONTRACT.json",
         "family_contract_version": "1",
         "name": "operations",
         "role": "protected-authority",

@@ -179,20 +179,6 @@ def test_private_operations_handoff_is_preflighted_and_diagnostic_runs_last():
 
 
 
-def test_public_foundation_is_the_only_github_actions_bridge_owner():
-    workflow = _workflow_texts()["foundation-canonical-workflow-bridge.yml"]
-    assert "actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1" in workflow
-    assert "FOUNDATION_APP_ID" in workflow
-    assert "FOUNDATION_APP_PRIVATE_KEY" in workflow
-    assert "permission-actions: write" in workflow
-    assert "repositories: foundation" in workflow
-    assert "actions/workflows/${TARGET}/dispatches" in workflow
-    assert "heroic-ai-production-release.yml" in workflow
-    assert "nightly-multi-agent-research.yml" in workflow
-    assert "confirm_production=true" in workflow
-
-
-
 
 def test_production_release_has_live_runtime_acceptance_gates():
     production = (ROOT / "scripts" / "production_release.sh").read_text(encoding="utf-8")
@@ -204,16 +190,6 @@ def test_production_release_has_live_runtime_acceptance_gates():
     assert 'POST /api/v1/research -> HTTP' in production
     assert 'Live research execution/readback acceptance: PASS' in production
 
-def test_centralized_operations_validation_owns_private_repo_ci():
-    workflow = _workflow_texts()["operations-centralized-validation.yml"]
-    assert "actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1" in workflow
-    assert "OPERATIONS_APP_ID" in workflow
-    assert "OPERATIONS_APP_PRIVATE_KEY" in workflow
-    assert "repositories: operations" in workflow
-    assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in workflow
-    assert "python -m pytest tests -q" in workflow
-    assert "contents/.github/workflows?ref=${OPERATIONS_REF}" in workflow
-    assert "private Operations GitHub Actions boundary: FAIL" in workflow
 
 def test_private_operations_automation_guard_is_in_public_foundation_ci():
     workflow = _workflow_texts()["cross-repository-contract-drift.yml"]

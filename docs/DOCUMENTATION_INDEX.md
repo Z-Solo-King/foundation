@@ -15,19 +15,9 @@
 8. `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md`
 9. `docs/DEPLOYMENT.md`
 10. `docs/FAMILY_CONTRACT.json`
-11. `docs/FAMILY_ARCHITECTURE.md`
-12. `docs/FAMILY_MEMBER.md`
+11. `docs/contracts/adapter-route-v1.md`
+12. `docs/contracts/compute-envelope-v1.md`
 
 ## Boundary
 
-Foundation documentation is intentionally public-safe. Protected chatbot policy, private provider/runtime logic, resource governance, memory/feedback, evaluation/promotion, private operational state and AI maintenance methodology live in the private Operations repository.
-
-The public repository must not become a mirror of private Operations documentation.
-
-## Current source of truth
-
-The live `main` tree, current PR/issue/workflow state and fresh execution evidence are authoritative. Internal continuation/handoff/state documents are intentionally maintained only in private Operations.
-
-## Lifecycle
-
-Keep public documents focused on product behavior, stable public contracts, deployment/backup boundaries and public/private ownership. Put exploratory, operational, sensitive or future-only material in Operations.
+Foundation documentation is limited to stable product behavior, public contracts, deployment/backup boundaries and the public/private family contract. Protected chatbot policy, provider/runtime logic, resource governance, memory/feedback, evaluation, private research, benchmark material, maintenance methodology and historical change records live in Operations.

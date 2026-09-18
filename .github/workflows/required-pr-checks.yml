@@ -55,8 +55,6 @@ jobs:
         run: coverage run --branch --source=backend,foundation_core,worker --omit='tests/*,backend/persistence/artifacts.py' -m pytest tests/ -v
       - name: Enforce complete product coverage
         run: coverage report --show-missing --fail-under=100 --omit='tests/*,backend/persistence/artifacts.py'
-      - name: Run deterministic natural-language research benchmark
-        run: python -m benchmark.chatbot_query_benchmark --input benchmark/chatbot-query-corpus.json --output .runtime/chatbot-query-benchmark.json
       - name: Run frontend UI contract
         working-directory: frontend
         run: npm test

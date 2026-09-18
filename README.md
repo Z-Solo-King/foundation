@@ -11,7 +11,6 @@ Heroic AI is the product. Research is one of its capabilities, not a separate pr
 3. `docs/DOCUMENTATION_INDEX.md`
 4. `REPOSITORY_MAP.json`
 5. `docs/FAMILY_CONTRACT.json`
-6. `docs/FAMILY_ARCHITECTURE.md`
 
 Live repository state and fresh GitHub evidence override dated continuity notes.
 

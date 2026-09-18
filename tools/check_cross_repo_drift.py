@@ -58,13 +58,13 @@ def compare_active_family_catalogs(
         )
 
     for name, catalog in (("foundation", foundation), ("operations", operations)):
-        if catalog.get("family_contract") != "docs/FAMILY_MEMBER.md":
+        if catalog.get("family_contract") != "docs/FAMILY_CONTRACT.json":
             findings.append(
                 DriftFinding(
                     DriftSeverity.ERROR,
                     name,
                     "family_contract",
-                    "docs/FAMILY_MEMBER.md",
+                    "docs/FAMILY_CONTRACT.json",
                     str(catalog.get("family_contract")),
                     "active family members must point to the canonical family contract",
                 )

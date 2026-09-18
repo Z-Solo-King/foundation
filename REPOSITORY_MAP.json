@@ -7,8 +7,7 @@
     "docs/HEROIC_AI_PRODUCT.md",
     "README.md",
     "docs/DOCUMENTATION_INDEX.md",
-    "docs/FAMILY_CONTRACT.json",
-    "docs/FAMILY_ARCHITECTURE.md"
+    "docs/FAMILY_CONTRACT.json"
   ],
   "canonical": {
     "chat_product_ui": "frontend/index.html",
@@ -28,8 +27,7 @@
     "execution": "backend/execution/engine.py",
     "research_pipeline": "backend/execution/pipeline.py",
     "public_worker_boundary": "backend/execution/worker_boundary.py",
-    "artifacts": "backend/artifacts/manifest.py",
-    "benchmarks": "benchmark/"
+    "artifacts": "backend/artifacts/manifest.py"
   },
   "boundary": {
     "private_operations": "Z-Solo-King/operations",
@@ -47,8 +45,7 @@
     "historical_code_is_not_runtime": true,
     "github_actions_owner": ".github/workflows/",
     "private_operations_actions_forbidden": true,
-    "private_operations_access": "Foundation GitHub App short-lived installation token",
-    "workflow_dispatch_bridge": ".github/workflows/foundation-canonical-workflow-bridge.yml"
+    "private_operations_access": "Foundation GitHub App short-lived installation token"
   },
   "method": [
     "accept Heroic AI request",

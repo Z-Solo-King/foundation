@@ -34,7 +34,6 @@ python -m compileall -q backend foundation_core worker.py
 python -c "import foundation_core; print(foundation_core.__all__)"
 coverage run --branch --source=backend,foundation_core,worker --omit='tests/*,backend/persistence/artifacts.py' -m pytest tests/ -v
 coverage report --show-missing --fail-under=100 --omit='tests/*,backend/persistence/artifacts.py'
-python -m benchmark.chatbot_query_benchmark --input benchmark/chatbot-query-corpus.json --output .runtime/chatbot-query-benchmark.json
 python -m pytest -q tests/test_workflow_policy.py
 python scripts/public_security_lint.py --strict
 
