@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime, timezone
 from urllib.parse import parse_qs, urlparse
 
-from workers import Request, Response, WorkerEntrypoint
+from workers import Response, WorkerEntrypoint
 
 from backend.api.main import submit_research
 from backend.api.models import ChatRequest, ResearchRequest
@@ -23,16 +23,35 @@ from backend.worker_research import get_run, ingest_sources
 
 
 
-def _service_request(url, *, method="GET", headers=None, body=None):
-    """Construct a Fetch API Request for a Worker service binding.
+class _TestServiceRequest:
+    """Minimal request shape used only when the Cloudflare JS runtime is unavailable."""
 
-    Cloudflare Python Worker service bindings accept exactly one Request object;
-    they do not support the JavaScript-style fetch(url, init) positional form.
+    def __init__(self, url, *, method, headers, body=None):
+        self.url = url
+        self.method = method
+        self.headers = headers
+        self.body = body
+
+
+def _service_request(url, *, method="GET", headers=None, body=None):
+    """Construct the single Request object required by an HTTP service binding.
+
+    Python Workers exposes the Fetch API through JavaScript FFI. The runtime SDK
+    does not export Request consistently across local test environments, so CI gets
+    a small structural fallback while deployed Workers use the real JS Request.
     """
-    kwargs = {"method": method, "headers": headers or {}}
+    request_init = {"method": method, "headers": headers or {}}
     if body is not None:
-        kwargs["body"] = body
-    return Request.new(url, **kwargs)
+        request_init["body"] = body
+    try:
+        from js import Object, Request as JSRequest
+        from pyodide.ffi import to_js
+        return JSRequest.new(
+            url,
+            to_js(request_init, dict_converter=Object.fromEntries),
+        )
+    except ImportError:
+        return _TestServiceRequest(url, method=method, headers=headers or {}, body=body)
 
 def _extract_source_urls(question, explicit=()):
     return extract_source_urls(question, explicit)
