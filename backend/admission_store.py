@@ -124,6 +124,32 @@ class D1AdmissionStore:
         if now < 0:
             raise ValueError("now must be non-negative")
 
+        existing = await self.db.prepare(
+            """SELECT subject_fingerprint, route
+               FROM public_admission_events
+               WHERE event_id = ?
+               LIMIT 1"""
+        ).bind(event_id).first()
+        if existing:
+            existing_subject = (
+                existing.get("subject_fingerprint", "")
+                if isinstance(existing, dict)
+                else getattr(existing, "subject_fingerprint", "")
+            )
+            existing_route = (
+                existing.get("route", "")
+                if isinstance(existing, dict)
+                else getattr(existing, "route", "")
+            )
+            if existing_subject != subject_fingerprint or existing_route != route.value:
+                raise ValueError("event_id is already bound to a different admission scope")
+            return AdmissionDecision(
+                AdmissionOutcome.ACCEPTED,
+                route,
+                True,
+                "idempotent replay forwarded to the canonical request idempotency authority",
+            ), None
+
         window_start = now - (now % policy.window_seconds)
         expires_at = now + policy.window_seconds
         cost_units = ROUTE_COST_UNITS[route]
