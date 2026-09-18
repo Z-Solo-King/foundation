@@ -124,7 +124,7 @@ def test_public_worker_chat_stream_route_proxies_private_sse():
     class Request:
         method = "POST"; url = "https://example/api/v1/chat/stream"; headers = {"Authorization": "Bearer secret", "Idempotency-Key": "r1", "Content-Type": "application/json"}
         async def json(self): return {"chat_id": "c1", "request_id": "r1", "message": "hello", "strict_zero_cost_only": True}
-    instance = worker.Default(); instance.env = SimpleNamespace(AUTH_TOKEN="secret", OPERATIONS=Binding())
+    instance = worker.Default(); instance.env = SimpleNamespace(AUTH_TOKEN="secret", OPERATIONS=Binding(), ENVIRONMENT="development", LOCAL_DEVELOPMENT_AUTH_BYPASS="true")
     response = asyncio.run(instance.fetch(Request()))
     assert response.status == 200
 
