@@ -209,17 +209,23 @@ async def test_worker_http_all_branches(monkeypatch):
     rejected = await entry.fetch(Request("POST", "https://x/api/v1/research", payload={"question":"q"}, headers={"Authorization":"Bearer secret", "Content-Type":"application/json"})); assert rejected
     monkeypatch.setattr(worker, "submit_research", lambda req: SimpleNamespace(ok=True, run_id="r1", metadata={}))
     class Persistence:
+        def __init__(self):
+            self.subject_fingerprints = []
         async def create_run(self, run_id, req): return run_id
-        async def create_run_idempotent(self, req, key): return "idempotent"
-    monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: Persistence())
+        async def create_run_idempotent(self, req, key, *, subject_fingerprint=None, capability="research", contract_revision=None):
+            self.subject_fingerprints.append((subject_fingerprint, capability, contract_revision))
+            return "idempotent"
+    persistence = Persistence()
+    monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: persistence)
     no_sources = await entry.fetch(Request("POST", "https://x/api/v1/research", payload={"question":"q"}, headers={"Authorization":"Bearer secret", "Content-Type":"application/json"})); assert no_sources
     with_key = await entry.fetch(Request("POST", "https://x/api/v1/research", payload={"question":"q"}, headers={"Authorization":"Bearer secret", "Idempotency-Key":"k", "Content-Type":"application/json"})); assert with_key
+    assert persistence.subject_fingerprints == [(worker.authenticated_subject_fingerprint(Request("POST", "https://x/api/v1/research", headers={"Authorization":"Bearer secret"})), "research", None)]
     source_request = {"question":"q","source_urls":["https://example.com"]}
     async def ok_public(url): return source_http.FetchResult(url,url,200,"text/plain",b"ok",None)
     monkeypatch.setattr(worker, "fetch_public_url", ok_public)
     with_sources = await entry.fetch(Request("POST", "https://x/api/v1/research", payload=source_request, headers={"Authorization":"Bearer secret", "Content-Type":"application/json"})); assert with_sources
     class BrokenPersistence:
         async def create_run(self, run_id, req): raise RuntimeError("persist")
-        async def create_run_idempotent(self, req, key): raise RuntimeError("persist")
+        async def create_run_idempotent(self, req, key, **kwargs): raise RuntimeError("persist")
     monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: BrokenPersistence())
     persistence_post_error = await entry.fetch(Request("POST", "https://x/api/v1/research", payload={"question":"q"}, headers={"Authorization":"Bearer secret", "Content-Type":"application/json"})); assert persistence_post_error
