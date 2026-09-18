@@ -62,16 +62,70 @@ class Source:
         )
 
 
+class DisclosureState(StrEnum):
+    PUBLIC = "public"
+    PRIVATE = "private"
+    UNKNOWN = "unknown"
+
+
+class AccessState(StrEnum):
+    PUBLIC = "public"
+    AUTHENTICATED = "authenticated"
+    RESTRICTED = "restricted"
+    UNKNOWN = "unknown"
+
+
 @dataclass(frozen=True)
 class SourcePolicy:
     allowed: bool = True
     retain_content: bool = False
     max_requests: int = 5
+    revision: str = "source-policy/v1"
+    access: AccessState = AccessState.PUBLIC
+    retention_seconds: int | None = 86_400
+    disclosure: DisclosureState = DisclosureState.PUBLIC
+    revalidate_after_seconds: int | None = None
+
+    def validate(self) -> None:
+        if not self.revision.strip():
+            raise ValueError("source policy revision is required")
+        if self.max_requests < 1:
+            raise ValueError("max_requests must be positive")
+        if self.retention_seconds is not None and self.retention_seconds < 0:
+            raise ValueError("retention_seconds must be non-negative or None")
+        if self.revalidate_after_seconds is not None and self.revalidate_after_seconds < 0:
+            raise ValueError("revalidate_after_seconds must be non-negative or None")
+        if not isinstance(self.access, AccessState) or not isinstance(self.disclosure, DisclosureState):
+            raise ValueError("source access/disclosure state is invalid")
+
+
+@dataclass(frozen=True)
+class SourcePolicyDecision:
+    allowed: bool
+    reason: str
+    policy_revision: str
+
+
+def evaluate_source_policy(source: Source, policy: SourcePolicy) -> SourcePolicyDecision:
+    source.validate()
+    policy.validate()
+    if not policy.allowed:
+        return SourcePolicyDecision(False, "source access is disabled by policy", policy.revision)
+    if policy.max_requests < 1:
+        return SourcePolicyDecision(False, "source request budget is exhausted", policy.revision)
+    if policy.access is AccessState.UNKNOWN:
+        return SourcePolicyDecision(False, "source access classification is unknown", policy.revision)
+    if policy.disclosure is DisclosureState.UNKNOWN:
+        return SourcePolicyDecision(False, "source disclosure classification is unknown", policy.revision)
+    if policy.access is AccessState.RESTRICTED and policy.disclosure is DisclosureState.PUBLIC:
+        return SourcePolicyDecision(False, "restricted source cannot be public-disclosure eligible", policy.revision)
+    if policy.access is AccessState.AUTHENTICATED and not policy.retain_content:
+        return SourcePolicyDecision(True, "authenticated source allowed with metadata-only retention", policy.revision)
+    return SourcePolicyDecision(True, "source is eligible under current access policy", policy.revision)
 
 
 def evaluate_source(source: Source, policy: SourcePolicy) -> bool:
-    source.validate()
-    return policy.allowed and policy.max_requests > 0
+    return evaluate_source_policy(source, policy).allowed
 
 
 __all__ = [
