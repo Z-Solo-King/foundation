@@ -16,10 +16,29 @@ def _install_workers_compat() -> None:
 
     workers = types.ModuleType("workers")
 
+    class Headers(dict):
+        def get(self, key, default=None):
+            return super().get(key, default)
+
+        def set(self, key, value):
+            self[key] = value
+
     class Response:
+        def __init__(self, body="", status=200, headers=None, payload=None):
+            if payload is not None:
+                body = payload
+            self.body = body
+            self.payload = body
+            self.status = status
+            self.headers = Headers(headers or {})
+
         @staticmethod
         def json(payload, status=200):
-            return types.SimpleNamespace(status=status, payload=payload)
+            return Response(payload=payload, status=status)
+
+        def __repr__(self):
+            return repr(self.payload)
+
 
     class WorkerEntrypoint:
         pass

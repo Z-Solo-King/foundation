@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
@@ -229,3 +230,20 @@ async def test_worker_http_all_branches(monkeypatch):
         async def create_run_idempotent(self, req, key, **kwargs): raise RuntimeError("persist")
     monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: BrokenPersistence())
     persistence_post_error = await entry.fetch(Request("POST", "https://x/api/v1/research", payload={"question":"q"}, headers={"Authorization":"Bearer secret", "Content-Type":"application/json"})); assert persistence_post_error
+
+
+def test_authenticated_json_response_is_not_cacheable(monkeypatch):
+    calls = []
+
+    class Response:
+        def __init__(self, body, *, status=200, headers=None):
+            calls.append((body, status, headers))
+            self.status = status
+
+    monkeypatch.setattr(worker, "Response", Response)
+    worker._authenticated_json({"ok": True}, status=401)
+
+    body, status, headers = calls[0]
+    assert status == 401
+    assert json.loads(body) == {"ok": True}
+    assert headers["Cache-Control"] == "private, no-store, max-age=0, must-revalidate"
