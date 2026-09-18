@@ -19,7 +19,7 @@ test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo 'Missing CLOUDFLARE_API_TOKEN GitH
 test -n "${CLOUDFLARE_ACCOUNT_ID:-}" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID GitHub secret'; exit 1; }
 test -n "${OPERATIONS_APP_ID:-}" || { echo 'Missing OPERATIONS_APP_ID GitHub Actions secret'; exit 1; }
 test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIVATE_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = 'cf28a28cb40de527aff1cd87f96e103669635f70'
+test "$OPERATIONS_REF" = 'd8825f5ce9c917a780c962f9773de6bb4446997f'
 
 after_install_marker=''
 
