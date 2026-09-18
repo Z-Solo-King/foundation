@@ -230,8 +230,12 @@ async def _operations_chat(env, payload, request):
         if not isinstance(body, dict):
             return {"ok": False, "error": "invalid_private_chat_response"}, 503
         return body, upstream.status
-    except Exception:
-        return {"ok": False, "error": "chat_backend_unavailable"}, 503
+    except Exception as exc:
+        return {
+            "ok": False,
+            "error": "chat_backend_unavailable",
+            "error_class": type(exc).__name__,
+        }, 503
 
 
 def _public_sse_response(upstream):
