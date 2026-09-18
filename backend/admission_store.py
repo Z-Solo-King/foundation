@@ -47,14 +47,7 @@ async def _existing_event(db: Any, event_id: str) -> dict[str, Any] | None:
     if rows is not None:
         rows = list(rows or ())
         return rows[0] if rows else None
-    return {
-        "event_id": getattr(result, "event_id", event_id),
-        "window_start": getattr(result, "window_start", None),
-        "subject_fingerprint": getattr(result, "subject_fingerprint", ""),
-        "route": getattr(result, "route", ""),
-        "lease_expires_at": getattr(result, "lease_expires_at", 0),
-        "released_at": getattr(result, "released_at", None),
-    }
+    return None
 
 
 async def _handle_existing_event(
