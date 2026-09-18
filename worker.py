@@ -117,6 +117,16 @@ async def _operations_chat(env, payload, request):
         return {"ok": False, "error": "chat_backend_unavailable"}, 503
 
 
+def _public_sse_response(upstream):
+    """Expose only the public SSE headers while preserving the upstream body stream."""
+    headers = {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-store, no-cache, max-age=0, must-revalidate",
+        "X-Content-Type-Options": "nosniff",
+    }
+    return Response(upstream.body, status=int(upstream.status), headers=headers)
+
+
 async def _operations_chat_stream(env, payload, request):
     """Proxy the private chatbot's SSE stream without exposing its topology."""
     operations = getattr(env, "OPERATIONS", None)
@@ -206,7 +216,7 @@ class Default(WorkerEntrypoint):
             except (TypeError, ValueError) as exc:
                 return Response.json({"ok": False, "error": str(exc)}, status=400)
             upstream, body, status = await _operations_chat_stream(self.env, payload, request)
-            return upstream if upstream is not None else Response.json(body, status=status)
+            return _public_sse_response(upstream) if upstream is not None else _authenticated_json(body, status=status)
         if request.method == "POST" and path.endswith("/api/v1/chat"):
             if not _authorized(request, self.env):
                 return Response.json({"ok": False, "error": "unauthorized"}, status=401)
