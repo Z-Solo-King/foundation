@@ -24,6 +24,21 @@ class TypedClaim:
     unit: str | None = None
     qualifier: str | None = None
     version: str | None = None
+    tolerance: Decimal | None = None
+    negated: bool = False
+
+
+_UNIT_FACTORS = {
+    "ms": ("time", Decimal("1")),
+    "s": ("time", Decimal("1000")),
+    "us": ("time", Decimal("0.001")),
+    "g": ("mass", Decimal("1")),
+    "kg": ("mass", Decimal("1000")),
+    "mg": ("mass", Decimal("0.001")),
+    "bytes": ("bytes", Decimal("1")),
+    "kb": ("bytes", Decimal("1024")),
+    "mb": ("bytes", Decimal("1048576")),
+}
 
 
 def _numeric(value):
@@ -58,6 +73,17 @@ def _validity_overlap(left: TypedClaim, right: TypedClaim) -> bool:
     return True
 
 
+def _normalize_quantity(value: object, unit: str | None) -> tuple[str, Decimal] | None:
+    if not unit:
+        return None
+    numeric = _numeric(value)
+    spec = _UNIT_FACTORS.get(unit.strip().casefold())
+    if numeric is None or spec is None:
+        return None
+    dimension, factor = spec
+    return dimension, numeric * factor
+
+
 def detect_typed_contradiction(left: TypedClaim, right: TypedClaim) -> Contradiction | None:
     if left.entity != right.entity or left.predicate != right.predicate:
         return None
@@ -67,9 +93,12 @@ def detect_typed_contradiction(left: TypedClaim, right: TypedClaim) -> Contradic
         return None
 
     if left.value_type == right.value_type == "numeric":
-        a, b = _numeric(left.value), _numeric(right.value)
-        if a is not None and b is not None and left.unit == right.unit and a != b:
-            return Contradiction(left.claim_id, right.claim_id, "numeric values differ", left.predicate)
+        a = _normalize_quantity(left.value, left.unit)
+        b = _normalize_quantity(right.value, right.unit)
+        if a is not None and b is not None and a[0] == b[0]:
+            tolerance = max(left.tolerance or Decimal("0"), right.tolerance or Decimal("0"))
+            if abs(a[1] - b[1]) > tolerance:
+                return Contradiction(left.claim_id, right.claim_id, "numeric values differ beyond tolerance", left.predicate)
 
     if left.value_type == right.value_type == "date":
         a, b = _as_date(left.value), _as_date(right.value)
@@ -81,13 +110,18 @@ def detect_typed_contradiction(left: TypedClaim, right: TypedClaim) -> Contradic
             return Contradiction(left.claim_id, right.claim_id, "mutually exclusive categorical values", left.predicate)
 
     if left.value_type == right.value_type == "quantity":
-        a, b = _numeric(left.value), _numeric(right.value)
-        if a is not None and b is not None and left.unit and left.unit == right.unit and a != b:
-            return Contradiction(left.claim_id, right.claim_id, "normalized quantities differ", left.predicate)
+        a = _normalize_quantity(left.value, left.unit)
+        b = _normalize_quantity(right.value, right.unit)
+        if a is not None and b is not None and a[0] == b[0]:
+            tolerance = max(left.tolerance or Decimal("0"), right.tolerance or Decimal("0"))
+            if abs(a[1] - b[1]) > tolerance:
+                return Contradiction(left.claim_id, right.claim_id, "normalized quantities differ", left.predicate)
 
     if left.value_type == right.value_type == "text":
         a = str(left.value).strip().lower()
         b = str(right.value).strip().lower()
+        if left.negated != right.negated:
+            return Contradiction(left.claim_id, right.claim_id, "explicit negation differs", left.predicate)
         if left.qualifier != right.qualifier:
             return Contradiction(left.claim_id, right.claim_id, "commercial qualifiers differ", left.predicate)
         if left.unit == right.unit and a and b and a != b:
