@@ -132,3 +132,5 @@ def test_performance_sample_rejects_negative_optional_timing():
             value.stage_timings,
             ttfb_ms=-1,
         ).validate()
+
+# Protected-main check refresh: re-evaluate required checks against latest main.
