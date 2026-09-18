@@ -64,7 +64,7 @@ def test_canonical_operations_production_pin_is_current_and_immutable():
     assert LEGACY_OPERATIONS_REF not in deployment
     assert 'git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git"' in deployment
     assert '"github:${OPERATIONS_REF}"' in deployment
-    assert '.private == true' in deployment
+    assert '.private == false' in deployment
 
 
 def test_production_generates_private_operations_service_binding():
