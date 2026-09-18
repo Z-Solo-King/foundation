@@ -30,9 +30,6 @@ name: Foundation canonical workflow bridge
         type: string
         default: main
 
-  repository_dispatch:
-    types: [foundation_action]
-
 permissions:
   contents: read
 
@@ -57,30 +54,17 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ steps.foundation-app.outputs.token }}
-          EVENT_NAME: ${{ github.event_name }}
-          INPUT_TARGET: ${{ inputs.target }}
-          INPUT_DRY_RUN: ${{ inputs.dry_run }}
-          INPUT_CONFIRM_PRODUCTION: ${{ inputs.confirm_production }}
-          INPUT_OPERATIONS_REF: ${{ inputs.operations_ref }}
-          PAYLOAD_TARGET: ${{ github.event.client_payload.target }}
-          PAYLOAD_DRY_RUN: ${{ github.event.client_payload.dry_run }}
-          PAYLOAD_CONFIRM_PRODUCTION: ${{ github.event.client_payload.confirm_production }}
-          PAYLOAD_OPERATIONS_REF: ${{ github.event.client_payload.operations_ref }}
+          TARGET: ${{ inputs.target }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          CONFIRM_PRODUCTION: ${{ inputs.confirm_production }}
+          OPERATIONS_REF: ${{ inputs.operations_ref }}
           FOUNDATION_REF: main
         run: |
           set -euo pipefail
 
-          TARGET="${INPUT_TARGET:-}"
-          DRY_RUN="${INPUT_DRY_RUN:-false}"
-          CONFIRM_PRODUCTION="${INPUT_CONFIRM_PRODUCTION:-false}"
-          OPERATIONS_REF="${INPUT_OPERATIONS_REF:-main}"
-
-          if [[ "$EVENT_NAME" == "repository_dispatch" ]]; then
-            TARGET="${PAYLOAD_TARGET:-}"
-            DRY_RUN="${PAYLOAD_DRY_RUN:-false}"
-            CONFIRM_PRODUCTION="${PAYLOAD_CONFIRM_PRODUCTION:-false}"
-            OPERATIONS_REF="${PAYLOAD_OPERATIONS_REF:-main}"
-          fi
+          DRY_RUN="${DRY_RUN:-false}"
+          CONFIRM_PRODUCTION="${CONFIRM_PRODUCTION:-false}"
+          OPERATIONS_REF="${OPERATIONS_REF:-main}"
 
           case "$TARGET" in
             nightly-multi-agent-research.yml|heroic-ai-production-release.yml|cross-repository-contract-drift.yml|operations-centralized-validation.yml|main-push-actions-control-plane-probe.yml) ;;
@@ -140,4 +124,3 @@ jobs:
           fi
 
           echo "Foundation dispatch accepted: $TARGET @ $FOUNDATION_REF"
-          echo "router_event=$EVENT_NAME"
