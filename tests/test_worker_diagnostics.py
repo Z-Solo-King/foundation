@@ -262,3 +262,16 @@ async def test_health_payload_uses_worker_environment_binding():
 async def test_health_payload_preserves_default_environment_without_binding():
     payload = await worker._health_payload()
     assert payload["environment"] == "development"
+
+
+class FalseyBindingValue:
+    def __str__(self):
+        return "production"
+    def __bool__(self):
+        return False
+
+
+@pytest.mark.asyncio
+async def test_health_payload_preserves_falsey_runtime_environment_binding():
+    payload = await worker._health_payload(SimpleNamespace(ENVIRONMENT=FalseyBindingValue()))
+    assert payload["environment"] == "production"
