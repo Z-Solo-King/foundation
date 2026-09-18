@@ -65,3 +65,21 @@ def test_derived_artifact_preserves_parent_lineage_and_scope():
     assert child.provenance_parent == parent.artifact_id
     assert child.owner_scope == parent.owner_scope
     assert child.execution_identity == parent.execution_identity
+
+
+def test_blocked_artifact_and_empty_scope_fail_closed():
+    artifact = _private_artifact()
+    with pytest.raises(ValueError, match="target_scope"):
+        authorize_artifact_execution(artifact, target_scope=" ")
+    blocked = create_artifact(
+        b"blocked",
+        kind=ArtifactKind.TEXT,
+        media_type="text/plain",
+        parser_version="p1",
+        owner_scope="owner-1",
+        safety=ArtifactSafety.BLOCKED,
+        validation=ArtifactValidation.VALID,
+    )
+    decision = authorize_artifact_execution(blocked, target_scope="owner-1")
+    assert decision.state is ArtifactExecutionState.BLOCKED
+    assert decision.to_dict()["schema_version"] == "artifact-execution/v1"
