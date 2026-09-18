@@ -40,6 +40,7 @@ class SourceAccessPolicy:
     raw_content_allowed: bool = False
     disclosure_class: DisclosureClass = DisclosureClass.PUBLIC_SAFE
     revalidation_required: bool = True
+    revalidation_after_seconds: int | None = None
 
     def validate(self) -> None:
         if self.policy_version != SOURCE_ACCESS_POLICY_VERSION:
@@ -58,6 +59,8 @@ class SourceAccessPolicy:
             raise ValueError("public-safe disclosure cannot retain unrestricted raw content")
         if self.retention_class is RetentionClass.NONE and self.raw_content_allowed:
             raise ValueError("raw content cannot be retained when retention is none")
+        if self.revalidation_after_seconds is not None and self.revalidation_after_seconds < 0:
+            raise ValueError("revalidation_after_seconds must be non-negative")
 
 
 @dataclass(frozen=True)
