@@ -30,7 +30,7 @@ class CodeAnalysisRequest:
     def validate(self) -> None:
         if not self.repository.strip() or not self.revision.strip():
             raise ValueError("repository and revision are required")
-        if self.operation is CodeAnalysisOperation.INSPECT and self.execution_requested:
+        if self.execution_requested:
             raise ValueError("public code analysis cannot execute repository code")
 
 
