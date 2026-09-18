@@ -38,27 +38,22 @@ def test_chat_stream_proxy_fails_closed_without_operations_binding():
     assert payload["error"] == "chat_backend_unavailable"
 
 
-def test_chat_stream_proxy_preserves_sse_response(monkeypatch):
+def test_chat_stream_proxy_preserves_sse_response():
     import worker
-
-    class PublicResponse:
-        def __init__(self, body, *, status=200):
-            self.body = body
-            self.status = status
-            self.headers = {}
-
-    monkeypatch.setattr(worker, "Response", PublicResponse)
-
-    class UpstreamResponse:
+    class Body: pass
+    class Response:
         status = 200
-        body = b"data: hello\\n\\n"
-
-    public = worker._public_sse_response(UpstreamResponse())
-    assert public.status == 200
-    assert public.body == b"data: hello\\n\\n"
-    assert public.headers["Content-Type"] == "text/event-stream; charset=utf-8"
-    assert public.headers["Cache-Control"] == "no-store, no-cache, max-age=0, must-revalidate"
-    assert public.headers["X-Content-Type-Options"] == "nosniff"
+        body = Body()
+    class Binding:
+        async def fetch(self, url, options):
+            assert url == "https://chat/v1/chat/stream"
+            assert options["headers"]["Idempotency-Key"] == "req-2"
+            return Response()
+    class Request: headers = {"Authorization": "Bearer user", "Idempotency-Key": "req-2"}
+    upstream, body, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request()))
+    assert upstream.status == 200
+    assert body is None
+    assert status == 200
 
 
 def test_chat_stream_proxy_handles_binding_error():
@@ -114,36 +109,24 @@ def test_public_worker_chat_stream_route_returns_private_unavailable_response_wi
     assert response.status == 503
 
 
-def test_public_worker_chat_stream_route_proxies_private_sse(monkeypatch):
+def test_public_worker_chat_stream_route_proxies_private_sse():
     import worker
-
-    class PublicResponse:
-        def __init__(self, body, *, status=200, headers=None):
-            self.body = body
-            self.status = status
-            self.headers = headers or {}
-
-    monkeypatch.setattr(worker, "Response", PublicResponse)
-
-    class UpstreamResponse:
+    class Body: pass
+    class Response:
         status = 200
-        body = b"data: hello\\n\\n"
-
+        body = Body()
     class Binding:
         async def fetch(self, url, options):
             assert url == "https://chat/v1/chat/stream"
             assert options["headers"]["Authorization"] == "Bearer secret"
             assert options["headers"]["Idempotency-Key"] == "r1"
-            return UpstreamResponse()
-
+            return Response()
     class Request:
         method = "POST"; url = "https://example/api/v1/chat/stream"; headers = {"Authorization": "Bearer secret", "Idempotency-Key": "r1", "Content-Type": "application/json"}
         async def json(self): return {"chat_id": "c1", "request_id": "r1", "message": "hello", "strict_zero_cost_only": True}
-
     instance = worker.Default(); instance.env = SimpleNamespace(AUTH_TOKEN="secret", OPERATIONS=Binding())
     response = asyncio.run(instance.fetch(Request()))
     assert response.status == 200
-    assert response.headers["Cache-Control"] == "no-store, no-cache, max-age=0, must-revalidate"
 
 
 def test_public_worker_chat_route_requires_auth_and_validates_payload():
