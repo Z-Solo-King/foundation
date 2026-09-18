@@ -24,6 +24,9 @@ class FakeStatement:
     async def first(self):
         return self.value
 
+    async def run(self):
+        return SimpleNamespace(meta={"changes": 1})
+
 
 class FakeDB:
     def __init__(self, run=None):
@@ -33,10 +36,10 @@ class FakeDB:
     def prepare(self, sql):
         if sql.startswith("SELECT * FROM research_runs"):
             return FakeStatement(self.run)
+        if sql.startswith("SELECT run_id, request_hash, subject_fingerprint"):
+            value = self.batch_result[2].results[0] if self.batch_result[2].results else None
+            return FakeStatement(value)
         return FakeStatement()
-
-    async def batch(self, statements):
-        return self.batch_result
 
 
 class FakeArtifacts:

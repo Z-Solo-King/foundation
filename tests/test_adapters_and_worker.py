@@ -31,6 +31,8 @@ class FakeDB:
         value = None
         if sql.startswith("SELECT * FROM research_runs WHERE run_id") and self.run_rows:
             value = next(iter(self.run_rows.values()), None)
+        elif sql.startswith("SELECT run_id, request_hash, subject_fingerprint"):
+            value = self.batch_result[2].results[0] if self.batch_result[2].results else None
         statement = FakeStatement(value); self.statements.append((sql, statement)); return statement
     async def batch(self, statements):
         self.batch_calls.append(tuple(statements))

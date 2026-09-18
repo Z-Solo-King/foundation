@@ -88,13 +88,16 @@ async def _claim_idempotent_run(env, request, idempotency_key, subject_fingerpri
         request.max_sources, request.max_evidence_items, int(request.strict_zero_cost_only),
         "planned", now, now,
     )
-    lookup = env.DB.prepare(
+    # Cloudflare Python Workers D1 reliably supports the serial prepare/bind/run/first
+    # pattern used by the chat idempotency authority. Keep the INSERT ... DO NOTHING
+    # semantics for concurrency, but avoid mixing INSERT and SELECT in a D1 batch.
+    await claim.run()
+    await create.run()
+    row = await env.DB.prepare(
         """SELECT run_id, request_hash, subject_fingerprint,
         capability, contract_revision FROM idempotency_keys
         WHERE idempotency_key = ?"""
-    ).bind(idempotency_key)
-    result = await env.DB.batch([claim, create, lookup])
-    row = result[2].results[0] if result[2].results else None
+    ).bind(idempotency_key).first()
     if row is None:
         raise RuntimeError("idempotency claim was not persisted")
     if isinstance(row, dict):
