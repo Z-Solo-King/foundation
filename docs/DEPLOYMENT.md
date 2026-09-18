@@ -12,11 +12,11 @@ Private Operations and the private runtime never dispatch Foundation target work
 
 The route is:
 
-private runtime -> Foundation GitHub App installation token -> Foundation `repository_dispatch` (`foundation_action`) -> canonical Foundation workflow
+private runtime -> Foundation GitHub App installation token (Actions: write) -> Foundation `workflow_dispatch` router -> canonical Foundation workflow
 
 The bridge allowlists only the nightly research, production release, cross-repository contract-drift, centralized Operations validation, and main-push control-plane probe workflows. Production still requires explicit confirmation.
 
-The Foundation GitHub App installation used for the external `repository_dispatch` route must have the required repository permission for creating dispatch events. The bridge itself creates a short-lived Foundation installation token with Actions write to dispatch the selected workflow. GitHub documents the required GitHub App permissions for these endpoints. citeturn780788search0turn780788search4
+The Foundation GitHub App installation used by the private runtime must have Actions: write on `foundation`; the bridge itself creates a short-lived Foundation installation token with Actions: write to dispatch the selected workflow. GitHub documents that GitHub App installation tokens can create workflow-dispatch events with Actions: write. citeturn780911search4turn480911search6
 
 Direct private-to-target workflow dispatch is prohibited so that all family automation remains observable and governed through one public routing surface.
 
