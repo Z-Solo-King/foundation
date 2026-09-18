@@ -36,22 +36,30 @@ class _TestServiceRequest:
 def _service_request(url, *, method="GET", headers=None, body=None):
     """Construct the single Request object required by an HTTP service binding.
 
-    Python Workers exposes the Fetch API through JavaScript FFI. The runtime SDK
-    does not export Request consistently across local test environments, so CI gets
-    a small structural fallback while deployed Workers use the real JS Request.
+    Cloudflare's Python Workers SDK exposes ``Request.new`` and supports the same
+    method/headers/body parameters as the JavaScript Fetch API. Local CI environments
+    may not expose that runtime class, so tests use the structural fallback below.
     """
-    request_init = {"method": method, "headers": headers or {}}
-    if body is not None:
-        request_init["body"] = body
+    request_headers = headers or {}
     try:
-        from js import Object, Request as JSRequest
-        from pyodide.ffi import to_js
-        return JSRequest.new(
-            url,
-            to_js(request_init, dict_converter=Object.fromEntries),
-        )
+        from workers import Request
+        kwargs = {"method": method, "headers": request_headers}
+        if body is not None:
+            kwargs["body"] = body
+        return Request.new(url, **kwargs)
     except ImportError:
-        return _TestServiceRequest(url, method=method, headers=headers or {}, body=body)
+        try:
+            from js import Object, Request as JSRequest
+            from pyodide.ffi import to_js
+            init = {"method": method, "headers": request_headers}
+            if body is not None:
+                init["body"] = body
+            return JSRequest.new(
+                url,
+                to_js(init, dict_converter=Object.fromEntries),
+            )
+        except ImportError:
+            return _TestServiceRequest(url, method=method, headers=request_headers, body=body)
 
 def _extract_source_urls(question, explicit=()):
     return extract_source_urls(question, explicit)
