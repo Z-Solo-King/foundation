@@ -111,3 +111,41 @@ def test_authenticated_public_research_read_supports_pagination_and_boundaries()
         headers={"Authorization": "Bearer token"},
     )))
     assert bad_cursor.status == 400
+
+
+def test_worker_research_uses_scoped_persistence_adapter(monkeypatch):
+    import asyncio
+    import worker
+
+    class ScopedPersistence:
+        def __init__(self):
+            self.created = False
+            self.status = "planned"
+
+        async def create_run_scoped(self, run_id, request, subject_fingerprint):
+            self.created = (run_id, subject_fingerprint)
+            return run_id
+
+        async def create_run_idempotent(self, request, key, subject_fingerprint=None):
+            return "idempotent"
+
+        async def set_run_status(self, run_id, status):
+            self.status = status
+
+    persistence = ScopedPersistence()
+    monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: persistence)
+    monkeypatch.setattr(worker, "submit_research", lambda request: __import__("types").SimpleNamespace(ok=True, run_id="r-scope", metadata={"strict_zero_cost_only": True}))
+
+    class Request:
+        method = "POST"
+        url = "https://worker/api/v1/research"
+        headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
+
+        async def json(self):
+            return {"question": "No source", "strict_zero_cost_only": True}
+
+    entry = worker.Default()
+    entry.env = __import__("types").SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret")
+    response = asyncio.run(entry.fetch(Request()))
+    assert response.status == 200
+    assert persistence.created[0] == "r-scope"
