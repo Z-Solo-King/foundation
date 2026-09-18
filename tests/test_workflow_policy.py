@@ -167,6 +167,27 @@ def test_private_operations_handoff_is_preflighted_and_diagnostic_runs_last():
     assert public_deploy < operations_deploy < diagnostic < success
 
 
+
+def test_public_foundation_is_the_only_github_actions_bridge_owner():
+    workflow = _workflow_texts()["foundation-canonical-workflow-bridge.yml"]
+    assert "actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1" in workflow
+    assert "FOUNDATION_APP_ID" in workflow
+    assert "FOUNDATION_APP_PRIVATE_KEY" in workflow
+    assert "permission-actions: write" in workflow
+    assert "repositories: foundation" in workflow
+    assert "actions/workflows/${TARGET}/dispatches" in workflow
+    assert "heroic-ai-production-release.yml" in workflow
+    assert "nightly-multi-agent-research.yml" in workflow
+    assert "confirm_production=true" in workflow
+
+
+def test_private_operations_automation_guard_is_in_public_foundation_ci():
+    workflow = _workflow_texts()["cross-repository-contract-drift.yml"]
+    assert 'contents/.github/workflows?ref=main' in workflow
+    assert 'private Operations GitHub Actions boundary: PASS' in workflow
+    assert 'private Operations GitHub Actions boundary: FAIL' in workflow
+    assert 'cron: "17 2 * * *"' in workflow
+
 def test_required_pr_checks_emit_the_branch_protection_contract():
     required = _workflow_texts()["required-pr-checks.yml"]
     assert "pull_request:" in required
