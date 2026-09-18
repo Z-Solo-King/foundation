@@ -102,7 +102,9 @@ def test_observation_and_certificate_validation_edges():
     source=Source("s","https://example.com",SourceType.WEB,family_id="f"); source.validate(); assert source.lineage("fp").origin_fingerprint == "fp"
     with pytest.raises(ValueError): Source("s","https://example.com",SourceType.WEB,lineage_type="bad").validate()
     with pytest.raises(ValueError): Source("s","https://example.com",SourceType.WEB,lineage_type="republished").validate()
-    assert evaluate_source(source,SourcePolicy()) is True and evaluate_source(source,SourcePolicy(allowed=False)) is False and evaluate_source(source,SourcePolicy(max_requests=0)) is False
+    assert evaluate_source(source,SourcePolicy()) is True and evaluate_source(source,SourcePolicy(allowed=False)) is False
+    with pytest.raises(ValueError, match="max_requests"):
+        SourcePolicy(max_requests=0).validate()
 
 
 def test_observation_create_and_span_guards():

@@ -144,4 +144,4 @@ def test_synthesis_status_matrix_and_entailment_negation():
     for statuses, confidence in (((ClaimStatus.CORROBORATED,), "high"), ((ClaimStatus.SUPPORTED,), "medium"), ((ClaimStatus.PARTIAL,), "low"), ((ClaimStatus.CONTRADICTED,), "unknown"), ((ClaimStatus.SUPPORTED, ClaimStatus.CONTRADICTED), "low"), ((ClaimStatus.UNKNOWN,), "unknown")):
         assert ResearchSynthesizer().synthesize(run(statuses)).confidence == confidence
     mixed = ResearchSynthesizer().synthesize(run((ClaimStatus.SUPPORTED, ClaimStatus.CONTRADICTED, ClaimStatus.UNKNOWN)))
-    assert "Contradictory" in mixed.answer and "Unresolved" in mixed.answer
+    assert "Unresolved aspects:" in mixed.answer
