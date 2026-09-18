@@ -1,7 +1,9 @@
+import json
+
 import pytest
 
 from backend.json_admission import MAX_JSON_COLLECTION_ITEMS, MAX_JSON_DEPTH, validate_json_shape
-from backend.worker_auth import json_object
+from backend.worker_auth import MAX_PUBLIC_JSON_BODY_BYTES, json_object
 
 
 def test_json_shape_accepts_bounded_payload():
@@ -36,12 +38,18 @@ def test_json_shape_rejects_invalid_limits():
 
 
 class Request:
-    def __init__(self, payload):
+    def __init__(self, payload, *, raw=None):
         self.headers = {"Content-Type": "application/json"}
         self.payload = payload
+        self.raw = raw
 
     async def json(self):
         return self.payload
+
+    async def arrayBuffer(self):
+        if self.raw is not None:
+            return self.raw
+        return json.dumps(self.payload).encode("utf-8")
 
 
 @pytest.mark.asyncio
@@ -57,3 +65,16 @@ async def test_public_json_object_rejects_deep_payload():
 @pytest.mark.asyncio
 async def test_public_json_object_rejects_large_array():
     assert await json_object(Request({"items": list(range(MAX_JSON_COLLECTION_ITEMS + 1))})) is None
+
+
+@pytest.mark.asyncio
+async def test_public_json_object_rejects_oversized_body_without_content_length():
+    raw = b"x" * (MAX_PUBLIC_JSON_BODY_BYTES + 1)
+    assert await json_object(Request({}, raw=raw)) is None
+
+
+@pytest.mark.asyncio
+async def test_public_json_object_accepts_bounded_actual_body_without_content_length():
+    payload = {"message": "hello"}
+    raw = json.dumps(payload).encode("utf-8")
+    assert await json_object(Request(payload, raw=raw)) == payload
