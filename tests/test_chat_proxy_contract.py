@@ -33,8 +33,7 @@ def test_chat_proxy_forwards_auth_and_idempotency():
 def test_chat_stream_proxy_fails_closed_without_operations_binding():
     import worker
     class Request: headers = {}
-    upstream, payload, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(), {"message": "x"}, Request()))
-    assert upstream is None
+    payload, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(), {"message": "x"}, Request()))
     assert status == 503
     assert payload["error"] == "chat_backend_unavailable"
 
