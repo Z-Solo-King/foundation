@@ -110,17 +110,12 @@ def catalog_from_capabilities(
     return catalog
 
 
-def compare_catalogs(
-    baseline: ContractCatalog,
-    candidate: ContractCatalog,
-    *,
-    required_capabilities: tuple[str, ...] = (),
-) -> DriftReport:
-    baseline.validate()
-    candidate.validate()
-    findings: list[DriftFinding] = []
-
-    for field in ("family", "family_contract_version", "role", "promotion_authority", "evidence_authority", "trust_authority", "private_secrets"):
+def _compare_scalar_fields(baseline: ContractCatalog, candidate: ContractCatalog) -> list[DriftFinding]:
+    findings = []
+    for field in (
+        "family", "family_contract_version", "role",
+        "promotion_authority", "evidence_authority", "trust_authority", "private_secrets",
+    ):
         expected = str(getattr(baseline, field))
         actual = str(getattr(candidate, field))
         if expected != actual:
@@ -134,64 +129,61 @@ def compare_catalogs(
                     f"{candidate.name}: {field} drifted from {baseline.name}",
                 )
             )
+    return findings
 
-    for capability in sorted(set(required_capabilities) | set(baseline.capabilities) | set(candidate.capabilities)):
-        expected = baseline.capabilities.get(capability, "<required>" if capability in required_capabilities else "<missing>")
-        actual = candidate.capabilities.get(capability, "<missing>")
-        if capability in required_capabilities and capability not in candidate.capabilities:
+
+def _compare_mapping(
+    baseline: ContractCatalog,
+    candidate: ContractCatalog,
+    field: str,
+    *,
+    required: tuple[str, ...] = (),
+) -> list[DriftFinding]:
+    expected_map = getattr(baseline, field)
+    actual_map = getattr(candidate, field)
+    findings = []
+    for key in sorted(set(required) | set(expected_map) | set(actual_map)):
+        expected = expected_map.get(key, "<required>" if key in required else "<missing>")
+        actual = actual_map.get(key, "<missing>")
+        if field == "capabilities":
+            label = f"capability.{key}"
+        else:
+            label = f"{field[:-1]}.{key}"
+        if key in required and key not in actual_map:
             findings.append(
                 DriftFinding(
-                    DriftSeverity.ERROR,
-                    candidate.name,
-                    f"capability.{capability}",
-                    expected,
-                    "<missing>",
+                    DriftSeverity.ERROR, candidate.name, label, expected, "<missing>",
                     f"{candidate.name}: required capability is missing",
                 )
             )
-            continue
-        if expected != actual:
+        elif expected != actual:
+            message = (
+                f"{candidate.name}: capability revision drift for {key}"
+                if field == "capabilities"
+                else f"{candidate.name}: ownership/schema drift for {key}"
+            )
             findings.append(
                 DriftFinding(
-                    DriftSeverity.ERROR,
-                    candidate.name,
-                    f"capability.{capability}",
-                    expected,
-                    actual,
-                    f"{candidate.name}: capability revision drift for {capability}",
+                    DriftSeverity.ERROR, candidate.name, label, expected, actual, message,
                 )
             )
+    return findings
 
-    for key in sorted(set(baseline.owners) | set(candidate.owners)):
-        expected = baseline.owners.get(key, "<missing>")
-        actual = candidate.owners.get(key, "<missing>")
-        if expected != actual:
-            findings.append(
-                DriftFinding(
-                    DriftSeverity.ERROR,
-                    candidate.name,
-                    f"owner.{key}",
-                    expected,
-                    actual,
-                    f"{candidate.name}: ownership changed for {key}",
-                )
-            )
 
-    for key in sorted(set(baseline.schemas) | set(candidate.schemas)):
-        expected = baseline.schemas.get(key, "<missing>")
-        actual = candidate.schemas.get(key, "<missing>")
-        if expected != actual:
-            findings.append(
-                DriftFinding(
-                    DriftSeverity.ERROR,
-                    candidate.name,
-                    f"schema.{key}",
-                    expected,
-                    actual,
-                    f"{candidate.name}: schema revision drift for {key}",
-                )
-            )
-
+def compare_catalogs(
+    baseline: ContractCatalog,
+    candidate: ContractCatalog,
+    *,
+    required_capabilities: tuple[str, ...] = (),
+) -> DriftReport:
+    baseline.validate()
+    candidate.validate()
+    findings = _compare_scalar_fields(baseline, candidate)
+    findings.extend(_compare_mapping(
+        baseline, candidate, "capabilities", required=required_capabilities
+    ))
+    findings.extend(_compare_mapping(baseline, candidate, "owners"))
+    findings.extend(_compare_mapping(baseline, candidate, "schemas"))
     report = DriftReport(
         schema_version=DRIFT_CONTRACT_VERSION,
         compatible=not any(f.severity is DriftSeverity.ERROR for f in findings),

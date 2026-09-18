@@ -75,6 +75,49 @@ def _row_value(row, key, default=None):
     return getattr(row, key, default)
 
 
+def _public_run_payload(run, run_id):
+    return {
+        "run_id": _row_value(run, "run_id", run_id),
+        "status": _row_value(run, "status", "unknown"),
+        "created_at": _row_value(run, "created_at"),
+        "updated_at": _row_value(run, "updated_at"),
+        "depth": _row_value(run, "depth"),
+        "require_citations": bool(_row_value(run, "require_citations", 0)),
+        "max_sources": _row_value(run, "max_sources"),
+        "max_evidence_items": _row_value(run, "max_evidence_items"),
+    }
+
+
+async def _fetch_public_observations(env, run_id, *, limit, offset):
+    rows = await env.DB.prepare(
+        """SELECT o.observation_id, o.source_id, o.version_id, o.observed_at,
+        o.retrieval_method, o.content_hash, o.integrity_state, o.access_state,
+        s.url, s.source_family_id
+        FROM observations o
+        JOIN sources s ON s.source_id = o.source_id
+        WHERE o.run_id = ?
+        ORDER BY o.observed_at ASC, o.observation_id ASC
+        LIMIT ? OFFSET ?"""
+    ).bind(run_id, limit + 1, offset).all()
+    if hasattr(rows, "results"):
+        rows = rows.results
+    items = list(rows or [])
+    return items[:limit], len(items) > limit
+
+
+def _next_public_cursor(*, has_more, secret, subject_fingerprint, run_id, snapshot_id, offset, limit):
+    if not has_more:
+        return None
+    return encode_cursor(
+        secret=secret,
+        subject_fingerprint=subject_fingerprint,
+        run_id=run_id,
+        snapshot_id=snapshot_id,
+        offset=offset + limit,
+        expires_at=int(datetime.now(timezone.utc).timestamp()) + PUBLIC_READ_CURSOR_TTL_SECONDS,
+    )
+
+
 async def get_run(
     env,
     run_id,
@@ -105,42 +148,19 @@ async def get_run(
             run_id=run_id,
             snapshot_id=snapshot_id,
         )
-
-    rows = await env.DB.prepare(
-        """SELECT o.observation_id, o.source_id, o.version_id, o.observed_at,
-        o.retrieval_method, o.content_hash, o.integrity_state, o.access_state,
-        s.url, s.source_family_id
-        FROM observations o
-        JOIN sources s ON s.source_id = o.source_id
-        WHERE o.run_id = ?
-        ORDER BY o.observed_at ASC, o.observation_id ASC
-        LIMIT ? OFFSET ?"""
-    ).bind(run_id, limit + 1, offset).all()
-    if hasattr(rows, "results"):
-        rows = rows.results
-    items = list(rows or [])
-    has_more = len(items) > limit
-    items = items[:limit]
-    public_run = {
-        "run_id": _row_value(run, "run_id", run_id),
-        "status": _row_value(run, "status", "unknown"),
-        "created_at": _row_value(run, "created_at"),
-        "updated_at": _row_value(run, "updated_at"),
-        "depth": _row_value(run, "depth"),
-        "require_citations": bool(_row_value(run, "require_citations", 0)),
-        "max_sources": _row_value(run, "max_sources"),
-        "max_evidence_items": _row_value(run, "max_evidence_items"),
-    }
-    next_cursor = None
-    if has_more:
-        next_cursor = encode_cursor(
-            secret=cursor_secret,
-            subject_fingerprint=subject_fingerprint,
-            run_id=run_id,
-            snapshot_id=snapshot_id,
-            offset=offset + limit,
-            expires_at=int(datetime.now(timezone.utc).timestamp()) + PUBLIC_READ_CURSOR_TTL_SECONDS,
-        )
+    items, has_more = await _fetch_public_observations(
+        env, run_id, limit=limit, offset=offset
+    )
+    public_run = _public_run_payload(run, run_id)
+    next_cursor = _next_public_cursor(
+        has_more=has_more,
+        secret=cursor_secret,
+        subject_fingerprint=subject_fingerprint,
+        run_id=run_id,
+        snapshot_id=snapshot_id,
+        offset=offset,
+        limit=limit,
+    )
     return {
         "run": public_run,
         "status": public_run["status"],
@@ -160,3 +180,4 @@ async def get_run(
             "snapshot_id": snapshot_id,
         },
     }
+
