@@ -1,0 +1,54 @@
+name: cross-repository contract drift
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'CAPABILITIES.json'
+      - 'backend/governance/contract_drift.py'
+      - 'tools/check_cross_repo_drift.py'
+      - 'tests/test_cross_repo_drift_gate.py'
+      - '.github/workflows/cross-repository-contract-drift.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'CAPABILITIES.json'
+      - 'backend/governance/contract_drift.py'
+      - 'tools/check_cross_repo_drift.py'
+      - 'tests/test_cross_repo_drift_gate.py'
+      - '.github/workflows/cross-repository-contract-drift.yml'
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    name: Cross-repository contract drift
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: foundation
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: main
+          path: operations
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+
+      - name: Run drift contract regression
+        working-directory: foundation
+        run: |
+          python -m pytest -q tests/test_cross_repo_drift_gate.py
+          python tools/check_cross_repo_drift.py             --foundation CAPABILITIES.json             --operations ../operations/CAPABILITIES.json
