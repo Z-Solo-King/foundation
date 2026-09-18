@@ -55,3 +55,9 @@ def test_invalid_url_is_rejected():
 def test_blank_family_key_is_rejected():
     with pytest.raises(ValueError, match="family_key"):
         identity(family=" ")
+
+
+
+def test_empty_source_url_is_rejected():
+    with pytest.raises(ValueError, match="source URL"):
+        identity(url="   ")
