@@ -168,3 +168,32 @@ def test_metric_to_dict_and_now_are_bounded():
     assert payload["precision"] == 1.0
     now = metric_now()
     assert now.tzinfo is not None
+
+
+def test_citation_sample_and_metric_remaining_validation_branches():
+    from backend.citation_sampling import CitationSample
+
+    with pytest.raises(ValueError, match="sample identity"):
+        CitationSample("", "c1", 0).validate()
+    with pytest.raises(ValueError, match="sample rank"):
+        CitationSample("o1", "c1", -1).validate()
+
+    with pytest.raises(ValueError, match="window_start"):
+        CitationPrecisionMetric(datetime(2026, 9, 18), BASE, 0, 0, 0, 0).validate()
+    with pytest.raises(ValueError, match="window_end"):
+        CitationPrecisionMetric(BASE, datetime(2026, 9, 18), 0, 0, 0, 0).validate()
+
+    duplicate = output("duplicate")
+    with pytest.raises(ValueError, match="output IDs"):
+        select_citation_samples((duplicate, duplicate), max_outputs=2, max_citations=1)
+
+    filtered = output("filtered", BASE)
+    assert select_citation_samples(
+        (filtered,),
+        max_outputs=1,
+        max_citations=1,
+        window_end=BASE - timedelta(minutes=1),
+    ) == ()
+
+    with pytest.raises(ValueError, match="window_end"):
+        build_precision_metric((select_citation_samples((output(),), max_outputs=1, max_citations=1)[0],), (), window_start=BASE + timedelta(days=1), window_end=BASE)
