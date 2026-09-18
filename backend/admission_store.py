@@ -146,6 +146,52 @@ class D1AdmissionStore:
         if not decision.allowed:
             return decision, None
 
+        existing = await self._existing_event(event_id)
+        if existing is not None:
+            existing_subject = str(existing.get("subject_fingerprint", ""))
+            existing_route = str(existing.get("route", ""))
+            if existing_subject != subject_fingerprint or existing_route != route.value:
+                return AdmissionDecision(
+                    AdmissionOutcome.DUPLICATE,
+                    route,
+                    False,
+                    "event id was already used for a different admission scope",
+                ), None
+
+            released_at = existing.get("released_at")
+            if released_at is not None:
+                # Idempotent replay: the prior admission lease completed and was
+                # released. Do not consume a second public admission slot.
+                return decision, None
+
+            existing_expiry = int(existing.get("lease_expires_at") or 0)
+            if existing_expiry <= now:
+                reclaimed = await self.db.prepare(
+                    "UPDATE public_admission_events SET window_start = ?, lease_expires_at = ?, released_at = NULL WHERE event_id = ? AND subject_fingerprint = ? AND route = ? AND released_at IS NULL AND lease_expires_at <= ?"
+                ).bind(
+                    window_start, expires_at, event_id, subject_fingerprint, route.value, now
+                ).run()
+                changes = (
+                    int((reclaimed.get("meta", {}) if isinstance(reclaimed, dict) else {}).get("changes", 0) or 0)
+                )
+                if changes == 1:
+                    return decision, AdmissionLease(
+                        event_id=event_id,
+                        subject_fingerprint=subject_fingerprint,
+                        route=route,
+                        window_start=window_start,
+                        expires_at=expires_at,
+                        cost_units=cost_units,
+                    )
+
+            return AdmissionDecision(
+                AdmissionOutcome.CONCURRENCY_LIMITED,
+                route,
+                False,
+                "duplicate request is still executing under the same admission lease",
+                policy.retry_after_seconds,
+            ), None
+
         inserted = await self._insert_if_admissible(
             event_id=event_id,
             window_start=window_start,
@@ -157,6 +203,9 @@ class D1AdmissionStore:
             policy=policy,
         )
         if not inserted:
+            # A competing request may have inserted the same event between the
+            # existence check and the INSERT. Treat that race as a bounded retry
+            # condition rather than leaking a D1 uniqueness error as HTTP 500.
             return AdmissionDecision(
                 AdmissionOutcome.CONCURRENCY_LIMITED,
                 route,
@@ -173,6 +222,25 @@ class D1AdmissionStore:
             expires_at=expires_at,
             cost_units=cost_units,
         )
+
+    async def _existing_event(self, event_id: str) -> dict[str, Any] | None:
+        result = await self.db.prepare(
+            """SELECT event_id, window_start, subject_fingerprint, route, lease_expires_at, released_at
+               FROM public_admission_events
+               WHERE event_id = ?"""
+        ).bind(event_id).first()
+        if result is None:
+            return None
+        if isinstance(result, dict):
+            return result
+        return {
+            "event_id": getattr(result, "event_id", event_id),
+            "window_start": getattr(result, "window_start", None),
+            "subject_fingerprint": getattr(result, "subject_fingerprint", ""),
+            "route": getattr(result, "route", ""),
+            "lease_expires_at": getattr(result, "lease_expires_at", 0),
+            "released_at": getattr(result, "released_at", None),
+        }
 
     @staticmethod
     def _validate_identity(subject_fingerprint: str, event_id: str) -> None:
