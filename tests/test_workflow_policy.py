@@ -146,6 +146,16 @@ def test_production_script_preserves_static_asset_binding_and_diagnostic_smokes(
     assert 'POST GitHub App installation token -> HTTP' in deployment
 
 
+
+def test_private_operations_deployment_verifies_cloudflare_provenance():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments' in deployment
+    assert 'workers/scripts/${OPERATIONS_SERVICE_NAME}/versions/' in deployment
+    assert 'workers/message' in deployment
+    assert 'workers/tag' in deployment
+    assert 'Operations Cloudflare provenance: PASS' in deployment
+
+
 def test_private_operations_handoff_is_preflighted_and_diagnostic_runs_last():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     preflight = deployment.index("Preflight and stage the private Operations handoff")
