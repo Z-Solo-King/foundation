@@ -1,11 +1,12 @@
 # AI / Maintainer Engineering Guidance
 
 Read these before architecture or cross-repository changes:
+1. `docs/MAINTENANCE_CONTRACT.md`
 1. `REPOSITORY_MAP.json`
 2. `docs/FAMILY_CONTRACT.json`
-3. `docs/FAMILY_ARCHITECTURE.md`
+3. `docs/MAINTENANCE_CONTRACT.md`
 4. relevant public contract/test files
-5. Operations `docs/CLAUDE_GUIDANCE.md` when working across the family
+5. Operations `docs/AGENT_MAINTENANCE_GUIDE.md` when working across the family
 
 Live `main` and fresh execution evidence outrank dated notes.
 
@@ -74,4 +75,4 @@ Add focused owner-level and adversarial tests for behavior changes. Never weaken
 
 Public documentation must remain public-safe. Private operational methodology, protected runtime state, secret material, and exploratory/private future knowledge belong in Operations.
 
-When a rule or contract is consolidated, remove redundant copies rather than preserving parallel authorities.
+When a rule or contract is consolidated, remove redundant copies rather than preserving parallel authorities. Do not create model-specific guidance, chat-limit handoffs, duplicate architecture maps, or parallel governance/knowledge standards.
