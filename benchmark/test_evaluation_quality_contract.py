@@ -83,12 +83,14 @@ def test_approved_corpus_requires_receipt_reference():
 
 def test_collision_detection_covers_known_inputs_oracles_and_declared_leakage():
     result = detect_corpus_collisions(
-        manifest(cases=(case(oracle_ref="oracle-1"),)),
+        manifest(cases=(case(oracle_ref="oracle-1", leakage_class=LeakageClass.SUSPECTED),)),
         known_input_digests=("a" * 64,),
         known_oracle_refs=("oracle-1",),
     )
     assert result == (
-        "declared_leakage:case-1:clean",  # intentionally replaced below
+        "declared_leakage:case-1:suspected",
+        "input_digest_collision:case-1",
+        "oracle_ref_collision:case-1",
     )
 
 
@@ -101,7 +103,13 @@ def test_invalid_fingerprint_and_empty_required_fields_fail_closed():
 
 def scorecard(**changes):
     all_dimensions = tuple(
-        DimensionScore(dimension=d, value=0.9, baseline=0.92, max_regression=0.05, critical=True)
+        DimensionScore(
+            dimension=d,
+            value=(0.80 if d is QualityDimension.CORRECTNESS else 0.9),
+            baseline=0.92,
+            max_regression=0.05,
+            critical=True,
+        )
         for d in QualityDimension
         if d is not QualityDimension.LATENCY
     ) + (
