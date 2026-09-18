@@ -69,3 +69,32 @@ def test_uncertainty_ranges_are_validated():
             uncertainty_low=Decimal("5"),
             uncertainty_high=Decimal("2"),
         ).validate()
+
+
+def test_measurement_validation_and_normalization_fail_closed():
+    with pytest.raises(ValueError, match="entity"):
+        MeasurementContext(entity=" ", provenance_id="src").validate()
+    with pytest.raises(ValueError, match="entity"):
+        MeasurementContext(entity="cpu", provenance_id=" ").validate()
+    with pytest.raises(ValueError, match="sample_size"):
+        MeasurementContext(entity="cpu", provenance_id="src", sample_size=0).validate()
+    with pytest.raises(ValueError, match="replication_count"):
+        MeasurementContext(entity="cpu", provenance_id="src", replication_count=0).validate()
+    assert normalize_measurement(Decimal("1"), None) is None
+    assert normalize_measurement(Decimal("1"), "unknown") is None
+
+
+def test_comparability_rejects_entity_and_dimension_mismatches():
+    left = Measurement(Decimal("1"), ctx(unit="s", variant="v1"))
+    right = Measurement(Decimal("1"), MeasurementContext(entity="gpu", provenance_id="src", unit="s", variant="v1"))
+    assert classify_comparability(left, right).state is ComparabilityState.UNCOMPARABLE
+
+    bytes_measure = Measurement(Decimal("1"), ctx(unit="bytes", variant="v1"))
+    time_measure = Measurement(Decimal("1"), ctx(unit="s", variant="v1"))
+    assert classify_comparability(bytes_measure, time_measure).state is ComparabilityState.UNCOMPARABLE
+
+
+def test_comparability_result_rejects_unknown_schema():
+    from backend.intelligence.comparability import ComparabilityResult
+    with pytest.raises(ValueError, match="schema"):
+        ComparabilityResult(ComparabilityState.COMPARABLE, (), schema_version="v0").validate()
