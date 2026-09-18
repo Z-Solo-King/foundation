@@ -33,28 +33,26 @@ def test_chat_proxy_forwards_auth_and_idempotency():
 def test_chat_stream_proxy_fails_closed_without_operations_binding():
     import worker
     class Request: headers = {}
-    upstream, payload, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(), {"message": "x"}, Request()))
-    assert upstream is None
+    payload, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(), {"message": "x"}, Request()))
     assert status == 503
     assert payload["error"] == "chat_backend_unavailable"
 
 
-def test_chat_stream_proxy_preserves_sse_response():
+def test_chat_stream_proxy_uses_proven_json_chat():
     import worker
-    class Body: pass
     class Response:
         status = 200
-        body = Body()
+        async def json(self):
+            return {"ok": True, "response": {"response_id": "chat-r2", "result_state": "PARTIAL", "text": "hello"}}
     class Binding:
         async def fetch(self, request):
-            assert request.url == "https://chat/v1/chat/stream"
+            assert request.url == "https://chat/v1/chat"
             assert request.method == "POST"
             assert request.headers.get("Idempotency-Key") == "req-2"
             return Response()
     class Request: headers = {"Authorization": "Bearer user", "Idempotency-Key": "req-2"}
-    upstream, body, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request()))
-    assert upstream.status == 200
-    assert body is None
+    body, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request()))
+    assert body["response"]["text"] == "hello"
     assert status == 200
 
 
@@ -63,10 +61,118 @@ def test_chat_stream_proxy_handles_binding_error():
     class Binding:
         async def fetch(self, request): raise RuntimeError("binding unavailable")
     class Request: headers = {}
-    upstream, payload, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request()))
-    assert upstream is None
+    payload, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request()))
     assert status == 503
     assert payload["error"] == "chat_backend_unavailable"
+
+
+def test_chat_sse_body_rejects_invalid_private_response():
+    import pytest
+    import worker
+
+    with pytest.raises(ValueError, match="invalid_private_chat_response"):
+        worker._chat_sse_body({"ok": True})
+
+    with pytest.raises(ValueError, match="stream_execution_identity_missing"):
+        worker._chat_sse_body({"response": {"result_state": "PARTIAL", "text": "x"}})
+
+    with pytest.raises(ValueError, match="blocked_chat_stream"):
+        worker._chat_sse_body({"response": {"response_id": "r", "result_state": "BLOCKED", "text": "x"}})
+
+
+def test_chat_sse_body_covers_usage_complete_and_bounded_size():
+    import pytest
+    import worker
+
+    body = worker._chat_sse_body({
+        "response": {
+            "response_id": "chat-complete",
+            "result_state": "COMPLETE",
+            "text": "x" * 300,
+            "generation_status": "model_generated",
+            "usage": {"input_tokens": 3, "output_tokens": 2},
+        }
+    })
+    assert "event: usage" in body
+    assert '"status":"completed"' in body
+    assert '"result_state":"COMPLETE"' in body
+
+    with pytest.raises(ValueError, match="stream response exceeds supported size"):
+        worker._chat_sse_body({
+            "response": {
+                "response_id": "too-large",
+                "result_state": "PARTIAL",
+                "text": "x" * (worker.MAX_PUBLIC_JSON_BODY_BYTES + 1),
+            }
+        })
+
+
+def test_chat_sse_body_has_start_delta_and_done_contract():
+    import worker
+    body = worker._chat_sse_body({
+        "ok": True,
+        "response": {
+            "response_id": "chat-r1",
+            "result_state": "PARTIAL",
+            "text": "hello world",
+            "generation_status": "deterministic_fallback",
+        },
+    })
+    assert "event: start" in body
+    assert "event: delta" in body
+    assert "hello world" in body
+    assert "event: done" in body
+    assert '"result_state":"PARTIAL"' in body
+
+
+
+
+def test_public_worker_chat_stream_returns_private_non_200(monkeypatch):
+    import worker
+
+    async def backend(*args, **kwargs):
+        return {"ok": False, "error": "chat_backend_unavailable"}, 503
+
+    monkeypatch.setattr(worker, "_operations_chat_stream", backend)
+    async def admit(*args, **kwargs):
+        return type("Decision", (), {"allowed": True})(), None
+    monkeypatch.setattr(worker, "_public_admit", admit)
+
+    class Request:
+        method = "POST"
+        url = "https://example/api/v1/chat/stream"
+        headers = {"Authorization": "Bearer secret", "Idempotency-Key": "r2", "Content-Type": "application/json"}
+        async def json(self):
+            return {"chat_id": "c2", "request_id": "r2", "message": "hello", "mode": "chat", "strict_zero_cost_only": True}
+
+    instance = worker.Default()
+    instance.env = SimpleNamespace(AUTH_TOKEN="secret", DB=object(), ENVIRONMENT="development", LOCAL_DEVELOPMENT_AUTH_BYPASS="true")
+    response = asyncio.run(instance.fetch(Request()))
+    assert response.status == 503
+
+
+def test_public_worker_chat_stream_returns_503_for_invalid_sse_payload(monkeypatch):
+    import worker
+
+    async def backend(*args, **kwargs):
+        return {"ok": True, "response": {"result_state": "BLOCKED"}}, 200
+
+    monkeypatch.setattr(worker, "_operations_chat_stream", backend)
+    async def admit(*args, **kwargs):
+        return type("Decision", (), {"allowed": True})(), None
+    monkeypatch.setattr(worker, "_public_admit", admit)
+
+    class Request:
+        method = "POST"
+        url = "https://example/api/v1/chat/stream"
+        headers = {"Authorization": "Bearer secret", "Idempotency-Key": "r3", "Content-Type": "application/json"}
+        async def json(self):
+            return {"chat_id": "c3", "request_id": "r3", "message": "hello", "mode": "chat", "strict_zero_cost_only": True}
+
+    instance = worker.Default()
+    instance.env = SimpleNamespace(AUTH_TOKEN="secret", DB=object(), ENVIRONMENT="development", LOCAL_DEVELOPMENT_AUTH_BYPASS="true")
+    response = asyncio.run(instance.fetch(Request()))
+    assert response.status == 503
 
 
 def test_public_worker_chat_stream_route_requires_auth():
@@ -111,15 +217,15 @@ def test_public_worker_chat_stream_route_returns_private_unavailable_response_wi
     assert response.status == 503
 
 
-def test_public_worker_chat_stream_route_proxies_private_sse():
+def test_public_worker_chat_stream_route_frames_proven_private_json():
     import worker
-    class Body: pass
     class Response:
         status = 200
-        body = Body()
+        async def json(self):
+            return {"ok": True, "response": {"response_id": "chat-r1", "result_state": "PARTIAL", "text": "hello", "generation_status": "deterministic_fallback"}}
     class Binding:
         async def fetch(self, request):
-            assert request.url == "https://chat/v1/chat/stream"
+            assert request.url == "https://chat/v1/chat"
             assert request.method == "POST"
             assert request.headers.get("Authorization") == "Bearer secret"
             assert request.headers.get("Idempotency-Key") == "r1"
