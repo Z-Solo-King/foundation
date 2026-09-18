@@ -186,10 +186,30 @@ def test_public_foundation_is_the_only_github_actions_bridge_owner():
     assert "FOUNDATION_APP_PRIVATE_KEY" in workflow
     assert "permission-actions: write" in workflow
     assert "repositories: foundation" in workflow
+    assert "workflow_dispatch:" in workflow
+    assert "repository_dispatch:" in workflow
+    assert "types: [foundation_action]" in workflow
     assert "actions/workflows/${TARGET}/dispatches" in workflow
-    assert "heroic-ai-production-release.yml" in workflow
-    assert "nightly-multi-agent-research.yml" in workflow
+    for target in (
+        "heroic-ai-production-release.yml",
+        "nightly-multi-agent-research.yml",
+        "cross-repository-contract-drift.yml",
+        "operations-centralized-validation.yml",
+        "main-push-actions-control-plane-probe.yml",
+    ):
+        assert target in workflow
     assert "confirm_production=true" in workflow
+    assert "operations_ref" in workflow
+
+
+def test_all_canonical_workflow_dispatch_requests_use_the_public_router():
+    texts = _workflow_texts()
+    dispatchers = [
+        name
+        for name, text in texts.items()
+        if "actions/workflows/" in text and "/dispatches" in text
+    ]
+    assert dispatchers == ["foundation-canonical-workflow-bridge.yml"]
 
 
 
