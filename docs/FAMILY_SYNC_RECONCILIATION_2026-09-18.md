@@ -13,10 +13,10 @@ The standalone extractor/mapper repository is historical context and is not part
 
 ## Current observed branch tips
 
-- Foundation `main`: `88e16810febede7e0d7fa663638794e10d213712`
-- Operations `main`: `7ca856c4be291140e52625ff9b73b234f1dc103e`
-- Approved Operations production revision: `cf28a28cb40de527aff1cd87f96e103669635f70`
-- Nightly Operations revision: `b6a519742e57e7e68db64ab10535d76372bcbdb1`
+- Foundation `main`: `562b0ce20cb71d0330b6274e6a5596ad719d5712`
+- Operations `main`: `5fe39602090951119821d573e8ef4f9c71496e78`
+- Approved Operations production revision: `3afbde926880b91e3e660ee2d35daa5334e542bf`
+- Nightly Operations revision: `3afbde926880b91e3e660ee2d35daa5334e542bf`
 
 These SHAs are audit observations, not aliases for future branch tips. Production revision remains separate from Operations `main`.
 
