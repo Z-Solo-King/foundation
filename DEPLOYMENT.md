@@ -12,7 +12,7 @@ The public Worker is deployed with Python Worker tooling (`pywrangler`), not pla
 
 ## Canonical production workflow
 
-The canonical Foundation production deployment workflow is `.github/workflows/codeql.yml`. It contains the single `pywrangler deploy` production owner and runs the public deployment only after `Public tests` succeeds on a push to `main`.
+The canonical Foundation production deployment workflow is `.github/workflows/heroic-ai-production-release.yml`. It contains the single `pywrangler deploy` production owner and runs the public deployment only after `Public tests` succeeds on a push to `main`.
 
 The same workflow performs the public post-deployment smoke checks. There is no second public production deployment workflow.
 
@@ -25,19 +25,31 @@ The workflow also owns the protected Operations handoff. Production is pinned to
 The private Operations checkout uses the purpose-specific GitHub App installation credential set:
 
 - `OPERATIONS_APP_ID`;
-- `OPERATIONS_APP_INSTALLATION_ID`;
 - `OPERATIONS_APP_PRIVATE_KEY`.
+
+The installation ID is derived dynamically from the App JWT at runtime; it is not a stored secret or independent authority.
 
 The workflow mints a short-lived installation token at runtime, verifies access to the private Operations repository and exact approved revision, then uses that token for checkout. The generated token and key material are masked/removed and never printed. These credentials are for the Foundation deployment handoff only; they are not B2 or Cloudflare credentials.
 
 The canonical credential and backup policy is `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md`.
+
+
+## GitHub Actions ownership boundary
+
+All GitHub Actions automation for the active family is executed from public `foundation`.
+
+The private `operations` repository must not contain `.github/workflows` and must not execute CI, scheduled jobs, workflow dispatch, or deployment automation itself.
+
+When Foundation automation needs private Operations source or metadata, it uses the approved Foundation GitHub App and short-lived installation token. This is a source-access/deployment boundary, not a runtime Worker boundary.
+
+The runtime Foundation -> Operations path is a Cloudflare service binding plus the canonical `AUTH_TOKEN` check.
+
 
 ## Credential boundaries
 
 | Secret | Purpose | Owner | Not interchangeable with |
 | --- | --- | --- | --- |
 | `OPERATIONS_APP_ID` | Identify the GitHub App used for private Operations deployment access | Foundation deployment workflow | B2 secrets, Cloudflare secrets |
-| `OPERATIONS_APP_INSTALLATION_ID` | Select the installed read-only Operations authorization | Foundation deployment workflow | B2 secrets, Cloudflare secrets |
 | `OPERATIONS_APP_PRIVATE_KEY` | Sign the short-lived GitHub App JWT | Foundation deployment workflow | B2 secrets, Cloudflare secrets |
 | `BACKUP_GITHUB_TOKEN` | Read/mirror both repositories for B2 backup | Foundation backup workflow | Operations deployment credentials, B2 secrets |
 | `B2_KEY_ID` | B2 API authentication | B2 backup boundary | GitHub tokens, Cloudflare tokens |
