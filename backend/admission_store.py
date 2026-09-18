@@ -41,13 +41,9 @@ async def _existing_event(db: Any, event_id: str) -> dict[str, Any] | None:
     ).bind(event_id).first()
     if result is None:
         return None
-    if isinstance(result, dict):
-        return result if "event_id" in result else None
-    rows = getattr(result, "results", None)
-    if rows is not None:
-        rows = list(rows or ())
-        return rows[0] if rows else None
-    return None
+    if not isinstance(result, dict):
+        return None
+    return result if "event_id" in result else None
 
 
 async def _handle_existing_event(
