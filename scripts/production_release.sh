@@ -99,7 +99,7 @@ printf '%s\n' \
 grep -q '^database_name = "research-intelligence"$' wrangler.production.generated.toml
 grep -q '^directory = "./frontend"$' wrangler.production.generated.toml
 grep -q '^binding = "ASSETS"$' wrangler.production.generated.toml
-grep -q '^service = "${OPERATIONS_SERVICE_NAME}"$' wrangler.production.generated.toml
+grep -q "^service = \"${OPERATIONS_SERVICE_NAME}\"$" wrangler.production.generated.toml
 npx --yes wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
 pywrangler deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}"
 
