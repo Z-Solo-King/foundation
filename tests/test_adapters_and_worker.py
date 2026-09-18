@@ -24,13 +24,16 @@ class FakeDB:
     def __init__(self):
         self.statements = []
         self.batch_result = [SimpleNamespace(results=[]), SimpleNamespace(results=[]), SimpleNamespace(results=[])]
+        self.batch_calls = []
         self.run_rows = {}
     def prepare(self, sql):
         value = None
         if sql.startswith("SELECT * FROM research_runs WHERE run_id") and self.run_rows:
             value = next(iter(self.run_rows.values()), None)
         statement = FakeStatement(value); self.statements.append((sql, statement)); return statement
-    async def batch(self, statements): return self.batch_result
+    async def batch(self, statements):
+        self.batch_calls.append(tuple(statements))
+        return self.batch_result
 
 
 class FakeArtifacts:
@@ -162,10 +165,14 @@ async def test_worker_helpers_and_source_ingestion(monkeypatch):
     async def fake_public(url): return source_http.FetchResult(url,url,200,"text/plain",b"abc","e")
     monkeypatch.setattr(worker,"fetch_public_url",fake_public)
     ingested = await worker._ingest_sources(env,"run-1",request); assert ingested[0]["bytes"] == 3
+    assert len(db.batch_calls) == 1
+    assert len(db.batch_calls[0]) == 3
     request_error = make_request(source_urls=("https://example.com",))
     async def error_public(url): return source_http.FetchResult(url,url,404,"text/plain",b"bad",None)
     monkeypatch.setattr(worker,"fetch_public_url",error_public)
     ingested_error = await worker._ingest_sources(env,"run-2",request_error); assert ingested_error[0]["status"] == 404
+    assert len(db.batch_calls) == 2
+    assert all(len(call) == 3 for call in db.batch_calls)
     class RunDB:
         def prepare(self, sql):
             if sql.startswith("SELECT * FROM research_runs"):
