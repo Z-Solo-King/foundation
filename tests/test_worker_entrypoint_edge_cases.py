@@ -144,8 +144,20 @@ def test_worker_research_uses_scoped_persistence_adapter(monkeypatch):
         async def json(self):
             return {"question": "No source", "strict_zero_cost_only": True}
 
+    class AdmissionStatement:
+        def bind(self, *args):
+            return self
+        async def first(self):
+            return {"subject_requests": 0, "global_requests": 0, "subject_concurrent": 0, "global_concurrent": 0}
+        async def run(self):
+            return {"meta": {"changes": 1}}
+
+    class AdmissionDB:
+        def prepare(self, sql):
+            return AdmissionStatement()
+
     entry = worker.Default()
-    entry.env = __import__("types").SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret", DB=DB())
+    entry.env = __import__("types").SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret", DB=AdmissionDB())
     response = asyncio.run(entry.fetch(Request()))
     assert response.status == 200
     assert persistence.created[0] == "r-scope"
