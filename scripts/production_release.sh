@@ -331,6 +331,18 @@ stream_payload=$(jq -nc \
   --arg chat_id "production-stream-${GITHUB_RUN_ID}" \
   --arg request_id "production-stream-request-${GITHUB_RUN_ID}" \
   '{chat_id:$chat_id,request_id:$request_id,message:"Return a one-sentence explanation of the public/private service-binding boundary.",mode:"chat",strict_zero_cost_only:true}')
+stream_json_status=$(curl -sS --max-time 90 \
+  -o "$RUNNER_TEMP/live-stream-json.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: production-stream-json-${GITHUB_RUN_ID}" \
+  -d "${stream_payload}" \
+  "${BASE_URL}/api/v1/chat")
+echo "POST /api/v1/chat with stream payload -> HTTP ${stream_json_status}"
+cat "$RUNNER_TEMP/live-stream-json.json" || true
+test "$stream_json_status" = '200'
+jq -e '.ok == true and .response.response_id == ("chat-" + ("production-stream-request-" + env.GITHUB_RUN_ID))' "$RUNNER_TEMP/live-stream-json.json" >/dev/null
+
 stream_status=$(curl -sS --no-buffer --max-time 90 \
   -D "$RUNNER_TEMP/live-stream.headers" \
   -o "$RUNNER_TEMP/live-stream.txt" \
