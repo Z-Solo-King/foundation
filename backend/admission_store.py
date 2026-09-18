@@ -107,6 +107,47 @@ async def _handle_existing_event(
     ), None
 
 
+async def _insert_new_admission(
+    store: "D1AdmissionStore",
+    decision: AdmissionDecision,
+    *,
+    event_id: str,
+    window_start: int,
+    subject_fingerprint: str,
+    route: AdmissionRoute,
+    cost_units: int,
+    expires_at: int,
+    now: int,
+    policy: AdmissionPolicy,
+) -> tuple[AdmissionDecision, AdmissionLease | None]:
+    inserted = await store._insert_if_admissible(
+        event_id=event_id,
+        window_start=window_start,
+        subject_fingerprint=subject_fingerprint,
+        route=route,
+        cost_units=cost_units,
+        expires_at=expires_at,
+        now=now,
+        policy=policy,
+    )
+    if not inserted:
+        return AdmissionDecision(
+            AdmissionOutcome.CONCURRENCY_LIMITED,
+            route,
+            False,
+            "admission state changed concurrently; retry",
+            policy.retry_after_seconds,
+        ), None
+    return decision, AdmissionLease(
+        event_id=event_id,
+        subject_fingerprint=subject_fingerprint,
+        route=route,
+        window_start=window_start,
+        expires_at=expires_at,
+        cost_units=cost_units,
+    )
+
+
 class D1AdmissionStore:
     def __init__(self, db: Any):
         self.db = db
@@ -236,7 +277,9 @@ class D1AdmissionStore:
                 policy=policy,
             )
 
-        inserted = await self._insert_if_admissible(
+        return await _insert_new_admission(
+            self,
+            decision,
             event_id=event_id,
             window_start=window_start,
             subject_fingerprint=subject_fingerprint,
@@ -245,26 +288,6 @@ class D1AdmissionStore:
             expires_at=expires_at,
             now=now,
             policy=policy,
-        )
-        if not inserted:
-            # A competing request may have inserted the same event between the
-            # existence check and the INSERT. Treat that race as a bounded retry
-            # condition rather than leaking a D1 uniqueness error as HTTP 500.
-            return AdmissionDecision(
-                AdmissionOutcome.CONCURRENCY_LIMITED,
-                route,
-                False,
-                "admission state changed concurrently; retry",
-                policy.retry_after_seconds,
-            ), None
-
-        return decision, AdmissionLease(
-            event_id=event_id,
-            subject_fingerprint=subject_fingerprint,
-            route=route,
-            window_start=window_start,
-            expires_at=expires_at,
-            cost_units=cost_units,
         )
 
     @staticmethod
