@@ -107,3 +107,24 @@ def test_retention_none_guard_is_reached_for_non_public_disclosure():
             raw_content_allowed=True,
             disclosure_class=DisclosureClass.METADATA_ONLY,
         ).validate()
+
+
+def test_retention_expiry_revalidation_and_conflict_resolution_are_deterministic():
+    from datetime import datetime, timezone
+    from backend.sources.access_policy import expires_at, revalidation_due, resolve_source_policy_conflict, retention_seconds
+    observed = datetime(2026, 9, 18, tzinfo=timezone.utc)
+    policy = SourceAccessPolicy(retention_class=RetentionClass.SHORT, revalidation_required=True)
+    assert retention_seconds(policy) == 86_400
+    assert expires_at(observed, policy).isoformat().startswith("2026-09-19")
+    assert revalidation_due(observed, policy).isoformat().startswith("2026-09-19")
+    restricted = SourceAccessPolicy(access_class=AccessClass.RESTRICTED, disclosure_class=DisclosureClass.PRIVATE_ONLY)
+    assert resolve_source_policy_conflict((policy, restricted)).access_class is AccessClass.RESTRICTED
+
+
+def test_source_policy_expiry_rejects_naive_time_and_unknown_retention():
+    from datetime import datetime
+    from backend.sources.access_policy import expires_at
+    with pytest.raises(ValueError, match="timezone-aware"):
+        expires_at(datetime(2026, 9, 18), SourceAccessPolicy())
+    with pytest.raises(ValueError, match="unknown"):
+        expires_at(datetime(2026, 9, 18, tzinfo=__import__("datetime").timezone.utc), SourceAccessPolicy(retention_class=RetentionClass.UNKNOWN))
