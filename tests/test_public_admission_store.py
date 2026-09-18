@@ -400,3 +400,166 @@ async def test_worker_research_success_handles_missing_admission_lease(monkeypat
     )
     assert response.status == 200
     assert persistence.created == ["run-no-lease"]
+
+
+@pytest.mark.asyncio
+async def test_d1_store_rejects_negative_now():
+    store = D1AdmissionStore(FakeDB())
+    with pytest.raises(ValueError, match="now must be non-negative"):
+        await store.acquire(
+            subject_fingerprint="subject-1",
+            route=AdmissionRoute.RESEARCH,
+            policy=AdmissionPolicy(),
+            event_id="event-1",
+            now=-1,
+        )
+
+
+@pytest.mark.asyncio
+async def test_d1_store_returns_denied_decision_from_authoritative_snapshot(monkeypatch):
+    from backend.admission import AdmissionSnapshot
+
+    store = D1AdmissionStore(FakeDB())
+    policy = AdmissionPolicy()
+
+    async def snapshot(**kwargs):
+        return AdmissionSnapshot(
+            authority_available=True,
+            global_requests=policy.max_requests_global,
+        )
+
+    monkeypatch.setattr(store, "_snapshot", snapshot)
+    decision, lease = await store.acquire(
+        subject_fingerprint="subject-1",
+        route=AdmissionRoute.RESEARCH,
+        policy=policy,
+        event_id="event-1",
+        now=120,
+    )
+    assert decision.allowed is False
+    assert decision.outcome.value == "rate_limited"
+    assert lease is None
+
+
+class ZeroInsertDB(FakeDB):
+    def prepare(self, query):
+        statement = super().prepare(query)
+        if query.lstrip().startswith("INSERT INTO public_admission_events"):
+            statement.run = self._zero_insert
+        return statement
+
+    async def _zero_insert(self):
+        return {"meta": {"changes": 0}}
+
+
+@pytest.mark.asyncio
+async def test_d1_store_fails_closed_when_insert_races():
+    store = D1AdmissionStore(ZeroInsertDB())
+    decision, lease = await store.acquire(
+        subject_fingerprint="subject-1",
+        route=AdmissionRoute.RESEARCH,
+        policy=AdmissionPolicy(),
+        event_id="event-1",
+        now=120,
+    )
+    assert decision.allowed is False
+    assert decision.outcome.value == "concurrency_limited"
+    assert lease is None
+
+
+@pytest.mark.asyncio
+async def test_d1_store_rejects_empty_identity_fields():
+    store = D1AdmissionStore(FakeDB())
+    with pytest.raises(ValueError, match="subject_fingerprint is required"):
+        await store.acquire(
+            subject_fingerprint="",
+            route=AdmissionRoute.RESEARCH,
+            policy=AdmissionPolicy(),
+            event_id="event-1",
+            now=120,
+        )
+    with pytest.raises(ValueError, match="event_id is required"):
+        await store.acquire(
+            subject_fingerprint="subject-1",
+            route=AdmissionRoute.RESEARCH,
+            policy=AdmissionPolicy(),
+            event_id="",
+            now=120,
+        )
+
+
+@pytest.mark.asyncio
+async def test_d1_store_release_none_is_noop():
+    db = FakeDB()
+    await D1AdmissionStore(db).release(None)
+    assert db.queries == []
+
+
+def test_admission_response_without_retry_after_header():
+    import worker
+    from backend.admission import AdmissionDecision, AdmissionOutcome
+
+    response = worker._admission_response(
+        AdmissionDecision(
+            AdmissionOutcome.RATE_LIMITED,
+            AdmissionRoute.RESEARCH,
+            False,
+            "rate limited",
+            retry_after_seconds=0,
+        )
+    )
+    assert response.status == 429
+    assert "Retry-After" not in response.headers
+
+
+@pytest.mark.asyncio
+async def test_worker_research_success_missing_lease_runs_through_finally(monkeypatch):
+    import worker
+
+    async def admit(*args, **kwargs):
+        return accepted_admission(None)
+
+    class FullPersistence(Persistence):
+        def __init__(self):
+            super().__init__()
+            self.statuses = []
+
+        async def set_run_status(self, run_id, status):
+            self.statuses.append((run_id, status))
+
+    persistence = FullPersistence()
+    monkeypatch.setattr(worker, "_public_admit", admit)
+    monkeypatch.setattr(
+        worker,
+        "submit_research",
+        lambda request: type(
+            "Result",
+            (),
+            {"ok": True, "run_id": "run-full", "metadata": {"mode": "test"}},
+        )(),
+    )
+    monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: persistence)
+
+    async def ingest(*args, **kwargs):
+        return []
+
+    monkeypatch.setattr(worker, "_ingest_sources", ingest)
+
+    env = type("Env", (), {"AUTH_TOKEN": "secret", "DB": object()})()
+    entry = worker.Default()
+    entry.env = env
+    response = await entry.fetch(
+        Request(
+            "POST",
+            "https://x/api/v1/research",
+            {
+                "question": "q",
+                "source_urls": ["https://example.com"],
+                "strict_zero_cost_only": True,
+            },
+            {"Authorization": "Bearer secret", "Content-Type": "application/json"},
+        )
+    )
+    assert response.status == 200
+    assert persistence.created == ["run-full"]
+    assert persistence.statuses == [("run-full", "running"), ("run-full", "completed")]
