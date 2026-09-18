@@ -62,6 +62,9 @@ def _source_metadata(fetched, run_id: str, index: int, content: bytes) -> dict:
     now = datetime.now(timezone.utc).isoformat()
     access_state = "accessible" if 200 <= fetched.status < 400 else "error"
     return {
+        "run_id": run_id,
+        "final_url": fetched.final_url,
+        "etag": fetched.etag,
         "source_id": source_id,
         "content_hash": content_hash,
         "version_id": version_id,
