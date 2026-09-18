@@ -101,6 +101,8 @@ async def get_run(
         ORDER BY o.observed_at ASC, o.observation_id ASC
         LIMIT ? OFFSET ?"""
     ).bind(run_id, limit + 1, offset).all()
+    if hasattr(rows, "results"):
+        rows = rows.results
     items = list(rows or [])
     has_more = len(items) > limit
     items = items[:limit]
