@@ -155,3 +155,19 @@ def test_code_analysis_input_validation():
         redact_repository_secrets(None)
     with pytest.raises(TypeError):
         patch_digest(None)
+
+
+def test_code_analysis_result_validation_rejects_invalid_fields():
+    with pytest.raises(ValueError, match="repository and revision"):
+        CodeAnalysisResult(CODE_ANALYSIS_CONTRACT_VERSION, "", "rev", CodeAnalysisOperation.INSPECT, False).validate()
+    with pytest.raises(ValueError, match="cannot authorize execution"):
+        CodeAnalysisResult(CODE_ANALYSIS_CONTRACT_VERSION, "owner/repo", "rev", CodeAnalysisOperation.INSPECT, True).validate()
+    with pytest.raises(ValueError, match="non-negative"):
+        CodeAnalysisResult(CODE_ANALYSIS_CONTRACT_VERSION, "owner/repo", "rev", CodeAnalysisOperation.INSPECT, False, redacted_secret_count=-1).validate()
+    with pytest.raises(ValueError, match="SHA-256"):
+        CodeAnalysisResult(CODE_ANALYSIS_CONTRACT_VERSION, "owner/repo", "rev", CodeAnalysisOperation.PATCH_CANDIDATE, False, candidate_patch_digest="bad").validate()
+
+
+def test_code_analysis_execution_is_rejected_for_all_operations():
+    with pytest.raises(ValueError, match="cannot execute"):
+        CodeAnalysisRequest("owner/repo", "rev", CodeAnalysisOperation.PATCH_CANDIDATE, execution_requested=True).validate()
