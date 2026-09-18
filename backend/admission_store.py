@@ -5,7 +5,14 @@ from dataclasses import dataclass
 from time import time
 from typing import Any
 
-from backend.admission import AdmissionDecision, AdmissionOutcome, AdmissionPolicy, AdmissionRoute, AdmissionSnapshot, decide_admission
+from backend.admission import (
+    AdmissionDecision,
+    AdmissionOutcome,
+    AdmissionPolicy,
+    AdmissionRoute,
+    AdmissionSnapshot,
+    decide_admission,
+)
 
 
 ROUTE_COST_UNITS = {
@@ -30,32 +37,7 @@ class D1AdmissionStore:
     def __init__(self, db: Any):
         self.db = db
 
-    async def acquire(
-        self,
-        *,
-        subject_fingerprint: str,
-        route: AdmissionRoute,
-        policy: AdmissionPolicy,
-        event_id: str,
-        now: int | None = None,
-    ) -> tuple[AdmissionDecision, AdmissionLease | None]:
-        if not subject_fingerprint.strip():
-            raise ValueError("subject_fingerprint is required")
-        if not event_id.strip():
-            raise ValueError("event_id is required")
-        policy.validate()
-        now = int(time()) if now is None else now
-        if now < 0:
-            raise ValueError("now must be non-negative")
-
-        window_start = now - (now % policy.window_seconds)
-        expires_at = now + policy.window_seconds
-        cost_units = ROUTE_COST_UNITS[route]
-
-        await self.db.prepare(
-            "DELETE FROM public_admission_events WHERE window_start < ?"
-        ).bind(window_start - policy.window_seconds).run()
-
+    async def _snapshot(self, *, window_start: int, subject_fingerprint: str, now: int) -> AdmissionSnapshot:
         row = await self.db.prepare(
             """SELECT
                  (SELECT COUNT(*) FROM public_admission_events
@@ -77,26 +59,28 @@ class D1AdmissionStore:
         ).first()
 
         def field(name: str) -> int:
-            if isinstance(row, dict):
-                return int(row.get(name, 0) or 0)
-            return int(getattr(row, name, 0) or 0)
+            return int(row.get(name, 0) or 0) if isinstance(row, dict) else int(getattr(row, name, 0) or 0)
 
-        snapshot = AdmissionSnapshot(
+        return AdmissionSnapshot(
             authority_available=True,
             subject_requests=field("subject_requests"),
             global_requests=field("global_requests"),
             subject_concurrent=field("subject_concurrent"),
             global_concurrent=field("global_concurrent"),
         )
-        decision = decide_admission(
-            policy=policy,
-            snapshot=snapshot,
-            subject_fingerprint=subject_fingerprint,
-            route=route,
-        )
-        if not decision.allowed:
-            return decision, None
 
+    async def _insert_if_admissible(
+        self,
+        *,
+        event_id: str,
+        window_start: int,
+        subject_fingerprint: str,
+        route: AdmissionRoute,
+        cost_units: int,
+        expires_at: int,
+        now: int,
+        policy: AdmissionPolicy,
+    ) -> bool:
         result = await self.db.prepare(
             """INSERT INTO public_admission_events
                  (event_id, window_start, subject_fingerprint, route,
@@ -122,10 +106,57 @@ class D1AdmissionStore:
             subject_fingerprint, now, policy.max_concurrent_per_subject,
             now, policy.max_concurrent_global,
         ).run()
-
         meta = result.get("meta", {}) if isinstance(result, dict) else getattr(result, "meta", {})
-        changes = int(meta.get("changes", 0) or 0)
-        if changes != 1:
+        return int(meta.get("changes", 0) or 0) == 1
+
+    async def acquire(
+        self,
+        *,
+        subject_fingerprint: str,
+        route: AdmissionRoute,
+        policy: AdmissionPolicy,
+        event_id: str,
+        now: int | None = None,
+    ) -> tuple[AdmissionDecision, AdmissionLease | None]:
+        self._validate_identity(subject_fingerprint, event_id)
+        policy.validate()
+        now = int(time()) if now is None else now
+        if now < 0:
+            raise ValueError("now must be non-negative")
+
+        window_start = now - (now % policy.window_seconds)
+        expires_at = now + policy.window_seconds
+        cost_units = ROUTE_COST_UNITS[route]
+
+        await self.db.prepare(
+            "DELETE FROM public_admission_events WHERE window_start < ?"
+        ).bind(window_start - policy.window_seconds).run()
+
+        snapshot = await self._snapshot(
+            window_start=window_start,
+            subject_fingerprint=subject_fingerprint,
+            now=now,
+        )
+        decision = decide_admission(
+            policy=policy,
+            snapshot=snapshot,
+            subject_fingerprint=subject_fingerprint,
+            route=route,
+        )
+        if not decision.allowed:
+            return decision, None
+
+        inserted = await self._insert_if_admissible(
+            event_id=event_id,
+            window_start=window_start,
+            subject_fingerprint=subject_fingerprint,
+            route=route,
+            cost_units=cost_units,
+            expires_at=expires_at,
+            now=now,
+            policy=policy,
+        )
+        if not inserted:
             return AdmissionDecision(
                 AdmissionOutcome.CONCURRENCY_LIMITED,
                 route,
@@ -142,6 +173,13 @@ class D1AdmissionStore:
             expires_at=expires_at,
             cost_units=cost_units,
         )
+
+    @staticmethod
+    def _validate_identity(subject_fingerprint: str, event_id: str) -> None:
+        if not subject_fingerprint.strip():
+            raise ValueError("subject_fingerprint is required")
+        if not event_id.strip():
+            raise ValueError("event_id is required")
 
     async def release(self, lease: AdmissionLease | None) -> None:
         if lease is None:
