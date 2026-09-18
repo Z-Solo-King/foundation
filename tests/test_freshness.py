@@ -105,3 +105,5 @@ def test_observed_timestamp_with_unbounded_freshness_is_fresh():
         now=NOW,
     )
     assert result is FreshnessState.FRESH
+
+# Protected-main check refresh: re-evaluate required checks against latest main.
