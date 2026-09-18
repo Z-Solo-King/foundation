@@ -4,6 +4,7 @@
   "role": "public_product_boundary_for_heroic_ai",
   "product": "Heroic AI",
   "read_first": [
+    "docs/MAINTENANCE_CONTRACT.md",
     "docs/HEROIC_AI_PRODUCT.md",
     "README.md",
     "docs/DOCUMENTATION_INDEX.md",
