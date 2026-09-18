@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime, timezone
 from urllib.parse import parse_qs, urlparse
 
-from workers import Response, WorkerEntrypoint
+from workers import Headers, Request, Response, WorkerEntrypoint
 
 from backend.api.main import submit_research
 from backend.api.models import ChatRequest, ResearchRequest
@@ -21,6 +21,19 @@ from backend.worker_auth import MAX_PUBLIC_JSON_BODY_BYTES, authenticated_subjec
 from backend.worker_diagnostics import health_payload, public_infrastructure_verify, readiness_payload, storage_diagnostic
 from backend.worker_research import get_run, ingest_sources
 
+
+
+def _service_request(url, *, method="GET", headers=None, body=None):
+    """Construct a Fetch API Request for a Worker service binding.
+
+    Cloudflare Python Worker service bindings accept exactly one Request object;
+    they do not support the JavaScript-style fetch(url, init) positional form.
+    """
+    request_headers = Headers.new((headers or {}).items())
+    kwargs = {"method": method, "headers": request_headers}
+    if body is not None:
+        kwargs["body"] = body
+    return Request.new(url, **kwargs)
 
 def _extract_source_urls(question, explicit=()):
     return extract_source_urls(question, explicit)
@@ -197,8 +210,7 @@ async def _operations_chat(env, payload, request):
     headers = _chat_headers(request)
     try:
         upstream = await operations.fetch(
-            "https://chat/v1/chat",
-            {"method": "POST", "headers": headers, "body": json.dumps(payload)},
+            _service_request("https://chat/v1/chat", method="POST", headers=headers, body=json.dumps(payload))
         )
         body = await upstream.json()
         if not isinstance(body, dict):
@@ -229,8 +241,7 @@ async def _operations_chat_stream(env, payload, request):
     headers = _chat_headers(request)
     try:
         upstream = await operations.fetch(
-            "https://chat/v1/chat/stream",
-            {"method": "POST", "headers": headers, "body": json.dumps(payload)},
+            _service_request("https://chat/v1/chat/stream", method="POST", headers=headers, body=json.dumps(payload))
         )
         return upstream, None, upstream.status
     except Exception:
@@ -244,12 +255,12 @@ async def _operations_chatbot_diagnostic(env):
         return {"ok": False, "error": "chat_backend_unavailable", "status": "unavailable"}, 503
     try:
         upstream = await operations.fetch(
-            "https://private/v1/diagnostics/chatbot",
-            {
-                "method": "POST",
-                "headers": {"Content-Type": "application/json"},
-                "body": json.dumps({"operation": "infrastructure_verify", "question": "Infrastructure diagnostic only; do not execute a model provider."}),
-            },
+            _service_request(
+                "https://private/v1/diagnostics/chatbot",
+                method="POST",
+                headers={"Content-Type": "application/json"},
+                body=json.dumps({"operation": "infrastructure_verify", "question": "Infrastructure diagnostic only; do not execute a model provider."}),
+            )
         )
         body = await upstream.json()
         healthy = upstream.status == 200 and isinstance(body, dict) and bool(body.get("ok")) and bool(body.get("chatbot", {}).get("allowed"))
@@ -275,7 +286,7 @@ async def _operations_dashboard(env, request):
     if token:
         headers["Authorization"] = f"Bearer {token}"
     try:
-        upstream = await operations.fetch("https://private/v1/dashboard", {"method": "GET", "headers": headers})
+        upstream = await operations.fetch(_service_request("https://private/v1/dashboard", method="GET", headers=headers))
         body = await upstream.json()
         if not isinstance(body, dict):
             return {"ok": False, "error": "invalid_private_dashboard_response"}, 503
