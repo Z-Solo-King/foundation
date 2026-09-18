@@ -96,3 +96,39 @@ def test_invalid_samples_are_rejected():
         StageTiming("", 1)
     with pytest.raises(ValueError):
         StageTiming("research", -1)
+
+
+
+def test_performance_sample_rejects_missing_identity_fields_and_negative_budget():
+    value = sample()
+    for field in ("workload", "population", "environment"):
+        payload = {
+            "workload": value.workload,
+            "population": value.population,
+            "environment": value.environment,
+            "stage_timings": value.stage_timings,
+            "ttfb_ms": value.ttfb_ms,
+            "time_to_evidence_ms": value.time_to_evidence_ms,
+            "time_to_final_ms": value.time_to_final_ms,
+            "resource_units": value.resource_units,
+            "completed_work_units": value.completed_work_units,
+        }
+        payload[field] = " "
+        with pytest.raises(ValueError):
+            PerformanceSample(**payload).validate()
+    with pytest.raises(ValueError):
+        PerformanceSample(value.workload, value.population, value.environment, value.stage_timings, resource_units=-1).validate()
+    with pytest.raises(ValueError):
+        PerformanceSample(value.workload, value.population, value.environment, value.stage_timings, completed_work_units=-1).validate()
+
+
+def test_performance_sample_rejects_negative_optional_timing():
+    value = sample()
+    with pytest.raises(ValueError):
+        PerformanceSample(
+            value.workload,
+            value.population,
+            value.environment,
+            value.stage_timings,
+            ttfb_ms=-1,
+        ).validate()
