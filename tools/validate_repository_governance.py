@@ -30,6 +30,17 @@ CANONICAL_OPERATION_DOCS = {
     "CHATBOT_BOUNDARY.md",
 }
 
+ALLOWED_FOUNDATION_WORKFLOWS = {
+    "b2-repository-backup.yml",
+    "b2-restore-verification.yml",
+    "codeql.yml",
+    "context-budget.yml",
+    "cross-repository-contract-drift.yml",
+    "heroic-ai-production-release.yml",
+    "nightly-invariants.yml",
+    "required-pr-checks.yml",
+}
+
 PRIVATE_WORKFLOW_FORBIDDEN_MARKERS = (
     "autonomous-benchmark",
     "autonomous-scorecard",
@@ -60,6 +71,10 @@ def validate_foundation(root: Path) -> list[str]:
         errors.append("Foundation must not contain an active top-level benchmark/ directory")
 
     workflows = [p for p in paths if p.startswith(".github/workflows/")]
+    workflow_names = {Path(p).name for p in workflows}
+    unexpected = sorted(workflow_names - ALLOWED_FOUNDATION_WORKFLOWS)
+    for name in unexpected:
+        errors.append(f"Foundation workflow is not in the approved public allowlist: {name}")
     for path in workflows:
         lowered = path.lower()
         if any(marker in lowered for marker in PRIVATE_WORKFLOW_FORBIDDEN_MARKERS):
