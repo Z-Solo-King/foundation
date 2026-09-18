@@ -135,15 +135,22 @@ def detect_typed_contradiction(left: TypedClaim, right: TypedClaim) -> Contradic
         if str(left.value).strip().casefold() != str(right.value).strip().casefold():
             return Contradiction(left.claim_id, right.claim_id, "mutually exclusive categorical values", left.predicate)
 
-    if left.value_type == right.value_type == "quantity" and _numeric_conflict(left, right):
+    if left.value_type == right.value_type == "quantity" and left.unit and right.unit and _numeric_conflict(left, right):
         return Contradiction(left.claim_id, right.claim_id, "normalized quantities differ", left.predicate)
 
     if left.value_type == right.value_type == "text":
         a = str(left.value).strip().casefold()
         b = str(right.value).strip().casefold()
         if left.qualifier != right.qualifier:
-            # Commercial qualifiers such as starts_at and exact are different
-            # claims unless a stronger predicate explicitly declares them exclusive.
+            qualifier_pair = {
+                (left.qualifier or "").casefold(),
+                (right.qualifier or "").casefold(),
+            }
+            if qualifier_pair == {"starts_at", "exact"}:
+                return None
+            if left.qualifier is not None and right.qualifier is not None:
+                return Contradiction(left.claim_id, right.claim_id, "commercial qualifiers differ", left.predicate)
+        if left.unit != right.unit:
             return None
         if a and b and a != b:
             return Contradiction(left.claim_id, right.claim_id, "typed text predicates differ", left.predicate)
@@ -177,14 +184,11 @@ def detect_contradiction(claim_a: str, claim_b: str):
     return None
 
 
-def _candidate_bucket_key(claim: TypedClaim) -> tuple[str, str, str, str, str]:
-    start = claim.valid_from.date().isoformat() if claim.valid_from else "*"
+def _candidate_bucket_key(claim: TypedClaim) -> tuple[str, str, str]:
     return (
         claim.entity.strip().casefold(),
         claim.predicate.strip().casefold(),
         (claim.scope or "*").strip().casefold() or "*",
-        (claim.version or "*").strip().casefold() or "*",
-        start,
     )
 
 
@@ -192,7 +196,7 @@ def bucket_typed_claims(
     claims: tuple[TypedClaim, ...] | list[TypedClaim],
 ) -> dict[tuple[str, str, str, str, str], tuple[TypedClaim, ...]]:
     """Group compatible contradiction candidates deterministically."""
-    buckets: dict[tuple[str, str, str, str, str], list[TypedClaim]] = {}
+    buckets: dict[tuple[str, str, str], list[TypedClaim]] = {}
     for claim in claims:
         if not isinstance(claim, TypedClaim):
             raise TypeError("claims must contain TypedClaim values")
@@ -216,8 +220,11 @@ def bounded_typed_candidate_pairs(
     for values in bucket_typed_claims(claims).values():
         for index, left in enumerate(values):
             for right in values[index + 1:]:
-                if _validity_overlap(left, right):
-                    pairs.append((left, right))
-                    if len(pairs) >= max_pairs:
-                        return tuple(pairs)
+                if left.version and right.version and left.version != right.version:
+                    continue
+                if not _validity_overlap(left, right):
+                    continue
+                pairs.append((left, right))
+                if len(pairs) >= max_pairs:
+                    return tuple(pairs)
     return tuple(pairs)
