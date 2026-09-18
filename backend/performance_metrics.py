@@ -82,3 +82,39 @@ def regression_allowed(*, baseline: float, candidate: float, threshold: Regressi
     if baseline == 0:
         return candidate == 0
     return candidate <= baseline * (1 + threshold.max_relative_regression)
+
+
+@dataclass(frozen=True)
+class PerformanceGateResult:
+    metric: str
+    baseline: float
+    candidate: float
+    allowed: bool
+    relative_change: float
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "schema_version": "performance-gate/v1",
+            "metric": self.metric,
+            "baseline": self.baseline,
+            "candidate": self.candidate,
+            "allowed": self.allowed,
+            "relative_change": self.relative_change,
+        }
+
+
+def evaluate_regression_gate(
+    *,
+    baseline: float,
+    candidate: float,
+    threshold: RegressionThreshold,
+) -> PerformanceGateResult:
+    allowed = regression_allowed(baseline=baseline, candidate=candidate, threshold=threshold)
+    relative_change = 0.0 if baseline == 0 else (candidate - baseline) / baseline
+    return PerformanceGateResult(
+        metric=threshold.metric,
+        baseline=baseline,
+        candidate=candidate,
+        allowed=allowed,
+        relative_change=relative_change,
+    )
