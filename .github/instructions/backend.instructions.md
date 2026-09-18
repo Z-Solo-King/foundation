@@ -4,7 +4,7 @@ applyTo: "backend/**/*.py"
 
 # Backend AI maintenance contract
 
-- Read `REPOSITORY_MAP.json` before editing and identify the canonical owner.
+- Read `docs/MAINTENANCE_CONTRACT.md` and `REPOSITORY_MAP.json` before editing and identify the canonical owner.
 - Foundation owns public-safe contracts, evidence/intelligence primitives, deterministic planning, and the public API boundary.
 - Do not add private provider policy, secrets, heavy extraction, or heavy product mapping here.
 - Prefer the smallest change that preserves the typed contract and explicit uncertainty/contradiction states.
@@ -14,4 +14,4 @@ applyTo: "backend/**/*.py"
 - Do not translate network failures into successful empty results.
 - Keep private Operations authorities in Operations; never reach into `private/` from Foundation.
 - Distinguish repository evidence from runtime/production evidence.
-- Use `REPOSITORY_MAP.json` as the canonical navigation map; do not assume an `AI_CODEMAP.json` exists unless it is actually present.
+- Use `REPOSITORY_MAP.json` as the canonical navigation map; do not create alternate maps or model-specific guidance documents.
