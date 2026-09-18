@@ -7,6 +7,7 @@ from typing import Any, Literal
 MAX_RESEARCH_SOURCES = 500
 MAX_RESEARCH_EVIDENCE_ITEMS = 5_000
 MAX_SOURCE_URL_LENGTH = 8_192
+MAX_RESEARCH_QUESTION_LENGTH = 16_384
 MAX_METADATA_FIELDS = 32
 MAX_METADATA_KEY_LENGTH = 128
 MAX_METADATA_VALUE_LENGTH = 4_096
@@ -28,6 +29,8 @@ class ResearchRequest:
     def validate(self) -> None:
         if not self.question.strip():
             raise ValueError("question required and must not be empty")
+        if len(self.question) > MAX_RESEARCH_QUESTION_LENGTH:
+            raise ValueError("question exceeds the supported length")
         if not isinstance(self.max_sources, int) or isinstance(self.max_sources, bool):
             raise ValueError("max_sources must be an integer")
         if not isinstance(self.max_evidence_items, int) or isinstance(self.max_evidence_items, bool):
