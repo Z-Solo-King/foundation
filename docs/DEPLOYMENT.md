@@ -2,6 +2,10 @@
 
 Foundation owns the single production deployment workflow in `.github/workflows/heroic-ai-production-release.yml`. Its workflow name is `Heroic AI production release`. The workflow deploys the public Worker and, after the public deployment succeeds, deploys the explicitly approved private Operations revision.
 
+## GitHub Actions ownership boundary
+
+All GitHub Actions automation for the active family is executed from public `foundation`. The private `operations` repository must contain no `.github/workflows` and must not be its own CI, scheduled-job, workflow-dispatch, or deployment owner. Foundation uses the approved GitHub App to read private Operations source when automation requires it.
+
 ## Production authority
 
 - Public Worker deployment authority: `.github/workflows/heroic-ai-production-release.yml`
@@ -39,6 +43,13 @@ The canonical workflow performs the following in order:
 9. remove the ephemeral checkout, temporary authentication helper, private key material and generated configuration.
 
 A credential failure stops the deployment before any Operations deployment step. A wrong credential must not be silently retried with a B2 or other provider credential.
+
+
+## Private Operations validation
+
+The public workflow `.github/workflows/operations-centralized-validation.yml` is the CI owner for the private Operations repository. It uses the approved GitHub App read credential to check out `Z-Solo-King/operations`, validates the private-repository boundary, runs the Operations test suite, and fails if Operations contains any GitHub Actions workflow.
+
+Scheduled and manual validation happen on Foundation runners. Operations itself has no GitHub Actions execution surface.
 
 ## Evidence and closure
 

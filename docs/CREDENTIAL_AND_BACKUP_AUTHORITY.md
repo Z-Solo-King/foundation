@@ -15,7 +15,6 @@ The governing rule is: **a credential is named and scoped by the authority it se
 | Credential / resource | Canonical purpose | Authority | Must not be used for |
 | --- | --- | --- | --- |
 | `OPERATIONS_APP_ID` | Identify the GitHub App used by Foundation deployment | GitHub App / Foundation deployment | B2, Cloudflare, arbitrary repository writes |
-| `OPERATIONS_APP_INSTALLATION_ID` | Select the GitHub App installation authorized for private Operations | GitHub App / Foundation deployment | B2, Cloudflare, arbitrary repository access |
 | `OPERATIONS_APP_PRIVATE_KEY` | Sign the short-lived GitHub App JWT used to mint an Operations installation token | GitHub App / Foundation deployment | B2, Cloudflare, general repository writes |
 | `BACKUP_GITHUB_TOKEN` | Read/mirror `foundation` and private `operations` for repository backup | Foundation B2 backup workflow | B2, Cloudflare, production deployment |
 | `B2_KEY_ID` | Authenticate the backup workflow to the configured B2 S3 API | Backblaze B2 | GitHub, Cloudflare |
@@ -43,7 +42,7 @@ Production deployment uses a short-lived GitHub App installation token minted fr
 
 Before checkout, deployment must fail closed unless:
 
-1. the App ID, installation ID, and private key secrets are present;
+1. the App ID and private key secrets are present;
 2. a valid short-lived App JWT is generated;
 3. GitHub accepts the installation-token exchange;
 4. the installation token can read `Z-Solo-King/operations`;
