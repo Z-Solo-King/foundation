@@ -145,7 +145,10 @@ def _compare_mapping(
     for key in sorted(set(required) | set(expected_map) | set(actual_map)):
         expected = expected_map.get(key, "<required>" if key in required else "<missing>")
         actual = actual_map.get(key, "<missing>")
-        label = f"{field}.{key}" if field == "capabilities" else f"{field[:-1]}.{key}"
+        if field == "capabilities":
+            label = f"capability.{key}"
+        else:
+            label = f"{field[:-1]}.{key}"
         if key in required and key not in actual_map:
             findings.append(
                 DriftFinding(
@@ -154,10 +157,14 @@ def _compare_mapping(
                 )
             )
         elif expected != actual:
+            message = (
+                f"{candidate.name}: capability revision drift for {key}"
+                if field == "capabilities"
+                else f"{candidate.name}: ownership/schema drift for {key}"
+            )
             findings.append(
                 DriftFinding(
-                    DriftSeverity.ERROR, candidate.name, label, expected, actual,
-                    f"{candidate.name}: {label} drifted for {candidate.name}",
+                    DriftSeverity.ERROR, candidate.name, label, expected, actual, message,
                 )
             )
     return findings
