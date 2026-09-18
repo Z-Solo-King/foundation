@@ -17,6 +17,8 @@ class FakeStatement:
         return {"meta": {"changes": 1}}
 
     async def first(self):
+        if "SELECT event_id" in self.query.upper():
+            return None
         return {
             "subject_requests": 0,
             "global_requests": 0,
@@ -563,3 +565,117 @@ async def test_worker_research_success_missing_lease_runs_through_finally(monkey
     assert response.status == 200
     assert persistence.created == ["run-full"]
     assert persistence.statuses == [("run-full", "running"), ("run-full", "completed")]
+
+
+
+class IdempotentAdmissionDB(FakeDB):
+    def __init__(self):
+        super().__init__()
+        self.events = {}
+
+    def prepare(self, query):
+        db = self
+
+        class StatefulStatement(FakeStatement):
+            async def run(self_inner):
+                sql = self_inner.query.lower().strip()
+                args = self_inner.args
+
+                if sql.startswith("delete from public_admission_events"):
+                    return {"meta": {"changes": 0}}
+
+                if sql.startswith("insert into public_admission_events"):
+                    event_id, window_start, subject, route, cost_units, expires_at = args[:6]
+                    if event_id in db.events:
+                        return {"meta": {"changes": 0}}
+                    db.events[event_id] = {
+                        "event_id": event_id,
+                        "window_start": window_start,
+                        "subject_fingerprint": subject,
+                        "route": route,
+                        "cost_units": cost_units,
+                        "lease_expires_at": expires_at,
+                        "released_at": None,
+                    }
+                    return {"meta": {"changes": 1}}
+
+                if sql.startswith("update public_admission_events set released_at"):
+                    released_at, event_id = args
+                    row = db.events.get(event_id)
+                    if row and row["released_at"] is None:
+                        row["released_at"] = released_at
+                        return {"meta": {"changes": 1}}
+                    return {"meta": {"changes": 0}}
+
+                if sql.startswith("update public_admission_events set window_start"):
+                    window_start, expires_at, event_id, subject, route, now = args
+                    row = db.events.get(event_id)
+                    if (
+                        row
+                        and row["subject_fingerprint"] == subject
+                        and row["route"] == route
+                        and row["released_at"] is None
+                        and row["lease_expires_at"] <= now
+                    ):
+                        row.update(window_start=window_start, lease_expires_at=expires_at)
+                        return {"meta": {"changes": 1}}
+                    return {"meta": {"changes": 0}}
+
+                if sql.startswith("select event_id"):
+                    row = db.events.get(args[0])
+                    return {"results": [row] if row else []}
+
+                return {"meta": {"changes": 1}}
+
+            async def first(self_inner):
+                sql = self_inner.query.lower().strip()
+                if sql.startswith("select event_id"):
+                    row = db.events.get(self_inner.args[0])
+                    return row
+                return {
+                    "subject_requests": len(db.events),
+                    "global_requests": len(db.events),
+                    "subject_concurrent": sum(
+                        1 for row in db.events.values()
+                        if row["released_at"] is None
+                    ),
+                    "global_concurrent": sum(
+                        1 for row in db.events.values()
+                        if row["released_at"] is None
+                    ),
+                }
+
+        return StatefulStatement(query)
+
+
+def test_d1_store_replays_same_event_without_a_second_admission_slot():
+    import asyncio
+
+    db = IdempotentAdmissionDB()
+    store = D1AdmissionStore(db)
+    policy = AdmissionPolicy()
+
+    first_decision, first_lease = asyncio.run(
+        store.acquire(
+            subject_fingerprint="subject-1",
+            route=AdmissionRoute.CHAT,
+            policy=policy,
+            event_id="replay-key",
+            now=120,
+        )
+    )
+    assert first_decision.allowed is True
+    assert first_lease is not None
+    asyncio.run(store.release(first_lease))
+
+    second_decision, second_lease = asyncio.run(
+        store.acquire(
+            subject_fingerprint="subject-1",
+            route=AdmissionRoute.CHAT,
+            policy=policy,
+            event_id="replay-key",
+            now=121,
+        )
+    )
+    assert second_decision.allowed is True
+    assert second_lease is None
