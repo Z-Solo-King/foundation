@@ -1,76 +1,46 @@
-# Family Architecture Rule
+# GitHub Family Architecture
 
-This repository is one member of a two-repository system. The public-safe ownership contract is canonical in `docs/FAMILY_CONTRACT.json`.
+The family has exactly two active repositories and one canonical owner per behavior. The normative ownership contract is `docs/FAMILY_CONTRACT.json`.
 
-- `foundation`: public contracts, evidence structures, research contracts, reusable deterministic primitives, canonical public CI and production deployment/backup ownership.
-- `operations`: private control, acquisition, extraction, mapping, verification, evaluation, promotion, private runtime orchestration, protected runtime configuration and recovery.
+## Repository roles
 
-Dependency direction is one-way:
+| Repository | Canonical responsibility | Must not become |
+| --- | --- | --- |
+| Foundation | public-safe contracts, deterministic core, public evidence structures, public Worker/frontend, GitHub CI, canonical production deployment and backup | private policy, private runtime authority, protected provider/resource decisions |
+| Operations | protected policy/governance, private acquisition/execution, provider/runtime, evaluation, promotion/recovery, chatbot orchestration | duplicate Foundation algorithms or a second family-wide authority |
 
-`foundation public contract/core -> operations consumer`
+The standalone extractor-mapper repository is historical. Active extractor/mapping responsibilities are under Operations.
 
-Operations may consume the pinned public `foundation_core` package or the public Foundation service contract. Foundation must not import Operations source, private credentials, private runtime state, or protected implementation.
+## Canonical dependency
 
-## Single-owner rule
+`Foundation public contract/core -> pinned Operations consumption -> private execution/policy -> verification/evaluation -> promotion/release`
 
-The same behavior may not have multiple authoritative implementations. A compatibility module may expose an old API over the canonical owner, but it may not contain another copy of the algorithm.
+Foundation never imports Operations internals. Operations materializes the pinned public Foundation core; generated public-core materialization is not a second authority.
 
-This applies to code, policy logic, process methodology, DTOs, registries, state models, routing rules, result-state semantics, resource accounting, provider eligibility, evaluation gates, promotion/rollback, trust/identity checks, credential purpose and deployment ownership.
+## Internal placement
 
-## Credential and backup boundary
+Foundation deterministic/public code belongs under public-safe packages. Operations owns private acquisition/extraction, protected policy, resources, chatbot orchestration, evaluation and promotion.
 
-Credential and backup policy is canonical in `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md`.
+Repository location is itself an authority/security claim and changes deserve the same scrutiny as policy changes.
 
-Foundation owns the GitHub production deployment workflow and the repository backup workflow. `OPERATIONS_READ_TOKEN` is the purpose-specific credential for reading the private Operations revision during production deployment. `BACKUP_GITHUB_TOKEN` is a separate GitHub read credential used by the B2 backup workflow to mirror repository Git data.
+## Cross-repository policy
 
-Backblaze B2 is artifact/backup storage authority only. `B2_KEY_ID`, `B2_APPLICATION_KEY` and `B2_BUCKET` belong to the B2 boundary and are never substitutes for GitHub credentials. B2 does not own application identity, authorization, routing, resource governance, evidence, deployment approval or result-state semantics.
+Shared changes must identify the owner, dependency direction, counterpart impact and evidence level. A consumer may fail closed, but must not become a competing policy engine.
 
-Backup manifests are evidence records only. Secret values must never appear in manifests or durable handoff records. Backup integrity, GitHub CI, Cloudflare deployment and application runtime are separate evidence classes.
+If the counterpart repository cannot be inspected, record `UNKNOWN` rather than inventing a product defect.
 
-## Repository structure rule
+## External architecture references
 
-New modules belong under the layer that owns their responsibility. Do not create a convenient top-level module when an existing owning package already exists. Keep public contracts, evidence semantics, execution state, protected policy and orchestration separated by ownership.
+External architecture patterns may inform placement and reliability—separation of acquisition/mapping, durable state/checkpoints, explicit tool boundaries, provider routing, caching, idempotency and bounded workflows—but they are references, not copied business logic or authority.
 
-## Maintainability rule
+## Validation and controls
 
-The family maintainability contract is `docs/FAMILY_MAINTAINABILITY_STANDARD.md`. Non-trivial modules should make responsibility, non-responsibilities, inputs, outputs, invariants, failure behavior, side effects, canonical authority and tests discoverable without depending on chat history.
+Foundation owns public GitHub-hosted CI and canonical production deployment/backup workflows.
 
-## GitHub change order
+Operations intentionally has no GitHub-hosted private runtime workflow dependency.
 
-Use one coherent feature branch and one PR per owning repository. For a cross-repository change, merge in dependency order: `foundation` contract -> `operations` implementation/control-plane integration. Do not copy implementation between repositories to avoid a dependency.
+Privileged Foundation workflows must run only from trusted `main` or approved manual dispatch, never pull-request code. Third-party actions are pinned. Credential-bearing deployment and backup purposes remain separate.
 
-## Change methodology
+## Storage and cost
 
-1. Locate the existing canonical implementation across both repositories.
-2. Decide which repository owns the behavior using `docs/FAMILY_CONTRACT.json` and the repository maps.
-3. Inspect imports, runtime entrypoints, state and consumers before modifying or moving code.
-4. Extend that owner rather than duplicating it.
-5. Expose the minimum stable typed/versioned contract needed by consumers.
-6. Add owner-level tests plus boundary/golden-vector tests where repositories interact.
-7. Run repository-local validation and the family overlap audit for structural changes.
-8. Update the canonical documentation in the same change set when ownership, contract, policy or methodology changes.
-9. Remove duplicate, obsolete or completed compatibility code after parity evidence.
-
-## Splitting and moving code
-
-Split when responsibilities, ownership, lifecycle or change frequency are materially independent; do not split merely to reduce line count.
-
-Move between repositories only when ownership requires it. Preserve contracts and compatibility during migration, then delete the old implementation after consumers migrate and parity evidence exists.
-
-## Anti-patterns
-
-- Two resource ledgers for the same authority.
-- Two execution-run models with overlapping state.
-- A public repository reimplementing protected policy from Operations.
-- A public repository making trust or promotion decisions.
-- Legacy snapshots receiving new business logic.
-- Compatibility facades containing competing business logic.
-- Shared or ambiguously named credentials used for unrelated authorities.
-- Treating B2 backup success as application or deployment certification.
-- Synchronized copy-paste commits across repositories that should instead be a contract plus one owner.
-- Large modules with mixed ownership that cannot be reasoned about or tested independently.
-- AI token reduction that silently removes constraints, failure states or evidence requirements.
-
-## Historical migration record
-
-The former `extractor-mapper` repository was consolidated into Operations and deleted. Its migration facts are retained in current documentation only. The retired repository and any former `operations/archive/extractor-mapper/` snapshot are not active runtime, CI, package, import or ownership boundaries and must not be recreated.
+Backblaze B2 is the current artifact/backup store; D1 is compact operational metadata/index storage. R2 is historical and requires a new architecture/cost decision before reconsideration. Strict zero-cost remains a family invariant.
