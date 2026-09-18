@@ -19,8 +19,8 @@ This file is the canonical handoff for a new GitHub-maintenance chat/agent. Trea
 ## Current canonical revisions
 
 - Foundation production-code baseline at handoff: `972e1b05c1e2d51905029b602d0c4120eac1d399`
-- Operations production-code baseline at handoff: `282dea820a1a2c24bdf7b5e23298e932ffd94767`
-- Canonical approved Operations production revision: `282dea820a1a2c24bdf7b5e23298e932ffd94767`
+- Operations production-code baseline at handoff: `b43c19554100bcdded0c6e70d966b30e5e4df04c`
+- Canonical approved Operations production revision: `b43c19554100bcdded0c6e70d966b30e5e4df04c`
 - Operations PR #505 / commit `3afbde92...` corrected the Cloudflare Python service-binding request construction to use `workers.Request(url, **kwargs)` and added regression coverage. The previous deployed-runtime `Request.new` failure is therefore a superseded blocker, not a reason to redesign the boundary.
 - Foundation PR #642 advanced the production pin and synchronized the nightly research/pin-repair contracts to the corrected Operations revision.
 
