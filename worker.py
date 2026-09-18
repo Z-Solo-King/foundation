@@ -12,7 +12,7 @@ from backend.api.models import ChatRequest, ResearchRequest
 from backend.evidence_publication import package_digest, verify_package
 from backend.persistence.cloudflare import CloudflarePersistence
 from backend.sources.http import fetch_public_url
-from backend.worker_auth import authenticated_subject_fingerprint, authorized, bearer_token, extract_source_urls, json_object
+from backend.worker_auth import MAX_PUBLIC_JSON_BODY_BYTES, authenticated_subject_fingerprint, authorized, bearer_token, extract_source_urls, json_object
 from backend.worker_diagnostics import health_payload, public_infrastructure_verify, readiness_payload, storage_diagnostic
 from backend.worker_research import get_run, ingest_sources
 
@@ -88,9 +88,13 @@ async def _publish_evidence(env, run_id, package):
 
 
 def _authenticated_json(payload, *, status=200):
-    """Return an authenticated API response that cannot be shared or reused by caches."""
+    """Return a bounded authenticated response that cannot be shared or reused by caches."""
+    serialized = json.dumps(payload, ensure_ascii=False)
+    if len(serialized.encode("utf-8")) > MAX_PUBLIC_JSON_BODY_BYTES:
+        serialized = json.dumps({"ok": False, "error": "response exceeds supported size"}, ensure_ascii=False)
+        status = 500
     return Response(
-        json.dumps(payload, ensure_ascii=False),
+        serialized,
         status=status,
         headers={
             "Content-Type": "application/json",
