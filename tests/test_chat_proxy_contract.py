@@ -143,7 +143,7 @@ def test_public_worker_chat_stream_returns_private_non_200(monkeypatch):
         url = "https://example/api/v1/chat/stream"
         headers = {"Authorization": "Bearer secret", "Idempotency-Key": "r2"}
         async def json(self):
-            return {"chat_id": "c2", "request_id": "r2", "message": "hello", "strict_zero_cost_only": True}
+            return {"chat_id": "c2", "request_id": "r2", "message": "hello", "mode": "chat", "strict_zero_cost_only": True}
 
     instance = worker.Default()
     instance.env = SimpleNamespace(AUTH_TOKEN="secret", DB=object(), ENVIRONMENT="development", LOCAL_DEVELOPMENT_AUTH_BYPASS="true")
