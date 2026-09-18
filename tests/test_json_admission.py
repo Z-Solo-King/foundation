@@ -35,6 +35,8 @@ def test_json_shape_rejects_invalid_limits():
         validate_json_shape({}, max_depth=0)
     with pytest.raises(ValueError, match="max_collection_items"):
         validate_json_shape({}, max_collection_items=0)
+    with pytest.raises(ValueError, match="max_string_chars"):
+        validate_json_shape({}, max_string_chars=0)
 
 
 class Request:
@@ -78,3 +80,11 @@ async def test_public_json_object_accepts_bounded_actual_body_without_content_le
     payload = {"message": "hello"}
     raw = json.dumps(payload).encode("utf-8")
     assert await json_object(Request(payload, raw=raw)) == payload
+
+
+def test_json_shape_rejects_oversized_string_and_duplicate_fields():
+    from backend.json_admission import MAX_JSON_STRING_CHARS, parse_bounded_json
+    with pytest.raises(ValueError, match="string"):
+        validate_json_shape({"message": "x" * (MAX_JSON_STRING_CHARS + 1)})
+    with pytest.raises(ValueError, match="duplicate"):
+        parse_bounded_json('{"a":1,"a":2}')

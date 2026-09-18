@@ -7,7 +7,7 @@ import json
 import re
 from typing import Any
 
-from backend.json_admission import validate_json_shape
+from backend.json_admission import parse_bounded_json, validate_json_shape
 
 _URL_RE = re.compile(r"https?://[^\s<>\"']+")
 MAX_PUBLIC_JSON_BODY_BYTES = 1_048_576
@@ -79,7 +79,7 @@ async def json_object(request: Any):
             raw_bytes = bytes(raw)
             if len(raw_bytes) > MAX_PUBLIC_JSON_BODY_BYTES:
                 return None
-            value = json.loads(raw_bytes.decode("utf-8"))
+            value = parse_bounded_json(raw_bytes.decode("utf-8"))
         else:
             # Keep compatibility with repository test doubles that expose only
             # request.json(), while deployed Workers use the actual body bytes

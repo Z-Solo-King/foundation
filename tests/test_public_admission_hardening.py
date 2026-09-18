@@ -48,6 +48,8 @@ def test_research_admission_rejects_finite_ceiling_and_bad_urls():
         ResearchRequest("q", source_urls=("x" * (MAX_SOURCE_URL_LENGTH + 1),)).validate()
 
     ResearchRequest("q", source_urls=("https://example.com/a", "https://example.org/b")).validate()
+    with pytest.raises(ValueError, match="question exceeds"):
+        ResearchRequest("x" * (16_384 + 1)).validate()
 
 
 def test_chat_admission_rejects_metadata_and_history_amplification():
@@ -114,3 +116,12 @@ def test_authenticated_response_rejects_oversized_payload():
     from backend.worker_auth import MAX_PUBLIC_JSON_BODY_BYTES
     response = _authenticated_json({"payload": "x" * MAX_PUBLIC_JSON_BODY_BYTES}, status=200)
     assert response.status == 500
+
+
+def test_public_json_object_rejects_duplicate_fields_from_actual_body():
+    raw = b'{"message":"first","message":"second"}'
+    request = type("Request", (), {
+        "headers": {"Content-Type": "application/json"},
+        "arrayBuffer": lambda self: __import__("asyncio").sleep(0, result=raw),
+    })()
+    assert asyncio.run(json_object(request)) is None
