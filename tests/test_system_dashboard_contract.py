@@ -41,15 +41,16 @@ def test_dashboard_proxy_forwards_auth_and_returns_payload():
         async def json(self): return {"ok": True, "schema": "heroic-ai-ops-dashboard/v1", "status": "ok"}
     class Binding:
         def __init__(self): self.calls = []
-        async def fetch(self, url, options): self.calls.append((url, options)); return Response()
+        async def fetch(self, request): self.calls.append(request); return Response()
     class Request: headers = {"Authorization": "Bearer dashboard"}
     binding = Binding()
     payload, status = asyncio.run(worker._operations_dashboard(SimpleNamespace(OPERATIONS=binding), Request()))
     assert status == 200
     assert payload["schema"] == "heroic-ai-ops-dashboard/v1"
-    url, options = binding.calls[0]
-    assert url == "https://private/v1/dashboard"
-    assert options["headers"]["Authorization"] == "Bearer dashboard"
+    request = binding.calls[0]
+    assert request.url == "https://private/v1/dashboard"
+    assert request.method == "GET"
+    assert request.headers.get("Authorization") == "Bearer dashboard"
 
 
 def test_dashboard_proxy_rejects_invalid_private_response():
@@ -58,7 +59,7 @@ def test_dashboard_proxy_rejects_invalid_private_response():
         status = 200
         async def json(self): return ["invalid"]
     class Binding:
-        async def fetch(self, url, options): return Response()
+        async def fetch(self, request): return Response()
     class Request: headers = {}
     payload, status = asyncio.run(worker._operations_dashboard(SimpleNamespace(OPERATIONS=Binding()), Request()))
     assert status == 503
@@ -68,7 +69,7 @@ def test_dashboard_proxy_rejects_invalid_private_response():
 def test_dashboard_proxy_handles_binding_error():
     import worker
     class Binding:
-        async def fetch(self, url, options): raise RuntimeError("binding unavailable")
+        async def fetch(self, request): raise RuntimeError("binding unavailable")
     class Request: headers = {}
     payload, status = asyncio.run(worker._operations_dashboard(SimpleNamespace(OPERATIONS=Binding()), Request()))
     assert status == 503
