@@ -62,8 +62,9 @@ def test_latency_regression_blocks_as_lower_is_better():
         corpus_version=candidate.corpus_version,
         dimensions=tuple(dims),
     )
-    with pytest.raises(ValueError):
-        evaluate_release_quality(baseline=baseline, candidate=candidate)
+    gate = evaluate_release_quality(baseline=baseline, candidate=candidate)
+    assert gate.state is GateState.BLOCKED
+    assert any(item.dimension is QualityDimension.LATENCY for item in gate.regressions)
 
 
 def test_performance_failure_blocks_without_mixing_into_quality_score():
