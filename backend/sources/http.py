@@ -29,6 +29,7 @@ class FetchResult:
     content_type: str
     content: bytes
     etag: str | None
+    redirect_chain: tuple[str, ...] = ()
 
 
 def _workers_fetch():
@@ -120,6 +121,7 @@ async def fetch_public_url(url: str, *, fetcher=None, dns_resolver=None) -> Fetc
     original = canonicalize_url(url)
     current = original
     original_scheme = urlparse(original).scheme
+    redirect_chain: list[str] = [original]
     for _ in range(MAX_REDIRECTS + 1):
         if not custom_transport or dns_resolver is not None:
             await _validate_public_destination(current, resolver=dns_resolver)
@@ -133,7 +135,8 @@ async def fetch_public_url(url: str, *, fetcher=None, dns_resolver=None) -> Fetc
             location = response.headers.get("location")
             if not location:
                 raise RuntimeError("redirect without Location header")
-            current = urljoin(current, location)
+            current = canonicalize_url(urljoin(current, location))
+            redirect_chain.append(current)
             continue
         content = bytes(await response.arrayBuffer())
         if len(content) > MAX_BYTES:
@@ -145,5 +148,6 @@ async def fetch_public_url(url: str, *, fetcher=None, dns_resolver=None) -> Fetc
             content_type=response.headers.get("content-type", "application/octet-stream"),
             content=content,
             etag=response.headers.get("etag"),
+            redirect_chain=tuple(redirect_chain),
         )
     raise RuntimeError("too many redirects")
