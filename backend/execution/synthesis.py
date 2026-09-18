@@ -127,8 +127,7 @@ def _projection_answer(projection: SynthesisProjection) -> str:
             parts.append(claim.text)
     if projection.gaps:
         parts.append("Unresolved aspects: " + "; ".join(projection.gaps))
-    return "
-".join(parts) if parts else "Evidence is insufficient to answer this question."
+    return "\n".join(parts) if parts else "Evidence is insufficient to answer this question."
 
 def _bucket_claims(verified_claims):
     buckets = {"corroborated": [], "supported": [], "partial": [], "contradicted": [], "unknown": []}
