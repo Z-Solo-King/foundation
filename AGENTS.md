@@ -139,3 +139,49 @@ Track every candidate as one of: `actionable`, `in_progress`, `blocked_checks`, 
 Prefer exact-path reads and bounded searches over repeated full-tree scans. After a merge or PR closure, refresh only the affected queue slices first, then perform a broader rescan.
 
 GitHub API operations must respect rate limits: avoid excessive concurrent requests, serialize mutations, space large mutation bursts, and back off on secondary-rate-limit responses. Use stable, narrow queries when polling.
+
+## Queue execution protocol v2
+
+Use this operating contract for high-volume issue reduction.
+
+### Wave scheduler
+
+1. **Discovery wave:** keep 3–4 independent read-only lanes classifying issues, PRs, exact file surfaces, and acceptance evidence.
+2. **Mutation wave:** serialize branch creation, file writes, PRs, issue updates, and merges.
+3. **Acceptance wave:** while checks run, continue independent discovery and implementation instead of waiting.
+4. **Rebase wave:** after a relevant merge changes `main`, refresh dependent branches before merge.
+5. **Rescan wave:** after every 3–5 meaningful mutations, refresh the live issue/PR queue and discard stale plans.
+
+Never treat a captured issue list as authoritative after another mutation changes repository state.
+
+### Lane packet
+
+Before mutation, each lane records: issue and exact acceptance target; queue disposition; canonical owner/file surface; competing PR/branch; focused tests; and remaining runtime/external evidence. A lane with overlapping authority or files must yield before writing.
+
+### Fresh-main rule
+
+Start from current `main`. If `main` advances before merge, update the work branch through a normal non-force-push flow and rerun required checks. Never make an old PR mergeable by bypassing protection or altering status metadata.
+
+### Acceptance ladder
+
+Treat evidence as:
+
+`implemented -> tested -> CI_green -> integration_verified -> runtime_verified -> production_certified`
+
+Close an issue only at the highest rung explicitly required by its acceptance criteria. Repository tests do not become runtime or production evidence by wording.
+
+### Failure routing
+
+When a lane fails, narrow the failure to the exact contract, file, test, branch-protection rule, or external dependency. Fix the root cause or record a precise blocker, then switch to another independent lane. Never weaken a gate to manufacture progress.
+
+### Batch discipline
+
+Batch issues only when they share the same canonical authority and touched file surface. The PR body must enumerate every included issue and explicitly mark any issue that remains only partially satisfied.
+
+### Queue truth
+
+Issue count is a metric, not the goal. Do not close an issue merely because code, a PR, or green tests exist. Preserve runtime/admin/external gates until their required evidence exists.
+
+### Maintainer handoff
+
+Every substantive issue update should leave the canonical files, completed acceptance items, remaining items, current PR/commit, and blocker/evidence state discoverable without chat history.
