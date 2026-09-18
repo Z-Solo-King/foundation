@@ -81,3 +81,53 @@ def test_translation_cannot_drop_negation_units_or_qualifiers():
     )
     with pytest.raises(ValueError, match="evidence strength"):
         translation.validate()
+
+
+from backend.intelligence.language import (
+    ClaimLanguageAlignment,
+    LanguageNormalization,
+    LanguageSpan,
+    normalize_text,
+)
+
+
+def test_language_normalization_rejects_non_text_and_invalid_tags():
+    with pytest.raises(TypeError):
+        normalize_text(123)
+    with pytest.raises(ValueError):
+        normalize_text("x") if False else __import__("backend.intelligence.language", fromlist=["normalize_language_tag"]).normalize_language_tag("x")
+
+
+def test_language_span_validation_rejects_bad_confidence_and_fingerprint():
+    with pytest.raises(ValueError, match="confidence"):
+        LanguageSpan("s", "en", 1001, "a", "a" * 64).validate()
+    with pytest.raises(ValueError, match="SHA-256"):
+        LanguageSpan("s", "en", 100, "a", "bad").validate()
+
+
+def test_translation_validation_rejects_non_derived_provenance():
+    translation = TranslationArtifact(
+        "t", ("s",), "en", "hi", "m", "1", "a" * 64,
+        True, True, True, translation_provenance="source",
+    )
+    with pytest.raises(ValueError, match="derived"):
+        translation.validate()
+
+
+def test_normalization_validation_rejects_missing_fields_and_non_derived_state():
+    with pytest.raises(ValueError, match="source_span_ids"):
+        LanguageNormalization((), "en", "x", "m", "1", "a" * 64).validate()
+    with pytest.raises(ValueError, match="method"):
+        LanguageNormalization(("s",), "en", "x", "", "1", "a" * 64).validate()
+    with pytest.raises(ValueError, match="normalized_text"):
+        LanguageNormalization(("s",), "en", "", "m", "1", "a" * 64).validate()
+    with pytest.raises(ValueError, match="SHA-256"):
+        LanguageNormalization(("s",), "en", "x", "m", "1", "bad").validate()
+    with pytest.raises(ValueError, match="derived metadata"):
+        LanguageNormalization(("s",), "en", "x", "m", "1", "a" * 64, derived=False).validate()
+
+
+def test_alignment_validation_rejects_invalid_status():
+    alignment = ClaimLanguageAlignment("a", "s", "t", "tr", "en", "hi", "invalid", True)
+    with pytest.raises(ValueError, match="status"):
+        alignment.validate()
