@@ -10,7 +10,7 @@ def test_worker_http_entrypoint_all_paths():
     class DBStatement:
         def __init__(self, first=None, all_rows=None): self.first_value, self.all_rows = first, all_rows or []
         def bind(self,*args): return self
-        async def run(self): return {"success":True}
+        async def run(self): return {"success":True, "meta":{"changes":1}}
         async def first(self): return self.first_value
         async def all(self): return self.all_rows
     class DB:
