@@ -130,7 +130,10 @@ class D1AdmissionStore:
                WHERE event_id = ?
                LIMIT 1"""
         ).bind(event_id).first()
-        if existing:
+        if existing and (
+            (isinstance(existing, dict) and "subject_fingerprint" in existing)
+            or hasattr(existing, "subject_fingerprint")
+        ):
             existing_subject = (
                 existing.get("subject_fingerprint", "")
                 if isinstance(existing, dict)
