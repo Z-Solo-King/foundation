@@ -50,3 +50,14 @@ def test_untrusted_family_fails_closed():
 def test_invalid_url_is_rejected():
     with pytest.raises(ValueError):
         identity(url="not-a-url")
+
+
+@pytest.mark.parametrize("url", ["", "https:///missing-host"])
+def test_invalid_url_without_host_is_rejected(url):
+    with pytest.raises(ValueError, match="source URL"):
+        identity(url=url)
+
+
+def test_empty_family_key_is_rejected():
+    with pytest.raises(ValueError, match="family_key"):
+        identity(family="   ")
