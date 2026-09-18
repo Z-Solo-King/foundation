@@ -384,7 +384,11 @@ if [ -n "${AUTH_TOKEN:-}" ]; then
   echo "POST /api/v1/chatbot/diagnostic -> HTTP ${diagnostic_status}"
   cat diagnostic.json
   test "$diagnostic_status" = '200'
-  jq -e '.ok == true and .status == "ok" and .checks.public_chatbot == true and .checks.cloudflare_d1 == true and .checks.backblaze_b2_lifecycle == true' diagnostic.json >/dev/null
+  jq -e '.ok == true and .status == "ok"
+  and any(.checks[]?; .name == "public_chatbot" and .ok == true)
+  and any(.checks[]?; .name == "cloudflare_d1" and .ok == true)
+  and any(.checks[]?; .name == "backblaze_b2_lifecycle" and .ok == true)
+' diagnostic.json >/dev/null
 else
   echo 'AUTH_TOKEN GitHub secret not configured; authenticated infrastructure diagnostic skipped.'
 fi
