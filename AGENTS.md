@@ -278,3 +278,149 @@ A queue is finished only when every remaining issue is one of:
 - awaiting an unavailable platform/admin operation.
 
 Do not label an issue complete merely because no further code change is obvious.
+
+## Fast Execution Protocol v4 — final-queue scheduler
+
+This section is authoritative for high-volume autonomous maintenance when the remaining queue contains many partially implemented or runtime-gated issues.
+
+### 1. Classify before touching code
+
+Every open issue must receive exactly one primary disposition before mutation:
+
+| Disposition | Meaning | Action |
+|---|---|---|
+| FIX_NOW | concrete repository defect is present | implement/test/PR |
+| INTEGRATE | contract exists but is not wired to its canonical path | wire existing authority, test/PR |
+| VERIFY_REPO | implementation appears complete but deterministic acceptance is missing | add smallest missing test/gate/evidence contract |
+| RUNTIME_GATE | repository work is complete; approved runtime/control-plane evidence remains | document probe; do not add speculative code |
+| EXTERNAL_BLOCKED | GitHub/Cloudflare/admin/secret/provider dependency is unavailable | record dependency and switch lanes |
+| DUPLICATE | another issue/PR is canonical | reference canonical owner; do not duplicate |
+| SUPERSEDED | newer architecture/PR replaces it | record replacement and close when justified |
+| ROADMAP | future capability, not current acceptance debt | defer explicitly |
+
+Never use RUNTIME_GATE to avoid a concrete repository gap. Never use FIX_NOW when the only missing fact is live evidence.
+
+### 2. Proof-first issue decomposition
+
+For every non-trivial issue, identify the first unproven rung:
+
+contract -> owner -> implementation -> focused test -> CI -> integration -> control-plane -> runtime -> production
+
+Only work on the first missing required rung and the minimum dependencies needed to reach it.
+
+### 3. Four execution lanes
+
+Maintain four logical lanes when the queue allows it:
+
+- Lane A — core implementation: deterministic repository fixes.
+- Lane B — integration: wire existing contracts into real call paths.
+- Lane C — validation: tests, benchmark gates, fixtures, CI contracts, acceptance evidence.
+- Lane D — queue hygiene: duplicate/superseded consolidation, stale PR/branch triage, issue synchronization.
+
+Each lane owns one issue at a time and declares its touched file/authority surface before mutation. When a lane blocks, work-steal the next unclaimed actionable issue. Never idle waiting for another lane.
+
+### 4. Serialized mutation queue
+
+Read-only work is parallel. Repository mutations are serialized:
+
+branch -> smallest coherent change -> focused tests -> PR -> required checks -> merge -> issue receipt -> queue refresh
+
+Do not race another lane on the same issue, branch, canonical authority, or file surface.
+
+### 5. Candidate ranking
+
+Prefer, in order: dependency-unblocking work; shared canonical-authority fixes; CI/control-plane blockers; security/trust boundaries; integration of already-merged contracts; deterministic validation gates; queue hygiene; roadmap.
+
+Within the same class, prefer the oldest non-conflicting issue. Never prioritize by issue number alone.
+
+### 6. Shared-authority rule
+
+Before editing a hard issue, search both active repositories and current PRs for the canonical authority.
+
+Single-owner concepts include ResourceLedger/DurableResourceLedger, execution identity/deadline, provider eligibility/health/fallback, admission/backpressure, tool authorization/idempotency, memory/feedback lifecycle, evidence verification/EvaluationReceipt, promotion/rollback, and production deployment.
+
+If a patch creates a competing owner, reject the approach and extend the existing authority.
+
+### 7. Hard-issue fast path
+
+1. Read issue body and latest status.
+2. Locate canonical module.
+3. Inspect newest related PR/merge.
+4. Compare acceptance criteria with actual code/tests.
+5. Implement only the missing repository-side slice.
+6. Run focused tests.
+7. Put exact remaining R2/R3/R4 evidence in PR/issue.
+8. Merge when green.
+9. Immediately rescan the queue.
+
+Do not reopen solved design work because runtime certification is missing.
+
+### 8. Control-plane and zero-job diagnosis
+
+For GitHub Actions, merge queue, deployment, secret, permissions, or binding failures, classify the fault as trigger -> workflow graph -> job creation -> execution -> artifact/downstream -> runtime.
+
+Zero jobs is an observation, not a root cause. Use a known-good control workflow where possible. Change only the earliest causally supported layer. Never weaken permissions/protection or create a second deployment owner.
+
+### 9. Cross-repository execution rule
+
+Active family = Foundation + Operations.
+
+Foundation is the public contract/core/deployment authority. Operations is the protected runtime/policy/resource/evaluation authority.
+
+Private Operations access must use the existing approved GitHub App/deployment credential path. Never create personal-token dependencies, public mirrors of private runtime code, second secret authorities, or second production deployment paths.
+
+The retired extractor/mapper repository is historical, not an active production authority.
+
+### 10. Evidence transport rule
+
+Never upgrade evidence strength by narration.
+
+Unit tests prove local behavior. CI proves reproducible repository checks. Integration evidence proves a real service boundary. Control-plane evidence proves admission/configuration/bindings. Runtime evidence proves real execution. Production certification proves the approved deployed environment.
+
+A runtime issue may be repository-complete while still open.
+
+### 11. Evidence packet
+
+Every hard-issue update should contain:
+
+issue | disposition | canonical owner | current revision | completed rung | missing rung | test/check | PR | remaining evidence
+
+Do not rely on conversation history.
+
+### 12. Stale work elimination
+
+Before opening/updating a PR, search for another active PR on the same issue/authority, compare its base SHA with current main, and inspect exact touched files.
+
+After a relevant merge, dependent PRs become suspect until rechecked against current main. Close stale/superseded PRs rather than consuming more check/review bandwidth.
+
+### 13. Merge-wave discipline
+
+After each meaningful merge, refresh current main, refresh affected issues/PRs first, update lane packets, and start the next safe lane while unrelated checks run.
+
+After 3–5 meaningful mutations, perform a broader queue rescan.
+
+Never poll one PR repeatedly while independent work exists.
+
+### 14. Testing strategy
+
+Use the cheapest proving layer first:
+
+pure contract test -> focused module test -> integration fixture -> targeted workflow -> approved runtime probe
+
+Do not rerun the entire suite repeatedly during pure local iteration. Required repository checks remain mandatory before merge.
+
+### 15. Closure rules
+
+Close only when every required acceptance rung is proven.
+
+Safe closure: deterministic implementation plus tests plus required CI; duplicate with canonical owner; superseded by an explicitly accepted replacement; obsolete/roadmap with documented disposition.
+
+Unsafe closure: PR exists but evidence is missing; code is merged but runtime is required; a fixture simulates a real provider/control plane; a deployment is inferred from source/workflow text; or a failed gate is ignored because another gate is green.
+
+### 16. Completion definition
+
+Do not optimize for zero open issues mechanically.
+
+The final queue is complete only when remaining issues are explicitly RUNTIME_GATE, EXTERNAL_BLOCKED, DUPLICATE, SUPERSEDED, or ROADMAP, and each has a canonical owner, exact missing evidence/dependency, current revision, and reproducible next probe/action.
+
+Everything else is actionable queue debt.
