@@ -18,6 +18,7 @@ class FakeStatement:
         self.value = value
 
     def bind(self, *args):
+        self.args = args
         return self
 
     async def first(self):
@@ -218,3 +219,22 @@ async def test_create_run_idempotent_supports_non_dict_database_rows():
     db = FakeDB()
     db.batch_result[2] = SimpleNamespace(results=[row])
     assert await persistence(db, token="token-a").create_run_idempotent(request(), "tuple-key") == "run-tuple"
+
+
+@pytest.mark.asyncio
+async def test_create_run_persists_subject_scope():
+    class RecordingStatement(FakeStatement):
+        async def run(self):
+            self.executed_args = getattr(self, "args", ())
+            return {"success": True}
+
+    class RecordingDB:
+        def __init__(self):
+            self.statement = RecordingStatement()
+        def prepare(self, sql):
+            return self.statement
+
+    db = RecordingDB()
+    await persistence(db).create_run_scoped("run-subject", request(), "subject-a")
+    assert db.statement.args[0] == "run-subject"
+    assert db.statement.args[1] == "subject-a"
