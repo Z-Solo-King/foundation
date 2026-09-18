@@ -121,3 +121,28 @@ def test_catalog_parser_rejects_non_boolean_authority_flags():
         with pytest.raises(ValueError, match=field):
             catalog_from_capabilities(broken, revision="r1")
         broken[field] = BASE_CAPABILITIES[field]
+
+
+def test_catalog_validate_covers_family_version_and_direct_authority_branches():
+    value = catalog_from_capabilities(BASE_CAPABILITIES, revision="r1")
+    with pytest.raises(ValueError, match="family_contract_version"):
+        ContractCatalog(
+            value.name, value.revision, value.role, value.family, " ",
+            value.promotion_authority, value.evidence_authority, value.trust_authority,
+            value.private_secrets, value.capabilities, value.owners, value.schemas,
+        ).validate()
+    with pytest.raises(ValueError, match="authority flags"):
+        ContractCatalog(
+            value.name, value.revision, value.role, value.family, value.family_contract_version,
+            "not-bool", value.evidence_authority, value.trust_authority,
+            value.private_secrets, value.capabilities, value.owners, value.schemas,
+        ).validate()
+
+
+def test_catalog_compare_keeps_identical_capability_revision_compatible():
+    baseline = catalog_from_capabilities(
+        {**BASE_CAPABILITIES, "capabilities": {"publication": "v1"}},
+        revision="r1",
+    )
+    report = compare_catalogs(baseline, baseline)
+    assert report.compatible is True
