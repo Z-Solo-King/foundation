@@ -50,7 +50,7 @@
     "private_operations_actions_forbidden": true,
     "private_operations_access": "Foundation GitHub App short-lived installation token",
     "workflow_dispatch_bridge": ".github/workflows/foundation-canonical-workflow-bridge.yml",
-    "private_runtime_actions_route": ".github/workflows/foundation-canonical-workflow-bridge.yml via repository_dispatch event foundation_action",
+    "private_runtime_actions_route": ".github/workflows/foundation-canonical-workflow-bridge.yml",
     "private_runtime_must_not_dispatch_targets_directly": true,
     "foundation_app_dispatch_targets": [
       ".github/workflows/nightly-multi-agent-research.yml",
@@ -58,7 +58,8 @@
       ".github/workflows/cross-repository-contract-drift.yml",
       ".github/workflows/operations-centralized-validation.yml",
       ".github/workflows/main-push-actions-control-plane-probe.yml"
-    ]
+    ],
+    "private_runtime_actions_event": "repository_dispatch:foundation_action"
   },
   "method": [
     "accept Heroic AI request",
