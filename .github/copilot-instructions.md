@@ -4,11 +4,12 @@ Foundation is the public-safe contract, deterministic research core and public W
 
 ## Before changing code
 1. Read `REPOSITORY_MAP.json` and the relevant ownership document.
-2. Read `docs/CLAUDE_GUIDANCE.md` in the Operations repository when doing cross-family AI maintenance.
+2. Read `docs/MAINTENANCE_CONTRACT.md` first; use Operations `docs/AGENT_MAINTENANCE_GUIDE.md` for private-family maintenance.
 3. Search both active repositories for an existing implementation.
 4. Extend the canonical owner instead of creating a duplicate.
 5. Keep public/private boundaries intact.
-6. Add focused regression tests for behavior changes.
+6. Do not create a second current-state/handoff/governance/architecture/knowledge document; extend the canonical owner.
+7. Add focused regression tests for behavior changes.
 
 ## Family boundaries
 - Foundation owns public-safe contracts, deterministic evidence/intelligence primitives, planning, frontend/public API and canonical GitHub Actions/deployment.
