@@ -17,7 +17,7 @@ class FakeStatement:
         return {"meta": {"changes": 1}}
 
     async def first(self):
-        if "SELECT event_id" in self.query.upper():
+        if "SELECT EVENT_ID" in self.query.upper():
             return None
         return {
             "subject_requests": 0,
