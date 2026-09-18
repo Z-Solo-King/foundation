@@ -149,26 +149,26 @@ def resolve_source_policy_conflict(policies: tuple[SourceAccessPolicy, ...] | li
         AccessClass.UNKNOWN: 0,
     }
     disclosure_rank = {
-        DisclosureClass.FORBIDDEN: 0,
-        DisclosureClass.PRIVATE_ONLY: 1,
+        DisclosureClass.FORBIDDEN: 4,
+        DisclosureClass.PRIVATE_ONLY: 3,
         DisclosureClass.METADATA_ONLY: 2,
-        DisclosureClass.PUBLIC_SAFE: 3,
+        DisclosureClass.PUBLIC_SAFE: 1,
     }
     retention_rank = {
-        RetentionClass.NONE: 0,
-        RetentionClass.EPHEMERAL: 1,
+        RetentionClass.NONE: 4,
+        RetentionClass.EPHEMERAL: 3,
         RetentionClass.SHORT: 2,
-        RetentionClass.STANDARD: 3,
+        RetentionClass.STANDARD: 1,
         RetentionClass.UNKNOWN: 0,
     }
-    return min(
+    return max(
         policies,
         key=lambda policy: (
             access_rank[policy.access_class],
             disclosure_rank[policy.disclosure_class],
             retention_rank[policy.retention_class],
-            not policy.requires_authentication,
-            not policy.robots_restriction,
-            policy.raw_content_allowed,
+            policy.requires_authentication,
+            policy.robots_restriction,
+            not policy.raw_content_allowed,
         ),
     )
