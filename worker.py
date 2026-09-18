@@ -34,33 +34,21 @@ class _TestServiceRequest:
 
 
 def _service_request(url, *, method="GET", headers=None, body=None):
-    """Construct the single Request object required by an HTTP service binding.
-
-    Cloudflare's Python Workers SDK exposes ``Request.new`` and supports the same
-    method/headers/body parameters as the JavaScript Fetch API. Local CI environments
-    may not expose that runtime class, so tests use the structural fallback below.
-    """
+    """Construct the JavaScript Fetch Request object required by an HTTP service binding."""
     request_headers = headers or {}
     try:
-        from workers import Request
-        kwargs = {"method": method, "headers": request_headers}
-        if body is not None:
-            kwargs["body"] = body
-        return Request.new(url, **kwargs)
-    except ImportError:
-        try:
-            from js import Object, Request as JSRequest
-            from pyodide.ffi import to_js
-            init = {"method": method, "headers": request_headers}
-            if body is not None:
-                init["body"] = body
-            return JSRequest.new(
-                url,
-                to_js(init, dict_converter=Object.fromEntries),
-            )
-        except ImportError:
-            return _TestServiceRequest(url, method=method, headers=request_headers, body=body)
+        from js import Object, Request as JSRequest
+        from pyodide.ffi import to_js
 
+        init = {"method": method, "headers": request_headers}
+        if body is not None:
+            init["body"] = body
+        return JSRequest.new(
+            url,
+            to_js(init, dict_converter=Object.fromEntries),
+        )
+    except ImportError:
+        return _TestServiceRequest(url, method=method, headers=request_headers, body=body)
 def _extract_source_urls(question, explicit=()):
     return extract_source_urls(question, explicit)
 

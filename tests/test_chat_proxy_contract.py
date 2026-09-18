@@ -218,17 +218,18 @@ def test_service_request_uses_cloudflare_js_request_when_available(monkeypatch):
     assert get_request.body is None
 
 
-def test_service_request_prefers_workers_request_api(monkeypatch):
+def test_service_request_uses_structural_fallback_without_js_runtime(monkeypatch):
+    import sys
     import types
     import worker
-    import workers
 
-    class FakeRequest:
-        @classmethod
-        def new(cls, url, **kwargs):
-            return types.SimpleNamespace(url=url, method=kwargs["method"], headers=kwargs["headers"], body=kwargs.get("body"))
+    js_module = types.ModuleType("js")
+    pyodide_module = types.ModuleType("pyodide")
+    ffi_module = types.ModuleType("pyodide.ffi")
+    monkeypatch.setitem(sys.modules, "js", js_module)
+    monkeypatch.setitem(sys.modules, "pyodide", pyodide_module)
+    monkeypatch.setitem(sys.modules, "pyodide.ffi", ffi_module)
 
-    monkeypatch.setattr(workers, "Request", FakeRequest, raising=False)
     request = worker._service_request(
         "https://chat/v1/chat",
         method="POST",
@@ -239,12 +240,4 @@ def test_service_request_prefers_workers_request_api(monkeypatch):
     assert request.method == "POST"
     assert request.headers == {"Content-Type": "application/json"}
     assert request.body == '{"message":"hello"}'
-    get_request = worker._service_request(
-        "https://private/v1/dashboard",
-        method="GET",
-        headers={"Authorization": "Bearer test"},
-    )
-    assert get_request.url == "https://private/v1/dashboard"
-    assert get_request.method == "GET"
-    assert get_request.headers == {"Authorization": "Bearer test"}
-    assert get_request.body is None
+
