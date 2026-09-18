@@ -135,7 +135,8 @@ async def test_worker_chat_and_stream_release_admission_lease(monkeypatch):
     tracker = AdmissionLeaseTracker()
     lease = object()
     monkeypatch.setattr(worker, "D1AdmissionStore", lambda db: tracker)
-    monkeypatch.setattr(worker, "_public_admit", lambda env, route, subject, event_id: accepted_admission(lease))
+    async def admit(*args, **kwargs): return accepted_admission(lease)
+    monkeypatch.setattr(worker, "_public_admit", admit)
 
     env = type("Env", (), {"AUTH_TOKEN": "secret"})()
     entry = worker.Default()
