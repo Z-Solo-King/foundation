@@ -52,7 +52,7 @@ def test_latency_regression_blocks_as_lower_is_better():
     candidate = scorecard()
     dims = list(candidate.dimensions)
     index = next(i for i, item in enumerate(dims) if item.dimension is QualityDimension.LATENCY)
-    dims[index] = DimensionScore(QualityDimension.LATENCY, 150, baseline=150, max_regression=20, critical=True)
+    dims[index] = DimensionScore(QualityDimension.LATENCY, 150, baseline=100, max_regression=20, critical=True)
     candidate = VectorQualityScorecard(
         workload=candidate.workload,
         population=candidate.population,
