@@ -161,3 +161,24 @@ def test_research_synthesizer_preserves_explicit_gap_state():
     )
     synthesized = ResearchSynthesizer().synthesize(run)
     assert "Unresolved aspects:" in synthesized.answer
+
+
+def test_legacy_synthesis_answer_formats_contradictions_unknowns_and_empty():
+    from backend.execution.synthesis import _answer
+    from types import SimpleNamespace
+
+    claim = lambda text: SimpleNamespace(text=text)
+    buckets = {
+        "corroborated": [(claim("Corroborated."), None)],
+        "supported": [(claim("Supported."), None)],
+        "partial": [(claim("Partial."), None)],
+        "contradicted": [(claim("Contradicted."), None)],
+        "unknown": [(claim("Unknown."), None)],
+    }
+    answer = _answer(buckets)
+    assert "Corroborated." in answer
+    assert "Contradictory evidence exists for:" in answer
+    assert "Unresolved aspects:" in answer
+
+    empty = {key: [] for key in buckets}
+    assert _answer(empty) == "Evidence is insufficient to answer this question."
