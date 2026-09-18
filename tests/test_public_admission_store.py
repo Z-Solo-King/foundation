@@ -138,7 +138,7 @@ async def test_worker_chat_and_stream_release_admission_lease(monkeypatch):
     async def admit(*args, **kwargs): return accepted_admission(lease)
     monkeypatch.setattr(worker, "_public_admit", admit)
 
-    env = type("Env", (), {"AUTH_TOKEN": "secret"})()
+    env = type("Env", (), {"AUTH_TOKEN": "secret", "DB": object()})()
     entry = worker.Default()
     entry.env = env
     payload = {
@@ -232,7 +232,7 @@ async def test_worker_research_uses_legacy_create_run_fallback(monkeypatch):
             "POST",
             "https://x/api/v1/research",
             {"question": "q", "strict_zero_cost_only": True},
-            {"Authorization": "Bearer secret"},
+            {"Authorization": "Bearer secret", "Content-Type": "application/json"},
         )
     )
     assert response.status == 200
