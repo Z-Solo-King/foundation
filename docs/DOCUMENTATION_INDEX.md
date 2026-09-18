@@ -5,6 +5,8 @@
 
 ## Public documentation
 
+0. `docs/MAINTENANCE_CONTRACT.md`
+
 1. `README.md`
 2. `docs/HEROIC_AI_PRODUCT.md`
 3. `docs/PUBLIC_DETERMINISTIC_CORE.md`
