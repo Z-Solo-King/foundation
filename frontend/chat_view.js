@@ -30,6 +30,33 @@
     el.chatList.innerHTML = chats.length ? chats.map((chat) => `<button class="chat-row ${chat.id === api.state.activeChatId ? 'active' : ''}" data-chat="${api.escapeHtml(chat.id)}" aria-label="Open chat ${api.escapeHtml(chat.title || 'New chat')}" aria-current="${chat.id === api.state.activeChatId ? 'page' : 'false'}"><span class="chat-icon">✦</span><span><strong>${api.escapeHtml(chat.title || 'New chat')}</strong><small>${chat.messages?.length || 0} message${(chat.messages?.length || 0) === 1 ? '' : 's'} · ${new Date(chat.createdAt || Date.now()).toLocaleDateString()}</small></span></button>`).join('') : '<div class="sidebar-empty">No matching chats.</div>';
   }
 
+  function messageRenderSignature(message) {
+    return JSON.stringify({
+      id: message.id,
+      role: message.role,
+      text: message.text,
+      at: message.at,
+      runId: message.meta?.runId || '',
+      saved: Boolean(message.meta?.saved),
+      pending: Boolean(message.meta?.pending),
+      error: Boolean(message.meta?.error),
+      operation: message.meta?.operation || '',
+      sources: Array.isArray(message.meta?.sources) ? message.meta.sources : [],
+    });
+  }
+
+  function messageHtml(message) {
+    const runButton = message.meta?.runId ? `<button class="secondary" data-open-run="${api.escapeHtml(message.meta.runId)}">Open run</button>` : '';
+    const saveLabel = message.meta?.saved ? 'Saved' : 'Save';
+    const sources = Array.isArray(message.meta?.sources) && message.meta.sources.length ? `<div class="source-list" aria-label="Sources">${renderSources(message.meta.sources)}</div>` : '';
+    const pending = message.meta?.pending ? '<span class="message-state">Sending…</span>' : '';
+    const error = message.meta?.error ? '<span class="message-state error">Request failed</span>' : '';
+    const operation = message.meta?.operation ? `<span class="message-state">${api.escapeHtml(message.meta.operation)}</span>` : '';
+    const label = message.role === 'user' ? 'You' : 'Heroic AI';
+    const signature = api.escapeHtml(messageRenderSignature(message));
+    return `<article class="message ${message.role === 'user' ? 'user-message' : 'assistant-message'} ${message.meta?.error ? 'message-error' : ''}" data-message-id="${api.escapeHtml(message.id)}" data-render-signature="${signature}"><div class="message-meta"><span>${label}</span><time datetime="${new Date(message.at || Date.now()).toISOString()}">${new Date(message.at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>${pending}${error}${operation}</div><div class="message-bubble">${api.escapeHtml(message.text)}</div><div class="message-actions"><button class="secondary" data-save-message="${api.escapeHtml(message.id)}" aria-label="${saveLabel} message">${saveLabel}</button>${runButton}</div>${sources}</article>`;
+  }
+
   function renderConversation() {
     if (api.state.view !== 'chats') return;
     const chat = api.activeChat();
@@ -40,17 +67,26 @@
       return;
     }
     if (el.emptyState) el.emptyState.hidden = true;
-    el.conversation.innerHTML = chat.messages.map((message) => {
-      const runButton = message.meta?.runId ? `<button class="secondary" data-open-run="${api.escapeHtml(message.meta.runId)}">Open run</button>` : '';
-      const saveLabel = message.meta?.saved ? 'Saved' : 'Save';
-      const sources = Array.isArray(message.meta?.sources) && message.meta.sources.length ? `<div class="source-list" aria-label="Sources">${renderSources(message.meta.sources)}</div>` : '';
-      const pending = message.meta?.pending ? '<span class="message-state">Sending…</span>' : '';
-      const error = message.meta?.error ? '<span class="message-state error">Request failed</span>' : '';
-      const operation = message.meta?.operation ? `<span class="message-state">${api.escapeHtml(message.meta.operation)}</span>` : '';
-      const label = message.role === 'user' ? 'You' : 'Heroic AI';
-      return `<article class="message ${message.role === 'user' ? 'user-message' : 'assistant-message'} ${message.meta?.error ? 'message-error' : ''}" data-message-id="${api.escapeHtml(message.id)}"><div class="message-meta"><span>${label}</span><time datetime="${new Date(message.at || Date.now()).toISOString()}">${new Date(message.at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>${pending}${error}${operation}</div><div class="message-bubble">${api.escapeHtml(message.text)}</div><div class="message-actions"><button class="secondary" data-save-message="${api.escapeHtml(message.id)}" aria-label="${saveLabel} message">${saveLabel}</button>${runButton}</div>${sources}</article>`;
-    }).join('');
-    el.conversation.scrollTop = el.conversation.scrollHeight;
+
+    const existing = Array.from(el.conversation.querySelectorAll(':scope > article.message'));
+    const sameCount = existing.length === chat.messages.length;
+    const sameOrder = sameCount && chat.messages.every((message, index) => existing[index]?.dataset.messageId === message.id);
+
+    if (!sameCount || !sameOrder) {
+      el.conversation.innerHTML = chat.messages.map(messageHtml).join('');
+      el.conversation.scrollTop = el.conversation.scrollHeight;
+      return;
+    }
+
+    let changed = false;
+    chat.messages.forEach((message, index) => {
+      const node = existing[index];
+      const signature = messageRenderSignature(message);
+      if (node.dataset.renderSignature === signature) return;
+      node.outerHTML = messageHtml(message);
+      changed = true;
+    });
+    if (changed) el.conversation.scrollTop = el.conversation.scrollHeight;
   }
 
   function renderProjects() {

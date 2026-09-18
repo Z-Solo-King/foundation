@@ -48,6 +48,14 @@ def test_session_settings_are_functional():
     assert "sessionStorage.setItem" in view
 
 
+def test_chat_render_updates_changed_messages_without_rebuilding_every_message():
+    view = Path("frontend/chat_view.js").read_text(encoding="utf-8")
+    assert "messageRenderSignature" in view
+    assert "data-render-signature" in view
+    assert "node.outerHTML = messageHtml(message)" in view
+    assert "chat.messages.map(messageHtml).join('')" in view
+
+
 def test_dashboard_exposes_truthful_provider_telemetry():
     js = Path("frontend/dashboard.js").read_text(encoding="utf-8")
     assert "recent_failures" in js
