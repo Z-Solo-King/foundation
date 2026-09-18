@@ -66,7 +66,7 @@ def test_catalog_parser_rejects_invalid_identity_and_mapping_values():
 
 def test_catalog_compare_is_compatible_when_identical():
     value = catalog()
-    report = compare_catalogs(value, value, required_capabilities=("publication",))
+    report = compare_catalogs(value, value)
     assert report.compatible is True
     assert report.findings == ()
     assert canonical_json(report) == canonical_json(report)
