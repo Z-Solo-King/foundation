@@ -70,3 +70,31 @@ def test_retention_and_disclosure_flags_fail_closed():
         request_authenticated=True,
         restricted_research=False,
     ).allowed is False
+
+
+def test_source_policy_validation_edges_and_decision_invariants():
+    with pytest.raises(ValueError, match="unsupported"):
+        SourceAccessPolicy(policy_version="v0").validate()
+    with pytest.raises(ValueError, match="acquisition"):
+        SourceAccessPolicy(acquisition_method=" ").validate()
+    with pytest.raises(ValueError, match="boolean"):
+        SourceAccessPolicy(requires_authentication=1).validate()
+    with pytest.raises(ValueError, match="boolean"):
+        SourceAccessPolicy(robots_restriction=1).validate()
+    with pytest.raises(ValueError, match="raw content"):
+        SourceAccessPolicy(retention_class=RetentionClass.NONE, raw_content_allowed=True).validate()
+    auth = SourceAccessPolicy(
+        access_class=AccessClass.AUTHENTICATED,
+        requires_authentication=True,
+        disclosure_class=DisclosureClass.PRIVATE_ONLY,
+    )
+    assert decide_source_access(
+        auth,
+        requested_disclosure=DisclosureClass.METADATA_ONLY,
+        request_authenticated=False,
+    ).allowed is False
+    from backend.sources.access_policy import SourceAccessDecision
+    with pytest.raises(ValueError, match="reason"):
+        SourceAccessDecision(False, " ", RetentionClass.SHORT, DisclosureClass.PRIVATE_ONLY, True).validate()
+    with pytest.raises(ValueError, match="standard retention"):
+        SourceAccessDecision(False, "blocked", RetentionClass.STANDARD, DisclosureClass.PRIVATE_ONLY, True).validate()
