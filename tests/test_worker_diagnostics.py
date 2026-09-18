@@ -247,9 +247,12 @@ async def test_research_persistence_failures_and_idempotency(monkeypatch):
     request = Request("POST", "https://x/api/v1/research", {"question": "x", "source_urls": [], "strict_zero_cost_only": True}, {"Authorization": "Bearer secret", "Content-Type": "application/json"})
     failed = await entry.fetch(request)
     assert "execution/persistence failure" in str(failed)
+    assert '"phase": "create_run"' in str(failed)
+    assert '"error_class": "RuntimeError"' in str(failed)
     request.headers["Idempotency-Key"] = "key-1"
     failed_idempotent = await entry.fetch(request)
     assert "execution/persistence failure" in str(failed_idempotent)
+    assert '"phase": "create_run"' in str(failed_idempotent)
 
 
 @pytest.mark.asyncio
