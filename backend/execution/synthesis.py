@@ -24,6 +24,112 @@ class SynthesisResult:
     evidence_chain: tuple[dict[str, Any], ...] = ()
 
 
+_ALLOWED_SYNTHESIS_STATUSES = frozenset({
+    ClaimStatus.CORROBORATED,
+    ClaimStatus.SUPPORTED,
+    ClaimStatus.PARTIAL,
+    ClaimStatus.CONTRADICTED,
+    ClaimStatus.UNKNOWN,
+    ClaimStatus.INACCESSIBLE,
+    ClaimStatus.STALE,
+    ClaimStatus.INFERRED,
+})
+
+
+@dataclass(frozen=True)
+class SynthesisClaimProjection:
+    claim_id: str
+    text: str
+    status: str
+    evidence_ids: tuple[str, ...] = ()
+    qualifier: str = ""
+
+    def validate(self) -> None:
+        if not self.claim_id.strip() or not self.text.strip():
+            raise ValueError("synthesis claim identity and text are required")
+        if self.status not in _ALLOWED_SYNTHESIS_STATUSES:
+            raise ValueError("unsupported synthesis claim status")
+        if len(set(self.evidence_ids)) != len(self.evidence_ids):
+            raise ValueError("synthesis evidence IDs must be unique")
+        if self.status in {ClaimStatus.CORROBORATED, ClaimStatus.SUPPORTED} and not self.evidence_ids:
+            raise ValueError("supported synthesis claims require evidence")
+        if self.status == ClaimStatus.PARTIAL and not self.qualifier.strip():
+            raise ValueError("partial synthesis claims require a qualifier")
+
+
+@dataclass(frozen=True)
+class SynthesisProjection:
+    question: str
+    claims: tuple[SynthesisClaimProjection, ...]
+    gaps: tuple[str, ...] = ()
+
+    def validate(self) -> None:
+        if not self.question.strip():
+            raise ValueError("synthesis question is required")
+        ids = [claim.claim_id for claim in self.claims]
+        if len(ids) != len(set(ids)):
+            raise ValueError("synthesis claim IDs must be unique")
+        for claim in self.claims:
+            claim.validate()
+        if any(not gap.strip() for gap in self.gaps):
+            raise ValueError("synthesis gaps must be non-empty")
+
+
+def build_synthesis_projection(verified_claims, *, question: str, required_claim_ids: tuple[str, ...] = ()) -> SynthesisProjection:
+    if not question.strip():
+        raise ValueError("synthesis question is required")
+    if len(set(required_claim_ids)) != len(required_claim_ids):
+        raise ValueError("required claim IDs must be unique")
+    projections = []
+    gaps = []
+    for claim, result in verified_claims:
+        claim_id = str(getattr(claim, "claim_id", "") or "")
+        text = str(getattr(claim, "text", "") or "")
+        status = str(getattr(result, "status", ClaimStatus.UNKNOWN) or ClaimStatus.UNKNOWN)
+        if not claim_id or not text:
+            raise ValueError("verified claim projection requires claim identity and text")
+        supporting = tuple(
+            str(getattr(certificate, "observation_id", "") or "")
+            for certificate in getattr(result, "supporting_evidence", ())
+            if str(getattr(certificate, "observation_id", "") or "")
+        )
+        if status in {ClaimStatus.CORROBORATED, ClaimStatus.SUPPORTED}:
+            projections.append(SynthesisClaimProjection(claim_id, text, status, supporting))
+        elif status == ClaimStatus.PARTIAL:
+            projections.append(SynthesisClaimProjection(
+                claim_id,
+                text,
+                status,
+                supporting,
+                "This claim is only partially supported by the available evidence.",
+            ))
+        elif status in {
+            ClaimStatus.CONTRADICTED, ClaimStatus.UNKNOWN, ClaimStatus.INACCESSIBLE,
+            ClaimStatus.STALE, ClaimStatus.INFERRED,
+        }:
+            gaps.append(claim_id)
+        else:
+            raise ValueError("verified claim has unsupported status")
+    present_ids = {claim.claim_id for claim in projections} | set(gaps)
+    if sorted(set(required_claim_ids) - present_ids):
+        raise ValueError("required verified claims are missing")
+    projection = SynthesisProjection(question, tuple(projections), tuple(gaps))
+    projection.validate()
+    return projection
+
+
+def _projection_answer(projection: SynthesisProjection) -> str:
+    parts = []
+    for claim in projection.claims:
+        if claim.status == ClaimStatus.PARTIAL:
+            parts.append(f"{claim.qualifier} {claim.text}")
+        else:
+            parts.append(claim.text)
+    if projection.gaps:
+        parts.append("Unresolved aspects: " + "; ".join(projection.gaps))
+    return "
+".join(parts) if parts else "Evidence is insufficient to answer this question."
+
 def _bucket_claims(verified_claims):
     buckets = {"corroborated": [], "supported": [], "partial": [], "contradicted": [], "unknown": []}
     for claim, result in verified_claims:
@@ -89,9 +195,10 @@ class ResearchSynthesizer:
         if not run.verified_claims:
             return SynthesisResult(question=question, answer="No evidence found to answer this question.", confidence="unknown")
         buckets = _bucket_claims(run.verified_claims)
+        projection = build_synthesis_projection(run.verified_claims, question=question)
         return SynthesisResult(
             question=question,
-            answer=_answer(buckets),
+            answer=_projection_answer(projection),
             confidence=_confidence(buckets),
             supported_by=tuple(claim.claim_id for claim, _ in buckets["corroborated"]),
             qualified_by=tuple(claim.claim_id for claim, _ in buckets["supported"] + buckets["partial"]),
