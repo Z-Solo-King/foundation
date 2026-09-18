@@ -131,3 +131,39 @@ def test_artifact_extraction_validation_rejects_missing_identity_and_media_type(
         ArtifactExtractionResult("", content_fingerprint("x"), content_fingerprint("y"), "text/html", ArtifactIngestionState.EXTRACTED, spec).validate()
     with pytest.raises(ValueError, match="media_type"):
         ArtifactExtractionResult("a", content_fingerprint("x"), content_fingerprint("y"), " ", ArtifactIngestionState.EXTRACTED, spec).validate()
+
+
+def test_ingestion_adapter_media_types_and_replay_identity_are_deterministic():
+    spec = adapter(input_media_types=("text/html", "application/pdf", "image/png", "application/json"))
+    first = spec.replay_identity(content_fingerprint("document"))
+    second = spec.replay_identity(content_fingerprint("document"))
+    assert first == second
+    assert spec.supports_media_type(" application/pdf ")
+    assert spec.supports_media_type("IMAGE/PNG")
+    assert not spec.supports_media_type("application/zip")
+
+
+def test_ingestion_result_rejects_media_mismatch_and_bad_replay_identity():
+    spec = adapter(input_media_types=("application/pdf",))
+    source = content_fingerprint("pdf")
+    with pytest.raises(ValueError, match="unsupported"):
+        ArtifactExtractionResult(
+            "artifact", source, content_fingerprint("text"), "text/plain",
+            ArtifactIngestionState.EXTRACTED, spec,
+        ).validate()
+    with pytest.raises(ValueError):
+        spec.replay_identity("bad")
+
+
+def test_representative_format_fixtures_are_contract_valid():
+    for media_type in ("text/html", "application/pdf", "image/png", "application/json"):
+        spec = adapter(input_media_types=(media_type,))
+        result = ArtifactExtractionResult(
+            f"artifact-{media_type}",
+            content_fingerprint(f"raw:{media_type}"),
+            content_fingerprint(f"normalized:{media_type}"),
+            media_type,
+            ArtifactIngestionState.EXTRACTED,
+            spec,
+        )
+        result.validate()
