@@ -193,6 +193,17 @@ def test_public_foundation_is_the_only_github_actions_bridge_owner():
 
 
 
+
+def test_production_release_has_live_runtime_acceptance_gates():
+    production = (ROOT / "scripts" / "production_release.sh").read_text(encoding="utf-8")
+    assert 'POST /api/v1/chat -> HTTP' in production
+    assert 'Live chat acceptance: PASS' in production
+    assert 'Live chat idempotency acceptance: PASS' in production
+    assert 'POST /api/v1/chat/stream -> HTTP' in production
+    assert 'Live SSE lifecycle acceptance: PASS' in production
+    assert 'POST /api/v1/research -> HTTP' in production
+    assert 'Live research execution/readback acceptance: PASS' in production
+
 def test_centralized_operations_validation_owns_private_repo_ci():
     workflow = _workflow_texts()["operations-centralized-validation.yml"]
     assert "actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1" in workflow
