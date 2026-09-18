@@ -11,7 +11,7 @@ def _install_workers_compat() -> None:
         importlib.import_module("workers")
         return
     except ModuleNotFoundError as exc:
-        if exc.name != "js":
+        if exc.name not in {"workers", "js"}:
             raise
 
     workers = types.ModuleType("workers")
