@@ -15,6 +15,10 @@ Heroic AI is the product. Research is one of its capabilities, not a separate pr
 
 Live repository state and fresh GitHub evidence override dated continuity notes.
 
+## Repository naming clarification
+
+The retired repository `Z-Solo-King/extractor-mapper` is historical. The active extractor/mapping capability used by the family is the `operations/extractor_mapper/` directory in the private Operations repository. Do not treat the similarly named retired repository as a current production authority.
+
 ## Heroic AI product boundary
 
 ```text
@@ -46,3 +50,7 @@ The frontend must never become a second authority. Private policy, memory, provi
 D1 is used for compact operational state. Backblaze B2 is the artifact/object-storage path. The former R2 design is retired.
 
 The canonical repository-backup workflow is `.github/workflows/b2-repository-backup.yml`. It mirrors both `foundation` and private `operations` to B2, uses `BACKUP_GITHUB_TOKEN` only for GitHub repository access, uses the separate B2 credentials for storage access, verifies uploaded metadata/SHA-256 integrity, and performs archive extraction plus Git integrity checks from the remote B2 objects. A successful workflow execution is required before claiming live backup/restore health; repository source inspection alone is not production backup evidence.
+
+## Automation ownership
+
+Foundation is the sole GitHub Actions and canonical production-deployment owner for the family. Operations intentionally has no competing GitHub-hosted private runtime or deployment owner.
