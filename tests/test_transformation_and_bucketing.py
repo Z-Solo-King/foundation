@@ -1,3 +1,4 @@
+import dataclasses
 from datetime import datetime, timezone
 
 import pytest
@@ -68,3 +69,31 @@ def test_lossy_transformation_requires_warning_and_exact_mapping_requires_same_c
             "artifact-1", "identity", "v1", "a", "b",
             span_mapping=SpanMappingState.EXACT,
         )
+
+
+def test_bucket_rejects_non_typed_claim_and_pair_generation_skips_non_overlapping_windows():
+    with pytest.raises(TypeError):
+        bucket_typed_claims(["not-a-claim"])
+    left = claim("a", valid_until=datetime(2024, 1, 1, tzinfo=timezone.utc))
+    right = claim("b", valid_from=datetime(2024, 2, 1, tzinfo=timezone.utc))
+    assert bounded_typed_candidate_pairs([left, right]) == ()
+
+
+def test_transformation_validation_rejects_blank_fields_bad_hashes_and_naive_time():
+    base = create_transformation_lineage(
+        "artifact-1", "html", "v1", "a", "a",
+        span_mapping=SpanMappingState.EXACT,
+        transformed_at=datetime(2026, 9, 18, tzinfo=timezone.utc),
+    )
+    cases = [
+        ("parent_artifact_id", {"parent_artifact_id": " "}),
+        ("transformation_type", {"transformation_type": " "}),
+        ("transformation_version", {"transformation_version": " "}),
+        ("input_fingerprint", {"input_fingerprint": "bad"}),
+        ("output_fingerprint", {"output_fingerprint": "bad"}),
+        ("transformed_at", {"transformed_at": datetime(2026, 9, 18)}),
+    ]
+    for label, changes in cases:
+        broken = dataclasses.replace(base, **changes)
+        with pytest.raises(ValueError):
+            broken.validate()
