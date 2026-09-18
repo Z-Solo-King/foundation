@@ -11,7 +11,7 @@ from workers import Response, WorkerEntrypoint
 
 from backend.api.main import submit_research
 from backend.api.models import ChatRequest, ResearchRequest
-from backend.admission import AdmissionOutcome, AdmissionPolicy, AdmissionRoute
+from backend.admission import AdmissionDecision, AdmissionOutcome, AdmissionPolicy, AdmissionRoute
 from backend.admission_store import D1AdmissionStore
 from backend.evidence_publication import package_digest, verify_package
 from backend.persistence.cloudflare import CloudflarePersistence
@@ -136,7 +136,25 @@ def _chat_headers(request):
 
 
 async def _public_admit(env, route, subject_fingerprint, event_id):
-    store = D1AdmissionStore(env.DB)
+    db = getattr(env, "DB", None)
+    environment = str(getattr(env, "ENVIRONMENT", "production") or "production").casefold()
+    local_bypass = str(getattr(env, "LOCAL_DEVELOPMENT_AUTH_BYPASS", "") or "").casefold() == "true"
+    if db is None:
+        if environment == "development" and local_bypass:
+            return AdmissionDecision(
+                AdmissionOutcome.ACCEPTED,
+                route,
+                True,
+                "explicit local development admission bypass",
+            ), None
+        return AdmissionDecision(
+            AdmissionOutcome.AUTHORITY_UNAVAILABLE,
+            route,
+            False,
+            "admission authority is unavailable for a protected resource-consuming route",
+            AdmissionPolicy().retry_after_seconds,
+        ), None
+    store = D1AdmissionStore(db)
     return await store.acquire(
         subject_fingerprint=subject_fingerprint,
         route=route,
