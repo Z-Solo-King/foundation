@@ -53,3 +53,9 @@ Do not create equivalent copies under a different filename merely to bypass this
 - Human review resolves semantic duplication that static checks cannot prove.
 
 A green structural check does not certify private runtime behavior.
+
+## GitHub administrator ruleset contract
+
+Repository files enforce structural policy; GitHub rulesets enforce branch acceptance. For `foundation/main`, the administrator ruleset should require pull-request-based changes, required status checks for the `Public tests` and `Analyze python` jobs, block force pushes and branch deletion, and require the branch to satisfy the configured update/status-check policy before merge. GitHub rulesets support required status checks and force-push/deletion restrictions. For `operations/main`, require pull-request-based changes and block force pushes/deletion; do not require a private GitHub Actions check because Operations intentionally has no GitHub Actions authority.
+
+The bypass set should be limited to the minimum administrative/recovery identities required by the repository. Normal maintenance must not use a bypass to avoid the structural governance gates.
