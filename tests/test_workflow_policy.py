@@ -8,7 +8,7 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "3cad7283dc40ae68c4338bd154071aea9c0a8e75"
+CANONICAL_OPERATIONS_REF = "2e280e418787189a3f1aabd59778c3e5ac949c4b"
 CANONICAL_OPERATIONS_SERVICE = "research-intelligence-engine-private"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 PRODUCTION_WORKFLOW = "heroic-ai-production-release.yml"
@@ -64,7 +64,7 @@ def test_canonical_operations_production_pin_is_current_and_immutable():
     assert LEGACY_OPERATIONS_REF not in deployment
     assert 'git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git"' in deployment
     assert '"github:${OPERATIONS_REF}"' in deployment
-    assert '.private == false' in deployment
+    assert '.private == true' in deployment
 
 
 def test_production_generates_private_operations_service_binding():
