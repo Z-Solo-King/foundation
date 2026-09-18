@@ -134,3 +134,12 @@ def test_effective_window_validation_and_cache_replay_policy():
     assert not cache_replay_allowed(FreshnessState.STALE, requirement=FreshnessRequirement(max_age=timedelta(hours=1)))
     assert cache_replay_allowed(FreshnessState.UNKNOWN, requirement=FreshnessRequirement(require_timestamp=False))
     assert not cache_replay_allowed(FreshnessState.UNKNOWN, requirement=FreshnessRequirement(require_timestamp=True))
+
+
+def test_non_utc_now_clock_is_rejected_when_naive():
+    with pytest.raises(ValueError, match="now"):
+        classify_freshness(
+            EvidenceTime(observed_at=NOW),
+            FreshnessRequirement(),
+            now=datetime(2026, 9, 18),
+        )
