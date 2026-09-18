@@ -143,6 +143,9 @@ def test_source_policy_expiry_rejects_naive_time_and_unknown_retention():
         SourceAccessPolicy(revalidation_after_seconds=-1).validate()
     with pytest.raises(ValueError, match="timezone-aware"):
         expires_at(datetime(2026, 9, 18), SourceAccessPolicy())
+    from backend.sources.access_policy import revalidation_due
+    with pytest.raises(ValueError, match="timezone-aware"):
+        revalidation_due(datetime(2026, 9, 18), SourceAccessPolicy())
     with pytest.raises(ValueError, match="unknown"):
         expires_at(
             datetime(2026, 9, 18, tzinfo=timezone.utc),
