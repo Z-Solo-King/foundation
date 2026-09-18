@@ -169,3 +169,41 @@ def test_public_sse_response_uses_only_allowlisted_headers(monkeypatch):
         "Cache-Control": "no-store, no-cache, max-age=0, must-revalidate",
         "X-Content-Type-Options": "nosniff",
     }
+
+
+def test_service_request_uses_cloudflare_js_request_when_available(monkeypatch):
+    import sys
+    import types
+    import worker
+
+    class FakeRequest:
+        @classmethod
+        def new(cls, url, init):
+            return types.SimpleNamespace(url=url, init=init, method=init["method"], headers=init["headers"], body=init.get("body"))
+
+    class FakeObject:
+        @staticmethod
+        def fromEntries(value):
+            return dict(value)
+
+    js_module = types.ModuleType("js")
+    js_module.Request = FakeRequest
+    js_module.Object = FakeObject
+    ffi_module = types.ModuleType("pyodide.ffi")
+    ffi_module.to_js = lambda value, dict_converter: dict_converter(value.items())
+    pyodide_module = types.ModuleType("pyodide")
+    pyodide_module.ffi = ffi_module
+    monkeypatch.setitem(sys.modules, "js", js_module)
+    monkeypatch.setitem(sys.modules, "pyodide", pyodide_module)
+    monkeypatch.setitem(sys.modules, "pyodide.ffi", ffi_module)
+
+    request = worker._service_request(
+        "https://chat/v1/chat",
+        method="POST",
+        headers={"Authorization": "Bearer test"},
+        body='{"message":"hello"}',
+    )
+    assert request.url == "https://chat/v1/chat"
+    assert request.method == "POST"
+    assert request.headers == {"Authorization": "Bearer test"}
+    assert request.body == '{"message":"hello"}'
