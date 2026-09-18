@@ -39,22 +39,21 @@ def test_chat_stream_proxy_fails_closed_without_operations_binding():
     assert payload["error"] == "chat_backend_unavailable"
 
 
-def test_chat_stream_proxy_preserves_sse_response():
+def test_chat_stream_proxy_uses_proven_json_chat():
     import worker
-    class Body: pass
     class Response:
         status = 200
-        body = Body()
+        async def json(self):
+            return {"ok": True, "response": {"response_id": "chat-r2", "result_state": "PARTIAL", "text": "hello"}}
     class Binding:
         async def fetch(self, request):
-            assert request.url == "https://chat/v1/chat/stream"
+            assert request.url == "https://chat/v1/chat"
             assert request.method == "POST"
             assert request.headers.get("Idempotency-Key") == "req-2"
             return Response()
     class Request: headers = {"Authorization": "Bearer user", "Idempotency-Key": "req-2"}
-    upstream, body, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request()))
-    assert upstream.status == 200
-    assert body is None
+    body, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request()))
+    assert body["response"]["text"] == "hello"
     assert status == 200
 
 
@@ -63,10 +62,27 @@ def test_chat_stream_proxy_handles_binding_error():
     class Binding:
         async def fetch(self, request): raise RuntimeError("binding unavailable")
     class Request: headers = {}
-    upstream, payload, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request()))
-    assert upstream is None
+    payload, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request()))
     assert status == 503
     assert payload["error"] == "chat_backend_unavailable"
+
+
+def test_chat_sse_body_has_start_delta_and_done_contract():
+    import worker
+    body = worker._chat_sse_body({
+        "ok": True,
+        "response": {
+            "response_id": "chat-r1",
+            "result_state": "PARTIAL",
+            "text": "hello world",
+            "generation_status": "deterministic_fallback",
+        },
+    })
+    assert "event: start" in body
+    assert "event: delta" in body
+    assert "hello world" in body
+    assert "event: done" in body
+    assert '"result_state":"PARTIAL"' in body
 
 
 def test_public_worker_chat_stream_route_requires_auth():
@@ -111,15 +127,15 @@ def test_public_worker_chat_stream_route_returns_private_unavailable_response_wi
     assert response.status == 503
 
 
-def test_public_worker_chat_stream_route_proxies_private_sse():
+def test_public_worker_chat_stream_route_frames_proven_private_json():
     import worker
-    class Body: pass
     class Response:
         status = 200
-        body = Body()
+        async def json(self):
+            return {"ok": True, "response": {"response_id": "chat-r1", "result_state": "PARTIAL", "text": "hello", "generation_status": "deterministic_fallback"}}
     class Binding:
         async def fetch(self, request):
-            assert request.url == "https://chat/v1/chat/stream"
+            assert request.url == "https://chat/v1/chat"
             assert request.method == "POST"
             assert request.headers.get("Authorization") == "Bearer secret"
             assert request.headers.get("Idempotency-Key") == "r1"
