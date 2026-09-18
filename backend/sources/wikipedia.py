@@ -33,7 +33,10 @@ async def _implementation(query: str, limit: int, *, fetcher=None) -> list[Searc
         "origin": "*",
     })
     url = f"https://en.wikipedia.org/w/api.php?{params}"
-    response = await (fetcher or _workers_fetch())(url, {"headers": {"User-Agent": "ResearchIntelligenceEngine/0.1"}})
+    if fetcher is not None:
+        response = await fetcher(url, {"headers": {"User-Agent": "ResearchIntelligenceEngine/0.1"}})
+    else:
+        response = await _workers_fetch()(url, headers={"User-Agent": "ResearchIntelligenceEngine/0.1"})
     if int(response.status) != 200:
         raise RuntimeError(f"Wikimedia search failed with HTTP {response.status}")
     payload = await response.json()
