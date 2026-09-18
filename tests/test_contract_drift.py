@@ -113,3 +113,33 @@ def test_drift_report_and_finding_validation():
         DriftReport("bad", True, ()).validate()
     with pytest.raises(ValueError):
         DriftReport(DRIFT_CONTRACT_VERSION, True, (type("F", (), {"repository": "", "field": "x"})(),)).validate()
+
+
+def test_catalog_validation_covers_family_version_authority_types_and_stable_capabilities():
+    broken = dict(BASE_CAPABILITIES)
+    broken["family_contract_version"] = " "
+    with pytest.raises(ValueError, match="family_contract_version"):
+        catalog_from_capabilities(broken, revision="r1")
+
+    broken = dict(BASE_CAPABILITIES)
+    broken["promotion_authority"] = "true"
+    with pytest.raises(ValueError, match="authority flags"):
+        catalog_from_capabilities(broken, revision="r1")
+
+    baseline = ContractCatalog(
+        "foundation",
+        "r1",
+        "role",
+        "family",
+        "1",
+        False,
+        "evidence",
+        False,
+        False,
+        {"core": "v1"},
+        {},
+        {},
+    )
+    candidate = baseline
+    report = compare_catalogs(baseline, candidate, required_capabilities=("core",))
+    assert report.compatible is True
