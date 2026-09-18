@@ -36,7 +36,7 @@ The canonical workflow performs the following in order:
 6. apply the canonical Operations resource-governance D1 schema;
 7. materialize the exact pinned Foundation public deterministic core into the ignored Operations checkout and verify its generated package entrypoint;
 8. deploy the exact Operations Worker revision;
-8. remove the ephemeral checkout, temporary authentication helper, private key material and generated configuration.
+9. remove the ephemeral checkout, temporary authentication helper, private key material and generated configuration.
 
 A credential failure stops the deployment before any Operations deployment step. A wrong credential must not be silently retried with a B2 or other provider credential.
 
@@ -48,7 +48,7 @@ A successful repository-side change does not prove production deployment. Deploy
 
 The current explicitly approved Operations production revision is:
 
-`0b89ee3dca7d686205e49b7bb5b2806b72f2b57b`
+`90e3c692bfd43da25d08bf5d47a6a6c5167e0f7f`
 
 This is a signed Operations commit implementing the durable D1 governance runtime. The deployment workflow must not silently substitute a newer Operations `main` commit without a new explicit approval change.
 
