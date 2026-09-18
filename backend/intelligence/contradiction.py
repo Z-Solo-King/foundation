@@ -123,11 +123,12 @@ def detect_typed_contradiction(left: TypedClaim, right: TypedClaim) -> Contradic
             return Contradiction(left.claim_id, right.claim_id, "mutually exclusive categorical values", left.predicate)
 
     if left.value_type == right.value_type == "quantity":
-        pair = _numeric_pair(left, right)
-        if pair is not None:
-            tolerance = max(left.tolerance or Decimal("0"), right.tolerance or Decimal("0"))
-            if abs(pair[0] - pair[1]) > tolerance:
-                return Contradiction(left.claim_id, right.claim_id, "normalized quantities differ", left.predicate)
+        if left.unit and right.unit:
+            pair = _numeric_pair(left, right)
+            if pair is not None:
+                tolerance = max(left.tolerance or Decimal("0"), right.tolerance or Decimal("0"))
+                if abs(pair[0] - pair[1]) > tolerance:
+                    return Contradiction(left.claim_id, right.claim_id, "normalized quantities differ", left.predicate)
 
     if left.value_type == right.value_type == "text":
         a = str(left.value).strip().lower()
