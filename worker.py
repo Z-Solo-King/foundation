@@ -119,15 +119,21 @@ async def _operations_chat(env, payload, request):
 
 def _public_sse_response(upstream):
     """Expose only the public SSE headers while preserving the upstream body stream."""
-    return Response(
-        upstream.body,
-        status=int(upstream.status),
-        headers={
-            "Content-Type": "text/event-stream; charset=utf-8",
-            "Cache-Control": "no-store, no-cache, max-age=0, must-revalidate",
-            "X-Content-Type-Options": "nosniff",
-        },
-    )
+    response = Response(upstream.body, status=int(upstream.status))
+    headers = getattr(response, "headers", None)
+    values = {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-store, no-cache, max-age=0, must-revalidate",
+        "X-Content-Type-Options": "nosniff",
+    }
+    if hasattr(headers, "set"):
+        for name, value in values.items():
+            headers.set(name, value)
+    elif isinstance(headers, dict):
+        headers.update(values)
+    else:
+        response.headers = dict(values)
+    return response
 
 
 async def _operations_chat_stream(env, payload, request):
@@ -219,7 +225,7 @@ class Default(WorkerEntrypoint):
             except (TypeError, ValueError) as exc:
                 return Response.json({"ok": False, "error": str(exc)}, status=400)
             upstream, body, status = await _operations_chat_stream(self.env, payload, request)
-            return _public_sse_response(upstream) if upstream is not None else _authenticated_json(body, status=status)
+            return _public_sse_response(upstream) if upstream is not None else Response.json(body, status=status)
         if request.method == "POST" and path.endswith("/api/v1/chat"):
             if not _authorized(request, self.env):
                 return Response.json({"ok": False, "error": "unauthorized"}, status=401)
