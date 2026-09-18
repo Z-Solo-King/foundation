@@ -192,3 +192,94 @@ class AdapterResult:
             raise ValueError("adapter output fingerprint must be SHA-256")
         if any(not item.strip() for item in self.warnings + self.unsupported_features + self.stable_region_ids):
             raise ValueError("adapter metadata values must not be empty")
+
+
+class ArtifactExecutionState(StrEnum):
+    AUTHORIZED = "authorized"
+    BLOCKED = "blocked"
+    REQUIRES_AUTHORIZATION = "requires_authorization"
+
+
+@dataclass(frozen=True)
+class ArtifactExecutionDecision:
+    state: ArtifactExecutionState
+    reason: str
+    artifact_id: str
+    target_scope: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "schema_version": "artifact-execution/v1",
+            "state": self.state.value,
+            "reason": self.reason,
+            "artifact_id": self.artifact_id,
+            "target_scope": self.target_scope,
+        }
+
+
+def authorize_artifact_execution(
+    artifact: ArtifactRef,
+    *,
+    target_scope: str,
+    explicit_authorization: bool = False,
+) -> ArtifactExecutionDecision:
+    if not target_scope.strip():
+        raise ValueError("target_scope is required")
+    if artifact.safety is ArtifactSafety.BLOCKED:
+        return ArtifactExecutionDecision(
+            ArtifactExecutionState.BLOCKED,
+            "blocked artifacts cannot enter execution",
+            artifact.artifact_id,
+            target_scope,
+        )
+    if artifact.validation in {ArtifactValidation.MALFORMED, ArtifactValidation.UNSUPPORTED}:
+        return ArtifactExecutionDecision(
+            ArtifactExecutionState.BLOCKED,
+            "invalid or unsupported artifacts cannot enter execution",
+            artifact.artifact_id,
+            target_scope,
+        )
+    private_cross_scope = artifact.safety is ArtifactSafety.PRIVATE and target_scope != artifact.owner_scope
+    if private_cross_scope and not explicit_authorization:
+        return ArtifactExecutionDecision(
+            ArtifactExecutionState.REQUIRES_AUTHORIZATION,
+            "private artifact cannot cross scope without explicit authorization",
+            artifact.artifact_id,
+            target_scope,
+        )
+    return ArtifactExecutionDecision(
+        ArtifactExecutionState.AUTHORIZED,
+        "artifact execution boundary satisfied",
+        artifact.artifact_id,
+        target_scope,
+    )
+
+
+def derive_artifact(
+    parent: ArtifactRef,
+    content: bytes | str,
+    *,
+    kind: ArtifactKind,
+    media_type: str,
+    parser_version: str,
+    validation: ArtifactValidation = ArtifactValidation.UNVALIDATED,
+    safety: ArtifactSafety | None = None,
+    retention_days: int | None = None,
+    publication_eligible: bool = False,
+    policy: ArtifactPolicy = ArtifactPolicy(),
+) -> ArtifactRef:
+    """Create a derived artifact while preserving explicit parent lineage."""
+    return create_artifact(
+        content,
+        kind=kind,
+        media_type=media_type,
+        parser_version=parser_version,
+        owner_scope=parent.owner_scope,
+        parent_artifact=parent.artifact_id,
+        safety=safety or parent.safety,
+        validation=validation,
+        retention_days=retention_days,
+        publication_eligible=publication_eligible,
+        execution_identity=parent.execution_identity,
+        policy=policy,
+    )
