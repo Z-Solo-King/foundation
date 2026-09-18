@@ -61,3 +61,22 @@ def test_blank_family_key_is_rejected():
 def test_empty_source_url_is_rejected():
     with pytest.raises(ValueError, match="source URL"):
         identity(url="   ")
+
+
+def test_same_content_different_family_is_not_independent():
+    candidate = identity(url="https://mirror.example/page", body=b"hello", family="mirror.example")
+    assert classify_source_integrity(
+        candidate,
+        observed_family_hashes={},
+        observed_content_hashes={candidate.content_hash},
+        trusted_family_keys={"mirror.example"},
+    ) is IntegrityState.DUPLICATE_CONTENT
+
+
+def test_new_family_without_content_history_remains_eligible():
+    candidate = identity(url="https://mirror.example/page", body=b"hello", family="mirror.example")
+    assert classify_source_integrity(
+        candidate,
+        observed_family_hashes={},
+        trusted_family_keys={"mirror.example"},
+    ) is IntegrityState.ELIGIBLE
