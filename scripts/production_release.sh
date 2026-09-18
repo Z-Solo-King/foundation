@@ -274,9 +274,9 @@ test "$operations_version_status" = '200' || {
   jq -c '{message,errors}' "$RUNNER_TEMP/operations-version.json" 2>/dev/null || cat "$RUNNER_TEMP/operations-version.json"
   exit 1
 }
-jq -e --arg expected "github:${OPERATIONS_REF}" '.
-  (.result.annotations."workers/message" == $expected)
-  or (.result.annotations."workers/tag" == $expected)
+jq -e --arg expected "github:${OPERATIONS_REF}" '
+  ((.result.annotations["workers/message"] // "") == $expected)
+  or ((.result.annotations["workers/tag"] // "") == $expected)
 ' "$RUNNER_TEMP/operations-version.json" >/dev/null || {
   echo "Active Operations Worker provenance does not match canonical revision ${OPERATIONS_REF}"
   jq -c '.result | {id,number,source,annotations}' "$RUNNER_TEMP/operations-version.json" 2>/dev/null || true
