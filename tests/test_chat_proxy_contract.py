@@ -141,3 +141,28 @@ def test_public_worker_chat_route_requires_auth_and_validates_payload():
     invalid = worker.Default(); invalid.env = SimpleNamespace(AUTH_TOKEN="secret")
     response = asyncio.run(invalid.fetch(Request({"Authorization": "Bearer secret", "Content-Type": "application/json"}, {"message": "hello"})))
     assert response.status == 400
+
+
+def test_public_sse_response_uses_only_allowlisted_headers(monkeypatch):
+    import worker
+
+    calls = []
+
+    class Response:
+        def __init__(self, body, *, status=200, headers=None):
+            calls.append((body, status, headers))
+            self.status = status
+
+    monkeypatch.setattr(worker, "Response", Response)
+    upstream = type("Upstream", (), {"body": b"data: hello\\n\\n", "status": 200})()
+    response = worker._public_sse_response(upstream)
+
+    assert response.status == 200
+    body, status, headers = calls[0]
+    assert body == b"data: hello\\n\\n"
+    assert status == 200
+    assert headers == {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-store, no-cache, max-age=0, must-revalidate",
+        "X-Content-Type-Options": "nosniff",
+    }
