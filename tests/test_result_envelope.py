@@ -120,3 +120,5 @@ def test_legacy_adapter_explicit_result_does_not_add_run_id():
         metadata={"ignored": True},
     )
     assert envelope.to_dict()["result"] == {"answer": "ok"}
+
+# Protected-main check refresh: re-evaluate required checks against latest main.
