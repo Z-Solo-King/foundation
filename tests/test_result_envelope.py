@@ -105,3 +105,17 @@ def test_legacy_error_adapter_allows_missing_error_without_false_detail():
     payload = envelope.to_dict()
     assert payload["status"] == "FAILED"
     assert payload["warnings"] == []
+
+
+
+def test_completed_rejects_failed_scope_and_stale_freshness():
+    with pytest.raises(ValueError, match="missing or failed"):
+        ResultEnvelope(
+            status=ResultStatus.COMPLETED,
+            failed_scope=("q2",),
+        ).to_dict()
+    with pytest.raises(ValueError, match="stale"):
+        ResultEnvelope(
+            status=ResultStatus.COMPLETED,
+            freshness=FreshnessState.STALE,
+        ).to_dict()
