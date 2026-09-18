@@ -12,7 +12,7 @@ from backend.api.models import ChatRequest, ResearchRequest
 from backend.evidence_publication import package_digest, verify_package
 from backend.persistence.cloudflare import CloudflarePersistence
 from backend.sources.http import fetch_public_url
-from backend.worker_auth import authorized, bearer_token, extract_source_urls, json_object
+from backend.worker_auth import authenticated_subject_fingerprint, authorized, bearer_token, extract_source_urls, json_object
 from backend.worker_diagnostics import health_payload, public_infrastructure_verify, readiness_payload, storage_diagnostic
 from backend.worker_research import get_run, ingest_sources
 
@@ -286,7 +286,7 @@ class Default(WorkerEntrypoint):
             run_id = None
             try:
                 if idempotency_key:
-                    run_id = await persistence.create_run_idempotent(req, idempotency_key)
+                    run_id = await persistence.create_run_idempotent(req, idempotency_key, subject_fingerprint=authenticated_subject_fingerprint(request))
                 else:
                     run_id = result.run_id
                     await persistence.create_run(run_id, req)
