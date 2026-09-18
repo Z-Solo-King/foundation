@@ -240,3 +240,163 @@ async def test_worker_research_uses_legacy_create_run_fallback(monkeypatch):
     assert response.status == 200
     assert persistence.created == ["run-legacy"]
     assert tracker.released == [lease]
+
+
+def test_admission_response_emits_retry_after_header():
+    import worker
+    from backend.admission import AdmissionDecision, AdmissionOutcome
+
+    response = worker._admission_response(
+        AdmissionDecision(
+            AdmissionOutcome.RATE_LIMITED,
+            AdmissionRoute.RESEARCH,
+            False,
+            "rate limited",
+            retry_after_seconds=7,
+        )
+    )
+    assert response.status == 429
+    assert response.headers["Retry-After"] == "7"
+
+
+@pytest.mark.asyncio
+async def test_worker_chat_denied_admission_stops_before_upstream(monkeypatch):
+    import worker
+    from backend.admission import AdmissionDecision, AdmissionOutcome
+
+    async def deny(*args, **kwargs):
+        return AdmissionDecision(
+            AdmissionOutcome.RATE_LIMITED,
+            AdmissionRoute.CHAT,
+            False,
+            "rate limited",
+            retry_after_seconds=3,
+        ), None
+
+    called = False
+
+    async def backend(*args, **kwargs):
+        nonlocal called
+        called = True
+        return {"ok": True}, 200
+
+    monkeypatch.setattr(worker, "_public_admit", deny)
+    monkeypatch.setattr(worker, "_operations_chat", backend)
+
+    env = type("Env", (), {"AUTH_TOKEN": "secret", "DB": object()})()
+    entry = worker.Default()
+    entry.env = env
+    response = await entry.fetch(
+        Request(
+            "POST",
+            "https://x/api/v1/chat",
+            {"chat_id": "c", "request_id": "r", "message": "hello", "mode": "chat", "strict_zero_cost_only": True},
+            {"Authorization": "Bearer secret", "Content-Type": "application/json"},
+        )
+    )
+    assert response.status == 429
+    assert response.headers["Retry-After"] == "3"
+    assert called is False
+
+
+@pytest.mark.asyncio
+async def test_worker_research_denied_admission_stops_before_submit(monkeypatch):
+    import worker
+    from backend.admission import AdmissionDecision, AdmissionOutcome
+
+    async def deny(*args, **kwargs):
+        return AdmissionDecision(
+            AdmissionOutcome.CONCURRENCY_LIMITED,
+            AdmissionRoute.RESEARCH,
+            False,
+            "concurrency limited",
+            retry_after_seconds=4,
+        ), None
+
+    called = False
+
+    def submit(*args, **kwargs):
+        nonlocal called
+        called = True
+        return type("Result", (), {"ok": True, "run_id": "run", "metadata": {}})()
+
+    monkeypatch.setattr(worker, "_public_admit", deny)
+    monkeypatch.setattr(worker, "submit_research", submit)
+
+    env = type("Env", (), {"AUTH_TOKEN": "secret", "DB": object()})()
+    entry = worker.Default()
+    entry.env = env
+    response = await entry.fetch(
+        Request(
+            "POST",
+            "https://x/api/v1/research",
+            {"question": "q", "strict_zero_cost_only": True},
+            {"Authorization": "Bearer secret", "Content-Type": "application/json"},
+        )
+    )
+    assert response.status == 429
+    assert response.headers["Retry-After"] == "4"
+    assert called is False
+
+
+@pytest.mark.asyncio
+async def test_worker_research_rejected_result_handles_missing_admission_lease(monkeypatch):
+    import worker
+
+    async def admit(*args, **kwargs):
+        return accepted_admission(None)
+
+    monkeypatch.setattr(worker, "_public_admit", admit)
+    monkeypatch.setattr(
+        worker,
+        "submit_research",
+        lambda request: type("Result", (), {"ok": False, "error": "rejected"})(),
+    )
+
+    env = type("Env", (), {"AUTH_TOKEN": "secret", "DB": object()})()
+    entry = worker.Default()
+    entry.env = env
+    response = await entry.fetch(
+        Request(
+            "POST",
+            "https://x/api/v1/research",
+            {"question": "q", "strict_zero_cost_only": True},
+            {"Authorization": "Bearer secret", "Content-Type": "application/json"},
+        )
+    )
+    assert response.status == 400
+
+
+@pytest.mark.asyncio
+async def test_worker_research_success_handles_missing_admission_lease(monkeypatch):
+    import worker
+
+    async def admit(*args, **kwargs):
+        return accepted_admission(None)
+
+    monkeypatch.setattr(worker, "_public_admit", admit)
+    monkeypatch.setattr(
+        worker,
+        "submit_research",
+        lambda request: type(
+            "Result",
+            (),
+            {"ok": True, "run_id": "run-no-lease", "metadata": {"mode": "test"}},
+        )(),
+    )
+    persistence = Persistence()
+    monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: persistence)
+
+    env = type("Env", (), {"AUTH_TOKEN": "secret", "DB": object()})()
+    entry = worker.Default()
+    entry.env = env
+    response = await entry.fetch(
+        Request(
+            "POST",
+            "https://x/api/v1/research",
+            {"question": "q", "strict_zero_cost_only": True},
+            {"Authorization": "Bearer secret", "Content-Type": "application/json"},
+        )
+    )
+    assert response.status == 200
+    assert persistence.created == ["run-no-lease"]
