@@ -14,6 +14,9 @@ from backend.public_read_cursor import (
 )
 
 
+MAX_SOURCE_RESPONSE_BYTES = 10 * 1024 * 1024
+
+
 async def ingest_sources(env, run_id, req, *, fetcher, persistence_cls):
     persistence = persistence_cls(env)
     results = []
@@ -21,8 +24,21 @@ async def ingest_sources(env, run_id, req, *, fetcher, persistence_cls):
     for index, url in enumerate(req.source_urls[:req.max_sources]):
         try:
             fetched = await fetcher(url)
+            content = bytes(fetched.content)
+            if len(content) > MAX_SOURCE_RESPONSE_BYTES:
+                results.append(
+                    {
+                        "url": url,
+                        "status": "too_large",
+                        "error": "source response exceeds supported size",
+                        "bytes": len(content),
+                        "max_bytes": MAX_SOURCE_RESPONSE_BYTES,
+                    }
+                )
+                continue
+
             source_id = hashlib.sha256(fetched.final_url.encode()).hexdigest()[:32]
-            content_hash = hashlib.sha256(fetched.content).hexdigest()
+            content_hash = hashlib.sha256(content).hexdigest()
             version_id = hashlib.sha256((source_id + content_hash).encode()).hexdigest()[:32]
             observation_id = f"{run_id}:obs:{index}"
             family = urlparse(fetched.final_url).hostname or "unknown"
@@ -34,10 +50,10 @@ async def ingest_sources(env, run_id, req, *, fetcher, persistence_cls):
                 )
             )
             artifact_ref = f"raw/{run_id}/{observation_id}/{content_hash}"
-            await persistence.put_artifact(artifact_ref, fetched.content, content_type=fetched.content_type)
+            await persistence.put_artifact(artifact_ref, content, content_type=fetched.content_type)
             write_statements.append(
                 env.DB.prepare("""INSERT INTO document_versions (version_id, source_id, retrieved_at, etag, content_hash, artifact_ref, content_length) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(version_id) DO UPDATE SET source_id = excluded.source_id, retrieved_at = excluded.retrieved_at, etag = excluded.etag, artifact_ref = excluded.artifact_ref, content_length = excluded.content_length""").bind(
-                    version_id, source_id, now, fetched.etag, content_hash, artifact_ref, len(fetched.content)
+                    version_id, source_id, now, fetched.etag, content_hash, artifact_ref, len(content)
                 )
             )
             write_statements.append(
@@ -45,7 +61,7 @@ async def ingest_sources(env, run_id, req, *, fetcher, persistence_cls):
                     observation_id, run_id, source_id, version_id, now, "http_fetch", content_hash, "verified", access_state
                 )
             )
-            results.append({"url": fetched.final_url, "status": fetched.status, "source_id": source_id, "observation_id": observation_id, "version_id": version_id, "content_hash": content_hash, "bytes": len(fetched.content), "access_state": access_state, "retrieval_method": "http_fetch", "source_family_id": family})
+            results.append({"url": fetched.final_url, "status": fetched.status, "source_id": source_id, "observation_id": observation_id, "version_id": version_id, "content_hash": content_hash, "bytes": len(content), "access_state": access_state, "retrieval_method": "http_fetch", "source_family_id": family})
         except Exception as exc:
             results.append({"url": url, "status": "error", "error": str(exc)})
     if write_statements:
