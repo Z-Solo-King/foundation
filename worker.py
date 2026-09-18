@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime, timezone
 from urllib.parse import parse_qs, urlparse
 
-from workers import Headers, Request, Response, WorkerEntrypoint
+from workers import Request, Response, WorkerEntrypoint
 
 from backend.api.main import submit_research
 from backend.api.models import ChatRequest, ResearchRequest
@@ -29,8 +29,7 @@ def _service_request(url, *, method="GET", headers=None, body=None):
     Cloudflare Python Worker service bindings accept exactly one Request object;
     they do not support the JavaScript-style fetch(url, init) positional form.
     """
-    request_headers = Headers.new((headers or {}).items())
-    kwargs = {"method": method, "headers": request_headers}
+    kwargs = {"method": method, "headers": headers or {}}
     if body is not None:
         kwargs["body"] = body
     return Request.new(url, **kwargs)
