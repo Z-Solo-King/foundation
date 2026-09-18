@@ -330,7 +330,7 @@ echo "Live chat idempotency acceptance: PASS"
 stream_payload=$(jq -nc \
   --arg chat_id "production-stream-${GITHUB_RUN_ID}" \
   --arg request_id "production-stream-request-${GITHUB_RUN_ID}" \
-  '{chat_id:$chat_id,request_id:$request_id,message:"Return a one-sentence explanation of the public/private service-binding boundary.",mode:"chat",strict_zero_cost_only:true}')
+  '{chat_id:$chat_id,request_id:$request_id,message:"Give a concise explanation of why authenticated service bindings are used between Foundation and the private control plane.",mode:"chat",strict_zero_cost_only:true}')
 stream_json_status=$(curl -sS --max-time 90 \
   -o "$RUNNER_TEMP/live-stream-json.json" -w '%{http_code}' \
   -H "Authorization: Bearer ${AUTH_TOKEN}" \
