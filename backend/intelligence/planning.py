@@ -91,6 +91,19 @@ def create_plan(contract: ResearchContract) -> ResearchPlan:
                 "old vs new", "older reviews", "latest", "recent", "2024", "2025", "2026", "revision",
             ))
         ).lower(),
+        "contract_revision": contract.contract_revision,
+        "policy_version": contract.policy_version,
+        "contract_fingerprint": contract.contract_fingerprint,
+        "required_output_scope": ",".join(contract.required_output_scope),
+        "optional_output_scope": ",".join(contract.optional_output_scope),
+        "freshness_requirement": contract.freshness_requirement or "",
+        "evidence_requirement": contract.evidence_requirement,
+        "allowed_tool_classes": ",".join(contract.allowed_tool_classes),
+        "deadline_ms": "" if contract.deadline_ms is None else str(contract.deadline_ms),
+        "execution_budget_units": "" if contract.execution_budget_units is None else str(contract.execution_budget_units),
+        "privacy_policy": contract.privacy_policy,
+        "publication_policy": contract.publication_policy,
+        "expected_result_states": ",".join(contract.expected_result_states),
     }
 
     return ResearchPlan(
