@@ -162,7 +162,7 @@ async def test_worker_chat_and_stream_release_admission_lease(monkeypatch):
     monkeypatch.setattr(worker, "_operations_chat_stream", stream_backend)
 
     chat_response = await entry.fetch(
-        Request("POST", "https://x/api/v1/chat", payload, {"Authorization": "Bearer secret"})
+        Request("POST", "https://x/api/v1/chat", payload, {"Authorization": "Bearer secret", "Content-Type": "application/json"})
     )
     assert chat_response.status == 200
 
@@ -195,7 +195,7 @@ async def test_worker_research_rejected_result_releases_admission_lease(monkeypa
             "POST",
             "https://x/api/v1/research",
             {"question": "q", "strict_zero_cost_only": True},
-            {"Authorization": "Bearer secret"},
+            {"Authorization": "Bearer secret", "Content-Type": "application/json"},
         )
     )
     assert response.status == 400
