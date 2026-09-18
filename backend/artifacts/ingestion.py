@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 import hashlib
+import json
 
 
 ARTIFACT_INGESTION_CONTRACT_VERSION = "artifact-ingestion/v1"
@@ -41,6 +42,22 @@ class IngestionAdapterSpec:
     def schema_version(self) -> str:
         return ARTIFACT_INGESTION_CONTRACT_VERSION
 
+    def supports_media_type(self, media_type: str) -> bool:
+        normalized = media_type.strip().casefold()
+        return normalized in {item.strip().casefold() for item in self.input_media_types}
+
+    def replay_identity(self, source_fingerprint: str) -> str:
+        self.validate()
+        if len(source_fingerprint) != 64:
+            raise ValueError("source_fingerprint must be SHA-256")
+        payload = {
+            "adapter_id": self.adapter_id,
+            "extraction_version": self.extraction_version,
+            "source_fingerprint": source_fingerprint,
+            "schema_version": self.schema_version,
+        }
+        return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
 
 @dataclass(frozen=True)
 class ArtifactExtractionResult:
@@ -61,6 +78,8 @@ class ArtifactExtractionResult:
             raise ValueError("source_fingerprint must be SHA-256")
         if not self.media_type.strip():
             raise ValueError("media_type is required")
+        if not self.adapter.supports_media_type(self.media_type):
+            raise ValueError("media_type is unsupported by adapter")
         if self.state in {ArtifactIngestionState.EXTRACTED, ArtifactIngestionState.PARTIAL}:
             if not self.output_fingerprint:
                 raise ValueError("successful extraction states require output_fingerprint")
