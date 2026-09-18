@@ -139,3 +139,103 @@ def test_result_serialization():
     result = compare_measurements(obs(), obs(measurement_id="m2"))
     payload = result.to_dict()
     assert payload["schema"] == "evidence-comparability/v1"
+
+
+def test_missing_units_and_incompatible_conversion_are_unknown():
+    missing = compare_measurements(
+        obs(value=1, unit="s"),
+        obs(measurement_id="m2", value=1, unit="ms"),
+    )
+    assert missing.state is ComparabilityState.UNKNOWN
+    assert "unit_conversion_missing" in missing.reason_codes
+
+    incompatible = compare_measurements(
+        obs(value=1, unit="s"),
+        obs(measurement_id="m2", value=1, unit="kg"),
+        conversion=UnitConversion("s", "ms", 1000.0),
+    )
+    assert incompatible.state is ComparabilityState.UNKNOWN
+    assert "unit_conversion_incompatible" in incompatible.reason_codes
+
+
+def test_reverse_unit_conversion_is_supported():
+    conversion = UnitConversion("ms", "s", 0.001)
+    result = compare_measurements(
+        obs(value=1000, unit="ms"),
+        obs(measurement_id="m2", value=1, unit="s"),
+        conversion=conversion,
+    )
+    assert result.state is ComparabilityState.COMPARABLE
+    assert result.normalized_left == 1
+
+
+def test_unknown_time_context_prevents_comparable_state():
+    result = compare_measurements(
+        obs(context=ctx(region=None)),
+        obs(measurement_id="m2"),
+    )
+    assert result.state is ComparabilityState.UNKNOWN
+
+
+def test_invalid_compare_limits_are_rejected():
+    with pytest.raises(ValueError, match="tolerance"):
+        compare_measurements(obs(), obs(measurement_id="m2"), tolerance=-1)
+    with pytest.raises(ValueError, match="max_age_seconds"):
+        compare_measurements(obs(), obs(measurement_id="m2"), max_age_seconds=-1)
+
+
+def test_unit_conversion_and_observation_validation_edges():
+    with pytest.raises(ValueError, match="source_unit"):
+        UnitConversion("", "ms", 1).validate()
+    with pytest.raises(ValueError, match="target_unit"):
+        UnitConversion("s", "", 1).validate()
+    with pytest.raises(ValueError, match="revision"):
+        UnitConversion("s", "ms", 1, revision="").validate()
+    with pytest.raises(ValueError, match="numeric"):
+        UnitConversion("s", "ms", 1).convert("bad")
+
+    with pytest.raises(ValueError, match="measurement value"):
+        obs(value=True).validate()
+    with pytest.raises(ValueError, match="unit"):
+        obs(unit="").validate()
+    with pytest.raises(ValueError, match="measurement_id"):
+        obs(measurement_id="").validate()
+    with pytest.raises(ValueError, match="timezone"):
+        obs(observed_at=datetime(2026, 9, 18)).validate()
+    with pytest.raises(ValueError, match="population"):
+        obs(population="").validate()
+    with pytest.raises(ValueError, match="replication"):
+        obs(replication_count=-1).validate()
+
+
+def test_context_optional_fields_must_be_text():
+    with pytest.raises(ValueError, match="variant"):
+        ctx(variant=1).validate()
+    with pytest.raises(ValueError, match="region"):
+        ctx(region=1).validate()
+    with pytest.raises(ValueError, match="environment"):
+        ctx(environment=1).validate()
+    with pytest.raises(ValueError, match="software_revision"):
+        ctx(software_revision=1).validate()
+    with pytest.raises(ValueError, match="methodology"):
+        ctx(methodology=1).validate()
+    with pytest.raises(ValueError, match="tool_version"):
+        ctx(tool_version=1).validate()
+
+
+def test_normalized_value_and_result_serialization():
+    item = obs(value=2, unit="s")
+    assert item.normalized_value(None) == (2.0, "s")
+    assert item.normalized_value(UnitConversion("s", "ms", 1000.0)) == (2000.0, "ms")
+    with pytest.raises(ValueError, match="source"):
+        item.normalized_value(UnitConversion("kg", "ms", 1))
+
+    result = compare_measurements(obs(), obs(measurement_id="m2"))
+    payload = result.to_dict()
+    assert payload["schema"] == "evidence-comparability/v1"
+
+
+def test_measurement_optional_uncertainty_fields_and_provenance_are_valid():
+    obs(uncertainty_low=None, uncertainty_high=10).validate()
+    obs(uncertainty_low=10, uncertainty_high=None).validate()
+    obs(population=None).validate()
