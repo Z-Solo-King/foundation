@@ -189,7 +189,7 @@ async def test_worker_research_rejected_result_releases_admission_lease(monkeypa
         lambda request: type("Result", (), {"ok": False, "error": "rejected"})(),
     )
 
-    env = type("Env", (), {"AUTH_TOKEN": "secret"})()
+    env = type("Env", (), {"AUTH_TOKEN": "secret", "DB": object()})()
     entry = worker.Default()
     entry.env = env
     response = await entry.fetch(
@@ -226,7 +226,7 @@ async def test_worker_research_uses_legacy_create_run_fallback(monkeypatch):
     )
     monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: persistence)
 
-    env = type("Env", (), {"AUTH_TOKEN": "secret"})()
+    env = type("Env", (), {"AUTH_TOKEN": "secret", "DB": object()})()
     entry = worker.Default()
     entry.env = env
     response = await entry.fetch(
