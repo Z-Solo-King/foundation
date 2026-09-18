@@ -159,7 +159,7 @@ async def test_worker_chat_and_stream_release_admission_lease(monkeypatch):
         status = 200
 
     async def stream_backend(env, payload, request):
-        return Upstream(), None, 200
+        return {"ok": True, "response": {"response_id": "chat-r1", "result_state": "PARTIAL", "text": "ok", "generation_status": "deterministic_fallback"}}, 200
 
     monkeypatch.setattr(worker, "_operations_chat", chat_backend)
     monkeypatch.setattr(worker, "_operations_chat_stream", stream_backend)
