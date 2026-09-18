@@ -6,12 +6,12 @@
   "repositories": {
     "foundation": {
       "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup",
-      "last_audited_main_sha": "88e16810febede7e0d7fa663638794e10d213712"
+      "last_audited_main_sha": "5d8a39874f677040089eeacc82970bbc348c0142"
     },
     "operations": {
       "role": "private-control-plane-research-orchestration",
-      "last_audited_main_sha": "7ca856c4be291140e52625ff9b73b234f1dc103e",
-      "approved_production_revision": "cf28a28cb40de527aff1cd87f96e103669635f70",
+      "last_audited_main_sha": "d8825f5ce9c917a780c962f9773de6bb4446997f",
+      "approved_production_revision": "d8825f5ce9c917a780c962f9773de6bb4446997f",
       "nightly_research_revision": "b6a519742e57e7e68db64ab10535d76372bcbdb1"
     }
   },
@@ -49,7 +49,8 @@
     "deadline_governance_issue_state": "Operations issues #377/#383/#384 remain open pending explicit acceptance/CI evidence; the merged implementation does not claim L4 runtime certification",
     "stage_receipt_correctness": "Foundation PR #461 remains a separate implementation stream",
     "nightly_timeout": "Foundation issue #487 remains open; nightly research lane still requires timeout below the six-hour GitHub Actions ceiling",
-    "runtime_evidence": "Repository CI remains L3; private/runtime/production gates remain L4 and are not inferred from source"
+    "runtime_evidence": "Repository CI remains L3; private/runtime/production gates remain L4 and are not inferred from source",
+    "cloudflare_recovery_2026_09_18": "Private Worker platform configuration is now present (D1/service binding/cron and governance metadata), but RESOURCE_LIMITS_JSON, RESOURCE_RESERVATIONS_JSON and canonical AUTH_TOKEN remain absent; v15 is not yet the approved d8825f5ce9c917a780c962f9773de6bb4446997f application revision."
   },
   "documentation_rule": "Dated plans and handoffs are historical context. Current merged source, current tests/CI, current source-of-truth documents, and explicit runtime evidence determine present status."
 }

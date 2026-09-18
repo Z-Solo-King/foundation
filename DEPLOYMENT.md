@@ -20,7 +20,7 @@ The workflow dynamically resolves the live D1 database ID and writes a runner-on
 
 The workflow also owns the protected Operations handoff. Production is pinned to the explicitly approved immutable Operations revision:
 
-`cf28a28cb40de527aff1cd87f96e103669635f70`
+`d8825f5ce9c917a780c962f9773de6bb4446997f`
 
 The private Operations checkout uses the purpose-specific GitHub App installation credential set:
 
