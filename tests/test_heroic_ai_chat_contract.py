@@ -27,14 +27,14 @@ def test_public_chat_boundary_uses_internal_service_binding_and_idempotency():
         async def json(self): return {"ok": True, "response": {"text": "grounded", "status": "completed"}}
     class Binding:
         def __init__(self): self.calls = []
-        async def fetch(self, url, options): self.calls.append((url, options)); return Response()
+        async def fetch(self, request): self.calls.append(request); return Response()
     class Request: headers = {"Authorization": "Bearer token", "Idempotency-Key": "request"}
     binding = Binding(); payload = {"chat_id": "chat", "request_id": "request", "message": "hello", "mode": "chat", "strict_zero_cost_only": True}
     body, status = asyncio.run(worker._operations_chat(SimpleNamespace(OPERATIONS=binding), payload, Request()))
     assert status == 200 and body["ok"] is True
-    url, options = binding.calls[0]; assert url == "https://chat/v1/chat"
-    assert options["headers"]["Authorization"] == "Bearer token" and options["headers"]["Idempotency-Key"] == "request"
-    assert json.loads(options["body"]) == payload
+    request = binding.calls[0]; assert request.url == "https://chat/v1/chat"
+    assert request.method == "POST"
+    assert request.headers.get("Authorization") == "Bearer token" and request.headers.get("Idempotency-Key") == "request"
 
 
 def test_public_chat_boundary_returns_fail_closed_on_invalid_private_response():
@@ -43,7 +43,7 @@ def test_public_chat_boundary_returns_fail_closed_on_invalid_private_response():
         status = 200
         async def json(self): return ["not", "an", "object"]
     class Binding:
-        async def fetch(self, url, options): return Response()
+        async def fetch(self, request): return Response()
     class Request: headers = {}
     payload = {"chat_id": "chat", "request_id": "request", "message": "hello", "mode": "chat", "strict_zero_cost_only": True}
     body, status = asyncio.run(worker._operations_chat(SimpleNamespace(OPERATIONS=Binding()), payload, Request()))
@@ -53,7 +53,7 @@ def test_public_chat_boundary_returns_fail_closed_on_invalid_private_response():
 def test_public_chat_boundary_returns_unavailable_on_binding_error():
     import worker
     class Binding:
-        async def fetch(self, url, options): raise RuntimeError("binding unavailable")
+        async def fetch(self, request): raise RuntimeError("binding unavailable")
     class Request: headers = {}
     payload = {"chat_id": "chat", "request_id": "request", "message": "hello", "mode": "chat", "strict_zero_cost_only": True}
     body, status = asyncio.run(worker._operations_chat(SimpleNamespace(OPERATIONS=Binding()), payload, Request()))
@@ -67,7 +67,7 @@ def test_public_worker_chat_route_validation_and_fail_closed_paths():
             self.method = "POST"; self.url = "https://example/api/v1/chat"; self._payload = payload; self.headers = headers or {}
         async def json(self): return self._payload
     class Binding:
-        async def fetch(self, url, options):
+        async def fetch(self, request):
             class Response:
                 status = 200
                 async def json(self): return {"ok": True, "response": {"text": "grounded", "status": "completed"}}

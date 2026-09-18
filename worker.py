@@ -22,6 +22,37 @@ from backend.worker_diagnostics import health_payload, public_infrastructure_ver
 from backend.worker_research import get_run, ingest_sources
 
 
+
+class _TestServiceRequest:
+    """Minimal request shape used only when the Cloudflare JS runtime is unavailable."""
+
+    def __init__(self, url, *, method, headers, body=None):
+        self.url = url
+        self.method = method
+        self.headers = headers
+        self.body = body
+
+
+def _service_request(url, *, method="GET", headers=None, body=None):
+    """Construct the single Request object required by an HTTP service binding.
+
+    Python Workers exposes the Fetch API through JavaScript FFI. The runtime SDK
+    does not export Request consistently across local test environments, so CI gets
+    a small structural fallback while deployed Workers use the real JS Request.
+    """
+    request_init = {"method": method, "headers": headers or {}}
+    if body is not None:
+        request_init["body"] = body
+    try:
+        from js import Object, Request as JSRequest
+        from pyodide.ffi import to_js
+        return JSRequest.new(
+            url,
+            to_js(request_init, dict_converter=Object.fromEntries),
+        )
+    except ImportError:
+        return _TestServiceRequest(url, method=method, headers=headers or {}, body=body)
+
 def _extract_source_urls(question, explicit=()):
     return extract_source_urls(question, explicit)
 
@@ -197,8 +228,7 @@ async def _operations_chat(env, payload, request):
     headers = _chat_headers(request)
     try:
         upstream = await operations.fetch(
-            "https://chat/v1/chat",
-            {"method": "POST", "headers": headers, "body": json.dumps(payload)},
+            _service_request("https://chat/v1/chat", method="POST", headers=headers, body=json.dumps(payload))
         )
         body = await upstream.json()
         if not isinstance(body, dict):
@@ -229,8 +259,7 @@ async def _operations_chat_stream(env, payload, request):
     headers = _chat_headers(request)
     try:
         upstream = await operations.fetch(
-            "https://chat/v1/chat/stream",
-            {"method": "POST", "headers": headers, "body": json.dumps(payload)},
+            _service_request("https://chat/v1/chat/stream", method="POST", headers=headers, body=json.dumps(payload))
         )
         return upstream, None, upstream.status
     except Exception:
@@ -244,12 +273,12 @@ async def _operations_chatbot_diagnostic(env):
         return {"ok": False, "error": "chat_backend_unavailable", "status": "unavailable"}, 503
     try:
         upstream = await operations.fetch(
-            "https://private/v1/diagnostics/chatbot",
-            {
-                "method": "POST",
-                "headers": {"Content-Type": "application/json"},
-                "body": json.dumps({"operation": "infrastructure_verify", "question": "Infrastructure diagnostic only; do not execute a model provider."}),
-            },
+            _service_request(
+                "https://private/v1/diagnostics/chatbot",
+                method="POST",
+                headers={"Content-Type": "application/json"},
+                body=json.dumps({"operation": "infrastructure_verify", "question": "Infrastructure diagnostic only; do not execute a model provider."}),
+            )
         )
         body = await upstream.json()
         healthy = upstream.status == 200 and isinstance(body, dict) and bool(body.get("ok")) and bool(body.get("chatbot", {}).get("allowed"))
@@ -275,7 +304,7 @@ async def _operations_dashboard(env, request):
     if token:
         headers["Authorization"] = f"Bearer {token}"
     try:
-        upstream = await operations.fetch("https://private/v1/dashboard", {"method": "GET", "headers": headers})
+        upstream = await operations.fetch(_service_request("https://private/v1/dashboard", method="GET", headers=headers))
         body = await upstream.json()
         if not isinstance(body, dict):
             return {"ok": False, "error": "invalid_private_dashboard_response"}, 503
