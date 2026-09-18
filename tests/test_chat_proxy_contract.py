@@ -141,7 +141,7 @@ def test_public_worker_chat_stream_returns_private_non_200(monkeypatch):
     class Request:
         method = "POST"
         url = "https://example/api/v1/chat/stream"
-        headers = {"Authorization": "Bearer secret", "Idempotency-Key": "r2"}
+        headers = {"Authorization": "Bearer secret", "Idempotency-Key": "r2", "Content-Type": "application/json"}
         async def json(self):
             return {"chat_id": "c2", "request_id": "r2", "message": "hello", "mode": "chat", "strict_zero_cost_only": True}
 
@@ -158,14 +158,16 @@ def test_public_worker_chat_stream_returns_503_for_invalid_sse_payload(monkeypat
         return {"ok": True, "response": {"result_state": "BLOCKED"}}, 200
 
     monkeypatch.setattr(worker, "_operations_chat_stream", backend)
-    monkeypatch.setattr(worker, "_public_admit", lambda *args, **kwargs: asyncio.sleep(0, result=(type("D", (), {"allowed": True})(), None)))
+    async def admit(*args, **kwargs):
+        return type("Decision", (), {"allowed": True})(), None
+    monkeypatch.setattr(worker, "_public_admit", admit)
 
     class Request:
         method = "POST"
         url = "https://example/api/v1/chat/stream"
-        headers = {"Authorization": "Bearer secret", "Idempotency-Key": "r3"}
+        headers = {"Authorization": "Bearer secret", "Idempotency-Key": "r3", "Content-Type": "application/json"}
         async def json(self):
-            return {"chat_id": "c3", "request_id": "r3", "message": "hello", "strict_zero_cost_only": True}
+            return {"chat_id": "c3", "request_id": "r3", "message": "hello", "mode": "chat", "strict_zero_cost_only": True}
 
     instance = worker.Default()
     instance.env = SimpleNamespace(AUTH_TOKEN="secret", DB=object(), ENVIRONMENT="development", LOCAL_DEVELOPMENT_AUTH_BYPASS="true")
