@@ -123,6 +123,8 @@ def detect_typed_contradiction(left: TypedClaim, right: TypedClaim) -> Contradic
         return Contradiction(left.claim_id, right.claim_id, "explicit negation conflict", left.predicate)
 
     if left.value_type == right.value_type == "numeric":
+        if left.unit != right.unit:
+            return None
         if _numeric_conflict(left, right):
             return Contradiction(left.claim_id, right.claim_id, "numeric values differ beyond tolerance", left.predicate)
 
