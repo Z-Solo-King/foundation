@@ -57,6 +57,21 @@ def test_completed_cannot_hide_missing_or_unresolved_scope():
         ).to_dict()
 
 
+def test_completed_cannot_hide_stale_evidence():
+    with pytest.raises(ValueError, match="stale"):
+        ResultEnvelope(
+            status=ResultStatus.COMPLETED,
+            freshness=FreshnessState.STALE,
+        ).to_dict()
+
+
+def test_schema_version_and_identity_validation_fail_closed():
+    with pytest.raises(ValueError, match="schema"):
+        ResultEnvelope(schema_version="heroic-ai-result/v2").to_dict()
+    with pytest.raises(ValueError, match="execution_identity"):
+        ResultEnvelope(execution_identity="   ").to_dict()
+
+
 def test_legacy_adapter_preserves_metadata_and_run_identity():
     envelope = envelope_from_legacy_response(
         ok=True,
@@ -68,8 +83,25 @@ def test_legacy_adapter_preserves_metadata_and_run_identity():
     assert payload["result"]["question"] == "test"
 
 
+def test_legacy_adapter_preserves_explicit_result_without_metadata():
+    envelope = envelope_from_legacy_response(
+        ok=True,
+        result={"answer": "ok"},
+        run_id="run-2",
+        metadata={"ignored": True},
+    )
+    assert envelope.to_dict()["result"] == {"answer": "ok", "run_id": "run-2"}
+
+
 def test_legacy_error_adapter_is_explicitly_failed():
     envelope = envelope_from_legacy_response(ok=False, error="blocked")
     payload = envelope.to_dict()
     assert payload["status"] == "FAILED"
     assert payload["warnings"] == ["blocked"]
+
+
+def test_legacy_error_adapter_allows_missing_error_without_false_detail():
+    envelope = envelope_from_legacy_response(ok=False)
+    payload = envelope.to_dict()
+    assert payload["status"] == "FAILED"
+    assert payload["warnings"] == []
