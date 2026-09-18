@@ -11,13 +11,18 @@ def validate_json_shape(value, *, max_depth=MAX_JSON_DEPTH, max_collection_items
         raise ValueError("max_depth must be a positive integer")
     if not isinstance(max_collection_items, int) or max_collection_items < 1:
         raise ValueError("max_collection_items must be a positive integer")
+    if not isinstance(max_string_chars, int) or max_string_chars < 1:
+        raise ValueError("max_string_chars must be a positive integer")
 
     stack = [(value, 0)]
     while stack:
         current, depth = stack.pop()
         if depth > max_depth:
             raise ValueError("JSON nesting exceeds the supported depth")
-        if isinstance(current, dict):
+        if isinstance(current, str):
+            if len(current) > max_string_chars:
+                raise ValueError("JSON string exceeds the supported length")
+        elif isinstance(current, dict):
             if len(current) > max_collection_items:
                 raise ValueError("JSON object exceeds the supported field count")
             stack.extend((item, depth + 1) for item in current.values())
