@@ -8,7 +8,7 @@ def c(cid, value, value_type="numeric", **kwargs):
 
 
 def test_numeric_difference_is_contradiction_and_tolerance_is_respected():
-    assert detect_typed_contradiction(c("a", 10, unit="kg"), c("b", 10000, unit="g")) is not None
+    assert detect_typed_contradiction(c("a", 10, unit="kg"), c("b", 9000, unit="g")) is not None
     assert detect_typed_contradiction(c("a", 10, unit="kg", tolerance=Decimal("1")), c("b", 10.5, unit="kg")) is None
 
 
