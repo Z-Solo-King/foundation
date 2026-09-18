@@ -146,6 +146,17 @@ def test_production_script_preserves_static_asset_binding_and_diagnostic_smokes(
     assert 'POST GitHub App installation token -> HTTP' in deployment
 
 
+def test_private_operations_handoff_is_preflighted_and_diagnostic_runs_last():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    preflight = deployment.index("Preflight and stage the private Operations handoff")
+    public_deploy = deployment.index("pywrangler deploy --config wrangler.production.generated.toml")
+    operations_deploy = deployment.index("pywrangler deploy --config wrangler.toml --secrets-file")
+    diagnostic = deployment.index("infrastructure_verify_public_test")
+    success = deployment.rindex("Production release completed")
+    assert preflight < public_deploy
+    assert public_deploy < operations_deploy < diagnostic < success
+
+
 def test_required_pr_checks_emit_the_branch_protection_contract():
     required = _workflow_texts()["required-pr-checks.yml"]
     assert "pull_request:" in required
