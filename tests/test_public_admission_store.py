@@ -212,7 +212,9 @@ async def test_worker_research_uses_legacy_create_run_fallback(monkeypatch):
     lease = object()
     persistence = Persistence()
     monkeypatch.setattr(worker, "D1AdmissionStore", lambda db: tracker)
-    async def admit(*args, **kwargs): return accepted_admission(lease)\n    monkeypatch.setattr(worker, "_public_admit", admit)
+    async def admit(*args, **kwargs):
+        return accepted_admission(lease)
+    monkeypatch.setattr(worker, "_public_admit", admit)
     monkeypatch.setattr(
         worker,
         "submit_research",
