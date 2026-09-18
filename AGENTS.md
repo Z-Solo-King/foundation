@@ -14,6 +14,20 @@ Dependency direction is:
 
 Never import Operations source, private credentials, private runtime state, or protected implementation into Foundation.
 
+
+## GitHub Actions ownership boundary
+
+All GitHub Actions automation for the active family is owned and executed from the public `foundation` repository.
+
+The private `operations` repository is **not** an Actions execution surface. It must not contain `.github/workflows` or depend on private-repository workflow runs.
+
+When automation needs private Operations source, metadata, or configuration, the Foundation workflow must authenticate through the approved Foundation GitHub App, read the minimum required private content, and execute the action from Foundation.
+
+This boundary is separate from Cloudflare runtime access: Foundation -> Operations Worker uses the Cloudflare service binding and the canonical `AUTH_TOKEN` boundary.
+
+The cross-repository automation guard in `.github/workflows/cross-repository-contract-drift.yml` must fail closed if private Operations gains a workflow file.
+
+
 ## Canonical-owner rule
 
 Before writing code, search both active repositories and active PRs for an existing implementation. Identify the canonical owner first.
