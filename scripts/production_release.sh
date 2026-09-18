@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="90e3c692bfd43da25d08bf5d47a6a6c5167e0f7f"
+OPERATIONS_REF="856cb2a473b90390a906c9603949ef593e93d6d2"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
@@ -19,7 +19,8 @@ test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo 'Missing CLOUDFLARE_API_TOKEN GitH
 test -n "${CLOUDFLARE_ACCOUNT_ID:-}" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID GitHub secret'; exit 1; }
 test -n "${OPERATIONS_APP_ID:-}" || { echo 'Missing OPERATIONS_APP_ID GitHub Actions secret'; exit 1; }
 test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIVATE_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = '90e3c692bfd43da25d08bf5d47a6a6c5167e0f7f'
+test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
+test "$OPERATIONS_REF" = '856cb2a473b90390a906c9603949ef593e93d6d2'
 
 after_install_marker=''
 
@@ -219,7 +220,7 @@ repo_status=$(curl -sS -o "$RUNNER_TEMP/operations-repo-response.json" -w '%{htt
   -H 'X-GitHub-Api-Version: 2022-11-28' "https://api.github.com/repos/${OPERATIONS_REPOSITORY}")
 echo "GET Operations repository -> HTTP ${repo_status}"
 test "$repo_status" = '200' || { jq -c '{message,errors,documentation_url}' "$RUNNER_TEMP/operations-repo-response.json" || cat "$RUNNER_TEMP/operations-repo-response.json"; exit 1; }
-jq -e --arg repo "$OPERATIONS_REPOSITORY" '.full_name == $repo and .private == true' "$RUNNER_TEMP/operations-repo-response.json" >/dev/null
+jq -e --arg repo "$OPERATIONS_REPOSITORY" '.full_name == $repo and .private == false' "$RUNNER_TEMP/operations-repo-response.json" >/dev/null
 
 ref_status=$(curl -sS -o "$RUNNER_TEMP/operations-ref-response.json" -w '%{http_code}' \
   -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${github_app_token}" \
@@ -259,12 +260,6 @@ npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
   --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql" \
   --config="$RUNNER_TEMP/operations/wrangler.toml"
 secret_file="$RUNNER_TEMP/operations-secrets.env"
-if [ -n "${AUTH_TOKEN:-}" ]; then
-  printf 'AUTH_TOKEN=%s\n' "$AUTH_TOKEN" > "$secret_file"
-  (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}")
-else
-  echo 'AUTH_TOKEN is not configured in Foundation Actions; deploying Operations using already-configured protected remote secrets.'
-  (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --message "github:${OPERATIONS_REF}")
-fi
-
+printf 'AUTH_TOKEN=%s\n' "$AUTH_TOKEN" > "$secret_file"
+(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}")
 echo "Production release completed for ${GITHUB_SHA} using Operations ${OPERATIONS_REF}"
