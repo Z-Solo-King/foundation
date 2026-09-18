@@ -232,18 +232,17 @@ async def test_worker_http_all_branches(monkeypatch):
 
 
 def test_authenticated_json_response_is_not_cacheable(monkeypatch):
-    class FakeResponse:
-        def __init__(self, payload, status, headers):
-            self.payload = payload
+    calls = []
+
+    class Response:
+        def __init__(self, body, *, status=200, headers=None):
+            calls.append((body, status, headers))
             self.status = status
-            self.headers = headers
 
-        @staticmethod
-        def json(payload, *, status=200, headers=None):
-            return FakeResponse(payload, status, headers or {})
+    monkeypatch.setattr(worker, "Response", Response)
+    worker._authenticated_json({"ok": True}, status=401)
 
-    monkeypatch.setattr(worker, "Response", FakeResponse)
-    response = worker._authenticated_json({"ok": True}, status=201)
-    assert response.status == 201
-    assert response.payload == {"ok": True}
-    assert response.headers["Cache-Control"] == "private, no-store, max-age=0, must-revalidate"
+    body, status, headers = calls[0]
+    assert status == 401
+    assert json.loads(body) == {"ok": True}
+    assert headers["Cache-Control"] == "private, no-store, max-age=0, must-revalidate"
