@@ -1,0 +1,200 @@
+{
+  "schema": "evaluation-corpus/v1",
+  "corpus_id": "research-evaluation-fixture",
+  "corpus_version": "2026-09-fixture",
+  "owner": "foundation-evaluation",
+  "approval_status": "unapproved",
+  "oracle_registry_version": "oracle-registry-v1",
+  "provenance_revision": "repository-fixture",
+  "approval_receipt_ref": null,
+  "evidence_tier": "repository_only",
+  "cases": [
+    {
+      "case_id": "factual",
+      "corpus_id": "research-evaluation-fixture",
+      "corpus_version": "2026-09-fixture",
+      "category": "deterministic factual",
+      "population": "public-research",
+      "source_family": "official",
+      "input_digest": "d1c7fb580cd1deae8aaa47065cccc6e456541da819bd8cf65bf58d1f7e828955",
+      "expected_invariants": [
+        "answer_cited",
+        "fact_preserved"
+      ],
+      "oracle_ref": "fixture://oracle/factual",
+      "snapshot_ref": "fixture://snapshot/factual",
+      "replay_mode": "snapshot",
+      "leakage_class": "clean"
+    },
+    {
+      "case_id": "multi-source",
+      "corpus_id": "research-evaluation-fixture",
+      "corpus_version": "2026-09-fixture",
+      "category": "multi-source research",
+      "population": "public-research",
+      "source_family": "official",
+      "input_digest": "7bb9b6779d2cc2c736cfa993ae1a1a796fa3c942e295ab294927b278b27551bf",
+      "expected_invariants": [
+        "multiple_sources",
+        "claim_source_binding"
+      ],
+      "oracle_ref": "fixture://oracle/multi-source",
+      "snapshot_ref": "fixture://snapshot/multi-source",
+      "replay_mode": "snapshot",
+      "leakage_class": "clean"
+    },
+    {
+      "case_id": "contradiction",
+      "corpus_id": "research-evaluation-fixture",
+      "corpus_version": "2026-09-fixture",
+      "category": "contradictory evidence",
+      "population": "public-research",
+      "source_family": "mixed-official",
+      "input_digest": "456cf73c569be56c85917812afdc16a1303b33f2dbf2d4f4c3c04e8029dccc3a",
+      "expected_invariants": [
+        "contradiction_preserved",
+        "no_silent_resolution"
+      ],
+      "oracle_ref": "fixture://oracle/contradiction",
+      "snapshot_ref": "fixture://snapshot/contradiction",
+      "replay_mode": "snapshot",
+      "leakage_class": "clean"
+    },
+    {
+      "case_id": "temporal-stale",
+      "corpus_id": "research-evaluation-fixture",
+      "corpus_version": "2026-09-fixture",
+      "category": "stale/current temporal",
+      "population": "public-research",
+      "source_family": "official",
+      "input_digest": "b118ae9a4f2787c1008eb37d68201c31a4db7606e4f3424072a5a427c4f47fa6",
+      "expected_invariants": [
+        "timestamp_preserved",
+        "freshness_state"
+      ],
+      "oracle_ref": "fixture://oracle/temporal-stale",
+      "snapshot_ref": "fixture://snapshot/temporal-stale",
+      "replay_mode": "snapshot",
+      "leakage_class": "clean"
+    },
+    {
+      "case_id": "multilingual",
+      "corpus_id": "research-evaluation-fixture",
+      "corpus_version": "2026-09-fixture",
+      "category": "multilingual research",
+      "population": "multilingual-public",
+      "source_family": "official",
+      "input_digest": "693cdc0633a7e7c9ffff8890193b7a43383bea4491b2dcb49da0275c61677a73",
+      "expected_invariants": [
+        "language_preserved",
+        "citation_present"
+      ],
+      "oracle_ref": "fixture://oracle/multilingual",
+      "snapshot_ref": "fixture://snapshot/multilingual",
+      "replay_mode": "snapshot",
+      "leakage_class": "clean"
+    },
+    {
+      "case_id": "citation-precision",
+      "corpus_id": "research-evaluation-fixture",
+      "corpus_version": "2026-09-fixture",
+      "category": "citation precision",
+      "population": "public-research",
+      "source_family": "official",
+      "input_digest": "fabaaa296d35b6b303d04dcfff4f0985891283c9fea527756481fdda09d6734a",
+      "expected_invariants": [
+        "citation_entails_claim",
+        "source_bound"
+      ],
+      "oracle_ref": "fixture://oracle/citation-precision",
+      "snapshot_ref": "fixture://snapshot/citation-precision",
+      "replay_mode": "snapshot",
+      "leakage_class": "clean"
+    },
+    {
+      "case_id": "source-duplication",
+      "corpus_id": "research-evaluation-fixture",
+      "corpus_version": "2026-09-fixture",
+      "category": "source-family duplication",
+      "population": "public-research",
+      "source_family": "syndicated",
+      "input_digest": "273fddf4b16178ff2fc051ab2cc3f866a0579244fdea266bc66a41f55c5aecfe",
+      "expected_invariants": [
+        "family_deduplicated",
+        "independence_preserved"
+      ],
+      "oracle_ref": "fixture://oracle/source-duplication",
+      "snapshot_ref": "fixture://snapshot/source-duplication",
+      "replay_mode": "snapshot",
+      "leakage_class": "clean"
+    },
+    {
+      "case_id": "adversarial-retrieved",
+      "corpus_id": "research-evaluation-fixture",
+      "corpus_version": "2026-09-fixture",
+      "category": "adversarial retrieved content",
+      "population": "public-research",
+      "source_family": "untrusted-web",
+      "input_digest": "00daa93b94c1e154ab3428a413ff783ee8ba094849e058c8f26fd95fe71ada13",
+      "expected_invariants": [
+        "prompt_boundary",
+        "untrusted_content"
+      ],
+      "oracle_ref": "fixture://oracle/adversarial-retrieved",
+      "snapshot_ref": "fixture://snapshot/adversarial-retrieved",
+      "replay_mode": "snapshot",
+      "leakage_class": "clean"
+    },
+    {
+      "case_id": "partial-execution",
+      "corpus_id": "research-evaluation-fixture",
+      "corpus_version": "2026-09-fixture",
+      "category": "incomplete partial execution",
+      "population": "public-research",
+      "source_family": "mixed",
+      "input_digest": "8e6c9df326991aaf69b47353bac3606df415a059f29c33d2dd20d4a5fc829839",
+      "expected_invariants": [
+        "partial_state",
+        "missing_scope_explicit"
+      ],
+      "oracle_ref": "fixture://oracle/partial-execution",
+      "snapshot_ref": "fixture://snapshot/partial-execution",
+      "replay_mode": "snapshot",
+      "leakage_class": "clean"
+    },
+    {
+      "case_id": "provider-failure",
+      "corpus_id": "research-evaluation-fixture",
+      "corpus_version": "2026-09-fixture",
+      "category": "provider/source failure",
+      "population": "synthetic-failure",
+      "source_family": "fixture",
+      "input_digest": "dcd2bcad2e6989f2c586e96751d5379d203304cc9482081247a63da85f4cc0e6",
+      "expected_invariants": [
+        "failure_classified",
+        "no_false_success"
+      ],
+      "oracle_ref": "fixture://oracle/provider-failure",
+      "snapshot_ref": "fixture://snapshot/provider-failure",
+      "replay_mode": "snapshot",
+      "leakage_class": "clean"
+    },
+    {
+      "case_id": "large-evidence",
+      "corpus_id": "research-evaluation-fixture",
+      "corpus_version": "2026-09-fixture",
+      "category": "large evidence/long-running research",
+      "population": "synthetic-large",
+      "source_family": "fixture",
+      "input_digest": "8fd35445b924463c2b86f39207c435d40d73530aeebacdb2ff2d4da181989601",
+      "expected_invariants": [
+        "bounded_evidence",
+        "resource_bound"
+      ],
+      "oracle_ref": "fixture://oracle/large-evidence",
+      "snapshot_ref": "fixture://snapshot/large-evidence",
+      "replay_mode": "snapshot",
+      "leakage_class": "clean"
+    }
+  ]
+}
