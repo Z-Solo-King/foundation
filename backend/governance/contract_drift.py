@@ -92,9 +92,6 @@ def catalog_from_capabilities(
     for field in ("promotion_authority", "trust_authority", "private_secrets"):
         if not isinstance(capabilities[field], bool):
             raise ValueError(f"{field} must be boolean")
-    for field in ("promotion_authority", "trust_authority", "private_secrets"):
-        if not isinstance(capabilities[field], bool):
-            raise ValueError(f"{field} must be boolean")
     catalog = ContractCatalog(
         name=str(capabilities["name"]),
         revision=revision,
