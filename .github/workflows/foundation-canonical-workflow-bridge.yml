@@ -10,9 +10,12 @@ name: Foundation canonical workflow bridge
         options:
           - nightly-multi-agent-research.yml
           - heroic-ai-production-release.yml
+          - cross-repository-contract-drift.yml
+          - operations-centralized-validation.yml
+          - main-push-actions-control-plane-probe.yml
         default: nightly-multi-agent-research.yml
       dry_run:
-        description: Pass dry_run=true to the nightly research workflow only
+        description: Pass dry_run=true to nightly research only
         required: false
         type: boolean
         default: false
@@ -21,6 +24,11 @@ name: Foundation canonical workflow bridge
         required: false
         type: boolean
         default: false
+      operations_ref:
+        description: Operations branch or immutable SHA for centralized validation only
+        required: false
+        type: string
+        default: main
 
 permissions:
   contents: read
@@ -47,19 +55,29 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.foundation-app.outputs.token }}
           TARGET: ${{ inputs.target }}
-          FOUNDATION_REF: main
           DRY_RUN: ${{ inputs.dry_run }}
           CONFIRM_PRODUCTION: ${{ inputs.confirm_production }}
+          OPERATIONS_REF: ${{ inputs.operations_ref }}
+          FOUNDATION_REF: main
         run: |
           set -euo pipefail
 
+          DRY_RUN="${DRY_RUN:-false}"
+          CONFIRM_PRODUCTION="${CONFIRM_PRODUCTION:-false}"
+          OPERATIONS_REF="${OPERATIONS_REF:-main}"
+
           case "$TARGET" in
-            nightly-multi-agent-research.yml|heroic-ai-production-release.yml) ;;
+            nightly-multi-agent-research.yml|heroic-ai-production-release.yml|cross-repository-contract-drift.yml|operations-centralized-validation.yml|main-push-actions-control-plane-probe.yml) ;;
             *)
               echo "Refusing non-canonical Foundation workflow: $TARGET"
               exit 1
               ;;
           esac
+
+          if [[ "$DRY_RUN" == "true" && "$TARGET" != "nightly-multi-agent-research.yml" ]]; then
+            echo 'dry_run is only valid for nightly research'
+            exit 1
+          fi
 
           if [[ "$TARGET" == "heroic-ai-production-release.yml" ]]; then
             [[ "$DRY_RUN" != "true" ]] || {
@@ -75,10 +93,20 @@ jobs:
             exit 1
           fi
 
-          payload=$(jq -n --arg ref "$FOUNDATION_REF" '{ref: $ref}')
-          if [[ "$TARGET" == "nightly-multi-agent-research.yml" ]]; then
-            payload=$(jq --arg value "$DRY_RUN" '.inputs = {dry_run: $value}' <<<"$payload")
+          if [[ "$OPERATIONS_REF" != "main" && ! "$OPERATIONS_REF" =~ ^[0-9a-f]{40}$ ]]; then
+            echo 'operations_ref must be main or a 40-character commit SHA'
+            exit 1
           fi
+
+          payload=$(jq -n --arg ref "$FOUNDATION_REF" '{ref: $ref}')
+          case "$TARGET" in
+            nightly-multi-agent-research.yml)
+              payload=$(jq --arg value "$DRY_RUN" '.inputs = {dry_run: $value}' <<<"$payload")
+              ;;
+            operations-centralized-validation.yml)
+              payload=$(jq --arg value "$OPERATIONS_REF" '.inputs = {operations_ref: $value}' <<<"$payload")
+              ;;
+          esac
 
           dispatch_status=$(curl -sS -o "$RUNNER_TEMP/foundation-dispatch-response.json" -w '%{http_code}' \
             -X POST \

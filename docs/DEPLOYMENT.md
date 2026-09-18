@@ -6,6 +6,20 @@ Foundation owns the single production deployment workflow in `.github/workflows/
 
 All GitHub Actions automation for the active family is executed from public `foundation`. The private `operations` repository must contain no `.github/workflows` and must not be its own CI, scheduled-job, workflow-dispatch, or deployment owner. Foundation uses the approved GitHub App to read private Operations source when automation requires it.
 
+## External private-runtime Actions route
+
+Private Operations and the private runtime never dispatch Foundation target workflows directly. Their single public automation ingress is `.github/workflows/foundation-canonical-workflow-bridge.yml`.
+
+The route is:
+
+private runtime -> Foundation GitHub App installation token (Actions: write) -> Foundation `workflow_dispatch` router -> canonical Foundation workflow
+
+The bridge allowlists only the nightly research, production release, cross-repository contract-drift, centralized Operations validation, and main-push control-plane probe workflows. Production still requires explicit confirmation.
+
+The Foundation GitHub App installation used by the private runtime must have Actions: write on `foundation`; the bridge itself creates a short-lived Foundation installation token with Actions: write to dispatch the selected workflow. GitHub documents that GitHub App installation tokens can create workflow-dispatch events with Actions: write. citeturn780911search4turn480911search6
+
+Direct private-to-target workflow dispatch is prohibited so that all family automation remains observable and governed through one public routing surface.
+
 ## Production authority
 
 - Public Worker deployment authority: `.github/workflows/heroic-ai-production-release.yml`
