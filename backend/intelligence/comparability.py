@@ -246,39 +246,10 @@ def compare_measurements(
         result.validate()
         return result
 
-    if unknown and conversion is None and left.unit != right.unit:
-        reasons.append("unit_conversion_missing")
-
-    try:
-        left_value, unit = left.normalized_value(conversion if left.unit != right.unit else None)
-        if left.unit == right.unit:
-            right_value, right_unit = float(right.value), right.unit
-        else:
-            if conversion is None:
-                result = ComparabilityResult(
-                    ComparabilityState.UNKNOWN,
-                    tuple(reasons),
-                    None,
-                    None,
-                    None,
-                    None,
-                    tolerance,
-                    context_fingerprint,
-                )
-                result.validate()
-                return result
-            if conversion.target_unit != left.unit:
-                reverse = UnitConversion(
-                    source_unit=right.unit,
-                    target_unit=conversion.target_unit,
-                    scale=conversion.scale,
-                    offset=conversion.offset,
-                    revision=conversion.revision,
-                )
-                raise ValueError("unit conversion target must match the normalized comparison unit")
-            right_value = float(right.value)
-            right_unit = right.unit
-    except ValueError:
+    if left.unit == right.unit:
+        left_value, unit = float(left.value), left.unit
+        right_value, right_unit = float(right.value), right.unit
+    else:
         if conversion is None:
             result = ComparabilityResult(
                 ComparabilityState.UNKNOWN,
@@ -292,24 +263,28 @@ def compare_measurements(
             )
             result.validate()
             return result
-        raise
-
-    if unit != right_unit:
-        result = ComparabilityResult(
-            ComparabilityState.UNKNOWN,
-            tuple(reasons + ["unit_conversion_incompatible"]),
-            None,
-            None,
-            None,
-            None,
-            tolerance,
-            context_fingerprint,
-        )
-        result.validate()
-        return result
+        if conversion.source_unit == left.unit and conversion.target_unit == right.unit:
+            left_value, unit = conversion.convert(float(left.value)), right.unit
+            right_value, right_unit = float(right.value), right.unit
+        elif conversion.source_unit == right.unit and conversion.target_unit == left.unit:
+            left_value, unit = float(left.value), left.unit
+            right_value, right_unit = conversion.convert(float(right.value)), left.unit
+        else:
+            result = ComparabilityResult(
+                ComparabilityState.UNKNOWN,
+                tuple(reasons + ["unit_conversion_incompatible"]),
+                None,
+                None,
+                None,
+                None,
+                tolerance,
+                context_fingerprint,
+            )
+            result.validate()
+            return result
 
     difference = abs(left_value - right_value)
-    state = ComparabilityState.COMPARABLE if difference <= tolerance else ComparabilityState.COMPARABLE
+    state = ComparabilityState.UNKNOWN if unknown else ComparabilityState.COMPARABLE
     result = ComparabilityResult(
         state,
         tuple(reasons),
