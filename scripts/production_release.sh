@@ -65,84 +65,7 @@ database_id=$(jq -r '[.result[]? | select(.name == "research-intelligence") | .u
 test -n "$database_id" || { echo 'Expected exactly one research-intelligence D1 database'; exit 1; }
 echo "Cloudflare account/D1 authorization: PASS ($database_id)"
 
-printf '%s\n' \
-  'name = "research-intelligence-engine-public"' \
-  'main = "worker.py"' \
-  'compatibility_date = "2026-09-09"' \
-  'compatibility_flags = ["python_workers"]' \
-  'workers_dev = true' \
-  'preview_urls = false' \
-  '' \
-  '[assets]' \
-  'directory = "./frontend"' \
-  'binding = "ASSETS"' \
-  'not_found_handling = "single-page-application"' \
-  '' \
-  '[[d1_databases]]' \
-  'binding = "DB"' \
-  'database_name = "research-intelligence"' \
-  "database_id = \"${database_id}\"" \
-  '' \
-  '[[services]]' \
-  'binding = "OPERATIONS"' \
-  "service = \"${OPERATIONS_SERVICE_NAME}\"" \
-  '' \
-  '[secrets]' \
-  'required = ["AUTH_TOKEN", "B2_KEY_ID", "B2_APPLICATION_KEY"]' \
-  '' \
-  '[vars]' \
-  'ENVIRONMENT = "production"' \
-  'STRICT_ZERO_COST_ONLY = "true"' \
-  'B2_BUCKET = "SoloKing"' \
-  'B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"' \
-  > wrangler.production.generated.toml
-
-grep -q '^database_name = "research-intelligence"$' wrangler.production.generated.toml
-grep -q '^directory = "./frontend"$' wrangler.production.generated.toml
-grep -q '^binding = "ASSETS"$' wrangler.production.generated.toml
-grep -q "^service = \"${OPERATIONS_SERVICE_NAME}\"$" wrangler.production.generated.toml
-npx --yes wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
-pywrangler deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}"
-
-health_status=$(curl -sS -o health.json -w '%{http_code}' "$BASE_URL/health")
-echo "GET /health -> HTTP ${health_status}"
-cat health.json
-test "$health_status" = '200'
-jq -e '.ok == true and .environment == "production"' health.json >/dev/null
-
-readiness=$(curl -sS -o readiness.json -w '%{http_code}' "$BASE_URL/readiness")
-echo "GET /readiness -> HTTP ${readiness}"
-cat readiness.json
-test "$readiness" = '200'
-jq -e '.ready == true and .database == true' readiness.json >/dev/null
-
-ui=$(curl -sS -o frontend.html -w '%{http_code}' "$BASE_URL/")
-echo "GET / -> HTTP ${ui}"
-test "$ui" = '200'
-grep -q '<title>Heroic AI — Chat & Research</title>' frontend.html
-test -s frontend.html
-
-for asset in styles.css app.js composer.js lifecycle_controller.js; do
-  asset_status=$(curl -sS -o "/tmp/${asset}" -w '%{http_code}' "$BASE_URL/${asset}")
-  echo "GET /${asset} -> HTTP ${asset_status}"
-  test "$asset_status" = '200'
-  test -s "/tmp/${asset}"
-done
-
-if [ -n "${AUTH_TOKEN:-}" ]; then
-  diagnostic_status=$(curl -sS -o diagnostic.json -w '%{http_code}' \
-    -H "Authorization: Bearer ${AUTH_TOKEN}" \
-    -H 'Content-Type: application/json' \
-    -d '{"operation":"infrastructure_verify_public_test"}' \
-    "$BASE_URL/api/v1/chatbot/diagnostic")
-  echo "POST /api/v1/chatbot/diagnostic -> HTTP ${diagnostic_status}"
-  cat diagnostic.json
-  test "$diagnostic_status" = '200'
-  jq -e '.ok == true and .status == "ok" and .checks.public_chatbot == true and .checks.cloudflare_d1 == true and .checks.backblaze_b2_lifecycle == true' diagnostic.json >/dev/null
-else
-  echo 'AUTH_TOKEN GitHub secret not configured; authenticated infrastructure diagnostic skipped.'
-fi
-
+# Preflight and stage the private Operations handoff before touching production.
 key_file="$RUNNER_TEMP/operations-app.pem"
 umask 077
 printf '%s\n' "$OPERATIONS_APP_PRIVATE_KEY" > "$key_file"
@@ -256,10 +179,94 @@ test "$(git -C "$RUNNER_TEMP/operations" rev-parse HEAD)" = "$OPERATIONS_REF"
 python "$RUNNER_TEMP/operations/scripts/sync_public_core.py"
 test -f "$RUNNER_TEMP/operations/foundation_core/__init__.py"
 
+
+printf '%s\n' \
+  'name = "research-intelligence-engine-public"' \
+  'main = "worker.py"' \
+  'compatibility_date = "2026-09-09"' \
+  'compatibility_flags = ["python_workers"]' \
+  'workers_dev = true' \
+  'preview_urls = false' \
+  '' \
+  '[assets]' \
+  'directory = "./frontend"' \
+  'binding = "ASSETS"' \
+  'not_found_handling = "single-page-application"' \
+  '' \
+  '[[d1_databases]]' \
+  'binding = "DB"' \
+  'database_name = "research-intelligence"' \
+  "database_id = \"${database_id}\"" \
+  '' \
+  '[[services]]' \
+  'binding = "OPERATIONS"' \
+  "service = \"${OPERATIONS_SERVICE_NAME}\"" \
+  '' \
+  '[secrets]' \
+  'required = ["AUTH_TOKEN", "B2_KEY_ID", "B2_APPLICATION_KEY"]' \
+  '' \
+  '[vars]' \
+  'ENVIRONMENT = "production"' \
+  'STRICT_ZERO_COST_ONLY = "true"' \
+  'B2_BUCKET = "SoloKing"' \
+  'B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"' \
+  > wrangler.production.generated.toml
+
+grep -q '^database_name = "research-intelligence"$' wrangler.production.generated.toml
+grep -q '^directory = "./frontend"$' wrangler.production.generated.toml
+grep -q '^binding = "ASSETS"$' wrangler.production.generated.toml
+grep -q "^service = \"${OPERATIONS_SERVICE_NAME}\"$" wrangler.production.generated.toml
+npx --yes wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
+pywrangler deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}"
+
+health_status=$(curl -sS -o health.json -w '%{http_code}' "$BASE_URL/health")
+echo "GET /health -> HTTP ${health_status}"
+cat health.json
+test "$health_status" = '200'
+jq -e '.ok == true and .environment == "production"' health.json >/dev/null
+
+readiness=$(curl -sS -o readiness.json -w '%{http_code}' "$BASE_URL/readiness")
+echo "GET /readiness -> HTTP ${readiness}"
+cat readiness.json
+test "$readiness" = '200'
+jq -e '.ready == true and .database == true' readiness.json >/dev/null
+
+ui=$(curl -sS -o frontend.html -w '%{http_code}' "$BASE_URL/")
+echo "GET / -> HTTP ${ui}"
+test "$ui" = '200'
+grep -q '<title>Heroic AI — Chat & Research</title>' frontend.html
+test -s frontend.html
+
+for asset in styles.css app.js composer.js lifecycle_controller.js; do
+  asset_status=$(curl -sS -o "/tmp/${asset}" -w '%{http_code}' "$BASE_URL/${asset}")
+  echo "GET /${asset} -> HTTP ${asset_status}"
+  test "$asset_status" = '200'
+  test -s "/tmp/${asset}"
+done
+
+# Only the canonical private Operations deployment now follows the public asset smoke.
 npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
   --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql" \
   --config="$RUNNER_TEMP/operations/wrangler.toml"
 secret_file="$RUNNER_TEMP/operations-secrets.env"
 printf 'AUTH_TOKEN=%s\n' "$AUTH_TOKEN" > "$secret_file"
 (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}")
+
+# Run the broader authenticated infrastructure diagnostic only after both deployments succeed.
+if [ -n "${AUTH_TOKEN:-}" ]; then
+  diagnostic_status=$(curl -sS -o diagnostic.json -w '%{http_code}' \
+    -H "Authorization: Bearer ${AUTH_TOKEN}" \
+    -H 'Content-Type: application/json' \
+    -d '{"operation":"infrastructure_verify_public_test"}' \
+    "$BASE_URL/api/v1/chatbot/diagnostic")
+  echo "POST /api/v1/chatbot/diagnostic -> HTTP ${diagnostic_status}"
+  cat diagnostic.json
+  test "$diagnostic_status" = '200'
+  jq -e '.ok == true and .status == "ok" and .checks.public_chatbot == true and .checks.cloudflare_d1 == true and .checks.backblaze_b2_lifecycle == true' diagnostic.json >/dev/null
+else
+  echo 'AUTH_TOKEN GitHub secret not configured; authenticated infrastructure diagnostic skipped.'
+fi
+
+
 echo "Production release completed for ${GITHUB_SHA} using Operations ${OPERATIONS_REF}"
+
