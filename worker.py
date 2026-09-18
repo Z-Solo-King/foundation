@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import uuid
 from datetime import datetime, timezone
 from urllib.parse import parse_qs, urlparse
 
@@ -10,6 +11,8 @@ from workers import Response, WorkerEntrypoint
 
 from backend.api.main import submit_research
 from backend.api.models import ChatRequest, ResearchRequest
+from backend.admission import AdmissionOutcome, AdmissionPolicy, AdmissionRoute
+from backend.admission_store import D1AdmissionStore
 from backend.evidence_publication import package_digest, verify_package
 from backend.persistence.cloudflare import CloudflarePersistence
 from backend.public_read_cursor import PublicReadCursorError
@@ -129,6 +132,43 @@ def _chat_headers(request):
     if idempotency_key:
         headers["Idempotency-Key"] = idempotency_key
     return headers
+
+
+
+async def _public_admit(env, route, subject_fingerprint, event_id):
+    store = D1AdmissionStore(env.DB)
+    return await store.acquire(
+        subject_fingerprint=subject_fingerprint,
+        route=route,
+        policy=AdmissionPolicy(),
+        event_id=event_id,
+    )
+
+
+def _admission_response(decision):
+    if decision.allowed:
+        return None
+    status = (
+        429
+        if decision.outcome in {
+            AdmissionOutcome.RATE_LIMITED,
+            AdmissionOutcome.CONCURRENCY_LIMITED,
+            AdmissionOutcome.DUPLICATE,
+        }
+        else 503
+    )
+    response = _authenticated_json(
+        {
+            "ok": False,
+            "error": decision.reason,
+            "admission": decision.outcome.value,
+            "contract_version": decision.contract_version,
+        },
+        status=status,
+    )
+    if decision.retry_after_header:
+        response.headers["Retry-After"] = decision.retry_after_header
+    return response
 
 
 async def _operations_chat(env, payload, request):
@@ -251,8 +291,17 @@ class Default(WorkerEntrypoint):
                 req.validate()
             except (TypeError, ValueError) as exc:
                 return _authenticated_json({"ok": False, "error": str(exc)}, status=400)
-            upstream, body, status = await _operations_chat_stream(self.env, payload, request)
-            return _public_sse_response(upstream) if upstream is not None else Response.json(body, status=status)
+            subject = authenticated_subject_fingerprint(request) or "development-local"
+            event_id = request.headers.get("Idempotency-Key") or req.request_id or uuid.uuid4().hex
+            decision, lease = await _public_admit(self.env, AdmissionRoute.STREAM, subject, event_id)
+            denied = _admission_response(decision)
+            if denied is not None:
+                return denied
+            try:
+                upstream, body, status = await _operations_chat_stream(self.env, payload, request)
+                return _public_sse_response(upstream) if upstream is not None else Response.json(body, status=status)
+            finally:
+                await D1AdmissionStore(self.env.DB).release(lease)
         if request.method == "POST" and path.endswith("/api/v1/chat"):
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
@@ -264,8 +313,17 @@ class Default(WorkerEntrypoint):
                 req.validate()
             except (TypeError, ValueError) as exc:
                 return _authenticated_json({"ok": False, "error": str(exc)}, status=400)
-            body, status = await _operations_chat(self.env, payload, request)
-            return _authenticated_json(body, status=status)
+            subject = authenticated_subject_fingerprint(request) or "development-local"
+            event_id = request.headers.get("Idempotency-Key") or req.request_id or uuid.uuid4().hex
+            decision, lease = await _public_admit(self.env, AdmissionRoute.CHAT, subject, event_id)
+            denied = _admission_response(decision)
+            if denied is not None:
+                return denied
+            try:
+                body, status = await _operations_chat(self.env, payload, request)
+                return _authenticated_json(body, status=status)
+            finally:
+                await D1AdmissionStore(self.env.DB).release(lease)
         if request.method == "POST" and path.endswith("/api/v1/chatbot/diagnostic"):
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
@@ -343,8 +401,15 @@ class Default(WorkerEntrypoint):
                 req = ResearchRequest(**payload)
             except TypeError as exc:
                 return _authenticated_json({"ok": False, "error": str(exc)}, status=400)
+            subject_fingerprint = authenticated_subject_fingerprint(request) or "development-local"
+            event_id = request.headers.get("Idempotency-Key") or f"research:{uuid.uuid4().hex}"
+            decision, lease = await _public_admit(self.env, AdmissionRoute.RESEARCH, subject_fingerprint, event_id)
+            denied = _admission_response(decision)
+            if denied is not None:
+                return denied
             result = submit_research(req)
             if not result.ok:
+                await D1AdmissionStore(self.env.DB).release(lease)
                 return _authenticated_json({"ok": False, "error": result.error}, status=400)
             persistence = CloudflarePersistence(self.env)
             subject_fingerprint = authenticated_subject_fingerprint(request) or "development-local"
@@ -372,6 +437,8 @@ class Default(WorkerEntrypoint):
                     except Exception:
                         pass
                 return _authenticated_json({"ok": False, "error": f"execution/persistence failure: {exc}"}, status=503)
+            finally:
+                await D1AdmissionStore(self.env.DB).release(lease)
             return _authenticated_json({"ok": True, "run_id": run_id, "metadata": {**result.metadata, "execution_mode": "source_url_ingestion"}, "sources": sources})
         assets = getattr(self.env, "ASSETS", None)
         if assets is not None:
