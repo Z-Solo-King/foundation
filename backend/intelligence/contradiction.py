@@ -120,3 +120,46 @@ def detect_contradiction(claim_a: str, claim_b: str):
         return Contradiction(claim_a, claim_b, "explicit negation")
 
     return None
+
+
+def _candidate_bucket_key(claim: TypedClaim) -> tuple[str, str, str]:
+    return (
+        claim.entity.strip().casefold(),
+        claim.predicate.strip().casefold(),
+        (claim.scope or "*").strip().casefold() or "*",
+    )
+
+
+def bucket_typed_claims(
+    claims: tuple[TypedClaim, ...] | list[TypedClaim],
+) -> dict[tuple[str, str, str], tuple[TypedClaim, ...]]:
+    """Group compatible contradiction candidates deterministically."""
+    buckets: dict[tuple[str, str, str], list[TypedClaim]] = {}
+    for claim in claims:
+        if not isinstance(claim, TypedClaim):
+            raise TypeError("claims must contain TypedClaim values")
+        key = _candidate_bucket_key(claim)
+        buckets.setdefault(key, []).append(claim)
+    return {
+        key: tuple(sorted(values, key=lambda item: item.claim_id))
+        for key, values in sorted(buckets.items(), key=lambda item: item[0])
+    }
+
+
+def bounded_typed_candidate_pairs(
+    claims: tuple[TypedClaim, ...] | list[TypedClaim],
+    *,
+    max_pairs: int = 1_000,
+) -> tuple[tuple[TypedClaim, TypedClaim], ...]:
+    """Produce source-order-invariant, bounded candidate pairs."""
+    if max_pairs < 1:
+        raise ValueError("max_pairs must be positive")
+    pairs: list[tuple[TypedClaim, TypedClaim]] = []
+    for values in bucket_typed_claims(claims).values():
+        for index, left in enumerate(values):
+            for right in values[index + 1:]:
+                if _validity_overlap(left, right):
+                    pairs.append((left, right))
+                    if len(pairs) >= max_pairs:
+                        return tuple(pairs)
+    return tuple(pairs)
