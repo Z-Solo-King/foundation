@@ -40,10 +40,9 @@ def test_chat_stream_proxy_fails_closed_without_operations_binding():
 
 def test_chat_stream_proxy_preserves_sse_response():
     import worker
-    class Body: pass
     class Response:
         status = 200
-        body = Body()
+        body = b"data: hello\\n\\n"
     class Binding:
         async def fetch(self, url, options):
             assert url == "https://chat/v1/chat/stream"
@@ -111,10 +110,9 @@ def test_public_worker_chat_stream_route_returns_private_unavailable_response_wi
 
 def test_public_worker_chat_stream_route_proxies_private_sse():
     import worker
-    class Body: pass
     class Response:
         status = 200
-        body = Body()
+        body = b"data: hello\\n\\n"
     class Binding:
         async def fetch(self, url, options):
             assert url == "https://chat/v1/chat/stream"
