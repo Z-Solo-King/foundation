@@ -62,7 +62,7 @@ async def public_infrastructure_verify(env, *, persistence_cls):
         row = await env.DB.prepare("SELECT 1 AS ok").first()
         if not row or row["ok"] != 1:
             raise RuntimeError("D1 health query failed")
-        request = ResearchRequest(question="Public infrastructure self-test", depth="quick", require_citations=False, max_sources=0, max_evidence_items=1, strict_zero_cost_only=True, source_urls=[])
+        request = ResearchRequest(question="Public infrastructure self-test", depth="quick", require_citations=False, max_sources=1, max_evidence_items=1, strict_zero_cost_only=True, source_urls=[])
         await persistence.create_run(run_id, request)
         stored = await persistence.get_run(run_id)
         d1_ok = stored is not None
