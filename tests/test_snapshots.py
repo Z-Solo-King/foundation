@@ -74,3 +74,12 @@ def test_answer_snapshot_validation_rejects_missing_identity_or_negative_metrics
         AnswerSnapshot("", "e", (), (), {}, {}, (), "c", "p", "d").validate()
     with pytest.raises(ValueError):
         AnswerSnapshot("s", "e", (), (), {}, {}, (), "c", "p", "d", resource_units=-1).validate()
+
+
+def test_answer_snapshot_validation_rejects_missing_capability_policy_and_digest():
+    with pytest.raises(ValueError):
+        AnswerSnapshot("s", "e", (), (), {}, {}, (), "", "p", "d").validate()
+    with pytest.raises(ValueError):
+        AnswerSnapshot("s", "e", (), (), {}, {}, (), "c", "", "d").validate()
+    with pytest.raises(ValueError):
+        AnswerSnapshot("s", "e", (), (), {}, {}, (), "c", "p", "").validate()
