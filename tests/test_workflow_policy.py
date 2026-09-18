@@ -118,6 +118,17 @@ def test_production_release_has_one_minimal_main_push_job():
     assert "actions: write" not in frontend
 
 
+
+
+def test_public_production_deploy_injects_required_b2_secrets():
+    workflow = _workflow_texts()[PRODUCTION_WORKFLOW]
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert "B2_KEY_ID: ${{ secrets.B2_KEY_ID }}" in workflow
+    assert "B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}" in workflow
+    assert "--secrets-file \"$public_secret_file\"" in deployment
+    assert 'printf \'AUTH_TOKEN=%s\\nB2_KEY_ID=%s\\nB2_APPLICATION_KEY=%s\\n\'' in deployment
+    assert 'test -n "${B2_KEY_ID:-}"' in deployment
+    assert 'test -n "${B2_APPLICATION_KEY:-}"' in deployment
 def test_public_worker_static_assets_binding_is_declared():
     wrangler = WRANGLER.read_text(encoding="utf-8")
     assert '[assets]' in wrangler

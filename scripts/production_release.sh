@@ -7,7 +7,7 @@ OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
 cleanup() {
-  rm -rf "$RUNNER_TEMP/operations" "$RUNNER_TEMP/operations-secrets.env" \
+  rm -rf "$RUNNER_TEMP/operations" "$RUNNER_TEMP/operations-secrets.env" "$RUNNER_TEMP/public-secrets.env" \
     "$RUNNER_TEMP/git-askpass-operations.sh" "$RUNNER_TEMP/operations-app.pem" \
     "$RUNNER_TEMP/github-app-jwt.txt" "$RUNNER_TEMP/github-app-installation.json" \
     "$RUNNER_TEMP/github-app-installation-meta.json" wrangler.production.generated.toml health.json readiness.json frontend.html \
@@ -20,6 +20,8 @@ test -n "${CLOUDFLARE_ACCOUNT_ID:-}" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID Gi
 test -n "${OPERATIONS_APP_ID:-}" || { echo 'Missing OPERATIONS_APP_ID GitHub Actions secret'; exit 1; }
 test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIVATE_KEY GitHub Actions secret'; exit 1; }
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
+test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
+test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
 test "$OPERATIONS_REF" = '4bc21b96f13cf14b3767a6eabfc0a70d496d94e3'
 
 after_install_marker=''
@@ -216,8 +218,13 @@ grep -q '^database_name = "research-intelligence"$' wrangler.production.generate
 grep -q '^directory = "./frontend"$' wrangler.production.generated.toml
 grep -q '^binding = "ASSETS"$' wrangler.production.generated.toml
 grep -q "^service = \"${OPERATIONS_SERVICE_NAME}\"$" wrangler.production.generated.toml
+
+public_secret_file="$RUNNER_TEMP/public-secrets.env"
+printf 'AUTH_TOKEN=%s\nB2_KEY_ID=%s\nB2_APPLICATION_KEY=%s\n' "$AUTH_TOKEN" "$B2_KEY_ID" "$B2_APPLICATION_KEY" > "$public_secret_file"
+chmod 600 "$public_secret_file"
+
 npx --yes wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
-pywrangler deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}"
+pywrangler deploy --config wrangler.production.generated.toml --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}"
 
 health_status=$(curl -sS -o health.json -w '%{http_code}' "$BASE_URL/health")
 echo "GET /health -> HTTP ${health_status}"
