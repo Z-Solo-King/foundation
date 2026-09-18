@@ -48,7 +48,7 @@ A successful repository-side change does not prove production deployment. Deploy
 
 The current explicitly approved Operations production revision is:
 
-`3cad7283dc40ae68c4338bd154071aea9c0a8e75`
+`2e280e418787189a3f1aabd59778c3e5ac949c4b`
 
 This is a signed Operations commit implementing the durable D1 governance runtime. The deployment workflow must not silently substitute a newer Operations `main` commit without a new explicit approval change.
 
