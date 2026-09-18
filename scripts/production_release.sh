@@ -291,6 +291,89 @@ jq -e --arg expected "github:${OPERATIONS_REF}" '
 }
 echo "Operations Cloudflare provenance: PASS (github:${OPERATIONS_REF})"
 
+# Exercise the real public-to-private conversational and research paths only after
+# both Workers are deployed and the private provenance gate has passed.
+live_chat_payload=$(jq -nc \
+  --arg chat_id "production-live-${GITHUB_RUN_ID}" \
+  --arg request_id "production-chat-${GITHUB_RUN_ID}" \
+  '{chat_id:$chat_id,request_id:$request_id,message:"Give a concise explanation of why authenticated service bindings are used between Foundation and the private control plane.",mode:"chat",strict_zero_cost_only:true}')
+live_chat_key="production-chat-${GITHUB_RUN_ID}"
+live_chat_status=$(curl -sS --max-time 90 \
+  -o "$RUNNER_TEMP/live-chat.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: ${live_chat_key}" \
+  -d "${live_chat_payload}" \
+  "${BASE_URL}/api/v1/chat")
+echo "POST /api/v1/chat -> HTTP ${live_chat_status}"
+test "$live_chat_status" = '200'
+jq -e '.ok == true and (.response.result_state == "COMPLETE" or .response.result_state == "PARTIAL")' \
+  "$RUNNER_TEMP/live-chat.json" >/dev/null
+live_chat_state=$(jq -r '.response.result_state' "$RUNNER_TEMP/live-chat.json")
+live_chat_generation=$(jq -r '.response.generation_status' "$RUNNER_TEMP/live-chat.json")
+echo "Live chat acceptance: PASS (result_state=${live_chat_state}; generation_status=${live_chat_generation})"
+
+live_chat_replay_status=$(curl -sS --max-time 30 \
+  -o "$RUNNER_TEMP/live-chat-replay.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: ${live_chat_key}" \
+  -d "${live_chat_payload}" \
+  "${BASE_URL}/api/v1/chat")
+echo "POST /api/v1/chat replay -> HTTP ${live_chat_replay_status}"
+test "$live_chat_replay_status" = '200'
+jq -e --arg request_id "production-chat-${GITHUB_RUN_ID}" \
+  '.ok == true and .request_id == $request_id and .response.response_id == ("chat-" + $request_id)' \
+  "$RUNNER_TEMP/live-chat-replay.json" >/dev/null
+echo "Live chat idempotency acceptance: PASS"
+
+stream_payload=$(jq -nc \
+  --arg chat_id "production-stream-${GITHUB_RUN_ID}" \
+  --arg request_id "production-stream-request-${GITHUB_RUN_ID}" \
+  '{chat_id:$chat_id,request_id:$request_id,message:"Return a one-sentence explanation of the public/private service-binding boundary.",mode:"chat",strict_zero_cost_only:true}')
+stream_status=$(curl -sS --no-buffer --max-time 90 \
+  -D "$RUNNER_TEMP/live-stream.headers" \
+  -o "$RUNNER_TEMP/live-stream.txt" \
+  -w '%{http_code}' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: production-stream-${GITHUB_RUN_ID}" \
+  -d "${stream_payload}" \
+  "${BASE_URL}/api/v1/chat/stream")
+echo "POST /api/v1/chat/stream -> HTTP ${stream_status}"
+test "$stream_status" = '200'
+grep -qi '^Content-Type: text/event-stream' "$RUNNER_TEMP/live-stream.headers"
+grep -q '^event: start' "$RUNNER_TEMP/live-stream.txt"
+grep -q '^event: done' "$RUNNER_TEMP/live-stream.txt"
+grep -q '"result_state":' "$RUNNER_TEMP/live-stream.txt"
+echo "Live SSE lifecycle acceptance: PASS"
+
+live_research_payload=$(jq -nc \
+  '{question:"Production runtime acceptance: verify the public research path can ingest a permitted source without inventing facts.",depth:"quick",require_citations:true,max_sources:1,max_evidence_items:4,strict_zero_cost_only:true,source_urls:["https://example.com/"]}')
+live_research_status=$(curl -sS --max-time 90 \
+  -o "$RUNNER_TEMP/live-research.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: production-research-${GITHUB_RUN_ID}" \
+  -d "${live_research_payload}" \
+  "${BASE_URL}/api/v1/research")
+echo "POST /api/v1/research -> HTTP ${live_research_status}"
+test "$live_research_status" = '200'
+jq -e '.ok == true and (.run_id | type == "string" and length > 0)' \
+  "$RUNNER_TEMP/live-research.json" >/dev/null
+live_research_run_id=$(jq -r '.run_id' "$RUNNER_TEMP/live-research.json")
+
+live_research_read_status=$(curl -sS --max-time 30 \
+  -o "$RUNNER_TEMP/live-research-read.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  "${BASE_URL}/api/v1/research/${live_research_run_id}")
+echo "GET /api/v1/research/${live_research_run_id} -> HTTP ${live_research_read_status}"
+test "$live_research_read_status" = '200'
+jq -e --arg run_id "${live_research_run_id}" \
+  '.ok == true and .run_id == $run_id' \
+  "$RUNNER_TEMP/live-research-read.json" >/dev/null
+echo "Live research execution/readback acceptance: PASS (${live_research_run_id})"
+
 # Run the broader authenticated infrastructure diagnostic only after both deployments succeed.
 if [ -n "${AUTH_TOKEN:-}" ]; then
   diagnostic_status=$(curl -sS -o diagnostic.json -w '%{http_code}' \
@@ -301,7 +384,11 @@ if [ -n "${AUTH_TOKEN:-}" ]; then
   echo "POST /api/v1/chatbot/diagnostic -> HTTP ${diagnostic_status}"
   cat diagnostic.json
   test "$diagnostic_status" = '200'
-  jq -e '.ok == true and .status == "ok" and .checks.public_chatbot == true and .checks.cloudflare_d1 == true and .checks.backblaze_b2_lifecycle == true' diagnostic.json >/dev/null
+  jq -e '.ok == true and .status == "ok"
+  and any(.checks[]?; .name == "public_chatbot" and .ok == true)
+  and any(.checks[]?; .name == "cloudflare_d1" and .ok == true)
+  and any(.checks[]?; .name == "backblaze_b2_lifecycle" and .ok == true)
+' diagnostic.json >/dev/null
 else
   echo 'AUTH_TOKEN GitHub secret not configured; authenticated infrastructure diagnostic skipped.'
 fi
