@@ -2,19 +2,17 @@
 
 The canonical public entrypoint for family automation is `.github/workflows/foundation-canonical-workflow-bridge.yml`.
 
-Private Operations and the private runtime must not dispatch target workflows directly. They use the Foundation GitHub App installation credential to invoke the public Foundation router, which validates the requested target and then dispatches the canonical Foundation workflow with its own Foundation App token.
+Private Operations and the private runtime must not dispatch target workflows directly. They use the Foundation GitHub App installation credential to invoke the public Foundation router through the GitHub Actions workflow-dispatch API. The router validates the requested target and then dispatches the canonical Foundation workflow with its own Foundation App token.
 
 ## External/private-runtime route
 
-The router accepts a `repository_dispatch` event with:
+The route is:
 
-- `event_type`: `foundation_action`
-- `client_payload.target`: one of the allowlisted Foundation workflows;
-- `client_payload.dry_run`: only for nightly research;
-- `client_payload.confirm_production`: mandatory for production release;
-- `client_payload.operations_ref`: optional branch or immutable SHA for centralized Operations validation.
+`private runtime -> Foundation GitHub App installation token (Actions: write) -> workflow_dispatch on Foundation canonical router -> canonical Foundation workflow`.
 
-The GitHub App used for this external route must be installed on `Z-Solo-King/foundation` and have the repository permission needed to create `repository_dispatch` events (Contents: write). GitHub documents that GitHub App installation tokens can create repository dispatch events and that the workflow-dispatch endpoint uses Actions: write. citeturn780788search0turn780788search4
+The external caller supplies the same constrained inputs as the public bridge: `target`, optional nightly `dry_run`, optional production `confirm_production`, and optional `operations_ref` for centralized Operations validation.
+
+GitHub documents that GitHub App installation tokens can create workflow-dispatch events when the app has the repository Actions: write permission. citeturn780911search4turn480911search6
 
 ## Allowlisted Foundation targets
 
@@ -40,4 +38,4 @@ The production release workflow remains protected behind explicit `confirm_produ
 
 ## Boundary
 
-Foundation remains the sole GitHub Actions execution/dispatch owner. Operations remains the private source/runtime/policy authority. This routing contract adds an external ingress to the existing public bridge; it does not create a second CI/CD owner or deployment path.
+Foundation remains the sole GitHub Actions execution/dispatch owner. Operations remains the private source/runtime/policy authority. This routing contract adds a single public ingress to the existing bridge; it does not create a second CI/CD owner or deployment path.
