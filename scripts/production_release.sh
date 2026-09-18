@@ -220,7 +220,7 @@ repo_status=$(curl -sS -o "$RUNNER_TEMP/operations-repo-response.json" -w '%{htt
   -H 'X-GitHub-Api-Version: 2022-11-28' "https://api.github.com/repos/${OPERATIONS_REPOSITORY}")
 echo "GET Operations repository -> HTTP ${repo_status}"
 test "$repo_status" = '200' || { jq -c '{message,errors,documentation_url}' "$RUNNER_TEMP/operations-repo-response.json" || cat "$RUNNER_TEMP/operations-repo-response.json"; exit 1; }
-jq -e --arg repo "$OPERATIONS_REPOSITORY" '.full_name == $repo and .private == true' "$RUNNER_TEMP/operations-repo-response.json" >/dev/null
+jq -e --arg repo "$OPERATIONS_REPOSITORY" '.full_name == $repo and .private == false' "$RUNNER_TEMP/operations-repo-response.json" >/dev/null
 
 ref_status=$(curl -sS -o "$RUNNER_TEMP/operations-ref-response.json" -w '%{http_code}' \
   -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${github_app_token}" \
