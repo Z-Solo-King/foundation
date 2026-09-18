@@ -679,3 +679,62 @@ def test_d1_store_replays_same_event_without_a_second_admission_slot():
     )
     assert second_decision.allowed is True
     assert second_lease is None
+
+
+def test_d1_store_rejects_replay_across_admission_scopes():
+    import asyncio
+
+    db = IdempotentAdmissionDB()
+    db.events["scope-key"] = {
+        "event_id": "scope-key",
+        "window_start": 120,
+        "subject_fingerprint": "other-subject",
+        "route": "chat",
+        "cost_units": 2,
+        "lease_expires_at": 180,
+        "released_at": 150,
+    }
+    decision, lease = asyncio.run(
+        D1AdmissionStore(db).acquire(
+            subject_fingerprint="subject-1",
+            route=AdmissionRoute.CHAT,
+            policy=AdmissionPolicy(),
+            event_id="scope-key",
+            now=121,
+        )
+    )
+    assert decision.outcome.value == "duplicate"
+    assert decision.allowed is False
+    assert lease is None
+
+
+def test_d1_store_reclaims_expired_admission_lease():
+    import asyncio
+
+    db = IdempotentAdmissionDB()
+    store = D1AdmissionStore(db)
+    first_decision, first_lease = asyncio.run(
+        store.acquire(
+            subject_fingerprint="subject-1",
+            route=AdmissionRoute.CHAT,
+            policy=AdmissionPolicy(),
+            event_id="expired-key",
+            now=120,
+        )
+    )
+    assert first_decision.allowed is True
+    assert first_lease is not None
+    db.events["expired-key"]["lease_expires_at"] = 0
+
+    decision, lease = asyncio.run(
+        store.acquire(
+            subject_fingerprint="subject-1",
+            route=AdmissionRoute.CHAT,
+            policy=AdmissionPolicy(),
+            event_id="expired-key",
+            now=121,
+        )
+    )
+    assert decision.allowed is True
+    assert lease is not None
+    assert lease.expires_at == 181
