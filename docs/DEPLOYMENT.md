@@ -44,6 +44,13 @@ The canonical workflow performs the following in order:
 
 A credential failure stops the deployment before any Operations deployment step. A wrong credential must not be silently retried with a B2 or other provider credential.
 
+
+## Private Operations validation
+
+The public workflow `.github/workflows/operations-centralized-validation.yml` is the CI owner for the private Operations repository. It uses the approved GitHub App read credential to check out `Z-Solo-King/operations`, validates the private-repository boundary, runs the Operations test suite, and fails if Operations contains any GitHub Actions workflow.
+
+Scheduled and manual validation happen on Foundation runners. Operations itself has no GitHub Actions execution surface.
+
 ## Evidence and closure
 
 A successful repository-side change does not prove production deployment. Deployment issue closure requires an actual successful post-merge Foundation Actions run proving the complete chain. Cloudflare production state, D1 bindings, Worker bindings, scheduled triggers, and live runtime behavior are verified separately in the Cloudflare-only operational context.
