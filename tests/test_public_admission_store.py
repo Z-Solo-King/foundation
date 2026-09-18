@@ -181,7 +181,8 @@ async def test_worker_research_rejected_result_releases_admission_lease(monkeypa
     tracker = AdmissionLeaseTracker()
     lease = object()
     monkeypatch.setattr(worker, "D1AdmissionStore", lambda db: tracker)
-    monkeypatch.setattr(worker, "_public_admit", lambda env, route, subject, event_id: accepted_admission(lease))
+    async def admit(*args, **kwargs): return accepted_admission(lease)
+    monkeypatch.setattr(worker, "_public_admit", admit)
     monkeypatch.setattr(
         worker,
         "submit_research",
