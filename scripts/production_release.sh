@@ -107,7 +107,7 @@ health_status=$(curl -sS -o health.json -w '%{http_code}' "$BASE_URL/health")
 echo "GET /health -> HTTP ${health_status}"
 cat health.json
 test "$health_status" = '200'
-jq -e '.ok == true' health.json >/dev/null
+jq -e '.ok == true and .environment == "production"' health.json >/dev/null
 
 readiness=$(curl -sS -o readiness.json -w '%{http_code}' "$BASE_URL/readiness")
 echo "GET /readiness -> HTTP ${readiness}"
