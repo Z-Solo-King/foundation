@@ -171,3 +171,41 @@ def test_code_analysis_result_validation_rejects_invalid_fields():
 def test_code_analysis_execution_is_rejected_for_all_operations():
     with pytest.raises(ValueError, match="cannot execute"):
         CodeAnalysisRequest("owner/repo", "rev", CodeAnalysisOperation.PATCH_CANDIDATE, execution_requested=True).validate()
+
+
+def test_artifact_ref_validation_rejects_remaining_identity_and_fingerprint_edges():
+    from backend.artifacts.contract import ArtifactRef
+    base = create_artifact(
+        "x",
+        kind=ArtifactKind.TEXT,
+        media_type="text/plain",
+        parser_version="v1",
+        owner_scope="public",
+    )
+    cases = [
+        {"artifact_id": " "},
+        {"kind": "unsupported"},
+        {"media_type": " "},
+        {"content_fingerprint": "bad"},
+        {"schema_fingerprint": "bad"},
+        {"retention_days": -1},
+        {"safety": ArtifactSafety.BLOCKED, "publication_eligible": True},
+    ]
+    for changes in cases:
+        broken = ArtifactRef(**{**base.__dict__, **changes})
+        with pytest.raises(ValueError):
+            broken.validate()
+
+
+def test_adapter_validation_rejects_remaining_branches():
+    with pytest.raises(ValueError):
+        AdapterContract("unsupported", ("x",), "v1").validate()
+    with pytest.raises(ValueError):
+        AdapterContract(ArtifactKind.TEXT, ("text/plain",), "v1", max_input_bytes=0).validate()
+
+    with pytest.raises(ValueError):
+        AdapterResult("v1", "a" * 63, None, ExtractionMode.DETERMINISTIC).validate()
+    with pytest.raises(ValueError):
+        AdapterResult("v1", "a" * 64, "b" * 63, ExtractionMode.DETERMINISTIC).validate()
+    with pytest.raises(ValueError):
+        AdapterResult("v1", "a" * 64, None, ExtractionMode.DETERMINISTIC, warnings=("",)).validate()
