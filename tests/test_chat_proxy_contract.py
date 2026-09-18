@@ -207,6 +207,15 @@ def test_service_request_uses_cloudflare_js_request_when_available(monkeypatch):
     assert request.method == "POST"
     assert request.headers == {"Authorization": "Bearer test"}
     assert request.body == '{"message":"hello"}'
+    get_request = worker._service_request(
+        "https://private/v1/dashboard",
+        method="GET",
+        headers={"Authorization": "Bearer test"},
+    )
+    assert get_request.url == "https://private/v1/dashboard"
+    assert get_request.method == "GET"
+    assert get_request.headers == {"Authorization": "Bearer test"}
+    assert get_request.body is None
 
 
 def test_service_request_prefers_workers_request_api(monkeypatch):
@@ -230,3 +239,12 @@ def test_service_request_prefers_workers_request_api(monkeypatch):
     assert request.method == "POST"
     assert request.headers == {"Content-Type": "application/json"}
     assert request.body == '{"message":"hello"}'
+    get_request = worker._service_request(
+        "https://private/v1/dashboard",
+        method="GET",
+        headers={"Authorization": "Bearer test"},
+    )
+    assert get_request.url == "https://private/v1/dashboard"
+    assert get_request.method == "GET"
+    assert get_request.headers == {"Authorization": "Bearer test"}
+    assert get_request.body is None
