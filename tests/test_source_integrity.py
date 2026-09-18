@@ -61,3 +61,40 @@ def test_blank_family_key_is_rejected():
 def test_empty_source_url_is_rejected():
     with pytest.raises(ValueError, match="source URL"):
         identity(url="   ")
+
+
+def test_same_content_different_family_is_not_independent():
+    candidate = identity(
+        url="https://syndicator.example/reprint",
+        family="syndicator.example",
+    )
+    assert classify_source_integrity(
+        candidate,
+        observed_family_hashes={},
+        observed_content_hashes={candidate.content_hash},
+        trusted_family_keys={"syndicator.example"},
+    ) is IntegrityState.DUPLICATE_FAMILY
+
+
+def test_new_content_different_family_remains_eligible():
+    candidate = identity(
+        url="https://independent.example/research",
+        body=b"independent",
+        family="independent.example",
+    )
+    assert classify_source_integrity(
+        candidate,
+        observed_family_hashes={},
+        observed_content_hashes={identity().content_hash},
+        trusted_family_keys={"independent.example"},
+    ) is IntegrityState.ELIGIBLE
+
+
+def test_invalid_cross_host_hash_registry_is_rejected():
+    with pytest.raises(ValueError, match="observed_content_hashes"):
+        classify_source_integrity(
+            identity(),
+            observed_family_hashes={},
+            observed_content_hashes={"hash-a": "not-a-set"},
+            trusted_family_keys={"example.com"},
+        )
