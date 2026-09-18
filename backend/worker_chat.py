@@ -179,8 +179,8 @@ async def _operations_chatbot_diagnostic(env, request=None):
             "provider_policy": body.get("provider_policy") if isinstance(body, dict) else None,
             "error": None if healthy else (body.get("error") if isinstance(body, dict) else "invalid_private_chatbot_diagnostic"),
         }, 200 if healthy else 503
-    except Exception as exc:
-        return {"ok": False, "status": "degraded", "error": f"chatbot diagnostic binding failure: {exc}"}, 503
+    except Exception:
+        return {"ok": False, "status": "degraded", "error": "chatbot_diagnostic_binding_failure"}, 503
 
 
 async def _operations_dashboard(env, request):
