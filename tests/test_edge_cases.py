@@ -87,7 +87,7 @@ def test_engine_invalid_transitions_and_router_execute_edges():
     cert = type("C", (), {"observation_id":"missing"})()
     claim = Claim.create("c", "claim")
     result = type("R", (), {"supporting_evidence":(cert,)})()
-    fake_run = type("Run", (), {"verified_claims":((claim,result),),"observations":(obs,)})()
+    fake_run = type("Run", (), {"contract": type("C", (), {"question": "q"})(), "verified_claims":((claim,result),),"observations":(obs,)})()
     synthesized = synthesis.ResearchSynthesizer().synthesize(fake_run)
     assert synthesized is not None
 
@@ -188,7 +188,7 @@ def test_public_api_and_synthesis_edge_paths(monkeypatch):
     claim = Claim.create("c", "claim")
     cert = EvidenceCertificate("missing", "sid", "https://e", "hash", 0, 1, "x", True)
     result = type("R", (), {"supporting_evidence":(cert,)})()
-    run = type("Run", (), {"verified_claims":((claim,result),),"observations":()})()
+    run = type("Run", (), {"contract": type("C", (), {"question": "q"})(), "verified_claims":((claim,result),),"observations":()})()
     assert ResearchSynthesizer().synthesize(run).evidence_chain == ()
 
 
