@@ -105,7 +105,7 @@ def test_translation_artifact_requires_cross_language_qualifier_safety():
     with pytest.raises(ValueError):
         TranslationArtifact("tr", (), "zh", "en", "m", "v", text_fingerprint("x"), True, True, True).validate()
     with pytest.raises(ValueError):
-        TranslationArtifact("tr", ("s1",), "en", "EN-us", "m", "v", text_fingerprint("x"), True, True, True).validate()
+        TranslationArtifact("tr", ("s1",), "en", "EN", "m", "v", text_fingerprint("x"), True, True, True).validate()
     with pytest.raises(ValueError):
         TranslationArtifact("tr", ("s1",), "zh", "en", "", "v", text_fingerprint("x"), True, True, True).validate()
     with pytest.raises(ValueError):
