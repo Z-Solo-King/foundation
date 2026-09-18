@@ -34,11 +34,85 @@ jobs:
         with:
           path: foundation
 
-      - name: Fetch Operations capability catalog
+      - name: Authenticate private Operations catalog access
+        shell: bash
+        env:
+          OPERATIONS_REPOSITORY: Z-Solo-King/operations
+          OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
+          OPERATIONS_APP_INSTALLATION_ID: ${{ secrets.OPERATIONS_APP_INSTALLATION_ID }}
+          OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
         run: |
           set -euo pipefail
+          test -n "${OPERATIONS_APP_ID:-}" || { echo 'Missing OPERATIONS_APP_ID GitHub Actions secret'; exit 1; }
+          test -n "${OPERATIONS_APP_INSTALLATION_ID:-}" || { echo 'Missing OPERATIONS_APP_INSTALLATION_ID GitHub Actions secret'; exit 1; }
+          test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIVATE_KEY GitHub Actions secret'; exit 1; }
+          key_file="$RUNNER_TEMP/operations-app.pem"
+          jwt_file="$RUNNER_TEMP/operations-app-jwt.txt"
+          response_file="$RUNNER_TEMP/operations-app-response.json"
+          umask 077
+          printf '%s\n' "$OPERATIONS_APP_PRIVATE_KEY" > "$key_file"
+          chmod 600 "$key_file"
+          python - "$OPERATIONS_APP_ID" "$key_file" > "$jwt_file" <<'PY'
+import base64
+import json
+import subprocess
+import sys
+import time
+
+app_id, key_file = sys.argv[1:]
+
+def b64url(value: bytes) -> str:
+    return base64.urlsafe_b64encode(value).rstrip(b"=").decode("ascii")
+
+now = int(time.time())
+header = {"alg": "RS256", "typ": "JWT"}
+payload = {"iat": now - 60, "exp": now + 540, "iss": app_id}
+unsigned = f"{b64url(json.dumps(header, separators=(",", ":")).encode())}.{b64url(json.dumps(payload, separators=(",", ":")).encode())}".encode()
+signed = subprocess.run(
+    ["openssl", "dgst", "-sha256", "-sign", key_file],
+    input=unsigned,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    check=True,
+)
+print(unsigned.decode() + "." + b64url(signed.stdout))
+PY
+          app_jwt=$(cat "$jwt_file")
+          installation_response=$(curl -fsS -X POST \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer ${app_jwt}" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/app/installations/${OPERATIONS_APP_INSTALLATION_ID}/access_tokens")
+          printf '%s\n' "$installation_response" > "$response_file"
+          github_app_token=$(python - "$response_file" <<'PY'
+import json
+import sys
+with open(sys.argv[1], encoding="utf-8") as handle:
+    print(json.load(handle)["token"])
+PY
+)
+          test -n "$github_app_token"
+          echo "::add-mask::$github_app_token"
           mkdir -p operations
-          curl --fail --silent --show-error --location             https://raw.githubusercontent.com/Z-Solo-King/operations/main/CAPABILITIES.json             --output operations/CAPABILITIES.json
+          catalog_response=$(curl -fsS \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer ${github_app_token}" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/contents/CAPABILITIES.json?ref=main")
+          python - "$catalog_response" > operations/CAPABILITIES.json <<'PY'
+import base64
+import json
+import sys
+payload = json.loads(sys.argv[1])
+print(base64.b64decode(payload["content"]).decode("utf-8"))
+PY
+          jq -e --arg repo "$OPERATIONS_REPOSITORY" '.full_name == $repo and .private == true' \
+            < <(curl -fsS \
+              -H 'Accept: application/vnd.github+json' \
+              -H "Authorization: Bearer ${github_app_token}" \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/${OPERATIONS_REPOSITORY}") >/dev/null
+          test -s operations/CAPABILITIES.json
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -49,4 +123,6 @@ jobs:
         working-directory: foundation
         run: |
           python -m pytest -q tests/test_cross_repo_drift_gate.py
-          python tools/check_cross_repo_drift.py             --foundation CAPABILITIES.json             --operations ../operations/CAPABILITIES.json
+          python tools/check_cross_repo_drift.py \
+            --foundation CAPABILITIES.json \
+            --operations ../operations/CAPABILITIES.json
