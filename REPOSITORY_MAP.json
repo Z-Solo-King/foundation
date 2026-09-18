@@ -45,7 +45,11 @@
     "validation_workflow": ".github/workflows/required-pr-checks.yml",
     "public_tests": "tests/",
     "deployment_workflow": ".github/workflows/heroic-ai-production-release.yml",
-    "historical_code_is_not_runtime": true
+    "historical_code_is_not_runtime": true,
+    "github_actions_owner": ".github/workflows/",
+    "private_operations_actions_forbidden": true,
+    "private_operations_access": "Foundation GitHub App short-lived installation token",
+    "workflow_dispatch_bridge": ".github/workflows/foundation-canonical-workflow-bridge.yml"
   },
   "method": [
     "accept Heroic AI request",
@@ -58,5 +62,5 @@
     "publish citations/uncertainty",
     "persist only through the owning boundary"
   ],
-  "operations_use": "Operations is the private control plane for Heroic AI. It consumes Foundation contracts and public-safe results; it does not copy Foundation implementation authority."
+  "operations_use": "Operations is the private control plane for Heroic AI. It consumes Foundation contracts and public-safe results; it does not copy Foundation implementation authority. Operations contains no GitHub Actions workflows; all family automation is owned by Foundation."
 }
