@@ -65,3 +65,21 @@ def test_candidate_bucket_is_bounded_and_order_invariant():
 
 def test_legacy_negation_detection_remains_available():
     assert detect_contradiction("available", "unavailable") is not None
+
+
+def test_numeric_pair_rejects_invalid_raw_fallback_without_false_contradiction():
+    assert detect_typed_contradiction(
+        c("a", "not-a-number", unit="u"),
+        c("b", 2, unit="u"),
+    ) is None
+
+
+def test_quantity_unit_mismatch_and_tolerance_branches_are_bounded():
+    assert detect_typed_contradiction(
+        c("a", 1, "quantity", unit="kg"),
+        c("b", 1, "quantity", unit="s"),
+    ) is None
+    assert detect_typed_contradiction(
+        c("a", 1, "quantity", unit="kg", tolerance=2),
+        c("b", 999, "quantity", unit="g"),
+    ) is None
