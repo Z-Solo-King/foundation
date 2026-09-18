@@ -11,7 +11,7 @@ from backend.api.models import ResearchRequest
 def health_payload(env=None):
     payload = health_endpoint()
     environment = getattr(env, "ENVIRONMENT", None) if env is not None else None
-    if environment:
+    if env is not None:
         payload["environment"] = str(environment)
     return payload
 
