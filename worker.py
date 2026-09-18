@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime, timezone
+from urllib.parse import parse_qs, urlparse
 
 from workers import Response, WorkerEntrypoint
 
@@ -11,6 +12,7 @@ from backend.api.main import submit_research
 from backend.api.models import ChatRequest, ResearchRequest
 from backend.evidence_publication import package_digest, verify_package
 from backend.persistence.cloudflare import CloudflarePersistence
+from backend.public_read_cursor import PublicReadCursorError
 from backend.sources.http import fetch_public_url
 from backend.worker_auth import MAX_PUBLIC_JSON_BODY_BYTES, authenticated_subject_fingerprint, authorized, bearer_token, extract_source_urls, json_object
 from backend.worker_diagnostics import health_payload, public_infrastructure_verify, readiness_payload, storage_diagnostic
@@ -53,8 +55,23 @@ async def _ingest_sources(env, run_id, req):
     return await ingest_sources(env, run_id, req, fetcher=fetch_public_url, persistence_cls=CloudflarePersistence)
 
 
-async def _get_run(env, run_id):
-    return await get_run(env, run_id)
+async def _get_run(
+    env,
+    run_id,
+    *,
+    subject_fingerprint="development-local",
+    cursor=None,
+    limit=50,
+    cursor_secret="development-local",
+):
+    return await get_run(
+        env,
+        run_id,
+        subject_fingerprint=subject_fingerprint,
+        cursor=cursor,
+        limit=limit,
+        cursor_secret=cursor_secret,
+    )
 
 
 async def _publish_evidence(env, run_id, package):
@@ -287,8 +304,26 @@ class Default(WorkerEntrypoint):
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             run_id = path.rsplit("/", 1)[-1]
+            query = parse_qs(urlparse(request.url).query)
+            cursor = query.get("cursor", [None])[0]
+            limit_raw = query.get("limit", ["50"])[0]
             try:
-                payload = await _get_run(self.env, run_id)
+                limit = int(limit_raw)
+            except (TypeError, ValueError):
+                return _authenticated_json({"ok": False, "error": "limit must be an integer"}, status=400)
+            if limit < 1 or limit > 50:
+                return _authenticated_json({"ok": False, "error": "limit must be between 1 and 50"}, status=400)
+            subject_fingerprint = authenticated_subject_fingerprint(request) or "development-local"
+            try:
+                payload = await _get_run(
+                    self.env,
+                    run_id,
+                    subject_fingerprint=subject_fingerprint,
+                    cursor=cursor,
+                    limit=limit,
+                )
+            except PublicReadCursorError as exc:
+                return _authenticated_json({"ok": False, "error": str(exc)}, status=400)
             except Exception as exc:
                 return _authenticated_json({"ok": False, "error": f"persistence failure: {exc}"}, status=503)
             if payload is None:
@@ -311,14 +346,19 @@ class Default(WorkerEntrypoint):
             if not result.ok:
                 return _authenticated_json({"ok": False, "error": result.error}, status=400)
             persistence = CloudflarePersistence(self.env)
+            subject_fingerprint = authenticated_subject_fingerprint(request) or "development-local"
             idempotency_key = request.headers.get("Idempotency-Key")
             run_id = None
             try:
                 if idempotency_key:
-                    run_id = await persistence.create_run_idempotent(req, idempotency_key, subject_fingerprint=authenticated_subject_fingerprint(request))
+                    run_id = await persistence.create_run_idempotent(req, idempotency_key, subject_fingerprint=subject_fingerprint)
                 else:
                     run_id = result.run_id
-                    await persistence.create_run(run_id, req)
+                    create_scoped = getattr(persistence, "create_run_scoped", None)
+                    if callable(create_scoped):
+                        await create_scoped(run_id, req, subject_fingerprint)
+                    else:
+                        await persistence.create_run(run_id, req)
                 if not req.source_urls:
                     return _authenticated_json({"ok": True, "run_id": run_id, "metadata": {**result.metadata, "execution_mode": "awaiting_source_urls", "source_url_ingestion": True, "general_web_discovery": False, "evidence_synthesis": False, "next_action": "provide one or more permitted public HTTP(S) source URLs"}, "sources": []})
                 await persistence.set_run_status(run_id, "running")
