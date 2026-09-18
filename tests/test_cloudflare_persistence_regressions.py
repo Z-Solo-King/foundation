@@ -14,8 +14,10 @@ from backend.api.models import ResearchRequest
 
 
 class FakeStatement:
-    def __init__(self, value=None):
+    def __init__(self, value=None, *, sql="", db=None):
         self.value = value
+        self.sql = sql
+        self.db = db
 
     def bind(self, *args):
         self.args = args
@@ -25,21 +27,24 @@ class FakeStatement:
         return self.value
 
     async def run(self):
+        if self.db is not None:
+            self.db.executed_sql.append(self.sql)
         return SimpleNamespace(meta={"changes": 1})
 
 
 class FakeDB:
     def __init__(self, run=None):
         self.run = run
+        self.executed_sql = []
         self.batch_result = [SimpleNamespace(results=[]), SimpleNamespace(results=[]), SimpleNamespace(results=[])]
 
     def prepare(self, sql):
         if sql.startswith("SELECT * FROM research_runs"):
-            return FakeStatement(self.run)
+            return FakeStatement(self.run, sql=sql, db=self)
         if sql.startswith("SELECT run_id, request_hash, subject_fingerprint"):
             value = self.batch_result[2].results[0] if self.batch_result[2].results else None
-            return FakeStatement(value)
-        return FakeStatement()
+            return FakeStatement(value, sql=sql, db=self)
+        return FakeStatement(sql=sql, db=self)
 
 
 class FakeArtifacts:
@@ -96,6 +101,24 @@ async def test_set_run_status_rejects_disallowed_transition():
     db = FakeDB({"run_id": "run-1", "status": "completed"})
     with pytest.raises(ValueError, match="invalid run transition"):
         await persistence(db).set_run_status("run-1", "running")
+
+
+@pytest.mark.asyncio
+async def test_create_run_idempotent_creates_parent_before_foreign_key_claim():
+    db = FakeDB()
+    subject = hashlib.sha256(b"token-a").hexdigest()
+    scope = execution_scope_fingerprint(subject, "research", IDEMPOTENCY_CONTRACT_REVISION)
+    request_hash = hashlib.sha256(f"{request_fingerprint(request())}:{scope}".encode()).hexdigest()
+    db.batch_result[2] = SimpleNamespace(results=[{
+        "run_id": "run-scoped",
+        "request_hash": request_hash,
+        "subject_fingerprint": subject,
+        "capability": "research",
+        "contract_revision": IDEMPOTENCY_CONTRACT_REVISION,
+    }])
+    assert await CloudflarePersistence(SimpleNamespace(DB=db, ARTIFACTS=FakeArtifacts(), AUTH_TOKEN="token-a")).create_run_idempotent(request(), "fk-order") == "run-scoped"
+    assert db.executed_sql[0].startswith("INSERT INTO research_runs")
+    assert db.executed_sql[1].startswith("INSERT INTO idempotency_keys")
 
 
 @pytest.mark.asyncio
