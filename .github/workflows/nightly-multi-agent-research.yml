@@ -29,7 +29,7 @@ env:
   RESEARCH_LLM_API_KEY: ${{ secrets.RESEARCH_LLM_API_KEY }}
   RESEARCH_LLM_MODEL: ${{ secrets.RESEARCH_LLM_MODEL }}
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_RESEARCH_REF: e185818cb58e4a1165a2c007f41eeb2112390eba
+  OPERATIONS_RESEARCH_REF: 3cad7283dc40ae68c4338bd154071aea9c0a8e75
 
 jobs:
   research:
@@ -118,7 +118,7 @@ PY
             -H "Authorization: Bearer ${github_app_token}" \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
             "https://api.github.com/repos/${OPERATIONS_REPOSITORY}")
-          jq -e --arg repo "$OPERATIONS_REPOSITORY" '.full_name == $repo and .private == true' <<<"$repo_response" >/dev/null
+          jq -e --arg repo "$OPERATIONS_REPOSITORY" '.full_name == $repo and .private == false' <<<"$repo_response" >/dev/null
           ref_response=$(curl -fsS \
             -H 'Accept: application/vnd.github+json' \
             -H "Authorization: Bearer ${github_app_token}" \
