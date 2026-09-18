@@ -98,3 +98,12 @@ def test_source_policy_validation_edges_and_decision_invariants():
         SourceAccessDecision(False, " ", RetentionClass.SHORT, DisclosureClass.PRIVATE_ONLY, True).validate()
     with pytest.raises(ValueError, match="standard retention"):
         SourceAccessDecision(False, "blocked", RetentionClass.STANDARD, DisclosureClass.PRIVATE_ONLY, True).validate()
+
+
+def test_retention_none_guard_is_reached_for_non_public_disclosure():
+    with pytest.raises(ValueError, match="retention is none"):
+        SourceAccessPolicy(
+            retention_class=RetentionClass.NONE,
+            raw_content_allowed=True,
+            disclosure_class=DisclosureClass.METADATA_ONLY,
+        ).validate()
