@@ -18,8 +18,8 @@ This file is the canonical handoff for a new GitHub-maintenance chat/agent. Trea
 
 ## Current canonical revisions
 
-- Foundation `main`: `972e1b05c1e2d51905029b602d0c4120eac1d399`
-- Operations `main): `3afbde926880b91e3e660ee2d35daa5334e542bf`
+- Foundation production-code baseline at handoff: `972e1b05c1e2d51905029b602d0c4120eac1d399`
+- Operations production-code baseline at handoff: `3afbde926880b91e3e660ee2d35daa5334e542bf`
 - Canonical approved Operations production revision: `3afbde926880b91e3e660ee2d35daa5334e542bf`
 - Operations PR #505 / commit `3afbde92...` corrected the Cloudflare Python service-binding request construction to use `workers.Request(url, **kwargs)` and added regression coverage. The previous deployed-runtime `Request.new` failure is therefore a superseded blocker, not a reason to redesign the boundary.
 - Foundation PR #642 advanced the production pin and synchronized the nightly research/pin-repair contracts to the corrected Operations revision.
@@ -129,7 +129,7 @@ Do not close runtime-gated issues because a PR merged or unit tests passed.
 ## Immediate next action for a new chat
 
 1. Read this file plus `docs/DEPLOYMENT.md`, `REPOSITORY_MAP.json`, and `docs/FAMILY_ARCHITECTURE.md`.
-2. Verify current Foundation/Operations `main) SHAs before changing anything.
+2. Verify the current Foundation/Operations `main` SHAs before changing anything.
 3. Inspect the latest canonical production-release run after the `972e1b0...` pin update.
 4. If the run fails, classify the earliest proven failure (workflow admission -> job creation -> execution -> binding/configuration -> live endpoint) and fix only that layer.
 5. If the run succeeds, convert its exact evidence into issue receipts and close only issues whose own acceptance graph is fully satisfied.
