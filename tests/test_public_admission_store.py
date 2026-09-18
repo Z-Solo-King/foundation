@@ -572,6 +572,7 @@ class IdempotentAdmissionDB(FakeDB):
     def __init__(self):
         super().__init__()
         self.events = {}
+        self.reclaim_changes = 1
 
     def prepare(self, query):
         db = self
@@ -608,6 +609,8 @@ class IdempotentAdmissionDB(FakeDB):
                     return {"meta": {"changes": 0}}
 
                 if sql.startswith("update public_admission_events set window_start"):
+                    if db.reclaim_changes == 0:
+                        return {"meta": {"changes": 0}}
                     window_start, expires_at, event_id, subject, route, now = args
                     row = db.events.get(event_id)
                     if (
@@ -763,6 +766,39 @@ def test_d1_store_blocks_an_active_duplicate_admission():
             route=AdmissionRoute.CHAT,
             policy=AdmissionPolicy(),
             event_id="active-key",
+            now=121,
+        )
+    )
+    assert decision.outcome.value == "concurrency_limited"
+    assert decision.allowed is False
+    assert lease is None
+
+
+def test_d1_store_handles_failed_lease_reclaim_race():
+    import asyncio
+
+    db = IdempotentAdmissionDB()
+    store = D1AdmissionStore(db)
+    first_decision, first_lease = asyncio.run(
+        store.acquire(
+            subject_fingerprint="subject-1",
+            route=AdmissionRoute.CHAT,
+            policy=AdmissionPolicy(),
+            event_id="reclaim-race-key",
+            now=120,
+        )
+    )
+    assert first_decision.allowed is True
+    assert first_lease is not None
+    db.events["reclaim-race-key"]["lease_expires_at"] = 0
+    db.reclaim_changes = 0
+
+    decision, lease = asyncio.run(
+        store.acquire(
+            subject_fingerprint="subject-1",
+            route=AdmissionRoute.CHAT,
+            policy=AdmissionPolicy(),
+            event_id="reclaim-race-key",
             now=121,
         )
     )
