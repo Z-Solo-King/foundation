@@ -2,6 +2,10 @@
 
 Foundation owns the single production deployment workflow in `.github/workflows/heroic-ai-production-release.yml`. Its workflow name is `Heroic AI production release`. The workflow deploys the public Worker and, after the public deployment succeeds, deploys the explicitly approved private Operations revision.
 
+## GitHub Actions ownership boundary
+
+All GitHub Actions automation for the active family is executed from public `foundation`. The private `operations` repository must contain no `.github/workflows` and must not be its own CI, scheduled-job, workflow-dispatch, or deployment owner. Foundation uses the approved GitHub App to read private Operations source when automation requires it.
+
 ## Production authority
 
 - Public Worker deployment authority: `.github/workflows/heroic-ai-production-release.yml`
