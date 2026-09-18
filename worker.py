@@ -321,6 +321,7 @@ class Default(WorkerEntrypoint):
                     subject_fingerprint=subject_fingerprint,
                     cursor=cursor,
                     limit=limit,
+                    cursor_secret=bearer_token(request) or "development-local",
                 )
             except PublicReadCursorError as exc:
                 return _authenticated_json({"ok": False, "error": str(exc)}, status=400)
