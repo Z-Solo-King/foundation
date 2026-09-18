@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="cf28a28cb40de527aff1cd87f96e103669635f70"
+OPERATIONS_REF="d8825f5ce9c917a780c962f9773de6bb4446997f"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
