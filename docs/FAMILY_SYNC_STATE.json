@@ -6,11 +6,11 @@
   "repositories": {
     "foundation": {
       "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup",
-      "last_audited_main_sha": "972e1b05c1e2d51905029b602d0c4120eac1d399"
+      "last_audited_main_sha": "5f2ac608ab05ff922d0fa4f4ed95d7b7b3266109"
     },
     "operations": {
-      "role": "private-control-plane-research-orchestration",
-      "last_audited_main_sha": "3afbde926880b91e3e660ee2d35daa5334e542bf",
+      "role": "private-control-plane-runtime-research-orchestration",
+      "last_audited_main_sha": "b20e02483d25724ee26a560b7feedc900d8ea154",
       "approved_production_revision": "3afbde926880b91e3e660ee2d35daa5334e542bf",
       "nightly_research_revision": "3afbde926880b91e3e660ee2d35daa5334e542bf"
     }
@@ -24,7 +24,7 @@
     "historical_repositories": [
       "extractor-mapper"
     ],
-    "note": "The standalone extractor/mapper repository is historical and is not part of the current active family boundary."
+    "note": "The standalone extractor/mapper repository is historical and is not part of the current active family boundary. The active extractor_mapper implementation is a directory inside Operations."
   },
   "evidence_boundary": {
     "L0": "hypothesis",
@@ -33,29 +33,49 @@
     "L3": "current GitHub Actions execution",
     "L4": "approved runtime/production execution"
   },
+  "current_open_gates": [
+    "foundation#27",
+    "foundation#58",
+    "foundation#157",
+    "foundation#259",
+    "foundation#263",
+    "foundation#452",
+    "operations#119",
+    "operations#120",
+    "operations#132",
+    "operations#145",
+    "operations#155",
+    "operations#164",
+    "operations#197",
+    "operations#329",
+    "operations#330",
+    "operations#331",
+    "operations#332",
+    "operations#333",
+    "operations#334",
+    "operations#340",
+    "operations#349",
+    "operations#352",
+    "operations#385"
+  ],
   "sync_rules": {
     "main_sha_is_audit_observation": true,
     "live_main_out_ranks_recorded_sha": true,
     "cloudflare_runtime_is_external_to_github_only_sync": true,
     "production_revision_is_separate_from_operations_main": true,
-    "current_github_state_out_ranks_issue_tracker_summaries": true
+    "current_github_state_out_ranks_issue_tracker_summaries": true,
+    "sync_public_core_only_materializes_foundation_core": true,
+    "documentation_requires_explicit_cross_repo_update_when_shared": true
   },
-  "known_current_reconciliation": {
-    "public_admission": "Foundation PR #484 merged to main with required CI green; earlier #460 and #483 are superseded/closed",
-    "source_url_security": "Foundation PR #482 merged to main with green required CI",
-    "execution_identity": "Foundation PR #488 merged to main as the current contract lineage replacing stale #485/#394",
-    "nightly_pin_repair": "Foundation nightly workflow is pinned to approved Operations revision 90e3c692bfd43da25d08bf5d47a6a6c5167e0f7f",
-    "zero_cost_provider_gate": "Operations PRs #392/#393/#394 merged; unknown/paid/stale/missing billing or quota state now fails closed across canonical selector, quota policy, chat runtime and private research runtime; Operations issue #353 completed",
-    "provider_output_admission": "Operations PR #395 merged; canonical bounded provider-output normalization and identity/partial/tool/usage checks are shared by chatbot and private research runtime",
-    "provider_fanout_limits": "Operations PR #396 merged; provider-derived research structure is bounded by depth/collection limits, finding/follow-up ceilings and duplicate coalescing; broader tool/streaming execution fan-out remains governed separately",
-    "durable_recovery_accounting": "Operations PR #398 merged; durable consume/release transitions report whether the current actor won and expiry reconciliation counts actual releases only",
-    "deadline_retry_and_execution_governance": "Operations PR #402 merged as 532b90ecfe7a876b4477ab8cb2097b18bcf62b70; consolidated repository implementation for #377/#383/#384 now propagates one monotonic parent deadline through multi-agent research, provider/model calls, HTTP and retry backoff; binds durable reservations to execution identity; caps leases by parent deadline; adds identity-bound heartbeat and recovery; and retains immutable decision-snapshot enforcement",
-    "terminalization_governance": "Operations PR #403 merged as 7ca856c4be291140e52625ff9b73b234f1dc103e; the canonical chat idempotency authority now binds terminalization and abandon to durable attempt identity, records terminal/result/side-effect identities, prevents stale reclaimed workers from overwriting current executions, and binds chat model execution identity to request_id:attempt_id; Operations issue #385 remains open for broader runtime/L4 acceptance",
-    "deadline_governance_issue_state": "Operations issues #377/#383/#384 remain open pending explicit acceptance/CI evidence; the merged implementation does not claim L4 runtime certification",
-    "stage_receipt_correctness": "Foundation PR #461 remains a separate implementation stream",
-    "nightly_timeout": "Foundation issue #487 remains open; nightly research lane still requires timeout below the six-hour GitHub Actions ceiling",
-    "runtime_evidence": "Repository CI remains L3; private/runtime/production gates remain L4 and are not inferred from source",
-    "cloudflare_recovery_2026_09_18": "Cloudflare recovery is partially complete: the existing private Worker was configured and automatically deployed as v15 (version ID 5ee4364d-b26a-4a6e-b2e8-22e9129e1fdc; deployment ID 61b1a4fe-be10-441a-9307-8301b5e3e94). Reported configuration includes OPERATIONS_DB to canonical D1 research-intelligence, FOUNDATION service binding to research-intelligence-engine-public, production/strict-zero-cost vars, */15 * * * * cron, and governance scope/window/lease metadata. The v15 configuration deployment is not proof that the approved Operations application revision is running. RESOURCE_LIMITS_JSON, RESOURCE_RESERVATIONS_JSON and private AUTH_TOKEN remain absent; no protected values were guessed."
+  "current_architecture_facts": {
+    "foundation_actions_owner": true,
+    "operations_has_github_workflows": false,
+    "operations_private": true,
+    "foundation_public": true,
+    "cloudflare_builds_or_deploy_hooks_are_not_deployment_authority": true,
+    "retired_extractor_mapper_repo_is_historical": true,
+    "operations_extractor_mapper_directory_is_active": true
   },
-  "documentation_rule": "Dated plans and handoffs are historical context. Current merged source, current tests/CI, current source-of-truth documents, and explicit runtime evidence determine present status."
+  "documentation_rule": "Dated plans and handoffs are historical context. Current merged source, current tests/CI, current source-of-truth documents, and explicit runtime evidence determine present status. Shared family documents are not auto-synced by scripts/sync_public_core.py.",
+  "runtime_gate_rule": "Do not close runtime/control-plane issues from repository source or CI alone. Record the exact missing L3/L4/admin evidence and keep the issue open until its acceptance graph is satisfied."
 }
