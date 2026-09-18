@@ -274,14 +274,14 @@ async def _operations_chat_stream(env, payload, request):
         return None, {"ok": False, "error": "chat_backend_unavailable"}, 503
 
 
-async def _operations_chatbot_diagnostic(env, request):
+async def _operations_chatbot_diagnostic(env, request=None):
     """Exercise the private chatbot routing/diagnostic boundary without provider execution."""
     operations = getattr(env, "OPERATIONS", None)
     if operations is None:
         return {"ok": False, "error": "chat_backend_unavailable", "status": "unavailable"}, 503
     try:
         headers = {"Content-Type": "application/json"}
-        token = _bearer_token(request)
+        token = _bearer_token(request) if request is not None else None
         if token:
             headers["Authorization"] = f"Bearer {token}"
         upstream = await operations.fetch(
