@@ -1,6 +1,7 @@
 import pytest
 
 from backend.sources.fallbacks import (
+    AcquisitionDecisionCode,
     AcquisitionFallbackPolicy,
     AcquisitionLane,
     AcquisitionLaneKind,
@@ -97,3 +98,40 @@ def test_runtime_counters_must_be_non_negative():
         choose_next_lane(policy=AcquisitionFallbackPolicy(), attempts_used=-1)
     with pytest.raises(ValueError):
         choose_next_lane(policy=AcquisitionFallbackPolicy(), cost_used=-1)
+
+
+def test_fallback_decision_is_versioned_and_deterministically_fingerprinted():
+    policy = AcquisitionFallbackPolicy(revision="policy-7")
+    first = choose_next_lane(policy=policy)
+    second = choose_next_lane(policy=policy)
+    assert first.decision_code is AcquisitionDecisionCode.READY
+    assert first.policy_revision == "policy-7"
+    assert first.digest == second.digest
+    assert first.to_dict()["schema"] == "acquisition-fallback-decision/v1"
+
+
+def test_fallback_classifies_attempt_and_cost_exhaustion():
+    assert choose_next_lane(
+        policy=AcquisitionFallbackPolicy(max_attempts=1),
+        attempts_used=1,
+    ).decision_code is AcquisitionDecisionCode.ATTEMPTS_EXHAUSTED
+    assert choose_next_lane(
+        policy=AcquisitionFallbackPolicy(max_cost_units=1),
+        cost_used=1,
+    ).decision_code is AcquisitionDecisionCode.COST_EXHAUSTED
+
+
+def test_fallback_classifies_no_budget_fit_separately():
+    lanes = (
+        AcquisitionLane("cheap", AcquisitionLaneKind.STATIC_FETCH, "static", 3, priority=1),
+    )
+    decision = choose_next_lane(
+        policy=AcquisitionFallbackPolicy(max_attempts=3, max_cost_units=2),
+        lanes=lanes,
+    )
+    assert decision.decision_code is AcquisitionDecisionCode.NO_BUDGET_FIT
+
+
+def test_fallback_policy_revision_is_required():
+    with pytest.raises(ValueError, match="revision"):
+        AcquisitionFallbackPolicy(revision="").validate()
