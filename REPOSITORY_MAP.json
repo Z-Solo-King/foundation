@@ -8,8 +8,7 @@
     "README.md",
     "docs/DOCUMENTATION_INDEX.md",
     "docs/FAMILY_CONTRACT.json",
-    "docs/FAMILY_ARCHITECTURE.md",
-    "Z-Solo-King/operations:docs/CURRENT_SOURCE_OF_TRUTH.md"
+    "docs/FAMILY_ARCHITECTURE.md"
   ],
   "canonical": {
     "chat_product_ui": "frontend/index.html",
