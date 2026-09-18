@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 class IntegrityState(StrEnum):
     ELIGIBLE = "eligible"
     DUPLICATE_FAMILY = "duplicate_family"
+    DUPLICATE_CONTENT = "duplicate_content"
     MODIFIED = "modified"
     UNTRUSTED = "untrusted"
     UNKNOWN = "unknown"
@@ -41,11 +42,14 @@ def classify_source_integrity(
     *,
     observed_family_hashes: dict[str, str],
     trusted_family_keys: set[str],
+    observed_content_hashes: set[str] | None = None,
 ) -> IntegrityState:
     if candidate.family_key not in trusted_family_keys:
         return IntegrityState.UNTRUSTED
     previous = observed_family_hashes.get(candidate.family_key)
     if previous is None:
+        if candidate.content_hash in (observed_content_hashes or set()):
+            return IntegrityState.DUPLICATE_CONTENT
         return IntegrityState.ELIGIBLE
     if previous == candidate.content_hash:
         return IntegrityState.DUPLICATE_FAMILY
