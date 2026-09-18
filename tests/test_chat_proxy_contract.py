@@ -207,3 +207,26 @@ def test_service_request_uses_cloudflare_js_request_when_available(monkeypatch):
     assert request.method == "POST"
     assert request.headers == {"Authorization": "Bearer test"}
     assert request.body == '{"message":"hello"}'
+
+
+def test_service_request_prefers_workers_request_api(monkeypatch):
+    import types
+    import worker
+    import workers
+
+    class FakeRequest:
+        @classmethod
+        def new(cls, url, **kwargs):
+            return types.SimpleNamespace(url=url, method=kwargs["method"], headers=kwargs["headers"], body=kwargs.get("body"))
+
+    monkeypatch.setattr(workers, "Request", FakeRequest, raising=False)
+    request = worker._service_request(
+        "https://chat/v1/chat",
+        method="POST",
+        headers={"Content-Type": "application/json"},
+        body='{"message":"hello"}',
+    )
+    assert request.url == "https://chat/v1/chat"
+    assert request.method == "POST"
+    assert request.headers == {"Content-Type": "application/json"}
+    assert request.body == '{"message":"hello"}'
