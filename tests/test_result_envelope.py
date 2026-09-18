@@ -109,3 +109,14 @@ def test_legacy_error_adapter_allows_missing_error_without_false_detail():
     payload = envelope.to_dict()
     assert payload["status"] == "FAILED"
     assert payload["warnings"] == []
+
+
+
+def test_legacy_adapter_explicit_result_does_not_add_run_id():
+    envelope = envelope_from_legacy_response(
+        ok=True,
+        result={"answer": "ok"},
+        run_id="run-3",
+        metadata={"ignored": True},
+    )
+    assert envelope.to_dict()["result"] == {"answer": "ok"}
