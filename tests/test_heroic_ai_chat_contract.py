@@ -67,7 +67,7 @@ def test_public_worker_chat_route_validation_and_fail_closed_paths():
             self.method = "POST"; self.url = "https://example/api/v1/chat"; self._payload = payload; self.headers = headers or {}
         async def json(self): return self._payload
     class Binding:
-        async def fetch(self, url, options):
+        async def fetch(self, request):
             class Response:
                 status = 200
                 async def json(self): return {"ok": True, "response": {"text": "grounded", "status": "completed"}}
