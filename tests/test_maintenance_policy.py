@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from tools.validate_repository_governance import (
+    ALLOWED_FOUNDATION_WORKFLOWS,
     FORBIDDEN_LEGACY_DOCS,
     validate_foundation,
     validate_operations,
@@ -8,6 +9,11 @@ from tools.validate_repository_governance import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_foundation_workflow_allowlist_is_explicit():
+    assert "required-pr-checks.yml" in ALLOWED_FOUNDATION_WORKFLOWS
+    assert "heroic-ai-production-release.yml" in ALLOWED_FOUNDATION_WORKFLOWS
 
 
 def test_foundation_governance_contract_is_present():
