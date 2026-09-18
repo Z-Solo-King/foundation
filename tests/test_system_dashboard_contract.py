@@ -85,7 +85,7 @@ def test_public_worker_dashboard_route_requires_auth_and_proxies():
         status = 200
         async def json(self): return {"ok": True, "status": "ok"}
     class Binding:
-        async def fetch(self, url, options): return Response()
+        async def fetch(self, request): return Response()
     unauthorized = worker.Default(); unauthorized.env = SimpleNamespace(AUTH_TOKEN="secret", OPERATIONS=Binding())
     response = asyncio.run(unauthorized.fetch(Request({}))); assert response.status == 401
     authorized = worker.Default(); authorized.env = SimpleNamespace(ENVIRONMENT="development", AUTH_TOKEN=None, LOCAL_DEVELOPMENT_AUTH_BYPASS="true", OPERATIONS=Binding())
