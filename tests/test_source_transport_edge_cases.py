@@ -134,3 +134,45 @@ def test_dns_preflight_rechecks_each_redirect(monkeypatch):
 
     with pytest.raises(ValueError, match="non-public"):
         asyncio.run(http.fetch_public_url("https://example.com", fetcher=fetcher, dns_resolver=resolver))
+
+
+def test_http_worker_fetch_uses_keyword_options(monkeypatch):
+    import backend.sources.http as http
+    calls = []
+
+    class Response:
+        status = 200
+        headers = {"content-type": "text/plain", "etag": "e"}
+        async def arrayBuffer(self): return b"ok"
+
+    async def fake_fetch(url, **kwargs):
+        calls.append((url, kwargs))
+        return Response()
+
+    monkeypatch.setattr(http, "_workers_fetch", lambda: fake_fetch)
+    async def no_dns(*args, **kwargs):
+        return None
+    monkeypatch.setattr(http, "_validate_public_destination", no_dns)
+
+    result = asyncio.run(http.fetch_public_url("https://example.com"))
+    assert result.status == 200
+    assert calls[-1][1] == {"redirect": "manual"}
+
+
+def test_wikipedia_worker_fetch_uses_keyword_headers(monkeypatch):
+    import backend.sources.wikipedia as wikipedia
+
+    class Response:
+        status = 200
+        headers = {}
+        async def json(self):
+            return {"query": {"search": []}}
+
+    calls = []
+    async def fake_fetch(url, **kwargs):
+        calls.append((url, kwargs))
+        return Response()
+
+    monkeypatch.setattr(wikipedia, "_workers_fetch", lambda: fake_fetch)
+    assert asyncio.run(wikipedia.wikipedia_search("cloudflare", 1)) == []
+    assert calls[-1][1] == {"headers": {"User-Agent": "ResearchIntelligenceEngine/0.1"}}
