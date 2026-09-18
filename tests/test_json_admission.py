@@ -35,6 +35,8 @@ def test_json_shape_rejects_invalid_limits():
         validate_json_shape({}, max_depth=0)
     with pytest.raises(ValueError, match="max_collection_items"):
         validate_json_shape({}, max_collection_items=0)
+    with pytest.raises(ValueError, match="max_string_chars"):
+        validate_json_shape({}, max_string_chars=0)
 
 
 class Request:
