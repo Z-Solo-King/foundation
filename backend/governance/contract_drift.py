@@ -133,8 +133,20 @@ def compare_catalogs(
             )
 
     for capability in sorted(set(required_capabilities) | set(baseline.capabilities) | set(candidate.capabilities)):
-        expected = baseline.capabilities.get(capability, "<missing>")
+        expected = baseline.capabilities.get(capability, "<required>" if capability in required_capabilities else "<missing>")
         actual = candidate.capabilities.get(capability, "<missing>")
+        if capability in required_capabilities and capability not in candidate.capabilities:
+            findings.append(
+                DriftFinding(
+                    DriftSeverity.ERROR,
+                    candidate.name,
+                    f"capability.{capability}",
+                    expected,
+                    "<missing>",
+                    f"{candidate.name}: required capability is missing",
+                )
+            )
+            continue
         if expected != actual:
             findings.append(
                 DriftFinding(
