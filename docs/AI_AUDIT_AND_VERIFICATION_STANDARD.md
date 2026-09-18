@@ -1,61 +1,70 @@
 # AI Audit and Verification Standard
 
-Foundation is both an implementation boundary and an evidence boundary. AI-assisted maintenance must not turn partial repository inspection into confident claims about missing code, CI, deployment, or runtime state.
+**Status:** normative; current  
+**Owner:** Foundation family governance
 
-## Evidence levels
+## Evidence ladder
 
-- **L0 — hypothesis:** pattern, filename, count, prior statement, or suspicion.
-- **L1 — source:** relevant file/module/document opened and read.
-- **L2 — repository:** L1 plus search, callers/imports/exports, compatibility paths, and tests.
-- **L3 — execution:** L2 plus a current test, lint, workflow, or reproducible execution.
-- **L4 — runtime:** L3 plus approved current deployment/runtime evidence.
+- L0 — hypothesis
+- L1 — source inspection
+- L2 — repository inspection with callers/imports/tests/ownership
+- L3 — current execution such as tests, CI or reproducible run
+- L4 — approved runtime/production evidence
 
-Claims must never be stronger than their evidence level.
+Claims must never be stronger than their evidence.
 
-## Negative claims
+## Negative-claim protocol
 
-Claims such as missing, absent, stub, duplicated, broken, unsupported, no retry, no streaming, or never called require the target read, repository search, caller/export inspection, relevant tests, current revision verification, and focused execution when behavioral. If evidence is unavailable, say unverified or partially verified.
+Claims such as missing, absent, stub, dead, duplicated, broken, unsupported or never called require the target read, repository search, caller/export inspection, current revision verification and focused execution when behavioral.
 
-A short file is not proof of a stub. A compatibility export is not duplicate authority. A delegated implementation is not absence.
+A short file is not evidence of a stub. A compatibility facade is not duplicate authority. A delegated implementation is not absence.
 
-## Positive claims
+## Positive-claim protocol
 
-Do not equate PR existence with completeness, mergeability with acceptance, workflow definitions with executed checks, skipped jobs with success, or source with production state. The acceptance requirement determines the required evidence level.
+Do not equate file existence, PR existence, mergeability, workflow definition, skipped jobs, or static analysis with completion. Acceptance criteria determine the required evidence level.
 
-## CI taxonomy
+## CI failure taxonomy
 
-- **pre-runner:** zero executed steps, no runner identity/metadata, no logs;
-- **setup/checkout:** runner executed but repository setup failed;
-- **test/check:** a verification step executed and failed;
-- **external/tooling:** an external service/action failed after execution began.
+- pre-runner: no executed steps/runner/logs;
+- setup/checkout: runner started but setup failed;
+- test/check: verification step executed and failed;
+- external/tooling: external service failed after execution began.
 
-A pre-runner failure is not a repository test failure.
+A pre-runner failure is not evidence that application tests failed.
 
 ## Runtime separation
 
-Keep repository source, GitHub Actions, deployment intent, and live runtime state separate. Private secrets and live infrastructure require the approved runtime evidence path.
+Keep source state, CI state, deployment intent and runtime state separate. Source or CI cannot prove a private runtime or production state unless the required runtime evidence actually exists.
 
-## Canonical authority
+## Issue/PR acceptance
 
-Before implementing a missing-looking primitive, locate canonical implementations, trace compatibility exports/facades, inspect callers, and determine ownership. Extend existing authority rather than creating a second implementation.
+Classify findings as implementation defect, architecture/policy gap, deterministic validation gap, runtime gate, external dependency, research hypothesis, roadmap/future work or duplicate/superseded.
 
-## Revision and merge discipline
+Close only when the written acceptance condition is satisfied or direct evidence shows the item is superseded/duplicate/obsolete.
 
-Record repository, branch/PR, head SHA, relevant base SHA, and observation time. Never mix revisions. Do not merge because GitHub reports mergeable; required checks must pass on the reviewed head. Do not close an issue because code exists unless its written acceptance condition is satisfied or it is directly superseded/duplicated with evidence.
+## Rule traceability
 
-## Required finding format
+Normative rules should be traceable:
+
+`rule -> class -> canonical owner -> enforcement point -> callers -> regression -> evidence tier -> runtime gate -> retirement`
+
+A policy document is not enforcement. Machine-enforced, test-enforced, documentation-only and externally verified are different dispositions.
+
+## Required audit report
+
+For any non-trivial audit record:
 
 ### Finding
 One precise claim.
 
 ### Evidence
-Exact files, symbols, PRs, workflow runs, and SHAs.
+Exact files/symbols/PR/run/SHA.
 
 ### Evidence level
 L0–L4.
 
 ### Counter-check
-What was inspected that could have disproved the finding.
+What was inspected that could disprove the claim.
 
 ### Result
 Verified / partially verified / unverified.
@@ -64,14 +73,32 @@ Verified / partially verified / unverified.
 Fix / test / issue / defer / no change.
 
 ### Acceptance gate
-Exact evidence required before calling the work complete.
+Exact evidence needed to declare completion.
+
+## Permanent regression lessons
+
+Compatibility facade: trace imports/exports before calling a short module a stub.
+
+Retry: separate failure classification/eligibility from the actual retry execution loop.
+
+Context: inspect budgets and compaction before claiming only the last N messages are sent.
+
+Streaming: distinguish upstream token streaming, buffered generation and SSE transport.
+
+CI: zero-step/no-runner jobs are pre-runner infrastructure failures.
+
+Production: workflow/source is not production evidence.
+
+Revision: never mix findings from old PR/base revisions with current main.
+
+Mergeability: `mergeable=true` is not acceptance.
+
+Authority: client/model/retrieved content cannot become server policy authority.
+
+## Evidence states
+
+Use explicit states such as `NOT_ATTEMPTED`, `UNKNOWN`, `BLOCKED`, `PARTIAL`, `FAILED`, `COMPLETE`. Missing execution is never implicit success.
 
 ## Prohibited shortcuts
 
-Do not infer implementation from filenames, line counts, historical summaries, or AI descriptions. Do not call a compatibility layer a stub without tracing it. Do not describe pre-runner failures as test failures. Do not claim deployment/runtime state from source alone.
-
-## Incomplete evidence rule
-
-> Source evidence confirms X. The remaining assertion is unverified because Y evidence is unavailable.
-
-Never substitute inference for unavailable evidence.
+Do not infer implementation from filenames, line counts, historical summaries or AI descriptions. Do not infer runtime/production state from repository source. Do not use tool/connector limitations as product limitations.
