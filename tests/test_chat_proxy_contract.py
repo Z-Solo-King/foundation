@@ -66,6 +66,47 @@ def test_chat_stream_proxy_handles_binding_error():
     assert payload["error"] == "chat_backend_unavailable"
 
 
+def test_chat_sse_body_rejects_invalid_private_response():
+    import pytest
+    import worker
+
+    with pytest.raises(ValueError, match="invalid_private_chat_response"):
+        worker._chat_sse_body({"ok": True})
+
+    with pytest.raises(ValueError, match="stream_execution_identity_missing"):
+        worker._chat_sse_body({"response": {"result_state": "PARTIAL", "text": "x"}})
+
+    with pytest.raises(ValueError, match="blocked_chat_stream"):
+        worker._chat_sse_body({"response": {"response_id": "r", "result_state": "BLOCKED", "text": "x"}})
+
+
+def test_chat_sse_body_covers_usage_complete_and_bounded_size():
+    import pytest
+    import worker
+
+    body = worker._chat_sse_body({
+        "response": {
+            "response_id": "chat-complete",
+            "result_state": "COMPLETE",
+            "text": "x" * 300,
+            "generation_status": "model_generated",
+            "usage": {"input_tokens": 3, "output_tokens": 2},
+        }
+    })
+    assert "event: usage" in body
+    assert '"status":"completed"' in body
+    assert '"result_state":"COMPLETE"' in body
+
+    with pytest.raises(ValueError, match="stream response exceeds supported size"):
+        worker._chat_sse_body({
+            "response": {
+                "response_id": "too-large",
+                "result_state": "PARTIAL",
+                "text": "x" * (worker.MAX_PUBLIC_JSON_BODY_BYTES + 1),
+            }
+        })
+
+
 def test_chat_sse_body_has_start_delta_and_done_contract():
     import worker
     body = worker._chat_sse_body({
@@ -82,6 +123,52 @@ def test_chat_sse_body_has_start_delta_and_done_contract():
     assert "hello world" in body
     assert "event: done" in body
     assert '"result_state":"PARTIAL"' in body
+
+
+
+
+def test_public_worker_chat_stream_returns_private_non_200(monkeypatch):
+    import worker
+
+    async def backend(*args, **kwargs):
+        return {"ok": False, "error": "chat_backend_unavailable"}, 503
+
+    monkeypatch.setattr(worker, "_operations_chat_stream", backend)
+    monkeypatch.setattr(worker, "_public_admit", lambda *args, **kwargs: asyncio.sleep(0, result=(type("D", (), {"allowed": True})(), None)))
+
+    class Request:
+        method = "POST"
+        url = "https://example/api/v1/chat/stream"
+        headers = {"Authorization": "Bearer secret", "Idempotency-Key": "r2"}
+        async def json(self):
+            return {"chat_id": "c2", "request_id": "r2", "message": "hello", "strict_zero_cost_only": True}
+
+    instance = worker.Default()
+    instance.env = SimpleNamespace(AUTH_TOKEN="secret", DB=object(), ENVIRONMENT="development", LOCAL_DEVELOPMENT_AUTH_BYPASS="true")
+    response = asyncio.run(instance.fetch(Request()))
+    assert response.status == 503
+
+
+def test_public_worker_chat_stream_returns_503_for_invalid_sse_payload(monkeypatch):
+    import worker
+
+    async def backend(*args, **kwargs):
+        return {"ok": True, "response": {"result_state": "BLOCKED"}}, 200
+
+    monkeypatch.setattr(worker, "_operations_chat_stream", backend)
+    monkeypatch.setattr(worker, "_public_admit", lambda *args, **kwargs: asyncio.sleep(0, result=(type("D", (), {"allowed": True})(), None)))
+
+    class Request:
+        method = "POST"
+        url = "https://example/api/v1/chat/stream"
+        headers = {"Authorization": "Bearer secret", "Idempotency-Key": "r3"}
+        async def json(self):
+            return {"chat_id": "c3", "request_id": "r3", "message": "hello", "strict_zero_cost_only": True}
+
+    instance = worker.Default()
+    instance.env = SimpleNamespace(AUTH_TOKEN="secret", DB=object(), ENVIRONMENT="development", LOCAL_DEVELOPMENT_AUTH_BYPASS="true")
+    response = asyncio.run(instance.fetch(Request()))
+    assert response.status == 503
 
 
 def test_public_worker_chat_stream_route_requires_auth():
