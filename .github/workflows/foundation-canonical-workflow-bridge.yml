@@ -10,9 +10,12 @@ name: Foundation canonical workflow bridge
         options:
           - nightly-multi-agent-research.yml
           - heroic-ai-production-release.yml
+          - cross-repository-contract-drift.yml
+          - operations-centralized-validation.yml
+          - main-push-actions-control-plane-probe.yml
         default: nightly-multi-agent-research.yml
       dry_run:
-        description: Pass dry_run=true to the nightly research workflow only
+        description: Pass dry_run=true to nightly research only
         required: false
         type: boolean
         default: false
@@ -21,6 +24,14 @@ name: Foundation canonical workflow bridge
         required: false
         type: boolean
         default: false
+      operations_ref:
+        description: Operations branch or immutable SHA for centralized validation only
+        required: false
+        type: string
+        default: main
+
+  repository_dispatch:
+    types: [foundation_action]
 
 permissions:
   contents: read
@@ -46,20 +57,43 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ steps.foundation-app.outputs.token }}
-          TARGET: ${{ inputs.target }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TARGET: ${{ inputs.target }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+          INPUT_CONFIRM_PRODUCTION: ${{ inputs.confirm_production }}
+          INPUT_OPERATIONS_REF: ${{ inputs.operations_ref }}
+          PAYLOAD_TARGET: ${{ github.event.client_payload.target }}
+          PAYLOAD_DRY_RUN: ${{ github.event.client_payload.dry_run }}
+          PAYLOAD_CONFIRM_PRODUCTION: ${{ github.event.client_payload.confirm_production }}
+          PAYLOAD_OPERATIONS_REF: ${{ github.event.client_payload.operations_ref }}
           FOUNDATION_REF: main
-          DRY_RUN: ${{ inputs.dry_run }}
-          CONFIRM_PRODUCTION: ${{ inputs.confirm_production }}
         run: |
           set -euo pipefail
 
+          TARGET="${INPUT_TARGET:-}"
+          DRY_RUN="${INPUT_DRY_RUN:-false}"
+          CONFIRM_PRODUCTION="${INPUT_CONFIRM_PRODUCTION:-false}"
+          OPERATIONS_REF="${INPUT_OPERATIONS_REF:-main}"
+
+          if [[ "$EVENT_NAME" == "repository_dispatch" ]]; then
+            TARGET="${PAYLOAD_TARGET:-}"
+            DRY_RUN="${PAYLOAD_DRY_RUN:-false}"
+            CONFIRM_PRODUCTION="${PAYLOAD_CONFIRM_PRODUCTION:-false}"
+            OPERATIONS_REF="${PAYLOAD_OPERATIONS_REF:-main}"
+          fi
+
           case "$TARGET" in
-            nightly-multi-agent-research.yml|heroic-ai-production-release.yml) ;;
+            nightly-multi-agent-research.yml|heroic-ai-production-release.yml|cross-repository-contract-drift.yml|operations-centralized-validation.yml|main-push-actions-control-plane-probe.yml) ;;
             *)
               echo "Refusing non-canonical Foundation workflow: $TARGET"
               exit 1
               ;;
           esac
+
+          if [[ "$DRY_RUN" == "true" && "$TARGET" != "nightly-multi-agent-research.yml" ]]; then
+            echo 'dry_run is only valid for nightly research'
+            exit 1
+          fi
 
           if [[ "$TARGET" == "heroic-ai-production-release.yml" ]]; then
             [[ "$DRY_RUN" != "true" ]] || {
@@ -75,10 +109,20 @@ jobs:
             exit 1
           fi
 
+          case "$OPERATIONS_REF" in
+            main|[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ;;
+            *) echo 'operations_ref must be main or a 40-character commit SHA'; exit 1 ;;
+          esac
+
           payload=$(jq -n --arg ref "$FOUNDATION_REF" '{ref: $ref}')
-          if [[ "$TARGET" == "nightly-multi-agent-research.yml" ]]; then
-            payload=$(jq --arg value "$DRY_RUN" '.inputs = {dry_run: $value}' <<<"$payload")
-          fi
+          case "$TARGET" in
+            nightly-multi-agent-research.yml)
+              payload=$(jq --arg value "$DRY_RUN" '.inputs = {dry_run: $value}' <<<"$payload")
+              ;;
+            operations-centralized-validation.yml)
+              payload=$(jq --arg value "$OPERATIONS_REF" '.inputs = {operations_ref: $value}' <<<"$payload")
+              ;;
+          esac
 
           dispatch_status=$(curl -sS -o "$RUNNER_TEMP/foundation-dispatch-response.json" -w '%{http_code}' \
             -X POST \
@@ -96,3 +140,4 @@ jobs:
           fi
 
           echo "Foundation dispatch accepted: $TARGET @ $FOUNDATION_REF"
+          echo "router_event=$EVENT_NAME"
