@@ -150,20 +150,14 @@ def test_builder_handles_nonempty_required_claims_and_projection_validation():
 
 
 def test_research_synthesizer_preserves_explicit_gap_state():
-    from backend.execution.engine import create_run, start_research, complete_research
     from backend.execution.synthesis import ResearchSynthesizer
-    from backend.intelligence.contracts import ResearchContract, ResearchPlan
 
-    run = create_run(
-        "run-gap",
-        ResearchContract(question="Question?"),
-        ResearchPlan(question="Question?", stages=(), source_budget=1, evidence_budget=1),
+    run = SimpleNamespace(
+        contract=SimpleNamespace(question="Question?"),
+        verified_claims=(
+            verified("c1", "Unknown fact.", ClaimStatus.UNKNOWN),
+        ),
+        observations=(),
     )
-    run = start_research(run)
-    claim = SimpleNamespace(claim_id="c1", text="Unknown fact.")
-    result = SimpleNamespace(status=ClaimStatus.UNKNOWN, supporting_evidence=())
-    run.verified_claims = ((claim, result),)
-    run = complete_research(run)
-
     synthesized = ResearchSynthesizer().synthesize(run)
     assert "Unresolved aspects:" in synthesized.answer
