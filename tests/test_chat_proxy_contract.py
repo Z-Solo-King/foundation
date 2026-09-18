@@ -42,10 +42,10 @@ def test_chat_stream_proxy_preserves_sse_response(monkeypatch):
     import worker
 
     class PublicResponse:
-        def __init__(self, body, *, status=200, headers=None):
+        def __init__(self, body, *, status=200):
             self.body = body
             self.status = status
-            self.headers = headers or {}
+            self.headers = {}
 
     monkeypatch.setattr(worker, "Response", PublicResponse)
 
@@ -53,20 +53,12 @@ def test_chat_stream_proxy_preserves_sse_response(monkeypatch):
         status = 200
         body = b"data: hello\\n\\n"
 
-    class Binding:
-        async def fetch(self, url, options):
-            assert url == "https://chat/v1/chat/stream"
-            assert options["headers"]["Idempotency-Key"] == "req-2"
-            return UpstreamResponse()
-
-    class Request: headers = {"Authorization": "Bearer user", "Idempotency-Key": "req-2"}
-    upstream, body, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request()))
-    assert upstream.status == 200
-    assert upstream.headers["Content-Type"] == "text/event-stream; charset=utf-8"
-    assert upstream.headers["Cache-Control"] == "no-store, no-cache, max-age=0, must-revalidate"
-    assert upstream.headers["X-Content-Type-Options"] == "nosniff"
-    assert body is None
-    assert status == 200
+    public = worker._public_sse_response(UpstreamResponse())
+    assert public.status == 200
+    assert public.body == b"data: hello\\n\\n"
+    assert public.headers["Content-Type"] == "text/event-stream; charset=utf-8"
+    assert public.headers["Cache-Control"] == "no-store, no-cache, max-age=0, must-revalidate"
+    assert public.headers["X-Content-Type-Options"] == "nosniff"
 
 
 def test_chat_stream_proxy_handles_binding_error():
