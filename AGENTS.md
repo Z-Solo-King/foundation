@@ -128,3 +128,14 @@ Non-trivial modules must make responsibility, non-responsibilities, inputs, outp
 `parallel triage -> non-overlapping slice -> latest-main branch -> smallest safe change -> focused tests -> PR -> merge when green -> update issue -> rescan queue -> next slice`
 
 Continue until the remaining queue is entirely runtime/external/blocked, duplicate/superseded, or otherwise lacks a repository-actionable fix.
+
+
+## Fast queue operating profile
+
+For high-volume maintenance, use a two-stage scheduler: parallel read-only discovery, then a serialized mutation queue. Keep 3-4 non-overlapping candidate lanes available, but never let parallel lanes share an issue, branch, or file surface. Re-check active PRs and exact paths immediately before each write.
+
+Track every candidate as one of: `actionable`, `in_progress`, `blocked_checks`, `runtime_only`, `external_blocked`, `duplicate`, `superseded`, or `complete`. A blocked check lane does not stop other actionable lanes.
+
+Prefer exact-path reads and bounded searches over repeated full-tree scans. After a merge or PR closure, refresh only the affected queue slices first, then perform a broader rescan.
+
+GitHub API operations must respect rate limits: avoid excessive concurrent requests, serialize mutations, space large mutation bursts, and back off on secondary-rate-limit responses. Use stable, narrow queries when polling.
