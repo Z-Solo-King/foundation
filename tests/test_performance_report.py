@@ -85,3 +85,14 @@ def test_performance_report_requires_samples_and_consistent_context():
         assert "share workload" in str(exc)
     else:
         raise AssertionError("expected context mismatch rejection")
+
+
+def test_performance_metric_summary_rejects_empty_values():
+    from backend.performance_report import _summary
+
+    try:
+        _summary("latency", ())
+    except ValueError as exc:
+        assert "at least one value" in str(exc)
+    else:
+        raise AssertionError("expected empty metric rejection")
