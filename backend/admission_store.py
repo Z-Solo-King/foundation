@@ -33,6 +33,114 @@ class AdmissionLease:
     cost_units: int
 
 
+async def _existing_event(db: Any, event_id: str) -> dict[str, Any] | None:
+    result = await db.prepare(
+        """SELECT event_id, window_start, subject_fingerprint, route, lease_expires_at, released_at
+           FROM public_admission_events
+           WHERE event_id = ?"""
+    ).bind(event_id).first()
+    if result is None:
+        return None
+    if not isinstance(result, dict):
+        return None
+    return result if "event_id" in result else None
+
+
+async def _handle_existing_event(
+    db: Any,
+    existing: dict[str, Any],
+    *,
+    subject_fingerprint: str,
+    route: AdmissionRoute,
+    event_id: str,
+    window_start: int,
+    expires_at: int,
+    now: int,
+    cost_units: int,
+    decision: AdmissionDecision,
+    policy: AdmissionPolicy,
+) -> tuple[AdmissionDecision, AdmissionLease | None] | None:
+    if (
+        str(existing.get("subject_fingerprint", "")) != subject_fingerprint
+        or str(existing.get("route", "")) != route.value
+    ):
+        return AdmissionDecision(
+            AdmissionOutcome.DUPLICATE,
+            route,
+            False,
+            "event id was already used for a different admission scope",
+        ), None
+
+    if existing.get("released_at") is not None:
+        return decision, None
+
+    if int(existing.get("lease_expires_at") or 0) <= now:
+        result = await db.prepare(
+            "UPDATE public_admission_events SET window_start = ?, lease_expires_at = ?, released_at = NULL "
+            "WHERE event_id = ? AND subject_fingerprint = ? AND route = ? "
+            "AND released_at IS NULL AND lease_expires_at <= ?"
+        ).bind(window_start, expires_at, event_id, subject_fingerprint, route.value, now).run()
+        meta = result.get("meta", {}) if isinstance(result, dict) else getattr(result, "meta", {})
+        if int(meta.get("changes", 0) or 0) == 1:
+            return decision, AdmissionLease(
+                event_id=event_id,
+                subject_fingerprint=subject_fingerprint,
+                route=route,
+                window_start=window_start,
+                expires_at=expires_at,
+                cost_units=cost_units,
+            )
+
+    return AdmissionDecision(
+        AdmissionOutcome.CONCURRENCY_LIMITED,
+        route,
+        False,
+        "duplicate request is still executing under the same admission lease",
+        policy.retry_after_seconds,
+    ), None
+
+
+async def _insert_new_admission(
+    store: "D1AdmissionStore",
+    decision: AdmissionDecision,
+    *,
+    event_id: str,
+    window_start: int,
+    subject_fingerprint: str,
+    route: AdmissionRoute,
+    cost_units: int,
+    expires_at: int,
+    now: int,
+    policy: AdmissionPolicy,
+) -> tuple[AdmissionDecision, AdmissionLease | None]:
+    inserted = await store._insert_if_admissible(
+        event_id=event_id,
+        window_start=window_start,
+        subject_fingerprint=subject_fingerprint,
+        route=route,
+        cost_units=cost_units,
+        expires_at=expires_at,
+        now=now,
+        policy=policy,
+    )
+    if not inserted:
+        return AdmissionDecision(
+            AdmissionOutcome.CONCURRENCY_LIMITED,
+            route,
+            False,
+            "admission state changed concurrently; retry",
+            policy.retry_after_seconds,
+        ), None
+    return decision, AdmissionLease(
+        event_id=event_id,
+        subject_fingerprint=subject_fingerprint,
+        route=route,
+        window_start=window_start,
+        expires_at=expires_at,
+        cost_units=cost_units,
+    )
+
+
 class D1AdmissionStore:
     def __init__(self, db: Any):
         self.db = db
@@ -146,7 +254,25 @@ class D1AdmissionStore:
         if not decision.allowed:
             return decision, None
 
-        inserted = await self._insert_if_admissible(
+        existing = await _existing_event(self.db, event_id)
+        if existing is not None:
+            return await _handle_existing_event(
+                self.db,
+                existing,
+                subject_fingerprint=subject_fingerprint,
+                route=route,
+                event_id=event_id,
+                window_start=window_start,
+                expires_at=expires_at,
+                now=now,
+                cost_units=cost_units,
+                decision=decision,
+                policy=policy,
+            )
+
+        return await _insert_new_admission(
+            self,
+            decision,
             event_id=event_id,
             window_start=window_start,
             subject_fingerprint=subject_fingerprint,
@@ -155,23 +281,6 @@ class D1AdmissionStore:
             expires_at=expires_at,
             now=now,
             policy=policy,
-        )
-        if not inserted:
-            return AdmissionDecision(
-                AdmissionOutcome.CONCURRENCY_LIMITED,
-                route,
-                False,
-                "admission state changed concurrently; retry",
-                policy.retry_after_seconds,
-            ), None
-
-        return decision, AdmissionLease(
-            event_id=event_id,
-            subject_fingerprint=subject_fingerprint,
-            route=route,
-            window_start=window_start,
-            expires_at=expires_at,
-            cost_units=cost_units,
         )
 
     @staticmethod
