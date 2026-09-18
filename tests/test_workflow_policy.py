@@ -196,6 +196,8 @@ def test_private_operations_automation_guard_is_in_public_foundation_ci():
     assert 'contents/.github/workflows?ref=main' in workflow
     assert 'private Operations GitHub Actions boundary: PASS' in workflow
     assert 'private Operations GitHub Actions boundary: FAIL' in workflow
+    assert 'private Operations structural policy: PASS' in workflow
+    assert 'git/trees/main?recursive=1' in workflow
     assert 'cron: "17 2 * * *"' in workflow
 
 def test_required_pr_checks_emit_the_branch_protection_contract():
@@ -205,6 +207,8 @@ def test_required_pr_checks_emit_the_branch_protection_contract():
     assert "types: [checks_requested]" in required
     assert "name: Public tests" in required
     assert "name: Analyze python" in required
+    assert "name: Repository maintenance governance" in required
+    assert "python tools/validate_repository_governance.py" in required
     assert "pywrangler deploy" not in required
     assert "CLOUDFLARE_API_TOKEN" not in required
     assert "B2_KEY_ID" not in required
