@@ -30,8 +30,9 @@ SOURCE_ALIASES = {
 }
 
 PROJECT_CATEGORIES = {
-    "project_architecture", "project_status", "research_artifacts", "extraction_quality", "regression_analysis",
-    "ci_health", "source_novelty", "evidence_quality", "research_efficiency", "frontend_research", "acceptance",
+    "project_architecture", "project_status", "research_artifacts", "nightly_artifact_integrity",
+    "extraction_quality", "regression_analysis", "ci_health", "source_novelty", "evidence_quality",
+    "research_efficiency", "frontend_research", "acceptance",
 }
 
 

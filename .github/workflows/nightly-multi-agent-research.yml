@@ -518,6 +518,12 @@ EOF
           baseline = json.loads(Path('.runtime/nightly-baseline.json').read_text())
           assert baseline['schema'] == 'project-improvement-baseline/v1'
           assert baseline['decision'] in {'NO_BASELINE', 'IMPROVED', 'REGRESSED', 'STABLE'}
+      - name: Validate complete nightly artifact bundle
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m benchmark.research_artifact_validator --root .
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
         with:
