@@ -157,25 +157,14 @@ async def _doh_request(endpoint: str, encoded_query: str):
     """Send an RFC 8484 wireformat GET to a fixed, allowlisted DoH endpoint."""
     if endpoint not in DNS_OVER_HTTPS_ENDPOINTS:
         raise ValueError("unsupported DNS-over-HTTPS endpoint")
-    from js import Headers, Request, fetch as js_fetch
+    from js import Request, fetch as js_fetch
 
-    # Use the documented Python Workers FFI constructors so the runtime receives
-    # a real Request/Headers object rather than Python kwargs or a raw options dict.
+    # Construct the standard Request with only the URL. Mutating the real Headers
+    # object avoids Python->JS RequestInit conversion on Python Workers.
     request_url = f"{endpoint}?dns={encoded_query}"
-    headers = Headers.new(
-        {
-            "accept": "application/dns-message",
-            "cache-control": "no-store",
-        }.items()
-    )
-    request = Request.new(
-        request_url,
-        {
-            "method": "GET",
-            "headers": headers,
-            "cache": "no-store",
-        },
-    )
+    request = Request.new(request_url)
+    request.headers.set("Accept", "application/dns-message")
+    request.headers.set("Cache-Control", "no-store")
     return await js_fetch(request)
 
 
