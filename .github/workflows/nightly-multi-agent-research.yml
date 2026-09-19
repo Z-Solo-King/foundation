@@ -454,6 +454,11 @@ EOF
           name: nightly-diagnosis
           path: .runtime/nightly-diagnosis.json
           retention-days: 30
+      - name: Validate nightly artifact bundle contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m benchmark.research_artifact_validator --root .runtime/artifacts
       - name: Build project research only from complete live research
         if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
         run: |
