@@ -326,3 +326,6 @@ def test_foundation_bridge_records_run_and_job_creation_control_plane_evidence()
     assert "for attempt in {1..6}; do" in workflow
     assert "no job was created after bounded polling" in workflow
     assert 'actions/runs/${run_id}/jobs' in workflow
+    post = workflow.index('dispatch_status=$(curl')
+    timestamp = workflow.index('dispatch_epoch="$(date -u +%s)"')
+    assert timestamp < post, "dispatch timestamp must be captured before the POST"
