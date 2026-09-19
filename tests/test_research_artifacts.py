@@ -52,6 +52,7 @@ def test_project_research_corpus_has_broad_project_coverage() -> None:
         "research_efficiency",
         "frontend_research",
         "acceptance",
+        "nightly_artifact_integrity",
     }
     assert project_categories <= categories
     project_rows = [row for row in queries if row["category"] in project_categories]
