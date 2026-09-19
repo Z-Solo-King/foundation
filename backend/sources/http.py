@@ -157,16 +157,17 @@ async def _doh_request(endpoint: str, encoded_query: str):
     """Send an RFC 8484 wireformat GET through the native Workers fetch API."""
     if endpoint not in DNS_OVER_HTTPS_ENDPOINTS:
         raise ValueError("unsupported DNS-over-HTTPS endpoint")
-    from js import Request, fetch as js_fetch
+    # Use the documented Python Workers SDK fetch path with a native
+    # JavaScript Request. This avoids crossing the Python -> JS fetch FFI
+    # boundary with a Request object directly, which currently throws TypeError
+    # in the live Python Worker despite the equivalent unit-test double passing.
+    from workers import Request, fetch
 
-    # Construct the standard JavaScript Request with only the fixed URL.
-    # Mutating its real Headers object avoids Python -> JavaScript RequestInit
-    # conversion at the Python Workers FFI boundary.
     request_url = f"{endpoint}?dns={encoded_query}"
     request = Request.new(request_url)
-    request.headers.set("Accept", "application/dns-message")
-    request.headers.set("Cache-Control", "no-store")
-    return await js_fetch(request)
+    request.headers["Accept"] = "application/dns-message"
+    request.headers["Cache-Control"] = "no-store"
+    return await fetch(request)
 
 
 async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
