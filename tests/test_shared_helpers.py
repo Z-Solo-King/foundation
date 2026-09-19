@@ -61,7 +61,7 @@ def test_workers_fetch_adapter_uses_js_fetch_for_request_options(monkeypatch) ->
             raise AssertionError("workers.fetch should not carry request options in production path")
 
     monkeypatch.setitem(sys.modules, "workers", FakeWorkers)
-    monkeypatch.setitem(sys.modules, "js", types.SimpleNamespace(Object=FakeObject, Request=FakeRequest, fetch=fake_js_fetch))
+    monkeypatch.setitem(sys.modules, "js", types.SimpleNamespace(Object=FakeObject, Request=FakeRequest, Uint8Array=FakeUint8Array, fetch=fake_js_fetch))
     monkeypatch.setitem(sys.modules, "pyodide", types.SimpleNamespace())
     monkeypatch.setitem(sys.modules, "pyodide.ffi", types.SimpleNamespace(to_js=fake_to_js))
 
