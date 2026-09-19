@@ -21,11 +21,9 @@ def workers_fetch(context: str) -> Callable:
             return await fetch(url)
 
         try:
-            from js import Object, Request as JSRequest, fetch as js_fetch
+            from js import Object, Request as JSRequest, Uint8Array, fetch as js_fetch
             from pyodide.ffi import to_js
         except ImportError:
-            # Local/unit-test fallback. In a real Python Worker the documented JS
-            # FFI modules are present, so this branch is not used in production.
             try:
                 from workers import Request
             except ImportError:
@@ -35,7 +33,14 @@ def workers_fetch(context: str) -> Callable:
             except (AttributeError, TypeError):
                 return await fetch(url, options)
 
-        request_options = to_js(options, dict_converter=Object.fromEntries)
+        normalized = dict(options)
+        body = normalized.get("body")
+        if isinstance(body, (bytes, bytearray, memoryview)):
+            # Python bytes are not a browser Fetch BodyInit. Convert them to a
+            # JavaScript Uint8Array before constructing the Request. Pyodide
+            # documents Uint8Array as the JS typed-array bridge for Python buffers.
+            normalized["body"] = Uint8Array.new(list(body))
+        request_options = to_js(normalized, dict_converter=Object.fromEntries)
         request = JSRequest.new(url, request_options)
         return await js_fetch(request)
 
