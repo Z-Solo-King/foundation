@@ -446,3 +446,10 @@ Do not optimize for zero open issues mechanically.
 The final queue is complete only when remaining issues are explicitly RUNTIME_GATE, EXTERNAL_BLOCKED, DUPLICATE, SUPERSEDED, or ROADMAP, and each has a canonical owner, exact missing evidence/dependency, current revision, and reproducible next probe/action.
 
 Everything else is actionable queue debt.
+
+
+## Cross-chat continuity override — 2026-09-19
+
+Before any new mutation, read `docs/AI_AGENT_HANDOFF.md`. The 2026-09-19 live-state section is authoritative over older sections. Current Foundation main is `b1e0e6e74e0d3d9a3e280fa146a6c39503628274`; current Operations main and production pin are `b43c19554100bcdded0c6e70d966b30e5e4df04c`.
+
+The latest production run has already proven authenticated chat, idempotent replay, and SSE. The current failure is research source ingestion/DNS (`example.com` -> `DNS resolution failed`), while the nightly workflow still exhibits zero-job control-plane failures. Do not reopen solved SSE work without new regression evidence. Rebase stale PRs before continuing them, especially PR #666; treat #671 as diagnostic-only until its output is reviewed.
