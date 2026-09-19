@@ -11,12 +11,16 @@ from collections.abc import Callable
 def workers_fetch(context: str) -> Callable:
     """Return a Worker fetch adapter with Python SDK request compatibility."""
     try:
-        from workers import Request, fetch
+        from workers import fetch
     except ImportError as exc:
         raise RuntimeError(f"Cloudflare Workers runtime is required for {context}") from exc
 
     async def _fetch(url, options=None):
         if options:
+            try:
+                from workers import Request
+            except ImportError:
+                return await fetch(url, options)
             return await fetch(Request(url, **options))
         return await fetch(url)
 
