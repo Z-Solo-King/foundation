@@ -131,7 +131,7 @@ def test_doh_request_rejects_non_allowlisted_endpoint():
         asyncio.run(http._doh_request("https://attacker.example/dns-query", "AQID"))
 
 
-def test_doh_request_uses_workers_sdk_fetch_with_native_request(monkeypatch):
+def test_doh_request_uses_native_request_with_workers_sdk_fetch(monkeypatch):
     import sys
     import types
 
@@ -139,18 +139,16 @@ def test_doh_request_uses_workers_sdk_fetch_with_native_request(monkeypatch):
 
     captured = {}
 
-    class FakeHeaders(dict):
-        pass
+    class FakeHeaders:
+        def set(self, key, value):
+            captured.setdefault("headers", {})[key] = value
 
     class FakeRequest:
-        def __init__(self, url):
-            self.url = url
-            self.headers = FakeHeaders()
-
         @staticmethod
         def new(url):
             captured["url"] = url
-            request = FakeRequest(url)
+            request = type("RequestObject", (), {})()
+            request.headers = FakeHeaders()
             captured["request"] = request
             return request
 
@@ -158,20 +156,16 @@ def test_doh_request_uses_workers_sdk_fetch_with_native_request(monkeypatch):
         captured["fetched_request"] = request
         return "response"
 
-    monkeypatch.setitem(
-        sys.modules,
-        "workers",
-        types.SimpleNamespace(Request=FakeRequest, fetch=fake_fetch),
-    )
-    monkeypatch.delitem(sys.modules, "js", raising=False)
+    monkeypatch.setitem(sys.modules, "js", types.SimpleNamespace(Request=FakeRequest))
+    monkeypatch.setitem(sys.modules, "workers", types.SimpleNamespace(fetch=fake_fetch))
 
     result = asyncio.run(
         http._doh_request("https://cloudflare-dns.com/dns-query", "AQID")
     )
     assert result == "response"
     assert captured["url"] == "https://cloudflare-dns.com/dns-query?dns=AQID"
-    assert captured["request"].headers["Accept"] == "application/dns-message"
-    assert captured["request"].headers["Cache-Control"] == "no-store"
+    assert captured["headers"]["Accept"] == "application/dns-message"
+    assert captured["headers"]["Cache-Control"] == "no-store"
     assert captured["fetched_request"] is captured["request"]
 
 
