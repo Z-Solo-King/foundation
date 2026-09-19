@@ -26,7 +26,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TARGET: main-push-actions-control-plane-probe.yml
+          TARGET: main-push-actions-control-plane-probe-v2.yml
           FOUNDATION_REF: main
         run: |
           set -euo pipefail
@@ -74,7 +74,7 @@ jobs:
           test "$job_count" -gt 0
 
           mkdir -p .runtime
-          jq -n --arg sha "$expected_sha" --argjson bridge "$bridge_run_id" --argjson target "$target_run_id" --argjson jobs "$job_count" '{schema:"foundation-workflow-dispatch-bridge-receipt/v1",target:"main-push-actions-control-plane-probe.yml",foundation_sha:$sha,bridge_run_id:$bridge,target_run_id:$target,target_job_count:$jobs,status:"success"}' > .runtime/workflow-dispatch-bridge-receipt.json
+          jq -n --arg sha "$expected_sha" --argjson bridge "$bridge_run_id" --argjson target "$target_run_id" --argjson jobs "$job_count" '{schema:"foundation-workflow-dispatch-bridge-receipt/v1",target:"main-push-actions-control-plane-probe-v2.yml",foundation_sha:$sha,bridge_run_id:$bridge,target_run_id:$target,target_job_count:$jobs,status:"success"}' > .runtime/workflow-dispatch-bridge-receipt.json
 
       - name: Upload workflow-dispatch bridge receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
