@@ -303,3 +303,9 @@ def test_dns_parse_addresses_rejects_short_packet():
 
     with pytest.raises(ValueError, match="truncated DNS response"):
         http._dns_parse_addresses(b"", "A")
+
+def test_dns_query_payload_rejects_overlong_label():
+    import backend.sources.http as http
+
+    with pytest.raises(ValueError, match="invalid DNS hostname"):
+        http._dns_query_payload(("a" * 64) + ".com", "A")
