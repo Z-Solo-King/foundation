@@ -416,7 +416,7 @@ if [ -n "${AUTH_TOKEN:-}" ]; then
   and any(.checks[]?.runtime_checks[]?; .name == "d1_memory_store" and .ok == true)
   and any(.checks[]?.runtime_checks[]?; .name == "d1_memory_query" and .ok == true)
   and any(.checks[]?.runtime_checks[]?; .name == "memory_owner_boundary" and .ok == true)
-  and any(.checks[]?.runtime_checks[]; .name == "task_envelope_d1_replay_guard" and .ok == true)
+  and any(.checks[]?.runtime_checks[]?; .name == "task_envelope_d1_replay_guard" and .ok == true)
   and any(.checks[]?.runtime_checks[]; .name == "d1_candidate_learning_round_trip" and .ok == true)
   and any(.checks[]?.runtime_checks[]; .name == "durable_resource_reserve_consume" and .ok == true)
   and any(.checks[]?.runtime_checks[]; .name == "maintenance_scheduler_reconciliation" and .ok == true)
