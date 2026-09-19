@@ -185,7 +185,7 @@ async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
             if int(response.status) != 200:
                 failures.append(f"{endpoint}: HTTP {int(response.status)}")
                 continue
-            raw = bytes(await response.arrayBuffer())
+            raw = bytes(await response.bytes())
             try:
                 values = _dns_parse_addresses(raw, record_type)
             except ValueError:
