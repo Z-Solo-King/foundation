@@ -245,6 +245,24 @@ def test_response_bytes_covers_all_supported_buffer_shapes():
         def __bytes__(self):
             return b"final-fallback"
 
+    class ToPyWithoutTobytes:
+        def to_py(self):
+            return object()
+
+        def __bytes__(self):
+            return b"to-py-fallback"
+
+    class NestedUnsupported:
+        def to_py(self):
+            return object()
+
+    class ToBytesNestedUnsupported:
+        def to_bytes(self):
+            return NestedUnsupported()
+
+        def __bytes__(self):
+            return b"nested-final-fallback"
+
     class JsProxyBinary:
         def to_bytes(self):
             return b"binary"
@@ -263,6 +281,8 @@ def test_response_bytes_covers_all_supported_buffer_shapes():
     assert http._response_bytes(ToBytesNestedBytearray()) == b"nested-bytearray"
     assert http._response_bytes(type("ToBytesNestedMemoryview", (), {"to_bytes": lambda self: NestedMemoryview()})()) == b"nested-memoryview"
     assert http._response_bytes(ToBytesNoNestedConversion()) == b"final-fallback"
+    assert http._response_bytes(ToPyWithoutTobytes()) == b"to-py-fallback"
+    assert http._response_bytes(ToBytesNestedUnsupported()) == b"nested-final-fallback"
 
 
 def test_doh_request_rejects_non_allowlisted_endpoint():
