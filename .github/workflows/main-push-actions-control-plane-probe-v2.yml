@@ -1,0 +1,25 @@
+name: main push Actions control-plane probe v2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: Main push Actions probe
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify runner job graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF}" = "refs/heads/main"
+          test -n "${GITHUB_SHA}"
+          echo "main push Actions probe: runner job created"
+          echo "sha=${GITHUB_SHA}"
