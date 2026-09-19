@@ -125,10 +125,14 @@ jobs:
 
           echo "Foundation dispatch accepted: $TARGET @ $FOUNDATION_REF"
 
+          # Record the dispatch boundary BEFORE the POST. GitHub can create the run
+          # immediately; recording the timestamp afterward creates a race where a valid
+          # run is rejected as too old.
+          dispatch_epoch="$(date -u +%s)"
+
           # A successful dispatch HTTP 204 only proves request admission. Poll for the
           # resulting workflow run and its first job so accepted-trigger/zero-job states
           # become explicit control-plane evidence instead of disappearing into history.
-          dispatch_epoch="$(date -u +%s)"
           run_id=""
           for attempt in {1..12}; do
             runs_json="$(curl -fsS \
@@ -152,7 +156,7 @@ for run in payload.get("workflow_runs", []):
     created = run.get("created_at")
     if not created:
         continue
-    if epoch(created) >= dispatch_epoch - 5 and run.get("head_sha") == expected_sha:
+    if epoch(created) >= dispatch_epoch - 30 and run.get("head_sha") == expected_sha:
         print(run.get("id", ""))
         break
 PY
