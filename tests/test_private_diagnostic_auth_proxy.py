@@ -13,7 +13,7 @@ class Response:
     status = 200
 
     async def json(self):
-        return {"ok": True, "chatbot": {"allowed": True}}
+        return {"ok": True, "chatbot": {"allowed": True}, "runtime_status": "ok", "runtime_checks": [{"name": "d1_memory_store", "ok": True}]}
 
 
 class Binding:

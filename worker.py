@@ -313,13 +313,29 @@ async def _operations_chatbot_diagnostic(env, request=None):
             )
         )
         body = await upstream.json()
-        healthy = upstream.status == 200 and isinstance(body, dict) and bool(body.get("ok")) and bool(body.get("chatbot", {}).get("allowed"))
+        body_dict = body if isinstance(body, dict) else {}
+        runtime_checks = body_dict.get("runtime_checks") if isinstance(body_dict.get("runtime_checks"), list) else []
+        runtime_ok = bool(body_dict.get("runtime_status") == "ok") and bool(runtime_checks) and all(
+            isinstance(check, dict) and bool(check.get("ok"))
+            for check in runtime_checks
+        )
+        chatbot = body_dict.get("chatbot")
+        chatbot_allowed = isinstance(chatbot, dict) and bool(chatbot.get("allowed"))
+        healthy = (
+            upstream.status == 200
+            and isinstance(body, dict)
+            and bool(body_dict.get("ok"))
+            and chatbot_allowed
+            and runtime_ok
+        )
         return {
             "ok": healthy,
             "status": "ok" if healthy else "degraded",
             "response_status": upstream.status,
             "chatbot": body.get("chatbot") if isinstance(body, dict) else None,
             "provider_policy": body.get("provider_policy") if isinstance(body, dict) else None,
+            "runtime_status": body.get("runtime_status") if isinstance(body, dict) else None,
+            "runtime_checks": runtime_checks,
             "error": None if healthy else (body.get("error") if isinstance(body, dict) else "invalid_private_chatbot_diagnostic"),
         }, 200 if healthy else 503
     except Exception as exc:
@@ -428,7 +444,14 @@ class Default(WorkerEntrypoint):
             if payload.get("operation") == "infrastructure_verify_public_test":
                 body, status = await _public_infrastructure_verify(self.env)
                 private_body, private_status = await _operations_chatbot_diagnostic(self.env, request)
-                body["checks"].append({"name": "public_chatbot", "ok": private_body.get("ok", False), "status": private_status, "detail": private_body.get("error") or "private chatbot diagnostic completed"})
+                body["checks"].append({
+                    "name": "public_chatbot",
+                    "ok": private_body.get("ok", False),
+                    "status": private_status,
+                    "detail": private_body.get("error") or "private chatbot diagnostic completed",
+                    "runtime_status": private_body.get("runtime_status"),
+                    "runtime_checks": private_body.get("runtime_checks", []),
+                })
                 body["ok"] = all(bool(check.get("ok")) for check in body["checks"])
                 body["status"] = "ok" if body["ok"] else "degraded"
                 return _authenticated_json(body, status=200 if body["ok"] else 503)

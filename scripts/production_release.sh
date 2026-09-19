@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="035bb38e54aa2b81a1e41b95ac01e7d352b75d83"
+OPERATIONS_REF="8258d0bcee2bef9427a60aed522a14e0ff95ea2b"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
@@ -22,7 +22,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = '035bb38e54aa2b81a1e41b95ac01e7d352b75d83'
+test "$OPERATIONS_REF" = '8258d0bcee2bef9427a60aed522a14e0ff95ea2b'
 
 after_install_marker=''
 
@@ -412,7 +412,14 @@ if [ -n "${AUTH_TOKEN:-}" ]; then
   cat diagnostic.json
   test "$diagnostic_status" = '200'
   jq -e '.ok == true and .status == "ok"
-  and any(.checks[]?; .name == "public_chatbot" and .ok == true)
+  and any(.checks[]?; .name == "public_chatbot" and .ok == true and .runtime_status == "ok")
+  and any(.checks[]?.runtime_checks[]?; .name == "d1_memory_store" and .ok == true)
+  and any(.checks[]?.runtime_checks[]?; .name == "d1_memory_query" and .ok == true)
+  and any(.checks[]?.runtime_checks[]?; .name == "memory_owner_boundary" and .ok == true)
+  and any(.checks[]?.runtime_checks[]; .name == "task_envelope_d1_replay_guard" and .ok == true)
+  and any(.checks[]?.runtime_checks[]; .name == "d1_candidate_learning_round_trip" and .ok == true)
+  and any(.checks[]?.runtime_checks[]; .name == "durable_resource_reserve_consume" and .ok == true)
+  and any(.checks[]?.runtime_checks[]; .name == "maintenance_scheduler_reconciliation" and .ok == true)
   and any(.checks[]?; .name == "cloudflare_d1" and .ok == true)
   and any(.checks[]?; .name == "backblaze_b2_lifecycle" and .ok == true)
 ' diagnostic.json >/dev/null
