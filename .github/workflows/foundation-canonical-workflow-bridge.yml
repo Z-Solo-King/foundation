@@ -8,12 +8,12 @@ name: Foundation canonical workflow bridge
         required: true
         type: choice
         options:
-          - nightly-multi-agent-research.yml
+          - nightly-multi-agent-research-v2.yml
           - heroic-ai-production-release.yml
           - cross-repository-contract-drift.yml
           - operations-centralized-validation.yml
           - main-push-actions-control-plane-probe.yml
-        default: nightly-multi-agent-research.yml
+        default: nightly-multi-agent-research-v2.yml
       dry_run:
         description: Pass dry_run=true to nightly research only
         required: false
@@ -67,14 +67,14 @@ jobs:
           OPERATIONS_REF="${OPERATIONS_REF:-main}"
 
           case "$TARGET" in
-            nightly-multi-agent-research.yml|heroic-ai-production-release.yml|cross-repository-contract-drift.yml|operations-centralized-validation.yml|main-push-actions-control-plane-probe.yml) ;;
+            nightly-multi-agent-research-v2.yml|heroic-ai-production-release.yml|cross-repository-contract-drift.yml|operations-centralized-validation.yml|main-push-actions-control-plane-probe.yml) ;;
             *)
               echo "Refusing non-canonical Foundation workflow: $TARGET"
               exit 1
               ;;
           esac
 
-          if [[ "$DRY_RUN" == "true" && "$TARGET" != "nightly-multi-agent-research.yml" ]]; then
+          if [[ "$DRY_RUN" == "true" && "$TARGET" != "nightly-multi-agent-research-v2.yml" ]]; then
             echo 'dry_run is only valid for nightly research'
             exit 1
           fi
@@ -100,7 +100,7 @@ jobs:
 
           payload=$(jq -n --arg ref "$FOUNDATION_REF" '{ref: $ref}')
           case "$TARGET" in
-            nightly-multi-agent-research.yml)
+            nightly-multi-agent-research-v2.yml)
               payload=$(jq --arg value "$DRY_RUN" '.inputs = {dry_run: $value}' <<<"$payload")
               ;;
             operations-centralized-validation.yml)
