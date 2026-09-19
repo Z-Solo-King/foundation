@@ -340,8 +340,16 @@ stream_json_status=$(curl -sS --max-time 90 \
   "${BASE_URL}/api/v1/chat")
 echo "POST /api/v1/chat with stream payload -> HTTP ${stream_json_status}"
 cat "$RUNNER_TEMP/live-stream-json.json" || true
-test "$stream_json_status" = '200'
-jq -e '.ok == true and .response.response_id == ("chat-" + ("production-stream-request-" + env.GITHUB_RUN_ID))' "$RUNNER_TEMP/live-stream-json.json" >/dev/null
+test "$stream_json_status" = '200' || {
+  echo "stream-payload JSON probe failed:"
+  cat "$RUNNER_TEMP/live-stream-json.json" || true
+  exit 1
+}
+jq -e '.ok == true and .response.response_id == ("chat-" + ("production-stream-request-" + env.GITHUB_RUN_ID))' "$RUNNER_TEMP/live-stream-json.json" >/dev/null || {
+  echo "stream-payload JSON response contract failed:"
+  cat "$RUNNER_TEMP/live-stream-json.json" || true
+  exit 1
+}
 
 stream_status=$(curl -sS --no-buffer --max-time 90 \
   -D "$RUNNER_TEMP/live-stream.headers" \
