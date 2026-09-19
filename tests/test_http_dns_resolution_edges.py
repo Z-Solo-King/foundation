@@ -131,24 +131,32 @@ def test_doh_request_rejects_non_allowlisted_endpoint():
         asyncio.run(http._doh_request("https://attacker.example/dns-query", "AQID"))
 
 
-def test_doh_request_constructs_fixed_request_and_get_options(monkeypatch):
+def test_doh_request_constructs_fixed_url_and_get_options(monkeypatch):
     import backend.sources.http as http
 
     captured = {}
 
-    class FakeRequest:
-        def __init__(self, url, **options):
-            captured["url"] = url
-            captured["options"] = options
+    class FakeObject:
+        @staticmethod
+        def fromEntries(value):
+            return value
 
-    async def fake_fetch(request):
-        captured["request"] = request
+    async def fake_fetch(url, options):
+        captured["url"] = url
+        captured["options"] = options
         return "response"
 
     monkeypatch.setitem(
         __import__("sys").modules,
-        "workers",
-        __import__("types").SimpleNamespace(Request=FakeRequest, fetch=fake_fetch),
+        "js",
+        __import__("types").SimpleNamespace(Object=FakeObject, fetch=fake_fetch),
+    )
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "pyodide.ffi",
+        __import__("types").SimpleNamespace(
+            to_js=lambda value, dict_converter=None: dict_converter(value) if dict_converter else value
+        ),
     )
 
     result = asyncio.run(http._doh_request("https://cloudflare-dns.com/dns-query", "AQID"))
@@ -156,7 +164,6 @@ def test_doh_request_constructs_fixed_request_and_get_options(monkeypatch):
     assert captured["url"] == "https://cloudflare-dns.com/dns-query?dns=AQID"
     assert captured["options"]["method"] == "GET"
     assert captured["options"]["headers"]["Accept"] == "application/dns-message"
-
 
 
 
