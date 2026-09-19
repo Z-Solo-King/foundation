@@ -254,3 +254,44 @@ Do not close runtime-gated issues because a PR merged or unit tests passed.
 6. Then process the remaining 23-issue queue using non-overlapping lanes and rescan after every 3–5 meaningful mutations.
 
 Never infer Cloudflare/runtime success from GitHub source alone. Never expose private Operations implementation or secrets through Foundation documentation.
+
+
+## 2026-09-19 LIVE STATE OVERRIDE — CURRENT CHAT HANDOFF
+
+This section supersedes older handoff revisions when they conflict with the live repositories.
+
+### Exact current revisions
+- Foundation `main`: `4dd63df25f34d8489d9abb8f75611a511d2a3c2a`.
+- Operations `main`: `8258d0bcee2bef9427a60aed522a14e0ff95ea2b`.
+- Operations remains private; Foundation remains the sole GitHub Actions and canonical production-deployment owner.
+
+### Research transport progression
+- Foundation PR #697 merged: raw JavaScript `fetch(url)` DoH path.
+- Foundation PR #699 merged: documented `Request.new` path; live production still showed an FFI `AttributeError`.
+- Foundation PR #700 merged after all required PR checks and CodeQL passed. It explicitly converts the fixed DoH URL through Pyodide `to_js` before the JavaScript fetch boundary.
+- Foundation PRs #684, #687 and #691 were closed as superseded after the newer validated path was merged.
+- Do not reopen or stack another transport variant without a fresh production receipt identifying a new failure mode.
+
+### Private-runtime acceptance progression
+- Operations PR #517 merged at `8258d0bcee2bef9427a60aed522a14e0ff95ea2b`.
+- Foundation PR #698 merged the corresponding protected-runtime diagnostic/pin update.
+- The production diagnostic is now capable of exercising D1 memory store/query/owner-bound delete, D1 replay rejection, candidate-learning persistence, durable resource reservation/reconciliation, and maintenance reconciliation.
+- These capabilities remain runtime acceptance gates until the canonical production release records the exact PASS evidence.
+
+### Current production gate
+Canonical production run **35434275607** is the latest deployment run for Foundation `main` `4dd63df...` and was still in progress at the last refresh. Do not infer research/runtime success from the merge or from CI.
+
+### Nightly/control-plane state
+The latest push-triggered nightly-related workflows on `4dd63df...` created **zero jobs** (including the canonical nightly research, pin-repair, bridge, backup/restore and cross-repository drift runs). The dedicated main-push control-plane and secret probes still passed. Treat zero-job workflow runs as an independent GitHub control-plane/job-graph acceptance gate; do not change valid permissions merely to manufacture jobs.
+
+### Open issue queue
+The live queue remains 23 issues: Foundation #27/#58/#157/#259/#263/#452 and Operations #119/#120/#132/#145/#155/#164/#197/#329/#330/#331/#332/#333/#334/#340/#349/#352/#385.
+
+### New-chat continuation protocol
+1. Inspect the final result and logs of production run **35434275607**.
+2. If research still fails, use the exact production exception and the current Foundation #700 implementation as the starting point; do not repeat already-tested fetch shapes blindly.
+3. If production passes, write the exact receipt to #259 and only close issues whose own acceptance graphs are fully satisfied.
+4. Independently handle the zero-job nightly/control-plane gate for #157/#263.
+5. Do not close runtime-gated Operations issues from source/CI alone.
+
+Updated: 2026-09-19
