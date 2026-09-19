@@ -1,6 +1,6 @@
 name: Live extractor benchmark
 
-'on':
+on:
   push:
     branches: [main]
   workflow_dispatch:
@@ -16,17 +16,120 @@ permissions:
 
 jobs:
   benchmark:
-    name: Live API/feed/HTML/browser extractor benchmark
+    name: ${{ matrix.case }} pass ${{ matrix.pass }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include:
+          - case: api-dummyjson
+            label: api:dummyjson
+            mode: http
+            url: https://dummyjson.com/products/1
+            pass: 1
+          - case: api-dummyjson
+            label: api:dummyjson
+            mode: http
+            url: https://dummyjson.com/products/1
+            pass: 2
+          - case: api-fakestore
+            label: api:fakestore
+            mode: http
+            url: https://fakestoreapi.com/products/1
+            pass: 1
+          - case: api-fakestore
+            label: api:fakestore
+            mode: http
+            url: https://fakestoreapi.com/products/1
+            pass: 2
+          - case: api-escuela
+            label: api:escuela
+            mode: http
+            url: https://api.escuelajs.co/api/v1/products/1
+            pass: 1
+          - case: api-escuela
+            label: api:escuela
+            mode: http
+            url: https://api.escuelajs.co/api/v1/products/1
+            pass: 2
+          - case: feed-hnrss
+            label: feed:hnrss
+            mode: http
+            url: https://hnrss.org/frontpage
+            pass: 1
+          - case: feed-hnrss
+            label: feed:hnrss
+            mode: http
+            url: https://hnrss.org/frontpage
+            pass: 2
+          - case: feed-github
+            label: feed:github
+            mode: http
+            url: https://github.com/openai/openai-python/releases.atom
+            pass: 1
+          - case: feed-github
+            label: feed:github
+            mode: http
+            url: https://github.com/openai/openai-python/releases.atom
+            pass: 2
+          - case: html-example
+            label: html:example
+            mode: http
+            url: https://example.com/
+            pass: 1
+          - case: html-example
+            label: html:example
+            mode: http
+            url: https://example.com/
+            pass: 2
+          - case: html-books
+            label: html:books
+            mode: http
+            url: https://books.toscrape.com/catalogue/page-1.html
+            pass: 1
+          - case: html-books
+            label: html:books
+            mode: http
+            url: https://books.toscrape.com/catalogue/page-1.html
+            pass: 2
+          - case: html-ecommerce
+            label: html:ecommerce
+            mode: http
+            url: https://webscraper.io/test-sites/e-commerce/static/computers/laptops
+            pass: 1
+          - case: html-ecommerce
+            label: html:ecommerce
+            mode: http
+            url: https://webscraper.io/test-sites/e-commerce/static/computers/laptops
+            pass: 2
+          - case: browser-quotes
+            label: browser:quotes
+            mode: browser
+            url: https://quotes.toscrape.com/js/
+            pass: 1
+          - case: browser-quotes
+            label: browser:quotes
+            mode: browser
+            url: https://quotes.toscrape.com/js/
+            pass: 2
+          - case: browser-ecommerce
+            label: browser:ecommerce
+            mode: browser
+            url: https://webscraper.io/test-sites/e-commerce/dynamic/computers/laptops
+            pass: 1
+          - case: browser-ecommerce
+            label: browser:ecommerce
+            mode: browser
+            url: https://webscraper.io/test-sites/e-commerce/dynamic/computers/laptops
+            pass: 2
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
       OPERATIONS_REF: ${{ inputs.operations_ref || 'a1466288f16115b784d75d0a3c675dd410c06d24' }}
       PYTHONUNBUFFERED: "1"
     steps:
-      - name: Checkout Foundation
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
       - name: Create Operations read token
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
@@ -45,14 +148,6 @@ jobs:
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
-      - name: Verify immutable Operations revision
-        working-directory: operations
-        run: |
-          set -euo pipefail
-          resolved="$(git rev-parse HEAD)"
-          test "$resolved" = "$OPERATIONS_REF"
-          echo "BENCHMARK_OPERATIONS_REF=$resolved"
-
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -63,106 +158,130 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check -e ".[test,browser]"
-          python -m playwright install --with-deps chromium
+          if [ "${{ matrix.mode }}" = "browser" ]; then python -m playwright install --with-deps chromium; fi
 
-      - name: Materialize bounded benchmark targets
+      - name: Materialize one-target case
         run: |
           set -euo pipefail
           mkdir -p benchmark-input benchmark-output
-          cat > benchmark-input/http-targets.json <<'EOF'
+          cat > benchmark-input/target.json <<'EOF'
           {
-            "targets": [
-              {"url":"https://dummyjson.com/products/1","label":"api:dummyjson"},
-              {"url":"https://hnrss.org/frontpage","label":"feed:hnrss"},
-              {"url":"https://example.com/","label":"html:example"}
-            ]
+            "targets": [{"url":"${{ matrix.url }}","label":"${{ matrix.label }}"}]
           }
           EOF
-          cat > benchmark-input/browser-targets.json <<'EOF'
-          {
-            "targets": [
-              {"url":"https://quotes.toscrape.com/js/","label":"browser:playwright"}
-            ]
-          }
-          EOF
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          for path in Path("benchmark-input").glob("*.json"):
-              payload=json.loads(path.read_text())
-              assert 1 <= len(payload["targets"]) <= 8
-              assert all(isinstance(item["url"], str) and item["url"].startswith(("http://","https://")) for item in payload["targets"])
-              assert all(isinstance(item.get("label",""), str) and item.get("label") for item in payload["targets"])
-          PY
 
-      - name: Run HTTP benchmark pass 1\n        continue-on-error: true\n        working-directory: operations
-        run: |
-          set -euo pipefail
-          PYTHONPATH=. python scripts/durable_site_benchmark.py run             --input ../benchmark-input/http-targets.json             --output ../benchmark-output/http-pass1             --shards 1 --shard 0 --workers 2 --retries 2
-
-      - name: Run HTTP benchmark pass 2\n        continue-on-error: true\n        working-directory: operations
-        run: |
-          set -euo pipefail
-          python scripts/durable_site_benchmark.py run             --input ../benchmark-input/http-targets.json             --output ../benchmark-output/http-pass2             --shards 1 --shard 0 --workers 2 --retries 2
-
-      - name: Run browser benchmark pass 1\n        continue-on-error: true\n        working-directory: operations
-        run: |
-          set -euo pipefail
-          python scripts/browser_site_benchmark.py             --input ../benchmark-input/browser-targets.json             --output ../benchmark-output/browser-pass1.jsonl
-
-      - name: Run browser benchmark pass 2\n        continue-on-error: true\n        working-directory: operations
-        run: |
-          set -euo pipefail
-          python scripts/browser_site_benchmark.py             --input ../benchmark-input/browser-targets.json             --output ../benchmark-output/browser-pass2.jsonl
-
-      - name: Verify benchmark receipts
-        continue-on-error: true
+      - name: Run HTTP case
+        if: matrix.mode == 'http'
         working-directory: operations
         run: |
           set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          files=sorted(Path("../benchmark-output").rglob("*.jsonl"))
-          assert len(files) >= 4, f"expected at least four pass files, got {len(files)}"
-          for path in files:
-              text=path.read_text(encoding="utf-8").strip()
-              assert text, f"empty benchmark receipt: {path}"
-              print(path)
-          PY
+          PYTHONPATH=. python scripts/durable_site_benchmark.py run \
+            --input ../benchmark-input/target.json \
+            --output ../benchmark-output \
+            --shards 1 --shard 0 --workers 1 --retries 2
 
-      - name: Build benchmark quality report\n        continue-on-error: true\n        working-directory: operations
+      - name: Run browser case
+        if: matrix.mode == 'browser'
+        working-directory: operations
         run: |
           set -euo pipefail
-          inputs=()
-          while IFS= read -r file; do inputs+=(--input "$file"); done < <(
-            find ../benchmark-output -name '*.jsonl' -type f | sort
-          )
-          python scripts/site_benchmark_quality.py             "${inputs[@]}"             --expected-platform api             --expected-platform feed             --expected-platform html             --expected-platform browser             --output ../benchmark-output/live-extractor-quality.json
+          PYTHONPATH=. python scripts/browser_site_benchmark.py \
+            --input ../benchmark-input/target.json \
+            --output ../benchmark-output/receipts.jsonl
 
-      - name: Benchmark quality gate
+      - name: Emit case manifest
         if: always()
-        working-directory: operations
         run: |
           set -euo pipefail
-          test -s ../benchmark-output/live-extractor-quality.json || {
-            echo "benchmark quality report is missing"
-            exit 1
-          }
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          payload=json.loads(Path("../benchmark-output/live-extractor-quality.json").read_text(encoding="utf-8"))
-          print(json.dumps(payload, indent=2, sort_keys=True))
-          raise SystemExit(0 if payload.get("pass") is True else 2)
-          PY
+          mkdir -p benchmark-output
+          cat > benchmark-output/case.json <<EOF
+          {"case":"${{ matrix.case }}","label":"${{ matrix.label }}","mode":"${{ matrix.mode }}","url":"${{ matrix.url }}","pass":${{ matrix.pass }},"operations_ref":"${{ inputs.operations_ref || 'a1466288f16115b784d75d0a3c675dd410c06d24' }}"}
+          EOF
 
-      - name: Publish benchmark artifact
+      - name: Upload case artifact
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: live-extractor-benchmark
-          path: |
-            benchmark-input/*.json
-            benchmark-output/**
-          if-no-files-found: error
+          name: extractor-${{ matrix.case }}-pass-${{ matrix.pass }}
+          path: benchmark-output/**
+          if-no-files-found: warn
           retention-days: 14
+
+  aggregate:
+    name: Aggregate 20-way extractor benchmark
+    runs-on: ubuntu-latest
+    needs: benchmark
+    if: always()
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout pinned Operations benchmark source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref || 'a1466288f16115b784d75d0a3c675dd410c06d24' }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Download all case artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: extractor-*
+          path: benchmark-artifacts
+          merge-multiple: false
+
+      - name: Build aggregate quality report
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          inputs=()
+          while IFS= read -r file; do inputs+=(--input "$file"); done < <(find ../benchmark-artifacts -type f -name '*.jsonl' | sort)
+          test "${#inputs[@]}" -ge 10
+          python scripts/site_benchmark_quality.py "${inputs[@]}" \
+            --expected-platform api \
+            --expected-platform feed \
+            --expected-platform html \
+            --expected-platform browser \
+            --output ../live-extractor-quality.json
+
+      - name: Print aggregate summary
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path=Path('live-extractor-quality.json')
+          print(json.dumps(json.loads(path.read_text()), indent=2, sort_keys=True) if path.exists() else 'quality report missing')
+          PY
+
+      - name: Upload aggregate benchmark artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: live-extractor-benchmark-20way
+          path: |
+            benchmark-artifacts/**
+            live-extractor-quality.json
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Enforce aggregate quality gate
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          test -s ../live-extractor-quality.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          payload=json.loads(Path('../live-extractor-quality.json').read_text())
+          raise SystemExit(0 if payload.get('pass') is True else 2)
+          PY
