@@ -156,3 +156,15 @@ def test_fetch_public_url_supports_workers_single_argument_fetch():
     assert calls == ["https://example.com/"]
 
 
+
+
+def test_fetch_public_url_reraises_unrelated_type_error():
+    import backend.sources.http as http
+
+    async def broken(_url, _opts):
+        raise TypeError("internal bug")
+
+    with pytest.raises(TypeError, match="internal bug"):
+        asyncio.run(http.fetch_public_url("https://example.com", fetcher=broken))
+
+
