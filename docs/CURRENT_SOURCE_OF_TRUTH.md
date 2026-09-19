@@ -76,19 +76,15 @@ Never upgrade L1/L2 evidence into L3/L4 claims.
 ### Maintenance loop
 parallel discovery -> classify disposition -> non-overlapping fix lane -> focused tests -> required CI -> merge -> canonical production/runtime probe -> exact issue receipt -> queue rescan.
 
-## 2026-09-19 POST-DOH MAINLINE SYNC
+## Historical continuity notes
 
-Current Foundation main includes commit 61353f4351778a57e5abf602c961d26bc4d208c9, which fixes canonical workflow bridge run matching by passing the actual workflow head SHA into the control-plane probe, and commit aa966f4365b66351f28ea88946b1408344184c07, which fixes the Python Workers DoH transport by constructing a standard JavaScript Request and mutating its real Headers before JavaScript fetch.
+The earlier post-DoH and pre-#219 synchronization snapshots below the live-state section are superseded by the current revisions and production receipt at the top of this document.
 
-Current approved Operations production pin remains 035bb38e54aa2b81a1e41b95ac01e7d352b75d83.
+For maintenance decisions, always use:
+- current Foundation main `d2231195982b1a3a82a310a5e5a9e8d54c65c01d`;
+- current Operations main / production revision `abf7007f4251f80280296c9855e4354502b98541`;
+- latest canonical production receipt `35445892339` (#219);
+- the current 14-issue acceptance queue;
+- fresh GitHub/Cloudflare runtime evidence.
 
-The latest authoritative production receipt before the DoH merge still proves deployment/provenance, authenticated chat, idempotent replay and SSE while research source ingestion failed at the older DoH invocation. A fresh canonical production run is required before #259 can close.
-
-
-## 2026-09-19 CURRENT RECONCILIATION
-
-Foundation main now includes the workflow-bridge dispatch timestamp race fix (PR #708, merged as `33331e37c66fb77b60098e8adb3c80ef63942bc6`).
-
-The canonical production and nightly paths are being advanced from obsolete Operations revision `8258d0bcee2bef9427a60aed522a14e0ff95ea2b` to the current immutable Operations main `abf7007f4251f80280296c9855e4354502b98541` in PR #709.
-
-No fresh post-change production receipt exists yet. Do not claim Cloudflare L4 certification or close runtime-gated issues until the canonical production workflow produces current evidence.
+Never revive an obsolete DoH blocker, stale Operations pin, or pre-#219 runtime receipt solely from historical continuity text.
