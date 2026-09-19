@@ -294,7 +294,7 @@ async def _operations_chat_stream(env, payload, request):
     return body, status
 
 
-async def _operations_chatbot_diagnostic(env, request=None):
+async def _operations_chatbot_diagnostic(env, request=None, operation="infrastructure_verify"):
     """Exercise the private chatbot routing/diagnostic boundary without provider execution."""
     operations = getattr(env, "OPERATIONS", None)
     if operations is None:
@@ -309,7 +309,7 @@ async def _operations_chatbot_diagnostic(env, request=None):
                 "https://private/v1/diagnostics/chatbot",
                 method="POST",
                 headers=headers,
-                body=json.dumps({"operation": "infrastructure_verify", "question": "Infrastructure diagnostic only; do not execute a model provider."}),
+                body=json.dumps({"operation": operation, "question": "Infrastructure diagnostic only; do not execute a model provider."}),
             )
         )
         body = await upstream.json()
@@ -441,9 +441,12 @@ class Default(WorkerEntrypoint):
             payload = await _json(request)
             if payload is None:
                 return _authenticated_json({"ok": False, "error": "invalid JSON object"}, status=400)
-            if payload.get("operation") == "infrastructure_verify_public_test":
+            operation = payload.get("operation")
+            if operation == "infrastructure_verify_public_test":
                 body, status = await _public_infrastructure_verify(self.env)
-                private_body, private_status = await _operations_chatbot_diagnostic(self.env, request)
+                private_body, private_status = await _operations_chatbot_diagnostic(
+                    self.env, request, operation="infrastructure_verify"
+                )
                 body["checks"].append({
                     "name": "public_chatbot",
                     "ok": private_body.get("ok", False),
@@ -455,6 +458,11 @@ class Default(WorkerEntrypoint):
                 body["ok"] = all(bool(check.get("ok")) for check in body["checks"])
                 body["status"] = "ok" if body["ok"] else "degraded"
                 return _authenticated_json(body, status=200 if body["ok"] else 503)
+            if operation in {"persistence_seed", "persistence_verify"}:
+                private_body, private_status = await _operations_chatbot_diagnostic(
+                    self.env, request, operation=operation
+                )
+                return _authenticated_json(private_body, status=private_status)
             return _authenticated_json({"ok": False, "error": "unsupported public diagnostic operation"}, status=400)
         if request.method == "POST" and path.endswith("/api/v1/storage/diagnostic"):
             if not _authorized(request, self.env):
