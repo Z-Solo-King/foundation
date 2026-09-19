@@ -152,7 +152,7 @@ def test_response_bytes_accepts_pyodide_jsproxy_like_value():
         def to_bytes(self):
             return b"binary"
 
-    assert http._response_bytes(JsProxyBinary()) == b"binary"
+    assert http._response_bytes(JsProxyBytes()) == b"binary"
 
 
 def test_response_bytes_converts_array_buffer_proxy_via_to_py():
@@ -259,7 +259,7 @@ def test_response_bytes_covers_all_supported_buffer_shapes():
     assert http._response_bytes(ToBytesBytearray()) == b"to-bytes-bytearray"
     assert http._response_bytes(ToBytesMemoryview()) == b"to-bytes-memoryview"
     assert http._response_bytes(ToBytesNestedBytes()) == b"nested-bytes"
-    assert http._response_bytes(JsProxyBytes()) == b"binary"
+    assert http._response_bytes(JsProxyBinary()) == b"binary"
     assert http._response_bytes(ToBytesNestedBytearray()) == b"nested-bytearray"
     assert http._response_bytes(type("ToBytesNestedMemoryview", (), {"to_bytes": lambda self: NestedMemoryview()})()) == b"nested-memoryview"
     assert http._response_bytes(ToBytesNoNestedConversion()) == b"final-fallback"
