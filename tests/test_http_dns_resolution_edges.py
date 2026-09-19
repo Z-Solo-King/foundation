@@ -152,7 +152,7 @@ def test_response_bytes_accepts_pyodide_jsproxy_like_value():
         def to_bytes(self):
             return b"binary"
 
-    assert http._response_bytes(JsProxyBytes()) == b"binary"
+    assert http._response_bytes(JsProxyBinary()) == b"binary"
 
 
 def test_response_bytes_converts_array_buffer_proxy_via_to_py():
@@ -244,6 +244,10 @@ def test_response_bytes_covers_all_supported_buffer_shapes():
 
         def __bytes__(self):
             return b"final-fallback"
+
+    class JsProxyBinary:
+        def to_bytes(self):
+            return b"binary"
 
     assert http._response_bytes(b"direct") == b"direct"
     assert http._response_bytes(bytearray(b"direct-bytearray")) == b"direct-bytearray"
