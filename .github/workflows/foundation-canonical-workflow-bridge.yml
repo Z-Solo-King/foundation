@@ -98,7 +98,7 @@ jobs:
             exit 1
           fi
 
-          expected_sha="$(gh api \"repos/${GITHUB_REPOSITORY}/git/ref/heads/${FOUNDATION_REF}\" --jq '.object.sha')"
+          expected_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${FOUNDATION_REF}" --jq '.object.sha')"
           test "$expected_sha" =~ ^[0-9a-f]{40}$ || { echo "Invalid target ref SHA"; exit 1; }
           echo "Dispatch target revision: ${FOUNDATION_REF}@${expected_sha}"
 
