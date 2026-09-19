@@ -80,9 +80,9 @@ def _nightly_artifact_errors(root: Path) -> list[str]:
         for lane in range(NIGHTLY_LANE_COUNT)
     }
     discovered_lane_paths = {
-        lane: paths[0]
-        for lane, paths in lane_paths.items()
-        if (paths := _find_named_artifacts(root, paths.name))
+        lane: discovered[0]
+        for lane, candidate in lane_paths.items()
+        if (discovered := _find_named_artifacts(root, candidate.name))
     }
 
     if not discovered_lane_paths:
