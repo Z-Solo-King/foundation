@@ -137,17 +137,16 @@ def test_doh_request_constructs_fixed_url_and_get_options(monkeypatch):
     captured = {}
 
     class FakeHeaders:
-        @staticmethod
-        def new(items):
-            captured["headers_items"] = list(items)
-            return dict(items)
+        def set(self, key, value):
+            captured.setdefault("headers", {})[key] = value
 
     class FakeRequest:
         @staticmethod
-        def new(url, options):
+        def new(url):
             captured["url"] = url
-            captured["options"] = options
-            return ("request", url, options)
+            request = type("RequestObject", (), {})()
+            request.headers = FakeHeaders()
+            return request
 
     async def fake_fetch(request):
         captured["request"] = request
@@ -157,7 +156,6 @@ def test_doh_request_constructs_fixed_url_and_get_options(monkeypatch):
         __import__("sys").modules,
         "js",
         __import__("types").SimpleNamespace(
-            Headers=FakeHeaders,
             Request=FakeRequest,
             fetch=fake_fetch,
         ),
@@ -166,10 +164,8 @@ def test_doh_request_constructs_fixed_url_and_get_options(monkeypatch):
     result = asyncio.run(http._doh_request("https://cloudflare-dns.com/dns-query", "AQID"))
     assert result == "response"
     assert captured["url"] == "https://cloudflare-dns.com/dns-query?dns=AQID"
-    assert dict(captured["headers_items"])["accept"] == "application/dns-message"
-    assert captured["options"]["method"] == "GET"
-    assert captured["options"]["cache"] == "no-store"
-    assert captured["request"][0] == "request"
+    assert captured["headers"]["Accept"] == "application/dns-message"
+    assert captured["headers"]["Cache-Control"] == "no-store"
 
 
 
