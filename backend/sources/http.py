@@ -1,4 +1,4 @@
-""""Bounded HTTP acquisition primitive for Cloudflare Python Workers.
+"""Bounded HTTP acquisition primitive for Cloudflare Python Workers.
 
 This is a transport primitive, not a search engine. It follows only normal
 public HTTP access paths, limits redirects and response size, and rejects
