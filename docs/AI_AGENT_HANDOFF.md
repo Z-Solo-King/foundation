@@ -279,7 +279,7 @@ This section supersedes older handoff revisions when they conflict with the live
 - These capabilities remain runtime acceptance gates until the canonical production release records the exact PASS evidence.
 
 ### Current production gate
-Canonical production run **35434275607** is the latest deployment run for Foundation `main` `4dd63df...` and was still in progress at the last refresh. Do not infer research/runtime success from the merge or from CI.
+Canonical production run **35434275607** is the latest deployment run for Foundation `main` `4dd63df...` and completed with **FAILURE**. It passed Operations provenance, authenticated chat, idempotent replay and SSE, then failed research acquisition because both allowlisted DoH calls raised `TypeError`. Foundation PR #702 is the current focused follow-up; do not infer research/runtime success from the merge or from CI.
 
 ### Nightly/control-plane state
 The latest push-triggered nightly-related workflows on `4dd63df...` created **zero jobs** (including the canonical nightly research, pin-repair, bridge, backup/restore and cross-repository drift runs). The dedicated main-push control-plane and secret probes still passed. Treat zero-job workflow runs as an independent GitHub control-plane/job-graph acceptance gate; do not change valid permissions merely to manufacture jobs.
@@ -289,7 +289,7 @@ The live queue remains 23 issues: Foundation #27/#58/#157/#259/#263/#452 and Ope
 
 ### New-chat continuation protocol
 1. Inspect the final result and logs of production run **35434275607**.
-2. If research still fails, use the exact production exception and the current Foundation #700 implementation as the starting point; do not repeat already-tested fetch shapes blindly.
+2. If research still fails after #702, use the exact production exception and the current implementation as the starting point; do not repeat already-tested fetch shapes blindly.
 3. If production passes, write the exact receipt to #259 and only close issues whose own acceptance graphs are fully satisfied.
 4. Independently handle the zero-job nightly/control-plane gate for #157/#263.
 5. Do not close runtime-gated Operations issues from source/CI alone.
