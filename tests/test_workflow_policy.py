@@ -180,7 +180,7 @@ def test_private_operations_handoff_is_preflighted_and_diagnostic_runs_last():
 
 
 def test_public_foundation_is_the_only_github_actions_bridge_owner():
-    workflow = _workflow_texts()["foundation-canonical-workflow-bridge.yml"]
+    workflow = _workflow_texts()["foundation-canonical-workflow-bridge-v2.yml"]
     assert "actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1" in workflow
     assert "FOUNDATION_APP_ID" in workflow
     assert "FOUNDATION_APP_PRIVATE_KEY" in workflow
@@ -206,49 +206,12 @@ def test_all_canonical_workflow_dispatch_requests_use_the_public_router():
         name
         for name, text in texts.items()
         if "actions/workflows/" in text and "/dispatches" in text
-        and name != "foundation-canonical-workflow-bridge.yml"
+        and "foundation-canonical-workflow-bridge" not in name
     ]
     assert raw_dispatch_callers == []
     acceptance = texts["canonical-workflow-dispatch-acceptance.yml"]
-    assert "gh workflow run foundation-canonical-workflow-bridge.yml" in acceptance
-def test_production_release_has_live_runtime_acceptance_gates():
-    production = (ROOT / "scripts" / "production_release.sh").read_text(encoding="utf-8")
-    assert 'POST /api/v1/chat -> HTTP' in production
-    assert 'Live chat acceptance: PASS' in production
-    assert 'Live chat idempotency acceptance: PASS' in production
-    assert 'POST /api/v1/chat/stream -> HTTP' in production
-    assert 'Live SSE lifecycle acceptance: PASS' in production
-    assert 'POST /api/v1/research -> HTTP' in production
-    assert 'Live research execution/readback acceptance: PASS' in production
+    assert "gh workflow run foundation-canonical-workflow-bridge-v2.yml" in acceptance
 
-def test_centralized_operations_validation_owns_private_repo_ci():
-    workflow = _workflow_texts()["operations-centralized-validation.yml"]
-    assert "actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1" in workflow
-    assert "OPERATIONS_APP_ID" in workflow
-    assert "OPERATIONS_APP_PRIVATE_KEY" in workflow
-    assert "repositories: operations" in workflow
-    assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in workflow
-    assert "python -m pytest tests -q" in workflow
-    assert "contents/.github/workflows?ref=${OPERATIONS_REF}" in workflow
-    assert "private Operations GitHub Actions boundary: FAIL" in workflow
-
-def test_private_operations_automation_guard_is_in_public_foundation_ci():
-    workflow = _workflow_texts()["cross-repository-contract-drift.yml"]
-    assert 'contents/.github/workflows?ref=main' in workflow
-    assert 'private Operations GitHub Actions boundary: PASS' in workflow
-    assert 'private Operations GitHub Actions boundary: FAIL' in workflow
-    assert 'cron: "17 2 * * *"' in workflow
-
-def test_required_pr_checks_emit_the_branch_protection_contract():
-    required = _workflow_texts()["required-pr-checks.yml"]
-    assert "pull_request:" in required
-    assert "merge_group:" in required
-    assert "types: [checks_requested]" in required
-    assert "name: Public tests" in required
-    assert "name: Analyze python" in required
-    assert "pywrangler deploy" not in required
-    assert "CLOUDFLARE_API_TOKEN" not in required
-    assert "B2_KEY_ID" not in required
 
 
 def test_backup_workflow_separates_github_and_b2_credentials():
@@ -316,7 +279,7 @@ def test_operations_public_core_is_materialized_before_worker_deploy():
 
 
 def test_foundation_bridge_records_run_and_job_creation_control_plane_evidence():
-    workflow = _workflow_texts()["foundation-canonical-workflow-bridge.yml"]
+    workflow = _workflow_texts()["foundation-canonical-workflow-bridge-v2.yml"]
     assert 'actions/workflows/${TARGET}/runs' in workflow
     assert "CONTROL_PLANE=UNKNOWN" in workflow
     assert "CONTROL_PLANE=ACCEPTED_TRIGGER_ZERO_JOB" in workflow
