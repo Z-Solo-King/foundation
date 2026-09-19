@@ -278,3 +278,26 @@ class FalseyBindingValue:
 async def test_health_payload_preserves_falsey_runtime_environment_binding():
     payload = await worker._health_payload(SimpleNamespace(ENVIRONMENT=FalseyBindingValue()))
     assert payload["environment"] == "production"
+
+
+@pytest.mark.asyncio
+async def test_storage_diagnostic_dispatch_guard_routes_authenticated_requests():
+    monkeypatch = pytest.MonkeyPatch()
+    try:
+        monkeypatch.setattr(worker, "CloudflarePersistence", Persistence)
+        env = SimpleNamespace(DB=DB(rows=[]), ENVIRONMENT="production", AUTH_TOKEN="secret")
+        entry = worker.Default()
+        entry.env = env
+        headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
+
+        invalid = await entry.fetch(
+            Request("POST", "https://x/api/v1/storage/diagnostic", None, headers)
+        )
+        assert "run_id is required" in str(invalid)
+
+        valid = await entry.fetch(
+            Request("POST", "https://x/api/v1/storage/diagnostic", {"run_id": "covered-run"}, headers)
+        )
+        assert "artifacts" in str(valid)
+    finally:
+        monkeypatch.undo()
