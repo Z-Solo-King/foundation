@@ -254,3 +254,10 @@ Do not close runtime-gated issues because a PR merged or unit tests passed.
 6. Then process the remaining 23-issue queue using non-overlapping lanes and rescan after every 3–5 meaningful mutations.
 
 Never infer Cloudflare/runtime success from GitHub source alone. Never expose private Operations implementation or secrets through Foundation documentation.
+
+
+## 2026-09-19 POST-DOH MAINLINE SYNC
+
+Foundation main is now aa966f4365b66351f28ea88946b1408344184c07 after the canonical DoH transport fix. The workflow bridge probe fix is merged at 61353f4351778a57e5abf602c961d26bc4d208c9.
+
+Fresh canonical production evidence is still required. Keep #259 open until research ingestion succeeds on the new mainline; do not infer runtime success from the merge itself.

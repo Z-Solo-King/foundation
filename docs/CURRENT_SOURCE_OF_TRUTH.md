@@ -59,3 +59,12 @@ Never upgrade L1/L2 evidence into L3/L4 claims.
 ### Maintenance loop
 `parallel discovery -> classify disposition -> non-overlapping fix lane -> focused tests -> required CI -> merge -> canonical production/runtime probe -> exact issue receipt -> queue rescan`.
 
+
+
+## 2026-09-19 POST-DOH MAINLINE SYNC
+
+Current Foundation main includes commit 61353f4351778a57e5abf602c961d26bc4d208c9, which fixes canonical workflow bridge run matching by passing the actual workflow head SHA into the control-plane probe, and commit aa966f4365b66351f28ea88946b1408344184c07, which fixes the Python Workers DoH transport by constructing a standard JavaScript Request and mutating its real Headers before JavaScript fetch.
+
+Current approved Operations production pin remains 035bb38e54aa2b81a1e41b95ac01e7d352b75d83.
+
+The latest authoritative production receipt before the DoH merge still proves deployment/provenance, authenticated chat, idempotent replay and SSE while research source ingestion failed at the older DoH invocation. A fresh canonical production run is required before #259 can close.
