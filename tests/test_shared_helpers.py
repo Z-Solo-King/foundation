@@ -19,6 +19,54 @@ def test_canonical_url_allows_component_specific_error_text() -> None:
         canonical_url("file:///tmp/test", error_message="unsupported URL: 'file:///tmp/test'")
 
 
+def test_workers_fetch_accepts_keyword_request_options(monkeypatch) -> None:
+    import backend.core.workers_runtime as runtime
+
+    captured = {}
+
+    class FakeObject:
+        @staticmethod
+        def fromEntries(value):
+            captured["options"] = value
+            return value
+
+    async def fake_js_fetch(url, options):
+        captured["url"] = url
+        captured["js_options"] = options
+        return "response"
+
+    async def fake_workers_fetch(url, **kwargs):
+        return "sdk-response"
+
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "workers",
+        __import__("types").SimpleNamespace(fetch=fake_workers_fetch),
+    )
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "js",
+        __import__("types").SimpleNamespace(Object=FakeObject, fetch=fake_js_fetch),
+    )
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "pyodide.ffi",
+        __import__("types").SimpleNamespace(to_js=lambda value, dict_converter=None: value),
+    )
+
+    fetch = runtime.workers_fetch("keyword-options-test")
+    assert __import__("asyncio").run(
+        fetch(
+            "https://example.com",
+            {"headers": {"Accept": "text/plain"}},
+            method="GET",
+        )
+    ) == "response"
+    assert captured["url"] == "https://example.com"
+    assert captured["js_options"]["method"] == "GET"
+    assert captured["js_options"]["headers"] == {"Accept": "text/plain"}
+
+
 def test_workers_fetch_is_lazy_and_reports_context() -> None:
     with pytest.raises(RuntimeError, match="Cloudflare Workers runtime is required for unit-test"):
         workers_fetch("unit-test")
