@@ -131,29 +131,27 @@ def test_doh_request_rejects_non_allowlisted_endpoint():
         asyncio.run(http._doh_request("https://attacker.example/dns-query", "AQID"))
 
 
-def test_doh_request_explicitly_converts_url_for_js_fetch(monkeypatch):
+def test_doh_request_invokes_bound_global_fetch(monkeypatch):
     import backend.sources.http as http
 
     captured = {}
 
-    async def fake_fetch(url):
-        captured["url"] = url
-        return "response"
+    class FakeGlobal:
+        async def fetch(self, url):
+            captured["url"] = url
+            return "response"
 
     monkeypatch.setitem(
         __import__("sys").modules,
         "js",
-        __import__("types").SimpleNamespace(fetch=fake_fetch),
-    )
-    monkeypatch.setitem(
-        __import__("sys").modules,
-        "pyodide.ffi",
-        __import__("types").SimpleNamespace(to_js=lambda value: f"JS<{value}>"),
+        __import__("types").SimpleNamespace(globalThis=FakeGlobal()),
     )
 
-    result = asyncio.run(http._doh_request("https://cloudflare-dns.com/dns-query", "AQID"))
+    result = asyncio.run(
+        http._doh_request("https://cloudflare-dns.com/dns-query", "AQID")
+    )
     assert result == "response"
-    assert captured["url"] == "JS<https://cloudflare-dns.com/dns-query?dns=AQID>"
+    assert captured["url"] == "https://cloudflare-dns.com/dns-query?dns=AQID"
 
 
 def test_public_destination_fails_when_dns_returns_no_addresses():
