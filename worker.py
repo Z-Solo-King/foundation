@@ -235,6 +235,7 @@ async def _operations_chat(env, payload, request):
             "ok": False,
             "error": "chat_backend_unavailable",
             "error_class": type(exc).__name__,
+            "error_detail": str(exc)[:240],
         }, 503
 
 
