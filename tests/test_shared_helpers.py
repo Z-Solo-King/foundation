@@ -103,3 +103,18 @@ def test_workers_fetch_adapter_falls_back_to_request_for_legacy_sdk(monkeypatch)
     assert result == "response"
     assert captured["request"].url == "https://example.com"
     assert captured["request"].options == options
+
+def test_workers_fetch_adapter_reraises_typeerror_when_legacy_request_is_unavailable(monkeypatch) -> None:
+    import asyncio
+    import sys
+    import types
+
+    async def fake_fetch(_url, **_options):
+        raise TypeError("legacy fetch does not accept keyword options")
+
+    monkeypatch.setitem(sys.modules, "workers", types.SimpleNamespace(fetch=fake_fetch))
+
+    from backend.core.workers_runtime import workers_fetch
+
+    with pytest.raises(TypeError, match="legacy fetch does not accept keyword options"):
+        asyncio.run(workers_fetch("test")("https://example.com", {"method": "POST"}))
