@@ -1,263 +1,82 @@
 # AI Agent Handoff — Research Intelligence Engine
 
-## 2026-09-19 LIVE STATE OVERRIDE — CURRENT SESSION HANDOFF
+## 2026-09-19 CURRENT HANDOFF — AUTHORITATIVE
 
-This section is authoritative over every older section below. It was synchronized from the live GitHub state after the previous maintenance chat ended.
-
-### Exact repository state
-- Foundation `main`: `95840f563b51f08c38996d673034ca49fc539f79`.
-- Operations `main`: `035bb38e54aa2b81a1e41b95ac01e7d352b75d83`.
-- Foundation's canonical production Operations pin: `035bb38e54aa2b81a1e41b95ac01e7d352b75d83`.
-- Operations PR #515 is merged into `main`; it adds D1-backed production memory and D1-backed task replay nonce protection.
-- Foundation PR #683 is merged. It added the RFC 8484 DoH GET/wire-format transport, but the merged path still fails in the live Python Worker with a runtime `TypeError` during the DoH fetch call.
-
-### Latest canonical production evidence
-Latest production run: **35430074029** on Foundation `95840f563b51f08c38996d673034ca49fc539f79`.
-
-Observed:
-- public Worker deploy/readiness: PASS;
-- private Operations deploy/provenance: PASS;
-- Operations provenance: `github:035bb38e54aa2b81a1e41b95ac01e7d352b75d83`;
-- authenticated chat: PASS;
-- idempotent chat replay: PASS;
-- authenticated SSE lifecycle: PASS;
-- research endpoint and run readback: HTTP 200;
-- research source ingestion: FAIL only at DoH transport:
-  `DNS resolution failed for example.com (https://cloudflare-dns.com/dns-query: TypeError; https://dns.google/dns-query: TypeError)`.
-
-Therefore the current production blocker is **Python Workers DoH transport invocation**, not chat, replay, SSE, service binding, or Operations deployment.
-
-### Current DoH PR state
-Three Foundation follow-up PRs exist for the same blocker:
-- #684 — native Worker Fetch options for DoH runtime; no completed check evidence recorded in the current snapshot.
-- #687 — construct the DoH Request through Python Workers FFI; **all required PR checks passed** on head `dd4bea5dbaa09601e082f55f5b9de732f1121ca6`, but the PR targets an older Foundation base and must be reconciled with current `main` before merge.
-- #691 — avoid Python Workers RequestInit conversion in DoH; newest candidate, but current snapshot has no completed check evidence.
-
-Do not create a fourth competing DoH implementation. Start by comparing #687 and #691 against current `main`, then keep one canonical fix path.
-
-### Nightly/control-plane evidence
-Latest canonical nightly-related push on current `main`: **35430072561**.
-- No jobs were created.
-- This remains a GitHub Actions control-plane/job-graph acceptance problem.
-- Do not weaken permissions or workflow semantics merely to manufacture jobs.
-- Keep #157 and #263 open until a supported canonical run creates and executes the expected jobs and retains L3 evidence.
-
-### Current issue queue
-There are still **23 open issues** across the two active repositories:
-- Foundation: #27, #58, #157, #259, #263, #452.
-- Operations: #119, #120, #132, #145, #155, #164, #197, #329, #330, #331, #332, #333, #334, #340, #349, #352, #385.
-
-The issue count is not a completion target. Most Operations issues are runtime/evidence gates.
-
-### Cross-chat execution rule
-The next agent must:
-1. read this live-state override first;
-2. verify current `main` SHAs before mutating anything;
-3. treat production run **35430074029** as the current authoritative runtime receipt;
-4. do not reopen solved chat/replay/SSE/service-binding work without a new failing receipt;
-5. resolve the single DoH transport blocker through one canonical PR path;
-6. separately diagnose nightly zero-job control-plane behavior;
-7. then rerun the canonical production release and convert exact evidence into issue updates.
-
-Never infer runtime closure from source code or unit tests alone.
-
----
-
-## 2026-09-19 LIVE STATE OVERRIDE — READ FIRST
-
-This section supersedes older observations in this file when they disagree with the live repositories or the latest execution evidence.
+This section is the continuity anchor for the next maintenance chat. Current GitHub state and fresh production evidence override all older sections in this file.
 
 ### Exact repository state
-- Foundation `main`: `b1e0e6e74e0d3d9a3e280fa146a6c39503628274`.
-- Operations `main`: `035bb38e54aa2b81a1e41b95ac01e7d352b75d83`.
-- Canonical approved Operations production pin in Foundation: `035bb38e54aa2b81a1e41b95ac01e7d352b75d83`.
-- The intermediate Operations SSE revision `282dea820a1a2c24bdf7b5e23298e932ffd94767` is an ancestor of `b43c...`; it is not the current production pin.
-- Operations PR #510's SSE fix is included in current `b43c...`.
 
-### Latest production proof
-Canonical production run **35420683298** on Foundation commit `b1e0e6e...` reached Cloudflare deployment and passed:
-- Operations provenance: `github:035bb38e54aa2b81a1e41b95ac01e7d352b75d83`;
-- authenticated chat: PASS;
-- idempotent chat replay: PASS;
-- authenticated SSE lifecycle: PASS, including start/delta/done;
-- research POST/readback endpoints: HTTP 200.
+- Foundation `main`: `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`
+- Operations `main`: `307ed38fe4c7902220cb981556bf08702babbae0`
+- Foundation production/nightly Operations pin: `307ed38fe4c7902220cb981556bf08702babbae0`
+- Foundation PRs #739, #740, #741 and #742 are merged.
+- Operations PRs #535, #536 and #537 are merged.
+- Foundation #27 is closed.
+- Operations contains no GitHub Actions workflow authority.
 
-The run still failed because the bounded research smoke source `https://example.com/` returned:
-`DNS resolution failed for example.com`.
-Therefore production certification is **not complete**. Do not reopen the already-fixed SSE work as the primary blocker.
+### Latest canonical production proof
 
-### Latest GitHub Actions/nightly proof
-- Main-push control-plane probe run **35420683253**: PASS.
-- Main-push secret probe run **35420683329**: PASS.
-- Nightly multi-agent research run **35420680901** on the same main commit: failure with **zero jobs**.
-- Canonical nightly pin-repair run **35420682251**: failure before useful job evidence.
+Run `35456292033` (#232), Foundation `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`.
 
-Interpret zero-job nightly failures as a GitHub Actions control-plane/job-graph acceptance gate unless a future run produces executable job evidence. Do not change valid workflow permissions or semantics merely to manufacture jobs.
+The release verified:
 
-### Open issue queue
-Foundation has **6 actual open issues**: #27, #58, #157, #259, #263, #452.
-Operations has **17 actual open issues**: #119, #120, #132, #145, #155, #164, #197, #329, #330, #331, #332, #333, #334, #340, #349, #352, #385.
-Issue count is not the goal; closure requires each issue's stated acceptance rung.
+- public Worker deployment/readiness;
+- private Operations Worker deployment and Cloudflare provenance `github:307ed38fe4c7902220cb981556bf08702babbae0`;
+- authenticated chat and idempotent replay;
+- authenticated SSE lifecycle;
+- permitted-source research ingestion/readback;
+- D1/B2 lifecycle;
+- memory store/query/delete and owner boundary;
+- durable task-envelope replay protection;
+- candidate learning and rating-feedback candidate flow;
+- durable terminalization CAS;
+- durable resource reserve/consume and reconciliation;
+- maintenance scheduler reconciliation;
+- provider-stream contract.
 
-### Current open Foundation PRs
-- **#675** canonical workflow bridge control-plane evidence: verifies post-dispatch run creation and job creation, explicitly surfacing accepted-trigger/zero-job states.
-- **#674** research DNS transport fix: adds a bounded secondary DNS-over-HTTPS resolver while preserving fail-closed public-address validation.
-- **#673** nightly artifact-integrity contract: validates the complete lane/diagnosis/project-summary/baseline bundle.
-- **#671** remains diagnostic-only and should not be merged blindly.
-- **#666**, **#650**, **#657**, **#661** are stale/superseded and should not be resumed.
+The production release emitted and uploaded `cross-repository-audit-receipt`. The release itself completed successfully.
 
-### Required next strategy
-1. Reconfirm current `main` SHAs.
-2. Fix the **research DNS/transport failure** first using the smallest reproducible source adapter probe; verify the exact Cloudflare Python Workers fetch contract.
-3. Separately verify the nightly zero-job control-plane condition; do not mix it with research/runtime code changes.
-4. Run the canonical production workflow again.
-5. Only after production research succeeds, use the exact run receipt to advance #259.
-6. For nightly, retain #157/#263 until a real canonical nightly run creates and executes its expected lane/final-gate jobs.
-7. Treat chat/SSE/idempotency as already passing on current main unless a new run regresses them.
+### Repository-side fixes completed in this sequence
 
-Never infer L3/L4 runtime success from repository source alone, and never resurrect superseded SSE/service-binding work without new evidence.
+- Operations #535: family audit excludes approved compatibility facades.
+- Operations #536: nested `foundation_core.*` compatibility facades are recognized correctly.
+- Operations #537: terminalization CAS requires the current durable attempt identity and prevents stale/reclaimed attempts from masquerading as valid duplicate terminalization.
+- Foundation #741: pins the corrected nested-facade audit revision.
+- Foundation #742: pins the corrected terminalization runtime revision.
+- Production run `35456292033` exercised the merged Operations terminalization correction successfully.
 
+### Remaining queue
 
-Updated: 2026-09-18
+Foundation:
+- #157 — real 24-program nightly execution/artifact evidence remains missing because the current push-triggered nightly run still fails before job creation.
+- #263 — one supported workflow-dispatch bridge receipt with exact target SHA and actual job creation remains missing.
+- #452 — repository SSE lifecycle is green; remaining proof is real client cancellation/disconnect propagation and provider-error-after-partial-output terminalization.
+- #58 — meta tracker remains open until the dependent gates above are genuinely satisfied.
 
-This file is the canonical handoff for a new GitHub-maintenance chat/agent. Treat the live repositories and the latest production evidence as authoritative; do not revive older chat conclusions when newer commits supersede them.
+Operations:
+- #119 — live memory persistence across restart plus endpoint authorization/deletion.
+- #120 — live durable feedback retention plus evaluation/benchmark integration.
+- #132 — live replay-guard persistence/rejection across an actual restart/instance boundary.
+- #145 — external approved scheduler activation.
+- #155 — current cross-repository audit receipt is green in production; supported bridge-dispatch evidence is still required.
+- #197 — broader approved runtime conversational acceptance.
+- #340 — deeper provider streaming interruption/cancellation/error evidence.
+- #352 — representative API/feed/HTML/browser extractor/mapper replay matrix with failures/retries/restarts/idempotency/provenance.
+- #385 — broader concurrent completion/failure/cancellation, crash-after-side-effect, late-output, and restart/recovery acceptance. The concrete stale-attempt defect is fixed and covered by the latest production CAS check.
 
-## Repository topology
+### Do not regress the architecture
 
-- Public repository: `Z-Solo-King/foundation`
-- Private repository: `Z-Solo-King/operations`
-- Foundation owns public contracts/core, public Worker/API, GitHub Actions, backup/restore orchestration, and the sole production release authority.
-- Operations owns protected policy, resource governance, provider/runtime selection, private execution, promotion/rollback/recovery, and chatbot control.
-- Operations must remain private.
-- Foundation -> Operations runtime path is Cloudflare Worker service binding + `AUTH_TOKEN`.
-- Foundation -> private-source/deployment path is the approved GitHub App installation credential resolved dynamically at runtime.
-- Do not re-enable Cloudflare Workers Builds or Deploy Hooks as a competing deployment authority.
-- Do not add GitHub Actions to the private Operations repository.
+- Foundation remains the only GitHub Actions and canonical production deployment owner.
+- Operations remains private and contains no GitHub Actions workflows.
+- Do not add Cloudflare Workers Builds or Deploy Hooks.
+- Do not create a second memory store, resource ledger, replay authority, lifecycle authority, evaluator, publication authority, or deployment path.
+- Do not close runtime/external issues from source inspection or unit tests alone.
 
-## Current canonical revisions
+### Queue continuation
 
-- Foundation production-code baseline at handoff: `972e1b05c1e2d51905029b602d0c4120eac1d399`
-- Operations production-code baseline at handoff: `035bb38e54aa2b81a1e41b95ac01e7d352b75d83`
-- Canonical approved Operations production revision: `035bb38e54aa2b81a1e41b95ac01e7d352b75d83`
-- Operations PR #505 / commit `3afbde92...` corrected the Cloudflare Python service-binding request construction to use `workers.Request(url, **kwargs)` and added regression coverage. The previous deployed-runtime `Request.new` failure is therefore a superseded blocker, not a reason to redesign the boundary.
-- Foundation PR #642 advanced the production pin and synchronized the nightly research/pin-repair contracts to the corrected Operations revision.
+Use `FIX_NOW | INTEGRATE | VERIFY_REPO | RUNTIME_GATE | EXTERNAL_BLOCKED | DUPLICATE | SUPERSEDED | ROADMAP`.
 
-## Production release chain
+For every mutation, preserve:
+`issue -> canonical owner -> revision -> acceptance rung -> checks -> PR -> missing evidence`.
 
-Canonical owner:
-`.github/workflows/heroic-ai-production-release.yml` -> `scripts/production_release.sh`
-
-The release is intentionally ordered and fail-closed:
-
-1. required Foundation checks;
-2. dynamic GitHub App installation resolution;
-3. exact private Operations repository/SHA verification;
-4. public Worker deploy + public health/readiness/UI smoke;
-5. exact Operations D1 schema application;
-6. exact pinned Operations checkout/core materialization;
-7. private Operations Worker deploy with `AUTH_TOKEN`;
-8. Cloudflare active-version provenance verification;
-9. real authenticated production chat;
-10. chat idempotent replay;
-11. real SSE lifecycle;
-12. real research execution + readback;
-13. broader authenticated infrastructure diagnostic/B2 check.
-
-A merged PR is not production certification. A successful deploy step is not runtime acceptance. Keep runtime issues open until the required evidence exists.
-
-## Authentication and secrets
-
-- Never print or commit the plaintext `AUTH_TOKEN`.
-- Canonical application authentication secret: Foundation Actions `AUTH_TOKEN`.
-- The same secret is intended for public Worker, private Operations Worker, and authenticated production probes.
-- Repo-safe AUTH_TOKEN record is stored in Operations as `docs/AUTH_TOKEN_REPOSITORY_SAFE_RECORD.docx`; it contains only non-secret audit metadata/fingerprint.
-- `OPERATIONS_APP_ID` and `OPERATIONS_APP_PRIVATE_KEY` are for GitHub App access only and must never be substituted with storage/provider credentials.
-- Cloudflare credentials and B2 credentials remain separate authorities.
-
-## Resource governance baseline
-
-Canonical protected resource kinds:
-`d1_reads`, `d1_writes`, `queue_operations`, `workflow_steps`, `browser_minutes`, `workers_ai_neurons`, `model_calls`, `github_minutes`, `search_calls`, `storage_bytes`.
-
-Starter limits:
-```json
-{
-  "d1_reads": 100000,
-  "d1_writes": 20000,
-  "queue_operations": 10000,
-  "workflow_steps": 5000,
-  "browser_minutes": 60,
-  "workers_ai_neurons": 100000,
-  "model_calls": 2000,
-  "github_minutes": 500,
-  "search_calls": 1000,
-  "storage_bytes": 5000000000
-}
-```
-
-Promotion/canary/shadow/rollback reservation baseline: `workflow_steps: 10` each.
-
-The canonical D1 is `research-intelligence`; Operations uses `OPERATIONS_DB` for durable governance. Do not create a second resource ledger or second D1 authority.
-
-## Current open queue
-
-GitHub currently has 23 open issues across the two active repositories.
-
-Foundation (6):
-- #27 stale branch/reference hygiene
-- #58 coverage/meta tracker
-- #157 24-program nightly research live execution
-- #259 production release acceptance
-- #263 GitHub Actions control-plane/job-graph evidence
-- #452 public SSE lifecycle/runtime acceptance
-
-Operations (17):
-- #119 memory safety/runtime
-- #120 feedback loop/runtime
-- #132 authenticated task-envelope/replay runtime
-- #145 periodic maintenance scheduler
-- #155 cross-repository audit bridge
-- #164 durable resource governance runtime
-- #197 conversational execution runtime
-- #329 adaptive execution budgets/runtime breadth
-- #330 fast/deep routing + research-stop integration
-- #331 provider health/circuit breaker
-- #332 cache/coalescing live path
-- #333 admission/backpressure/fairness
-- #334 capacity forecasting/fallback
-- #340 provider streaming interruption/idempotency
-- #349 extractor/mapper failure visibility
-- #352 network-enabled extractor/mapper replay
-- #385 terminalization/recovery
-
-## Queue interpretation
-
-The issue count must not be used as a progress target.
-
-Most of the remaining Operations issues already have substantial repository implementations and are acceptance gates. Their remaining rung is normally real private-runtime/control-plane/production evidence, not another speculative implementation.
-
-For every issue use:
-`contract -> canonical owner -> implementation -> focused test -> CI -> Foundation integration -> control-plane -> runtime -> production`.
-
-Primary dispositions:
-`FIX_NOW`, `INTEGRATE`, `VERIFY_REPO`, `RUNTIME_GATE`, `EXTERNAL_BLOCKED`, `DUPLICATE`, `SUPERSEDED`, `ROADMAP`.
-
-Do not close runtime-gated issues because a PR merged or unit tests passed.
-
-## Immediate next action for a new chat
-
-1. Read this file plus `docs/DEPLOYMENT.md`, `REPOSITORY_MAP.json`, and `docs/FAMILY_ARCHITECTURE.md`.
-2. Verify the current Foundation/Operations `main` SHAs before changing anything.
-3. Inspect the latest canonical production-release run after the `972e1b0...` pin update.
-4. If the run fails, classify the earliest proven failure (workflow admission -> job creation -> execution -> binding/configuration -> live endpoint) and fix only that layer.
-5. If the run succeeds, convert its exact evidence into issue receipts and close only issues whose own acceptance graph is fully satisfied.
-6. Then process the remaining 23-issue queue using non-overlapping lanes and rescan after every 3–5 meaningful mutations.
-
-Never infer Cloudflare/runtime success from GitHub source alone. Never expose private Operations implementation or secrets through Foundation documentation.
-
-
-## 2026-09-19 POST-DOH MAINLINE SYNC
-
-Foundation main is now aa966f4365b66351f28ea88946b1408344184c07 after the canonical DoH transport fix. The workflow bridge probe fix is merged at 61353f4351778a57e5abf602c961d26bc4d208c9.
-
-Fresh canonical production evidence is still required. Keep #259 open until research ingestion succeeds on the new mainline; do not infer runtime success from the merge itself.
+When a queue item is RUNTIME_GATE or EXTERNAL_BLOCKED, record the exact missing evidence on the issue and move to the next independent lane.

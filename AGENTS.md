@@ -453,16 +453,17 @@ Everything else is actionable queue debt.
 Before any new mutation, read `docs/AI_AGENT_HANDOFF.md` and `docs/CURRENT_SOURCE_OF_TRUTH.md`. Live GitHub state and fresh runtime evidence override dated continuity text.
 
 Current verified family state:
-- Foundation main: `23b72d2f4a6636df75ce13025ba349b3b47ea244`
-- Operations main / canonical production revision: `3eb53a1c6e7c56dd3a6369e95e962b8b22c40d2b`
-- Latest canonical production receipt: run `35445892339` (#219), green for deployment/readiness, authenticated chat, replay/idempotency, SSE lifecycle, permitted-source research ingestion/readback, D1/B2 lifecycle, and the private runtime diagnostic.
-- Current open acceptance queue is the 14-issue set recorded in `docs/CURRENT_SOURCE_OF_TRUTH.md`.
+- Foundation main: `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`
+- Operations main / canonical production revision: `307ed38fe4c7902220cb981556bf08702babbae0`
+- Latest canonical production receipt: run `35456292033` (#232), successful on Foundation `6a91fbd17143083882e9ac7ebfa52f0b06a344b2` with Cloudflare Operations provenance `github:307ed38fe4c7902220cb981556bf08702babbae0`.
+- Current acceptance queue is the 13-issue set recorded in `docs/CURRENT_SOURCE_OF_TRUTH.md`.
 
 Current queue policy:
-- #27 is an admin-only stale-branch deletion gate; do not simulate ref deletion.
-- #157 and #263 require real GitHub Actions nightly/workflow-dispatch evidence; do not weaken permissions or create a second automation authority.
-- #452 requires real cancellation and provider-error-after-partial-output evidence.
-- Operations #119, #120, #132, #145, #155, #197, #340, #352 and #385 are runtime/control-plane/external evidence gates unless their issue-specific acceptance graph identifies a new repository-side defect.
+- #27 is completed and closed after confirmed stale temporary/diagnostic/test branch cleanup; do not reopen merely for historical branch pruning.
+- #157 requires a real 24-program nightly execution with retained artifacts; the current push-triggered nightly run still fails before job creation.
+- #263 requires an empirical supported workflow-dispatch receipt proving exact target SHA and actual job creation.
+- #452 requires real client cancellation/disconnect propagation and provider-error-after-partial-output evidence.
+- Operations #119, #120, #132, #145, #155, #197, #340, #352 and #385 remain runtime/control-plane/external evidence gates unless a new repository-side defect is established.
 - Operations must remain private and must not contain GitHub Actions workflows.
 - Foundation remains the sole GitHub Actions and canonical production deployment owner.
 - Do not enable Cloudflare Workers Builds or Deploy Hooks as a competing deployment authority.

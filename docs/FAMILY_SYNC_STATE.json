@@ -1,64 +1,94 @@
 {
   "schema_version": "family-sync-state/v1",
-  "status": "CURRENT_AUDIT_SNAPSHOT",
+  "status": "CURRENT_LIVE_RECONCILIATION",
   "audited_at": "2026-09-19",
-  "authority": "Foundation docs/FAMILY_SYNC_STANDARD.md",
+  "authority": "Foundation docs/CURRENT_SOURCE_OF_TRUTH.md",
   "repositories": {
     "foundation": {
       "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup",
-      "last_audited_main_sha": "23b72d2f4a6636df75ce13025ba349b3b47ea244"
+      "last_audited_main_sha": "6a91fbd17143083882e9ac7ebfa52f0b06a344b2"
     },
     "operations": {
       "role": "private-control-plane-research-orchestration",
-      "last_audited_main_sha": "3eb53a1c6e7c56dd3a6369e95e962b8b22c40d2b",
-      "approved_production_revision": "3eb53a1c6e7c56dd3a6369e95e962b8b22c40d2b",
-      "nightly_research_revision": "3eb53a1c6e7c56dd3a6369e95e962b8b22c40d2b"
+      "last_audited_main_sha": "307ed38fe4c7902220cb981556bf08702babbae0",
+      "approved_production_revision": "307ed38fe4c7902220cb981556bf08702babbae0",
+      "nightly_research_revision": "307ed38fe4c7902220cb981556bf08702babbae0"
     }
   },
-  "family_boundary": {
-    "active_repository_count": 2,
-    "active_repositories": [
-      "foundation",
-      "operations"
+  "production": {
+    "workflow_run_id": 35456292033,
+    "workflow_run_number": 232,
+    "foundation_revision": "6a91fbd17143083882e9ac7ebfa52f0b06a344b2",
+    "operations_revision": "307ed38fe4c7902220cb981556bf08702babbae0",
+    "cross_repository_audit_artifact": "cross-repository-audit-receipt",
+    "result": "success"
+  },
+  "acceptance": {
+    "foundation": [
+      157,
+      263,
+      452
     ],
-    "historical_repositories": [
-      "extractor-mapper"
+    "operations": [
+      119,
+      120,
+      132,
+      145,
+      155,
+      197,
+      340,
+      352,
+      385
     ],
-    "note": "The standalone extractor/mapper repository is historical and is not part of the current active family boundary."
+    "meta": [
+      58
+    ]
+  },
+  "completed_recently": {
+    "foundation_prs": [
+      739,
+      740,
+      741,
+      742
+    ],
+    "operations_prs": [
+      535,
+      536,
+      537
+    ],
+    "foundation_issue_27": true
   },
   "evidence_boundary": {
     "L0": "hypothesis",
     "L1": "source inspected",
-    "L2": "repository inspection including callers/tests/ownership",
-    "L3": "current GitHub Actions execution",
+    "L2": "repository tests/contracts",
+    "L3": "current GitHub Actions/control-plane execution",
     "L4": "approved runtime/production execution"
   },
-  "sync_rules": {
-    "main_sha_is_audit_observation": true,
-    "live_main_out_ranks_recorded_sha": true,
-    "cloudflare_runtime_is_external_to_github_only_sync": true,
-    "production_revision_is_separate_from_operations_main": true,
-    "current_github_state_out_ranks_issue_tracker_summaries": true
+  "control_plane": {
+    "main_push_probe": "success_with_job_creation",
+    "main_push_secret_probe": "success_with_job_creation",
+    "nightly_push_run": 35456290060,
+    "nightly_push_result": "failure_before_job_creation",
+    "workflow_dispatch_bridge": "no_current_empirical_job-creation_receipt"
   },
-  "known_current_reconciliation": {
-    "public_admission": "Foundation PR #484 merged to main with required CI green; earlier #460 and #483 are superseded/closed",
-    "source_url_security": "Foundation PR #482 merged to main with green required CI",
-    "execution_identity": "Foundation PR #488 merged to main as the current contract lineage replacing stale #485/#394",
-    "nightly_pin_repair": "Foundation nightly research remains pinned to approved Operations revision 3eb53a1c6e7c56dd3a6369e95e962b8b22c40d2b; the current live handoff is authoritative over older dated reconciliation text.",
-    "zero_cost_provider_gate": "Operations PRs #392/#393/#394 merged; unknown/paid/stale/missing billing or quota state now fails closed across canonical selector, quota policy, chat runtime and private research runtime; Operations issue #353 completed",
-    "provider_output_admission": "Operations PR #395 merged; canonical bounded provider-output normalization and identity/partial/tool/usage checks are shared by chatbot and private research runtime",
-    "provider_fanout_limits": "Operations PR #396 merged; provider-derived research structure is bounded by depth/collection limits, finding/follow-up ceilings and duplicate coalescing; broader tool/streaming execution fan-out remains governed separately",
-    "durable_recovery_accounting": "Operations PR #398 merged; durable consume/release transitions report whether the current actor won and expiry reconciliation counts actual releases only",
-    "deadline_retry_and_execution_governance": "Operations PR #402 merged as 532b90ecfe7a876b4477ab8cb2097b18bcf62b70; consolidated repository implementation for #377/#383/#384 now propagates one monotonic parent deadline through multi-agent research, provider/model calls, HTTP and retry backoff; binds durable reservations to execution identity; caps leases by parent deadline; adds identity-bound heartbeat and recovery; and retains immutable decision-snapshot enforcement",
-    "terminalization_governance": "Operations PR #403 merged as 7ca856c4be291140e52625ff9b73b234f1dc103e; the canonical chat idempotency authority now binds terminalization and abandon to durable attempt identity, records terminal/result/side-effect identities, prevents stale reclaimed workers from overwriting current executions, and binds chat model execution identity to request_id:attempt_id; Operations issue #385 remains open for broader runtime/L4 acceptance",
-    "deadline_governance_issue_state": "Operations issues #377/#383/#384 remain open pending explicit acceptance/CI evidence; the merged implementation does not claim L4 runtime certification",
-    "stage_receipt_correctness": "Foundation PR #461 remains a separate implementation stream",
-    "nightly_timeout": "Foundation issue #487 remains open; nightly research lane still requires timeout below the six-hour GitHub Actions ceiling",
-    "runtime_evidence": "Canonical production run 35445892339 (#219) is green on Foundation 23b72d2f4a6636df75ce13025ba349b3b47ea244 with Operations 3eb53a1c6e7c56dd3a6369e95e962b8b22c40d2b. Public chat/replay/SSE, permitted-source ingestion/readback, D1/B2, execution-core budget/admission/fairness/circuit/cache/capacity/routing diagnostics, provider-stream contract, memory/replay/learning/resource governance, and maintenance reconciliation all passed.",
-    "cloudflare_recovery_2026_09_18": "Cloudflare recovery is partially complete: the existing private Worker was configured and automatically deployed as v15 (version ID 5ee4364d-b26a-4a6e-b2e8-22e9129e1fdc; deployment ID 61b1a4fe-be10-441a-9307-8301b5e3e94). Reported configuration includes OPERATIONS_DB to canonical D1 research-intelligence, FOUNDATION service binding to research-intelligence-engine-public, production/strict-zero-cost vars, */15 * * * * cron, and governance scope/window/lease metadata. The v15 configuration deployment is not proof that the approved Operations application revision is running. RESOURCE_LIMITS_JSON, RESOURCE_RESERVATIONS_JSON and private AUTH_TOKEN remain absent; no protected values were guessed.",
-    "workflow_control_plane": "Main-push control-plane and secret probes create real jobs successfully. Current nightly-multi-agent-research push run 35445593168 and canonical workflow-bridge run 35445592590 still fail before job creation; #157/#263 remain open for their specific supported workflow-dispatch/nightly execution evidence.",
-    "execution_core_consolidation": "Operations #329-#333 were consolidated into #334, which is completed after production runtime checks passed; #349 was consolidated into #352.",
-    "production_acceptance": "Foundation #259 is completed after successful canonical production run 35445595003, which proves source ingestion/readback and the broader private runtime diagnostic on the current pinned Operations revision."
+  "runtime_summary": {
+    "chat": "pass",
+    "chat_idempotency": "pass",
+    "sse_lifecycle": "pass",
+    "permitted_source_ingestion_readback": "pass",
+    "d1_b2": "pass",
+    "memory_store_query_delete_owner_boundary": "pass",
+    "task_envelope_replay_guard": "pass",
+    "candidate_learning_feedback": "pass",
+    "terminalization_cas": "pass",
+    "resource_reservation_reconciliation": "pass",
+    "maintenance_reconciliation": "pass",
+    "provider_stream_contract": "pass"
   },
-  "documentation_rule": "Dated plans and handoffs are historical context. Current merged source, current tests/CI, current source-of-truth documents, and explicit runtime evidence determine present status."
+  "rules": [
+    "Current merged source and fresh runtime evidence outrank historical handoff text.",
+    "Do not claim L4 acceptance for an issue whose remaining criterion is restart, scheduler, workflow-dispatch, cancellation, provider failure, or other external/runtime evidence not observed.",
+    "Do not introduce competing deployment, automation, resource, lifecycle, replay, memory, evaluation, or publication authorities."
+  ]
 }
