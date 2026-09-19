@@ -119,19 +119,18 @@ jobs:
           set -euo pipefail
           python scripts/browser_site_benchmark.py             --input ../benchmark-input/browser-targets.json             --output ../benchmark-output/browser-pass2.jsonl
 
-      - name: Collect benchmark receipts
+      - name: Verify benchmark receipts
         working-directory: operations
         run: |
           set -euo pipefail
-          find ../benchmark-output -name '*.jsonl' -type f -print
-          cp ../benchmark-output/browser-pass1.jsonl ../benchmark-output/browser-pass1-collected.jsonl
-          cp ../benchmark-output/browser-pass2.jsonl ../benchmark-output/browser-pass2-collected.jsonl
-          find ../benchmark-output -path '*/receipts.jsonl' -type f -exec cp {} ../benchmark-output/ \;
           python - <<'PY'
           from pathlib import Path
           files=sorted(Path("../benchmark-output").rglob("*.jsonl"))
-          assert files, "no benchmark receipts were produced"
-          print("\n".join(str(path) for path in files))
+          assert len(files) >= 4, f"expected at least four pass files, got {len(files)}"
+          for path in files:
+              text=path.read_text(encoding="utf-8").strip()
+              assert text, f"empty benchmark receipt: {path}"
+              print(path)
           PY
 
       - name: Build benchmark quality report
