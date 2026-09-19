@@ -131,24 +131,36 @@ def test_doh_request_rejects_non_allowlisted_endpoint():
         asyncio.run(http._doh_request("https://attacker.example/dns-query", "AQID"))
 
 
-def test_doh_request_constructs_fixed_url_without_request_init_conversion(monkeypatch):
+def test_doh_request_constructs_documented_request_object(monkeypatch):
     import backend.sources.http as http
 
     captured = {}
 
-    async def fake_fetch(url):
-        captured["url"] = url
+    class FakeRequest:
+        @staticmethod
+        def new(url):
+            captured["url"] = url
+            return {"url": url}
+
+    async def fake_fetch(request):
+        captured["request"] = request
         return "response"
 
     monkeypatch.setitem(
         __import__("sys").modules,
         "js",
+        __import__("types").SimpleNamespace(Request=FakeRequest),
+    )
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "workers",
         __import__("types").SimpleNamespace(fetch=fake_fetch),
     )
 
     result = asyncio.run(http._doh_request("https://cloudflare-dns.com/dns-query", "AQID"))
     assert result == "response"
     assert captured["url"] == "https://cloudflare-dns.com/dns-query?dns=AQID"
+    assert captured["request"] == {"url": captured["url"]}
 
 
 def test_public_destination_fails_when_dns_returns_no_addresses():
