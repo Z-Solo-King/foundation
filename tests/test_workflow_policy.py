@@ -207,7 +207,12 @@ def test_all_canonical_workflow_dispatch_requests_use_the_public_router():
         for name, text in texts.items()
         if "actions/workflows/" in text and "/dispatches" in text
     ]
-    assert dispatchers == ["foundation-canonical-workflow-bridge.yml"]
+    assert dispatchers == [
+        "canonical-workflow-dispatch-acceptance.yml",
+        "foundation-canonical-workflow-bridge.yml",
+    ]
+    for name in dispatchers:
+        assert "foundation-canonical-workflow-bridge.yml/dispatches" in texts[name]
 
 
 
