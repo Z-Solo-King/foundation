@@ -8,7 +8,9 @@
       "reusable_evidence": false,
       "research_value": "High",
       "description": "Deep research prompts covering product research plus project-specific architecture, status, artifact, CI, extraction, evidence and acceptance questions.",
-      "feeds": ["benchmark/chatbot_query_benchmark.py"]
+      "feeds": [
+        "benchmark/chatbot_query_benchmark.py"
+      ]
     },
     {
       "path": "benchmark/chatbot_query_benchmark.py",
@@ -43,7 +45,7 @@
       "kind": "evidence_boundary_validator",
       "reusable_evidence": false,
       "research_value": "High",
-      "description": "Executable validation of artifact classification, project-query coverage and the boundary between transport/structural signals and field-level correctness."
+      "description": "Executable validation of artifact classification, project-query coverage, complete nightly lane/diagnosis/project-summary/baseline bundle integrity when present, and the boundary between transport/structural signals and field-level correctness."
     },
     {
       "path": "benchmark/multi_agent/baseline.py",
@@ -103,7 +105,8 @@
     "Structural product-candidate or JSON-LD signals are hints about page shape, not proof that extracted product fields are correct.",
     "Current project state must be tied to a revision and timestamp before being reused as a current claim.",
     "A regression result must name the compared baseline; NO_BASELINE is a truthful state, not a pass.",
-    "Every benchmark artifact must carry an explicit execution evidence tier; lower-tier evidence cannot certify higher-tier runtime or production claims."
+    "Every benchmark artifact must carry an explicit execution evidence tier; lower-tier evidence cannot certify higher-tier runtime or production claims.",
+    "A nightly research bundle is reusable only when its lane manifests, diagnosis, project-improvement summary and baseline are internally consistent for the same run; missing runtime artifacts are absence of evidence, not a pass."
   ],
   "search_priorities": [
     "project-specific research questions",
