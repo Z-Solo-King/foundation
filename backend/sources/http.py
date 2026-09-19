@@ -307,7 +307,7 @@ async def fetch_public_url(url: str, *, fetcher=None, dns_resolver=None) -> Fetc
             current = canonicalize_url(urljoin(current, location))
             redirect_chain.append(current)
             continue
-        content = bytes(await response.arrayBuffer())
+        content = _response_bytes(await response.arrayBuffer())
         if len(content) > MAX_BYTES:
             raise RuntimeError("response exceeds acquisition size budget")
         return FetchResult(
