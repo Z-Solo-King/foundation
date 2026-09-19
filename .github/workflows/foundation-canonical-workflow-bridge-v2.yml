@@ -12,7 +12,7 @@ name: Foundation canonical workflow bridge
           - heroic-ai-production-release.yml
           - cross-repository-contract-drift.yml
           - operations-centralized-validation.yml
-          - main-push-actions-control-plane-probe.yml
+          - main-push-actions-control-plane-probe-v2.yml
         default: nightly-multi-agent-research-v2.yml
       dry_run:
         description: Pass dry_run=true to nightly research only
@@ -67,7 +67,7 @@ jobs:
           OPERATIONS_REF="${OPERATIONS_REF:-main}"
 
           case "$TARGET" in
-            nightly-multi-agent-research-v2.yml|heroic-ai-production-release.yml|cross-repository-contract-drift.yml|operations-centralized-validation.yml|main-push-actions-control-plane-probe.yml) ;;
+            nightly-multi-agent-research-v2.yml|heroic-ai-production-release.yml|cross-repository-contract-drift.yml|operations-centralized-validation.yml|main-push-actions-control-plane-probe-v2.yml) ;;
             *)
               echo "Refusing non-canonical Foundation workflow: $TARGET"
               exit 1
