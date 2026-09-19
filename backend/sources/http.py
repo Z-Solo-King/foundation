@@ -115,6 +115,17 @@ async def _validate_public_destination(url: str, *, resolver=None) -> None:
         raise ValueError("target host resolves to a non-public address")
 
 
+async def _call_fetcher(fetcher, url: str, options: dict):
+    """Call Workers Fetch with the runtime's supported signature, preserving test doubles."""
+    try:
+        return await fetcher(url, options)
+    except TypeError as exc:
+        message = str(exc)
+        if "positional argument" not in message and "positional arguments" not in message:
+            raise
+        return await fetcher(url)
+
+
 async def fetch_public_url(url: str, *, fetcher=None, dns_resolver=None) -> FetchResult:
     custom_transport = fetcher is not None
     fetcher = fetcher or _workers_fetch()
@@ -129,7 +140,7 @@ async def fetch_public_url(url: str, *, fetcher=None, dns_resolver=None) -> Fetc
             current = canonicalize_url(current)
         if original_scheme == "https" and urlparse(current).scheme != "https":
             raise ValueError("https to http redirect downgrade is not allowed")
-        response = await fetcher(current, {"redirect": "manual"})
+        response = await _call_fetcher(fetcher, current, {"redirect": "manual"})
         status = int(response.status)
         if status in {301, 302, 303, 307, 308}:
             location = response.headers.get("location")
