@@ -157,13 +157,13 @@ async def _doh_request(endpoint: str, encoded_query: str):
     """Send an RFC 8484 wireformat GET to a fixed, allowlisted DoH endpoint."""
     if endpoint not in DNS_OVER_HTTPS_ENDPOINTS:
         raise ValueError("unsupported DNS-over-HTTPS endpoint")
-    from js import Request, fetch as js_fetch
+    from workers import fetch
 
-    # Construct the standard Request with only the URL. Mutating the real Headers
-    # object avoids Python->JS RequestInit conversion on Python Workers.
+    # Cloudflare's wireformat GET endpoint defaults to application/dns-message.
+    # Keep the Python Workers path to a URL-only fetch so no Python->JS RequestInit
+    # conversion is involved in the deployed runtime.
     request_url = f"{endpoint}?dns={encoded_query}"
-    request = Request.new(request_url)
-    return await js_fetch(request)
+    return await fetch(request_url)
 
 
 async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
