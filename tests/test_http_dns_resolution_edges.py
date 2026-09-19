@@ -83,16 +83,22 @@ def test_dns_over_https_filters_non_address_records_and_returns_matching_type(mo
 
 
 def test_dns_over_https_encodes_wire_query_without_plain_hostname_in_transport(monkeypatch):
-    async def response_factory(_endpoint, encoded_query):
-        assert _endpoint == "https://cloudflare-dns.com/dns-query"
-        assert "example.com" not in encoded_query
+    seen = []
+
+    async def response_factory(endpoint, encoded_query):
+        import base64
+
         decoded = base64.urlsafe_b64decode(encoded_query + "=" * (-len(encoded_query) % 4))
-        assert b"example.com" in decoded
+        seen.append((endpoint, encoded_query, decoded))
         return _DnsResponse(200, _dns_packet(record_type=1, addresses=("93.184.216.34",)))
 
-    http, calls = _patch_doh(monkeypatch, response_factory)
+    http, _calls = _patch_doh(monkeypatch, response_factory)
     assert asyncio.run(http._dns_over_https("example.com", "A")) == ["93.184.216.34"]
-    assert calls and calls[0][0] == "https://cloudflare-dns.com/dns-query"
+    assert seen
+    endpoint, encoded_query, decoded = seen[0]
+    assert endpoint == "https://cloudflare-dns.com/dns-query"
+    assert "example.com" not in encoded_query
+    assert b"example.com" in decoded
 
 
 def test_dns_over_https_falls_back_to_secondary_resolver(monkeypatch):
