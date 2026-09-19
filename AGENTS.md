@@ -454,7 +454,7 @@ Before any new mutation, read `docs/AI_AGENT_HANDOFF.md` and `docs/CURRENT_SOURC
 
 Current verified family state:
 - Foundation main: `23b72d2f4a6636df75ce13025ba349b3b47ea244`
-- Operations main / canonical production revision: `b740eac06e1a25b145bba587c1fd134a71d9463f`
+- Operations main / canonical production revision: `fc5edf0115d9fa74ffd7a0fea7ccfbcbc00c96c4`
 - Latest canonical production receipt: run `35445892339` (#219), green for deployment/readiness, authenticated chat, replay/idempotency, SSE lifecycle, permitted-source research ingestion/readback, D1/B2 lifecycle, and the private runtime diagnostic.
 - Current open acceptance queue is the 14-issue set recorded in `docs/CURRENT_SOURCE_OF_TRUTH.md`.
 
