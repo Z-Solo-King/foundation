@@ -290,3 +290,16 @@ def test_dns_parse_addresses_rejects_truncated_answer_header_and_record():
     answer = b"\xc0\x0c" + struct.pack("!HHIH", 1, 1, 60, 4) + b"\x5d"
     with pytest.raises(ValueError, match="truncated DNS record"):
         http._dns_parse_addresses(header + question + answer, "A")
+
+def test_dns_query_payload_rejects_empty_label():
+    import backend.sources.http as http
+
+    with pytest.raises(ValueError, match="invalid DNS hostname"):
+        http._dns_query_payload("example..com", "A")
+
+
+def test_dns_parse_addresses_rejects_short_packet():
+    import backend.sources.http as http
+
+    with pytest.raises(ValueError, match="truncated DNS response"):
+        http._dns_parse_addresses(b"", "A")
