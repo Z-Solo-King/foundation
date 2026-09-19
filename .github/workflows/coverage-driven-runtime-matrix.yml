@@ -118,11 +118,18 @@ jobs:
 
       - name: Install Operations test environment
         working-directory: operations
-        run: python -m pip install --disable-pip-version-check -e ".[test,browser]"
+        run: |
+          python -m pip install --disable-pip-version-check -e ".[test,browser]"
+          python -m pip install --disable-pip-version-check "workers-py>=1.9" workers-runtime-sdk
 
       - name: Materialize pinned public core
         working-directory: operations
         run: python scripts/sync_public_core.py
+
+      - name: Install browser runtime for browser scenario
+        if: matrix.id == 'browser-acquisition'
+        working-directory: operations
+        run: python -m playwright install --with-deps chromium
 
       - name: Run scenario
         id: run
