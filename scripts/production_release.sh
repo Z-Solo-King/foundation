@@ -378,6 +378,43 @@ jq -e --arg request_id "production-chat-${GITHUB_RUN_ID}" \
   "$RUNNER_TEMP/live-chat-replay.json" >/dev/null
 echo "Live chat idempotency acceptance: PASS"
 
+# Prove the existing idempotency authority under concurrent duplicate requests.
+concurrent_key="production-concurrent-${GITHUB_RUN_ID}"
+concurrent_dir="$RUNNER_TEMP/concurrent-chat"
+mkdir -p "$concurrent_dir"
+curl -sS --max-time 90 -o "$concurrent_dir/a.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: ${concurrent_key}" -d "$live_chat_payload" \
+  "$BASE_URL/api/v1/chat" > "$concurrent_dir/a.status" 2>&1 &
+pid_a=$!
+curl -sS --max-time 90 -o "$concurrent_dir/b.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: ${concurrent_key}" -d "$live_chat_payload" \
+  "$BASE_URL/api/v1/chat" > "$concurrent_dir/b.status" 2>&1 &
+pid_b=$!
+wait "$pid_a"
+wait "$pid_b"
+concurrent_status_a=$(cat "$concurrent_dir/a.status")
+concurrent_status_b=$(cat "$concurrent_dir/b.status")
+echo "Concurrent chat statuses: ${concurrent_status_a}/${concurrent_status_b}"
+test "$concurrent_status_a" = "200"
+test "$concurrent_status_b" = "200"
+concurrent_response_a=$(jq -r '.response.response_id' "$concurrent_dir/a.json")
+concurrent_response_b=$(jq -r '.response.response_id' "$concurrent_dir/b.json")
+test -n "$concurrent_response_a"
+test "$concurrent_response_a" = "$concurrent_response_b"
+echo "Live concurrent idempotency acceptance: PASS"
+
+# Prove the public authentication boundary explicitly rejects an unauthenticated request.
+unauth_status=$(curl -sS --max-time 30 -o "$RUNNER_TEMP/live-chat-unauth.json" -w '%{http_code}' \
+  -H 'Content-Type: application/json' -d "$live_chat_payload" \
+  "$BASE_URL/api/v1/chat")
+echo "POST /api/v1/chat without AUTH_TOKEN -> HTTP ${unauth_status}"
+if [ "$unauth_status" != "401" ] && [ "$unauth_status" != "403" ]; then
+  cat "$RUNNER_TEMP/live-chat-unauth.json" || true
+  exit 1
+fi
+echo "Live public authentication boundary acceptance: PASS"
 stream_payload=$(jq -nc \
   --arg chat_id "production-stream-${GITHUB_RUN_ID}" \
   --arg request_id "production-stream-request-${GITHUB_RUN_ID}" \
