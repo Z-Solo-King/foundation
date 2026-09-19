@@ -16,14 +16,16 @@ This file is the compact continuity record for the next maintenance chat. Curren
 ### Exact current revisions
 
 - Foundation `main`: `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`
-- Operations `main`: `307ed38fe4c7902220cb981556bf08702babbae0`
-- Foundation canonical production/nightly Operations pin: `307ed38fe4c7902220cb981556bf08702babbae0`
+- Operations `main`: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
+- Foundation canonical production Operations pin target: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
+- Foundation nightly research pin remains: `307ed38fe4c7902220cb981556bf08702babbae0`
 
 ### Latest canonical production receipt
 
-- Workflow run: `35456292033` (Heroic AI production release, #232)
+- Latest verified workflow run: `35456292033` (Heroic AI production release, #232)
 - Foundation revision: `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`
-- Operations provenance observed in Cloudflare: `github:307ed38fe4c7902220cb981556bf08702babbae0`
+- Last verified Operations provenance in Cloudflare: `github:307ed38fe4c7902220cb981556bf08702babbae0`
+- Next production certification target: `github:c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
 - Cross-repository audit receipt artifact: `cross-repository-audit-receipt`
 
 Passed in the canonical production release:
