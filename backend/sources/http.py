@@ -183,6 +183,25 @@ async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
     for endpoint in DNS_OVER_HTTPS_ENDPOINTS:
         try:
             response = await _doh_request(endpoint, encoded_query)
+            if int(response.status) != 200:
+                failures.append(f"{endpoint}: HTTP {int(response.status)}")
+                continue
+            raw = bytes(await response.arrayBuffer())
+            try:
+                values = _dns_parse_addresses(raw, record_type)
+            except ValueError:
+                invalid_response = True
+                failures.append(f"{endpoint}: invalid DNS response")
+                continue
+            if values:
+                return values
+            failures.append(f"{endpoint}: no {record_type} answers")
+        except Exception as exc:
+            failures.append(f"{endpoint}: {type(exc).__name__}")
+    detail = "; ".join(failures[:2])
+    if invalid_response and all("invalid DNS response" in failure for failure in failures):
+        raise RuntimeError(f"invalid DNS response for {hostname}" + (f" ({detail})" if detail else ""))
+    raise RuntimeError(f"DNS resolution failed for {hostname}" + (f" ({detail})" if detail else ""))
 
 
 async def _validate_public_destination(url: str, *, resolver=None) -> None:
