@@ -99,7 +99,7 @@ jobs:
         working-directory: operations
         run: |
           set -euo pipefail
-          python scripts/durable_site_benchmark.py run             --input ../benchmark-input/http-targets.json             --output ../benchmark-output/http-pass1             --shards 1 --shard 0 --workers 2 --retries 2
+          PYTHONPATH=. python scripts/durable_site_benchmark.py run             --input ../benchmark-input/http-targets.json             --output ../benchmark-output/http-pass1             --shards 1 --shard 0 --workers 2 --retries 2
 
       - name: Run HTTP benchmark pass 2
         working-directory: operations
