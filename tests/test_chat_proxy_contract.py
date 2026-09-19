@@ -8,7 +8,6 @@ def test_chat_proxy_fails_closed_without_operations_binding():
     payload, status = asyncio.run(worker._operations_chat(SimpleNamespace(), {"message": "x"}, Request()))
     assert status == 503
     assert payload["error"] == "chat_backend_unavailable"
-    assert "RuntimeError: binding unavailable" in payload["diagnostic"]
 
 
 def test_chat_proxy_forwards_auth_and_idempotency():
@@ -65,6 +64,7 @@ def test_chat_stream_proxy_handles_binding_error():
     payload, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request()))
     assert status == 503
     assert payload["error"] == "chat_backend_unavailable"
+    assert "RuntimeError: binding unavailable" in payload["diagnostic"]
 
 
 def test_chat_sse_body_rejects_invalid_private_response():
