@@ -24,43 +24,54 @@ def test_workers_fetch_is_lazy_and_reports_context() -> None:
         workers_fetch("unit-test")
 
 
-def test_workers_fetch_adapter_preserves_request_options(monkeypatch) -> None:
+def test_workers_fetch_adapter_uses_js_fetch_for_request_options(monkeypatch) -> None:
     import asyncio
     import sys
     import types
 
     captured = {}
 
+    class FakeObject:
+        @staticmethod
+        def fromEntries(value):
+            return value
+
     class FakeRequest:
-        def __init__(self, url, **options):
+        @classmethod
+        def new(cls, url, options):
             captured["url"] = url
             captured["options"] = options
+            return (url, options)
 
-    async def fake_fetch(request):
+    async def fake_js_fetch(request):
         captured["request"] = request
         return "response"
 
-    fake_workers = types.SimpleNamespace(Request=FakeRequest, fetch=fake_fetch)
-    monkeypatch.setitem(sys.modules, "workers", fake_workers)
+    def fake_to_js(value, dict_converter=None):
+        return dict_converter(value) if dict_converter else value
+
+    class FakeWorkers:
+        @staticmethod
+        async def fetch(*_args, **_kwargs):
+            raise AssertionError("workers.fetch should not carry request options in production path")
+
+    monkeypatch.setitem(sys.modules, "workers", FakeWorkers)
+    monkeypatch.setitem(sys.modules, "js", types.SimpleNamespace(Object=FakeObject, Request=FakeRequest, fetch=fake_js_fetch))
+    monkeypatch.setitem(sys.modules, "pyodide", types.SimpleNamespace())
+    monkeypatch.setitem(sys.modules, "pyodide.ffi", types.SimpleNamespace(to_js=fake_to_js))
 
     from backend.core.workers_runtime import workers_fetch
 
-    fetcher = workers_fetch("test")
-    result = asyncio.run(fetcher("https://example.com/dns-query", {
-        "method": "POST",
-        "headers": {"Content-Type": "application/dns-message"},
-        "body": b"payload",
-    }))
+    options = {"method": "POST", "headers": {"Content-Type": "application/dns-message"}, "body": b"payload"}
+    result = asyncio.run(workers_fetch("test")("https://example.com/dns-query", options))
 
     assert result == "response"
     assert captured["url"] == "https://example.com/dns-query"
-    assert captured["options"]["method"] == "POST"
-    assert captured["options"]["headers"]["Content-Type"] == "application/dns-message"
-    assert captured["options"]["body"] == b"payload"
-    assert captured["request"].__class__ is FakeRequest
+    assert captured["options"] is options
+    assert captured["request"] == (captured["url"], options)
 
 
-def test_workers_fetch_adapter_uses_fetch_directly_without_options(monkeypatch) -> None:
+def test_workers_fetch_adapter_without_options_uses_workers_fetch(monkeypatch) -> None:
     import asyncio
     import sys
     import types
@@ -80,22 +91,3 @@ def test_workers_fetch_adapter_uses_fetch_directly_without_options(monkeypatch) 
     assert calls == ["https://example.com"]
 
 
-def test_workers_fetch_adapter_falls_back_when_request_type_is_unavailable(monkeypatch) -> None:
-    import asyncio
-    import sys
-    import types
-
-    calls = []
-
-    async def fake_fetch(url, options):
-        calls.append((url, options))
-        return "response"
-
-    monkeypatch.setitem(sys.modules, "workers", types.SimpleNamespace(fetch=fake_fetch))
-
-    from backend.core.workers_runtime import workers_fetch
-
-    options = {"method": "POST", "body": b"payload"}
-    result = asyncio.run(workers_fetch("test")("https://example.com", options))
-    assert result == "response"
-    assert calls == [("https://example.com", options)]
