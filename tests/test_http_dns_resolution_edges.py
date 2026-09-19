@@ -131,20 +131,19 @@ def test_doh_request_rejects_non_allowlisted_endpoint():
         asyncio.run(http._doh_request("https://attacker.example/dns-query", "AQID"))
 
 
-def test_doh_request_invokes_bound_global_fetch(monkeypatch):
+def test_doh_request_uses_native_workers_fetch_without_options(monkeypatch):
     import backend.sources.http as http
 
     captured = {}
 
-    class FakeGlobal:
-        async def fetch(self, url):
-            captured["url"] = url
-            return "response"
+    async def fake_fetch(url):
+        captured["url"] = url
+        return "response"
 
     monkeypatch.setitem(
         __import__("sys").modules,
-        "js",
-        __import__("types").SimpleNamespace(globalThis=FakeGlobal()),
+        "workers",
+        __import__("types").SimpleNamespace(fetch=fake_fetch),
     )
 
     result = asyncio.run(

@@ -154,16 +154,16 @@ def _dns_parse_addresses(payload: bytes, record_type: str) -> list[str]:
 
 
 async def _doh_request(endpoint: str, encoded_query: str):
-    """Send an RFC 8484 wireformat GET to a fixed, allowlisted DoH endpoint."""
+    """Send an RFC 8484 wireformat GET through the native Workers fetch API."""
     if endpoint not in DNS_OVER_HTTPS_ENDPOINTS:
         raise ValueError("unsupported DNS-over-HTTPS endpoint")
-    from js import globalThis
+    from workers import fetch
 
-    # Keep the JavaScript method invocation bound to the Workers global object.
-    # The URL authority remains fixed and the DNS question stays only inside the
-    # Base64URL wireformat parameter.
+    # Keep the DoH call on the same native Workers fetch primitive used by
+    # ordinary public acquisition. No RequestInit/options cross the Python/JS
+    # FFI boundary; the DNS question stays only in the Base64URL wire query.
     request_url = f"{endpoint}?dns={encoded_query}"
-    return await globalThis.fetch(request_url)
+    return await fetch(request_url)
 
 
 async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
