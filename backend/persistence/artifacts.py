@@ -108,7 +108,14 @@ class B2ArtifactStore(ArtifactStore):
         headers, authorization = self._authorization(method, url, body, datetime.now(timezone.utc), content_type)
         headers["authorization"] = authorization
         fetch = self._workers_fetch()
-        response = await fetch(url, method=method, headers=headers, body=body if method == "PUT" else None)
+        response = await fetch(
+            url,
+            {
+                "method": method,
+                "headers": headers,
+                "body": body if method == "PUT" else None,
+            },
+        )
         return response
 
     async def put(self, key: str, content: bytes, *, content_type: str = "application/octet-stream") -> None:
