@@ -129,7 +129,9 @@ def test_workers_fetch_adapter_falls_back_to_workers_request_when_js_ffi_is_miss
 
     assert result == "response"
     assert captured["request"] == ("https://example.com", options)
-    assert captured["fetch"] == captured["request"]
+    assert captured["fetch"].__class__ is FakeRequest
+    assert captured["fetch"].__dict__["url"] == "https://example.com"
+    assert captured["fetch"].__dict__["options"] == options
 
 
 def test_workers_fetch_adapter_falls_back_to_direct_fetch_when_request_type_is_missing(monkeypatch) -> None:
