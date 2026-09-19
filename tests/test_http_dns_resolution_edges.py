@@ -292,42 +292,30 @@ def test_doh_request_rejects_non_allowlisted_endpoint():
         asyncio.run(http._doh_request("https://attacker.example/dns-query", "AQID"))
 
 
-def test_doh_request_uses_native_request_with_workers_sdk_fetch(monkeypatch):
-    import sys
-    import types
-
+def test_doh_request_uses_js_fetch_with_url_and_headers(monkeypatch):
     import backend.sources.http as http
 
     captured = {}
 
-    class FakeHeaders:
-        def set(self, key, value):
-            captured.setdefault("headers", {})[key] = value
-
-    class FakeRequest:
-        @staticmethod
-        def new(url):
+    def fake_workers_fetch():
+        async def fetcher(url, options):
             captured["url"] = url
-            request = type("RequestObject", (), {})()
-            request.headers = FakeHeaders()
-            captured["request"] = request
-            return request
+            captured["options"] = options
+            return "response"
+        return fetcher
 
-    async def fake_fetch(request):
-        captured["fetched_request"] = request
-        return "response"
-
-    monkeypatch.setitem(sys.modules, "js", types.SimpleNamespace(Request=FakeRequest))
-    monkeypatch.setitem(sys.modules, "workers", types.SimpleNamespace(fetch=fake_fetch))
-
+    monkeypatch.setattr(http, "_workers_fetch", fake_workers_fetch)
     result = asyncio.run(
         http._doh_request("https://cloudflare-dns.com/dns-query", "AQID")
     )
     assert result == "response"
     assert captured["url"] == "https://cloudflare-dns.com/dns-query?dns=AQID"
-    assert captured["headers"]["Accept"] == "application/dns-message"
-    assert captured["headers"]["Cache-Control"] == "no-store"
-    assert captured["fetched_request"] is captured["request"]
+    assert captured["options"] == {
+        "headers": {
+            "Accept": "application/dns-message",
+            "Cache-Control": "no-store",
+        }
+    }
 
 
 def test_public_destination_fails_when_dns_returns_no_addresses():
