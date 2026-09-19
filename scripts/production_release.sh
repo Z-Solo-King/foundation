@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="c6f7ebaec4ebdf21cd1d036df073b90de5bc7129"
+OPERATIONS_REF="c9073a85c4658d3c07b0b2f31f12e28581930763"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
@@ -263,6 +263,29 @@ for asset in styles.css app.js composer.js lifecycle_controller.js; do
   test -s "/tmp/${asset}"
 done
 
+# Seed a deployment-boundary sentinel when the currently deployed Operations revision
+# already supports it. The first pin to a new revision intentionally skips this seed;
+# the next canonical production run performs the real old-version -> new-version test.
+persistence_seed_file="$RUNNER_TEMP/persistence-rollover-seed.json"
+persistence_seed_payload='{"operation":"persistence_seed"}'
+persistence_seed_status=$(curl -sS --max-time 30 \
+  -o "$persistence_seed_file" -w '%{http_code}' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  -d "$persistence_seed_payload" \
+  "${BASE_URL}/api/v1/chatbot/diagnostic" || true)
+echo "POST persistence_seed -> HTTP ${persistence_seed_status}"
+persistence_seed_ready=false
+if [ "$persistence_seed_status" = "200" ] && jq -e '.ok == true and (.sentinel_id | type == "string" and length > 0)' "$persistence_seed_file" >/dev/null 2>&1; then
+  persistence_seed_ready=true
+  echo "Persistence rollover seed: READY"
+elif [ "$persistence_seed_status" = "400" ] || [ "$persistence_seed_status" = "503" ] || [ "$persistence_seed_status" = "404" ]; then
+  echo "Persistence rollover seed unavailable on the currently deployed revision; first-pin run continues."
+else
+  echo "Unexpected persistence rollover seed response"
+  cat "$persistence_seed_file" || true
+  exit 1
+fi
 # Only the canonical private Operations deployment now follows the public asset smoke.
 npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
   --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql" \
@@ -303,6 +326,23 @@ jq -e --arg expected "github:${OPERATIONS_REF}" '
 }
 echo "Operations Cloudflare provenance: PASS (github:${OPERATIONS_REF})"
 
+if [ "$persistence_seed_ready" = "true" ]; then
+  sentinel_id=$(jq -r '.sentinel_id' "$persistence_seed_file")
+  persistence_verify_payload=$(jq -nc --arg operation "persistence_verify" --arg sentinel_id "$sentinel_id" '{operation:$operation,sentinel_id:$sentinel_id}')
+persistence_verify_status=$(curl -sS --max-time 30 \
+  -o "$RUNNER_TEMP/persistence-rollover-verify.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  -d "$persistence_verify_payload" \
+  "${BASE_URL}/api/v1/chatbot/diagnostic" || true)
+echo "POST persistence_verify -> HTTP ${persistence_verify_status}"
+test "$persistence_verify_status" = "200"
+jq -e '.ok == true and .memory_persisted_across_version == true and .replay_nonce_rejected_after_version_change == true and .cleanup_status == 200' \
+  "$RUNNER_TEMP/persistence-rollover-verify.json" >/dev/null
+echo "Live memory/replay deployment-boundary acceptance: PASS"
+else
+  echo "Live memory/replay deployment-boundary acceptance: DEFERRED (requires one subsequent canonical production run after the new Operations pin is active)"
+fi
 # Exercise the real public-to-private conversational and research paths only after
 # both Workers are deployed and the private provenance gate has passed.
 live_chat_payload=$(jq -nc \
