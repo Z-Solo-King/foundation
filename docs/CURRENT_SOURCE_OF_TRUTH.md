@@ -13,13 +13,13 @@ This is the compact synchronization record for future maintenance chats. Live Gi
 - Do not enable Cloudflare Workers Builds or Deploy Hooks as a competing deployment authority.
 
 ### Current revisions
-- Foundation main: 450fb977957db716e60655778e6263bb15064073
+- Foundation main: 5f0c80e49930604780f7832ccbb2627faf252ca0
 - Operations main: abf7007f4251f80280296c9855e4354502b98541
 - Current Foundation production pin for Operations: abf7007f4251f80280296c9855e4354502b98541
 
 ### Latest canonical production receipt
-Run: 35444893823 (#217)
-Foundation commit: 450fb977957db716e60655778e6263bb15064073
+Run: 35445595003 (#218)
+Foundation commit: 5f0c80e49930604780f7832ccbb2627faf252ca0
 Operations revision: abf7007f4251f80280296c9855e4354502b98541
 
 Passed:
@@ -48,17 +48,21 @@ Private runtime checks passed:
 - maintenance scheduler reconciliation.
 
 ### Current control-plane evidence
-- Main-push Actions control-plane probe: run 35444893881, SUCCESS with job creation.
-- Main-push secret probe: run 35444893733, SUCCESS with job creation.
-- The actual nightly-multi-agent-research.yml push run 35444890399 still failed before job creation.
-- The canonical-workflow-bridge run 35444891050 also failed before job creation.
-- Therefore #157 and #263 remain open for their specific workflow-dispatch/nightly execution evidence. Do not generalize the earlier zero-job defect to all main pushes.
+- Main-push Actions control-plane probe run 35445595034: SUCCESS with job creation.
+- Main-push secret probe run 35445595001: SUCCESS with job creation.
+- Actual nightly-multi-agent-research.yml push run 35445593168: failure with no jobs created.
+- Canonical workflow-bridge run 35445592590: failure with no jobs created.
+- Canonical nightly pin repair / cross-repository drift / B2 helper runs also remain separate auxiliary failures and are not production deployment authorities.
+- Therefore #157 and #263 remain open for their specific supported workflow-dispatch/nightly execution evidence.
+
+### Issue consolidation
+- Operations #329–#333 consolidated into #334; #334 is completed after production runtime acceptance.
+- Operations #349 consolidated into #352; #352 remains open for broader extractor/mapper replay evidence.
+- Foundation #259 is completed after successful post-DoH production acceptance.
 
 ### Open queue
 Foundation: #27, #58, #157, #263, #452.
 Operations: #119, #120, #132, #145, #155, #197, #340, #352, #385.
-Operations #329–#333 were consolidated into #334, and #334 is now completed. Operations #349 was consolidated into #352.
-
 Total open issues: 14.
 
 ### Evidence ladder
