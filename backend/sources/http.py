@@ -201,22 +201,23 @@ def _dns_parse_addresses(payload: bytes, record_type: str) -> list[str]:
 
 
 async def _doh_request(endpoint: str, encoded_query: str):
-    """Send an RFC 8484 wireformat GET through the native Workers fetch API."""
+    """Send an RFC 8484 wireformat GET through the JS Fetch API."""
     if endpoint not in DNS_OVER_HTTPS_ENDPOINTS:
         raise ValueError("unsupported DNS-over-HTTPS endpoint")
-    # Use a native JavaScript Request for the WHATWG Headers/Request
-    # implementation, but enter the network through the Python Workers SDK
-    # fetch() bridge documented by Cloudflare. This avoids both the direct
-    # js.fetch(Request) FFI failure and the Python workers.Request wrapper
-    # failure observed in live production.
-    from js import Request
-    from workers import fetch
-
     request_url = f"{endpoint}?dns={encoded_query}"
-    request = Request.new(request_url)
-    request.headers.set("Accept", "application/dns-message")
-    request.headers.set("Cache-Control", "no-store")
-    return await fetch(request)
+    # Reuse the runtime adapter's option-bearing path. It enters the native
+    # JavaScript Fetch API with a URL string, avoiding Python Workers Response
+    # wrappers whose bytes() bridge is not reliable in the deployed runtime.
+    fetcher = _workers_fetch()
+    return await fetcher(
+        request_url,
+        {
+            "headers": {
+                "Accept": "application/dns-message",
+                "Cache-Control": "no-store",
+            }
+        },
+    )
 
 
 async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
@@ -232,7 +233,7 @@ async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
             if int(response.status) != 200:
                 failures.append(f"{endpoint}: HTTP {int(response.status)}")
                 continue
-            raw = _response_bytes(await response.bytes())
+            raw = _response_bytes(await response.arrayBuffer())
             try:
                 values = _dns_parse_addresses(raw, record_type)
             except ValueError:
