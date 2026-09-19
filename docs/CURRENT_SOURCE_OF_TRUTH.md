@@ -2,51 +2,64 @@
 
 ## 2026-09-19 LIVE STATE
 
-This is a compact synchronization record for future maintenance chats. Live GitHub state and current runtime receipts override older notes.
+This is the compact synchronization record for future maintenance chats. Live GitHub state and current runtime receipts override older notes.
 
 ### Repository topology
-- Public: `Z-Solo-King/foundation`
-- Private: `Z-Solo-King/operations`
+- Public: Z-Solo-King/foundation
+- Private: Z-Solo-King/operations
 - Foundation owns public contracts/core, GitHub Actions, public Worker/API, backup/restore orchestration, and the sole canonical production release.
 - Operations owns protected policy/resource governance, private execution, provider/runtime control, memory/feedback, promotion/recovery, and chatbot control.
 - Operations must remain private and must not contain GitHub Actions workflows.
 - Do not enable Cloudflare Workers Builds or Deploy Hooks as a competing deployment authority.
 
 ### Current revisions
-- Foundation main: `33331e37c66fb77b60098e8adb3c80ef63942bc6`
-- Operations main: `abf7007f4251f80280296c9855e4354502b98541`
-- Current Foundation production pin for Operations: `abf7007f4251f80280296c9855e4354502b98541`
+- Foundation main: 450fb977957db716e60655778e6263bb15064073
+- Operations main: abf7007f4251f80280296c9855e4354502b98541
+- Current Foundation production pin for Operations: abf7007f4251f80280296c9855e4354502b98541
 
 ### Latest canonical production receipt
-Run: `35430074029`
+Run: 35444893823 (#217)
+Foundation commit: 450fb977957db716e60655778e6263bb15064073
+Operations revision: abf7007f4251f80280296c9855e4354502b98541
 
 Passed:
-- public Worker deployment/readiness;
-- private Operations deployment/provenance;
+- public deployment/readiness;
 - authenticated chat;
-- idempotent chat replay;
-- authenticated SSE lifecycle.
+- chat idempotency/replay;
+- authenticated SSE lifecycle;
+- permitted source ingestion from https://example.com/ (HTTP 200);
+- persisted research readback;
+- D1 and B2 lifecycle checks;
+- private runtime diagnostic.
 
-Failed:
-- research source ingestion because both fixed DoH endpoints return a Python Worker `TypeError` from the fetch invocation.
+Private runtime checks passed:
+- execution amplification budget;
+- admission/backpressure;
+- fairness;
+- circuit breaker;
+- cache/coalescing;
+- provider capacity;
+- routing/stop;
+- provider-stream contract;
+- memory store/query/delete and ownership boundary;
+- replay protection;
+- candidate learning round-trip;
+- durable resource reservation/reconciliation;
+- maintenance scheduler reconciliation.
 
-The production blocker is therefore limited to the Python Workers DoH transport invocation. Do not reopen already-proven chat/replay/SSE/service-binding work without a fresh failing receipt.
-
-### Active DoH candidates
-- PR #684: native Worker Fetch options; no completed checks in the current snapshot.
-- PR #687: JS/Python FFI Request construction; all required PR checks passed on head `dd4bea5dbaa09601e082f55f5b9de732f1121ca6`, but it is based on an older main.
-- PR #691: RequestInit-free JS Request path; newest candidate, checks not yet complete in the current snapshot.
-
-Use one canonical candidate only. Rebase/reconcile a validated solution onto current main rather than creating another competing PR.
-
-### Nightly control-plane
-Latest canonical nightly-related push on current main: `35430072561`.
-No jobs were created. Keep #157 and #263 open until supported canonical workflow execution produces the expected jobs and L3 evidence. Do not weaken permissions to force job creation.
+### Current control-plane evidence
+- Main-push Actions control-plane probe: run 35444893881, SUCCESS with job creation.
+- Main-push secret probe: run 35444893733, SUCCESS with job creation.
+- The actual nightly-multi-agent-research.yml push run 35444890399 still failed before job creation.
+- The canonical-workflow-bridge run 35444891050 also failed before job creation.
+- Therefore #157 and #263 remain open for their specific workflow-dispatch/nightly execution evidence. Do not generalize the earlier zero-job defect to all main pushes.
 
 ### Open queue
-23 open issues remain: Foundation #27, #58, #157, #259, #263, #452; Operations #119, #120, #132, #145, #155, #164, #197, #329, #330, #331, #332, #333, #334, #340, #349, #352, #385.
+Foundation: #27, #58, #157, #263, #452.
+Operations: #119, #120, #132, #145, #155, #197, #340, #352, #385.
+Operations #329–#333 were consolidated into #334, and #334 is now completed. Operations #349 was consolidated into #352.
 
-The issue count is not a completion metric. Close an issue only when its own acceptance graph is satisfied.
+Total open issues: 14.
 
 ### Evidence ladder
 - L1: source/document inspection
@@ -57,9 +70,7 @@ The issue count is not a completion metric. Close an issue only when its own acc
 Never upgrade L1/L2 evidence into L3/L4 claims.
 
 ### Maintenance loop
-`parallel discovery -> classify disposition -> non-overlapping fix lane -> focused tests -> required CI -> merge -> canonical production/runtime probe -> exact issue receipt -> queue rescan`.
-
-
+parallel discovery -> classify disposition -> non-overlapping fix lane -> focused tests -> required CI -> merge -> canonical production/runtime probe -> exact issue receipt -> queue rescan.
 
 ## 2026-09-19 POST-DOH MAINLINE SYNC
 
