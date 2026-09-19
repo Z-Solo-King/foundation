@@ -458,7 +458,7 @@ EOF
         shell: bash
         run: |
           set -euo pipefail
-          python -m benchmark.research_artifact_validator --root .runtime/artifacts
+          python -m benchmark.research_artifact_validator --root .
       - name: Build project research only from complete live research
         if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
         run: |
