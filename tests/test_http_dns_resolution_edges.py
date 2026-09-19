@@ -25,6 +25,17 @@ def test_dns_over_https_non_200_fails_closed(monkeypatch, status):
         asyncio.run(http._dns_over_https("example.com", "A"))
 
 
+def test_dns_over_https_rejects_empty_answer_sets(monkeypatch):
+    import backend.sources.http as http
+
+    async def fetcher(_url, _opts):
+        return _DnsResponse(200, {"Answer": []})
+
+    monkeypatch.setattr(http, "_workers_fetch", lambda: fetcher)
+    with pytest.raises(RuntimeError, match="DNS resolution failed"):
+        asyncio.run(http._dns_over_https("example.com", "A"))
+
+
 def test_dns_over_https_rejects_non_mapping_payload(monkeypatch):
     import backend.sources.http as http
 
