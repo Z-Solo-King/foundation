@@ -7,8 +7,9 @@ This section is the continuity anchor for the next maintenance chat. Current Git
 ### Exact repository state
 
 - Foundation `main`: `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`
-- Operations `main`: `307ed38fe4c7902220cb981556bf08702babbae0`
-- Foundation production/nightly Operations pin: `307ed38fe4c7902220cb981556bf08702babbae0`
+- Operations `main`: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
+- Foundation production Operations pin target: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
+- Foundation nightly research pin remains: `307ed38fe4c7902220cb981556bf08702babbae0`
 - Foundation PRs #739, #740, #741 and #742 are merged.
 - Operations PRs #535, #536 and #537 are merged.
 - Foundation #27 is closed.
@@ -16,7 +17,7 @@ This section is the continuity anchor for the next maintenance chat. Current Git
 
 ### Latest canonical production proof
 
-Run `35456292033` (#232), Foundation `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`.
+Run `35456292033` (#232), Foundation `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`, last verified against Operations `307ed38fe4c7902220cb981556bf08702babbae0`. The next production certification target is Operations `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`.
 
 The release verified:
 
