@@ -2,9 +2,6 @@ name: Foundation canonical workflow bridge
 
 'on':
   workflow_dispatch:
-  push:
-    branches:
-      - fix/dispatch-boundary-and-nightly-baseline-20260919
     inputs:
       target:
         description: Canonical Foundation workflow to dispatch
@@ -32,6 +29,10 @@ name: Foundation canonical workflow bridge
         required: false
         type: string
         default: main
+  push:
+    branches:
+      - fix/dispatch-boundary-and-nightly-baseline-20260919
+
 
 permissions:
   contents: read
