@@ -58,3 +58,44 @@ def test_workers_fetch_adapter_preserves_request_options(monkeypatch) -> None:
     assert captured["options"]["headers"]["Content-Type"] == "application/dns-message"
     assert captured["options"]["body"] == b"payload"
     assert captured["request"].__class__ is FakeRequest
+
+
+def test_workers_fetch_adapter_uses_fetch_directly_without_options(monkeypatch) -> None:
+    import asyncio
+    import sys
+    import types
+
+    calls = []
+
+    async def fake_fetch(url):
+        calls.append(url)
+        return "response"
+
+    monkeypatch.setitem(sys.modules, "workers", types.SimpleNamespace(fetch=fake_fetch))
+
+    from backend.core.workers_runtime import workers_fetch
+
+    result = asyncio.run(workers_fetch("test")("https://example.com"))
+    assert result == "response"
+    assert calls == ["https://example.com"]
+
+
+def test_workers_fetch_adapter_falls_back_when_request_type_is_unavailable(monkeypatch) -> None:
+    import asyncio
+    import sys
+    import types
+
+    calls = []
+
+    async def fake_fetch(url, options):
+        calls.append((url, options))
+        return "response"
+
+    monkeypatch.setitem(sys.modules, "workers", types.SimpleNamespace(fetch=fake_fetch))
+
+    from backend.core.workers_runtime import workers_fetch
+
+    options = {"method": "POST", "body": b"payload"}
+    result = asyncio.run(workers_fetch("test")("https://example.com", options))
+    assert result == "response"
+    assert calls == [("https://example.com", options)]
