@@ -157,16 +157,18 @@ async def _doh_request(endpoint: str, encoded_query: str):
     """Send an RFC 8484 wireformat GET through the native Workers fetch API."""
     if endpoint not in DNS_OVER_HTTPS_ENDPOINTS:
         raise ValueError("unsupported DNS-over-HTTPS endpoint")
-    # Use the documented Python Workers SDK fetch path with a native
-    # JavaScript Request. This avoids crossing the Python -> JS fetch FFI
-    # boundary with a Request object directly, which currently throws TypeError
-    # in the live Python Worker despite the equivalent unit-test double passing.
-    from workers import Request, fetch
+    # Use a native JavaScript Request for the WHATWG Headers/Request
+    # implementation, but enter the network through the Python Workers SDK
+    # fetch() bridge documented by Cloudflare. This avoids both the direct
+    # js.fetch(Request) FFI failure and the Python workers.Request wrapper
+    # failure observed in live production.
+    from js import Request
+    from workers import fetch
 
     request_url = f"{endpoint}?dns={encoded_query}"
     request = Request.new(request_url)
-    request.headers["Accept"] = "application/dns-message"
-    request.headers["Cache-Control"] = "no-store"
+    request.headers.set("Accept", "application/dns-message")
+    request.headers.set("Cache-Control", "no-store")
     return await fetch(request)
 
 
@@ -194,7 +196,11 @@ async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
                 return values
             failures.append(f"{endpoint}: no {record_type} answers")
         except Exception as exc:
-            failures.append(f"{endpoint}: {type(exc).__name__}")
+            detail = str(exc).strip()
+            if len(detail) > 240:
+                detail = detail[:240]
+            suffix = f": {detail}" if detail else ""
+            failures.append(f"{endpoint}: {type(exc).__name__}{suffix}")
     detail = "; ".join(failures[:2])
     if invalid_response and all("invalid DNS response" in failure for failure in failures):
         raise RuntimeError(f"invalid DNS response for {hostname}" + (f" ({detail})" if detail else ""))
