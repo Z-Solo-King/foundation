@@ -104,7 +104,7 @@ async def test_private_chatbot_diagnostic_paths():
     body, status = await worker._operations_chatbot_diagnostic(SimpleNamespace())
     assert status == 503 and body["error"] == "chat_backend_unavailable"
 
-    healthy = {"ok": True, "chatbot": {"allowed": True}, "provider_policy": {"strict_zero_cost_only": True}}
+    healthy = {"ok": True, "chatbot": {"allowed": True}, "runtime_status": "ok", "runtime_checks": [{"name": "d1_memory_store", "ok": True}], "provider_policy": {"strict_zero_cost_only": True}}
     body, status = await worker._operations_chatbot_diagnostic(SimpleNamespace(OPERATIONS=Binding(Response(200, healthy))))
     assert status == 200 and body["ok"] is True
     assert body["chatbot"]["allowed"] is True
