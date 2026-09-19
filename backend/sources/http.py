@@ -157,7 +157,7 @@ async def _doh_request(endpoint: str, encoded_query: str):
     """Send an RFC 8484 wireformat GET to a fixed, allowlisted DoH endpoint."""
     if endpoint not in DNS_OVER_HTTPS_ENDPOINTS:
         raise ValueError("unsupported DNS-over-HTTPS endpoint")
-    from workers import fetch
+    from workers import fetch  # pragma: no cover - Python Workers-only SDK import
 
     # RFC 8484 carries the DNS wire message in the query; the authority remains allowlisted above.
     request_url = f"{endpoint}?dns={encoded_query}"
