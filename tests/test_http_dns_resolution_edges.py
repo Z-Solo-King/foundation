@@ -108,3 +108,22 @@ def test_custom_transport_without_resolver_uses_only_url_validation(monkeypatch)
     result = asyncio.run(http.fetch_public_url("https://example.com", fetcher=fetcher))
     assert result.status == 200
     assert calls == ["https://example.com/"]
+
+
+def test_dns_over_https_supports_workers_one_argument_fetch_signature(monkeypatch):
+    import backend.sources.http as http
+
+    calls = []
+
+    class Response:
+        status = 200
+        async def json(self):
+            return {"Answer": [{"type": 1, "data": "93.184.216.34"}]}
+
+    async def fetcher(url):
+        calls.append(url)
+        return Response()
+
+    monkeypatch.setattr(http, "_workers_fetch", lambda: fetcher)
+    assert asyncio.run(http._dns_over_https("example.com", "A")) == ["93.184.216.34"]
+    assert calls == ["https://cloudflare-dns.com/dns-query?name=example.com&type=A"]
