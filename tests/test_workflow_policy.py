@@ -332,4 +332,4 @@ def test_foundation_bridge_records_run_and_job_creation_control_plane_evidence()
     assert 'expected_sha="$(gh api ' in workflow
     assert '/git/ref/heads/${FOUNDATION_REF}' in workflow
     assert 'python - "$dispatch_epoch" "$runs_json" "$expected_sha"' in workflow
-    assert 'head_sha == expected_sha' in workflow
+    assert 'run.get("head_sha") == expected_sha' in workflow
