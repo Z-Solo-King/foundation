@@ -15,7 +15,11 @@ def workers_fetch(context: str) -> Callable:
     except ImportError as exc:
         raise RuntimeError(f"Cloudflare Workers runtime is required for {context}") from exc
 
-    async def _fetch(url, options=None):
+    async def _fetch(url, options=None, **request_options):
+        if request_options:
+            merged_options = dict(options or {})
+            merged_options.update(request_options)
+            options = merged_options
         if not options:
             return await fetch(url)
 
