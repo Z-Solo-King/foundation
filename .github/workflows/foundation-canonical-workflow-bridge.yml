@@ -123,12 +123,12 @@ jobs:
             exit 1
           fi
 
-          echo "Foundation dispatch accepted: $TARGET @ $FOUNDATION_REF"
-
           # Record the dispatch boundary BEFORE the POST. GitHub can create the run
           # immediately; recording the timestamp afterward creates a race where a valid
           # run is rejected as too old.
           dispatch_epoch="$(date -u +%s)"
+
+          echo "Foundation dispatch accepted: $TARGET @ $FOUNDATION_REF"
 
           # A successful dispatch HTTP 204 only proves request admission. Poll for the
           # resulting workflow run and its first job so accepted-trigger/zero-job states
