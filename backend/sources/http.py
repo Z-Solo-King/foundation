@@ -117,10 +117,49 @@ def _dns_skip_name(payload: bytes, offset: int) -> int:
 
 
 def _response_bytes(value) -> bytes:
-    """Convert a Python Workers/JsProxy byte result into native Python bytes."""
+    """Convert a Workers/Pyodide buffer proxy into native Python bytes."""
+    if isinstance(value, bytes):
+        return value
+    if isinstance(value, bytearray):
+        return bytes(value)
+    if isinstance(value, memoryview):
+        return value.tobytes()
+
+    # Cloudflare's Python Workers runtime may return a Pyodide JsProxy for
+    # Response.bytes(). ArrayBuffer/TypedArray proxies are explicitly
+    # convertible through to_py(), which yields a Python memoryview.
+    to_py = getattr(value, "to_py", None)
+    if callable(to_py):
+        converted = to_py()
+        if isinstance(converted, bytes):
+            return converted
+        if isinstance(converted, bytearray):
+            return bytes(converted)
+        if isinstance(converted, memoryview):
+            return converted.tobytes()
+        to_bytes = getattr(converted, "tobytes", None)
+        if callable(to_bytes):
+            result = to_bytes()
+            if isinstance(result, bytes):
+                return result
+
     to_bytes = getattr(value, "to_bytes", None)
     if callable(to_bytes):
-        return to_bytes()
+        converted = to_bytes()
+        if isinstance(converted, bytes):
+            return converted
+        if isinstance(converted, bytearray):
+            return bytes(converted)
+        if isinstance(converted, memoryview):
+            return converted.tobytes()
+        nested_to_py = getattr(converted, "to_py", None)
+        if callable(nested_to_py):
+            converted = nested_to_py()
+            if isinstance(converted, memoryview):
+                return converted.tobytes()
+            if isinstance(converted, (bytes, bytearray)):
+                return bytes(converted)
+
     return bytes(value)
 
 
