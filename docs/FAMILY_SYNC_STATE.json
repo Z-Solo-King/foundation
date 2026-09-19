@@ -10,9 +10,9 @@
     },
     "operations": {
       "role": "private-control-plane-research-orchestration",
-      "last_audited_main_sha": "d13d5e49a27125e01a0135455266b0449a157e86",
-      "approved_production_revision": "8258d0bcee2bef9427a60aed522a14e0ff95ea2b",
-      "nightly_research_revision": "8258d0bcee2bef9427a60aed522a14e0ff95ea2b"
+      "last_audited_main_sha": "f132dfaf3f44fc992ad9f31a5a520851f6111c0e",
+      "approved_production_revision": "f132dfaf3f44fc992ad9f31a5a520851f6111c0e",
+      "nightly_research_revision": "f132dfaf3f44fc992ad9f31a5a520851f6111c0e"
     }
   },
   "family_boundary": {
@@ -44,7 +44,7 @@
     "public_admission": "Foundation PR #484 merged to main with required CI green; earlier #460 and #483 are superseded/closed",
     "source_url_security": "Foundation PR #482 merged to main with green required CI",
     "execution_identity": "Foundation PR #488 merged to main as the current contract lineage replacing stale #485/#394",
-    "nightly_pin_repair": "Foundation nightly research remains pinned to approved Operations revision 8258d0bcee2bef9427a60aed522a14e0ff95ea2b; the current live handoff is authoritative over older dated reconciliation text.",
+    "nightly_pin_repair": "Foundation nightly research remains pinned to approved Operations revision f132dfaf3f44fc992ad9f31a5a520851f6111c0e; the current live handoff is authoritative over older dated reconciliation text.",
     "zero_cost_provider_gate": "Operations PRs #392/#393/#394 merged; unknown/paid/stale/missing billing or quota state now fails closed across canonical selector, quota policy, chat runtime and private research runtime; Operations issue #353 completed",
     "provider_output_admission": "Operations PR #395 merged; canonical bounded provider-output normalization and identity/partial/tool/usage checks are shared by chatbot and private research runtime",
     "provider_fanout_limits": "Operations PR #396 merged; provider-derived research structure is bounded by depth/collection limits, finding/follow-up ceilings and duplicate coalescing; broader tool/streaming execution fan-out remains governed separately",
