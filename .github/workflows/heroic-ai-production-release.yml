@@ -43,3 +43,11 @@ jobs:
           test "$GITHUB_EVENT_NAME" != "pull_request" || { echo 'Privileged production release cannot run from pull_request'; exit 1; }
           test "$GITHUB_EVENT_NAME" != "pull_request_target" || { echo 'Privileged production release cannot run from pull_request_target'; exit 1; }
           bash scripts/production_release.sh
+
+      - name: Upload cross-repository audit receipt
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: cross-repository-audit-receipt
+          path: .runtime/cross-repository-audit-receipt.json
+          if-no-files-found: warn
