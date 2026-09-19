@@ -1,6 +1,6 @@
 """Small Cloudflare Worker runtime adapter used by public transport code.
 
-Importing ``workers.fetch`` is intentionally lazy so deterministic code and local
+Importing workers.fetch is intentionally lazy so deterministic code and local
 unit tests can run outside a Worker runtime. Callers supply a short context only
 for a useful, component-specific failure message.
 """
@@ -9,9 +9,19 @@ from collections.abc import Callable
 
 
 def workers_fetch(context: str) -> Callable:
-    """Return Cloudflare's runtime ``fetch`` function or fail clearly."""
+    """Return a Worker fetch adapter with Python SDK request compatibility."""
     try:
         from workers import fetch
     except ImportError as exc:
         raise RuntimeError(f"Cloudflare Workers runtime is required for {context}") from exc
-    return fetch
+
+    async def _fetch(url, options=None):
+        if options:
+            try:
+                from workers import Request
+            except ImportError:
+                return await fetch(url, options)
+            return await fetch(Request(url, **options))
+        return await fetch(url)
+
+    return _fetch
