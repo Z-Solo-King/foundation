@@ -136,30 +136,19 @@ def test_doh_request_constructs_fixed_url_without_request_init_conversion(monkey
 
     captured = {}
 
-    class FakeRequest:
-        @staticmethod
-        def new(url):
-            captured["url"] = url
-            return ("request", url)
-
-    async def fake_fetch(request):
-        captured["request"] = request
+    async def fake_fetch(url):
+        captured["url"] = url
         return "response"
 
     monkeypatch.setitem(
         __import__("sys").modules,
-        "js",
-        __import__("types").SimpleNamespace(
-            Request=FakeRequest,
-            fetch=fake_fetch,
-        ),
+        "workers",
+        __import__("types").SimpleNamespace(fetch=fake_fetch),
     )
 
     result = asyncio.run(http._doh_request("https://cloudflare-dns.com/dns-query", "AQID"))
     assert result == "response"
     assert captured["url"] == "https://cloudflare-dns.com/dns-query?dns=AQID"
-    assert captured["request"] == ("request", captured["url"])
-
 
 
 def test_public_destination_fails_when_dns_returns_no_addresses():
