@@ -29,10 +29,6 @@ name: Foundation canonical workflow bridge
         required: false
         type: string
         default: main
-  push:
-    branches:
-      - fix/dispatch-boundary-and-nightly-baseline-20260919
-
 
 permissions:
   contents: read
@@ -58,10 +54,10 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ steps.foundation-app.outputs.token }}
-          TARGET: ${{ inputs.target || 'nightly-multi-agent-research-v2.yml' }}
-          DRY_RUN: ${{ inputs.dry_run || false }}
-          CONFIRM_PRODUCTION: ${{ inputs.confirm_production || false }}
-          OPERATIONS_REF: ${{ inputs.operations_ref || 'main' }}
+          TARGET: ${{ inputs.target }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          CONFIRM_PRODUCTION: ${{ inputs.confirm_production }}
+          OPERATIONS_REF: ${{ inputs.operations_ref }}
           FOUNDATION_REF: main
         run: |
           set -euo pipefail
