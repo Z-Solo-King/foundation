@@ -155,43 +155,32 @@ def _dns_parse_addresses(payload: bytes, record_type: str) -> list[str]:
 
 async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
     payload = _dns_query_payload(hostname, record_type)
-    fetcher = _workers_fetch()
+    import base64
+
+    encoded_query = base64.urlsafe_b64encode(payload).rstrip(b"=").decode("ascii")
     failures: list[str] = []
     invalid_response = False
     for endpoint in DNS_OVER_HTTPS_ENDPOINTS:
         try:
-            response = await _call_fetcher(
-                fetcher,
-                endpoint,
+            from js import Object, URL, fetch as js_fetch
+            from pyodide.ffi import to_js
+
+            # The resolver authority remains constant. The untrusted hostname is
+            # encoded inside the RFC 8484 "dns" query parameter only; it is never
+            # used to construct the URL authority/path.
+            resolver_url = URL.new(endpoint)
+            resolver_url.searchParams.set("dns", encoded_query)
+            options = to_js(
                 {
-                    "method": "POST",
+                    "method": "GET",
                     "headers": {
                         "Accept": "application/dns-message",
-                        "Content-Type": "application/dns-message",
                         "Cache-Control": "no-store",
                     },
-                    "body": payload,
                 },
+                dict_converter=Object.fromEntries,
             )
-            if int(response.status) != 200:
-                failures.append(f"{endpoint}: HTTP {int(response.status)}")
-                continue
-            raw = bytes(await response.arrayBuffer())
-            try:
-                values = _dns_parse_addresses(raw, record_type)
-            except ValueError:
-                invalid_response = True
-                failures.append(f"{endpoint}: invalid DNS response")
-                continue
-            if values:
-                return values
-            failures.append(f"{endpoint}: no {record_type} answers")
-        except Exception as exc:
-            failures.append(f"{endpoint}: {type(exc).__name__}")
-    detail = "; ".join(failures[:2])
-    if invalid_response and all("invalid DNS response" in failure for failure in failures):
-        raise RuntimeError(f"invalid DNS response for {hostname}" + (f" ({detail})" if detail else ""))
-    raise RuntimeError(f"DNS resolution failed for {hostname}" + (f" ({detail})" if detail else ""))
+            response = await js_fetch(resolver_url, options)
 
 
 async def _validate_public_destination(url: str, *, resolver=None) -> None:
