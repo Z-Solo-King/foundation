@@ -90,4 +90,123 @@ def test_workers_fetch_adapter_without_options_uses_workers_fetch(monkeypatch) -
     assert result == "response"
     assert calls == ["https://example.com"]
 
+def test_workers_fetch_adapter_falls_back_to_workers_request_when_js_ffi_is_missing(monkeypatch) -> None:
+    import asyncio
+    import builtins
+    import sys
+    import types
 
+    captured = {}
+
+    class FakeRequest:
+        def __init__(self, url, **options):
+            captured["request"] = (url, options)
+
+    async def fake_fetch(request):
+        captured["fetch"] = request
+        return "response"
+
+    fake_workers = types.SimpleNamespace(Request=FakeRequest, fetch=fake_fetch)
+    original_import = builtins.__import__
+
+    def blocked_import(name, *args, **kwargs):
+        if name == "js":
+            raise ImportError("blocked")
+        if name == "pyodide.ffi":
+            raise ImportError("blocked")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setitem(sys.modules, "workers", fake_workers)
+    monkeypatch.delitem(sys.modules, "js", raising=False)
+    monkeypatch.delitem(sys.modules, "pyodide", raising=False)
+    monkeypatch.delitem(sys.modules, "pyodide.ffi", raising=False)
+    monkeypatch.setattr(builtins, "__import__", blocked_import)
+
+    from backend.core.workers_runtime import workers_fetch
+
+    options = {"method": "POST", "body": b"payload"}
+    result = asyncio.run(workers_fetch("test")("https://example.com", options))
+
+    assert result == "response"
+    assert captured["request"] == ("https://example.com", options)
+    assert captured["fetch"] == captured["request"]
+
+
+def test_workers_fetch_adapter_falls_back_to_direct_fetch_when_request_type_is_missing(monkeypatch) -> None:
+    import asyncio
+    import builtins
+    import sys
+    import types
+
+    captured = []
+
+    async def fake_fetch(*args):
+        captured.append(args)
+        return "response"
+
+    fake_workers = types.SimpleNamespace(fetch=fake_fetch)
+    original_import = builtins.__import__
+
+    def blocked_import(name, *args, **kwargs):
+        if name == "js":
+            raise ImportError("blocked")
+        if name == "pyodide.ffi":
+            raise ImportError("blocked")
+        if name == "workers":
+            return fake_workers
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setitem(sys.modules, "workers", fake_workers)
+    monkeypatch.delitem(sys.modules, "js", raising=False)
+    monkeypatch.delitem(sys.modules, "pyodide", raising=False)
+    monkeypatch.delitem(sys.modules, "pyodide.ffi", raising=False)
+    monkeypatch.setattr(builtins, "__import__", blocked_import)
+
+    from backend.core.workers_runtime import workers_fetch
+
+    options = {"method": "POST", "body": b"payload"}
+    result = asyncio.run(workers_fetch("test")("https://example.com", options))
+
+    assert result == "response"
+    assert captured == [("https://example.com", options)]
+
+
+def test_workers_fetch_adapter_falls_back_after_request_constructor_error(monkeypatch) -> None:
+    import asyncio
+    import builtins
+    import sys
+    import types
+
+    captured = []
+
+    class BadRequest:
+        def __init__(self, *_args, **_kwargs):
+            raise TypeError("unsupported request constructor")
+
+    async def fake_fetch(*args):
+        captured.append(args)
+        return "response"
+
+    fake_workers = types.SimpleNamespace(Request=BadRequest, fetch=fake_fetch)
+    original_import = builtins.__import__
+
+    def blocked_import(name, *args, **kwargs):
+        if name == "js":
+            raise ImportError("blocked")
+        if name == "pyodide.ffi":
+            raise ImportError("blocked")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setitem(sys.modules, "workers", fake_workers)
+    monkeypatch.delitem(sys.modules, "js", raising=False)
+    monkeypatch.delitem(sys.modules, "pyodide", raising=False)
+    monkeypatch.delitem(sys.modules, "pyodide.ffi", raising=False)
+    monkeypatch.setattr(builtins, "__import__", blocked_import)
+
+    from backend.core.workers_runtime import workers_fetch
+
+    options = {"method": "POST", "body": b"payload"}
+    result = asyncio.run(workers_fetch("test")("https://example.com", options))
+
+    assert result == "response"
+    assert captured == [("https://example.com", options)]
