@@ -193,7 +193,7 @@ def test_public_foundation_is_the_only_github_actions_bridge_owner():
         "nightly-multi-agent-research-v2.yml",
         "cross-repository-contract-drift.yml",
         "operations-centralized-validation.yml",
-        "main-push-actions-control-plane-probe.yml",
+        "main-push-actions-control-plane-probe-v2.yml",
     ):
         assert target in workflow
     assert "confirm_production=true" in workflow
