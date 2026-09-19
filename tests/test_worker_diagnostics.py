@@ -301,3 +301,29 @@ async def test_storage_diagnostic_dispatch_guard_routes_authenticated_requests()
         assert "artifacts" in str(valid)
     finally:
         monkeypatch.undo()
+
+
+@pytest.mark.asyncio
+async def test_public_persistence_diagnostic_operations_are_forwarded(monkeypatch):
+    async def fake_private_diagnostic(env, request, operation="infrastructure_verify"):
+        return {
+            "ok": True,
+            "operation": operation,
+            "sentinel_id": "covered",
+        }, 200
+
+    monkeypatch.setattr(worker, "_operations_chatbot_diagnostic", fake_private_diagnostic)
+    env = SimpleNamespace(DB=DB(rows=[]), ENVIRONMENT="production", AUTH_TOKEN="secret")
+    entry = worker.Default()
+    entry.env = env
+    headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
+
+    seed = await entry.fetch(
+        Request("POST", "https://x/api/v1/chatbot/diagnostic", {"operation": "persistence_seed"}, headers)
+    )
+    verify = await entry.fetch(
+        Request("POST", "https://x/api/v1/chatbot/diagnostic", {"operation": "persistence_verify", "sentinel_id": "covered"}, headers)
+    )
+
+    assert "persistence_seed" in str(seed)
+    assert "persistence_verify" in str(verify)
