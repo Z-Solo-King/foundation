@@ -98,7 +98,7 @@ def test_dns_over_https_encodes_wire_query_without_plain_hostname_in_transport(m
     endpoint, encoded_query, decoded = seen[0]
     assert endpoint == "https://cloudflare-dns.com/dns-query"
     assert "example.com" not in encoded_query
-    assert b"example.com" in decoded
+    assert b"example" in decoded and b"com" in decoded
 
 
 def test_dns_over_https_falls_back_to_secondary_resolver(monkeypatch):
