@@ -82,3 +82,9 @@ def test_incomplete_runs_do_not_build_project_improvement_summary():
     assert text.count(guard) >= 7
     assert "real_research_findings_allowed" in text
     assert "historical_dry_run_findings_are_real_research': False" in text
+
+
+def test_nightly_baseline_lookup_uses_only_current_registered_workflow():
+    text = workflow_text()
+    assert "gh run list --workflow nightly-multi-agent-research-v2.yml" in text
+    assert "nightly-multi-agent-research.yml" not in text

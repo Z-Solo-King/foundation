@@ -484,7 +484,7 @@ EOF
         shell: bash
         run: |
           set -euo pipefail
-          previous_run="$(gh run list --workflow nightly-multi-agent-research.yml --status success --limit 20 --json databaseId --jq 'map(select(.databaseId != (env.GITHUB_RUN_ID|tonumber))) | .[0].databaseId // empty')"
+          previous_run="$(gh run list --workflow nightly-multi-agent-research-v2.yml --status success --limit 20 --json databaseId --jq 'map(select(.databaseId != (env.GITHUB_RUN_ID|tonumber))) | .[0].databaseId // empty')"
           if [ -z "$previous_run" ]; then
             echo 'No previous successful nightly run is available; producing NO_BASELINE.'
             mkdir -p .runtime/previous
