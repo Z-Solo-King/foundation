@@ -1,0 +1,154 @@
+name: Live extractor benchmark
+
+'on':
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: Immutable Operations revision to benchmark
+        required: false
+        default: 827e7043466c6b7f1411a7e7f2c02451420297ac
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    name: Live API/feed/HTML/browser extractor benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OPERATIONS_REPOSITORY: Z-Solo-King/operations
+      OPERATIONS_REF: ${{ inputs.operations_ref || '827e7043466c6b7f1411a7e7f2c02451420297ac' }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout pinned Operations benchmark source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.OPERATIONS_REPOSITORY }}
+          ref: ${{ env.OPERATIONS_REF }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Verify immutable Operations revision
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          resolved="$(git rev-parse HEAD)"
+          test "$resolved" = "$OPERATIONS_REF"
+          echo "BENCHMARK_OPERATIONS_REF=$resolved"
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Install benchmark dependencies
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -e ".[test,browser]"
+          python -m playwright install --with-deps chromium
+
+      - name: Materialize bounded benchmark targets
+        run: |
+          set -euo pipefail
+          mkdir -p benchmark-input benchmark-output
+          cat > benchmark-input/http-targets.json <<'EOF'
+          {
+            "targets": [
+              {"url":"https://dummyjson.com/products/1","label":"api:dummyjson"},
+              {"url":"https://hnrss.org/frontpage","label":"feed:hnrss"},
+              {"url":"https://example.com/","label":"html:example"}
+            ]
+          }
+          EOF
+          cat > benchmark-input/browser-targets.json <<'EOF'
+          {
+            "targets": [
+              {"url":"https://quotes.toscrape.com/js/","label":"browser:playwright"}
+            ]
+          }
+          EOF
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for path in Path("benchmark-input").glob("*.json"):
+              payload=json.loads(path.read_text())
+              assert 1 <= len(payload["targets"]) <= 8
+              assert all(isinstance(item["url"], str) and item["url"].startswith(("http://","https://")) for item in payload["targets"])
+              assert all(isinstance(item.get("label",""), str) and item.get("label") for item in payload["targets"])
+          PY
+
+      - name: Run HTTP benchmark pass 1
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          python scripts/durable_site_benchmark.py run             --input ../benchmark-input/http-targets.json             --output ../benchmark-output/http-pass1             --shards 1 --shard 0 --workers 2 --retries 2
+
+      - name: Run HTTP benchmark pass 2
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          python scripts/durable_site_benchmark.py run             --input ../benchmark-input/http-targets.json             --output ../benchmark-output/http-pass2             --shards 1 --shard 0 --workers 2 --retries 2
+
+      - name: Run browser benchmark pass 1
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          python scripts/browser_site_benchmark.py             --input ../benchmark-input/browser-targets.json             --output ../benchmark-output/browser-pass1.jsonl
+
+      - name: Run browser benchmark pass 2
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          python scripts/browser_site_benchmark.py             --input ../benchmark-input/browser-targets.json             --output ../benchmark-output/browser-pass2.jsonl
+
+      - name: Verify benchmark receipts
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          files=sorted(Path("../benchmark-output").rglob("*.jsonl"))
+          assert len(files) >= 4, f"expected at least four pass files, got {len(files)}"
+          for path in files:
+              text=path.read_text(encoding="utf-8").strip()
+              assert text, f"empty benchmark receipt: {path}"
+              print(path)
+          PY
+
+      - name: Build benchmark quality report
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          inputs=()
+          while IFS= read -r file; do inputs+=(--input "$file"); done < <(
+            find ../benchmark-output -name '*.jsonl' -type f | sort
+          )
+          python scripts/site_benchmark_quality.py             "${inputs[@]}"             --expected-platform api             --expected-platform feed             --expected-platform html             --expected-platform browser             --output ../benchmark-output/live-extractor-quality.json
+
+      - name: Publish benchmark artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: live-extractor-benchmark
+          path: |
+            benchmark-input/*.json
+            benchmark-output/**
+          if-no-files-found: error
+          retention-days: 14
