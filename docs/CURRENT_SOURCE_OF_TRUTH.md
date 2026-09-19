@@ -2,89 +2,90 @@
 
 ## 2026-09-19 LIVE STATE
 
-This is the compact synchronization record for future maintenance chats. Live GitHub state and current runtime receipts override older notes.
+This file is the compact continuity record for the next maintenance chat. Current GitHub state and fresh runtime receipts override every older dated section elsewhere in the repository.
 
 ### Repository topology
-- Public: Z-Solo-King/foundation
-- Private: Z-Solo-King/operations
-- Foundation owns public contracts/core, GitHub Actions, public Worker/API, backup/restore orchestration, and the sole canonical production release.
+
+- Public repository: `Z-Solo-King/foundation`
+- Private repository: `Z-Solo-King/operations`
+- Foundation owns public contracts/core, public Worker/API, GitHub Actions, backup/restore orchestration, and the sole canonical production release.
 - Operations owns protected policy/resource governance, private execution, provider/runtime control, memory/feedback, promotion/recovery, and chatbot control.
-- Operations must remain private and must not contain GitHub Actions workflows.
+- Operations must remain private and must contain no `.github/workflows`.
 - Do not enable Cloudflare Workers Builds or Deploy Hooks as a competing deployment authority.
 
-### Current revisions
-- Foundation main: 23b72d2f4a6636df75ce13025ba349b3b47ea244
-- Operations main: 3eb53a1c6e7c56dd3a6369e95e962b8b22c40d2b
-- Current Foundation production pin for Operations: 3eb53a1c6e7c56dd3a6369e95e962b8b22c40d2b
+### Exact current revisions
+
+- Foundation `main`: `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`
+- Operations `main`: `307ed38fe4c7902220cb981556bf08702babbae0`
+- Foundation canonical production/nightly Operations pin: `307ed38fe4c7902220cb981556bf08702babbae0`
 
 ### Latest canonical production receipt
-Run: 35445892339 (#219)
-Foundation commit: 23b72d2f4a6636df75ce13025ba349b3b47ea244
-Operations revision: 3eb53a1c6e7c56dd3a6369e95e962b8b22c40d2b
 
-Passed:
-- public deployment/readiness;
+- Workflow run: `35456292033` (Heroic AI production release, #232)
+- Foundation revision: `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`
+- Operations provenance observed in Cloudflare: `github:307ed38fe4c7902220cb981556bf08702babbae0`
+- Cross-repository audit receipt artifact: `cross-repository-audit-receipt`
+
+Passed in the canonical production release:
+
+- public Worker deployment/readiness;
+- private Operations deployment and exact Cloudflare provenance;
 - authenticated chat;
 - chat idempotency/replay;
 - authenticated SSE lifecycle;
-- permitted source ingestion from https://example.com/ (HTTP 200);
-- persisted research readback;
-- D1 and B2 lifecycle checks;
-- private runtime diagnostic.
-
-Private runtime checks passed:
-- execution amplification budget;
-- admission/backpressure;
-- fairness;
-- circuit breaker;
-- cache/coalescing;
-- provider capacity;
-- routing/stop;
-- provider-stream contract;
-- memory store/query/delete and ownership boundary;
-- replay protection;
+- permitted-source research ingestion/readback using `https://example.com/`;
+- D1/B2 lifecycle;
+- memory store/query/delete and owner boundary;
+- durable task-envelope replay guard;
 - candidate learning round-trip;
-- durable resource reservation/reconciliation;
-- maintenance scheduler reconciliation.
+- rating feedback/evaluation candidate path;
+- durable chat terminalization CAS;
+- durable resource reservation/consume;
+- durable resource reconciliation;
+- maintenance scheduler reconciliation;
+- provider-stream contract.
 
-### Current control-plane evidence
-- Main-push Actions control-plane probe run 35445595034: SUCCESS with job creation.
-- Main-push secret probe run 35445595001: SUCCESS with job creation.
-- Actual nightly-multi-agent-research-v2.yml push run 35445593168: failure with no jobs created.
-- Canonical workflow-bridge run 35445592590: failure with no jobs created.
-- Canonical nightly pin repair / cross-repository drift / B2 helper runs also remain separate auxiliary failures and are not production deployment authorities.
-- Therefore #157 and #263 remain open for their specific supported workflow-dispatch/nightly execution evidence.
+The live chat response deliberately remained `PARTIAL` with deterministic fallback because no permitted live chat provider was configured. That is an explicit governed state, not a failed production release.
 
-### Issue consolidation
-- Operations #329–#333 consolidated into #334; #334 is completed after production runtime acceptance.
-- Operations #349 consolidated into #352; #352 remains open for broader extractor/mapper replay evidence.
-- Foundation #259 is completed after successful post-DoH production acceptance.
+### Control-plane state
 
-### Open queue
-Foundation: #27, #58, #157, #263, #452.
-Operations: #119, #120, #132, #145, #155, #197, #340, #352, #385.
-Total open issues: 14.
+- Main-push Actions control-plane probe on current Foundation `main`: SUCCESS with job creation.
+- Main-push secret probe on current Foundation `main`: SUCCESS with job creation.
+- Current `nightly-multi-agent-research-v2.yml` push run `35456290060`: failure before job creation; this does not satisfy the real 24-program execution gate.
+- Current auxiliary nightly pin-repair, B2 backup/restore and cross-repository drift helper runs are separate automation evidence and are not production deployment authorities.
+- The supported workflow-dispatch bridge still lacks one empirical receipt proving exact target SHA + actual job creation.
 
-### Evidence ladder
-- L1: source/document inspection
-- L2: repository tests/contracts
-- L3: GitHub/control-plane execution
-- L4: approved private/runtime/production execution
+### Current open acceptance queue
 
-Never upgrade L1/L2 evidence into L3/L4 claims.
+Foundation:
+- #58 — this master tracker;
+- #157 — real 24-program nightly execution evidence;
+- #263 — real workflow-dispatch bridge receipt;
+- #452 — deeper SSE cancellation/disconnect and provider-error-after-partial-output evidence.
 
-### Maintenance loop
-parallel discovery -> classify disposition -> non-overlapping fix lane -> focused tests -> required CI -> merge -> canonical production/runtime probe -> exact issue receipt -> queue rescan.
+Operations:
+- #119 — memory persistence/restart plus live authorization/deletion evidence;
+- #120 — durable feedback ingestion plus evaluation integration;
+- #132 — durable replay guard across real restart/instance boundary;
+- #145 — approved external scheduler activation;
+- #155 — cross-repository audit receipt plus supported bridge-dispatch evidence;
+- #197 — broader approved-runtime conversational execution acceptance;
+- #340 — deeper provider streaming interruption/cancellation/error acceptance;
+- #352 — broader extractor/mapper network replay matrix;
+- #385 — broader terminalization/recovery runtime acceptance beyond the fixed attempt-identity defect.
 
-## Historical continuity notes
+#27 is completed and closed after the confirmed stale temporary/diagnostic/test branch cleanup. Do not reopen it merely for historical branch pruning.
 
-The earlier post-DoH and pre-#219 synchronization snapshots below the live-state section are superseded by the current revisions and production receipt at the top of this document.
+There are 13 open issues total, of which 12 are non-meta acceptance gates.
 
-For maintenance decisions, always use:
-- current Foundation main `23b72d2f4a6636df75ce13025ba349b3b47ea244`;
-- current Operations main / production revision `3eb53a1c6e7c56dd3a6369e95e962b8b22c40d2b`;
-- latest canonical production receipt `35445892339` (#219);
-- the current 14-issue acceptance queue;
-- fresh GitHub/Cloudflare runtime evidence.
+### Evidence boundary
 
-Never revive an obsolete DoH blocker, stale Operations pin, or pre-#219 runtime receipt solely from historical continuity text.
+Use the ladder:
+
+`contract -> implementation -> focused test -> CI -> control-plane -> runtime -> production`
+
+Do not upgrade source inspection or repository tests into runtime/control-plane/production certification.
+
+### Next-chat operating rule
+
+Start from Foundation `6a91fbd17143083882e9ac7ebfa52f0b06a344b2` and Operations `307ed38fe4c7902220cb981556bf08702babbae0`. The production receipt `35456292033` is the current L4 baseline. Work only on a missing acceptance rung or a newly established repository-side defect; do not re-open the already-correct chat/SSE/service-binding/deployment path without new evidence.
