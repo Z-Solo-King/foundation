@@ -155,6 +155,30 @@ def test_response_bytes_accepts_pyodide_jsproxy_like_value():
     assert http._response_bytes(JsProxyBytes()) == b"binary"
 
 
+def test_response_bytes_converts_array_buffer_proxy_via_to_py():
+    import backend.sources.http as http
+
+    class JsProxyArrayBuffer:
+        def to_py(self):
+            return memoryview(b"wire")
+
+    assert http._response_bytes(JsProxyArrayBuffer()) == b"wire"
+
+
+def test_response_bytes_converts_nested_proxy_returned_by_to_bytes():
+    import backend.sources.http as http
+
+    class NestedProxy:
+        def to_py(self):
+            return memoryview(b"nested")
+
+    class JsProxyBytes:
+        def to_bytes(self):
+            return NestedProxy()
+
+    assert http._response_bytes(JsProxyBytes()) == b"nested"
+
+
 def test_doh_request_rejects_non_allowlisted_endpoint():
     import backend.sources.http as http
 
