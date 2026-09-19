@@ -1,16 +1,16 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT_AUDIT_SNAPSHOT",
-  "audited_at": "2026-09-18",
+  "audited_at": "2026-09-19",
   "authority": "Foundation docs/FAMILY_SYNC_STANDARD.md",
   "repositories": {
     "foundation": {
       "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup",
-      "last_audited_main_sha": "972e1b05c1e2d51905029b602d0c4120eac1d399"
+      "last_audited_main_sha": "63e45709d24e8acd8ec720036c4c11f0a531f78e"
     },
     "operations": {
       "role": "private-control-plane-research-orchestration",
-      "last_audited_main_sha": "b43c19554100bcdded0c6e70d966b30e5e4df04c",
+      "last_audited_main_sha": "d13d5e49a27125e01a0135455266b0449a157e86",
       "approved_production_revision": "b43c19554100bcdded0c6e70d966b30e5e4df04c",
       "nightly_research_revision": "b43c19554100bcdded0c6e70d966b30e5e4df04c"
     }
@@ -44,7 +44,7 @@
     "public_admission": "Foundation PR #484 merged to main with required CI green; earlier #460 and #483 are superseded/closed",
     "source_url_security": "Foundation PR #482 merged to main with green required CI",
     "execution_identity": "Foundation PR #488 merged to main as the current contract lineage replacing stale #485/#394",
-    "nightly_pin_repair": "Foundation nightly workflow is pinned to approved Operations revision 90e3c692bfd43da25d08bf5d47a6a6c5167e0f7f",
+    "nightly_pin_repair": "Foundation nightly research remains pinned to approved Operations revision b43c19554100bcdded0c6e70d966b30e5e4df04c; the current live handoff is authoritative over older dated reconciliation text.",
     "zero_cost_provider_gate": "Operations PRs #392/#393/#394 merged; unknown/paid/stale/missing billing or quota state now fails closed across canonical selector, quota policy, chat runtime and private research runtime; Operations issue #353 completed",
     "provider_output_admission": "Operations PR #395 merged; canonical bounded provider-output normalization and identity/partial/tool/usage checks are shared by chatbot and private research runtime",
     "provider_fanout_limits": "Operations PR #396 merged; provider-derived research structure is bounded by depth/collection limits, finding/follow-up ceilings and duplicate coalescing; broader tool/streaming execution fan-out remains governed separately",
@@ -54,7 +54,7 @@
     "deadline_governance_issue_state": "Operations issues #377/#383/#384 remain open pending explicit acceptance/CI evidence; the merged implementation does not claim L4 runtime certification",
     "stage_receipt_correctness": "Foundation PR #461 remains a separate implementation stream",
     "nightly_timeout": "Foundation issue #487 remains open; nightly research lane still requires timeout below the six-hour GitHub Actions ceiling",
-    "runtime_evidence": "Repository CI remains L3; private/runtime/production gates remain L4 and are not inferred from source",
+    "runtime_evidence": "Repository CI remains L3; latest production run proved chat/replay/SSE but research ingestion failed on DNS resolution for example.com; runtime/production research certification remains open.",
     "cloudflare_recovery_2026_09_18": "Cloudflare recovery is partially complete: the existing private Worker was configured and automatically deployed as v15 (version ID 5ee4364d-b26a-4a6e-b2e8-22e9129e1fdc; deployment ID 61b1a4fe-be10-441a-9307-8301b5e3e94). Reported configuration includes OPERATIONS_DB to canonical D1 research-intelligence, FOUNDATION service binding to research-intelligence-engine-public, production/strict-zero-cost vars, */15 * * * * cron, and governance scope/window/lease metadata. The v15 configuration deployment is not proof that the approved Operations application revision is running. RESOURCE_LIMITS_JSON, RESOURCE_RESERVATIONS_JSON and private AUTH_TOKEN remain absent; no protected values were guessed."
   },
   "documentation_rule": "Dated plans and handoffs are historical context. Current merged source, current tests/CI, current source-of-truth documents, and explicit runtime evidence determine present status."
