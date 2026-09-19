@@ -116,6 +116,14 @@ def _dns_skip_name(payload: bytes, offset: int) -> int:
             raise ValueError("truncated DNS label")
 
 
+def _response_bytes(value) -> bytes:
+    """Convert a Python Workers/JsProxy byte result into native Python bytes."""
+    to_bytes = getattr(value, "to_bytes", None)
+    if callable(to_bytes):
+        return to_bytes()
+    return bytes(value)
+
+
 def _dns_parse_addresses(payload: bytes, record_type: str) -> list[str]:
     if len(payload) < 12:
         raise ValueError("truncated DNS response")
@@ -185,7 +193,7 @@ async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
             if int(response.status) != 200:
                 failures.append(f"{endpoint}: HTTP {int(response.status)}")
                 continue
-            raw = bytes(await response.bytes())
+            raw = _response_bytes(await response.bytes())
             try:
                 values = _dns_parse_addresses(raw, record_type)
             except ValueError:

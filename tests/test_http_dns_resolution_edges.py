@@ -145,6 +145,15 @@ def test_dns_over_https_consumes_python_workers_response_bytes(monkeypatch):
     http, _ = _patch_doh(monkeypatch, response_factory)
     assert asyncio.run(http._dns_over_https("example.com", "A")) == ["93.184.216.34"]
 
+def test_response_bytes_accepts_pyodide_jsproxy_like_value():
+    import backend.sources.http as http
+
+    class JsProxyBytes:
+        def to_bytes(self):
+            return b"binary"
+
+    assert http._response_bytes(JsProxyBytes()) == b"binary"
+
 
 def test_doh_request_rejects_non_allowlisted_endpoint():
     import backend.sources.http as http
