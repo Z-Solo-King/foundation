@@ -108,6 +108,11 @@ jobs:
               ;;
           esac
 
+          # Record the dispatch boundary BEFORE the POST. GitHub can create the run
+          # immediately; recording the timestamp afterward creates a race where a valid
+          # run is rejected as too old.
+          dispatch_epoch="$(date -u +%s)"
+
           dispatch_status=$(curl -sS -o "$RUNNER_TEMP/foundation-dispatch-response.json" -w '%{http_code}' \
             -X POST \
             -H 'Accept: application/vnd.github+json' \
