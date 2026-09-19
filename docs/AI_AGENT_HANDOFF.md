@@ -254,3 +254,27 @@ Do not close runtime-gated issues because a PR merged or unit tests passed.
 6. Then process the remaining 23-issue queue using non-overlapping lanes and rescan after every 3–5 meaningful mutations.
 
 Never infer Cloudflare/runtime success from GitHub source alone. Never expose private Operations implementation or secrets through Foundation documentation.
+
+
+## 2026-09-19 LIVE STATE OVERRIDE — POST-#702
+
+Use this section over older handoff entries.
+
+### Current revisions
+- Foundation production-code `main`: `0ce0662a603232e1fc57db2829208c1600124e9a` (Foundation PR #702 merged).
+- Operations production-code revision pinned by Foundation: `8258d0bcee2bef9427a60aed522a14e0ff95ea2b`.
+- Operations `main`: `f132dfaf3f44fc992ad9f31a5a520851f6111c0e`; this is documentation-only on top of the approved production-code revision.
+
+### Current research transport state
+Foundation #702 is merged. It changes the DoH call from an extracted `fetch` function to the bound `globalThis.fetch(...)` invocation. Required PR checks and CodeQL passed before merge. Earlier experimental PRs #684, #687 and #691 are closed; do not resurrect them.
+
+### Latest production run
+Canonical production run **35434521366** is the release for Foundation `0ce0662...` and was still executing at the last refresh. The preceding production run **35434275607** proved private Worker provenance, chat, replay/idempotency and SSE, then failed only at research DNS acquisition with `TypeError` from both allowlisted DoH resolvers. The next handoff step is to inspect the final receipt from **35434521366**.
+
+### Control-plane state
+The push-triggered nightly/bridge/pin-repair/backup-restore/drift workflow family on Foundation `0ce0662...` again produced zero jobs. The dedicated main-push control-plane probe passed. Treat this as an independent GitHub Actions job-graph/control-plane acceptance gate.
+
+### Queue
+23 issues remain open across Foundation and Operations. Issue #58 has the detailed live receipt and continuation notes. Runtime-gated issues remain open until their exact acceptance evidence is recorded.
+
+Updated: 2026-09-19
