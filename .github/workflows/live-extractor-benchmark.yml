@@ -8,7 +8,7 @@ name: Live extractor benchmark
       operations_ref:
         description: Immutable Operations revision to benchmark
         required: false
-        default: 827e7043466c6b7f1411a7e7f2c02451420297ac
+        default: 2454135bdff9a3851f077e899bac2f22ef9c5281
         type: string
 
 permissions:
@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 30
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || '827e7043466c6b7f1411a7e7f2c02451420297ac' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || '2454135bdff9a3851f077e899bac2f22ef9c5281' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Checkout Foundation
