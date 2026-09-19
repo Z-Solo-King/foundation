@@ -153,26 +153,37 @@ def _dns_parse_addresses(payload: bytes, record_type: str) -> list[str]:
     return values
 
 
+async def _doh_request(endpoint: str, encoded_query: str):
+    """Send an RFC 8484 wireformat GET to a fixed, allowlisted DoH endpoint."""
+    if endpoint not in DNS_OVER_HTTPS_ENDPOINTS:
+        raise ValueError("unsupported DNS-over-HTTPS endpoint")
+    from js import Object, fetch as js_fetch
+    from pyodide.ffi import to_js
+
+    request_url = f"{endpoint}?dns={encoded_query}"
+    options = to_js(
+        {
+            "method": "GET",
+            "headers": {
+                "Accept": "application/dns-message",
+                "Cache-Control": "no-store",
+            },
+        },
+        dict_converter=Object.fromEntries,
+    )
+    return await js_fetch(request_url, options)
+
+
 async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
     payload = _dns_query_payload(hostname, record_type)
-    fetcher = _workers_fetch()
+    import base64
+
+    encoded_query = base64.urlsafe_b64encode(payload).rstrip(b"=").decode("ascii")
     failures: list[str] = []
     invalid_response = False
     for endpoint in DNS_OVER_HTTPS_ENDPOINTS:
         try:
-            response = await _call_fetcher(
-                fetcher,
-                endpoint,
-                {
-                    "method": "POST",
-                    "headers": {
-                        "Accept": "application/dns-message",
-                        "Content-Type": "application/dns-message",
-                        "Cache-Control": "no-store",
-                    },
-                    "body": payload,
-                },
-            )
+            response = await _doh_request(endpoint, encoded_query)
             if int(response.status) != 200:
                 failures.append(f"{endpoint}: HTTP {int(response.status)}")
                 continue
