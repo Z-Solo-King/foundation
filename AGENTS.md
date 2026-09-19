@@ -450,12 +450,21 @@ Everything else is actionable queue debt.
 
 ## Cross-chat continuity override — 2026-09-19
 
-Before any new mutation, read `docs/AI_AGENT_HANDOFF.md` and `docs/CURRENT_SOURCE_OF_TRUTH.md`. Current Foundation main is `95840f563b51f08c38996d673034ca49fc539f79`; current Operations main and production pin are `035bb38e54aa2b81a1e41b95ac01e7d352b75d83`.
+Before any new mutation, read `docs/AI_AGENT_HANDOFF.md` and `docs/CURRENT_SOURCE_OF_TRUTH.md`. Live GitHub state and fresh runtime evidence override dated continuity text.
 
-Latest production receipt **35430074029** proves public/private deployment, authenticated chat, replay, and SSE. The remaining production defect is research-source DoH transport in the Python Worker: both allowlisted DoH endpoints return `TypeError` from the fetch invocation.
+Current verified family state:
+- Foundation main: `d2231195982b1a3a82a310a5e5a9e8d54c65c01d`
+- Operations main / canonical production revision: `abf7007f4251f80280296c9855e4354502b98541`
+- Latest canonical production receipt: run `35445892339` (#219), green for deployment/readiness, authenticated chat, replay/idempotency, SSE lifecycle, permitted-source research ingestion/readback, D1/B2 lifecycle, and the private runtime diagnostic.
+- Current open acceptance queue is the 14-issue set recorded in `docs/CURRENT_SOURCE_OF_TRUTH.md`.
 
-Open candidates are #684, #687, and #691. Do not create another competing implementation. PR #687's required checks passed on its older base; reconcile the validated approach with current main before merge, and use the newest candidate only after evidence.
+Current queue policy:
+- #27 is an admin-only stale-branch deletion gate; do not simulate ref deletion.
+- #157 and #263 require real GitHub Actions nightly/workflow-dispatch evidence; do not weaken permissions or create a second automation authority.
+- #452 requires real cancellation and provider-error-after-partial-output evidence.
+- Operations #119, #120, #132, #145, #155, #197, #340, #352 and #385 are runtime/control-plane/external evidence gates unless their issue-specific acceptance graph identifies a new repository-side defect.
+- Operations must remain private and must not contain GitHub Actions workflows.
+- Foundation remains the sole GitHub Actions and canonical production deployment owner.
+- Do not enable Cloudflare Workers Builds or Deploy Hooks as a competing deployment authority.
 
-Latest nightly control-plane run **35430072561** created no jobs. Treat this as an independent GitHub Actions job-graph/control-plane gate. Do not weaken permissions to manufacture jobs.
-
-Keep runtime-gated issues open until their exact L3/L4 acceptance evidence exists. Never claim production closure from repository tests alone.
+Never close a required runtime/control-plane issue from source inspection or repository tests alone.
