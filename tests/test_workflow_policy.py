@@ -318,11 +318,11 @@ def test_operations_public_core_is_materialized_before_worker_deploy():
 
 def test_foundation_bridge_records_run_and_job_creation_control_plane_evidence():
     workflow = _workflow_texts()["foundation-canonical-workflow-bridge.yml"]
-    assert "actions/workflows/\${TARGET}/runs" in workflow
+    assert 'actions/workflows/${TARGET}/runs' in workflow
     assert "CONTROL_PLANE=UNKNOWN" in workflow
     assert "CONTROL_PLANE=ACCEPTED_TRIGGER_ZERO_JOB" in workflow
     assert "CONTROL_PLANE=JOB_CREATED" in workflow
     assert "head_sha" in workflow
     assert "for attempt in {1..6}; do" in workflow
     assert "no job was created after bounded polling" in workflow
-    assert "actions/runs/\${run_id}/jobs" in workflow
+    assert 'actions/runs/${run_id}/jobs' in workflow
