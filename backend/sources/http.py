@@ -80,7 +80,11 @@ def validate_url(url: str) -> None:
 async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
     fetcher = _workers_fetch()
     url = f"{DNS_OVER_HTTPS_ENDPOINT}?name={quote(hostname, safe='')}&type={record_type}"
-    response = await fetcher(url, {"headers": {"Accept": "application/dns-json", "Cache-Control": "no-store"}})
+    response = await _call_fetcher(
+        fetcher,
+        url,
+        {"headers": {"Accept": "application/dns-json", "Cache-Control": "no-store"}},
+    )
     if int(response.status) != 200:
         raise RuntimeError(f"DNS resolution failed for {hostname}")
     payload = await response.json()
