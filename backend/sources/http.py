@@ -157,20 +157,24 @@ async def _doh_request(endpoint: str, encoded_query: str):
     """Send an RFC 8484 wireformat GET to a fixed, allowlisted DoH endpoint."""
     if endpoint not in DNS_OVER_HTTPS_ENDPOINTS:
         raise ValueError("unsupported DNS-over-HTTPS endpoint")
-    from workers import Request, fetch
+    from js import Object, fetch as js_fetch
+    from pyodide.ffi import to_js
 
     # Keep the resolver authority fixed and encode only the DNS wire query in the
-    # RFC 8484 dns query parameter. GET avoids Python Worker POST-body conversion.
+    # RFC 8484 dns query parameter. Use the Fetch API directly: this is the
+    # documented Python Workers path for outbound HTTP requests.
     request_url = f"{endpoint}?dns={encoded_query}"
-    request = Request(
-        request_url,
-        method="GET",
-        headers={
-            "Accept": "application/dns-message",
-            "Cache-Control": "no-store",
+    options = to_js(
+        {
+            "method": "GET",
+            "headers": {
+                "Accept": "application/dns-message",
+                "Cache-Control": "no-store",
+            },
         },
+        dict_converter=Object.fromEntries,
     )
-    return await fetch(request)
+    return await js_fetch(request_url, options)
 
 
 async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
