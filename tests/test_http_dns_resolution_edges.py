@@ -124,6 +124,13 @@ def test_dns_over_https_fails_after_all_resolvers_fail(monkeypatch):
         asyncio.run(http._dns_over_https("example.com", "A"))
 
 
+def test_doh_request_rejects_non_allowlisted_endpoint():
+    import backend.sources.http as http
+
+    with pytest.raises(ValueError, match="unsupported DNS-over-HTTPS endpoint"):
+        asyncio.run(http._doh_request("https://attacker.example/dns-query", "AQID"))
+
+
 def test_doh_request_constructs_fixed_url_and_get_options(monkeypatch):
     import backend.sources.http as http
 
