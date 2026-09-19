@@ -163,8 +163,6 @@ async def _doh_request(endpoint: str, encoded_query: str):
     # object avoids Python->JS RequestInit conversion on Python Workers.
     request_url = f"{endpoint}?dns={encoded_query}"
     request = Request.new(request_url)
-    request.headers["Accept"] = "application/dns-message"
-    request.headers["Cache-Control"] = "no-store"
     return await js_fetch(request)
 
 
