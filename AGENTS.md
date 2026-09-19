@@ -454,8 +454,8 @@ Before any new mutation, read `docs/AI_AGENT_HANDOFF.md` and `docs/CURRENT_SOURC
 
 Current verified family state:
 - Foundation main: `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`
-- Operations main / canonical production revision: `307ed38fe4c7902220cb981556bf08702babbae0`
-- Latest canonical production receipt: run `35456292033` (#232), successful on Foundation `6a91fbd17143083882e9ac7ebfa52f0b06a344b2` with Cloudflare Operations provenance `github:307ed38fe4c7902220cb981556bf08702babbae0`.
+- Operations main: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129` (production pin target; last verified production remains `307ed38fe4c7902220cb981556bf08702babbae0`)
+- Latest canonical production receipt: run `35456292033` (#232), successful on Foundation `6a91fbd17143083882e9ac7ebfa52f0b06a344b2` with Cloudflare provenance last verified at `github:307ed38fe4c7902220cb981556bf08702babbae0`; re-certification target is `github:c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`.
 - Current acceptance queue is the 13-issue set recorded in `docs/CURRENT_SOURCE_OF_TRUTH.md`.
 
 Current queue policy:
