@@ -175,6 +175,18 @@ git -C "$RUNNER_TEMP/operations" fetch --no-tags --depth=1 origin "$OPERATIONS_R
 git -C "$RUNNER_TEMP/operations" checkout --detach "$OPERATIONS_REF"
 test "$(git -C "$RUNNER_TEMP/operations" rev-parse HEAD)" = "$OPERATIONS_REF"
 
+# Run the bounded cross-repository audit before touching production. This is evidence
+# collection inside the canonical production owner, not a second deployment authority.
+mkdir -p .runtime
+python "$RUNNER_TEMP/operations/scripts/run_cross_repo_audit.py" \
+  "$GITHUB_WORKSPACE" "$RUNNER_TEMP/operations" \
+  --output "$RUNNER_TEMP/cross-repository-audit-receipt.json"
+test -s "$RUNNER_TEMP/cross-repository-audit-receipt.json"
+jq -e '.schema == "cross-repository-audit-receipt/v1" and .passed == true' \
+  "$RUNNER_TEMP/cross-repository-audit-receipt.json" >/dev/null
+cp "$RUNNER_TEMP/cross-repository-audit-receipt.json" .runtime/cross-repository-audit-receipt.json
+echo "Cross-repository audit acceptance: PASS"
+
 # Materialize the pinned public Foundation deterministic core locally.
 # Cloudflare Python Workers must bundle local Worker-compatible modules rather
 # than resolve a Git URL package during the Worker build.
