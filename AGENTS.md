@@ -453,8 +453,8 @@ Everything else is actionable queue debt.
 Before any new mutation, read `docs/AI_AGENT_HANDOFF.md` and `docs/CURRENT_SOURCE_OF_TRUTH.md`. Live GitHub state and fresh runtime evidence override dated continuity text.
 
 Current verified family state:
-- Foundation main: `d2231195982b1a3a82a310a5e5a9e8d54c65c01d`
-- Operations main / canonical production revision: `abf7007f4251f80280296c9855e4354502b98541`
+- Foundation main: `23b72d2f4a6636df75ce13025ba349b3b47ea244`
+- Operations main / canonical production revision: `4f200a43d70920a499a173bf5e1cec5bc491acf2`
 - Latest canonical production receipt: run `35445892339` (#219), green for deployment/readiness, authenticated chat, replay/idempotency, SSE lifecycle, permitted-source research ingestion/readback, D1/B2 lifecycle, and the private runtime diagnostic.
 - Current open acceptance queue is the 14-issue set recorded in `docs/CURRENT_SOURCE_OF_TRUTH.md`.
 

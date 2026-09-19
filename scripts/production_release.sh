@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="abf7007f4251f80280296c9855e4354502b98541"
+OPERATIONS_REF="4f200a43d70920a499a173bf5e1cec5bc491acf2"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
@@ -22,7 +22,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = 'abf7007f4251f80280296c9855e4354502b98541'
+test "$OPERATIONS_REF" = '4f200a43d70920a499a173bf5e1cec5bc491acf2'
 
 after_install_marker=''
 
@@ -174,6 +174,18 @@ git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git" "$RUNN
 git -C "$RUNNER_TEMP/operations" fetch --no-tags --depth=1 origin "$OPERATIONS_REF"
 git -C "$RUNNER_TEMP/operations" checkout --detach "$OPERATIONS_REF"
 test "$(git -C "$RUNNER_TEMP/operations" rev-parse HEAD)" = "$OPERATIONS_REF"
+
+# Run the bounded cross-repository audit before touching production. This is evidence
+# collection inside the canonical production owner, not a second deployment authority.
+mkdir -p .runtime
+python "$RUNNER_TEMP/operations/scripts/run_cross_repo_audit.py" \
+  "$GITHUB_WORKSPACE" "$RUNNER_TEMP/operations" \
+  --output "$RUNNER_TEMP/cross-repository-audit-receipt.json"
+test -s "$RUNNER_TEMP/cross-repository-audit-receipt.json"
+jq -e '.schema == "cross-repository-audit-receipt/v1" and .passed == true' \
+  "$RUNNER_TEMP/cross-repository-audit-receipt.json" >/dev/null
+cp "$RUNNER_TEMP/cross-repository-audit-receipt.json" .runtime/cross-repository-audit-receipt.json
+echo "Cross-repository audit acceptance: PASS"
 
 # Materialize the pinned public Foundation deterministic core locally.
 # Cloudflare Python Workers must bundle local Worker-compatible modules rather

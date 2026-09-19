@@ -6,13 +6,13 @@
   "repositories": {
     "foundation": {
       "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup",
-      "last_audited_main_sha": "d2231195982b1a3a82a310a5e5a9e8d54c65c01d"
+      "last_audited_main_sha": "23b72d2f4a6636df75ce13025ba349b3b47ea244"
     },
     "operations": {
       "role": "private-control-plane-research-orchestration",
-      "last_audited_main_sha": "abf7007f4251f80280296c9855e4354502b98541",
-      "approved_production_revision": "abf7007f4251f80280296c9855e4354502b98541",
-      "nightly_research_revision": "abf7007f4251f80280296c9855e4354502b98541"
+      "last_audited_main_sha": "4f200a43d70920a499a173bf5e1cec5bc491acf2",
+      "approved_production_revision": "4f200a43d70920a499a173bf5e1cec5bc491acf2",
+      "nightly_research_revision": "4f200a43d70920a499a173bf5e1cec5bc491acf2"
     }
   },
   "family_boundary": {
@@ -44,7 +44,7 @@
     "public_admission": "Foundation PR #484 merged to main with required CI green; earlier #460 and #483 are superseded/closed",
     "source_url_security": "Foundation PR #482 merged to main with green required CI",
     "execution_identity": "Foundation PR #488 merged to main as the current contract lineage replacing stale #485/#394",
-    "nightly_pin_repair": "Foundation nightly research remains pinned to approved Operations revision abf7007f4251f80280296c9855e4354502b98541; the current live handoff is authoritative over older dated reconciliation text.",
+    "nightly_pin_repair": "Foundation nightly research remains pinned to approved Operations revision 4f200a43d70920a499a173bf5e1cec5bc491acf2; the current live handoff is authoritative over older dated reconciliation text.",
     "zero_cost_provider_gate": "Operations PRs #392/#393/#394 merged; unknown/paid/stale/missing billing or quota state now fails closed across canonical selector, quota policy, chat runtime and private research runtime; Operations issue #353 completed",
     "provider_output_admission": "Operations PR #395 merged; canonical bounded provider-output normalization and identity/partial/tool/usage checks are shared by chatbot and private research runtime",
     "provider_fanout_limits": "Operations PR #396 merged; provider-derived research structure is bounded by depth/collection limits, finding/follow-up ceilings and duplicate coalescing; broader tool/streaming execution fan-out remains governed separately",
@@ -54,7 +54,7 @@
     "deadline_governance_issue_state": "Operations issues #377/#383/#384 remain open pending explicit acceptance/CI evidence; the merged implementation does not claim L4 runtime certification",
     "stage_receipt_correctness": "Foundation PR #461 remains a separate implementation stream",
     "nightly_timeout": "Foundation issue #487 remains open; nightly research lane still requires timeout below the six-hour GitHub Actions ceiling",
-    "runtime_evidence": "Canonical production run 35445892339 (#219) is green on Foundation d2231195982b1a3a82a310a5e5a9e8d54c65c01d with Operations abf7007f4251f80280296c9855e4354502b98541. Public chat/replay/SSE, permitted-source ingestion/readback, D1/B2, execution-core budget/admission/fairness/circuit/cache/capacity/routing diagnostics, provider-stream contract, memory/replay/learning/resource governance, and maintenance reconciliation all passed.",
+    "runtime_evidence": "Canonical production run 35445892339 (#219) is green on Foundation 23b72d2f4a6636df75ce13025ba349b3b47ea244 with Operations 4f200a43d70920a499a173bf5e1cec5bc491acf2. Public chat/replay/SSE, permitted-source ingestion/readback, D1/B2, execution-core budget/admission/fairness/circuit/cache/capacity/routing diagnostics, provider-stream contract, memory/replay/learning/resource governance, and maintenance reconciliation all passed.",
     "cloudflare_recovery_2026_09_18": "Cloudflare recovery is partially complete: the existing private Worker was configured and automatically deployed as v15 (version ID 5ee4364d-b26a-4a6e-b2e8-22e9129e1fdc; deployment ID 61b1a4fe-be10-441a-9307-8301b5e3e94). Reported configuration includes OPERATIONS_DB to canonical D1 research-intelligence, FOUNDATION service binding to research-intelligence-engine-public, production/strict-zero-cost vars, */15 * * * * cron, and governance scope/window/lease metadata. The v15 configuration deployment is not proof that the approved Operations application revision is running. RESOURCE_LIMITS_JSON, RESOURCE_RESERVATIONS_JSON and private AUTH_TOKEN remain absent; no protected values were guessed.",
     "workflow_control_plane": "Main-push control-plane and secret probes create real jobs successfully. Current nightly-multi-agent-research push run 35445593168 and canonical workflow-bridge run 35445592590 still fail before job creation; #157/#263 remain open for their specific supported workflow-dispatch/nightly execution evidence.",
     "execution_core_consolidation": "Operations #329-#333 were consolidated into #334, which is completed after production runtime checks passed; #349 was consolidated into #352.",

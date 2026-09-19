@@ -13,14 +13,14 @@ This is the compact synchronization record for future maintenance chats. Live Gi
 - Do not enable Cloudflare Workers Builds or Deploy Hooks as a competing deployment authority.
 
 ### Current revisions
-- Foundation main: d2231195982b1a3a82a310a5e5a9e8d54c65c01d
-- Operations main: abf7007f4251f80280296c9855e4354502b98541
-- Current Foundation production pin for Operations: abf7007f4251f80280296c9855e4354502b98541
+- Foundation main: 23b72d2f4a6636df75ce13025ba349b3b47ea244
+- Operations main: 4f200a43d70920a499a173bf5e1cec5bc491acf2
+- Current Foundation production pin for Operations: 4f200a43d70920a499a173bf5e1cec5bc491acf2
 
 ### Latest canonical production receipt
 Run: 35445892339 (#219)
-Foundation commit: d2231195982b1a3a82a310a5e5a9e8d54c65c01d
-Operations revision: abf7007f4251f80280296c9855e4354502b98541
+Foundation commit: 23b72d2f4a6636df75ce13025ba349b3b47ea244
+Operations revision: 4f200a43d70920a499a173bf5e1cec5bc491acf2
 
 Passed:
 - public deployment/readiness;
@@ -81,8 +81,8 @@ parallel discovery -> classify disposition -> non-overlapping fix lane -> focuse
 The earlier post-DoH and pre-#219 synchronization snapshots below the live-state section are superseded by the current revisions and production receipt at the top of this document.
 
 For maintenance decisions, always use:
-- current Foundation main `d2231195982b1a3a82a310a5e5a9e8d54c65c01d`;
-- current Operations main / production revision `abf7007f4251f80280296c9855e4354502b98541`;
+- current Foundation main `23b72d2f4a6636df75ce13025ba349b3b47ea244`;
+- current Operations main / production revision `4f200a43d70920a499a173bf5e1cec5bc491acf2`;
 - latest canonical production receipt `35445892339` (#219);
 - the current 14-issue acceptance queue;
 - fresh GitHub/Cloudflare runtime evidence.
