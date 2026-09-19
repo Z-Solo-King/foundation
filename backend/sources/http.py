@@ -153,6 +153,26 @@ def _dns_parse_addresses(payload: bytes, record_type: str) -> list[str]:
     return values
 
 
+async def _doh_request(endpoint: str, encoded_query: str):
+    """Send an RFC 8484 wireformat GET to a fixed DoH endpoint."""
+    from js import Object, URL, fetch as js_fetch
+    from pyodide.ffi import to_js
+
+    resolver_url = URL.new(endpoint)
+    resolver_url.searchParams.set("dns", encoded_query)
+    options = to_js(
+        {
+            "method": "GET",
+            "headers": {
+                "Accept": "application/dns-message",
+                "Cache-Control": "no-store",
+            },
+        },
+        dict_converter=Object.fromEntries,
+    )
+    return await js_fetch(resolver_url, options)
+
+
 async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
     payload = _dns_query_payload(hostname, record_type)
     import base64
@@ -162,25 +182,7 @@ async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
     invalid_response = False
     for endpoint in DNS_OVER_HTTPS_ENDPOINTS:
         try:
-            from js import Object, URL, fetch as js_fetch
-            from pyodide.ffi import to_js
-
-            # The resolver authority remains constant. The untrusted hostname is
-            # encoded inside the RFC 8484 "dns" query parameter only; it is never
-            # used to construct the URL authority/path.
-            resolver_url = URL.new(endpoint)
-            resolver_url.searchParams.set("dns", encoded_query)
-            options = to_js(
-                {
-                    "method": "GET",
-                    "headers": {
-                        "Accept": "application/dns-message",
-                        "Cache-Control": "no-store",
-                    },
-                },
-                dict_converter=Object.fromEntries,
-            )
-            response = await js_fetch(resolver_url, options)
+            response = await _doh_request(endpoint, encoded_query)
 
 
 async def _validate_public_destination(url: str, *, resolver=None) -> None:
