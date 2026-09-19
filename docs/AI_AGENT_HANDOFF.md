@@ -6,14 +6,14 @@ This section supersedes older observations in this file when they disagree with 
 
 ### Exact repository state
 - Foundation `main`: `b1e0e6e74e0d3d9a3e280fa146a6c39503628274`.
-- Operations `main`: `b43c19554100bcdded0c6e70d966b30e5e4df04c`.
-- Canonical approved Operations production pin in Foundation: `b43c19554100bcdded0c6e70d966b30e5e4df04c`.
+- Operations `main`: `035bb38e54aa2b81a1e41b95ac01e7d352b75d83`.
+- Canonical approved Operations production pin in Foundation: `035bb38e54aa2b81a1e41b95ac01e7d352b75d83`.
 - The intermediate Operations SSE revision `282dea820a1a2c24bdf7b5e23298e932ffd94767` is an ancestor of `b43c...`; it is not the current production pin.
 - Operations PR #510's SSE fix is included in current `b43c...`.
 
 ### Latest production proof
 Canonical production run **35420683298** on Foundation commit `b1e0e6e...` reached Cloudflare deployment and passed:
-- Operations provenance: `github:b43c19554100bcdded0c6e70d966b30e5e4df04c`;
+- Operations provenance: `github:035bb38e54aa2b81a1e41b95ac01e7d352b75d83`;
 - authenticated chat: PASS;
 - idempotent chat replay: PASS;
 - authenticated SSE lifecycle: PASS, including start/delta/done;
@@ -74,8 +74,8 @@ This file is the canonical handoff for a new GitHub-maintenance chat/agent. Trea
 ## Current canonical revisions
 
 - Foundation production-code baseline at handoff: `972e1b05c1e2d51905029b602d0c4120eac1d399`
-- Operations production-code baseline at handoff: `b43c19554100bcdded0c6e70d966b30e5e4df04c`
-- Canonical approved Operations production revision: `b43c19554100bcdded0c6e70d966b30e5e4df04c`
+- Operations production-code baseline at handoff: `035bb38e54aa2b81a1e41b95ac01e7d352b75d83`
+- Canonical approved Operations production revision: `035bb38e54aa2b81a1e41b95ac01e7d352b75d83`
 - Operations PR #505 / commit `3afbde92...` corrected the Cloudflare Python service-binding request construction to use `workers.Request(url, **kwargs)` and added regression coverage. The previous deployed-runtime `Request.new` failure is therefore a superseded blocker, not a reason to redesign the boundary.
 - Foundation PR #642 advanced the production pin and synchronized the nightly research/pin-repair contracts to the corrected Operations revision.
 
