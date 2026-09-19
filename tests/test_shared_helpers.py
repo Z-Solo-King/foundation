@@ -24,19 +24,42 @@ def test_workers_fetch_is_lazy_and_reports_context() -> None:
         workers_fetch("unit-test")
 
 
-def test_workers_fetch_adapter_passes_options_to_native_sdk(monkeypatch) -> None:
+def test_workers_fetch_adapter_uses_js_fetch_for_request_options(monkeypatch) -> None:
     import asyncio
     import sys
     import types
 
     captured = {}
 
-    async def fake_fetch(url, **options):
+    class FakeObject:
+        @staticmethod
+        def fromEntries(value):
+            return value
+
+    class FakeRequest:
+        pass
+
+    async def fake_js_fetch(url, options):
         captured["url"] = url
         captured["options"] = options
         return "response"
 
-    monkeypatch.setitem(sys.modules, "workers", types.SimpleNamespace(fetch=fake_fetch))
+    def fake_to_js(value, dict_converter=None):
+        return dict_converter(value) if dict_converter else value
+
+    monkeypatch.setitem(
+        sys.modules,
+        "workers",
+        types.SimpleNamespace(fetch=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("workers.fetch should not handle option-bearing production calls")
+        )),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "js",
+        types.SimpleNamespace(Object=FakeObject, Request=FakeRequest, fetch=fake_js_fetch),
+    )
+    monkeypatch.setitem(sys.modules, "pyodide.ffi", types.SimpleNamespace(to_js=fake_to_js))
 
     from backend.core.workers_runtime import workers_fetch
 
@@ -55,7 +78,7 @@ def test_workers_fetch_adapter_passes_options_to_native_sdk(monkeypatch) -> None
     }
 
 
-def test_workers_fetch_adapter_without_options_uses_native_sdk(monkeypatch) -> None:
+def test_workers_fetch_adapter_without_options_uses_workers_sdk(monkeypatch) -> None:
     import asyncio
     import sys
     import types
@@ -75,25 +98,34 @@ def test_workers_fetch_adapter_without_options_uses_native_sdk(monkeypatch) -> N
     assert calls == ["https://example.com"]
 
 
-def test_workers_fetch_adapter_falls_back_to_request_for_legacy_sdk(monkeypatch) -> None:
+def test_workers_fetch_adapter_uses_sdk_fallback_when_js_ffi_is_unavailable(monkeypatch) -> None:
     import asyncio
+    import builtins
     import sys
     import types
 
     captured = {}
 
-    class FakeRequest:
-        def __init__(self, url, **options):
-            self.url = url
-            self.options = options
-
-    async def fake_fetch(*args, **kwargs):
-        if kwargs:
-            raise TypeError("legacy fetch does not accept keyword options")
-        captured["request"] = args[0]
+    async def fake_fetch(url, **options):
+        captured["url"] = url
+        captured["options"] = options
         return "response"
 
-    monkeypatch.setitem(sys.modules, "workers", types.SimpleNamespace(fetch=fake_fetch, Request=FakeRequest))
+    fake_workers = types.SimpleNamespace(fetch=fake_fetch)
+    original_import = builtins.__import__
+
+    def blocked_import(name, *args, **kwargs):
+        if name == "js":
+            raise ImportError("blocked")
+        if name == "pyodide.ffi":
+            raise ImportError("blocked")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setitem(sys.modules, "workers", fake_workers)
+    monkeypatch.delitem(sys.modules, "js", raising=False)
+    monkeypatch.delitem(sys.modules, "pyodide", raising=False)
+    monkeypatch.delitem(sys.modules, "pyodide.ffi", raising=False)
+    monkeypatch.setattr(builtins, "__import__", blocked_import)
 
     from backend.core.workers_runtime import workers_fetch
 
@@ -101,20 +133,4 @@ def test_workers_fetch_adapter_falls_back_to_request_for_legacy_sdk(monkeypatch)
     result = asyncio.run(workers_fetch("test")("https://example.com", options))
 
     assert result == "response"
-    assert captured["request"].url == "https://example.com"
-    assert captured["request"].options == options
-
-def test_workers_fetch_adapter_reraises_typeerror_when_legacy_request_is_unavailable(monkeypatch) -> None:
-    import asyncio
-    import sys
-    import types
-
-    async def fake_fetch(_url, **_options):
-        raise TypeError("legacy fetch does not accept keyword options")
-
-    monkeypatch.setitem(sys.modules, "workers", types.SimpleNamespace(fetch=fake_fetch))
-
-    from backend.core.workers_runtime import workers_fetch
-
-    with pytest.raises(TypeError, match="legacy fetch does not accept keyword options"):
-        asyncio.run(workers_fetch("test")("https://example.com", {"method": "POST"}))
+    assert captured == {"url": "https://example.com", "options": options}

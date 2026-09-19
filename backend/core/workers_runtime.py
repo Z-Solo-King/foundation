@@ -1,9 +1,8 @@
 """Cloudflare Python Workers Fetch compatibility adapter.
 
-The Workers Python runtime exposes Fetch through the `workers` SDK. Use its native
-keyword-option interface for option-bearing requests instead of constructing a raw
-JavaScript Request through Pyodide FFI; this keeps request bodies and headers in the
-runtime's supported conversion path.
+Use the Workers SDK for simple GET-style calls. For option-bearing calls, use the
+documented JavaScript Fetch API through Python Workers FFI so POST headers and binary
+request bodies reach the runtime without depending on SDK wrapper behavior.
 """
 
 from collections.abc import Callable
@@ -19,15 +18,17 @@ def workers_fetch(context: str) -> Callable:
     async def _fetch(url, options=None):
         if not options:
             return await fetch(url)
+
         try:
+            from js import Object, fetch as js_fetch
+            from pyodide.ffi import to_js
+        except ImportError:
+            # Local/legacy runtime fallback: retain the Workers SDK option path.
             return await fetch(url, **dict(options))
-        except TypeError as exc:
-            # Keep a compatibility fallback for older/local SDK shims that accept
-            # a Request object rather than keyword options.
-            try:
-                from workers import Request
-            except ImportError:
-                raise exc
-            return await fetch(Request(url, **dict(options)))
+
+        # Pyodide converts Python bytes/buffer values to JS TypedArrays through
+        # to_js(), so binary application/dns-message POST bodies remain intact.
+        js_options = to_js(dict(options), dict_converter=Object.fromEntries)
+        return await js_fetch(url, js_options)
 
     return _fetch
