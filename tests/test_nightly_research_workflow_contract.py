@@ -50,6 +50,12 @@ def test_lane_status_and_artifact_steps_are_always_run():
     assert "-status.json" in text
 
 
+def test_summary_validates_downloaded_nightly_artifact_bundle():
+    text = workflow_text()
+    assert "name: Validate nightly artifact bundle contract" in text
+    assert "python -m benchmark.research_artifact_validator --root ." in text
+
+
 def test_summary_is_always_run_and_final_gate_preserves_failure():
     text = workflow_text()
     assert "name: Diagnose nightly Heroic AI research" in text
