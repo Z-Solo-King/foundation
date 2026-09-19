@@ -13,9 +13,9 @@ This is a compact synchronization record for future maintenance chats. Live GitH
 - Do not enable Cloudflare Workers Builds or Deploy Hooks as a competing deployment authority.
 
 ### Current revisions
-- Foundation main: `95840f563b51f08c38996d673034ca49fc539f79`
-- Operations main: `035bb38e54aa2b81a1e41b95ac01e7d352b75d83`
-- Current Foundation production pin for Operations: `035bb38e54aa2b81a1e41b95ac01e7d352b75d83`
+- Foundation main: `33331e37c66fb77b60098e8adb3c80ef63942bc6`
+- Operations main: `f132dfaf3f44fc992ad9f31a5a520851f6111c0e`
+- Current Foundation production pin for Operations: `f132dfaf3f44fc992ad9f31a5a520851f6111c0e`
 
 ### Latest canonical production receipt
 Run: `35430074029`
@@ -68,3 +68,12 @@ Current Foundation main includes commit 61353f4351778a57e5abf602c961d26bc4d208c9
 Current approved Operations production pin remains 035bb38e54aa2b81a1e41b95ac01e7d352b75d83.
 
 The latest authoritative production receipt before the DoH merge still proves deployment/provenance, authenticated chat, idempotent replay and SSE while research source ingestion failed at the older DoH invocation. A fresh canonical production run is required before #259 can close.
+
+
+## 2026-09-19 CURRENT RECONCILIATION
+
+Foundation main now includes the workflow-bridge dispatch timestamp race fix (PR #708, merged as `33331e37c66fb77b60098e8adb3c80ef63942bc6`).
+
+The canonical production and nightly paths are being advanced from obsolete Operations revision `8258d0bcee2bef9427a60aed522a14e0ff95ea2b` to the current immutable Operations main `f132dfaf3f44fc992ad9f31a5a520851f6111c0e` in PR #709.
+
+No fresh post-change production receipt exists yet. Do not claim Cloudflare L4 certification or close runtime-gated issues until the canonical production workflow produces current evidence.
