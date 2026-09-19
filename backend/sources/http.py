@@ -93,10 +93,6 @@ def _dns_query_payload(hostname: str, record_type: str) -> bytes:
         ascii_host = host.encode("idna").decode("ascii")
     except UnicodeError as exc:
         raise ValueError("invalid DNS hostname") from exc
-    raw_labels = host.split(".")
-    invalid_labels = [label for label in raw_labels if not label or len(label.encode("utf-8")) > 63]
-    if invalid_labels:
-        raise ValueError("invalid DNS hostname")
     labels = ascii_host.split(".")
     qname = b"".join(bytes((len(label),)) + label.encode("ascii") for label in labels) + b"\x00"
     return b"\x00\x00\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00" + qname + struct.pack("!HH", qtype, 1)
