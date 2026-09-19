@@ -36,6 +36,11 @@ def test_workers_fetch_adapter_uses_js_fetch_for_request_options(monkeypatch) ->
         def fromEntries(value):
             return value
 
+    class FakeUint8Array:
+        @classmethod
+        def new(cls, values):
+            return list(values)
+
     class FakeRequest:
         @classmethod
         def new(cls, url, options):
