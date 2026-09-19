@@ -214,3 +214,60 @@ def test_workers_fetch_adapter_falls_back_after_request_constructor_error(monkey
 
     assert result == "response"
     assert captured == [("https://example.com", options)]
+
+
+def test_workers_fetch_adapter_converts_binary_body_to_uint8array(monkeypatch) -> None:
+    import asyncio
+    import sys
+    import types
+
+    captured = {}
+
+    class FakeObject:
+        @staticmethod
+        def fromEntries(value):
+            return value
+
+    class FakeUint8Array:
+        @classmethod
+        def new(cls, values):
+            instance = cls()
+            instance.values = list(values)
+            return instance
+
+    class FakeRequest:
+        @classmethod
+        def new(cls, url, options):
+            captured["url"] = url
+            captured["options"] = options
+            return (url, options)
+
+    async def fake_fetch(request):
+        captured["request"] = request
+        return "response"
+
+    def fake_to_js(value, dict_converter=None):
+        return dict_converter(value) if dict_converter else value
+
+    fake_workers = types.SimpleNamespace(fetch=lambda *_args, **_kwargs: None)
+    monkeypatch.setitem(sys.modules, "workers", fake_workers)
+    monkeypatch.setitem(sys.modules, "js", types.SimpleNamespace(
+        Object=FakeObject,
+        Request=FakeRequest,
+        Uint8Array=FakeUint8Array,
+        fetch=fake_fetch,
+    ))
+    monkeypatch.setitem(sys.modules, "pyodide.ffi", types.SimpleNamespace(to_js=fake_to_js))
+
+    from backend.core.workers_runtime import workers_fetch
+
+    payload = b"\\x00\\x01\\xffpayload"
+    options = {"method": "POST", "headers": {"Content-Type": "application/dns-message"}, "body": payload}
+    result = asyncio.run(workers_fetch("test")("https://example.com/dns-query", options))
+
+    assert result == "response"
+    assert captured["url"] == "https://example.com/dns-query"
+    body = captured["options"]["body"]
+    assert isinstance(body, FakeUint8Array)
+    assert body.values == list(payload)
+    assert captured["options"]["method"] == "POST"
