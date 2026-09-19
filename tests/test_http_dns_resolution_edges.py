@@ -131,28 +131,33 @@ def test_doh_request_rejects_non_allowlisted_endpoint():
         asyncio.run(http._doh_request("https://attacker.example/dns-query", "AQID"))
 
 
-def test_doh_request_constructs_fixed_url_and_get_options(monkeypatch):
+def test_doh_request_constructs_fixed_request_and_get_options(monkeypatch):
     import backend.sources.http as http
 
     captured = {}
 
-    async def fake_fetch(url, **options):
-        captured["url"] = url
-        captured["options"] = options
+    class FakeRequest:
+        def __init__(self, url, **options):
+            captured["url"] = url
+            captured["options"] = options
+
+    async def fake_fetch(request):
+        captured["request"] = request
         return "response"
 
-    monkeypatch.setitem(__import__("sys").modules, "workers", __import__("types").SimpleNamespace(
-        fetch=fake_fetch,
-    ))
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "workers",
+        __import__("types").SimpleNamespace(Request=FakeRequest, fetch=fake_fetch),
+    )
 
-    result = asyncio.run(http._doh_request(
-        "https://cloudflare-dns.com/dns-query",
-        "AQID",
-    ))
+    result = asyncio.run(http._doh_request("https://cloudflare-dns.com/dns-query", "AQID"))
     assert result == "response"
     assert captured["url"] == "https://cloudflare-dns.com/dns-query?dns=AQID"
+    assert captured["options"]["method"] == "GET"
     assert captured["options"]["headers"]["Accept"] == "application/dns-message"
-    assert captured["options"]["cache"] == "no-store"
+
+
 
 
 def test_public_destination_fails_when_dns_returns_no_addresses():

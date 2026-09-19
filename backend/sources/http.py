@@ -157,18 +157,20 @@ async def _doh_request(endpoint: str, encoded_query: str):
     """Send an RFC 8484 wireformat GET to a fixed, allowlisted DoH endpoint."""
     if endpoint not in DNS_OVER_HTTPS_ENDPOINTS:
         raise ValueError("unsupported DNS-over-HTTPS endpoint")
-    from workers import fetch
+    from workers import Request, fetch
 
-    # RFC 8484 carries the DNS wire message in the query; the authority remains allowlisted above.
+    # Keep the resolver authority fixed and encode only the DNS wire query in the
+    # RFC 8484 dns query parameter. GET avoids Python Worker POST-body conversion.
     request_url = f"{endpoint}?dns={encoded_query}"
-    return await fetch(
+    request = Request(
         request_url,
+        method="GET",
         headers={
             "Accept": "application/dns-message",
             "Cache-Control": "no-store",
         },
-        cache="no-store",
     )
+    return await fetch(request)
 
 
 async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
