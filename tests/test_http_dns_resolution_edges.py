@@ -179,6 +179,88 @@ def test_response_bytes_converts_nested_proxy_returned_by_to_bytes():
     assert http._response_bytes(JsProxyBytes()) == b"nested"
 
 
+
+def test_response_bytes_covers_all_supported_buffer_shapes():
+    import backend.sources.http as http
+
+    class PyBytesProxy:
+        def to_py(self):
+            return b"py-bytes"
+
+    class PyBytearrayProxy:
+        def to_py(self):
+            return bytearray(b"py-bytearray")
+
+    class PyTobytesProxy:
+        def tobytes(self):
+            return b"py-tobytes"
+
+    class PyTobytesNonBytesProxy:
+        def tobytes(self):
+            return bytearray(b"not-returned")
+
+    class JsProxyTobytes:
+        def to_py(self):
+            return PyTobytesProxy()
+
+    class JsProxyTobytesNonBytes:
+        def to_py(self):
+            return PyTobytesNonBytesProxy()
+
+        def __bytes__(self):
+            return b"fallback-from-bytes"
+
+    class NestedMemoryview:
+        def to_py(self):
+            return memoryview(b"nested-memoryview")
+
+    class NestedBytes:
+        def to_py(self):
+            return b"nested-bytes"
+
+    class NestedBytearray:
+        def to_py(self):
+            return bytearray(b"nested-bytearray")
+
+    class ToBytesBytearray:
+        def to_bytes(self):
+            return bytearray(b"to-bytes-bytearray")
+
+    class ToBytesMemoryview:
+        def to_bytes(self):
+            return memoryview(b"to-bytes-memoryview")
+
+    class ToBytesNestedBytes:
+        def to_bytes(self):
+            return NestedBytes()
+
+    class ToBytesNestedBytearray:
+        def to_bytes(self):
+            return NestedBytearray()
+
+    class ToBytesNoNestedConversion:
+        def to_bytes(self):
+            return object()
+
+        def __bytes__(self):
+            return b"final-fallback"
+
+    assert http._response_bytes(b"direct") == b"direct"
+    assert http._response_bytes(bytearray(b"direct-bytearray")) == b"direct-bytearray"
+    assert http._response_bytes(memoryview(b"direct-memoryview")) == b"direct-memoryview"
+    assert http._response_bytes(PyBytesProxy()) == b"py-bytes"
+    assert http._response_bytes(PyBytearrayProxy()) == b"py-bytearray"
+    assert http._response_bytes(JsProxyTobytes()) == b"py-tobytes"
+    assert http._response_bytes(JsProxyTobytesNonBytes()) == b"fallback-from-bytes"
+    assert http._response_bytes(ToBytesBytearray()) == b"to-bytes-bytearray"
+    assert http._response_bytes(ToBytesMemoryview()) == b"to-bytes-memoryview"
+    assert http._response_bytes(ToBytesNestedBytes()) == b"nested-bytes"
+    assert http._response_bytes(JsProxyBytes()) == b"binary"
+    assert http._response_bytes(ToBytesNestedBytearray()) == b"nested-bytearray"
+    assert http._response_bytes(type("ToBytesNestedMemoryview", (), {"to_bytes": lambda self: NestedMemoryview()})()) == b"nested-memoryview"
+    assert http._response_bytes(ToBytesNoNestedConversion()) == b"final-fallback"
+
+
 def test_doh_request_rejects_non_allowlisted_endpoint():
     import backend.sources.http as http
 
