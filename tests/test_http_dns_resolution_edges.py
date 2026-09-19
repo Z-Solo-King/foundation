@@ -136,9 +136,8 @@ def test_doh_request_constructs_fixed_url_and_get_options(monkeypatch):
 
     captured = {}
 
-    class FakeHeaders:
-        def set(self, key, value):
-            captured.setdefault("headers", {})[key] = value
+    class FakeHeaders(dict):
+        pass
 
     class FakeRequest:
         @staticmethod
@@ -164,8 +163,8 @@ def test_doh_request_constructs_fixed_url_and_get_options(monkeypatch):
     result = asyncio.run(http._doh_request("https://cloudflare-dns.com/dns-query", "AQID"))
     assert result == "response"
     assert captured["url"] == "https://cloudflare-dns.com/dns-query?dns=AQID"
-    assert captured["headers"]["Accept"] == "application/dns-message"
-    assert captured["headers"]["Cache-Control"] == "no-store"
+    assert captured["request"].headers["Accept"] == "application/dns-message"
+    assert captured["request"].headers["Cache-Control"] == "no-store"
 
 
 
