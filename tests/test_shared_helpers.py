@@ -22,3 +22,39 @@ def test_canonical_url_allows_component_specific_error_text() -> None:
 def test_workers_fetch_is_lazy_and_reports_context() -> None:
     with pytest.raises(RuntimeError, match="Cloudflare Workers runtime is required for unit-test"):
         workers_fetch("unit-test")
+
+
+def test_workers_fetch_adapter_preserves_request_options(monkeypatch) -> None:
+    import asyncio
+    import sys
+    import types
+
+    captured = {}
+
+    class FakeRequest:
+        def __init__(self, url, **options):
+            captured["url"] = url
+            captured["options"] = options
+
+    async def fake_fetch(request):
+        captured["request"] = request
+        return "response"
+
+    fake_workers = types.SimpleNamespace(Request=FakeRequest, fetch=fake_fetch)
+    monkeypatch.setitem(sys.modules, "workers", fake_workers)
+
+    from backend.core.workers_runtime import workers_fetch
+
+    fetcher = workers_fetch("test")
+    result = asyncio.run(fetcher("https://example.com/dns-query", {
+        "method": "POST",
+        "headers": {"Content-Type": "application/dns-message"},
+        "body": b"payload",
+    }))
+
+    assert result == "response"
+    assert captured["url"] == "https://example.com/dns-query"
+    assert captured["options"]["method"] == "POST"
+    assert captured["options"]["headers"]["Content-Type"] == "application/dns-message"
+    assert captured["options"]["body"] == b"payload"
+    assert captured["request"].__class__ is FakeRequest
