@@ -8,7 +8,7 @@ name: Live extractor benchmark
       operations_ref:
         description: Immutable Operations revision to benchmark
         required: false
-        default: 2454135bdff9a3851f077e899bac2f22ef9c5281
+        default: a1466288f16115b784d75d0a3c675dd410c06d24
         type: string
 
 permissions:
@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 30
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || '2454135bdff9a3851f077e899bac2f22ef9c5281' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || 'a1466288f16115b784d75d0a3c675dd410c06d24' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Checkout Foundation
@@ -95,31 +95,28 @@ jobs:
               assert all(isinstance(item.get("label",""), str) and item.get("label") for item in payload["targets"])
           PY
 
-      - name: Run HTTP benchmark pass 1
-        working-directory: operations
+      - name: Run HTTP benchmark pass 1\n        continue-on-error: true\n        working-directory: operations
         run: |
           set -euo pipefail
           PYTHONPATH=. python scripts/durable_site_benchmark.py run             --input ../benchmark-input/http-targets.json             --output ../benchmark-output/http-pass1             --shards 1 --shard 0 --workers 2 --retries 2
 
-      - name: Run HTTP benchmark pass 2
-        working-directory: operations
+      - name: Run HTTP benchmark pass 2\n        continue-on-error: true\n        working-directory: operations
         run: |
           set -euo pipefail
           python scripts/durable_site_benchmark.py run             --input ../benchmark-input/http-targets.json             --output ../benchmark-output/http-pass2             --shards 1 --shard 0 --workers 2 --retries 2
 
-      - name: Run browser benchmark pass 1
-        working-directory: operations
+      - name: Run browser benchmark pass 1\n        continue-on-error: true\n        working-directory: operations
         run: |
           set -euo pipefail
           python scripts/browser_site_benchmark.py             --input ../benchmark-input/browser-targets.json             --output ../benchmark-output/browser-pass1.jsonl
 
-      - name: Run browser benchmark pass 2
-        working-directory: operations
+      - name: Run browser benchmark pass 2\n        continue-on-error: true\n        working-directory: operations
         run: |
           set -euo pipefail
           python scripts/browser_site_benchmark.py             --input ../benchmark-input/browser-targets.json             --output ../benchmark-output/browser-pass2.jsonl
 
       - name: Verify benchmark receipts
+        continue-on-error: true
         working-directory: operations
         run: |
           set -euo pipefail
@@ -133,8 +130,7 @@ jobs:
               print(path)
           PY
 
-      - name: Build benchmark quality report
-        working-directory: operations
+      - name: Build benchmark quality report\n        continue-on-error: true\n        working-directory: operations
         run: |
           set -euo pipefail
           inputs=()
@@ -143,7 +139,25 @@ jobs:
           )
           python scripts/site_benchmark_quality.py             "${inputs[@]}"             --expected-platform api             --expected-platform feed             --expected-platform html             --expected-platform browser             --output ../benchmark-output/live-extractor-quality.json
 
+      - name: Benchmark quality gate
+        if: always()
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          test -s ../benchmark-output/live-extractor-quality.json || {
+            echo "benchmark quality report is missing"
+            exit 1
+          }
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          payload=json.loads(Path("../benchmark-output/live-extractor-quality.json").read_text(encoding="utf-8"))
+          print(json.dumps(payload, indent=2, sort_keys=True))
+          raise SystemExit(0 if payload.get("pass") is True else 2)
+          PY
+
       - name: Publish benchmark artifact
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: live-extractor-benchmark
