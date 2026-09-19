@@ -158,6 +158,7 @@ async def _doh_request(endpoint: str, encoded_query: str):
     if endpoint not in DNS_OVER_HTTPS_ENDPOINTS:
         raise ValueError("unsupported DNS-over-HTTPS endpoint")
     from js import Request
+    from workers import fetch
 
     # Cloudflare's Python Workers documentation recommends constructing a JS
     # Request object with Request.new(...) before passing it to fetch. Keep the
@@ -165,7 +166,7 @@ async def _doh_request(endpoint: str, encoded_query: str):
     # Base64URL query parameter.
     request_url = f"{endpoint}?dns={encoded_query}"
     request = Request.new(request_url)
-    return await _workers_fetch(request)
+    return await fetch(request)
 
 
 async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
