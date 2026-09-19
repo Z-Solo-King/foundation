@@ -1,6 +1,6 @@
 from pathlib import Path
 
-WORKFLOW = Path(__file__).parents[1] / ".github" / "workflows" / "nightly-multi-agent-research.yml"
+WORKFLOW = Path(__file__).parents[1] / ".github" / "workflows" / "nightly-multi-agent-research-v2.yml"
 
 
 def workflow_text() -> str:

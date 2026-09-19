@@ -50,7 +50,7 @@ Private runtime checks passed:
 ### Current control-plane evidence
 - Main-push Actions control-plane probe run 35445595034: SUCCESS with job creation.
 - Main-push secret probe run 35445595001: SUCCESS with job creation.
-- Actual nightly-multi-agent-research.yml push run 35445593168: failure with no jobs created.
+- Actual nightly-multi-agent-research-v2.yml push run 35445593168: failure with no jobs created.
 - Canonical workflow-bridge run 35445592590: failure with no jobs created.
 - Canonical nightly pin repair / cross-repository drift / B2 helper runs also remain separate auxiliary failures and are not production deployment authorities.
 - Therefore #157 and #263 remain open for their specific supported workflow-dispatch/nightly execution evidence.
