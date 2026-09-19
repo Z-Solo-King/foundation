@@ -397,7 +397,7 @@ live_research_read_status=$(curl -sS --max-time 30 \
 echo "GET /api/v1/research/${live_research_run_id} -> HTTP ${live_research_read_status}"
 test "$live_research_read_status" = '200'
 jq -e --arg run_id "${live_research_run_id}" \
-  '.ok == true and .run_id == $run_id' \
+  '.ok == true and ((.run_id // .run.run_id) == $run_id)' \
   "$RUNNER_TEMP/live-research-read.json" >/dev/null
 echo "Live research execution/readback acceptance: PASS (${live_research_run_id})"
 
