@@ -144,7 +144,7 @@ jobs:
           python scripts/site_benchmark_quality.py             "${inputs[@]}"             --expected-platform api             --expected-platform feed             --expected-platform html             --expected-platform browser             --output ../benchmark-output/live-extractor-quality.json
 
       - name: Publish benchmark artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: live-extractor-benchmark
           path: |
