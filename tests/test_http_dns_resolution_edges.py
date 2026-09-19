@@ -1,5 +1,5 @@
 import asyncio
-from types import SimpleNamespace
+import struct
 
 import pytest
 
@@ -9,8 +9,26 @@ class _DnsResponse:
         self.status = status
         self.payload = payload
 
-    async def json(self):
+    async def arrayBuffer(self):
         return self.payload
+
+
+def _qname(hostname="example.com"):
+    return b"".join(bytes((len(label),)) + label.encode() for label in hostname.split(".")) + b"\x00"
+
+
+def _dns_packet(*, record_type=1, addresses=(), status_flags=0x8180):
+    question = _qname() + struct.pack("!HH", record_type, 1)
+    answers = []
+    for address in addresses:
+        if record_type == 1:
+            rdata = bytes(int(part) for part in address.split("."))
+        else:
+            import ipaddress
+            rdata = ipaddress.IPv6Address(address).packed
+        answers.append(b"\xc0\x0c" + struct.pack("!HHIH", record_type, 1, 60, len(rdata)) + rdata)
+    header = struct.pack("!HHHHHH", 0, status_flags, 1, len(answers), 0, 0)
+    return header + question + b"".join(answers)
 
 
 @pytest.mark.parametrize("status", [400, 500])
@@ -18,7 +36,7 @@ def test_dns_over_https_non_200_fails_closed(monkeypatch, status):
     import backend.sources.http as http
 
     async def fetcher(_url, _opts):
-        return _DnsResponse(status, {})
+        return _DnsResponse(status, b"")
 
     monkeypatch.setattr(http, "_workers_fetch", lambda: fetcher)
     with pytest.raises(RuntimeError, match="DNS resolution failed"):
@@ -29,41 +47,32 @@ def test_dns_over_https_rejects_empty_answer_sets(monkeypatch):
     import backend.sources.http as http
 
     async def fetcher(_url, _opts):
-        return _DnsResponse(200, {"Answer": []})
+        return _DnsResponse(200, _dns_packet(record_type=1, addresses=()))
 
     monkeypatch.setattr(http, "_workers_fetch", lambda: fetcher)
     with pytest.raises(RuntimeError, match="DNS resolution failed"):
         asyncio.run(http._dns_over_https("example.com", "A"))
 
 
-def test_dns_over_https_rejects_non_mapping_payload(monkeypatch):
+def test_dns_over_https_rejects_invalid_dns_payload(monkeypatch):
     import backend.sources.http as http
 
     async def fetcher(_url, _opts):
-        return _DnsResponse(200, [])
+        return _DnsResponse(200, b"not-a-dns-message")
 
     monkeypatch.setattr(http, "_workers_fetch", lambda: fetcher)
     with pytest.raises(RuntimeError, match="invalid DNS response"):
         asyncio.run(http._dns_over_https("example.com", "AAAA"))
 
 
-def test_dns_over_https_filters_non_address_records_and_blank_data(monkeypatch):
+def test_dns_over_https_filters_non_address_records_and_returns_matching_type(monkeypatch):
     import backend.sources.http as http
 
-    payload = {
-        "Answer": [
-            {"type": 5, "data": "alias.example.com"},
-            {"type": 1, "data": ""},
-            {"type": 28, "data": "2001:db8::1"},
-            "not-a-record",
-        ]
-    }
-
     async def fetcher(_url, _opts):
-        return _DnsResponse(200, payload)
+        return _DnsResponse(200, _dns_packet(record_type=28, addresses=("2001:db8::1",)))
 
     monkeypatch.setattr(http, "_workers_fetch", lambda: fetcher)
-    assert asyncio.run(http._dns_over_https("example.com", "A")) == ["2001:db8::1"]
+    assert asyncio.run(http._dns_over_https("example.com", "AAAA")) == ["2001:db8::1"]
 
 
 def test_public_destination_fails_when_dns_returns_no_addresses():
@@ -126,18 +135,31 @@ def test_dns_over_https_supports_workers_one_argument_fetch_signature(monkeypatc
 
     calls = []
 
-    class Response:
-        status = 200
-        async def json(self):
-            return {"Answer": [{"type": 1, "data": "93.184.216.34"}]}
-
     async def fetcher(url):
         calls.append(url)
-        return Response()
+        return _DnsResponse(200, _dns_packet(record_type=1, addresses=("93.184.216.34",)))
 
     monkeypatch.setattr(http, "_workers_fetch", lambda: fetcher)
     assert asyncio.run(http._dns_over_https("example.com", "A")) == ["93.184.216.34"]
-    assert calls == ["https://cloudflare-dns.com/dns-query?name=example.com&type=A"]
+    assert calls == ["https://cloudflare-dns.com/dns-query"]
+
+
+def test_dns_over_https_does_not_put_target_hostname_in_request_url(monkeypatch):
+    import backend.sources.http as http
+
+    seen = {}
+
+    async def fetcher(url, opts):
+        seen["url"] = url
+        seen["opts"] = opts
+        return _DnsResponse(200, _dns_packet(record_type=1, addresses=("93.184.216.34",)))
+
+    monkeypatch.setattr(http, "_workers_fetch", lambda: fetcher)
+    assert asyncio.run(http._dns_over_https("example.com", "A")) == ["93.184.216.34"]
+    assert seen["url"] == "https://cloudflare-dns.com/dns-query"
+    assert seen["opts"]["method"] == "POST"
+    assert seen["opts"]["headers"]["Content-Type"] == "application/dns-message"
+    assert b"example.com" not in seen["opts"]["body"]
 
 
 def test_dns_over_https_falls_back_to_secondary_resolver(monkeypatch):
@@ -145,23 +167,17 @@ def test_dns_over_https_falls_back_to_secondary_resolver(monkeypatch):
 
     calls = []
 
-    class Response:
-        status = 200
-
-        async def json(self):
-            return {"Answer": [{"type": 1, "data": "93.184.216.34"}]}
-
     async def fetcher(url, _opts):
         calls.append(url)
-        if "cloudflare-dns.com" in url:
+        if url == "https://cloudflare-dns.com/dns-query":
             raise RuntimeError("primary resolver unavailable")
-        return Response()
+        return _DnsResponse(200, _dns_packet(record_type=1, addresses=("93.184.216.34",)))
 
     monkeypatch.setattr(http, "_workers_fetch", lambda: fetcher)
     assert asyncio.run(http._dns_over_https("example.com", "A")) == ["93.184.216.34"]
     assert calls == [
-        "https://cloudflare-dns.com/dns-query?name=example.com&type=A",
-        "https://dns.google/resolve?name=example.com&type=A",
+        "https://cloudflare-dns.com/dns-query",
+        "https://dns.google/dns-query",
     ]
 
 
