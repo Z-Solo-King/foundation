@@ -313,16 +313,19 @@ async def _operations_chatbot_diagnostic(env, request=None):
             )
         )
         body = await upstream.json()
-        runtime_checks = body.get("runtime_checks") if isinstance(body, dict) and isinstance(body.get("runtime_checks"), list) else []
-        runtime_ok = bool(body.get("runtime_status") == "ok") and bool(runtime_checks) and all(
+        body_dict = body if isinstance(body, dict) else {}
+        runtime_checks = body_dict.get("runtime_checks") if isinstance(body_dict.get("runtime_checks"), list) else []
+        runtime_ok = bool(body_dict.get("runtime_status") == "ok") and bool(runtime_checks) and all(
             isinstance(check, dict) and bool(check.get("ok"))
             for check in runtime_checks
         )
+        chatbot = body_dict.get("chatbot")
+        chatbot_allowed = isinstance(chatbot, dict) and bool(chatbot.get("allowed"))
         healthy = (
             upstream.status == 200
             and isinstance(body, dict)
-            and bool(body.get("ok"))
-            and bool(body.get("chatbot", {}).get("allowed"))
+            and bool(body_dict.get("ok"))
+            and chatbot_allowed
             and runtime_ok
         )
         return {
