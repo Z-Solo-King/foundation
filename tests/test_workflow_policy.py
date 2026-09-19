@@ -202,17 +202,16 @@ def test_public_foundation_is_the_only_github_actions_bridge_owner():
 
 def test_all_canonical_workflow_dispatch_requests_use_the_public_router():
     texts = _workflow_texts()
-    dispatchers = [
+    callers = [
         name
         for name, text in texts.items()
         if "actions/workflows/" in text and "/dispatches" in text
+        and name != "foundation-canonical-workflow-bridge.yml"
     ]
-    assert dispatchers == [
-        "canonical-workflow-dispatch-acceptance.yml",
-        "foundation-canonical-workflow-bridge.yml",
-    ]
-    for name in dispatchers:
-        assert "foundation-canonical-workflow-bridge.yml/dispatches" in texts[name]
+    assert callers == ["canonical-workflow-dispatch-acceptance.yml"]
+    assert "foundation-canonical-workflow-bridge.yml/dispatches" in texts["canonical-workflow-dispatch-acceptance.yml"]
+    bridge = texts["foundation-canonical-workflow-bridge.yml"]
+    assert "main-push-actions-control-plane-probe.yml" in bridge
 
 
 
