@@ -1,0 +1,206 @@
+name: Coverage-driven runtime matrix
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: Immutable Operations revision to test
+        required: false
+        default: c9073a85c4658d3c07b0b2f31f12e28581930763
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  scenario:
+    name: ${{ matrix.id }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include:
+          - id: chat-core
+            issues: "Operations #197"
+            tests: "tests/test_chat_endpoint.py tests/test_chatbot.py"
+          - id: idempotency
+            issues: "Operations #197"
+            tests: "tests/test_chat_idempotency.py"
+          - id: trust-replay
+            issues: "Operations #132"
+            tests: "tests/test_chat_trust_envelope.py tests/test_replay_guard.py tests/test_v175_v18_replay_bridge.py"
+          - id: memory-privacy
+            issues: "Operations #119"
+            tests: "tests/test_chat_memory.py tests/test_chat_memory_persistence.py tests/test_chat_privacy.py"
+          - id: learning-evaluation
+            issues: "Operations #197"
+            tests: "tests/test_chat_learning.py tests/test_chat_learning_d1.py tests/test_chat_learning_runtime.py tests/test_chat_learning_store.py"
+          - id: provider-admission
+            issues: "Operations #197"
+            tests: "tests/test_provider_catalog.py tests/test_provider_capacity.py tests/test_provider_capacity_admission.py tests/test_provider_response_admission.py"
+          - id: provider-runtime
+            issues: "Operations #197"
+            tests: "tests/test_provider_runtime.py tests/test_provider_runtime_state_adapter.py tests/test_provider_retry.py tests/test_provider_retry_deadline.py tests/test_provider_circuit_runtime.py"
+          - id: stream-contract
+            issues: "Operations #340/#452"
+            tests: "tests/test_provider_stream.py tests/test_provider_stream_runtime_diagnostic.py tests/test_stream_transport.py tests/test_streaming_contract.py"
+          - id: execution-core
+            issues: "Operations #385"
+            tests: "tests/test_execution_decision.py tests/test_execution_strategy.py tests/test_chatbot_execution_strategy.py tests/test_execution_core_runtime_diagnostic.py"
+          - id: queue-recovery
+            issues: "Operations #385"
+            tests: "tests/test_queue_job.py tests/test_replay_guard.py"
+          - id: resource-governance
+            issues: "Operations #385"
+            tests: "tests/test_durable_resource_ledger.py tests/test_resource_ledger.py tests/test_resource_ledger_invariants.py"
+          - id: maintenance-governance
+            issues: "Operations #145/#385"
+            tests: "tests/test_maintenance_execution.py tests/test_maintenance_tick.py tests/test_chatbot_maintenance_scheduler.py tests/test_maintenance_plan.py tests/test_maintenance_policy.py"
+          - id: planner-bridge
+            issues: "Operations #197/#385"
+            tests: "tests/test_planner_execution_bridge.py tests/test_planner_execution_bridge_edges.py tests/test_planner_resource_bridge.py tests/test_planner_resource_bridge_complete.py"
+          - id: acquisition-runtime
+            issues: "Operations #352"
+            tests: "tests/test_acquisition_execution.py"
+          - id: extractor-methods
+            issues: "Operations #352"
+            tests: "tests/test_extraction_identity_gate.py tests/test_extraction_method_matrix.py tests/test_extractor_subsystem.py tests/test_extractor_next_data.py"
+          - id: extractor-failure-visibility
+            issues: "Operations #352"
+            tests: "tests/test_extractor_failure_visibility.py tests/test_extractor_parse_failure_contract.py tests/test_extractor_suppression_audit.py tests/test_extractor_generic_hardening.py"
+          - id: browser-acquisition
+            issues: "Operations #352"
+            tests: "tests/test_browser_acquisition.py"
+          - id: research-runtime
+            issues: "Operations #197"
+            tests: "tests/test_project_research.py tests/test_private_project_research.py tests/test_governed_research_retry.py tests/test_research_stop.py tests/test_research_adjudication.py"
+          - id: artifact-security-audit
+            issues: "Operations #155/#385"
+            tests: "tests/test_artifact_execution_policy.py tests/test_artifact_manifest.py tests/test_artifact_manifest_canonical.py tests/test_public_research_artifact_boundary.py tests/test_cross_repo_audit_runner.py tests/test_audit_policy_traceability.py"
+          - id: repository-policy
+            issues: "Foundation #263/#58"
+            tests: "tests/test_workflow_policy.py tests/test_cross_module_contract_edges.py tests/test_family_audit.py tests/test_family_semantic_audit.py"
+    env:
+      OPERATIONS_REPOSITORY: Z-Solo-King/operations
+      OPERATIONS_REF: ${{ inputs.operations_ref || 'c9073a85c4658d3c07b0b2f31f12e28581930763' }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout pinned Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.OPERATIONS_REPOSITORY }}
+          ref: ${{ env.OPERATIONS_REF }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Install Operations test environment
+        working-directory: operations
+        run: python -m pip install --disable-pip-version-check -e ".[test,browser]"
+
+      - name: Materialize pinned public core
+        working-directory: operations
+        run: python scripts/sync_public_core.py
+
+      - name: Run scenario
+        id: run
+        shell: bash
+        run: |
+          set +e
+          mkdir -p ../coverage-artifacts/${{ matrix.id }}
+          python -m pytest -q -ra ${{ matrix.tests }} > ../coverage-artifacts/${{ matrix.id }}/pytest.log 2>&1
+          status=$?
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          p=Path("../coverage-artifacts/${{ matrix.id }}/scenario.json")
+          p.write_text(json.dumps({
+              "schema":"coverage-matrix-result/v1",
+              "scenario":"${{ matrix.id }}",
+              "issue_refs":"${{ matrix.issues }}",
+              "operations_ref":os.environ.get("OPERATIONS_REF",""),
+              "pytest":"${{ matrix.tests }}",
+              "exit_code":int("${status}"),
+              "passed":int("${status}")==0,
+          }, indent=2, sort_keys=True)+"\n")
+          PY
+          exit "$status"
+
+      - name: Upload scenario evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-${{ matrix.id }}
+          path: coverage-artifacts/${{ matrix.id }}/
+          if-no-files-found: error
+          retention-days: 14
+
+  aggregate:
+    name: Aggregate 20 orthogonal scenarios
+    runs-on: ubuntu-latest
+    needs: scenario
+    if: always()
+    timeout-minutes: 10
+    steps:
+      - name: Download scenario evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: coverage-*
+          path: coverage-artifacts
+          merge-multiple: false
+
+      - name: Build coverage/failure map
+        id: report
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          results=[]
+          for p in Path("coverage-artifacts").glob("**/scenario.json"):
+              results.append(json.loads(p.read_text()))
+          results.sort(key=lambda x:x["scenario"])
+          failed=[x for x in results if not x["passed"]]
+          report={
+              "schema":"coverage-matrix-report/v1",
+              "scenario_count":len(results),
+              "passed_count":len(results)-len(failed),
+              "failed_count":len(failed),
+              "failed":failed,
+          }
+          Path("coverage-matrix-report.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(report,indent=2,sort_keys=True))
+          raise SystemExit(1 if failed else 0)
+
+      - name: Upload aggregate report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-matrix-report
+          path: |
+            coverage-artifacts/**/scenario.json
+            coverage-artifacts/**/pytest.log
+            coverage-matrix-report.json
+          if-no-files-found: error
+          retention-days: 30
