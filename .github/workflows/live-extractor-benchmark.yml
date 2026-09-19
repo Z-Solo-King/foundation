@@ -149,12 +149,11 @@ jobs:
           path: operations
 
       - name: Materialize pinned public foundation_core for extractor
+        working-directory: operations
         run: |
           set -euo pipefail
+          python scripts/sync_public_core.py
           test -f foundation_core/__init__.py
-          rm -rf operations/foundation_core
-          cp -R foundation_core operations/foundation_core
-          test -f operations/foundation_core/__init__.py
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
