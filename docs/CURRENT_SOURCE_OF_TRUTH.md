@@ -13,13 +13,13 @@ This is the compact synchronization record for future maintenance chats. Live Gi
 - Do not enable Cloudflare Workers Builds or Deploy Hooks as a competing deployment authority.
 
 ### Current revisions
-- Foundation main: 5f0c80e49930604780f7832ccbb2627faf252ca0
+- Foundation main: d2231195982b1a3a82a310a5e5a9e8d54c65c01d
 - Operations main: abf7007f4251f80280296c9855e4354502b98541
 - Current Foundation production pin for Operations: abf7007f4251f80280296c9855e4354502b98541
 
 ### Latest canonical production receipt
-Run: 35445595003 (#218)
-Foundation commit: 5f0c80e49930604780f7832ccbb2627faf252ca0
+Run: 35445892339 (#219)
+Foundation commit: d2231195982b1a3a82a310a5e5a9e8d54c65c01d
 Operations revision: abf7007f4251f80280296c9855e4354502b98541
 
 Passed:
