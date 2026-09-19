@@ -1,5 +1,58 @@
 # AI Agent Handoff — Research Intelligence Engine
 
+## 2026-09-19 LIVE STATE OVERRIDE — READ FIRST
+
+This section supersedes older observations in this file when they disagree with the live repositories or the latest execution evidence.
+
+### Exact repository state
+- Foundation `main`: `b1e0e6e74e0d3d9a3e280fa146a6c39503628274`.
+- Operations `main`: `b43c19554100bcdded0c6e70d966b30e5e4df04c`.
+- Canonical approved Operations production pin in Foundation: `b43c19554100bcdded0c6e70d966b30e5e4df04c`.
+- The intermediate Operations SSE revision `282dea820a1a2c24bdf7b5e23298e932ffd94767` is an ancestor of `b43c...`; it is not the current production pin.
+- Operations PR #510's SSE fix is included in current `b43c...`.
+
+### Latest production proof
+Canonical production run **35420683298** on Foundation commit `b1e0e6e...` reached Cloudflare deployment and passed:
+- Operations provenance: `github:b43c19554100bcdded0c6e70d966b30e5e4df04c`;
+- authenticated chat: PASS;
+- idempotent chat replay: PASS;
+- authenticated SSE lifecycle: PASS, including start/delta/done;
+- research POST/readback endpoints: HTTP 200.
+
+The run still failed because the bounded research smoke source `https://example.com/` returned:
+`DNS resolution failed for example.com`.
+Therefore production certification is **not complete**. Do not reopen the already-fixed SSE work as the primary blocker.
+
+### Latest GitHub Actions/nightly proof
+- Main-push control-plane probe run **35420683253**: PASS.
+- Main-push secret probe run **35420683329**: PASS.
+- Nightly multi-agent research run **35420680901** on the same main commit: failure with **zero jobs**.
+- Canonical nightly pin-repair run **35420682251**: failure before useful job evidence.
+
+Interpret zero-job nightly failures as a GitHub Actions control-plane/job-graph acceptance gate unless a future run produces executable job evidence. Do not change valid workflow permissions or semantics merely to manufacture jobs.
+
+### Open issue queue
+Foundation has **6 actual open issues**: #27, #58, #157, #259, #263, #452.
+Operations has **17 actual open issues**: #119, #120, #132, #145, #155, #164, #197, #329, #330, #331, #332, #333, #334, #340, #349, #352, #385.
+Issue count is not the goal; closure requires each issue's stated acceptance rung.
+
+### Current open Foundation PRs
+- **#671** current diagnostic investigation: exposes only bounded private chat-hop exception diagnostics; do not merge blindly; use to identify the next private binding failure if needed.
+- **#666** research transport fix candidate: fixes Cloudflare Python Worker fetch option calling conventions in HTTP/Wikimedia adapters; it has an obsolete base and must be rebased/reapplied on current `main` before merge.
+- **#650**, **#657**, **#661** are stale/superseded PRs and should not be resumed as independent work.
+
+### Required next strategy
+1. Reconfirm current `main` SHAs.
+2. Fix the **research DNS/transport failure** first using the smallest reproducible source adapter probe; verify the exact Cloudflare Python Workers fetch contract.
+3. Separately verify the nightly zero-job control-plane condition; do not mix it with research/runtime code changes.
+4. Run the canonical production workflow again.
+5. Only after production research succeeds, use the exact run receipt to advance #259.
+6. For nightly, retain #157/#263 until a real canonical nightly run creates and executes its expected lane/final-gate jobs.
+7. Treat chat/SSE/idempotency as already passing on current main unless a new run regresses them.
+
+Never infer L3/L4 runtime success from repository source alone, and never resurrect superseded SSE/service-binding work without new evidence.
+
+
 Updated: 2026-09-18
 
 This file is the canonical handoff for a new GitHub-maintenance chat/agent. Treat the live repositories and the latest production evidence as authoritative; do not revive older chat conclusions when newer commits supersede them.
