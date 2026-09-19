@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 
 from backend.core.workers_runtime import workers_fetch
 from .search import SearchResult, SearchAuthorization, search
+from .http import _call_fetcher
 
 WIKIPEDIA_AUTHORIZATION = SearchAuthorization(
     provider="wikimedia",
@@ -33,7 +34,11 @@ async def _implementation(query: str, limit: int, *, fetcher=None) -> list[Searc
         "origin": "*",
     })
     url = f"https://en.wikipedia.org/w/api.php?{params}"
-    response = await (fetcher or _workers_fetch())(url, {"headers": {"User-Agent": "ResearchIntelligenceEngine/0.1"}})
+    response = await _call_fetcher(
+        fetcher or _workers_fetch(),
+        url,
+        {"headers": {"User-Agent": "ResearchIntelligenceEngine/0.1"}},
+    )
     if int(response.status) != 200:
         raise RuntimeError(f"Wikimedia search failed with HTTP {response.status}")
     payload = await response.json()

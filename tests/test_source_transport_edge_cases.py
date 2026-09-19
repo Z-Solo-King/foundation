@@ -168,3 +168,22 @@ def test_fetch_public_url_reraises_unrelated_type_error():
         asyncio.run(http.fetch_public_url("https://example.com", fetcher=broken))
 
 
+
+
+def test_wikipedia_search_supports_workers_single_argument_fetch():
+    import backend.sources.wikipedia as wikipedia
+
+    class Response:
+        status = 200
+
+        async def json(self):
+            return {"query": {"search": []}}
+
+    calls = []
+
+    async def fetcher(url):
+        calls.append(url)
+        return Response()
+
+    assert asyncio.run(wikipedia._implementation("q", 2, fetcher=fetcher)) == []
+    assert calls and "w/api.php" in calls[0]
