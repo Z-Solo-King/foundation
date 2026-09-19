@@ -72,8 +72,10 @@ def test_workers_fetch_adapter_uses_js_fetch_for_request_options(monkeypatch) ->
 
     assert result == "response"
     assert captured["url"] == "https://example.com/dns-query"
-    assert captured["options"] is options
-    assert captured["request"] == (captured["url"], options)
+    assert captured["options"]["method"] == "POST"
+    assert captured["options"]["headers"]["Content-Type"] == "application/dns-message"
+    assert captured["options"]["body"] == list(b"payload")
+    assert captured["request"] == (captured["url"], captured["options"])
 
 
 def test_workers_fetch_adapter_without_options_uses_workers_fetch(monkeypatch) -> None:
