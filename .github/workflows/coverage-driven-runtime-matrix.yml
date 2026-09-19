@@ -126,28 +126,31 @@ jobs:
 
       - name: Run scenario
         id: run
+        working-directory: operations
         shell: bash
         run: |
           set +e
           mkdir -p ../coverage-artifacts/${{ matrix.id }}
           python -m pytest -q -ra ${{ matrix.tests }} > ../coverage-artifacts/${{ matrix.id }}/pytest.log 2>&1
           status=$?
-          python - <<'PY'
-          import json, os
+          SCENARIO_STATUS="$status" python - <<'PY'
+          import json
+          import os
           from pathlib import Path
-          p=Path("../coverage-artifacts/${{ matrix.id }}/scenario.json")
+
+          status = int(os.environ["SCENARIO_STATUS"])
+          p = Path("../coverage-artifacts/${{ matrix.id }}/scenario.json")
           p.write_text(json.dumps({
-              "schema":"coverage-matrix-result/v1",
-              "scenario":"${{ matrix.id }}",
-              "issue_refs":"${{ matrix.issues }}",
-              "operations_ref":os.environ.get("OPERATIONS_REF",""),
-              "pytest":"${{ matrix.tests }}",
-              "exit_code":int("${status}"),
-              "passed":int("${status}")==0,
-          }, indent=2, sort_keys=True)+"\n")
+              "schema": "coverage-matrix-result/v1",
+              "scenario": "${{ matrix.id }}",
+              "issue_refs": "${{ matrix.issues }}",
+              "operations_ref": os.environ.get("OPERATIONS_REF", ""),
+              "pytest": "${{ matrix.tests }}",
+              "exit_code": status,
+              "passed": status == 0,
+          }, indent=2, sort_keys=True) + "\n")
           PY
           exit "$status"
-
       - name: Upload scenario evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
