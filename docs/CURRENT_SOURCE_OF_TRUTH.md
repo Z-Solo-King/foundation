@@ -14,13 +14,13 @@ This is the compact synchronization record for future maintenance chats. Live Gi
 
 ### Current revisions
 - Foundation main: 23b72d2f4a6636df75ce13025ba349b3b47ea244
-- Operations main: 8f0cf156924fb9b96bfeaff02c8662d8a75e4f7c
-- Current Foundation production pin for Operations: 8f0cf156924fb9b96bfeaff02c8662d8a75e4f7c
+- Operations main: 53842db428ec5aad3de5496d4a9e04c20e4bf6c7
+- Current Foundation production pin for Operations: 53842db428ec5aad3de5496d4a9e04c20e4bf6c7
 
 ### Latest canonical production receipt
 Run: 35445892339 (#219)
 Foundation commit: 23b72d2f4a6636df75ce13025ba349b3b47ea244
-Operations revision: 8f0cf156924fb9b96bfeaff02c8662d8a75e4f7c
+Operations revision: 53842db428ec5aad3de5496d4a9e04c20e4bf6c7
 
 Passed:
 - public deployment/readiness;
@@ -82,7 +82,7 @@ The earlier post-DoH and pre-#219 synchronization snapshots below the live-state
 
 For maintenance decisions, always use:
 - current Foundation main `23b72d2f4a6636df75ce13025ba349b3b47ea244`;
-- current Operations main / production revision `8f0cf156924fb9b96bfeaff02c8662d8a75e4f7c`;
+- current Operations main / production revision `53842db428ec5aad3de5496d4a9e04c20e4bf6c7`;
 - latest canonical production receipt `35445892339` (#219);
 - the current 14-issue acceptance queue;
 - fresh GitHub/Cloudflare runtime evidence.
