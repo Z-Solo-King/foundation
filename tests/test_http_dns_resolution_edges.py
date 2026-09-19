@@ -11,7 +11,7 @@ class _DnsResponse:
         self.payload = payload
         self.headers = {"content-type": "application/dns-message"}
 
-    async def arrayBuffer(self):
+    async def bytes(self):
         return self.payload
 
 
@@ -135,6 +135,15 @@ def test_dns_over_https_truncates_long_transport_exception_detail(monkeypatch):
     assert "DNS resolution failed for example.com" in message
     assert len(message) < 650
     assert "x" * 241 not in message
+
+def test_dns_over_https_consumes_python_workers_response_bytes(monkeypatch):
+    payload = _dns_packet(record_type=1, addresses=("93.184.216.34",))
+
+    async def response_factory(_endpoint, _encoded_query):
+        return _DnsResponse(200, payload)
+
+    http, _ = _patch_doh(monkeypatch, response_factory)
+    assert asyncio.run(http._dns_over_https("example.com", "A")) == ["93.184.216.34"]
 
 
 def test_doh_request_rejects_non_allowlisted_endpoint():
