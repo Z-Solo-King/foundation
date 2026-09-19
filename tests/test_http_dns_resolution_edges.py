@@ -131,25 +131,31 @@ def test_doh_request_rejects_non_allowlisted_endpoint():
         asyncio.run(http._doh_request("https://attacker.example/dns-query", "AQID"))
 
 
-def test_doh_request_constructs_fixed_request_and_get_options(monkeypatch):
-    import backend.sources.http as http
+def test_doh_request_constructs_js_request_and_get_options(monkeypatch):
+    import sys
+    import types
 
+    import backend.sources.http as http
     captured = {}
 
+    class FakeObject:
+        @staticmethod
+        def fromEntries(value):
+            return value
+
     class FakeRequest:
-        def __init__(self, url, **options):
+        @classmethod
+        def new(cls, url, options):
             captured["url"] = url
             captured["options"] = options
+            return (url, options)
 
     async def fake_fetch(request):
         captured["request"] = request
         return "response"
 
-    monkeypatch.setitem(
-        __import__("sys").modules,
-        "workers",
-        __import__("types").SimpleNamespace(Request=FakeRequest, fetch=fake_fetch),
-    )
+    monkeypatch.setitem(sys.modules, "js", types.SimpleNamespace(Object=FakeObject, Request=FakeRequest, fetch=fake_fetch))
+    monkeypatch.setitem(sys.modules, "pyodide.ffi", types.SimpleNamespace(to_js=lambda value, dict_converter=None: dict_converter(value) if dict_converter else value))
 
     result = asyncio.run(http._doh_request("https://cloudflare-dns.com/dns-query", "AQID"))
     assert result == "response"
