@@ -22,6 +22,47 @@ class ArtifactStore:
         raise NotImplementedError
 
 
+def _response_bytes(value) -> bytes:
+    """Convert Workers/Pyodide binary response values into native Python bytes."""
+    if isinstance(value, bytes):
+        return value
+    if isinstance(value, bytearray):
+        return bytes(value)
+    if isinstance(value, memoryview):
+        return value.tobytes()
+    to_py = getattr(value, "to_py", None)
+    if callable(to_py):
+        converted = to_py()
+        if isinstance(converted, bytes):
+            return converted
+        if isinstance(converted, bytearray):
+            return bytes(converted)
+        if isinstance(converted, memoryview):
+            return converted.tobytes()
+        to_bytes = getattr(converted, "tobytes", None)
+        if callable(to_bytes):
+            converted = to_bytes()
+            if isinstance(converted, bytes):
+                return converted
+    to_bytes = getattr(value, "to_bytes", None)
+    if callable(to_bytes):
+        converted = to_bytes()
+        if isinstance(converted, bytes):
+            return converted
+        if isinstance(converted, bytearray):
+            return bytes(converted)
+        if isinstance(converted, memoryview):
+            return converted.tobytes()
+        nested_to_py = getattr(converted, "to_py", None)
+        if callable(nested_to_py):
+            converted = nested_to_py()
+            if isinstance(converted, memoryview):
+                return converted.tobytes()
+            if isinstance(converted, (bytes, bytearray)):
+                return bytes(converted)
+    return bytes(value)
+
+
 class B2ArtifactStore(ArtifactStore):
     """Minimal B2 S3-compatible client using AWS Signature V4."""
 
@@ -131,7 +172,7 @@ class B2ArtifactStore(ArtifactStore):
         if not (200 <= response.status < 300):
             detail = await response.text()
             raise RuntimeError(f"B2 GET failed ({response.status}): {detail[:500]}")
-        return await response.bytes()
+        return _response_bytes(await response.bytes())
 
     async def delete(self, key: str) -> None:
         response = await self._request("DELETE", key)
