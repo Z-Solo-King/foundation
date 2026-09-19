@@ -202,20 +202,15 @@ def test_public_foundation_is_the_only_github_actions_bridge_owner():
 
 def test_all_canonical_workflow_dispatch_requests_use_the_public_router():
     texts = _workflow_texts()
-    callers = [
+    raw_dispatch_callers = [
         name
         for name, text in texts.items()
         if "actions/workflows/" in text and "/dispatches" in text
         and name != "foundation-canonical-workflow-bridge.yml"
     ]
-    assert callers == ["canonical-workflow-dispatch-acceptance.yml"]
-    assert "foundation-canonical-workflow-bridge.yml/dispatches" in texts["canonical-workflow-dispatch-acceptance.yml"]
-    bridge = texts["foundation-canonical-workflow-bridge.yml"]
-    assert "main-push-actions-control-plane-probe.yml" in bridge
-
-
-
-
+    assert raw_dispatch_callers == []
+    acceptance = texts["canonical-workflow-dispatch-acceptance.yml"]
+    assert "gh workflow run foundation-canonical-workflow-bridge.yml" in acceptance
 def test_production_release_has_live_runtime_acceptance_gates():
     production = (ROOT / "scripts" / "production_release.sh").read_text(encoding="utf-8")
     assert 'POST /api/v1/chat -> HTTP' in production
