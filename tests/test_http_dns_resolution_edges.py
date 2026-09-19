@@ -136,22 +136,13 @@ def test_doh_request_constructs_fixed_url_and_get_options(monkeypatch):
 
     captured = {}
 
-    class FakeObject:
-        @staticmethod
-        def fromEntries(value):
-            return value
-
-    async def fake_fetch(url, options):
+    async def fake_fetch(url, **options):
         captured["url"] = url
         captured["options"] = options
         return "response"
 
-    monkeypatch.setitem(__import__("sys").modules, "js", __import__("types").SimpleNamespace(
-        Object=FakeObject,
+    monkeypatch.setitem(__import__("sys").modules, "workers", __import__("types").SimpleNamespace(
         fetch=fake_fetch,
-    ))
-    monkeypatch.setitem(__import__("sys").modules, "pyodide.ffi", __import__("types").SimpleNamespace(
-        to_js=lambda value, dict_converter=None: dict_converter(value) if dict_converter else value,
     ))
 
     result = asyncio.run(http._doh_request(
@@ -160,8 +151,8 @@ def test_doh_request_constructs_fixed_url_and_get_options(monkeypatch):
     ))
     assert result == "response"
     assert captured["url"] == "https://cloudflare-dns.com/dns-query?dns=AQID"
-    assert captured["options"]["method"] == "GET"
     assert captured["options"]["headers"]["Accept"] == "application/dns-message"
+    assert captured["options"]["cache"] == "no-store"
 
 
 def test_public_destination_fails_when_dns_returns_no_addresses():
