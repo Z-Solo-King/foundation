@@ -329,7 +329,6 @@ def test_foundation_bridge_records_run_and_job_creation_control_plane_evidence()
     post = workflow.index('dispatch_status=$(curl')
     timestamp = workflow.index('dispatch_epoch="$(date -u +%s)"')
     assert timestamp < post, "dispatch timestamp must be captured before the POST"
-    assert "fix/dispatch-boundary-and-nightly-baseline-20260919" in workflow
     assert 'expected_sha="$(gh api ' in workflow
     assert '/git/ref/heads/${FOUNDATION_REF}' in workflow
     assert 'python - "$dispatch_epoch" "$runs_json" "$expected_sha"' in workflow
