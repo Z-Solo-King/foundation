@@ -11,14 +11,18 @@ DNS resolution and network connection. Resolution failures fail closed.
 """
 
 from dataclasses import dataclass
-from ipaddress import ip_address
-from urllib.parse import quote, urljoin, urlparse, urlunparse
+from ipaddress import ip_address, IPv4Address, IPv6Address
+import struct
+from urllib.parse import urljoin, urlparse, urlunparse
 
 from backend.core.workers_runtime import workers_fetch
 
 MAX_REDIRECTS = 3
 MAX_BYTES = 1_000_000
-DNS_OVER_HTTPS_ENDPOINT = "https://cloudflare-dns.com/dns-query"
+DNS_OVER_HTTPS_ENDPOINTS = (
+    "https://cloudflare-dns.com/dns-query",
+    "https://dns.google/dns-query",
+)
 
 
 @dataclass(frozen=True)
@@ -77,28 +81,117 @@ def validate_url(url: str) -> None:
     canonicalize_url(url)
 
 
-async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
-    fetcher = _workers_fetch()
-    url = f"{DNS_OVER_HTTPS_ENDPOINT}?name={quote(hostname, safe='')}&type={record_type}"
-    response = await _call_fetcher(
-        fetcher,
-        url,
-        {"headers": {"Accept": "application/dns-json", "Cache-Control": "no-store"}},
-    )
-    if int(response.status) != 200:
-        raise RuntimeError(f"DNS resolution failed for {hostname}")
-    payload = await response.json()
-    if not isinstance(payload, dict):
-        raise RuntimeError(f"invalid DNS response for {hostname}")
-    answers = payload.get("Answer") or ()
-    values = []
-    for answer in answers:
-        if not isinstance(answer, dict) or int(answer.get("type", 0)) not in {1, 28}:
+def _dns_query_payload(hostname: str, record_type: str) -> bytes:
+    """Build a bounded RFC 1035 DNS query for DoH POST without tainting the URL."""
+    qtype = {"A": 1, "AAAA": 28}.get(record_type)
+    if qtype is None:
+        raise ValueError("unsupported DNS record type")
+    host = hostname.rstrip(".")
+    if not host or len(host) > 253:
+        raise ValueError("invalid DNS hostname")
+    try:
+        ascii_host = host.encode("idna").decode("ascii")
+    except UnicodeError as exc:
+        raise ValueError("invalid DNS hostname") from exc
+    labels = ascii_host.split(".")
+    qname = b"".join(bytes((len(label),)) + label.encode("ascii") for label in labels) + b"\x00"
+    return b"\x00\x00\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00" + qname + struct.pack("!HH", qtype, 1)
+
+
+def _dns_skip_name(payload: bytes, offset: int) -> int:
+    while True:
+        if offset >= len(payload):
+            raise ValueError("truncated DNS response")
+        length = payload[offset]
+        if length == 0:
+            return offset + 1
+        if length & 0xC0 == 0xC0:
+            if offset + 1 >= len(payload):
+                raise ValueError("truncated DNS name pointer")
+            return offset + 2
+        if length & 0xC0:
+            raise ValueError("invalid DNS label")
+        offset += 1 + length
+        if length > 63 or offset > len(payload):
+            raise ValueError("truncated DNS label")
+
+
+def _dns_parse_addresses(payload: bytes, record_type: str) -> list[str]:
+    if len(payload) < 12:
+        raise ValueError("truncated DNS response")
+    _ident, flags, question_count, answer_count, _authority_count, _additional_count = struct.unpack("!HHHHHH", payload[:12])
+    if flags & 0x000F:
+        raise ValueError("DNS resolver returned an error status")
+    if question_count > 64 or answer_count > 64:
+        raise ValueError("DNS response exceeds answer budget")
+
+    offset = 12
+    for _ in range(question_count):
+        offset = _dns_skip_name(payload, offset)
+        if offset + 4 > len(payload):
+            raise ValueError("truncated DNS question")
+        offset += 4
+
+    wanted_type = {"A": 1, "AAAA": 28}[record_type]
+    values: list[str] = []
+    for _ in range(answer_count):
+        offset = _dns_skip_name(payload, offset)
+        if offset + 10 > len(payload):
+            raise ValueError("truncated DNS answer")
+        rr_type, rr_class, _ttl, rdlength = struct.unpack("!HHIH", payload[offset:offset + 10])
+        offset += 10
+        if offset + rdlength > len(payload):
+            raise ValueError("truncated DNS record")
+        rdata = payload[offset:offset + rdlength]
+        offset += rdlength
+        if rr_class != 1 or rr_type != wanted_type:
             continue
-        value = str(answer.get("data", "")).strip()
-        if value:
-            values.append(value)
+        if rr_type == 1 and rdlength == 4:
+            values.append(str(IPv4Address(rdata)))
+        elif rr_type == 28 and rdlength == 16:
+            values.append(str(IPv6Address(rdata)))
     return values
+
+
+async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
+    payload = _dns_query_payload(hostname, record_type)
+    fetcher = _workers_fetch()
+    failures: list[str] = []
+    invalid_response = False
+    for endpoint in DNS_OVER_HTTPS_ENDPOINTS:
+        try:
+            response = await _call_fetcher(
+                fetcher,
+                endpoint,
+                {
+                    "method": "POST",
+                    "headers": {
+                        "Accept": "application/dns-message",
+                        "Content-Type": "application/dns-message",
+                        "Cache-Control": "no-store",
+                    },
+                    "body": payload,
+                },
+            )
+            if int(response.status) != 200:
+                failures.append(f"{endpoint}: HTTP {int(response.status)}")
+                continue
+            raw = bytes(await response.arrayBuffer())
+            try:
+                values = _dns_parse_addresses(raw, record_type)
+            except ValueError:
+                invalid_response = True
+                failures.append(f"{endpoint}: invalid DNS response")
+                continue
+            if values:
+                return values
+            failures.append(f"{endpoint}: no {record_type} answers")
+        except Exception as exc:
+            failures.append(f"{endpoint}: {type(exc).__name__}")
+    detail = "; ".join(failures[:2])
+    if invalid_response and all("invalid DNS response" in failure for failure in failures):
+        raise RuntimeError(f"invalid DNS response for {hostname}" + (f" ({detail})" if detail else ""))
+    raise RuntimeError(f"DNS resolution failed for {hostname}" + (f" ({detail})" if detail else ""))
 
 
 async def _validate_public_destination(url: str, *, resolver=None) -> None:
