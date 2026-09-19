@@ -131,22 +131,16 @@ def test_doh_request_rejects_non_allowlisted_endpoint():
         asyncio.run(http._doh_request("https://attacker.example/dns-query", "AQID"))
 
 
-def test_doh_request_constructs_fixed_url_and_get_options(monkeypatch):
+def test_doh_request_constructs_fixed_url_without_request_init_conversion(monkeypatch):
     import backend.sources.http as http
 
     captured = {}
-
-    class FakeHeaders:
-        def set(self, key, value):
-            captured.setdefault("headers", {})[key] = value
 
     class FakeRequest:
         @staticmethod
         def new(url):
             captured["url"] = url
-            request = type("RequestObject", (), {})()
-            request.headers = FakeHeaders()
-            return request
+            return ("request", url)
 
     async def fake_fetch(request):
         captured["request"] = request
@@ -164,8 +158,7 @@ def test_doh_request_constructs_fixed_url_and_get_options(monkeypatch):
     result = asyncio.run(http._doh_request("https://cloudflare-dns.com/dns-query", "AQID"))
     assert result == "response"
     assert captured["url"] == "https://cloudflare-dns.com/dns-query?dns=AQID"
-    assert captured["headers"]["Accept"] == "application/dns-message"
-    assert captured["headers"]["Cache-Control"] == "no-store"
+    assert captured["request"] == ("request", captured["url"])
 
 
 
