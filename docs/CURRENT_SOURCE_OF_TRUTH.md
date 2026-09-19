@@ -14,8 +14,8 @@ This is a compact synchronization record for future maintenance chats. Live GitH
 
 ### Current revisions
 - Foundation main: `33331e37c66fb77b60098e8adb3c80ef63942bc6`
-- Operations main: `f132dfaf3f44fc992ad9f31a5a520851f6111c0e`
-- Current Foundation production pin for Operations: `f132dfaf3f44fc992ad9f31a5a520851f6111c0e`
+- Operations main: `c940c7dc7fdfe4c4fb344757b48670747321d9a6`
+- Current Foundation production pin for Operations: `c940c7dc7fdfe4c4fb344757b48670747321d9a6`
 
 ### Latest canonical production receipt
 Run: `35430074029`
@@ -74,6 +74,6 @@ The latest authoritative production receipt before the DoH merge still proves de
 
 Foundation main now includes the workflow-bridge dispatch timestamp race fix (PR #708, merged as `33331e37c66fb77b60098e8adb3c80ef63942bc6`).
 
-The canonical production and nightly paths are being advanced from obsolete Operations revision `8258d0bcee2bef9427a60aed522a14e0ff95ea2b` to the current immutable Operations main `f132dfaf3f44fc992ad9f31a5a520851f6111c0e` in PR #709.
+The canonical production and nightly paths are being advanced from obsolete Operations revision `8258d0bcee2bef9427a60aed522a14e0ff95ea2b` to the current immutable Operations main `c940c7dc7fdfe4c4fb344757b48670747321d9a6` in PR #709.
 
 No fresh post-change production receipt exists yet. Do not claim Cloudflare L4 certification or close runtime-gated issues until the canonical production workflow produces current evidence.
