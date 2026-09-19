@@ -100,6 +100,8 @@ def test_workers_fetch_adapter_falls_back_to_workers_request_when_js_ffi_is_miss
 
     class FakeRequest:
         def __init__(self, url, **options):
+            self.url = url
+            self.options = options
             captured["request"] = (url, options)
 
     async def fake_fetch(request):
@@ -130,8 +132,8 @@ def test_workers_fetch_adapter_falls_back_to_workers_request_when_js_ffi_is_miss
     assert result == "response"
     assert captured["request"] == ("https://example.com", options)
     assert captured["fetch"].__class__ is FakeRequest
-    assert captured["fetch"].__dict__["url"] == "https://example.com"
-    assert captured["fetch"].__dict__["options"] == options
+    assert captured["fetch"].url == "https://example.com"
+    assert captured["fetch"].options == options
 
 
 def test_workers_fetch_adapter_falls_back_to_direct_fetch_when_request_type_is_missing(monkeypatch) -> None:
