@@ -1,5 +1,68 @@
 # AI Agent Handoff — Research Intelligence Engine
 
+## 2026-09-19 LIVE STATE OVERRIDE — CURRENT SESSION HANDOFF
+
+This section is authoritative over every older section below. It was synchronized from the live GitHub state after the previous maintenance chat ended.
+
+### Exact repository state
+- Foundation `main`: `95840f563b51f08c38996d673034ca49fc539f79`.
+- Operations `main`: `035bb38e54aa2b81a1e41b95ac01e7d352b75d83`.
+- Foundation's canonical production Operations pin: `035bb38e54aa2b81a1e41b95ac01e7d352b75d83`.
+- Operations PR #515 is merged into `main`; it adds D1-backed production memory and D1-backed task replay nonce protection.
+- Foundation PR #683 is merged. It added the RFC 8484 DoH GET/wire-format transport, but the merged path still fails in the live Python Worker with a runtime `TypeError` during the DoH fetch call.
+
+### Latest canonical production evidence
+Latest production run: **35430074029** on Foundation `95840f563b51f08c38996d673034ca49fc539f79`.
+
+Observed:
+- public Worker deploy/readiness: PASS;
+- private Operations deploy/provenance: PASS;
+- Operations provenance: `github:035bb38e54aa2b81a1e41b95ac01e7d352b75d83`;
+- authenticated chat: PASS;
+- idempotent chat replay: PASS;
+- authenticated SSE lifecycle: PASS;
+- research endpoint and run readback: HTTP 200;
+- research source ingestion: FAIL only at DoH transport:
+  `DNS resolution failed for example.com (https://cloudflare-dns.com/dns-query: TypeError; https://dns.google/dns-query: TypeError)`.
+
+Therefore the current production blocker is **Python Workers DoH transport invocation**, not chat, replay, SSE, service binding, or Operations deployment.
+
+### Current DoH PR state
+Three Foundation follow-up PRs exist for the same blocker:
+- #684 — native Worker Fetch options for DoH runtime; no completed check evidence recorded in the current snapshot.
+- #687 — construct the DoH Request through Python Workers FFI; **all required PR checks passed** on head `dd4bea5dbaa09601e082f55f5b9de732f1121ca6`, but the PR targets an older Foundation base and must be reconciled with current `main` before merge.
+- #691 — avoid Python Workers RequestInit conversion in DoH; newest candidate, but current snapshot has no completed check evidence.
+
+Do not create a fourth competing DoH implementation. Start by comparing #687 and #691 against current `main`, then keep one canonical fix path.
+
+### Nightly/control-plane evidence
+Latest canonical nightly-related push on current `main`: **35430072561**.
+- No jobs were created.
+- This remains a GitHub Actions control-plane/job-graph acceptance problem.
+- Do not weaken permissions or workflow semantics merely to manufacture jobs.
+- Keep #157 and #263 open until a supported canonical run creates and executes the expected jobs and retains L3 evidence.
+
+### Current issue queue
+There are still **23 open issues** across the two active repositories:
+- Foundation: #27, #58, #157, #259, #263, #452.
+- Operations: #119, #120, #132, #145, #155, #164, #197, #329, #330, #331, #332, #333, #334, #340, #349, #352, #385.
+
+The issue count is not a completion target. Most Operations issues are runtime/evidence gates.
+
+### Cross-chat execution rule
+The next agent must:
+1. read this live-state override first;
+2. verify current `main` SHAs before mutating anything;
+3. treat production run **35430074029** as the current authoritative runtime receipt;
+4. do not reopen solved chat/replay/SSE/service-binding work without a new failing receipt;
+5. resolve the single DoH transport blocker through one canonical PR path;
+6. separately diagnose nightly zero-job control-plane behavior;
+7. then rerun the canonical production release and convert exact evidence into issue updates.
+
+Never infer runtime closure from source code or unit tests alone.
+
+---
+
 ## 2026-09-19 LIVE STATE OVERRIDE — READ FIRST
 
 This section supersedes older observations in this file when they disagree with the live repositories or the latest execution evidence.
