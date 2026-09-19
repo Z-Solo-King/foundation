@@ -14,6 +14,9 @@ class _DnsResponse:
     async def bytes(self):
         return self.payload
 
+    async def arrayBuffer(self):
+        return self.payload
+
 
 def _qname(hostname="example.com"):
     return b"".join(bytes((len(label),)) + label.encode() for label in hostname.split(".")) + b"\x00"
@@ -136,7 +139,7 @@ def test_dns_over_https_truncates_long_transport_exception_detail(monkeypatch):
     assert len(message) < 650
     assert "x" * 241 not in message
 
-def test_dns_over_https_consumes_python_workers_response_bytes(monkeypatch):
+def test_dns_over_https_consumes_js_fetch_response_array_buffer(monkeypatch):
     payload = _dns_packet(record_type=1, addresses=("93.184.216.34",))
 
     async def response_factory(_endpoint, _encoded_query):
@@ -292,42 +295,30 @@ def test_doh_request_rejects_non_allowlisted_endpoint():
         asyncio.run(http._doh_request("https://attacker.example/dns-query", "AQID"))
 
 
-def test_doh_request_uses_native_request_with_workers_sdk_fetch(monkeypatch):
-    import sys
-    import types
-
+def test_doh_request_uses_js_fetch_with_url_and_headers(monkeypatch):
     import backend.sources.http as http
 
     captured = {}
 
-    class FakeHeaders:
-        def set(self, key, value):
-            captured.setdefault("headers", {})[key] = value
-
-    class FakeRequest:
-        @staticmethod
-        def new(url):
+    def fake_workers_fetch():
+        async def fetcher(url, options):
             captured["url"] = url
-            request = type("RequestObject", (), {})()
-            request.headers = FakeHeaders()
-            captured["request"] = request
-            return request
+            captured["options"] = options
+            return "response"
+        return fetcher
 
-    async def fake_fetch(request):
-        captured["fetched_request"] = request
-        return "response"
-
-    monkeypatch.setitem(sys.modules, "js", types.SimpleNamespace(Request=FakeRequest))
-    monkeypatch.setitem(sys.modules, "workers", types.SimpleNamespace(fetch=fake_fetch))
-
+    monkeypatch.setattr(http, "_workers_fetch", fake_workers_fetch)
     result = asyncio.run(
         http._doh_request("https://cloudflare-dns.com/dns-query", "AQID")
     )
     assert result == "response"
     assert captured["url"] == "https://cloudflare-dns.com/dns-query?dns=AQID"
-    assert captured["headers"]["Accept"] == "application/dns-message"
-    assert captured["headers"]["Cache-Control"] == "no-store"
-    assert captured["fetched_request"] is captured["request"]
+    assert captured["options"] == {
+        "headers": {
+            "Accept": "application/dns-message",
+            "Cache-Control": "no-store",
+        }
+    }
 
 
 def test_public_destination_fails_when_dns_returns_no_addresses():
