@@ -1,4 +1,4 @@
-"""Bounded HTTP acquisition primitive for Cloudflare Python Workers.
+""""Bounded HTTP acquisition primitive for Cloudflare Python Workers.
 
 This is a transport primitive, not a search engine. It follows only normal
 public HTTP access paths, limits redirects and response size, and rejects
@@ -83,6 +83,7 @@ def validate_url(url: str) -> None:
 async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
     fetcher = _workers_fetch()
     failures: list[str] = []
+    invalid_response = False
     for endpoint, headers in DNS_OVER_HTTPS_ENDPOINTS:
         url = f"{endpoint}?name={quote(hostname, safe='')}&type={record_type}"
         try:
@@ -96,6 +97,7 @@ async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
                 continue
             payload = await response.json()
             if not isinstance(payload, dict):
+                invalid_response = True
                 failures.append(f"{endpoint}: invalid JSON object")
                 continue
             answers = payload.get("Answer") or ()
@@ -111,6 +113,9 @@ async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
             failures.append(f"{endpoint}: no A/AAAA answers")
         except Exception as exc:
             failures.append(f"{endpoint}: {type(exc).__name__}")
+    if invalid_response and all("invalid JSON object" in failure for failure in failures):
+        detail = "; ".join(failures[:2])
+        raise RuntimeError(f"invalid DNS response for {hostname}" + (f" ({detail})" if detail else ""))
     detail = "; ".join(failures[:2])
     raise RuntimeError(f"DNS resolution failed for {hostname}" + (f" ({detail})" if detail else ""))
 
