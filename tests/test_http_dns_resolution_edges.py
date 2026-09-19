@@ -123,15 +123,6 @@ def test_doh_request_constructs_fixed_url_and_get_options(monkeypatch):
 
     captured = {}
 
-    class FakeSearchParams:
-        def set(self, key, value):
-            captured["query"] = (key, value)
-
-    class FakeURL:
-        def __init__(self, endpoint):
-            captured["endpoint"] = endpoint
-            self.searchParams = FakeSearchParams()
-
     class FakeObject:
         @staticmethod
         def fromEntries(value):
@@ -144,7 +135,6 @@ def test_doh_request_constructs_fixed_url_and_get_options(monkeypatch):
 
     monkeypatch.setitem(__import__("sys").modules, "js", __import__("types").SimpleNamespace(
         Object=FakeObject,
-        URL=FakeURL,
         fetch=fake_fetch,
     ))
     monkeypatch.setitem(__import__("sys").modules, "pyodide.ffi", __import__("types").SimpleNamespace(
@@ -156,8 +146,7 @@ def test_doh_request_constructs_fixed_url_and_get_options(monkeypatch):
         "AQID",
     ))
     assert result == "response"
-    assert captured["endpoint"] == "https://cloudflare-dns.com/dns-query"
-    assert captured["query"] == ("dns", "AQID")
+    assert captured["url"] == "https://cloudflare-dns.com/dns-query?dns=AQID"
     assert captured["options"]["method"] == "GET"
     assert captured["options"]["headers"]["Accept"] == "application/dns-message"
 
