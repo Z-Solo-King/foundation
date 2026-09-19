@@ -18,7 +18,10 @@ from backend.core.workers_runtime import workers_fetch
 
 MAX_REDIRECTS = 3
 MAX_BYTES = 1_000_000
-DNS_OVER_HTTPS_ENDPOINT = "https://cloudflare-dns.com/dns-query"
+DNS_OVER_HTTPS_ENDPOINTS = (
+    ("https://cloudflare-dns.com/dns-query", {"Accept": "application/dns-json", "Cache-Control": "no-store"}),
+    ("https://dns.google/resolve", {"Cache-Control": "no-store"}),
+)
 
 
 @dataclass(frozen=True)
@@ -79,26 +82,37 @@ def validate_url(url: str) -> None:
 
 async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
     fetcher = _workers_fetch()
-    url = f"{DNS_OVER_HTTPS_ENDPOINT}?name={quote(hostname, safe='')}&type={record_type}"
-    response = await _call_fetcher(
-        fetcher,
-        url,
-        {"headers": {"Accept": "application/dns-json", "Cache-Control": "no-store"}},
-    )
-    if int(response.status) != 200:
-        raise RuntimeError(f"DNS resolution failed for {hostname}")
-    payload = await response.json()
-    if not isinstance(payload, dict):
-        raise RuntimeError(f"invalid DNS response for {hostname}")
-    answers = payload.get("Answer") or ()
-    values = []
-    for answer in answers:
-        if not isinstance(answer, dict) or int(answer.get("type", 0)) not in {1, 28}:
-            continue
-        value = str(answer.get("data", "")).strip()
-        if value:
-            values.append(value)
-    return values
+    failures: list[str] = []
+    for endpoint, headers in DNS_OVER_HTTPS_ENDPOINTS:
+        url = f"{endpoint}?name={quote(hostname, safe='')}&type={record_type}"
+        try:
+            response = await _call_fetcher(
+                fetcher,
+                url,
+                {"headers": headers},
+            )
+            if int(response.status) != 200:
+                failures.append(f"{endpoint}: HTTP {int(response.status)}")
+                continue
+            payload = await response.json()
+            if not isinstance(payload, dict):
+                failures.append(f"{endpoint}: invalid JSON object")
+                continue
+            answers = payload.get("Answer") or ()
+            values = []
+            for answer in answers:
+                if not isinstance(answer, dict) or int(answer.get("type", 0)) not in {1, 28}:
+                    continue
+                value = str(answer.get("data", "")).strip()
+                if value:
+                    values.append(value)
+            if values:
+                return values
+            failures.append(f"{endpoint}: no A/AAAA answers")
+        except Exception as exc:
+            failures.append(f"{endpoint}: {type(exc).__name__}")
+    detail = "; ".join(failures[:2])
+    raise RuntimeError(f"DNS resolution failed for {hostname}" + (f" ({detail})" if detail else ""))
 
 
 async def _validate_public_destination(url: str, *, resolver=None) -> None:
