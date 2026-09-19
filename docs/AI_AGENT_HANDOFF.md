@@ -37,9 +37,11 @@ Operations has **17 actual open issues**: #119, #120, #132, #145, #155, #164, #1
 Issue count is not the goal; closure requires each issue's stated acceptance rung.
 
 ### Current open Foundation PRs
-- **#671** current diagnostic investigation: exposes only bounded private chat-hop exception diagnostics; do not merge blindly; use to identify the next private binding failure if needed.
-- **#666** research transport fix candidate: fixes Cloudflare Python Worker fetch option calling conventions in HTTP/Wikimedia adapters; it has an obsolete base and must be rebased/reapplied on current `main` before merge.
-- **#650**, **#657**, **#661** are stale/superseded PRs and should not be resumed as independent work.
+- **#675** canonical workflow bridge control-plane evidence: verifies post-dispatch run creation and job creation, explicitly surfacing accepted-trigger/zero-job states.
+- **#674** research DNS transport fix: adds a bounded secondary DNS-over-HTTPS resolver while preserving fail-closed public-address validation.
+- **#673** nightly artifact-integrity contract: validates the complete lane/diagnosis/project-summary/baseline bundle.
+- **#671** remains diagnostic-only and should not be merged blindly.
+- **#666**, **#650**, **#657**, **#661** are stale/superseded and should not be resumed.
 
 ### Required next strategy
 1. Reconfirm current `main` SHAs.
