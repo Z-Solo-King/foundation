@@ -10,6 +10,7 @@ PROJECT_CATEGORIES = {
     "project_architecture",
     "project_status",
     "research_artifacts",
+    "nightly_artifact_integrity",
     "extraction_quality",
     "regression_analysis",
     "ci_health",
@@ -29,6 +30,16 @@ REQUIRED_CATALOG_PATHS = {
     "benchmark/nightly/research_ledger.py",
     "benchmark/autonomous_scorecard.py",
     "benchmark/multi_agent/baseline.py",
+}
+
+NIGHTLY_LANE_COUNT = 3
+NIGHTLY_PROGRAMS_PER_LANE = 8
+NIGHTLY_PROGRAM_COUNT = 24
+NIGHTLY_LANE_STATES = {
+    "live_research_executed",
+    "dry_run",
+    "blocked_before_execution",
+    "lane_failure",
 }
 
 
@@ -59,6 +70,126 @@ def _scorecard_evidence_boundary_errors(scorecard: dict[str, Any]) -> list[str]:
             "field-level correctness claims require an explicit verified oracle; "
             "transport and structural benchmark signals are not product-field correctness"
         )
+    return errors
+
+
+def _nightly_artifact_errors(root: Path) -> list[str]:
+    """Validate the nightly lane/diagnosis/summary/baseline bundle when present."""
+    lane_paths = {
+        lane: root / ".runtime" / "artifacts" / f"nightly-lane-{lane}-status.json"
+        for lane in range(NIGHTLY_LANE_COUNT)
+    }
+    discovered_lane_paths = {
+        lane: paths[0]
+        for lane, paths in lane_paths.items()
+        if (paths := _find_named_artifacts(root, paths.name))
+    }
+
+    if not discovered_lane_paths:
+        for lane in range(NIGHTLY_LANE_COUNT):
+            discovered = _find_named_artifacts(root, f"nightly-lane-{lane}-status.json")
+            if discovered:
+                discovered_lane_paths[lane] = discovered[0]
+
+    artifacts_present = bool(discovered_lane_paths)
+    if not artifacts_present:
+        return []
+
+    errors: list[str] = []
+    missing_lanes = sorted(set(range(NIGHTLY_LANE_COUNT)) - set(discovered_lane_paths))
+    errors.extend(f"nightly artifact bundle missing lane status: lane {lane}" for lane in missing_lanes)
+    if missing_lanes:
+        return errors
+
+    statuses = [_load(discovered_lane_paths[lane]) for lane in range(NIGHTLY_LANE_COUNT)]
+    schemas = {str(item.get("schema", "")) for item in statuses}
+    if schemas != {"nightly-research-lane-status/v1"}:
+        errors.append(f"unexpected nightly lane status schemas: {sorted(schemas)}")
+
+    run_ids = {str(item.get("run_id", "")) for item in statuses}
+    if len(run_ids) != 1 or "" in run_ids:
+        errors.append("nightly lane statuses must share one non-empty run_id")
+
+    modes = {str(item.get("mode", "")) for item in statuses}
+    if len(modes) != 1 or not modes.issubset({"live", "dry-run"}):
+        errors.append(f"nightly lane statuses must share one valid mode: {sorted(modes)}")
+
+    operations_revisions = {str(item.get("operations_revision", "")) for item in statuses}
+    if len(operations_revisions) != 1 or "" in operations_revisions:
+        errors.append("nightly lane statuses must share one non-empty Operations revision")
+
+    for lane, status in enumerate(statuses):
+        if int(status.get("lane", -1)) != lane:
+            errors.append(f"nightly lane {lane} status has mismatched lane field")
+        state = str(status.get("state", ""))
+        if state not in NIGHTLY_LANE_STATES:
+            errors.append(f"nightly lane {lane} has unknown state: {state}")
+        program_count = int(status.get("program_count", 0) or 0)
+        if program_count != NIGHTLY_PROGRAMS_PER_LANE:
+            errors.append(f"nightly lane {lane} must report exactly 8 programs, got {program_count}")
+        programs = {str(program) for program in (status.get("programs") or [])}
+        expected = {f"lane{lane}-slot{slot}" for slot in range(NIGHTLY_PROGRAMS_PER_LANE)}
+        if state in {"live_research_executed", "dry_run"} and programs != expected:
+            errors.append(f"nightly lane {lane} program IDs do not exactly match the 8-slot contract")
+        if str(status.get("mode")) == "live" and state == "dry_run":
+            errors.append(f"nightly lane {lane} cannot be dry_run while mode=live")
+
+    diagnosis_paths = _find_named_artifacts(root, "nightly-diagnosis.json")
+    if diagnosis_paths:
+        diagnosis = _load(diagnosis_paths[0])
+        if diagnosis.get("schema") != "nightly-research-diagnosis/v1":
+            errors.append(f"unsupported nightly diagnosis schema: {diagnosis.get('schema')!r}")
+        if str(diagnosis.get("run_id")) not in run_ids:
+            errors.append("nightly diagnosis run_id does not match lane statuses")
+        lane_state_set = {str(item.get("state")) for item in statuses}
+        expected_aggregate = (
+            "lane_specific_failure" if "lane_failure" in lane_state_set else
+            "blocked_before_execution" if "blocked_before_execution" in lane_state_set else
+            "dry_run" if lane_state_set == {"dry_run"} else
+            "live_research_executed" if lane_state_set == {"live_research_executed"} else
+            "partial_or_mixed"
+        )
+        if diagnosis.get("aggregate_state") != expected_aggregate:
+            errors.append(
+                f"nightly diagnosis aggregate_state mismatch: expected {expected_aggregate}, "
+                f"got {diagnosis.get('aggregate_state')!r}"
+            )
+        allowed_findings = bool(diagnosis.get("real_research_findings_allowed"))
+        should_allow = expected_aggregate == "live_research_executed" and modes == {"live"}
+        if allowed_findings != should_allow:
+            errors.append("nightly diagnosis real_research_findings_allowed violates execution/evidence boundary")
+        if diagnosis.get("historical_dry_run_findings_are_real_research") is not False:
+            errors.append("nightly diagnosis must mark dry-run findings as non-research")
+
+    project_paths = _find_named_artifacts(root, "nightly-project-improvement.json")
+    if project_paths:
+        project = _load(project_paths[0])
+        if project.get("schema") != "project-improvement-research/v1":
+            errors.append(f"unsupported project-improvement schema: {project.get('schema')!r}")
+        if str(project.get("research_mode")) != "project_improvement":
+            errors.append("nightly project-improvement artifact must declare research_mode=project_improvement")
+        if int(project.get("program_count", 0) or 0) != NIGHTLY_PROGRAM_COUNT:
+            errors.append("nightly project-improvement artifact must contain all 24 programs")
+        if not (project.get("project_snapshot") or {}).get("revision"):
+            errors.append("nightly project-improvement artifact must carry a project revision")
+        evidence_policy = project.get("evidence_policy") or {}
+        if evidence_policy.get("llm_findings") != "candidate_only_until_acquisition_receipt":
+            errors.append("nightly project-improvement artifact violates the LLM evidence policy")
+        if "live_research_executed" not in {str(item.get("state")) for item in statuses}:
+            errors.append("nightly project-improvement artifact requires live research lane execution")
+
+    baseline_paths = _find_named_artifacts(root, "nightly-baseline.json")
+    if baseline_paths:
+        baseline = _load(baseline_paths[0])
+        if baseline.get("schema") != "project-improvement-baseline/v1":
+            errors.append(f"unsupported nightly baseline schema: {baseline.get('schema')!r}")
+        if baseline.get("decision") not in {"NO_BASELINE", "IMPROVED", "REGRESSED", "STABLE"}:
+            errors.append(f"invalid nightly baseline decision: {baseline.get('decision')!r}")
+        if baseline.get("available") is True:
+            for field in ("current_research_id", "previous_research_id", "current_revision", "previous_revision"):
+                if not baseline.get(field):
+                    errors.append(f"available nightly baseline is missing {field}")
+
     return errors
 
 
@@ -143,6 +274,9 @@ def validate_repository(root: Path) -> dict[str, Any]:
         if not schema.startswith("autonomous-research-scorecard/"):
             errors.append(f"unsupported scorecard artifact schema: {schema!r}")
         errors.extend(_scorecard_evidence_boundary_errors(scorecard))
+
+    nightly_errors = _nightly_artifact_errors(root)
+    errors.extend(nightly_errors)
 
     return _report(errors, warnings)
 
