@@ -157,16 +157,15 @@ async def _doh_request(endpoint: str, encoded_query: str):
     """Send an RFC 8484 wireformat GET to a fixed, allowlisted DoH endpoint."""
     if endpoint not in DNS_OVER_HTTPS_ENDPOINTS:
         raise ValueError("unsupported DNS-over-HTTPS endpoint")
-    from js import Request
-    from workers import fetch
+    from js import fetch as js_fetch
+    from pyodide.ffi import to_js
 
-    # Cloudflare's Python Workers documentation recommends constructing a JS
-    # Request object with Request.new(...) before passing it to fetch. Keep the
-    # URL fixed/allowlisted and the DNS question only inside the wireformat
-    # Base64URL query parameter.
+    # The Python Worker runtime has shown inconsistent automatic conversion of
+    # Python strings at the JS fetch boundary. Convert the URL explicitly to a
+    # JavaScript primitive while keeping the URL authority fixed and the DNS
+    # question only inside the Base64URL wireformat parameter.
     request_url = f"{endpoint}?dns={encoded_query}"
-    request = Request.new(request_url)
-    return await fetch(request)
+    return await js_fetch(to_js(request_url))
 
 
 async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
