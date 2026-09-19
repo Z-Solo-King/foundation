@@ -154,12 +154,13 @@ def _dns_parse_addresses(payload: bytes, record_type: str) -> list[str]:
 
 
 async def _doh_request(endpoint: str, encoded_query: str):
-    """Send an RFC 8484 wireformat GET to a fixed DoH endpoint."""
-    from js import Object, URL, fetch as js_fetch
+    """Send an RFC 8484 wireformat GET to a fixed, allowlisted DoH endpoint."""
+    if endpoint not in DNS_OVER_HTTPS_ENDPOINTS:
+        raise ValueError("unsupported DNS-over-HTTPS endpoint")
+    from js import Object, fetch as js_fetch
     from pyodide.ffi import to_js
 
-    resolver_url = URL.new(endpoint)
-    resolver_url.searchParams.set("dns", encoded_query)
+    request_url = f"{endpoint}?dns={encoded_query}"
     options = to_js(
         {
             "method": "GET",
@@ -170,7 +171,7 @@ async def _doh_request(endpoint: str, encoded_query: str):
         },
         dict_converter=Object.fromEntries,
     )
-    return await js_fetch(resolver_url, options)
+    return await js_fetch(request_url, options)
 
 
 async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
