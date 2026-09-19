@@ -450,6 +450,12 @@ Everything else is actionable queue debt.
 
 ## Cross-chat continuity override — 2026-09-19
 
-Before any new mutation, read `docs/AI_AGENT_HANDOFF.md`. The 2026-09-19 live-state section is authoritative over older sections. Current production-code Foundation main is `b1e0e6e74e0d3d9a3e280fa146a6c39503628274`; the latest main commit `63e45709d24e8acd8ec720036c4c11f0a531f78e` is documentation-only. current Operations main and production pin are `035bb38e54aa2b81a1e41b95ac01e7d352b75d83`.
+Before any new mutation, read `docs/AI_AGENT_HANDOFF.md` and `docs/CURRENT_SOURCE_OF_TRUTH.md`. Current Foundation main is `95840f563b51f08c38996d673034ca49fc539f79`; current Operations main and production pin are `035bb38e54aa2b81a1e41b95ac01e7d352b75d83`.
 
-The latest production run has already proven authenticated chat, idempotent replay, and SSE. The current failure is research source ingestion/DNS (`example.com` -> `DNS resolution failed`), while the nightly workflow still exhibits zero-job control-plane failures. Do not reopen solved SSE work without new regression evidence. Active research/control-plane fixes are PR #674 (research DNS transport) and #675 (dispatch/run/job control-plane evidence); PR #673 hardens nightly artifact integrity. PR #666 is obsolete and should not be resumed; #671 remains diagnostic-only.
+Latest production receipt **35430074029** proves public/private deployment, authenticated chat, replay, and SSE. The remaining production defect is research-source DoH transport in the Python Worker: both allowlisted DoH endpoints return `TypeError` from the fetch invocation.
+
+Open candidates are #684, #687, and #691. Do not create another competing implementation. PR #687's required checks passed on its older base; reconcile the validated approach with current main before merge, and use the newest candidate only after evidence.
+
+Latest nightly control-plane run **35430072561** created no jobs. Treat this as an independent GitHub Actions job-graph/control-plane gate. Do not weaken permissions to manufacture jobs.
+
+Keep runtime-gated issues open until their exact L3/L4 acceptance evidence exists. Never claim production closure from repository tests alone.
