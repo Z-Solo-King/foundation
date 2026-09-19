@@ -134,3 +134,25 @@ def test_dns_preflight_rechecks_each_redirect(monkeypatch):
 
     with pytest.raises(ValueError, match="non-public"):
         asyncio.run(http.fetch_public_url("https://example.com", fetcher=fetcher, dns_resolver=resolver))
+
+
+def test_fetch_public_url_supports_workers_single_argument_fetch():
+    import backend.sources.http as http
+
+    class Response:
+        status = 200
+        headers = {"content-type": "text/plain"}
+
+        async def arrayBuffer(self):
+            return b"ok"
+
+    calls = []
+    async def fetcher(url):
+        calls.append(url)
+        return Response()
+
+    result = asyncio.run(http.fetch_public_url("https://example.com", fetcher=fetcher))
+    assert result.status == 200
+    assert calls == ["https://example.com/"]
+
+
