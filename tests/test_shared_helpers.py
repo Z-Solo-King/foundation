@@ -278,3 +278,44 @@ def test_workers_fetch_adapter_converts_binary_body_to_uint8array(monkeypatch) -
     assert isinstance(body, FakeUint8Array)
     assert body.values == list(payload)
     assert captured["options"]["method"] == "POST"
+
+
+def test_workers_fetch_adapter_preserves_text_body(monkeypatch) -> None:
+    import asyncio
+    import sys
+    import types
+
+    captured = {}
+
+    class FakeObject:
+        @staticmethod
+        def fromEntries(value):
+            return value
+
+    class FakeUint8Array:
+        @classmethod
+        def new(cls, values):
+            return list(values)
+
+    class FakeRequest:
+        @classmethod
+        def new(cls, url, options):
+            captured["options"] = options
+            return options
+
+    async def fake_fetch(request):
+        captured["request"] = request
+        return "response"
+
+    def fake_to_js(value, dict_converter=None):
+        return dict_converter(value) if dict_converter else value
+
+    monkeypatch.setitem(sys.modules, "workers", types.SimpleNamespace(fetch=lambda *_a, **_k: None))
+    monkeypatch.setitem(sys.modules, "js", types.SimpleNamespace(Object=FakeObject, Request=FakeRequest, Uint8Array=FakeUint8Array, fetch=fake_fetch))
+    monkeypatch.setitem(sys.modules, "pyodide.ffi", types.SimpleNamespace(to_js=fake_to_js))
+
+    from backend.core.workers_runtime import workers_fetch
+
+    result = asyncio.run(workers_fetch("test")("https://example.com", {"method": "POST", "body": "payload"}))
+    assert result == "response"
+    assert captured["options"]["body"] == "payload"
