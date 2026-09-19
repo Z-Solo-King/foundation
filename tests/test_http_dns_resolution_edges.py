@@ -123,6 +123,19 @@ def test_dns_over_https_fails_after_all_resolvers_fail(monkeypatch):
     with pytest.raises(RuntimeError, match="DNS resolution failed"):
         asyncio.run(http._dns_over_https("example.com", "A"))
 
+    
+def test_dns_over_https_truncates_long_transport_exception_detail(monkeypatch):
+    async def response_factory(_endpoint, _encoded_query):
+        raise RuntimeError("x" * 500)
+
+    http, _ = _patch_doh(monkeypatch, response_factory)
+    with pytest.raises(RuntimeError) as exc_info:
+        asyncio.run(http._dns_over_https("example.com", "A"))
+    message = str(exc_info.value)
+    assert "DNS resolution failed for example.com" in message
+    assert len(message) < 650
+    assert "x" * 241 not in message
+
 
 def test_doh_request_rejects_non_allowlisted_endpoint():
     import backend.sources.http as http
