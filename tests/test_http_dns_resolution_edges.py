@@ -142,7 +142,7 @@ def test_doh_request_constructs_fixed_url_without_request_init_conversion(monkey
 
     monkeypatch.setitem(
         __import__("sys").modules,
-        "workers",
+        "js",
         __import__("types").SimpleNamespace(fetch=fake_fetch),
     )
 
