@@ -8,7 +8,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to benchmark
         required: false
-        default: fd389d83d5df9099c5bf22e15b892aacc3f0968d
+        default: 46bf7363170ee584b2354c30de9de2aa830426e8
         type: string
 
 permissions:
@@ -127,7 +127,7 @@ jobs:
             pass: 2
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || 'fd389d83d5df9099c5bf22e15b892aacc3f0968d' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || '46bf7363170ee584b2354c30de9de2aa830426e8' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Create Operations read token
@@ -164,8 +164,18 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check -e ".[test,browser]"
+          python -m pip install --disable-pip-version-check "workers-py>=1.9" workers-runtime-sdk
           if [ "${{ matrix.mode }}" = "browser" ]; then python -m playwright install --with-deps chromium; fi
 
+      - name: Preflight extractor import
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import extractor_mapper.fast_engine as engine
+          assert callable(engine.extract_and_map)
+          print("extractor import: PASS")
+          PY
       - name: Materialize one-target case
         run: |
           set -euo pipefail
@@ -201,7 +211,7 @@ jobs:
           set -euo pipefail
           mkdir -p benchmark-output
           cat > benchmark-output/case.json <<EOF
-          {"case":"${{ matrix.case }}","label":"${{ matrix.label }}","mode":"${{ matrix.mode }}","url":"${{ matrix.url }}","pass":${{ matrix.pass }},"operations_ref":"${{ inputs.operations_ref || 'fd389d83d5df9099c5bf22e15b892aacc3f0968d' }}"}
+          {"case":"${{ matrix.case }}","label":"${{ matrix.label }}","mode":"${{ matrix.mode }}","url":"${{ matrix.url }}","pass":${{ matrix.pass }},"operations_ref":"${{ inputs.operations_ref || '46bf7363170ee584b2354c30de9de2aa830426e8' }}"}
           EOF
 
       - name: Upload case artifact
@@ -234,7 +244,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'fd389d83d5df9099c5bf22e15b892aacc3f0968d' }}
+          ref: ${{ inputs.operations_ref || '46bf7363170ee584b2354c30de9de2aa830426e8' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
