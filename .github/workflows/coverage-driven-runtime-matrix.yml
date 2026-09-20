@@ -163,17 +163,17 @@ jobs:
           exit "$status"
 
       - name: Run live production acceptance probe
-        if: github.ref == 'refs/heads/main' && matrix.live_probe != ''
+        if: github.ref == 'refs/heads/main' && matrix.live_probe
         env:
-          AUTH_TOKEN: \${{ secrets.AUTH_TOKEN }}
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
           BASE_URL: https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev
         working-directory: operations
         shell: bash
         run: |
           set -euo pipefail
-          test -n "\${AUTH_TOKEN:-}" || { echo 'AUTH_TOKEN is required for main-branch live acceptance probes'; exit 1; }
-          key="fast-\${GITHUB_RUN_ID}-\${{ matrix.id }}"
-          case "\${{ matrix.live_probe }}" in
+          test -n "${AUTH_TOKEN:-}" || { echo 'AUTH_TOKEN is required for main-branch live acceptance probes'; exit 1; }
+          key="fast-${GITHUB_RUN_ID}-${{ matrix.id }}"
+          case "${{ matrix.live_probe }}" in
             chat)
               payload=$(jq -nc --arg chat_id "$key-chat" --arg request_id "$key-request" '{chat_id:$chat_id,request_id:$request_id,message:"Explain in one sentence why the public Worker uses an authenticated private service binding.",mode:"chat",strict_zero_cost_only:true}')
               status=$(curl -sS --max-time 60 -o /tmp/live-chat.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-chat" -d "$payload" "$BASE_URL/api/v1/chat")
@@ -210,9 +210,9 @@ jobs:
               test "$read_status" = 200
               jq -e --arg rid "$run_id" '.ok == true and ((.run_id // .run.run_id) == $rid)' /tmp/live-research-read.json >/dev/null
               ;;
-            *) echo "Unknown live probe: \${{ matrix.live_probe }}"; exit 2 ;;
+            *) echo "Unknown live probe: ${{ matrix.live_probe }}"; exit 2 ;;
           esac
-          echo "live probe \${{ matrix.live_probe }}: PASS"
+          echo "live probe ${{ matrix.live_probe }}: PASS"
 
       - name: Upload scenario evidence
         if: always()
