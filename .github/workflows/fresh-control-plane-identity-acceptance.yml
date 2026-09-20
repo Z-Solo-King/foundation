@@ -42,7 +42,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh workflow run nightly-multi-agent-research-v3.yml --repo "$GITHUB_REPOSITORY" --ref main -f dry_run=false
+          gh workflow run nightly-multi-agent-research-v2.yml --repo "$GITHUB_REPOSITORY" --ref main -f dry_run=false
       - name: Verify nightly run has jobs
         env:
           GH_TOKEN: ${{ github.token }}
@@ -51,7 +51,7 @@ jobs:
           expected="$GITHUB_SHA"
           run_id=""
           for _ in {1..30}; do
-            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow nightly-multi-agent-research-v3.yml --event workflow_dispatch --branch main --limit 20 --json databaseId,headSha --jq '.[] | select(.headSha=="'"$expected"'") | .databaseId' | head -n1)"
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow nightly-multi-agent-research-v2.yml --event workflow_dispatch --branch main --limit 20 --json databaseId,headSha --jq '.[] | select(.headSha=="'"$expected"'") | .databaseId' | head -n1)"
             [ -n "$run_id" ] && break
             sleep 2
           done

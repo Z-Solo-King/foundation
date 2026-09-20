@@ -29,7 +29,7 @@ env:
   RESEARCH_LLM_API_KEY: ${{ secrets.RESEARCH_LLM_API_KEY }}
   RESEARCH_LLM_MODEL: ${{ secrets.RESEARCH_LLM_MODEL }}
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_RESEARCH_REF: f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5
+  OPERATIONS_RESEARCH_REF: b5982fd9c3203d360584f955b8adfcf85cfd1315
 
 jobs:
   research:
@@ -67,30 +67,30 @@ jobs:
           printf '%s\n' "$OPERATIONS_APP_PRIVATE_KEY" > "$key_file"
           chmod 600 "$key_file"
           python - "$OPERATIONS_APP_ID" "$key_file" > "$jwt_file" <<'PY'
-import base64
-import json
-import subprocess
-import sys
-import time
+          import base64
+          import json
+          import subprocess
+          import sys
+          import time
 
-app_id, key_file = sys.argv[1:]
+          app_id, key_file = sys.argv[1:]
 
-def b64url(value: bytes) -> str:
-    return base64.urlsafe_b64encode(value).rstrip(b"=").decode("ascii")
+          def b64url(value: bytes) -> str:
+              return base64.urlsafe_b64encode(value).rstrip(b"=").decode("ascii")
 
-now = int(time.time())
-header = {"alg": "RS256", "typ": "JWT"}
-payload = {"iat": now - 60, "exp": now + 540, "iss": app_id}
-unsigned = f"{b64url(json.dumps(header, separators=(",", ":")).encode())}.{b64url(json.dumps(payload, separators=(",", ":")).encode())}".encode()
-signed = subprocess.run(
-    ["openssl", "dgst", "-sha256", "-sign", key_file],
-    input=unsigned,
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    check=True,
-)
-print(unsigned.decode() + "." + b64url(signed.stdout))
-PY
+          now = int(time.time())
+          header = {"alg": "RS256", "typ": "JWT"}
+          payload = {"iat": now - 60, "exp": now + 540, "iss": app_id}
+          unsigned = f"{b64url(json.dumps(header, separators=(",", ":")).encode())}.{b64url(json.dumps(payload, separators=(",", ":")).encode())}".encode()
+          signed = subprocess.run(
+              ["openssl", "dgst", "-sha256", "-sign", key_file],
+              input=unsigned,
+              stdout=subprocess.PIPE,
+              stderr=subprocess.PIPE,
+              check=True,
+          )
+          print(unsigned.decode() + "." + b64url(signed.stdout))
+          PY
           app_jwt=$(cat "$jwt_file")
           installation_output="$RUNNER_TEMP/operations-installation-id.txt"
           installation_error="$RUNNER_TEMP/operations-installation-id.err"
@@ -103,8 +103,7 @@ PY
             cat "$installation_error" 2>/dev/null || true
             exit 1
           fi
-          installation_id="$(tr -d "
-" < "$installation_output")"
+          installation_id="$(tr -d "\r\n" < "$installation_output")"
           test -n "$installation_id" || { echo 'GitHub App installation discovery returned an empty installation id'; exit 1; }
           installation_response=$(curl -fsS \
             -X POST \
@@ -114,12 +113,12 @@ PY
             "https://api.github.com/app/installations/${installation_id}/access_tokens")
           printf '%s\n' "$installation_response" > "$response_file"
           github_app_token=$(python - "$response_file" <<'PY'
-import json
-import sys
-with open(sys.argv[1], encoding="utf-8") as handle:
-    print(json.load(handle)["token"])
-PY
-)
+          import json
+          import sys
+          with open(sys.argv[1], encoding="utf-8") as handle:
+              print(json.load(handle)["token"])
+          PY
+          )
           test -n "$github_app_token"
           echo "::add-mask::$github_app_token"
           echo 'GITHUB_APP_TOKEN<<EOF' >> "$GITHUB_ENV"
@@ -138,20 +137,20 @@ PY
             "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/git/commits/${OPERATIONS_RESEARCH_REF}")
           jq -e --arg expected "$OPERATIONS_RESEARCH_REF" '.sha == $expected' <<<"$ref_response" >/dev/null
           echo "private research source access: PASS (${OPERATIONS_RESEARCH_REF})"
-      - name: Checkout pinned private research implementation
-        shell: bash
-        run: |
+                - name: Checkout pinned private research implementation
+                  shell: bash
+                  run: |
           set -euo pipefail
           askpass="$RUNNER_TEMP/git-askpass-operations-research.sh"
           umask 077
           cat > "$askpass" <<'EOF'
-#!/bin/sh
-case "$1" in
-  *Username*) printf '%s\n' x-access-token ;;
-  *Password*) printf '%s\n' "$GITHUB_APP_TOKEN" ;;
-  *) printf '%s\n' '' ;;
-esac
-EOF
+          #!/bin/sh
+          case "$1" in
+            *Username*) printf '%s\n' x-access-token ;;
+            *Password*) printf '%s\n' "$GITHUB_APP_TOKEN" ;;
+            *) printf '%s\n' '' ;;
+          esac
+          EOF
           chmod 700 "$askpass"
           export GIT_ASKPASS="$askpass"
           export GIT_TERMINAL_PROMPT=0
@@ -314,30 +313,30 @@ EOF
           printf '%s\n' "$OPERATIONS_APP_PRIVATE_KEY" > "$key_file"
           chmod 600 "$key_file"
           python - "$OPERATIONS_APP_ID" "$key_file" > "$jwt_file" <<'PY'
-import base64
-import json
-import subprocess
-import sys
-import time
+          import base64
+          import json
+          import subprocess
+          import sys
+          import time
 
-app_id, key_file = sys.argv[1:]
+          app_id, key_file = sys.argv[1:]
 
-def b64url(value: bytes) -> str:
-    return base64.urlsafe_b64encode(value).rstrip(b"=").decode("ascii")
+          def b64url(value: bytes) -> str:
+              return base64.urlsafe_b64encode(value).rstrip(b"=").decode("ascii")
 
-now = int(time.time())
-header = {"alg": "RS256", "typ": "JWT"}
-payload = {"iat": now - 60, "exp": now + 540, "iss": app_id}
-unsigned = f"{b64url(json.dumps(header, separators=(",", ":")).encode())}.{b64url(json.dumps(payload, separators=(",", ":")).encode())}".encode()
-signed = subprocess.run(
-    ["openssl", "dgst", "-sha256", "-sign", key_file],
-    input=unsigned,
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    check=True,
-)
-print(unsigned.decode() + "." + b64url(signed.stdout))
-PY
+          now = int(time.time())
+          header = {"alg": "RS256", "typ": "JWT"}
+          payload = {"iat": now - 60, "exp": now + 540, "iss": app_id}
+          unsigned = f"{b64url(json.dumps(header, separators=(",", ":")).encode())}.{b64url(json.dumps(payload, separators=(",", ":")).encode())}".encode()
+          signed = subprocess.run(
+              ["openssl", "dgst", "-sha256", "-sign", key_file],
+              input=unsigned,
+              stdout=subprocess.PIPE,
+              stderr=subprocess.PIPE,
+              check=True,
+          )
+          print(unsigned.decode() + "." + b64url(signed.stdout))
+          PY
           app_jwt=$(cat "$jwt_file")
           installation_output="$RUNNER_TEMP/operations-installation-id.txt"
           installation_error="$RUNNER_TEMP/operations-installation-id.err"
@@ -350,8 +349,7 @@ PY
             cat "$installation_error" 2>/dev/null || true
             exit 1
           fi
-          installation_id="$(tr -d "
-" < "$installation_output")"
+          installation_id="$(tr -d "\r\n" < "$installation_output")"
           test -n "$installation_id" || { echo 'GitHub App installation discovery returned an empty installation id'; exit 1; }
           installation_response=$(curl -fsS \
             -X POST \
@@ -361,12 +359,12 @@ PY
             "https://api.github.com/app/installations/${installation_id}/access_tokens")
           printf '%s\n' "$installation_response" > "$response_file"
           github_app_token=$(python - "$response_file" <<'PY'
-import json
-import sys
-with open(sys.argv[1], encoding="utf-8") as handle:
-    print(json.load(handle)["token"])
-PY
-)
+          import json
+          import sys
+          with open(sys.argv[1], encoding="utf-8") as handle:
+              print(json.load(handle)["token"])
+          PY
+          )
           test -n "$github_app_token"
           echo "::add-mask::$github_app_token"
           echo 'GITHUB_APP_TOKEN<<EOF' >> "$GITHUB_ENV"
@@ -385,20 +383,20 @@ PY
             "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/git/commits/${OPERATIONS_RESEARCH_REF}")
           jq -e --arg expected "$OPERATIONS_RESEARCH_REF" '.sha == $expected' <<<"$ref_response" >/dev/null
           echo "private project-research source access: PASS (${OPERATIONS_RESEARCH_REF})"
-      - name: Checkout pinned private project-research implementation
-        shell: bash
-        run: |
+                - name: Checkout pinned private project-research implementation
+                  shell: bash
+                  run: |
           set -euo pipefail
           askpass="$RUNNER_TEMP/git-askpass-operations-summary.sh"
           umask 077
           cat > "$askpass" <<'EOF'
-#!/bin/sh
-case "$1" in
-  *Username*) printf '%s\n' x-access-token ;;
-  *Password*) printf '%s\n' "$GITHUB_APP_TOKEN" ;;
-  *) printf '%s\n' '' ;;
-esac
-EOF
+          #!/bin/sh
+          case "$1" in
+            *Username*) printf '%s\n' x-access-token ;;
+            *Password*) printf '%s\n' "$GITHUB_APP_TOKEN" ;;
+            *) printf '%s\n' '' ;;
+          esac
+          EOF
           chmod 700 "$askpass"
           export GIT_ASKPASS="$askpass"
           export GIT_TERMINAL_PROMPT=0
