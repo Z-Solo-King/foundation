@@ -49,3 +49,11 @@ Important: catalog presence is not adapter presence. The next implementation ste
 
 ## Current benchmark strategy
 Use parallel jobs only when each job answers a different question. The project now has a site-extraction matrix plus an orthogonal 20-scenario runtime matrix. Never spend 20 jobs repeating the same happy path.
+
+## 2026-09-20 implementation status
+
+- L1 now has a Phase B TypeScript shadow at `polyglot/edge-worker/`.
+- The shadow covers the current public route matrix, authentication header extraction, authenticated JSON cache policy, SSE response headers, bounded response sizing, and deterministic chat SSE framing.
+- The TypeScript shadow is contract-only: it does not own authentication secrets, D1 admission, resource governance, private service bindings, research persistence, or production deployment.
+- Foundation GitHub Actions now runs the L1 shadow typecheck/tests alongside the Rust/Go/L3 pilot lanes.
+- Production routing remains Python. Promotion still requires differential fixtures, negative/error-path parity, and measured latency/CPU/memory evidence.
