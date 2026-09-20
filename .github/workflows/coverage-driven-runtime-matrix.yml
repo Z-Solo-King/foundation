@@ -8,7 +8,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to test
         required: false
-        default: 284ee00b98b345a4b408c57b19092385ad9591b7
+        default: 5b35117233935256b8a86db96327467eaf5b4163
         type: string
 
 permissions:
@@ -90,7 +90,7 @@ jobs:
             tests: "tests/test_workflow_policy.py tests/test_cross_module_contract_edges.py tests/test_family_audit.py tests/test_family_semantic_audit.py"
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || '284ee00b98b345a4b408c57b19092385ad9591b7' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || '5b35117233935256b8a86db96327467eaf5b4163' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Checkout Foundation
@@ -152,7 +152,7 @@ jobs:
       - name: Materialize pinned public core
         working-directory: operations
         env:
-          FOUNDATION_CORE_SOURCE: ${{ github.workspace }}/foundation-core/foundation_core
+          FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core
         run: python scripts/sync_public_core.py
 
       - name: Install browser runtime for browser scenario
