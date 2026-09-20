@@ -256,3 +256,9 @@ The first-slice choice (L3) must also record its own measured justification. Add
 - `polyglot/edge-worker/src/public-http.ts` now mirrors the deterministic transport contract of `backend/sources/http.py`: URL canonicalization, redirect bounds, HTTPS downgrade protection, response-size bounds and redirect provenance.
 - DNS-over-HTTPS resolution and public/private-address authority are deliberately not duplicated in TypeScript. The shadow consumes an explicit `PublicDestinationDecision`, preserving Python's existing DNS/SSRF authority.
 - This is a contract shadow only; `backend/sources/http.py` remains the production acquisition implementation until differential fixtures and runtime/performance evidence justify any promotion.
+
+### Frontend lifecycle TypeScript shadow — 2026-09-20
+
+- `polyglot/frontend-state/` mirrors `frontend/lifecycle_state_machine.js` for vocabulary, backend normalization and fail-closed transition rules.
+- The shadow intentionally excludes DOM/event wiring and persistence so the first promotion gate is pure state-machine parity.
+- Existing JavaScript production UI remains authoritative until the TypeScript shadow passes the same contract tests plus browser-level differential tests.
