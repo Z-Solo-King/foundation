@@ -174,7 +174,7 @@ jobs:
       - name: Materialize pinned public foundation_core for extractor
         working-directory: operations
         env:
-          FOUNDATION_CORE_SOURCE: ${{ github.workspace }}/foundation-core/foundation_core
+          FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core
         run: |
           set -euo pipefail
           python scripts/sync_public_core.py
