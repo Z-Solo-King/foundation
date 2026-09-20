@@ -114,7 +114,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          current_main=$(git ls-remote "https://x-access-token:${OPERATIONS_TOKEN}@github.com/Z-Solo-King/operations.git" refs/heads/main | awk '{print $1}')
+          response=$(curl -fsS \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${OPERATIONS_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/git/ref/heads/main")
+          current_main=$(jq -r '.object.sha // empty' <<<"$response")
           test -n "$current_main"
           if [ "$PINNED_OPERATIONS_REF" != "$current_main" ]; then
             echo "stale_operations_pin: configured=$PINNED_OPERATIONS_REF current_main=$current_main"
