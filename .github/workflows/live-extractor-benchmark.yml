@@ -8,7 +8,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to benchmark
         required: false
-        default: 284ee00b98b345a4b408c57b19092385ad9591b7
+        default: 5b35117233935256b8a86db96327467eaf5b4163
         type: string
 
 permissions:
@@ -126,7 +126,7 @@ jobs:
             pass: 2
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || '284ee00b98b345a4b408c57b19092385ad9591b7' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || '5b35117233935256b8a86db96327467eaf5b4163' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Create Operations read token
@@ -174,7 +174,7 @@ jobs:
       - name: Materialize pinned public foundation_core for extractor
         working-directory: operations
         env:
-          FOUNDATION_CORE_SOURCE: ${{ github.workspace }}/foundation-core/foundation_core
+          FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core
         run: |
           set -euo pipefail
           python scripts/sync_public_core.py
@@ -237,7 +237,7 @@ jobs:
           set -euo pipefail
           mkdir -p benchmark-output
           cat > benchmark-output/case.json <<EOF
-          {"case":"${{ matrix.case }}","label":"${{ matrix.label }}","mode":"${{ matrix.mode }}","url":"${{ matrix.url }}","pass":${{ matrix.pass }},"operations_ref":"${{ inputs.operations_ref || '284ee00b98b345a4b408c57b19092385ad9591b7' }}"}
+          {"case":"${{ matrix.case }}","label":"${{ matrix.label }}","mode":"${{ matrix.mode }}","url":"${{ matrix.url }}","pass":${{ matrix.pass }},"operations_ref":"${{ inputs.operations_ref || '5b35117233935256b8a86db96327467eaf5b4163' }}"}
           EOF
 
       - name: Upload case artifact
@@ -270,7 +270,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '284ee00b98b345a4b408c57b19092385ad9591b7' }}
+          ref: ${{ inputs.operations_ref || '5b35117233935256b8a86db96327467eaf5b4163' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
