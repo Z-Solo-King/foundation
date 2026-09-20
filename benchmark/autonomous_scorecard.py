@@ -39,6 +39,26 @@ def _tier_rank(value: str) -> int:
         return -1
 
 
+def _target_health_from_counts(observations: int, failures: int, status_counts: dict[str, int], http_status_counts: dict[str, int]) -> tuple[str, str]:
+    if observations <= 0:
+        return "unknown", "collect_more_observations"
+    failure_rate = failures / observations
+    blocked = int(status_counts.get("blocked", 0))
+    limited = int(status_counts.get("resource_limited", 0))
+    errors = int(status_counts.get("error", 0))
+    if blocked / observations >= 0.95:
+        return "blocked", "quarantine_until_manual_recheck"
+    if limited / observations >= 0.95:
+        return "rate_limited", "exponential_backoff_and_quarantine"
+    if errors / observations >= 0.95 and not http_status_counts:
+        return "transport_error", "investigate_dns_tls_or_network_path"
+    if failure_rate == 0:
+        return "healthy", "retain_normal_sampling"
+    if failure_rate >= 0.5:
+        return "degraded", "retain_for_targeted_recheck"
+    return "intermittent", "retain_with_failure_aware_retry"
+
+
 def build_scorecard(root: Path) -> dict[str, Any]:
     raw_summary_paths = collect_summary_files(root)
     # Avoid double-counting when an artifact contains both naming conventions.
@@ -217,8 +237,8 @@ def build_scorecard(root: Path) -> dict[str, Any]:
                 "status_counts": dict(sorted(entry["status_counts"].items())),
                 "http_status_counts": dict(sorted(entry["http_status_counts"].items())),
                 "diagnostics": dict(sorted(entry["diagnostics"].items())),
-                "health_class": str(entry.get("health_class") or "unknown"),
-                "recommended_action": str(entry.get("recommended_action") or "collect_more_observations"),
+                "health_class": str(entry.get("health_class") or _target_health_from_counts(int(entry["observations"]), int(entry["failures"]), dict(entry["status_counts"]), dict(entry["http_status_counts"]))[0]),
+                "recommended_action": str(entry.get("recommended_action") or _target_health_from_counts(int(entry["observations"]), int(entry["failures"]), dict(entry["status_counts"]), dict(entry["http_status_counts"]))[1]),
             }
         )
     target_rows.sort(key=lambda item: (-float(item["failure_rate"] or 0), item["url"]))
