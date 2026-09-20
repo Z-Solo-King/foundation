@@ -131,13 +131,15 @@ jobs:
         shell: python
         run: |
           import ast
+          import os
           from pathlib import Path
           tree = ast.parse(Path("scripts/sync_public_core.py").read_text(encoding="utf-8"))
+          output = Path(os.environ["GITHUB_OUTPUT"])
           for node in tree.body:
               if isinstance(node, ast.Assign):
                   for target in node.targets:
                       if isinstance(target, ast.Name) and target.id == "FOUNDATION_COMMIT":
-                          print(f"ref={node.value.value}")
+                          output.write_text(f"ref={node.value.value}\n", encoding="utf-8")
                           raise SystemExit
           raise SystemExit("FOUNDATION_COMMIT not found")
 
