@@ -88,7 +88,7 @@ jobs:
           git_basic_auth="$(printf 'x-access-token:%s' "$github_app_token" | base64 -w0)"
           git -c "http.extraHeader=Authorization: Basic $git_basic_auth" \
             clone --depth=1 --filter=blob:none \
-            "https://github.com/${OPERATIONS_REPOSITORY}.git" operations/repo
+            "https://github.com/${OPERATIONS_REPOSITORY}.git" ../operations/repo
           catalog_response="$(curl -fsS \
             -H 'Accept: application/vnd.github+json' \
             -H "Authorization: Bearer ${github_app_token}" \
