@@ -119,6 +119,8 @@ def test_scorecard_aggregates_shards_and_separates_contract_from_acquisition(tmp
     assert scorecard["structural_signals"]["jsonld_blocks_total"] == 7
     assert scorecard["structural_signals"]["field_level_correctness_oracle"] is False
     assert scorecard["targets_with_failures"][0]["url"] == "https://blocked.example/"
+    assert scorecard["targets_with_failures"][0]["health_class"] == "blocked"
+    assert scorecard["targets_with_failures"][0]["recommended_action"] == "quarantine_until_manual_recheck"
 
     markdown = render_markdown(scorecard)
     assert "Overall: **WARN**" in markdown
