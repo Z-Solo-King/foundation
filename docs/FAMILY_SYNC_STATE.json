@@ -12,14 +12,14 @@
       "role": "private-control-plane-research-orchestration",
       "last_audited_main_sha": "c6f7ebaec4ebdf21cd1d036df073b90de5bc7129",
       "approved_production_revision": "c6f7ebaec4ebdf21cd1d036df073b90de5bc7129",
-      "nightly_research_revision": "f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5"
+      "nightly_research_revision": "9572b3b2d2c52120833a590b4612daacc2a493c2"
     }
   },
   "production": {
     "workflow_run_id": 35456292033,
     "workflow_run_number": 232,
     "foundation_revision": "6a91fbd17143083882e9ac7ebfa52f0b06a344b2",
-    "operations_revision": "f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5",
+    "operations_revision": "9572b3b2d2c52120833a590b4612daacc2a493c2",
     "cross_repository_audit_artifact": "cross-repository-audit-receipt",
     "result": "success"
   },
