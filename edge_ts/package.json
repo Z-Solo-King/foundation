@@ -1,0 +1,13 @@
+{
+  "name": "research-intelligence-engine-edge-shadow",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260919.0",
+    "typescript": "^5.9.2"
+  }
+}
