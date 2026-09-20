@@ -241,3 +241,25 @@ jobs:
       - name: Test
         working-directory: operations
         run: cargo test --manifest-path experiments/rust_text_normalization/Cargo.toml
+
+
+  frontend_state:
+    name: TypeScript frontend lifecycle parity shadow
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+
+      - name: Install and test
+        working-directory: polyglot/frontend-state
+        run: |
+          set -euo pipefail
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          npm test
