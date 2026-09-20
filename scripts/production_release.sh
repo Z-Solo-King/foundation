@@ -274,6 +274,9 @@ persistence_seed_status=$(curl -sS --max-time 30 \
   -d "$persistence_seed_payload" \
   "$BASE_URL/api/v1/chatbot/diagnostic" || true)
 echo "POST persistence_seed -> HTTP $persistence_seed_status"
+if [ "$persistence_seed_status" != "200" ]; then
+  echo "persistence_seed_response=$(jq -c '.' "$persistence_seed_file" 2>/dev/null | cut -c1-1200 || true)"
+fi
 persistence_seed_ready=false
 if [ "$persistence_seed_status" = "200" ] && jq -e '.ok == true and (.sentinel_id | type == "string" and length > 0)' "$persistence_seed_file" >/dev/null 2>&1; then
   persistence_seed_ready=true
