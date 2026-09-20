@@ -137,9 +137,9 @@ jobs:
             "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/git/commits/${OPERATIONS_RESEARCH_REF}")
           jq -e --arg expected "$OPERATIONS_RESEARCH_REF" '.sha == $expected' <<<"$ref_response" >/dev/null
           echo "private research source access: PASS (${OPERATIONS_RESEARCH_REF})"
-                - name: Checkout pinned private research implementation
-                  shell: bash
-                  run: |
+      - name: Checkout pinned private research implementation
+        shell: bash
+        run: |
           set -euo pipefail
           askpass="$RUNNER_TEMP/git-askpass-operations-research.sh"
           umask 077
@@ -232,6 +232,7 @@ jobs:
           from pathlib import Path
 
           lane = int(os.environ['LANE'])
+          Path('.runtime').mkdir(parents=True, exist_ok=True)
           mode = os.environ['MODE']
           preflight = os.environ['PREFLIGHT']
           run_lane = os.environ['RUN_LANE']
@@ -383,9 +384,9 @@ jobs:
             "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/git/commits/${OPERATIONS_RESEARCH_REF}")
           jq -e --arg expected "$OPERATIONS_RESEARCH_REF" '.sha == $expected' <<<"$ref_response" >/dev/null
           echo "private project-research source access: PASS (${OPERATIONS_RESEARCH_REF})"
-                - name: Checkout pinned private project-research implementation
-                  shell: bash
-                  run: |
+      - name: Checkout pinned private project-research implementation
+        shell: bash
+        run: |
           set -euo pipefail
           askpass="$RUNNER_TEMP/git-askpass-operations-summary.sh"
           umask 077
