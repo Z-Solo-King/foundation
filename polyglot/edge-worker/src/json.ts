@@ -50,10 +50,7 @@ export function parseBoundedJson(
     if (current.value && typeof current.value === "object") {
       const entries = Object.entries(current.value as Record<string, unknown>);
       if (entries.length > MAX_JSON_COLLECTION_ITEMS) throw new Error("JSON object exceeds the supported field count");
-      for (const [key, item] of entries) {
-        if (key.length > MAX_JSON_STRING_CHARS) throw new Error("JSON key exceeds the supported length");
-        stack.push({ value: item, depth: current.depth + 1 });
-      }
+      for (const [, item] of entries) stack.push({ value: item, depth: current.depth + 1 });
     }
   }
 
