@@ -127,6 +127,8 @@ jobs:
 
       - name: Materialize pinned public core
         working-directory: operations
+        env:
+          FOUNDATION_CORE_SOURCE: \${{ github.workspace }}/foundation_core
         run: python scripts/sync_public_core.py
 
       - name: Install browser runtime for browser scenario
