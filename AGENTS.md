@@ -19,7 +19,7 @@ Never import Operations source, private credentials, private runtime state, or p
 
 Private Operations and approved external runtime callers must use the canonical Foundation workflow bridge for GitHub Actions automation.
 
-`private runtime -> Foundation GitHub App installation token (Actions: write) -> .github/workflows/foundation-canonical-workflow-bridge.yml -> allowlisted Foundation workflow`
+`private runtime -> Foundation GitHub App installation token (Actions: write) -> .github/workflows/foundation-canonical-workflow-bridge-v3.yml -> allowlisted Foundation workflow`
 
 The runtime caller must not dispatch arbitrary target workflows directly, create a second bridge, add a private Operations workflow, or introduce another deployment authority. The bridge owns target allowlisting and production confirmation; Operations remains the private source/runtime/policy authority.
 
