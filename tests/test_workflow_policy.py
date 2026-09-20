@@ -180,24 +180,24 @@ def test_private_operations_handoff_is_preflighted_and_diagnostic_runs_last():
 
 
 def test_public_foundation_is_the_only_github_actions_bridge_owner():
-    workflow = _workflow_texts()["foundation-canonical-workflow-bridge-v2.yml"]
-    assert "actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1" in workflow
-    assert "FOUNDATION_APP_ID" in workflow
-    assert "FOUNDATION_APP_PRIVATE_KEY" in workflow
-    assert "permission-actions: write" in workflow
-    assert "repositories: foundation" in workflow
+    workflow = _workflow_texts()["foundation-canonical-workflow-bridge-v3.yml"]
+    assert "name: Foundation canonical workflow bridge v3" in workflow
+    assert "permissions:" in workflow
+    assert "actions: write" in workflow
+    assert "workflow-dispatch-bridge-receipt/v2" in workflow
+    assert "canonical-bridge-v3-receipt" in workflow
     assert "workflow_dispatch:" in workflow
     assert "actions/workflows/${TARGET}/dispatches" in workflow
     for target in (
         "heroic-ai-production-release.yml",
-        "nightly-multi-agent-research-v2.yml",
+        "nightly-multi-agent-research-v3.yml",
         "cross-repository-contract-drift.yml",
         "operations-centralized-validation.yml",
         "main-push-actions-control-plane-probe-v2.yml",
     ):
         assert target in workflow
-    assert "confirm_production=true" in workflow
-    assert "operations_ref" in workflow
+    assert "foundation-canonical-workflow-bridge-v2.yml" not in workflow
+    assert "foundation-canonical-workflow-bridge.yml" not in workflow
 
 
 def test_all_canonical_workflow_dispatch_requests_use_the_public_router():
