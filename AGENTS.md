@@ -520,3 +520,36 @@ Prefer capability-based selection over one-language standardization. Use TypeScr
 
 ## AI model portability
 Keep `AGENTS.md` as the concise execution map. The public-safe cross-agent contract is `docs/AI_PORTABLE_ENGINEERING_CONTRACT.md`. Do not encode business rules in a model-specific instruction file.
+
+
+## Adaptive hybrid execution and ChatGPT session strategy
+
+For high-volume migrations, use the shared four-lane execution model documented by Operations in `docs/ADAPTIVE_POLYGLOT_EXECUTION_POLICY_2026-09-20.md`.
+
+The default is **3 migration lanes + 1 acceptance/blocker lane** when migration pressure is high. Rebalance dynamically for critical runtime/control-plane failures, collision pressure, duplicate work, or externally blocked migration.
+
+Keep uniformity in:
+- canonical owner;
+- exact revision;
+- file-surface ownership;
+- evidence ladder;
+- rollback;
+- security/policy/provenance gates.
+
+Keep diversity in:
+- language;
+- component surface;
+- evidence mode;
+- risk class.
+
+Foundation owns CI/CD and deployment. Operations owns protected policy/runtime authority. Candidate compilation or static benchmarks never grant production authority.
+
+For ChatGPT/multi-agent sessions:
+1. refresh live GitHub state before every mutation;
+2. batch discovery and independent evidence reads;
+3. allocate lanes adaptively instead of permanently assigning issues to sessions;
+4. serialize mutations per authority/file surface;
+5. continue independent work while CI runs;
+6. collapse repeated failures into one root-cause fix;
+7. refresh affected queue slices after merges;
+8. keep exact evidence/rung state in PR and issue metadata so another session can resume without chat history.
