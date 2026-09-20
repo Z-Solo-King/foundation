@@ -1,0 +1,125 @@
+name: Polyglot migration review
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/*.py"
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.js"
+      - "**/*.jsx"
+      - "**/*.rs"
+      - "**/*.go"
+      - "**/*.php"
+      - "**/*.java"
+      - "**/*.kt"
+      - "**/*.kts"
+      - "**/*.cs"
+      - "**/*.c"
+      - "**/*.cc"
+      - "**/*.cpp"
+      - "**/*.cxx"
+      - "**/*.h"
+      - "**/*.hh"
+      - "**/*.hpp"
+      - "**/*.zig"
+      - "benchmark/polyglot/**"
+      - "docs/**"
+      - ".github/workflows/polyglot-migration-review.yml"
+  workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: Immutable Operations revision to review
+        required: false
+        default: ae67910d85c1d31fbead8ae1c94da434a0be8a93
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  review:
+    name: Cross-language migration review
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OPERATIONS_REF: \${{ inputs.operations_ref || 'ae67910d85c1d31fbead8ae1c94da434a0be8a93' }}
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          app-id: \${{ secrets.OPERATIONS_APP_ID }}
+          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout immutable Operations review policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: \${{ env.OPERATIONS_REF }}
+          token: \${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Verify immutable Operations revision
+        working-directory: operations
+        env:
+          EXPECTED: \${{ env.OPERATIONS_REF }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED"
+
+      - name: Install Operations package
+        working-directory: operations
+        run: python -m pip install --disable-pip-version-check -e . --no-deps
+
+      - name: Run migration review
+        env:
+          PYTHONPATH: \${{ github.workspace }}/operations
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime
+          python operations/private/multi_agent/migration_review.py \
+            --foundation "$GITHUB_WORKSPACE" \
+            --operations "$GITHUB_WORKSPACE/operations" \
+            --matrix "$GITHUB_WORKSPACE/benchmark/polyglot/migration_matrix_40.json" \
+            --output .runtime/polyglot-migration-review.json
+
+      - name: Validate migration review
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          receipt = json.loads(Path(".runtime/polyglot-migration-review.json").read_text(encoding="utf-8"))
+          assert receipt["schema"] == "nightly-migration-review/v1"
+          assert receipt["matrix"]["case_count"] == 40
+          assert receipt["matrix"]["agent_counts"] == [1, 2, 4, 8]
+          assert receipt["matrix"]["execution_modes"] == ["serial", "parallel"]
+          assert receipt["matrix"]["repeats"] == 3
+          assert receipt["capacity_sweep"]["cases"] == 24
+          assert receipt["capacity_sweep"]["all_cases_completed"] is True
+          assert len(receipt["language_review"]) == 40
+          assert len(receipt["polyglot_audit"]["language_scoreboard"]) == 10
+          assert receipt["polyglot_audit"]["project"]["migration_candidates"] >= 0
+
+      - name: Upload machine-readable review
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: polyglot-migration-review
+          path: .runtime/polyglot-migration-review.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Attest migration review
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: .runtime/polyglot-migration-review.json
