@@ -1,5 +1,6 @@
 export const MAX_PUBLIC_REDIRECTS = 3;
 export const MAX_PUBLIC_RESPONSE_BYTES = 1_000_000;
+export const MAX_PUBLIC_JSON_BODY_BYTES = 1_000_000;
 export const PUBLIC_HTTP_METHOD = "GET" as const;
 
 export interface PublicDestinationDecision {
@@ -42,12 +43,17 @@ export function nextRedirect(
   currentUrl: string,
   location: string,
   redirects: number,
-  originalScheme: "http:" | "https:",
+  originalScheme: string | { originalScheme: string },
 ): string {
   if (redirects >= MAX_PUBLIC_REDIRECTS) throw new Error("too many redirects");
+  const scheme =
+    typeof originalScheme === "string"
+      ? originalScheme
+      : originalScheme?.originalScheme;
+  if (scheme !== "http:" && scheme !== "https:") throw new Error("original scheme must be http: or https:");
   const next = new URL(location, currentUrl);
   const canonical = canonicalizePublicUrl(next.toString());
-  if (originalScheme === "https:" && new URL(canonical).protocol !== "https:") {
+  if (scheme === "https:" && new URL(canonical).protocol !== "https:") {
     throw new Error("https to http redirect downgrade is not allowed");
   }
   return canonical;

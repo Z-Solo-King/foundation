@@ -17,7 +17,9 @@ interface LifecycleGlobal {
 function machine() {
   const context = { window: {} as { RIEFrontend?: LifecycleGlobal }, console };
   vm.runInNewContext(generated, context);
-  return context.window.RIEFrontend.lifecycleStateMachine;
+  const frontend = context.window.RIEFrontend;
+  if (!frontend) throw new Error('RIEFrontend registry was not initialized');
+  return frontend.lifecycleStateMachine;
 }
 
 test("preserves the canonical state vocabulary", () => {

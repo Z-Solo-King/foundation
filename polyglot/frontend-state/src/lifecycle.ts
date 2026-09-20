@@ -65,7 +65,8 @@
     return normalize(raw) ?? 'UNKNOWN';
   }
 
-  const target = window as Window & { RIEFrontend?: Record<string, unknown> };
-  target.RIEFrontend = target.RIEFrontend || {};
-  target.RIEFrontend.lifecycleStateMachine = Object.freeze({ STATES, normalize, canTransition, advance, fromBackend });
+  const target = window;
+  const registry = target.RIEFrontend ?? {};
+  registry.lifecycleStateMachine = Object.freeze({ STATES, normalize, canTransition, advance, fromBackend });
+  target.RIEFrontend = registry;
 })();
