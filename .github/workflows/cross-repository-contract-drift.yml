@@ -107,12 +107,12 @@ PY
 )
           test -n "$github_app_token"
           echo "::add-mask::$github_app_token"
+          mkdir -p operations
           # Reuse the authenticated read-only Operations app token for the family
           # language-fit scan. Operations remains workflow-free.
           git -c http.extraHeader="Authorization: Bearer ${github_app_token}" \
             clone --depth=1 --filter=blob:none \
             "https://github.com/${OPERATIONS_REPOSITORY}.git" operations/repo
-          mkdir -p operations
           catalog_response=$(curl -fsS \
             -H 'Accept: application/vnd.github+json' \
             -H "Authorization: Bearer ${github_app_token}" \
