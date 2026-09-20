@@ -51,6 +51,8 @@ jobs:
             *) exit 1 ;;
           esac
       - name: Write bridge receipt
+        env:
+          TARGET: ${{ inputs.target }}
         run: |
           set -euo pipefail
           mkdir -p .runtime
