@@ -239,7 +239,7 @@ def test_credential_policy_documents_the_separation():
 
     assert "B2 credentials are secrets and never belong in Git" in deployment
     assert "`OPERATIONS_APP_ID`" in policy
-    assert "Production deployment uses the purpose-specific GitHub App installation credential set" in backup
+    assert "purpose-specific GitHub App credential family" in backup
     assert CANONICAL_OPERATIONS_REF in deployment
 
 
