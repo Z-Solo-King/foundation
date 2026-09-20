@@ -1,3 +1,31 @@
+## 2026-09-20 VERIFIED PRODUCTION + MIGRATION STATE
+
+This is the current continuity override. It supersedes older dated sections below when values conflict.
+
+### Exact heads and production proof
+
+- Foundation `main`: `d4f8be98447d2b6c6d05d1b213941e029f8649a6`.
+- Operations `main`: `dd30834aec8f1263d9b35142b1bd16b4ba95f1ca`.
+- Canonical production workflow: run `35519167159`, run number `321`, status `success`.
+- Production revision: Foundation `d4f8be98447d2b6c6d05d1b213941e029f8649a6` + Operations `dd30834aec8f1263d9b35142b1bd16b4ba95f1ca`.
+- Cloudflare Operations version observed by the canonical release: `0dae35f1-854b-49e4-b278-f3a17af3aa00`.
+- Cross-repository audit receipt: `cross-repository-audit-receipt`.
+
+### Fresh production acceptance
+
+Passed: public/Operations deployment provenance, security-trust strict audit, authenticated chat, idempotency replay, SSE lifecycle, permitted-source research ingestion/readback, D1/B2 diagnostics, memory store/query/delete and owner boundary, task-envelope replay guard, candidate-learning round trip, terminalization CAS, durable resource reservation/consume/reconciliation, maintenance reconciliation, and provider-stream contract.
+
+The canonical release explicitly deferred cross-version memory/replay acceptance. The chat path also used governed deterministic fallback because no permitted live model provider was configured. These are open acceptance states, not failed deployment states.
+
+### Current migration harness status
+
+The migration/extractor workflows now verify an exact Foundation public-core revision before immutable Git-blob verification. The remaining task is to execute a fresh main-branch matrix with the corrected `GITHUB_OUTPUT` pin-discovery contract and then adjudicate Rust/Go/TypeScript candidates from actual scenario receipts.
+
+### External blockers
+
+- The real 24-program nightly research execution remains blocked by the live research executor configuration gate.
+- B2 backup remains blocked at the GitHub backup credential/network verification step.
+
 ## 2026-09-20 PRODUCTION PROMOTION OVERRIDE
 
 Current live preparation state:
