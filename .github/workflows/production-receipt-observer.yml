@@ -1,0 +1,81 @@
+name: Canonical evidence receipt observer
+
+on:
+  workflow_run:
+    workflows:
+      - "Canonical Heroic AI production release"
+      - "Fresh control-plane identity acceptance"
+      - "Coverage-driven runtime matrix"
+      - "Live extractor benchmark"
+      - "Hybrid language pilots"
+      - "nightly multi-agent research"
+    types:
+      - completed
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+jobs:
+  receipt:
+    name: Publish canonical evidence receipt
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Capture release, job and artifact evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          run_json="$(gh api "repos/$REPOSITORY/actions/runs/$RUN_ID")"
+          jobs_json="$(gh api "repos/$REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100")"
+          artifacts_json="$(gh api "repos/$REPOSITORY/actions/runs/$RUN_ID/artifacts?per_page=100")"
+
+          job_summary="$(
+            jq -c '[.jobs[] | {name, status, conclusion}] | sort_by(.name)' <<<"$jobs_json"
+          )"
+
+          artifact_summary="$(
+            jq -c '[.artifacts[] | {name, expired, size_in_bytes}] | sort_by(.name)' <<<"$artifacts_json"
+          )"
+
+          issue_numbers="$(
+            case "$WORKFLOW_NAME" in
+              "Canonical Heroic AI production release") echo "58" ;;
+              "Fresh control-plane identity acceptance") echo "58 263" ;;
+              "nightly multi-agent research") echo "58 157" ;;
+              "Coverage-driven runtime matrix") echo "58 197 340 385 452" ;;
+              "Live extractor benchmark") echo "58 352 597" ;;
+              "Hybrid language pilots") echo "58 597 603" ;;
+              *) echo "58" ;;
+            esac
+          )"
+
+          body="$(
+            jq -rn               --arg workflow "$WORKFLOW_NAME"               --arg run "$RUN_NUMBER"               --arg id "$RUN_ID"               --arg sha "$HEAD_SHA"               --arg conclusion "$CONCLUSION"               --arg url "$RUN_URL"               --argjson jobs "$job_summary"               --argjson artifacts "$artifact_summary"               '
+              "## Automated evidence receipt\n\n" +
+              "- Workflow: " + $workflow + "\n" +
+              "- Run: #" + $run + " (id " + $id + ")\n" +
+              "- Conclusion: " + $conclusion + "\n" +
+              "- Head SHA: " + $sha + "\n" +
+              "- URL: " + $url + "\n\n" +
+              "### Jobs\n" + ($jobs | tojson) + "\n\n" +
+              "### Artifacts\n" + ($artifacts | tojson)
+              '
+          )"
+
+          for issue in $issue_numbers; do
+            gh issue comment "$issue" --repo "$REPOSITORY" --body "$body"
+          done
+
+          echo "Published $WORKFLOW_NAME receipt for run $RUN_NUMBER to issues: $issue_numbers"
