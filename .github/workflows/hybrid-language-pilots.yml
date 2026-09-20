@@ -420,7 +420,7 @@ jobs:
               f'<article class="product-card"><h2>Product {i}</h2><a href="/p/{i}">/p/{i}</a><span class="price">₹{100+i}</span></article>'
               for i in range(32)
           ]
-          binary = "./target/release/rie_html_kernel"
+          binary = "./experiments/rust_html_kernel/target/release/rie_html_kernel"
           rust_times = []
 
           for repeat in range(3):
