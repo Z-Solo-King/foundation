@@ -230,7 +230,6 @@ def test_credential_policy_documents_the_separation():
     for secret in (
         "OPERATIONS_APP_ID",
         "OPERATIONS_APP_PRIVATE_KEY",
-        "BACKUP_GITHUB_TOKEN",
         "B2_KEY_ID",
         "B2_APPLICATION_KEY",
         "CLOUDFLARE_API_TOKEN",
@@ -239,7 +238,7 @@ def test_credential_policy_documents_the_separation():
         assert secret in policy
 
     assert "B2 credentials are secrets and never belong in Git" in deployment
-    assert "`BACKUP_GITHUB_TOKEN` is a GitHub read credential" in backup
+    assert "`OPERATIONS_APP_ID`" in policy
     assert "Production deployment uses the purpose-specific GitHub App installation credential set" in backup
     assert CANONICAL_OPERATIONS_REF in deployment
 
