@@ -3,7 +3,7 @@ import fs from 'node:fs';
 
 const index = fs.readFileSync(new URL('./index.html', import.meta.url), 'utf8');
 const lifecycle = fs.readFileSync(new URL('./lifecycle_controller.js', import.meta.url), 'utf8');
-const stateMachine = fs.readFileSync(new URL('./lifecycle_state_machine.js', import.meta.url), 'utf8');
+const stateMachine = fs.readFileSync(new URL('./generated/lifecycle.js', import.meta.url), 'utf8');
 const queue = fs.readFileSync(new URL('./lifecycle_queue_controls.js', import.meta.url), 'utf8');
 const workspace = fs.readFileSync(new URL('./workspace_view.js', import.meta.url), 'utf8');
 
