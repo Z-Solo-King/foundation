@@ -1,27 +1,27 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT_LIVE_RECONCILIATION",
-  "audited_at": "2026-09-19",
+  "audited_at": "2026-09-20",
   "authority": "Foundation docs/CURRENT_SOURCE_OF_TRUTH.md",
   "repositories": {
     "foundation": {
       "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup",
-      "last_audited_main_sha": "6a91fbd17143083882e9ac7ebfa52f0b06a344b2"
+      "last_audited_main_sha": "62ff421534034d70a110f1dba32f71975c7e5a2d"
     },
     "operations": {
       "role": "private-control-plane-research-orchestration",
-      "last_audited_main_sha": "c6f7ebaec4ebdf21cd1d036df073b90de5bc7129",
-      "approved_production_revision": "c6f7ebaec4ebdf21cd1d036df073b90de5bc7129",
+      "last_audited_main_sha": "277ccb9ee33221038c7ca5647f19e27a00d84ea3",
+      "approved_production_revision": "6a3e8577ca9d75b80f592da104e7f997850ed164",
       "nightly_research_revision": "f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5"
     }
   },
   "production": {
-    "workflow_run_id": 35456292033,
-    "workflow_run_number": 232,
-    "foundation_revision": "6a91fbd17143083882e9ac7ebfa52f0b06a344b2",
-    "operations_revision": "f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5",
+    "workflow_run_id": null,
+    "workflow_run_number": null,
+    "foundation_revision": "62ff421534034d70a110f1dba32f71975c7e5a2d",
+    "operations_revision": "6a3e8577ca9d75b80f592da104e7f997850ed164",
     "cross_repository_audit_artifact": "cross-repository-audit-receipt",
-    "result": "success"
+    "result": "PENDING_RECERTIFICATION"
   },
   "acceptance": {
     "foundation": [
