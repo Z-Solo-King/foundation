@@ -23,7 +23,7 @@ function machine() {
 }
 
 test("preserves the canonical state vocabulary", () => {
-  assert.deepEqual(machine().STATES, [
+  assert.deepEqual(Array.from(machine().STATES), [
     "NEW_CHAT","SUBMITTING","QUEUED","RUNNING","STREAMING","COMPLETE","PARTIAL",
     "BLOCKED","REJECTED","UNAVAILABLE","UNKNOWN","RECONNECTING","RESUMED","REPLAYED","AUTH_EXPIRED",
   ]);
