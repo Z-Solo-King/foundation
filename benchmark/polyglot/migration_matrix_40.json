@@ -1,0 +1,434 @@
+{
+  "schema": "polyglot-adaptive-matrix/v1",
+  "case_count": 40,
+  "repeats": 3,
+  "topics": [
+    "chat",
+    "research",
+    "extraction",
+    "streaming",
+    "resource-governance",
+    "browser",
+    "migration",
+    "security"
+  ],
+  "approaches": [
+    "baseline",
+    "adversarial",
+    "recovery",
+    "cost-bound",
+    "cross-language"
+  ],
+  "agent_counts": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "execution_modes": [
+    "serial",
+    "parallel"
+  ],
+  "cases": [
+    {
+      "id": "polyglot-01",
+      "topic": "chat",
+      "approach": "baseline",
+      "agent_count": 1,
+      "execution_mode": "serial",
+      "candidate_pair": "python-rust",
+      "evidence": "contract",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-02",
+      "topic": "chat",
+      "approach": "adversarial",
+      "agent_count": 2,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-typescript",
+      "evidence": "error-taxonomy",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-03",
+      "topic": "chat",
+      "approach": "recovery",
+      "agent_count": 4,
+      "execution_mode": "serial",
+      "candidate_pair": "python-go",
+      "evidence": "cancellation",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-04",
+      "topic": "chat",
+      "approach": "cost-bound",
+      "agent_count": 8,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-rust",
+      "evidence": "resource-bounds",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-05",
+      "topic": "chat",
+      "approach": "cross-language",
+      "agent_count": 1,
+      "execution_mode": "serial",
+      "candidate_pair": "python-typescript",
+      "evidence": "provenance",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-06",
+      "topic": "research",
+      "approach": "baseline",
+      "agent_count": 2,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-go",
+      "evidence": "contract",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-07",
+      "topic": "research",
+      "approach": "adversarial",
+      "agent_count": 4,
+      "execution_mode": "serial",
+      "candidate_pair": "python-rust",
+      "evidence": "error-taxonomy",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-08",
+      "topic": "research",
+      "approach": "recovery",
+      "agent_count": 8,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-typescript",
+      "evidence": "cancellation",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-09",
+      "topic": "research",
+      "approach": "cost-bound",
+      "agent_count": 1,
+      "execution_mode": "serial",
+      "candidate_pair": "python-go",
+      "evidence": "resource-bounds",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-10",
+      "topic": "research",
+      "approach": "cross-language",
+      "agent_count": 2,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-rust",
+      "evidence": "provenance",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-11",
+      "topic": "extraction",
+      "approach": "baseline",
+      "agent_count": 4,
+      "execution_mode": "serial",
+      "candidate_pair": "python-typescript",
+      "evidence": "contract",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-12",
+      "topic": "extraction",
+      "approach": "adversarial",
+      "agent_count": 8,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-go",
+      "evidence": "error-taxonomy",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-13",
+      "topic": "extraction",
+      "approach": "recovery",
+      "agent_count": 1,
+      "execution_mode": "serial",
+      "candidate_pair": "python-rust",
+      "evidence": "cancellation",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-14",
+      "topic": "extraction",
+      "approach": "cost-bound",
+      "agent_count": 2,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-typescript",
+      "evidence": "resource-bounds",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-15",
+      "topic": "extraction",
+      "approach": "cross-language",
+      "agent_count": 4,
+      "execution_mode": "serial",
+      "candidate_pair": "python-go",
+      "evidence": "provenance",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-16",
+      "topic": "streaming",
+      "approach": "baseline",
+      "agent_count": 8,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-rust",
+      "evidence": "contract",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-17",
+      "topic": "streaming",
+      "approach": "adversarial",
+      "agent_count": 1,
+      "execution_mode": "serial",
+      "candidate_pair": "python-typescript",
+      "evidence": "error-taxonomy",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-18",
+      "topic": "streaming",
+      "approach": "recovery",
+      "agent_count": 2,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-go",
+      "evidence": "cancellation",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-19",
+      "topic": "streaming",
+      "approach": "cost-bound",
+      "agent_count": 4,
+      "execution_mode": "serial",
+      "candidate_pair": "python-rust",
+      "evidence": "resource-bounds",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-20",
+      "topic": "streaming",
+      "approach": "cross-language",
+      "agent_count": 8,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-typescript",
+      "evidence": "provenance",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-21",
+      "topic": "resource-governance",
+      "approach": "baseline",
+      "agent_count": 1,
+      "execution_mode": "serial",
+      "candidate_pair": "python-go",
+      "evidence": "contract",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-22",
+      "topic": "resource-governance",
+      "approach": "adversarial",
+      "agent_count": 2,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-rust",
+      "evidence": "error-taxonomy",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-23",
+      "topic": "resource-governance",
+      "approach": "recovery",
+      "agent_count": 4,
+      "execution_mode": "serial",
+      "candidate_pair": "python-typescript",
+      "evidence": "cancellation",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-24",
+      "topic": "resource-governance",
+      "approach": "cost-bound",
+      "agent_count": 8,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-go",
+      "evidence": "resource-bounds",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-25",
+      "topic": "resource-governance",
+      "approach": "cross-language",
+      "agent_count": 1,
+      "execution_mode": "serial",
+      "candidate_pair": "python-rust",
+      "evidence": "provenance",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-26",
+      "topic": "browser",
+      "approach": "baseline",
+      "agent_count": 2,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-typescript",
+      "evidence": "contract",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-27",
+      "topic": "browser",
+      "approach": "adversarial",
+      "agent_count": 4,
+      "execution_mode": "serial",
+      "candidate_pair": "python-go",
+      "evidence": "error-taxonomy",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-28",
+      "topic": "browser",
+      "approach": "recovery",
+      "agent_count": 8,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-rust",
+      "evidence": "cancellation",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-29",
+      "topic": "browser",
+      "approach": "cost-bound",
+      "agent_count": 1,
+      "execution_mode": "serial",
+      "candidate_pair": "python-typescript",
+      "evidence": "resource-bounds",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-30",
+      "topic": "browser",
+      "approach": "cross-language",
+      "agent_count": 2,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-go",
+      "evidence": "provenance",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-31",
+      "topic": "migration",
+      "approach": "baseline",
+      "agent_count": 4,
+      "execution_mode": "serial",
+      "candidate_pair": "python-rust",
+      "evidence": "contract",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-32",
+      "topic": "migration",
+      "approach": "adversarial",
+      "agent_count": 8,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-typescript",
+      "evidence": "error-taxonomy",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-33",
+      "topic": "migration",
+      "approach": "recovery",
+      "agent_count": 1,
+      "execution_mode": "serial",
+      "candidate_pair": "python-go",
+      "evidence": "cancellation",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-34",
+      "topic": "migration",
+      "approach": "cost-bound",
+      "agent_count": 2,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-rust",
+      "evidence": "resource-bounds",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-35",
+      "topic": "migration",
+      "approach": "cross-language",
+      "agent_count": 4,
+      "execution_mode": "serial",
+      "candidate_pair": "python-typescript",
+      "evidence": "provenance",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-36",
+      "topic": "security",
+      "approach": "baseline",
+      "agent_count": 8,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-go",
+      "evidence": "contract",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-37",
+      "topic": "security",
+      "approach": "adversarial",
+      "agent_count": 1,
+      "execution_mode": "serial",
+      "candidate_pair": "python-rust",
+      "evidence": "error-taxonomy",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-38",
+      "topic": "security",
+      "approach": "recovery",
+      "agent_count": 2,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-typescript",
+      "evidence": "cancellation",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-39",
+      "topic": "security",
+      "approach": "cost-bound",
+      "agent_count": 4,
+      "execution_mode": "serial",
+      "candidate_pair": "python-go",
+      "evidence": "resource-bounds",
+      "repeats": 3
+    },
+    {
+      "id": "polyglot-40",
+      "topic": "security",
+      "approach": "cross-language",
+      "agent_count": 8,
+      "execution_mode": "parallel",
+      "candidate_pair": "python-rust",
+      "evidence": "provenance",
+      "repeats": 3
+    }
+  ]
+}
