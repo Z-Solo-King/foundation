@@ -8,7 +8,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to benchmark
         required: false
-        default: e8e7b2434ed9fd4efac41d1003008c6544ecedf2
+        default: ecabc7557bb4d4b829298f4eaf9d90939aa321bb
         type: string
 
 permissions:
@@ -126,7 +126,7 @@ jobs:
             pass: 2
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || 'e8e7b2434ed9fd4efac41d1003008c6544ecedf2' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || 'ecabc7557bb4d4b829298f4eaf9d90939aa321bb' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Create Operations read token
@@ -250,7 +250,7 @@ jobs:
           set -euo pipefail
           mkdir -p benchmark-output
           cat > benchmark-output/case.json <<EOF
-          {"case":"${{ matrix.case }}","label":"${{ matrix.label }}","mode":"${{ matrix.mode }}","url":"${{ matrix.url }}","pass":${{ matrix.pass }},"operations_ref":"${{ inputs.operations_ref || 'e8e7b2434ed9fd4efac41d1003008c6544ecedf2' }}"}
+          {"case":"${{ matrix.case }}","label":"${{ matrix.label }}","mode":"${{ matrix.mode }}","url":"${{ matrix.url }}","pass":${{ matrix.pass }},"operations_ref":"${{ inputs.operations_ref || 'ecabc7557bb4d4b829298f4eaf9d90939aa321bb' }}"}
           EOF
 
       - name: Upload case artifact
@@ -283,7 +283,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'e8e7b2434ed9fd4efac41d1003008c6544ecedf2' }}
+          ref: ${{ inputs.operations_ref || 'ecabc7557bb4d4b829298f4eaf9d90939aa321bb' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
