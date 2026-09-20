@@ -36,22 +36,56 @@ jobs:
           command -v aws >/dev/null || { echo 'AWS CLI is unavailable on the runner'; exit 1; }
           echo 'backup tools: PASS'
 
-      - name: Verify required GitHub backup credential
+      - name: Authenticate GitHub App for private Operations backup
         shell: bash
         env:
-          BACKUP_GITHUB_TOKEN: ${{ secrets.BACKUP_GITHUB_TOKEN }}
+          OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
+          OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
         run: |
           set -euo pipefail
-          token="$(printf '%s' "${BACKUP_GITHUB_TOKEN:-}" | tr -d '\r\n')"
-          test -n "$token" || { echo 'Missing BACKUP_GITHUB_TOKEN GitHub secret'; exit 1; }
-          response="$(curl --fail-with-body -sS \
-            -H "Authorization: Bearer ${token}" \
+          test -n "${OPERATIONS_APP_ID:-}" || { echo 'Missing OPERATIONS_APP_ID GitHub Actions secret'; exit 1; }
+          test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIVATE_KEY GitHub Actions secret'; exit 1; }
+          key_file="$RUNNER_TEMP/operations-backup-app.pem"
+          jwt_file="$RUNNER_TEMP/operations-backup-jwt.txt"
+          installation_output="$RUNNER_TEMP/operations-backup-installation-id.txt"
+          installation_error="$RUNNER_TEMP/operations-backup-installation-id.err"
+          response_file="$RUNNER_TEMP/operations-backup-installation-response.json"
+          umask 077
+          printf '%s\n' "$OPERATIONS_APP_PRIVATE_KEY" > "$key_file"
+          chmod 600 "$key_file"
+          python scripts/create_github_app_jwt.py "$OPERATIONS_APP_ID" "$key_file" > "$jwt_file"
+          app_jwt="$(cat "$jwt_file")"
+          set +e
+          OPERATIONS_APP_JWT="$app_jwt" python scripts/resolve_operations_installation.py >"$installation_output" 2>"$installation_error"
+          installation_status=$?
+          set -e
+          if [ "$installation_status" -ne 0 ]; then
+            echo "GitHub App installation discovery failed (exit $installation_status)"
+            cat "$installation_error" 2>/dev/null || true
+            exit 1
+          fi
+          installation_id="$(tr -d '\r\n' < "$installation_output")"
+          test -n "$installation_id"
+          installation_response="$(curl -fsS -X POST \
             -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer ${app_jwt}" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/app/installations/${installation_id}/access_tokens")"
+          printf '%s\n' "$installation_response" > "$response_file"
+          github_app_token="$(jq -r '.token // empty' "$response_file")"
+          test -n "$github_app_token"
+          echo "::add-mask::$github_app_token"
+          echo 'GITHUB_APP_TOKEN<<EOF' >> "$GITHUB_ENV"
+          printf '%s\n' "$github_app_token" >> "$GITHUB_ENV"
+          echo 'EOF' >> "$GITHUB_ENV"
+          response="$(curl -fsS \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer ${github_app_token}" \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
             'https://api.github.com/repos/Z-Solo-King/operations')"
-          test "$(jq -r '.visibility // empty' <<< "$response")" = 'private' || { echo 'BACKUP_GITHUB_TOKEN is not authorized for the private Operations repository'; exit 1; }
-          echo 'BACKUP_GITHUB_TOKEN purpose check: PASS (GitHub repository access)'
-
+          jq -e '.private == true and .full_name == "Z-Solo-King/operations"' <<<"$response" >/dev/null
+          echo 'GitHub App private Operations API access: PASS'
+          echo 'GitHub App private Operations credential: PASS'
       - name: Verify required B2 credentials
         shell: bash
         env:
@@ -70,24 +104,24 @@ jobs:
 
       - name: Mirror both repositories
         shell: bash
-        env:
-          BACKUP_GITHUB_TOKEN: ${{ secrets.BACKUP_GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          token="$(printf '%s' "${BACKUP_GITHUB_TOKEN:-}" | tr -d '\r\n')"
-          test -n "$token"
-          basic="$(printf 'x-access-token:%s' "$token" | base64 -w0)"
+          test -n "${GITHUB_APP_TOKEN:-}"
           rm -rf backup-work backup-output remote-restore
           mkdir -p backup-work backup-output remote-restore
           for repo in foundation operations; do
-            git -c "http.extraHeader=Authorization: Basic $basic" clone --mirror "https://github.com/Z-Solo-King/${repo}.git" "backup-work/${repo}.git"
+            if [[ "$repo" == "operations" ]]; then
+              basic="$(printf 'x-access-token:%s' "$GITHUB_APP_TOKEN" | base64 -w0)"
+              git -c "http.extraHeader=Authorization: Basic $basic" clone --mirror "https://github.com/Z-Solo-King/${repo}.git" "backup-work/${repo}.git"
+            else
+              git clone --mirror "https://github.com/Z-Solo-King/${repo}.git" "backup-work/${repo}.git"
+            fi
             git -C "backup-work/${repo}.git" fsck --full --no-dangling
             sha="$(git -C "backup-work/${repo}.git" rev-parse --verify refs/heads/main)"
             refs="$(git -C "backup-work/${repo}.git" show-ref --head | wc -l)"
             test -n "$sha" && test "$refs" -gt 0
             echo "${repo} mirror integrity: PASS (${sha}; ${refs} refs)"
           done
-
       - name: Create immutable archives and manifests
         shell: bash
         run: |

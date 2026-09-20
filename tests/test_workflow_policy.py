@@ -211,17 +211,17 @@ def test_all_canonical_workflow_dispatch_requests_use_the_public_router():
 
 
 
-def test_backup_workflow_separates_github_and_b2_credentials():
+def test_backup_workflow_uses_app_auth_for_private_operations_and_separates_b2_credentials():
     backup = _workflow_texts()["b2-repository-backup.yml"]
-    assert "BACKUP_GITHUB_TOKEN: ${{ secrets.BACKUP_GITHUB_TOKEN }}" in backup
-    assert "B2_KEY_ID: ${{ secrets.B2_KEY_ID }}" in backup
-    assert "B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}" in backup
+    assert "OPERATIONS_APP_ID" in backup
+    assert "OPERATIONS_APP_PRIVATE_KEY" in backup
+    assert "B2_KEY_ID" in backup
+    assert "B2_APPLICATION_KEY" in backup
     assert "https://api.github.com/repos/Z-Solo-King/operations" in backup
-    assert "BACKUP_GITHUB_TOKEN purpose check: PASS (GitHub repository access)" in backup
+    assert "GitHub App private Operations credential: PASS" in backup
     assert "B2 credential/bucket check: PASS" in backup
+    assert "BACKUP_GITHUB_TOKEN" not in backup
     assert "OPERATIONS_READ_TOKEN" not in backup
-
-
 def test_credential_policy_documents_the_separation():
     policy = (ROOT / "docs" / "CREDENTIAL_AND_BACKUP_AUTHORITY.md").read_text(encoding="utf-8")
     deployment = (ROOT / "DEPLOYMENT.md").read_text(encoding="utf-8")
@@ -230,7 +230,6 @@ def test_credential_policy_documents_the_separation():
     for secret in (
         "OPERATIONS_APP_ID",
         "OPERATIONS_APP_PRIVATE_KEY",
-        "BACKUP_GITHUB_TOKEN",
         "B2_KEY_ID",
         "B2_APPLICATION_KEY",
         "CLOUDFLARE_API_TOKEN",
@@ -239,8 +238,8 @@ def test_credential_policy_documents_the_separation():
         assert secret in policy
 
     assert "B2 credentials are secrets and never belong in Git" in deployment
-    assert "`BACKUP_GITHUB_TOKEN` is a GitHub read credential" in backup
-    assert "Production deployment uses the purpose-specific GitHub App installation credential set" in backup
+    assert "`OPERATIONS_APP_ID`" in policy
+    assert "purpose-specific GitHub App credential family" in backup
     assert CANONICAL_OPERATIONS_REF in deployment
 
 

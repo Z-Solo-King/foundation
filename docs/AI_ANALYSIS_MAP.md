@@ -36,8 +36,7 @@ The former `test_coverage_*` files were broad aggregators. They were audited by 
 
 ## Credential boundary
 
-- `OPERATIONS_READ_TOKEN` belongs to production checkout of the private Operations repository.
-- `BACKUP_GITHUB_TOKEN` belongs only to repository mirroring for the B2 backup workflow.
+- `OPERATIONS_APP_ID` and `OPERATIONS_APP_PRIVATE_KEY` belong to the GitHub App used for private Operations source access in deployment/backup workflows.
 - `B2_KEY_ID`, `B2_APPLICATION_KEY`, and `B2_BUCKET` belong only to B2.
 - Never substitute credentials between authorities.
 

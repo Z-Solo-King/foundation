@@ -21,7 +21,7 @@ This applies to code, policy logic, process methodology, DTOs, registries, state
 
 Credential and backup policy is canonical in `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md`.
 
-Foundation owns the GitHub production deployment workflow and the repository backup workflow. `OPERATIONS_READ_TOKEN` is the purpose-specific credential for reading the private Operations revision during production deployment. `BACKUP_GITHUB_TOKEN` is a separate GitHub read credential used by the B2 backup workflow to mirror repository Git data.
+Foundation owns the GitHub production deployment workflow and the repository backup workflow. `OPERATIONS_APP_ID` and `OPERATIONS_APP_PRIVATE_KEY` are the purpose-specific GitHub App credentials used to mint short-lived private Operations read access for deployment and backup. The two workflows retain separate authority, lifecycle and acceptance gates.
 
 Backblaze B2 is artifact/backup storage authority only. `B2_KEY_ID`, `B2_APPLICATION_KEY` and `B2_BUCKET` belong to the B2 boundary and are never substitutes for GitHub credentials. B2 does not own application identity, authorization, routing, resource governance, evidence, deployment approval or result-state semantics.
 

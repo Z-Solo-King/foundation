@@ -51,7 +51,7 @@ The runtime Foundation -> Operations path is a Cloudflare service binding plus t
 | --- | --- | --- | --- |
 | `OPERATIONS_APP_ID` | Identify the GitHub App used for private Operations deployment access | Foundation deployment workflow | B2 secrets, Cloudflare secrets |
 | `OPERATIONS_APP_PRIVATE_KEY` | Sign the short-lived GitHub App JWT | Foundation deployment workflow | B2 secrets, Cloudflare secrets |
-| `BACKUP_GITHUB_TOKEN` | Read/mirror both repositories for B2 backup | Foundation backup workflow | Operations deployment credentials, B2 secrets |
+| `OPERATIONS_APP_ID` + `OPERATIONS_APP_PRIVATE_KEY` | Mint short-lived GitHub App token for private Operations source access during deployment and backup | Foundation deployment/backup workflows | B2 secrets, Cloudflare secrets |
 | `B2_KEY_ID` | B2 API authentication | B2 backup boundary | GitHub tokens, Cloudflare tokens |
 | `B2_APPLICATION_KEY` | B2 backup/restore authorization | B2 backup boundary | GitHub tokens, Cloudflare tokens |
 | `CLOUDFLARE_API_TOKEN` | Cloudflare deployment/API access | Cloudflare deployment boundary | GitHub tokens, B2 secrets |
@@ -115,7 +115,7 @@ The public path is validated first. The protected Operations handoff is then val
 - Use `pywrangler deploy` for Python Workers.
 - Never commit credential values.
 - Never put GitHub tokens, B2 keys, Cloudflare tokens, or application authentication tokens into backup manifests or handoff records.
-- Do not reuse `BACKUP_GITHUB_TOKEN` as the production Operations deployment credential.
+- Do not use B2 credentials or application/runtime credentials as GitHub source-access credentials; use the purpose-specific GitHub App installation credential set.
 - Do not reuse B2 credentials as GitHub credentials.
 - Keep the strict `$0` policy fail-closed; do not add paid fallbacks to make deployment convenient.
 - Do not claim Cloudflare production or application certification without current evidence.

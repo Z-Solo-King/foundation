@@ -6,16 +6,16 @@ The scheduled Foundation workflow mirrors both active repositories to the author
 
 The backup workflow uses two independent credential families.
 
-### GitHub repository credential
+### GitHub repository access
 
-`BACKUP_GITHUB_TOKEN` is a GitHub read credential used only to mirror:
+The backup workflow uses `OPERATIONS_APP_ID` and `OPERATIONS_APP_PRIVATE_KEY` to mint a short-lived GitHub App installation token used only to mirror private Operations:
 
 - `Z-Solo-King/foundation`;
 - `Z-Solo-King/operations`.
 
-It is **not** a B2 credential and must not contain or be substituted with a B2 key or application key.
+The public Foundation mirror is readable without private credentials. The App installation token is not a B2 credential and must not be substituted with a B2 key or application key.
 
-The workflow validates this credential against the GitHub API before cloning the private Operations repository. It then uses an ephemeral `GIT_ASKPASS` helper for Git authentication and removes the helper during cleanup.
+The workflow validates the App installation/token against the GitHub API before cloning the private Operations repository. It then uses a non-interactive Git HTTP Authorization header and removes App key/JWT material during cleanup.
 
 ### Backblaze B2 credentials
 
@@ -31,7 +31,7 @@ The workflow validates the B2 credentials against the configured bucket separate
 
 ## Deployment credential is separate
 
-Production deployment uses the purpose-specific GitHub App installation credential set (`OPERATIONS_APP_ID`, `OPERATIONS_APP_PRIVATE_KEY`), not `BACKUP_GITHUB_TOKEN`.
+Production deployment and backup both use the same purpose-specific GitHub App credential family for private Operations source access; the workflows retain separate authority, lifecycle and acceptance gates.
 
 The production workflow resolves the installed Operations App dynamically and mints a short-lived installation token for the approved Operations checkout. `OPERATIONS_APP_INSTALLATION_ID` is **not** a stored production secret authority.
 
