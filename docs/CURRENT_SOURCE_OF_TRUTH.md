@@ -15,8 +15,8 @@ This file is the compact continuity record for the next maintenance chat. Curren
 
 ### Exact current revisions
 
-- Foundation `main`: `7dc0e4164df3f20dac933f22a326e3c67fe06e59`
-- Operations `main`: `f1ce7fc3957357a6da9a33f6577b4dfff606048b`
+- Foundation `main`: `c9e5ed881791be39465d0aaaa680e04a569ae505`
+- Operations `main`: `64a381186d6355566054313472c80176f02bee3b`
 - Foundation canonical production Operations pin target: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
 - Foundation nightly research pin remains: `f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5`
 
@@ -71,6 +71,7 @@ Repository-side migration work merged today:
 - Operations #576 — hardened TypeScript shadow search-adapter contract.
 - Operations #577 — parity-gated Rust URL identity pilot.
 - Operations #579 — durable failed terminalization/replay for unexpected chat execution exceptions.
+- Operations #581 — provider-stream ERROR/CANCELLED classification codes are now mandatory.
 
 Operations:
 - #119 — memory persistence/restart plus live authorization/deletion evidence;
@@ -97,4 +98,4 @@ Do not upgrade source inspection or repository tests into runtime/control-plane/
 
 ### Next-chat operating rule
 
-Start from Foundation `7dc0e4164df3f20dac933f22a326e3c67fe06e59` and Operations `f1ce7fc3957357a6da9a33f6577b4dfff606048b`. The production receipt `35456292033` is the current L4 baseline. Work only on a missing acceptance rung or a newly established repository-side defect; do not re-open the already-correct chat/SSE/service-binding/deployment path without new evidence.
+Start from Foundation `c9e5ed881791be39465d0aaaa680e04a569ae505` and Operations `64a381186d6355566054313472c80176f02bee3b`. The production receipt `35456292033` is the current L4 baseline. Work only on a missing acceptance rung or a newly established repository-side defect; do not re-open the already-correct chat/SSE/service-binding/deployment path without new evidence.
