@@ -108,6 +108,11 @@ PY
           test -n "$github_app_token"
           echo "::add-mask::$github_app_token"
           mkdir -p operations
+          # Reuse the authenticated read-only Operations app token for the family
+          # language-fit scan. Operations remains workflow-free.
+          git -c http.extraHeader="Authorization: Bearer ${github_app_token}" \
+            clone --depth=1 --filter=blob:none \
+            "https://github.com/${OPERATIONS_REPOSITORY}.git" operations/repo
           catalog_response=$(curl -fsS \
             -H 'Accept: application/vnd.github+json' \
             -H "Authorization: Bearer ${github_app_token}" \
@@ -148,6 +153,44 @@ PY
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.14'
+
+      - name: Generate family language-fit coverage
+        working-directory: foundation
+        env:
+          PYTHONPATH: ../operations/repo
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime
+          python ../operations/repo/tools/code_language_coverage.py \
+            --repo . \
+            --repo ../operations/repo \
+            --name foundation \
+            --name operations \
+            --output .runtime/language_fit_inventory.json
+          python - .runtime/language_fit_inventory.json <<'PY'
+import json
+import sys
+from pathlib import Path
+p = Path(sys.argv[1])
+data = json.loads(p.read_text(encoding="utf-8"))
+assert data["rows"] > 0, "family inventory is empty"
+assert all(row.get("coverage_status") == "covered" for row in data["artifacts"]), "uncovered artifact row detected"
+assert all(row.get("language_fit") for row in data["artifacts"]), "artifact missing language scores"
+for repo, summary in data["repositories"].items():
+    assert summary["files"] > 0, f"{repo} has no covered artifacts"
+print(json.dumps({
+    "rows": data["rows"],
+    "repositories": data["repositories"],
+    "coverage": "100% of inventoried engineering artifacts",
+}, indent=2))
+PY
+
+      - name: Upload family language-fit inventory
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: family-language-fit-inventory
+          path: foundation/.runtime/language_fit_inventory.json
 
       - name: Run drift contract regression
         working-directory: foundation
