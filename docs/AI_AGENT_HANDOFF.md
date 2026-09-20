@@ -1,3 +1,11 @@
+## 2026-09-20 PRODUCTION PROMOTION OVERRIDE
+
+- Foundation main before this promotion: 62ff421534034d70a110f1dba32f71975c7e5a2d.
+- Operations main: 277ccb9ee33221038c7ca5647f19e27a00d84ea3.
+- Production pin target: 6a3e8577ca9d75b80f592da104e7f997850ed164 (Operations #610, exact proven packaging fix).
+- This is a deliberately immutable production target; it does not promote the newest Operations benchmark/docs commits.
+- Fresh production certification is required after merge; historical production receipts do not certify this target.
+
 ## 2026-09-20 LIVE MIGRATION RECONCILIATION — CURRENT OVERRIDE
 
 Refresh live GitHub refs before every mutation.
