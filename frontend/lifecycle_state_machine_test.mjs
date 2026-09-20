@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-const source = fs.readFileSync(new URL('./lifecycle_state_machine.js', import.meta.url), 'utf8');
+const source = fs.readFileSync(new URL('./generated/lifecycle.js', import.meta.url), 'utf8');
 const context = { window: {}, console };
 vm.runInNewContext(source, context);
 const machine = context.window.RIEFrontend.lifecycleStateMachine;
