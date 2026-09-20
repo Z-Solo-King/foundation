@@ -4,7 +4,7 @@ Use live GitHub refs and fresh runtime receipts over all older sections in this 
 
 ### Exact current state
 - Foundation `main`: `13dfa282cdd21524b05be396213ea22d51ba63ae`.
-- Operations `main`: `3d0f787947ba994471b74431927ab6a6dfa45d65`.
+- Operations `main`: `84cf891a5dc41feec97174cc6191f069b1cb5607`.
 - No open Foundation PRs; no open Operations PRs.
 - Foundation PR #821 is merged. It adds explicit browser chat-stream cancellation, abort propagation to fetch/ReadableStream, visible cancel UI, and a fail-safe `backend_state: UNKNOWN` result.
 - Canonical workflow bridge: `.github/workflows/foundation-canonical-workflow-bridge-v3.yml`. Legacy bridge v1/v2 files must not remain as parallel authorities.
