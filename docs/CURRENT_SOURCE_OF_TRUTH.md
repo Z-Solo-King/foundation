@@ -3,7 +3,7 @@
 GitHub refs and fresh runtime evidence override every older continuity section below.
 
 ### Exact repository state
-- Foundation `main`: `13dfa282cdd21524b05be396213ea22d51ba63ae` (includes merged PR #821).
+- Foundation `main`: `64528e331db940096f6177c7ee40c62da9948150` (includes merged PR #821).
 - Operations `main`: `84cf891a5dc41feec97174cc6191f069b1cb5607`.
 - Open Foundation PRs: none.
 - Open Operations PRs: none.
