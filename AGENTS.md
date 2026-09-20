@@ -1,8 +1,8 @@
 ## 2026-09-20 PRODUCTION PIN PROMOTION OVERRIDE
 
-- Foundation main at promotion preparation: 62ff421534034d70a110f1dba32f71975c7e5a2d.
-- Operations main: 277ccb9ee33221038c7ca5647f19e27a00d84ea3.
-- Canonical production Operations revision for the next release: 6a3e8577ca9d75b80f592da104e7f997850ed164 (Operations #610 merge; fixes the previously observed Worker package omission of generated foundation_core).
+- Foundation main at promotion preparation: c3337a23eb967dfa1dde9915aafea302758650fd.
+- Operations main: dd30834aec8f1263d9b35142b1bd16b4ba95f1ca.
+- Canonical production Operations revision for the next release: dd30834aec8f1263d9b35142b1bd16b4ba95f1ca (current Operations main; includes exact Git-blob sync, Rust URL admission and native-test isolation fixes).
 - Nightly research remains separately pinned to its research revision; production promotion and nightly research are distinct authorities.
 - Do not treat this pin promotion as a live runtime certificate until the canonical production workflow succeeds against the exact Foundation revision and emits a fresh Cloudflare provenance receipt.
 
