@@ -78,9 +78,9 @@ A successful repository-side change does not prove production deployment. Deploy
 
 The current explicitly approved Operations production revision is:
 
-`035bb38e54aa2b81a1e41b95ac01e7d352b75d83`
+`388bff7f2bf93aadad5bf1df27cf95ae223f8f4f`
 
-This is a signed Operations commit implementing the durable D1 governance runtime. The deployment workflow must not silently substitute a newer Operations `main` commit without a new explicit approval change.
+This is the explicitly approved immutable Operations revision for the next canonical production release. It is not a live runtime certificate until the canonical production workflow succeeds against the corresponding Foundation revision.
 
 ## Credential rotation boundary
 
