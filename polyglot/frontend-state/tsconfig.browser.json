@@ -8,6 +8,6 @@
     "outDir": "../../frontend/generated",
     "rootDir": "src"
   },
-  "include": ["src/lifecycle.ts"],
+  "include": ["src/lifecycle.ts", "src/ui_guards.ts", "src/lifecycle_queue_controls.ts"],
   "lib": ["ES2022", "DOM"]
 }
