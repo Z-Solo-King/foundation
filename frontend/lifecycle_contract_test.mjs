@@ -7,7 +7,7 @@ const stateMachine = fs.readFileSync(new URL('./generated/lifecycle.js', import.
 const queue = fs.readFileSync(new URL('./lifecycle_queue_controls.js', import.meta.url), 'utf8');
 const workspace = fs.readFileSync(new URL('./workspace_view.js', import.meta.url), 'utf8');
 
-assert.match(index, /lifecycle_state_machine\.js/);
+assert.match(index, /generated\/lifecycle\.js/);
 assert.match(index, /lifecycle_controller\.js/);
 assert.match(index, /durable browser-local queue items/);
 assert.doesNotMatch(index, /data-action="process-queue"/);
