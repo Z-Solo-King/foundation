@@ -1,3 +1,20 @@
+## 2026-09-20 VERIFIED HANDOFF
+
+Start from Foundation `d4f8be98447d2b6c6d05d1b213941e029f8649a6` and Operations `dd30834aec8f1263d9b35142b1bd16b4ba95f1ca`.
+
+Canonical production proof:
+- Foundation production run `35519167159` / run number `321` = SUCCESS.
+- Operations Cloudflare provenance = `github:dd30834aec8f1263d9b35142b1bd16b4ba95f1ca`.
+- Operations active version observed by the release = `0dae35f1-854b-49e4-b278-f3a17af3aa00`.
+- Runtime acceptance passed for chat, idempotency, SSE lifecycle, permitted-source research/readback, D1/B2, memory store/query/delete/owner boundary, replay guard, learning feedback, terminalization CAS, durable resource reservation/reconciliation, maintenance reconciliation and provider-stream contract.
+- Cross-version memory/replay remains deferred.
+- Live provider completion remains intentionally unavailable because no permitted provider is configured; deterministic fallback is explicit.
+
+Migration:
+- Foundation #862 is merged: exact pinned Foundation Git object/tree is asserted before public-core sync.
+- Foundation #863 is the active follow-up correcting the pin discovery output contract; after it merges, run the fresh migration/extractor matrices before making candidate migration decisions.
+- Do not treat earlier blob-mismatch failures as candidate failures; they were harness failures.
+- Keep the 3 migration + 1 acceptance/blocker adaptive lane model.
 ## 2026-09-20 PRODUCTION PROMOTION OVERRIDE
 
 - Foundation main before this promotion: 62ff421534034d70a110f1dba32f71975c7e5a2d.
