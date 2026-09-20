@@ -1,0 +1,27 @@
+name: nightly research v4
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  control-plane:
+    name: Nightly research control-plane smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Verify workflow runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$GITHUB_SHA"
+          test "$GITHUB_REF" = "refs/heads/main"
+          python --version
+          echo "nightly research v4 control-plane: PASS"
