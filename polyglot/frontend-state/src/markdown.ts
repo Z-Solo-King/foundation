@@ -12,17 +12,18 @@ interface RIEWindow extends Window {
 
   const api = (window as RIEWindow).RIEFrontend;
   if (!api) throw new Error('frontend_state.js must load before markdown_renderer.js');
+  const safeApi: FrontendApi = api;
 
   const inline = (value: unknown): string => {
-    let text = api.escapeHtml(String(value || ''));
+    let text = safeApi.escapeHtml(String(value || ''));
     const codeTokens: string[] = [];
     text = text.replace(/`([^`\n]+)`/g, (_m: string, code: string) => {
       const token = `@@CODE_${codeTokens.length}@@`;
       codeTokens.push(`<code>${code}</code>`);
       return token;
     });
-    text = text.replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g, (_m: string, alt: string, url: string) => `<a href="${api.escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${alt || 'image'}</a>`);
-    text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (_m: string, label: string, url: string) => `<a href="${api.escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`);
+    text = text.replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g, (_m: string, alt: string, url: string) => `<a href="${safeApi.escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${alt || 'image'}</a>`);
+    text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (_m: string, label: string, url: string) => `<a href="${safeApi.escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`);
     text = text.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
     text = text.replace(/__([^_\n]+)__/g, '<strong>$1</strong>');
     text = text.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
@@ -34,7 +35,7 @@ interface RIEWindow extends Window {
   function highlightCode(source: unknown, language: unknown): string {
     const lang = String(language || '').toLowerCase();
     const supported = new Set(['js', 'jsx', 'javascript', 'ts', 'tsx', 'typescript', 'py', 'python', 'json', 'bash', 'sh', 'shell', 'sql']);
-    if (!supported.has(lang)) return api.escapeHtml(source);
+    if (!supported.has(lang)) return safeApi.escapeHtml(source);
 
     const keyword = /\b(?:const|let|var|function|return|async|await|if|else|for|while|do|class|extends|new|try|catch|throw|import|from|export|default|def|in|with|as|True|False|None|null|true|false|SELECT|FROM|WHERE|INSERT|UPDATE|DELETE|JOIN|ON|AND|OR)\b/g;
     const number = /\b\d+(?:\.\d+)?\b/g;
@@ -76,7 +77,7 @@ interface RIEWindow extends Window {
       listType = null;
     };
     const flushFence = () => {
-      const className = fenceLanguage ? ` class="language-${api.escapeHtml(fenceLanguage)}"` : '';
+      const className = fenceLanguage ? ` class="language-${safeApi.escapeHtml(fenceLanguage)}"` : '';
       out.push(`<pre class="code-block"><code${className}>${highlightCode(code.join('\n'), fenceLanguage)}</code></pre>`);
       code = [];
       fenceLanguage = '';
@@ -117,7 +118,7 @@ interface RIEWindow extends Window {
         flushParagraph();
         const wanted = unordered ? 'ul' : 'ol';
         if (listType !== wanted) { closeList(); out.push(`<${wanted}>`); listType = wanted; }
-        const itemText = unordered ? unordered[1] : ordered[1];
+        const itemText = unordered ? unordered[1] : (ordered?.[1] ?? '');
         out.push(`<li>${inline(itemText)}` + '</li>');
         continue;
       }
@@ -136,5 +137,5 @@ interface RIEWindow extends Window {
     return out.join('');
   }
 
-  if (api) api.renderMarkdown = Object.freeze(render);
+  if (api) safeApi.renderMarkdown = Object.freeze(render);
 })();
