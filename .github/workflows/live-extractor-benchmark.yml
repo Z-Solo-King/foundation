@@ -8,7 +8,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to benchmark
         required: false
-        default: c464c165687c5849f1ec153a54b42fc84a25ddd1
+        default: f38b24930a528a5e37f129e3b6ea4533b3b717b5
         type: string
 
 permissions:
@@ -23,110 +23,60 @@ jobs:
       fail-fast: false
       max-parallel: 20
       matrix:
+        pass: [1, 2, 3, 4]
         include:
           - case: api-dummyjson
             label: api:dummyjson
             mode: http
             url: https://dummyjson.com/products/1
-            pass: 1
-          - case: api-dummyjson
-            label: api:dummyjson
-            mode: http
-            url: https://dummyjson.com/products/1
-            pass: 2
+
           - case: api-fakestore
             label: api:fakestore
             mode: http
             url: https://fakestoreapi.com/products/1
-            pass: 1
-          - case: api-fakestore
-            label: api:fakestore
-            mode: http
-            url: https://fakestoreapi.com/products/1
-            pass: 2
+
           - case: api-escuela
             label: api:escuela
             mode: http
             url: https://api.escuelajs.co/api/v1/products/1
-            pass: 1
-          - case: api-escuela
-            label: api:escuela
-            mode: http
-            url: https://api.escuelajs.co/api/v1/products/1
-            pass: 2
+
           - case: feed-hnrss
             label: feed:hnrss
             mode: http
             url: https://hnrss.org/frontpage
-            pass: 1
-          - case: feed-hnrss
-            label: feed:hnrss
-            mode: http
-            url: https://hnrss.org/frontpage
-            pass: 2
+
           - case: feed-github
             label: feed:github
             mode: http
             url: https://github.com/openai/openai-python/releases.atom
-            pass: 1
-          - case: feed-github
-            label: feed:github
-            mode: http
-            url: https://github.com/openai/openai-python/releases.atom
-            pass: 2
+
           - case: html-example
             label: html:example
             mode: http
             url: https://example.com/
-            pass: 1
-          - case: html-example
-            label: html:example
-            mode: http
-            url: https://example.com/
-            pass: 2
+
           - case: html-books
             label: html:books
             mode: http
             url: https://books.toscrape.com/catalogue/page-1.html
-            pass: 1
-          - case: html-books
-            label: html:books
-            mode: http
-            url: https://books.toscrape.com/catalogue/page-1.html
-            pass: 2
+
           - case: html-ecommerce
             label: html:ecommerce
             mode: http
             url: https://webscraper.io/test-sites/e-commerce/static/computers/laptops
-            pass: 1
-          - case: html-ecommerce
-            label: html:ecommerce
-            mode: http
-            url: https://webscraper.io/test-sites/e-commerce/static/computers/laptops
-            pass: 2
+
           - case: browser-quotes
             label: browser:quotes
             mode: browser
             url: https://quotes.toscrape.com/js/
-            pass: 1
-          - case: browser-quotes
-            label: browser:quotes
-            mode: browser
-            url: https://quotes.toscrape.com/js/
-            pass: 2
+
           - case: browser-ecommerce
             label: browser:ecommerce
             mode: browser
             url: https://webscraper.io/test-sites/e-commerce/dynamic/computers/laptops
-            pass: 1
-          - case: browser-ecommerce
-            label: browser:ecommerce
-            mode: browser
-            url: https://webscraper.io/test-sites/e-commerce/dynamic/computers/laptops
-            pass: 2
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || 'c464c165687c5849f1ec153a54b42fc84a25ddd1' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Create Operations read token
@@ -225,6 +175,18 @@ jobs:
           }
           EOF
 
+      - name: Determine case execution profile
+        id: profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${{ matrix.pass }}" in
+            1) echo "workers=1" >> "$GITHUB_OUTPUT"; echo "retries=2" >> "$GITHUB_OUTPUT" ;;
+            2) echo "workers=2" >> "$GITHUB_OUTPUT"; echo "retries=1" >> "$GITHUB_OUTPUT" ;;
+            3) echo "workers=1" >> "$GITHUB_OUTPUT"; echo "retries=3" >> "$GITHUB_OUTPUT" ;;
+            4) echo "workers=2" >> "$GITHUB_OUTPUT"; echo "retries=2" >> "$GITHUB_OUTPUT" ;;
+            *) echo "Unsupported pass profile"; exit 2 ;;
+          esac
       - name: Run HTTP case
         if: matrix.mode == 'http'
         working-directory: operations
@@ -233,7 +195,7 @@ jobs:
           PYTHONPATH=. python scripts/durable_site_benchmark.py run \
             --input ../benchmark-input/target.json \
             --output ../benchmark-output \
-            --shards 1 --shard 0 --workers 1 --retries 2
+            --shards 1 --shard 0 --workers ${{ steps.profile.outputs.workers }} --retries ${{ steps.profile.outputs.retries }}
 
       - name: Run browser case
         if: matrix.mode == 'browser'
@@ -250,7 +212,7 @@ jobs:
           set -euo pipefail
           mkdir -p benchmark-output
           cat > benchmark-output/case.json <<EOF
-          {"case":"${{ matrix.case }}","label":"${{ matrix.label }}","mode":"${{ matrix.mode }}","url":"${{ matrix.url }}","pass":${{ matrix.pass }},"operations_ref":"${{ inputs.operations_ref || 'c464c165687c5849f1ec153a54b42fc84a25ddd1' }}"}
+          {"case":"${{ matrix.case }}","label":"${{ matrix.label }}","mode":"${{ matrix.mode }}","url":"${{ matrix.url }}","pass":${{ matrix.pass }},"workers":"${{ steps.profile.outputs.workers || '1' }}","retries":"${{ steps.profile.outputs.retries || '2' }}","operations_ref":"${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}"}
           EOF
 
       - name: Upload case artifact
@@ -263,7 +225,7 @@ jobs:
           retention-days: 14
 
   aggregate:
-    name: Aggregate 20-way extractor benchmark
+    name: Aggregate 40-case extractor benchmark
     runs-on: ubuntu-latest
     needs: benchmark
     if: always()
@@ -283,7 +245,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'c464c165687c5849f1ec153a54b42fc84a25ddd1' }}
+          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
@@ -300,7 +262,7 @@ jobs:
           set -euo pipefail
           inputs=()
           while IFS= read -r file; do inputs+=(--input "$file"); done < <(find ../benchmark-artifacts -type f -name '*.jsonl' | sort)
-          test "${#inputs[@]}" -ge 10
+          test "${#inputs[@]}" -eq 40
           python scripts/site_benchmark_quality.py "${inputs[@]}" \
             --expected-platform api \
             --expected-platform feed \
@@ -322,7 +284,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: live-extractor-benchmark-20way
+          name: live-extractor-benchmark-40way
           path: |
             benchmark-artifacts/**
             live-extractor-quality.json
