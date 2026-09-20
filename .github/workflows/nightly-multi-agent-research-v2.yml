@@ -287,9 +287,81 @@ jobs:
         shell: bash
         run: rm -rf "$RUNNER_TEMP/operations-research" "$RUNNER_TEMP/operations-research-app.pem" "$RUNNER_TEMP/operations-research-jwt.txt" "$RUNNER_TEMP/operations-research-installation.json" "$RUNNER_TEMP/git-askpass-operations-research.sh"
 
+
+  migration_review:
+    name: Nightly polyglot migration review
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - name: Authenticate private migration review source
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          app-id: \${{ secrets.OPERATIONS_APP_ID }}
+          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout pinned Operations migration policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: \${{ env.OPERATIONS_RESEARCH_REF }}
+          token: \${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Verify Operations revision
+        working-directory: operations
+        shell: bash
+        env:
+          EXPECTED: \${{ env.OPERATIONS_RESEARCH_REF }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED"
+      - name: Install Operations package
+        working-directory: operations
+        run: python -m pip install --disable-pip-version-check -e . --no-deps
+      - name: Run deterministic migration review sweep
+        env:
+          PYTHONPATH: \${{ github.workspace }}/operations
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime
+          python operations/private/multi_agent/migration_review.py \
+            --foundation "$GITHUB_WORKSPACE" \
+            --operations "$GITHUB_WORKSPACE/operations" \
+            --matrix "$GITHUB_WORKSPACE/benchmark/polyglot/migration_matrix_40.json" \
+            --output .runtime/nightly-migration-review.json
+      - name: Validate migration review receipt
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          receipt = json.loads(Path(".runtime/nightly-migration-review.json").read_text(encoding="utf-8"))
+          assert receipt["schema"] == "nightly-migration-review/v1"
+          assert receipt["matrix"]["case_count"] == 40
+          assert receipt["capacity_sweep"]["agent_capacities"] == [1, 2, 4, 8]
+          assert receipt["capacity_sweep"]["execution_modes"] == ["serial", "parallel"]
+          assert receipt["capacity_sweep"]["repeats"] == 3
+          assert receipt["capacity_sweep"]["all_cases_completed"] is True
+          assert len(receipt["language_review"]) == 40
+          assert receipt["polyglot_audit"]["language_scoreboard"]
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-migration-review
+          path: .runtime/nightly-migration-review.json
+          if-no-files-found: error
+          retention-days: 30
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: .runtime/nightly-migration-review.json
+
   project-summary:
     name: Diagnose nightly Heroic AI research
-    needs: research
+    needs: [research, migration_review]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -412,6 +484,11 @@ jobs:
           pattern: nightly-research-lane-*
           path: .runtime/artifacts
           merge-multiple: true
+      - name: Download migration review artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: nightly-migration-review
+          path: .runtime/migration-review
       - name: Build truthful nightly diagnosis
         shell: python
         run: |
@@ -435,11 +512,16 @@ jobs:
           else:
               aggregate = 'partial_or_mixed'
 
+          migration_review = json.loads(Path('.runtime/migration-review/nightly-migration-review.json').read_text())
           diagnosis = {
               'schema': 'nightly-research-diagnosis/v1',
               'run_id': '${{ github.run_id }}',
               'aggregate_state': aggregate,
               'research_job_result': '${{ needs.research.result }}',
+              'migration_review_job_result': '${{ needs.migration_review.result }}',
+              'migration_review_score_0_to_100': migration_review['review_score_0_to_100'],
+              'migration_review_cases': migration_review['capacity_sweep']['cases'],
+              'migration_review_languages': sorted({item['language'] for item in migration_review['language_review']}),
               'lanes': statuses,
               'operations_revision': '${{ env.OPERATIONS_RESEARCH_REF }}',
               'real_research_findings_allowed': aggregate == 'live_research_executed' and '${{ inputs.dry_run || false }}' != 'true',
@@ -552,7 +634,7 @@ jobs:
 
   final-gate:
     name: Preserve truthful nightly result
-    needs: [research, project-summary]
+    needs: [research, migration_review, project-summary]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
@@ -562,5 +644,7 @@ jobs:
           set -euo pipefail
           echo "research=${{ needs.research.result }}"
           echo "diagnosis=${{ needs.project-summary.result }}"
+          echo "migration-review=${{ needs.migration_review.result }}"
+          test "${{ needs.migration_review.result }}" = "success" || { echo "Nightly migration review failed; truthful migration evidence remains failed."; exit 1; }
           test "${{ needs.project-summary.result }}" = "success" || { echo 'Nightly diagnosis failed.'; exit 1; }
           test "${{ needs.research.result }}" = "success" || { echo 'One or more research lanes failed/blocked; truthful nightly result remains failed.'; exit 1; }
