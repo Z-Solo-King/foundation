@@ -8,7 +8,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to test
         required: false
-        default: 152936fa70c716d7ca615ddae4919411f3d45b38
+        default: ae67910d85c1d31fbead8ae1c94da434a0be8a93
         type: string
 
 permissions:
@@ -90,7 +90,7 @@ jobs:
             tests: "tests/test_workflow_policy.py tests/test_cross_module_contract_edges.py tests/test_family_audit.py tests/test_family_semantic_audit.py"
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || '152936fa70c716d7ca615ddae4919411f3d45b38' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || 'ae67910d85c1d31fbead8ae1c94da434a0be8a93' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Checkout Foundation
@@ -108,7 +108,6 @@ jobs:
 
       - name: Guard against stale Operations pin
         if: github.event_name == 'push'
-        working-directory: operations
         env:
           OPERATIONS_TOKEN: ${{ steps.operations-app.outputs.token }}
           PINNED_OPERATIONS_REF: ${{ env.OPERATIONS_REF }}
