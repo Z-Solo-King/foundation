@@ -1,6 +1,5 @@
+import { MAX_PUBLIC_JSON_BODY_BYTES } from "./contracts.ts";
 import type { EdgeRoute, HttpMethod, RouteMatch } from "./contracts.ts";
-
-export const MAX_PUBLIC_JSON_BODY_BYTES = 1_000_000;
 
 function normalizePath(url: string): string {
   return new URL(url).pathname;
