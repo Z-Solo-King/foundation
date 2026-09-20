@@ -104,6 +104,7 @@ jobs:
             sha256="$(sha256sum "$archive" | cut -d' ' -f1)"
             size="$(stat -c '%s' "$archive")"
             manifest="backup-output/${repo}-${sha}-${timestamp}.json"
+            # "remote_b2_restore_verified": False — this manifest starts as unverified; restore verification is a separate acceptance step.
             jq -n --arg repo "$repo" --arg commit "$sha" --arg tree "$tree" --arg created "$timestamp" --arg archive "$(basename "$archive")" --arg sha256 "$sha256" --argjson size "$size" --argjson refs "$refs" '{schema:"repository-backup/v2",repository:("Z-Solo-King/"+$repo),visibility:(if $repo=="foundation" then "public" else "private" end),ref:"main",commit:$commit,tree:$tree,created_at:$created,archive:$archive,sha256:$sha256,size_bytes:$size,ref_count:$refs,restore_test:{local_git_fsck:true,main_ref_verified:true,remote_b2_restore_verified:false}}' > "$manifest"
             printf 'repository-backup/%s\t%s\t%s\t%s\n' "$(basename "$archive")" "$archive" "$sha256" "$size" >> backup-output/uploaded.tsv
             printf 'repository-backup/%s\t%s\t%s\t%s\n' "$(basename "$manifest")" "$manifest" "$(sha256sum "$manifest" | cut -d' ' -f1)" "$(stat -c '%s' "$manifest")" >> backup-output/uploaded.tsv
