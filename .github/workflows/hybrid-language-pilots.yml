@@ -632,10 +632,15 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.14"
-      - name: Run migration policy tests
+      - name: Install migration policy test runtime
         working-directory: operations
         run: |
           python -m pip install --disable-pip-version-check -e ".[test]"
+          python -m pip install --disable-pip-version-check "workers-py>=1.9" workers-runtime-sdk
+
+      - name: Run migration policy tests
+        working-directory: operations
+        run: |
           python -m pytest -q tests/test_runtime_language_policy.py tests/test_runtime_language_catalog.py
 
   workflow_yaml_syntax:
