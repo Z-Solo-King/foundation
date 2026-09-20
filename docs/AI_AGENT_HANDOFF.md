@@ -3,8 +3,8 @@
 Use live GitHub refs and fresh runtime receipts over all older sections in this file.
 
 ### Exact current state
-- Foundation `main`: `64528e331db940096f6177c7ee40c62da9948150`.
-- Operations `main`: `84cf891a5dc41feec97174cc6191f069b1cb5607`.
+- Foundation `main`: `386dcad577cacf729ee49830548597ff5504de14`.
+- Operations `main`: `f87b565be102df93baca760261657a8c949479da`.
 - No open Foundation PRs; no open Operations PRs.
 - Foundation PR #821 is merged. It adds explicit browser chat-stream cancellation, abort propagation to fetch/ReadableStream, visible cancel UI, and a fail-safe `backend_state: UNKNOWN` result.
 - Canonical workflow bridge: `.github/workflows/foundation-canonical-workflow-bridge-v3.yml`. Legacy bridge v1/v2 files must not remain as parallel authorities.
@@ -25,8 +25,8 @@ This section is the continuity anchor for the next maintenance chat. Current Git
 
 ### Exact repository state
 
-- Foundation `main`: `7dc0e4164df3f20dac933f22a326e3c67fe06e59`
-- Operations `main`: `f1ce7fc3957357a6da9a33f6577b4dfff606048b`
+- Foundation `main`: `386dcad577cacf729ee49830548597ff5504de14`
+- Operations `main`: `f87b565be102df93baca760261657a8c949479da`
 - Foundation production Operations pin target: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
 - Foundation nightly research pin remains: `f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5`
 - Foundation PRs #739, #740, #741, #742, #808, #810, #811, #812, #814, #815, #816, #817 and #818 are merged.
