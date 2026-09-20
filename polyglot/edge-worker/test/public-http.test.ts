@@ -80,3 +80,25 @@ test("bounds fetched response size and preserves response provenance", () => {
     /acquisition size budget/,
   );
 });
+
+
+test("canonicalization accepts only standard HTTP(S) destinations", () => {
+  const cases = [
+    ["https://EXAMPLE.com:443/a#x", "https://example.com/a"],
+    ["http://example.com:80/a", "http://example.com/a"],
+    ["https://example.com/a?x=1#fragment", "https://example.com/a?x=1"],
+    ["http://example.com", "http://example.com/"],
+  ];
+  for (const [input, expected] of cases) assert.equal(canonicalizePublicUrl(input), expected);
+});
+
+test("destination decision remains the external security authority", () => {
+  assert.doesNotThrow(() => assertPublicDestination("https://example.com/", { allowed: true, addresses: ["127.0.0.1"] }));
+  assert.throws(() => assertPublicDestination("https://example.com/", { allowed: false, reason: "private destination" }), /private destination/);
+});
+
+test("redirect and body limits remain deterministic at their exact boundaries", () => {
+  assert.doesNotThrow(() => nextRedirect("https://example.com/", "/one", MAX_PUBLIC_REDIRECTS - 1, { originalScheme: "https:" }));
+  assert.throws(() => nextRedirect("https://example.com/", "/two", MAX_PUBLIC_REDIRECTS, { originalScheme: "https:" }), /too many redirects/);
+  assert.doesNotThrow(() => acceptPublicResponse({ status: 200, headers: {}, body: new Uint8Array(MAX_PUBLIC_RESPONSE_BYTES), finalUrl: "https://example.com/", redirectChain: [] }));
+});
