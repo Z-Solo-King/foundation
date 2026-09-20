@@ -1,0 +1,114 @@
+name: Hybrid language pilots
+
+on:
+  workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: Operations revision to test
+        required: true
+        default: main
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/hybrid-language-pilots.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    name: Rust HTML parser pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref || 'main' }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@0ce6392f4c79a8d47e5e0a94f9f9eeced7ad9d42
+        with:
+          toolchain: stable
+
+      - name: Test
+        working-directory: operations
+        run: cargo test --manifest-path experiments/rust_html_kernel/Cargo.toml
+
+  go:
+    name: Go HTTP fanout pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref || 'main' }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Setup Go
+        uses: actions/setup-go@40bde6a3c6f2d53d11c6b9a7ec8d74f6a1b0b6e1
+        with:
+          go-version: "1.25"
+
+      - name: Test
+        working-directory: operations/experiments/go_http_fanout
+        run: go test ./...
+
+  typescript:
+    name: TypeScript search adapter pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref || 'main' }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+
+      - name: Install and typecheck
+        working-directory: operations/experiments/ts_search_adapter
+        run: npm install --ignore-scripts --no-audit --no-fund && npm run typecheck
