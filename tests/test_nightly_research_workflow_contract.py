@@ -18,7 +18,7 @@ def test_matrix_is_fail_fast_false_and_has_three_lanes():
 def test_private_operations_revision_and_app_auth_are_explicit():
     text = workflow_text()
     assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
-    assert "OPERATIONS_RESEARCH_REF: 1b81f371cd6bd39ca74764b3c901217435fdd824" in text
+    assert "OPERATIONS_RESEARCH_REF: 152936fa70c716d7ca615ddae4919411f3d45b38" in text
     assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in text
     assert "OPERATIONS_APP_INSTALLATION_ID" not in text
     assert "resolve_operations_installation.py" in text
@@ -61,11 +61,13 @@ def test_summary_validates_complete_nightly_artifact_bundle_after_baseline():
 def test_summary_is_always_run_and_final_gate_preserves_failure():
     text = workflow_text()
     assert "name: Diagnose nightly Heroic AI research" in text
-    assert "needs: research" in text
+    assert "needs: [research, migration_review]" in text
     assert "if: ${{ always() }}" in text
     assert "name: Preserve truthful nightly result" in text
-    assert "needs: [research, project-summary]" in text
+    assert "needs: [research, migration_review, project-summary]" in text
     assert "One or more research lanes failed/blocked" in text
+    assert "Nightly migration review failed" in text
+    assert "agent_capacities"] == [1, 2, 4, 8]
 
 
 def test_scheduled_workflow_never_requests_dry_run_implicitly():
