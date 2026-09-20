@@ -9,7 +9,7 @@ This section is the continuity anchor for the next maintenance chat. Current Git
 - Foundation `main`: `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`
 - Operations `main`: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
 - Foundation production Operations pin target: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
-- Foundation nightly research pin remains: `307ed38fe4c7902220cb981556bf08702babbae0`
+- Foundation nightly research pin remains: `f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5`
 - Foundation PRs #739, #740, #741 and #742 are merged.
 - Operations PRs #535, #536 and #537 are merged.
 - Foundation #27 is closed.
@@ -17,12 +17,12 @@ This section is the continuity anchor for the next maintenance chat. Current Git
 
 ### Latest canonical production proof
 
-Run `35456292033` (#232), Foundation `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`, last verified against Operations `307ed38fe4c7902220cb981556bf08702babbae0`. The next production certification target is Operations `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`.
+Run `35456292033` (#232), Foundation `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`, last verified against Operations `f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5`. The next production certification target is Operations `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`.
 
 The release verified:
 
 - public Worker deployment/readiness;
-- private Operations Worker deployment and Cloudflare provenance `github:307ed38fe4c7902220cb981556bf08702babbae0`;
+- private Operations Worker deployment and Cloudflare provenance `github:f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5`;
 - authenticated chat and idempotent replay;
 - authenticated SSE lifecycle;
 - permitted-source research ingestion/readback;
