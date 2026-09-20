@@ -361,6 +361,8 @@ jobs:
         run: cargo build --release --manifest-path experiments/rust_html_kernel/Cargo.toml
       - name: Run 32x3 Python/Rust differential benchmark
         working-directory: operations
+        env:
+          PYTHONPATH: ../foundation-core
         shell: python
         run: |
           import json, os, subprocess, time
