@@ -1,21 +1,21 @@
-## 2026-09-20 CURRENT LIVE HANDOFF — AUTHORITATIVE
+## 2026-09-20 LIVE MIGRATION RECONCILIATION — CURRENT OVERRIDE
 
-Use live GitHub refs and fresh runtime receipts over all older sections in this file.
+Refresh live GitHub refs before every mutation.
 
-### Exact current state
-- Foundation `main`: `386dcad577cacf729ee49830548597ff5504de14`.
-- Operations `main`: `f87b565be102df93baca760261657a8c949479da`.
-- No open Foundation PRs; no open Operations PRs.
-- Foundation PR #821 is merged. It adds explicit browser chat-stream cancellation, abort propagation to fetch/ReadableStream, visible cancel UI, and a fail-safe `backend_state: UNKNOWN` result.
-- Canonical workflow bridge: `.github/workflows/foundation-canonical-workflow-bridge-v3.yml`. Legacy bridge v1/v2 files must not remain as parallel authorities.
-- Python remains the policy/orchestration/rollback authority. TypeScript shadows edge/search/browser/frontend lifecycle responsibilities; Rust remains a measured-kernel candidate; Go remains benchmark-only until evidence warrants promotion.
-- Operations contains no GitHub Actions workflow authority and must not gain one. Do not re-enable Cloudflare Workers Builds or Deploy Hooks.
+### Current repository heads
+- Foundation main: 12cf25f6a5688522f945e48efed915a5d5902703.
+- Operations main: b5982fd9c3203d360584f955b8adfcf85cfd1315.
 
-### Queue disposition
-All remaining open issues are either runtime/control-plane acceptance gates or the meta tracker. Do not add speculative repository code solely to manufacture those receipts. Continue independent lanes while runtime evidence is unavailable.
+### Active migration work
+- Foundation #835 (TypeScript frontend controls) is merged.
+- Foundation #836 is the documentation reconciliation PR.
+- Operations #606, #607, #608, #609, #610 and #611 are merged.
+- Operations #610 fixed the production Worker packaging defect where generated foundation_core was excluded from setuptools package discovery.
+- Operations #603 remains the canonical AI-model/tooling portability tracker.
+- Current main is not production-certified until a canonical production release proves the current revisions.
 
-### Closure rule
-Evidence ladder: `contract -> implementation -> focused test -> CI -> integration -> control-plane -> runtime -> production`. Never promote lower-rung evidence into runtime/production certification.
+### Architecture invariant
+Python remains protected policy/governance/persistence/provenance/replay/rollback authority. TypeScript/Rust/Go migration work remains evidence-gated. Operations remains free of GitHub Actions; Foundation remains the sole CI/CD/deployment owner.
 
 # AI Agent Handoff — Research Intelligence Engine
 
