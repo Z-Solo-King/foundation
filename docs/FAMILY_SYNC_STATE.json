@@ -6,12 +6,12 @@
   "repositories": {
     "foundation": {
       "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup",
-      "last_audited_main_sha": "62ff421534034d70a110f1dba32f71975c7e5a2d"
+      "last_audited_main_sha": "c3337a23eb967dfa1dde9915aafea302758650fd"
     },
     "operations": {
       "role": "private-control-plane-research-orchestration",
-      "last_audited_main_sha": "277ccb9ee33221038c7ca5647f19e27a00d84ea3",
-      "approved_production_revision": "6a3e8577ca9d75b80f592da104e7f997850ed164",
+      "last_audited_main_sha": "c3337a23eb967dfa1dde9915aafea302758650fd",
+      "approved_production_revision": "dd30834aec8f1263d9b35142b1bd16b4ba95f1ca",
       "nightly_research_revision": "f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5"
     }
   },
