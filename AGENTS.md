@@ -489,3 +489,7 @@ Never close a required runtime/control-plane issue from source inspection or rep
 ## Hybrid implementation policy
 
 Prefer capability-based selection over one-language standardization. Use TypeScript for new asynchronous edge/search fan-out work, retain Python for current deterministic public primitives, and require measured evidence before introducing Rust/Wasm or Go. PHP is a legacy-integration option, not a performance-driven rewrite target. Provider choice belongs behind typed capability contracts and must not move protected policy or resource ownership into Foundation.
+
+
+## AI model portability
+Keep `AGENTS.md` as the concise execution map. The public-safe cross-agent contract is `docs/AI_PORTABLE_ENGINEERING_CONTRACT.md`. Do not encode business rules in a model-specific instruction file.

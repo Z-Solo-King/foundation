@@ -22,3 +22,7 @@ Foundation is the public-safe contract, deterministic research core and public W
 
 ## Validation
 Run the repository tests and boundary checks. For cross-repository changes, inspect the corresponding owner repository before changing the public contract.
+
+
+## Cross-agent maintainability
+Use `AGENTS.md` plus `docs/AI_PORTABLE_ENGINEERING_CONTRACT.md` as the shared source of truth. Keep Copilot instructions model-neutral; do not encode repository correctness in model-specific prompts.
