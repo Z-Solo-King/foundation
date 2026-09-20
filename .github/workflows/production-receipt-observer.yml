@@ -74,8 +74,66 @@ jobs:
               '
           )"
 
+          mkdir -p evidence-receipt
+          jq -n \
+            --arg workflow "$WORKFLOW_NAME" \
+            --arg run "$RUN_NUMBER" \
+            --arg id "$RUN_ID" \
+            --arg sha "$HEAD_SHA" \
+            --arg conclusion "$CONCLUSION" \
+            --arg url "$RUN_URL" \
+            --argjson jobs "$job_summary" \
+            --argjson artifacts "$artifact_summary" \
+            '{schema:"canonical-evidence-receipt/v1",workflow:$workflow,run_number:$run,run_id:$id,head_sha:$sha,conclusion:$conclusion,url:$url,jobs:$jobs,artifacts:$artifacts}' \
+            > evidence-receipt/receipt.json
+
+          body="$(jq -rn \
+            --arg workflow "$WORKFLOW_NAME" \
+            --arg run "$RUN_NUMBER" \
+            --arg id "$RUN_ID" \
+            --arg sha "$HEAD_SHA" \
+            --arg conclusion "$CONCLUSION" \
+            --arg url "$RUN_URL" \
+            --argjson jobs "$job_summary" \
+            --argjson artifacts "$artifact_summary" \
+            '
+              "## Automated evidence receipt\n\n" +
+              "- Workflow: " + $workflow + "\n" +
+              "- Run: #" + $run + " (id " + $id + ")\n" +
+              "- Conclusion: " + $conclusion + "\n" +
+              "- Head SHA: " + $sha + "\n" +
+              "- URL: " + $url + "\n\n" +
+              "### Jobs\n" + ($jobs | tojson) + "\n\n" +
+              "### Artifacts\n" + ($artifacts | tojson)
+            '
+          )"
+
+          {
+            echo "### Canonical evidence receipt"
+            echo
+            echo "- Workflow: $WORKFLOW_NAME"
+            echo "- Run: #$RUN_NUMBER"
+            echo "- Conclusion: $CONCLUSION"
+            echo "- Head SHA: $HEAD_SHA"
+            echo "- URL: $RUN_URL"
+            echo
+            echo "Machine-readable receipt uploaded as artifact."
+          } >> "$GITHUB_STEP_SUMMARY"
+
           for issue in $issue_numbers; do
-            gh api "repos/$REPOSITORY/issues/$issue/comments" --method POST --field body="$body" >/dev/null
+            if gh api "repos/$REPOSITORY/issues/$issue/comments" --method POST --field body="$body" >/dev/null 2>/dev/null; then
+              echo "Published receipt for issue #$issue"
+            else
+              echo "WARNING: issue-comment publication unavailable for #$issue; artifact/summary receipt remains authoritative"
+            fi
           done
 
-          echo "Published $WORKFLOW_NAME receipt for run $RUN_NUMBER to issues: $issue_numbers"
+          echo "Receipt capture completed for $WORKFLOW_NAME run $RUN_NUMBER"
+
+      - name: Upload machine-readable receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: canonical-evidence-receipt-${{ github.event.workflow_run.id }}
+          path: evidence-receipt/receipt.json
+          if-no-files-found: error
