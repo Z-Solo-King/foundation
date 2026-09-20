@@ -53,75 +53,44 @@ jobs:
           mkdir -p restore-check
 
           for repo in foundation operations; do
-            python - "$repo" "$B2_BUCKET" "$B2_ENDPOINT" <<'PY'
-                      import json
-                      import os
-                      import subprocess
-                      import sys
-            
-                      repo, bucket, endpoint = sys.argv[1:]
-                      prefix = "repository-backup/"
-                      raw = subprocess.check_output([
-                      "aws", "s3api", "list-objects-v2",
-                      "--bucket", bucket,
-                      "--prefix", prefix,
-                      "--endpoint-url", endpoint,
-                      "--output", "json",
-                      ], text=True)
-                      items = json.loads(raw).get("Contents", [])
-                      manifests = [
-                      item for item in items
-                      if item["Key"].endswith(".json")
-                      and item["Key"].startswith(f"{prefix}{repo}-")
-                      ]
-                      if not manifests:
-                      raise SystemExit(f"No backup manifest found for {repo}")
-                      latest = max(manifests, key=lambda item: item["LastModified"])
-                      key = latest["Key"]
-                      name = os.path.basename(key)
-                      path = os.path.join("restore-check", name)
-                      subprocess.check_call([
-                      "aws", "s3api", "get-object",
-                      "--bucket", bucket, "--key", key, path,
-                      "--endpoint-url", endpoint,
-                      ], stdout=subprocess.DEVNULL)
-                      manifest = json.load(open(path, encoding="utf-8"))
-                      if manifest.get("repository") != f"Z-Solo-King/{repo}":
-                      raise SystemExit(f"Manifest repository mismatch: {key}")
-                      archive = manifest.get("archive")
-                      commit = manifest.get("commit")
-                      expected_sha = manifest.get("sha256")
-                      if not archive or not commit or not expected_sha:
-                      raise SystemExit(f"Incomplete restore manifest: {key}")
-                      print(json.dumps({
-                      "repo": repo,
-                      "manifest": key,
-                      "archive": archive,
-                      "commit": commit,
-                      }, sort_keys=True))
-                      open(f"restore-check/{repo}.meta", "w", encoding="utf-8").write(
-                      json.dumps({"manifest": key, "archive": archive, "commit": commit, "sha256": expected_sha})
-                      )
-            PY
+            prefix="repository-backup/"
+            raw=$(aws s3api list-objects-v2 \
+              --bucket "$B2_BUCKET" \
+              --prefix "${prefix}$repo-" \
+              --endpoint-url "$B2_ENDPOINT" \
+              --output json)
+            key=$(jq -r --arg prefix "$prefix" --arg repo "$repo" '
+              [.Contents[]? | select(.Key | endswith(".json")) | select(.Key | startswith($prefix + $repo + "-"))]
+              | max_by(.LastModified)
+              | .Key // empty
+            ' <<< "$raw")
+            test -n "$key" || { echo "No backup manifest found for $repo"; exit 1; }
+            name=$(basename "$key")
+            path="restore-check/$name"
+            aws s3api get-object \
+              --bucket "$B2_BUCKET" \
+              --key "$key" \
+              "$path" \
+              --endpoint-url "$B2_ENDPOINT" \
+              >/dev/null
+            jq -e --arg repo "$repo" '
+              .repository == ("Z-Solo-King/" + $repo)
+              and (.archive | type == "string" and length > 0)
+              and (.commit | type == "string" and length > 0)
+              and (.sha256 | type == "string" and length > 0)
+            ' "$path" >/dev/null || { echo "Invalid restore manifest: $key"; exit 1; }
+            archive=$(jq -r '.archive' "$path")
+            expected_sha=$(jq -r '.sha256' "$path")
+            expected_commit=$(jq -r '.commit' "$path")
+            jq -n --arg repo "$repo" --arg manifest "$key" --arg archive "$archive" --arg commit "$expected_commit" '{repo:$repo,manifest:$manifest,archive:$archive,commit:$commit}' 
+            printf '%s\n' "manifest=$key" "archive=$archive" "commit=$expected_commit" "sha256=$expected_sha" > "restore-check/$repo.meta"
 
-            meta="restore-check/$repo.meta"
-            archive=$(python - "$meta" <<'PY'
-                      import json, sys
-                      print(json.load(open(sys.argv[1], encoding="utf-8"))["archive"])
-            PY
-            )
-            expected_sha=$(python - "$meta" <<'PY'
-                      import json, sys
-                      print(json.load(open(sys.argv[1], encoding="utf-8"))["sha256"])
-            PY
-            )
-            expected_commit=$(python - "$meta" <<'PY'
-                      import json, sys
-                      print(json.load(open(sys.argv[1], encoding="utf-8"))["commit"])
-            PY
-            )
-
-            aws s3api get-object               --bucket "$B2_BUCKET"               --key "repository-backup/$archive"               "restore-check/$archive"               --endpoint-url "$B2_ENDPOINT"               >/dev/null
+            aws s3api get-object \
+              --bucket "$B2_BUCKET" \
+              --key "repository-backup/$archive" \
+              "restore-check/$archive" \
+              --endpoint-url "$B2_ENDPOINT" \
+              >/dev/null
 
             actual_sha=$(sha256sum "restore-check/$archive" | cut -d' ' -f1)
             test "$actual_sha" = "$expected_sha" || {
