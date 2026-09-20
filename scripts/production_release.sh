@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="15c61245dc71a560a2a1a415919ff6d9c6982d72"
+OPERATIONS_REF="46bf7363170ee584b2354c30de9de2aa830426e8"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
@@ -278,10 +278,12 @@ persistence_seed_ready=false
 if [ "$persistence_seed_status" = "200" ] && jq -e '.ok == true and (.sentinel_id | type == "string" and length > 0)' "$persistence_seed_file" >/dev/null 2>&1; then
   persistence_seed_ready=true
   echo "Persistence rollover seed: READY"
-elif [ "$persistence_seed_status" = "400" ] || [ "$persistence_seed_status" = "404" ] || [ "$persistence_seed_status" = "503" ]; then
-  echo "Persistence rollover seed unavailable on current deployed revision; continuing first-pin release."
+elif [ "$persistence_seed_status" = "404" ]; then
+  echo "Persistence rollover seed endpoint unavailable on current deployed revision; continuing first-pin release."
+elif [ "$persistence_seed_status" = "400" ] && jq -e '.error == "unsupported persistence acceptance operation"' "$persistence_seed_file" >/dev/null 2>&1; then
+  echo "Persistence rollover seed operation is not implemented on the currently deployed revision; continuing first-pin release."
 else
-  echo "Unexpected persistence rollover seed response"
+  echo "Persistence rollover seed failed on a revision that reached the diagnostic endpoint."
   cat "$persistence_seed_file" || true
   exit 1
 fi
