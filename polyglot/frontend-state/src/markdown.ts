@@ -10,9 +10,9 @@ interface RIEWindow extends Window {
 (() => {
   'use strict';
 
-  const api = (window as RIEWindow).RIEFrontend;
-  if (!api) throw new Error('frontend_state.js must load before markdown_renderer.js');
-  const safeApi: FrontendApi = api;
+  const api = window.RIEFrontend;
+  if (!api?.escapeHtml) throw new Error('frontend_state.js must load before markdown_renderer.js');
+  const safeApi: FrontendApi = api as FrontendApi;
 
   const inline = (value: unknown): string => {
     let text = safeApi.escapeHtml(String(value || ''));
