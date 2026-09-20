@@ -199,6 +199,11 @@ jobs:
               "passed": status == 0,
           }, indent=2, sort_keys=True) + "\n")
           PY
+          if [ "$status" -ne 0 ]; then
+            echo "::group::${{ matrix.id }} pytest failure output"
+            tail -n 250 "../coverage-artifacts/${{ matrix.id }}/pytest.log" || true
+            echo "::endgroup::"
+          fi
           exit "$status"
 
       - name: Run live production acceptance probe
