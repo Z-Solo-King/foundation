@@ -10,8 +10,8 @@ This section is the continuity anchor for the next maintenance chat. Current Git
 - Operations `main`: `f1ce7fc3957357a6da9a33f6577b4dfff606048b`
 - Foundation production Operations pin target: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
 - Foundation nightly research pin remains: `f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5`
-- Foundation PRs #739, #740, #741, #742, #808, #810, #811 and #812 are merged.
-- Operations PRs #535, #536, #537, #575, #576, #577, #578 and #579 are merged.
+- Foundation PRs #739, #740, #741, #742, #808, #810, #811, #812, #814, #815, #816, #817 and #818 are merged.
+- Operations PRs #535, #536, #537, #575, #576, #577, #578, #579, #581, #583, #584, #585, #586 and #587 are merged.
 - Foundation #27 is closed.
 - Operations contains no GitHub Actions workflow authority.
 
@@ -51,7 +51,7 @@ The production release emitted and uploaded `cross-repository-audit-receipt`. Th
 Foundation:
 - #157 — real 24-program nightly execution/artifact evidence remains missing because the current push-triggered nightly run still fails before job creation.
 - #263 — repository-side bridge v3 is fixed and merged; one real workflow-dispatch receipt with exact target SHA and actual job creation remains missing.
-- #452 — repository SSE lifecycle is green; remaining proof is real client cancellation/disconnect propagation and provider-error-after-partial-output terminalization.
+- #452 — repository SSE lifecycle is green; current architecture uses non-streaming provider calls, so remaining proof is real client cancellation/disconnect propagation; a true provider-error-after-partial-output path would require a separate incremental-provider-streaming feature.
 - #58 — meta tracker remains open until the dependent gates above are genuinely satisfied.
 
 Operations:
@@ -63,7 +63,7 @@ Operations:
 - #197 — broader approved runtime conversational acceptance.
 - #340 — deeper provider streaming interruption/cancellation/error evidence.
 - #352 — representative API/feed/HTML/browser extractor/mapper replay matrix with failures/retries/restarts/idempotency/provenance.
-- #385 — broader concurrent completion/failure/cancellation, crash-after-side-effect, late-output, and restart/recovery acceptance. Unexpected chat exceptions are now durable `failed` terminal receipts via Operations #579; the remaining broader recovery/runtime gates are still open.
+- #385 — broader concurrent completion/failure/cancellation, crash-after-side-effect, late-output, and restart/recovery acceptance. Unexpected chat exceptions are durable `failed` terminal receipts via #579, and unresolved external intents fail closed via #585; remaining broader recovery/runtime gates are still open.
 
 ### Do not regress the architecture
 
@@ -80,4 +80,4 @@ Use `FIX_NOW | INTEGRATE | VERIFY_REPO | RUNTIME_GATE | EXTERNAL_BLOCKED | DUPLI
 For every mutation, preserve:
 `issue -> canonical owner -> revision -> acceptance rung -> checks -> PR -> missing evidence`.
 
-When a queue item is RUNTIME_GATE or EXTERNAL_BLOCKED, record the exact missing evidence on the issue and move to the next independent lane.
+When a queue item is RUNTIME_GATE or EXTERNAL_BLOCKED, record the exact missing evidence on the issue and move to the next independent lane. The current repository migration sequence is TS edge/search/browser -> Rust measured kernels -> optional Go sidecars, while Python remains the protected rollback/policy authority.
