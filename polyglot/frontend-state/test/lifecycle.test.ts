@@ -5,8 +5,17 @@ import { test } from "node:test";
 
 const generated = fs.readFileSync(new URL("../../../frontend/generated/lifecycle.js", import.meta.url), "utf8");
 
+interface LifecycleGlobal {
+  lifecycleStateMachine: {
+    STATES: string[];
+    normalize(value: unknown): string | null;
+    advance(from: string, to: string): string;
+    fromBackend(value: unknown): string;
+  };
+}
+
 function machine() {
-  const context = { window: {}, console };
+  const context = { window: {} as { RIEFrontend?: LifecycleGlobal }, console };
   vm.runInNewContext(generated, context);
   return context.window.RIEFrontend.lifecycleStateMachine;
 }
