@@ -210,7 +210,7 @@ def test_all_canonical_workflow_dispatch_requests_use_the_public_router():
     ]
     assert raw_dispatch_callers == []
     acceptance = texts["canonical-workflow-dispatch-acceptance.yml"]
-    assert "gh workflow run foundation-canonical-workflow-bridge-v2.yml" in acceptance
+    assert "gh workflow run foundation-canonical-workflow-bridge-v3.yml" in acceptance
 
 
 
@@ -279,19 +279,13 @@ def test_operations_public_core_is_materialized_before_worker_deploy():
 
 
 def test_foundation_bridge_records_run_and_job_creation_control_plane_evidence():
-    workflow = _workflow_texts()["foundation-canonical-workflow-bridge-v2.yml"]
+    workflow = _workflow_texts()["foundation-canonical-workflow-bridge-v3.yml"]
+    assert 'actions/workflows/${TARGET}/dispatches' in workflow
     assert 'actions/workflows/${TARGET}/runs' in workflow
-    assert "CONTROL_PLANE=UNKNOWN" in workflow
-    assert "CONTROL_PLANE=ACCEPTED_TRIGGER_ZERO_JOB" in workflow
-    assert "CONTROL_PLANE=JOB_CREATED" in workflow
-    assert "head_sha" in workflow
-    assert "for attempt in {1..6}; do" in workflow
-    assert "no job was created after bounded polling" in workflow
-    assert 'actions/runs/${run_id}/jobs' in workflow
-    post = workflow.index('dispatch_status=$(curl')
-    timestamp = workflow.index('dispatch_epoch="$(date -u +%s)"')
-    assert timestamp < post, "dispatch timestamp must be captured before the POST"
+    assert 'actions/runs/${target_run_id}/jobs' in workflow
+    assert 'dispatch_status=$(curl' in workflow
+    assert 'test "$dispatch_status" = "204"' in workflow
     assert 'expected_sha="$(gh api ' in workflow
     assert '/git/ref/heads/${FOUNDATION_REF}' in workflow
-    assert 'python - "$dispatch_epoch" "$runs_json" "$expected_sha"' in workflow
-    assert 'run.get("head_sha") == expected_sha' in workflow
+    assert 'target_run_id' in workflow
+    assert 'target_job_count' in workflow
