@@ -1,3 +1,14 @@
+## 2026-09-20 LIVE REF OVERRIDE
+
+This section is the freshest repository synchronization point. Live GitHub refs outrank older dated sections below.
+
+- Foundation `main`: `7c3ba3a6828d2a753027580439e861d96b05f522`.
+- Operations `main`: `7aff054264048a6a7f5e5068de4da6c3a992ef5f`.
+- Operations #637/#638 are merged and form the current migration/root-cause baseline.
+- Foundation #888 refreshes the coverage matrix to current Operations and adds stale-pin/async safeguards; it remains open pending required checks.
+- Production/runtime certification remains separate from repository state and requires a fresh canonical release receipt for the relevant revisions.
+
+---
 ## 2026-09-20 VERIFIED PRODUCTION + MIGRATION STATE
 
 This is the current continuity override. It supersedes older dated sections below when values conflict.
