@@ -8,7 +8,7 @@ Repositories: Z-Solo-King/foundation and Z-Solo-King/operations
 - Operations main tree: 613 tracked blobs
 - Combined inventory: 1,081 tracked blobs
 - Python intentionally excluded from migration-lens scoring: 274 Foundation + 425 Operations blobs
-- Non-Python tracked inventory: 194 Foundation + 188 Operations blobs = 382 blobs
+- Non-Python tracked inventory at final coverage pass: 384 blobs total (current-tree inventory). Of these, 383 were UTF-8 text blobs semantically read by the machine coverage pass; one binary DOCX was inventoried but could not be decoded through GitHub's text file endpoint.
 
 The scan treats Python as the existing reference authority. Cross-language findings do not create a second policy or semantic authority.
 
@@ -114,3 +114,8 @@ The scan treats Python as the existing reference authority. Cross-language findi
 - Operations #340
 
 No candidate receives production authority from the scan. Promotion remains reference -> candidate -> differential -> shadow -> canary -> authority.
+
+
+## Final machine coverage pass
+
+The final pass re-read all 384 current-tree non-Python blobs by path. 383 UTF-8 text blobs were content-read; the single binary DOCX remained inventory-only because the connector cannot decode binary content. No non-Python text path was skipped. Python remained intentionally outside migration scoring.
