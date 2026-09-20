@@ -6,7 +6,7 @@ on:
       operations_ref:
         description: Operations revision to test
         required: true
-        default: 8a340bc7bb2d2e81cc3281c7977cdfac49964901
+        default: a82753c2b23dac355a3424249ed7d9fd3dc4d86e
         type: string
   push:
     branches: [main]
@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'main' }}
+          ref: ${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
@@ -70,7 +70,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'main' }}
+          ref: ${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
@@ -102,7 +102,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'main' }}
+          ref: ${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
@@ -138,7 +138,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'main' }}
+          ref: ${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -192,7 +192,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'main' }}
+          ref: ${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
@@ -229,7 +229,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'main' }}
+          ref: ${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
@@ -282,7 +282,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '8a340bc7bb2d2e81cc3281c7977cdfac49964901' }}
+          ref: ${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -311,7 +311,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '8a340bc7bb2d2e81cc3281c7977cdfac49964901' }}
+          ref: ${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -340,7 +340,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '8a340bc7bb2d2e81cc3281c7977cdfac49964901' }}
+          ref: ${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -457,7 +457,7 @@ jobs:
                   "p95": pct(0.95),
                   "p99": pct(0.99),
               },
-              "operations_revision": "${{ inputs.operations_ref || '8a340bc7bb2d2e81cc3281c7977cdfac49964901' }}",
+              "operations_revision": "${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}",
               "python_reference": "extractor_mapper.extraction.generic_html.products_from_html",
               "candidate": "experiments/rust_html_kernel",
           }
@@ -491,7 +491,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '8a340bc7bb2d2e81cc3281c7977cdfac49964901' }}
+          ref: ${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -522,7 +522,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '8a340bc7bb2d2e81cc3281c7977cdfac49964901' }}
+          ref: ${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Node
@@ -553,7 +553,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '8a340bc7bb2d2e81cc3281c7977cdfac49964901' }}
+          ref: ${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Node
@@ -616,7 +616,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '8a340bc7bb2d2e81cc3281c7977cdfac49964901' }}
+          ref: ${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Go
@@ -645,7 +645,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '8a340bc7bb2d2e81cc3281c7977cdfac49964901' }}
+          ref: ${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Go
@@ -674,7 +674,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '8a340bc7bb2d2e81cc3281c7977cdfac49964901' }}
+          ref: ${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Determine pinned Foundation public-core revision
@@ -738,6 +738,96 @@ jobs:
         working-directory: operations
         run: |
           python -m pytest -q tests/test_runtime_language_policy.py tests/test_runtime_language_catalog.py
+
+  adaptive_matrix_contract:
+    name: Validate 40-case adaptive migration matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Validate 40 orthogonal cases
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("benchmark/polyglot/migration_matrix_40.json")
+          data = json.loads(path.read_text(encoding="utf-8"))
+          cases = data["cases"]
+          assert data["case_count"] == 40
+          assert len(cases) == 40
+          assert len({case["id"] for case in cases}) == 40
+          assert all(case["repeats"] == 3 for case in cases)
+          assert {case["topic"] for case in cases} == set(data["topics"])
+          assert {case["approach"] for case in cases} == set(data["approaches"])
+          assert {case["agent_count"] for case in cases} == set(data["agent_counts"])
+          assert {case["execution_mode"] for case in cases} == set(data["execution_modes"])
+          assert all(case["candidate_pair"] in {"python-rust", "python-typescript", "python-go"} for case in cases)
+          assert all(case["evidence"] in {"contract", "error-taxonomy", "cancellation", "resource-bounds", "provenance"} for case in cases)
+          print("40-case adaptive migration matrix: PASS")
+          PY
+
+  rust_link_pagination:
+    name: Rust Link-header pagination parity pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659
+        with:
+          toolchain: stable
+      - name: Test
+        working-directory: operations
+        run: cargo test --manifest-path benchmark/polyglot/rust_link_pagination/Cargo.toml
+
+  typescript_acquisition_planner:
+    name: TypeScript acquisition planner shadow
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref || 'a82753c2b23dac355a3424249ed7d9fd3dc4d86e' }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Typecheck and test
+        working-directory: operations/polyglot/acquisition-planner
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          npm test
 
   workflow_yaml_syntax:
     name: All Foundation workflow YAML syntax
