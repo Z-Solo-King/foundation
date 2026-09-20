@@ -7,6 +7,15 @@
   const connectionPill = document.getElementById('connection-pill');
   const workspace = document.getElementById('workspace');
   const composerHint = document.querySelector('.composer-hint');
+  let activeChatAbortController = null;
+  let activeChatRequestId = null;
+  const cancelButton = document.createElement('button');
+  cancelButton.type = 'button';
+  cancelButton.className = 'secondary cancel-chat-button';
+  cancelButton.textContent = 'Cancel';
+  cancelButton.hidden = true;
+  cancelButton.setAttribute('aria-label', 'Cancel active chat stream');
+  if (composerHint) composerHint.prepend(cancelButton);
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
   fileInput.accept = 'application/json,.json';
@@ -176,11 +185,16 @@
     }
   }
 
-  async function consumeChatStream(response, onEvent) {
+  async function consumeChatStream(response, onEvent, signal) {
     if (!response.body) throw new Error('Heroic AI stream is unavailable in this browser');
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    const onAbort = () => { void reader.cancel(); };
+    if (signal) {
+      if (signal.aborted) throw new DOMException('Chat stream was cancelled', 'AbortError');
+      signal.addEventListener('abort', onAbort, { once: true });
+    }
     const dispatch = (block) => {
       const lines = block.split(/\r?\n/);
       let eventName = 'message';
@@ -203,6 +217,15 @@
     }
     buffer += decoder.decode();
     if (buffer.trim()) dispatch(buffer);
+    if (signal) signal.removeEventListener('abort', onAbort);
+  }
+
+  function cancelActiveChat() {
+    if (activeChatAbortController && !activeChatAbortController.signal.aborted) {
+      activeChatAbortController.abort();
+      return true;
+    }
+    return false;
   }
 
   async function submitChat(text, chatId = api.state.activeChatId) {
@@ -210,6 +233,10 @@
     if (api.state.guestTestMode) return submitGuestTestChat(text, chatId);
     if (!api.API_BASE) throw new Error('Heroic AI API base is not configured');
     const requestId = api.uuid();
+    const abortController = new AbortController();
+    activeChatAbortController = abortController;
+    activeChatRequestId = requestId;
+    cancelButton.hidden = false;
     const userMessage = api.addMessage('user', text, { request_id: requestId, pending: true }, chatId);
     const assistantMessage = api.addMessage('assistant', '', { request_id: requestId, pending: true, streaming: true }, chatId);
     api.state.submitting = true;
@@ -217,6 +244,7 @@
     try {
       const response = await fetch(api.apiUrl('/api/v1/chat/stream'), {
         method: 'POST',
+        signal: abortController.signal,
         headers: { ...api.authHeaders(true), Accept: 'text/event-stream', 'Idempotency-Key': requestId },
         body: JSON.stringify({
           chat_id: chatId,
@@ -248,16 +276,51 @@
           api.updateMessage(assistantMessage.id, { text: answer, meta: { ...assistantMessage.meta, response_id: responseId, status: payload.status || 'completed', pending: false, streaming: false } });
           api.updateMessage(userMessage.id, { meta: { ...(userMessage.meta || {}), pending: false } });
         }
-      });
+      }, abortController.signal);
+      if (abortController.signal.aborted) throw new DOMException('Chat stream was cancelled', 'AbortError');
       if (!terminal) throw new Error('Heroic AI stream ended without a completion event');
       const body = { ok: true, request_id: requestId, chat_id: chatId, response: { response_id: responseId, status: 'completed', text: answer } };
       document.dispatchEvent(new CustomEvent('rie:chat-response', { detail: { chatId, requestId, body } }));
       return body;
     } catch (error) {
+      if (error?.name === 'AbortError' || abortController.signal.aborted) {
+        api.updateMessage(userMessage.id, {
+          meta: { ...(userMessage.meta || {}), pending: false, cancelled: true },
+        });
+        api.updateMessage(assistantMessage.id, {
+          meta: {
+            ...(assistantMessage.meta || {}),
+            pending: false,
+            streaming: false,
+            cancelled: true,
+            backend_state: 'UNKNOWN',
+          },
+          text: answer || 'Chat streaming was cancelled in the browser. Backend completion state is unknown; reconnect or retry to observe it.',
+        });
+        document.dispatchEvent(new CustomEvent('rie:chat-stream-cancelled', {
+          detail: { chatId, requestId, responseId, partial: Boolean(answer) },
+        }));
+        return {
+          ok: false,
+          request_id: requestId,
+          chat_id: chatId,
+          response: {
+            response_id: responseId,
+            status: 'cancelled',
+            result_state: answer ? 'PARTIAL' : 'UNKNOWN',
+            client_cancelled: true,
+            backend_state: 'UNKNOWN',
+            text: answer,
+          },
+        };
+      }
       api.updateMessage(userMessage.id, { meta: { ...(userMessage.meta || {}), pending: false, error: true } });
       api.updateMessage(assistantMessage.id, { meta: { ...(assistantMessage.meta || {}), pending: false, streaming: false, error: true }, text: answerOrFallback(assistantMessage.text, error) });
       throw error;
     } finally {
+      activeChatAbortController = null;
+      activeChatRequestId = null;
+      cancelButton.hidden = true;
       api.state.submitting = false;
       api.chatView.render();
     }
@@ -271,6 +334,11 @@
   function closeWorkspace() { workspace?.classList.remove('open'); }
 
   document.addEventListener('click', (event) => {
+    if (event.target.closest('.cancel-chat-button')) {
+      event.preventDefault();
+      cancelActiveChat();
+      return;
+    }
     if (event.target.closest('.guest-test-button')) {
       event.preventDefault();
       if (api.state.guestTestMode) api.disableGuestTestMode();
@@ -313,6 +381,8 @@
   api.openWorkspace = openWorkspace;
   api.closeWorkspace = closeWorkspace;
   api.submitChat = submitChat;
+  api.cancelActiveChat = cancelActiveChat;
+  api.getActiveChatRequestId = () => activeChatRequestId;
   api.submitGuestTestChat = submitGuestTestChat;
 
   api.load();
