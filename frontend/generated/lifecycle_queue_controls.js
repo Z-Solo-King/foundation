@@ -1,6 +1,7 @@
+// Generated from polyglot/frontend-state/src/lifecycle_queue_controls.ts. Do not edit directly.
+"use strict";
 (() => {
   'use strict';
-
   const api = window.RIEFrontend;
   if (!api) return;
   const QUEUE_KEY = 'rie.frontend.research.queue.v1';
@@ -9,16 +10,14 @@
   const queueList = document.getElementById('queue-list');
   const queueCount = document.getElementById('queue-count');
   const queueStatus = document.getElementById('queue-status');
-
   const readQueue = () => {
     try {
       const value = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-      return Array.isArray(value) ? value.filter((item) => item && item.id && item.request_id && item.text) : [];
+      return Array.isArray(value) ? value.filter((item) => item && typeof item === 'object' && 'id' in item && 'request_id' in item && 'text' in item && item.id && item.request_id && item.text) : [];
     } catch {
       return [];
     }
   };
-
   function render() {
     const items = readQueue();
     if (queueCount) { queueCount.textContent = String(items.length); queueCount.hidden = items.length === 0; }
@@ -29,7 +28,6 @@
         : '<div class="queue-empty">Queue is empty.</div>';
     }
   }
-
   function open() {
     panel?.classList.add('open');
     panel?.setAttribute('aria-hidden', 'false');
@@ -41,23 +39,18 @@
     panel?.setAttribute('aria-hidden', 'true');
     overlay?.classList.remove('show');
   }
-
   document.addEventListener('click', (event) => {
-    if (event.target.closest('[data-action="open-queue"]')) { event.preventDefault(); event.stopPropagation(); open(); return; }
-    if (event.target.closest('[data-action="clear-queue"]')) {
-      event.preventDefault(); event.stopPropagation();
-      document.dispatchEvent(new Event('rie:queue-clear-requested'));
-      return;
-    }
-    const remove = event.target.closest('[data-lifecycle-remove-queue]');
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest('[data-action="open-queue"]')) { event.preventDefault(); event.stopPropagation(); open(); return; }
+    if (target?.closest('[data-action="clear-queue"]')) { event.preventDefault(); event.stopPropagation(); document.dispatchEvent(new Event('rie:queue-clear-requested')); return; }
+    const remove = target?.closest('[data-lifecycle-remove-queue]');
     if (remove) {
       event.preventDefault(); event.stopPropagation();
       document.dispatchEvent(new CustomEvent('rie:queue-remove-requested', { detail: { id: remove.dataset.lifecycleRemoveQueue } }));
       return;
     }
-    if (event.target.closest('[data-action="close-queue"]')) close();
+    if (target?.closest('[data-action="close-queue"]')) close();
   }, false);
-
   document.addEventListener('rie:queue-changed', render);
   window.addEventListener('storage', (event) => { if (event.key === QUEUE_KEY) render(); });
   render();
