@@ -180,7 +180,7 @@ def test_private_operations_handoff_is_preflighted_and_diagnostic_runs_last():
 
 
 def test_public_foundation_is_the_only_github_actions_bridge_owner():
-    workflow = _workflow_texts()["foundation-canonical-workflow-bridge-v2.yml"]
+    workflow = _workflow_texts()["foundation-canonical-workflow-bridge-v3.yml"]
     assert "actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1" in workflow
     assert "FOUNDATION_APP_ID" in workflow
     assert "FOUNDATION_APP_PRIVATE_KEY" in workflow
@@ -193,7 +193,7 @@ def test_public_foundation_is_the_only_github_actions_bridge_owner():
         "nightly-multi-agent-research-v2.yml",
         "cross-repository-contract-drift.yml",
         "operations-centralized-validation.yml",
-        "main-push-actions-control-plane-probe-v2.yml",
+        "main-push-actions-control-plane-probe-v3.yml",
     ):
         assert target in workflow
     assert "confirm_production=true" in workflow
@@ -210,7 +210,7 @@ def test_all_canonical_workflow_dispatch_requests_use_the_public_router():
     ]
     assert raw_dispatch_callers == []
     acceptance = texts["canonical-workflow-dispatch-acceptance.yml"]
-    assert "gh workflow run foundation-canonical-workflow-bridge-v2.yml" in acceptance
+    assert "gh workflow run foundation-canonical-workflow-bridge-v3.yml" in acceptance
 
 
 
@@ -279,7 +279,7 @@ def test_operations_public_core_is_materialized_before_worker_deploy():
 
 
 def test_foundation_bridge_records_run_and_job_creation_control_plane_evidence():
-    workflow = _workflow_texts()["foundation-canonical-workflow-bridge-v2.yml"]
+    workflow = _workflow_texts()["foundation-canonical-workflow-bridge-v3.yml"]
     assert 'actions/workflows/${TARGET}/runs' in workflow
     assert "CONTROL_PLANE=UNKNOWN" in workflow
     assert "CONTROL_PLANE=ACCEPTED_TRIGGER_ZERO_JOB" in workflow
