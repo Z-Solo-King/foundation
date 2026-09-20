@@ -12,15 +12,15 @@ The migration program is incremental and parallel. At no point should a rewrite 
 
 | Lane | State in repos | Evidence |
 |---|---|---|
-| L1 Worker edge | Phase A shadow only: `/health`, `/readiness`, bounded JSON errors. No auth, routing, chat or SSE yet. Two TypeScript locations exist (`edge_ts/` and `shadow/edge-ts/`) that appear to cover the same Phase A surface. | `edge_ts/src/worker.ts`, `shadow/edge-ts/README.md` |
+| L1 Worker edge | Phase B contract shadow: typed route matrix, auth extraction, cache policy, bounded JSON sizing and deterministic SSE framing. No private authority or production routing has moved. | `polyglot/edge-worker/`, Foundation hybrid-language pilot CI |
 | L2 Rust core | Pilots only, outside production authority. HTML kernel contract test checks substrings, not exact parity with the Python extractor. No profile-based justification found in the docs or pilots reviewed. | operations PR #570, #565 |
-| L3 Search adapters | Four TypeScript shadow adapters in `operations/polyglot/search-adapters`: Brave, Jina Search, Jina Reader, SearXNG. Tavily, Serper, DuckDuckGo fallback and Firecrawl are not built. CI contract for the package is not merged yet. | `adapters.ts`, `adapters.test.ts`, operations PR #573 |
+| L3 Search adapters | Four TypeScript shadow adapters in `operations/polyglot/search-adapters`: Brave, Jina Search, Jina Reader, SearXNG. Repository contract hardening and Foundation-owned CI are merged. Default timeout, policy handoff, response-header allowlisting and deterministic failure coverage are enforced; recorded/live parity is still pending. | `adapters.ts`, `adapters.test.ts`, Operations #576 plus Foundation #811 |
 | L4 Go | Benchmark pilot only. No service. No independent deployment need has been shown. | operations PR #564, #570 |
 | L5–L7 | Python, unchanged. | — |
 
 ## Decisions that resolve conflicts between plan documents
 
-1. **First approved slice is L3 (search adapters).** L1 stays at Phase A shadow until L3 shadow parity is demonstrated. This matches the Decision Record.
+1. **First promoted production slice remains L3 (search adapters).** L1 can advance in parallel as a contract-only shadow because it does not own protected policy/state. No production language switch occurs until the L1 fixture gates and L3 provider gates are independently satisfied.
 2. **Browser/Playwright (L5).** Existing Python browser acquisition stays in Python. New browser orchestration may be written in TypeScript. No existing Python Playwright code is migrated until browser latency attribution shows the language is relevant.
 3. **Go (L4).** Benchmark pilot only. It becomes a service only under the L4 trigger below.
 4. **PHP.** Boundary-only WordPress adapter. No PHP in the core.
@@ -40,7 +40,7 @@ The migration program is incremental and parallel. At no point should a rewrite 
 
 Lanes can run in parallel only when they touch different ownership boundaries. Shared contract changes must land first.
 
-Current shared-contract dependency: operations PR #571 (explicit stream terminal semantics, once-only finalization, no close after cancel) changes SSE behavior. L1 SSE fixtures must be generated after it lands.
+Current shared-contract dependency #571 is merged. L1 SSE fixtures are now generated against the landed terminal semantics; runtime cancellation evidence remains a separate gate.
 
 ## L1 — TypeScript Worker migration
 
@@ -56,11 +56,12 @@ Current shared-contract dependency: operations PR #571 (explicit stream terminal
 - public/private routing;
 - exact production deployment owner.
 
-### Before more L1 work
-- Consolidate `edge_ts/` and `shadow/edge-ts/` into one path. Keep the one referenced by CI and `wrangler.toml`; delete or redirect the other.
+### Canonical L1 shadow path
+- `polyglot/edge-worker/` is now the sole maintained L1 contract-shadow path.
+- Historical `edge_ts/` / `shadow/edge-ts/` references in older planning text are superseded; production Wrangler/Worker routing remains unchanged.
 
 ### Shadow methodology
-1. Build worker-ts beside the Python Worker.
+1. Keep the TypeScript contract shadow beside the Python Worker in `polyglot/edge-worker/`.
 2. Generate contract fixtures from current production receipts.
 3. Add synthetic negative fixtures that production traffic will not contain: missing/invalid credentials, wrong role, malformed bodies, oversized bodies, client cancel mid-stream, upstream timeout.
 4. Run both implementations against the same fixture corpus.
@@ -139,14 +140,8 @@ Implemented as shadow adapters: Jina Reader, Jina Search, Brave, SearXNG.
 
 Not yet built, in order: Tavily, Serper, DuckDuckGo fallback, Firecrawl. Each needs zero-cost eligibility verified before its adapter is built or called. Exa is listed in the backlog but is not part of the first slice. Conditional model-grounding providers stay behind billing and zero-cost gates.
 
-### Defects to fix before L3 shadow parity is claimed
-Observed in `polyglot/search-adapters/src/adapters.ts` and its tests:
-- Jina Reader is requested with `Accept: text/plain`, but the normalizer expects a JSON body with `content`. Against a plain-text response the result list is likely empty. The unit test uses a JSON fake, so it does not catch this. Verify against a recorded live response and fix either the header or the parser.
-- No request timeout is set, so `TIMEOUT` is only produced if a caller supplies an abort signal. Add a default timeout.
-- A missing API key throws instead of returning a typed `AUTH_FAILED` failure, which breaks error-class parity with Python.
-- The Jina Reader target URL is appended without validation or encoding.
-- All response headers are returned. Return an allowlist (rate-limit and retry headers) to avoid passing through cookies or provider internals.
-- Test coverage covers 4 cases. Add: 401, 402, 403, timeout, malformed JSON, plain-text body, empty results, and cancellation.
+### L3 repository-side defects status
+The initial review defects have been addressed in Operations #576 except the remaining external parity evidence gate. The adapter now performs policy-decision handoff, has a default timeout, typed auth failures, reader URL validation, response-header allowlisting, malformed-response handling and expanded deterministic tests. Remaining L3 work is recorded-response/live-sample parity and provider health/cooldown equivalence.
 
 ### Promotion threshold
 - recorded-fixture parity on normalized results and failure classes;
