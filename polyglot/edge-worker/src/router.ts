@@ -74,5 +74,3 @@ export function sseHeaders(): Record<string, string> {
 export function responseBodyWithinBound(serialized: string, maxBytes = MAX_PUBLIC_JSON_BODY_BYTES): boolean {
   return new TextEncoder().encode(serialized).byteLength <= maxBytes;
 }
-
-const MAX_PUBLIC_JSON_BODY_BYTES = 1_048_576;
