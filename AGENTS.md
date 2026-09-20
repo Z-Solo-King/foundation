@@ -2,25 +2,15 @@
 
 Refresh live GitHub refs before every mutation.
 
-### Current repository heads
-- Foundation `main`: `12cf25f6a5688522f945e48efed915a5d5902703`.
-- Operations `main`: `4d66e1f471cbafc7adf99317c742574b9e6ce079`.
-
-### Active migration work
+- Foundation main: 12cf25f6a5688522f945e48efed915a5d5902703.
+- Operations main: 6a3e8577ca9d75b80f592da104e7f997850ed164.
 - Foundation #835 (TypeScript frontend controls) is merged.
-- Foundation #836 is the active source-of-truth reconciliation PR.
-- Operations #606, #607, #608 and #609 are merged.
+- Foundation #836 is the active documentation reconciliation PR.
+- Operations #606, #607, #608, #609 and #610 are merged.
+- Operations #610 fixes a real production-release packaging defect: generated foundation_core was excluded from setuptools package discovery.
 - Operations #603 remains the canonical AI-model/tooling portability tracker.
-- No other open implementation PRs are currently known.
-
-### Production/evidence boundary
-- The latest documented successful canonical production receipt remains Foundation run `35456292033` (#232).
-- Current `main` is not being treated as production-certified until a canonical release proves the current revisions.
-- Runtime/control-plane acceptance issues remain evidence-gated; do not manufacture receipts from source inspection or unit tests.
-
-### Architecture invariant
-Python remains protected policy/governance/persistence/replay/provenance/rollback authority. TypeScript/Rust/Go migration work remains evidence-gated. Operations remains free of GitHub Actions; Foundation remains the sole CI/CD/deployment owner.
-
+- Current main is not production-certified until a canonical production release proves the current revisions.
+- Python remains protected policy/governance/persistence/provenance/replay/rollback authority; Operations contains no GitHub Actions workflow authority.
 
 # AI / Maintainer Engineering Guidance
 
