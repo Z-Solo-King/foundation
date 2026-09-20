@@ -6,7 +6,7 @@ on:
       operations_ref:
         description: Operations revision to test
         required: true
-        default: b5982fd9c3203d360584f955b8adfcf85cfd1315
+        default: 0bd49f64e1734b59a7dd3f90f346dd9bce089b14
         type: string
   push:
     branches: [main]
@@ -282,7 +282,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          ref: ${{ inputs.operations_ref || '0bd49f64e1734b59a7dd3f90f346dd9bce089b14' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -311,7 +311,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          ref: ${{ inputs.operations_ref || '0bd49f64e1734b59a7dd3f90f346dd9bce089b14' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -323,7 +323,7 @@ jobs:
         run: cargo bench --manifest-path experiments/rust_text_normalization/Cargo.toml --bench normalization
 
   rust_html_sample:
-    name: Rust HTML kernel sample contract
+    name: Rust HTML parity 32x3 differential benchmark
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -340,20 +340,89 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          ref: ${{ inputs.operations_ref || '0bd49f64e1734b59a7dd3f90f346dd9bce089b14' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659
         with:
           toolchain: stable
-      - name: Run sample
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Install Python extractor baseline
         working-directory: operations
         run: |
-          set -euo pipefail
-          printf '%s\n' '<article class="product-card"><h2>Sample Product</h2><a href="/p">/p</a><span class="price">$1</span></article>' |
-            cargo run --quiet --manifest-path experiments/rust_html_kernel/Cargo.toml |
-            grep -F 'Sample Product'
+          python -m pip install --disable-pip-version-check -e . --no-deps
+          python -m pip install --disable-pip-version-check "lxml>=5,<7"
+      - name: Build Rust kernel
+        working-directory: operations
+        run: cargo build --release --manifest-path experiments/rust_html_kernel/Cargo.toml
+      - name: Run 32x3 Python/Rust differential benchmark
+        working-directory: operations
+        shell: python
+        run: |
+          import json, os, subprocess, time
+          from statistics import median
+          from extractor_mapper.extraction.generic_html import products_from_html
+
+          cases = [
+              f'<article class="product-card"><h2>Product {i}</h2><a href="/p/{i}">/p/{i}</a><span class="price">₹{100+i}</span></article>'
+              for i in range(32)
+          ]
+          binary = "./target/release/rie_html_kernel"
+          rust_times = []
+
+          for repeat in range(3):
+              for index, html in enumerate(cases):
+                  expected = products_from_html(html)
+                  start = time.perf_counter_ns()
+                  proc = subprocess.run([binary], input=html, text=True, capture_output=True, check=True)
+                  elapsed = time.perf_counter_ns() - start
+                  rust_times.append(elapsed)
+                  actual = json.loads(proc.stdout)
+                  expected_common = [
+                      {"name": row["name"], "url": row["url"], "price": row["price"]}
+                      for row in expected
+                  ]
+                  actual_common = [
+                      {"name": row["name"], "url": row["url"], "price": row["price"]}
+                      for row in actual
+                  ]
+                  assert actual_common == expected_common, f"parity mismatch repeat={repeat+1} case={index}: {actual_common!r} != {expected_common!r}"
+
+          ordered = sorted(rust_times)
+          def pct(p):
+              pos = (len(ordered)-1) * p
+              lo, hi = int(pos), min(int(pos)+1, len(ordered)-1)
+              return int(ordered[lo] + (ordered[hi]-ordered[lo]) * (pos-lo))
+
+          summary = {
+              "schema": "rust-html-differential-v1",
+              "cases": 32,
+              "repeats": 3,
+              "parity": "PASS",
+              "rust_latency_ns": {
+                  "p50": int(median(ordered)),
+                  "p95": pct(0.95),
+                  "p99": pct(0.99),
+              },
+              "operations_revision": "\${{ inputs.operations_ref || '0bd49f64e1734b59a7dd3f90f346dd9bce089b14' }}",
+              "python_reference": "extractor_mapper.extraction.generic_html.products_from_html",
+              "candidate": "experiments/rust_html_kernel",
+          }
+          os.makedirs(".runtime", exist_ok=True)
+          with open(".runtime/rust-html-differential.json", "w", encoding="utf-8") as handle:
+              json.dump(summary, handle, indent=2)
+          print(json.dumps(summary, indent=2))
+      - name: Upload Rust HTML differential receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rust-html-differential-receipt
+          path: operations/.runtime/rust-html-differential.json
+          if-no-files-found: error
+          retention-days: 30
 
   rust_url_cli:
     name: Rust URL identity CLI parity smoke
@@ -373,7 +442,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          ref: ${{ inputs.operations_ref || '0bd49f64e1734b59a7dd3f90f346dd9bce089b14' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -404,7 +473,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          ref: ${{ inputs.operations_ref || '0bd49f64e1734b59a7dd3f90f346dd9bce089b14' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Node
@@ -435,7 +504,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          ref: ${{ inputs.operations_ref || '0bd49f64e1734b59a7dd3f90f346dd9bce089b14' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Node
@@ -498,7 +567,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          ref: ${{ inputs.operations_ref || '0bd49f64e1734b59a7dd3f90f346dd9bce089b14' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Go
@@ -527,7 +596,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          ref: ${{ inputs.operations_ref || '0bd49f64e1734b59a7dd3f90f346dd9bce089b14' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Go
@@ -556,7 +625,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          ref: ${{ inputs.operations_ref || '0bd49f64e1734b59a7dd3f90f346dd9bce089b14' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Python
