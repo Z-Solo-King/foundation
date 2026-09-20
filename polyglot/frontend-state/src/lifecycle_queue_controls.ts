@@ -15,8 +15,8 @@
     RIEFrontend?: FrontendApi;
   }
 
-  const api = (window as RIEWindow).RIEFrontend;
-  if (!api) return;
+  const frontendApi = (window as RIEWindow).RIEFrontend;
+  if (!frontendApi) return;
 
   const QUEUE_KEY = 'rie.frontend.research.queue.v1';
   const panel = document.getElementById('message-queue');
@@ -50,7 +50,7 @@
     if (queueList) {
       queueList.innerHTML = items.length
         ? items.map((item, index) =>
-          `<div class="queue-item"><b>${index + 1}</b><div><strong>Research</strong><p>${api.escapeHtml(item.text)}</p></div><button data-lifecycle-remove-queue="${api.escapeHtml(item.id)}" aria-label="Remove queued research">×</button></div>`
+          `<div class="queue-item"><b>${index + 1}</b><div><strong>Research</strong><p>${frontendApi.escapeHtml(item.text)}</p></div><button data-lifecycle-remove-queue="${frontendApi.escapeHtml(item.id)}" aria-label="Remove queued research">×</button></div>`
         ).join('')
         : '<div class="queue-empty">Queue is empty.</div>';
     }
