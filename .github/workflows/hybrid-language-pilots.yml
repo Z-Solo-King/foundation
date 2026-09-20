@@ -847,7 +847,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'ecb3079acad2198b3c0732add032112ee239c637' }}
+          ref: ${{ inputs.operations_ref || '99ad7e946a98d7a4f1b5131b9a1fa87e41ae9b03' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
