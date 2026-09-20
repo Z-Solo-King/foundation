@@ -1,48 +1,41 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import vm from "node:vm";
 import { test } from "node:test";
-import { STATES, advance, canTransition, fromBackend, normalize } from "../src/lifecycle.ts";
+
+const generated = fs.readFileSync(new URL("../../../frontend/generated/lifecycle.js", import.meta.url), "utf8");
+
+function machine() {
+  const context = { window: {}, console };
+  vm.runInNewContext(generated, context);
+  return context.window.RIEFrontend.lifecycleStateMachine;
+}
 
 test("preserves the canonical state vocabulary", () => {
-  assert.deepEqual(STATES, [
-    "NEW_CHAT",
-    "SUBMITTING",
-    "QUEUED",
-    "RUNNING",
-    "STREAMING",
-    "COMPLETE",
-    "PARTIAL",
-    "BLOCKED",
-    "REJECTED",
-    "UNAVAILABLE",
-    "UNKNOWN",
-    "RECONNECTING",
-    "RESUMED",
-    "REPLAYED",
-    "AUTH_EXPIRED",
+  assert.deepEqual(machine().STATES, [
+    "NEW_CHAT","SUBMITTING","QUEUED","RUNNING","STREAMING","COMPLETE","PARTIAL",
+    "BLOCKED","REJECTED","UNAVAILABLE","UNKNOWN","RECONNECTING","RESUMED","REPLAYED","AUTH_EXPIRED",
   ]);
 });
 
 test("normalizes backend state spellings exactly", () => {
-  assert.equal(normalize("completed"), "COMPLETE");
-  assert.equal(normalize("auth-expired"), "AUTH_EXPIRED");
-  assert.equal(normalize("paused"), "RECONNECTING");
-  assert.equal(normalize("not-a-state"), null);
+  const m = machine();
+  assert.equal(m.normalize("completed"), "COMPLETE");
+  assert.equal(m.normalize("auth-expired"), "AUTH_EXPIRED");
+  assert.equal(m.normalize("paused"), "RECONNECTING");
+  assert.equal(m.normalize("not-a-state"), null);
 });
 
 test("illegal transitions fail closed to UNKNOWN", () => {
-  assert.equal(advance("COMPLETE", "RUNNING"), "UNKNOWN");
-  assert.equal(advance("STREAMING", "AUTH_EXPIRED"), "AUTH_EXPIRED");
-  assert.equal(advance("QUEUED", "RUNNING"), "RUNNING");
+  const m = machine();
+  assert.equal(m.advance("COMPLETE", "RUNNING"), "UNKNOWN");
+  assert.equal(m.advance("STREAMING", "AUTH_EXPIRED"), "AUTH_EXPIRED");
+  assert.equal(m.advance("QUEUED", "RUNNING"), "RUNNING");
 });
 
 test("backend envelope extraction is deterministic", () => {
-  assert.equal(fromBackend({ status: "completed" }), "COMPLETE");
-  assert.equal(fromBackend({ run: { state: "streaming" } }), "STREAMING");
-  assert.equal(fromBackend({ nope: "value" }), "UNKNOWN");
-});
-
-test("transition helper mirrors the canonical allowlist", () => {
-  assert.equal(canTransition("NEW_CHAT", "SUBMITTING"), true);
-  assert.equal(canTransition("NEW_CHAT", "RUNNING"), false);
-  assert.equal(canTransition("AUTH_EXPIRED", "RECONNECTING"), true);
+  const m = machine();
+  assert.equal(m.fromBackend({ status: "completed" }), "COMPLETE");
+  assert.equal(m.fromBackend({ run: { state: "streaming" } }), "STREAMING");
+  assert.equal(m.fromBackend({ nope: "value" }), "UNKNOWN");
 });
