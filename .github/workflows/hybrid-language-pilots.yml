@@ -6,7 +6,7 @@ on:
       operations_ref:
         description: Operations revision to test
         required: true
-        default: 9bc234d6ce2a0fada53fb4c145d1bc923aaf6487
+        default: 446d19793f469fae036f7823a851b41b7bfc2771
         type: string
   push:
     branches: [main]
@@ -282,7 +282,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '9bc234d6ce2a0fada53fb4c145d1bc923aaf6487' }}
+          ref: ${{ inputs.operations_ref || '446d19793f469fae036f7823a851b41b7bfc2771' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -311,7 +311,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '9bc234d6ce2a0fada53fb4c145d1bc923aaf6487' }}
+          ref: ${{ inputs.operations_ref || '446d19793f469fae036f7823a851b41b7bfc2771' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -340,7 +340,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '9bc234d6ce2a0fada53fb4c145d1bc923aaf6487' }}
+          ref: ${{ inputs.operations_ref || '446d19793f469fae036f7823a851b41b7bfc2771' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -361,6 +361,8 @@ jobs:
         run: cargo build --release --manifest-path experiments/rust_html_kernel/Cargo.toml
       - name: Run 32x3 Python/Rust differential benchmark
         working-directory: operations
+        env:
+          PYTHONPATH: .
         shell: python
         run: |
           import json, os, subprocess, time
@@ -408,7 +410,7 @@ jobs:
                   "p95": pct(0.95),
                   "p99": pct(0.99),
               },
-              "operations_revision": "\${{ inputs.operations_ref || '9bc234d6ce2a0fada53fb4c145d1bc923aaf6487' }}",
+              "operations_revision": "${{ inputs.operations_ref || '446d19793f469fae036f7823a851b41b7bfc2771' }}",
               "python_reference": "extractor_mapper.extraction.generic_html.products_from_html",
               "candidate": "experiments/rust_html_kernel",
           }
@@ -442,7 +444,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '9bc234d6ce2a0fada53fb4c145d1bc923aaf6487' }}
+          ref: ${{ inputs.operations_ref || '446d19793f469fae036f7823a851b41b7bfc2771' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -473,7 +475,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '9bc234d6ce2a0fada53fb4c145d1bc923aaf6487' }}
+          ref: ${{ inputs.operations_ref || '446d19793f469fae036f7823a851b41b7bfc2771' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Node
@@ -504,7 +506,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '9bc234d6ce2a0fada53fb4c145d1bc923aaf6487' }}
+          ref: ${{ inputs.operations_ref || '446d19793f469fae036f7823a851b41b7bfc2771' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Node
@@ -567,7 +569,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '9bc234d6ce2a0fada53fb4c145d1bc923aaf6487' }}
+          ref: ${{ inputs.operations_ref || '446d19793f469fae036f7823a851b41b7bfc2771' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Go
@@ -596,7 +598,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '9bc234d6ce2a0fada53fb4c145d1bc923aaf6487' }}
+          ref: ${{ inputs.operations_ref || '446d19793f469fae036f7823a851b41b7bfc2771' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Go
@@ -625,7 +627,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '9bc234d6ce2a0fada53fb4c145d1bc923aaf6487' }}
+          ref: ${{ inputs.operations_ref || '446d19793f469fae036f7823a851b41b7bfc2771' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Python
