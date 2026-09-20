@@ -3,6 +3,29 @@
 Refresh live GitHub refs before every mutation.
 
 ### Current repository heads
+- Foundation `main`: `12cf25f6a5688522f945e48efed915a5d5902703`.
+- Operations `main`: `4d66e1f471cbafc7adf99317c742574b9e6ce079`.
+
+### Active migration work
+- Foundation #835 (TypeScript frontend controls) is merged.
+- Foundation #836 is the active source-of-truth reconciliation PR.
+- Operations #606, #607, #608 and #609 are merged.
+- Operations #603 remains the canonical AI-model/tooling portability tracker.
+- No other open implementation PRs are currently known.
+
+### Production/evidence boundary
+- The latest documented successful canonical production receipt remains Foundation run `35456292033` (#232).
+- Current `main` is not being treated as production-certified until a canonical release proves the current revisions.
+- Runtime/control-plane acceptance issues remain evidence-gated; do not manufacture receipts from source inspection or unit tests.
+
+### Architecture invariant
+Python remains protected policy/governance/persistence/replay/provenance/rollback authority. TypeScript/Rust/Go migration work remains evidence-gated. Operations remains free of GitHub Actions; Foundation remains the sole CI/CD/deployment owner.
+
+## 2026-09-20 LIVE MIGRATION RECONCILIATION — CURRENT OVERRIDE
+
+Refresh live GitHub refs before every mutation.
+
+### Current repository heads
 - Foundation `main`: `e14b6d07ad32eb6eeb7899ec3b5bfe5140169b63`.
 - Operations `main`: `88bc073b5d14c10d83fe7bbff6f78bdbf672cc14`.
 
