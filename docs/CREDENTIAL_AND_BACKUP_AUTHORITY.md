@@ -38,7 +38,7 @@ The backup workflow validates the GitHub App installation/token against the priv
 
 ## Production Operations credential
 
-Production deployment uses a short-lived GitHub App installation token minted from the purpose-specific App secrets. The App is installed only on the private Operations repository with read-only Contents permission. It is intentionally separate from `BACKUP_GITHUB_TOKEN`.
+Production deployment uses a short-lived GitHub App installation token minted from the purpose-specific App secrets. The App is installed only on the private Operations repository with read-only Contents permission. Deployment and backup use the same App credential family but separate workflow authority and acceptance gates.
 
 Before checkout, deployment must fail closed unless:
 
