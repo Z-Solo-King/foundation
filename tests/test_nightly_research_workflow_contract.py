@@ -67,7 +67,7 @@ def test_summary_is_always_run_and_final_gate_preserves_failure():
     assert "needs: [research, migration_review, project-summary]" in text
     assert "One or more research lanes failed/blocked" in text
     assert "Nightly migration review failed" in text
-    assert "agent_capacities"] == [1, 2, 4, 8]
+    assert 'agent_capacities"] == [1, 2, 4, 8]' in text
 
 
 def test_scheduled_workflow_never_requests_dry_run_implicitly():
