@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "none",
+    "strict": true,
+    "noEmitOnError": true,
+    "skipLibCheck": true,
+    "outDir": "../../frontend/generated",
+    "rootDir": "src"
+  },
+  "include": ["src/feedback.ts"],
+  "lib": ["ES2022", "DOM"]
+}
