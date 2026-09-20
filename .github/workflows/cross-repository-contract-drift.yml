@@ -1,12 +1,13 @@
 name: cross-repository contract drift
 
-on:
+'on':
   pull_request:
     branches: [main]
     paths:
       - 'CAPABILITIES.json'
       - 'backend/governance/contract_drift.py'
       - 'tools/check_cross_repo_drift.py'
+      - 'tools/validate_language_fit_inventory.py'
       - 'tests/test_cross_repo_drift_gate.py'
       - '.github/workflows/cross-repository-contract-drift.yml'
   push:
@@ -15,6 +16,7 @@ on:
       - 'CAPABILITIES.json'
       - 'backend/governance/contract_drift.py'
       - 'tools/check_cross_repo_drift.py'
+      - 'tools/validate_language_fit_inventory.py'
       - 'tests/test_cross_repo_drift_gate.py'
       - '.github/workflows/cross-repository-contract-drift.yml'
   merge_group:
@@ -36,8 +38,14 @@ jobs:
         with:
           path: foundation
 
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+
       - name: Authenticate private Operations catalog access
         shell: bash
+        working-directory: foundation
         env:
           OPERATIONS_REPOSITORY: Z-Solo-King/operations
           OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
@@ -52,32 +60,8 @@ jobs:
           umask 077
           printf '%s\n' "$OPERATIONS_APP_PRIVATE_KEY" > "$key_file"
           chmod 600 "$key_file"
-          python - "$OPERATIONS_APP_ID" "$key_file" > "$jwt_file" <<'PY'
-                    import base64
-                    import json
-                    import subprocess
-                    import sys
-                    import time
-          
-                    app_id, key_file = sys.argv[1:]
-          
-                    def b64url(value: bytes) -> str:
-                    return base64.urlsafe_b64encode(value).rstrip(b"=").decode("ascii")
-          
-                    now = int(time.time())
-                    header = {"alg": "RS256", "typ": "JWT"}
-                    payload = {"iat": now - 60, "exp": now + 540, "iss": app_id}
-                    unsigned = f"{b64url(json.dumps(header, separators=(",", ":")).encode())}.{b64url(json.dumps(payload, separators=(",", ":")).encode())}".encode()
-                    signed = subprocess.run(
-                    ["openssl", "dgst", "-sha256", "-sign", key_file],
-                    input=unsigned,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    check=True,
-                    )
-                    print(unsigned.decode() + "." + b64url(signed.stdout))
-          PY
-          app_jwt=$(cat "$jwt_file")
+          python scripts/create_github_app_jwt.py "$OPERATIONS_APP_ID" "$key_file" > "$jwt_file"
+          app_jwt="$(cat "$jwt_file")"
           installation_output="$RUNNER_TEMP/operations-installation-id.txt"
           installation_error="$RUNNER_TEMP/operations-installation-id.err"
           set +e
@@ -89,42 +73,28 @@ jobs:
             cat "$installation_error" 2>/dev/null || true
             exit 1
           fi
-          installation_id="$(tr -d "
-" < "$installation_output")"
+          installation_id="$(tr -d '\r\n' < "$installation_output")"
           test -n "$installation_id" || { echo 'GitHub App installation discovery returned an empty installation id'; exit 1; }
-          installation_response=$(curl -fsS -X POST \
+          installation_response="$(curl -fsS -X POST \
             -H 'Accept: application/vnd.github+json' \
             -H "Authorization: Bearer ${app_jwt}" \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "https://api.github.com/app/installations/${installation_id}/access_tokens")
+            "https://api.github.com/app/installations/${installation_id}/access_tokens")"
           printf '%s\n' "$installation_response" > "$response_file"
-          github_app_token=$(python - "$response_file" <<'PY'
-                    import json
-                    import sys
-                    with open(sys.argv[1], encoding="utf-8") as handle:
-                    print(json.load(handle)["token"])
-          PY
-          )
+          github_app_token="$(jq -r '.token // empty' "$response_file")"
           test -n "$github_app_token"
           echo "::add-mask::$github_app_token"
           mkdir -p operations
-          # Reuse the authenticated read-only Operations app token for the family
-          # language-fit scan. Operations remains workflow-free.
-          git -c http.extraHeader="Authorization: Bearer ${github_app_token}" \
+          git_basic_auth="$(printf 'x-access-token:%s' "$github_app_token" | base64 -w0)"
+          git -c "http.extraHeader=Authorization: Basic $git_basic_auth" \
             clone --depth=1 --filter=blob:none \
-            "https://github.com/${OPERATIONS_REPOSITORY}.git" operations/repo
-          catalog_response=$(curl -fsS \
+            "https://github.com/${OPERATIONS_REPOSITORY}.git" ../operations/repo
+          catalog_response="$(curl -fsS \
             -H 'Accept: application/vnd.github+json' \
             -H "Authorization: Bearer ${github_app_token}" \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/contents/CAPABILITIES.json?ref=main")
-          python - "$catalog_response" > operations/CAPABILITIES.json <<'PY'
-                    import base64
-                    import json
-                    import sys
-                    payload = json.loads(sys.argv[1])
-                    print(base64.b64decode(payload["content"]).decode("utf-8"))
-          PY
+            "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/contents/CAPABILITIES.json?ref=main")"
+          printf '%s\n' "$catalog_response" | jq -r '.content // empty' | tr -d '\n' | base64 --decode > operations/CAPABILITIES.json
           jq -e --arg repo "$OPERATIONS_REPOSITORY" '.full_name == $repo and .private == true' \
             < <(curl -fsS \
               -H 'Accept: application/vnd.github+json' \
@@ -132,12 +102,11 @@ jobs:
               -H 'X-GitHub-Api-Version: 2022-11-28' \
               "https://api.github.com/repos/${OPERATIONS_REPOSITORY}") >/dev/null
           test -s operations/CAPABILITIES.json
-          # Operations is source/runtime only. GitHub Actions ownership lives in Foundation.
-          workflow_status=$(curl -sS -o "$RUNNER_TEMP/operations-workflows.json" -w '%{http_code}' \
+          workflow_status="$(curl -sS -o "$RUNNER_TEMP/operations-workflows.json" -w '%{http_code}' \
             -H 'Accept: application/vnd.github+json' \
             -H "Authorization: Bearer ${github_app_token}" \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/contents/.github/workflows?ref=main")
+            "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/contents/.github/workflows?ref=main")"
           echo "Operations .github/workflows -> HTTP ${workflow_status}"
           if [[ "${workflow_status}" == "404" ]]; then
             echo 'private Operations GitHub Actions boundary: PASS (no workflow directory)'
@@ -149,10 +118,9 @@ jobs:
             exit 1
           fi
 
-      - name: Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.14'
+      - name: Install drift test tools
+        working-directory: foundation
+        run: python -m pip install --disable-pip-version-check -e ".[test]"
 
       - name: Generate family language-fit coverage
         working-directory: foundation
@@ -167,23 +135,7 @@ jobs:
             --name foundation \
             --name operations \
             --output .runtime/language_fit_inventory.json
-          python - .runtime/language_fit_inventory.json <<'PY'
-                    import json
-                    import sys
-                    from pathlib import Path
-                    p = Path(sys.argv[1])
-                    data = json.loads(p.read_text(encoding="utf-8"))
-                    assert data["rows"] > 0, "family inventory is empty"
-                    assert all(row.get("coverage_status") == "covered" for row in data["artifacts"]), "uncovered artifact row detected"
-                    assert all(row.get("language_fit") for row in data["artifacts"]), "artifact missing language scores"
-                    for repo, summary in data["repositories"].items():
-                    assert summary["files"] > 0, f"{repo} has no covered artifacts"
-                    print(json.dumps({
-                    "rows": data["rows"],
-                    "repositories": data["repositories"],
-                    "coverage": "100% of inventoried engineering artifacts",
-                    }, indent=2))
-          PY
+          python tools/validate_language_fit_inventory.py .runtime/language_fit_inventory.json
 
       - name: Upload family language-fit inventory
         if: ${{ always() }}
