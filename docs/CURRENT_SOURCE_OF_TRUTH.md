@@ -18,13 +18,13 @@ This file is the compact continuity record for the next maintenance chat. Curren
 - Foundation `main`: `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`
 - Operations `main`: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
 - Foundation canonical production Operations pin target: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
-- Foundation nightly research pin remains: `307ed38fe4c7902220cb981556bf08702babbae0`
+- Foundation nightly research pin remains: `f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5`
 
 ### Latest canonical production receipt
 
 - Latest verified workflow run: `35456292033` (Heroic AI production release, #232)
 - Foundation revision: `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`
-- Last verified Operations provenance in Cloudflare: `github:307ed38fe4c7902220cb981556bf08702babbae0`
+- Last verified Operations provenance in Cloudflare: `github:f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5`
 - Next production certification target: `github:c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
 - Cross-repository audit receipt artifact: `cross-repository-audit-receipt`
 
@@ -90,4 +90,4 @@ Do not upgrade source inspection or repository tests into runtime/control-plane/
 
 ### Next-chat operating rule
 
-Start from Foundation `6a91fbd17143083882e9ac7ebfa52f0b06a344b2` and Operations `307ed38fe4c7902220cb981556bf08702babbae0`. The production receipt `35456292033` is the current L4 baseline. Work only on a missing acceptance rung or a newly established repository-side defect; do not re-open the already-correct chat/SSE/service-binding/deployment path without new evidence.
+Start from Foundation `6a91fbd17143083882e9ac7ebfa52f0b06a344b2` and Operations `f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5`. The production receipt `35456292033` is the current L4 baseline. Work only on a missing acceptance rung or a newly established repository-side defect; do not re-open the already-correct chat/SSE/service-binding/deployment path without new evidence.
