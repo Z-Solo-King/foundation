@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import {
   MAX_PUBLIC_JSON_BODY_BYTES,
   MAX_SSE_CHUNK_CHARS,
@@ -13,7 +12,12 @@ function sse(event: string, payload: unknown): string {
   return `event: ${event}\ndata: ${json(payload)}\n\n`;
 }
 
-export function frameChatSse(body: ChatProxyEnvelope, maxBytes = MAX_PUBLIC_JSON_BODY_BYTES): string {
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export async function frameChatSse(body: ChatProxyEnvelope, maxBytes = MAX_PUBLIC_JSON_BODY_BYTES): Promise<string> {
   const response = body.response;
   if (!response) throw new Error("invalid_private_chat_response");
 
@@ -44,7 +48,7 @@ export function frameChatSse(body: ChatProxyEnvelope, maxBytes = MAX_PUBLIC_JSON
     }));
   }
 
-  const outputDigest = createHash("sha256").update(text, "utf8").digest("hex");
+  const outputDigest = await sha256Hex(text);
   const status = resultState === "COMPLETE" ? "completed" : "partial";
   events.push(sse("done", {
     response_id: responseId,
