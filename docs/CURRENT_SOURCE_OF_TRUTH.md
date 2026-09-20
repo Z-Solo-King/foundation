@@ -1,3 +1,14 @@
+## 2026-09-20 CURRENT AUDIT CHECKPOINT
+
+This section records the latest audited immutable revisions. It is intentionally a checkpoint, not a claim that the document's own future merge commit will equal the recorded Foundation branch head. The live Git refs remain authoritative for current branch heads.
+
+- Last audited Foundation main: `8d38e825887fedae078973d472ed05e959cd433a`.
+- Last audited Operations main: `99ad7e946a98d7a4f1b5131b9a1fa87e41ae9b03`.
+- Repository-side parallel migration wave: merged.
+- Current candidates remain shadow/benchmark-only until parity, security/policy/provenance, performance/boundary, shadow/canary and rollback evidence pass.
+- Runtime/production claims require the specified L4/production receipt and are not inferred from this document.
+
+---
 ## 2026-09-20 LIVE REF OVERRIDE
 
 This is the newest synchronization point. Older dated sections remain historical evidence and must not outrank these refs.
