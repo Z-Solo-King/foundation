@@ -1,3 +1,32 @@
+## 2026-09-20 LIVE RECONCILIATION — AUTHORITATIVE
+
+GitHub refs and fresh runtime evidence override every older continuity section below.
+
+### Exact repository state
+- Foundation `main`: `13dfa282cdd21524b05be396213ea22d51ba63ae` (includes merged PR #821).
+- Operations `main`: `3d0f787947ba994471b74431927ab6a6dfa45d65`.
+- Open Foundation PRs: none.
+- Open Operations PRs: none.
+- Open issues: Foundation #58, #157, #263, #452; Operations #119, #132, #145, #155, #197, #340, #352, #385.
+- #821 is merged and supplies the browser-side chat-stream cancellation contract under Foundation #452.
+- The canonical workflow bridge is `.github/workflows/foundation-canonical-workflow-bridge-v3.yml`; legacy bridge v1/v2 definitions are being removed so there is one routing authority.
+- Operations remains free of `.github/workflows`; Cloudflare Workers Builds and Deploy Hooks remain prohibited competing deployment authorities.
+
+### Acceptance boundary
+Repository-side migration and deterministic validation work is complete for the current lane. Remaining open issues are acceptance gates requiring live control-plane/runtime evidence, not speculative rewrites:
+- #157: real 24-program nightly execution/artifact evidence.
+- #263 / Operations #155: one real v3 bridge dispatch receipt proving exact SHA and downstream job creation.
+- #452: live browser cancellation/disconnect propagation through the public Worker; current provider execution is non-streaming, so provider-error-after-partial-output is not a currently reachable provider path.
+- Operations #119/#132: real restart/instance-boundary persistence/replay evidence.
+- Operations #145: approved external scheduler tick receipt.
+- Operations #197: broader approved-runtime conversational execution evidence.
+- Operations #340: deeper interrupted-stream/usage-reconciliation/runtime evidence.
+- Operations #352: representative live extractor/mapper replay evidence across API/feed/HTML/browser and failure/retry/restart cases.
+- Operations #385: broader cross-surface crash/recovery/late-output runtime evidence.
+
+### Production evidence boundary
+The last documented successful canonical production release remains run `35456292033` (#232), which predates the current Foundation/Operations heads. Do not treat current `main` as production-certified until a new canonical release proves the current revisions.
+
 # Current Source of Truth — Foundation Family
 
 ## 2026-09-19 LIVE STATE
