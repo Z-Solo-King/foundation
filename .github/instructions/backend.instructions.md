@@ -4,7 +4,7 @@ applyTo: "backend/**/*.py"
 
 # Backend AI maintenance contract
 
-- Read `AI_CODEMAP.json` before editing and identify the canonical owner.
+- Read `REPOSITORY_MAP.json` and `docs/FAMILY_CANONICAL_AUTHORITY_REGISTRY.json` before editing and identify the current canonical owner.
 - Foundation owns public-safe contracts, evidence/intelligence primitives, deterministic planning, and the public API boundary.
 - Do not add private provider policy, secrets, heavy extraction, or heavy product mapping here.
 - Prefer the smallest change that preserves the typed contract and explicit uncertainty/contradiction states.
