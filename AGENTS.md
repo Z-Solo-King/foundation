@@ -3,14 +3,13 @@
 Refresh live GitHub refs before every mutation.
 
 ### Current repository heads
-- Foundation `main`: `e14b6d07ad32eb6eeb7899ec3b5bfe5140169b63`.
-- Operations `main`: `88bc073b5d14c10d83fe7bbff6f78bdbf672cc14`.
+- Foundation `main`: `12cf25f6a5688522f945e48efed915a5d5902703`.
+- Operations `main`: `4d66e1f471cbafc7adf99317c742574b9e6ce079`.
 
 ### Active migration work
-- Foundation #835 is the active TypeScript frontend-controls migration PR; it is blocked only by the required `Public tests` check, currently being repaired.
-- Foundation #836 is this documentation reconciliation PR.
-- Operations #606 and #607 are merged.
-- Operations #608 (rolling four-lane execution scheduler) is merged.
+- Foundation #835 (TypeScript frontend controls) is merged.
+- Foundation #836 is the active source-of-truth reconciliation PR.
+- Operations #606, #607, #608 and #609 are merged.
 - Operations #603 remains the canonical AI-model/tooling portability tracker.
 - No other open implementation PRs are currently known.
 
