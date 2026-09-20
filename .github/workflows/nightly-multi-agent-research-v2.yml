@@ -301,8 +301,8 @@ jobs:
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
-          app-id: \${{ secrets.OPERATIONS_APP_ID }}
-          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
@@ -310,14 +310,14 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: \${{ env.OPERATIONS_RESEARCH_REF }}
-          token: \${{ steps.operations-app.outputs.token }}
+          ref: ${{ env.OPERATIONS_RESEARCH_REF }}
+          token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Verify Operations revision
         working-directory: operations
         shell: bash
         env:
-          EXPECTED: \${{ env.OPERATIONS_RESEARCH_REF }}
+          EXPECTED: ${{ env.OPERATIONS_RESEARCH_REF }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED"
@@ -326,7 +326,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check -e . --no-deps
       - name: Run deterministic migration review sweep
         env:
-          PYTHONPATH: \${{ github.workspace }}/operations
+          PYTHONPATH: ${{ github.workspace }}/operations
         run: |
           set -euo pipefail
           mkdir -p .runtime
@@ -485,6 +485,7 @@ jobs:
           path: .runtime/artifacts
           merge-multiple: true
       - name: Download migration review artifact
+        continue-on-error: true
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: nightly-migration-review
@@ -512,7 +513,16 @@ jobs:
           else:
               aggregate = 'partial_or_mixed'
 
-          migration_review = json.loads(Path('.runtime/migration-review/nightly-migration-review.json').read_text())
+          migration_path = Path('.runtime/migration-review/nightly-migration-review.json')
+          migration_review = (
+              json.loads(migration_path.read_text())
+              if migration_path.exists()
+              else {
+                  'review_score_0_to_100': 0,
+                  'capacity_sweep': {'cases': 0},
+                  'language_review': [],
+              }
+          )
           diagnosis = {
               'schema': 'nightly-research-diagnosis/v1',
               'run_id': '${{ github.run_id }}',
