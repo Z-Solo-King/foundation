@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from email.message import Message
 from pathlib import Path
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
@@ -213,7 +213,8 @@ def fetch_target(target: Target, timeout: float = REQUEST_TIMEOUT_SECONDS) -> Re
                 continue
         except (ssl.SSLError, ConnectionError, OSError) as exc:
             final_error = type(exc).__name__
-            diagnostics.append(f"attempt-{attempt}:{final_error}")
+            reason = str(exc.reason)[:160] if isinstance(exc, URLError) else str(exc)[:160]
+            diagnostics.append(f"attempt-{attempt}:{final_error}:{reason}" if reason else f"attempt-{attempt}:{final_error}")
             if attempt < MAX_ATTEMPTS:
                 time.sleep(0.25 * attempt)
                 continue
@@ -261,6 +262,32 @@ def _percentile(values: list[int], percentile: float) -> int | None:
     rank = max(0, min(len(ordered) - 1, int((len(ordered) - 1) * percentile)))
     return ordered[rank]
 
+
+
+
+def classify_target_health(
+    observations: int,
+    failures: int,
+    status_counts: dict[str, int],
+    http_status_counts: dict[str, int],
+) -> tuple[str, str]:
+    if observations <= 0:
+        return "unknown", "collect_more_observations"
+    failure_rate = failures / observations
+    blocked = int(status_counts.get("blocked", 0))
+    limited = int(status_counts.get("resource_limited", 0))
+    errors = int(status_counts.get("error", 0))
+    if blocked / observations >= 0.95:
+        return "blocked", "quarantine_until_manual_recheck"
+    if limited / observations >= 0.95:
+        return "rate_limited", "exponential_backoff_and_quarantine"
+    if errors / observations >= 0.95 and not http_status_counts:
+        return "transport_error", "investigate_dns_tls_or_network_path"
+    if failure_rate == 0:
+        return "healthy", "retain_normal_sampling"
+    if failure_rate >= 0.5:
+        return "degraded", "retain_for_targeted_recheck"
+    return "intermittent", "retain_with_failure_aware_retry"
 
 def _target_entry() -> dict[str, object]:
     return {
@@ -382,6 +409,8 @@ def run(input_path: str, output: str, run_id: str, shards: int, shard: int, work
             "status_counts": dict(sorted(entry["status_counts"].items())),
             "http_status_counts": dict(sorted(entry["http_status_counts"].items())),
             "diagnostics": dict(sorted(entry["diagnostics"].items())),
+            "health_class": classify_target_health(int(entry["observations"]), int(entry["failures"]), dict(entry["status_counts"]), dict(entry["http_status_counts"]))[0],
+            "recommended_action": classify_target_health(int(entry["observations"]), int(entry["failures"]), dict(entry["status_counts"]), dict(entry["http_status_counts"]))[1],
             "measurement": {
                 "elapsed_ms": {
                     "min": _percentile(entry["elapsed_ms"], 0.0),

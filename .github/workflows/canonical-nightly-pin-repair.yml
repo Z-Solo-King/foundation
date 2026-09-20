@@ -24,12 +24,13 @@ jobs:
           APPLY: ${{ inputs.apply }}
           REPO: ${{ github.repository }}
           TARGET_PATH: .github/workflows/nightly-multi-agent-research-v2.yml
-          SOURCE_REF: 3eb53a1c6e7c56dd3a6369e95e962b8b22c40d2b
         run: |
           set -euo pipefail
           [[ "$APPLY" == "true" ]] || { echo 'apply=false; refusing mutation.'; exit 0; }
-          branch="repair/nightly-operations-pin-${GITHUB_RUN_ID}"
+          branch="repair/nightly-operations-pin-\${GITHUB_RUN_ID}"
           git switch --create "$branch"
+          SOURCE_REF="$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
+          test -n "$SOURCE_REF"
           python - "$TARGET_PATH" "$SOURCE_REF" <<'PY'
 import pathlib
 import sys
