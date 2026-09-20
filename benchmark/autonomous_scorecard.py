@@ -217,6 +217,8 @@ def build_scorecard(root: Path) -> dict[str, Any]:
                 "status_counts": dict(sorted(entry["status_counts"].items())),
                 "http_status_counts": dict(sorted(entry["http_status_counts"].items())),
                 "diagnostics": dict(sorted(entry["diagnostics"].items())),
+                "health_class": str(entry.get("health_class") or "unknown"),
+                "recommended_action": str(entry.get("recommended_action") or "collect_more_observations"),
             }
         )
     target_rows.sort(key=lambda item: (-float(item["failure_rate"] or 0), item["url"]))
@@ -258,6 +260,7 @@ def build_scorecard(root: Path) -> dict[str, Any]:
             "status_counts": dict(sorted(status_counts.items())),
             "http_status_counts": dict(sorted(http_counts.items())),
             "diagnostic_counts": dict(sorted(diagnostic_counts.items())),
+            "health_class_counts": dict(sorted(Counter(str(item.get("health_class") or "unknown") for item in target_rows).items())),
         },
         "structural_signals": {
             "observations_measured": measurement_observations,
