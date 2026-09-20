@@ -250,3 +250,9 @@ measured bottleneck
 > migration complexity
 
 The first-slice choice (L3) must also record its own measured justification. Add the profile or latency/cost data that motivated it to the L3 evidence record.
+
+### L1 public HTTP transport shadow
+
+- `polyglot/edge-worker/src/public-http.ts` now mirrors the deterministic transport contract of `backend/sources/http.py`: URL canonicalization, redirect bounds, HTTPS downgrade protection, response-size bounds and redirect provenance.
+- DNS-over-HTTPS resolution and public/private-address authority are deliberately not duplicated in TypeScript. The shadow consumes an explicit `PublicDestinationDecision`, preserving Python's existing DNS/SSRF authority.
+- This is a contract shadow only; `backend/sources/http.py` remains the production acquisition implementation until differential fixtures and runtime/performance evidence justify any promotion.
