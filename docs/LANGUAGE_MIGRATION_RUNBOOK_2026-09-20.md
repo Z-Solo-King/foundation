@@ -2,6 +2,30 @@
 
 Revision: reconciliation pass after reviewing `foundation` and `operations` (docs, code, open PRs) on 2026-09-20.
 
+## Language-fit decision authority
+
+Operations owns the canonical component-specific language-fit score model at `private/runtime_language_policy.py`.
+
+Foundation migration work must consume that authority rather than creating a second language-ranking model.
+
+Every candidate is scored across:
+- performance;
+- stability;
+- flexibility;
+- library/ecosystem fit;
+- runtime fit;
+- type/contract safety;
+- concurrency;
+- memory/startup;
+- migration cost;
+- tooling/observability.
+
+Static scores are provisional priors. Promotion still requires exact contract/security/policy/provenance parity, 32 orthogonal benchmark cases, three repeats and canary evidence.
+
+See Operations:
+`docs/LANGUAGE_FIT_SCORING_SYSTEM_2026-09-20.md`
+`docs/LANGUAGE_FIT_BASELINE_MATRIX_2026-09-20.md`
+
 ## Principle
 
 Use the best language for the specific workload, not the language with the best generic benchmark.
