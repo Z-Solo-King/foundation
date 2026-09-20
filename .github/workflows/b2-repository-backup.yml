@@ -97,8 +97,6 @@ jobs:
 
       - name: Mirror both repositories
         shell: bash
-        env:
-          GITHUB_APP_TOKEN: ${{ env.GITHUB_APP_TOKEN }}
         run: |
           set -euo pipefail
           test -n "${GITHUB_APP_TOKEN:-}"
