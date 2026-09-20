@@ -5,17 +5,9 @@
     repairSavedOwnership?: () => void;
   }
 
-  interface FrontendApi {
-    chatStore?: ChatStoreLike;
-  }
-
-  interface RIEWindow extends Window {
-    RIEFrontend?: FrontendApi;
-  }
-
-  const api = (window as RIEWindow).RIEFrontend;
+  const api = window.RIEFrontend;
   if (!api) throw new Error('frontend_state.js must load before ui_guards.ts');
-  const safeApi: FrontendApi = api;
+  const safeApi = api;
 
   function repairSavedOwnership(): void {
     safeApi.chatStore?.repairSavedOwnership?.();
