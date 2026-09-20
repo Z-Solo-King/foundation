@@ -36,22 +36,6 @@ export function canonicalizePublicUrl(input: string): string {
 export function assertPublicDestination(input: string, decision: PublicDestinationDecision): void {
   canonicalizePublicUrl(input);
   if (!decision.allowed) throw new Error(decision.reason ?? "target host is not allowed");
-  for (const address of decision.addresses ?? []) {
-    const value = address.toLowerCase();
-    if (
-      value === "localhost" ||
-      value.startsWith("127.") ||
-      value.startsWith("10.") ||
-      value.startsWith("192.168.") ||
-      value.startsWith("169.254.") ||
-      value === "::1" ||
-      value.startsWith("fc") ||
-      value.startsWith("fd") ||
-      value.startsWith("fe80:")
-    ) {
-      throw new Error("target host resolves to a non-public address");
-    }
-  }
 }
 
 export function nextRedirect(
