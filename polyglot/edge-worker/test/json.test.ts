@@ -19,8 +19,8 @@ test("rejects oversized body and pathological depth", () => {
     () => parseBoundedJson("x".repeat(1_048_577), "application/json"),
     /supported size/,
   );
-  let nested = "0";
-  for (let i = 0; i < 33; i += 1) nested = "[" + nested + "]";
+  let nested: string = "0";
+  for (let i = 0; i < 33; i += 1) nested = '{"next":' + nested + "}";
   assert.throws(() => parseBoundedJson(nested, "application/json"), /nesting/);
 });
 
