@@ -2,68 +2,15 @@
 
 Refresh live GitHub refs before every mutation.
 
-### Current repository heads
-- Foundation `main`: `12cf25f6a5688522f945e48efed915a5d5902703`.
-- Operations `main`: `4d66e1f471cbafc7adf99317c742574b9e6ce079`.
-
-### Active migration work
+- Foundation main: 12cf25f6a5688522f945e48efed915a5d5902703.
+- Operations main: 6a3e8577ca9d75b80f592da104e7f997850ed164.
 - Foundation #835 (TypeScript frontend controls) is merged.
-- Foundation #836 is the active source-of-truth reconciliation PR.
-- Operations #606, #607, #608 and #609 are merged.
+- Foundation #836 is the active documentation reconciliation PR.
+- Operations #606, #607, #608, #609 and #610 are merged.
+- Operations #610 fixes a real production-release packaging defect: generated foundation_core was excluded from setuptools package discovery.
 - Operations #603 remains the canonical AI-model/tooling portability tracker.
-- No other open implementation PRs are currently known.
-
-### Production/evidence boundary
-- The latest documented successful canonical production receipt remains Foundation run `35456292033` (#232).
-- Current `main` is not being treated as production-certified until a canonical release proves the current revisions.
-- Runtime/control-plane acceptance issues remain evidence-gated; do not manufacture receipts from source inspection or unit tests.
-
-### Architecture invariant
-Python remains protected policy/governance/persistence/replay/provenance/rollback authority. TypeScript/Rust/Go migration work remains evidence-gated. Operations remains free of GitHub Actions; Foundation remains the sole CI/CD/deployment owner.
-
-## 2026-09-20 LIVE MIGRATION RECONCILIATION — CURRENT OVERRIDE
-
-Refresh live GitHub refs before every mutation.
-
-### Current repository heads
-- Foundation `main`: `e14b6d07ad32eb6eeb7899ec3b5bfe5140169b63`.
-- Operations `main`: `88bc073b5d14c10d83fe7bbff6f78bdbf672cc14`.
-
-### Active migration work
-- Foundation #835 is the active TypeScript frontend-controls migration PR; it is blocked only by the required `Public tests` check, currently being repaired.
-- Foundation #836 is this documentation reconciliation PR.
-- Operations #606 and #607 are merged.
-- Operations #608 (rolling four-lane execution scheduler) is merged.
-- Operations #603 remains the canonical AI-model/tooling portability tracker.
-- No other open implementation PRs are currently known.
-
-### Production/evidence boundary
-- The latest documented successful canonical production receipt remains Foundation run `35456292033` (#232).
-- Current `main` is not being treated as production-certified until a canonical release proves the current revisions.
-- Runtime/control-plane acceptance issues remain evidence-gated; do not manufacture receipts from source inspection or unit tests.
-
-### Architecture invariant
-Python remains protected policy/governance/persistence/replay/provenance/rollback authority. TypeScript/Rust/Go migration work remains evidence-gated. Operations remains free of GitHub Actions; Foundation remains the sole CI/CD/deployment owner.
-
-
-## 2026-09-20 CURRENT LIVE HANDOFF — AUTHORITATIVE
-
-Use live GitHub refs and fresh runtime receipts over all older sections in this file.
-
-### Exact current state
-- Foundation `main`: `386dcad577cacf729ee49830548597ff5504de14`.
-- Operations `main`: `f87b565be102df93baca760261657a8c949479da`.
-- No open Foundation PRs; no open Operations PRs.
-- Foundation PR #821 is merged. It adds explicit browser chat-stream cancellation, abort propagation to fetch/ReadableStream, visible cancel UI, and a fail-safe `backend_state: UNKNOWN` result.
-- Canonical workflow bridge: `.github/workflows/foundation-canonical-workflow-bridge-v3.yml`. Legacy bridge v1/v2 files must not remain as parallel authorities.
-- Python remains the policy/orchestration/rollback authority. TypeScript shadows edge/search/browser/frontend lifecycle responsibilities; Rust remains a measured-kernel candidate; Go remains benchmark-only until evidence warrants promotion.
-- Operations contains no GitHub Actions workflow authority and must not gain one. Do not re-enable Cloudflare Workers Builds or Deploy Hooks.
-
-### Queue disposition
-All remaining open issues are either runtime/control-plane acceptance gates or the meta tracker. Do not add speculative repository code solely to manufacture those receipts. Continue independent lanes while runtime evidence is unavailable.
-
-### Closure rule
-Evidence ladder: `contract -> implementation -> focused test -> CI -> integration -> control-plane -> runtime -> production`. Never promote lower-rung evidence into runtime/production certification.
+- Current main is not production-certified until a canonical production release proves the current revisions.
+- Python remains protected policy/governance/persistence/provenance/replay/rollback authority; Operations contains no GitHub Actions workflow authority.
 
 # AI Agent Handoff — Research Intelligence Engine
 
