@@ -145,6 +145,21 @@ When ownership, workflow, policy, or agent methodology changes, update the canon
 
 Non-trivial modules must make responsibility, non-responsibilities, inputs, outputs, invariants, failure semantics, side effects, canonical authority, and tests discoverable without chat history.
 
+## Hybrid runtime and language policy
+
+Read `docs/ARCHITECTURE_LANGUAGE_PROVIDER_MAP_2026-09-20.md` and `docs/LANGUAGE_MIGRATION_RUNBOOK_2026-09-20.md` before introducing or migrating runtime languages.
+
+Rules:
+
+- Do not rewrite Python globally.
+- TypeScript is the preferred first migration for the Cloudflare edge Worker because it maps directly to the native V8/web-standard Worker runtime.
+- Rust is a candidate for measured CPU/memory hot paths such as deterministic parsing/extraction.
+- Go is a candidate only for a separately justified long-lived high-concurrency service.
+- PHP, Java/Kotlin, C/C++ are not default project runtimes; introduce them only when a concrete workload and benchmark prove a need.
+- Search/retrieval providers are capabilities behind a common eligibility/quota/billing/health contract. Never hard-code provider names into business logic.
+- Every migration must have a frozen baseline, shadow comparison, failure-injection coverage, security/authorization parity, and rollback path.
+- Never claim performance improvement from a language change without benchmark evidence from the actual project workload.
+
 ## Completion loop
 
 `parallel triage -> non-overlapping slice -> latest-main branch -> smallest safe change -> focused tests -> PR -> merge when green -> update issue -> rescan queue -> next slice`
