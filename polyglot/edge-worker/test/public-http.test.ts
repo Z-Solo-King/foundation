@@ -29,13 +29,10 @@ test("trusts Python-owned DNS decision instead of implementing a second resolver
     "https://example.com/products",
     { allowed: true, addresses: ["93.184.216.34"] },
   ));
-  assert.throws(
-    () => assertPublicDestination(
-      "https://example.com/products",
-      { allowed: true, addresses: ["127.0.0.1"] },
-    ),
-    /non-public/,
-  );
+  assert.doesNotThrow(() => assertPublicDestination(
+    "https://example.com/products",
+    { allowed: true, addresses: ["127.0.0.1"] },
+  ));
   assert.throws(
     () => assertPublicDestination(
       "https://example.com/products",
