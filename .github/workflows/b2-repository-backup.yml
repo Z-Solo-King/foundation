@@ -43,9 +43,16 @@ jobs:
         run: |
           set -euo pipefail
           test -n "${BACKUP_GITHUB_TOKEN:-}" || { echo 'Missing BACKUP_GITHUB_TOKEN GitHub secret'; exit 1; }
-          token="${BACKUP_GITHUB_TOKEN//
+          token="$(printf '%s' "$BACKUP_GITHUB_TOKEN" | tr -d '\r\n')"
+          test -n "$token" || { echo 'GitHub backup token is empty after normalization'; exit 1; }
+          response="$(curl --fail-with-body -sS \
+            -H "Authorization: Bearer ${token}" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            'https://api.github.com/repos/Z-Solo-King/operations')"
+          visibility="$(jq -r '.visibility // empty' <<< "$response")"
+          test "$visibility" = 'private' || { echo 'BACKUP_GITHUB_TOKEN is not authorized for the private Operations repository'; exit 1; }
           echo 'BACKUP_GITHUB_TOKEN purpose check: PASS (GitHub repository access)'
-
       - name: Verify required B2 credentials
         shell: bash
         env:
