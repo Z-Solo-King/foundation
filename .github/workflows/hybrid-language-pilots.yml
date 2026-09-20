@@ -516,7 +516,7 @@ jobs:
     steps:
       - name: Create Operations read token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409303e3eb1
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
           app-id: \${{ secrets.OPERATIONS_APP_ID }}
           private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
@@ -537,3 +537,44 @@ jobs:
       - name: Vet
         working-directory: operations/experiments/go_http_fanout
         run: go vet ./...
+
+  python_language_policy:
+    name: Migration language policy regression gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          app-id: \${{ secrets.OPERATIONS_APP_ID }}
+          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: \${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          token: \${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Run migration policy tests
+        working-directory: operations
+        run: |
+          python -m pip install --disable-pip-version-check -e ".[test]"
+          python -m pytest -q tests/test_runtime_language_policy.py tests/test_runtime_language_catalog.py
+
+  workflow_yaml_syntax:
+    name: All Foundation workflow YAML syntax
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Parse every workflow
+        run: |
+          ruby -e 'require "yaml"; Dir[".github/workflows/*.yml"].sort.each { |path| data = YAML.load_file(path); abort "invalid workflow: #{path}" unless data.is_a?(Hash) && data.key?("jobs"); puts "YAML PASS #{path}" }'
