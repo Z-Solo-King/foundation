@@ -55,6 +55,10 @@ jobs:
           grep -Fq 'lane: 2' .github/workflows/nightly-multi-agent-research-v2.yml
           grep -Fq 'assert completed == expected' .github/workflows/nightly-multi-agent-research-v2.yml
           grep -Fq "assert summary['program_count'] == 24" .github/workflows/nightly-multi-agent-research-v2.yml
+          grep -Fq 'name: Nightly polyglot migration review' .github/workflows/nightly-multi-agent-research-v2.yml
+          grep -Fq 'agent_capacities"] == [1, 2, 4, 8]' .github/workflows/nightly-multi-agent-research-v2.yml
+          grep -Fq 'execution_modes"] == ["serial", "parallel"]' .github/workflows/nightly-multi-agent-research-v2.yml
+          grep -Fq 'name: nightly-migration-review' .github/workflows/nightly-multi-agent-research-v2.yml
           grep -Fq 'cron: "45 19 * * *"' .github/workflows/autonomous-benchmark.yml
           grep -Fq 'cron: "0 20 * * *"' .github/workflows/nightly-invariants.yml
           echo 'overnight 01:00-09:00 IST schedule and 24-program coverage contract: PASS'

@@ -1,0 +1,144 @@
+name: Polyglot governance audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/*.py"
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.js"
+      - "**/*.jsx"
+      - "**/*.mjs"
+      - "**/*.cjs"
+      - "**/*.rs"
+      - "**/*.go"
+      - "**/*.php"
+      - "**/*.java"
+      - "**/*.kt"
+      - "**/*.kts"
+      - "**/*.cs"
+      - "**/*.c"
+      - "**/*.cc"
+      - "**/*.cpp"
+      - "**/*.cxx"
+      - "**/*.h"
+      - "**/*.hh"
+      - "**/*.hpp"
+      - "**/*.zig"
+      - "docs/**"
+      - "operations/**"
+  workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: Immutable Operations revision to audit
+        required: false
+        default: 388bff7f2bf93aadad5bf1df27cf95ae223f8f4f
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Full cross-language governance scoreboard
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OPERATIONS_REF: \${{ inputs.operations_ref || '388bff7f2bf93aadad5bf1df27cf95ae223f8f4f' }}
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          app-id: \${{ secrets.OPERATIONS_APP_ID }}
+          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout immutable Operations policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: \${{ env.OPERATIONS_REF }}
+          token: \${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Verify Operations revision
+        working-directory: operations
+        shell: bash
+        env:
+          EXPECTED: \${{ env.OPERATIONS_REF }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED"
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: operations/requirements.txt
+
+      - name: Install minimal audit dependencies
+        working-directory: operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -e . --no-deps
+
+      - name: Run complete language-by-language audit
+        shell: bash
+        env:
+          PYTHONPATH: \${{ github.workspace }}/operations
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime
+          python operations/tools/polyglot_governance_audit.py \
+            --repo . \
+            --repo operations \
+            --name foundation \
+            --name operations \
+            --output .runtime/polyglot-governance-audit.json \
+            --markdown .runtime/polyglot-governance-audit.md
+          test -s .runtime/polyglot-governance-audit.json
+          test -s .runtime/polyglot-governance-audit.md
+
+      - name: Publish scoreboard summary
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path(".runtime/polyglot-governance-audit.json").read_text(encoding="utf-8"))
+          project = data["project"]
+          print(
+              f"Audit score={project['audit_score']} "
+              f"files={project['source_files']} "
+              f"findings={project['findings']} "
+              f"high={project['high_findings']} "
+              f"candidates={project['migration_candidates']}"
+          )
+          for item in data["language_scoreboard"]:
+              print(
+                  f"{item['language']}: files={item['source_files']} "
+                  f"coverage={item['policy_domain_coverage_pct']}% "
+                  f"findings={item['rule_findings']} "
+                  f"candidates={item['candidate_count']} "
+                  f"score={item['audit_score']} "
+                  f"status={item['status']}"
+              )
+
+      - name: Upload cross-language governance evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: polyglot-governance-scoreboard
+          path: |
+            .runtime/polyglot-governance-audit.json
+            .runtime/polyglot-governance-audit.md
+          if-no-files-found: error
+          retention-days: 30
