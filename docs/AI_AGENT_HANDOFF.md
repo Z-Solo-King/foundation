@@ -1,3 +1,22 @@
+## 2026-09-20 CURRENT LIVE HANDOFF — AUTHORITATIVE
+
+Use live GitHub refs and fresh runtime receipts over all older sections in this file.
+
+### Exact current state
+- Foundation `main`: `13dfa282cdd21524b05be396213ea22d51ba63ae`.
+- Operations `main`: `3d0f787947ba994471b74431927ab6a6dfa45d65`.
+- No open Foundation PRs; no open Operations PRs.
+- Foundation PR #821 is merged. It adds explicit browser chat-stream cancellation, abort propagation to fetch/ReadableStream, visible cancel UI, and a fail-safe `backend_state: UNKNOWN` result.
+- Canonical workflow bridge: `.github/workflows/foundation-canonical-workflow-bridge-v3.yml`. Legacy bridge v1/v2 files must not remain as parallel authorities.
+- Python remains the policy/orchestration/rollback authority. TypeScript shadows edge/search/browser/frontend lifecycle responsibilities; Rust remains a measured-kernel candidate; Go remains benchmark-only until evidence warrants promotion.
+- Operations contains no GitHub Actions workflow authority and must not gain one. Do not re-enable Cloudflare Workers Builds or Deploy Hooks.
+
+### Queue disposition
+All remaining open issues are either runtime/control-plane acceptance gates or the meta tracker. Do not add speculative repository code solely to manufacture those receipts. Continue independent lanes while runtime evidence is unavailable.
+
+### Closure rule
+Evidence ladder: `contract -> implementation -> focused test -> CI -> integration -> control-plane -> runtime -> production`. Never promote lower-rung evidence into runtime/production certification.
+
 # AI Agent Handoff — Research Intelligence Engine
 
 ## 2026-09-19 CURRENT HANDOFF — AUTHORITATIVE
