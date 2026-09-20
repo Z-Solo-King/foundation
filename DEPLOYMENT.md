@@ -115,7 +115,7 @@ The public path is validated first. The protected Operations handoff is then val
 - Use `pywrangler deploy` for Python Workers.
 - Never commit credential values.
 - Never put GitHub tokens, B2 keys, Cloudflare tokens, or application authentication tokens into backup manifests or handoff records.
-- Do not reuse `BACKUP_GITHUB_TOKEN` as the production Operations deployment credential.
+- Do not use B2 credentials or application/runtime credentials as GitHub source-access credentials; use the purpose-specific GitHub App installation credential set.
 - Do not reuse B2 credentials as GitHub credentials.
 - Keep the strict `$0` policy fail-closed; do not add paid fallbacks to make deployment convenient.
 - Do not claim Cloudflare production or application certification without current evidence.
