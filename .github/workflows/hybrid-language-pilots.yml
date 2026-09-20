@@ -41,7 +41,7 @@ jobs:
           path: operations
 
       - name: Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@0ce6392f4c79a8d47e5e0a94f9f9eeced7ad9d42
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659
         with:
           toolchain: stable
 
@@ -73,7 +73,7 @@ jobs:
           path: operations
 
       - name: Setup Go
-        uses: actions/setup-go@40bde6a3c6f2d53d11c6b9a7ec8d74f6a1b0b6e1
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
           go-version: "1.25"
 
