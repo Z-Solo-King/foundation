@@ -75,7 +75,7 @@ jobs:
           )"
 
           for issue in $issue_numbers; do
-            gh issue comment "$issue" --repo "$REPOSITORY" --body "$body"
+            gh api "repos/$REPOSITORY/issues/$issue/comments" --method POST --field body="$body" >/dev/null
           done
 
           echo "Published $WORKFLOW_NAME receipt for run $RUN_NUMBER to issues: $issue_numbers"
