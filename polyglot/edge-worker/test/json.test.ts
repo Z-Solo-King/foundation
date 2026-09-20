@@ -25,7 +25,9 @@ test("rejects oversized body and pathological depth", () => {
 });
 
 test("rejects oversized collections and strings", () => {
-  const tooMany = "[" + Array.from({ length: 1_025 }, () => "0").join(",") + "]";
-  assert.throws(() => parseBoundedJson(tooMany, "application/json"), /item count/);
+  const tooMany = JSON.stringify(
+    Object.fromEntries(Array.from({ length: 1_025 }, (_, index) => [String(index), 0])),
+  );
+  assert.throws(() => parseBoundedJson(tooMany, "application/json"), /field count/);
   assert.throws(() => parseBoundedJson(JSON.stringify({ text: "x".repeat(131_073) }), "application/json"), /string/);
 });
