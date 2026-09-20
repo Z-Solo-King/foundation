@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { handleShadow, readinessResponse } from "../src/worker.js";
+import { handleShadow, readinessResponse } from "../src/worker.ts";
 
 test("health preserves a stable public contract", async () => {
   const response = await handleShadow(new Request("https://example.test/health"));
