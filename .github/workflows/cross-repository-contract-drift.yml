@@ -118,6 +118,10 @@ jobs:
             exit 1
           fi
 
+      - name: Install drift test tools
+        working-directory: foundation
+        run: python -m pip install --disable-pip-version-check -e ".[test]"
+
       - name: Generate family language-fit coverage
         working-directory: foundation
         env:
