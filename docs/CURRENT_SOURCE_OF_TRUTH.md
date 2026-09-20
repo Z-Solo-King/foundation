@@ -3,9 +3,9 @@
 Current live preparation state:
 - Foundation main before promotion: 62ff421534034d70a110f1dba32f71975c7e5a2d.
 - Operations main: 277ccb9ee33221038c7ca5647f19e27a00d84ea3.
-- Canonical production Operations pin target: 6a3e8577ca9d75b80f592da104e7f997850ed164.
+- Canonical production Operations pin target: dd30834aec8f1263d9b35142b1bd16b4ba95f1ca.
 - Reason: Operations #610 is the exact merged fix for the production release failure caused by generated foundation_core being excluded from Worker package discovery.
-- Certification rule: current production state remains unverified until the canonical production workflow runs successfully and Cloudflare provenance matches 6a3e8577ca9d75b80f592da104e7f997850ed164.
+- Certification rule: current production state remains unverified until the canonical production workflow runs successfully and Cloudflare provenance matches dd30834aec8f1263d9b35142b1bd16b4ba95f1ca.
 
 ## 2026-09-20 LIVE MIGRATION RECONCILIATION — CURRENT OVERRIDE
 
