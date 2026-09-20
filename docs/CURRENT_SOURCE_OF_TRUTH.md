@@ -3,8 +3,8 @@
 GitHub refs and fresh runtime evidence override every older continuity section below.
 
 ### Exact repository state
-- Foundation `main`: `64528e331db940096f6177c7ee40c62da9948150` (includes merged PR #821).
-- Operations `main`: `84cf891a5dc41feec97174cc6191f069b1cb5607`.
+- Foundation `main`: `386dcad577cacf729ee49830548597ff5504de14` (includes merged PR #821).
+- Operations `main`: `f87b565be102df93baca760261657a8c949479da`.
 - Open Foundation PRs: none.
 - Open Operations PRs: none.
 - Open issues: Foundation #58, #157, #263, #452; Operations #119, #132, #145, #155, #197, #340, #352, #385.
@@ -44,8 +44,8 @@ This file is the compact continuity record for the next maintenance chat. Curren
 
 ### Exact current revisions
 
-- Foundation `main`: `d3f32e09bd39ca167ae556cb3514709b8ed4644f`
-- Operations `main`: `4128d25c2d116993d6a0868cb129e591b5b815c2`
+- Foundation `main`: `386dcad577cacf729ee49830548597ff5504de14`
+- Operations `main`: `f87b565be102df93baca760261657a8c949479da`
 - Foundation canonical production Operations pin target: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
 - Foundation nightly research pin remains: `f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5`
 
