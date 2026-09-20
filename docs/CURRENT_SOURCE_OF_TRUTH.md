@@ -3,13 +3,13 @@
 GitHub refs and fresh runtime evidence override every older continuity section below.
 
 ### Exact repository state
-- Foundation `main`: `13dfa282cdd21524b05be396213ea22d51ba63ae` (includes merged PR #821).
+- Foundation `main`: `64528e331db940096f6177c7ee40c62da9948150` (includes merged PR #821).
 - Operations `main`: `84cf891a5dc41feec97174cc6191f069b1cb5607`.
 - Open Foundation PRs: none.
 - Open Operations PRs: none.
 - Open issues: Foundation #58, #157, #263, #452; Operations #119, #132, #145, #155, #197, #340, #352, #385.
 - #821 is merged and supplies the browser-side chat-stream cancellation contract under Foundation #452.
-- The canonical workflow bridge is `.github/workflows/foundation-canonical-workflow-bridge-v3.yml`; legacy bridge v1/v2 definitions are being removed so there is one routing authority.
+- The canonical workflow bridge is `.github/workflows/foundation-canonical-workflow-bridge-v3.yml`; legacy bridge v1/v2 definitions have been removed; v3 is the sole routing authority.
 - Operations remains free of `.github/workflows`; Cloudflare Workers Builds and Deploy Hooks remain prohibited competing deployment authorities.
 
 ### Acceptance boundary

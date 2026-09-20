@@ -3,7 +3,7 @@
 Use live GitHub refs and fresh runtime receipts over all older sections in this file.
 
 ### Exact current state
-- Foundation `main`: `13dfa282cdd21524b05be396213ea22d51ba63ae`.
+- Foundation `main`: `64528e331db940096f6177c7ee40c62da9948150`.
 - Operations `main`: `84cf891a5dc41feec97174cc6191f069b1cb5607`.
 - No open Foundation PRs; no open Operations PRs.
 - Foundation PR #821 is merged. It adds explicit browser chat-stream cancellation, abort propagation to fetch/ReadableStream, visible cancel UI, and a fail-safe `backend_state: UNKNOWN` result.
