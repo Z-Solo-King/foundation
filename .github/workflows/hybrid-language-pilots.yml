@@ -273,8 +273,8 @@ jobs:
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
-          app-id: \${{ secrets.OPERATIONS_APP_ID }}
-          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
@@ -282,8 +282,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: \${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
-          token: \${{ steps.operations-app.outputs.token }}
+          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659
@@ -302,8 +302,8 @@ jobs:
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
-          app-id: \${{ secrets.OPERATIONS_APP_ID }}
-          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
@@ -311,8 +311,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: \${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
-          token: \${{ steps.operations-app.outputs.token }}
+          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659
@@ -331,8 +331,8 @@ jobs:
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
-          app-id: \${{ secrets.OPERATIONS_APP_ID }}
-          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
@@ -340,8 +340,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: \${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
-          token: \${{ steps.operations-app.outputs.token }}
+          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659
@@ -364,8 +364,8 @@ jobs:
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
-          app-id: \${{ secrets.OPERATIONS_APP_ID }}
-          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
@@ -373,8 +373,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: \${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
-          token: \${{ steps.operations-app.outputs.token }}
+          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659
@@ -395,8 +395,8 @@ jobs:
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
-          app-id: \${{ secrets.OPERATIONS_APP_ID }}
-          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
@@ -404,8 +404,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: \${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
-          token: \${{ steps.operations-app.outputs.token }}
+          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
@@ -426,8 +426,8 @@ jobs:
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
-          app-id: \${{ secrets.OPERATIONS_APP_ID }}
-          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
@@ -435,8 +435,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: \${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
-          token: \${{ steps.operations-app.outputs.token }}
+          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
@@ -489,8 +489,8 @@ jobs:
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
-          app-id: \${{ secrets.OPERATIONS_APP_ID }}
-          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
@@ -498,8 +498,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: \${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
-          token: \${{ steps.operations-app.outputs.token }}
+          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
@@ -518,8 +518,8 @@ jobs:
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
-          app-id: \${{ secrets.OPERATIONS_APP_ID }}
-          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
@@ -527,8 +527,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: \${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
-          token: \${{ steps.operations-app.outputs.token }}
+          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
@@ -547,8 +547,8 @@ jobs:
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
-          app-id: \${{ secrets.OPERATIONS_APP_ID }}
-          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
@@ -556,8 +556,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: \${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
-          token: \${{ steps.operations-app.outputs.token }}
+          ref: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
+          token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
