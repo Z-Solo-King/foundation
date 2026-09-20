@@ -94,3 +94,49 @@ test("matches the Python SSE golden vector for a partial deterministic response"
     'event: done\ndata: {"response_id":"chat-r1","status":"partial","result_state":"PARTIAL","output_digest":"b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"}\n\n'
   );
 });
+
+
+test("SSE framing is deterministic across repeats and chunk boundaries", async () => {
+  const body = {
+    ok: true,
+    response: {
+      response_id: "chunk-r1",
+      result_state: "COMPLETE",
+      generation_status: "deterministic_fallback",
+      text: "a".repeat(256),
+    },
+  };
+  const first = await frameChatSse(body);
+  for (let i = 0; i < 3; i += 1) {
+    assert.equal(await frameChatSse(body), first);
+  }
+  assert.match(first, /"response_id":"chunk-r1"/);
+  assert.match(first, /"status":"completed"/);
+});
+
+test("SSE frame size gate fails closed", async () => {
+  const body = {
+    ok: true,
+    response: {
+      response_id: "oversize",
+      result_state: "PARTIAL",
+      generation_status: "deterministic_fallback",
+      text: "x".repeat(10_000),
+    },
+  };
+  await assert.rejects(frameChatSse(body, 100), /stream response exceeds supported size/);
+});
+
+test("empty partial response still emits terminal framing with identity and digest", async () => {
+  const payload = await frameChatSse({
+    ok: true,
+    response: {
+      response_id: "empty-r1",
+      result_state: "PARTIAL",
+      text: "",
+    },
+  });
+  assert.match(payload, /event: start/);
+  assert.match(payload, /event: done/);
+  assert.match(payload, /"output_digest":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"/);
+});
