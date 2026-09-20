@@ -8,7 +8,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to test
         required: false
-        default: 46bf7363170ee584b2354c30de9de2aa830426e8
+        default: b5982fd9c3203d360584f955b8adfcf85cfd1315
         type: string
 
 permissions:
@@ -19,7 +19,6 @@ jobs:
     name: ${{ matrix.id }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    continue-on-error: true
     strategy:
       fail-fast: false
       max-parallel: 20
@@ -27,9 +26,11 @@ jobs:
         include:
           - id: chat-core
             issues: "Operations #197"
+            live_probe: chat
             tests: "tests/test_chat_endpoint.py tests/test_chatbot.py"
           - id: idempotency
             issues: "Operations #197"
+            live_probe: idempotency
             tests: "tests/test_chat_idempotency.py"
           - id: trust-replay
             issues: "Operations #132"
@@ -48,6 +49,7 @@ jobs:
             tests: "tests/test_provider_runtime.py tests/test_provider_runtime_state_adapter.py tests/test_provider_retry.py tests/test_provider_retry_deadline.py tests/test_provider_circuit_runtime.py"
           - id: stream-contract
             issues: "Operations #340/#452"
+            live_probe: sse
             tests: "tests/test_provider_stream.py tests/test_provider_stream_runtime_diagnostic.py tests/test_stream_transport.py tests/test_streaming_contract.py"
           - id: execution-core
             issues: "Operations #385"
@@ -78,6 +80,7 @@ jobs:
             tests: "tests/test_browser_acquisition.py"
           - id: research-runtime
             issues: "Operations #197"
+            live_probe: research
             tests: "tests/test_project_research.py tests/test_private_project_research.py tests/test_governed_research_retry.py tests/test_research_stop.py tests/test_research_adjudication.py"
           - id: artifact-security-audit
             issues: "Operations #155/#385"
@@ -87,7 +90,7 @@ jobs:
             tests: "tests/test_workflow_policy.py tests/test_cross_module_contract_edges.py tests/test_family_audit.py tests/test_family_semantic_audit.py"
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || '46bf7363170ee584b2354c30de9de2aa830426e8' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || 'b5982fd9c3203d360584f955b8adfcf85cfd1315' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Checkout Foundation
@@ -158,6 +161,59 @@ jobs:
           }, indent=2, sort_keys=True) + "\n")
           PY
           exit "$status"
+
+      - name: Run live production acceptance probe
+        if: github.ref == 'refs/heads/main' && matrix.live_probe != ''
+        env:
+          AUTH_TOKEN: \${{ secrets.AUTH_TOKEN }}
+          BASE_URL: https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev
+        working-directory: operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "\${AUTH_TOKEN:-}" || { echo 'AUTH_TOKEN is required for main-branch live acceptance probes'; exit 1; }
+          key="fast-\${GITHUB_RUN_ID}-\${{ matrix.id }}"
+          case "\${{ matrix.live_probe }}" in
+            chat)
+              payload=$(jq -nc --arg chat_id "$key-chat" --arg request_id "$key-request" '{chat_id:$chat_id,request_id:$request_id,message:"Explain in one sentence why the public Worker uses an authenticated private service binding.",mode:"chat",strict_zero_cost_only:true}')
+              status=$(curl -sS --max-time 60 -o /tmp/live-chat.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-chat" -d "$payload" "$BASE_URL/api/v1/chat")
+              test "$status" = 200
+              jq -e '.ok == true and (.response.result_state == "COMPLETE" or .response.result_state == "PARTIAL")' /tmp/live-chat.json >/dev/null
+              ;;
+            idempotency)
+              payload=$(jq -nc --arg chat_id "$key-chat" --arg request_id "$key-request" '{chat_id:$chat_id,request_id:$request_id,message:"Return a deterministic one-line acknowledgement for this idempotency probe.",mode:"chat",strict_zero_cost_only:true}')
+              status1=$(curl -sS --max-time 60 -o /tmp/live-idem-1.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-idem" -d "$payload" "$BASE_URL/api/v1/chat")
+              status2=$(curl -sS --max-time 60 -o /tmp/live-idem-2.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-idem" -d "$payload" "$BASE_URL/api/v1/chat")
+              test "$status1" = 200 && test "$status2" = 200
+              python - <<'PY'
+          import json
+          one=json.load(open('/tmp/live-idem-1.json')); two=json.load(open('/tmp/live-idem-2.json'))
+          assert one.get('ok') is True and two.get('ok') is True
+          assert one.get('response',{}).get('response_id') == two.get('response',{}).get('response_id')
+          PY
+              ;;
+            sse)
+              payload=$(jq -nc --arg chat_id "$key-chat" --arg request_id "$key-request" '{chat_id:$chat_id,request_id:$request_id,message:"Emit a short acknowledgement suitable for an SSE lifecycle probe.",mode:"chat",strict_zero_cost_only:true}')
+              status=$(curl -sS --no-buffer --max-time 60 -D /tmp/live-sse.headers -o /tmp/live-sse.body -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-sse" -d "$payload" "$BASE_URL/api/v1/chat/stream")
+              test "$status" = 200
+              grep -qi '^Content-Type: text/event-stream' /tmp/live-sse.headers
+              grep -q '^event: start' /tmp/live-sse.body
+              grep -q '^event: done' /tmp/live-sse.body
+              ;;
+            research)
+              payload='{"question":"Fast live acceptance probe: verify the permitted source can be acquired and read back.","depth":"quick","require_citations":true,"max_sources":1,"max_evidence_items":3,"strict_zero_cost_only":true,"source_urls":["https://example.com/"]}'
+              status=$(curl -sS --max-time 90 -o /tmp/live-research.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-research" -d "$payload" "$BASE_URL/api/v1/research")
+              test "$status" = 200
+              run_id=$(jq -r '.run_id // empty' /tmp/live-research.json)
+              test -n "$run_id"
+              read_status=$(curl -sS --max-time 30 -o /tmp/live-research-read.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" "$BASE_URL/api/v1/research/$run_id")
+              test "$read_status" = 200
+              jq -e --arg rid "$run_id" '.ok == true and ((.run_id // .run.run_id) == $rid)' /tmp/live-research-read.json >/dev/null
+              ;;
+            *) echo "Unknown live probe: \${{ matrix.live_probe }}"; exit 2 ;;
+          esac
+          echo "live probe \${{ matrix.live_probe }}: PASS"
+
       - name: Upload scenario evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
