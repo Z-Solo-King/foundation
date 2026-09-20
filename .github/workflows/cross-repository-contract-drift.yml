@@ -120,7 +120,7 @@ jobs:
 
       - name: Install drift test tools
         working-directory: foundation
-        run: python -m pip install --disable-pip-version-check -e ".[test]"
+        run: python -m pip install --disable-pip-version-check "pytest>=8,<10"
 
       - name: Generate family language-fit coverage
         working-directory: foundation
