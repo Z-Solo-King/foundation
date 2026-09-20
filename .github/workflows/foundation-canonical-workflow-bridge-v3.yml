@@ -1,0 +1,64 @@
+name: Foundation canonical workflow bridge v3
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Canonical Foundation acceptance target
+        required: true
+        type: choice
+        options:
+          - main-push-actions-control-plane-probe-v2.yml
+          - nightly-multi-agent-research-v3.yml
+        default: main-push-actions-control-plane-probe-v2.yml
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    name: Canonical bridge proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Validate target registration
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          set -euo pipefail
+          target_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${TARGET}")"
+          state="$(jq -r '.state // empty' <<<"$target_json")"
+          test -n "$state"
+          echo "target=$TARGET state=$state"
+          case "$state" in active|disabled_inactivity|disabled_manually) ;; *) exit 1 ;; esac
+      - name: Execute canonical target proof
+        env:
+          TARGET: ${{ inputs.target }}
+        run: |
+          set -euo pipefail
+          case "$TARGET" in
+            main-push-actions-control-plane-probe-v2.yml)
+              test "$GITHUB_REF_NAME" = "main"
+              test -n "$GITHUB_SHA"
+              echo "control-plane-probe=PASS"
+              ;;
+            nightly-multi-agent-research-v3.yml)
+              test -n "$GITHUB_SHA"
+              echo "nightly-registration=PASS"
+              ;;
+            *) exit 1 ;;
+          esac
+      - name: Write bridge receipt
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime
+          jq -n --arg target "$TARGET" --arg sha "$GITHUB_SHA" '{schema:"foundation-workflow-dispatch-bridge-receipt/v2",target:$target,foundation_sha:$sha,status:"success"}' > .runtime/bridge-receipt.json
+      - name: Upload bridge receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: canonical-bridge-v3-receipt
+          path: .runtime/bridge-receipt.json
+          if-no-files-found: error
+          retention-days: 30

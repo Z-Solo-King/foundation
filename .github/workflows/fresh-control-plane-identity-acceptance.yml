@@ -1,0 +1,65 @@
+name: Fresh control-plane identity acceptance
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  accept:
+    name: Dispatch fresh workflow identities
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Dispatch bridge v3
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run foundation-canonical-workflow-bridge-v3.yml --repo "$GITHUB_REPOSITORY" --ref main -f target=main-push-actions-control-plane-probe-v2.yml
+      - name: Verify bridge run and job
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          expected="$GITHUB_SHA"
+          run_id=""
+          for _ in {1..30}; do
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow foundation-canonical-workflow-bridge-v3.yml --event workflow_dispatch --branch main --limit 20 --json databaseId,headSha --jq '.[] | select(.headSha=="'"$expected"'") | .databaseId' | head -n1)"
+            [ -n "$run_id" ] && break
+            sleep 2
+          done
+          test -n "$run_id"
+          jobs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" --jq '.total_count // (.jobs|length)')"
+          test "$jobs" -gt 0
+          echo "bridge_run_id=$run_id jobs=$jobs"
+      - name: Dispatch nightly v3
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run nightly-multi-agent-research-v3.yml --repo "$GITHUB_REPOSITORY" --ref main -f dry_run=false
+      - name: Verify nightly run has jobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          expected="$GITHUB_SHA"
+          run_id=""
+          for _ in {1..30}; do
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow nightly-multi-agent-research-v3.yml --event workflow_dispatch --branch main --limit 20 --json databaseId,headSha --jq '.[] | select(.headSha=="'"$expected"'") | .databaseId' | head -n1)"
+            [ -n "$run_id" ] && break
+            sleep 2
+          done
+          test -n "$run_id"
+          for _ in {1..30}; do
+            jobs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" --jq '.total_count // (.jobs|length)')"
+            if [ "$jobs" -gt 0 ]; then echo "nightly_run_id=$run_id jobs=$jobs"; exit 0; fi
+            sleep 2
+          done
+          echo "nightly run created without jobs"
+          exit 1
