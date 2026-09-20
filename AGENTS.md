@@ -469,3 +469,8 @@ Current queue policy:
 - Do not enable Cloudflare Workers Builds or Deploy Hooks as a competing deployment authority.
 
 Never close a required runtime/control-plane issue from source inspection or repository tests alone.
+
+
+## Hybrid implementation policy
+
+Prefer capability-based selection over one-language standardization. Use TypeScript for new asynchronous edge/search fan-out work, retain Python for current deterministic public primitives, and require measured evidence before introducing Rust/Wasm or Go. PHP is a legacy-integration option, not a performance-driven rewrite target. Provider choice belongs behind typed capability contracts and must not move protected policy or resource ownership into Foundation.
