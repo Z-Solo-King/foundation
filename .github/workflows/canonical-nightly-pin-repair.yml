@@ -24,7 +24,7 @@ jobs:
           APPLY: ${{ inputs.apply }}
           REPO: ${{ github.repository }}
           TARGET_PATH: .github/workflows/nightly-multi-agent-research-v2.yml
-          SOURCE_REF: 3eb53a1c6e7c56dd3a6369e95e962b8b22c40d2b
+          SOURCE_REF: a8608004a1da27d244d6080e9dbde59daa74e047
         run: |
           set -euo pipefail
           [[ "$APPLY" == "true" ]] || { echo 'apply=false; refusing mutation.'; exit 0; }
