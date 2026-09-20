@@ -16,7 +16,7 @@ The governing rule is: **a credential is named and scoped by the authority it se
 | --- | --- | --- | --- |
 | `OPERATIONS_APP_ID` | Identify the GitHub App used by Foundation deployment | GitHub App / Foundation deployment | B2, Cloudflare, arbitrary repository writes |
 | `OPERATIONS_APP_PRIVATE_KEY` | Sign the short-lived GitHub App JWT used to mint an Operations installation token | GitHub App / Foundation deployment | B2, Cloudflare, general repository writes |
-| `BACKUP_GITHUB_TOKEN` | Read/mirror `foundation` and private `operations` for repository backup | Foundation B2 backup workflow | B2, Cloudflare, production deployment |
+| `OPERATIONS_APP_ID` + `OPERATIONS_APP_PRIVATE_KEY` | Mint a short-lived GitHub App installation token for private Operations backup mirroring | Foundation B2 backup workflow | B2, Cloudflare, arbitrary writes |
 | `B2_KEY_ID` | Authenticate the backup workflow to the configured B2 S3 API | Backblaze B2 | GitHub, Cloudflare |
 | `B2_APPLICATION_KEY` | B2 backup/restore application credential | Backblaze B2 | GitHub, Cloudflare |
 | `B2_BUCKET` | Authoritative backup bucket name | B2 backup configuration | GitHub authentication |
@@ -26,15 +26,15 @@ The governing rule is: **a credential is named and scoped by the authority it se
 
 Never substitute one credential for another because the workflows run in the same GitHub repository or job.
 
-## Backup GitHub credential
+## Backup GitHub repository access
 
-`BACKUP_GITHUB_TOKEN` is a **GitHub credential** despite its historical name. It exists so the backup workflow can mirror repository Git data. It has no relationship to the B2 secret values except that the same backup workflow consumes both credential families.
+The backup workflow uses the same purpose-specific GitHub App credential family already approved for private Operations source access: `OPERATIONS_APP_ID` and `OPERATIONS_APP_PRIVATE_KEY`. A short-lived installation token is minted at runtime and used only to mirror the private `operations` repository. The public `foundation` mirror does not require a private GitHub credential.
 
-B2 credentials authenticate only to B2. The GitHub token authenticates only to GitHub repository read operations. Neither credential is stored in or substituted for the other.
+B2 credentials authenticate only to B2. The GitHub App credentials authenticate only to GitHub repository access. Neither credential is stored in or substituted for the other.
 
-The backup workflow must use an ephemeral `GIT_ASKPASS` helper, disable interactive prompts, remove the helper during cleanup, and never print token values.
+The backup workflow must mint a short-lived installation token, use a non-interactive Git HTTP credential/header, remove private key/JWT material during cleanup, and never print token values.
 
-The backup workflow validates the GitHub credential against the private Operations repository before cloning and validates B2 credentials separately against the configured B2 bucket. Passing both checks proves credential-purpose separation, not production or disaster-recovery certification.
+The backup workflow validates the GitHub App installation/token against the private Operations repository before cloning and validates B2 credentials separately against the configured B2 bucket. Passing both checks proves credential-purpose separation, not production or disaster-recovery certification.
 
 ## Production Operations credential
 
