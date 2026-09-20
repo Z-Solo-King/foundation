@@ -8,7 +8,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to test
         required: false
-        default: 1b81f371cd6bd39ca74764b3c901217435fdd824
+        default: 7aff054264048a6a7f5e5068de4da6c3a992ef5f
         type: string
 
 permissions:
@@ -90,7 +90,7 @@ jobs:
             tests: "tests/test_workflow_policy.py tests/test_cross_module_contract_edges.py tests/test_family_audit.py tests/test_family_semantic_audit.py"
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || 'df9aa306783b46eb302144b857a6e50fe9827f03' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || '7aff054264048a6a7f5e5068de4da6c3a992ef5f' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Checkout Foundation
@@ -106,6 +106,22 @@ jobs:
           repositories: operations
           permission-contents: read
 
+      - name: Guard against stale Operations pin
+        if: github.event_name == 'push'
+        working-directory: operations
+        env:
+          OPERATIONS_TOKEN: ${{ steps.operations-app.outputs.token }}
+          PINNED_OPERATIONS_REF: ${{ env.OPERATIONS_REF }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          current_main=$(git ls-remote "https://x-access-token:${OPERATIONS_TOKEN}@github.com/Z-Solo-King/operations.git" refs/heads/main | awk '{print $1}')
+          test -n "$current_main"
+          if [ "$PINNED_OPERATIONS_REF" != "$current_main" ]; then
+            echo "stale_operations_pin: configured=$PINNED_OPERATIONS_REF current_main=$current_main"
+            exit 1
+          fi
+          echo "Operations pin matches current main: $current_main"
       - name: Checkout pinned Operations
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -124,6 +140,11 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check -e ".[test,browser]"
           python -m pip install --disable-pip-version-check "workers-py>=1.9" workers-runtime-sdk
+
+      - name: Verify async test environment
+        working-directory: operations
+        run: |
+          python -c "import pytest_asyncio, pytest; print('pytest=' + pytest.__version__ + ' pytest-asyncio=' + pytest_asyncio.__version__)"
 
       - name: Determine pinned Foundation public-core revision
         id: foundation-core-pin
@@ -180,7 +201,7 @@ jobs:
         run: |
           set +e
           mkdir -p ../coverage-artifacts/${{ matrix.id }}
-          python -m pytest -q -ra ${{ matrix.tests }} > ../coverage-artifacts/${{ matrix.id }}/pytest.log 2>&1
+          python -m pytest --asyncio-mode=auto -q -ra ${{ matrix.tests }} > ../coverage-artifacts/${{ matrix.id }}/pytest.log 2>&1
           status=$?
           SCENARIO_STATUS="$status" python - <<'PY'
           import json
