@@ -1,5 +1,4 @@
 name: Hybrid language pilots
-# Validation trigger: Operations hybrid-language pilot source rev edc0b1b66953
 
 on:
   workflow_dispatch:
@@ -7,7 +6,7 @@ on:
       operations_ref:
         description: Operations revision to test
         required: true
-        default: edc0b1b669538fa1e62866c22f87d81c739d7e65
+        default: main
         type: string
   push:
     branches: [main]
@@ -83,7 +82,7 @@ jobs:
         run: go test ./...
 
   typescript:
-    name: TypeScript search adapter pilot
+    name: TypeScript search adapter shadow
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -111,5 +110,9 @@ jobs:
           node-version: 22
 
       - name: Install and typecheck
-        working-directory: operations/experiments/ts_search_adapter
-        run: npm install --ignore-scripts --no-audit --no-fund && npm run typecheck
+        working-directory: operations/polyglot/search-adapters
+        run: |
+          set -euo pipefail
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          npm test
