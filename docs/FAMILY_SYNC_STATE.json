@@ -6,27 +6,27 @@
   "repositories": {
     "foundation": {
       "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup",
-      "last_audited_main_sha": "62ff421534034d70a110f1dba32f71975c7e5a2d"
+      "last_audited_main_sha": "2d3dee41fde834b0ef894cd1a54fe4417a748cd4"
     },
     "operations": {
       "role": "private-control-plane-research-orchestration",
-      "last_audited_main_sha": "277ccb9ee33221038c7ca5647f19e27a00d84ea3",
+      "last_audited_main_sha": "dd30834aec8f1263d9b35142b1bd16b4ba95f1ca",
       "approved_production_revision": "dd30834aec8f1263d9b35142b1bd16b4ba95f1ca",
       "nightly_research_revision": "f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5"
     }
   },
   "production": {
-    "workflow_run_id": null,
-    "workflow_run_number": null,
-    "foundation_revision": "62ff421534034d70a110f1dba32f71975c7e5a2d",
+    "workflow_run_id": 35519167159,
+    "workflow_run_number": 321,
+    "foundation_revision": "d4f8be98447d2b6c6d05d1b213941e029f8649a6",
     "operations_revision": "dd30834aec8f1263d9b35142b1bd16b4ba95f1ca",
+    "cloudflare_operations_version_id": "0dae35f1-854b-49e4-b278-f3a17af3aa00",
     "cross_repository_audit_artifact": "cross-repository-audit-receipt",
-    "result": "PENDING_RECERTIFICATION"
+    "result": "PRODUCTION_CERTIFIED"
   },
   "acceptance": {
     "foundation": [
       157,
-      263,
       452
     ],
     "operations": [
@@ -34,7 +34,6 @@
       120,
       132,
       145,
-      155,
       197,
       340,
       352,
@@ -46,17 +45,19 @@
   },
   "completed_recently": {
     "foundation_prs": [
-      739,
-      740,
-      741,
-      742
+      858,
+      861,
+      862
     ],
     "operations_prs": [
-      535,
-      536,
-      537
-    ],
-    "foundation_issue_27": true
+      613,
+      614,
+      617,
+      619,
+      620,
+      622,
+      625
+    ]
   },
   "evidence_boundary": {
     "L0": "hypothesis",
@@ -68,9 +69,8 @@
   "control_plane": {
     "main_push_probe": "success_with_job_creation",
     "main_push_secret_probe": "success_with_job_creation",
-    "nightly_push_run": 35456290060,
-    "nightly_push_result": "failure_before_job_creation",
-    "workflow_dispatch_bridge": "no_current_empirical_job-creation_receipt"
+    "workflow_dispatch_bridge": "success_with_job_creation_on_current_release",
+    "nightly_program_execution": "blocked_by_live_research_executor_configuration"
   },
   "runtime_summary": {
     "chat": "pass",
@@ -84,11 +84,14 @@
     "terminalization_cas": "pass",
     "resource_reservation_reconciliation": "pass",
     "maintenance_reconciliation": "pass",
-    "provider_stream_contract": "pass"
+    "provider_stream_contract": "pass",
+    "memory_cross_version": "deferred",
+    "external_provider_partial_stream": "not_reachable_under_current_architecture"
   },
   "rules": [
     "Current merged source and fresh runtime evidence outrank historical handoff text.",
-    "Do not claim L4 acceptance for an issue whose remaining criterion is restart, scheduler, workflow-dispatch, cancellation, provider failure, or other external/runtime evidence not observed.",
+    "Production certification applies only to Foundation d4f8be98447d2b6c6d05d1b213941e029f8649a6 deploying Operations dd30834aec8f1263d9b35142b1bd16b4ba95f1ca.",
+    "Do not claim L4 acceptance for an issue whose remaining criterion is restart, scheduler, cancellation, provider failure, or other unobserved external/runtime evidence.",
     "Do not introduce competing deployment, automation, resource, lifecycle, replay, memory, evaluation, or publication authorities."
   ]
 }
