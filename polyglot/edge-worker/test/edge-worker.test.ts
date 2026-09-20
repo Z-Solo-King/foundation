@@ -74,3 +74,23 @@ test("enforces public response body bound", () => {
   assert.equal(responseBodyWithinBound("x".repeat(1_048_576)), true);
   assert.equal(responseBodyWithinBound("x".repeat(1_048_577)), false);
 });
+
+test("matches the Python SSE golden vector for a partial deterministic response", async () => {
+  const payload = await frameChatSse({
+    ok: true,
+    response: {
+      response_id: "chat-r1",
+      result_state: "PARTIAL",
+      generation_status: "deterministic_fallback",
+      text: "hello world",
+      usage: { input_tokens: 3, output_tokens: 2 },
+    },
+  });
+  assert.equal(
+    payload,
+    'event: start\ndata: {"response_id":"chat-r1","status":"streaming","generation":"deterministic_fallback"}\n\n' +
+    'event: delta\ndata: {"text":"hello world"}\n\n' +
+    'event: usage\ndata: {"input_tokens":3,"output_tokens":2}\n\n' +
+    'event: done\ndata: {"response_id":"chat-r1","status":"partial","result_state":"PARTIAL","output_digest":"b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"}\n\n'
+  );
+});
