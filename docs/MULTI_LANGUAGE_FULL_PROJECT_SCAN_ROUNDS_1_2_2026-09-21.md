@@ -118,4 +118,4 @@ No candidate receives production authority from the scan. Promotion remains refe
 
 ## Final machine coverage pass
 
-The final pass re-read all 384 current-tree non-Python blobs by path. 383 UTF-8 text blobs were content-read; the single binary DOCX remained inventory-only because the connector cannot decode binary content. No non-Python text path was skipped. Python remained intentionally outside migration scoring.
+The final pass re-read all 384 current-tree non-Python blobs by path. 383 UTF-8 text blobs were content-read; the single binary DOCX remained inventory-only because the connector cannot decode binary content. No non-Python text path was skipped. The machine pass established path/content coverage; semantic review and findings focused on polyglot implementation surfaces plus policy, workflow, architecture, issue and migration-contract material. Python remained intentionally outside migration scoring.
