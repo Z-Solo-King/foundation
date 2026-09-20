@@ -314,6 +314,8 @@ async def _operations_chatbot_diagnostic(env, request=None, operation="infrastru
         )
         body = await upstream.json()
         body_dict = body if isinstance(body, dict) else {}
+        if operation in {"persistence_seed", "persistence_verify"}:
+            return body_dict, upstream.status
         runtime_checks = body_dict.get("runtime_checks") if isinstance(body_dict.get("runtime_checks"), list) else []
         runtime_ok = bool(body_dict.get("runtime_status") == "ok") and bool(runtime_checks) and all(
             isinstance(check, dict) and bool(check.get("ok"))
