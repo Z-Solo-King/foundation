@@ -6,12 +6,12 @@ This section is the continuity anchor for the next maintenance chat. Current Git
 
 ### Exact repository state
 
-- Foundation `main`: `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`
-- Operations `main`: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
+- Foundation `main`: `7dc0e4164df3f20dac933f22a326e3c67fe06e59`
+- Operations `main`: `f1ce7fc3957357a6da9a33f6577b4dfff606048b`
 - Foundation production Operations pin target: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
 - Foundation nightly research pin remains: `f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5`
-- Foundation PRs #739, #740, #741 and #742 are merged.
-- Operations PRs #535, #536 and #537 are merged.
+- Foundation PRs #739, #740, #741, #742, #808, #810, #811 and #812 are merged.
+- Operations PRs #535, #536, #537, #575, #576, #577, #578 and #579 are merged.
 - Foundation #27 is closed.
 - Operations contains no GitHub Actions workflow authority.
 
@@ -50,7 +50,7 @@ The production release emitted and uploaded `cross-repository-audit-receipt`. Th
 
 Foundation:
 - #157 — real 24-program nightly execution/artifact evidence remains missing because the current push-triggered nightly run still fails before job creation.
-- #263 — one supported workflow-dispatch bridge receipt with exact target SHA and actual job creation remains missing.
+- #263 — repository-side bridge v3 is fixed and merged; one real workflow-dispatch receipt with exact target SHA and actual job creation remains missing.
 - #452 — repository SSE lifecycle is green; remaining proof is real client cancellation/disconnect propagation and provider-error-after-partial-output terminalization.
 - #58 — meta tracker remains open until the dependent gates above are genuinely satisfied.
 
@@ -63,7 +63,7 @@ Operations:
 - #197 — broader approved runtime conversational acceptance.
 - #340 — deeper provider streaming interruption/cancellation/error evidence.
 - #352 — representative API/feed/HTML/browser extractor/mapper replay matrix with failures/retries/restarts/idempotency/provenance.
-- #385 — broader concurrent completion/failure/cancellation, crash-after-side-effect, late-output, and restart/recovery acceptance. The concrete stale-attempt defect is fixed and covered by the latest production CAS check.
+- #385 — broader concurrent completion/failure/cancellation, crash-after-side-effect, late-output, and restart/recovery acceptance. Unexpected chat exceptions are now durable `failed` terminal receipts via Operations #579; the remaining broader recovery/runtime gates are still open.
 
 ### Do not regress the architecture
 
