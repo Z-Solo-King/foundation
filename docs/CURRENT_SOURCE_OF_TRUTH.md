@@ -1,3 +1,16 @@
+## 2026-09-20 LIVE REF OVERRIDE
+
+This is the freshest synchronization point for this file. Live GitHub refs outrank older dated sections below.
+
+- Foundation `main`: `83fb8704913a5b6d83967c93529e343d020ef1a9`.
+- Operations `main`: `9660b00ec5418569f95d3d582c99bc4f2ed22978`.
+- Operations #637 merged: retired `AI_CODEMAP.json` consumer replaced by canonical family registries.
+- Operations #638 merged: stale artifact-manifest test reconciled to `artifact-manifest/v1`.
+- Foundation #888 merged: coverage matrix now installs/verifies pytest-asyncio, uses asyncio auto mode, and rejects stale Operations pins on push-triggered main runs.
+- Foundation #890 merged: coverage matrix pin refreshed to current Operations main after documentation synchronization.
+- Runtime/production certification remains a separate evidence rung; these repository commits do not constitute live Cloudflare certification.
+
+---
 ## 2026-09-20 VERIFIED PRODUCTION + MIGRATION STATE
 
 This is the current continuity override. It supersedes older dated sections below when values conflict.
