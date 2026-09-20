@@ -189,7 +189,7 @@ def test_public_foundation_is_the_only_github_actions_bridge_owner():
     assert "workflow_dispatch:" in workflow
     assert "actions/workflows/${TARGET}/dispatches" in workflow
     for target in (
-        "nightly-multi-agent-research-v3.yml",
+        "nightly-multi-agent-research-v2.yml",
         "main-push-actions-control-plane-probe-v2.yml",
     ):
         assert target in workflow
