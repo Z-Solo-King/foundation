@@ -43,7 +43,7 @@ test("preserves auth boundary and cache policy", () => {
   });
 });
 
-test("frames partial chat identically to the Python public contract", () => {
+test("frames partial chat identically to the Python public contract", async () => {
   const body = {
     ok: true,
     response: {
@@ -54,7 +54,7 @@ test("frames partial chat identically to the Python public contract", () => {
       usage: { input_tokens: 3, output_tokens: 2 },
     },
   };
-  const payload = frameChatSse(body);
+  const payload = await frameChatSse(body);
   assert.match(payload, /event: start/);
   assert.match(payload, /event: delta/);
   assert.match(payload, /event: usage/);
@@ -63,10 +63,10 @@ test("frames partial chat identically to the Python public contract", () => {
   assert.match(payload, /"status":"partial"/);
 });
 
-test("rejects blocked or malformed chat results", () => {
-  assert.throws(() => frameChatSse({ ok: true }), /invalid_private_chat_response/);
-  assert.throws(() => frameChatSse({ ok: true, response: { response_id: "", result_state: "PARTIAL", text: "" } }), /stream_execution_identity_missing/);
-  assert.throws(() => frameChatSse({ ok: true, response: { response_id: "r", result_state: "BLOCKED", text: "" } }), /blocked_chat_stream/);
+test("rejects blocked or malformed chat results", async () => {
+  await assert.rejects(frameChatSse({ ok: true }), /invalid_private_chat_response/);
+  await assert.rejects(frameChatSse({ ok: true, response: { response_id: "", result_state: "PARTIAL", text: "" } }), /stream_execution_identity_missing/);
+  await assert.rejects(frameChatSse({ ok: true, response: { response_id: "r", result_state: "BLOCKED", text: "" } }), /blocked_chat_stream/);
 });
 
 test("enforces public response body bound", () => {
