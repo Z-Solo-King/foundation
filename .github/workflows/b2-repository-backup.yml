@@ -85,6 +85,7 @@ jobs:
             'https://api.github.com/repos/Z-Solo-King/operations')"
           jq -e '.private == true and .full_name == "Z-Solo-King/operations"' <<<"$response" >/dev/null
           echo 'GitHub App private Operations API access: PASS'
+          echo 'GitHub App private Operations credential: PASS'
       - name: Verify required B2 credentials
         shell: bash
         env:
