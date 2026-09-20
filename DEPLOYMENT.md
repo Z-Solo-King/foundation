@@ -51,7 +51,7 @@ The runtime Foundation -> Operations path is a Cloudflare service binding plus t
 | --- | --- | --- | --- |
 | `OPERATIONS_APP_ID` | Identify the GitHub App used for private Operations deployment access | Foundation deployment workflow | B2 secrets, Cloudflare secrets |
 | `OPERATIONS_APP_PRIVATE_KEY` | Sign the short-lived GitHub App JWT | Foundation deployment workflow | B2 secrets, Cloudflare secrets |
-| `BACKUP_GITHUB_TOKEN` | Read/mirror both repositories for B2 backup | Foundation backup workflow | Operations deployment credentials, B2 secrets |
+| `OPERATIONS_APP_ID` + `OPERATIONS_APP_PRIVATE_KEY` | Mint short-lived GitHub App token for private Operations source access during deployment and backup | Foundation deployment/backup workflows | B2 secrets, Cloudflare secrets |
 | `B2_KEY_ID` | B2 API authentication | B2 backup boundary | GitHub tokens, Cloudflare tokens |
 | `B2_APPLICATION_KEY` | B2 backup/restore authorization | B2 backup boundary | GitHub tokens, Cloudflare tokens |
 | `CLOUDFLARE_API_TOKEN` | Cloudflare deployment/API access | Cloudflare deployment boundary | GitHub tokens, B2 secrets |
