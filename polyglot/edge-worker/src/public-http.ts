@@ -42,7 +42,6 @@ export function nextRedirect(
   currentUrl: string,
   location: string,
   redirects: number,
-  *,
   originalScheme: "http:" | "https:",
 ): string {
   if (redirects >= MAX_PUBLIC_REDIRECTS) throw new Error("too many redirects");
