@@ -1,29 +1,37 @@
-// TypeScript migration candidate. @ts-nocheck is temporary while this lane preserves exact browser semantics before type-hardening.
+interface FrontendApi {
+  escapeHtml(value: unknown): string;
+  renderMarkdown?: (value: unknown) => string;
+}
+
+interface RIEWindow extends Window {
+  RIEFrontend?: FrontendApi;
+}
+
 (() => {
   'use strict';
 
-  const api = window.RIEFrontend;
+  const api = (window as RIEWindow).RIEFrontend;
   if (!api) throw new Error('frontend_state.js must load before markdown_renderer.js');
 
-  const inline = (value) => {
+  const inline = (value: unknown): string => {
     let text = api.escapeHtml(String(value || ''));
-    const codeTokens = [];
-    text = text.replace(/`([^`\n]+)`/g, (_m, code) => {
+    const codeTokens: string[] = [];
+    text = text.replace(/`([^`\n]+)`/g, (_m: string, code: string) => {
       const token = `@@CODE_${codeTokens.length}@@`;
       codeTokens.push(`<code>${code}</code>`);
       return token;
     });
-    text = text.replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g, (_m, alt, url) => `<a href="${api.escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${alt || 'image'}</a>`);
-    text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (_m, label, url) => `<a href="${api.escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`);
+    text = text.replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g, (_m: string, alt: string, url: string) => `<a href="${api.escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${alt || 'image'}</a>`);
+    text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (_m: string, label: string, url: string) => `<a href="${api.escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`);
     text = text.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
     text = text.replace(/__([^_\n]+)__/g, '<strong>$1</strong>');
     text = text.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
     text = text.replace(/_([^_\n]+)_/g, '<em>$1</em>');
     text = text.replace(/~~([^~\n]+)~~/g, '<del>$1</del>');
-    return text.replace(/@@CODE_(\d+)@@/g, (_m, index) => codeTokens[Number(index)]);
+    return text.replace(/@@CODE_(\d+)@@/g, (_m: string, index: string) => codeTokens[Number(index)]);
   };
 
-  function highlightCode(source, language) {
+  function highlightCode(source: unknown, language: unknown): string {
     const lang = String(language || '').toLowerCase();
     const supported = new Set(['js', 'jsx', 'javascript', 'ts', 'tsx', 'typescript', 'py', 'python', 'json', 'bash', 'sh', 'shell', 'sql']);
     if (!supported.has(lang)) return api.escapeHtml(source);
@@ -31,31 +39,31 @@
     const keyword = /\b(?:const|let|var|function|return|async|await|if|else|for|while|do|class|extends|new|try|catch|throw|import|from|export|default|def|in|with|as|True|False|None|null|true|false|SELECT|FROM|WHERE|INSERT|UPDATE|DELETE|JOIN|ON|AND|OR)\b/g;
     const number = /\b\d+(?:\.\d+)?\b/g;
     const tokenPattern = /(\/\*[\s\S]*?\*\/|\/\/[^\n]*|#[^\n]*|"[^"\n]*"|'[^'\n]*')/g;
-    const held = [];
-    const hold = (html) => {
+    const held: string[] = [];
+    const hold = (html: string): string => {
       const token = `@@HL_${held.length}@@`;
       held.push(html);
       return token;
     };
 
-    let text = String(source || '').replace(/[&<>]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[char]);
-    text = text.replace(tokenPattern, (match) => {
+    let text = String(source || '').replace(/[&<>]/g, (char: string) => char === '&' ? '&amp;' : char === '<' ? '&lt;' : '&gt;');
+    text = text.replace(tokenPattern, (match: string) => {
       if (match.startsWith('//') || match.startsWith('#') || match.startsWith('/*')) return hold(`<span class="code-comment">${match}</span>`);
       return hold(`<span class="code-string">${match}</span>`);
     });
     text = text.replace(keyword, (match) => `<span class="code-keyword">${match}</span>`);
     text = text.replace(number, (match) => `<span class="code-number">${match}</span>`);
-    return text.replace(/@@HL_(\d+)@@/g, (_m, index) => held[Number(index)]);
+    return text.replace(/@@HL_(\d+)@@/g, (_m: string, index: string) => held[Number(index)] ?? '');
   }
 
-  function render(markdown) {
+  function render(markdown: unknown): string {
     const lines = String(markdown || '').replace(/\r\n?/g, '\n').split('\n');
-    const out = [];
+    const out: string[] = [];
     let inFence = false;
     let fenceLanguage = '';
-    let code = [];
-    let paragraph = [];
-    let listType = null;
+    let code: string[] = [];
+    let paragraph: string[] = [];
+    let listType: 'ul' | 'ol' | null = null;
 
     const flushParagraph = () => {
       if (!paragraph.length) return;
@@ -109,7 +117,8 @@
         flushParagraph();
         const wanted = unordered ? 'ul' : 'ol';
         if (listType !== wanted) { closeList(); out.push(`<${wanted}>`); listType = wanted; }
-        out.push(`<li>${inline((unordered || ordered)[1])}</li>`);
+        const itemText = unordered ? unordered[1] : ordered[1];
+        out.push(`<li>${inline(itemText)}` + '</li>');
         continue;
       }
 
@@ -127,5 +136,5 @@
     return out.join('');
   }
 
-  api.renderMarkdown = Object.freeze(render);
+  if (api) api.renderMarkdown = Object.freeze(render);
 })();
