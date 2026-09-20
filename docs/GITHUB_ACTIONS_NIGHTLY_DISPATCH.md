@@ -1,6 +1,6 @@
 # GitHub Actions dispatch through the public Foundation router
 
-The canonical public entrypoint for family automation is `.github/workflows/foundation-canonical-workflow-bridge.yml`.
+The canonical public entrypoint for family automation is `.github/workflows/foundation-canonical-workflow-bridge-v3.yml`.
 
 Private Operations and the private runtime must not dispatch target workflows directly. They use the Foundation GitHub App installation credential to invoke the public Foundation router through the GitHub Actions workflow-dispatch API. The router validates the requested target and then dispatches the canonical Foundation workflow with its own Foundation App token.
 

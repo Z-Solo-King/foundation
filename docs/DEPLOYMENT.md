@@ -8,7 +8,7 @@ All GitHub Actions automation for the active family is executed from public `fou
 
 ## External private-runtime Actions route
 
-Private Operations and the private runtime never dispatch Foundation target workflows directly. Their single public automation ingress is `.github/workflows/foundation-canonical-workflow-bridge.yml`.
+Private Operations and the private runtime never dispatch Foundation target workflows directly. Their single public automation ingress is `.github/workflows/foundation-canonical-workflow-bridge-v3.yml`.
 
 The route is:
 
