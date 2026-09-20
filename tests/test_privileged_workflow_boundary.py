@@ -30,12 +30,11 @@ def test_backup_is_main_or_manual_only_and_separates_credential_purposes():
     assert "branches:" in text and "- main" in text
     assert "pull_request:" not in text
     assert "pull_request_target:" not in text
-    assert "BACKUP_GITHUB_TOKEN" in text
+    assert "OPERATIONS_APP_ID" in text
+    assert "OPERATIONS_APP_PRIVATE_KEY" in text
     assert "B2_APPLICATION_KEY" in text
     assert "CLOUDFLARE_API_TOKEN" not in text
-    assert "OPERATIONS_APP_PRIVATE_KEY" not in text
-
-
+    assert "BACKUP_GITHUB_TOKEN" not in text
 def test_privileged_boundary_contract_is_documented():
     text = (ROOT / "docs" / "PRIVILEGED_WORKFLOW_TRUST_BOUNDARY.md").read_text(encoding="utf-8")
     for phrase in (
