@@ -44,7 +44,7 @@ The migration program is incremental and parallel. At no point should a rewrite 
 
 ## Decisions that resolve conflicts between plan documents
 
-1. **First promoted production slice remains L3 (search adapters).** L1 can advance in parallel as a contract-only shadow because it does not own protected policy/state. No production language switch occurs until the L1 fixture gates and L3 provider gates are independently satisfied.
+1. **L3 is the current leading production candidate, not a guaranteed first promotion.** L1 can advance in parallel as a contract-only shadow because it does not own protected policy/state. Final promotion order is determined by Operations' component-fit score + sequencing/risk score + evidence gates; another lane may promote first if its measured case becomes stronger.
 2. **Browser/Playwright (L5).** Existing Python browser acquisition stays in Python. New browser orchestration may be written in TypeScript. No existing Python Playwright code is migrated until browser latency attribution shows the language is relevant.
 3. **Go (L4).** Benchmark pilot only. It becomes a service only under the L4 trigger below.
 4. **PHP.** Boundary-only WordPress adapter. No PHP in the core.
@@ -186,6 +186,54 @@ Suitable candidates:
 
 If introduced, it must remain behind the same API contract used by Python. The pilot must reuse the same target lists, timeouts and retry policy as the Python benchmark executor before any comparison is valid (the current pilot has no retry policy).
 
+## Risk-driven sequencing and eventual authority migration
+
+The migration program distinguishes **language fit**, **migration order**, and **authority readiness**.
+
+Every artifact/capability is additionally classified by:
+
+- criticality;
+- blast radius;
+- dependency fan-out;
+- authority sensitivity;
+- security sensitivity;
+- semantic sensitivity;
+- reversibility;
+- observability;
+- evidence maturity.
+
+Critical/security/authority components are generally later-wave candidates because the project first uses lower-blast-radius migrations to prove the migration machinery itself. This is **not a permanent Python exemption**.
+
+A critical authority can eventually migrate when the stronger authority-promotion gates are met.
+
+The canonical sequence is:
+
+`reference authority
+→ candidate
+→ differential parity
+→ shadow
+→ authority candidate
+→ canary
+→ authority promoted
+→ retire old authority`
+
+Authority promotion requires, at minimum:
+
+- dependency readiness ≥95%;
+- exact functional parity;
+- 100% security parity;
+- 100% policy parity;
+- 100% provenance parity;
+- verified rollback;
+- recovery/incident rehearsal;
+- at least 3 successful shadow passes;
+- at least 3 successful canary passes;
+- 100% downstream contract coverage;
+- zero critical divergences;
+- evidence grade A.
+
+The sequence score is guidance, not permission. A component can be high-fit but late-wave, or low-risk but not worth migrating.
+
 ## Benchmark matrix
 
 Every migration candidate must run a matrix that varies:
@@ -201,7 +249,7 @@ Every migration candidate must run a matrix that varies:
 - cold start/warm start;
 - representative production traffic mix.
 
-Run at least 20 orthogonal cases rather than 20 copies of one test.
+Run at least 32 orthogonal cases, with at least 3 repeats per case, rather than copies of one test.
 
 ## Evidence and rollback
 
