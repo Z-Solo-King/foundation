@@ -829,6 +829,35 @@ jobs:
           npm run typecheck
           npm test
 
+  rust_robots_sitemap:
+    name: Rust robots sitemap parity pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref || '99ad7e946a98d7a4f1b5131b9a1fa87e41ae9b03' }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659
+        with:
+          toolchain: stable
+      - name: Test
+        working-directory: operations
+        run: cargo test --manifest-path benchmark/polyglot/rust_robots_sitemap/Cargo.toml
+
   workflow_yaml_syntax:
     name: All Foundation workflow YAML syntax
     runs-on: ubuntu-latest
