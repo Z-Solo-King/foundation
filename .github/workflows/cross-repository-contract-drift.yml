@@ -85,7 +85,8 @@ jobs:
           test -n "$github_app_token"
           echo "::add-mask::$github_app_token"
           mkdir -p operations
-          git -c http.extraHeader="Authorization: Bearer ${github_app_token}" \
+          git_basic_auth="$(printf 'x-access-token:%s' "$github_app_token" | base64 -w0)"
+          git -c "http.extraHeader=Authorization: Basic $git_basic_auth" \
             clone --depth=1 --filter=blob:none \
             "https://github.com/${OPERATIONS_REPOSITORY}.git" operations/repo
           catalog_response="$(curl -fsS \
