@@ -15,8 +15,8 @@ This file is the compact continuity record for the next maintenance chat. Curren
 
 ### Exact current revisions
 
-- Foundation `main`: `c9e5ed881791be39465d0aaaa680e04a569ae505`
-- Operations `main`: `64a381186d6355566054313472c80176f02bee3b`
+- Foundation `main`: `d3f32e09bd39ca167ae556cb3514709b8ed4644f`
+- Operations `main`: `4128d25c2d116993d6a0868cb129e591b5b815c2`
 - Foundation canonical production Operations pin target: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
 - Foundation nightly research pin remains: `f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5`
 
@@ -55,7 +55,9 @@ The live chat response deliberately remained `PARTIAL` with deterministic fallba
 - Main-push secret probe on current Foundation `main`: SUCCESS with job creation.
 - Current `nightly-multi-agent-research-v2.yml` push run `35456290060`: failure before job creation; this does not satisfy the real 24-program execution gate.
 - Current auxiliary nightly pin-repair, B2 backup/restore and cross-repository drift helper runs are separate automation evidence and are not production deployment authorities.
-- Foundation PR #812 is merged and the v3 bridge now dispatches the allowlisted target, verifies the exact SHA, polls the target run and requires job creation. The remaining acceptance is one real execution receipt proving those conditions in the live Actions control plane.
+- Foundation PR #812 is merged and the v3 bridge now dispatches the allowlisted target, verifies the exact SHA, polls the target run and requires job creation.
+- Foundation PRs #815 and #816 advanced the TypeScript edge shadow into Phase B route/SSE/JSON/public-HTTP contract coverage.
+- Foundation PRs #817 and #818 merged Foundation-owned CI lanes for the TypeScript browser shadow and Rust text-normalization pilot. The remaining acceptance is one real execution receipt proving those conditions in the live Actions control plane.
 
 ### Current open acceptance queue
 
@@ -72,6 +74,11 @@ Repository-side migration work merged today:
 - Operations #577 — parity-gated Rust URL identity pilot.
 - Operations #579 — durable failed terminalization/replay for unexpected chat execution exceptions.
 - Operations #581 — provider-stream ERROR/CANCELLED classification codes are now mandatory.
+- Operations #583 — TypeScript search-adapter default timeout is enforced.
+- Operations #584 — deterministic extractor/mapper replay matrix is merged.
+- Operations #585 — unresolved external provider intent now fails closed instead of replaying an unknown side effect.
+- Operations #586 — TypeScript browser acquisition shadow is merged.
+- Operations #587 — Rust text-normalization parity kernel is merged.
 
 Operations:
 - #119 — memory persistence/restart plus live authorization/deletion evidence;
@@ -86,7 +93,7 @@ Operations:
 
 #27 is completed and closed after the confirmed stale temporary/diagnostic/test branch cleanup. Do not reopen it merely for historical branch pruning.
 
-There are 13 open issues total, of which 12 are non-meta acceptance gates.
+There are 12 open issues total, of which 11 are non-meta acceptance gates.
 
 ### Evidence boundary
 
@@ -98,4 +105,4 @@ Do not upgrade source inspection or repository tests into runtime/control-plane/
 
 ### Next-chat operating rule
 
-Start from Foundation `c9e5ed881791be39465d0aaaa680e04a569ae505` and Operations `64a381186d6355566054313472c80176f02bee3b`. The production receipt `35456292033` is the current L4 baseline. Work only on a missing acceptance rung or a newly established repository-side defect; do not re-open the already-correct chat/SSE/service-binding/deployment path without new evidence.
+Start from Foundation `d3f32e09bd39ca167ae556cb3514709b8ed4644f` and Operations `4128d25c2d116993d6a0868cb129e591b5b815c2`. The production receipt `35456292033` is the current L4 baseline. Work only on a missing acceptance rung or a newly established repository-side defect; do not re-open the already-correct chat/SSE/service-binding/deployment path without new evidence.
