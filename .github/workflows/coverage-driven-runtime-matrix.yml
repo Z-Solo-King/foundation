@@ -8,7 +8,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to test
         required: false
-        default: a2a19ee15a88031490f689262a43fae1e053794d
+        default: 6cf0faaeadaf1cd990114661d6e74f9709ab28b2
         type: string
 
 permissions:
@@ -90,7 +90,7 @@ jobs:
             tests: "tests/test_workflow_policy.py tests/test_cross_module_contract_edges.py tests/test_family_audit.py tests/test_family_semantic_audit.py"
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || 'a2a19ee15a88031490f689262a43fae1e053794d' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || '6cf0faaeadaf1cd990114661d6e74f9709ab28b2' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Checkout Foundation
