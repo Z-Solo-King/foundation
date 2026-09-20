@@ -1,18 +1,12 @@
-interface FrontendApi {
-  escapeHtml(value: unknown): string;
-  renderMarkdown?: (value: unknown) => string;
-}
-
-interface RIEWindow extends Window {
-  RIEFrontend?: FrontendApi;
-}
-
 (() => {
   'use strict';
 
   const api = window.RIEFrontend;
   if (!api?.escapeHtml) throw new Error('frontend_state.js must load before markdown_renderer.js');
-  const safeApi: FrontendApi = api as FrontendApi;
+  const safeApi = api as RIEFrontendGlobalApi & {
+    escapeHtml(value: unknown): string;
+    renderMarkdown?: (value: unknown) => string;
+  };
 
   const inline = (value: unknown): string => {
     let text = safeApi.escapeHtml(String(value || ''));

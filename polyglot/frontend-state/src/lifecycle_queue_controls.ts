@@ -7,17 +7,11 @@
     text?: unknown;
   }
 
-  interface FrontendApi {
+  const frontendApi = window.RIEFrontend;
+  if (!frontendApi?.escapeHtml) return;
+  const safeApi = frontendApi as RIEFrontendGlobalApi & {
     escapeHtml(value: unknown): string;
-  }
-
-  interface RIEWindow extends Window {
-    RIEFrontend?: FrontendApi;
-  }
-
-  const frontendApi = (window as RIEWindow).RIEFrontend;
-  if (!frontendApi) return;
-  const safeApi: FrontendApi = frontendApi;
+  };
 
   const QUEUE_KEY = 'rie.frontend.research.queue.v1';
   const panel = document.getElementById('message-queue');
