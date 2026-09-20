@@ -1,3 +1,17 @@
+## 2026-09-20 LIVE REF OVERRIDE
+
+This is the newest repository synchronization point. Older dated sections remain historical evidence.
+
+- Foundation main: `c9c27d32b5c5ded06068024c9953d16f8585a739`.
+- Operations main: `a82753c2b23dac355a3424249ed7d9fd3dc4d86e`.
+- Operations #637/#638 fixed the retired codemap consumer and stale artifact-manifest test contract.
+- Operations #640/#641/#642 added/validated the Rust Link-header pilot, TypeScript acquisition-planner shadow, and remaining retired-codemap audit cleanup.
+- Foundation #888/#890 synchronized the coverage-driven matrix with current Operations and added stale-pin/async safeguards.
+- Foundation #892 merged the 40-case adaptive parallel polyglot matrix and the new Rust/TypeScript migration lanes.
+- Foundation #893 merged the remaining backend maintenance-instruction correction away from retired AI_CODEMAP authority.
+- Production/runtime acceptance remains separate from repository/CI evidence.
+
+---
 ## 2026-09-20 VERIFIED PRODUCTION + MIGRATION STATE
 
 This is the current continuity override. It supersedes older dated sections below when values conflict.
