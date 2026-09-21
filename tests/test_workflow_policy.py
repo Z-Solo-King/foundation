@@ -327,6 +327,14 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     assert "OPERATIONS_RESEARCH_REF: 7cf73e6a15b1e1d090f023915f62e5a2bd066b8e" in nightly
 
 
+
+def test_coverage_runtime_matrix_allows_docs_only_operations_pin_drift():
+    workflow = _workflow_texts()["coverage-driven-runtime-matrix.yml"]
+    assert "compare/${PINNED_OPERATIONS_REF}...${current_main}" in workflow
+    assert "compare_too_large" in workflow
+    assert "operations_runtime_drift" in workflow
+    assert "AGENTS.md|README.md|docs/*" in workflow
+    assert "stale_operations_pin" not in workflow
 def test_production_operations_compile_guard_is_executable():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert "# Fail before deployment if the pinned Operations tree contains any Python syntax error.\\npython" not in deployment
