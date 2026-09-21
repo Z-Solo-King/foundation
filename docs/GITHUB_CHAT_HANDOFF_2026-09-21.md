@@ -1,5 +1,16 @@
 # GitHub Project Handoff — 2026-09-21
 
+## 2026-09-21 CURRENT RECONCILIATION
+
+- Foundation `main`: `b2752d6a63aaf646743cc8173fa83b4271b02160`
+- Operations `main`: `0fa576c10fee30221150110865b11c0132de4575`
+- Canonical immutable Operations pin: `0fa576c10fee30221150110865b11c0132de4575`
+- Foundation PRs #951, #952, #954, #955 and #956 are merged; Operations #745-#749 are merged.
+- Foundation #953 is closed. The remaining open issue queue is Foundation #58/#157/#452 and Operations #119/#132/#145/#197/#340/#352/#385/#597/#603/#699/#711.
+- Repository implementation waves are reconciled. Remaining issues are explicit runtime/control-plane/production evidence gates unless fresh CI reproduces a new defect.
+- Do not infer Cloudflare/runtime certification from source inspection or GitHub-only tests.
+
+
 > Foundation mirror. This handoff is intentionally mirrored so a future GitHub-only chat can start from either repository.
 
 ## Canonical repository state
@@ -20,22 +31,7 @@
 
 ### #711 — DurableResourceLedger reservation orphan
 
-This is now the highest-priority concrete code defect.
-
-Observed failure:
-- an over-limit reservation can leave an uncharged `reserved` row;
-- later release/reconcile can subtract quota that was never charged;
-- quota can therefore under-count active reservations and permit an over-limit state.
-
-Proposed direction already recorded in #711:
-- make finalization conditional on proof that the reservation charge changed one row;
-- distinguish idempotent replay from identity mismatch;
-- delete failed pending state deterministically;
-- fix the D1 fake commit behavior;
-- add orphan/reconcile and quota-invariant regression coverage;
-- verify real/preview D1 `changes()` semantics and a concurrent over-limit probe.
-
-Do not close #711 from static inspection alone.
+Repository implementation is complete in the merged repair wave. #711 remains open only for runtime evidence: Python 3.14/full-suite evidence plus real/preview D1 `changes()` semantics and the concurrent over-limit probe. Do not close from static inspection alone.
 
 ## Remaining runtime/evidence gates
 
