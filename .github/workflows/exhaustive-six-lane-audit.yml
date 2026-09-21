@@ -82,7 +82,7 @@ jobs:
           repository: Z-Solo-King/operations
           ref: ${{ steps.resolve.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
-          path: operations
+          path: operations-repo
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -123,10 +123,10 @@ jobs:
         if: always()
         run: |
           set +e
-          git -C operations diff --binary > .runtime/exhaustive-audit/operations-autofix.patch
-          git diff --binary > .runtime/exhaustive-audit/foundation-autofix.patch
-          git -C operations status --short > .runtime/exhaustive-audit/operations-status.txt
-          git status --short > .runtime/exhaustive-audit/foundation-status.txt
+          git -C operations-repo diff --binary > .runtime/exhaustive-audit/operations-autofix.patch
+          git -C foundation-repo diff --binary > .runtime/exhaustive-audit/foundation-autofix.patch
+          git -C operations-repo status --short > .runtime/exhaustive-audit/operations-status.txt
+          git -C foundation-repo status --short > .runtime/exhaustive-audit/foundation-status.txt
           exit 0
 
       - name: Upload exhaustive audit artifacts
@@ -148,9 +148,9 @@ jobs:
             echo "No Foundation auto-fixes to commit."
             exit 0
           fi
-          git add -A
-          git commit -m "[audit-autofix] apply targeted deterministic hygiene fixes"
-          git push origin "HEAD:${GITHUB_HEAD_REF}"
+          git -C foundation-repo add -A
+          git -C foundation-repo commit -m "[audit-autofix] apply targeted deterministic hygiene fixes"
+          git -C foundation-repo push origin "HEAD:${GITHUB_HEAD_REF}"
 
       - name: Print final summary
         if: always()
