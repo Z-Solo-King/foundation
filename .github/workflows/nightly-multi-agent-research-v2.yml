@@ -523,6 +523,20 @@ jobs:
                   'language_review': [],
               }
           )
+          blockers = []
+          if 'blocked_before_execution' in states:
+              blockers.append('research_preflight_blocked')
+          if 'lane_failure' in states:
+              blockers.append('research_lane_failure')
+          if '${{ needs.research.result }}' != 'success':
+              blockers.append('research_job_not_successful')
+          if '${{ needs.migration_review.result }}' != 'success':
+              blockers.append('migration_review_job_not_successful')
+          if migration_review.get('capacity_sweep', {}).get('cases', 0) != 40:
+              blockers.append('migration_review_incomplete')
+          if any(item.get('validation') != 'success' for item in statuses):
+              blockers.append('lane_validation_incomplete')
+          blockers = sorted(set(blockers))[:8]
           diagnosis = {
               'schema': 'nightly-research-diagnosis/v1',
               'run_id': '${{ github.run_id }}',
@@ -532,6 +546,7 @@ jobs:
               'migration_review_score_0_to_100': migration_review['review_score_0_to_100'],
               'migration_review_cases': migration_review['capacity_sweep']['cases'],
               'migration_review_languages': sorted({item['language'] for item in migration_review['language_review']}),
+              'blockers': blockers,
               'lanes': statuses,
               'operations_revision': '${{ env.OPERATIONS_RESEARCH_REF }}',
               'real_research_findings_allowed': aggregate == 'live_research_executed' and '${{ inputs.dry_run || false }}' != 'true',
