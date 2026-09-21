@@ -34,7 +34,7 @@ jobs:
     steps:
       - name: Checkout Foundation audit branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        # Audit source is resolved from the synchronized Operations branch.
+        # Audit source is resolved from the synchronized Operations branch. Preflight follows.
         with:
           fetch-depth: 0
 
