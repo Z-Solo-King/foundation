@@ -146,13 +146,20 @@ jobs:
       - name: Install Operations test environment
         working-directory: operations
         run: |
-          python -m pip install --disable-pip-version-check -e ".[test,browser]"
+          python -m pip install --disable-pip-version-check -e ".[test,browser,media]"
           python -m pip install --disable-pip-version-check "workers-py>=1.9" workers-runtime-sdk
 
       - name: Verify async test environment
         working-directory: operations
         run: |
           python -c "import pytest_asyncio, pytest; print('pytest=' + pytest.__version__ + ' pytest-asyncio=' + pytest_asyncio.__version__)"
+
+      - name: Install Foundation test environment for repository policy
+        if: matrix.id == 'repository-policy'
+        working-directory: .
+        run: |
+          python -m pip install --disable-pip-version-check -e .
+          python -m pip install --disable-pip-version-check pytest pytest-asyncio coverage workers-py workers-runtime-sdk
 
       - name: Determine pinned Foundation public-core revision
         id: foundation-core-pin
@@ -204,6 +211,7 @@ jobs:
 
       - name: Run scenario
         id: run
+        if: matrix.id != 'repository-policy'
         working-directory: operations
         shell: bash
         run: |
@@ -231,6 +239,36 @@ jobs:
           if [ "$status" -ne 0 ]; then
             echo "::group::${{ matrix.id }} pytest failure output"
             tail -n 250 "../coverage-artifacts/${{ matrix.id }}/pytest.log" || true
+            echo "::endgroup::"
+          fi
+          exit "$status"
+
+      - name: Run Foundation repository-policy scenario
+        if: matrix.id == 'repository-policy'
+        id: foundation-policy-run
+        shell: bash
+        run: |
+          set +e
+          mkdir -p coverage-artifacts/repository-policy
+          python -m pytest -q ${{ matrix.tests }} > coverage-artifacts/repository-policy/pytest.log 2>&1
+          status=$?
+          SCENARIO_STATUS="$status" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          status = int(os.environ["SCENARIO_STATUS"])
+          Path("coverage-artifacts/repository-policy/scenario.json").write_text(json.dumps({
+              "schema": "coverage-matrix-result/v1",
+              "scenario": "repository-policy",
+              "issue_refs": "Foundation #263/#58",
+              "operations_ref": os.environ.get("OPERATIONS_REF", ""),
+              "pytest": "${{ matrix.tests }}",
+              "exit_code": status,
+              "passed": status == 0,
+          }, indent=2, sort_keys=True) + "\n")
+          PY
+          if [ "$status" -ne 0 ]; then
+            echo "::group::repository-policy pytest failure output"
+            tail -n 250 coverage-artifacts/repository-policy/pytest.log || true
             echo "::endgroup::"
           fi
           exit "$status"
@@ -288,11 +326,20 @@ jobs:
           echo "live probe ${{ matrix.live_probe }}: PASS"
 
       - name: Upload scenario evidence
-        if: always()
+        if: always() && matrix.id != 'repository-policy'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: coverage-${{ matrix.id }}
           path: coverage-artifacts/${{ matrix.id }}/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Foundation policy evidence
+        if: always() && matrix.id == 'repository-policy'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: coverage-repository-policy
+          path: coverage-artifacts/repository-policy/
           if-no-files-found: error
           retention-days: 14
 
