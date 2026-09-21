@@ -1,8 +1,8 @@
 ## 2026-09-22 LIVE GITHUB REF RECONCILIATION
 
-**Live branch heads (queried from GitHub):**
+**Live branch heads observed immediately before this synchronization:**
 - Foundation `main`: `baad1daf07ea7d0307077631c4afb3a27fa31e78`
-- Operations `main`: `5ae639f547d67c96bb680fa7afee2dbe741d16a5`
+- Operations `main`: `e13a83cf0513edf065bfe2ddb9efc0e4443360d3`
 
 **Last verified implementation revisions:**
 - Foundation: `e5b26061861e570396b73993a3c8733496cb1956`
@@ -27,7 +27,7 @@ Documentation-only handoff commits may advance `main` without changing the verif
 
 Refresh live GitHub state before every mutation. Current canonical heads:
 - Foundation `main`: `b2752d6a63aaf646743cc8173fa83b4271b02160`
-- Operations `main`: `0fa576c10fee30221150110865b11c0132de4575`
+- Operations `main`: `e13a83cf0513edf065bfe2ddb9efc0e4443360d3`
 - Foundation immutable Operations pin: `0fa576c10fee30221150110865b11c0132de4575`
 
 Merged repair/documentation waves: Foundation #945/#949/#951/#952/#954/#955/#956; Operations #745-#749. Foundation #953 is closed. Current remaining acceptance queue: Foundation #58/#157/#452; Operations #119/#132/#145/#197/#340/#352/#385/#597/#603/#699/#711.
