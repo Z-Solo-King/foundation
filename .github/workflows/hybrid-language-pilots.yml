@@ -18,6 +18,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: foundation-hybrid-language-pilots-${{github.ref}}
+  cancel-in-progress: false
+
 jobs:
   resolve_operations_ref:
     name: Resolve immutable Operations revision
