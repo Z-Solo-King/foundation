@@ -33,7 +33,7 @@ def test_research_run_lifecycle():
 def test_research_run_accepts_terminal_lifecycle_states():
     contract = ResearchContract(question="test")
     plan = ResearchPlan(question="test", stages=(), source_budget=1, evidence_budget=1)
-    run = create_run("run", contract, plan)
+    run = start_research(create_run("run", contract, plan))
     for state in (
         ResearchLifecycle.PARTIAL,
         ResearchLifecycle.FAILED,
@@ -48,7 +48,10 @@ def test_research_run_accepts_terminal_lifecycle_states():
 def test_research_run_rejects_post_terminal_transition():
     contract = ResearchContract(question="test")
     plan = ResearchPlan(question="test", stages=(), source_budget=1, evidence_budget=1)
-    blocked = transition_research(create_run("run", contract, plan), ResearchLifecycle.BLOCKED)
+    blocked = transition_research(
+        start_research(create_run("run", contract, plan)),
+        ResearchLifecycle.BLOCKED,
+    )
     with pytest.raises(ValueError):
         transition_research(blocked, ResearchLifecycle.COMPLETED)
 
