@@ -105,6 +105,10 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED"
 
+      - name: Record immutable Operations revision
+        working-directory: operations
+        run: printf '%s\n' "${{ steps.resolve.outputs.ref }}" > .operations-review-sha
+
       - name: Upload immutable Operations source
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -129,7 +133,7 @@ jobs:
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: polyglot-operations-source
-          path: .
+          path: operations
 
       - name: Verify immutable Operations revision
         working-directory: operations
@@ -138,7 +142,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$EXPECTED"
+          test "$(cat .operations-review-sha)" = "$EXPECTED"
 
       - name: Install Operations package
         working-directory: operations
