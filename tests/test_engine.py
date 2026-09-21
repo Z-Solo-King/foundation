@@ -1,5 +1,7 @@
 """Tests for complete research execution pipeline."""
 
+import pytest
+
 from backend.execution.engine import create_run, start_research, add_observation, verify_and_add_claim, complete_research, summarize_research
 from backend.intelligence.contracts import ResearchContract, ResearchPlan
 from backend.intelligence.observations import Observation, EvidenceSpan
@@ -70,3 +72,29 @@ def test_synthesis_with_corroborated_claims():
     from backend.execution.synthesis import ResearchSynthesizer
     result = ResearchSynthesizer().synthesize(run)
     assert result.question == "Is X true?" and result.confidence == "high" and len(result.evidence_chain) == 2
+
+
+def test_research_run_accepts_canonical_terminal_outcomes():
+    from backend.execution.engine import ResearchLifecycle, transition_research
+    contract = ResearchContract(question="test")
+    plan = ResearchPlan(question="test", stages=(), source_budget=1, evidence_budget=1)
+    running = start_research(create_run("run-lifecycle", contract, plan))
+    for state in (
+        ResearchLifecycle.PARTIAL,
+        ResearchLifecycle.BLOCKED,
+        ResearchLifecycle.CANCELLED,
+        ResearchLifecycle.FAILED,
+        ResearchLifecycle.COMPLETED,
+    ):
+        terminal = transition_research(running, state)
+        assert terminal.status is state
+        assert terminal.completed_at is not None
+
+
+def test_research_run_rejects_terminal_transition_from_planned():
+    from backend.execution.engine import transition_research
+    contract = ResearchContract(question="test")
+    plan = ResearchPlan(question="test", stages=(), source_budget=1, evidence_budget=1)
+    run = create_run("run-planned", contract, plan)
+    with pytest.raises(ValueError, match="invalid or unsupported"):
+        transition_research(run, "completed")
