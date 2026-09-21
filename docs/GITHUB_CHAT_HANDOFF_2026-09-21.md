@@ -1,20 +1,21 @@
 ## 2026-09-22 CURRENT RECONCILIATION
 
+**Live-head rule:** query the current GitHub `main` refs at chat startup. Documentation-only commits may advance `main` and must not be mistaken for a new runtime implementation revision.
+
+- Last verified Foundation implementation revision: `e5b26061861e570396b73993a3c8733496cb1956`
+- Last verified Operations implementation revision: `7cf73e6a15b1e1d090f023915f62e5a2bd066b8e`
+- Canonical nightly research workflow: `.github/workflows/nightly-multi-agent-research-v2.yml`
+- Nightly `OPERATIONS_RESEARCH_REF`: `7cf73e6a15b1e1d090f023915f62e5a2bd066b8e`
+- Final implementation repair waves are merged through Foundation #960 and Operations #753.
+- Foundation #157 remains the canonical 24-program nightly acceptance gate.
+- Remaining open issues are runtime/provider/Cloudflare/migration evidence gates; do not infer closure from source inspection, unit tests, or dry-runs.
+- GitHub Actions remains the sole CI/CD/production deployment authority; Operations must remain free of GitHub Actions, and Workers Builds/Deploy Hooks must not be re-enabled.
+
 ### Nightly research continuity
-- Foundation issue #157 is the canonical 24-program Heroic AI nightly acceptance gate.
-- Workflow: `.github/workflows/nightly-multi-agent-research-v2.yml`.
-- Three lanes × eight programs = 24 programs.
-- `OPERATIONS_RESEARCH_REF` is pinned to Operations `7cf73e6a15b1e1d090f023915f62e5a2bd066b8e`.
-- Closure requires authorized provider configuration plus a real live 24-program receipt bundle; dry-runs/source inspection/tests do not qualify.
-
-- Foundation `main`: `cbe564103f9c5d9c7a0d0e13349140b620f541a8`
-- Operations `main`: `7cf73e6a15b1e1d090f023915f62e5a2bd066b8e`
-- Immutable Operations pin in Foundation: `7cf73e6a15b1e1d090f023915f62e5a2bd066b8e`
-- Final repository repair waves through Foundation #960 and Operations #753 are merged.
-- Fresh control-plane identity acceptance passes on this head.
-- Remaining open issues are the Foundation tracker #58, nightly research #157, SSE acceptance #452, and Operations runtime/evidence issues #119/#132/#145/#197/#340/#352/#385/#597/#603/#699/#711.
-
-# GitHub Project Handoff — 2026-09-21
+- 3 lanes × 8 programs = 24 programs.
+- Provider configuration required: `RESEARCH_LLM_ENDPOINT`, `RESEARCH_LLM_API_KEY`, `RESEARCH_LLM_MODEL`.
+- Live closure requires real provider-backed execution, all expected program IDs, complete JSONL/status artifacts, exact Operations revision provenance, and the final validation gate.
+- Do not post secrets in issues/comments.
 
 ## 2026-09-21 CURRENT RECONCILIATION
 
