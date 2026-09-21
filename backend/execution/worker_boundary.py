@@ -120,6 +120,7 @@ class WorkerResult:
 class WorkerTaskValidator:
     TASK_EXPIRY_HOURS = 24
     RESULT_EXPIRY_HOURS = 1
+    MAX_INPUT_SIZE_MB = 100
     MAX_OUTPUT_SIZE_MB = 100
     MAX_METADATA_SIZE_BYTES = MAX_METADATA_SIZE_BYTES
 
@@ -169,7 +170,7 @@ class WorkerTaskValidator:
         if task.task_type not in PUBLIC_TASK_TYPES:
             return False, f"unknown public task type {task.task_type}"
         try:
-            _bounded_json_digest(task.metadata, max_bytes=MAX_METADATA_SIZE_BYTES, field_name="task metadata", compact=True)
+            _bounded_json_digest(task.metadata, max_bytes=self.MAX_METADATA_SIZE_BYTES, field_name="task metadata", compact=True)
         except ValueError as exc:
             return False, str(exc)
 
@@ -210,7 +211,7 @@ class WorkerTaskValidator:
                 try:
                     computed_hash = _bounded_json_digest(
                         output_data,
-                        max_bytes=MAX_OUTPUT_SIZE_BYTES,
+                        max_bytes=self.MAX_OUTPUT_SIZE_MB * 1024 * 1024,
                         field_name="worker output",
                         compact=False,
                     )
