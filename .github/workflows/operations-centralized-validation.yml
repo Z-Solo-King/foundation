@@ -64,6 +64,10 @@ jobs:
         with:
           python-version: "3.14"
 
+      - name: Materialize pinned public Foundation core
+        working-directory: operations
+        run: python scripts/sync_public_core.py
+
       - name: Install Operations test dependencies
         working-directory: operations
         run: |
@@ -72,7 +76,18 @@ jobs:
 
       - name: Run Operations test suite
         working-directory: operations
-        run: python -m pytest tests -q
+        run: |
+          set -o pipefail
+          python -m pytest tests -q -rA 2>&1 | tee "$RUNNER_TEMP/operations-pytest.log"
+
+      - name: Upload Operations pytest diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: operations-pytest-diagnostics-${{ github.run_id }}
+          path: ${{ runner.temp }}/operations-pytest.log
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Assert private repository has no GitHub Actions workflows
         env:
