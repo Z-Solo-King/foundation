@@ -18,6 +18,83 @@ from threading import RLock
 from typing import Any
 
 PUBLIC_TASK_TYPES = ("fetch", "browser", "pdf", "transcript")
+MAX_INPUT_SIZE_MB = 100
+MAX_OUTPUT_SIZE_MB = 100
+MAX_METADATA_SIZE_BYTES = 16 * 1024
+MAX_MATERIALIZATION_DEPTH = 32
+MAX_MATERIALIZATION_ITEMS = 200_000
+MAX_STRING_SIZE_BYTES = 8 * 1024 * 1024
+
+
+def _validate_materialization_shape(value: Any, *, max_bytes: int, field_name: str) -> None:
+    items_seen = 0
+
+    def walk(current: Any, depth: int) -> int:
+        nonlocal items_seen
+        if depth > MAX_MATERIALIZATION_DEPTH:
+            raise ValueError(f"{field_name} nesting exceeds materialization depth limit")
+        items_seen += 1
+        if items_seen > MAX_MATERIALIZATION_ITEMS:
+            raise ValueError(f"{field_name} item count exceeds materialization limit")
+        if current is None or isinstance(current, bool):
+            return 4
+        if isinstance(current, int):
+            return len(str(current)) + 1
+        if isinstance(current, float):
+            if not math.isfinite(current):
+                raise ValueError(f"{field_name} contains a non-finite number")
+            return len(repr(current)) + 1
+        if isinstance(current, str):
+            size = len(current.encode("utf-8"))
+            if size > MAX_STRING_SIZE_BYTES:
+                raise ValueError(f"{field_name} string exceeds materialization limit")
+            return size + 2
+        if isinstance(current, (list, tuple)):
+            total = 2
+            for item in current:
+                total += walk(item, depth + 1) + 1
+                if total > max_bytes:
+                    raise ValueError(f"{field_name} exceeds {max_bytes} byte materialization limit")
+            return total
+        if isinstance(current, dict):
+            total = 2
+            for key, item in current.items():
+                if isinstance(key, float) and not math.isfinite(key):
+                    raise ValueError(f"{field_name} contains a non-finite number key")
+                if not isinstance(key, (str, int, float, bool)) and key is not None:
+                    raise ValueError(f"{field_name} contains an unsupported JSON key type")
+                total += walk(str(key), depth + 1) + walk(item, depth + 1) + 2
+                if total > max_bytes:
+                    raise ValueError(f"{field_name} exceeds {max_bytes} byte materialization limit")
+            return total
+        raise ValueError(f"{field_name} contains an unsupported JSON value type")
+
+    if walk(value, 0) > max_bytes:
+        raise ValueError(f"{field_name} exceeds {max_bytes} byte materialization limit")
+
+
+def _bounded_json_digest(
+    value: Any, *, max_bytes: int, field_name: str, compact: bool = False
+) -> str:
+    _validate_materialization_shape(value, max_bytes=max_bytes, field_name=field_name)
+    options: dict[str, Any] = {"sort_keys": True, "default": str, "ensure_ascii": False}
+    if compact:
+        options["separators"] = (",", ":")
+    encoder = json.JSONEncoder(**options)
+    digest = hashlib.sha256()
+    total = 0
+    try:
+        for chunk in encoder.iterencode(value):
+            encoded = chunk.encode("utf-8")
+            total += len(encoded)
+            if total > max_bytes:
+                raise ValueError(f"{field_name} exceeds {max_bytes} byte materialization limit")
+            digest.update(encoded)
+    except (TypeError, ValueError) as exc:
+        if isinstance(exc, ValueError) and "materialization limit" in str(exc):
+            raise
+        raise ValueError(f"{field_name} is not JSON serializable") from exc
+    return digest.hexdigest()
 
 
 @dataclass(frozen=True)
@@ -52,107 +129,14 @@ class WorkerTaskValidator:
 
     TASK_EXPIRY_HOURS = 24
     RESULT_EXPIRY_HOURS = 1
-    MAX_INPUT_SIZE_MB = 100
-    MAX_OUTPUT_SIZE_MB = 100
-    MAX_METADATA_SIZE_BYTES = 16 * 1024
-    MAX_MATERIALIZATION_DEPTH = 32
-    MAX_MATERIALIZATION_ITEMS = 200_000
-    MAX_STRING_SIZE_BYTES = MAX(max(MAX_INPUT_SIZE_MB, MAX_OUTPUT_SIZE_MB) * 1024 * 1024, 1)
+    MAX_INPUT_SIZE_MB = MAX_INPUT_SIZE_MB
+    MAX_OUTPUT_SIZE_MB = MAX_OUTPUT_SIZE_MB
+    MAX_METADATA_SIZE_BYTES = MAX_METADATA_SIZE_BYTES
 
     def __init__(self):
         self._lock = RLock()
         self._active_tasks: dict[str, str] = {}
         self._completed_nonces: set[str] = set()
-
-    @classmethod
-    def _validate_materialization_shape(
-        cls,
-        value: Any,
-        *,
-        max_bytes: int,
-        max_items: int | None = None,
-        field_name: str = "payload",
-    ) -> None:
-        """Fail closed before JSON encoding can materialize an oversized value."""
-        items_seen = 0
-
-        def walk(current: Any, depth: int) -> int:
-            nonlocal items_seen
-            if depth > cls.MAX_MATERIALIZATION_DEPTH:
-                raise ValueError(f"{field_name} nesting exceeds materialization depth limit")
-            items_seen += 1
-            if items_seen > (max_items or cls.MAX_MATERIALIZATION_ITEMS):
-                raise ValueError(f"{field_name} item count exceeds materialization limit")
-
-            if current is None or isinstance(current, bool):
-                return 4
-            if isinstance(current, int):
-                return len(str(current)) + 1
-            if isinstance(current, float):
-                if not math.isfinite(current):
-                    raise ValueError(f"{field_name} contains a non-finite number")
-                return len(repr(current)) + 1
-            if isinstance(current, str):
-                size = len(current.encode("utf-8"))
-                if size > cls.MAX_STRING_SIZE_BYTES:
-                    raise ValueError(f"{field_name} string exceeds materialization limit")
-                return size + 2
-            if isinstance(current, (list, tuple)):
-                total = 2
-                for item in current:
-                    total += walk(item, depth + 1) + 1
-                    if total > max_bytes:
-                        raise ValueError(f"{field_name} exceeds {max_bytes} byte materialization limit")
-                return total
-            if isinstance(current, dict):
-                total = 2
-                for key, item in current.items():
-                    if not isinstance(key, (str, int, float, bool)) and key is not None:
-                        raise ValueError(f"{field_name} contains an unsupported JSON key type")
-                    total += walk(str(key), depth + 1) + walk(item, depth + 1) + 2
-                    if total > max_bytes:
-                        raise ValueError(f"{field_name} exceeds {max_bytes} byte materialization limit")
-                return total
-            raise ValueError(f"{field_name} contains an unsupported JSON value type")
-
-        estimate = walk(value, 0)
-        if estimate > max_bytes:
-            raise ValueError(f"{field_name} exceeds {max_bytes} byte materialization limit")
-
-    @classmethod
-    def _bounded_json_digest(
-        cls,
-        value: Any,
-        *,
-        max_bytes: int,
-        field_name: str,
-        compact: bool = False,
-    ) -> str:
-        cls._validate_materialization_shape(value, max_bytes=max_bytes, field_name=field_name)
-        encoder_options = {
-            "sort_keys": True,
-            "default": str,
-            "ensure_ascii": False,
-        }
-        if compact:
-            encoder_options["separators"] = (",", ":")
-        encoder = json.JSONEncoder(**encoder_options)
-        digest = hashlib.sha256()
-        total = 0
-        try:
-            for chunk in encoder.iterencode(value):
-                encoded = chunk.encode("utf-8")
-                total += len(encoded)
-                if total > max_bytes:
-                    raise ValueError(
-                        f"{field_name} exceeds {max_bytes} byte materialization limit"
-                    )
-                digest.update(encoded)
-        except (TypeError, ValueError) as exc:
-            if isinstance(exc, ValueError) and "materialization limit" in str(exc):
-                raise
-            raise ValueError(f"{field_name} is not JSON serializable") from exc
-        return digest.hexdigest()
 
     def create_task(
         self,
@@ -170,16 +154,16 @@ class WorkerTaskValidator:
             raise ValueError("provenance must not be empty")
         task_id = f"wtask-{uuid.uuid4().hex[:12]}"
         nonce = f"nonce-{uuid.uuid4().hex}"
-        input_hash = self._bounded_json_digest(
+        input_hash = _bounded_json_digest(
             input_data,
-            max_bytes=self.MAX_INPUT_SIZE_MB * 1024 * 1024,
+            max_bytes=MAX_INPUT_SIZE_MB * 1024 * 1024,
             field_name="task input",
             compact=True,
         )
         metadata_value = metadata or {}
         self._bounded_json_digest(
             metadata_value,
-            max_bytes=self.MAX_METADATA_SIZE_BYTES,
+            max_bytes=MAX_METADATA_SIZE_BYTES,
             field_name="task metadata",
             compact=True,
         )
@@ -267,7 +251,7 @@ class WorkerTaskValidator:
                 try:
                     computed_hash = self._bounded_json_digest(
                         output_data,
-                        max_bytes=self.MAX_OUTPUT_SIZE_MB * 1024 * 1024,
+                        max_bytes=MAX_OUTPUT_SIZE_MB * 1024 * 1024,
                         field_name="worker output",
                     )
                 except ValueError as exc:
