@@ -34,9 +34,9 @@ jobs:
     steps:
       - name: Checkout Foundation audit branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        # Audit source is resolved from the synchronized Operations branch. Preflight follows.
         with:
           fetch-depth: 0
+          path: foundation-repo
 
       - name: Create Operations read token
         id: operations-app
@@ -89,29 +89,29 @@ jobs:
         with:
           python-version: "3.14"
           cache: pip
-          cache-dependency-path: operations/requirements.txt
+          cache-dependency-path: operations-repo/requirements.txt
 
       - name: Install Operations package
-        working-directory: operations
+        working-directory: operations-repo
         run: python -m pip install --disable-pip-version-check -e . --no-deps
 
       - name: Prepare audit artifact directory
         run: mkdir -p .runtime/exhaustive-audit
 
       - name: Compile exhaustive audit tool
-        working-directory: operations
+        working-directory: operations-repo
         run: python -m py_compile tools/exhaustive_audit.py
 
       - name: Run six concurrent lanes
         env:
           AUTO_FIX_INPUT: ${{ inputs.auto_fix }}
           HEAD_BRANCH: ${{ github.head_ref }}
-          PYTHONPATH: ${{ github.workspace }}/operations
+          PYTHONPATH: ${{ github.workspace }}/operations-repo
         run: |
           set -euo pipefail
           args=(
-            --foundation "${GITHUB_WORKSPACE}"
-            --operations "${GITHUB_WORKSPACE}/operations"
+            --foundation "${GITHUB_WORKSPACE}/foundation-repo"
+            --operations "${GITHUB_WORKSPACE}/operations-repo"
             --output-dir "${GITHUB_WORKSPACE}/.runtime/exhaustive-audit"
           )
           if [[ "${AUTO_FIX_INPUT}" == "true" || "${HEAD_BRANCH}" == exhaustive-audit/* ]]; then
@@ -144,7 +144,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet; then
+          if git -C foundation-repo diff --quiet; then
             echo "No Foundation auto-fixes to commit."
             exit 0
           fi
