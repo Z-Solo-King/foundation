@@ -98,3 +98,24 @@ def test_research_run_rejects_terminal_transition_from_planned():
     run = create_run("run-planned", contract, plan)
     with pytest.raises(ValueError, match="invalid or unsupported"):
         transition_research(run, "completed")
+
+
+def test_research_run_rejects_unknown_lifecycle_status():
+    from backend.execution.engine import ResearchRun
+    contract = ResearchContract(question="test")
+    plan = ResearchPlan(question="test", stages=(), source_budget=1, evidence_budget=1)
+    with pytest.raises(ValueError, match="invalid run status"):
+        ResearchRun("bad", contract, plan, "not-a-lifecycle")
+
+
+def test_private_terminal_transition_guards_are_exhaustive():
+    from backend.execution.engine import ResearchLifecycle, _transition_terminal
+    contract = ResearchContract(question="test")
+    plan = ResearchPlan(question="test", stages=(), source_budget=1, evidence_budget=1)
+    planned = create_run("planned", contract, plan)
+    with pytest.raises(ValueError, match="invalid or unsupported"):
+        _transition_terminal(planned, ResearchLifecycle.COMPLETED)
+
+    running = start_research(create_run("running", contract, plan))
+    with pytest.raises(ValueError, match="invalid or unsupported"):
+        _transition_terminal(running, ResearchLifecycle.RUNNING)
