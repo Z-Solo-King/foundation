@@ -33,7 +33,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to audit
         required: false
-        default: d3ed982bbdf86edca0af9fa9c8da0ac36488cdad
+        default: 79f5e4e413f663fc2d8484acd090676fbe957625
         type: string
 
 permissions:
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      OPERATIONS_REF: ${{ inputs.operations_ref || 'd3ed982bbdf86edca0af9fa9c8da0ac36488cdad' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || '79f5e4e413f663fc2d8484acd090676fbe957625' }}
     steps:
       - name: Checkout Foundation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
