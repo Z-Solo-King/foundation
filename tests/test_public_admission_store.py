@@ -836,7 +836,7 @@ def test_d1_store_delegates_active_research_duplicate_to_idempotency_authority()
     assert lease is None
 
 
-def test_d1_store_handles_failed_lease_reclaim_race():
+def test_d1_store_delegates_chat_after_failed_lease_reclaim_race():
     import asyncio
 
     db = IdempotentAdmissionDB()
@@ -864,6 +864,6 @@ def test_d1_store_handles_failed_lease_reclaim_race():
             now=121,
         )
     )
-    assert decision.outcome.value == "concurrency_limited"
-    assert decision.allowed is False
+    assert decision.outcome.value == "accepted"
+    assert decision.allowed is True
     assert lease is None
