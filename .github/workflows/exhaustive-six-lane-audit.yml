@@ -1,5 +1,5 @@
 name: Exhaustive six-lane repository audit
-# Scanner revision: 2026-09-22 deterministic L3 with deferred governance-tool health
+# Scanner revision: 2026-09-22 linear-time L3 checklist evaluation
 
 on:
   pull_request:
