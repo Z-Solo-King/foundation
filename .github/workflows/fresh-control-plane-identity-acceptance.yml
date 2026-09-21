@@ -34,9 +34,17 @@ jobs:
             sleep 2
           done
           test -n "$run_id"
-          jobs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" --jq '.total_count // (.jobs|length)')"
-          test "$jobs" -gt 0
-          echo "bridge_run_id=$run_id jobs=$jobs"
+          jobs=0
+          for _ in {1..30}; do
+            jobs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" --jq '.total_count // (.jobs|length)')"
+            if [ "$jobs" -gt 0 ]; then
+              echo "bridge_run_id=$run_id jobs=$jobs"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "bridge run created without jobs after polling: run_id=$run_id"
+          exit 1
       - name: Dispatch nightly v3
         env:
           GH_TOKEN: ${{ github.token }}
