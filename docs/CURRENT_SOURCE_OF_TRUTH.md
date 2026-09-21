@@ -1,3 +1,15 @@
+## 2026-09-22 FINAL LIVE REF RECONCILIATION
+
+**Live branch heads queried from GitHub:**
+- Foundation `main`: `f9490f36d7ffd877157f26d674b3bfc27388f67e`
+- Operations `main`: `948d826851a7678fdf81a344aeaa21ad1f278e36`
+
+**Verified runtime implementation pins:**
+- Foundation: `e5b26061861e570396b73993a3c8733496cb1956`
+- Operations: `7cf73e6a15b1e1d090f023915f62e5a2bd066b8e`
+
+The live heads may contain documentation and migration-candidate commits after the verified runtime pins. Acceptance workflows intentionally remain pinned to the verified immutable revisions until promotion evidence passes.
+
 ## 2026-09-22 LIVE GITHUB REF RECONCILIATION
 
 **Latest live branch heads queried from GitHub:**
