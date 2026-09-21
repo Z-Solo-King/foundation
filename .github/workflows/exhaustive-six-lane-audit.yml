@@ -22,7 +22,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: foundation-exhaustive-audit-v3-${{ github.ref }}
+  group: foundation-exhaustive-audit-v4-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
