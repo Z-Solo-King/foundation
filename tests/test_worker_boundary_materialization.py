@@ -64,12 +64,11 @@ def test_materialization_shape_covers_scalar_collections_and_budgets(monkeypatch
         field_name="payload",
     )
 
+    value = 1
+    for _ in range(module.MAX_MATERIALIZATION_DEPTH + 2):
+        value = [value]
     with pytest.raises(ValueError, match="materialization depth"):
-        module._validate_materialization_shape(
-            [[[[[1]]]]],
-            max_bytes=4096,
-            field_name="payload",
-        )
+        module._validate_materialization_shape(value, max_bytes=4096, field_name="payload")
 
     monkeypatch.setattr(module, "MAX_MATERIALIZATION_ITEMS", 1)
     with pytest.raises(ValueError, match="item count"):
@@ -96,6 +95,8 @@ def test_materialization_shape_rejects_nonfinite_and_unsupported_keys_values():
 def test_bounded_digest_enforces_encoded_size_and_reports_encoder_errors(monkeypatch):
     from backend.execution import worker_boundary as module
 
+    with pytest.raises(ValueError, match="exceeds"):
+        module._bounded_json_digest(123, max_bytes=1, field_name="payload", compact=False)
     with pytest.raises(ValueError, match="exceeds"):
         module._bounded_json_digest([1, 2], max_bytes=4, field_name="payload", compact=False)
 
