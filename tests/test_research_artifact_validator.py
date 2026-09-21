@@ -100,6 +100,7 @@ def _write_valid_nightly_bundle(root: Path) -> None:
                 "run_id": run_id,
                 "aggregate_state": "live_research_executed",
                 "research_job_result": "success",
+                "blockers": [],
                 "lanes": statuses,
                 "operations_revision": operations_revision,
                 "real_research_findings_allowed": True,
@@ -162,3 +163,14 @@ def test_nightly_artifact_bundle_rejects_missing_lane(tmp_path) -> None:
     (tmp_path / ".runtime" / "artifacts" / "nightly-lane-2-status.json").unlink()
     errors = _nightly_artifact_errors(tmp_path)
     assert any("missing lane status: lane 2" in error for error in errors)
+
+
+def test_nightly_diagnosis_rejects_unknown_or_unbounded_blockers(tmp_path) -> None:
+    _copy_catalog_tree(tmp_path)
+    _write_valid_nightly_bundle(tmp_path)
+    path = tmp_path / ".runtime" / "artifacts" / "nightly-diagnosis.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["blockers"] = ["unknown_blocker"]
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    errors = _nightly_artifact_errors(tmp_path)
+    assert any("bounded blocker vocabulary" in error for error in errors)
