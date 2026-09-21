@@ -13,6 +13,8 @@ assert.match(index, /durable browser-local queue items/);
 assert.doesNotMatch(index, /data-action="process-queue"/);
 assert.match(stateMachine, /NEW_CHAT/);
 assert.match(stateMachine, /AUTH_EXPIRED/);
+assert.match(stateMachine, /CANCELLED/);
+assert.match(stateMachine, /FAILED/);
 assert.match(stateMachine, /canTransition/);
 assert.match(stateMachine, /advance/);
 assert.match(stateMachine, /fromBackend/);
