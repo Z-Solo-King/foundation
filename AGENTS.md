@@ -553,3 +553,9 @@ For ChatGPT/multi-agent sessions:
 6. collapse repeated failures into one root-cause fix;
 7. refresh affected queue slices after merges;
 8. leave exact evidence/rung state in PR and issue metadata so another session can resume without chat history.
+
+## Cross-paradigm scan and learning closure — mandatory
+
+Use `docs/CROSS_PARADIGM_SCAN_AND_LEARNING_PROTOCOL_2026-09-21.md` for broad reviews. A scan is incomplete until its durable learning is converted into a regression, policy/test rule, benchmark fixture, migration candidate, or explicit runtime gate. Report coverage separately from semantic certainty; do not claim byte-for-byte rereads when the method used inventory/search/targeted inspection.
+
+For each scan wave, use multiple independent language paradigms, include Python as the reference surface, normalize findings to canonical owner and evidence rung, and rescan after the resulting mutations. Apply the same method to ordinary features/security/policy work, not only migration.
