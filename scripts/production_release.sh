@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="f38b24930a528a5e37f129e3b6ea4533b3b717b5"
+OPERATIONS_REF="ca9668cc087259d3f4ae74be86ec57cc01f43697"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
@@ -22,7 +22,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = 'f38b24930a528a5e37f129e3b6ea4533b3b717b5'
+test "$OPERATIONS_REF" = 'ca9668cc087259d3f4ae74be86ec57cc01f43697'
 
 after_install_marker=''
 
@@ -32,8 +32,8 @@ python -m pip install pytest pytest-asyncio coverage workers-py workers-runtime-
 uv --version
 python -m compileall -q backend foundation_core worker.py
 python -c "import foundation_core; print(foundation_core.__all__)"
-coverage run --branch --source=backend,foundation_core,worker --omit='tests/*,backend/persistence/artifacts.py' -m pytest tests/ -v
-coverage report --show-missing --fail-under=100 --omit='tests/*,backend/persistence/artifacts.py'
+coverage run --branch --source=backend,foundation_core,worker --omit='tests/*' -m pytest tests/ -v
+coverage report --show-missing --fail-under=100 --omit='tests/*'
 python -m benchmark.chatbot_query_benchmark --input benchmark/chatbot-query-corpus.json --output .runtime/chatbot-query-benchmark.json
 python -m pytest -q tests/test_workflow_policy.py
 python scripts/public_security_lint.py --strict

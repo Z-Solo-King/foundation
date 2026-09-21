@@ -8,11 +8,15 @@ on:
       operations_ref:
         description: Immutable Operations revision to test
         required: false
-        default: f38b24930a528a5e37f129e3b6ea4533b3b717b5
+        default: ca9668cc087259d3f4ae74be86ec57cc01f43697
         type: string
 
 permissions:
   contents: read
+
+concurrency:
+  group: foundation-coverage-driven-runtime-matrix-${{github.ref}}
+  cancel-in-progress: false
 
 jobs:
   scenario:
@@ -90,7 +94,7 @@ jobs:
             tests: "tests/test_workflow_policy.py tests/test_cross_module_contract_edges.py tests/test_family_audit.py tests/test_family_semantic_audit.py"
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || 'ca9668cc087259d3f4ae74be86ec57cc01f43697' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Checkout Foundation
@@ -295,9 +299,9 @@ jobs:
   aggregate:
     name: Aggregate 20 orthogonal scenarios
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: scenario
     if: always()
-    timeout-minutes: 10
     steps:
       - name: Download scenario evidence
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4

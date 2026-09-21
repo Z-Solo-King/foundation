@@ -10,10 +10,15 @@ permissions:
   contents: read
   security-events: write
 
+concurrency:
+  group: foundation-required-pr-checks-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   analyze:
     name: Analyze python
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -30,6 +35,7 @@ jobs:
   public_tests:
     name: Public tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -52,9 +58,9 @@ jobs:
       - name: Verify package installation
         run: python -c "import foundation_core; print(foundation_core.__all__)"
       - name: Run product tests
-        run: coverage run --branch --source=backend,foundation_core,worker --omit='tests/*,backend/persistence/artifacts.py' -m pytest tests/ -v
+        run: coverage run --branch --source=backend,foundation_core,worker --omit='tests/*' -m pytest tests/ -v
       - name: Enforce complete product coverage
-        run: coverage report --show-missing --fail-under=100 --omit='tests/*,backend/persistence/artifacts.py'
+        run: coverage report --show-missing --fail-under=100 --omit='tests/*'
       - name: Run deterministic natural-language research benchmark
         run: python -m benchmark.chatbot_query_benchmark --input benchmark/chatbot-query-corpus.json --output .runtime/chatbot-query-benchmark.json
       - name: Run frontend UI contract

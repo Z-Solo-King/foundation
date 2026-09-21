@@ -8,10 +8,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: foundation-main-push-actions-control-plane-probe-v2-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   probe:
     name: Main push Actions probe
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

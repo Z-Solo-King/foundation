@@ -8,10 +8,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: foundation-codeql-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   analyze:
     name: Analyze python
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       security-events: write

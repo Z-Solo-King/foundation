@@ -23,6 +23,7 @@ DNS_OVER_HTTPS_ENDPOINTS = (
     "https://cloudflare-dns.com/dns-query",
     "https://dns.google/dns-query",
 )
+_PROVIDER_DENYLIST = frozenset({"168.63.129.16"})
 
 
 @dataclass(frozen=True)
@@ -43,7 +44,12 @@ def _workers_fetch():
 
 def _safe_ip(value: str) -> bool:
     ip = ip_address(value)
-    return not (ip.is_loopback or ip.is_private or ip.is_link_local or ip.is_reserved or ip.is_multicast or ip.is_unspecified)
+    mapped = getattr(ip, "ipv4_mapped", None)
+    if mapped is not None:
+        ip = mapped
+    if str(ip) in _PROVIDER_DENYLIST:
+        return False
+    return bool(ip.is_global)
 
 
 def _safe_host(hostname: str) -> bool:

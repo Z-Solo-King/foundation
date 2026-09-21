@@ -1,13 +1,18 @@
 """Cloudflare Python Worker entrypoint for the standalone public-safe runtime."""
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
+import logging
 import os
 import uuid
 from datetime import datetime, timezone
 from urllib.parse import parse_qs, urlparse
 
 from workers import Response, WorkerEntrypoint
+
+_LOGGER = logging.getLogger("foundation.worker")
 
 from backend.api.main import submit_research
 from backend.api.models import ChatRequest, ResearchRequest
@@ -507,7 +512,13 @@ class Default(WorkerEntrypoint):
                     subject_fingerprint=subject_fingerprint,
                     cursor=cursor,
                     limit=limit,
-                    cursor_secret=bearer_token(request) or "development-local",
+                    cursor_secret=(
+                        hmac.new(
+                            (bearer_token(request) or "development-local").encode("utf-8"),
+                            b"foundation-public-read-cursor:v1",
+                            hashlib.sha256,
+                        ).hexdigest()
+                    ),
                 )
             except PublicReadCursorError as exc:
                 return _authenticated_json({"ok": False, "error": str(exc)}, status=400)
@@ -568,7 +579,7 @@ class Default(WorkerEntrypoint):
                     try:
                         await persistence.set_run_status(run_id, "failed")
                     except Exception:
-                        pass
+                        _LOGGER.exception("failed to record terminal failed status for run_id=%s", run_id)
                 return _authenticated_json({
                     "ok": False,
                     "error": "execution/persistence failure",
@@ -581,5 +592,15 @@ class Default(WorkerEntrypoint):
             return _authenticated_json({"ok": True, "run_id": run_id, "metadata": {**result.metadata, "execution_mode": "source_url_ingestion"}, "sources": sources})
         assets = getattr(self.env, "ASSETS", None)
         if assets is not None:
-            return await assets.fetch(request)
+            response = await assets.fetch(request)
+            headers = dict(response.headers)
+            headers["Content-Security-Policy"] = (
+                "default-src 'self'; script-src 'self'; style-src 'self'; "
+                "img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; "
+                "base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+            )
+            headers["X-Frame-Options"] = "DENY"
+            headers["Referrer-Policy"] = "no-referrer"
+            headers["X-Content-Type-Options"] = "nosniff"
+            return Response(response.body, status=response.status, headers=headers)
         return _authenticated_json({"ok": False, "error": "not found"}, status=404)

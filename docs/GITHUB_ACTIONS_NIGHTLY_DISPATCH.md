@@ -22,7 +22,7 @@ The router currently permits only:
 - `.github/workflows/heroic-ai-production-release.yml`
 - `.github/workflows/cross-repository-contract-drift.yml`
 - `.github/workflows/operations-centralized-validation.yml`
-- `.github/workflows/main-push-actions-control-plane-probe.yml`
+- `.github/workflows/main-push-actions-control-plane-probe-v2.yml`
 
 No private Operations workflow is introduced.
 
