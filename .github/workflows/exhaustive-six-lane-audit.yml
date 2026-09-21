@@ -23,13 +23,13 @@ permissions:
 
 concurrency:
   group: foundation-exhaustive-audit-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   audit:
     name: Six-lane exhaustive audit
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     env:
       PYTHONUNBUFFERED: "1"
     steps:
