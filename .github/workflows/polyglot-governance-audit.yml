@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      OPERATIONS_REF: \${{ inputs.operations_ref || 'ca9668cc087259d3f4ae74be86ec57cc01f43697' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || 'ca9668cc087259d3f4ae74be86ec57cc01f43697' }}
     steps:
       - name: Checkout Foundation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -54,8 +54,8 @@ jobs:
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
-          app-id: \${{ secrets.OPERATIONS_APP_ID }}
-          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
@@ -64,15 +64,15 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: \${{ env.OPERATIONS_REF }}
-          token: \${{ steps.operations-app.outputs.token }}
+          ref: ${{ env.OPERATIONS_REF }}
+          token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
       - name: Verify Operations revision
         working-directory: operations
         shell: bash
         env:
-          EXPECTED: \${{ env.OPERATIONS_REF }}
+          EXPECTED: ${{ env.OPERATIONS_REF }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED"
@@ -94,7 +94,7 @@ jobs:
       - name: Run complete language-by-language audit
         shell: bash
         env:
-          PYTHONPATH: \${{ github.workspace }}/operations
+          PYTHONPATH: ${{ github.workspace }}/operations
         run: |
           set -euo pipefail
           mkdir -p .runtime
