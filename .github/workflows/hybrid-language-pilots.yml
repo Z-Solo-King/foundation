@@ -31,10 +31,21 @@ jobs:
     outputs:
       ref: ${{ steps.resolve.outputs.ref }}
     steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
       - name: Resolve Operations ref
         id: resolve
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         with:
+          github-token: ${{ steps.operations-app.outputs.token }}
           script: |
             const requested = (context.payload.inputs?.operations_ref || "").trim();
             if (requested) {
