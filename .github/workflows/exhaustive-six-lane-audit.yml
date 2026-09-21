@@ -1,5 +1,5 @@
 name: Exhaustive six-lane repository audit
-# Scanner revision: 2026-09-22 manifest-first L1 inventory and linear L3 checklist
+# Scanner revision: 2026-09-22 manifest-first L1 with deep parallel L5 migration scoring
 
 on:
   pull_request:
