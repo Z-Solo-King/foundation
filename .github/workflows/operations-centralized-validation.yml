@@ -1,9 +1,6 @@
 name: Centralized Operations validation
 
 'on':
-  push:
-    branches:
-      - 'ci/operations-validation-sync-core'
   schedule:
     - cron: "17 */6 * * *"
   workflow_dispatch:
