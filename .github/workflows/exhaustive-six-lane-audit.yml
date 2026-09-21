@@ -106,6 +106,7 @@ jobs:
         env:
           AUTO_FIX_INPUT: ${{ inputs.auto_fix }}
           HEAD_BRANCH: ${{ github.head_ref }}
+          PYTHONPATH: ${{ github.workspace }}/operations
         run: |
           set -euo pipefail
           args=(
