@@ -581,3 +581,74 @@ A project learning is considered persisted only when it exists in at least one d
 - or this continuity ledger.
 
 If a future agent discovers a new strategy, invariant, test pattern, failure mode or policy that is not represented here, update this ledger before ending the work session.
+
+## 24. Benchmark design beyond one corpus
+
+When the project requests broad research/AI improvement benchmarks, vary more than the test inputs:
+- topic/domain;
+- approach/method;
+- number of agents;
+- serial vs parallel execution;
+- model mix;
+- tool mix;
+- failure injection;
+- corpus size;
+- cold vs warm state;
+- deterministic replay;
+- adversarial/security condition.
+
+The preferred research comparison set is often 30–40 scenarios rather than a tiny sample. Do not interpret a single benchmark configuration as representative of the whole system.
+
+For migration candidates, use the smaller exact differential corpus pattern where contract identity matters, then layer benchmark diversity on top.
+
+## 25. Research-source diversity strategy
+
+For external research used to improve the project, diversify source types rather than trusting one community:
+- GitHub/code/issues;
+- Reddit/community discussions;
+- YouTube/video demonstrations;
+- public social discussion;
+- documentation and standards;
+- Chinese/community sources such as Baidu Tieba, Zhihu, Douban, PTT and Bilibili when technically relevant.
+
+Source diversity is a research method, not evidence that all sources have equal reliability. Prefer primary documentation, reproducible code and direct evidence when sources conflict.
+
+## 26. Zero-cost / cost-governance policy
+
+The project has a strict zero-cost operating policy for the intended free-tier chatbot path.
+
+Architecture principle:
+- router tries the next eligible provider when one free quota is exhausted;
+- no provider is treated as a sole point of free-tier availability;
+- cost policy remains centralized in Operations;
+- provider-specific adapters must not independently override zero-cost policy;
+- runtime/provider selection must preserve resource reservations and budget accounting.
+
+The intended routing family documented in project research includes Cloudflare Worker, Cloudflare Workers AI, Groq, Gemini Flash and GitHub/OpenRouter free model options. Exact quotas/prices are external mutable facts and must be re-verified before being used as current production assumptions.
+
+## 27. Known Cloudflare/runtime configuration baseline
+
+GitHub-side code must remain aligned with the separately owned runtime configuration:
+- Operations Worker: `research-intelligence-engine-private`;
+- public Foundation Worker: `research-intelligence-engine-public`;
+- Operations D1 binding: canonical governance/memory database;
+- production environment is explicit;
+- `STRICT_ZERO_COST_ONLY=true`;
+- governance cron is configured for a 15-minute interval;
+- resource-governance scope/window/lease settings are explicit;
+- governance policy JSON secrets are installed from the canonical policy;
+- Workers Builds remain OFF;
+- Deploy Hooks remain NONE.
+
+Do not put credential values, private tokens or secret contents into GitHub documentation. Record only names, ownership and non-sensitive configuration semantics.
+
+## 28. Runtime evidence handoff method
+
+When a GitHub-only chat reaches a runtime acceptance gate:
+1. record the exact requested receipt/field in the issue;
+2. identify the owning runtime/deployment authority;
+3. hand the task to the Cloudflare/runtime chat when connector separation requires it;
+4. bring the resulting receipt back into GitHub issue/source-of-truth;
+5. close only when the recorded acceptance field matches the documented closure rule.
+
+Never replace this with a code-only assertion.
