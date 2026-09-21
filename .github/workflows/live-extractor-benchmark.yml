@@ -8,7 +8,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to benchmark
         required: false
-        default: 22c2103a9567a2b7e8bb62277ef94cac31a30c03
+        default: ca9668cc087259d3f4ae74be86ec57cc01f43697
         type: string
 
 permissions:
@@ -80,7 +80,7 @@ jobs:
             url: https://webscraper.io/test-sites/e-commerce/dynamic/computers/laptops
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || '22c2103a9567a2b7e8bb62277ef94cac31a30c03' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || 'ca9668cc087259d3f4ae74be86ec57cc01f43697' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Create Operations read token
@@ -216,7 +216,7 @@ jobs:
           set -euo pipefail
           mkdir -p benchmark-output
           cat > benchmark-output/case.json <<EOF
-          {"case":"${{ matrix.case }}","label":"${{ matrix.label }}","mode":"${{ matrix.mode }}","url":"${{ matrix.url }}","pass":${{ matrix.pass }},"workers":"${{ steps.profile.outputs.workers || '1' }}","retries":"${{ steps.profile.outputs.retries || '2' }}","operations_ref":"${{ inputs.operations_ref || '22c2103a9567a2b7e8bb62277ef94cac31a30c03' }}"}
+          {"case":"${{ matrix.case }}","label":"${{ matrix.label }}","mode":"${{ matrix.mode }}","url":"${{ matrix.url }}","pass":${{ matrix.pass }},"workers":"${{ steps.profile.outputs.workers || '1' }}","retries":"${{ steps.profile.outputs.retries || '2' }}","operations_ref":"${{ inputs.operations_ref || 'ca9668cc087259d3f4ae74be86ec57cc01f43697' }}"}
           EOF
 
       - name: Upload case artifact
@@ -250,7 +250,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '22c2103a9567a2b7e8bb62277ef94cac31a30c03' }}
+          ref: ${{ inputs.operations_ref || 'ca9668cc087259d3f4ae74be86ec57cc01f43697' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
