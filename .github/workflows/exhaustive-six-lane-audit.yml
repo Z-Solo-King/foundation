@@ -95,6 +95,9 @@ jobs:
         working-directory: operations-repo
         run: python -m pip install --disable-pip-version-check -e . --no-deps
 
+      - name: Clean audit-generated package metadata
+        run: rm -rf operations-repo/*.egg-info foundation-repo/*.egg-info
+
       - name: Prepare audit artifact directory
         run: mkdir -p .runtime/exhaustive-audit
 
