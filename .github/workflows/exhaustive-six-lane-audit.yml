@@ -117,6 +117,7 @@ jobs:
             --foundation "${GITHUB_WORKSPACE}/foundation-repo"
             --operations "${GITHUB_WORKSPACE}/operations-repo"
             --surface-map "${GITHUB_WORKSPACE}/operations-repo/benchmark/polyglot/open_issue_surface_map.json"
+            --issue-inventory "${GITHUB_WORKSPACE}/operations-repo/benchmark/polyglot/current_open_issue_inventory.json"
             --output-dir "${GITHUB_WORKSPACE}/.runtime/exhaustive-audit"
           )
           if [[ "${AUTO_FIX_INPUT}" == "true" || "${HEAD_BRANCH}" == exhaustive-audit/* ]]; then
@@ -142,20 +143,6 @@ jobs:
           path: .runtime/exhaustive-audit/
           if-no-files-found: error
           retention-days: 30
-
-      - name: Commit targeted Foundation auto-fixes
-        if: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'exhaustive-audit/') }}
-        run: |
-          set -euo pipefail
-          git -C foundation-repo config user.name "github-actions[bot]"
-          git -C foundation-repo config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git -C foundation-repo diff --quiet; then
-            echo "No Foundation auto-fixes to commit."
-            exit 0
-          fi
-          git -C foundation-repo add -A
-          git -C foundation-repo commit -m "[audit-autofix] apply targeted deterministic hygiene fixes"
-          git -C foundation-repo push origin "HEAD:${GITHUB_HEAD_REF}"
 
       - name: Print final summary
         if: always()
