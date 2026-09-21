@@ -140,3 +140,11 @@ test("empty partial response still emits terminal framing with identity and dige
   assert.match(payload, /event: done/);
   assert.match(payload, /"output_digest":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"/);
 });
+
+
+test("rejects prefix and nested path route collisions", () => {
+  assert.equal(matchRoute({ method: "GET", url: "https://example/api/v1/research/run-123/extra" }).route, "not_found");
+  assert.equal(matchRoute({ method: "GET", url: "https://example/not-api/v1/research/run-123" }).route, "not_found");
+  assert.equal(matchRoute({ method: "POST", url: "https://example/evil/api/v1/chat" }).route, "not_found");
+  assert.equal(matchRoute({ method: "POST", url: "https://example/api/v1/chat-extra" }).route, "not_found");
+});
