@@ -201,7 +201,7 @@ printf '%s\n' \
   'name = "research-intelligence-engine-public"' \
   'main = "worker.py"' \
   'compatibility_date = "2026-09-09"' \
-  'compatibility_flags = ["python_workers"]' \
+  'compatibility_flags = ["python_workers", "enable_request_signal", "request_signal_passthrough"]' \
   'workers_dev = true' \
   'preview_urls = false' \
   '' \

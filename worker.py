@@ -38,7 +38,7 @@ class _TestServiceRequest:
         self.body = body
 
 
-def _service_request(url, *, method="GET", headers=None, body=None):
+def _service_request(url, *, method="GET", headers=None, body=None, signal=None):
     """Construct the JavaScript Fetch Request object required by an HTTP service binding."""
     request_headers = headers or {}
     try:
@@ -48,6 +48,8 @@ def _service_request(url, *, method="GET", headers=None, body=None):
         init = {"method": method, "headers": request_headers}
         if body is not None:
             init["body"] = body
+        if signal is not None:
+            init["signal"] = signal
         return JSRequest.new(
             url,
             to_js(init, dict_converter=Object.fromEntries),
@@ -229,7 +231,13 @@ async def _operations_chat(env, payload, request):
     headers = _chat_headers(request)
     try:
         upstream = await operations.fetch(
-            _service_request("https://chat/v1/chat", method="POST", headers=headers, body=json.dumps(payload))
+            _service_request(
+                "https://chat/v1/chat",
+                method="POST",
+                headers=headers,
+                body=json.dumps(payload),
+                signal=getattr(request, "signal", None),
+            )
         )
         body = await upstream.json()
         if not isinstance(body, dict):
@@ -294,7 +302,7 @@ def _chat_sse_body(body):
 
 
 async def _operations_chat_stream(env, payload, request):
-    """Obtain the proven JSON chat result; SSE framing stays at the public edge."""
+    """Obtain the proven JSON chat result while preserving client cancellation to Operations."""
     body, status = await _operations_chat(env, payload, request)
     return body, status
 

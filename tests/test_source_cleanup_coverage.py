@@ -71,6 +71,40 @@ class Request:
         return None
 
 
+def test_service_request_carries_abort_signal(monkeypatch):
+    import sys
+    from types import ModuleType
+
+    signal = object()
+
+    class FakeRequest:
+        @staticmethod
+        def new(url, init):
+            return {"url": url, **init}
+
+    fake_js = ModuleType("js")
+    fake_js.Object = SimpleNamespace(fromEntries=lambda value: value)
+    fake_js.Request = FakeRequest
+
+    fake_ffi = ModuleType("pyodide.ffi")
+    fake_ffi.to_js = lambda value, **kwargs: value
+    fake_pyodide = ModuleType("pyodide")
+    fake_pyodide.ffi = fake_ffi
+
+    monkeypatch.setitem(sys.modules, "js", fake_js)
+    monkeypatch.setitem(sys.modules, "pyodide", fake_pyodide)
+    monkeypatch.setitem(sys.modules, "pyodide.ffi", fake_ffi)
+
+    request = worker._service_request(
+        "https://chat/v1/chat",
+        method="POST",
+        headers={"Authorization": "Bearer token"},
+        body="{}",
+        signal=signal,
+    )
+    assert request["signal"] is signal
+
+
 @pytest.mark.asyncio
 async def test_readiness_database_exception_fails_closed():
     body, status = await readiness_payload(SimpleNamespace(DB=BrokenDB()))

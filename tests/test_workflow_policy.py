@@ -120,6 +120,17 @@ def test_production_release_has_one_minimal_main_push_job():
 
 
 
+def test_public_worker_propagates_client_request_cancellation_to_operations():
+    worker = (ROOT / "worker.py").read_text(encoding="utf-8")
+    wrangler = WRANGLER.read_text(encoding="utf-8")
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'signal=getattr(request, "signal", None)' in worker
+    assert 'if signal is not None:\n            init["signal"] = signal' in worker
+    assert "enable_request_signal" in wrangler
+    assert "request_signal_passthrough" in wrangler
+    assert "enable_request_signal" in deployment
+    assert "request_signal_passthrough" in deployment
+
 def test_public_production_deploy_injects_required_b2_secrets():
     workflow = _workflow_texts()[PRODUCTION_WORKFLOW]
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
