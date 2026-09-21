@@ -52,11 +52,12 @@ class WorkerTaskValidator:
 
     TASK_EXPIRY_HOURS = 24
     RESULT_EXPIRY_HOURS = 1
+    MAX_INPUT_SIZE_MB = 100
     MAX_OUTPUT_SIZE_MB = 100
     MAX_METADATA_SIZE_BYTES = 16 * 1024
     MAX_MATERIALIZATION_DEPTH = 32
     MAX_MATERIALIZATION_ITEMS = 200_000
-    MAX_STRING_SIZE_BYTES = MAX_OUTPUT_SIZE_MB * 1024 * 1024
+    MAX_STRING_SIZE_BYTES = MAX(max(MAX_INPUT_SIZE_MB, MAX_OUTPUT_SIZE_MB) * 1024 * 1024, 1)
 
     def __init__(self):
         self._lock = RLock()
@@ -119,14 +120,23 @@ class WorkerTaskValidator:
             raise ValueError(f"{field_name} exceeds {max_bytes} byte materialization limit")
 
     @classmethod
-    def _bounded_json_digest(cls, value: Any, *, max_bytes: int, field_name: str) -> str:
+    def _bounded_json_digest(
+        cls,
+        value: Any,
+        *,
+        max_bytes: int,
+        field_name: str,
+        compact: bool = False,
+    ) -> str:
         cls._validate_materialization_shape(value, max_bytes=max_bytes, field_name=field_name)
-        encoder = json.JSONEncoder(
-            sort_keys=True,
-            default=str,
-            separators=(",", ":"),
-            ensure_ascii=False,
-        )
+        encoder_options = {
+            "sort_keys": True,
+            "default": str,
+            "ensure_ascii": False,
+        }
+        if compact:
+            encoder_options["separators"] = (",", ":")
+        encoder = json.JSONEncoder(**encoder_options)
         digest = hashlib.sha256()
         total = 0
         try:
@@ -162,14 +172,16 @@ class WorkerTaskValidator:
         nonce = f"nonce-{uuid.uuid4().hex}"
         input_hash = self._bounded_json_digest(
             input_data,
-            max_bytes=self.MAX_OUTPUT_SIZE_MB * 1024 * 1024,
+            max_bytes=self.MAX_INPUT_SIZE_MB * 1024 * 1024,
             field_name="task input",
+            compact=True,
         )
         metadata_value = metadata or {}
         self._bounded_json_digest(
             metadata_value,
             max_bytes=self.MAX_METADATA_SIZE_BYTES,
             field_name="task metadata",
+            compact=True,
         )
         now = datetime.now(timezone.utc)
         expires_at = now + timedelta(hours=self.TASK_EXPIRY_HOURS)
