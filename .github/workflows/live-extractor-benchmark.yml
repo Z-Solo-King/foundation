@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   benchmark:
-    name: ${{ matrix.case }} pass ${{ matrix.pass }}
+    name: ${{ matrix.case.name }} pass ${{ matrix.pass }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -28,53 +28,44 @@ jobs:
       max-parallel: 20
       matrix:
         pass: [1, 2, 3, 4]
-        include:
-          - case: api-dummyjson
+        case:
+          - name: api-dummyjson
             label: api:dummyjson
             mode: http
             url: https://dummyjson.com/products/1
-
-          - case: api-fakestore
+          - name: api-fakestore
             label: api:fakestore
             mode: http
             url: https://fakestoreapi.com/products/1
-
-          - case: api-escuela
+          - name: api-escuela
             label: api:escuela
             mode: http
             url: https://api.escuelajs.co/api/v1/products/1
-
-          - case: feed-hnrss
+          - name: feed-hnrss
             label: feed:hnrss
             mode: http
             url: https://hnrss.org/frontpage
-
-          - case: feed-github
+          - name: feed-github
             label: feed:github
             mode: http
             url: https://github.com/openai/openai-python/releases.atom
-
-          - case: html-example
+          - name: html-example
             label: html:example
             mode: http
             url: https://example.com/
-
-          - case: html-books
+          - name: html-books
             label: html:books
             mode: http
             url: https://books.toscrape.com/catalogue/page-1.html
-
-          - case: html-ecommerce
+          - name: html-ecommerce
             label: html:ecommerce
             mode: http
             url: https://webscraper.io/test-sites/e-commerce/static/computers/laptops
-
-          - case: browser-quotes
+          - name: browser-quotes
             label: browser:quotes
             mode: browser
             url: https://quotes.toscrape.com/js/
-
-          - case: browser-ecommerce
+          - name: browser-ecommerce
             label: browser:ecommerce
             mode: browser
             url: https://webscraper.io/test-sites/e-commerce/dynamic/computers/laptops
@@ -158,7 +149,7 @@ jobs:
           set -euo pipefail
           python -m pip install --disable-pip-version-check -e ".[test,browser]"
           python -m pip install --disable-pip-version-check "workers-py>=1.9" workers-runtime-sdk
-          if [ "${{ matrix.mode }}" = "browser" ]; then python -m playwright install --with-deps chromium; fi
+          if [ "${{ matrix.case.mode }}" = "browser" ]; then python -m playwright install --with-deps chromium; fi
 
       - name: Preflight extractor import
         working-directory: operations
@@ -175,7 +166,7 @@ jobs:
           mkdir -p benchmark-input benchmark-output
           cat > benchmark-input/target.json <<'EOF'
           {
-            "targets": [{"url":"${{ matrix.url }}","label":"${{ matrix.label }}"}]
+            "targets": [{"url":"${{ matrix.case.url }}","label":"${{ matrix.case.label }}"}]
           }
           EOF
 
