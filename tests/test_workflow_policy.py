@@ -8,7 +8,7 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "7cf73e6a15b1e1d090f023915f62e5a2bd066b8e"
+CANONICAL_OPERATIONS_REF = "c752ba7f6cfa82adfe2e5ce8cd5ecc10b8b04101"
 CANONICAL_OPERATIONS_SERVICE = "research-intelligence-engine-private"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 PRODUCTION_WORKFLOW = "heroic-ai-production-release.yml"
@@ -322,9 +322,9 @@ def test_superseded_nightly_variants_are_retired():
 
 def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'OPERATIONS_REF="7cf73e6a15b1e1d090f023915f62e5a2bd066b8e"' in deployment
+    assert 'OPERATIONS_REF="c752ba7f6cfa82adfe2e5ce8cd5ecc10b8b04101"' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v2.yml"]
-    assert "OPERATIONS_RESEARCH_REF: 7cf73e6a15b1e1d090f023915f62e5a2bd066b8e" in nightly
+    assert "OPERATIONS_RESEARCH_REF: c752ba7f6cfa82adfe2e5ce8cd5ecc10b8b04101" in nightly
 
 
 
@@ -335,6 +335,8 @@ def test_coverage_runtime_matrix_validates_immutable_operations_pin():
     assert "Unpromoted Operations main drift" in workflow
     assert "stale_operations_pin" not in workflow
     assert "operations_runtime_drift" not in workflow
+    assert "BLOCKED" in workflow
+    assert "Idempotency-Key: $key-idem" in workflow
 
 def test_production_operations_compile_guard_is_executable():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
