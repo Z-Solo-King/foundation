@@ -78,7 +78,7 @@ A successful repository-side change does not prove production deployment. Deploy
 
 The current explicitly approved Operations production revision is:
 
-`c8f11d46ee06b27ed4648c26101bfbd9a64accf3`
+`877d51c35b4d4f57ebc3fa6812b6a71ce38edf3a`
 
 This is the explicitly approved immutable Operations revision for the next canonical production release. It is not a live runtime certificate until the canonical production workflow succeeds against the corresponding Foundation revision.
 
