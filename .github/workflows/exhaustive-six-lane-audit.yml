@@ -120,7 +120,7 @@ jobs:
           if [[ "${AUTO_FIX_INPUT}" == "true" || "${HEAD_BRANCH}" == exhaustive-audit/* ]]; then
             args+=(--auto-fix)
           fi
-          python operations/tools/exhaustive_audit.py "${args[@]}"
+          python operations-repo/tools/exhaustive_audit.py "${args[@]}"
 
       - name: Generate Operations patch artifact
         if: always()
