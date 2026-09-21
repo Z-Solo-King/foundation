@@ -1,0 +1,154 @@
+name: Exhaustive six-lane repository audit
+
+on:
+  pull_request:
+    paths:
+      - "**"
+  workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: Optional Operations branch or immutable SHA; blank resolves audit branch when present, otherwise main
+        required: false
+        default: ""
+        type: string
+      auto_fix:
+        description: Apply only targeted mechanical safe fixes to files implicated by deterministic findings
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: foundation-exhaustive-audit-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Six-lane exhaustive audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Checkout Foundation audit branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Resolve Operations audit revision
+        id: resolve
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          OPERATIONS_TOKEN: ${{ steps.operations-app.outputs.token }}
+          REQUESTED_REF: ${{ inputs.operations_ref }}
+        with:
+          github-token: ${{ steps.operations-app.outputs.token }}
+          script: |
+            const requested = (process.env.REQUESTED_REF || "").trim();
+            if (requested) {
+              core.setOutput("ref", requested);
+              return;
+            }
+            const candidate = (context.payload.pull_request?.head?.ref || "").trim();
+            if (candidate) {
+              try {
+                await github.rest.repos.getBranch({
+                  owner: "Z-Solo-King",
+                  repo: "operations",
+                  branch: candidate,
+                });
+                core.setOutput("ref", candidate);
+                return;
+              } catch {}
+            }
+            core.setOutput("ref", "main");
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ steps.resolve.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: operations/requirements.txt
+
+      - name: Install Operations package
+        working-directory: operations
+        run: python -m pip install --disable-pip-version-check -e . --no-deps
+
+      - name: Run six concurrent lanes
+        env:
+          AUTO_FIX_INPUT: ${{ inputs.auto_fix }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime/exhaustive-audit
+          args=(
+            --foundation "${GITHUB_WORKSPACE}"
+            --operations "${GITHUB_WORKSPACE}/operations"
+            --output-dir "${GITHUB_WORKSPACE}/.runtime/exhaustive-audit"
+          )
+          if [[ "${AUTO_FIX_INPUT}" == "true" || "${HEAD_BRANCH}" == exhaustive-audit/* ]]; then
+            args+=(--auto-fix)
+          fi
+          python operations/tools/exhaustive_audit.py "${args[@]}"
+
+      - name: Generate Operations patch artifact
+        if: always()
+        run: |
+          set +e
+          git -C operations diff --binary > .runtime/exhaustive-audit/operations-autofix.patch
+          git diff --binary > .runtime/exhaustive-audit/foundation-autofix.patch
+          git -C operations status --short > .runtime/exhaustive-audit/operations-status.txt
+          git status --short > .runtime/exhaustive-audit/foundation-status.txt
+          exit 0
+
+      - name: Upload exhaustive audit artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: exhaustive-six-lane-audit
+          path: .runtime/exhaustive-audit/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Commit targeted Foundation auto-fixes
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'exhaustive-audit/') }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "No Foundation auto-fixes to commit."
+            exit 0
+          fi
+          git add -A
+          git commit -m "[audit-autofix] apply targeted deterministic hygiene fixes"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
+
+      - name: Print final summary
+        if: always()
+        run: |
+          if [[ -f .runtime/exhaustive-audit/SUMMARY.json ]]; then
+            cat .runtime/exhaustive-audit/SUMMARY.json
+          else
+            echo "SUMMARY.json was not produced"
+          fi
