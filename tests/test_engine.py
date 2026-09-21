@@ -1,5 +1,7 @@
 """Tests for complete research execution pipeline."""
 
+import pytest
+
 from backend.execution.engine import (
     ResearchLifecycle,
     add_observation,
