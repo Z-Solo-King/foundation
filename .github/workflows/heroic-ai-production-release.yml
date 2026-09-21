@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      allow_persistence_deferred:
+        description: "Allow one-time first-bootstrap release without persistence version-boundary evidence"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -36,6 +42,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
           OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          ALLOW_PERSISTENCE_DEFERRED: ${{ inputs.allow_persistence_deferred || false }}
         run: |
           set -euo pipefail
           test "$GITHUB_REPOSITORY" = "Z-Solo-King/foundation" || { echo 'Production release is restricted to the canonical Foundation repository'; exit 1; }
@@ -49,4 +56,11 @@ jobs:
         with:
           name: cross-repository-audit-receipt
           path: .runtime/cross-repository-audit-receipt.json
+          if-no-files-found: warn
+
+      - name: Upload runtime acceptance receipts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: production-runtime-acceptance-receipts
+          path: .runtime/*.json
           if-no-files-found: warn
