@@ -1,5 +1,5 @@
 name: Exhaustive six-lane repository audit
-# Scanner revision: 2026-09-22 fault-isolated L3 and reconciled L4
+# Scanner revision: 2026-09-22 deterministic L3 with deferred governance-tool health
 
 on:
   pull_request:
