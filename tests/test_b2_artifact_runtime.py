@@ -112,3 +112,42 @@ def test_artifact_store_from_env_materializes_b2_configuration():
     assert store.bucket == "SoloKing"
     assert store.region == "eu-central-003"
     assert store.key_id == "key-id"
+
+
+def test_response_bytes_covers_remaining_pyodide_and_worker_fetch_paths(monkeypatch):
+    from backend.persistence.artifacts import _response_bytes, B2ArtifactStore
+    import backend.persistence.artifacts as artifacts_module
+
+    class ToPyBytes:
+        def to_py(self):
+            return b"direct-py"
+
+    class ToBytesMemoryview:
+        def to_bytes(self):
+            return memoryview(b"direct-memory")
+
+    class ToBytesNoNested:
+        def to_bytes(self):
+            return object()
+
+    class ToBytesNestedBytes:
+        class Converted:
+            def to_py(self):
+                return b"nested-bytes"
+        def to_bytes(self):
+            return self.Converted()
+
+    assert _response_bytes(ToPyBytes()) == b"direct-py"
+    assert _response_bytes(ToBytesMemoryview()) == b"direct-memory"
+    assert isinstance(_response_bytes(ToBytesNoNested()), bytes)
+    assert _response_bytes(ToBytesNestedBytes()) == b"nested-bytes"
+
+    marker = object()
+    monkeypatch.setattr(artifacts_module, "workers_fetch", lambda reason: (marker, reason))
+    store = B2ArtifactStore(
+        bucket="SoloKing",
+        endpoint="https://s3.eu-central-003.backblazeb2.com",
+        key_id="key-id",
+        application_key="application-key",
+    )
+    assert store._workers_fetch() == (marker, "artifact persistence")
