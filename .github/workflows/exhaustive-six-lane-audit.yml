@@ -147,8 +147,8 @@ jobs:
         if: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'exhaustive-audit/') }}
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C foundation-repo config user.name "github-actions[bot]"
+          git -C foundation-repo config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if git -C foundation-repo diff --quiet; then
             echo "No Foundation auto-fixes to commit."
             exit 0
