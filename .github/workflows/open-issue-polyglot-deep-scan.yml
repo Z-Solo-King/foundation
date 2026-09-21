@@ -12,16 +12,6 @@ on:
       - "worker.py"
       - "backend/**"
       - "tests/**"
-  pull_request:
-    paths:
-      - "benchmark/polyglot/**"
-      - ".github/workflows/open-issue-polyglot-deep-scan.yml"
-      - "docs/**"
-      - "frontend/**"
-      - "polyglot/**"
-      - "worker.py"
-      - "backend/**"
-      - "tests/**"
   workflow_dispatch:
 
 permissions:
