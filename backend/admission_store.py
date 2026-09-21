@@ -72,6 +72,13 @@ async def _handle_existing_event(
         ), None
 
     if existing.get("released_at") is not None:
+        if route in {AdmissionRoute.CHAT, AdmissionRoute.STREAM, AdmissionRoute.RESEARCH}:
+            return AdmissionDecision(
+                AdmissionOutcome.ACCEPTED,
+                route,
+                True,
+                "duplicate request is delegated to the canonical idempotency authority",
+            ), None
         return decision, None
 
     if int(existing.get("lease_expires_at") or 0) <= now:
@@ -90,6 +97,17 @@ async def _handle_existing_event(
                 expires_at=expires_at,
                 cost_units=cost_units,
             )
+
+    if route in {AdmissionRoute.CHAT, AdmissionRoute.STREAM, AdmissionRoute.RESEARCH}:
+        # Idempotency is owned downstream for these routes. A duplicate must
+        # reach that authority instead of being rejected by the public admission
+        # layer as a second concurrent spend.
+        return AdmissionDecision(
+            AdmissionOutcome.ACCEPTED,
+            route,
+            True,
+            "duplicate request is delegated to the canonical idempotency authority",
+        ), None
 
     return AdmissionDecision(
         AdmissionOutcome.CONCURRENCY_LIMITED,
