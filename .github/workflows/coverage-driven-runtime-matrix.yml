@@ -110,7 +110,7 @@ jobs:
           repositories: operations
           permission-contents: read
 
-      - name: Guard against stale Operations pin
+      - name: Guard pinned Operations revision against implementation drift
         if: github.event_name == 'push'
         env:
           OPERATIONS_TOKEN: ${{ steps.operations-app.outputs.token }}
@@ -118,6 +118,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           response=$(curl -fsS \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${OPERATIONS_TOKEN}" \
@@ -125,11 +126,302 @@ jobs:
             "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/git/ref/heads/main")
           current_main=$(jq -r '.object.sha // empty' <<<"$response")
           test -n "$current_main"
-          if [ "$PINNED_OPERATIONS_REF" != "$current_main" ]; then
-            echo "stale_operations_pin: configured=$PINNED_OPERATIONS_REF current_main=$current_main"
+
+          if [ "$PINNED_OPERATIONS_REF" = "$current_main" ]; then
+            echo "Operations pin matches current main: $current_main"
+            exit 0
+          fi
+
+          compare=$(curl -fsS \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${OPERATIONS_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/compare/${PINNED_OPERATIONS_REF}...${current_main}")
+
+          compare_status=$(jq -r '.status // empty' <<<"$compare")
+          compare_too_large=$(jq -r '.too_large // false' <<<"$compare")
+          test "$compare_too_large" != "true"
+          test "$compare_status" = "ahead"
+
+          unsafe_files=""
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            case "$file" in
+              AGENTS.md|README.md|docs/*)
+                ;;
+              *)
+                unsafe_files="${unsafe_files}${file}"      - name: Checkout pinned Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.OPERATIONS_REPOSITORY }}
+          ref: ${{ env.OPERATIONS_REF }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Install Operations test environment
+        working-directory: operations
+        run: |
+          python -m pip install --disable-pip-version-check -e ".[test,browser,media]"
+          python -m pip install --disable-pip-version-check "workers-py>=1.9" workers-runtime-sdk
+
+      - name: Verify async test environment
+        working-directory: operations
+        run: |
+          python -c "import pytest_asyncio, pytest; print('pytest=' + pytest.__version__ + ' pytest-asyncio=' + pytest_asyncio.__version__)"
+
+      - name: Install Foundation test environment for repository policy
+        if: matrix.id == 'repository-policy'
+        working-directory: .
+        run: |
+          python -m pip install --disable-pip-version-check -e .
+          python -m pip install --disable-pip-version-check pytest pytest-asyncio coverage workers-py workers-runtime-sdk
+
+      - name: Determine pinned Foundation public-core revision
+        id: foundation-core-pin
+        working-directory: operations
+        shell: python
+        run: |
+          import ast
+          import os
+          from pathlib import Path
+          tree = ast.parse(Path("scripts/sync_public_core.py").read_text(encoding="utf-8"))
+          output = Path(os.environ["GITHUB_OUTPUT"])
+          for node in tree.body:
+              if isinstance(node, ast.Assign):
+                  for target in node.targets:
+                      if isinstance(target, ast.Name) and target.id == "FOUNDATION_COMMIT":
+                          output.write_text(f"ref={node.value.value}\n", encoding="utf-8")
+                          raise SystemExit
+          raise SystemExit("FOUNDATION_COMMIT not found")
+
+      - name: Checkout exact pinned Foundation public core
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/foundation
+          ref: ${{ steps.foundation-core-pin.outputs.ref }}
+          path: foundation-core
+          fetch-depth: 1
+
+      - name: Ensure exact pinned Foundation Git object is present
+        working-directory: foundation-core
+        shell: bash
+        env:
+          FOUNDATION_COMMIT: ${{ steps.foundation-core-pin.outputs.ref }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin "$FOUNDATION_COMMIT"
+          git cat-file -e "$FOUNDATION_COMMIT^{commit}"
+          git cat-file -e "$FOUNDATION_COMMIT:foundation_core/__init__.py"
+
+      - name: Materialize pinned public core
+        working-directory: operations
+        env:
+          FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core
+        run: python scripts/sync_public_core.py
+
+      - name: Install browser runtime for browser scenario
+        if: matrix.id == 'browser-acquisition'
+        working-directory: operations
+        run: python -m playwright install --with-deps chromium
+
+      - name: Run scenario
+        id: run
+        if: matrix.id != 'repository-policy'
+        working-directory: operations
+        shell: bash
+        run: |
+          set +e
+          mkdir -p ../coverage-artifacts/${{ matrix.id }}
+          python -m pytest --asyncio-mode=auto -q -ra ${{ matrix.tests }} > ../coverage-artifacts/${{ matrix.id }}/pytest.log 2>&1
+          status=$?
+          SCENARIO_STATUS="$status" python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          status = int(os.environ["SCENARIO_STATUS"])
+          p = Path("../coverage-artifacts/${{ matrix.id }}/scenario.json")
+          p.write_text(json.dumps({
+              "schema": "coverage-matrix-result/v1",
+              "scenario": "${{ matrix.id }}",
+              "issue_refs": "${{ matrix.issues }}",
+              "operations_ref": os.environ.get("OPERATIONS_REF", ""),
+              "pytest": "${{ matrix.tests }}",
+              "exit_code": status,
+              "passed": status == 0,
+          }, indent=2, sort_keys=True) + "\n")
+          PY
+          if [ "$status" -ne 0 ]; then
+            echo "::group::${{ matrix.id }} pytest failure output"
+            tail -n 250 "../coverage-artifacts/${{ matrix.id }}/pytest.log" || true
+            echo "::endgroup::"
+          fi
+          exit "$status"
+
+      - name: Run Foundation repository-policy scenario
+        if: matrix.id == 'repository-policy'
+        id: foundation-policy-run
+        shell: bash
+        run: |
+          set +e
+          mkdir -p coverage-artifacts/repository-policy
+          python -m pytest -q ${{ matrix.tests }} > coverage-artifacts/repository-policy/pytest.log 2>&1
+          status=$?
+          SCENARIO_STATUS="$status" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          status = int(os.environ["SCENARIO_STATUS"])
+          Path("coverage-artifacts/repository-policy/scenario.json").write_text(json.dumps({
+              "schema": "coverage-matrix-result/v1",
+              "scenario": "repository-policy",
+              "issue_refs": "Foundation #263/#58",
+              "operations_ref": os.environ.get("OPERATIONS_REF", ""),
+              "pytest": "${{ matrix.tests }}",
+              "exit_code": status,
+              "passed": status == 0,
+          }, indent=2, sort_keys=True) + "\n")
+          PY
+          if [ "$status" -ne 0 ]; then
+            echo "::group::repository-policy pytest failure output"
+            tail -n 250 coverage-artifacts/repository-policy/pytest.log || true
+            echo "::endgroup::"
+          fi
+          exit "$status"
+
+      - name: Run live production acceptance probe
+        if: github.ref == 'refs/heads/main' && matrix.live_probe
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          BASE_URL: https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev
+        working-directory: operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${AUTH_TOKEN:-}" || { echo 'AUTH_TOKEN is required for main-branch live acceptance probes'; exit 1; }
+          key="fast-${GITHUB_RUN_ID}-${{ matrix.id }}"
+          case "${{ matrix.live_probe }}" in
+            chat)
+              payload=$(jq -nc --arg chat_id "$key-chat" --arg request_id "$key-request" '{chat_id:$chat_id,request_id:$request_id,message:"Explain in one sentence why the public Worker uses an authenticated private service binding.",mode:"chat",strict_zero_cost_only:true}')
+              status=$(curl -sS --max-time 60 -o /tmp/live-chat.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-chat" -d "$payload" "$BASE_URL/api/v1/chat")
+              test "$status" = 200
+              jq -e '.ok == true and (.response.result_state == "COMPLETE" or .response.result_state == "PARTIAL")' /tmp/live-chat.json >/dev/null
+              ;;
+            idempotency)
+              payload=$(jq -nc --arg chat_id "$key-chat" --arg request_id "$key-request" '{chat_id:$chat_id,request_id:$request_id,message:"Return a deterministic one-line acknowledgement for this idempotency probe.",mode:"chat",strict_zero_cost_only:true}')
+              status1=$(curl -sS --max-time 60 -o /tmp/live-idem-1.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-idem" -d "$payload" "$BASE_URL/api/v1/chat")
+              status2=$(curl -sS --max-time 60 -o /tmp/live-idem-2.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-idem" -d "$payload" "$BASE_URL/api/v1/chat")
+              test "$status1" = 200 && test "$status2" = 200
+              python - <<'PY'
+          import json
+          one=json.load(open('/tmp/live-idem-1.json')); two=json.load(open('/tmp/live-idem-2.json'))
+          assert one.get('ok') is True and two.get('ok') is True
+          assert one.get('response',{}).get('response_id') == two.get('response',{}).get('response_id')
+          PY
+              ;;
+            sse)
+              payload=$(jq -nc --arg chat_id "$key-chat" --arg request_id "$key-request" '{chat_id:$chat_id,request_id:$request_id,message:"Emit a short acknowledgement suitable for an SSE lifecycle probe.",mode:"chat",strict_zero_cost_only:true}')
+              status=$(curl -sS --no-buffer --max-time 60 -D /tmp/live-sse.headers -o /tmp/live-sse.body -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-sse" -d "$payload" "$BASE_URL/api/v1/chat/stream")
+              test "$status" = 200
+              grep -qi '^Content-Type: text/event-stream' /tmp/live-sse.headers
+              grep -q '^event: start' /tmp/live-sse.body
+              grep -q '^event: done' /tmp/live-sse.body
+              ;;
+            research)
+              payload='{"question":"Fast live acceptance probe: verify the permitted source can be acquired and read back.","depth":"quick","require_citations":true,"max_sources":1,"max_evidence_items":3,"strict_zero_cost_only":true,"source_urls":["https://example.com/"]}'
+              status=$(curl -sS --max-time 90 -o /tmp/live-research.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-research" -d "$payload" "$BASE_URL/api/v1/research")
+              test "$status" = 200
+              run_id=$(jq -r '.run_id // empty' /tmp/live-research.json)
+              test -n "$run_id"
+              read_status=$(curl -sS --max-time 30 -o /tmp/live-research-read.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" "$BASE_URL/api/v1/research/$run_id")
+              test "$read_status" = 200
+              jq -e --arg rid "$run_id" '.ok == true and ((.run_id // .run.run_id) == $rid)' /tmp/live-research-read.json >/dev/null
+              ;;
+            *) echo "Unknown live probe: ${{ matrix.live_probe }}"; exit 2 ;;
+          esac
+          echo "live probe ${{ matrix.live_probe }}: PASS"
+
+      - name: Upload scenario evidence
+        if: always() && matrix.id != 'repository-policy'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-${{ matrix.id }}
+          path: coverage-artifacts/${{ matrix.id }}/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Foundation policy evidence
+        if: always() && matrix.id == 'repository-policy'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: coverage-repository-policy
+          path: coverage-artifacts/repository-policy/
+          if-no-files-found: error
+          retention-days: 14
+
+  aggregate:
+    name: Aggregate 20 orthogonal scenarios
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: scenario
+    if: always()
+    steps:
+      - name: Download scenario evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: coverage-*
+          path: coverage-artifacts
+          merge-multiple: false
+
+      - name: Build coverage/failure map
+        id: report
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          results=[]
+          for p in Path("coverage-artifacts").glob("**/scenario.json"):
+              results.append(json.loads(p.read_text()))
+          results.sort(key=lambda x:x["scenario"])
+          failed=[x for x in results if not x["passed"]]
+          report={
+              "schema":"coverage-matrix-report/v1",
+              "scenario_count":len(results),
+              "passed_count":len(results)-len(failed),
+              "failed_count":len(failed),
+              "failed":failed,
+          }
+          Path("coverage-matrix-report.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(report,indent=2,sort_keys=True))
+          raise SystemExit(1 if failed else 0)
+
+      - name: Upload aggregate report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-matrix-report
+          path: |
+            coverage-artifacts/**/scenario.json
+            coverage-artifacts/**/pytest.log
+            coverage-matrix-report.json
+          if-no-files-found: error
+          retention-days: 30
+\n'
+                ;;
+            esac
+          done < <(jq -r '.files[]?.filename // empty' <<<"$compare")
+
+          if [ -n "$unsafe_files" ]; then
+            echo "operations_runtime_drift: pinned=$PINNED_OPERATIONS_REF current_main=$current_main"
+            printf '%s' "$unsafe_files"
             exit 1
           fi
-          echo "Operations pin matches current main: $current_main"
+
+          echo "Operations main is ahead of the approved runtime pin only by documentation changes: pinned=$PINNED_OPERATIONS_REF current_main=$current_main"
       - name: Checkout pinned Operations
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
