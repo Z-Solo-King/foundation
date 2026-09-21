@@ -232,3 +232,59 @@ Do not upgrade source inspection or repository tests into runtime/control-plane/
 ### Next-chat operating rule
 
 Start from Foundation `d3f32e09bd39ca167ae556cb3514709b8ed4644f` and Operations `4128d25c2d116993d6a0868cb129e591b5b815c2`. The production receipt `35456292033` is the current L4 baseline. Work only on a missing acceptance rung or a newly established repository-side defect; do not re-open the already-correct chat/SSE/service-binding/deployment path without new evidence.
+
+
+## 2026-09-21 MIGRATION FINAL RECONCILIATION
+
+This dated section supersedes older migration-harness status statements above for repository-side polyglot work.
+
+### Current repository heads
+
+- Foundation main: `e303e4155c7520a7d74cbab389fbc15d0b023f35`
+- Operations main: `f162b1b46899b6c6b9a96e13adcee42e83373491`
+
+### Migration conveyor
+
+Foundation now owns one self-refreshing polyglot migration conveyor that:
+- resolves one immutable current Operations main SHA for each run;
+- executes all Operations-consuming lanes against the same revision;
+- keeps Foundation-only lanes independent;
+- reuses completed lane capacity by work-stealing the next compatible component;
+- preserves explicit immutable manual revisions for reproducible evidence.
+
+### Completed repository-side migration evidence
+
+- Rust URL canonicalization: corrected to the real Foundation acquisition URL contract; 32 valid + 14 adversarial differential coverage; benchmark lane.
+- Rust text normalization: frozen Python differential corpus + 32x3 benchmark.
+- Rust active HTML extraction kernel: expanded to the active generic extractor field contract; full-record Python differential lane + 32x3 benchmark.
+- Rust JSON-LD Product/ProductGroup extraction: frozen 32-case Python differential corpus + benchmark.
+- Rust Link-header pagination: Python differential corpus + benchmark.
+- Rust robots/sitemap: Python differential corpus + benchmark.
+- TypeScript public endpoint discovery: frozen Python differential corpus + benchmark.
+- TypeScript Next.js product-state extraction: frozen Python differential corpus + benchmark.
+- TypeScript search/provider adapters: contract/typecheck/test shadow.
+- TypeScript browser acquisition: contract/typecheck/test shadow.
+- TypeScript public edge routing/SSE slices: route/security/SSE contract coverage.
+- TypeScript frontend lifecycle: production frontend consumes the generated TypeScript-derived lifecycle artifact.
+- Go bounded fan-out: deterministic/race benchmark evidence.
+
+### Authority boundary
+
+Production authority remains centralized where a genuine runtime migration boundary has not been proven:
+- policy and authorization;
+- economic/zero-cost policy;
+- resource and quota governance;
+- persistence/D1;
+- replay/idempotency/terminalization;
+- provenance/lineage;
+- product identity matching and identity-sensitive dedupe;
+- promotion/adjudication/rollback;
+- public Worker orchestration.
+
+These are intentionally retained authorities, not forgotten migration work.
+
+### Completion meaning
+
+The repository-side migration loop is complete: every viable candidate has either reached production consumption, parity-complete shadow status, contract-complete shadow status, benchmark-complete disposition, or an explicit intentional-retention architecture decision.
+
+A candidate is not silently promoted merely because it compiles. Runtime authority changes still require an actual deployment boundary, canary, rollback and authority-level evidence.
