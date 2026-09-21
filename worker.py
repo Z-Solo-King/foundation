@@ -1,13 +1,18 @@
 """Cloudflare Python Worker entrypoint for the standalone public-safe runtime."""
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
+import logging
 import os
 import uuid
 from datetime import datetime, timezone
 from urllib.parse import parse_qs, urlparse
 
 from workers import Response, WorkerEntrypoint
+
+_LOGGER = logging.getLogger("foundation.worker")
 
 from backend.api.main import submit_research
 from backend.api.models import ChatRequest, ResearchRequest
@@ -507,7 +512,13 @@ class Default(WorkerEntrypoint):
                     subject_fingerprint=subject_fingerprint,
                     cursor=cursor,
                     limit=limit,
-                    cursor_secret=bearer_token(request) or "development-local",
+                    cursor_secret=(
+                        hmac.new(
+                            (bearer_token(request) or "development-local").encode("utf-8"),
+                            b"foundation-public-read-cursor:v1",
+                            hashlib.sha256,
+                        ).hexdigest()
+                    ),
                 )
             except PublicReadCursorError as exc:
                 return _authenticated_json({"ok": False, "error": str(exc)}, status=400)
@@ -568,7 +579,7 @@ class Default(WorkerEntrypoint):
                     try:
                         await persistence.set_run_status(run_id, "failed")
                     except Exception:
-                        pass
+                        _LOGGER.exception("failed to record terminal failed status for run_id=%s", run_id)
                 return _authenticated_json({
                     "ok": False,
                     "error": "execution/persistence failure",
