@@ -337,6 +337,8 @@ def test_coverage_runtime_matrix_validates_immutable_operations_pin():
     assert "operations_runtime_drift" not in workflow
     assert "BLOCKED" in workflow
     assert "Idempotency-Key: $key-idem" in workflow
+    assert "chat-rollover-before.json" in PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert "chat-rollover-after.json" in PRODUCTION_SCRIPT.read_text(encoding="utf-8")
 
 def test_production_operations_compile_guard_is_executable():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
