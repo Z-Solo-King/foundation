@@ -83,3 +83,15 @@ Foundation: #157, #58, #452.
 Operations: #340, #352, #385, #603, #650, #145.
 
 No language receives production authority from these scans. Promotion remains reference -> candidate -> differential -> shadow -> canary -> authority.
+
+## Post-scan implementation reconciliation — 2026-09-21
+
+- Foundation #915 closed the runtime capability-receipt gap identified by the Lua lens.
+- Operations #650 closed the Go fanout pilot defect set with bounded worker count, caller cancellation, response draining and deterministic sequencing.
+- Operations #655/#665 closed the nested-mutation leak in ResourceLedger snapshots.
+- Operations #656/#661 moved malformed provider configuration handling into explicit, centralized diagnostics.
+- Operations #657 closed the aggregate stream-output budget gap.
+- Foundation #909/#910 remain the active lifecycle/materialization defects; implementation PR #921 addresses both.
+- Nightly lessons remain normative: multi-blocker diagnosis, truthful execution states, explicit evidence tiers, stale-pin checks, and no dry-run-as-research.
+
+No language received production authority from rounds 5-6. Future waves must preserve full inventory coverage, vary paradigms, explicitly include Python, normalize findings into common invariant categories, and record false-positive/methodology learning after every wave.

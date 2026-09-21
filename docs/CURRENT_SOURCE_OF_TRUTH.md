@@ -1,3 +1,21 @@
+## 2026-09-21 CURRENT LIVE SYNC
+
+Live Git refs at sync time:
+- Foundation main: e50a84ee239937967f9c23412e94521d347e3466
+- Operations main: 44c4dc2189efa9b5a6f0e5648f5c892c55b45746
+- Foundation PR #921: lifecycle/materialization fix for #909/#910, awaiting required checks.
+- No other open pull requests were present at sync time.
+
+Repository-side multi-language rounds 5-6 have been reconciled. Operations fixes derived from the scan are already merged: provider configuration centralization (#661), deep immutability residue (#665), aggregate stream budgeting (#657), malformed-provider diagnostics (#656), ResourceLedger snapshot fix (#655), and Go fanout pilot (#650).
+
+Open acceptance queue at sync time:
+- Foundation: #58, #157, #452, #909, #910.
+- Operations: #119, #132, #145, #197, #340, #352, #385, #597, #603.
+
+Evidence rule: implementation/test/CI evidence does not substitute for required runtime/control-plane/production evidence.
+
+---
+
 ## 2026-09-20 CURRENT AUDIT CHECKPOINT
 
 This section records the latest audited immutable revisions. It is intentionally a checkpoint, not a claim that the document's own future merge commit will equal the recorded Foundation branch head. The live Git refs remain authoritative for current branch heads.

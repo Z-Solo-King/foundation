@@ -553,3 +553,36 @@ For ChatGPT/multi-agent sessions:
 6. collapse repeated failures into one root-cause fix;
 7. refresh affected queue slices after merges;
 8. leave exact evidence/rung state in PR and issue metadata so another session can resume without chat history.
+
+
+## Adaptive scan learning loop — 2026-09-21
+
+Treat repository scanning itself as a maintained engineering method, not a one-off audit.
+
+### Coverage contract
+- Begin with a live recursive tree inventory for every active repository.
+- Record blob count, language/file-type counts, binary exceptions, and a deterministic path index.
+- Preserve 100% path/inventory coverage even when semantic inspection is selective.
+- For large trees, partition by disjoint path ranges and assign different language paradigms as independent lenses.
+- Include Python in every scan; Python is the current semantic authority and must never be accidentally excluded because the lens is non-Python.
+
+### Lens diversity
+Each wave should mix structural and operational paradigms: typed functional/state-machine, actor/concurrency, systems/ownership, dataflow, managed OO, and runtime/stream-oriented lenses. Reuse a language only when a prior finding needs confirmation.
+
+### Evidence method
+1. repository-wide search for invariant patterns and boundary symbols;
+2. direct inspection of high-signal owner modules and consumers;
+3. compare against existing contracts, tests and issue/PR history;
+4. normalize findings into behavior/policy/security/resource/provenance/migration categories;
+5. distinguish candidate observations from verified defects;
+6. create or attach a regression issue only when a reproducible owner-level defect or explicit evidence gap exists.
+
+### Learning extraction
+After each wave, record reusable design rules, security/policy/resource invariants, migration candidates and explicit non-candidates, scan-method improvements, false-positive patterns to avoid, and documentation/AGENT changes needed to make the learning durable.
+
+### Migration rule
+No language promotion follows from stylistic similarity or benchmark enthusiasm. Use the gate: reference -> candidate -> contract -> differential -> adversarial/error taxonomy -> shadow -> canary -> rollback rehearsal -> authority.
+Python remains policy, semantic, persistence, replay, provenance and rollback authority unless an explicit evidence-gated ownership transfer is documented.
+
+### Queue rule
+Convert findings into the smallest canonical issue/PR surface, tag the issue by type and evidence rung, and keep runtime/external gates open until the required evidence exists. Issue count is not completion; the acceptance graph is.
