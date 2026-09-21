@@ -1,5 +1,5 @@
 name: Exhaustive six-lane repository audit
-# Scanner revision: 2026-09-22 linear-time L3 checklist evaluation
+# Scanner revision: 2026-09-22 manifest-first L1 inventory and linear L3 checklist
 
 on:
   pull_request:
