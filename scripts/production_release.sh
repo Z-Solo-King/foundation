@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="c752ba7f6cfa82adfe2e5ce8cd5ecc10b8b04101"
+OPERATIONS_REF="fed618a99a1540e4a7cd906952fbe3ee22acfe39"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
@@ -22,7 +22,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = 'c752ba7f6cfa82adfe2e5ce8cd5ecc10b8b04101'
+test "$OPERATIONS_REF" = 'fed618a99a1540e4a7cd906952fbe3ee22acfe39'
 
 after_install_marker=''
 
@@ -559,6 +559,7 @@ if [ -n "${AUTH_TOKEN:-}" ]; then
   and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "task_envelope_d1_replay_guard" and .ok == true)
   and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "d1_candidate_learning_round_trip" and .ok == true)
   and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "durable_resource_reserve_consume" and .ok == true)
+  and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "d1_reservation_reject_changes_semantics" and .ok == true)
   and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "maintenance_scheduler_reconciliation" and .ok == true)
   and any(.checks[]?; .name == "cloudflare_d1" and .ok == true)
   and any(.checks[]?; .name == "backblaze_b2_lifecycle" and .ok == true)
