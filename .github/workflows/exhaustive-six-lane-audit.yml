@@ -48,6 +48,7 @@ jobs:
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
+          permission-issues: read
 
       - name: Resolve Operations audit revision
         id: resolve
@@ -88,7 +89,7 @@ jobs:
       - name: Verify live open-issue register
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
-          github-token: ${{ github.token }}
+          github-token: ${{ steps.operations-app.outputs.token }}
           script: |
             const fs = require("fs");
             fs.mkdirSync(".runtime/exhaustive-audit", { recursive: true });
@@ -120,12 +121,15 @@ jobs:
             const act = new Map(actual.map(x => [key(x), x]));
             const missing = [...exp.keys()].filter(k => !act.has(k));
             const unexpected = [...act.keys()].filter(k => !exp.has(k));
-            if (missing.length || unexpected.length) {
-              core.setFailed(JSON.stringify({ missing, unexpected }));
+            const titleMismatch = [...exp.keys()]
+              .filter(k => act.has(k) && exp.get(k).title !== act.get(k).title)
+              .map(k => ({ key: k, expected: exp.get(k).title, actual: act.get(k).title }));
+            if (missing.length || unexpected.length || titleMismatch.length) {
+              core.setFailed(JSON.stringify({ missing, unexpected, titleMismatch }));
             }
             fs.writeFileSync(
               ".runtime/exhaustive-audit/live_open_issues.json",
-              JSON.stringify({ expected, actual, missing, unexpected }, null, 2) + "\n",
+              JSON.stringify({ expected, actual, missing, unexpected, titleMismatch }, null, 2) + "\n",
               "utf8",
             );
 
