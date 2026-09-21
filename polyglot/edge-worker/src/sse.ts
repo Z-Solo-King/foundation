@@ -61,7 +61,15 @@ export async function frameChatSse(body: ChatProxyEnvelope, maxBytes = MAX_PUBLI
   }
 
   const outputDigest = await sha256Hex(text);
-  const status = resultState === "COMPLETE" ? "completed" : "partial";
+  const terminalStatus: Record<string, "completed" | "partial" | "cancelled" | "failed"> = {
+    COMPLETE: "completed",
+    PARTIAL: "partial",
+    CANCELLED: "cancelled",
+    FAILED: "failed",
+    ERROR: "failed",
+  };
+  const status = terminalStatus[resultState];
+  if (!status) throw new Error(`unsupported_terminal_state:${resultState}`);
   pushEvent("done", {
     response_id: responseId,
     status,

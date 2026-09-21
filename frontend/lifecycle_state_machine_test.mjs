@@ -5,12 +5,16 @@ const source = fs.readFileSync(new URL('./generated/lifecycle.js', import.meta.u
 const context = { window: {}, console };
 vm.runInNewContext(source, context);
 const machine = context.window.RIEFrontend.lifecycleStateMachine;
-assert.deepEqual(machine.STATES, ['NEW_CHAT','SUBMITTING','QUEUED','RUNNING','STREAMING','COMPLETE','PARTIAL','BLOCKED','REJECTED','UNAVAILABLE','UNKNOWN','RECONNECTING','RESUMED','REPLAYED','AUTH_EXPIRED']);
+assert.deepEqual(machine.STATES, ['NEW_CHAT','SUBMITTING','QUEUED','RUNNING','STREAMING','COMPLETE','PARTIAL','CANCELLED','BLOCKED','REJECTED','UNAVAILABLE','UNKNOWN','RECONNECTING','RESUMED','REPLAYED','AUTH_EXPIRED']);
 assert.equal(machine.normalize('completed'), 'COMPLETE');
 assert.equal(machine.normalize('auth-expired'), 'AUTH_EXPIRED');
 assert.equal(machine.normalize('not-a-state'), null);
 assert.equal(machine.canTransition('QUEUED','RUNNING'), true);
 assert.equal(machine.canTransition('COMPLETE','RUNNING'), false);
+assert.equal(machine.normalize('cancelled'), 'CANCELLED');
+assert.equal(machine.canTransition('STREAMING','CANCELLED'), true);
+assert.equal(machine.canTransition('CANCELLED','RUNNING'), false);
+assert.equal(machine.advance('STREAMING','cancelled'), 'CANCELLED');
 assert.equal(machine.advance('COMPLETE','running'), 'UNKNOWN');
 assert.equal(machine.advance('RUNNING',undefined), 'UNKNOWN');
 assert.equal(machine.fromBackend({status:'queued'}), 'QUEUED');
