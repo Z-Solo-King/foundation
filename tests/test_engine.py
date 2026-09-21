@@ -109,3 +109,20 @@ def test_research_run_rejects_terminal_transition_from_planned_and_terminal():
     blocked = transition_research(start_research(create_run("terminal", contract, plan)), ResearchLifecycle.BLOCKED)
     with pytest.raises(ValueError, match="invalid or unsupported"):
         transition_research(blocked, ResearchLifecycle.COMPLETED)
+
+
+def test_research_run_rejects_unknown_stored_lifecycle_value():
+    contract = ResearchContract(question="test")
+    plan = ResearchPlan(question="test", stages=(), source_budget=1, evidence_budget=1)
+    with pytest.raises(ValueError, match="invalid run status"):
+        ResearchRun("bad", contract, plan, status="not-a-state")
+
+
+def test_terminalize_rejects_nonterminal_target():
+    from backend.execution.engine import _terminalize
+
+    contract = ResearchContract(question="test")
+    plan = ResearchPlan(question="test", stages=(), source_budget=1, evidence_budget=1)
+    running = start_research(create_run("run", contract, plan))
+    with pytest.raises(ValueError, match="invalid terminal status"):
+        _terminalize(running, ResearchLifecycle.RUNNING)
