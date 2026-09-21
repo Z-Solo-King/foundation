@@ -952,6 +952,9 @@ jobs:
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
+      - name: Materialize pinned Foundation public core
+        working-directory: operations
+        run: python scripts/sync_public_core.py
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
@@ -1015,6 +1018,9 @@ jobs:
           ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
+      - name: Materialize pinned Foundation public core
+        working-directory: operations
+        run: python scripts/sync_public_core.py
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
@@ -1070,6 +1076,9 @@ jobs:
           ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
+      - name: Materialize pinned Foundation public core
+        working-directory: operations
+        run: python scripts/sync_public_core.py
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
@@ -1125,6 +1134,9 @@ jobs:
           ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
+      - name: Materialize pinned Foundation public core
+        working-directory: operations
+        run: python scripts/sync_public_core.py
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
@@ -1213,6 +1225,9 @@ jobs:
           ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
+      - name: Materialize pinned Foundation public core
+        working-directory: operations
+        run: python scripts/sync_public_core.py
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
