@@ -116,6 +116,7 @@ jobs:
           args=(
             --foundation "${GITHUB_WORKSPACE}/foundation-repo"
             --operations "${GITHUB_WORKSPACE}/operations-repo"
+            --surface-map "${GITHUB_WORKSPACE}/operations-repo/benchmark/polyglot/open_issue_surface_map.json"
             --output-dir "${GITHUB_WORKSPACE}/.runtime/exhaustive-audit"
           )
           if [[ "${AUTO_FIX_INPUT}" == "true" || "${HEAD_BRANCH}" == exhaustive-audit/* ]]; then
