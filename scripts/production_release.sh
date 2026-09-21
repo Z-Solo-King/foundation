@@ -360,7 +360,12 @@ live_chat_status=$(curl -sS --max-time 90 \
   -d "${live_chat_payload}" \
   "${BASE_URL}/api/v1/chat")
 echo "POST /api/v1/chat -> HTTP ${live_chat_status}"
-test "$live_chat_status" = '200'
+if [ "$live_chat_status" != '200' ]; then
+  echo '--- live-chat.body ---'
+  cat "$RUNNER_TEMP/live-chat.json" || true
+  echo '--- end live-chat.body ---'
+  exit 1
+fi
 jq -e '.ok == true and (.response.result_state == "COMPLETE" or .response.result_state == "PARTIAL")' \
   "$RUNNER_TEMP/live-chat.json" >/dev/null
 live_chat_state=$(jq -r '.response.result_state' "$RUNNER_TEMP/live-chat.json")
