@@ -182,3 +182,20 @@ def test_workers_fetch_adapter_uses_sdk_fallback_when_js_ffi_is_unavailable(monk
 
     assert result == "response"
     assert captured == {"url": "https://example.com", "options": options}
+
+
+def test_runtime_capability_receipt_rejects_invalid_fields() -> None:
+    from backend.core.workers_runtime import FetchTransport, RuntimeCapabilityReceipt, WorkersFetchAdapter
+
+    with pytest.raises(ValueError, match="unsupported runtime capability schema"):
+        RuntimeCapabilityReceipt("bad/v1", "ctx", FetchTransport.WORKERS_SDK, False, False)
+    with pytest.raises(ValueError, match="runtime capability context"):
+        RuntimeCapabilityReceipt("workers-runtime-capability/v1", "", FetchTransport.WORKERS_SDK, False, False)
+    with pytest.raises(ValueError, match="runtime capability flags"):
+        RuntimeCapabilityReceipt("workers-runtime-capability/v1", "ctx", FetchTransport.WORKERS_SDK, "false", False)
+    with pytest.raises(ValueError, match="fallback flag"):
+        RuntimeCapabilityReceipt("workers-runtime-capability/v1", "ctx", FetchTransport.WORKERS_SDK, True, True)
+    with pytest.raises(ValueError, match="runtime fetch context is required"):
+        WorkersFetchAdapter("", lambda _url: None)
+    with pytest.raises(ValueError, match="runtime fetch context is too long"):
+        WorkersFetchAdapter("x" * 161, lambda _url: None)
