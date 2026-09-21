@@ -1,3 +1,12 @@
+## 2026-09-22 CURRENT RECONCILIATION
+
+- Foundation `main`: `e5b26061861e570396b73993a3c8733496cb1956`
+- Operations `main`: `7cf73e6a15b1e1d090f023915f62e5a2bd066b8e`
+- Immutable Operations pin in Foundation: `7cf73e6a15b1e1d090f023915f62e5a2bd066b8e`
+- Final repository repair waves through Foundation #960 and Operations #753 are merged.
+- Fresh control-plane identity acceptance passes on this head.
+- Remaining open issues are runtime/provider/Cloudflare/migration acceptance gates; do not infer closure from repository source or CI alone.
+
 ## 2026-09-21 CURRENT GITHUB RECONCILIATION
 
 This is the newest repository-side synchronization point. Fresh GitHub state overrides all older dated checkpoints below.
