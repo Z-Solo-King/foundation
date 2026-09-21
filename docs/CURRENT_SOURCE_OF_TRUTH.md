@@ -290,3 +290,14 @@ These are intentionally retained authorities, not forgotten migration work.
 The repository-side migration loop is complete: every viable candidate has either reached production consumption, parity-complete shadow status, contract-complete shadow status, benchmark-complete disposition, or an explicit intentional-retention architecture decision.
 
 A candidate is not silently promoted merely because it compiles. Runtime authority changes still require an actual deployment boundary, canary, rollback and authority-level evidence.
+
+
+## Current chat handoff
+
+For cross-chat continuity, read `docs/GITHUB_CHAT_HANDOFF_2026-09-21.md` before making repository changes.
+
+Current Foundation main: `0e5e3532e91ea40040b718a8dcbf7e3f66919d30`.
+
+Pending repository hardening: Foundation PR #937. Do not treat its branch as merged until protected checks pass.
+
+Current concrete Operations blocker: #711 (DurableResourceLedger orphan reservation defect).
