@@ -1,6 +1,15 @@
 """Tests for complete research execution pipeline."""
 
-from backend.execution.engine import create_run, start_research, add_observation, verify_and_add_claim, complete_research, summarize_research
+from backend.execution.engine import (
+    ResearchLifecycle,
+    add_observation,
+    complete_research,
+    create_run,
+    start_research,
+    summarize_research,
+    transition_research,
+    verify_and_add_claim,
+)
 from backend.intelligence.contracts import ResearchContract, ResearchPlan
 from backend.intelligence.observations import Observation, EvidenceSpan
 from backend.intelligence.certificates import create_certificate
@@ -14,9 +23,32 @@ def test_research_run_lifecycle():
     contract = ResearchContract(question="Is AI useful?")
     plan = ResearchPlan(question="Is AI useful?", stages=("discover", "collect", "verify", "synthesize"), source_budget=5, evidence_budget=10)
     run = start_research(create_run("run-1", contract, plan))
-    assert run.status == "running"
+    assert run.status is ResearchLifecycle.RUNNING
     run = complete_research(run, success=True)
-    assert run.status == "completed" and run.completed_at is not None
+    assert run.status is ResearchLifecycle.COMPLETED and run.completed_at is not None
+
+
+def test_research_run_accepts_terminal_lifecycle_states():
+    contract = ResearchContract(question="test")
+    plan = ResearchPlan(question="test", stages=(), source_budget=1, evidence_budget=1)
+    run = create_run("run", contract, plan)
+    for state in (
+        ResearchLifecycle.PARTIAL,
+        ResearchLifecycle.FAILED,
+        ResearchLifecycle.BLOCKED,
+        ResearchLifecycle.CANCELLED,
+    ):
+        terminal = transition_research(run, state)
+        assert terminal.status is state
+        assert terminal.completed_at is not None
+
+
+def test_research_run_rejects_post_terminal_transition():
+    contract = ResearchContract(question="test")
+    plan = ResearchPlan(question="test", stages=(), source_budget=1, evidence_budget=1)
+    blocked = transition_research(create_run("run", contract, plan), ResearchLifecycle.BLOCKED)
+    with pytest.raises(ValueError):
+        transition_research(blocked, ResearchLifecycle.COMPLETED)
 
 
 def test_add_observation_consumes_budget():
@@ -52,7 +84,7 @@ def test_summarize_research():
     run = verify_and_add_claim(run, Claim.create("c1", "The answer is 42."), (cert,), EvidenceVerifier(), {"s1": SourceLineage("s1", "family-a")})
     run = complete_research(run)
     summary = summarize_research(run)
-    assert summary["run_id"] == "run-1" and summary["status"] == "completed" and summary["observations"] == 1
+    assert summary["run_id"] == "run-1" and summary["status"] is ResearchLifecycle.COMPLETED and summary["observations"] == 1
 
 
 def test_synthesis_with_corroborated_claims():
