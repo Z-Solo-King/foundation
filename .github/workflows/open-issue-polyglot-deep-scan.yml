@@ -26,6 +26,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: foundation-open-issue-polyglot-deep-scan
@@ -85,6 +86,7 @@ jobs:
             --foundation "$GITHUB_WORKSPACE" \
             --operations "$GITHUB_WORKSPACE/operations" \
             --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_56.json" \
+            --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json" \
             --lane "${{ matrix.lane }}" \
             --output ".runtime/open-issue-deep-scan/${{ matrix.lane }}.json"
 
@@ -140,33 +142,36 @@ jobs:
 
           root = Path(".runtime/open-issue-deep-scan")
           receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L*.json"))]
-          assert len(receipts) == 4, f"expected 4 lane receipts, got {len(receipts)}"
-
           expected_lanes = {"L1", "L2", "L3", "L4"}
-          assert {receipt["lane"] for receipt in receipts} == expected_lanes
-          assert all(receipt["case_count"] == 14 for receipt in receipts)
-          assert all(receipt["issue_count"] == 14 for receipt in receipts)
-          assert all(not receipt["missing_cases"] for receipt in receipts)
-
-          cases = {(result["issue"], result["lane"]) for receipt in receipts for result in receipt["results"]}
-          assert len(cases) == 56
-          assert all(result["status"] != "FAIL" for receipt in receipts for result in receipt["results"])
-
+          lane_count_ok = len(receipts) == 4 and {receipt.get("lane") for receipt in receipts} == expected_lanes
+          case_count_ok = all(receipt.get("case_count") == 14 for receipt in receipts) and all(receipt.get("issue_count") == 14 for receipt in receipts)
+          missing_ok = all(not receipt.get("missing_cases") for receipt in receipts)
+          cases = {(result.get("issue"), result.get("lane")) for receipt in receipts for result in receipt.get("results", [])}
+          case_matrix_ok = len(cases) == 56
+          failed_results = [
+              {"issue": result.get("issue"), "lane": result.get("lane"), "findings": result.get("findings", [])}
+              for receipt in receipts
+              for result in receipt.get("results", [])
+              if result.get("status") == "FAIL"
+          ]
+          scan_ok = lane_count_ok and case_count_ok and missing_ok and case_matrix_ok and not failed_results
           aggregate = {
               "schema": "open-issue-polyglot-deep-scan/v1",
               "lane_count": 4,
               "issue_count": 14,
-              "case_count": 56,
-              "status": "PASS",
-              "foundation_revisions": sorted({receipt["foundation_revision"] for receipt in receipts}),
-              "operations_revisions": sorted({receipt["operations_revision"] for receipt in receipts}),
-              "review_cases": sum(receipt["review_cases"] for receipt in receipts),
+              "case_count": 56 if case_matrix_ok else len(cases),
+              "status": "PASS" if scan_ok else "FAIL",
+              "foundation_revisions": sorted({receipt.get("foundation_revision", "") for receipt in receipts}),
+              "operations_revisions": sorted({receipt.get("operations_revision", "") for receipt in receipts}),
+              "review_cases": sum(receipt.get("review_cases", 0) for receipt in receipts),
+              "failed_cases": len(failed_results),
+              "missing_cases": sorted({case for receipt in receipts for case in receipt.get("missing_cases", [])}),
+              "failures": failed_results[:100],
           }
-          Path(".runtime/open-issue-deep-scan/aggregate.json").write_text(
-              json.dumps(aggregate, indent=2) + "\n"
-          )
+          Path(".runtime/open-issue-deep-scan/aggregate.json").write_text(json.dumps(aggregate, indent=2) + "\n")
           print(json.dumps(aggregate, indent=2))
-
+          if not scan_ok:
+              raise SystemExit(1)
       - name: Upload aggregate receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -174,3 +179,42 @@ jobs:
           path: .runtime/open-issue-deep-scan/aggregate.json
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish aggregate result to triggering PR
+        if: ${{ always() && github.event_name == 'pull_request_target' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        working-directory: .runtime/open-issue-deep-scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f aggregate.json
+          body_file="$RUNNER_TEMP/open-issue-deep-scan-comment.md"
+          python - <<'PY' > "$body_file"
+          import json, os
+          data = json.load(open("aggregate.json", encoding="utf-8"))
+          failures = data.get("failures", [])
+          print("<!-- open-issue-polyglot-deep-scan -->")
+          print("## Four-lane open-issue polyglot deep scan")
+          print(f"- Status: **{data.get("status")}**")
+          print(f"- Coverage: {data.get("case_count", 0)}/56 issue×lane cases")
+          print(f"- Failed cases: {data.get("failed_cases", 0)}")
+          print(f"- Review cases: {data.get("review_cases", 0)}")
+          print(f"- Foundation revision: {", ".join(data.get("foundation_revisions", []))}")
+          print(f"- Operations revision: {", ".join(data.get("operations_revisions", []))}")
+          if data.get("missing_cases"):
+              print("\n### Missing cases")
+              for item in data["missing_cases"][:50]: print(f"- {item}")
+          if failures:
+              print("\n### Failures")
+              for item in failures[:50]:
+                  print(f"- {item.get("issue")} / {item.get("lane")}: {item.get("findings", [])}")
+          PY
+          existing_id=$(gh api "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate --jq '.[] | select(.body | startswith("<!-- open-issue-polyglot-deep-scan -->")) | .id' | tail -n 1 || true)
+          if [ -n "$existing_id" ]; then
+            gh api --method PATCH "repos/${REPOSITORY}/issues/comments/${existing_id}" -F body=@- < "$body_file" >/dev/null
+          else
+            gh api --method POST "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" -F body=@- < "$body_file" >/dev/null
+          fi
