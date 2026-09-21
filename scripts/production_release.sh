@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="7cf73e6a15b1e1d090f023915f62e5a2bd066b8e"
+OPERATIONS_REF="c752ba7f6cfa82adfe2e5ce8cd5ecc10b8b04101"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
@@ -22,7 +22,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = '7cf73e6a15b1e1d090f023915f62e5a2bd066b8e'
+test "$OPERATIONS_REF" = 'c752ba7f6cfa82adfe2e5ce8cd5ecc10b8b04101'
 
 after_install_marker=''
 
@@ -326,7 +326,40 @@ jq -e --arg expected "github:${OPERATIONS_REF}" '
   jq -c '.result | {id,number,source,annotations}' "$RUNNER_TEMP/operations-version.json" 2>/dev/null || true
   exit 1
 }
+
+# P0 chat acceptance: seed a terminal chat receipt before the private Operations redeployment.
+# The identical idempotency key is replayed after deployment to prove durable recovery across
+# the private-worker version boundary.
+chat_rollover_payload=$(jq -nc \
+  --arg chat_id "production-chat-rollover-${GITHUB_RUN_ID}" \
+  --arg request_id "production-chat-rollover-request-${GITHUB_RUN_ID}" \
+  '{chat_id:$chat_id,request_id:$request_id,message:"Return one concise sentence explaining why the public Worker uses an authenticated private service binding.",mode:"chat",strict_zero_cost_only:true}')
+chat_rollover_key="production-chat-rollover-${GITHUB_RUN_ID}"
+chat_rollover_status=$(curl -sS --max-time 90 \
+  -o "$RUNNER_TEMP/chat-rollover-before.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: ${chat_rollover_key}" \
+  -d "$chat_rollover_payload" \
+  "$BASE_URL/api/v1/chat")
+echo "POST /api/v1/chat rollover seed -> HTTP ${chat_rollover_status}"
+test "$chat_rollover_status" = '200'
+jq -e '.ok == true and (.response.result_state == "COMPLETE" or .response.result_state == "PARTIAL") and (.response.response_id | type == "string" and length > 0)' "$RUNNER_TEMP/chat-rollover-before.json" >/dev/null
 echo "Operations Cloudflare provenance: PASS (github:${OPERATIONS_REF})"
+chat_rollover_after_status=$(curl -sS --max-time 60 \
+  -o "$RUNNER_TEMP/chat-rollover-after.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: ${chat_rollover_key}" \
+  -d "$chat_rollover_payload" \
+  "$BASE_URL/api/v1/chat")
+echo "POST /api/v1/chat rollover replay -> HTTP ${chat_rollover_after_status}"
+test "$chat_rollover_after_status" = '200'
+jq -e --arg expected_id "$(jq -r '.response.response_id' "$RUNNER_TEMP/chat-rollover-before.json")" \
+  '.ok == true and .response.response_id == $expected_id' \
+  "$RUNNER_TEMP/chat-rollover-after.json" >/dev/null
+echo "Live chat redeployment replay acceptance: PASS"
+
 
 if [ "$persistence_seed_ready" = "true" ]; then
   sentinel_id=$(jq -r '.sentinel_id' "$persistence_seed_file")
