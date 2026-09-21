@@ -1,3 +1,21 @@
+## 2026-09-21 FINAL HANDOFF
+
+Current heads:
+- Foundation 985fd526913bdf48fffc73cfc7e834d38dd449de
+- Operations 2da42873fa2ff7ae05df00973a7ba584cdd1c6a9
+
+Completed in this work:
+- rounds 5-6 scan findings reconciled;
+- lifecycle/materialization fixes merged in Foundation #921;
+- scan-method and maintenance documentation synchronized in Foundation #922 and Operations #670;
+- Operations #650/#655/#656/#657 plus provider-configuration centralization #661 and deep-immutability residue #665 merged;
+- issue labels and cross-issue relationships normalized;
+- remaining queue reduced to explicit runtime/evidence acceptance gates.
+
+The adaptive scan protocol is canonical in docs/CROSS_LANGUAGE_ADAPTIVE_SCAN_METHOD_2026-09-21.md and referenced by AGENTS.md.
+
+---
+
 ## 2026-09-21 LIVE HANDOFF
 
 Current GitHub heads:

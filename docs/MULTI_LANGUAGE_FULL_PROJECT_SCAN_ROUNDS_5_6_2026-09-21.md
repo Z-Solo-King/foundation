@@ -4,8 +4,8 @@ Date: 2026-09-21
 Repositories: Z-Solo-King/foundation and Z-Solo-King/operations
 
 ## Coverage
-- Current live-tree inventory: Foundation 469 blobs; Operations 614 blobs; combined 1,083.
-- Python included in inventory and analysis.
+- Initial round-5/6 live-tree inventory at scan start: Foundation 469 blobs; Operations 614 blobs; combined 1,083.
+- Python was included in inventory and analysis.
 - Operations has one binary DOCX; inventory-covered but not text-decoded by the connector.
 - Batch 5 directional coverage: Scala = Foundation forward 0–234; Clojure = Foundation reverse 235–468; Dart = Operations forward 0–306; Nim = Operations reverse 307–613.
 - Batch 6 directional coverage: OCaml = Foundation forward 0–234; Lua = Foundation reverse 235–468; Crystal = Operations forward 0–306; D = Operations reverse 307–613.
@@ -95,3 +95,18 @@ No language receives production authority from these scans. Promotion remains re
 - Nightly lessons remain normative: multi-blocker diagnosis, truthful execution states, explicit evidence tiers, stale-pin checks, and no dry-run-as-research.
 
 No language received production authority from rounds 5-6. Future waves must preserve full inventory coverage, vary paradigms, explicitly include Python, normalize findings into common invariant categories, and record false-positive/methodology learning after every wave.
+
+## Final reconciliation after implementation and documentation merges — 2026-09-21
+
+Final live tree after all round-5/6 changes:
+- Foundation: 472 blobs, 275 Python files.
+- Operations: 620 blobs, 429 Python files.
+- Combined: 1,092 blobs, 704 Python files.
+
+Completed implementation outcomes:
+- Foundation #909/#910 closed after merged #921 and green required checks.
+- Operations #650, #655, #656, #657, #661 and #665 are closed with their concrete scan-derived fixes merged.
+- Foundation #915 runtime capability-receipt gap is closed.
+- The adaptive cross-language scan methodology is now durable in canonical agent/documentation guidance.
+
+The original 1,083-path count remains the coverage baseline for the scan wave itself; the 1,092-path count is the post-merge live-tree state. Future scans must start from the new live inventory.
