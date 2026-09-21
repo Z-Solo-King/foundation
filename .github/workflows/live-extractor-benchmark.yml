@@ -40,7 +40,7 @@ jobs:
             core.setOutput("ref", response.data.commit.sha);
 
   benchmark:
-    needs: resolve_operations_ref:
+    needs: resolve_operations_ref
     name: ${{ matrix.case }} pass ${{ matrix.pass }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
