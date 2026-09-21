@@ -31,6 +31,18 @@ Reduce mutation parallelism when two lanes approach the same file surface, dupli
 
 Never leave a lane idle solely because another lane is waiting on CI.
 
+## Capacity conservation / no-idle lanes
+
+A lane is a capacity slot, not a permanent language assignment.
+
+When the current candidate reaches a gate, merges, becomes blocked, or finishes its evidence slice, immediately assign that lane another compatible migration/evidence packet. Prefer a different language or component where practical.
+
+Do not leave a lane idle because another lane is waiting on CI, runtime evidence, or an external dependency.
+
+A lane is only idle when a live queue refresh proves there is no compatible actionable migration, differential, benchmark, security, portability, reference-optimization, or acceptance packet available.
+
+Avoid false diversity: repeated work on the same contract/file/benchmark does not count as additional migration capacity.
+
 ## Uniformity
 
 Every lane reports:
