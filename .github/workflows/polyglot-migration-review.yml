@@ -30,9 +30,9 @@ on:
   workflow_dispatch:
     inputs:
       operations_ref:
-        description: Immutable Operations revision to review
+        description: Optional immutable Operations revision; blank uses current main SHA resolved at run start
         required: false
-        default: f38b24930a528a5e37f129e3b6ea4533b3b717b5
+        default: ""
         type: string
 
 permissions:
@@ -41,12 +41,47 @@ permissions:
   attestations: write
 
 jobs:
+  resolve_operations_ref:
+    name: Resolve immutable Operations revision
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      ref: ${{ steps.resolve.outputs.ref }}
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Resolve Operations ref
+        id: resolve
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          github-token: ${{ steps.operations-app.outputs.token }}
+          script: |
+            const requested = (context.payload.inputs?.operations_ref || "").trim();
+            if (requested) {
+              core.setOutput("ref", requested);
+              return;
+            }
+            const response = await github.rest.repos.getBranch({
+              owner: "Z-Solo-King",
+              repo: "operations",
+              branch: "main",
+            });
+            core.setOutput("ref", response.data.commit.sha);
+
   review:
+    needs: resolve_operations_ref
     name: Cross-language migration review
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      OPERATIONS_REF: \${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+      OPERATIONS_REF: ${{ needs.resolve_operations_ref.outputs.ref }}
     steps:
       - name: Checkout Foundation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -55,8 +90,8 @@ jobs:
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
-          app-id: \${{ secrets.OPERATIONS_APP_ID }}
-          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
@@ -65,14 +100,14 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: \${{ env.OPERATIONS_REF }}
-          token: \${{ steps.operations-app.outputs.token }}
+          ref: ${{ env.OPERATIONS_REF }}
+          token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
       - name: Verify immutable Operations revision
         working-directory: operations
         env:
-          EXPECTED: \${{ env.OPERATIONS_REF }}
+          EXPECTED: ${{ env.OPERATIONS_REF }}
         shell: bash
         run: |
           set -euo pipefail
@@ -84,7 +119,7 @@ jobs:
 
       - name: Run migration review
         env:
-          PYTHONPATH: \${{ github.workspace }}/operations
+          PYTHONPATH: ${{ github.workspace }}/operations
         run: |
           set -euo pipefail
           mkdir -p .runtime
