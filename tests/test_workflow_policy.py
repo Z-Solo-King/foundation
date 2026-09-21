@@ -120,6 +120,16 @@ def test_production_release_has_one_minimal_main_push_job():
 
 
 
+def test_production_release_fails_closed_and_retains_chat_policy_receipts():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    workflow = (ROOT / ".github/workflows/heroic-ai-production-release.yml").read_text(encoding="utf-8")
+    assert "ALLOW_PERSISTENCE_DEFERRED" in deployment
+    assert "no explicit bootstrap override is active; failing closed" in deployment
+    assert "concurrent-chat-1.json" in deployment
+    assert "concurrent-chat-2.json" in deployment
+    assert "policy-block.json" in deployment
+    assert "production-runtime-acceptance-receipts" in workflow
+
 def test_public_worker_propagates_client_request_cancellation_to_operations():
     worker = (ROOT / "worker.py").read_text(encoding="utf-8")
     wrangler = WRANGLER.read_text(encoding="utf-8")
