@@ -1,5 +1,17 @@
 ## 2026-09-22 LIVE GITHUB REF RECONCILIATION
 
+**Latest live branch heads queried from GitHub:**
+- Foundation `main`: `86a7d02b86a78102bf412cdce050c1f9e6c95bd5`
+- Operations `main`: `7c8981eac2f943fc234a659f82aa05349cce111b`
+
+**Verified runtime implementation pins:**
+- Foundation: `e5b26061861e570396b73993a3c8733496cb1956`
+- Operations: `7cf73e6a15b1e1d090f023915f62e5a2bd066b8e`
+
+**Important:** Operations `main` now contains merged migration-candidate/test fixes after the verified runtime pin. Those candidate revisions are not production/runtime certification and must not silently replace the immutable runtime pin in acceptance workflows. The coverage/runtime guard must fail closed when non-documentation drift exists after the approved pin.
+
+## 2026-09-22 LIVE GITHUB REF RECONCILIATION
+
 **Live branch heads observed immediately before this synchronization:**
 - Foundation `main`: `baad1daf07ea7d0307077631c4afb3a27fa31e78`
 - Operations `main`: `e13a83cf0513edf065bfe2ddb9efc0e4443360d3`
