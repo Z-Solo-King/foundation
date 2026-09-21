@@ -1,3 +1,19 @@
+## 2026-09-21 LIVE HANDOFF
+
+Current GitHub heads:
+- Foundation main: e50a84ee239937967f9c23412e94521d347e3466
+- Operations main: 44c4dc2189efa9b5a6f0e5648f5c892c55b45746
+
+Current implementation PR: Foundation #921 fixes #909/#910 with closed ResearchLifecycle semantics and bounded worker materialization.
+
+Recently merged scan-derived Operations corrections: #650 Go fanout lifecycle/cancellation/deterministic receipt pilot; #655 ResourceLedgerSnapshot deep immutability; #656 explicit malformed provider-runtime diagnostics; #657 aggregate provider-stream output budget; #661 centralized provider configuration parsing; #665 nested-mutation hardening for frozen records.
+
+Remaining queue is intentionally acceptance-driven; runtime-gated issues remain open until their live evidence exists.
+
+Use AGENTS.md and docs/CROSS_LANGUAGE_ADAPTIVE_SCAN_METHOD_2026-09-21.md for all subsequent scan waves.
+
+---
+
 ## 2026-09-20 VERIFIED HANDOFF
 
 Start from Foundation `d4f8be98447d2b6c6d05d1b213941e029f8649a6` and Operations `dd30834aec8f1263d9b35142b1bd16b4ba95f1ca`.
