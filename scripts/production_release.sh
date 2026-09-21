@@ -282,7 +282,14 @@ if [ "$persistence_seed_status" = "200" ] && jq -e '.ok == true and (.sentinel_i
   persistence_seed_ready=true
   echo "Persistence rollover seed: READY"
 elif [ "$persistence_seed_status" = "400" ] || [ "$persistence_seed_status" = "404" ] || [ "$persistence_seed_status" = "503" ]; then
-  echo "Persistence rollover seed unavailable on current deployed revision; continuing first-pin release."
+  if [ "${ALLOW_PERSISTENCE_DEFERRED:-false}" = "true" ]; then
+    echo "Persistence rollover seed unavailable; explicit first-bootstrap override is active. Evidence will remain DEFERRED."
+    cp "$persistence_seed_file" .runtime/persistence-rollover-seed.json
+  else
+    echo "Persistence rollover seed unavailable and no explicit bootstrap override is active; failing closed."
+    cat "$persistence_seed_file" || true
+    exit 1
+  fi
 else
   echo "Unexpected persistence rollover seed response"
   cat "$persistence_seed_file" || true
@@ -374,9 +381,11 @@ echo "POST persistence_verify -> HTTP $persistence_verify_status"
 test "$persistence_verify_status" = "200"
 jq -e '.ok == true and .memory_persisted_across_version == true and .replay_nonce_rejected_after_version_change == true and .cleanup_status == 200' \
   "$RUNNER_TEMP/persistence-rollover-verify.json" >/dev/null
+cp "$RUNNER_TEMP/persistence-rollover-verify.json" .runtime/persistence-rollover-verify.json
 echo "Live memory/replay deployment-boundary acceptance: PASS"
 else
   echo "Live memory/replay deployment-boundary acceptance: DEFERRED"
+  printf '%s\n' '{"status":"DEFERRED","reason":"persistence probe unsupported on prior deployed revision","accepted_only_by_explicit_bootstrap_override":true}' > .runtime/persistence-rollover-verify.json
 fi
 # Exercise the real public-to-private conversational and research paths only after
 # both Workers are deployed and the private provenance gate has passed.
@@ -418,6 +427,45 @@ jq -e --arg request_id "production-chat-${GITHUB_RUN_ID}" \
   '.ok == true and .request_id == $request_id and .response.response_id == ("chat-" + $request_id)' \
   "$RUNNER_TEMP/live-chat-replay.json" >/dev/null
 echo "Live chat idempotency acceptance: PASS"
+
+# True concurrent P0 duplicate acceptance: both requests must converge on one durable response.
+concurrent_chat_payload=$(jq -nc \
+  --arg chat_id "production-concurrent-${GITHUB_RUN_ID}" \
+  --arg request_id "production-concurrent-request-${GITHUB_RUN_ID}" \
+  '{chat_id:$chat_id,request_id:$request_id,message:"Return one concise sentence about authenticated service bindings.",mode:"chat",strict_zero_cost_only:true}')
+concurrent_chat_key="production-concurrent-${GITHUB_RUN_ID}"
+curl -sS --max-time 90 -o "$RUNNER_TEMP/concurrent-chat-1.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: ${concurrent_chat_key}" -d "$concurrent_chat_payload" "$BASE_URL/api/v1/chat" > "$RUNNER_TEMP/concurrent-chat-1.status" &
+concurrent_pid_1=$!
+curl -sS --max-time 90 -o "$RUNNER_TEMP/concurrent-chat-2.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: ${concurrent_chat_key}" -d "$concurrent_chat_payload" "$BASE_URL/api/v1/chat" > "$RUNNER_TEMP/concurrent-chat-2.status" &
+concurrent_pid_2=$!
+wait "$concurrent_pid_1"
+wait "$concurrent_pid_2"
+test "$(cat "$RUNNER_TEMP/concurrent-chat-1.status")" = '200'
+test "$(cat "$RUNNER_TEMP/concurrent-chat-2.status")" = '200'
+jq -e --slurpfile second "$RUNNER_TEMP/concurrent-chat-2.json" '.ok == true and .response.response_id == ($second[0].response.response_id) and .response.result_state == ($second[0].response.result_state)' "$RUNNER_TEMP/concurrent-chat-1.json" >/dev/null
+echo "Live concurrent chat idempotency acceptance: PASS"
+
+# Explicit governed policy denial must be BLOCKED, not a provider call or a transport error.
+policy_block_payload=$(jq -nc \
+  --arg chat_id "production-policy-${GITHUB_RUN_ID}" \
+  --arg request_id "production-policy-request-${GITHUB_RUN_ID}" \
+  '{chat_id:$chat_id,request_id:$request_id,message:"https://example.com/",operation:"map",input_records:[{"id":"policy-probe"}],strict_zero_cost_only:true}')
+policy_block_status=$(curl -sS --max-time 30 -o "$RUNNER_TEMP/policy-block.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: production-policy-${GITHUB_RUN_ID}" -d "$policy_block_payload" "$BASE_URL/api/v1/chat")
+test "$policy_block_status" = '200'
+jq -e '.ok == true and .response.status == "blocked" and .response.result_state == "BLOCKED" and .response.operation == "map"' "$RUNNER_TEMP/policy-block.json" >/dev/null
+echo "Live policy denial acceptance: PASS"
+
+cp "$RUNNER_TEMP/chat-rollover-before.json" .runtime/chat-rollover-before.json
+cp "$RUNNER_TEMP/chat-rollover-after.json" .runtime/chat-rollover-after.json
+cp "$RUNNER_TEMP/concurrent-chat-1.json" .runtime/concurrent-chat-1.json
+cp "$RUNNER_TEMP/concurrent-chat-2.json" .runtime/concurrent-chat-2.json
+cp "$RUNNER_TEMP/policy-block.json" .runtime/policy-block.json
 
 stream_payload=$(jq -nc \
   --arg chat_id "production-stream-${GITHUB_RUN_ID}" \
