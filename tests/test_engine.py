@@ -1,5 +1,7 @@
 """Tests for complete research execution pipeline."""
 
+import pytest
+
 from backend.execution.engine import create_run, start_research, add_observation, verify_and_add_claim, complete_research, summarize_research
 from backend.intelligence.contracts import ResearchContract, ResearchPlan
 from backend.intelligence.observations import Observation, EvidenceSpan
