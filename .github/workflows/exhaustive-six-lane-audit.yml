@@ -1,5 +1,5 @@
 name: Exhaustive six-lane repository audit
-# Scanner revision: 2026-09-22 current-issue register + false-positive hardened governance
+# Scanner revision: 2026-09-22 issue-register + hardened governance + explicit duplicate-symbol coverage
 
 on:
   pull_request:
