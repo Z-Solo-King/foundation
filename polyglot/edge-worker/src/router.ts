@@ -5,41 +5,48 @@ function normalizePath(url: string): string {
   return new URL(url).pathname;
 }
 
-function match(method: HttpMethod, pathname: string, suffix: string): boolean {
-  return method === "GET" && pathname.endsWith(suffix);
+function exact(method: HttpMethod, pathname: string, route: string): boolean {
+  return method === "GET" && pathname === route;
 }
 
-function post(pathname: string, suffix: string): boolean {
-  return pathname.endsWith(suffix);
+function exactPost(pathname: string, route: string): boolean {
+  return pathname === route;
+}
+
+function researchRunPath(pathname: string): boolean {
+  const prefix = "/api/v1/research/";
+  if (!pathname.startsWith(prefix)) return false;
+  const runId = pathname.slice(prefix.length);
+  return runId.length > 0 && !runId.includes("/") && runId !== "." && runId !== "..";
 }
 
 export function matchRoute(request: { method: string; url: string }): RouteMatch {
   const method = request.method.toUpperCase();
   const pathname = normalizePath(request.url);
 
-  if (match("GET", pathname, "/health")) return { route: "health", method: "GET", pathname, requiresAuth: false };
-  if (match("GET", pathname, "/readiness")) return { route: "readiness", method: "GET", pathname, requiresAuth: false };
-  if (match("GET", pathname, "/api/v1/dashboard")) return { route: "dashboard", method: "GET", pathname, requiresAuth: true };
+  if (exact("GET", pathname, "/health")) return { route: "health", method: "GET", pathname, requiresAuth: false };
+  if (exact("GET", pathname, "/readiness")) return { route: "readiness", method: "GET", pathname, requiresAuth: false };
+  if (exact("GET", pathname, "/api/v1/dashboard")) return { route: "dashboard", method: "GET", pathname, requiresAuth: true };
 
-  if (method === "POST" && post(pathname, "/api/v1/chat/stream")) {
+  if (method === "POST" && exactPost(pathname, "/api/v1/chat/stream")) {
     return { route: "chat_stream", method: "POST", pathname, requiresAuth: true };
   }
-  if (method === "POST" && post(pathname, "/api/v1/chat")) {
+  if (method === "POST" && exactPost(pathname, "/api/v1/chat")) {
     return { route: "chat", method: "POST", pathname, requiresAuth: true };
   }
-  if (method === "POST" && post(pathname, "/api/v1/chatbot/diagnostic")) {
+  if (method === "POST" && exactPost(pathname, "/api/v1/chatbot/diagnostic")) {
     return { route: "chatbot_diagnostic", method: "POST", pathname, requiresAuth: true };
   }
-  if (method === "POST" && post(pathname, "/api/v1/storage/diagnostic")) {
+  if (method === "POST" && exactPost(pathname, "/api/v1/storage/diagnostic")) {
     return { route: "storage_diagnostic", method: "POST", pathname, requiresAuth: true };
   }
-  if (method === "POST" && post(pathname, "/api/v1/research/publish")) {
+  if (method === "POST" && exactPost(pathname, "/api/v1/research/publish")) {
     return { route: "research_publish", method: "POST", pathname, requiresAuth: true };
   }
-  if (method === "GET" && pathname.includes("/api/v1/research/")) {
+  if (method === "GET" && researchRunPath(pathname)) {
     return { route: "research_run", method: "GET", pathname, requiresAuth: true };
   }
-  if (method === "POST" && post(pathname, "/api/v1/research")) {
+  if (method === "POST" && exactPost(pathname, "/api/v1/research")) {
     return { route: "research", method: "POST", pathname, requiresAuth: true };
   }
 
