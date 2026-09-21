@@ -2,7 +2,7 @@
 
 **Latest live branch heads queried from GitHub:**
 - Foundation `main`: `86a7d02b86a78102bf412cdce050c1f9e6c95bd5`
-- Operations `main`: `7c8981eac2f943fc234a659f82aa05349cce111b`
+- Operations `main`: `948d826851a7678fdf81a344aeaa21ad1f278e36`
 
 **Verified runtime implementation pins:**
 - Foundation: `e5b26061861e570396b73993a3c8733496cb1956`
@@ -14,7 +14,7 @@
 
 **Live branch heads observed immediately before this synchronization:**
 - Foundation `main`: `baad1daf07ea7d0307077631c4afb3a27fa31e78`
-- Operations `main`: `e13a83cf0513edf065bfe2ddb9efc0e4443360d3`
+- Operations `main`: `948d826851a7678fdf81a344aeaa21ad1f278e36`
 
 **Last verified implementation revisions:**
 - Foundation: `e5b26061861e570396b73993a3c8733496cb1956`
@@ -109,7 +109,7 @@ This section is the continuity anchor for the next maintenance chat. Current Git
 ### Exact repository state
 
 - Foundation `main`: `386dcad577cacf729ee49830548597ff5504de14`
-- Operations `main`: `e13a83cf0513edf065bfe2ddb9efc0e4443360d3`
+- Operations `main`: `948d826851a7678fdf81a344aeaa21ad1f278e36`
 - Foundation production Operations pin target: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
 - Foundation nightly research pin remains: `f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5`
 - Foundation PRs #739, #740, #741, #742, #808, #810, #811, #812, #814, #815, #816, #817 and #818 are merged.
