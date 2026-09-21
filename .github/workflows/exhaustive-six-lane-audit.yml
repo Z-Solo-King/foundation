@@ -1,5 +1,5 @@
 name: Exhaustive six-lane repository audit
-# Scanner revision: 2026-09-22 hardened inventory, issue coverage, and shared-lane execution
+# Scanner revision: 2026-09-22 fault-isolated L3 and reconciled L4
 
 on:
   pull_request:
