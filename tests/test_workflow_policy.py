@@ -325,3 +325,18 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     assert 'OPERATIONS_REF="f40a641d5826c2ab5424e886331a95223bdf748c"' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v2.yml"]
     assert "OPERATIONS_RESEARCH_REF: f40a641d5826c2ab5424e886331a95223bdf748c" in nightly
+
+
+def test_production_operations_compile_guard_is_executable():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert "# Fail before deployment if the pinned Operations tree contains any Python syntax error.\\npython" not in deployment
+    assert '# Fail before deployment if the pinned Operations tree contains any Python syntax error.\npython -m compileall -q "$RUNNER_TEMP/operations"' in deployment
+
+
+def test_polyglot_migration_review_uses_declared_operations_python_runtime():
+    workflow = _workflow_texts()["polyglot-migration-review.yml"]
+    assert 'actions/setup-python@' in workflow
+    assert 'python-version: "3.14"' in workflow
+    setup_index = workflow.index('python-version: "3.14"')
+    install_index = workflow.index("python -m pip install --disable-pip-version-check -e . --no-deps")
+    assert setup_index < install_index
