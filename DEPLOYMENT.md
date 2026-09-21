@@ -20,7 +20,7 @@ The workflow dynamically resolves the live D1 database ID and writes a runner-on
 
 The workflow also owns the protected Operations handoff. Production is pinned to the explicitly approved immutable Operations revision:
 
-`ca9668cc087259d3f4ae74be86ec57cc01f43697`
+`f40a641d5826c2ab5424e886331a95223bdf748c`
 
 The private Operations checkout uses the purpose-specific GitHub App installation credential set:
 
@@ -64,7 +64,7 @@ Do not infer credential purpose from the fact that multiple secrets are consumed
 
 Before the private Operations checkout, the workflow must fail closed unless the GitHub App credentials are present, the App JWT is valid, the installation-token exchange succeeds, and the resulting installation token can read `Z-Solo-King/operations`.
 
-The checkout must then fetch and verify the exact approved revision `ca9668cc087259d3f4ae74be86ec57cc01f43697`. Before Worker packaging, the deployment materializes the pinned public `foundation_core` package through `operations/scripts/sync_public_core.py`; the generated directory is ignored and never committed. The workflow must not silently track `operations/main`, substitute an older pin, or deploy a mutable branch reference.
+The checkout must then fetch and verify the exact approved revision `f40a641d5826c2ab5424e886331a95223bdf748c`. Before Worker packaging, the deployment materializes the pinned public `foundation_core` package through `operations/scripts/sync_public_core.py`; the generated directory is ignored and never committed. The workflow must not silently track `operations/main`, substitute an older pin, or deploy a mutable branch reference.
 
 A successful public Worker deployment does not prove that Operations was deployed. Operations deployment, D1 governance application, protected configuration and private runtime verification remain separately evidenced.
 
