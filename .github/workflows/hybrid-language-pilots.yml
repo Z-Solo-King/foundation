@@ -8,6 +8,11 @@ on:
         required: false
         default: ""
         type: string
+  pull_request:
+    paths:
+      - "polyglot/**"
+      - "docs/**"
+      - ".github/workflows/hybrid-language-pilots.yml"
   push:
     branches: [main]
     paths:
@@ -43,7 +48,6 @@ jobs:
             });
             core.setOutput("ref", response.data.commit.sha);
 
-jobs:
   rust:
     needs: resolve_operations_ref
     name: Rust HTML parser pilot
