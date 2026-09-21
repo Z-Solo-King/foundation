@@ -652,3 +652,66 @@ When a GitHub-only chat reaches a runtime acceptance gate:
 5. close only when the recorded acceptance field matches the documented closure rule.
 
 Never replace this with a code-only assertion.
+
+## 29. Newer post-scan concrete issues discovered after the main migration wave
+
+These issues were created after the earlier #699 sweep and are part of the current handoff. They must not be lost merely because the older audit body predates them.
+
+### #717 — task-envelope/replay protection
+Concrete issues:
+- in-memory replay guard can evict a still-live nonce under capacity pressure;
+- missing `OPERATIONS_DB` can silently downgrade production replay protection;
+- per-request DDL/purge costs governance budget;
+- injected verification clock is ignored by signing/validation path;
+- non-ASCII `compare_digest` inputs can raise `TypeError`;
+- broad D1 error-message matching can misclassify operational failures as replay.
+
+Required acceptance:
+- live nonce cannot be re-admitted;
+- production missing-DB path fails closed;
+- injected-clock verification is deterministic;
+- non-ASCII auth/signatures become stable auth failures;
+- D1 replay classification is precise;
+- measure replay-guard D1 statements.
+
+### #718 — Operations Worker/chat boundary
+Concrete issues:
+- authenticate before parsing oversized request bodies;
+- cap request bytes before materialization;
+- do not return raw exception text;
+- map authorization failures consistently to 401/403;
+- reject string `requested_fields` instead of coercing into characters;
+- record external-provider intent even when generation fails;
+- remove the stray pytest function from production `chat_endpoint.py`;
+- use exact segment-aware route matching and correct 405 behavior;
+- split `handle_chat` into testable stages.
+
+### #719 — resource-ledger lifecycle
+Concrete issues:
+- poison expired rows must not stop reconciliation of later rows;
+- preserve partial progress and failed-row reporting;
+- deadline expiry immediately after reservation must release the reservation;
+- settlement cancellation must not leave resource state unsettled;
+- enumerate every ResourceKind and its actual reservation call site;
+- add reservation/quota conservation invariant probes.
+
+Related to #711. Land the reservation orphan fix before broad ledger lifecycle refactoring.
+
+### #720 — protected policy enforcement/digest
+Concrete issues:
+- `assert_protected(..., False)` is a no-op at current call sites and should not masquerade as an authorization gate;
+- policy digest currently fingerprints policy names rather than semantic gating rules;
+- verify actual digest callers before deciding whether to integrate or remove;
+- acceptance requires a real protected-mutation rejection test or an explicit traceability correction.
+
+### #721 — SSE terminal-result vocabulary
+Concrete issues:
+- `NOT_ATTEMPTED` currently degrades to stream status `failed`;
+- unknown future states also silently become failed;
+- use one closed terminal-outcome vocabulary across chat endpoint and streaming;
+- map `NOT_ATTEMPTED` explicitly;
+- reject unknown states through the existing contract-violation path;
+- retain the event-loop cancellation yield between events.
+
+These newer issues are current implementation backlog; they are not the older live-runtime evidence gates.
+
