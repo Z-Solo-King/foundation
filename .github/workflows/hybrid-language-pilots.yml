@@ -848,6 +848,9 @@ jobs:
       - name: Test
         working-directory: operations
         run: cargo test --manifest-path benchmark/polyglot/rust_link_pagination/Cargo.toml
+      - name: Benchmark
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_link_pagination/Cargo.toml
 
   typescript_acquisition_planner:
     needs: resolve_operations_ref
@@ -911,6 +914,9 @@ jobs:
       - name: Test
         working-directory: operations
         run: cargo test --manifest-path benchmark/polyglot/rust_robots_sitemap/Cargo.toml
+      - name: Benchmark
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_robots_sitemap/Cargo.toml
 
   workflow_yaml_syntax:
     name: All Foundation workflow YAML syntax
