@@ -8,7 +8,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to test
         required: false
-        default: 7cf73e6a15b1e1d090f023915f62e5a2bd066b8e
+        default: c752ba7f6cfa82adfe2e5ce8cd5ecc10b8b04101
         type: string
 
 permissions:
@@ -94,7 +94,7 @@ jobs:
             tests: "tests/test_workflow_policy.py tests/test_cross_module_contract_edges.py tests/test_family_audit.py tests/test_family_semantic_audit.py"
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || '7cf73e6a15b1e1d090f023915f62e5a2bd066b8e' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || 'c752ba7f6cfa82adfe2e5ce8cd5ecc10b8b04101' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Checkout Foundation
@@ -285,17 +285,30 @@ jobs:
               status=$(curl -sS --max-time 60 -o /tmp/live-chat.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-chat" -d "$payload" "$BASE_URL/api/v1/chat")
               test "$status" = 200
               jq -e '.ok == true and (.response.result_state == "COMPLETE" or .response.result_state == "PARTIAL")' /tmp/live-chat.json >/dev/null
+              jq -e --arg rid "$key-request" '.request_id == $rid and .response.response_id == ("chat-" + $rid)' /tmp/live-chat.json >/dev/null
+              policy_payload=$(jq -nc --arg chat_id "$key-policy" --arg request_id "$key-policy-request" '{chat_id:$chat_id,request_id:$request_id,message:"https://example.com/",operation:"map",input_records:[{"id":"policy-probe"}],strict_zero_cost_only:true}')
+              policy_status=$(curl -sS --max-time 30 -o /tmp/live-chat-policy.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-policy" -d "$policy_payload" "$BASE_URL/api/v1/chat")
+              test "$policy_status" = 200
+              jq -e '.ok == true and .response.status == "blocked" and .response.result_state == "BLOCKED" and .response.operation == "map"' /tmp/live-chat-policy.json >/dev/null
               ;;
             idempotency)
               payload=$(jq -nc --arg chat_id "$key-chat" --arg request_id "$key-request" '{chat_id:$chat_id,request_id:$request_id,message:"Return a deterministic one-line acknowledgement for this idempotency probe.",mode:"chat",strict_zero_cost_only:true}')
-              status1=$(curl -sS --max-time 60 -o /tmp/live-idem-1.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-idem" -d "$payload" "$BASE_URL/api/v1/chat")
-              status2=$(curl -sS --max-time 60 -o /tmp/live-idem-2.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-idem" -d "$payload" "$BASE_URL/api/v1/chat")
+              curl -sS --max-time 90 -o /tmp/live-idem-1.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-idem" -d "$payload" "$BASE_URL/api/v1/chat" > /tmp/live-idem-1.status &
+              idem_pid1=$!
+              curl -sS --max-time 90 -o /tmp/live-idem-2.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-idem" -d "$payload" "$BASE_URL/api/v1/chat" > /tmp/live-idem-2.status &
+              idem_pid2=$!
+              wait "$idem_pid1"
+              wait "$idem_pid2"
+              status1=$(cat /tmp/live-idem-1.status)
+              status2=$(cat /tmp/live-idem-2.status)
               test "$status1" = 200 && test "$status2" = 200
               python - <<'PY'
           import json
           one=json.load(open('/tmp/live-idem-1.json')); two=json.load(open('/tmp/live-idem-2.json'))
           assert one.get('ok') is True and two.get('ok') is True
+          assert one.get('request_id') == two.get('request_id')
           assert one.get('response',{}).get('response_id') == two.get('response',{}).get('response_id')
+          assert one.get('response',{}).get('result_state') == two.get('response',{}).get('result_state')
           PY
               ;;
             sse)
