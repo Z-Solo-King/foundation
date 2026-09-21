@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       operations_ref:
-        description: Operations revision to test
-        required: true
-        default: f38b24930a528a5e37f129e3b6ea4533b3b717b5
+        description: Optional immutable Operations revision; blank uses current main SHA resolved at run start
+        required: false
+        default: ""
         type: string
   push:
     branches: [main]
@@ -19,7 +19,42 @@ permissions:
   contents: read
 
 jobs:
+  resolve_operations_ref:
+    name: Resolve immutable Operations revision
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      ref: ${{ steps.resolve.outputs.ref }}
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Resolve Operations ref
+        id: resolve
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          github-token: ${{ steps.operations-app.outputs.token }}
+          script: |
+            const requested = (context.payload.inputs?.operations_ref || "").trim();
+            if (requested) {
+              core.setOutput("ref", requested);
+              return;
+            }
+            const response = await github.rest.repos.getBranch({
+              owner: "Z-Solo-King",
+              repo: "operations",
+              branch: "main",
+            });
+            core.setOutput("ref", response.data.commit.sha);
+
   rust:
+    needs: resolve_operations_ref
     name: Rust HTML parser pilot
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -38,7 +73,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
@@ -52,6 +87,7 @@ jobs:
         run: cargo test --manifest-path experiments/rust_html_kernel/Cargo.toml
 
   go:
+    needs: resolve_operations_ref
     name: Go HTTP fanout pilot
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -70,7 +106,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
@@ -86,6 +122,7 @@ jobs:
           go test -race ./...
 
   typescript:
+    needs: resolve_operations_ref
     name: TypeScript search adapter shadow
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -104,7 +141,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
@@ -123,6 +160,7 @@ jobs:
 
 
   rust_url_identity:
+    needs: resolve_operations_ref
     name: Rust URL identity parity pilot
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -140,7 +178,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -176,6 +214,7 @@ jobs:
 
 
   browser_acquisition:
+    needs: resolve_operations_ref
     name: TypeScript browser acquisition shadow
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -194,7 +233,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
@@ -213,6 +252,7 @@ jobs:
 
 
   rust_text_normalization:
+    needs: resolve_operations_ref
     name: Rust text normalization parity pilot
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -231,7 +271,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
@@ -267,6 +307,7 @@ jobs:
           npm test
 
   rust_url_bench:
+    needs: resolve_operations_ref
     name: Rust URL identity 32x3 benchmark
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -284,7 +325,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -296,6 +337,7 @@ jobs:
         run: cargo bench --manifest-path benchmark/polyglot/rust_url_identity/Cargo.toml --bench normalization
 
   rust_text_bench:
+    needs: resolve_operations_ref
     name: Rust text normalization 32x3 benchmark
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -313,7 +355,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -325,6 +367,7 @@ jobs:
         run: cargo bench --manifest-path experiments/rust_text_normalization/Cargo.toml --bench normalization
 
   rust_html_sample:
+    needs: resolve_operations_ref
     name: Rust HTML parity 32x3 differential benchmark
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -342,7 +385,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -459,7 +502,7 @@ jobs:
                   "p95": pct(0.95),
                   "p99": pct(0.99),
               },
-              "operations_revision": "${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}",
+              "operations_revision": "${{ needs.resolve_operations_ref.outputs.ref }}",
               "python_reference": "extractor_mapper.extraction.generic_html.products_from_html",
               "candidate": "experiments/rust_html_kernel",
           }
@@ -476,6 +519,7 @@ jobs:
           retention-days: 30
 
   rust_url_cli:
+    needs: resolve_operations_ref
     name: Rust URL identity CLI parity smoke
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -493,7 +537,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -507,6 +551,7 @@ jobs:
           test "$(cargo run --quiet --manifest-path benchmark/polyglot/rust_url_identity/Cargo.toml -- https://example.com/a https://example.com/b | wc -l)" -eq 2
 
   ts_search_typecheck:
+    needs: resolve_operations_ref
     name: TypeScript search adapter typecheck
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -524,7 +569,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Node
@@ -538,6 +583,7 @@ jobs:
           npm run typecheck
 
   ts_browser_typecheck:
+    needs: resolve_operations_ref
     name: TypeScript browser acquisition typecheck
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -555,7 +601,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Node
@@ -601,6 +647,7 @@ jobs:
           npm run typecheck
 
   go_bench:
+    needs: resolve_operations_ref
     name: Go fanout 32x3 benchmark
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -618,7 +665,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Go
@@ -630,6 +677,7 @@ jobs:
         run: go test -run '^$' -bench . -count=3
 
   go_vet:
+    needs: resolve_operations_ref
     name: Go fanout static analysis
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -647,7 +695,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Go
@@ -659,6 +707,7 @@ jobs:
         run: go vet ./...
 
   python_language_policy:
+    needs: resolve_operations_ref
     name: Migration language policy regression gate
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -676,7 +725,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Determine pinned Foundation public-core revision
@@ -771,6 +820,7 @@ jobs:
           PY
 
   rust_link_pagination:
+    needs: resolve_operations_ref
     name: Rust Link-header pagination parity pilot
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -788,7 +838,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
@@ -800,6 +850,7 @@ jobs:
         run: cargo test --manifest-path benchmark/polyglot/rust_link_pagination/Cargo.toml
 
   typescript_acquisition_planner:
+    needs: resolve_operations_ref
     name: TypeScript acquisition planner shadow
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -817,7 +868,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Node
@@ -832,6 +883,7 @@ jobs:
           npm test
 
   rust_robots_sitemap:
+    needs: resolve_operations_ref
     name: Rust robots sitemap parity pilot
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -849,7 +901,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '99ad7e946a98d7a4f1b5131b9a1fa87e41ae9b03' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
