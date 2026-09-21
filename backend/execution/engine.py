@@ -71,7 +71,7 @@ def create_run(run_id: str, contract: ResearchContract, plan: ResearchPlan) -> R
 
 def _transition_terminal(run: ResearchRun, status: ResearchLifecycle) -> ResearchRun:
     if run.status is not ResearchLifecycle.RUNNING:
-        raise ValueError(f"cannot terminalize run with status {run.status}")
+        raise ValueError(f"invalid or unsupported terminal transition from {run.status}")
     if status not in TERMINAL_RESEARCH_LIFECYCLES:
         raise ValueError(f"invalid terminal status {status}")
     return ResearchRun(
