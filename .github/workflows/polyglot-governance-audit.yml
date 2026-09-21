@@ -33,19 +33,44 @@ on:
       operations_ref:
         description: Immutable Operations revision to audit
         required: false
-        default: 388bff7f2bf93aadad5bf1df27cf95ae223f8f4f
+        default: ""
         type: string
 
 permissions:
   contents: read
 
 jobs:
+  resolve_operations_ref:
+    name: Resolve immutable Operations revision
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      ref: ${{ steps.resolve.outputs.ref }}
+    steps:
+      - name: Resolve Operations ref
+        id: resolve
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          script: |
+            const requested = (context.payload.inputs?.operations_ref || "").trim();
+            if (requested) {
+              core.setOutput("ref", requested);
+              return;
+            }
+            const response = await github.rest.repos.getBranch({
+              owner: "Z-Solo-King",
+              repo: "operations",
+              branch: "main",
+            });
+            core.setOutput("ref", response.data.commit.sha);
+
   audit:
+    needs: resolve_operations_ref:
     name: Full cross-language governance scoreboard
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      OPERATIONS_REF: \${{ inputs.operations_ref || '388bff7f2bf93aadad5bf1df27cf95ae223f8f4f' }}
+      OPERATIONS_REF: ${{ needs.resolve_operations_ref.outputs.ref }}
     steps:
       - name: Checkout Foundation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
