@@ -140,3 +140,17 @@ test("empty partial response still emits terminal framing with identity and dige
   assert.match(payload, /event: done/);
   assert.match(payload, /"output_digest":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"/);
 });
+
+
+test("SSE size gate fails before retaining later chunks", async () => {
+  const body = {
+    ok: true,
+    response: {
+      response_id: "early-limit",
+      result_state: "PARTIAL",
+      generation_status: "deterministic_fallback",
+      text: "x".repeat(10_000),
+    },
+  };
+  await assert.rejects(frameChatSse(body, 120), /stream response exceeds supported size/);
+});
