@@ -91,6 +91,7 @@ jobs:
           github-token: ${{ github.token }}
           script: |
             const fs = require("fs");
+            fs.mkdirSync(".runtime/exhaustive-audit", { recursive: true });
             const register = JSON.parse(
               fs.readFileSync(
                 "operations-repo/benchmark/polyglot/current_open_issue_inventory.json",
