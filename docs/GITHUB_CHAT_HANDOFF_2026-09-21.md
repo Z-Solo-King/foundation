@@ -3,7 +3,7 @@
 ## Canonical repository state
 
 - Foundation `main`: `0e5e3532e91ea40040b718a8dcbf7e3f66919d30`
-- Operations `main`: `4a471024c2885c3167d1ec9b4b3c648b9e324e7e`
+- Operations `main`: `a03c90fde14ccf89535020f50a5e15e51123c1b3`
 - Cloudflare configuration is intentionally **not modified from this GitHub-only handoff**; live runtime evidence remains a separate acceptance surface.
 - GitHub Actions remains the sole Foundation production deployment authority. Cloudflare Workers Builds and Deploy Hooks remain out of scope for GitHub-side changes.
 
@@ -30,7 +30,7 @@ Prepared but not yet merged:
 - explicit timeout/concurrency controls across the affected workflows;
 - retirement of obsolete push-probe workflows;
 - retirement of duplicate `edge_ts/` and `shadow/edge-ts/` copies in favor of `polyglot/edge-worker/`;
-- canonical Operations pin advanced to `4a471024c2885c3167d1ec9b4b3c648b9e324e7e`;
+- canonical Operations pin advanced to `a03c90fde14ccf89535020f50a5e15e51123c1b3`;
 - workflow-policy tests updated to enforce the new contract.
 
 ## New blocker discovered after the earlier scan
