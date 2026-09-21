@@ -175,7 +175,8 @@ git -C "$RUNNER_TEMP/operations" fetch --no-tags --depth=1 origin "$OPERATIONS_R
 git -C "$RUNNER_TEMP/operations" checkout --detach "$OPERATIONS_REF"
 test "$(git -C "$RUNNER_TEMP/operations" rev-parse HEAD)" = "$OPERATIONS_REF"
 
-# Fail before deployment if the pinned Operations tree contains any Python syntax error.\npython -m compileall -q "$RUNNER_TEMP/operations"
+# Fail before deployment if the pinned Operations tree contains any Python syntax error.
+python -m compileall -q "$RUNNER_TEMP/operations"
 
 # Run the bounded cross-repository audit before touching production. This is evidence
 # collection inside the canonical production owner, not a second deployment authority.
