@@ -181,7 +181,6 @@ jobs:
         run: cargo test --manifest-path benchmark/polyglot/rust_url_identity/Cargo.toml
 
   edge_worker:
-    needs: resolve_operations_ref
     name: TypeScript public edge contract shadow
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -278,7 +277,6 @@ jobs:
 
 
   frontend_state:
-    needs: resolve_operations_ref
     name: TypeScript frontend lifecycle parity shadow
     runs-on: ubuntu-latest
     timeout-minutes: 10
