@@ -743,7 +743,7 @@ def test_d1_store_reclaims_expired_admission_lease():
     assert lease.expires_at == 181
 
 
-def test_d1_store_blocks_an_active_duplicate_admission():
+def test_d1_store_delegates_active_chat_duplicate_to_idempotency_authority():
     import asyncio
 
     db = IdempotentAdmissionDB()
@@ -769,8 +769,70 @@ def test_d1_store_blocks_an_active_duplicate_admission():
             now=121,
         )
     )
-    assert decision.outcome.value == "concurrency_limited"
-    assert decision.allowed is False
+    assert decision.outcome.value == "accepted"
+    assert decision.allowed is True
+    assert lease is None
+
+
+def test_d1_store_delegates_active_stream_duplicate_to_idempotency_authority():
+    import asyncio
+
+    db = IdempotentAdmissionDB()
+    store = D1AdmissionStore(db)
+    first_decision, first_lease = asyncio.run(
+        store.acquire(
+            subject_fingerprint="subject-1",
+            route=AdmissionRoute.STREAM,
+            policy=AdmissionPolicy(),
+            event_id="active-stream-key",
+            now=120,
+        )
+    )
+    assert first_decision.allowed is True
+    assert first_lease is not None
+
+    decision, lease = asyncio.run(
+        store.acquire(
+            subject_fingerprint="subject-1",
+            route=AdmissionRoute.STREAM,
+            policy=AdmissionPolicy(),
+            event_id="active-stream-key",
+            now=121,
+        )
+    )
+    assert decision.outcome.value == "accepted"
+    assert decision.allowed is True
+    assert lease is None
+
+
+def test_d1_store_delegates_active_research_duplicate_to_idempotency_authority():
+    import asyncio
+
+    db = IdempotentAdmissionDB()
+    store = D1AdmissionStore(db)
+    first_decision, first_lease = asyncio.run(
+        store.acquire(
+            subject_fingerprint="subject-1",
+            route=AdmissionRoute.RESEARCH,
+            policy=AdmissionPolicy(),
+            event_id="active-research-key",
+            now=120,
+        )
+    )
+    assert first_decision.allowed is True
+    assert first_lease is not None
+
+    decision, lease = asyncio.run(
+        store.acquire(
+            subject_fingerprint="subject-1",
+            route=AdmissionRoute.RESEARCH,
+            policy=AdmissionPolicy(),
+            event_id="active-research-key",
+            now=121,
+        )
+    )
+    assert decision.outcome.value == "accepted"
+    assert decision.allowed is True
     assert lease is None
 
 
