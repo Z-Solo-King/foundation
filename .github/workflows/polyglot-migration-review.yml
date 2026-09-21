@@ -88,6 +88,32 @@ jobs:
             });
             core.setOutput("ref", response.data.commit.sha);
 
+      - name: Checkout immutable Operations source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ steps.resolve.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Verify immutable Operations revision
+        working-directory: operations
+        env:
+          EXPECTED: ${{ steps.resolve.outputs.ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED"
+
+      - name: Upload immutable Operations source
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: polyglot-operations-source
+          path: operations
+          include-hidden-files: true
+          retention-days: 1
+
+
   review:
     needs: resolve_operations_ref
     name: Cross-language migration review
@@ -99,28 +125,16 @@ jobs:
       - name: Checkout Foundation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
-      - name: Create Operations read token
-        id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+      - name: Download immutable Operations source
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          app-id: \${{ secrets.OPERATIONS_APP_ID }}
-          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
-          owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-
-      - name: Checkout immutable Operations review policy
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: Z-Solo-King/operations
-          ref: \${{ env.OPERATIONS_REF }}
-          token: \${{ steps.operations-app.outputs.token }}
-          path: operations
+          name: polyglot-operations-source
+          path: .
 
       - name: Verify immutable Operations revision
         working-directory: operations
         env:
-          EXPECTED: \${{ env.OPERATIONS_REF }}
+          EXPECTED: ${{ env.OPERATIONS_REF }}
         shell: bash
         run: |
           set -euo pipefail
