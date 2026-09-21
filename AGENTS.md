@@ -2,7 +2,7 @@
 
 **Latest live branch heads queried from GitHub:**
 - Foundation `main`: `86a7d02b86a78102bf412cdce050c1f9e6c95bd5`
-- Operations `main`: `7c8981eac2f943fc234a659f82aa05349cce111b`
+- Operations `main`: `948d826851a7678fdf81a344aeaa21ad1f278e36`
 
 **Verified runtime implementation pins:**
 - Foundation: `e5b26061861e570396b73993a3c8733496cb1956`
@@ -14,7 +14,7 @@
 
 **Live branch heads observed immediately before this synchronization:**
 - Foundation `main`: `baad1daf07ea7d0307077631c4afb3a27fa31e78`
-- Operations `main`: `e13a83cf0513edf065bfe2ddb9efc0e4443360d3`
+- Operations `main`: `948d826851a7678fdf81a344aeaa21ad1f278e36`
 
 **Last verified implementation revisions:**
 - Foundation: `e5b26061861e570396b73993a3c8733496cb1956`
@@ -39,7 +39,7 @@ Documentation-only handoff commits may advance `main` without changing the verif
 
 Refresh live GitHub state before every mutation. Current canonical heads:
 - Foundation `main`: `b2752d6a63aaf646743cc8173fa83b4271b02160`
-- Operations `main`: `e13a83cf0513edf065bfe2ddb9efc0e4443360d3`
+- Operations `main`: `948d826851a7678fdf81a344aeaa21ad1f278e36`
 - Foundation immutable Operations pin: `0fa576c10fee30221150110865b11c0132de4575`
 
 Merged repair/documentation waves: Foundation #945/#949/#951/#952/#954/#955/#956; Operations #745-#749. Foundation #953 is closed. Current remaining acceptance queue: Foundation #58/#157/#452; Operations #119/#132/#145/#197/#340/#352/#385/#597/#603/#699/#711.
