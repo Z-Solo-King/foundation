@@ -1,3 +1,18 @@
+## 2026-09-21 FINAL LIVE SYNC
+
+- Foundation main: 985fd526913bdf48fffc73cfc7e834d38dd449de
+- Operations main: 2da42873fa2ff7ae05df00973a7ba584cdd1c6a9
+- Foundation #921 merged; #909 and #910 are closed as completed.
+- Foundation documentation synchronization #922 is merged.
+- Operations documentation synchronization #670 is merged.
+- Scan-derived Operations implementation issues #650/#655/#656/#657/#661/#665 are closed/merged.
+- Current tree inventory after all merges: Foundation 472 blobs / 275 Python; Operations 620 blobs / 429 Python; combined 1,092 blobs / 704 Python.
+- Remaining open issues are acceptance gates: Foundation #58/#157/#452; Operations #119/#132/#145/#197/#340/#352/#385/#597/#603.
+- No open implementation PR remains from the rounds 5-6 code findings.
+- Runtime/production evidence remains separate from repository CI and is never inferred from source inspection or green tests.
+
+---
+
 ## 2026-09-21 CURRENT LIVE SYNC
 
 Live Git refs at sync time:
