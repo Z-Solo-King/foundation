@@ -1,5 +1,5 @@
 name: Exhaustive six-lane repository audit
-# Scanner revision: 2026-09-22 hardened findings
+# Scanner revision: 2026-09-22 hardened inventory, issue coverage, and shared-lane execution
 
 on:
   pull_request:
@@ -22,7 +22,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: foundation-exhaustive-audit-${{ github.ref }}
+  group: foundation-exhaustive-audit-v2-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
