@@ -191,12 +191,21 @@ async def test_worker_http_all_branches(monkeypatch):
     class Request:
         def __init__(self, method, url, payload=None, headers=None): self.method=method; self.url=url; self._payload=payload; self.headers=headers or {}
         async def json(self): return self._payload
+    class FakeAssetResponse:
+        def __init__(self):
+            self.body = b"STATIC_ASSET_RESPONSE"
+            self.status = 200
+            self.headers = {}
+
     class FakeAssets:
-        async def fetch(self, request): return "STATIC_ASSET_RESPONSE"
+        async def fetch(self, request): return FakeAssetResponse()
     env = SimpleNamespace(DB=FakeDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets())
     entry = worker.Default(); entry.env = env
     asset_response = await entry.fetch(Request("GET", "https://x/"))
-    assert asset_response == "STATIC_ASSET_RESPONSE"
+    assert asset_response.status == 200
+    assert asset_response.body == b"STATIC_ASSET_RESPONSE"
+    assert asset_response.headers["Content-Security-Policy"].startswith("default-src 'self'")
+    assert asset_response.headers["X-Frame-Options"] == "DENY"
     unauthorized_get = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer bad"})); assert "unauthorized" in str(unauthorized_get)
     ready = await entry.fetch(Request("GET", "https://x/readiness")); assert ready
     not_found = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer secret"})); assert not_found
