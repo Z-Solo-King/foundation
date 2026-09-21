@@ -1,8 +1,8 @@
 ## 2026-09-22 LIVE GITHUB REF RECONCILIATION
 
-**Live branch heads (queried from GitHub):**
+**Live branch heads observed immediately before this synchronization:**
 - Foundation `main`: `baad1daf07ea7d0307077631c4afb3a27fa31e78`
-- Operations `main`: `5ae639f547d67c96bb680fa7afee2dbe741d16a5`
+- Operations `main`: `e13a83cf0513edf065bfe2ddb9efc0e4443360d3`
 
 **Last verified implementation revisions:**
 - Foundation: `e5b26061861e570396b73993a3c8733496cb1956`
@@ -97,7 +97,7 @@ This section is the continuity anchor for the next maintenance chat. Current Git
 ### Exact repository state
 
 - Foundation `main`: `386dcad577cacf729ee49830548597ff5504de14`
-- Operations `main`: `f87b565be102df93baca760261657a8c949479da`
+- Operations `main`: `e13a83cf0513edf065bfe2ddb9efc0e4443360d3`
 - Foundation production Operations pin target: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`
 - Foundation nightly research pin remains: `f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5`
 - Foundation PRs #739, #740, #741, #742, #808, #810, #811, #812, #814, #815, #816, #817 and #818 are merged.
