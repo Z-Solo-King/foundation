@@ -328,13 +328,14 @@ def test_canonical_operations_pin_matches_latest_migration_head():
 
 
 
-def test_coverage_runtime_matrix_allows_docs_only_operations_pin_drift():
+def test_coverage_runtime_matrix_validates_immutable_operations_pin():
     workflow = _workflow_texts()["coverage-driven-runtime-matrix.yml"]
-    assert "compare/${PINNED_OPERATIONS_REF}...${current_main}" in workflow
-    assert "compare_too_large" in workflow
-    assert "operations_runtime_drift" in workflow
-    assert "AGENTS.md|README.md|docs/*" in workflow
+    assert "Validate immutable Operations acceptance pin" in workflow
+    assert '[[ ! "$PINNED_OPERATIONS_REF" =~ ^[0-9a-f]{40}$ ]]' in workflow
+    assert "Unpromoted Operations main drift" in workflow
     assert "stale_operations_pin" not in workflow
+    assert "operations_runtime_drift" not in workflow
+
 def test_production_operations_compile_guard_is_executable():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert "# Fail before deployment if the pinned Operations tree contains any Python syntax error.\\npython" not in deployment
