@@ -872,6 +872,7 @@ jobs:
           npm test
 
   rust_robots_sitemap:
+    needs: resolve_operations_ref
     name: Rust robots sitemap parity pilot
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -889,7 +890,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '99ad7e946a98d7a4f1b5131b9a1fa87e41ae9b03' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Setup Rust
