@@ -8,7 +8,7 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "f38b24930a528a5e37f129e3b6ea4533b3b717b5"
+CANONICAL_OPERATIONS_REF = "d3c680ce570f90975cc78a48952a40f51f70ac3c"
 CANONICAL_OPERATIONS_SERVICE = "research-intelligence-engine-private"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 PRODUCTION_WORKFLOW = "heroic-ai-production-release.yml"
@@ -138,7 +138,9 @@ def test_public_worker_static_assets_binding_is_declared():
 
     worker = (ROOT / "worker.py").read_text(encoding="utf-8")
     assert 'getattr(self.env, "ASSETS", None)' in worker
-    assert "return await assets.fetch(request)" in worker
+    assert "response = await assets.fetch(request)" in worker
+    assert "Content-Security-Policy" in worker
+    assert 'X-Frame-Options\"] = "DENY"' in worker
 
 
 def test_production_script_preserves_static_asset_binding_and_diagnostic_smokes():
@@ -285,3 +287,43 @@ def test_foundation_bridge_records_run_and_job_creation_control_plane_evidence()
     assert '/git/ref/heads/${FOUNDATION_REF}' in workflow
     assert 'target_run_id' in workflow
     assert 'target_job_count' in workflow
+
+
+def test_hardened_workflows_have_timeout_and_concurrency_contract():
+    texts = _workflow_texts()
+    affected = {
+        "codeql.yml",
+        "context-budget.yml",
+        "required-pr-checks.yml",
+        "autonomous-scorecard.yml",
+        "canonical-nightly-pin-repair.yml",
+        "release-quality-regression.yml",
+        "nightly-research-contract.yml",
+        "main-push-actions-secret-probe.yml",
+        "main-push-actions-control-plane-probe.yml",
+        "main-push-actions-control-plane-probe-v2.yml",
+        "cross-repository-contract-drift.yml",
+        "coverage-driven-runtime-matrix.yml",
+        "live-extractor-benchmark.yml",
+        "canonical-workflow-dispatch-acceptance.yml",
+        "hybrid-language-pilots.yml",
+    }
+    for name in affected:
+        text = texts[name]
+        assert "concurrency:" in text, name
+        assert len(re.findall(r"^\s+runs-on:\s+\S+\s*$", text, re.MULTILINE)) == len(
+            re.findall(r"^\s+timeout-minutes:\s+\d+\s*$", text, re.MULTILINE)
+        ), name
+
+
+def test_superseded_nightly_variants_are_retired():
+    texts = _workflow_texts()
+    assert "nightly-multi-agent-research-v3.yml" not in texts
+    assert "nightly-research-v4.yml" not in texts
+
+
+def test_canonical_operations_pin_matches_latest_migration_head():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'OPERATIONS_REF="d3c680ce570f90975cc78a48952a40f51f70ac3c"' in deployment
+    nightly = texts = _workflow_texts()["nightly-multi-agent-research-v2.yml"]
+    assert "OPERATIONS_RESEARCH_REF: d3c680ce570f90975cc78a48952a40f51f70ac3c" in nightly
