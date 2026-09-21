@@ -302,7 +302,6 @@ jobs:
     timeout-minutes: 20
     needs: scenario
     if: always()
-    timeout-minutes: 10
     steps:
       - name: Download scenario evidence
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
