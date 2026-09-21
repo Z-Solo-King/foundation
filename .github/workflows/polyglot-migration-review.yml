@@ -27,12 +27,24 @@ on:
       - "benchmark/polyglot/**"
       - "docs/**"
       - ".github/workflows/polyglot-migration-review.yml"
+  pull_request:
+    paths:
+      - "**/*.py"
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.js"
+      - "**/*.jsx"
+      - "**/*.rs"
+      - "**/*.go"
+      - "benchmark/polyglot/**"
+      - "docs/**"
+      - ".github/workflows/polyglot-migration-review.yml"
   workflow_dispatch:
     inputs:
       operations_ref:
         description: Immutable Operations revision to review
         required: false
-        default: f38b24930a528a5e37f129e3b6ea4533b3b717b5
+        default: ""
         type: string
 
 permissions:
@@ -41,12 +53,37 @@ permissions:
   attestations: write
 
 jobs:
+  resolve_operations_ref:
+    name: Resolve immutable Operations revision
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      ref: ${{ steps.resolve.outputs.ref }}
+    steps:
+      - name: Resolve Operations ref
+        id: resolve
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          script: |
+            const requested = (context.payload.inputs?.operations_ref || "").trim();
+            if (requested) {
+              core.setOutput("ref", requested);
+              return;
+            }
+            const response = await github.rest.repos.getBranch({
+              owner: "Z-Solo-King",
+              repo: "operations",
+              branch: "main",
+            });
+            core.setOutput("ref", response.data.commit.sha);
+
   review:
+    needs: resolve_operations_ref:
     name: Cross-language migration review
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      OPERATIONS_REF: \${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+      OPERATIONS_REF: ${{ needs.resolve_operations_ref.outputs.ref }}
     steps:
       - name: Checkout Foundation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
