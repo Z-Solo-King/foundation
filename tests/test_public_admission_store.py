@@ -743,6 +743,63 @@ def test_d1_store_reclaims_expired_admission_lease():
     assert lease.expires_at == 181
 
 
+def test_d1_store_keeps_released_non_idempotent_duplicate_on_admission_decision():
+    import asyncio
+
+    db = IdempotentAdmissionDB()
+    db.events["cheap-key"] = {
+        "event_id": "cheap-key",
+        "window_start": 120,
+        "subject_fingerprint": "subject-1",
+        "route": "cheap_read",
+        "cost_units": 1,
+        "lease_expires_at": 180,
+        "released_at": 150,
+    }
+    decision, lease = asyncio.run(
+        D1AdmissionStore(db).acquire(
+            subject_fingerprint="subject-1",
+            route=AdmissionRoute.CHEAP_READ,
+            policy=AdmissionPolicy(),
+            event_id="cheap-key",
+            now=121,
+        )
+    )
+    assert decision.allowed is True
+    assert lease is None
+
+
+def test_d1_store_blocks_active_non_idempotent_duplicate():
+    import asyncio
+
+    db = IdempotentAdmissionDB()
+    store = D1AdmissionStore(db)
+    first_decision, first_lease = asyncio.run(
+        store.acquire(
+            subject_fingerprint="subject-1",
+            route=AdmissionRoute.CHEAP_READ,
+            policy=AdmissionPolicy(),
+            event_id="cheap-active-key",
+            now=120,
+        )
+    )
+    assert first_decision.allowed is True
+    assert first_lease is not None
+
+    decision, lease = asyncio.run(
+        store.acquire(
+            subject_fingerprint="subject-1",
+            route=AdmissionRoute.CHEAP_READ,
+            policy=AdmissionPolicy(),
+            event_id="cheap-active-key",
+            now=121,
+        )
+    )
+    assert decision.outcome.value == "concurrency_limited"
+    assert decision.allowed is False
+    assert lease is None
+
+
 def test_d1_store_delegates_active_chat_duplicate_to_idempotency_authority():
     import asyncio
 
