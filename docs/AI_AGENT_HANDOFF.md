@@ -1,3 +1,15 @@
+## 2026-09-22 LIVE GITHUB REF RECONCILIATION
+
+**Live branch heads (queried from GitHub):**
+- Foundation `main`: `baad1daf07ea7d0307077631c4afb3a27fa31e78`
+- Operations `main`: `5ae639f547d67c96bb680fa7afee2dbe741d16a5`
+
+**Last verified implementation revisions:**
+- Foundation: `e5b26061861e570396b73993a3c8733496cb1956`
+- Operations: `7cf73e6a15b1e1d090f023915f62e5a2bd066b8e`
+
+Documentation-only handoff commits may advance `main` without changing the verified runtime implementation revision. Always refresh live refs before mutation and keep live branch heads separate from runtime-certification pins.
+
 ## 2026-09-21 FINAL HANDOFF
 
 Current heads:
