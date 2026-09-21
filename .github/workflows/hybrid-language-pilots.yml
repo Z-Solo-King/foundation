@@ -884,6 +884,171 @@ jobs:
         working-directory: operations
         run: cargo bench --manifest-path benchmark/polyglot/rust_jsonld_product/Cargo.toml --bench normalization
 
+  rust_link_differential:
+    needs: resolve_operations_ref
+    name: Rust Link-header Python differential parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659
+        with:
+          toolchain: stable
+      - name: Install Python reference runtime
+        working-directory: operations
+        run: python -m pip install --disable-pip-version-check -e .
+      - name: Generate Python reference
+        working-directory: operations
+        run: python benchmark/polyglot/rust_link_pagination/python_reference.py benchmark/polyglot/rust_link_pagination/corpus.jsonl python-link.jsonl
+      - name: Generate Rust candidate
+        working-directory: operations
+        run: cargo run --quiet --manifest-path benchmark/polyglot/rust_link_pagination/Cargo.toml --bin differential -- benchmark/polyglot/rust_link_pagination/corpus.jsonl rust-link.jsonl
+      - name: Compare exact outputs
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          py=[json.loads(v) for v in Path("python-link.jsonl").read_text().splitlines() if v]
+          rs=[json.loads(v) for v in Path("rust-link.jsonl").read_text().splitlines() if v]
+          assert len(py)==len(rs)==32
+          assert py==rs, "Rust Link-header parser diverges from Python"
+          print("Link-header differential parity: PASS (32/32)")
+          PY
+      - name: Benchmark Rust candidate
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_link_pagination/Cargo.toml
+
+  rust_robots_differential:
+    needs: resolve_operations_ref
+    name: Rust robots/sitemap Python differential parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659
+        with:
+          toolchain: stable
+      - name: Install Python reference runtime
+        working-directory: operations
+        run: python -m pip install --disable-pip-version-check -e .
+      - name: Generate Python reference
+        working-directory: operations
+        run: python benchmark/polyglot/rust_robots_sitemap/python_reference.py benchmark/polyglot/rust_robots_sitemap/corpus.jsonl python-robots.jsonl
+      - name: Generate Rust candidate
+        working-directory: operations
+        run: cargo run --quiet --manifest-path benchmark/polyglot/rust_robots_sitemap/Cargo.toml --bin differential -- benchmark/polyglot/rust_robots_sitemap/corpus.jsonl rust-robots.jsonl
+      - name: Compare exact outputs
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          py=[json.loads(v) for v in Path("python-robots.jsonl").read_text().splitlines() if v]
+          rs=[json.loads(v) for v in Path("rust-robots.jsonl").read_text().splitlines() if v]
+          assert len(py)==len(rs)==32
+          assert py==rs, "Rust robots/sitemap parser diverges from Python"
+          print("robots/sitemap differential parity: PASS (32/32)")
+          PY
+      - name: Benchmark Rust candidate
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_robots_sitemap/Cargo.toml
+
+  rust_text_differential:
+    needs: resolve_operations_ref
+    name: Rust text normalization Python differential parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659
+        with:
+          toolchain: stable
+      - name: Install Python reference runtime
+        working-directory: operations
+        run: python -m pip install --disable-pip-version-check -e .
+      - name: Generate Python reference
+        working-directory: operations
+        run: python experiments/rust_text_normalization/python_reference.py experiments/rust_text_normalization/corpus.jsonl python-text.jsonl
+      - name: Generate Rust candidate
+        working-directory: operations
+        run: cargo run --quiet --manifest-path experiments/rust_text_normalization/Cargo.toml --bin differential -- experiments/rust_text_normalization/corpus.jsonl rust-text.jsonl
+      - name: Compare exact outputs
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          py=[json.loads(v) for v in Path("python-text.jsonl").read_text().splitlines() if v]
+          rs=[json.loads(v) for v in Path("rust-text.jsonl").read_text().splitlines() if v]
+          assert len(py)==len(rs)==32
+          assert py==rs, "Rust text normalization diverges from Python"
+          print("text normalization differential parity: PASS (32/32)")
+          PY
+      - name: Benchmark Rust candidate
+        working-directory: operations
+        run: cargo bench --manifest-path experiments/rust_text_normalization/Cargo.toml
+
   rust_link_pagination:
     needs: resolve_operations_ref
     name: Rust Link-header pagination parity pilot
