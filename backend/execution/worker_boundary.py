@@ -31,6 +31,7 @@ def _bounded_json_digest(
     *,
     max_bytes: int,
     field_name: str,
+    compact: bool = False,
 ) -> str:
     """Fail closed on shape/size before JSON encoding, then hash bounded chunks."""
     items_seen = 0
@@ -78,7 +79,10 @@ def _bounded_json_digest(
     if walk(value, 0) > max_bytes:
         raise ValueError(f"{field_name} exceeds {max_bytes} byte materialization limit")
 
-    encoder = json.JSONEncoder(sort_keys=True, default=str, ensure_ascii=False, separators=(",", ":"))
+    encoder_options = {"sort_keys": True, "default": str, "ensure_ascii": False}
+    if compact:
+        encoder_options["separators"] = (",", ":")
+    encoder = json.JSONEncoder(**encoder_options)
     digest = hashlib.sha256()
     total = 0
     for chunk in encoder.iterencode(value):
@@ -152,11 +156,13 @@ class WorkerTaskValidator:
             input_data,
             max_bytes=self.MAX_INPUT_SIZE_MB * 1024 * 1024,
             field_name="task input",
+            compact=True,
         )
         _bounded_json_digest(
             metadata_value,
             max_bytes=self.MAX_METADATA_SIZE_BYTES,
             field_name="task metadata",
+            compact=True,
         )
         now = datetime.now(timezone.utc)
         expires_at = now + timedelta(hours=self.TASK_EXPIRY_HOURS)
@@ -239,11 +245,14 @@ class WorkerTaskValidator:
             if result.status == "success":
                 if output_data is None or result.output_hash is None:
                     return False, "successful result requires output data and output hash"
-                computed_hash = _bounded_json_digest(
-                    output_data,
-                    max_bytes=self.MAX_OUTPUT_SIZE_MB * 1024 * 1024,
-                    field_name="worker output",
-                )
+                try:
+                    computed_hash = _bounded_json_digest(
+                        output_data,
+                        max_bytes=self.MAX_OUTPUT_SIZE_MB * 1024 * 1024,
+                        field_name="worker output",
+                    )
+                except ValueError as exc:
+                    return False, str(exc)
                 if computed_hash != result.output_hash:
                     return False, "output hash mismatch (tampering detected)"
 
