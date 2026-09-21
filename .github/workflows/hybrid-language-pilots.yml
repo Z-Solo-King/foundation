@@ -81,7 +81,9 @@ jobs:
 
       - name: Test
         working-directory: operations/experiments/go_http_fanout
-        run: go test ./...
+        run: |
+          go test ./...
+          go test -race ./...
 
   typescript:
     name: TypeScript search adapter shadow
