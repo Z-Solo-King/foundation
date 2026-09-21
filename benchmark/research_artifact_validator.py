@@ -41,6 +41,14 @@ NIGHTLY_LANE_STATES = {
     "blocked_before_execution",
     "lane_failure",
 }
+NIGHTLY_DIAGNOSIS_BLOCKERS = {
+    "research_preflight_blocked",
+    "research_lane_failure",
+    "research_job_not_successful",
+    "migration_review_job_not_successful",
+    "migration_review_incomplete",
+    "lane_validation_incomplete",
+}
 
 
 def _load(path: Path) -> Any:
@@ -160,6 +168,14 @@ def _nightly_artifact_errors(root: Path) -> list[str]:
             errors.append("nightly diagnosis real_research_findings_allowed violates execution/evidence boundary")
         if diagnosis.get("historical_dry_run_findings_are_real_research") is not False:
             errors.append("nightly diagnosis must mark dry-run findings as non-research")
+
+        blockers = diagnosis.get("blockers", [])
+        if not isinstance(blockers, list) or any(
+            str(item) not in NIGHTLY_DIAGNOSIS_BLOCKERS for item in blockers
+        ):
+            errors.append("nightly diagnosis blockers must use the bounded blocker vocabulary")
+        elif len(blockers) != len(set(blockers)) or len(blockers) > 8:
+            errors.append("nightly diagnosis blockers must be unique and bounded to 8 entries")
 
     project_paths = _find_named_artifacts(root, "nightly-project-improvement.json")
     if project_paths:
