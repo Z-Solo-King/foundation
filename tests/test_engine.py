@@ -1,5 +1,7 @@
 """Tests for complete research execution pipeline."""
 
+import pytest
+
 from backend.execution.engine import create_run, start_research, add_observation, verify_and_add_claim, complete_research, summarize_research
 from backend.intelligence.contracts import ResearchContract, ResearchPlan
 from backend.intelligence.observations import Observation, EvidenceSpan
@@ -70,3 +72,11 @@ def test_synthesis_with_corroborated_claims():
     from backend.execution.synthesis import ResearchSynthesizer
     result = ResearchSynthesizer().synthesize(run)
     assert result.question == "Is X true?" and result.confidence == "high" and len(result.evidence_chain) == 2
+
+
+def test_research_run_rejects_invalid_status_and_terminal_target() -> None:
+    contract = ResearchContract(question="test")
+    plan = ResearchPlan(question="test", stages=(), source_budget=1, evidence_budget=1)
+    with pytest.raises(ValueError, match="invalid run status"):
+        create_run("run", contract, plan.__class__(plan.question, plan.stages, plan.source_budget, plan.evidence_budget)).__class__("run", contract, plan, "unknown")
+
