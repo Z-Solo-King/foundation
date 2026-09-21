@@ -36,7 +36,7 @@ Evidence rule: implementation/test/CI evidence does not substitute for required 
 This section records the latest audited immutable revisions. It is intentionally a checkpoint, not a claim that the document's own future merge commit will equal the recorded Foundation branch head. The live Git refs remain authoritative for current branch heads.
 
 - Last audited Foundation main: `8d38e825887fedae078973d472ed05e959cd433a`.
-- Last audited Operations main: `99ad7e946a98d7a4f1b5131b9a1fa87e41ae9b03`.
+- Last audited Operations main must be queried from the `main` ref at chat startup..
 - Repository-side parallel migration wave: merged.
 - Current candidates remain shadow/benchmark-only until parity, security/policy/provenance, performance/boundary, shadow/canary and rollback evidence pass.
 - Runtime/production claims require the specified L4/production receipt and are not inferred from this document.
@@ -47,7 +47,7 @@ This section records the latest audited immutable revisions. It is intentionally
 This is the newest synchronization point. Older dated sections remain historical evidence and must not outrank these refs.
 
 - Foundation main: `06996042d0866d2895d71c4dca24343c07a45a20`.
-- Operations main: `99ad7e946a98d7a4f1b5131b9a1fa87e41ae9b03`.
+- Operations main must be queried from the `main` ref at chat startup..
 - Operations #637/#638/#642 fixed stale authority/test-contract clusters; #640/#641/#643 added Rust/TypeScript migration candidates; #644 formalized parallel merge-train synchronization.
 - Foundation #888/#890 refreshed stale-pin/async safeguards; #892 merged the 40-case adaptive polyglot matrix; #893 fixed the final retired-codemap maintenance instruction; #895 refreshed the coverage pin; #897 added the Rust robots/sitemap lane.
 - Current migration candidates remain benchmark/shadow-only until exact parity, security/policy/provenance parity, performance/boundary evidence, shadow/canary and rollback gates pass.
@@ -59,7 +59,7 @@ This is the newest synchronization point. Older dated sections remain historical
 This is the newest repository synchronization point. Older dated sections remain historical evidence.
 
 - Foundation main: `c9c27d32b5c5ded06068024c9953d16f8585a739`.
-- Operations main: `a82753c2b23dac355a3424249ed7d9fd3dc4d86e`.
+- Operations main must be queried from the `main` ref at chat startup..
 - Operations #637/#638 fixed the retired codemap consumer and stale artifact-manifest test contract.
 - Operations #640/#641/#642 added/validated the Rust Link-header pilot, TypeScript acquisition-planner shadow, and remaining retired-codemap audit cleanup.
 - Foundation #888/#890 synchronized the coverage-driven matrix with current Operations and added stale-pin/async safeguards.
@@ -296,7 +296,7 @@ A candidate is not silently promoted merely because it compiles. Runtime authori
 
 For cross-chat continuity, read `docs/GITHUB_CHAT_HANDOFF_2026-09-21.md` before making repository changes.
 
-Current Foundation main: `0e5e3532e91ea40040b718a8dcbf7e3f66919d30`.
+Current Foundation main must be queried from the `main` ref at chat startup.
 
 Pending repository hardening: Foundation PR #937. Do not treat its branch as merged until protected checks pass.
 
