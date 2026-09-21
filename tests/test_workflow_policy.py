@@ -299,7 +299,6 @@ def test_hardened_workflows_have_timeout_and_concurrency_contract():
         "canonical-nightly-pin-repair.yml",
         "release-quality-regression.yml",
         "nightly-research-contract.yml",
-        "main-push-actions-secret-probe.yml",
         "main-push-actions-control-plane-probe.yml",
         "main-push-actions-control-plane-probe-v2.yml",
         "cross-repository-contract-drift.yml",
