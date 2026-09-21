@@ -14,6 +14,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: foundation-live-extractor-benchmark-${{github.ref}}
+  cancel-in-progress: false
+
 jobs:
   benchmark:
     name: ${{ matrix.case }} pass ${{ matrix.pass }}
@@ -227,6 +231,7 @@ jobs:
   aggregate:
     name: Aggregate 40-case extractor benchmark
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: benchmark
     if: always()
     timeout-minutes: 10
