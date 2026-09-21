@@ -161,7 +161,7 @@ class WorkerTaskValidator:
             compact=True,
         )
         metadata_value = metadata or {}
-        self._bounded_json_digest(
+        _bounded_json_digest(
             metadata_value,
             max_bytes=MAX_METADATA_SIZE_BYTES,
             field_name="task metadata",
@@ -198,7 +198,7 @@ class WorkerTaskValidator:
         if task.task_type not in PUBLIC_TASK_TYPES:
             return False, f"unknown public task type {task.task_type}"
         try:
-            self._bounded_json_digest(
+            _bounded_json_digest(
                 task.metadata,
                 max_bytes=self.MAX_METADATA_SIZE_BYTES,
                 field_name="task metadata",
@@ -249,7 +249,7 @@ class WorkerTaskValidator:
                 if output_data is None or result.output_hash is None:
                     return False, "successful result requires output data and output hash"
                 try:
-                    computed_hash = self._bounded_json_digest(
+                    computed_hash = _bounded_json_digest(
                         output_data,
                         max_bytes=MAX_OUTPUT_SIZE_MB * 1024 * 1024,
                         field_name="worker output",
