@@ -28,37 +28,46 @@ export async function frameChatSse(body: ChatProxyEnvelope, maxBytes = MAX_PUBLI
   if (resultState === "BLOCKED") throw new Error("blocked_chat_stream");
 
   const text = String(response.text ?? "");
-  const events: string[] = [
-    sse("start", {
-      response_id: responseId,
-      status: "streaming",
-      generation: response.generation_status ?? "unknown",
-    }),
-  ];
+  const encoder = new TextEncoder();
+  const events: string[] = [];
+  let bytes = 0;
+
+  const pushEvent = (event: string, payload: unknown): void => {
+    const encoded = sse(event, payload);
+    const encodedBytes = encoder.encode(encoded).byteLength;
+    if (bytes + encodedBytes > maxBytes) {
+      throw new Error("stream response exceeds supported size");
+    }
+    events.push(encoded);
+    bytes += encodedBytes;
+  };
+
+  pushEvent("start", {
+    response_id: responseId,
+    status: "streaming",
+    generation: response.generation_status ?? "unknown",
+  });
 
   for (let offset = 0; offset < text.length; offset += MAX_SSE_CHUNK_CHARS) {
-    events.push(sse("delta", { text: text.slice(offset, offset + MAX_SSE_CHUNK_CHARS) }));
+    pushEvent("delta", { text: text.slice(offset, offset + MAX_SSE_CHUNK_CHARS) });
   }
 
   const usage = response.usage;
   if (usage) {
-    events.push(sse("usage", {
+    pushEvent("usage", {
       input_tokens: usage.input_tokens,
       output_tokens: usage.output_tokens,
-    }));
+    });
   }
 
   const outputDigest = await sha256Hex(text);
   const status = resultState === "COMPLETE" ? "completed" : "partial";
-  events.push(sse("done", {
+  pushEvent("done", {
     response_id: responseId,
     status,
     result_state: resultState,
     output_digest: outputDigest,
-  }));
+  });
 
-  const payload = events.join("");
-  const bytes = new TextEncoder().encode(payload).byteLength;
-  if (bytes > maxBytes) throw new Error("stream response exceeds supported size");
-  return payload;
+  return events.join("");
 }
