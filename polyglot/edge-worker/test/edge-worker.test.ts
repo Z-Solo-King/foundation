@@ -148,3 +148,17 @@ test("rejects prefix and nested path route collisions", () => {
   assert.equal(matchRoute({ method: "POST", url: "https://example/evil/api/v1/chat" }).route, "not_found");
   assert.equal(matchRoute({ method: "POST", url: "https://example/api/v1/chat-extra" }).route, "not_found");
 });
+
+
+test("SSE size gate fails before retaining later chunks", async () => {
+  const body = {
+    ok: true,
+    response: {
+      response_id: "early-limit",
+      result_state: "PARTIAL",
+      generation_status: "deterministic_fallback",
+      text: "x".repeat(10_000),
+    },
+  };
+  await assert.rejects(frameChatSse(body, 120), /stream response exceeds supported size/);
+});
