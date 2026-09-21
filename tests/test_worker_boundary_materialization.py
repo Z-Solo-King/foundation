@@ -113,3 +113,15 @@ def test_bounded_digest_enforces_encoded_size_and_reports_encoder_errors(monkeyp
     monkeypatch.setattr(module.json, "JSONEncoder", BrokenEncoder)
     with pytest.raises(ValueError, match="not JSON serializable"):
         module._bounded_json_digest({"x": 1}, max_bytes=100, field_name="payload", compact=True)
+
+    class OversizeEncoder:
+        def __init__(self, **_kwargs):
+            pass
+
+        def iterencode(self, _value):
+            yield "x" * 101
+
+    monkeypatch.setattr(module, "_validate_materialization_shape", lambda *args, **kwargs: None)
+    monkeypatch.setattr(module.json, "JSONEncoder", OversizeEncoder)
+    with pytest.raises(ValueError, match="materialization limit"):
+        module._bounded_json_digest({"x": 1}, max_bytes=100, field_name="payload", compact=True)
