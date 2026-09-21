@@ -65,6 +65,8 @@ def test_workers_fetch_accepts_keyword_request_options(monkeypatch) -> None:
     assert captured["url"] == "https://example.com"
     assert captured["js_options"]["method"] == "GET"
     assert captured["js_options"]["headers"] == {"Accept": "text/plain"}
+    assert fetch.last_capability_receipt.transport.value == "js_fetch_ffi"
+    assert fetch.last_capability_receipt.fallback_used is False
 
 
 def test_workers_fetch_is_lazy_and_reports_context() -> None:
@@ -144,6 +146,7 @@ def test_workers_fetch_adapter_without_options_uses_workers_sdk(monkeypatch) -> 
     result = asyncio.run(workers_fetch("test")("https://example.com"))
     assert result == "response"
     assert calls == ["https://example.com"]
+    assert result is not None
 
 
 def test_workers_fetch_adapter_uses_sdk_fallback_when_js_ffi_is_unavailable(monkeypatch) -> None:
@@ -182,3 +185,55 @@ def test_workers_fetch_adapter_uses_sdk_fallback_when_js_ffi_is_unavailable(monk
 
     assert result == "response"
     assert captured == {"url": "https://example.com", "options": options}
+
+
+
+def test_workers_fetch_adapter_records_sdk_transport_receipt(monkeypatch) -> None:
+    import asyncio
+    import sys
+    import types
+
+    async def fake_fetch(url):
+        return ("response", url)
+
+    monkeypatch.setitem(sys.modules, "workers", types.SimpleNamespace(fetch=fake_fetch))
+
+    fetch = workers_fetch("receipt-test")
+    assert asyncio.run(fetch("https://example.com"))[0] == "response"
+    receipt = fetch.last_capability_receipt
+    assert receipt is not None
+    assert receipt.schema == "workers-runtime-capability/v1"
+    assert receipt.transport.value == "workers_sdk"
+    assert receipt.options_present is False
+    assert receipt.fallback_used is False
+
+
+def test_workers_fetch_adapter_records_fallback_receipt(monkeypatch) -> None:
+    import asyncio
+    import builtins
+    import sys
+    import types
+
+    async def fake_fetch(url, **options):
+        return ("response", options)
+
+    original_import = builtins.__import__
+
+    def blocked_import(name, *args, **kwargs):
+        if name in {"js", "pyodide.ffi"}:
+            raise ImportError("blocked")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setitem(sys.modules, "workers", types.SimpleNamespace(fetch=fake_fetch))
+    monkeypatch.delitem(sys.modules, "js", raising=False)
+    monkeypatch.delitem(sys.modules, "pyodide", raising=False)
+    monkeypatch.delitem(sys.modules, "pyodide.ffi", raising=False)
+    monkeypatch.setattr(builtins, "__import__", blocked_import)
+
+    fetch = workers_fetch("receipt-fallback")
+    assert asyncio.run(fetch("https://example.com", {"method": "POST"}))[0] == "response"
+    receipt = fetch.last_capability_receipt
+    assert receipt is not None
+    assert receipt.transport.value == "workers_sdk_fallback"
+    assert receipt.options_present is True
+    assert receipt.fallback_used is True
