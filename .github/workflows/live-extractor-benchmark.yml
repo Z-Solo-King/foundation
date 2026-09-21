@@ -234,7 +234,6 @@ jobs:
     timeout-minutes: 20
     needs: benchmark
     if: always()
-    timeout-minutes: 10
     steps:
       - name: Create Operations read token
         id: operations-app
