@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 
+import pytest
+
 from backend.persistence.artifacts import B2ArtifactStore
 
 
@@ -139,7 +141,8 @@ def test_response_bytes_covers_remaining_pyodide_and_worker_fetch_paths(monkeypa
 
     assert _response_bytes(ToPyBytes()) == b"direct-py"
     assert _response_bytes(ToBytesMemoryview()) == b"direct-memory"
-    assert isinstance(_response_bytes(ToBytesNoNested()), bytes)
+    with pytest.raises(TypeError):
+        _response_bytes(ToBytesNoNested())
     assert _response_bytes(ToBytesNestedBytes()) == b"nested-bytes"
 
     marker = object()
