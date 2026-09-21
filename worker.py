@@ -592,5 +592,15 @@ class Default(WorkerEntrypoint):
             return _authenticated_json({"ok": True, "run_id": run_id, "metadata": {**result.metadata, "execution_mode": "source_url_ingestion"}, "sources": sources})
         assets = getattr(self.env, "ASSETS", None)
         if assets is not None:
-            return await assets.fetch(request)
+            response = await assets.fetch(request)
+            headers = dict(response.headers)
+            headers["Content-Security-Policy"] = (
+                "default-src 'self'; script-src 'self'; style-src 'self'; "
+                "img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; "
+                "base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+            )
+            headers["X-Frame-Options"] = "DENY"
+            headers["Referrer-Policy"] = "no-referrer"
+            headers["X-Content-Type-Options"] = "nosniff"
+            return Response(response.body, status=response.status, headers=headers)
         return _authenticated_json({"ok": False, "error": "not found"}, status=404)
