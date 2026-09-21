@@ -132,6 +132,20 @@ def test_response_bytes_covers_remaining_pyodide_and_worker_fetch_paths(monkeypa
         def to_bytes(self):
             return object()
 
+    class ToPyTobytesUnsupported:
+        class Converted:
+            def tobytes(self):
+                return object()
+        def to_py(self):
+            return self.Converted()
+
+    class ToBytesNestedUnsupported:
+        class Converted:
+            def to_py(self):
+                return object()
+        def to_bytes(self):
+            return self.Converted()
+
     class ToBytesNestedBytes:
         class Converted:
             def to_py(self):
@@ -140,10 +154,14 @@ def test_response_bytes_covers_remaining_pyodide_and_worker_fetch_paths(monkeypa
             return self.Converted()
 
     assert _response_bytes(ToPyBytes()) == b"direct-py"
+    with pytest.raises(TypeError):
+        _response_bytes(ToPyTobytesUnsupported())
     assert _response_bytes(ToBytesMemoryview()) == b"direct-memory"
     with pytest.raises(TypeError):
         _response_bytes(ToBytesNoNested())
     assert _response_bytes(ToBytesNestedBytes()) == b"nested-bytes"
+    with pytest.raises(TypeError):
+        _response_bytes(ToBytesNestedUnsupported())
 
     marker = object()
     monkeypatch.setattr(artifacts_module, "workers_fetch", lambda reason: (marker, reason))
