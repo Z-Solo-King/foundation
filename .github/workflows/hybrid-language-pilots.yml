@@ -306,6 +306,95 @@ jobs:
           npm run typecheck
           npm test
 
+  rust_url_canonical_differential:
+    needs: resolve_operations_ref
+    name: Rust URL canonicalization Python differential
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{secrets.OPERATIONS_APP_ID}}
+          private-key: ${{secrets.OPERATIONS_APP_PRIVATE_KEY}}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{needs.resolve_operations_ref.outputs.ref}}
+          token: ${{steps.operations-app.outputs.token}}
+          path: operations
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659
+        with:
+          toolchain: stable
+      - name: Install Foundation and Operations runtimes
+        run: |
+          python -m pip install --disable-pip-version-check -e .
+          python -m pip install --disable-pip-version-check -e operations
+      - name: Build corpus with adversarial URL cases
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[json.loads(v) for v in Path("benchmark/polyglot/rust_url_identity/corpus.jsonl").read_text().splitlines() if v]
+          invalid=["not-a-url","ftp://example.com/file","https:///missing-host","https://","http:///example.com","https://example.com:8443/a","https://user:pass@example.com/a","http://user@example.com/a","http://localhost/a","http://127.0.0.1/a","http://10.0.0.1/a","http://192.168.1.1/a","http://[::1]/a","http://[fc00::1]/a"]
+          rows += [{"id":f"invalid-{i+1:02d}","input":value} for i,value in enumerate(invalid)]
+          Path("benchmark/polyglot/rust_url_identity/differential_corpus.jsonl").write_text("\n".join(json.dumps(v) for v in rows)+"\n", encoding="utf-8")
+          assert len(rows) == 46
+          PY
+      - name: Generate Python canonical outputs
+        working-directory: operations
+        env:
+          PYTHONPATH: ${{github.workspace}}
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from backend.sources.http import canonicalize_url
+          rows=[json.loads(v) for v in Path("benchmark/polyglot/rust_url_identity/differential_corpus.jsonl").read_text().splitlines() if v]
+          out=[]
+          for row in rows:
+            try:
+              value=canonicalize_url(row["input"])
+            except Exception:
+              out.append({"id":row["id"],"ok":False})
+            else:
+              out.append({"id":row["id"],"ok":True,"output":value})
+          Path("python-url.jsonl").write_text("\n".join(json.dumps(v,sort_keys=True) for v in out)+"\n")
+          PY
+      - name: Generate Rust candidate outputs
+        working-directory: operations
+        run: cargo run --quiet --manifest-path benchmark/polyglot/rust_url_identity/Cargo.toml --bin differential -- benchmark/polyglot/rust_url_identity/differential_corpus.jsonl rust-url.jsonl
+      - name: Compare Python and Rust URL contract
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          py=[json.loads(v) for v in Path("python-url.jsonl").read_text().splitlines() if v]
+          rs=[json.loads(v) for v in Path("rust-url.jsonl").read_text().splitlines() if v]
+          assert len(py)==len(rs)==46
+          for a,b in zip(py,rs):
+              assert a["id"]==b["id"]
+              assert a["ok"]==b["ok"], (a,b)
+              if a["ok"]:
+                  assert a["output"]==b["output"], (a,b)
+          print("URL canonicalization differential parity: PASS (32 valid + 14 adversarial)")
+          PY
+      - name: Benchmark Rust URL candidate
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_url_identity/Cargo.toml --bench normalization
+
   rust_url_bench:
     needs: resolve_operations_ref
     name: Rust URL identity 32x3 benchmark
@@ -451,7 +540,7 @@ jobs:
       - name: Build Rust kernel
         working-directory: operations
         run: cargo build --release --manifest-path experiments/rust_html_kernel/Cargo.toml
-      - name: Run 32x3 Python/Rust differential benchmark
+      - name: Run 32x3 Python/Rust differential benchmark against active extractor
         working-directory: operations
         env:
           PYTHONPATH: .
@@ -459,32 +548,51 @@ jobs:
         run: |
           import json, os, subprocess, time
           from statistics import median
-          from extractor_mapper.extraction.generic_html import products_from_html
+          from extractor_mapper.extraction.generic import _products_from_html
 
-          cases = [
-              f'<article class="product-card"><h2>Product {i}</h2><a href="/p/{i}">/p/{i}</a><span class="price">₹{100+i}</span></article>'
-              for i in range(32)
-          ]
+          cases = []
+          for i in range(32):
+              classes = ("product-card", "item-card", "listing-card", "catalog-card")
+              card = classes[i % len(classes)]
+              extras = []
+              if i % 2 == 0:
+                  extras.append(f'<meta itemprop="sku" content="SKU-{i}">')
+              else:
+                  extras.append(f'<span data-sku="SKU-{i}"></span>')
+              if i % 3 == 0:
+                  extras.append(f'<meta itemprop="mpn" content="MPN-{i}">')
+              if i % 4 == 0:
+                  extras.append(f'<meta itemprop="gtin" content="{1000000000000+i}">')
+              if i % 5 == 0:
+                  extras.append('<img src="/img/a.jpg" data-src="/img/b.jpg">')
+              if i % 6 == 0:
+                  extras.append('<table><tr><th>RAM</th><td>32 GB</td></tr></table>')
+              if i % 7 == 0:
+                  extras.append('<p itemprop="description">Fast machine</p>')
+              if i % 3 == 0:
+                  extras.append('<span>In Stock</span>')
+              price = f"₹{100+i:,}"
+              cases.append(
+                  f'<article class="{card}"><h2>Product {i}</h2>'
+                  f'<a href="/p/{i}">/p/{i}</a>'
+                  f'<span class="price">{price}</span>'
+                  + "".join(extras) + '</article>'
+              )
+
           binary = "./experiments/rust_html_kernel/target/release/rie_html_kernel"
           rust_times = []
-
           for repeat in range(3):
               for index, html in enumerate(cases):
-                  expected = products_from_html(html)
-                  start = time.perf_counter_ns()
+                  expected = _products_from_html(html)
+                  expected_norm = json.loads(json.dumps(expected, default=list, sort_keys=True))
+                  started = time.perf_counter_ns()
                   proc = subprocess.run([binary], input=html, text=True, capture_output=True, check=True)
-                  elapsed = time.perf_counter_ns() - start
-                  rust_times.append(elapsed)
+                  rust_times.append(time.perf_counter_ns() - started)
                   actual = json.loads(proc.stdout)
-                  expected_common = [
-                      {"name": row["name"], "url": row["url"], "price": row["price"]}
-                      for row in expected
-                  ]
-                  actual_common = [
-                      {"name": row["name"], "url": row["url"], "price": row["price"]}
-                      for row in actual
-                  ]
-                  assert actual_common == expected_common, f"parity mismatch repeat={repeat+1} case={index}: {actual_common!r} != {expected_common!r}"
+                  assert actual == expected_norm, (
+                      f"full parity mismatch repeat={repeat+1} case={index}: "
+                      f"{actual!r} != {expected_norm!r}"
+                  )
 
           ordered = sorted(rust_times)
           def pct(p):
@@ -493,18 +601,15 @@ jobs:
               return int(ordered[lo] + (ordered[hi]-ordered[lo]) * (pos-lo))
 
           summary = {
-              "schema": "rust-html-differential-v1",
+              "schema": "rust-html-active-extractor-differential-v2",
               "cases": 32,
               "repeats": 3,
               "parity": "PASS",
-              "rust_latency_ns": {
-                  "p50": int(median(ordered)),
-                  "p95": pct(0.95),
-                  "p99": pct(0.99),
-              },
-              "operations_revision": "${{ needs.resolve_operations_ref.outputs.ref }}",
-              "python_reference": "extractor_mapper.extraction.generic_html.products_from_html",
+              "rust_latency_ns": {"p50": int(median(ordered)), "p95": pct(0.95), "p99": pct(0.99)},
+              "operations_revision": "${{needs.resolve_operations_ref.outputs.ref}}",
+              "python_reference": "extractor_mapper.extraction.generic._products_from_html",
               "candidate": "experiments/rust_html_kernel",
+              "comparison": "full_record",
           }
           os.makedirs(".runtime", exist_ok=True)
           with open(".runtime/rust-html-differential.json", "w", encoding="utf-8") as handle:
