@@ -301,3 +301,8 @@ Current Foundation main: `0e5e3532e91ea40040b718a8dcbf7e3f66919d30`.
 Pending repository hardening: Foundation PR #937. Do not treat its branch as merged until protected checks pass.
 
 Current concrete Operations blocker: #711 (DurableResourceLedger orphan reservation defect).
+
+
+## Complete AI engineering continuity ledger
+
+For durable cross-chat continuity—including strategies, test taxonomy, migration rules, security invariants, failure lessons, lane/work-stealing rules, CI policy and issue-management methods—read `docs/AI_ENGINEERING_CONTINUITY_LEDGER_2026-09-21.md`.
