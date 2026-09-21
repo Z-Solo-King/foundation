@@ -4,6 +4,7 @@ import pytest
 
 from backend.execution.engine import (
     ResearchLifecycle,
+    ResearchRun,
     create_run,
     start_research,
     add_observation,
