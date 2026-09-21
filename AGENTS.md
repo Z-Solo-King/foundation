@@ -6,7 +6,7 @@
 
 **Verified runtime implementation pins:**
 - Foundation: `e5b26061861e570396b73993a3c8733496cb1956`
-- Operations: `7cf73e6a15b1e1d090f023915f62e5a2bd066b8e`
+- Operations: `c752ba7f6cfa82adfe2e5ce8cd5ecc10b8b04101`
 
 The live heads may contain documentation and migration-candidate commits after the verified runtime pins. Acceptance workflows intentionally remain pinned to the verified immutable revisions until promotion evidence passes.
 
@@ -18,7 +18,7 @@ The live heads may contain documentation and migration-candidate commits after t
 
 **Verified runtime implementation pins:**
 - Foundation: `e5b26061861e570396b73993a3c8733496cb1956`
-- Operations: `7cf73e6a15b1e1d090f023915f62e5a2bd066b8e`
+- Operations: `c752ba7f6cfa82adfe2e5ce8cd5ecc10b8b04101`
 
 **Important:** Operations `main` now contains merged migration-candidate/test fixes after the verified runtime pin. Those candidate revisions are not production/runtime certification and must not silently replace the immutable runtime pin in acceptance workflows. The coverage/runtime guard must fail closed when non-documentation drift exists after the approved pin.
 
@@ -30,7 +30,7 @@ The live heads may contain documentation and migration-candidate commits after t
 
 **Last verified implementation revisions:**
 - Foundation: `e5b26061861e570396b73993a3c8733496cb1956`
-- Operations: `7cf73e6a15b1e1d090f023915f62e5a2bd066b8e`
+- Operations: `c752ba7f6cfa82adfe2e5ce8cd5ecc10b8b04101`
 
 Documentation-only handoff commits may advance `main` without changing the verified runtime implementation revision. Always refresh live refs before mutation and keep live branch heads separate from runtime-certification pins.
 
@@ -39,9 +39,9 @@ Documentation-only handoff commits may advance `main` without changing the verif
 **Live-head rule:** query the current GitHub `main` refs at chat startup. Documentation-only commits may advance `main` and must not be mistaken for a new runtime implementation revision.
 
 - Last verified Foundation implementation revision: `e5b26061861e570396b73993a3c8733496cb1956`
-- Last verified Operations implementation revision: `7cf73e6a15b1e1d090f023915f62e5a2bd066b8e`
+- Last verified Operations implementation revision: `c752ba7f6cfa82adfe2e5ce8cd5ecc10b8b04101`
 - Canonical nightly research workflow: `.github/workflows/nightly-multi-agent-research-v2.yml`
-- Nightly `OPERATIONS_RESEARCH_REF`: `7cf73e6a15b1e1d090f023915f62e5a2bd066b8e`
+- Nightly `OPERATIONS_RESEARCH_REF`: `c752ba7f6cfa82adfe2e5ce8cd5ecc10b8b04101`
 - Final implementation repair waves are merged through Foundation #960 and Operations #753.
 - Foundation #157 remains the canonical 24-program nightly acceptance gate.
 - Remaining open issues are runtime/provider/Cloudflare/migration evidence gates; do not infer closure from source inspection, unit tests, or dry-runs.
