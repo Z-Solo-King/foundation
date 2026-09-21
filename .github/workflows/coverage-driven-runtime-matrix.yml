@@ -14,6 +14,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: foundation-coverage-driven-runtime-matrix-${{github.ref}}
+  cancel-in-progress: false
+
 jobs:
   scenario:
     name: ${{ matrix.id }}
@@ -295,6 +299,7 @@ jobs:
   aggregate:
     name: Aggregate 20 orthogonal scenarios
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: scenario
     if: always()
     timeout-minutes: 10
