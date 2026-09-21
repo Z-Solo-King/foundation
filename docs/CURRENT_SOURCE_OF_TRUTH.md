@@ -1,3 +1,28 @@
+## 2026-09-21 CURRENT GITHUB RECONCILIATION
+
+This is the newest repository-side synchronization point. Fresh GitHub state overrides all older dated checkpoints below.
+
+### Canonical repository heads
+- Foundation `main`: `b787d260f3072a916101947689c2e056c431f028`
+- Operations `main`: `a63caa1bbbcd0b61a1a71e450b15d1834d218bd9`
+- Canonical immutable Operations production pin in Foundation: `f0e01a227066d1c7069eccbbc2eba1c523a8baf7`
+
+### Current PR state
+- Foundation PR #951 merged: canonical workflow-dispatch bridge job polling fix.
+- Foundation PR #952 merged: Operations pin synchronized to `f0e01a2...`.
+- Foundation PR #954 merged: runtime-evidence ownership matrix / AI rules of engagement.
+- Operations PR #747 merged: extractor facade mapper test-surface compatibility.
+- Operations PR #748 merged: TypeScript search adapter contract alignment.
+- Current open PR queues were rechecked after these merges; no implementation PR remains open from these repair waves.
+
+### Current open-issue shape
+There are 15 open issues total across the two repositories: 14 evidence-gated acceptance issues plus the Foundation meta tracker #58. Foundation #953 (runtime-evidence ownership/process) has been completed and closed. Foundation's active acceptance issues are #157 and #452; Operations' active acceptance issues are #119, #132, #145, #197, #340, #352, #385, #597, #603, #699 and #711.
+
+### Evidence boundary
+Repository implementation and CI evidence are complete for the repaired slices. The remaining open issues are runtime/control-plane/production acceptance gates unless a newly reproduced repository defect appears. Do not re-open merged implementation merely to manufacture live evidence. Never infer live Cloudflare/Worker receipts from source inspection.
+
+---
+
 ## 2026-09-21 FINAL LIVE SYNC
 
 - Foundation main: 985fd526913bdf48fffc73cfc7e834d38dd449de
@@ -296,12 +321,11 @@ A candidate is not silently promoted merely because it compiles. Runtime authori
 
 For cross-chat continuity, read `docs/GITHUB_CHAT_HANDOFF_2026-09-21.md` before making repository changes.
 
-Current Foundation main must be queried from the `main` ref at chat startup.
+Current Foundation main: `b787d260f3072a916101947689c2e056c431f028`. Current Operations main: `a63caa1bbbcd0b61a1a71e450b15d1834d218bd9`. Always refresh both from `main` at chat startup before mutation.
 
-Pending repository hardening: Foundation PR #937. Do not treat its branch as merged until protected checks pass.
+Repository-side repair waves described by Foundation PRs #945 and #948-#954 and Operations PRs #745-#748 are merged. Foundation #954 records the runtime-evidence ownership matrix.
 
-Current concrete Operations blocker: #711 (DurableResourceLedger orphan reservation defect).
-
+The remaining issue queue is evidence-gated: Foundation #157/#452 and Operations #119/#132/#145/#197/#340/#352/#385/#597/#603/#699/#711. Do not create duplicate authorities or claim closure without the required runtime receipt.
 
 ## Complete AI engineering continuity ledger
 

@@ -57,3 +57,5 @@ The generic filenames must not be recreated merely to collect edge cases. Subsys
 When contracts, ownership, workflows, dependency direction or production gates change, update the affected canonical document in the same change set. Mark dated continuity material as historical. When a production workflow filename or ownership boundary changes, update both this navigation entry and `DEPLOYMENT.md` in the same PR.
 
 For family-wide synchronization changes, update `FAMILY_SYNC_STATE.json` and the affected Operations source-of-truth/navigation records in the same coordinated change set.
+
+- `docs/runtime-evidence-ownership.md` — runtime acceptance ownership matrix and AI rules of engagement.
