@@ -1,3 +1,13 @@
+## 2026-09-21 LIVE SYNC ANCHOR
+
+- Foundation main: `24e20c19f02a820afb261f4c43915f46c87a6a9c`
+- Operations main: `0f1420b2b7dba3270ff8de874ac2eb5e88995976`
+- Active Foundation PR: #919 (lifecycle/materialization).
+- Active Operations PR: #668 (deep immutability residue).
+- Merged current-wave Foundation: #913 Go race gate, #914 multi-blocker nightly diagnosis, #916 runtime capability receipts.
+- Merged current-wave Operations: #658 snapshot/provider/stream hardening, #659 Go fanout hardening, #662 shared provider configuration, #664 non-finite robots rejection.
+- Current open acceptance queue remains runtime/evidence-heavy; see `docs/ENGINEERING_LEARNING_LOOP_2026-09-21.md` for the synchronized methodology and evidence rules.
+
 ## 2026-09-20 PRODUCTION PIN PROMOTION OVERRIDE
 
 - Foundation main at promotion preparation: 62ff421534034d70a110f1dba32f71975c7e5a2d.

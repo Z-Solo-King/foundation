@@ -1,3 +1,13 @@
+## 2026-09-21 LIVE SYNC ANCHOR
+
+- Foundation main: `24e20c19f02a820afb261f4c43915f46c87a6a9c`
+- Operations main: `0f1420b2b7dba3270ff8de874ac2eb5e88995976`
+- Active Foundation PR: #919 (lifecycle/materialization).
+- Active Operations PR: #668 (deep immutability residue).
+- Merged current-wave Foundation: #913 Go race gate, #914 multi-blocker nightly diagnosis, #916 runtime capability receipts.
+- Merged current-wave Operations: #658 snapshot/provider/stream hardening, #659 Go fanout hardening, #662 shared provider configuration, #664 non-finite robots rejection.
+- Current open acceptance queue remains runtime/evidence-heavy; see `docs/ENGINEERING_LEARNING_LOOP_2026-09-21.md` for the synchronized methodology and evidence rules.
+
 # Family Change Methodology
 
 The family has two active repositories: `foundation` and `operations`. The retired `extractor-mapper` repository is historical material only and is never an active implementation owner.
@@ -43,3 +53,4 @@ For a new shared capability, prefer:
 `Foundation contract/core -> Foundation validation -> pinned Operations consumption -> Operations private implementation/control -> boundary validation`
 
 Do not copy Foundation implementation into Operations merely to remove an import, and do not move protected Operations policy into Foundation merely to simplify validation.
+\n## Cross-paradigm learning scan protocol\n\nUse the four-layer scan in `docs/ENGINEERING_LEARNING_LOOP_2026-09-21.md`: inventory coverage, repository-wide semantic search, targeted owner review, then evidence reconciliation. Record coverage honestly and never treat path inventory coverage as byte-for-byte semantic rereading.\n
