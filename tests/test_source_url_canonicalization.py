@@ -80,3 +80,16 @@ async def test_fetch_public_url_revalidates_each_redirect_destination():
     result = await source_http.fetch_public_url("https://example.com/start", fetcher=fetcher)
     assert calls == ["https://example.com/start", "https://example.com/next"]
     assert result.final_url == "https://example.com/next"
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["100.64.0.1", "168.63.129.16", "::ffff:100.64.0.1"],
+)
+def test_safe_ip_rejects_provider_and_shared_address_space(value):
+    assert source_http._safe_ip(value) is False
+
+
+def test_safe_ip_accepts_public_ipv4_and_ipv4_mapped_public_ipv4():
+    assert source_http._safe_ip("8.8.8.8") is True
+    assert source_http._safe_ip("::ffff:8.8.8.8") is True
