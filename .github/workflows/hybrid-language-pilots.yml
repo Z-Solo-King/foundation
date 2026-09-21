@@ -917,6 +917,42 @@ jobs:
         working-directory: operations
         run: cargo bench --manifest-path benchmark/polyglot/rust_link_pagination/Cargo.toml
 
+  typescript_public_endpoint_discovery:
+    needs: resolve_operations_ref
+    name: TypeScript public endpoint discovery shadow
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Install, typecheck and test
+        working-directory: operations/polyglot/public-endpoint-discovery
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          npm test
+      - name: Benchmark
+        working-directory: operations/polyglot/public-endpoint-discovery
+        run: npm run benchmark
+
   typescript_acquisition_planner:
     needs: resolve_operations_ref
     name: TypeScript acquisition planner shadow
