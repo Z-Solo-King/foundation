@@ -1,6 +1,18 @@
 """Tests for complete research execution pipeline."""
 
-from backend.execution.engine import create_run, start_research, add_observation, verify_and_add_claim, complete_research, summarize_research
+import pytest
+
+from backend.execution.engine import (
+    ResearchLifecycle,
+    ResearchRun,
+    create_run,
+    start_research,
+    add_observation,
+    verify_and_add_claim,
+    complete_research,
+    summarize_research,
+    transition_research,
+)
 from backend.intelligence.contracts import ResearchContract, ResearchPlan
 from backend.intelligence.observations import Observation, EvidenceSpan
 from backend.intelligence.certificates import create_certificate
@@ -70,3 +82,48 @@ def test_synthesis_with_corroborated_claims():
     from backend.execution.synthesis import ResearchSynthesizer
     result = ResearchSynthesizer().synthesize(run)
     assert result.question == "Is X true?" and result.confidence == "high" and len(result.evidence_chain) == 2
+
+
+def test_research_run_accepts_all_documented_terminal_lifecycles():
+    contract = ResearchContract(question="test")
+    plan = ResearchPlan(question="test", stages=(), source_budget=1, evidence_budget=1)
+    running = start_research(create_run("run", contract, plan))
+    for state in (
+        ResearchLifecycle.COMPLETED,
+        ResearchLifecycle.PARTIAL,
+        ResearchLifecycle.FAILED,
+        ResearchLifecycle.BLOCKED,
+        ResearchLifecycle.CANCELLED,
+    ):
+        terminal = transition_research(running, state)
+        assert terminal.status is state
+        assert terminal.completed_at is not None
+
+
+def test_research_run_rejects_terminal_transition_from_planned_and_terminal():
+    contract = ResearchContract(question="test")
+    plan = ResearchPlan(question="test", stages=(), source_budget=1, evidence_budget=1)
+    planned = create_run("planned", contract, plan)
+    with pytest.raises(ValueError, match="invalid or unsupported"):
+        transition_research(planned, ResearchLifecycle.COMPLETED)
+
+    blocked = transition_research(start_research(create_run("terminal", contract, plan)), ResearchLifecycle.BLOCKED)
+    with pytest.raises(ValueError, match="invalid or unsupported"):
+        transition_research(blocked, ResearchLifecycle.COMPLETED)
+
+
+def test_research_run_rejects_unknown_stored_lifecycle_value():
+    contract = ResearchContract(question="test")
+    plan = ResearchPlan(question="test", stages=(), source_budget=1, evidence_budget=1)
+    with pytest.raises(ValueError, match="invalid run status"):
+        ResearchRun("bad", contract, plan, status="not-a-state")
+
+
+def test_terminalize_rejects_nonterminal_target():
+    from backend.execution.engine import _terminalize
+
+    contract = ResearchContract(question="test")
+    plan = ResearchPlan(question="test", stages=(), source_budget=1, evidence_budget=1)
+    running = start_research(create_run("run", contract, plan))
+    with pytest.raises(ValueError, match="invalid terminal status"):
+        _terminalize(running, ResearchLifecycle.RUNNING)
