@@ -238,10 +238,12 @@ Start from Foundation `d3f32e09bd39ca167ae556cb3514709b8ed4644f` and Operations 
 
 This dated section supersedes older migration-harness status statements above for repository-side polyglot work.
 
-### Current repository heads
+### Migration implementation baselines
 
-- Foundation main: `e303e4155c7520a7d74cbab389fbc15d0b023f35`
-- Operations main: `f162b1b46899b6c6b9a96e13adcee42e83373491`
+These are immutable implementation baselines for the completed migration wave; later documentation-only commits may advance `main` without changing the migration result.
+
+- Foundation migration baseline: `e303e4155c7520a7d74cbab389fbc15d0b023f35`
+- Operations migration baseline: `f162b1b46899b6c6b9a96e13adcee42e83373491`
 
 ### Migration conveyor
 
