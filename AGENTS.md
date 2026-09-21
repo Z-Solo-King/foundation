@@ -1,3 +1,14 @@
+## 2026-09-21 CURRENT RECONCILIATION
+
+Refresh live GitHub state before every mutation. Current canonical heads:
+- Foundation `main`: `b2752d6a63aaf646743cc8173fa83b4271b02160`
+- Operations `main`: `0fa576c10fee30221150110865b11c0132de4575`
+- Foundation immutable Operations pin: `0fa576c10fee30221150110865b11c0132de4575`
+
+Merged repair/documentation waves: Foundation #945/#949/#951/#952/#954/#955/#956; Operations #745-#749. Foundation #953 is closed. Current remaining acceptance queue: Foundation #58/#157/#452; Operations #119/#132/#145/#197/#340/#352/#385/#597/#603/#699/#711.
+
+Do not treat a merged PR, repository test, or GitHub Actions success as Cloudflare/runtime certification. Keep runtime/admin/provider/scheduler evidence gates open until their actual receipts exist. GitHub Actions remains the sole CI/CD/deployment authority; Operations must remain free of GitHub Actions, and Workers Builds/Deploy Hooks must not be re-enabled.
+
 ## 2026-09-20 PRODUCTION PIN PROMOTION OVERRIDE
 
 - Foundation main at promotion preparation: 62ff421534034d70a110f1dba32f71975c7e5a2d.
