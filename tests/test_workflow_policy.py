@@ -8,7 +8,7 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "c8f11d46ee06b27ed4648c26101bfbd9a64accf3"
+CANONICAL_OPERATIONS_REF = "877d51c35b4d4f57ebc3fa6812b6a71ce38edf3a"
 CANONICAL_OPERATIONS_SERVICE = "research-intelligence-engine-private"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 PRODUCTION_WORKFLOW = "heroic-ai-production-release.yml"
@@ -322,9 +322,9 @@ def test_superseded_nightly_variants_are_retired():
 
 def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'OPERATIONS_REF="c8f11d46ee06b27ed4648c26101bfbd9a64accf3"' in deployment
+    assert 'OPERATIONS_REF="877d51c35b4d4f57ebc3fa6812b6a71ce38edf3a"' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v2.yml"]
-    assert "OPERATIONS_RESEARCH_REF: c8f11d46ee06b27ed4648c26101bfbd9a64accf3" in nightly
+    assert "OPERATIONS_RESEARCH_REF: 877d51c35b4d4f57ebc3fa6812b6a71ce38edf3a" in nightly
 
 
 def test_production_operations_compile_guard_is_executable():
