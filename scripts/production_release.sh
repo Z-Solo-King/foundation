@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="f40a641d5826c2ab5424e886331a95223bdf748c"
+OPERATIONS_REF="d3ed982bbdf86edca0af9fa9c8da0ac36488cdad"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
@@ -22,7 +22,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = 'f40a641d5826c2ab5424e886331a95223bdf748c'
+test "$OPERATIONS_REF" = 'd3ed982bbdf86edca0af9fa9c8da0ac36488cdad'
 
 after_install_marker=''
 
@@ -175,7 +175,8 @@ git -C "$RUNNER_TEMP/operations" fetch --no-tags --depth=1 origin "$OPERATIONS_R
 git -C "$RUNNER_TEMP/operations" checkout --detach "$OPERATIONS_REF"
 test "$(git -C "$RUNNER_TEMP/operations" rev-parse HEAD)" = "$OPERATIONS_REF"
 
-# Fail before deployment if the pinned Operations tree contains any Python syntax error.\npython -m compileall -q "$RUNNER_TEMP/operations"
+# Fail before deployment if the pinned Operations tree contains any Python syntax error.
+python -m compileall -q "$RUNNER_TEMP/operations"
 
 # Run the bounded cross-repository audit before touching production. This is evidence
 # collection inside the canonical production owner, not a second deployment authority.
