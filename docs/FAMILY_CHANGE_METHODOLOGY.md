@@ -54,3 +54,18 @@ For a new shared capability, prefer:
 
 Do not copy Foundation implementation into Operations merely to remove an import, and do not move protected Operations policy into Foundation merely to simplify validation.
 \n## Cross-paradigm learning scan protocol\n\nUse the four-layer scan in `docs/ENGINEERING_LEARNING_LOOP_2026-09-21.md`: inventory coverage, repository-wide semantic search, targeted owner review, then evidence reconciliation. Record coverage honestly and never treat path inventory coverage as byte-for-byte semantic rereading.\n
+
+## Cross-paradigm learning scan protocol
+
+The family scan is a four-layer evidence process:
+
+1. inventory the current tree and classify every blob;
+2. run repository-wide semantic searches for the lens failure modes;
+3. inspect high-signal owners, consumers, tests and workflow gates;
+4. reconcile findings against live issues, PRs, commits, CI and source-of-truth documents.
+
+Inventory coverage and semantic rereading are separate claims. Reports must say exactly which was achieved. Language lanes may partition inventory ranges without restricting semantic searches to those ranges.
+
+Translate verified cross-language findings into canonical-owner work only. Prefer one issue per authority/file surface and consolidate duplicates before implementation. Preserve the evidence ladder: implemented -> tested -> CI_green -> integration_verified -> runtime_verified -> production_certified.
+
+See docs/ENGINEERING_LEARNING_LOOP_2026-09-21.md for the synchronized scan, nightly-research, migration and queue rules.
