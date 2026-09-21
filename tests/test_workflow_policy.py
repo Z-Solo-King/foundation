@@ -8,7 +8,7 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "c752ba7f6cfa82adfe2e5ce8cd5ecc10b8b04101"
+CANONICAL_OPERATIONS_REF = "fed618a99a1540e4a7cd906952fbe3ee22acfe39"
 CANONICAL_OPERATIONS_SERVICE = "research-intelligence-engine-private"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 PRODUCTION_WORKFLOW = "heroic-ai-production-release.yml"
@@ -128,6 +128,7 @@ def test_production_release_fails_closed_and_retains_chat_policy_receipts():
     assert "concurrent-chat-1.json" in deployment
     assert "concurrent-chat-2.json" in deployment
     assert "policy-block.json" in deployment
+    assert "d1_reservation_reject_changes_semantics" in deployment
     assert "production-runtime-acceptance-receipts" in workflow
 
 def test_public_worker_propagates_client_request_cancellation_to_operations():
@@ -343,9 +344,9 @@ def test_superseded_nightly_variants_are_retired():
 
 def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'OPERATIONS_REF="c752ba7f6cfa82adfe2e5ce8cd5ecc10b8b04101"' in deployment
+    assert 'OPERATIONS_REF="fed618a99a1540e4a7cd906952fbe3ee22acfe39"' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v2.yml"]
-    assert "OPERATIONS_RESEARCH_REF: c752ba7f6cfa82adfe2e5ce8cd5ecc10b8b04101" in nightly
+    assert "OPERATIONS_RESEARCH_REF: fed618a99a1540e4a7cd906952fbe3ee22acfe39" in nightly
 
 
 
