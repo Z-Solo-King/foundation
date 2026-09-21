@@ -8,14 +8,39 @@ on:
       operations_ref:
         description: Immutable Operations revision to benchmark
         required: false
-        default: f38b24930a528a5e37f129e3b6ea4533b3b717b5
+        default: ""
         type: string
 
 permissions:
   contents: read
 
 jobs:
+  resolve_operations_ref:
+    name: Resolve immutable Operations revision
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      ref: ${{ steps.resolve.outputs.ref }}
+    steps:
+      - name: Resolve Operations ref
+        id: resolve
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          script: |
+            const requested = (context.payload.inputs?.operations_ref || "").trim();
+            if (requested) {
+              core.setOutput("ref", requested);
+              return;
+            }
+            const response = await github.rest.repos.getBranch({
+              owner: "Z-Solo-King",
+              repo: "operations",
+              branch: "main",
+            });
+            core.setOutput("ref", response.data.commit.sha);
+
   benchmark:
+    needs: resolve_operations_ref:
     name: ${{ matrix.case }} pass ${{ matrix.pass }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -76,7 +101,7 @@ jobs:
             url: https://webscraper.io/test-sites/e-commerce/dynamic/computers/laptops
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+      OPERATIONS_REF: ${{ needs.resolve_operations_ref.outputs.ref }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Create Operations read token
@@ -212,7 +237,7 @@ jobs:
           set -euo pipefail
           mkdir -p benchmark-output
           cat > benchmark-output/case.json <<EOF
-          {"case":"${{ matrix.case }}","label":"${{ matrix.label }}","mode":"${{ matrix.mode }}","url":"${{ matrix.url }}","pass":${{ matrix.pass }},"workers":"${{ steps.profile.outputs.workers || '1' }}","retries":"${{ steps.profile.outputs.retries || '2' }}","operations_ref":"${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}"}
+          {"case":"${{ matrix.case }}","label":"${{ matrix.label }}","mode":"${{ matrix.mode }}","url":"${{ matrix.url }}","pass":${{ matrix.pass }},"workers":"${{ steps.profile.outputs.workers || '1' }}","retries":"${{ steps.profile.outputs.retries || '2' }}","operations_ref":"${{ needs.resolve_operations_ref.outputs.ref }}"}
           EOF
 
       - name: Upload case artifact
@@ -225,6 +250,7 @@ jobs:
           retention-days: 14
 
   aggregate:
+    needs: resolve_operations_ref
     name: Aggregate 40-case extractor benchmark
     runs-on: ubuntu-latest
     needs: benchmark
@@ -245,7 +271,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f38b24930a528a5e37f129e3b6ea4533b3b717b5' }}
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
