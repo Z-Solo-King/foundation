@@ -218,7 +218,6 @@ jobs:
           gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$branch" --title "fix: make production chatbot usable" --body "Enable governed anonymous public chat, align production configuration and public UI guidance, and preserve protected control-plane authentication."
 
   operations-source:
-    needs: prepare
     runs-on: ubuntu-latest
     steps:
       - name: Create Operations write token
@@ -259,7 +258,6 @@ jobs:
           new = "            if not authorized_chat_request(request, self.env):\n                return Response.json({\"ok\": False, \"error\": \"unauthorized\"}, status=401)\n            payload = await read_json_object(request)\n"
           if old in source:
               source = source.replace(old, new, 1)
-
           path.write_text(source, encoding="utf-8")
 
       - name: Verify Operations source
@@ -273,7 +271,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          branch="fix/chat-backend-token-acceptance-$(date +%s)"
+          branch="fix/production-chatbot-operations-$(date +%s)"
           git checkout -b "$branch"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
