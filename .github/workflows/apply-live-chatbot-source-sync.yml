@@ -1,4 +1,4 @@
-name: Apply live chatbot source synchronization
+name: Finalize live chatbot source synchronization
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  patch:
+  finalize:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -18,7 +18,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Normalize duplicated UI auth guidance
+      - name: Normalize UI and submit wrapper
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -28,18 +28,6 @@ jobs:
               "This backend requires a session token. Open Settings to enter one, or enable Guest test mode to try Heroic AI locally without credentials.",
               "Public chat does not require a session token. Protected operational views still do.",
           )
-          path.write_text(text, encoding="utf-8")
-          PY
-
-      - name: Apply deterministic patch
-        run: python scripts/patch_live_chatbot_source.py
-
-      - name: Normalize submit wrapper
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          path = Path("frontend/ux_enhancements.js")
-          text = path.read_text(encoding="utf-8")
           bad = """  async function enhancedSubmitChat(text, chatId) {
     stopRequested = false;
         try {
@@ -69,28 +57,41 @@ jobs:
 """
           if bad in text:
               text = text.replace(bad, good, 1)
-          elif good not in text:
-              raise SystemExit("enhancedSubmitChat normalization marker not found")
           path.write_text(text, encoding="utf-8")
           PY
 
-      - name: Validate patched source
+      - name: Align production workflow test with generated Operations config
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path=Path("tests/test_workflow_policy.py")
+          text=path.read_text(encoding="utf-8")
+          old='operations_deploy = deployment.index("pywrangler deploy --config wrangler.toml --secrets-file")'
+          new='operations_deploy = deployment.index("pywrangler deploy --config \"$operations_wrangle\" --secrets-file")'
+          if old in text:
+              text=text.replace(old,new,1)
+          marker='    assert "wrangler.chatbot.production.generated.toml" in deployment\n'
+          anchor='    assert "operations_deploy" in locals()\n'
+          path.write_text(text,encoding="utf-8")
+          PY
+
+      - name: Validate source and policy
         run: |
           python -m py_compile worker.py
-          python -m pytest -q tests/test_live_chatbot_contract.py tests/test_live_chatbot_runtime_contract.py
-          python -m pytest -q tests/test_frontend_ux_completeness.py
+          python -m pytest -q tests/test_workflow_policy.py tests/test_live_chatbot_contract.py tests/test_live_chatbot_runtime_contract.py tests/test_frontend_ux_completeness.py
           for f in frontend/app.js frontend/composer.js frontend/chat_view.js frontend/ux_enhancements.js; do
             node --check "$f"
           done
           bash -n scripts/production_release.sh
 
-      - name: Commit source changes
+      - name: Commit final source and remove temporary tooling
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add worker.py wrangler.toml scripts/production_release.sh frontend/app.js frontend/composer.js frontend/chat_view.js frontend/ux_enhancements.js tests/test_live_chatbot_contract.py tests/test_live_chatbot_runtime_contract.py tests/test_frontend_ux_completeness.py
+          git rm -f .github/workflows/apply-live-chatbot-source-sync.yml .github/workflows/align-deployment-policy-marker.yml scripts/patch_live_chatbot_source.py 2>/dev/null || true
+          git add worker.py wrangler.toml scripts/production_release.sh frontend/app.js frontend/composer.js frontend/chat_view.js frontend/ux_enhancements.js tests/test_workflow_policy.py tests/test_frontend_ux_completeness.py tests/test_live_chatbot_contract.py tests/test_live_chatbot_runtime_contract.py
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "fix: finalize production chatbot source"
+          git commit -m "fix: finalize production chatbot source and policy"
           git push origin HEAD:$GITHUB_REF_NAME
