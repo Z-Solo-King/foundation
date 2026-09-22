@@ -14,6 +14,13 @@ def health_payload(env=None):
     environment = getattr(env, "ENVIRONMENT", None) if env is not None else None
     if env is not None:
         payload["environment"] = str(environment)
+        foundation_sha = str(getattr(env, "RELEASE_FOUNDATION_SHA", "") or "").strip()
+        operations_ref = str(getattr(env, "RELEASE_OPERATIONS_REF", "") or "").strip()
+        if foundation_sha or operations_ref:
+            payload["release"] = {
+                "foundation_sha": foundation_sha or None,
+                "operations_ref": operations_ref or None,
+            }
     return payload
 
 
