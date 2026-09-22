@@ -392,3 +392,8 @@ def test_live_acceptance_is_gated_by_runtime_provenance():
     assert ".release.foundation_sha == $foundation" in coverage
     assert ".release.operations_ref == $operations" in coverage
     assert "Live runtime provenance does not match the immutable revisions under test." in coverage
+
+
+def test_production_release_requires_concurrent_d1_overlimit_evidence():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'd1_concurrent_overlimit_changes_semantics' in deployment
