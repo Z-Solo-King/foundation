@@ -26,6 +26,7 @@ jobs:
         with:
           python-version: '3.14'
 
+      # Persistence bootstrap is automatic inside production_release.sh; no manual override is permitted.
       - name: Run canonical production release
         working-directory: ${{ github.workspace }}
         env:
