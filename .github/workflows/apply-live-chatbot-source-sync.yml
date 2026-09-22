@@ -145,7 +145,7 @@ jobs:
           lines = release.read_text(encoding="utf-8").splitlines()
           if not any('PUBLIC_CHAT_ANONYMOUS = "true"' in line for line in lines):
               index = next(i for i, line in enumerate(lines) if 'STRICT_ZERO_COST_ONLY = "true"' in line)
-              lines.insert(index + 1, "  'PUBLIC_CHAT_ANONYMOUS = \\"true\\"' \\\\")
+              lines.insert(index + 1, "  'PUBLIC_CHAT_ANONYMOUS = \"true\"' \\")
           if not any("wrangler.chatbot.production.generated.toml" in line for line in lines):
               index = next(i for i, line in enumerate(lines) if line.startswith('(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml'))
               ops_ref = dollar + "{OPERATIONS_REF}"
@@ -158,14 +158,14 @@ jobs:
                   "src, dst, worker = map(Path, sys.argv[1:])",
                   'text = src.read_text(encoding="utf-8")',
                   'if "[ai]" not in text:',
-                  '    text = text.replace("preview_urls = false\\\\n", "preview_urls = false\\\\n\\\\n[ai]\\\\nbinding = \\\\"AI\\\"\\\\n", 1)',
+                  '    text = text.replace("preview_urls = false\\n", "preview_urls = false\\n\\n[ai]\\nbinding = \\"AI\"\\n", 1)',
                   "provider_lines = (",
-                  '    \'CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"\\\\n\'',
-                  '    \'CHAT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast"\\\\n\'',
-                  '    \'CHAT_MODERATION_MODE = "observe"\\\\n\'',
+                  '    \'CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"\\n\'',
+                  '    \'CHAT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast"\\n\'',
+                  '    \'CHAT_MODERATION_MODE = "observe"\\n\'',
                   ")",
                   'if \'CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"\' not in text:',
-                  '    marker = \'STRICT_ZERO_COST_ONLY = "true"\\\\n\'',
+                  '    marker = \'STRICT_ZERO_COST_ONLY = "true"\\n\'',
                   "    if marker not in text:",
                   "        raise SystemExit('Operations provider marker missing')",
                   "    text = text.replace(marker, marker + provider_lines, 1)",
@@ -173,16 +173,16 @@ jobs:
                   "",
                   "ops = worker.read_text(encoding='utf-8')",
                   'if \'def _authorized_chat(request, env):\' not in ops:',
-                  '    ops = ops.replace("from urllib.parse import urlparse\\\\n", "import hmac\\\\nfrom urllib.parse import urlparse\\\\n", 1)',
-                  "    marker = 'from private.resource_governance_scheduler import reconcile_resource_governance\\\\n\\\\n\\\\nclass Default(WorkerEntrypoint):'",
-                  '    replacement = \'from private.resource_governance_scheduler import reconcile_resource_governance\\\\n\\\\n\\\\ndef _authorized_chat(request, env):\\\\n    if authorized_request(request, env):\\\\n        return True\\\\n    expected = str(getattr(env, "CHAT_BACKEND_TOKEN", "") or "").strip()\\\\n    authorization = str(request.headers.get("Authorization", "") or "").strip()\\\\n    scheme, _, value = authorization.partition(" ")\\\\n    return bool(expected and scheme.casefold() == "bearer" and value and hmac.compare_digest(value.encode("utf-8"), expected.encode("utf-8")))\\\\n\\\\n\\\\nclass Default(WorkerEntrypoint):\'',
+                  '    ops = ops.replace("from urllib.parse import urlparse\\n", "import hmac\\nfrom urllib.parse import urlparse\\n", 1)',
+                  "    marker = 'from private.resource_governance_scheduler import reconcile_resource_governance\\n\\n\\nclass Default(WorkerEntrypoint):'",
+                  '    replacement = \'from private.resource_governance_scheduler import reconcile_resource_governance\\n\\n\\ndef _authorized_chat(request, env):\\n    if authorized_request(request, env):\\n        return True\\n    expected = str(getattr(env, "CHAT_BACKEND_TOKEN", "") or "").strip()\\n    authorization = str(request.headers.get("Authorization", "") or "").strip()\\n    scheme, _, value = authorization.partition(" ")\\n    return bool(expected and scheme.casefold() == "bearer" and value and hmac.compare_digest(value.encode("utf-8"), expected.encode("utf-8")))\\n\\n\\nclass Default(WorkerEntrypoint):\'',
                   "    if marker not in ops:",
                   "        raise SystemExit('Operations Worker marker missing')",
                   "    ops = ops.replace(marker, replacement, 1)",
-                  '    route = \'            if not authorized_request(request, self.env):\\\\n                return Response.json({"ok": False, "error": "unauthorized"}, status=401)\'',
+                  '    route = \'            if not authorized_request(request, self.env):\\n                return Response.json({"ok": False, "error": "unauthorized"}, status=401)\'',
                   "    if route not in ops:",
                   "        raise SystemExit('Operations chat auth marker missing')",
-                  '    ops = ops.replace(route, \'            if not _authorized_chat(request, self.env):\\\\n                return Response.json({\"ok\": False, \"error\": \"unauthorized\"}, status=401)\', 1)',
+                  '    ops = ops.replace(route, \'            if not _authorized_chat(request, self.env):\\n                return Response.json({"ok": False, "error": "unauthorized"}, status=401)\', 1)',
                   '    worker.write_text(ops, encoding="utf-8")',
                   "PY",
                   'grep -q \'^binding = "AI"$\' "$operations_wrangle"',
@@ -215,8 +215,16 @@ jobs:
           )
           app = root / "frontend" / "app.js"
           app_text = app.read_text(encoding="utf-8")
-          old_cleanup = "    buffer += decoder.decode();\n    if (buffer.trim()) dispatch(buffer);\n    if (signal) signal.removeEventListener('abort', onAbort);\n"
-          new_cleanup = "    try:\n      buffer += decoder.decode();\n      if (buffer.trim()) dispatch(buffer);\n    } finally:\n      if (signal) signal.removeEventListener('abort', onAbort);\n"
+          old_cleanup = "    buffer += decoder.decode();
+    if (buffer.trim()) dispatch(buffer);
+    if (signal) signal.removeEventListener('abort', onAbort);
+"
+          new_cleanup = "    try:
+      buffer += decoder.decode();
+      if (buffer.trim()) dispatch(buffer);
+    } finally:
+      if (signal) signal.removeEventListener('abort', onAbort);
+"
           if new_cleanup not in app_text:
               if app_text.count(old_cleanup) != 1:
                   raise SystemExit("app.js SSE cleanup marker missing")
@@ -225,7 +233,8 @@ jobs:
           # Focused regression contract.
           test_path = root / "tests" / "test_live_chatbot_contract.py"
           test_path.write_text(
-              "\n".join([
+              "
+".join([
                   "from pathlib import Path",
                   "",
                   "ROOT = Path(__file__).parents[1]",
@@ -246,11 +255,11 @@ jobs:
                   "",
                   "def test_release_materializes_chat_provider_and_private_auth():",
                   '    release = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")',
-                  '    assert \'PUBLIC_CHAT_ANONYMOUS = "true"\' in release',
+                  '    assert 'PUBLIC_CHAT_ANONYMOUS = "true"' in release',
                   '    assert "wrangler.chatbot.production.generated.toml" in release',
-                  '    assert \'CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"\' in release',
-                  '    assert \'CHAT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast"\' in release',
-                  '    assert \'binding = "AI"\' in release',
+                  '    assert 'CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"' in release',
+                  '    assert 'CHAT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast"' in release',
+                  '    assert 'binding = "AI"' in release',
                   '    assert "def _authorized_chat(request, env):" in release',
                   "",
                   "",
@@ -262,7 +271,8 @@ jobs:
                   '    assert "public chat does not require one." in view',
                   '    assert "Public chat does not require a session token." in ux',
                   "",
-              ]) + "\n",
+              ]) + "
+",
               encoding="utf-8",
           )
 
