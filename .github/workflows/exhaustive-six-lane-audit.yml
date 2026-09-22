@@ -130,9 +130,22 @@ jobs:
         run: |
           printf 'foundation=%s\noperations=%s\n' "$(git -C foundation-repo rev-parse HEAD)" "$(git -C operations-repo rev-parse HEAD)" > .runtime/exhaustive-audit/scanned_revisions.txt
 
-      - name: Compile exhaustive audit tool
+      - name: Compile exhaustive audit tools
         working-directory: operations-repo
-        run: python -m py_compile tools/exhaustive_audit.py
+        run: |
+          python -m py_compile tools/exhaustive_audit.py
+          python -m py_compile tools/mapper_extractor_cross_audit.py
+
+      - name: Run mapper/extractor cross-audit
+        env:
+          PYTHONPATH: ${{ github.workspace }}/operations-repo
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime/exhaustive-audit/mapper-extractor
+          python operations-repo/tools/mapper_extractor_cross_audit.py \
+            --foundation "${{ github.workspace }}/foundation-repo" \
+            --operations "${{ github.workspace }}/operations-repo" \
+            --output "${{ github.workspace }}/.runtime/exhaustive-audit/mapper-extractor/receipt.json"
 
       - name: Test exhaustive audit contract
         working-directory: operations-repo
