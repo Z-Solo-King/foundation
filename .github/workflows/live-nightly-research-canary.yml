@@ -1,0 +1,104 @@
+name: Live nightly research canary
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: live-nightly-research-canary
+  cancel-in-progress: false
+
+env:
+  OPERATIONS_REPOSITORY: Z-Solo-King/operations
+  OPERATIONS_REF: 50e642dfb05846963a82fe76f4f5fe085d4b9a8c
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout pinned Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.OPERATIONS_REPOSITORY }}
+          ref: ${{ env.OPERATIONS_REF }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Verify research executor configuration
+        env:
+          RESEARCH_LLM_ENDPOINT: ${{ secrets.RESEARCH_LLM_ENDPOINT }}
+          RESEARCH_LLM_API_KEY: ${{ secrets.RESEARCH_LLM_API_KEY }}
+          RESEARCH_LLM_MODEL: ${{ secrets.RESEARCH_LLM_MODEL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${RESEARCH_LLM_ENDPOINT:-}" || { echo 'Missing RESEARCH_LLM_ENDPOINT'; exit 1; }
+          test -n "${RESEARCH_LLM_API_KEY:-}" || { echo 'Missing RESEARCH_LLM_API_KEY'; exit 1; }
+          test -n "${RESEARCH_LLM_MODEL:-}" || { echo 'Missing RESEARCH_LLM_MODEL'; exit 1; }
+          case "$RESEARCH_LLM_ENDPOINT" in http://*|https://*) ;; *) echo 'RESEARCH_LLM_ENDPOINT must be HTTP(S)'; exit 1;; esac
+          echo 'research executor preflight: PASS'
+      - name: Run live six-program canary across all three lanes
+        working-directory: operations
+        env:
+          RESEARCH_LLM_ENDPOINT: ${{ secrets.RESEARCH_LLM_ENDPOINT }}
+          RESEARCH_LLM_API_KEY: ${{ secrets.RESEARCH_LLM_API_KEY }}
+          RESEARCH_LLM_MODEL: ${{ secrets.RESEARCH_LLM_MODEL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime/live-nightly-canary
+          PYTHONPATH=. python -m private.multi_agent.runner --start-slot 0 --slots 2 --global-capacity 8 --output .runtime/live-nightly-canary/research.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[json.loads(line) for line in Path('.runtime/live-nightly-canary/research.jsonl').read_text().splitlines() if line.strip()]
+          expected={f'lane{lane}-slot{slot}' for lane in range(3) for slot in range(2)}
+          completed={row.get('program_id') for row in rows if row.get('status') == 'completed'}
+          summary={'schema':'live-nightly-canary/v1','ok':completed == expected,'programs_expected':len(expected),'programs_completed':len(completed),'program_ids':sorted(completed),'operations_ref':'50e642dfb05846963a82fe76f4f5fe085d4b9a8c'}
+          Path('.runtime/live-nightly-canary/summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(summary,indent=2,sort_keys=True))
+          raise SystemExit(0 if summary['ok'] else 1)
+          PY
+      - name: Publish sanitized canary receipt
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: operations
+        run: |
+          if [ -f .runtime/live-nightly-canary/summary.json ]; then
+            body=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('.runtime/live-nightly-canary/summary.json').read_text())
+          print('### Live nightly research canary')
+          print('```json')
+          print(json.dumps(data,indent=2,sort_keys=True))
+          print('```')
+          PY
+            )
+          else
+            body='### Live nightly research canary'
+            body="$body\nNo receipt was produced; inspect the failed canary job."
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/issues/157/comments" -f body="$body"
+      - name: Upload canary evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: live-nightly-research-canary-${{ github.run_id }}
+          path: operations/.runtime/live-nightly-canary/
+          retention-days: 30
