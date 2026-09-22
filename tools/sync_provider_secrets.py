@@ -26,9 +26,6 @@ except ImportError as exc:  # pragma: no cover - exercised by workflow bootstrap
 
 GH_OWNER = os.environ.get("GITHUB_OWNER", "Z-Solo-King")
 GH_REPO = os.environ.get("GITHUB_REPOSITORY_NAME", "foundation")
-CF_SCRIPT_NAME = os.environ.get(
-    "CLOUDFLARE_SCRIPT_NAME", "research-intelligence-engine-private"
-)
 KNOWN_PROVIDERS = {
     "groq": "GROQ",
     "gemini": "GEMINI",
@@ -53,21 +50,32 @@ def _provider_config(value: Any, provider: str) -> tuple[str, str, str]:
     endpoint = value.get("endpoint")
     api_key = value.get("api_key")
     model = value.get("model")
-    if not all(isinstance(item, str) and item.strip() for item in (endpoint, api_key, model)):
-        raise ValueError(f"provider '{provider}' requires non-empty endpoint, api_key and model")
+    if not all(
+        isinstance(item, str) and item.strip()
+        for item in (endpoint, api_key, model)
+    ):
+        raise ValueError(
+            f"provider '{provider}' requires non-empty endpoint, api_key and model"
+        )
     if not endpoint.startswith("https://"):
         raise ValueError(f"provider '{provider}' endpoint must use HTTPS")
     return endpoint.strip(), api_key.strip(), model.strip()
 
 
-def _json_request(method: str, url: str, headers: Mapping[str, str], body: Any = None) -> Any:
+def _json_request(
+    method: str, url: str, headers: Mapping[str, str], body: Any = None
+) -> Any:
     data = json.dumps(body).encode("utf-8") if body is not None else None
-    request = urllib.request.Request(url, data=data, method=method, headers=dict(headers))
+    request = urllib.request.Request(
+        url, data=data, method=method, headers=dict(headers)
+    )
     try:
         with urllib.request.urlopen(request) as response:
             raw = response.read()
     except urllib.error.HTTPError as exc:
-        raise RuntimeError(f"remote request failed: HTTP {exc.code} {method} {url}") from exc
+        raise RuntimeError(
+            f"remote request failed: HTTP {exc.code} {method} {url}"
+        ) from exc
     return json.loads(raw) if raw else {}
 
 
@@ -85,12 +93,20 @@ def gh_request(method: str, path: str, token: str, body: Any = None) -> Any:
     )
 
 
-def gh_set_secret(owner: str, repo: str, token: str, name: str, value: str) -> None:
+def gh_set_secret(
+    owner: str, repo: str, token: str, name: str, value: str
+) -> None:
     public_key = gh_request(
-        "GET", f"/repos/{owner}/{repo}/actions/secrets/public-key", token
+        "GET",
+        f"/repos/{owner}/{repo}/actions/secrets/public-key",
+        token,
     )
-    key = public.PublicKey(public_key["key"].encode("ascii"), encoding.Base64Encoder())
-    encrypted = base64.b64encode(public.SealedBox(key).encrypt(value.encode("utf-8"))).decode("ascii")
+    key = public.PublicKey(
+        public_key["key"].encode("ascii"), encoding.Base64Encoder()
+    )
+    encrypted = base64.b64encode(
+        public.SealedBox(key).encrypt(value.encode("utf-8"))
+    ).decode("ascii")
     gh_request(
         "PUT",
         f"/repos/{owner}/{repo}/actions/secrets/{name}",
@@ -100,7 +116,13 @@ def gh_set_secret(owner: str, repo: str, token: str, name: str, value: str) -> N
     print(f"[github/{repo}] set {name}")
 
 
-def cf_set_secret(account_id: str, script_name: str, api_token: str, name: str, value: str) -> None:
+def cf_set_secret(
+    account_id: str,
+    script_name: str,
+    api_token: str,
+    name: str,
+    value: str,
+) -> None:
     encoded_name = urllib.parse.quote(name, safe="")
     result = _json_request(
         "PUT",
@@ -120,6 +142,7 @@ def main() -> int:
     gh_token = _required_env("GH_ADMIN_TOKEN")
     cf_token = _required_env("CF_API_TOKEN")
     cf_account = _required_env("CF_ACCOUNT_ID")
+    cf_script_name = _required_env("CLOUDFLARE_SCRIPT_NAME")
     raw = _required_env("PROVIDER_KEYS_JSON")
     providers = json.loads(raw)
     if not isinstance(providers, Mapping):
@@ -130,21 +153,43 @@ def main() -> int:
         if provider not in KNOWN_PROVIDERS:
             raise ValueError(f"unknown provider: {provider}")
         endpoint, api_key, model = _provider_config(config, provider)
-        prepared.append((provider, KNOWN_PROVIDERS[provider], endpoint, api_key, model))
+        prepared.append(
+            (provider, KNOWN_PROVIDERS[provider], endpoint, api_key, model)
+        )
     if not prepared:
         raise ValueError("at least one provider must be configured")
 
     configured_order = []
     for provider, prefix, endpoint, api_key, model in prepared:
         print(f"Synchronizing provider: {provider}")
-        for suffix, value in (("ENDPOINT", endpoint), ("API_KEY", api_key), ("MODEL", model)):
-            gh_set_secret(GH_OWNER, GH_REPO, gh_token, f"RESEARCH_{prefix}_{suffix}", value)
-            cf_set_secret(cf_account, CF_SCRIPT_NAME, cf_token, f"CHAT_{prefix}_{suffix}", value)
+        for suffix, value in (
+            ("ENDPOINT", endpoint),
+            ("API_KEY", api_key),
+            ("MODEL", model),
+        ):
+            gh_set_secret(
+                GH_OWNER, GH_REPO, gh_token, f"RESEARCH_{prefix}_{suffix}", value
+            )
+            cf_set_secret(
+                cf_account,
+                cf_script_name,
+                cf_token,
+                f"CHAT_{prefix}_{suffix}",
+                value,
+            )
         configured_order.append(provider)
 
     provider_list = ",".join(configured_order)
-    gh_set_secret(GH_OWNER, GH_REPO, gh_token, "RESEARCH_LLM_PROVIDERS", provider_list)
-    cf_set_secret(cf_account, CF_SCRIPT_NAME, cf_token, "CHAT_LLM_PROVIDERS", provider_list)
+    gh_set_secret(
+        GH_OWNER, GH_REPO, gh_token, "RESEARCH_LLM_PROVIDERS", provider_list
+    )
+    cf_set_secret(
+        cf_account,
+        cf_script_name,
+        cf_token,
+        "CHAT_LLM_PROVIDERS",
+        provider_list,
+    )
     print(f"Completed synchronization for {len(configured_order)} provider(s)")
     return 0
 
