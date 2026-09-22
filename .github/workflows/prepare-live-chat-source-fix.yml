@@ -218,6 +218,7 @@ jobs:
           gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$branch" --title "fix: make production chatbot usable" --body "Enable governed anonymous public chat, align production configuration and public UI guidance, and preserve protected control-plane authentication."
 
   operations-source:
+    needs: prepare
     runs-on: ubuntu-latest
     steps:
       - name: Create Operations write token
@@ -244,20 +245,43 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+
           path = Path("worker.py")
           source = path.read_text(encoding="utf-8")
-          if "import hmac\nfrom urllib.parse import urlparse" not in source:
-              source = source.replace("from urllib.parse import urlparse\n", "import hmac\nfrom urllib.parse import urlparse\n", 1)
-          if "def authorized_chat_request(request, env):" not in source:
-              helper = "\n\ndef authorized_chat_request(request, env):\n    backend_expected = str(getattr(env, \"CHAT_BACKEND_TOKEN\", \"\") or \"\").strip()\n    authorization = str(getattr(request, \"headers\", {}).get(\"Authorization\", \"\") or \"\").strip()\n    scheme, _, value = authorization.partition(\" \")\n    if backend_expected and scheme.casefold() == \"bearer\" and value and hmac.compare_digest(value.encode(\"utf-8\"), backend_expected.encode(\"utf-8\")):\n        return True\n    return authorized_request(request, env)\n"
-              marker = "\n\nclass Default(WorkerEntrypoint):\n"
-              if marker not in source:
-                  raise SystemExit("Operations worker class marker missing")
-              source = source.replace(marker, helper + marker, 1)
-          old = "            if not authorized_request(request, self.env):\n                return Response.json({\"ok\": False, \"error\": \"unauthorized\"}, status=401)\n            payload = await read_json_object(request)\n"
-          new = "            if not authorized_chat_request(request, self.env):\n                return Response.json({\"ok\": False, \"error\": \"unauthorized\"}, status=401)\n            payload = await read_json_object(request)\n"
-          if old in source:
-              source = source.replace(old, new, 1)
+
+          assert "from urllib.parse import urlparse" in source
+          source = source.replace(
+              "from urllib.parse import urlparse\n",
+              "import hmac\nfrom urllib.parse import urlparse\n",
+              1,
+          )
+
+          helper = '''
+
+
+          def authorized_chat_request(request, env):
+              backend_expected = str(getattr(env, "CHAT_BACKEND_TOKEN", "") or "").strip()
+              authorization = str(getattr(request, "headers", {}).get("Authorization", "") or "").strip()
+              scheme, _, value = authorization.partition(" ")
+              if backend_expected and scheme.casefold() == "bearer" and value and hmac.compare_digest(value.encode("utf-8"), backend_expected.encode("utf-8")):
+                  return True
+              return authorized_request(request, env)
+          '''
+          marker = "\n\nclass Default(WorkerEntrypoint):\n"
+          assert marker in source, "Operations worker class marker not found"
+          source = source.replace(marker, helper + marker, 1)
+
+          old = '''            if not authorized_request(request, self.env):
+                  return Response.json({"ok": False, "error": "unauthorized"}, status=401)
+              payload = await read_json_object(request)
+          '''
+          new = '''            if not authorized_chat_request(request, self.env):
+                  return Response.json({"ok": False, "error": "unauthorized"}, status=401)
+              payload = await read_json_object(request)
+          '''
+          assert old in source, "Operations chat authorization contract not found"
+          source = source.replace(old, new, 1)
+
           path.write_text(source, encoding="utf-8")
 
       - name: Verify Operations source
@@ -271,12 +295,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          branch="fix/production-chatbot-operations-$(date +%s)"
+          branch="fix/chat-backend-token-acceptance-$(date +%s)"
           git checkout -b "$branch"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add worker.py
-          git diff --cached --quiet && exit 0
-          git commit -m "fix: production chatbot backend boundary"
+          git commit -m "fix: accept dedicated public chat backend token"
           git push origin "$branch"
-          gh pr create --repo Z-Solo-King/operations --base main --head "$branch" --title "fix: production chatbot backend boundary" --body "Align private chat authentication with CHAT_BACKEND_TOKEN while retaining AUTH_TOKEN protection for the rest of the control plane."
+          gh pr create --repo Z-Solo-King/operations --base main --head "$branch" --title "fix: accept dedicated public chat backend token" --body "Accept the dedicated CHAT_BACKEND_TOKEN only for private chat/chat-stream service traffic. Existing AUTH_TOKEN authorization remains required for dashboard, memory, diagnostics and other protected control-plane APIs."
