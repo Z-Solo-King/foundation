@@ -29,7 +29,7 @@ Private agent output crosses into the Foundation artifact surface only through v
 - `measurement`
 - `findings`
 
-Measurements are aggregate execution metrics only. Findings are restricted to the claim/source/evidence fields defined by the public boundary validator. Agent prompts, notes, arbitrary nested execution context, private topology, credentials and provider response objects are not part of the public contract.
+Measurements are aggregate execution metrics only. Findings are restricted to the claim/source/evidence fields defined by the public boundary validator. `research_type` and `topic` identify the nightly program itself; they do not expose private prompts, agent topology, provider responses, or execution context. Agent prompts, notes, arbitrary nested execution context, private topology, credentials and provider response objects are not part of the public contract.
 
 `benchmark.public_runner_boundary` provides deterministic validation of this schema, including unknown-field rejection, credential-pattern rejection, private-host rejection, lane/slot validation and duplicate-program detection. Its regression suite is deliberately adversarial.
 
@@ -41,4 +41,4 @@ Passing the repository validator proves only that the serialized artifact confor
 
 ## Ownership
 
-Foundation must not import or reimplement protected Operations policy. Operations owns acquisition, extraction, mapping, verification, provider execution and private orchestration. Foundation owns the public artifact contract and the trust boundary at the point where private execution output becomes publicly retained repository/workflow data.
+Nightly research uses its own immutable Operations implementation pin; that research pin is separate from the canonical production Operations deployment pin. Foundation must not import or reimplement protected Operations policy. Operations owns acquisition, extraction, mapping, verification, provider execution and private orchestration. Foundation owns the public artifact contract and the trust boundary at the point where private execution output becomes publicly retained repository/workflow data.
