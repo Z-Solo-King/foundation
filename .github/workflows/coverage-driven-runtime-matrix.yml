@@ -318,14 +318,25 @@ jobs:
               wait "$idem_pid2"
               status1=$(cat /tmp/live-idem-1.status)
               status2=$(cat /tmp/live-idem-2.status)
-              test "$status1" = 200 && test "$status2" = 200
+              if [ "$status1" != "200" ] || [ "$status2" != "200" ]; then
+                echo "Concurrent idempotency returned unexpected HTTP status"
+                echo "status1=$status1 status2=$status2"
+                echo "--- response 1 ---"; cat /tmp/live-idem-1.json || true
+                echo "--- response 2 ---"; cat /tmp/live-idem-2.json || true
+                exit 1
+              fi
               python - <<'PY'
           import json
-          one=json.load(open('/tmp/live-idem-1.json')); two=json.load(open('/tmp/live-idem-2.json'))
-          assert one.get('ok') is True and two.get('ok') is True
-          assert one.get('request_id') == two.get('request_id')
-          assert one.get('response',{}).get('response_id') == two.get('response',{}).get('response_id')
-          assert one.get('response',{}).get('result_state') == two.get('response',{}).get('result_state')
+          one=json.load(open("/tmp/live-idem-1.json")); two=json.load(open("/tmp/live-idem-2.json"))
+          if (
+              one.get("ok") is not True
+              or two.get("ok") is not True
+              or one.get("request_id") != two.get("request_id")
+              or one.get("response", {}).get("response_id") != two.get("response", {}).get("response_id")
+              or one.get("response", {}).get("result_state") != two.get("response", {}).get("result_state")
+          ):
+              print(json.dumps({"error":"concurrent_idempotency_divergence","first":one,"second":two}, indent=2, sort_keys=True))
+              raise SystemExit(1)
           PY
               ;;
             sse)
