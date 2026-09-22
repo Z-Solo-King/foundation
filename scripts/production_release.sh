@@ -562,6 +562,7 @@ if [ -n "${AUTH_TOKEN:-}" ]; then
   and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "d1_candidate_learning_round_trip" and .ok == true)
   and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "durable_resource_reserve_consume" and .ok == true)
   and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "d1_reservation_reject_changes_semantics" and .ok == true)
+  and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "d1_concurrent_overlimit_changes_semantics" and .ok == true)
   and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "maintenance_scheduler_reconciliation" and .ok == true)
   and any(.checks[]?; .name == "cloudflare_d1" and .ok == true)
   and any(.checks[]?; .name == "backblaze_b2_lifecycle" and .ok == true)
