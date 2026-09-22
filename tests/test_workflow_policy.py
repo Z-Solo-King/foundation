@@ -375,3 +375,20 @@ def test_polyglot_migration_review_uses_declared_operations_python_runtime():
     setup_index = workflow.index('python-version: "3.14"')
     install_index = workflow.index("python -m pip install --disable-pip-version-check -e . --no-deps")
     assert setup_index < install_index
+
+
+def test_production_release_publishes_immutable_runtime_identity():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'RELEASE_FOUNDATION_SHA = "${GITHUB_SHA}"' in deployment
+    assert 'RELEASE_OPERATIONS_REF = "${OPERATIONS_REF}"' in deployment
+
+
+def test_live_acceptance_is_gated_by_runtime_provenance():
+    diagnostics = (ROOT / "backend" / "worker_diagnostics.py").read_text(encoding="utf-8")
+    coverage = (ROOT / ".github/workflows/coverage-driven-runtime-matrix.yml").read_text(encoding="utf-8")
+    assert "RELEASE_FOUNDATION_SHA" in diagnostics
+    assert "RELEASE_OPERATIONS_REF" in diagnostics
+    assert 'payload["release"]' in diagnostics
+    assert ".release.foundation_sha == $foundation" in coverage
+    assert ".release.operations_ref == $operations" in coverage
+    assert "Live runtime provenance does not match the immutable revisions under test." in coverage
