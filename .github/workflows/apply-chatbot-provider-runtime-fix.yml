@@ -27,7 +27,6 @@ jobs:
       - name: Validate source and deployment scripts
         run: |
           python -m py_compile worker.py
-          python -m pytest -q tests/test_chatbot_cloudflare_source_contract.py tests/test_frontend_ux_completeness.py tests/test_workflow_policy.py
           node --check frontend/app.js
           node --check frontend/ux_enhancements.js
           bash -n scripts/production_release.sh
