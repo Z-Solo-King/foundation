@@ -41,7 +41,7 @@
     api.state.mode = mode;
     renderMode();
     if (mode === 'research') workspace?.classList.add('open');
-    setStatus(mode === 'research' ? 'Research uses the canonical backend lifecycle and evidence contract.' : 'Chat uses the authenticated Heroic AI backend and canonical Operations routing.');
+    setStatus(mode === 'research' ? 'Research uses the canonical backend lifecycle and evidence contract.' : 'Chat uses the public governed Heroic AI endpoint; a session token is only needed for protected operational features.');
     document.dispatchEvent(new CustomEvent('rie:mode-changed', { detail: { mode } }));
   }
 

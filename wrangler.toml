@@ -21,5 +21,6 @@ required = ["AUTH_TOKEN", "B2_KEY_ID", "B2_APPLICATION_KEY"]
 [vars]
 ENVIRONMENT = "production"
 STRICT_ZERO_COST_ONLY = "true"
+PUBLIC_CHAT_ANONYMOUS = "true"
 B2_BUCKET = "SoloKing"
 B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"

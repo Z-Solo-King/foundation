@@ -225,6 +225,7 @@ printf '%s\n' \
   '[vars]' \
   'ENVIRONMENT = "production"' \
   'STRICT_ZERO_COST_ONLY = "true"' \
+  'PUBLIC_CHAT_ANONYMOUS = "true"' \
   "RELEASE_FOUNDATION_SHA = \"${GITHUB_SHA}\"" \
   "RELEASE_OPERATIONS_REF = \"${OPERATIONS_REF}\"" \
   'B2_BUCKET = "SoloKing"' \
@@ -298,12 +299,35 @@ else
   exit 1
 fi
 # Only the canonical private Operations deployment now follows the public asset smoke.
+operations_wrangle="$RUNNER_TEMP/operations/wrangler.chatbot.production.generated.toml"
+python - "$RUNNER_TEMP/operations/wrangler.toml" "$operations_wrangle" <<'PY'
+from pathlib import Path
+import sys
+src, dst = map(Path, sys.argv[1:])
+text = src.read_text(encoding="utf-8")
+if "[ai]" not in text:
+    text = text.replace("preview_urls = false\n", "preview_urls = false\n\n[ai]\nbinding = \"AI\"\n", 1)
+provider_lines = (
+    'CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"\n'
+    'CHAT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast"\n'
+    'CHAT_MODERATION_MODE = "observe"\n'
+)
+if 'CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"' not in text:
+    marker = 'STRICT_ZERO_COST_ONLY = "true"\n'
+    if marker not in text:
+        raise SystemExit("Operations wrangler vars marker missing")
+    text = text.replace(marker, marker + provider_lines, 1)
+dst.write_text(text, encoding="utf-8")
+PY
+grep -q '^binding = "AI"$' "$operations_wrangle"
+grep -q '^CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"$' "$operations_wrangle"
+grep -q '^CHAT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast"$' "$operations_wrangle"
 npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
   --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql" \
   --config="$RUNNER_TEMP/operations/wrangler.toml"
 secret_file="$RUNNER_TEMP/operations-secrets.env"
 printf 'AUTH_TOKEN=%s\n' "$AUTH_TOKEN" > "$secret_file"
-(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}")
+(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$operations_wrangle" --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}")
 # Fail closed unless the active Cloudflare Operations deployment points to the
 # version carrying the exact canonical GitHub provenance annotation.
 operations_deployments_status=$(curl -sS -o "$RUNNER_TEMP/operations-deployments.json" -w '%{http_code}' \

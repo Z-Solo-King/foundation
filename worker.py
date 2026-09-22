@@ -157,15 +157,28 @@ def _authenticated_json(payload, *, status=200):
     )
 
 
-def _chat_headers(request):
+def _chat_headers(request, env):
     headers = {"Content-Type": "application/json"}
-    token = _bearer_token(request)
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
+    backend_token = str(getattr(env, "CHAT_BACKEND_TOKEN", "") or getattr(env, "AUTH_TOKEN", "") or "").strip()
+    if backend_token:
+        headers["Authorization"] = f"Bearer {backend_token}"
     idempotency_key = request.headers.get("Idempotency-Key")
     if idempotency_key:
         headers["Idempotency-Key"] = idempotency_key
     return headers
+
+
+def _anonymous_chat_enabled(env):
+    return str(getattr(env, "PUBLIC_CHAT_ANONYMOUS", "") or "").strip().casefold() == "true"
+
+
+def _public_chat_subject(request):
+    token_subject = authenticated_subject_fingerprint(request)
+    if token_subject:
+        return token_subject
+    ip = str(request.headers.get("CF-Connecting-IP", "") or "anonymous").split(",", 1)[0].strip() or "anonymous"
+    user_agent = str(request.headers.get("User-Agent", "") or "unknown")[:512]
+    return hashlib.sha256(f"anonymous|{ip}|{user_agent}".encode("utf-8")).hexdigest()
 
 
 
@@ -228,7 +241,7 @@ async def _operations_chat(env, payload, request):
     operations = getattr(env, "OPERATIONS", None)
     if operations is None:
         return {"ok": False, "error": "chat_backend_unavailable", "status": "unavailable"}, 503
-    headers = _chat_headers(request)
+    headers = _chat_headers(request, env)
     try:
         upstream = await operations.fetch(
             _service_request(
@@ -391,7 +404,8 @@ class Default(WorkerEntrypoint):
             body, status = await _operations_dashboard(self.env, request)
             return _authenticated_json(body, status=status)
         if request.method == "POST" and path.endswith("/api/v1/chat/stream"):
-            if not _authorized(request, self.env):
+            anonymous = _anonymous_chat_enabled(self.env)
+            if not anonymous and not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             payload = await _json(request)
             if payload is None:
@@ -401,7 +415,7 @@ class Default(WorkerEntrypoint):
                 req.validate()
             except (TypeError, ValueError) as exc:
                 return _authenticated_json({"ok": False, "error": str(exc)}, status=400)
-            subject = authenticated_subject_fingerprint(request) or "development-local"
+            subject = _public_chat_subject(request) if anonymous else (authenticated_subject_fingerprint(request) or "development-local")
             event_id = request.headers.get("Idempotency-Key") or req.request_id or uuid.uuid4().hex
             decision, lease = await _public_admit(self.env, AdmissionRoute.STREAM, subject, event_id)
             denied = _admission_response(decision)
@@ -428,7 +442,8 @@ class Default(WorkerEntrypoint):
                 if lease is not None:
                     await D1AdmissionStore(self.env.DB).release(lease)
         if request.method == "POST" and path.endswith("/api/v1/chat"):
-            if not _authorized(request, self.env):
+            anonymous = _anonymous_chat_enabled(self.env)
+            if not anonymous and not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             payload = await _json(request)
             if payload is None:
@@ -438,7 +453,7 @@ class Default(WorkerEntrypoint):
                 req.validate()
             except (TypeError, ValueError) as exc:
                 return _authenticated_json({"ok": False, "error": str(exc)}, status=400)
-            subject = authenticated_subject_fingerprint(request) or "development-local"
+            subject = _public_chat_subject(request) if anonymous else (authenticated_subject_fingerprint(request) or "development-local")
             event_id = request.headers.get("Idempotency-Key") or req.request_id or uuid.uuid4().hex
             decision, lease = await _public_admit(self.env, AdmissionRoute.CHAT, subject, event_id)
             denied = _admission_response(decision)
