@@ -31,14 +31,15 @@ from backend.worker_research import get_run, ingest_sources
 class _TestServiceRequest:
     """Minimal request shape used only when the Cloudflare JS runtime is unavailable."""
 
-    def __init__(self, url, *, method, headers, body=None):
+    def __init__(self, url, *, method, headers, body=None, signal=None):
         self.url = url
         self.method = method
         self.headers = headers
         self.body = body
+        self.signal = signal
 
 
-def _service_request(url, *, method="GET", headers=None, body=None):
+def _service_request(url, *, method="GET", headers=None, body=None, signal=None):
     """Construct the JavaScript Fetch Request object required by an HTTP service binding."""
     request_headers = headers or {}
     try:
@@ -48,12 +49,14 @@ def _service_request(url, *, method="GET", headers=None, body=None):
         init = {"method": method, "headers": request_headers}
         if body is not None:
             init["body"] = body
+        if signal is not None:
+            init["signal"] = signal
         return JSRequest.new(
             url,
             to_js(init, dict_converter=Object.fromEntries),
         )
     except ImportError:
-        return _TestServiceRequest(url, method=method, headers=request_headers, body=body)
+        return _TestServiceRequest(url, method=method, headers=request_headers, body=body, signal=signal)
 def _extract_source_urls(question, explicit=()):
     return extract_source_urls(question, explicit)
 
@@ -229,7 +232,13 @@ async def _operations_chat(env, payload, request):
     headers = _chat_headers(request)
     try:
         upstream = await operations.fetch(
-            _service_request("https://chat/v1/chat", method="POST", headers=headers, body=json.dumps(payload))
+            _service_request(
+                "https://chat/v1/chat",
+                method="POST",
+                headers=headers,
+                body=json.dumps(payload),
+                signal=getattr(request, "signal", None),
+            )
         )
         body = await upstream.json()
         if not isinstance(body, dict):
