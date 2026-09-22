@@ -32,24 +32,25 @@ jobs:
           ready=false
           if [ "$app_id" = true ] && [ "$app_key" = true ] && [ "$endpoint" = true ] && [ "$api_key" = true ] && [ "$model" = true ]; then ready=true; fi
           python - <<PY
-import json
-d={"schema":"live-nightly-preflight/v1","ready":${ready},"operations_app_id_set":${app_id},"operations_app_private_key_set":${app_key},"research_endpoint_set":${endpoint},"research_api_key_set":${api_key},"research_model_set":${model},"operations_ref":"50e642dfb05846963a82fe76f4f5fe085d4b9a8c"}
-open("preflight.json","w").write(json.dumps(d,indent=2,sort_keys=True)+"\n")
-print(json.dumps(d,indent=2,sort_keys=True))
-PY
+          import json
+          d={"schema":"live-nightly-preflight/v1","ready":${ready},"operations_app_id_set":${app_id},"operations_app_private_key_set":${app_key},"research_endpoint_set":${endpoint},"research_api_key_set":${api_key},"research_model_set":${model},"operations_ref":"50e642dfb05846963a82fe76f4f5fe085d4b9a8c"}
+          open("preflight.json","w").write(json.dumps(d,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(d,indent=2,sort_keys=True))
+          PY
       - name: Publish preflight receipt
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           body="$(python - <<PY
-import json
-d=json.load(open("preflight.json")) if __import__("os").path.exists("preflight.json") else {"ready":False,"error":"no receipt"}
-print("### Live nightly research preflight")
-print("```json")
-print(json.dumps(d,indent=2,sort_keys=True))
-print("```")
-PY
+          import json, os
+          p="preflight.json"
+          d=json.load(open(p)) if os.path.exists(p) else {"ready":False,"error":"no receipt"}
+          print("### Live nightly research preflight")
+          print("```json")
+          print(json.dumps(d,indent=2,sort_keys=True))
+          print("```")
+          PY
           )"
           gh api "repos/$GITHUB_REPOSITORY/issues/157/comments" -f body="$body"
       - name: Upload preflight receipt
