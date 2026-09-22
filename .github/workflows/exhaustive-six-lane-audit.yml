@@ -1,5 +1,5 @@
 name: Exhaustive six-lane repository audit
-# Scanner revision: 2026-09-22 restored full scanner + deterministic L3/L4 checks + process-parallel lanes + bounded conflicts + path-safe surface receipts + live issue register
+# Scanner revision: 2026-09-22 restored full scanner + deterministic L3/L4 checks + code-only sizing + migration normalization + process-parallel lanes + bounded conflicts + path-safe surface receipts + live issue register
 # The audit is report-only at the workflow boundary; generated patches remain artifacts for reviewed promotion.
 
 on:
