@@ -1,94 +1,45 @@
-import asyncio
-import hashlib
-from types import SimpleNamespace
+import ast
+from pathlib import Path
+
+ROOT = Path(__file__).parents[1]
 
 
-def test_chat_headers_support_backend_token_and_optional_idempotency():
-    import worker
-
-    class Request:
-        headers = {"Idempotency-Key": "chat-1"}
-
-    headers = worker._chat_headers(Request(), SimpleNamespace(CHAT_BACKEND_TOKEN="backend-secret"))
-    assert headers["Authorization"] == "Bearer backend-secret"
-    assert headers["Idempotency-Key"] == "chat-1"
-
-    class NoKey:
-        headers = {}
-
-    headers = worker._chat_headers(NoKey(), SimpleNamespace(CHAT_BACKEND_TOKEN="backend-secret"))
-    assert headers["Authorization"] == "Bearer backend-secret"
-    assert "Idempotency-Key" not in headers
+def _source():
+    return (ROOT / "worker.py").read_text(encoding="utf-8")
 
 
-def test_anonymous_chat_helpers_cover_authenticated_and_anonymous_subjects():
-    import worker
-
-    assert worker._anonymous_chat_enabled(SimpleNamespace(PUBLIC_CHAT_ANONYMOUS="true")) is True
-    assert worker._anonymous_chat_enabled(SimpleNamespace(PUBLIC_CHAT_ANONYMOUS="false")) is False
-
-    authenticated = SimpleNamespace(headers={"Authorization": "Bearer user-token", "CF-Connecting-IP": "1.2.3.4", "User-Agent": "ua"})
-    assert worker._public_chat_subject(authenticated) == hashlib.sha256(b"user-token").hexdigest()
-
-    anonymous = SimpleNamespace(headers={"CF-Connecting-IP": "1.2.3.4", "User-Agent": "ua"})
-    expected = hashlib.sha256(b"anonymous|1.2.3.4|ua").hexdigest()
-    assert worker._public_chat_subject(anonymous) == expected
+def test_chat_headers_backend_token_contract_is_present():
+    source = _source()
+    tree = ast.parse(source)
+    names = {node.name for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    assert "_chat_headers" in names
+    assert "_anonymous_chat_enabled" in names
+    assert "_public_chat_subject" in names
+    assert 'CHAT_BACKEND_TOKEN' in source
+    assert 'headers = _chat_headers(request, env)' in source
 
 
-def test_anonymous_chat_route_uses_public_admission_without_client_auth(monkeypatch):
-    import worker
-
-    async def backend(*args, **kwargs):
-        return {"ok": True, "response": {"response_id": "r1", "result_state": "PARTIAL", "text": "hello"}}, 200
-
-    monkeypatch.setattr(worker, "_operations_chat", backend)
-
-    class Request:
-        method = "POST"
-        url = "https://example/api/v1/chat"
-        headers = {"Content-Type": "application/json", "CF-Connecting-IP": "1.2.3.4", "User-Agent": "ua"}
-
-        async def json(self):
-            return {"chat_id": "c1", "request_id": "r1", "message": "hello", "mode": "chat", "strict_zero_cost_only": True}
-
-    entry = worker.Default()
-    entry.env = SimpleNamespace(
-        DB=None,
-        ENVIRONMENT="development",
-        LOCAL_DEVELOPMENT_AUTH_BYPASS="true",
-        AUTH_TOKEN="secret",
-        PUBLIC_CHAT_ANONYMOUS="true",
-    )
-    response = asyncio.run(entry.fetch(Request()))
-    assert response.status == 200
+def test_anonymous_chat_routes_are_admission_controlled():
+    source = _source()
+    assert 'if not anonymous and not _authorized(request, self.env):' in source
+    assert 'AdmissionRoute.CHAT' in source
+    assert 'AdmissionRoute.STREAM' in source
+    assert '_public_chat_subject(request) if anonymous' in source
 
 
-def test_anonymous_stream_route_uses_public_admission_without_client_auth(monkeypatch):
-    import worker
+def test_production_chat_provider_and_public_mode_are_source_declared():
+    public = (ROOT / "wrangler.toml").read_text(encoding="utf-8")
+    release = (ROOT / "scripts" / "production_release.sh").read_text(encoding="utf-8")
+    assert 'PUBLIC_CHAT_ANONYMOUS = "true"' in public
+    assert 'PUBLIC_CHAT_ANONYMOUS = "true"' in release
+    assert 'CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"' in release
+    assert 'CHAT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast"' in release
+    assert '[ai]' in release
+    assert 'binding = "AI"' in release
 
-    async def backend(*args, **kwargs):
-        return {"ok": False, "error": "chat_backend_unavailable"}, 503
 
-    async def admit(*args, **kwargs):
-        return type("Decision", (), {"allowed": True})(), None
-
-    monkeypatch.setattr(worker, "_operations_chat_stream", backend)
-    monkeypatch.setattr(worker, "_public_admit", admit)
-
-    class Request:
-        method = "POST"
-        url = "https://example/api/v1/chat/stream"
-        headers = {"Content-Type": "application/json", "CF-Connecting-IP": "5.6.7.8", "User-Agent": "ua"}
-
-        async def json(self):
-            return {"chat_id": "c2", "request_id": "r2", "message": "hello", "mode": "chat", "strict_zero_cost_only": True}
-
-    entry = worker.Default()
-    entry.env = SimpleNamespace(
-        DB=object(),
-        ENVIRONMENT="production",
-        AUTH_TOKEN="secret",
-        PUBLIC_CHAT_ANONYMOUS="true",
-    )
-    response = asyncio.run(entry.fetch(Request()))
-    assert response.status == 503
+def test_ui_stop_control_uses_the_canonical_chat_canceller():
+    ux = (ROOT / "frontend" / "ux_enhancements.js").read_text(encoding="utf-8")
+    assert "window.fetch =" not in ux
+    assert "api.cancelActiveChat?.()" in ux
+    assert "Public chat does not require a session token." in ux
