@@ -29,6 +29,8 @@ env:
   RESEARCH_LLM_API_KEY: ${{ secrets.RESEARCH_LLM_API_KEY }}
   RESEARCH_LLM_MODEL: ${{ secrets.RESEARCH_LLM_MODEL }}
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
+  # Immutable nightly-research runtime pin; production Operations pin is governed separately.
+  # Immutable nightly-research runtime pin; production Operations pin is governed separately.
   OPERATIONS_RESEARCH_REF: 3a7e350ddd5648caf93f58651323425186544f66
 
 jobs:
