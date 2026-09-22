@@ -357,3 +357,15 @@ def test_live_acceptance_is_gated_by_runtime_provenance():
     assert ".release.foundation_sha == $foundation" in coverage
     assert ".release.operations_ref == $operations" in coverage
     assert "Live runtime provenance does not match the immutable revisions under test." in coverage
+
+
+def test_public_worker_signal_passthrough_contract():
+    worker = (ROOT / "worker.py").read_text(encoding="utf-8")
+    wrangler = WRANGLER.read_text(encoding="utf-8")
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'signal=getattr(request, "signal", None)' in worker
+    assert 'init["signal"] = signal' in worker
+    assert "enable_request_signal" in wrangler
+    assert "request_signal_passthrough" in wrangler
+    assert "enable_request_signal" in deployment
+    assert "request_signal_passthrough" in deployment
