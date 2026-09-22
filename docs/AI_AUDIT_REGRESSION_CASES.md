@@ -17,3 +17,7 @@ Permanent warnings for future AI-assisted audits.
 ## Invariant
 
 A finding is complete only when evidence supports the exact claim, counter-checks were performed, and the acceptance gate is satisfied.
+
+| Peer-audit isolation | One audit family's PASS was used to dismiss another family's finding. | Compare shared finding categories across independent audits; preserve corroborated, single-observer and disagreement states. |
+| Audit drift | A newer scan changed coverage/methods/closure semantics without updating the other audit families. | Compare method contracts and false-positive controls after every material scan and record the delta as a regression rule. |
+| Revision disagreement | Findings from different repository SHAs were combined into one conclusion. | Reconcile exact Foundation/Operations revisions before comparing observations. |
