@@ -1,87 +1,123 @@
 # Deployment
 
-Foundation owns the single production deployment workflow in `.github/workflows/heroic-ai-production-release.yml`. Its workflow name is `Heroic AI production release`. The workflow deploys the public Worker and, after the public deployment succeeds, deploys the explicitly approved private Operations revision.
+This repository contains the public contract/Worker boundary. Production control-plane implementation details remain in the private `operations` repository.
+
+## Current verified production state
+
+Historical production verification is retained as historical evidence only. The 2026-09-13 manual verification is not current certification.
+
+Current acceptance requires fresh authenticated evidence from the approved GitHub deployment path and, where applicable, separate Cloudflare production verification.
+
+The public Worker is deployed with Python Worker tooling (`pywrangler`), not plain `wrangler deploy`.
+
+## Canonical production workflow
+
+The canonical Foundation production deployment workflow is `.github/workflows/heroic-ai-production-release.yml`. It contains the single `pywrangler deploy` production owner and runs the public deployment only after `Public tests` succeeds on a push to `main`.
+
+The same workflow performs the public post-deployment smoke checks. There is no second public production deployment workflow.
+
+The workflow dynamically resolves the live D1 database ID and writes a runner-only Wrangler configuration. Generated configuration is removed during cleanup. Credentials are never committed.
+
+The workflow also owns the protected Operations handoff. Production is pinned to the explicitly approved immutable Operations revision:
+
+`69f526f17a97fc29e478329db754658dd0fa383c`
+
+The private Operations checkout uses the purpose-specific GitHub App installation credential set:
+
+- `OPERATIONS_APP_ID`;
+- `OPERATIONS_APP_PRIVATE_KEY`.
+
+The installation ID is derived dynamically from the App JWT at runtime; it is not a stored secret or independent authority.
+
+The workflow mints a short-lived installation token at runtime, verifies access to the private Operations repository and exact approved revision, then uses that token for checkout. The generated token and key material are masked/removed and never printed. These credentials are for the Foundation deployment handoff only; they are not B2 or Cloudflare credentials.
+
+The canonical credential and backup policy is `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md`.
+
 
 ## GitHub Actions ownership boundary
 
-All GitHub Actions automation for the active family is executed from public `foundation`. The private `operations` repository must contain no `.github/workflows` and must not be its own CI, scheduled-job, workflow-dispatch, or deployment owner. Foundation uses the approved GitHub App to read private Operations source when automation requires it.
+All GitHub Actions automation for the active family is executed from public `foundation`.
 
-## External private-runtime Actions route
+The private `operations` repository must not contain `.github/workflows` and must not execute CI, scheduled jobs, workflow dispatch, or deployment automation itself.
 
-Private Operations and the private runtime never dispatch Foundation target workflows directly. Their single public automation ingress is `.github/workflows/foundation-canonical-workflow-bridge-v3.yml`.
+When Foundation automation needs private Operations source or metadata, it uses the approved Foundation GitHub App and short-lived installation token. This is a source-access/deployment boundary, not a runtime Worker boundary.
 
-The route is:
-
-private runtime -> Foundation GitHub App installation token (Actions: write) -> Foundation `workflow_dispatch` router -> canonical Foundation workflow
-
-The bridge allowlists only the nightly research, production release, cross-repository contract-drift, centralized Operations validation, and main-push control-plane probe workflows. Production still requires explicit confirmation.
-
-The Foundation GitHub App installation used by the private runtime must have Actions: write on `foundation`; the bridge itself creates a short-lived Foundation installation token with Actions: write to dispatch the selected workflow. GitHub documents that GitHub App installation tokens can create workflow-dispatch events with Actions: write. citeturn780911search4turn480911search6
-
-Direct private-to-target workflow dispatch is prohibited so that all family automation remains observable and governed through one public routing surface.
-
-## Production authority
-
-- Public Worker deployment authority: `.github/workflows/heroic-ai-production-release.yml`
-- Private Operations repository: `Z-Solo-King/operations`
-- Approved Operations production revision is pinned in `scripts/production_release.sh` and validated by the workflow policy.
-- The Operations production revision is immutable for a deployment run; the workflow fails closed if the expected pin changes.
-- Operations remains a private runtime/control-plane repository and is not deployed by a separate GitHub-hosted Operations workflow.
-
-## Required GitHub Actions secrets
-
-The deployment workflow uses separate credential authorities. Do not reuse storage/provider credentials for GitHub repository access.
-
-- `OPERATIONS_APP_ID`: GitHub App identifier used to resolve the installed Operations repository authorization at runtime.
-- `OPERATIONS_APP_PRIVATE_KEY`: GitHub App private key used only to mint the short-lived installation credential for the approved Operations checkout.
-- `CLOUDFLARE_API_TOKEN`: Cloudflare API credential required by the canonical deployment workflow.
-- `CLOUDFLARE_ACCOUNT_ID`: Cloudflare account identifier.
-- `AUTH_TOKEN`: application authentication secret, when protected authenticated smoke verification is enabled.
-
-`OPERATIONS_APP_INSTALLATION_ID` is **not** a stored production secret authority. The workflow resolves the current installation from the GitHub App at runtime.
-
-Backblaze B2 credentials are separate application/runtime credentials. They must never be stored in or substituted for the Operations GitHub App credentials.
-
-## Operations deployment sequence
-
-The canonical workflow performs the following in order:
-
-1. pass Foundation public tests and static analysis;
-2. resolve the installed Operations GitHub App installation from the App JWT;
-3. deploy the tested Foundation public Worker;
-4. run public production smoke checks;
-5. fetch and verify the exact approved Operations revision using the short-lived installation credential;
-6. apply the canonical Operations resource-governance D1 schema;
-7. materialize the exact pinned Foundation public deterministic core into the ignored Operations checkout and verify its generated package entrypoint;
-8. deploy the exact Operations Worker revision;
-9. remove the ephemeral checkout, temporary authentication helper, private key material and generated configuration.
-
-A credential failure stops the deployment before any Operations deployment step. A wrong credential must not be silently retried with a B2 or other provider credential.
+The runtime Foundation -> Operations path is a Cloudflare service binding plus the canonical `AUTH_TOKEN` check.
 
 
-## Private Operations validation
+## Credential boundaries
 
-The public workflow `.github/workflows/operations-centralized-validation.yml` is the CI owner for the private Operations repository. It uses the approved GitHub App read credential to check out `Z-Solo-King/operations`, validates the private-repository boundary, runs the Operations test suite, and fails if Operations contains any GitHub Actions workflow.
+| Secret | Purpose | Owner | Not interchangeable with |
+| --- | --- | --- | --- |
+| `OPERATIONS_APP_ID` | Identify the GitHub App used for private Operations deployment access | Foundation deployment workflow | B2 secrets, Cloudflare secrets |
+| `OPERATIONS_APP_PRIVATE_KEY` | Sign the short-lived GitHub App JWT | Foundation deployment workflow | B2 secrets, Cloudflare secrets |
+| `OPERATIONS_APP_ID` + `OPERATIONS_APP_PRIVATE_KEY` | Mint short-lived GitHub App token for private Operations source access during deployment and backup | Foundation deployment/backup workflows | B2 secrets, Cloudflare secrets |
+| `B2_KEY_ID` | B2 API authentication | B2 backup boundary | GitHub tokens, Cloudflare tokens |
+| `B2_APPLICATION_KEY` | B2 backup/restore authorization | B2 backup boundary | GitHub tokens, Cloudflare tokens |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare deployment/API access | Cloudflare deployment boundary | GitHub tokens, B2 secrets |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account identifier | Cloudflare deployment boundary | GitHub tokens, B2 secrets |
+| `AUTH_TOKEN` | Application/runtime authentication where required | Application/runtime boundary | GitHub tokens, B2 secrets |
 
-Scheduled and manual validation happen on Foundation runners. Operations itself has no GitHub Actions execution surface.
+Do not infer credential purpose from the fact that multiple secrets are consumed by one workflow. Each secret has an independent authority and scope.
 
-## Production re-release rule
+## Operations deployment gate
 
-When production runtime provenance or the deployed private Operations revision must be refreshed, the supported mechanism is a normal merge to `main`. The canonical `.github/workflows/heroic-ai-production-release.yml` is push-to-`main` owned and runs `scripts/production_release.sh`.
+Before the private Operations checkout, the workflow must fail closed unless the GitHub App credentials are present, the App JWT is valid, the installation-token exchange succeeds, and the resulting installation token can read `Z-Solo-King/operations`.
 
-Do not create a second deployment workflow, direct Cloudflare deployment path, private Operations Actions workflow, or manual Cloudflare Build/Deploy Hook to refresh production.
-## Evidence and closure
+The checkout must then fetch and verify the exact approved revision `69f526f17a97fc29e478329db754658dd0fa383c`. Before Worker packaging, the deployment materializes the pinned public `foundation_core` package through `operations/scripts/sync_public_core.py`; the generated directory is ignored and never committed. The workflow must not silently track `operations/main`, substitute an older pin, or deploy a mutable branch reference.
 
-A successful repository-side change does not prove production deployment. Deployment issue closure requires an actual successful post-merge Foundation Actions run proving the complete chain. Cloudflare production state, D1 bindings, Worker bindings, scheduled triggers, and live runtime behavior are verified separately in the Cloudflare-only operational context.
+A successful public Worker deployment does not prove that Operations was deployed. Operations deployment, D1 governance application, protected configuration and private runtime verification remain separately evidenced.
 
-## Current approved production revision
+## Backblaze B2 boundary
 
-The current explicitly approved Operations production revision is:
+Backblaze B2 is the authoritative artifact/backup storage provider under the strict zero-cost target.
 
-`50e642dfb05846963a82fe76f4f5fe085d4b9a8c`
+Current target:
 
-This is the explicitly approved immutable Operations revision for the next canonical production release. It is not a live runtime certificate until the canonical production workflow succeeds against the corresponding Foundation revision.
+- bucket: `SoloKing`;
+- endpoint: `https://s3.eu-central-003.backblazeb2.com`.
 
-## Credential rotation boundary
+B2 credentials are secrets and never belong in Git, documentation, backup manifests, or logs. B2 stores artifact/backup material; it is not an authority for identity, authorization, routing, policy, resource governance, evidence, deployment approval, or application result state.
 
-`OPERATIONS_APP_ID` and `OPERATIONS_APP_PRIVATE_KEY` are dedicated GitHub App deployment credentials. They are intentionally independent from Backblaze B2 application credentials, Cloudflare credentials, and application `AUTH_TOKEN`. The resolved installation token is short-lived and generated only for the approved Operations checkout.
+The repository backup workflow is `.github/workflows/b2-repository-backup.yml`; execution detail is documented in `backup/README.md` and policy in `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md`.
+
+## Backup artifact and restore policy
+
+The canonical backup workflow mirrors both active repositories:
+
+- `Z-Solo-King/foundation`;
+- `Z-Solo-King/operations`.
+
+It creates immutable Git mirror archives and manifests containing non-secret provenance. Backup verification requires remote B2 download, SHA-256 comparison, extraction, `git fsck --full --no-dangling`, and confirmation of the expected `main` reference.
+
+A successful upload is not disaster-recovery certification. Backup integrity, GitHub CI, Cloudflare deployment and application runtime are distinct evidence classes.
+
+## Runtime architecture
+
+The current public-safe architecture does not make public readiness depend on the private control plane. Protected Operations may use a private Service Binding to call Foundation where the protected verification path requires it.
+
+Foundation uses:
+
+- Cloudflare D1 for compact public/operational metadata where defined by the Foundation contract;
+- Backblaze B2 for current artifact storage under the strict zero-cost design;
+- no public route for arbitrary private control-plane dispatch.
+
+## Deployment order
+
+The Foundation production workflow owns the deployment path. Private Operations activation must not create a second GitHub deployment owner.
+
+The public path is validated first. The protected Operations handoff is then validated against the exact approved revision. Cloudflare production state is verified separately by the dedicated Cloudflare-side procedure.
+
+## Important operational rules
+
+- Never hard-code an obsolete D1 `database_id`; resolve it from Cloudflare at deployment time.
+- Never deploy a generated Wrangler config containing `REPLACE_WITH_*` placeholders.
+- Use `pywrangler deploy` for Python Workers.
+- Never commit credential values.
+- Never put GitHub tokens, B2 keys, Cloudflare tokens, or application authentication tokens into backup manifests or handoff records.
+- Do not use B2 credentials or application/runtime credentials as GitHub source-access credentials; use the purpose-specific GitHub App installation credential set.
+- Do not reuse B2 credentials as GitHub credentials.
+- Keep the strict `$0` policy fail-closed; do not add paid fallbacks to make deployment convenient.
+- Do not claim Cloudflare production or application certification without current evidence.
+- Keep deployment and its public post-deployment verification in the canonical workflow chain.
+- Record material deployment, credential, backup, scope and evidence changes in the canonical policy/record documents.

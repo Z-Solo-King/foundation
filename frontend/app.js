@@ -215,9 +215,12 @@
       buffer = blocks.pop() || '';
       blocks.filter(Boolean).forEach(dispatch);
     }
-    buffer += decoder.decode();
-    if (buffer.trim()) dispatch(buffer);
-    if (signal) signal.removeEventListener('abort', onAbort);
+    try {
+      buffer += decoder.decode();
+      if (buffer.trim()) dispatch(buffer);
+    } finally {
+      if (signal) signal.removeEventListener('abort', onAbort);
+    }
   }
 
   function cancelActiveChat() {

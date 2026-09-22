@@ -4,9 +4,7 @@
   const api = window.RIEFrontend;
   if (!api?.chatView || !api?.composer) return;
   const MAX_CHARS = 12_000;
-  let activeController = null;
   let stopRequested = false;
-  const originalFetch = window.fetch.bind(window);
 
   const icons = {
     menu: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
@@ -57,15 +55,6 @@
     root.querySelectorAll('.chat-icon').forEach((node) => { if (!node.querySelector('.ux-icon')) { node.textContent = ''; node.innerHTML = icons.chat; } });
   }
 
-  window.fetch = (input, init = {}) => {
-    const url = typeof input === 'string' ? input : input?.url || '';
-    if (String(url).includes('/api/v1/chat/stream') && String(init.method || input?.method || 'GET').toUpperCase() === 'POST') {
-      activeController = new AbortController();
-      return originalFetch(input, { ...init, signal: activeController.signal });
-    }
-    return originalFetch(input, init);
-  };
-
   function updateLastAssistant(fn) {
     const chat = api.activeChat?.();
     if (!chat) return;
@@ -84,7 +73,6 @@
 
   async function enhancedSubmitChat(text, chatId) {
     stopRequested = false;
-    activeController = new AbortController();
     try {
       return await api.__originalSubmitChat(text, chatId);
     } catch (error) {
@@ -93,8 +81,6 @@
         submitGuidedMessage('This backend requires a session token. Open Settings to enter one, or enable Guest test mode to try Heroic AI locally without credentials.');
       }
       throw error;
-    } finally {
-      activeController = null;
     }
   }
 
@@ -139,9 +125,9 @@
     button.hidden = true;
     button.innerHTML = icons.stop;
     button.addEventListener('click', () => {
-      if (!activeController) return;
+      if (!api.state.submitting) return;
       stopRequested = true;
-      activeController.abort();
+      api.cancelActiveChat?.();
       button.hidden = true;
     });
     const send = composer.querySelector('[data-action="send"]');
@@ -150,7 +136,7 @@
 
   function syncStopButton() {
     const button = document.querySelector('.ux-stop');
-    if (button) button.hidden = !Boolean(activeController) || !api.state.submitting;
+    if (button) button.hidden = !api.state.submitting;
   }
 
   function copyText(text, button) {

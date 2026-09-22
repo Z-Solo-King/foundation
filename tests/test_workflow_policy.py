@@ -8,7 +8,7 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "50e642dfb05846963a82fe76f4f5fe085d4b9a8c"
+CANONICAL_OPERATIONS_REF = "69f526f17a97fc29e478329db754658dd0fa383c"
 CANONICAL_OPERATIONS_SERVICE = "research-intelligence-engine-private"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 PRODUCTION_WORKFLOW = "heroic-ai-production-release.yml"
@@ -45,6 +45,7 @@ def test_production_deployment_has_one_owner():
     assert "bash scripts/production_release.sh" in texts[PRODUCTION_WORKFLOW]
     assert "pywrangler deploy" in PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert all("pywrangler deploy" not in text for name, text in texts.items() if name != PRODUCTION_WORKFLOW)
+    assert "prepare-live-chat-source-fix.yml" not in texts
 
     forbidden = re.compile(r"(?i)(workers\s+build|deploy\s+hook|deploy_hook|workers-builds)")
     violations = [
@@ -344,7 +345,7 @@ def test_superseded_nightly_variants_are_retired():
 
 def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'OPERATIONS_REF="50e642dfb05846963a82fe76f4f5fe085d4b9a8c"' in deployment
+    assert f'OPERATIONS_REF="{CANONICAL_OPERATIONS_REF}"' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v2.yml"]
     assert "OPERATIONS_RESEARCH_REF: 50e642dfb05846963a82fe76f4f5fe085d4b9a8c" in nightly
 
