@@ -1,5 +1,5 @@
 name: Exhaustive six-lane repository audit
-# Scanner revision: 2026-09-22 issue-register + hardened governance + explicit duplicate-symbol coverage
+# Scanner revision: 2026-09-22 bounded conflict clustering + restored semantic embedding helpers
 
 on:
   pull_request:
