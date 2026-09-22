@@ -34,10 +34,51 @@ jobs:
       - name: Apply deterministic patch
         run: python scripts/patch_live_chatbot_source.py
 
+      - name: Normalize submit wrapper
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("frontend/ux_enhancements.js")
+          text = path.read_text(encoding="utf-8")
+          bad = """  async function enhancedSubmitChat(text, chatId) {
+    stopRequested = false;
+        try {
+      return await api.__originalSubmitChat(text, chatId);
+    } catch (error) {
+      if (stopRequested) submitGuidedMessage('Response stopped by you. The backend request was cancelled.');
+      else if (/unauthorized|401/i.test(String(error?.message || error))) {
+        submitGuidedMessage('Public chat does not require a session token. The protected backend surface may still be unavailable; check Backend status and retry.');
+      }
+      throw error;
+    } finally {
+      }
+  }
+"""
+          good = """  async function enhancedSubmitChat(text, chatId) {
+    stopRequested = false;
+    try {
+      return await api.__originalSubmitChat(text, chatId);
+    } catch (error) {
+      if (stopRequested) submitGuidedMessage('Response stopped by you. The backend request was cancelled.');
+      else if (/unauthorized|401/i.test(String(error?.message || error))) {
+        submitGuidedMessage('Public chat does not require a session token. The protected backend surface may still be unavailable; check Backend status and retry.');
+      }
+      throw error;
+    }
+  }
+"""
+          if bad in text:
+              text = text.replace(bad, good, 1)
+          elif good not in text:
+              raise SystemExit("enhancedSubmitChat normalization marker not found")
+          path.write_text(text, encoding="utf-8")
+          PY
+
       - name: Validate patched source
         run: |
           python -m py_compile worker.py
-          python -m pytest -q tests/test_live_chatbot_contract.py
+          python -m pytest -q tests/test_live_chatbot_contract.py tests/test_live_chatbot_runtime_contract.py
+          python -m pytest -q tests/test_frontend_ux_completeness.py
           for f in frontend/app.js frontend/composer.js frontend/chat_view.js frontend/ux_enhancements.js; do
             node --check "$f"
           done
@@ -49,7 +90,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add worker.py wrangler.toml scripts/production_release.sh frontend/app.js frontend/composer.js frontend/chat_view.js frontend/ux_enhancements.js tests/test_live_chatbot_contract.py
+          git add worker.py wrangler.toml scripts/production_release.sh frontend/app.js frontend/composer.js frontend/chat_view.js frontend/ux_enhancements.js tests/test_live_chatbot_contract.py tests/test_live_chatbot_runtime_contract.py tests/test_frontend_ux_completeness.py
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "fix: make production chatbot usable and source-aligned"
+          git commit -m "fix: finalize production chatbot source"
           git push origin HEAD:$GITHUB_REF_NAME
