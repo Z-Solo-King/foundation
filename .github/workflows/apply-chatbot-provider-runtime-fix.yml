@@ -18,6 +18,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Repair patcher write-back contract
+        run: python scripts/fix_chatbot_patcher_writeback.py
+
       - name: Apply deterministic source patch
         run: python scripts/patch_chatbot_provider_runtime.py
 
@@ -36,7 +39,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scripts/production_release.sh scripts/deploy_operations_chatbot_config.sh frontend/app.js frontend/ux_enhancements.js tests/test_frontend_ux_completeness.py tests/test_workflow_policy.py tests/test_chatbot_cloudflare_source_contract.py
+          git add scripts/fix_chatbot_patcher_writeback.py scripts/patch_chatbot_provider_runtime.py scripts/production_release.sh scripts/deploy_operations_chatbot_config.sh frontend/app.js frontend/ux_enhancements.js tests/test_frontend_ux_completeness.py tests/test_workflow_policy.py tests/test_chatbot_cloudflare_source_contract.py
           git diff --cached --quiet && exit 0
           git commit -m "fix: wire Cloudflare AI provider and canonical chat cancellation"
           git push origin HEAD:fix/cloudflare-chatbot-provider-runtime-20260922
