@@ -1,17 +1,29 @@
 from pathlib import Path
+import json
+import re
+import subprocess
+import sys
+from datetime import datetime, timedelta, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def replace_once(path, old, new, label):
+def replace_file(path: Path, old: str, new: str, label: str) -> None:
     text = path.read_text(encoding="utf-8")
     count = text.count(old)
     if count != 1:
-        raise SystemExit(f"{label}: expected exactly one match, got {count}")
+        raise SystemExit(f"{label}: expected exactly one file match, got {count}")
     path.write_text(text.replace(old, new), encoding="utf-8")
 
 
-# Canonical private Operations deployment overlay.
+def replace_text(text: str, old: str, new: str, label: str) -> str:
+    count = text.count(old)
+    if count != 1:
+        raise SystemExit(f"{label}: expected exactly one text match, got {count}")
+    return text.replace(old, new)
+
+
+# Canonical private Operations production configuration.
 release = ROOT / "scripts" / "production_release.sh"
 ops_ref = "$" + "{OPERATIONS_REF}"
 old_deploy = '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:' + ops_ref + '" --tag "github:' + ops_ref + '")'
@@ -27,23 +39,56 @@ src, dst = map(Path, sys.argv[1:])
 text = src.read_text(encoding="utf-8")
 
 if "[ai]" not in text:
-    text = text.replace("preview_urls = false\n", "preview_urls = false\n\n[ai]\nbinding = \"AI\"\n", 1)
+    text = text.replace(
+        "preview_urls = false
+",
+        "preview_urls = false
+
+[ai]
+binding = "AI"
+",
+        1,
+    )
 
 provider_lines = (
-    'CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"\n'
-    'CHAT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast"\n'
-    'CHAT_MODERATION_MODE = "observe"\n'
+    'CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"
+'
+    'CHAT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast"
+'
+    'CHAT_MODERATION_MODE = "observe"
+'
 )
-if 'CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"' not in text:
-    marker = 'STRICT_ZERO_COST_ONLY = "true"\n'
+if "CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"" not in text:
+    marker = 'STRICT_ZERO_COST_ONLY = "true"
+'
+    if marker not in text:
+        raise SystemExit("Operations STRICT_ZERO_COST_ONLY marker missing")
     text = text.replace(marker, marker + provider_lines, 1)
 
-limits = {"d1_reads":100000,"d1_writes":20000,"queue_operations":10000,"workflow_steps":5000,"browser_minutes":60,"workers_ai_neurons":9000,"model_calls":2000,"github_minutes":500,"search_calls":1000,"storage_bytes":5000000000}
-text = re.sub(r"^RESOURCE_LIMITS_JSON = .*$", "RESOURCE_LIMITS_JSON = " + repr(json.dumps(limits, separators=(",", ":"))), text, count=1, flags=re.MULTILINE)
+limits = {
+    "d1_reads": 100000,
+    "d1_writes": 20000,
+    "queue_operations": 10000,
+    "workflow_steps": 5000,
+    "browser_minutes": 60,
+    "workers_ai_neurons": 9000,
+    "model_calls": 2000,
+    "github_minutes": 500,
+    "search_calls": 1000,
+    "storage_bytes": 5000000000,
+}
+limits_text = json.dumps(limits, separators=(",", ":"))
+text = re.sub(
+    r"^RESOURCE_LIMITS_JSON = .*$",
+    "RESOURCE_LIMITS_JSON = " + repr(limits_text),
+    text,
+    count=1,
+    flags=re.MULTILINE,
+)
 
 now = datetime.now(timezone.utc)
 expires = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-state = {
+runtime_state = {
     "cloudflare_workers_ai": {
         "unavailable": False,
         "recent_successes": 1,
@@ -59,17 +104,22 @@ state = {
         "config_revision": "cloudflare-ai-live-configuration",
     }
 }
-state_line = "CHAT_PROVIDER_RUNTIME_STATE = " + repr(json.dumps(state, separators=(",", ":")))
+state_line = "CHAT_PROVIDER_RUNTIME_STATE = " + repr(json.dumps(runtime_state, separators=(",", ":")))
 if "CHAT_PROVIDER_RUNTIME_STATE =" in text:
-    text = re.sub(r"^CHAT_PROVIDER_RUNTIME_STATE = .*$", re.escape(state_line).replace("\\", "\\"), text, count=0)
-# Simpler deterministic replacement without regex replacement escaping.
-if "CHAT_PROVIDER_RUNTIME_STATE =" in text:
-    lines = text.splitlines()
-    lines = [state_line if line.startswith("CHAT_PROVIDER_RUNTIME_STATE =") else line for line in lines]
-    text = "\n".join(lines) + "\n"
+    lines = [
+        state_line if line.startswith("CHAT_PROVIDER_RUNTIME_STATE =") else line
+        for line in text.splitlines()
+    ]
+    text = "
+".join(lines) + "
+"
 else:
-    marker = 'CHAT_MODERATION_MODE = "observe"\n'
-    text = text.replace(marker, marker + state_line + "\n", 1)
+    marker = 'CHAT_MODERATION_MODE = "observe"
+'
+    if marker not in text:
+        raise SystemExit("CHAT_MODERATION_MODE marker missing")
+    text = text.replace(marker, marker + state_line + "
+", 1)
 
 dst.write_text(text, encoding="utf-8")
 PY
@@ -83,7 +133,8 @@ grep -q '"workers_ai_neurons": 9000' "$operations_wrangle"
 operations_settings_status=$(curl -sS -o "$RUNNER_TEMP/operations-settings.json" -w '%{http_code}'   -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"   -H 'Content-Type: application/json'   "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$OPERATIONS_SERVICE_NAME/settings" || true)
 echo "GET Operations settings -> HTTP $operations_settings_status"
 test "$operations_settings_status" = "200"
-jq -e 'any(.result.bindings[]?; .name == "AI" and .type == "ai")
+jq -e '
+  any(.result.bindings[]?; .name == "AI" and .type == "ai")
   and any(.result.bindings[]?; .name == "OPERATIONS_DB" and .type == "d1" and .database_id == "19f51638-47a5-4218-a9dc-73dbfd6156fe")
   and any(.result.bindings[]?; .name == "FOUNDATION" and .type == "service" and .service == "research-intelligence-engine-public")
   and any(.result.bindings[]?; .name == "ENVIRONMENT" and .text == "production")
@@ -94,12 +145,11 @@ jq -e 'any(.result.bindings[]?; .name == "AI" and .type == "ai")
 ' "$RUNNER_TEMP/operations-settings.json" >/dev/null
 echo "Cloudflare Operations chatbot provider configuration: PASS"
 '''
-replace_once(release, old_deploy, new_deploy, "Operations production deploy overlay")
+replace_file(release, old_deploy, new_deploy, "Operations production deploy overlay")
 
 
-app = ROOT / "frontend" / "app.js"
-replace_once(
-    app,
+replace_file(
+    ROOT / "frontend" / "app.js",
     """    buffer += decoder.decode();
     if (buffer.trim()) dispatch(buffer);
     if (signal) signal.removeEventListener('abort', onAbort);
@@ -116,9 +166,9 @@ replace_once(
 
 
 ux = ROOT / "frontend" / "ux_enhancements.js"
-text = ux.read_text(encoding="utf-8")
-replace_once(
-    ux,
+ux_text = ux.read_text(encoding="utf-8")
+ux_text = replace_text(
+    ux_text,
     """  let activeController = null;
   let stopRequested = false;
   const originalFetch = window.fetch.bind(window);
@@ -127,15 +177,15 @@ replace_once(
 """,
     "UX controller header",
 )
-start = text.find("  window.fetch = (input, init = {}) => {")
+start = ux_text.find("  window.fetch = (input, init = {}) => {")
 if start < 0:
     raise SystemExit("global fetch interception not found")
-end = text.find("  function updateLastAssistant", start)
+end = ux_text.find("  function updateLastAssistant", start)
 if end < 0:
-    raise SystemExit("UX marker not found")
-text = text[:start] + text[end:]
-replace_once(
-    text,
+    raise SystemExit("UX updateLastAssistant marker not found")
+ux_text = ux_text[:start] + ux_text[end:]
+ux_text = replace_text(
+    ux_text,
     """  async function enhancedSubmitChat(text, chatId) {
     stopRequested = false;
     activeController = new AbortController();
@@ -167,8 +217,8 @@ replace_once(
 """,
     "UX submit wrapper",
 )
-replace_once(
-    text,
+ux_text = replace_text(
+    ux_text,
     """    button.addEventListener('click', () => {
       if (!activeController) return;
       stopRequested = true;
@@ -185,11 +235,20 @@ replace_once(
 """,
     "UX stop button",
 )
-replace_once(text, "button.hidden = !Boolean(activeController) || !api.state.submitting;", "button.hidden = !api.state.submitting;", "UX stop visibility")
-ux.write_text(text, encoding="utf-8")
+ux_text = replace_text(
+    ux_text,
+    "button.hidden = !Boolean(activeController) || !api.state.submitting;",
+    "button.hidden = !api.state.submitting;",
+    "UX stop visibility",
+)
+ux.write_text(ux_text, encoding="utf-8")
+
 
 ux_test = ROOT / "tests" / "test_frontend_ux_completeness.py"
-ux_test.write_text(ux_test.read_text(encoding="utf-8").replace('"AbortController",', '"api.cancelActiveChat?.()",', 1), encoding="utf-8")
+ux_test.write_text(
+    ux_test.read_text(encoding="utf-8").replace('"AbortController",', '"api.cancelActiveChat?.()",', 1),
+    encoding="utf-8",
+)
 
 (ROOT / "tests" / "test_chatbot_cloudflare_source_contract.py").write_text(
 """from pathlib import Path
@@ -219,7 +278,7 @@ def test_frontend_uses_canonical_chat_cancellation():
     assert "window.fetch =" not in ux
     assert "api.cancelActiveChat?.()" in ux
 """,
-encoding="utf-8",
+    encoding="utf-8",
 )
 
 print("chatbot provider/runtime source patch: PASS")
