@@ -85,7 +85,7 @@ jobs:
             --foundation "$GITHUB_WORKSPACE" \
             --operations "$GITHUB_WORKSPACE/operations" \
             --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_56.json" \
-            --surface-map "$GITHUB_WORKSPACE/operations/benchmark/open_issue_surface_map.json" \
+            --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json" \
             --lane "${{ matrix.lane }}" \
             --output ".runtime/open-issue-deep-scan/${{ matrix.lane }}.json"
 
