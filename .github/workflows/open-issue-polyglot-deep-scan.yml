@@ -26,6 +26,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: foundation-open-issue-polyglot-deep-scan
@@ -69,6 +70,7 @@ jobs:
           python-version: "3.14"
 
       - name: Validate scan matrix contract
+        id: validate-scan-contract
         working-directory: operations
         run: |
           python - <<'PY'
@@ -86,10 +88,47 @@ jobs:
           PY
 
       - name: Run lane ${{ matrix.lane }}
+        id: run-lane
         working-directory: operations
         run: |
           mkdir -p .runtime/open-issue-deep-scan
           python tools/open_issue_polyglot_scan.py             --foundation "$GITHUB_WORKSPACE"             --operations "$GITHUB_WORKSPACE/operations"             --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_52.json"             --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json"             --lane "${{ matrix.lane }}"             --output ".runtime/open-issue-deep-scan/${{ matrix.lane }}.json"
+
+      - name: Emit lane diagnostic
+        if: always()
+        working-directory: operations
+        shell: bash
+        env:
+          VALIDATE_OUTCOME: ${{ steps.validate-scan-contract.outcome }}
+          RUN_OUTCOME: ${{ steps.run-lane.outcome }}
+        run: |
+          set +e
+          mkdir -p .runtime/open-issue-deep-scan
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          lane="${{ matrix.lane }}"
+          receipt=Path('.runtime/open-issue-deep-scan')/f'{lane}.json'
+          payload={
+              'schema':'open-issue-deep-scan/diagnostic/v1',
+              'lane':lane,
+              'validate_outcome':os.environ.get('VALIDATE_OUTCOME'),
+              'run_outcome':os.environ.get('RUN_OUTCOME'),
+              'receipt_present':receipt.exists(),
+          }
+          if receipt.exists():
+              try:
+                  r=json.loads(receipt.read_text(encoding='utf-8'))
+                  payload.update({k:r.get(k) for k in ('case_count','expected_case_count','issue_count','failed_cases','review_cases','missing_cases')})
+                  payload['failed_results']=[
+                      {'issue':x.get('issue'),'lane':x.get('lane'),'status':x.get('status'),'findings':x.get('findings',[])}
+                      for x in r.get('results',[]) if x.get('status') == 'FAIL'
+                  ]
+              except Exception as exc:
+                  payload['receipt_parse_error']=repr(exc)
+          Path('.runtime/open-issue-deep-scan').joinpath(f'{lane}-diagnostic.json').write_text(json.dumps(payload,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(payload,indent=2,sort_keys=True))
+          PY
 
       - name: Add provenance
         working-directory: operations
@@ -119,8 +158,8 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: open-issue-deep-scan-${{ matrix.lane }}
-          path: operations/.runtime/open-issue-deep-scan/${{ matrix.lane }}.json
-          if-no-files-found: error
+          path: operations/.runtime/open-issue-deep-scan/**
+          if-no-files-found: warn
           retention-days: 30
 
   aggregate:
@@ -138,6 +177,22 @@ jobs:
           pattern: open-issue-deep-scan-*
           path: .runtime/open-issue-deep-scan
           merge-multiple: true
+
+      - name: Publish lane diagnostics to PR
+        if: always() && github.event_name == 'pull_request_target'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          DIAG_ROOT: .runtime/open-issue-deep-scan
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const root = process.env.DIAG_ROOT;
+            const files = fs.existsSync(root) ? fs.readdirSync(root).filter(name => name.endsWith('-diagnostic.json')).sort() : [];
+            const diagnostics = files.map(name => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8')));
+            const body = '## Deep-scan lane diagnostics\n\n```json\n' + JSON.stringify(diagnostics, null, 2) + '\n```';
+            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body });
 
       - name: Validate complete four-lane coverage
         shell: python
