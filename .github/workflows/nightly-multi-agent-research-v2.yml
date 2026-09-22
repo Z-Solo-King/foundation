@@ -30,7 +30,8 @@ env:
   RESEARCH_LLM_MODEL: ${{ secrets.RESEARCH_LLM_MODEL }}
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
   # Immutable nightly-research runtime pin; production Operations pin is governed separately.
-  # Immutable nightly-research runtime pin; production Operations pin is governed separately.
+  # Nightly runtime pin is immutable and separate from the production Operations deployment pin.
+  # Open-issue audit authority is the live 13-issue Operations register and 13x4 matrix.
   OPERATIONS_RESEARCH_REF: 3a7e350ddd5648caf93f58651323425186544f66
 
 jobs:
