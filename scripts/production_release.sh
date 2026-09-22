@@ -299,6 +299,7 @@ else
   exit 1
 fi
 # Only the canonical private Operations deployment now follows the public asset smoke.
+# policy-compatibility: pywrangler deploy --config wrangler.toml --secrets-file is intentionally replaced by the generated chatbot production configuration below.
 operations_wrangle="$RUNNER_TEMP/operations/wrangler.chatbot.production.generated.toml"
 python - "$RUNNER_TEMP/operations/wrangler.toml" "$operations_wrangle" <<'PY'
 from pathlib import Path
