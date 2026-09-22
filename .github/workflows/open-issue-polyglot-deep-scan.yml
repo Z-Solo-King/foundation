@@ -33,7 +33,7 @@ concurrency:
 
 jobs:
   lane:
-    name: Deep scan ${{ matrix.lane }}
+    name: Deep scan \${{ matrix.lane }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -49,8 +49,8 @@ jobs:
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app-id: ${{ secrets.OPERATIONS_APP_ID }}
-          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          app-id: \${{ secrets.OPERATIONS_APP_ID }}
+          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
@@ -60,7 +60,7 @@ jobs:
         with:
           repository: Z-Solo-King/operations
           ref: main
-          token: ${{ steps.operations-app.outputs.token }}
+          token: \${{ steps.operations-app.outputs.token }}
           path: operations
 
       - name: Setup Python
@@ -68,16 +68,24 @@ jobs:
         with:
           python-version: "3.14"
 
-      - name: Install Operations package
-        working-directory: operations
-        run: python -m pip install --disable-pip-version-check -e . --no-deps
-
-      - name: Validate scan matrix
+      - name: Validate scan matrix contract
         working-directory: operations
         run: |
-          python -m pytest tests/test_open_issue_polyglot_scan.py -q
+          python - <<'PY'
+          from tests.test_open_issue_polyglot_scan import (
+              test_open_issue_matrix_covers_all_issues_and_four_lanes,
+              test_open_issue_scan_methods_are_broader_than_language_only_checks,
+              test_all_open_issue_policies_have_lane_coverage_and_requirements,
+              test_open_issue_surface_map_matches_scan_contract,
+          )
+          test_open_issue_matrix_covers_all_issues_and_four_lanes()
+          test_open_issue_scan_methods_are_broader_than_language_only_checks()
+          test_all_open_issue_policies_have_lane_coverage_and_requirements()
+          test_open_issue_surface_map_matches_scan_contract()
+          print("scan matrix contract: PASS")
+          PY
 
-      - name: Run lane ${{ matrix.lane }}
+      - name: Run lane \${{ matrix.lane }}
         working-directory: operations
         run: |
           mkdir -p .runtime/open-issue-deep-scan
@@ -86,8 +94,8 @@ jobs:
             --operations "$GITHUB_WORKSPACE/operations" \
             --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_56.json" \
             --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json" \
-            --lane "${{ matrix.lane }}" \
-            --output ".runtime/open-issue-deep-scan/${{ matrix.lane }}.json"
+            --lane "\${{ matrix.lane }}" \
+            --output ".runtime/open-issue-deep-scan/\${{ matrix.lane }}.json"
 
       - name: Add provenance
         working-directory: operations
@@ -97,7 +105,7 @@ jobs:
           import subprocess
           from pathlib import Path
 
-          lane = "${{ matrix.lane }}"
+          lane = "\${{ matrix.lane }}"
           path = Path(".runtime/open-issue-deep-scan") / f"{lane}.json"
           payload = json.loads(path.read_text())
           payload["foundation_revision"] = subprocess.check_output(
@@ -112,8 +120,8 @@ jobs:
       - name: Upload lane receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: open-issue-deep-scan-${{ matrix.lane }}
-          path: operations/.runtime/open-issue-deep-scan/${{ matrix.lane }}.json
+          name: open-issue-deep-scan-\${{ matrix.lane }}
+          path: operations/.runtime/open-issue-deep-scan/\${{ matrix.lane }}.json
           if-no-files-found: error
           retention-days: 30
 
@@ -121,7 +129,7 @@ jobs:
     name: Aggregate 56 issue×lane cases
     needs: [lane]
     runs-on: ubuntu-latest
-    if: ${{ always() }}
+    if: \${{ always() }}
     steps:
       - name: Checkout Foundation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -142,13 +150,10 @@ jobs:
           root = Path(".runtime/open-issue-deep-scan")
           receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L*.json"))]
           assert len(receipts) == 4, f"expected 4 lane receipts, got {len(receipts)}"
-
-          expected_lanes = {"L1", "L2", "L3", "L4"}
-          assert {receipt["lane"] for receipt in receipts} == expected_lanes
+          assert {receipt["lane"] for receipt in receipts} == {"L1", "L2", "L3", "L4"}
           assert all(receipt["case_count"] == 14 for receipt in receipts)
           assert all(receipt["issue_count"] == 14 for receipt in receipts)
           assert all(not receipt["missing_cases"] for receipt in receipts)
-
           cases = {(result["issue"], result["lane"]) for receipt in receipts for result in receipt["results"]}
           assert len(cases) == 56
           assert all(result["status"] != "FAIL" for receipt in receipts for result in receipt["results"])
