@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="50e642dfb05846963a82fe76f4f5fe085d4b9a8c"
+OPERATIONS_REF="69f526f17a97fc29e478329db754658dd0fa383c"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
@@ -174,6 +174,13 @@ git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git" "$RUNN
 git -C "$RUNNER_TEMP/operations" fetch --no-tags --depth=1 origin "$OPERATIONS_REF"
 git -C "$RUNNER_TEMP/operations" checkout --detach "$OPERATIONS_REF"
 test "$(git -C "$RUNNER_TEMP/operations" rev-parse HEAD)" = "$OPERATIONS_REF"
+
+# Fail closed if the promoted Operations pin does not contain the canonical
+# authenticated chatbot backend boundary and zero-cost Workers AI provider contract.
+grep -q '^CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"$' "$RUNNER_TEMP/operations/wrangler.toml"
+grep -q '^CHAT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast"$' "$RUNNER_TEMP/operations/wrangler.toml"
+grep -q '"workers_ai_neurons":9000' "$RUNNER_TEMP/operations/wrangler.toml"
+grep -q 'CHAT_BACKEND_TOKEN' "$RUNNER_TEMP/operations/worker.py"
 
 # Fail before deployment if the pinned Operations tree contains any Python syntax error.
 python -m compileall -q "$RUNNER_TEMP/operations"
@@ -573,4 +580,3 @@ fi
 
 
 echo "Production release completed for ${GITHUB_SHA} using Operations ${OPERATIONS_REF}"
-
