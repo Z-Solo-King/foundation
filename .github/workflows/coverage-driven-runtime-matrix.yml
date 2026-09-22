@@ -284,6 +284,23 @@ jobs:
           set -euo pipefail
           test -n "${AUTH_TOKEN:-}" || { echo 'AUTH_TOKEN is required for main-branch live acceptance probes'; exit 1; }
           key="fast-${GITHUB_RUN_ID}-${{ matrix.id }}"
+          # Live acceptance is valid only when the deployed Worker matches the immutable revisions under test.
+          provenance_ok=false
+          for attempt in $(seq 1 20); do
+            readiness_status=$(curl -sS --max-time 20 -o /tmp/live-readiness.json -w '%{http_code}' "$BASE_URL/readiness" || true)
+            if [ "$readiness_status" = "200" ] && jq -e '.ready == true and .database == true and .release.foundation_sha == $foundation and .release.operations_ref == $operations' --arg foundation "$GITHUB_SHA" --arg operations "$OPERATIONS_REF" /tmp/live-readiness.json >/dev/null 2>&1; then
+              provenance_ok=true
+              break
+            fi
+            sleep 15
+          done
+          if [ "$provenance_ok" != "true" ]; then
+            echo "Live runtime provenance does not match the immutable revisions under test."
+            echo "Expected Foundation=${GITHUB_SHA} Operations=${OPERATIONS_REF}"
+            cat /tmp/live-readiness.json 2>/dev/null || true
+            exit 1
+          fi
+          echo "Live runtime provenance: PASS (Foundation=${GITHUB_SHA}, Operations=${OPERATIONS_REF})"
           case "${{ matrix.live_probe }}" in
             chat)
               payload=$(jq -nc --arg chat_id "$key-chat" --arg request_id "$key-request" '{chat_id:$chat_id,request_id:$request_id,message:"Explain in one sentence why the public Worker uses an authenticated private service binding.",mode:"chat",strict_zero_cost_only:true}')
