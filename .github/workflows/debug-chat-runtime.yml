@@ -1,0 +1,26 @@
+name: Debug chat-runtime
+
+on:
+  push:
+    branches:
+      - fix/chatbot-production-source-sync-20260922
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: chat-runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Install dependencies
+        run: |
+          python -m pip install -e . --no-deps
+          python -m pip install pytest pytest-asyncio workers-py workers-runtime-sdk uv
+      - name: Run chat-runtime
+        run: python -m pytest -q tests/test_live_chatbot_runtime_contract.py
