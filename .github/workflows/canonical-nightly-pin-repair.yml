@@ -32,7 +32,7 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$APPLY" == "true" ]] || { echo 'apply=false; refusing mutation.'; exit 0; }
-          branch="repair/nightly-operations-pin-\${GITHUB_RUN_ID}"
+          branch="repair/nightly-operations-pin-${GITHUB_RUN_ID}"
           git switch --create "$branch"
           SOURCE_REF="$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
           test -n "$SOURCE_REF"
@@ -45,14 +45,14 @@ jobs:
           needle = 'OPERATIONS_RESEARCH_REF: '
           lines = text.splitlines()
           for i, line in enumerate(lines):
-          if line.startswith(needle):
-          old = line[len(needle):].strip()
-          if old == new_ref:
-            raise SystemExit('nightly workflow already pinned to canonical Operations SHA')
-          lines[i] = needle + new_ref
-          break
+            if line.startswith(needle):
+              old = line[len(needle):].strip()
+              if old == new_ref:
+                raise SystemExit('nightly workflow already pinned to canonical Operations SHA')
+              lines[i] = needle + new_ref
+              break
           else:
-          raise SystemExit('OPERATIONS_RESEARCH_REF not found')
+            raise SystemExit('OPERATIONS_RESEARCH_REF not found')
           path.write_text('\n'.join(lines) + '\n')
           print(f'updated Operations research pin: {old} -> {new_ref}')
           PY
