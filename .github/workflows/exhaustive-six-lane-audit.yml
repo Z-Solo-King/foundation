@@ -1,5 +1,5 @@
 name: Exhaustive six-lane repository audit
-# Scanner revision: 2026-09-22 process-parallel analysis lanes + bounded conflict clustering
+# Scanner revision: 2026-09-22 process-parallel lanes + bounded conflicts + path-safe surface receipts
 
 on:
   pull_request:
