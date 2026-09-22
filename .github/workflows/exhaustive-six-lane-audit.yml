@@ -1,5 +1,5 @@
 name: Exhaustive six-lane repository audit
-# Scanner revision: 2026-09-22 restored full scanner + mapper/extractor cross-audit v4 (browser/numeric invariants) + deterministic L3/L4 checks + code-only sizing + migration normalization + regex escaping + process-parallel lanes + bounded conflicts + path-safe surface receipts + live issue register
+# Scanner revision: 2026-09-22 mapper/extractor cross-audit v5 — multi-offer, digest, browser resource/page-budget and non-finite numeric invariants
 # The audit is report-only at the workflow boundary; generated patches remain artifacts for reviewed promotion.
 
 on:
