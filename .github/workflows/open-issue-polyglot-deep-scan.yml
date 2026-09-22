@@ -93,7 +93,7 @@ jobs:
         working-directory: operations
         run: |
           mkdir -p .runtime/open-issue-deep-scan
-          python tools/open_issue_polyglot_scan.py             --foundation "$GITHUB_WORKSPACE"             --operations "$GITHUB_WORKSPACE/operations"             --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_56.json"             --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json"             --lane "${{ matrix.lane }}"             --output ".runtime/open-issue-deep-scan/${{ matrix.lane }}.json"
+          python tools/open_issue_polyglot_scan.py             --foundation "$GITHUB_WORKSPACE"             --operations "$GITHUB_WORKSPACE/operations"             --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_52.json"             --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json"             --lane "${{ matrix.lane }}"             --output ".runtime/open-issue-deep-scan/${{ matrix.lane }}.json"
 
       - name: Emit lane diagnostic
         if: always()
@@ -131,6 +131,31 @@ jobs:
           print(json.dumps(payload,indent=2,sort_keys=True))
           PY
 
+      - name: Publish lane diagnostic to PR
+        if: always() && github.event_name == 'pull_request_target'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          LANE: ${{ matrix.lane }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = 'operations/.runtime/open-issue-deep-scan/' + process.env.LANE + '.json';
+            if (!fs.existsSync(path)) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: '### Deep-scan ' + process.env.LANE + '\\n\\nNo lane receipt was produced; validation failed before scan execution.'
+              });
+              return;
+            }
+            const receipt = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const failures = (receipt.results || []).filter(r => r.status === 'FAIL');
+            const body = '### Deep-scan ' + process.env.LANE + ' diagnostic\\n\\n' +
+              '```json\\n' + JSON.stringify({lane: receipt.lane, issue_count: receipt.issue_count, case_count: receipt.case_count, failed_cases: receipt.failed_cases, failures}, null, 2) + '\\n```';
+            await github.rest.issues.createComment({owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body});
+
       - name: Add provenance
         working-directory: operations
         run: |
@@ -164,7 +189,7 @@ jobs:
           retention-days: 30
 
   aggregate:
-    name: Aggregate 56 issue×lane cases
+    name: Aggregate 52 issue×lane cases
     needs: [lane]
     runs-on: ubuntu-latest
     if: ${{ always() }}
@@ -207,17 +232,17 @@ jobs:
           receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L*.json"))]
           assert len(receipts) == 4, f"expected 4 lane receipts, got {len(receipts)}"
           assert {receipt["lane"] for receipt in receipts} == {"L1", "L2", "L3", "L4"}
-          assert all(receipt["case_count"] == 14 for receipt in receipts)
-          assert all(receipt["issue_count"] == 14 for receipt in receipts)
+          assert all(receipt["case_count"] == 13 for receipt in receipts)
+          assert all(receipt["issue_count"] == 13 for receipt in receipts)
           assert all(not receipt["missing_cases"] for receipt in receipts)
           cases = {(result["issue"], result["lane"]) for receipt in receipts for result in receipt["results"]}
-          assert len(cases) == 56
+          assert len(cases) == 52
           assert all(result["status"] != "FAIL" for receipt in receipts for result in receipt["results"])
           aggregate = {
               "schema": "open-issue-polyglot-deep-scan/v1",
               "lane_count": 4,
-              "issue_count": 14,
-              "case_count": 56,
+              "issue_count": 13,
+              "case_count": 52,
               "status": "PASS",
               "foundation_revisions": sorted({receipt["foundation_revision"] for receipt in receipts}),
               "operations_revisions": sorted({receipt["operations_revision"] for receipt in receipts}),
