@@ -1,4 +1,5 @@
 name: Open issue polyglot deep scan
+# Issue-count authority is the live Operations current_open_issue_inventory.json; never hard-code the queue size here.
 
 on:
   push:
