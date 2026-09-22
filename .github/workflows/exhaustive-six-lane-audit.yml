@@ -156,7 +156,7 @@ jobs:
 
       - name: Test exhaustive audit contract
         working-directory: operations-repo
-        run: python -m pytest tests/test_exhaustive_audit_contract.py -q
+        run: python -m unittest -v tests.test_exhaustive_audit_contract
 
       - name: Run six concurrent lanes
         env:
