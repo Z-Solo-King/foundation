@@ -142,3 +142,20 @@ def test_map_product_handles_empty_or_non_mapping_inputs_for_optional_sections()
 def test_public_package_has_no_network_dependency() -> None:
     import foundation_core
     assert foundation_core.__all__
+
+
+def test_map_product_preserves_multiple_observed_offers() -> None:
+    raw = {
+        "title": "X",
+        "offers": [
+            {"seller_id": "seller-a", "price": "20", "currency": "INR", "availability": "In Stock"},
+            {"seller_id": "seller-b", "price": "19", "currency": "INR", "availability": "Out of Stock"},
+        ],
+    }
+    mapped = map_product(raw)
+    assert mapped["price"] == "20"
+    assert mapped["stock"] == "In Stock"
+    assert mapped["offers"] == (
+        {"seller_id": "seller-a", "price": "20", "currency": "INR", "availability": "In Stock"},
+        {"seller_id": "seller-b", "price": "19", "currency": "INR", "availability": "Out of Stock"},
+    )
