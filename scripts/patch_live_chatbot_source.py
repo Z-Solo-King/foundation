@@ -14,7 +14,6 @@ def ensure_replace(path, old, new, label):
     path.write_text(text.replace(old, new, 1), encoding="utf-8")
 
 
-# Public Worker anonymous governed chat.
 p = ROOT / "worker.py"
 ensure_replace(
     p,
@@ -93,19 +92,26 @@ ensure_replace(
     "anonymous chat subject",
 )
 
-# Public production config.
 p = ROOT / "wrangler.toml"
-ensure_replace(p, 'STRICT_ZERO_COST_ONLY = "true"\n', 'STRICT_ZERO_COST_ONLY = "true"\nPUBLIC_CHAT_ANONYMOUS = "true"\n', "public anonymous variable")
+ensure_replace(
+    p,
+    'STRICT_ZERO_COST_ONLY = "true"\n',
+    'STRICT_ZERO_COST_ONLY = "true"\nPUBLIC_CHAT_ANONYMOUS = "true"\n',
+    "public anonymous variable",
+)
 
-# Canonical Foundation deployment overlay for immutable Operations.
 p = ROOT / "scripts" / "production_release.sh"
 text = p.read_text(encoding="utf-8")
 if 'PUBLIC_CHAT_ANONYMOUS = "true"' not in text:
-    text = text.replace(
-        '  \\'STRICT_ZERO_COST_ONLY = "true"\\' \\\\\\n',
-        '  \\'STRICT_ZERO_COST_ONLY = "true"\\' \\\\\\n  \\'PUBLIC_CHAT_ANONYMOUS = "true"\\' \\\\\\n',
-        1,
-    )
+    old_public_var = r"""  'STRICT_ZERO_COST_ONLY = "true"' \
+"""
+    new_public_var = r"""  'STRICT_ZERO_COST_ONLY = "true"' \
+  'PUBLIC_CHAT_ANONYMOUS = "true"' \
+"""
+    if old_public_var not in text:
+        raise SystemExit("production public variable marker not found")
+    text = text.replace(old_public_var, new_public_var, 1)
+
 if "wrangler.chatbot.production.generated.toml" not in text:
     ops_ref = DOLLAR + "{OPERATIONS_REF}"
     old_line = '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:' + ops_ref + '" --tag "github:' + ops_ref + '")'
@@ -125,8 +131,6 @@ provider_lines = (
 )
 if 'CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"' not in text:
     marker = 'STRICT_ZERO_COST_ONLY = "true"\\n'
-    if marker not in text:
-        raise SystemExit("Operations provider marker missing")
     text = text.replace(marker, marker + provider_lines, 1)
 dst.write_text(text, encoding="utf-8")
 
@@ -149,7 +153,6 @@ if old_line not in text:
 text = text.replace(old_line, new_block, 1)
 p.write_text(text, encoding="utf-8")
 
-# User-facing UI wording and safe SSE cleanup. Preserve the existing stop/AbortController implementation.
 ensure_replace(ROOT / "frontend" / "composer.js",
                "Chat uses the authenticated Heroic AI backend and canonical Operations routing.",
                "Chat uses the public governed Heroic AI endpoint; a session token is only needed for protected operational features.",
@@ -157,11 +160,11 @@ ensure_replace(ROOT / "frontend" / "composer.js",
 ensure_replace(ROOT / "frontend" / "chat_view.js",
                "Session authentication is held only in session storage for this browser session.",
                "Protected operational features use a browser-session token; public chat does not require one.",
-               "settings wording")
+               "settings guidance")
 ensure_replace(ROOT / "frontend" / "ux_enhancements.js",
                "This backend requires a session token. Open Settings to enter one, or enable Guest test mode to try Heroic AI locally without credentials.",
                "Public chat does not require a session token. Protected operational views still do.",
-               "auth error wording")
+               "auth guidance")
 ensure_replace(ROOT / "frontend" / "app.js",
                """    buffer += decoder.decode();
     if (buffer.trim()) dispatch(buffer);
@@ -182,20 +185,20 @@ ensure_replace(ROOT / "frontend" / "app.js",
 ROOT = Path(__file__).parents[1]
 
 
-def test_public_chat_uses_explicit_admission_flag():
+def test_public_chat_admission():
     source = (ROOT / "worker.py").read_text(encoding="utf-8")
     assert "def _anonymous_chat_enabled(env):" in source
     assert "def _public_chat_subject(request):" in source
     assert "if not anonymous and not _authorized(request, self.env):" in source
 
 
-def test_public_chat_uses_private_backend_credential():
+def test_private_backend_credential_forwarding():
     source = (ROOT / "worker.py").read_text(encoding="utf-8")
     assert "CHAT_BACKEND_TOKEN" in source
     assert "headers = _chat_headers(request, env)" in source
 
 
-def test_release_contains_chatbot_provider_overlay():
+def test_production_release_chat_overlay():
     release = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
     assert 'PUBLIC_CHAT_ANONYMOUS = "true"' in release
     assert "wrangler.chatbot.production.generated.toml" in release
@@ -205,7 +208,7 @@ def test_release_contains_chatbot_provider_overlay():
     assert 'def _authorized_chat(request, env):' in release
 
 
-def test_ui_wording_matches_public_chat_capability():
+def test_ui_public_chat_language():
     composer = (ROOT / "frontend/composer.js").read_text(encoding="utf-8")
     chat_view = (ROOT / "frontend/chat_view.js").read_text(encoding="utf-8")
     ux = (ROOT / "frontend/ux_enhancements.js").read_text(encoding="utf-8")
