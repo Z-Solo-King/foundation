@@ -26,32 +26,32 @@ jobs:
               health) path="/health" ;;
               readiness) path="/readiness" ;;
             esac
-            status=$(curl -sS --max-time 20 -o "probe/$item.body" -D "probe/$item.headers" -w "%{http_code}" "$URL$path" 2>"probe/$item.error")
+            status=$(curl -sS --max-time 20 -o "probe/$item.body" -D "probe/$item.headers" -w "%{http_code}" "$URL$path" 2> "probe/$item.error")
             printf "%s" "$status" > "probe/$item.status"
           done
           python - <<PY
-import json
-from pathlib import Path
-root=Path("probe")
-out={"schema":"public-worker-probe/v2","url":"https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev","checks":{},"ok":True}
-for name in ("root","health","readiness"):
-    status=int((root/f"{name}.status").read_text().strip() or "0")
-    body=(root/f"{name}.body").read_text(errors="replace")[:500]
-    item={"status":status,"body_prefix":body}
-    if status >= 200 and status < 500 and name != "root" and "json" in (root/f"{name}.headers").read_text(errors="replace").lower():
-        try:
-            data=json.loads(body)
-            item["ok"]=data.get("ok")
-            item["ready"]=data.get("ready")
-            item["database"]=data.get("database")
-            item["release"]=data.get("release")
-        except Exception:
-            item["json"]="invalid"
-    out["checks"][name]=item
-    if status < 200 or status >= 500: out["ok"]=False
-Path("probe/receipt.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
-print(json.dumps(out,indent=2,sort_keys=True))
-PY
+          import json
+          from pathlib import Path
+          root=Path("probe")
+          out={"schema":"public-worker-probe/v2","url":"https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev","checks":{},"ok":True}
+          for name in ("root","health","readiness"):
+              status=int((root/f"{name}.status").read_text().strip() or "0")
+              body=(root/f"{name}.body").read_text(errors="replace")[:500]
+              item={"status":status,"body_prefix":body}
+              if name != "root" and 200 <= status < 500 and "json" in (root/f"{name}.headers").read_text(errors="replace").lower():
+                  try:
+                      data=json.loads(body)
+                      item["ok"]=data.get("ok")
+                      item["ready"]=data.get("ready")
+                      item["database"]=data.get("database")
+                      item["release"]=data.get("release")
+                  except Exception:
+                      item["json"]="invalid"
+              out["checks"][name]=item
+              if status < 200 or status >= 500: out["ok"]=False
+          (root/"receipt.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,indent=2,sort_keys=True))
+          PY
           exit 0
       - name: Publish receipt
         if: always()
@@ -59,15 +59,15 @@ PY
           GH_TOKEN: ${{ github.token }}
         run: |
           body="$(python - <<PY
-import json
-from pathlib import Path
-p=Path("probe/receipt.json")
-d=json.loads(p.read_text()) if p.exists() else {"ok":False,"error":"no receipt"}
-print("### Public Worker live probe")
-print("```json")
-print(json.dumps(d,indent=2,sort_keys=True))
-print("```")
-PY
+          import json
+          from pathlib import Path
+          p=Path("probe/receipt.json")
+          d=json.loads(p.read_text()) if p.exists() else {"ok":False,"error":"no receipt"}
+          print("### Public Worker live probe")
+          print("```json")
+          print(json.dumps(d,indent=2,sort_keys=True))
+          print("```")
+          PY
           )"
           gh api "repos/$GITHUB_REPOSITORY/issues/197/comments" -f body="$body"
       - name: Upload receipt
