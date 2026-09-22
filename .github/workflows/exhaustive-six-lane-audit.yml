@@ -178,3 +178,5 @@ jobs:
         if: always()
         run: |
           if [[ -f .runtime/exhaustive-audit/SUMMARY.json ]]; then cat .runtime/exhaustive-audit/SUMMARY.json; else echo "SUMMARY.json was not produced"; fi
+
+# Audit rule revision: 2026-09-22 duplicate runtime declarations + production-like literal filtering
