@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="fed618a99a1540e4a7cd906952fbe3ee22acfe39"
+OPERATIONS_REF="50e642dfb05846963a82fe76f4f5fe085d4b9a8c"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
@@ -22,7 +22,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = 'fed618a99a1540e4a7cd906952fbe3ee22acfe39'
+test "$OPERATIONS_REF" = '50e642dfb05846963a82fe76f4f5fe085d4b9a8c'
 
 after_install_marker=''
 
@@ -225,6 +225,8 @@ printf '%s\n' \
   '[vars]' \
   'ENVIRONMENT = "production"' \
   'STRICT_ZERO_COST_ONLY = "true"' \
+  "RELEASE_FOUNDATION_SHA = \"${GITHUB_SHA}\"" \
+  "RELEASE_OPERATIONS_REF = \"${OPERATIONS_REF}\"" \
   'B2_BUCKET = "SoloKing"' \
   'B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"' \
   > wrangler.production.generated.toml
@@ -560,6 +562,7 @@ if [ -n "${AUTH_TOKEN:-}" ]; then
   and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "d1_candidate_learning_round_trip" and .ok == true)
   and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "durable_resource_reserve_consume" and .ok == true)
   and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "d1_reservation_reject_changes_semantics" and .ok == true)
+  and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "d1_concurrent_overlimit_changes_semantics" and .ok == true)
   and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "maintenance_scheduler_reconciliation" and .ok == true)
   and any(.checks[]?; .name == "cloudflare_d1" and .ok == true)
   and any(.checks[]?; .name == "backblaze_b2_lifecycle" and .ok == true)
