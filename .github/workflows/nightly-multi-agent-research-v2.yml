@@ -29,7 +29,7 @@ env:
   RESEARCH_LLM_API_KEY: ${{ secrets.RESEARCH_LLM_API_KEY }}
   RESEARCH_LLM_MODEL: ${{ secrets.RESEARCH_LLM_MODEL }}
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_RESEARCH_REF: fed618a99a1540e4a7cd906952fbe3ee22acfe39
+  OPERATIONS_RESEARCH_REF: 437bdfbdfa72ea1a4e1bf61bddccb4fabafacda1
 
 jobs:
   research:
