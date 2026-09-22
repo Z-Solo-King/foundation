@@ -133,6 +133,33 @@ jobs:
           print(json.dumps(payload,indent=2,sort_keys=True))
           PY
 
+      - name: Publish lane diagnostic to PR
+        if: always() && github.event_name == 'pull_request_target'
+        working-directory: operations
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+          LANE: ${{ matrix.lane }}
+        run: |
+          set -euo pipefail
+          [ -n "${PR_NUMBER:-}" ] || exit 0
+          python - <<'PY' > /tmp/lane-comment.md
+          import json
+          from pathlib import Path
+          lane="${{ matrix.lane }}"
+          path=Path('.runtime/open-issue-deep-scan')/f'{lane}-diagnostic.json'
+          if path.exists():
+              data=json.loads(path.read_text(encoding='utf-8'))
+          else:
+              data={"lane":lane,"receipt_present":False}
+          print(f"## Deep-scan {lane} diagnostic\n\n```json")
+          print(json.dumps(data, indent=2, sort_keys=True))
+          print("```")
+          PY
+          gh pr comment "$PR_NUMBER" --repo "$REPOSITORY" --body-file /tmp/lane-comment.md
+
       - name: Add provenance
         working-directory: operations
         run: |
