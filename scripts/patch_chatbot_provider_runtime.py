@@ -144,12 +144,13 @@ echo "Cloudflare Operations chatbot provider configuration: PASS"
 release = ROOT / "scripts/production_release.sh"
 ops_ref = "$" + "{OPERATIONS_REF}"
 old_deploy = '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:' + ops_ref + '" --tag "github:' + ops_ref + '")'
-replace_once(
-    release,
-    old_deploy,
-    'bash "$GITHUB_WORKSPACE/scripts/deploy_operations_chatbot_config.sh"',
-    "canonical Operations deploy command",
-)
+if "deploy_operations_chatbot_config.sh" not in release.read_text(encoding="utf-8"):
+    replace_once(
+        release,
+        old_deploy,
+        'bash "$GITHUB_WORKSPACE/scripts/deploy_operations_chatbot_config.sh"',
+        "canonical Operations deploy command",
+    )
 
 app = ROOT / "frontend" / "app.js"
 replace_once(
