@@ -154,6 +154,10 @@ jobs:
         working-directory: operations-repo
         run: python -m py_compile tools/exhaustive_audit.py
 
+      - name: Test exhaustive audit contract
+        working-directory: operations-repo
+        run: python -m pytest tests/test_exhaustive_audit_contract.py -q
+
       - name: Run six concurrent lanes
         env:
           AUTO_FIX_INPUT: ${{ inputs.auto_fix }}
