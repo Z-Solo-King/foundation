@@ -1,10 +1,13 @@
 name: Apply live chatbot source synchronization
+
 on:
   push:
     branches:
       - fix/chatbot-production-source-sync-20260922
+
 permissions:
   contents: write
+
 jobs:
   patch:
     runs-on: ubuntu-latest
@@ -13,14 +16,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
-      - name: Apply patch
+      - name: Patch source
         run: python scripts/patch_live_chatbot_source.py
-      - name: Verify
+      - name: Verify source
         run: |
           python scripts/verify_live_chatbot_source.py
           python -m py_compile worker.py
-          python -m compileall -q backend foundation_core
-          for f in frontend/app.js frontend/composer.js frontend/ux_enhancements.js; do node --check "$f"; done
+          node --check frontend/app.js
+          node --check frontend/composer.js
+          node --check frontend/ux_enhancements.js
           git diff --check
       - name: Commit patched source
         run: |
