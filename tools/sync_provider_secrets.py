@@ -12,6 +12,7 @@ import json
 import os
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections.abc import Mapping
 from typing import Any
@@ -100,9 +101,10 @@ def gh_set_secret(owner: str, repo: str, token: str, name: str, value: str) -> N
 
 
 def cf_set_secret(account_id: str, script_name: str, api_token: str, name: str, value: str) -> None:
+    encoded_name = urllib.parse.quote(name, safe="")
     result = _json_request(
         "PUT",
-        f"https://api.cloudflare.com/client/v4/accounts/{account_id}/workers/scripts/{script_name}/secrets",
+        f"https://api.cloudflare.com/client/v4/accounts/{account_id}/workers/scripts/{script_name}/secrets/{encoded_name}",
         {
             "Authorization": f"Bearer {api_token}",
             "Content-Type": "application/json",
