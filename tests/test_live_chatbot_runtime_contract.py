@@ -3,6 +3,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).parents[1]
 
+# Production chatbot contract: public chat is governed by D1 admission while
+# protected operational surfaces retain authentication.
+
 
 def _source():
     return (ROOT / "worker.py").read_text(encoding="utf-8")
