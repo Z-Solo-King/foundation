@@ -18,17 +18,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Normalize UI and submit wrapper
+      - name: Normalize UI submit wrapper
         run: |
           python - <<'PY'
           from pathlib import Path
-          path = Path("frontend/ux_enhancements.js")
-          text = path.read_text(encoding="utf-8")
-          text = text.replace(
-              "This backend requires a session token. Open Settings to enter one, or enable Guest test mode to try Heroic AI locally without credentials.",
-              "Public chat does not require a session token. Protected operational views still do.",
-          )
-          bad = """  async function enhancedSubmitChat(text, chatId) {
+          path=Path("frontend/ux_enhancements.js")
+          text=path.read_text(encoding="utf-8")
+          old="This backend requires a session token. Open Settings to enter one, or enable Guest test mode to try Heroic AI locally without credentials."
+          text=text.replace(old,"Public chat does not require a session token. Protected operational views still do.")
+          bad="""  async function enhancedSubmitChat(text, chatId) {
     stopRequested = false;
         try {
       return await api.__originalSubmitChat(text, chatId);
@@ -42,7 +40,7 @@ jobs:
       }
   }
 """
-          good = """  async function enhancedSubmitChat(text, chatId) {
+          good="""  async function enhancedSubmitChat(text, chatId) {
     stopRequested = false;
     try {
       return await api.__originalSubmitChat(text, chatId);
@@ -56,11 +54,11 @@ jobs:
   }
 """
           if bad in text:
-              text = text.replace(bad, good, 1)
-          path.write_text(text, encoding="utf-8")
+              text=text.replace(bad,good,1)
+          path.write_text(text,encoding="utf-8")
           PY
 
-      - name: Align production workflow test with generated Operations config
+      - name: Normalize production policy test
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -70,21 +68,20 @@ jobs:
           new='operations_deploy = deployment.index("pywrangler deploy --config \"$operations_wrangle\" --secrets-file")'
           if old in text:
               text=text.replace(old,new,1)
-          marker='    assert "wrangler.chatbot.production.generated.toml" in deployment\n'
-          anchor='    assert "operations_deploy" in locals()\n'
+          expected='operations_deploy = deployment.index("pywrangler deploy --config \"$operations_wrangle\" --secrets-file")'
+          if expected not in text:
+              raise SystemExit("production policy test marker was not normalized")
           path.write_text(text,encoding="utf-8")
           PY
 
-      - name: Validate source and policy
+      - name: Validate final source
         run: |
           python -m py_compile worker.py
           python -m pytest -q tests/test_workflow_policy.py tests/test_live_chatbot_contract.py tests/test_live_chatbot_runtime_contract.py tests/test_frontend_ux_completeness.py
-          for f in frontend/app.js frontend/composer.js frontend/chat_view.js frontend/ux_enhancements.js; do
-            node --check "$f"
-          done
+          for f in frontend/app.js frontend/composer.js frontend/chat_view.js frontend/ux_enhancements.js; do node --check "$f"; done
           bash -n scripts/production_release.sh
 
-      - name: Commit final source and remove temporary tooling
+      - name: Remove temporary tooling and commit
         shell: bash
         run: |
           set -euo pipefail
