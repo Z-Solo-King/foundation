@@ -1,5 +1,6 @@
 name: Exhaustive six-lane repository audit
 # Scanner revision: 2026-09-22 process-parallel lanes + bounded conflicts + path-safe surface receipts
+# The audit is report-only at the workflow boundary; generated patches remain artifacts for reviewed promotion.
 
 on:
   pull_request:
@@ -67,11 +68,7 @@ jobs:
             const candidate = (context.payload.pull_request?.head?.ref || "").trim();
             if (candidate) {
               try {
-                await github.rest.repos.getBranch({
-                  owner: "Z-Solo-King",
-                  repo: "operations",
-                  branch: candidate,
-                });
+                await github.rest.repos.getBranch({ owner: "Z-Solo-King", repo: "operations", branch: candidate });
                 core.setOutput("ref", candidate);
                 return;
               } catch {}
@@ -93,45 +90,24 @@ jobs:
           script: |
             const fs = require("fs");
             fs.mkdirSync(".runtime/exhaustive-audit", { recursive: true });
-            const register = JSON.parse(
-              fs.readFileSync(
-                "operations-repo/benchmark/polyglot/current_open_issue_inventory.json",
-                "utf8",
-              ),
-            );
+            const register = JSON.parse(fs.readFileSync("operations-repo/benchmark/polyglot/current_open_issue_inventory.json", "utf8"));
             const expected = [];
             for (const [repo, rows] of Object.entries(register.repositories || {})) {
               for (const row of rows) expected.push({ repo, number: Number(row.number), title: row.title });
             }
             const actual = [];
             for (const repo of ["foundation", "operations"]) {
-              const issues = await github.paginate(github.rest.issues.listForRepo, {
-                owner: "Z-Solo-King",
-                repo,
-                state: "open",
-                per_page: 100,
-              });
-              for (const issue of issues) {
-                if (issue.pull_request) continue;
-                actual.push({ repo, number: issue.number, title: issue.title });
-              }
+              const issues = await github.paginate(github.rest.issues.listForRepo, { owner: "Z-Solo-King", repo, state: "open", per_page: 100 });
+              for (const issue of issues) if (!issue.pull_request) actual.push({ repo, number: issue.number, title: issue.title });
             }
             const key = x => `${x.repo}#${x.number}`;
             const exp = new Map(expected.map(x => [key(x), x]));
             const act = new Map(actual.map(x => [key(x), x]));
             const missing = [...exp.keys()].filter(k => !act.has(k));
             const unexpected = [...act.keys()].filter(k => !exp.has(k));
-            const titleMismatch = [...exp.keys()]
-              .filter(k => act.has(k) && exp.get(k).title !== act.get(k).title)
-              .map(k => ({ key: k, expected: exp.get(k).title, actual: act.get(k).title }));
-            if (missing.length || unexpected.length || titleMismatch.length) {
-              core.setFailed(JSON.stringify({ missing, unexpected, titleMismatch }));
-            }
-            fs.writeFileSync(
-              ".runtime/exhaustive-audit/live_open_issues.json",
-              JSON.stringify({ expected, actual, missing, unexpected, titleMismatch }, null, 2) + "\n",
-              "utf8",
-            );
+            const titleMismatch = [...exp.keys()].filter(k => act.has(k) && exp.get(k).title !== act.get(k).title).map(k => ({ key: k, expected: exp.get(k).title, actual: act.get(k).title }));
+            fs.writeFileSync(".runtime/exhaustive-audit/live_open_issues.json", JSON.stringify({ expected, actual, missing, unexpected, titleMismatch }, null, 2) + "\n", "utf8");
+            if (missing.length || unexpected.length || titleMismatch.length) core.setFailed(JSON.stringify({ missing, unexpected, titleMismatch }));
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -172,9 +148,7 @@ jobs:
             --issue-inventory "${GITHUB_WORKSPACE}/operations-repo/benchmark/polyglot/current_open_issue_inventory.json"
             --output-dir "${GITHUB_WORKSPACE}/.runtime/exhaustive-audit"
           )
-          if [[ "${AUTO_FIX_INPUT}" == "true" || "${HEAD_BRANCH}" == exhaustive-audit/* ]]; then
-            args+=(--auto-fix)
-          fi
+          if [[ "${AUTO_FIX_INPUT}" == "true" || "${HEAD_BRANCH}" == exhaustive-audit/* ]]; then args+=(--auto-fix); fi
           python operations-repo/tools/exhaustive_audit.py "${args[@]}"
 
       - name: Generate Operations patch artifact
@@ -199,8 +173,4 @@ jobs:
       - name: Print final summary
         if: always()
         run: |
-          if [[ -f .runtime/exhaustive-audit/SUMMARY.json ]]; then
-            cat .runtime/exhaustive-audit/SUMMARY.json
-          else
-            echo "SUMMARY.json was not produced"
-          fi
+          if [[ -f .runtime/exhaustive-audit/SUMMARY.json ]]; then cat .runtime/exhaustive-audit/SUMMARY.json; else echo "SUMMARY.json was not produced"; fi
