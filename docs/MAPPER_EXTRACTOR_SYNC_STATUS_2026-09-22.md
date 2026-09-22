@@ -4,11 +4,11 @@
 
 This document is the synchronization record for the canonical Mapper/Extractor architecture across the two active repositories.
 
-Validated main revisions for this audit:
+Implementation synchronization baseline:
 - Foundation: `673080ad9eca408512adb241fe73c18d488c7e20`
 - Operations: `7226f5d8404df032654f0b8ebb8fd71dddfe0a0d`
 
-These revisions were verified from the repository main branches after the final Mapper/Extractor changes were merged.
+These are the implementation revisions at which the Mapper/Extractor fixes were fully synchronized before the dated documentation commits. The sync documents themselves are deliberately excluded from the implementation baseline so documentation commits do not invalidate the baseline reference.
 
 ## Canonical ownership
 
@@ -81,7 +81,7 @@ The final Foundation exhaustive audit run on the synchronized stack completed su
 - six concurrent exhaustive lanes: PASS
 - artifact generation/upload: PASS
 
-Foundation PR #986 was merged as `673080ad9eca408512adb241fe73c18d488c7e20`.
+Foundation PR #986 was merged as `673080ad9eca408512adb241fe73c18d488c7e20`. Subsequent commits on `main` are documentation synchronization commits and do not change the implementation baseline recorded above.
 
 Operations PRs #771, #772, #773, #774, #775, #776 and #777 were merged into Operations main during this synchronization wave.
 
