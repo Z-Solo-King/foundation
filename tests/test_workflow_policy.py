@@ -131,6 +131,22 @@ def test_production_release_fails_closed_and_retains_chat_policy_receipts():
     assert "d1_reservation_reject_changes_semantics" in deployment
     assert "production-runtime-acceptance-receipts" in workflow
 
+def test_production_release_publishes_immutable_runtime_identity():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'RELEASE_FOUNDATION_SHA = "${GITHUB_SHA}"' in deployment
+    assert 'RELEASE_OPERATIONS_REF = "${OPERATIONS_REF}"' in deployment
+
+
+def test_live_acceptance_is_gated_by_runtime_provenance():
+    diagnostics = (ROOT / "backend" / "worker_diagnostics.py").read_text(encoding="utf-8")
+    coverage = (ROOT / ".github/workflows/coverage-driven-runtime-matrix.yml").read_text(encoding="utf-8")
+    assert "RELEASE_FOUNDATION_SHA" in diagnostics
+    assert "RELEASE_OPERATIONS_REF" in diagnostics
+    assert 'payload["release"]' in diagnostics
+    assert ".release.foundation_sha == $foundation" in coverage
+    assert ".release.operations_ref == $operations" in coverage
+    assert "Live runtime provenance does not match the immutable revisions under test." in coverage
+
 def test_public_worker_propagates_client_request_cancellation_to_operations():
     worker = (ROOT / "worker.py").read_text(encoding="utf-8")
     wrangler = WRANGLER.read_text(encoding="utf-8")
