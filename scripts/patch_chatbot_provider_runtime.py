@@ -153,21 +153,23 @@ if "deploy_operations_chatbot_config.sh" not in release.read_text(encoding="utf-
     )
 
 app = ROOT / "frontend" / "app.js"
-replace_once(
-    app,
-    """    buffer += decoder.decode();
+app_text = app.read_text(encoding="utf-8")
+if "    try:\n      buffer += decoder.decode();" not in app_text:
+    replace_once(
+        app,
+        """    buffer += decoder.decode();
     if (buffer.trim()) dispatch(buffer);
     if (signal) signal.removeEventListener('abort', onAbort);
 """,
-    """    try {
+        """    try {
       buffer += decoder.decode();
       if (buffer.trim()) dispatch(buffer);
     } finally {
       if (signal) signal.removeEventListener('abort', onAbort);
     }
 """,
-    "SSE cleanup",
-)
+        "SSE cleanup",
+    )
 
 ux = ROOT / "frontend" / "ux_enhancements.js"
 ux_text = ux.read_text(encoding="utf-8")
