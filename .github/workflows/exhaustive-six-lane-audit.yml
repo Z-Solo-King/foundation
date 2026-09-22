@@ -1,5 +1,5 @@
 name: Exhaustive six-lane repository audit
-# Scanner revision: 2026-09-22 bounded conflict clustering + restored semantic embedding helpers
+# Scanner revision: 2026-09-22 process-parallel analysis lanes + bounded conflict clustering
 
 on:
   pull_request:
