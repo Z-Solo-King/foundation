@@ -134,6 +134,7 @@ def test_production_release_fails_closed_and_retains_chat_policy_receipts():
     assert "d1_reservation_reject_changes_semantics" in deployment
     assert "production-runtime-acceptance-receipts" in workflow
     assert "allow_persistence_deferred" not in workflow
+    assert "inputs:" not in workflow.split("permissions:", 1)[0]
 
 def test_public_worker_propagates_client_request_cancellation_to_operations():
     worker = (ROOT / "worker.py").read_text(encoding="utf-8")
