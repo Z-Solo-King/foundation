@@ -225,6 +225,8 @@ printf '%s\n' \
   '[vars]' \
   'ENVIRONMENT = "production"' \
   'STRICT_ZERO_COST_ONLY = "true"' \
+  "RELEASE_FOUNDATION_SHA = \"${GITHUB_SHA}\"" \
+  "RELEASE_OPERATIONS_REF = \"${OPERATIONS_REF}\"" \
   'B2_BUCKET = "SoloKing"' \
   'B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"' \
   > wrangler.production.generated.toml
