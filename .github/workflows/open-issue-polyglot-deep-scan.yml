@@ -96,21 +96,26 @@ jobs:
         run: |
           python - <<'PY'
           import json
+          import os
           import subprocess
           from pathlib import Path
+
           lane = "${{ matrix.lane }}"
+          workspace = Path(os.environ["GITHUB_WORKSPACE"])
+          operations_root = workspace / "operations"
           path = Path(".runtime/open-issue-deep-scan") / f"{lane}.json"
           payload = json.loads(path.read_text())
           payload["foundation_revision"] = subprocess.check_output(
-              ["git", "-C", "$GITHUB_WORKSPACE", "rev-parse", "HEAD"], text=True
+              ["git", "-C", str(workspace), "rev-parse", "HEAD"], text=True
           ).strip()
           payload["operations_revision"] = subprocess.check_output(
-              ["git", "-C", "$GITHUB_WORKSPACE/operations", "rev-parse", "HEAD"], text=True
+              ["git", "-C", str(operations_root), "rev-parse", "HEAD"], text=True
           ).strip()
           path.write_text(json.dumps(payload, indent=2) + "\n")
           PY
 
       - name: Upload lane receipt
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: open-issue-deep-scan-${{ matrix.lane }}
