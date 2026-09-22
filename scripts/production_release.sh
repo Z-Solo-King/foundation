@@ -275,10 +275,34 @@ for asset in styles.css app.js composer.js lifecycle_controller.js; do
   test -s "/tmp/${asset}"
 done
 
-# Seed a deployment-boundary sentinel before replacing the deployed Operations version.
-# A first run on the new pin can skip this if the old deployed revision does not yet support the probe.
+# Determine whether the currently active private Worker already implements the persistence
+# boundary probe. During first promotion of a newer immutable Operations pin, the old Worker
+# may legitimately return 400/404/503 because the diagnostic did not exist yet. In that case
+# the canonical release performs an automatic bootstrap rollover instead of requiring a human
+# override: deploy the new pin, seed on the new version, then deploy the same immutable pin a
+# second time with a unique tag to create a real version boundary and verify persistence/replay.
 persistence_seed_file="$RUNNER_TEMP/persistence-rollover-seed.json"
 persistence_seed_payload='{"operation":"persistence_seed"}'
+persistence_seed_ready=false
+persistence_bootstrap_deferred=false
+
+predeploy_operations_status=$(curl -sS -o "$RUNNER_TEMP/operations-predeploy.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments" || true)
+test "$predeploy_operations_status" = '200' || {
+  echo "Cloudflare Operations predeploy state check failed: HTTP $predeploy_operations_status"
+  jq -c '{message,errors}' "$RUNNER_TEMP/operations-predeploy.json" 2>/dev/null || cat "$RUNNER_TEMP/operations-predeploy.json"
+  exit 1
+}
+predeploy_operations_version_id=$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id' "$RUNNER_TEMP/operations-predeploy.json" | head -n1)
+test -n "$predeploy_operations_version_id" || { echo 'No 100% active Operations Worker version found before deployment'; exit 1; }
+predeploy_operations_matches_target=$(jq -r --arg expected "github:${OPERATIONS_REF}" '
+  (((.result.deployments[0].annotations["workers/message"] // "") == $expected) or
+   ((.result.deployments[0].annotations["workers/tag"] // "") == $expected))
+' "$RUNNER_TEMP/operations-predeploy.json")
+echo "Operations predeploy provenance matches target: ${predeploy_operations_matches_target}"
+
 persistence_seed_status=$(curl -sS --max-time 30 \
   -o "$persistence_seed_file" -w '%{http_code}' \
   -H "Authorization: Bearer $AUTH_TOKEN" \
@@ -286,21 +310,15 @@ persistence_seed_status=$(curl -sS --max-time 30 \
   -d "$persistence_seed_payload" \
   "$BASE_URL/api/v1/chatbot/diagnostic" || true)
 echo "POST persistence_seed -> HTTP $persistence_seed_status"
-persistence_seed_ready=false
 if [ "$persistence_seed_status" = "200" ] && jq -e '.ok == true and (.sentinel_id | type == "string" and length > 0)' "$persistence_seed_file" >/dev/null 2>&1; then
   persistence_seed_ready=true
   echo "Persistence rollover seed: READY"
-elif [ "$persistence_seed_status" = "400" ] || [ "$persistence_seed_status" = "404" ] || [ "$persistence_seed_status" = "503" ]; then
-  if [ "${ALLOW_PERSISTENCE_DEFERRED:-false}" = "true" ]; then
-    echo "Persistence rollover seed unavailable; explicit first-bootstrap override is active. Evidence will remain DEFERRED."
-    cp "$persistence_seed_file" .runtime/persistence-rollover-seed.json
-  else
-    echo "Persistence rollover seed unavailable and no explicit bootstrap override is active; failing closed."
-    cat "$persistence_seed_file" || true
-    exit 1
-  fi
+elif { [ "$persistence_seed_status" = "400" ] || [ "$persistence_seed_status" = "404" ] || [ "$persistence_seed_status" = "503" ]; } && [ "$predeploy_operations_matches_target" != "true" ]; then
+  persistence_bootstrap_deferred=true
+  echo "Persistence rollover seed unsupported on the older active Operations revision; automatic bootstrap rollover is required."
+  cp "$persistence_seed_file" .runtime/persistence-rollover-seed.json
 else
-  echo "Unexpected persistence rollover seed response"
+  echo "Persistence rollover seed failed on an already-targeted or unexpected runtime state; failing closed."
   cat "$persistence_seed_file" || true
   exit 1
 fi
@@ -376,8 +394,61 @@ jq -e --arg expected_id "$(jq -r '.response.response_id' "$RUNNER_TEMP/chat-roll
   "$RUNNER_TEMP/chat-rollover-after.json" >/dev/null
 echo "Live chat redeployment replay acceptance: PASS"
 
+if [ "$persistence_bootstrap_deferred" = "true" ]; then
+  # The old Worker did not implement the persistence probe. Now that the approved immutable
+  # revision is live, seed the sentinel there and create a second version of the exact same
+  # revision. This creates a real code-version boundary without changing authority or code.
+  persistence_bootstrap_status=$(curl -sS --max-time 30 \
+    -o "$RUNNER_TEMP/persistence-bootstrap-seed.json" -w '%{http_code}' \
+    -H "Authorization: Bearer $AUTH_TOKEN" \
+    -H 'Content-Type: application/json' \
+    -d "$persistence_seed_payload" \
+    "$BASE_URL/api/v1/chatbot/diagnostic" || true)
+  echo "POST persistence_seed after bootstrap deployment -> HTTP $persistence_bootstrap_status"
+  test "$persistence_bootstrap_status" = "200"
+  jq -e '.ok == true and (.sentinel_id | type == "string" and length > 0)' "$RUNNER_TEMP/persistence-bootstrap-seed.json" >/dev/null
+  sentinel_bootstrap_id=$(jq -r '.sentinel_id' "$RUNNER_TEMP/persistence-bootstrap-seed.json")
+  cp "$RUNNER_TEMP/persistence-bootstrap-seed.json" .runtime/persistence-rollover-seed.json
 
-if [ "$persistence_seed_ready" = "true" ]; then
+  bootstrap_version_before="$operations_version_id"
+  (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:persistence-bootstrap-${GITHUB_RUN_ID}")
+
+  bootstrap_deployments_status=$(curl -sS -o "$RUNNER_TEMP/operations-bootstrap-deployments.json" -w '%{http_code}' \
+    -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+    -H 'Content-Type: application/json' \
+    "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments" || true)
+  test "$bootstrap_deployments_status" = '200'
+  bootstrap_version_id=$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id' "$RUNNER_TEMP/operations-bootstrap-deployments.json" | head -n1)
+  test -n "$bootstrap_version_id"
+  test "$bootstrap_version_id" != "$bootstrap_version_before" || { echo 'Persistence bootstrap did not create a new Worker version'; exit 1; }
+  echo "Persistence bootstrap version boundary: PASS (${bootstrap_version_before} -> ${bootstrap_version_id})"
+
+  bootstrap_version_status=$(curl -sS -o "$RUNNER_TEMP/operations-bootstrap-version.json" -w '%{http_code}' \
+    -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+    -H 'Content-Type: application/json' \
+    "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/versions/${bootstrap_version_id}" || true)
+  test "$bootstrap_version_status" = '200'
+  jq -e --arg expected "github:${OPERATIONS_REF}" '
+    ((.result.annotations["workers/message"] // "") == $expected)
+    or ((.result.annotations["workers/tag"] // "") == $expected)
+  ' "$RUNNER_TEMP/operations-bootstrap-version.json" >/dev/null
+
+  persistence_verify_payload=$(jq -nc --arg operation "persistence_verify" --arg sentinel_id "$sentinel_bootstrap_id" '{operation:$operation,sentinel_id:$sentinel_id}')
+  persistence_verify_status=$(curl -sS --max-time 30 \
+    -o "$RUNNER_TEMP/persistence-rollover-verify.json" -w '%{http_code}' \
+    -H "Authorization: Bearer $AUTH_TOKEN" \
+    -H 'Content-Type: application/json' \
+    -d "$persistence_verify_payload" \
+    "$BASE_URL/api/v1/chatbot/diagnostic" || true)
+  echo "POST persistence_verify after automatic bootstrap rollover -> HTTP $persistence_verify_status"
+  test "$persistence_verify_status" = "200"
+  jq -e '.ok == true and .memory_persisted_across_version == true and .replay_nonce_rejected_after_version_change == true and .cleanup_status == 200' \
+    "$RUNNER_TEMP/persistence-rollover-verify.json" >/dev/null
+  cp "$RUNNER_TEMP/persistence-rollover-verify.json" .runtime/persistence-rollover-verify.json
+  echo "Automatic persistence/replay bootstrap acceptance: PASS"
+
+  persistence_seed_ready=false
+else
   sentinel_id=$(jq -r '.sentinel_id' "$persistence_seed_file")
   persistence_verify_payload=$(jq -nc --arg operation "persistence_verify" --arg sentinel_id "$sentinel_id" '{operation:$operation,sentinel_id:$sentinel_id}')
 persistence_verify_status=$(curl -sS --max-time 30 \
@@ -392,9 +463,6 @@ jq -e '.ok == true and .memory_persisted_across_version == true and .replay_nonc
   "$RUNNER_TEMP/persistence-rollover-verify.json" >/dev/null
 cp "$RUNNER_TEMP/persistence-rollover-verify.json" .runtime/persistence-rollover-verify.json
 echo "Live memory/replay deployment-boundary acceptance: PASS"
-else
-  echo "Live memory/replay deployment-boundary acceptance: DEFERRED"
-  printf '%s\n' '{"status":"DEFERRED","reason":"persistence probe unsupported on prior deployed revision","accepted_only_by_explicit_bootstrap_override":true}' > .runtime/persistence-rollover-verify.json
 fi
 # Exercise the real public-to-private conversational and research paths only after
 # both Workers are deployed and the private provenance gate has passed.
