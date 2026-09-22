@@ -1,5 +1,5 @@
 name: Exhaustive six-lane repository audit
-# Scanner revision: 2026-09-22 process-parallel lanes + bounded conflicts + path-safe surface receipts
+# Scanner revision: 2026-09-22 restored full scanner + process-parallel lanes + bounded conflicts + path-safe surface receipts
 # The audit is report-only at the workflow boundary; generated patches remain artifacts for reviewed promotion.
 
 on:
@@ -125,6 +125,10 @@ jobs:
 
       - name: Prepare audit artifact directory
         run: mkdir -p .runtime/exhaustive-audit
+
+      - name: Record scanned revisions
+        run: |
+          printf 'foundation=%s\noperations=%s\n' "$(git -C foundation-repo rev-parse HEAD)" "$(git -C operations-repo rev-parse HEAD)" > .runtime/exhaustive-audit/scanned_revisions.txt
 
       - name: Compile exhaustive audit tool
         working-directory: operations-repo
