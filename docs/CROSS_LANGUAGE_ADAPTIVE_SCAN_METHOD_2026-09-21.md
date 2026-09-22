@@ -39,3 +39,26 @@ This makes the repository progressively easier for humans and different coding a
 
 ## 9. Completion criterion
 A scan wave is complete only when all current paths are assigned; all high-signal findings are classified; concrete defects have a canonical issue/PR or are explicitly rejected with rationale; migration candidates have a measured evidence plan; runtime-only blockers are preserved; and the method changes discovered in the wave are written back into canonical maintenance rules.
+
+## 8A. Peer-audit learning loop
+
+Every audit wave is an input to the other active audit families. After the primary scan, compare its observations against family-overlap/semantic audits, security and architecture audits, exhaustive repository scans, open-issue scans, migration reviews, and fresh execution receipts where available.
+
+Normalize observations into shared categories before comparison:
+- correctness/state/concurrency;
+- security/trust boundary;
+- resource/size/deadline;
+- ownership/architecture;
+- revision/stale-reference;
+- evidence/provenance;
+- coverage/test;
+- migration/portability.
+
+Preserve the result as:
+- **corroborated** — independently observed by multiple audit families;
+- **single-observer** — observed by one family and still requiring counter-check;
+- **disagreement** — one family reports a finding while another explicitly passes the same category.
+
+Never resolve a disagreement by majority vote. Re-read the implicated files, tests, workflows and exact revisions; then reproduce or explicitly disposition the finding.
+
+A scan method is considered improved only when the lessons, false-positive controls and newly discovered cross-checks are written back into the regression cases and reused by the next audit wave.
