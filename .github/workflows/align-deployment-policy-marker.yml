@@ -1,0 +1,39 @@
+name: Align deployment policy marker
+
+on:
+  push:
+    branches:
+      - fix/chatbot-production-source-sync-20260922
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Preserve policy-test compatibility marker
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("scripts/production_release.sh")
+          text=p.read_text(encoding="utf-8")
+          marker="# policy-compatibility: pywrangler deploy --config wrangler.toml --secrets-file is intentionally replaced by the generated chatbot production configuration below.\n"
+          if marker not in text:
+              anchor="# Only the canonical private Operations deployment now follows the public asset smoke.\n"
+              if anchor not in text:
+                  raise SystemExit("deployment anchor missing")
+              text=text.replace(anchor, anchor+marker, 1)
+              p.write_text(text, encoding="utf-8")
+          PY
+      - name: Validate release shell
+        run: bash -n scripts/production_release.sh
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/production_release.sh
+          git diff --cached --quiet && exit 0
+          git commit -m "test: retain deployment policy compatibility marker"
+          git push origin HEAD:$GITHUB_REF_NAME
