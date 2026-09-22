@@ -244,6 +244,8 @@ replace_once(
     "UX stop visibility",
 )
 
+ux.write_text(ux_text, encoding="utf-8")
+
 ux_test = ROOT / "tests" / "test_frontend_ux_completeness.py"
 ux_text = ux_test.read_text(encoding="utf-8")
 ux_text = ux_text.replace('"AbortController",', '"api.cancelActiveChat?.()",', 1)

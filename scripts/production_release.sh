@@ -303,7 +303,7 @@ npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
   --config="$RUNNER_TEMP/operations/wrangler.toml"
 secret_file="$RUNNER_TEMP/operations-secrets.env"
 printf 'AUTH_TOKEN=%s\n' "$AUTH_TOKEN" > "$secret_file"
-(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}")
+bash "$GITHUB_WORKSPACE/scripts/deploy_operations_chatbot_config.sh"
 # Fail closed unless the active Cloudflare Operations deployment points to the
 # version carrying the exact canonical GitHub provenance annotation.
 operations_deployments_status=$(curl -sS -o "$RUNNER_TEMP/operations-deployments.json" -w '%{http_code}' \

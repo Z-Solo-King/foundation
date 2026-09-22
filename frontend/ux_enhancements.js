@@ -4,9 +4,7 @@
   const api = window.RIEFrontend;
   if (!api?.chatView || !api?.composer) return;
   const MAX_CHARS = 12_000;
-  let activeController = null;
   let stopRequested = false;
-  const originalFetch = window.fetch.bind(window);
 
   const icons = {
     menu: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
@@ -56,15 +54,6 @@
     root.querySelectorAll('.empty-mark').forEach((node) => { if (!node.querySelector('.ux-icon')) { node.textContent = ''; node.innerHTML = icons.workspace; node.classList.add('ux-brand-icon'); } });
     root.querySelectorAll('.chat-icon').forEach((node) => { if (!node.querySelector('.ux-icon')) { node.textContent = ''; node.innerHTML = icons.chat; } });
   }
-
-  window.fetch = (input, init = {}) => {
-    const url = typeof input === 'string' ? input : input?.url || '';
-    if (String(url).includes('/api/v1/chat/stream') && String(init.method || input?.method || 'GET').toUpperCase() === 'POST') {
-      activeController = new AbortController();
-      return originalFetch(input, { ...init, signal: activeController.signal });
-    }
-    return originalFetch(input, init);
-  };
 
   function updateLastAssistant(fn) {
     const chat = api.activeChat?.();

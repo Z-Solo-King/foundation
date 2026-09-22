@@ -26,7 +26,7 @@ def test_ux_layer_covers_copy_retry_stop_counter_and_guided_auth():
     for marker in (
         "navigator.clipboard",
         "ux-retry",
-        "AbortController",
+        "api.cancelActiveChat?.()",
         "Response stopped by you",
         "12_000",
         "unauthorized",

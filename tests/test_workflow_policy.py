@@ -195,7 +195,7 @@ def test_private_operations_handoff_is_preflighted_and_diagnostic_runs_last():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     preflight = deployment.index("Preflight and stage the private Operations handoff")
     public_deploy = deployment.index("pywrangler deploy --config wrangler.production.generated.toml")
-    operations_deploy = deployment.index("pywrangler deploy --config wrangler.toml --secrets-file")
+    operations_deploy = deployment.index("deploy_operations_chatbot_config.sh")
     diagnostic = deployment.index("infrastructure_verify_public_test")
     success = deployment.rindex("Production release completed")
     assert preflight < public_deploy
