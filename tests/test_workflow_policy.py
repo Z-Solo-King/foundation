@@ -379,8 +379,10 @@ def test_polyglot_migration_review_uses_declared_operations_python_runtime():
 
 def test_production_release_publishes_immutable_runtime_identity():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'RELEASE_FOUNDATION_SHA = "${GITHUB_SHA}"' in deployment
-    assert 'RELEASE_OPERATIONS_REF = "${OPERATIONS_REF}"' in deployment
+    assert 'RELEASE_FOUNDATION_SHA' in deployment
+    assert 'RELEASE_OPERATIONS_REF' in deployment
+    assert '"RELEASE_FOUNDATION_SHA = \\"${GITHUB_SHA}\\""' in deployment
+    assert '"RELEASE_OPERATIONS_REF = \\"${OPERATIONS_REF}\\""' in deployment
 
 
 def test_live_acceptance_is_gated_by_runtime_provenance():
