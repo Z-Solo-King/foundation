@@ -200,7 +200,7 @@
     root.querySelectorAll('.message.message-error .message-bubble').forEach((bubble) => {
       if (!/unauthorized|HTTP\s*401/i.test(bubble.textContent || '') || bubble.dataset.guidedAuth === 'true') return;
       bubble.dataset.guidedAuth = 'true';
-      bubble.textContent = 'This backend requires a session token. Open Settings to enter one, or enable Guest test mode to try Heroic AI locally without credentials.';
+      bubble.textContent = 'Public chat does not require a session token. Protected operational views still do.';
       const message = bubble.closest('.message');
       const actions = message?.querySelector('.message-actions');
       if (!actions || actions.querySelector('[data-auth-guidance]')) return;
