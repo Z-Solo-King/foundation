@@ -1,0 +1,282 @@
+name: Prepare live chatbot source fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/prepare-live-chat-source-fix.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: prepare-live-chat-source-fix
+  cancel-in-progress: false
+
+jobs:
+  foundation-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Apply public chatbot source, config and UI patch
+        shell: python
+        run: |
+          from pathlib import Path
+          root = Path(".")
+
+          def replace_once(path, old, new, label):
+              text = path.read_text(encoding="utf-8")
+              if new in text:
+                  return
+              if text.count(old) != 1:
+                  raise SystemExit(f"{label}: expected exactly one marker")
+              path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+          worker = root / "worker.py"
+          old = "\n".join([
+              "def _chat_headers(request):",
+              '    headers = {"Content-Type": "application/json"}',
+              "    token = _bearer_token(request)",
+              "    if token:",
+              '        headers["Authorization"] = f"Bearer {token}"',
+              '    idempotency_key = request.headers.get("Idempotency-Key")',
+              "    if idempotency_key:",
+              '        headers["Idempotency-Key"] = idempotency_key',
+              "    return headers", "",
+          ])
+          new = "\n".join([
+              "def _chat_headers(request, env):",
+              '    headers = {"Content-Type": "application/json"}',
+              '    backend_token = str(getattr(env, "CHAT_BACKEND_TOKEN", "") or getattr(env, "AUTH_TOKEN", "") or "").strip()',
+              "    if backend_token:",
+              '        headers["Authorization"] = f"Bearer {backend_token}"',
+              '    idempotency_key = request.headers.get("Idempotency-Key")',
+              "    if idempotency_key:",
+              '        headers["Idempotency-Key"] = idempotency_key',
+              "    return headers", "", "",
+              "def _anonymous_chat_enabled(env):",
+              '    return str(getattr(env, "PUBLIC_CHAT_ANONYMOUS", "") or "").strip().casefold() == "true"', "", "",
+              "def _public_chat_subject(request):",
+              "    token_subject = authenticated_subject_fingerprint(request)",
+              "    if token_subject:",
+              "        return token_subject",
+              '    ip = str(request.headers.get("CF-Connecting-IP", "") or "anonymous").split(",", 1)[0].strip() or "anonymous"',
+              '    user_agent = str(request.headers.get("User-Agent", "") or "unknown")[:512]',
+              '    return hashlib.sha256(f"anonymous|{ip}|{user_agent}".encode("utf-8")).hexdigest()', "", "",
+          ])
+          replace_once(worker, old, new, "public chat helpers")
+          replace_once(worker, "    headers = _chat_headers(request)\n", "    headers = _chat_headers(request, env)\n", "backend token forwarding")
+
+          replace_once(
+              worker,
+              "\n".join([
+                  '        if request.method == "POST" and path.endswith("/api/v1/chat/stream"):',
+                  "            if not _authorized(request, self.env):",
+                  '                return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)',
+              ]),
+              "\n".join([
+                  '        if request.method == "POST" and path.endswith("/api/v1/chat/stream"):',
+                  "            anonymous = _anonymous_chat_enabled(self.env)",
+                  "            if not anonymous and not _authorized(request, self.env):",
+                  '                return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)',
+              ]),
+              "stream auth",
+          )
+          replace_once(
+              worker,
+              "\n".join([
+                  '            subject = authenticated_subject_fingerprint(request) or "development-local"',
+                  '            event_id = request.headers.get("Idempotency-Key") or req.request_id or uuid.uuid4().hex',
+                  "            decision, lease = await _public_admit(self.env, AdmissionRoute.STREAM, subject, event_id)",
+              ]) + "\n",
+              "\n".join([
+                  '            subject = _public_chat_subject(request) if anonymous else (authenticated_subject_fingerprint(request) or "development-local")',
+                  '            event_id = request.headers.get("Idempotency-Key") or req.request_id or uuid.uuid4().hex',
+                  "            decision, lease = await _public_admit(self.env, AdmissionRoute.STREAM, subject, event_id)",
+              ]) + "\n",
+              "stream subject",
+          )
+          replace_once(
+              worker,
+              "\n".join([
+                  '        if request.method == "POST" and path.endswith("/api/v1/chat"):',
+                  "            if not _authorized(request, self.env):",
+                  '                return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)',
+              ]),
+              "\n".join([
+                  '        if request.method == "POST" and path.endswith("/api/v1/chat"):',
+                  "            anonymous = _anonymous_chat_enabled(self.env)",
+                  "            if not anonymous and not _authorized(request, self.env):",
+                  '                return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)',
+              ]),
+              "chat auth",
+          )
+          replace_once(
+              worker,
+              "\n".join([
+                  '            subject = authenticated_subject_fingerprint(request) or "development-local"',
+                  '            event_id = request.headers.get("Idempotency-Key") or req.request_id or uuid.uuid4().hex',
+                  "            decision, lease = await _public_admit(self.env, AdmissionRoute.CHAT, subject, event_id)",
+              ]) + "\n",
+              "\n".join([
+                  '            subject = _public_chat_subject(request) if anonymous else (authenticated_subject_fingerprint(request) or "development-local")',
+                  '            event_id = request.headers.get("Idempotency-Key") or req.request_id or uuid.uuid4().hex',
+                  "            decision, lease = await _public_admit(self.env, AdmissionRoute.CHAT, subject, event_id)",
+              ]) + "\n",
+              "chat subject",
+          )
+
+          path = root / "wrangler.toml"
+          lines = path.read_text(encoding="utf-8").splitlines()
+          if 'PUBLIC_CHAT_ANONYMOUS = "true"' not in lines:
+              idx = lines.index('STRICT_ZERO_COST_ONLY = "true"')
+              lines.insert(idx + 1, 'PUBLIC_CHAT_ANONYMOUS = "true"')
+              path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+          path = root / "scripts" / "production_release.sh"
+          text = path.read_text(encoding="utf-8")
+          if 'PUBLIC_CHAT_ANONYMOUS = "true"' not in text:
+              marker = "  'STRICT_ZERO_COST_ONLY = \"true\"' \\\n"
+              text = text.replace(marker, marker + "  'PUBLIC_CHAT_ANONYMOUS = \"true\"' \\\n", 1)
+              path.write_text(text, encoding="utf-8")
+
+          replace_once(root / "frontend" / "composer.js",
+                       "Chat uses the authenticated Heroic AI backend and canonical Operations routing.",
+                       "Chat uses the public governed Heroic AI endpoint; a session token is only needed for protected operational features.",
+                       "composer wording")
+          replace_once(root / "frontend" / "chat_view.js",
+                       "Session authentication is held only in session storage for this browser session.",
+                       "Protected operational features use a browser-session token; public chat does not require one.",
+                       "settings wording")
+          replace_once(root / "frontend" / "ux_enhancements.js",
+                       "This backend requires a session token. Open Settings to enter one, or enable Guest test mode to try Heroic AI locally without credentials.",
+                       "Public chat does not require a session token. Protected operational views still do.",
+                       "auth wording")
+
+          path = root / "frontend" / "app.js"
+          text = path.read_text(encoding="utf-8")
+          old_cleanup = "    buffer += decoder.decode();\n    if (buffer.trim()) dispatch(buffer);\n    if (signal) signal.removeEventListener('abort', onAbort);\n"
+          new_cleanup = "    try {\n      buffer += decoder.decode();\n      if (buffer.trim()) dispatch(buffer);\n    } finally {\n      if (signal) signal.removeEventListener('abort', onAbort);\n    }\n"
+          if new_cleanup not in text:
+              if text.count(old_cleanup) != 1:
+                  raise SystemExit("SSE cleanup marker missing")
+              path.write_text(text.replace(old_cleanup, new_cleanup, 1), encoding="utf-8")
+
+          (root / "tests" / "test_live_chatbot_contract.py").write_text(
+              "\n".join([
+                  "from pathlib import Path",
+                  "ROOT = Path(__file__).parents[1]",
+                  "",
+                  "def test_public_chat_admission_is_explicit():",
+                  '    source = (ROOT / "worker.py").read_text(encoding="utf-8")',
+                  '    assert "def _anonymous_chat_enabled(env):" in source',
+                  '    assert "def _public_chat_subject(request):" in source',
+                  '    assert "if not anonymous and not _authorized(request, self.env):" in source',
+                  "",
+                  "def test_private_backend_credential_forwarding():",
+                  '    source = (ROOT / "worker.py").read_text(encoding="utf-8")',
+                  '    assert "CHAT_BACKEND_TOKEN" in source',
+                  '    assert "headers = _chat_headers(request, env)" in source',
+                  "",
+                  "def test_public_production_chat_config_and_ui():",
+                  '    release = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")',
+                  '    assert \'PUBLIC_CHAT_ANONYMOUS = "true"\' in release',
+                  '    assert "public governed Heroic AI endpoint" in (ROOT / "frontend/composer.js").read_text(encoding="utf-8")',
+                  '    assert "public chat does not require one." in (ROOT / "frontend/chat_view.js").read_text(encoding="utf-8")',
+                  '    assert "Public chat does not require a session token." in (ROOT / "frontend/ux_enhancements.js").read_text(encoding="utf-8")',
+              ]) + "\n",
+              encoding="utf-8",
+          )
+
+      - name: Verify Foundation source
+        run: |
+          python -m py_compile worker.py
+          bash -n scripts/production_release.sh
+          node --check frontend/app.js
+          node --check frontend/composer.js
+          node --check frontend/chat_view.js
+          node --check frontend/ux_enhancements.js
+          python -m pytest -q tests/test_live_chatbot_contract.py
+
+      - name: Create Foundation source-fix PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="fix/production-chatbot-source-$(date +%s)"
+          git checkout -b "$branch"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add worker.py wrangler.toml scripts/production_release.sh frontend/app.js frontend/composer.js frontend/chat_view.js frontend/ux_enhancements.js tests/test_live_chatbot_contract.py
+          git commit -m "fix: make production chatbot usable"
+          git push origin "$branch"
+          gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$branch" --title "fix: make production chatbot usable" --body "Enable governed anonymous public chat, align production configuration and public UI guidance, and preserve protected control-plane authentication."
+
+  operations-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Operations write token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: main
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Apply private chat backend-token patch
+        working-directory: operations
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path("worker.py")
+          source = path.read_text(encoding="utf-8")
+          if "import hmac\nfrom urllib.parse import urlparse" not in source:
+              source = source.replace("from urllib.parse import urlparse\n", "import hmac\nfrom urllib.parse import urlparse\n", 1)
+          if "def authorized_chat_request(request, env):" not in source:
+              helper = "\n\ndef authorized_chat_request(request, env):\n    backend_expected = str(getattr(env, \"CHAT_BACKEND_TOKEN\", \"\") or \"\").strip()\n    authorization = str(getattr(request, \"headers\", {}).get(\"Authorization\", \"\") or \"\").strip()\n    scheme, _, value = authorization.partition(\" \")\n    if backend_expected and scheme.casefold() == \"bearer\" and value and hmac.compare_digest(value.encode(\"utf-8\"), backend_expected.encode(\"utf-8\")):\n        return True\n    return authorized_request(request, env)\n"
+              marker = "\n\nclass Default(WorkerEntrypoint):\n"
+              if marker not in source:
+                  raise SystemExit("Operations worker class marker missing")
+              source = source.replace(marker, helper + marker, 1)
+          old = "            if not authorized_request(request, self.env):\n                return Response.json({\"ok\": False, \"error\": \"unauthorized\"}, status=401)\n            payload = await read_json_object(request)\n"
+          new = "            if not authorized_chat_request(request, self.env):\n                return Response.json({\"ok\": False, \"error\": \"unauthorized\"}, status=401)\n            payload = await read_json_object(request)\n"
+          if old in source:
+              source = source.replace(old, new, 1)
+          path.write_text(source, encoding="utf-8")
+
+      - name: Verify Operations source
+        working-directory: operations
+        run: python -m py_compile worker.py
+
+      - name: Create Operations source-fix PR
+        env:
+          GH_TOKEN: ${{ steps.operations-app.outputs.token }}
+        working-directory: operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="fix/production-chatbot-operations-$(date +%s)"
+          git checkout -b "$branch"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add worker.py
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: production chatbot backend boundary"
+          git push origin "$branch"
+          gh pr create --repo Z-Solo-King/operations --base main --head "$branch" --title "fix: production chatbot backend boundary" --body "Align private chat authentication with CHAT_BACKEND_TOKEN while retaining AUTH_TOKEN protection for the rest of the control plane."
