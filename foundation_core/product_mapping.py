@@ -75,10 +75,34 @@ def _plausibility(raw: Mapping[str, object]) -> tuple[dict[str, object], ...]:
     )
 
 
+def _offer_rows(raw: object) -> tuple[dict[str, object], ...]:
+    if isinstance(raw, Mapping):
+        candidates = (raw,)
+    elif isinstance(raw, (list, tuple)):
+        candidates = tuple(item for item in raw if isinstance(item, Mapping))
+    else:
+        candidates = ()
+    rows: list[dict[str, object]] = []
+    for offer in candidates:
+        rows.append(
+            {
+                "seller_id": _text(offer.get("seller_id") or offer.get("sellerId") or offer.get("seller")),
+                "price": _text(offer.get("price") or offer.get("lowPrice")),
+                "currency": _text(offer.get("currency")),
+                "availability": normalize_stock(offer.get("availability")),
+            }
+        )
+    return tuple(rows)
+
+
 def map_product(raw: Mapping[str, object]) -> dict[str, object]:
-    """Map one observed record without fetching data or inventing facts."""
-    offers = raw.get("offers")
-    offer = offers if isinstance(offers, Mapping) else {}
+    """Map one observed record without fetching data or inventing facts.
+
+    Multi-seller offers are additive: legacy top-level price/stock fields
+    remain compatible while observed offer rows are preserved rather than dropped.
+    """
+    offer_rows = _offer_rows(raw.get("offers"))
+    offer = offer_rows[0] if offer_rows else {}
     availability = _routed(raw, "availability") or offer.get("availability")
     images = _images(_routed(raw, "images"))
     return {
@@ -91,10 +115,11 @@ def map_product(raw: Mapping[str, object]) -> dict[str, object]:
         "description": _text(_routed(raw, "description")),
         "specs": normalize_specs(raw.get("specs")),
         "variant_id": _identifier(_routed(raw, "variant_id")),
-        "price": _text(_routed(raw, "price") or offer.get("price") or offer.get("lowPrice")),
+        "price": _text(_routed(raw, "price") or offer.get("price")),
         "stock": normalize_stock(availability),
         "url": _text(_routed(raw, "url")),
         "images": images,
         "image_provenance": _image_provenance(raw, images),
+        "offers": offer_rows,
         "plausibility": _plausibility(raw),
     }
