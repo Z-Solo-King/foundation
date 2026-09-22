@@ -108,6 +108,10 @@ class EvaluationCorpusManifest:
     provenance_revision: str
     approval_receipt_ref: str | None = None
 
+    def __post_init__(self) -> None:
+        """Fail closed at construction so invalid manifests cannot enter the benchmark pipeline."""
+        self.validate()
+
     def validate(self) -> None:
         for name, value in (
             ("corpus_id", self.corpus_id),
