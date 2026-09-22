@@ -1,0 +1,146 @@
+name: Live chatbot production smoke
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: live-chatbot-production-smoke
+  cancel-in-progress: false
+
+env:
+  PUBLIC_WORKER_URL: https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev
+  OPERATIONS_REF: 50e642dfb05846963a82fe76f4f5fe085d4b9a8c
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Wait for deployed revision
+        env:
+          EXPECTED_FOUNDATION: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for _ in {1..90}; do
+            status=$(curl -sS --max-time 20 -o /tmp/readiness.json -w '%{http_code}' "$PUBLIC_WORKER_URL/readiness" || true)
+            if [ "$status" = "200" ] && jq -e --arg f "$EXPECTED_FOUNDATION" --arg o "$OPERATIONS_REF" '.ready == true and .database == true and .release.foundation_sha == $f and .release.operations_ref == $o' /tmp/readiness.json >/dev/null 2>&1; then
+              jq '{ready,database,release}' /tmp/readiness.json
+              exit 0
+            fi
+            sleep 10
+          done
+          cat /tmp/readiness.json 2>/dev/null || true
+          exit 1
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - name: Install HTTP client
+        run: python -m pip install --disable-pip-version-check httpx
+      - name: Run live production chatbot smoke
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p live-chatbot
+          cat > /tmp/live_chatbot_smoke.py <<'PY'
+          import json, os, sys, uuid
+          import httpx
+
+          base = os.environ['PUBLIC_WORKER_URL'].rstrip('/')
+          token = os.environ.get('AUTH_TOKEN', '')
+          if not token:
+              print(json.dumps({'ok': False, 'error': 'AUTH_TOKEN missing'}))
+              raise SystemExit(1)
+          headers = {'Authorization': f'Bearer {token}'}
+          result = {'ok': True, 'checks': {}}
+
+          def record(name, status, body=None, error=None):
+              item = {'status': status}
+              if isinstance(body, dict):
+                  item['ok'] = body.get('ok')
+                  item['ready'] = body.get('ready')
+                  response = body.get('response') if isinstance(body.get('response'), dict) else {}
+                  item['result_state'] = response.get('result_state')
+                  item['response_status'] = response.get('status')
+              if error:
+                  item['error'] = str(error)
+              result['checks'][name] = item
+              if status >= 400 or item.get('ok') is False:
+                  result['ok'] = False
+
+          with httpx.Client(timeout=90.0) as client:
+              for path in ['/','/health','/readiness']:
+                  r = client.get(base + path, headers=headers)
+                  body = r.json() if 'application/json' in r.headers.get('content-type','') else {'raw': r.text[:200]}
+                  record(path.strip('/').replace('/','_') or 'root', r.status_code, body)
+              rid = 'live-chat-' + uuid.uuid4().hex
+              payload = {'chat_id': rid, 'request_id': rid, 'message': 'Return one short sentence confirming the production chatbot is reachable.', 'mode': 'chat', 'strict_zero_cost_only': True}
+              r = client.post(base + '/api/v1/chat', headers={**headers, 'Content-Type': 'application/json', 'Idempotency-Key': rid}, json=payload)
+              body = r.json() if 'application/json' in r.headers.get('content-type','') else {'raw': r.text[:200]}
+              record('chat', r.status_code, body)
+              sse_rid = 'live-sse-' + uuid.uuid4().hex
+              r = client.post(base + '/api/v1/chat/stream', headers={**headers, 'Content-Type': 'application/json', 'Accept': 'text/event-stream', 'Idempotency-Key': sse_rid}, json={**payload, 'chat_id': sse_rid, 'request_id': sse_rid}, timeout=90.0)
+              record('chat_stream', r.status_code, {'ok': r.status_code == 200 and r.headers.get('content-type','').lower().startswith('text/event-stream')})
+              text = r.text
+              result['checks']['chat_stream']['has_start_event'] = 'event: start' in text
+              result['checks']['chat_stream']['has_done_event'] = 'event: done' in text
+              if not ('event: start' in text and 'event: done' in text):
+                  result['ok'] = False
+              for name, payload in {
+                  'knowledge': {'operation':'knowledge','question':'Explain how the production chatbot should answer a stable architecture question.'},
+                  'planning': {'operation':'knowledge','question':'Make a short plan for verifying the Cloudflare integration.'},
+              }.items():
+                  r = client.post(base + '/api/v1/chatbot/diagnostic', headers={**headers, 'Content-Type':'application/json'}, json=payload)
+                  body = r.json() if 'application/json' in r.headers.get('content-type','') else {'raw': r.text[:200]}
+                  record('diagnostic_' + name, r.status_code, body)
+              research = {'question':'Live acceptance probe; use only the permitted source and return citations.', 'depth':'shallow', 'require_citations':True, 'max_sources':1, 'max_evidence_items':3, 'strict_zero_cost_only':True, 'source_urls':['https://example.com/']}
+              r = client.post(base + '/api/v1/research', headers={**headers, 'Content-Type':'application/json', 'Idempotency-Key':'live-research-' + uuid.uuid4().hex}, json=research)
+              body = r.json() if 'application/json' in r.headers.get('content-type','') else {'raw': r.text[:200]}
+              record('research', r.status_code, body)
+              run_id = body.get('run_id') if isinstance(body, dict) else None
+              if run_id:
+                  r2 = client.post(base + '/api/v1/storage/diagnostic', headers={**headers, 'Content-Type':'application/json'}, json={'run_id':run_id})
+                  body2 = r2.json() if 'application/json' in r2.headers.get('content-type','') else {'raw': r2.text[:200]}
+                  record('storage_round_trip', r2.status_code, body2)
+
+          print(json.dumps(result, indent=2, sort_keys=True))
+          with open('live-chatbot/receipt.json','w',encoding='utf-8') as f:
+              json.dump(result, f, indent=2, sort_keys=True)
+          raise SystemExit(0 if result['ok'] else 1)
+          PY
+          PUBLIC_WORKER_URL="$PUBLIC_WORKER_URL" AUTH_TOKEN="$AUTH_TOKEN" python /tmp/live_chatbot_smoke.py
+      - name: Publish sanitized receipt to chatbot issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f live-chatbot/receipt.json ]; then
+            body=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('live-chatbot/receipt.json').read_text())
+          print('### Live production chatbot acceptance')
+          print('```json')
+          print(json.dumps(data, indent=2, sort_keys=True))
+          print('```')
+          PY
+            )
+          else
+            body='### Live production chatbot acceptance'
+            body="$body\nNo receipt was produced; inspect the failed job."
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/issues/197/comments" -f body="$body"
+      - name: Upload live receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: live-chatbot-production-smoke-${{ github.run_id }}
+          path: live-chatbot/
+          retention-days: 30
