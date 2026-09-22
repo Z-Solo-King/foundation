@@ -207,14 +207,14 @@ jobs:
           set -euo pipefail
           mkdir -p benchmark-output
           cat > benchmark-output/case.json <<EOF
-          {"case":"${{ matrix.case }}","label":"${{ matrix.label }}","mode":"${{ matrix.mode }}","url":"${{ matrix.url }}","pass":${{ matrix.pass }},"workers":"${{ steps.profile.outputs.workers || '1' }}","retries":"${{ steps.profile.outputs.retries || '2' }}","operations_ref":"${{ inputs.operations_ref || 'fed618a99a1540e4a7cd906952fbe3ee22acfe39' }}"}
+          {"case":"${{ matrix.case.name }}","label":"${{ matrix.case.label }}","mode":"${{ matrix.case.mode }}","url":"${{ matrix.case.url }}","pass":${{ matrix.pass }},"workers":"${{ steps.profile.outputs.workers || '1' }}","retries":"${{ steps.profile.outputs.retries || '2' }}","operations_ref":"${{ inputs.operations_ref || 'fed618a99a1540e4a7cd906952fbe3ee22acfe39' }}"}
           EOF
 
       - name: Upload case artifact
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: extractor-${{ matrix.case }}-pass-${{ matrix.pass }}
+          name: extractor-${{ matrix.case.name }}-pass-${{ matrix.pass }}
           path: benchmark-output/**
           if-no-files-found: warn
           retention-days: 14
