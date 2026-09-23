@@ -5,10 +5,10 @@
   "authority": "Foundation docs/FAMILY_SYNC_STANDARD.md",
   "runtime_implementation": {
     "foundation": "b1767a40c7b5f0b49429753365fa60dffe50119b",
-    "operations": "c159ec37ff2cdce5f29dc3859a53dbd63b1ee2cf"
+    "operations": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
   },
   "canonical_pins": {
-    "production_operations": "c159ec37ff2cdce5f29dc3859a53dbd63b1ee2cf",
+    "production_operations": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f",
     "nightly_research_operations": "3a7e350ddd5648caf93f58651323425186544f66"
   },
   "current_queue": {
@@ -62,9 +62,9 @@
       "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup"
     },
     "operations": {
-      "last_audited_main_sha": "c159ec37ff2cdce5f29dc3859a53dbd63b1ee2cf",
+      "last_audited_main_sha": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f",
       "role": "private-control-plane-research-orchestration",
-      "approved_production_revision": "c159ec37ff2cdce5f29dc3859a53dbd63b1ee2cf",
+      "approved_production_revision": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f",
       "nightly_research_revision": "3a7e350ddd5648caf93f58651323425186544f66"
     }
   }
