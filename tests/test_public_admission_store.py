@@ -71,6 +71,11 @@ async def test_d1_store_release_is_idempotent_at_statement_level():
     assert sum("UPDATE public_admission_events" in query for query in db.queries) == 2
 
 
+def test_public_admission_insert_is_idempotent_source_contract():
+    source = open("backend/admission_store.py", encoding="utf-8").read()
+    assert "INSERT OR IGNORE INTO public_admission_events" in source
+
+
 def test_route_cost_classes_are_explicit_and_bounded():
     policy = AdmissionPolicy()
     assert set(ROUTE_COST_UNITS) == {
