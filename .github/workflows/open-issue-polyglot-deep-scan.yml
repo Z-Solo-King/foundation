@@ -45,9 +45,6 @@ jobs:
       matrix:
         lane: [L1, L2, L3, L4]
     steps:
-      - name: Checkout Foundation
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
       - name: Validate Operations App configuration
         if: always() && github.event_name == 'pull_request_target'
         shell: bash
