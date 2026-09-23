@@ -65,7 +65,7 @@ def test_canonical_operations_production_pin_is_current_and_immutable():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_REPOSITORY="{CANONICAL_OPERATIONS_REPOSITORY}"' in deployment
     assert f'OPERATIONS_REF="{CANONICAL_OPERATIONS_REF}"' in deployment
-    assert deployment.count(CANONICAL_OPERATIONS_REF) == 2
+    assert deployment.count(CANONICAL_OPERATIONS_REF) == 1
     assert LEGACY_OPERATIONS_REF not in deployment
     assert 'git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git"' in deployment
     assert '"github:${OPERATIONS_REF}"' in deployment
