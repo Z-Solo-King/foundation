@@ -174,6 +174,21 @@ async def test_public_infrastructure_verify_b2_failure_paths(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_readiness_payload_exposes_release_identity():
+    env = SimpleNamespace(
+        DB=DB(),
+        RELEASE_FOUNDATION_SHA="foundation-sha",
+        RELEASE_OPERATIONS_REF="operations-ref",
+    )
+    ready, status = await worker._readiness_payload(env)
+    assert status == 200
+    assert ready["release"] == {
+        "foundation_sha": "foundation-sha",
+        "operations_ref": "operations-ref",
+    }
+
+
+@pytest.mark.asyncio
 async def test_readiness_payload_public_d1_paths():
     ready, status = await worker._readiness_payload(SimpleNamespace(DB=DB()))
     assert status == 200
