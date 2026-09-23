@@ -14,7 +14,9 @@ on:
         description: Exact Operations revision containing validation tests
         required: false
         default: 92eb7a850dff11a10886a952d5db8a42dae2b318
-        type: stringpermissions:
+        type: string
+
+permissions:
   contents: read
 
 concurrency:
