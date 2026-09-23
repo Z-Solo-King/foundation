@@ -356,6 +356,15 @@ def test_superseded_nightly_variants_are_retired():
     assert "nightly-research-v4.yml" not in texts
 
 
+def test_live_extractor_benchmark_overlays_versioned_http_and_browser_producers():
+    workflow = _workflow_texts()["live-extractor-benchmark.yml"]
+    assert "Checkout versioned benchmark tooling" in workflow
+    assert "Overlay benchmark producer tooling" in workflow
+    assert "scripts/browser_site_benchmark.py" in workflow
+    assert "scripts/site_benchmark_execution.py" in workflow
+    assert BENCHMARK_TOOLS_REF in workflow
+
+
 def test_live_extractor_benchmark_overlays_versioned_producer_tooling():
     workflow = _workflow_texts()["live-extractor-benchmark.yml"]
     assert "Checkout versioned benchmark tooling" in workflow
