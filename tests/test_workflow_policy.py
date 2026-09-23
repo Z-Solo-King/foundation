@@ -452,3 +452,11 @@ def test_live_extractor_benchmark_uses_case_mode_matrix_condition():
     assert "if: matrix.case.mode == 'browser'" in workflow
     assert "if: matrix.mode == 'http'" not in workflow
     assert "if: matrix.mode == 'browser'" not in workflow
+def test_production_acceptance_keys_include_run_attempt():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"' in deployment
+    assert 'production-concurrent-${ACCEPTANCE_RUN_ID}' in deployment
+    assert 'production-policy-${ACCEPTANCE_RUN_ID}' in deployment
+    assert 'production-research-${ACCEPTANCE_RUN_ID}' in deployment
+    assert 'persistence-bootstrap-${ACCEPTANCE_RUN_ID}' in deployment
+    assert 'env.ACCEPTANCE_RUN_ID' in deployment
