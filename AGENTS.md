@@ -1,8 +1,8 @@
 ## 2026-09-23 CURRENT AUTHORITY RECONCILIATION
 
 **Live main heads verified:**
-- Foundation main: `978a2b0208cafeae8e740a07374ed78865a19e0b`
-- Operations main: `2d09b7306b1d383d3b715db789d199010c7bcb19`
+- Foundation main: `1660243bf4610e7b3c07e32a623ddbe6f3e37de6`
+- Operations main: `3b0a83894cdc75c01bd8c441fd0ae20628da9b55`
 
 **Current audited runtime implementation pins:**
 - Foundation: `b1767a40c7b5f0b49429753365fa60dffe50119b`
