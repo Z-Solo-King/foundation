@@ -4,48 +4,52 @@
 **Owner:** Foundation family boundary
 **Audit date:** 2026-09-23
 
-## Head/implementation distinction
+## Current repository revisions
 
-- `main` is a live Git reference and must be queried before every mutation; this document does not freeze the current branch head.
-- Audited Foundation runtime implementation revision: `b1767a40c7b5f0b49429753365fa60dffe50119b`.
-- Audited Operations runtime implementation revision: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`.
-- Documentation-only commits may advance `main` without changing those runtime implementation revisions.
-- Canonical production Operations pin: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`.
-- Canonical nightly research Operations pin: `3a7e350ddd5648caf93f58651323425186544f66`.
+- Foundation `main`: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
+- Operations `main`: `804981445fcabe770fc236fd27a650cb6ba183d0`
+- Foundation runtime/deployment revision observed in production: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
+- Canonical production Operations pin actually deployed: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
+- Canonical nightly research Operations pin: `3a7e350ddd5648caf93f58651323425186544f66`
+
+The Operations production pin is intentionally separate from Operations `main`; current `main` contains later repository work.
+
+## Cloudflare runtime state
+
+- Public Worker: `research-intelligence-engine-public` — 100% current deployment, provenance `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`, version `1fe570c2-2ecb-472a-8713-773786d8e99a`.
+- Private Worker: `research-intelligence-engine-private` — 100% current deployment, provenance `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`, version `1eea8019-9b90-4c61-aac9-13563d4b5c9e`, cron `*/15 * * * *`.
+- The private Worker is not synchronized to Operations `main`; this is a controlled production-pin divergence.
 
 ## Current queue
 
-Live GitHub issue search: 13 open issues; 0 open implementation PRs.
-
-- Foundation: #58, #157
-- Operations: #119, #132, #145, #197, #340, #352, #385, #597, #603, #699, #711
+- 11 open issues; 0 open implementation PRs.
+- Foundation: #58, #157.
+- Operations: #145, #197, #340, #352, #385, #597, #603, #699, #711.
+- Foundation #1049 is the only open PR and is documentation-only.
 
 ## Current evidence
 
-- Operations #813 fixed transient D1 duplicate-waiter claim failures; Operations #817 extends the same bounded retry authority to the initial claim.
-- Foundation #1037 promotes the immutable Operations #817 fix across production, coverage, extractor benchmark and smoke pins.
-- Fresh extractor benchmark #319 is the current benchmark against Operations `4967fb56…`; prior benchmark #317 passed against `1e66e9d`.
-- Canonical production release #458 is the current post-promotion runtime certification run. Release #456 deployed the prior pin but failed at the concurrent duplicate acceptance before policy denial.
-- Coverage matrix #288 is the current promoted-pin runtime matrix.
-- Public Worker live probe is required to pass for the current runtime revision.
-- Nightly research remains externally blocked before live provider execution because the research endpoint, API key and model are not configured.
+- Nightly multi-agent research #861: **BLOCKED/FAIL** before provider execution. Three lanes × eight programs = 24 slots; all lanes stopped at preflight. The retained diagnosis and lane-status artifacts explicitly forbid treating this run as real research.
+- Nightly research contract #2302: **PASS**; this validates workflow contracts, not provider-backed research.
+- Live extractor benchmark #330: **FAIL**. Quality report: 40 receipts; 4 `ok`, 32 `empty`, 4 `blocked`; completion rate 10%; provenance completeness 100%; one unstable repeated group. All case manifests used Operations `246e563e...` (#830).
+- Coverage matrix #299: **FAIL**. 19/20 scenario artifacts pass; the idempotency artifact fails `test_initial_claim_retries_transient_d1_failure`. The stream-contract and research-runtime artifacts themselves report passed, so the workflow-level job classification needs reconciliation.
+- Production release/observer jobs can be green while L4 acceptance remains open; runtime acceptance must use the required production receipts.
 
-## Runtime evidence
+## Known current CI/data problems
 
-- The prior Cloudflare private Worker deployment from release #456 was version `76bf696d-8921-4510-a43b-84ad1cfa811f` and carried Operations provenance `1e66e9d`.
-- The current release target is Operations `4967fb56…`; L4 production certification is not claimed until #458 completes its final acceptance gates.
+1. The extractor benchmark workflow still defaults to Operations `246e563e...` (#830). Current Operations `main` is `804981445fcabe770fc236fd27a650cb6ba183d0` (#831), and production is `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`. The benchmark therefore does not currently prove either latest-main or production-pin behavior.
+2. The coverage receipt and workflow job summary disagree on which scenarios failed; the artifact truth needs to be reconciled before using the aggregate result as an issue-closure receipt.
+3. Nightly research cannot produce live findings until the authorized research endpoint, API key and model configuration are supplied to GitHub Actions.
 
 ## Evidence boundary
 
-L0 hypothesis -> L1 source -> L2 repository -> L3 GitHub Actions/control-plane -> L4 approved runtime/production
+`L0 hypothesis -> L1 source -> L2 repository -> L3 GitHub Actions/control-plane -> L4 approved runtime/production`
 
-No source-only or deterministic test result is treated as L4 runtime certification.
+Do not upgrade source, tests, dry-runs or successful contract jobs into L4 certification.
 
 ## Synchronization rule
 
-Refresh live `refs/heads/main` before mutation. Runtime/production pins and actual Cloudflare receipts outrank historical checkpoints.
-
-Older dated sections below are historical provenance only.
+Refresh live GitHub `main` refs and the Cloudflare runtime receipt before mutations or new production claims. Runtime/deployment receipts outrank historical checkpoints.
 
 ---
 # Historical checkpoint — 2026-09-23 Live Reconciliation (superseded)

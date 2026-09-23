@@ -1,16 +1,24 @@
 # 2026-09-23 CURRENT AUTHORITY OVERRIDE
 
-The following values are authoritative for the current handoff. Older dated checkpoints in this document are historical provenance only.
+The values below are the current family state. Older dated sections are historical provenance only.
 
-- Foundation main: `978a2b0208cafeae8e740a07374ed78865a19e0b`
-- Operations main: `2d09b7306b1d383d3b715db789d199010c7bcb19`
-- Audited Foundation runtime implementation: `b1767a40c7b5f0b49429753365fa60dffe50119b`
-- Audited Operations production implementation: `4967fb56c5fcd0f0f393d06b327476c886cf3e05`
-- Audited Operations nightly research pin: `3a7e350ddd5648caf93f58651323425186544f66`
-- Foundation production deployment owner: GitHub Actions / `scripts/production_release.sh`
-- Operations remains private runtime/control-plane authority and must not own GitHub Actions.
-- Remaining open issues are acceptance gates; do not infer live closure from source inspection or deterministic CI.
+- Foundation main: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
+- Operations main: `804981445fcabe770fc236fd27a650cb6ba183d0`
+- Foundation runtime/deployment provenance: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
+- Operations production runtime/deployment provenance: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
+- Operations nightly research pin: `3a7e350ddd5648caf93f58651323425186544f66`
+- Public Worker version observed: `1fe570c2-2ecb-472a-8713-773786d8e99a`
+- Private Worker version observed: `1eea8019-9b90-4c61-aac9-13563d4b5c9e`
+- Current open issue queue: Foundation #58/#157; Operations #145/#197/#340/#352/#385/#597/#603/#699/#711.
+- No open implementation PRs. Foundation #1049 is the only open documentation PR.
+- Nightly research #861 is blocked before provider execution.
+- Extractor benchmark #330 failed its quality gate and is additionally pinned to Operations #830 (`246e563...`), so it is not current-main evidence.
+- Coverage matrix #299 has one failing scenario: idempotency.
+- Full L4 runtime certification remains evidence-gated.
 
+The authoritative machine-readable snapshot is `docs/FAMILY_SYNC_STATE.json`.
+
+---
 ---
 
 ## 2026-09-22 FINAL LIVE REF RECONCILIATION
