@@ -8,7 +8,7 @@ def test_deep_scan_workflow_uses_real_matrix_expressions_and_expanded_provenance
     assert 'name: Deep scan ${{ matrix.lane }}' in text
     assert '--lane "${{ matrix.lane }}"' in text
     assert 'os.environ["GITHUB_WORKSPACE"]' in text
-    assert '["git", "-C", str(workspace), "rev-parse", "HEAD"]' in text
+    assert 'payload["foundation_revision"] = os.environ["GITHUB_SHA"]' in text
     assert '["git", "-C", str(operations_root), "rev-parse", "HEAD"]' in text
     assert '["git", "-C", "$GITHUB_WORKSPACE", "rev-parse", "HEAD"]' not in text
 

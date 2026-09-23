@@ -179,9 +179,7 @@ jobs:
           operations_root = workspace / "operations"
           path = Path(".runtime/open-issue-deep-scan") / f"{lane}.json"
           payload = json.loads(path.read_text())
-          payload["foundation_revision"] = subprocess.check_output(
-              ["git", "-C", str(workspace), "rev-parse", "HEAD"], text=True
-          ).strip()
+          payload["foundation_revision"] = os.environ["GITHUB_SHA"]
           payload["operations_revision"] = subprocess.check_output(
               ["git", "-C", str(operations_root), "rev-parse", "HEAD"], text=True
           ).strip()
@@ -230,10 +228,10 @@ jobs:
           expected_issue_count = next(iter(issue_counts))
           expected_case_count = next(iter(case_counts))
           assert expected_issue_count > 0
-          assert expected_case_count == expected_issue_count * 4
+          assert expected_case_count == expected_issue_count
           assert all(not receipt["missing_cases"] for receipt in receipts)
           cases = {(result["issue"], result["lane"]) for receipt in receipts for result in receipt["results"]}
-          assert len(cases) == expected_case_count
+          assert len(cases) == expected_issue_count * 4
           assert all(result["status"] != "FAIL" for receipt in receipts for result in receipt["results"])
           aggregate = {
               "schema": "open-issue-polyglot-deep-scan/v1",
