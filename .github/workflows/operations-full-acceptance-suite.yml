@@ -1,6 +1,9 @@
 name: Operations full acceptance suite
 
 on:
+  pull_request:
+    paths:
+      - .github/workflows/operations-full-acceptance-suite.yml
   push:
     branches: [main]
     paths:
