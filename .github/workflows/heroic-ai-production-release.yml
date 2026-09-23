@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: heroic-ai-production-release
@@ -28,6 +29,7 @@ jobs:
 
       # Persistence bootstrap is automatic inside production_release.sh; no manual override is permitted.
       - name: Run canonical production release
+        id: production_release
         working-directory: ${{ github.workspace }}
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
@@ -46,6 +48,7 @@ jobs:
           bash scripts/production_release.sh
 
       - name: Upload cross-repository audit receipt
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: cross-repository-audit-receipt
@@ -53,8 +56,38 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload runtime acceptance receipts
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: production-runtime-acceptance-receipts
           path: .runtime/*.json
           if-no-files-found: warn
+      - name: Publish sanitized production receipt
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          outcome="${{ steps.production_release.outcome }}"
+          operations_ref="$(sed -n 's/^OPERATIONS_REF="\([0-9a-f]\{40\}\)"$/\1/p' scripts/production_release.sh | head -n1)"
+          mkdir -p .runtime
+          {
+            echo "# Canonical production release receipt"
+            echo
+            echo "- Workflow run: ${GITHUB_RUN_ID}"
+            echo "- Foundation revision: ${GITHUB_SHA}"
+            echo "- Operations revision: ${operations_ref:-unknown}"
+            echo "- Release step outcome: ${outcome}"
+            echo "- Repository: ${GITHUB_REPOSITORY}"
+            echo "- Trigger: ${GITHUB_EVENT_NAME}"
+            echo
+            echo "## Runtime receipt files"
+            if compgen -G '.runtime/*.json' > /dev/null; then
+              find .runtime -maxdepth 1 -type f -name '*.json' -printf '%f\n' | sort | sed 's/^/- /'
+            else
+              echo '- none produced'
+            fi
+            echo
+            echo "This receipt is a sanitized index only; secret values and provider responses are not included."
+          } > .runtime/production-release-tracker-receipt.md
+          gh issue comment 58 --repo "$GITHUB_REPOSITORY" --body-file .runtime/production-release-tracker-receipt.md
