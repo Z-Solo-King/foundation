@@ -347,13 +347,13 @@ def test_superseded_nightly_variants_are_retired():
     assert "nightly-research-v4.yml" not in texts
 
 
-def test_live_extractor_benchmark_defaults_to_canonical_production_operations_pin():
+def test_live_extractor_benchmark_uses_immutable_browser_safe_operations_pin():
     workflow = _workflow_texts()["live-extractor-benchmark.yml"]
-    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert f"default: {CANONICAL_OPERATIONS_REF}" in workflow
-    assert f"OPERATIONS_REF: ${{{{ inputs.operations_ref || '{CANONICAL_OPERATIONS_REF}' }}}}" in workflow
-    assert f"OPERATIONS_REF: ${{{{ inputs.operations_ref || '{CANONICAL_OPERATIONS_REF}' }}}}" in workflow or f"operations_ref: {CANONICAL_OPERATIONS_REF}" in workflow
-    assert CANONICAL_OPERATIONS_REF in deployment
+    production = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    extractor_ref = "659d31660ef5dbea5fc72dc8e5fe3fdf91424fc8"
+    assert "OPERATIONS_REF: ${{ inputs.operations_ref || '659d31660ef5dbea5fc72dc8e5fe3fdf91424fc8' }}" in workflow
+    assert extractor_ref in workflow
+    assert CANONICAL_OPERATIONS_REF in production
 
 
 def test_canonical_operations_pin_matches_latest_migration_head():
