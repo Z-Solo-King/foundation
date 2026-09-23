@@ -535,6 +535,9 @@ jobs:
                   'language_review': [],
               }
           )
+          matrix_case_count = migration_review.get('matrix', {}).get('case_count', 0)
+          capacity_case_count = migration_review.get('capacity_sweep', {}).get('cases', 0)
+
           blockers = []
           if 'blocked_before_execution' in states:
               blockers.append('research_preflight_blocked')
@@ -544,7 +547,10 @@ jobs:
               blockers.append('research_job_not_successful')
           if '${{ needs.migration_review.result }}' != 'success':
               blockers.append('migration_review_job_not_successful')
-          if migration_review.get('capacity_sweep', {}).get('cases', 0) != 40:
+          # The 40-case migration matrix and the 24-case capacity sweep are
+          # distinct evidence dimensions. Only the matrix is required to have
+          # exactly 40 migration-review cases.
+          if matrix_case_count != 40:
               blockers.append('migration_review_incomplete')
           if any(item.get('validation') != 'success' for item in statuses):
               blockers.append('lane_validation_incomplete')
@@ -556,7 +562,8 @@ jobs:
               'research_job_result': '${{ needs.research.result }}',
               'migration_review_job_result': '${{ needs.migration_review.result }}',
               'migration_review_score_0_to_100': migration_review['review_score_0_to_100'],
-              'migration_review_cases': migration_review['capacity_sweep']['cases'],
+              'migration_review_cases': matrix_case_count,
+              'migration_review_capacity_cases': capacity_case_count,
               'migration_review_languages': sorted({item['language'] for item in migration_review['language_review']}),
               'blockers': blockers,
               'lanes': statuses,
