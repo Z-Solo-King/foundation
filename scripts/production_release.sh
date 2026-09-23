@@ -405,6 +405,7 @@ if [ "$persistence_bootstrap_deferred" = "true" ]; then
     -d "$persistence_seed_payload" \
     "$BASE_URL/api/v1/chatbot/diagnostic" || true)
   echo "POST persistence_seed after bootstrap deployment -> HTTP $persistence_bootstrap_status"
+  jq -c '.' "$RUNNER_TEMP/persistence-bootstrap-seed.json" 2>/dev/null || cat "$RUNNER_TEMP/persistence-bootstrap-seed.json" 2>/dev/null || true
   test "$persistence_bootstrap_status" = "200"
   jq -e '.ok == true and (.sentinel_id | type == "string" and length > 0)' "$RUNNER_TEMP/persistence-bootstrap-seed.json" >/dev/null
   sentinel_bootstrap_id=$(jq -r '.sentinel_id' "$RUNNER_TEMP/persistence-bootstrap-seed.json")
