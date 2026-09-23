@@ -45,9 +45,6 @@ jobs:
       matrix:
         lane: [L1, L2, L3, L4]
     steps:
-      - name: Checkout Foundation
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
       - name: Validate Operations App configuration
         if: always() && github.event_name == 'pull_request_target'
         shell: bash
@@ -200,8 +197,9 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+  # Refresh workflow revision after synchronized 10-issue inventory.
   aggregate:
-    name: Aggregate 44 issue×lane cases
+    name: Aggregate dynamic issue×lane cases
     needs: [lane]
     runs-on: ubuntu-latest
     if: ${{ always() }}
@@ -225,17 +223,23 @@ jobs:
           receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L?.json"))]
           assert len(receipts) == 4, f"expected 4 lane receipts, got {len(receipts)}"
           assert {receipt["lane"] for receipt in receipts} == {"L1", "L2", "L3", "L4"}
-          assert all(receipt["case_count"] == 11 for receipt in receipts)
-          assert all(receipt["issue_count"] == 11 for receipt in receipts)
+          issue_counts = {int(receipt["issue_count"]) for receipt in receipts}
+          case_counts = {int(receipt["case_count"]) for receipt in receipts}
+          assert len(issue_counts) == 1, f"lane issue counts diverged: {sorted(issue_counts)}"
+          assert len(case_counts) == 1, f"lane case counts diverged: {sorted(case_counts)}"
+          expected_issue_count = next(iter(issue_counts))
+          expected_case_count = next(iter(case_counts))
+          assert expected_issue_count > 0
+          assert expected_case_count == expected_issue_count * 4
           assert all(not receipt["missing_cases"] for receipt in receipts)
           cases = {(result["issue"], result["lane"]) for receipt in receipts for result in receipt["results"]}
-          assert len(cases) == 44
+          assert len(cases) == expected_case_count
           assert all(result["status"] != "FAIL" for receipt in receipts for result in receipt["results"])
           aggregate = {
               "schema": "open-issue-polyglot-deep-scan/v1",
               "lane_count": 4,
-              "issue_count": 11,
-              "case_count": 44,
+              "issue_count": expected_issue_count,
+              "case_count": expected_case_count,
               "status": "PASS",
               "foundation_revisions": sorted({receipt["foundation_revision"] for receipt in receipts}),
               "operations_revisions": sorted({receipt["operations_revision"] for receipt in receipts}),
