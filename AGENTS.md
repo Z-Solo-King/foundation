@@ -1,15 +1,15 @@
 ## 2026-09-23 CURRENT AUTHORITY RECONCILIATION
 
 **Live main heads verified:**
-- Foundation main: `978a2b0208cafeae8e740a07374ed78865a19e0b`
-- Operations main: `2d09b7306b1d383d3b715db789d199010c7bcb19`
+- Foundation main: `65d741b0c06bd053849f2197230b966eb5965976`
+- Operations main: `c159ec37ff2cdce5f29dc3859a53dbd63b1ee2cf`
 
 **Current audited runtime implementation pins:**
 - Foundation: `b1767a40c7b5f0b49429753365fa60dffe50119b`
-- Operations production: `4967fb56c5fcd0f0f393d06b327476c886cf3e05`
+- Operations production: `c159ec37ff2cdce5f29dc3859a53dbd63b1ee2cf`
 - Operations nightly research: `3a7e350ddd5648caf93f58651323425186544f66`
 
-Foundation #1037 and Operations #817 are merged. The current production pin is the Operations #817 merge above. Older dated reconciliation blocks below are historical provenance and must not override this section.
+Foundation #1037 and Operations #817 are merged. The current production pin is the Operations #821 test-harness correction tree above. Older dated reconciliation blocks below are historical provenance and must not override this section.
 
 **Current queue:** Foundation #58/#157; Operations #119/#132/#145/#197/#340/#352/#385/#597/#603/#699/#711. No open implementation PRs were found in the current live search.
 
