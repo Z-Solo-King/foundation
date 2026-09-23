@@ -53,20 +53,20 @@ jobs:
         continue-on-error: true
         run: |
           set +e
-          mkdir -p .runtime/diagnostic
+          mkdir -p operations/.runtime/diagnostic
           for lane in L1 L2 L3 L4; do
             (
               cd operations
               python tools/open_issue_polyglot_scan.py                 --foundation "$GITHUB_WORKSPACE"                 --operations "$GITHUB_WORKSPACE/operations"                 --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_52.json"                 --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json"                 --lane "$lane"                 --output ".runtime/diagnostic/$lane.json"
-            ) > ".runtime/diagnostic/$lane.out" 2>&1
-            echo "$?" > ".runtime/diagnostic/$lane.exit"
+            ) > "operations/.runtime/diagnostic/$lane.out" 2>&1
+            echo "$?" > "operations/.runtime/diagnostic/$lane.exit"
           done
 
       - name: Build diagnostic summary
         if: always()
         run: |
           python - <<'PY'
-          import json, os
+          import json
           from pathlib import Path
           root=Path("operations/.runtime/diagnostic")
           summary={
@@ -84,7 +84,7 @@ jobs:
               summary["lanes"][lane]={
                   "exit": exit_file.read_text().strip() if exit_file.exists() else "missing",
                   "receipt": receipt.exists(),
-                  "output_tail": output.read_text(errors="replace")[-5000:] if output.exists() else "",
+                  "output_tail": output.read_text(errors="replace")[-8000:] if output.exists() else "",
               }
           Path(".runtime-diagnostic-summary.json").write_text(json.dumps(summary,indent=2,sort_keys=True))
           print(json.dumps(summary,indent=2,sort_keys=True))
