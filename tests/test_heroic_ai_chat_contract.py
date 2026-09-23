@@ -84,3 +84,57 @@ def test_public_worker_chat_route_validation_and_fail_closed_paths():
     response = asyncio.run(unavailable.fetch(Request(payload, {"Content-Type": "application/json"}))); assert response.status == 503
     success = worker.Default(); success.env = SimpleNamespace(**dev, OPERATIONS=Binding())
     response = asyncio.run(success.fetch(Request(payload, {"Idempotency-Key": "request", "Content-Type": "application/json"}))); assert response.status == 200
+
+
+
+def test_chat_request_accepts_governed_operation_fields_with_bounds():
+    from backend.api.models import ChatRequest
+
+    request = ChatRequest(
+        "chat",
+        "request",
+        "https://example.com/",
+        operation="map",
+        input_records=[{"id": "policy-probe"}],
+    )
+    request.validate()
+
+
+def test_chat_request_rejects_unknown_operation_and_oversized_input_records():
+    from backend.api.models import ChatRequest, MAX_CHAT_INPUT_RECORDS, MAX_CHAT_RECORD_FIELDS
+
+    invalid_operation = ChatRequest("chat", "request", "hello", operation="execute_anything")
+    try:
+        invalid_operation.validate()
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("unknown chat operation was accepted")
+
+    too_many = ChatRequest(
+        "chat",
+        "request",
+        "hello",
+        operation="map",
+        input_records=[{"id": str(i)} for i in range(MAX_CHAT_INPUT_RECORDS + 1)],
+    )
+    try:
+        too_many.validate()
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("oversized input_records was accepted")
+
+    too_wide = ChatRequest(
+        "chat",
+        "request",
+        "hello",
+        operation="map",
+        input_records=[{str(i): "x" for i in range(MAX_CHAT_RECORD_FIELDS + 1)}],
+    )
+    try:
+        too_wide.validate()
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("oversized input record was accepted")
