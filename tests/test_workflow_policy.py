@@ -469,6 +469,13 @@ def test_production_acceptance_keys_include_run_attempt():
     assert 'production-research-${ACCEPTANCE_RUN_ID}' in deployment
     assert 'persistence-bootstrap-${ACCEPTANCE_RUN_ID}' in deployment
     assert 'env.ACCEPTANCE_RUN_ID' in deployment
+def test_stream_probe_uses_explicit_response_identity_argument():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'expected_stream_response_id="chat-production-stream-request-${ACCEPTANCE_RUN_ID}"' in deployment
+    assert 'jq -e --arg expected_response_id "$expected_stream_response_id"' in deployment
+    assert 'env.ACCEPTANCE_RUN_ID' not in deployment
+
+
 def test_live_probe_acceptance_does_not_depend_on_issue_comment_permissions():
     texts = _workflow_texts()
     assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["public-worker-live-probe.yml"]
