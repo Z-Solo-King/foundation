@@ -13,7 +13,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to validate
         required: false
-        default: 8a8701a92e2ca780fd82d8183bb83ae2d2c7b0e4
+        default: 8647881bdfa9c887542b2c4f8355911ffa925fe2
         type: string
 
 permissions:
@@ -46,14 +46,14 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '8a8701a92e2ca780fd82d8183bb83ae2d2c7b0e4' }}
+          ref: ${{ inputs.operations_ref || '8647881bdfa9c887542b2c4f8355911ffa925fe2' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
       - name: Verify immutable Operations revision
         working-directory: operations
         env:
-          EXPECTED: ${{ inputs.operations_ref || '8a8701a92e2ca780fd82d8183bb83ae2d2c7b0e4' }}
+          EXPECTED: ${{ inputs.operations_ref || '8647881bdfa9c887542b2c4f8355911ffa925fe2' }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED"
@@ -85,7 +85,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          OPERATIONS_REF: ${{ inputs.operations_ref || '8a8701a92e2ca780fd82d8183bb83ae2d2c7b0e4' }}
+          OPERATIONS_REF: ${{ inputs.operations_ref || '8647881bdfa9c887542b2c4f8355911ffa925fe2' }}
         run: |
           set -euo pipefail
           mkdir -p .runtime
