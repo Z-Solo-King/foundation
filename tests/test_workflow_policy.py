@@ -8,7 +8,7 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "1e66e9dc85552f484b91041ff95783db82b73332"
+CANONICAL_OPERATIONS_REF = "4967fb56c5fcd0f0f393d06b327476c886cf3e05"
 CANONICAL_OPERATIONS_SERVICE = "research-intelligence-engine-private"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 PRODUCTION_WORKFLOW = "heroic-ai-production-release.yml"
@@ -353,8 +353,8 @@ def test_superseded_nightly_variants_are_retired():
 def test_live_extractor_benchmark_uses_immutable_browser_safe_operations_pin():
     workflow = _workflow_texts()["live-extractor-benchmark.yml"]
     production = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    extractor_ref = "1e66e9dc85552f484b91041ff95783db82b73332"
-    assert "OPERATIONS_REF: ${{ inputs.operations_ref || '1e66e9dc85552f484b91041ff95783db82b73332' }}" in workflow
+    extractor_ref = "4967fb56c5fcd0f0f393d06b327476c886cf3e05"
+    assert "OPERATIONS_REF: ${{ inputs.operations_ref || '4967fb56c5fcd0f0f393d06b327476c886cf3e05' }}" in workflow
     assert extractor_ref in workflow
     assert CANONICAL_OPERATIONS_REF in production
 
@@ -417,7 +417,7 @@ def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
 def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
-    expected_production = "1e66e9dc85552f484b91041ff95783db82b73332"
+    expected_production = "4967fb56c5fcd0f0f393d06b327476c886cf3e05"
     expected_nightly = "3a7e350ddd5648caf93f58651323425186544f66"
     auxiliary = {
         "live-chatbot-production-smoke.yml": expected_production,
