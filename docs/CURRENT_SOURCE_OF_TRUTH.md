@@ -7,7 +7,7 @@
 ## Head/implementation distinction
 
 - `main` is a live Git reference and must be queried before every mutation; this document does not freeze the current branch head.
-- Audited Foundation runtime implementation revision: `b1767a40c7b5f0b49429753365fa60dffe50119b`.
+- Audited Foundation runtime implementation revision: `e9a38063458b0a9a3eb29ea69438e12dc2440316`.
 - Audited Operations runtime implementation revision: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`.
 - Documentation-only commits may advance `main` without changing those runtime implementation revisions.
 - Canonical production Operations pin: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`.
@@ -15,25 +15,25 @@
 
 ## Current queue
 
-Live GitHub issue search: 13 open issues; 0 open implementation PRs.
+Live GitHub issue search: 11 open issues; 0 open implementation PRs.
 
 - Foundation: #58, #157
-- Operations: #119, #132, #145, #197, #340, #352, #385, #597, #603, #699, #711
+- Operations: #145, #197, #340, #352, #385, #597, #603, #699, #711
 
 ## Current evidence
 
-- Operations #813 fixed transient D1 duplicate-waiter claim failures; Operations #817 extends the same bounded retry authority to the initial claim.
-- Foundation #1037 promotes the immutable Operations #817 fix across production, coverage, extractor benchmark and smoke pins.
-- Fresh extractor benchmark #319 is the current benchmark against Operations `4967fb56…`; prior benchmark #317 passed against `1e66e9d`.
-- Canonical production release #458 is the current post-promotion runtime certification run. Release #456 deployed the prior pin but failed at the concurrent duplicate acceptance before policy denial.
-- Coverage matrix #288 is the current promoted-pin runtime matrix.
+- Operations #813/#817 fixed transient D1 idempotency contention; Operations #823 extends the canonical retry authority to D1 schema/PRAGMA contention before claims.
+- Foundation #1043 promotes the immutable Operations #823 fix across production, coverage, extractor benchmark and smoke pins; Foundation #1047 adds the bounded public ChatRequest operation/input-record contract.
+- Fresh extractor benchmark #323 is the current 40-case benchmark against the promoted Operations `bfcfaf59…` tree.
+- Production release #461 proved deployment, provenance, cross-version memory/replay, normal chat and serial idempotency; it failed at true concurrent duplicate convergence. The next canonical release must re-prove concurrency and the updated public policy-denial path.
+- Coverage matrix #292 is the latest promoted-pin matrix; post-#823/1047 L4 evidence remains outstanding.
 - Public Worker live probe is required to pass for the current runtime revision.
 - Nightly research remains externally blocked before live provider execution because the research endpoint, API key and model are not configured.
 
 ## Runtime evidence
 
-- The prior Cloudflare private Worker deployment from release #456 was version `76bf696d-8921-4510-a43b-84ad1cfa811f` and carried Operations provenance `1e66e9d`.
-- The current release target is Operations `4967fb56…`; L4 production certification is not claimed until #458 completes its final acceptance gates.
+- Release #461 deployed the promoted Operations tree and passed exact Cloudflare provenance before the concurrent-chat gate.
+- The current release target is Operations `bfcfaf59…`; L4 certification is still open until fresh production evidence passes the concurrent-chat and policy-denial gates.
 
 ## Evidence boundary
 
