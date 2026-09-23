@@ -1,6 +1,7 @@
 name: Exhaustive six-lane repository audit
 # Scanner revision: 2026-09-22 mapper/extractor cross-audit v5 — multi-offer, digest, browser resource/page-budget and non-finite numeric invariants
 # The audit is report-only at the workflow boundary; generated patches remain artifacts for reviewed promotion.
+# Mutable issue inventory is sourced from Operations main; runtime/source scans may use an explicit candidate ref.
 
 on:
   pull_request:
@@ -44,7 +45,7 @@ jobs:
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
           repositories: operations
@@ -55,7 +56,6 @@ jobs:
         id: resolve
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         env:
-          OPERATIONS_TOKEN: ${{ steps.operations-app.outputs.token }}
           REQUESTED_REF: ${{ inputs.operations_ref }}
         with:
           github-token: ${{ steps.operations-app.outputs.token }}
@@ -75,13 +75,54 @@ jobs:
             }
             core.setOutput("ref", "main");
 
-      - name: Checkout Operations
+      - name: Checkout Operations runtime/source revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
           ref: ${{ steps.resolve.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations-repo
+
+      - name: Fetch live Operations issue register from main
+        id: issue-register
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          github-token: ${{ steps.operations-app.outputs.token }}
+          script: |
+            const fs = require("fs");
+            const path = "operations-repo/benchmark/polyglot/current_open_issue_inventory.json";
+            const response = await github.rest.repos.getContent({
+              owner: "Z-Solo-King",
+              repo: "operations",
+              path: "benchmark/polyglot/current_open_issue_inventory.json",
+              ref: "main",
+            });
+            if (Array.isArray(response.data) || response.data.encoding !== "base64") {
+              core.setFailed("Operations live issue inventory is not a regular base64 file on main");
+              return;
+            }
+            const registerText = Buffer.from(response.data.content, "base64").toString("utf8");
+            const register = JSON.parse(registerText);
+            if (register.source !== "live GitHub issue search") {
+              core.setFailed("Operations issue inventory does not identify live GitHub issue search as its source");
+              return;
+            }
+            fs.mkdirSync("operations-repo/benchmark/polyglot", { recursive: true });
+            fs.writeFileSync(path, registerText.endsWith("\n") ? registerText : registerText + "\n", "utf8");
+            fs.mkdirSync(".runtime/exhaustive-audit", { recursive: true });
+            fs.writeFileSync(
+              ".runtime/exhaustive-audit/issue_register_provenance.json",
+              JSON.stringify({
+                schema: "live-open-issue-register-provenance/v1",
+                source_repository: "Z-Solo-King/operations",
+                source_ref: "main",
+                source_path: "benchmark/polyglot/current_open_issue_inventory.json",
+                source_blob_sha: response.data.sha,
+                expected_open_issue_count: register.expected_open_issue_count,
+              }, null, 2) + "\n",
+              "utf8"
+            );
+            core.setOutput("sha", response.data.sha);
 
       - name: Verify live open-issue register
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
@@ -90,7 +131,8 @@ jobs:
           script: |
             const fs = require("fs");
             fs.mkdirSync(".runtime/exhaustive-audit", { recursive: true });
-            const register = JSON.parse(fs.readFileSync("operations-repo/benchmark/polyglot/current_open_issue_inventory.json", "utf8"));
+            const inventoryPath = "operations-repo/benchmark/polyglot/current_open_issue_inventory.json";
+            const register = JSON.parse(fs.readFileSync(inventoryPath, "utf8"));
             const expected = [];
             for (const [repo, rows] of Object.entries(register.repositories || {})) {
               for (const row of rows) expected.push({ repo, number: Number(row.number), title: row.title });
@@ -100,14 +142,23 @@ jobs:
               const issues = await github.paginate(github.rest.issues.listForRepo, { owner: "Z-Solo-King", repo, state: "open", per_page: 100 });
               for (const issue of issues) if (!issue.pull_request) actual.push({ repo, number: issue.number, title: issue.title });
             }
-            const key = x => `${x.repo}#${x.number}`;
+            const key = x => x.repo + "#" + x.number;
             const exp = new Map(expected.map(x => [key(x), x]));
             const act = new Map(actual.map(x => [key(x), x]));
             const missing = [...exp.keys()].filter(k => !act.has(k));
             const unexpected = [...act.keys()].filter(k => !exp.has(k));
             const titleMismatch = [...exp.keys()].filter(k => act.has(k) && exp.get(k).title !== act.get(k).title).map(k => ({ key: k, expected: exp.get(k).title, actual: act.get(k).title }));
-            fs.writeFileSync(".runtime/exhaustive-audit/live_open_issues.json", JSON.stringify({ expected, actual, missing, unexpected, titleMismatch }, null, 2) + "\n", "utf8");
-            if (missing.length || unexpected.length || titleMismatch.length) core.setFailed(JSON.stringify({ missing, unexpected, titleMismatch }));
+            fs.writeFileSync(".runtime/exhaustive-audit/live_open_issues.json", JSON.stringify({
+              expected,
+              actual,
+              missing,
+              unexpected,
+              titleMismatch,
+              expected_open_issue_count: register.expected_open_issue_count,
+            }, null, 2) + "\n", "utf8");
+            if (missing.length || unexpected.length || titleMismatch.length || Number(register.expected_open_issue_count) !== actual.length) {
+              core.setFailed(JSON.stringify({ missing, unexpected, titleMismatch, expectedCount: register.expected_open_issue_count, actualCount: actual.length }));
+            }
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -128,7 +179,7 @@ jobs:
 
       - name: Record scanned revisions
         run: |
-          printf 'foundation=%s\noperations=%s\n' "$(git -C foundation-repo rev-parse HEAD)" "$(git -C operations-repo rev-parse HEAD)" > .runtime/exhaustive-audit/scanned_revisions.txt
+          printf 'foundation=%s\noperations=%s\nissue_register=%s\n' "$(git -C foundation-repo rev-parse HEAD)" "$(git -C operations-repo rev-parse HEAD)" "${{ steps.issue-register.outputs.sha }}" > .runtime/exhaustive-audit/scanned_revisions.txt
 
       - name: Compile exhaustive audit tools
         working-directory: operations-repo
@@ -142,10 +193,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .runtime/exhaustive-audit/mapper-extractor
-          python operations-repo/tools/mapper_extractor_cross_audit.py \
-            --foundation "${{ github.workspace }}/foundation-repo" \
-            --operations "${{ github.workspace }}/operations-repo" \
-            --output "${{ github.workspace }}/.runtime/exhaustive-audit/mapper-extractor/receipt.json"
+          python operations-repo/tools/mapper_extractor_cross_audit.py             --foundation "${{ github.workspace }}/foundation-repo"             --operations "${{ github.workspace }}/operations-repo"             --output "${{ github.workspace }}/.runtime/exhaustive-audit/mapper-extractor/receipt.json"
 
       - name: Test exhaustive audit contract
         working-directory: operations-repo
