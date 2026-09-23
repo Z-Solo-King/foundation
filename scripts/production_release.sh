@@ -532,12 +532,24 @@ echo "Live concurrent chat idempotency acceptance: PASS"
 policy_block_payload=$(jq -nc \
   --arg chat_id "production-policy-${ACCEPTANCE_RUN_ID}" \
   --arg request_id "production-policy-request-${ACCEPTANCE_RUN_ID}" \
-  '{chat_id:$chat_id,request_id:$request_id,message:"https://example.com/",operation:"map",input_records:[{"id":"policy-probe"}],strict_zero_cost_only:true}')
+  '{chat_id:$chat_id,request_id:$request_id,message:"https://example.com/",operation:"map",input_records:[{"id":"policy-probe"}],mode:"chat",strict_zero_cost_only:true}')
 policy_block_status=$(curl -sS --max-time 30 -o "$RUNNER_TEMP/policy-block.json" -w '%{http_code}' \
   -H "Authorization: Bearer ${AUTH_TOKEN}" -H 'Content-Type: application/json' \
   -H "Idempotency-Key: production-policy-${ACCEPTANCE_RUN_ID}" -d "$policy_block_payload" "$BASE_URL/api/v1/chat")
+echo "POST /api/v1/chat policy denial -> HTTP ${policy_block_status}"
+if [ "$policy_block_status" != '200' ]; then
+  echo '--- policy-block.body ---'
+  cat "$RUNNER_TEMP/policy-block.json" || true
+  echo '--- end policy-block.body ---'
+  exit 1
+fi
 test "$policy_block_status" = '200'
-jq -e '.ok == true and .response.status == "blocked" and .response.result_state == "BLOCKED" and .response.operation == "map"' "$RUNNER_TEMP/policy-block.json" >/dev/null
+if ! jq -e '.ok == true and .response.status == "blocked" and .response.result_state == "BLOCKED" and .response.operation == "map"' "$RUNNER_TEMP/policy-block.json" >/dev/null; then
+  echo '--- policy-block.body ---'
+  cat "$RUNNER_TEMP/policy-block.json" || true
+  echo '--- end policy-block.body ---'
+  exit 1
+fi
 echo "Live policy denial acceptance: PASS"
 
 cp "$RUNNER_TEMP/chat-rollover-before.json" .runtime/chat-rollover-before.json
