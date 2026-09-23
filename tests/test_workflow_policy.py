@@ -432,3 +432,10 @@ def test_github_app_token_inputs_use_client_id():
         if "actions/create-github-app-token@" in text:
             assert "app-id: $" + "{{ secrets.OPERATIONS_APP_ID }}" not in text, name
             assert "client-id: $" + "{{ secrets.OPERATIONS_APP_ID }}" in text, name
+def test_production_acceptance_keys_include_run_attempt():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"' in deployment
+    assert 'production-concurrent-${ACCEPTANCE_RUN_ID}' in deployment
+    assert 'production-policy-${ACCEPTANCE_RUN_ID}' in deployment
+    assert 'production-research-${ACCEPTANCE_RUN_ID}' in deployment
+    assert 'env.ACCEPTANCE_RUN_ID' in deployment
