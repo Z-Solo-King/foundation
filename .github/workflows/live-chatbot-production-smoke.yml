@@ -116,27 +116,6 @@ jobs:
           raise SystemExit(0 if result['ok'] else 1)
           PY
           PUBLIC_WORKER_URL="$PUBLIC_WORKER_URL" AUTH_TOKEN="$AUTH_TOKEN" python /tmp/live_chatbot_smoke.py
-      - name: Publish sanitized receipt to chatbot issue
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ -f live-chatbot/receipt.json ]; then
-            body=$(python - <<'PY'
-          import json
-          from pathlib import Path
-          data=json.loads(Path('live-chatbot/receipt.json').read_text())
-          print('### Live production chatbot acceptance')
-          print('```json')
-          print(json.dumps(data, indent=2, sort_keys=True))
-          print('```')
-          PY
-            )
-          else
-            body='### Live production chatbot acceptance'
-            body="$body\nNo receipt was produced; inspect the failed job."
-          fi
-          gh api "repos/$GITHUB_REPOSITORY/issues/197/comments" -f body="$body"
       - name: Upload live receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

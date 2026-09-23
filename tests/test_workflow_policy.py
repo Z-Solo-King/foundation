@@ -460,3 +460,7 @@ def test_production_acceptance_keys_include_run_attempt():
     assert 'production-research-${ACCEPTANCE_RUN_ID}' in deployment
     assert 'persistence-bootstrap-${ACCEPTANCE_RUN_ID}' in deployment
     assert 'env.ACCEPTANCE_RUN_ID' in deployment
+def test_live_probe_acceptance_does_not_depend_on_issue_comment_permissions():
+    texts = _workflow_texts()
+    assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["public-worker-live-probe.yml"]
+    assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["live-chatbot-production-smoke.yml"]
