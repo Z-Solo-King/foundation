@@ -446,3 +446,10 @@ def test_live_extractor_benchmark_uses_direct_callable_import_preflight():
     assert 'from extractor_mapper.fast_engine import extract_and_map' in workflow
     assert 'extractor module:' in workflow
     assert 'extractor symbol type:' in workflow
+def test_production_acceptance_keys_include_run_attempt():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"' in deployment
+    assert 'production-concurrent-${ACCEPTANCE_RUN_ID}' in deployment
+    assert 'production-policy-${ACCEPTANCE_RUN_ID}' in deployment
+    assert 'production-research-${ACCEPTANCE_RUN_ID}' in deployment
+    assert 'env.ACCEPTANCE_RUN_ID' in deployment
