@@ -6,8 +6,8 @@
 
 ## Current repository revisions
 
-- Foundation `main`: `121ff5017c6b11ebc103dbbd26bdffe639fcc8cb`
-- Operations `main`: `b47aa056f50d27df9b5f552495a6cd862ae8a697`
+- Foundation `main`: `c8e35aa09f5780c4e3d662860c74beefbfa21c1c`
+- Operations `main`: `a65410989a991439aece942a98796f5a8a967ce3`
 - Public Worker deployed provenance: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
 - Private Worker production provenance: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
 - Canonical nightly research Operations pin: `3a7e350ddd5648caf93f58651323425186544f66`
@@ -16,18 +16,16 @@ Repository heads and deployed immutable runtime pins are intentionally separate.
 
 ## Current queue
 
-11 open issues:
+10 open issues:
 - Foundation: #58, #157
-- Operations: #145, #197, #340, #352, #385, #597, #603, #699, #711
-
-No open implementation PRs remain.
+- Operations: #145, #340, #352, #385, #597, #603, #699, #711
 
 ## Current CI / evidence
 
-- Nightly research #861: BLOCKED before provider execution; the required research endpoint/API key/model remain absent. Run #862 is the newer scheduled run.
+- Nightly research: live provider preflight remains externally blocked because RESEARCH_LLM_ENDPOINT/API_KEY/MODEL are absent.
 - Nightly contract #2302: PASS; contract-only evidence.
-- Extractor benchmark #330: FAIL on the old Operations #830 (`246e563...`). The workflow default is now corrected to the canonical production pin `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`; run #333 is the fresh benchmark.
-- Coverage matrix #299: deterministic idempotency test-fixture failure. Operations #833 corrected the case-sensitive matcher and merged. Run #301 was cancelled; corrected #302 is queued.
+- Extractor benchmark: fresh corrected run is being regenerated with canonical producer/evaluator tooling; historical #330/#333 failures are stale evidence.
+- Coverage matrix: deterministic fixture issue was corrected; fresh runs now use separate validation tooling and readiness release provenance.
 - Live Worker probe on deployed Foundation `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`: PASS. New main-push runtime checks are queued for current source.
 - Full L4 runtime acceptance remains separate from repository CI.
 
