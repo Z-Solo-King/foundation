@@ -1,30 +1,30 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT_RUNTIME_RECONCILIATION",
-  "audited_at": "2026-09-24T00:34:00+05:30",
+  "audited_at": "2026-09-24T00:35:00+05:30",
   "live_main": {
-    "foundation": "47b4af5c05b570e7909019a4dab10f207451522b",
+    "foundation": "0038189a25c6fd74af11600648321e87e9810b3d",
     "operations": "9ad378bc5c2b68408636cd9c574ffbf977758adf"
   },
   "runtime_pins": {
-    "foundation_runtime": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2",
+    "foundation_runtime": "fe79e10c4f7e3ee17b9488848b90cf6b7e93f6fb",
     "production_operations": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
     "nightly_research_operations": "3a7e350ddd5648caf93f58651323425186544f66",
-    "foundation_deployed": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2"
+    "foundation_deployed": "fe79e10c4f7e3ee17b9488848b90cf6b7e93f6fb"
   },
   "cloudflare": {
     "public_worker": {
       "name": "research-intelligence-engine-public",
-      "deployed_provenance": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2",
-      "deployment_version": "1fe570c2-2ecb-472a-8713-773786d8e99a",
+      "deployed_provenance": "fe79e10c4f7e3ee17b9488848b90cf6b7e93f6fb",
+      "deployment_version": "b5a03b24-2fde-4347-8cd4-356250c139ca",
       "deployment_percent": 100,
-      "provenance": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2",
+      "provenance": "fe79e10c4f7e3ee17b9488848b90cf6b7e93f6fb",
       "percent": 100
     },
     "private_worker": {
       "name": "research-intelligence-engine-private",
       "deployed_provenance": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f",
-      "deployment_version": "1eea8019-9b90-4c61-aac9-13563d4b5c9e",
+      "deployment_version": "1e05b73f-b18b-4720-816f-21823fc17534",
       "deployment_percent": 100,
       "cron": "*/15 * * * *",
       "provenance": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f",
@@ -58,7 +58,7 @@
   },
   "latest_evidence": {
     "nightly_completed": {
-      "run": 861,
+      "run": 878,
       "state": "blocked_before_provider_execution",
       "provider_execution": false,
       "programs": 24,
@@ -66,7 +66,7 @@
       "operations_ref": "3a7e350ddd5648caf93f58651323425186544f66"
     },
     "nightly_current": {
-      "run": 877,
+      "run": 878,
       "state": "provider_gated",
       "missing": [
         "RESEARCH_LLM_ENDPOINT",
@@ -74,61 +74,88 @@
         "RESEARCH_LLM_MODEL"
       ]
     },
+    "nightly_preflight": {
+      "run": 58,
+      "state": "failed",
+      "operations_app_id_set": true,
+      "operations_app_private_key_set": true,
+      "research_endpoint_set": false,
+      "research_api_key_set": false,
+      "research_model_set": false
+    },
+    "nightly_migration_review": {
+      "run": 878,
+      "state": "completed",
+      "score_0_to_100": 70,
+      "matrix_cases": 40,
+      "capacity_cases": 24,
+      "high_findings": 4,
+      "migration_candidates": 875,
+      "source_files": 1371
+    },
     "extractor_completed": {
-      "run": 346,
+      "run": 348,
       "state": "pass",
       "receipts": 40,
       "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
       "provenance_completeness": 1,
       "route_provenance_completeness": 1,
-      "unstable_repeated_groups": 0
-    },
-    "extractor_current": {
-      "run": 344,
-      "state": "queued_post_merge",
-      "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
-    },
-    "coverage_previous": {
-      "run": 299,
-      "state": "failed_fixture",
-      "test_failure": "initial_claim_retries_transient_d1_failure"
-    },
-    "coverage_cancelled": {
-      "run": 301,
-      "state": "cancelled"
+      "unstable_repeated_groups": 0,
+      "status_counts": {
+        "ok": 4,
+        "empty": 32,
+        "blocked": 4
+      },
+      "repeat_reliability": 1
     },
     "coverage_current": {
-      "run": 318,
+      "run": 319,
       "state": "in_progress",
       "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
     },
     "deep_scan": {
-      "run": 343,
+      "run": 345,
       "state": "pass",
       "active_issue_count": 9,
       "historical_issue_count": 1,
       "lane_count": 4,
       "cases_per_lane": 10
     },
+    "public_worker_probe": {
+      "run": 58,
+      "state": "pass",
+      "health_status": 200,
+      "readiness_status": 200,
+      "ready": true,
+      "database": true,
+      "foundation_sha": "fe79e10c4f7e3ee17b9488848b90cf6b7e93f6fb",
+      "operations_ref": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
+    },
     "production_release": {
-      "run": 486,
+      "run": 487,
       "state": "failed_before_deployment",
       "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
-      "reason": "release executed before latest family-state snapshot and observed missing repositories.last_audited_main_sha"
+      "reason": "family semantic audit snapshot was missing repositories.*.last_audited_main_sha at release time"
+    },
+    "chatbot_smoke": {
+      "run": 57,
+      "state": "pending"
+    },
+    "hybrid_language_pilots": {
+      "run": 144,
+      "state": "failure"
     }
   },
   "known_findings": [
-    "Operations #197 is closed.",
-    "Open issue inventory is 10 across the family.",
-    "Deep scan has 10 active issues plus one labeled historical #197 regression case per lane.",
-    "The canonical production release target is Operations 1a12b98981f52de207fa8626cf2e1f5ad06659be; the currently deployed private Worker remains bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f until release #483 passes.",
-    "Nightly live research remains externally blocked until authorized research endpoint/API key/model configuration is available.",
-    "L4 evidence-only issues remain open until their explicit runtime conditions are demonstrated.",
-    "Current live issue queue is 9; Operations #197 and #352 are closed.",
-    "Operations main contains repositories.last_audited_main_sha after the state-sync repairs.",
-    "Foundation current family state now records repositories.last_audited_main_sha for both repos.",
-    "Production release #486 failed before deployment against an older Operations state snapshot; a fresh mainline release is required.",
-    "Minimal #157 new secret remains RESEARCH_LLM_API_KEY; endpoint/model are configuration values where appropriate."
+    "Current open issue inventory is 9 across the family: Foundation #58/#157 and Operations #711/#699/#603/#597/#385/#340/#145.",
+    "Operations #197 and #352 plus Foundation #452 are closed; #197 remains historical regression coverage in the deep scan.",
+    "Latest open-issue deep scan #345 passed with 9 active issues plus one historical #197 case across four lanes.",
+    "Latest extractor benchmark #348 passed the strict evidence-quality gate with 40 receipts: 4 ok, 32 empty, 4 blocked; provenance and route provenance are complete; repeated groups are stable.",
+    "Nightly research #878 is blocked before provider execution because RESEARCH_LLM_ENDPOINT, RESEARCH_LLM_API_KEY and RESEARCH_LLM_MODEL are unset.",
+    "Nightly migration review reports 40 matrix/language cases and a separate 24-case capacity sweep; the diagnosis currently compares the capacity-sweep count to 40 and emits a misleading migration_review_incomplete blocker.",
+    "Canonical production target is Operations 1a12b98981f52de207fa8626cf2e1f5ad06659be. Release #487 failed before deployment during family-semantic snapshot validation, so Cloudflare remains on the verified deployed pair fe79... + bfc....",
+    "Public Worker live probe #58 returned /, /health and /readiness successfully; readiness reported ready=true and database=true for the deployed fe79... + bfc... pair.",
+    "Operations has no current GitHub Actions workflow surface; Foundation is the CI/CD owner. Cloudflare Deploy Hooks are empty for both Workers."
   ],
   "evidence_boundary": {
     "L0": "hypothesis",
@@ -153,24 +180,30 @@
   ],
   "current_evidence": {
     "extractor_benchmark": {
-      "run": 340,
+      "run": 348,
       "status": "pass",
       "case_jobs": 40,
+      "ok": 4,
+      "empty": 32,
+      "blocked": 4,
       "provenance_completeness": 1,
+      "route_provenance_completeness": 1,
       "unstable_repeated_groups": 0
     },
     "deep_scan": {
-      "run": 334,
-      "active_issue_count": 10,
+      "run": 345,
+      "status": "pass",
+      "active_issue_count": 9,
       "historical_issue_count": 1,
       "lane_count": 4,
-      "status": "pass"
+      "cases_per_lane": 10
     },
     "coverage_matrix": {
-      "run": 315,
-      "status": "queued_post_merge"
+      "run": 319,
+      "status": "in_progress"
     },
     "nightly_research": {
+      "run": 878,
       "status": "blocked",
       "reason": "missing authorized research endpoint/API key/model"
     },
@@ -179,14 +212,21 @@
       "operations_revision": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
     },
     "production_release": {
-      "run": 486,
+      "run": 487,
       "status": "failed_before_deployment",
-      "reason": "pre-#851 Operations snapshot missing repositories.last_audited_main_sha"
+      "operations_revision": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
+      "deployed_operations_revision": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
+    },
+    "public_worker_probe": {
+      "run": 58,
+      "status": "pass",
+      "foundation_sha": "fe79e10c4f7e3ee17b9488848b90cf6b7e93f4d2",
+      "operations_ref": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
     }
   },
   "repositories": {
     "foundation": {
-      "last_audited_main_sha": "47b4af5c05b570e7909019a4dab10f207451522b"
+      "last_audited_main_sha": "0038189a25c6fd74af11600648321e87e9810b3d"
     },
     "operations": {
       "last_audited_main_sha": "9ad378bc5c2b68408636cd9c574ffbf977758adf"
