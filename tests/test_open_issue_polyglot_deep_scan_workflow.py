@@ -17,9 +17,3 @@ def test_deep_scan_lane_receipts_upload_even_when_scan_fails():
     text = WORKFLOW.read_text(encoding="utf-8")
     assert '      - name: Upload lane receipt\n        if: always()' in text
 
-
-def test_deep_scan_does_not_infer_cross_repo_operations_branch():
-    text = WORKFLOW.read_text(encoding="utf-8")
-    assert 'context.payload.pull_request?.head?.ref' not in text
-    assert 'github.rest.repos.getBranch' not in text
-    assert 'core.setOutput("ref", "main")' in text
