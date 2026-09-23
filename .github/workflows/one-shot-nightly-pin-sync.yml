@@ -1,0 +1,65 @@
+name: One-shot nightly pin synchronization
+
+'on':
+  push:
+    branches:
+      - fix/nightly-research-topic-type-contract-20260923
+    paths:
+      - ".github/workflows/one-shot-nightly-pin-sync.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Synchronize nightly Operations pin and remove helper
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: fix/nightly-research-topic-type-contract-20260923
+          WORKFLOW: .github/workflows/nightly-multi-agent-research-v2.yml
+        run: |
+          set -euo pipefail
+          new_ref="$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
+          test -n "$new_ref"
+          python - "$new_ref" <<'PY'
+          import pathlib
+          import sys
+
+          new_ref = sys.argv[1]
+          replacements = {
+              "50e642dfb05846963a82fe76f4f5fe085d4b9a8c": new_ref,
+              "f352a148d135458bcc084285d0964b9c92287faa": new_ref,
+              "3a7e350ddd5648caf93f58651323425186544f66": new_ref,
+          }
+          paths = [
+              pathlib.Path(".github/workflows/nightly-multi-agent-research-v2.yml"),
+              pathlib.Path("tests/test_nightly_research_matrix.py"),
+              pathlib.Path("tests/test_fresh_workflow_identities.py"),
+              pathlib.Path("tests/test_nightly_research_workflow_contract.py"),
+              pathlib.Path("tests/test_workflow_policy.py"),
+          ]
+          for path in paths:
+              text = path.read_text(encoding="utf-8")
+              for old, replacement in replacements.items():
+                  text = text.replace(old, replacement)
+              path.write_text(text, encoding="utf-8")
+          print(f"synchronized nightly Operations revision to {new_ref}")
+          PY
+          rm -f .github/workflows/one-shot-nightly-pin-sync.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/nightly-multi-agent-research-v2.yml \
+                  tests/test_nightly_research_matrix.py \
+                  tests/test_fresh_workflow_identities.py \
+                  tests/test_nightly_research_workflow_contract.py \
+                  tests/test_workflow_policy.py \
+                  .github/workflows/one-shot-nightly-pin-sync.yml
+          git diff --cached --quiet && { echo 'No nightly pin changes required'; exit 0; }
+          git commit -m "fix: synchronize nightly Operations pin with canonical main"
+          git push origin "HEAD:${BRANCH}"
