@@ -222,7 +222,7 @@ jobs:
           import json
           from pathlib import Path
           root = Path(".runtime/open-issue-deep-scan")
-          receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L*.json"))]
+          receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L?.json"))]
           assert len(receipts) == 4, f"expected 4 lane receipts, got {len(receipts)}"
           assert {receipt["lane"] for receipt in receipts} == {"L1", "L2", "L3", "L4"}
           assert all(receipt["case_count"] == 13 for receipt in receipts)
