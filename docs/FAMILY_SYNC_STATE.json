@@ -1,10 +1,10 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT_RUNTIME_RECONCILIATION",
-  "audited_at": "2026-09-23",
+  "audited_at": "2026-09-24T00:34:00+05:30",
   "live_main": {
-    "foundation": "1c7e7e99a5229fc655b12bef782a2f2d05d8990a",
-    "operations": "f0143668eb0283c9e9b6ceab92f6644f78d2ede1"
+    "foundation": "47b4af5c05b570e7909019a4dab10f207451522b",
+    "operations": "9ad378bc5c2b68408636cd9c574ffbf977758adf"
   },
   "runtime_pins": {
     "foundation_runtime": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2",
@@ -32,18 +32,17 @@
     }
   },
   "current_queue": {
-    "open_issue_count": 10,
+    "open_issue_count": 9,
     "foundation": [
       58,
       157
     ],
     "operations": [
-      699,
       711,
+      699,
       603,
       597,
       385,
-      352,
       340,
       145
     ],
@@ -52,8 +51,9 @@
     "operations_open_prs": [],
     "open_pr_count": 0,
     "closed": [
-      452,
-      197
+      197,
+      352,
+      452
     ]
   },
   "latest_evidence": {
@@ -66,14 +66,22 @@
       "operations_ref": "3a7e350ddd5648caf93f58651323425186544f66"
     },
     "nightly_current": {
-      "run": "current",
-      "state": "provider-gated"
+      "run": 877,
+      "state": "provider_gated",
+      "missing": [
+        "RESEARCH_LLM_ENDPOINT",
+        "RESEARCH_LLM_API_KEY",
+        "RESEARCH_LLM_MODEL"
+      ]
     },
     "extractor_completed": {
-      "run": 330,
-      "state": "failed_stale_pin",
+      "run": 346,
+      "state": "pass",
       "receipts": 40,
-      "operations_ref": "246e563e354c43962c988cf2794cb09ccd4fe723"
+      "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
+      "provenance_completeness": 1,
+      "route_provenance_completeness": 1,
+      "unstable_repeated_groups": 0
     },
     "extractor_current": {
       "run": 344,
@@ -90,16 +98,23 @@
       "state": "cancelled"
     },
     "coverage_current": {
-      "run": 315,
-      "state": "queued_post_merge",
+      "run": 318,
+      "state": "in_progress",
       "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
     },
     "deep_scan": {
-      "run": 334,
+      "run": 343,
       "state": "pass",
-      "active_issue_count": 10,
+      "active_issue_count": 9,
       "historical_issue_count": 1,
-      "lane_count": 4
+      "lane_count": 4,
+      "cases_per_lane": 10
+    },
+    "production_release": {
+      "run": 486,
+      "state": "failed_before_deployment",
+      "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
+      "reason": "release executed before latest family-state snapshot and observed missing repositories.last_audited_main_sha"
     }
   },
   "known_findings": [
@@ -108,7 +123,12 @@
     "Deep scan has 10 active issues plus one labeled historical #197 regression case per lane.",
     "The canonical production release target is Operations 1a12b98981f52de207fa8626cf2e1f5ad06659be; the currently deployed private Worker remains bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f until release #483 passes.",
     "Nightly live research remains externally blocked until authorized research endpoint/API key/model configuration is available.",
-    "L4 evidence-only issues remain open until their explicit runtime conditions are demonstrated."
+    "L4 evidence-only issues remain open until their explicit runtime conditions are demonstrated.",
+    "Current live issue queue is 9; Operations #197 and #352 are closed.",
+    "Operations main contains repositories.last_audited_main_sha after the state-sync repairs.",
+    "Foundation current family state now records repositories.last_audited_main_sha for both repos.",
+    "Production release #486 failed before deployment against an older Operations state snapshot; a fresh mainline release is required.",
+    "Minimal #157 new secret remains RESEARCH_LLM_API_KEY; endpoint/model are configuration values where appropriate."
   ],
   "evidence_boundary": {
     "L0": "hypothesis",
@@ -157,6 +177,19 @@
     "maintenance": {
       "status": "pending-live-cron-receipt",
       "operations_revision": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
+    },
+    "production_release": {
+      "run": 486,
+      "status": "failed_before_deployment",
+      "reason": "pre-#851 Operations snapshot missing repositories.last_audited_main_sha"
+    }
+  },
+  "repositories": {
+    "foundation": {
+      "last_audited_main_sha": "47b4af5c05b570e7909019a4dab10f207451522b"
+    },
+    "operations": {
+      "last_audited_main_sha": "9ad378bc5c2b68408636cd9c574ffbf977758adf"
     }
   }
 }
