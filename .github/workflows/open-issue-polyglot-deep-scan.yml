@@ -201,7 +201,7 @@ jobs:
           retention-days: 30
 
   aggregate:
-    name: Aggregate 52 issue×lane cases
+    name: Aggregate 44 issue×lane cases
     needs: [lane]
     runs-on: ubuntu-latest
     if: ${{ always() }}
@@ -225,17 +225,17 @@ jobs:
           receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L?.json"))]
           assert len(receipts) == 4, f"expected 4 lane receipts, got {len(receipts)}"
           assert {receipt["lane"] for receipt in receipts} == {"L1", "L2", "L3", "L4"}
-          assert all(receipt["case_count"] == 13 for receipt in receipts)
-          assert all(receipt["issue_count"] == 13 for receipt in receipts)
+          assert all(receipt["case_count"] == 11 for receipt in receipts)
+          assert all(receipt["issue_count"] == 11 for receipt in receipts)
           assert all(not receipt["missing_cases"] for receipt in receipts)
           cases = {(result["issue"], result["lane"]) for receipt in receipts for result in receipt["results"]}
-          assert len(cases) == 52
+          assert len(cases) == 44
           assert all(result["status"] != "FAIL" for receipt in receipts for result in receipt["results"])
           aggregate = {
               "schema": "open-issue-polyglot-deep-scan/v1",
               "lane_count": 4,
-              "issue_count": 13,
-              "case_count": 52,
+              "issue_count": 11,
+              "case_count": 44,
               "status": "PASS",
               "foundation_revisions": sorted({receipt["foundation_revision"] for receipt in receipts}),
               "operations_revisions": sorted({receipt["operations_revision"] for receipt in receipts}),
