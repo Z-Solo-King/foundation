@@ -200,6 +200,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+  # Refresh workflow revision after synchronized 10-issue inventory.
   aggregate:
     name: Aggregate dynamic issue×lane cases
     needs: [lane]
