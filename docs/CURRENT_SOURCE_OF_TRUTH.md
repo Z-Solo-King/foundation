@@ -48,9 +48,9 @@ Refresh live `refs/heads/main` before mutation. Runtime/production pins and actu
 Older dated sections below are historical provenance only.
 
 ---
-# Current Source of Truth — 2026-09-23 Live Reconciliation
+# Historical checkpoint — 2026-09-23 Live Reconciliation (superseded)
 
-**Status:** CURRENT
+**Status:** HISTORICAL — SUPERSEDED
 **Owner:** Foundation family boundary
 **Audit date:** 2026-09-23
 
