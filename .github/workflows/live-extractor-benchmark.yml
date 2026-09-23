@@ -71,7 +71,7 @@ jobs:
             url: https://webscraper.io/test-sites/e-commerce/dynamic/computers/laptops
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || 'bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || '246e563e354c43962c988cf2794cb09ccd4fe723' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Create Operations read token
