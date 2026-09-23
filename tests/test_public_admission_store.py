@@ -1,7 +1,7 @@
 import pytest
 
 from backend.admission import AdmissionPolicy, AdmissionRoute
-from backend.admission_store import D1AdmissionStore, ROUTE_COST_UNITS
+from backend.admission_store import D1AdmissionStore, ROUTE_COST_UNITS, _insert_new_admission
 
 
 class FakeStatement:
@@ -71,6 +71,57 @@ async def test_d1_store_release_is_idempotent_at_statement_level():
     assert sum("UPDATE public_admission_events" in query for query in db.queries) == 2
 
 
+@pytest.mark.asyncio
+async def test_concurrent_insert_loss_replays_existing_protected_event():
+    from backend.admission import AdmissionDecision, AdmissionOutcome
+
+    db = IdempotentAdmissionDB()
+    existing = {
+        "event_id": "protected-race",
+        "window_start": 120,
+        "subject_fingerprint": "subject-1",
+        "route": "chat",
+        "cost_units": 2,
+        "lease_expires_at": 180,
+        "released_at": None,
+    }
+    db.events["protected-race"] = existing
+    store = D1AdmissionStore(db)
+
+    async def lost_insert(**_kwargs):
+        return False
+
+    store._insert_if_admissible = lost_insert
+    decision = AdmissionDecision(
+        AdmissionOutcome.ACCEPTED,
+        AdmissionRoute.CHAT,
+        True,
+        "admission accepted",
+    )
+
+    result, lease = await _insert_new_admission(
+        store,
+        decision,
+        event_id="protected-race",
+        window_start=120,
+        subject_fingerprint="subject-1",
+        route=AdmissionRoute.CHAT,
+        cost_units=2,
+        expires_at=181,
+        now=121,
+        policy=AdmissionPolicy(),
+    )
+
+    assert result.outcome is AdmissionOutcome.ACCEPTED
+    assert result.allowed is True
+    assert lease is None
+
+
+def test_public_admission_insert_is_idempotent_source_contract():
+    source = open("backend/admission_store.py", encoding="utf-8").read()
+    assert "INSERT OR IGNORE INTO public_admission_events" in source
+
+
 def test_route_cost_classes_are_explicit_and_bounded():
     policy = AdmissionPolicy()
     assert set(ROUTE_COST_UNITS) == {
@@ -128,6 +179,48 @@ def accepted_admission(lease):
         True,
         "accepted",
     ), lease
+
+
+@pytest.mark.asyncio
+async def test_concurrent_same_event_id_rechecks_existing_event(monkeypatch):
+    db = FakeDB()
+    store = D1AdmissionStore(db)
+
+    existing = {
+        "event_id": "event-race",
+        "subject_fingerprint": "subject-1",
+        "route": "chat",
+        "window_start": 120,
+        "lease_expires_at": 180,
+        "released_at": None,
+    }
+
+    class ExistingDB(FakeDB):
+        def prepare(self, query):
+            if "SELECT event_id, window_start" in query:
+                statement = FakeStatement(query)
+                async def first():
+                    return existing
+                statement.first = first
+                return statement
+            return super().prepare(query)
+
+    store.db = ExistingDB()
+    async def lost_insert(*args, **kwargs):
+        return False
+    monkeypatch.setattr(store, "_insert_if_admissible", lost_insert)
+
+    decision, lease = await store.acquire(
+        subject_fingerprint="subject-1",
+        route=AdmissionRoute.CHAT,
+        policy=AdmissionPolicy(),
+        event_id="event-race",
+        now=120,
+    )
+
+    assert decision.allowed is True
+    assert decision.outcome.value == "accepted"
+    assert lease is None
 
 
 @pytest.mark.asyncio
@@ -446,7 +539,7 @@ async def test_d1_store_returns_denied_decision_from_authoritative_snapshot(monk
 class ZeroInsertDB(FakeDB):
     def prepare(self, query):
         statement = super().prepare(query)
-        if query.lstrip().startswith("INSERT INTO public_admission_events"):
+        if query.lstrip().startswith("INSERT OR IGNORE INTO public_admission_events"):
             statement.run = self._zero_insert
         return statement
 
@@ -585,7 +678,7 @@ class IdempotentAdmissionDB(FakeDB):
                 if sql.startswith("delete from public_admission_events"):
                     return {"meta": {"changes": 0}}
 
-                if sql.startswith("insert into public_admission_events"):
+                if sql.startswith("insert or ignore into public_admission_events"):
                     event_id, window_start, subject, route, cost_units, expires_at = args[:6]
                     if event_id in db.events:
                         return {"meta": {"changes": 0}}
