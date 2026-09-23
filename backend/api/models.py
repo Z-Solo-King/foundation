@@ -14,6 +14,8 @@ MAX_METADATA_VALUE_LENGTH = 4_096
 MAX_HISTORY_TURNS = 20
 MAX_HISTORY_TEXT_LENGTH = 12_000
 MAX_HISTORY_TOTAL_TEXT_LENGTH = 100_000
+MAX_CHAT_INPUT_RECORDS = 200
+MAX_CHAT_RECORD_FIELDS = 64
 
 
 @dataclass(frozen=True)
@@ -61,6 +63,8 @@ class ChatRequest:
     strict_zero_cost_only: bool = True
     metadata: dict[str, str] = field(default_factory=dict)
     history: tuple[dict[str, str], ...] = ()
+    operation: str | None = None
+    input_records: Any = ()
 
     def validate(self) -> None:
         if not self.chat_id.strip():
@@ -82,6 +86,29 @@ class ChatRequest:
                 raise ValueError("metadata key exceeds the supported length")
             if not isinstance(value, str) or len(value) > MAX_METADATA_VALUE_LENGTH:
                 raise ValueError("metadata value exceeds the supported length")
+        if self.operation is not None:
+            allowed_operations = {
+                "extract",
+                "map",
+                "extract_and_map",
+                "image_analyze",
+                "platform_access",
+                "knowledge",
+                "research",
+                "infrastructure_verify",
+            }
+            if not isinstance(self.operation, str) or self.operation not in allowed_operations:
+                raise ValueError("unsupported chat operation")
+        if self.input_records not in ((), None):
+            if not isinstance(self.input_records, (list, tuple)):
+                raise ValueError("input_records must be a list or tuple")
+            if len(self.input_records) > MAX_CHAT_INPUT_RECORDS:
+                raise ValueError("input_records exceeds the supported record count")
+            for record in self.input_records:
+                if not isinstance(record, dict):
+                    raise ValueError("input_records entries must be objects")
+                if len(record) > MAX_CHAT_RECORD_FIELDS:
+                    raise ValueError("input_record exceeds the supported field count")
         if len(self.history) > MAX_HISTORY_TURNS:
             raise ValueError("history exceeds the supported turn count")
         total_history_text = 0
