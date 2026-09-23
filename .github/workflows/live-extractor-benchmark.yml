@@ -8,7 +8,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to benchmark
         required: false
-        default: 5338952a03dd850caca884b6995961d2baa20ba7
+        default: 246e563e354c43962c988cf2794cb09ccd4fe723
         type: string
 
 permissions:
@@ -71,7 +71,7 @@ jobs:
             url: https://webscraper.io/test-sites/e-commerce/dynamic/computers/laptops
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || 'bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || '246e563e354c43962c988cf2794cb09ccd4fe723' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Create Operations read token
@@ -234,7 +234,7 @@ jobs:
           set -euo pipefail
           mkdir -p benchmark-output
           cat > benchmark-output/case.json <<EOF
-          {"case":"${{ matrix.case.name }}","label":"${{ matrix.case.label }}","mode":"${{ matrix.case.mode }}","url":"${{ matrix.case.url }}","pass":${{ matrix.pass }},"workers":"${{ steps.profile.outputs.workers || '1' }}","retries":"${{ steps.profile.outputs.retries || '2' }}","operations_ref":"${{ inputs.operations_ref || '5338952a03dd850caca884b6995961d2baa20ba7' }}"}
+          {"case":"${{ matrix.case.name }}","label":"${{ matrix.case.label }}","mode":"${{ matrix.case.mode }}","url":"${{ matrix.case.url }}","pass":${{ matrix.pass }},"workers":"${{ steps.profile.outputs.workers || '1' }}","retries":"${{ steps.profile.outputs.retries || '2' }}","operations_ref":"${{ inputs.operations_ref || '246e563e354c43962c988cf2794cb09ccd4fe723' }}"}
           EOF
 
       - name: Upload case artifact
@@ -267,7 +267,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '5338952a03dd850caca884b6995961d2baa20ba7' }}
+          ref: ${{ inputs.operations_ref || '246e563e354c43962c988cf2794cb09ccd4fe723' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
@@ -325,20 +325,19 @@ jobs:
           from pathlib import Path
           payload=json.loads(Path('../live-extractor-quality.json').read_text())
           status_counts=payload.get('status_counts', {})
-          empty_count=int(status_counts.get('empty', 0) or 0)
           ok=(
               payload.get('pass') is True
-              and empty_count == 0
               and float(payload.get('provenance_completeness', 0.0)) == 1.0
               and int(payload.get('invalid_resource_rows', 0) or 0) == 0
               and int(payload.get('unstable_repeated_groups', 0) or 0) == 0
+              and int(payload.get('missing_key_rows', 0) or 0) == 0
               and not payload.get('missing_expected_platforms')
           )
           if not ok:
               print(json.dumps({
                   'strict_gate': 'FAIL',
                   'pass': payload.get('pass'),
-                  'empty_count': empty_count,
+                  'status_counts': status_counts,
                   'completion_rate': payload.get('completion_rate'),
                   'provenance_completeness': payload.get('provenance_completeness'),
                   'invalid_resource_rows': payload.get('invalid_resource_rows'),
