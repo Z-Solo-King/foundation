@@ -189,7 +189,7 @@ jobs:
             *) echo "Unsupported pass profile"; exit 2 ;;
           esac
       - name: Run HTTP case
-        if: matrix.mode == 'http'
+        if: matrix.case.mode == 'http'
         working-directory: operations
         run: |
           set -euo pipefail
@@ -199,7 +199,7 @@ jobs:
             --shards 1 --shard 0 --workers ${{ steps.profile.outputs.workers }} --retries ${{ steps.profile.outputs.retries }}
 
       - name: Run browser case
-        if: matrix.mode == 'browser'
+        if: matrix.case.mode == 'browser'
         working-directory: operations
         run: |
           set -euo pipefail

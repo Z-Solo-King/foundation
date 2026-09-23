@@ -446,3 +446,9 @@ def test_live_extractor_benchmark_uses_direct_callable_import_preflight():
     assert 'from extractor_mapper.fast_engine import extract_and_map' in workflow
     assert 'extractor module:' in workflow
     assert 'extractor symbol type:' in workflow
+def test_live_extractor_benchmark_uses_case_mode_matrix_condition():
+    workflow = _workflow_texts()["live-extractor-benchmark.yml"]
+    assert "if: matrix.case.mode == 'http'" in workflow
+    assert "if: matrix.case.mode == 'browser'" in workflow
+    assert "if: matrix.mode == 'http'" not in workflow
+    assert "if: matrix.mode == 'browser'" not in workflow
