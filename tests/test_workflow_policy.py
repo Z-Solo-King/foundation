@@ -438,7 +438,8 @@ def test_live_extractor_benchmark_normalizes_case_receipts_before_upload():
     assert "benchmark-output/receipts.jsonl" in workflow
     assert "find benchmark-output -type f -name 'shard-*.jsonl'" in workflow
     assert "No extractor JSONL receipt was produced for this case" in workflow
-    assert "find ../benchmark-artifacts -type f -name '*.jsonl'" in workflow
+    assert "find ../benchmark-artifacts -type f -name 'receipts.jsonl'" in workflow
+    assert "find ../benchmark-artifacts -type f -name '*.jsonl'" not in workflow
     assert 'test "${#inputs[@]}" -eq 40' in workflow
 def test_live_extractor_benchmark_uses_direct_callable_import_preflight():
     workflow = _workflow_texts()["live-extractor-benchmark.yml"]
