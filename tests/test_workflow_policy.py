@@ -9,7 +9,7 @@ SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
 CANONICAL_OPERATIONS_REF = "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
-BENCHMARK_OPERATIONS_REF = "246e563e354c43962c988cf2794cb09ccd4fe723"
+BENCHMARK_OPERATIONS_REF = CANONICAL_OPERATIONS_REF
 CANONICAL_OPERATIONS_SERVICE = "research-intelligence-engine-private"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 PRODUCTION_WORKFLOW = "heroic-ai-production-release.yml"
@@ -357,7 +357,7 @@ def test_live_extractor_benchmark_uses_immutable_browser_safe_operations_pin():
     workflow = _workflow_texts()["live-extractor-benchmark.yml"]
     production = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     extractor_ref = BENCHMARK_OPERATIONS_REF
-    expected = "OPERATIONS_REF: ${{ inputs.operations_ref || '" + BENCHMARK_OPERATIONS_REF + "' }}"
+    expected = "OPERATIONS_REF: ${{ inputs.operations_ref || '" + extractor_ref + "' }}"
     assert expected in workflow
     assert extractor_ref in workflow
     assert CANONICAL_OPERATIONS_REF in production
