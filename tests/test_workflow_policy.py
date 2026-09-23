@@ -131,6 +131,9 @@ def test_production_release_fails_closed_and_retains_chat_policy_receipts():
     assert "concurrent-chat-1.json" in deployment
     assert "concurrent-chat-2.json" in deployment
     assert "policy-block.json" in deployment
+    assert 'mode:"chat"' in deployment
+    assert "policy denial -> HTTP" in deployment
+    assert "policy-block.body" in deployment
     assert "d1_reservation_reject_changes_semantics" in deployment
     assert "production-runtime-acceptance-receipts" in workflow
     assert "allow_persistence_deferred" not in workflow
