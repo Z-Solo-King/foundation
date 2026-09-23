@@ -432,3 +432,11 @@ def test_github_app_token_inputs_use_client_id():
         if "actions/create-github-app-token@" in text:
             assert "app-id: $" + "{{ secrets.OPERATIONS_APP_ID }}" not in text, name
             assert "client-id: $" + "{{ secrets.OPERATIONS_APP_ID }}" in text, name
+def test_live_extractor_benchmark_normalizes_case_receipts_before_upload():
+    workflow = _workflow_texts()["live-extractor-benchmark.yml"]
+    assert "name: Normalize extractor receipts" in workflow
+    assert "benchmark-output/receipts.jsonl" in workflow
+    assert "find benchmark-output -type f -name 'shard-*.jsonl'" in workflow
+    assert "No extractor JSONL receipt was produced for this case" in workflow
+    assert "find ../benchmark-artifacts -type f -name '*.jsonl'" in workflow
+    assert 'test "${#inputs[@]}" -eq 40' in workflow
