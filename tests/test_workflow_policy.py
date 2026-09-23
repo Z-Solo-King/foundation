@@ -8,7 +8,7 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
+CANONICAL_OPERATIONS_REF = "1a12b98981f52de207fa8626cf2e1f5ad06659be"
 BENCHMARK_OPERATIONS_REF = CANONICAL_OPERATIONS_REF
 BENCHMARK_TOOLS_REF = "d4ef2e6d28435a59c735b9dc4d0de31f44b9cf29"
 MIGRATION_TOOLS_REF = BENCHMARK_TOOLS_REF
@@ -65,7 +65,7 @@ def test_canonical_operations_production_pin_is_current_and_immutable():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_REPOSITORY="{CANONICAL_OPERATIONS_REPOSITORY}"' in deployment
     assert f'OPERATIONS_REF="{CANONICAL_OPERATIONS_REF}"' in deployment
-    assert deployment.count(CANONICAL_OPERATIONS_REF) == 2
+    assert deployment.count(CANONICAL_OPERATIONS_REF) == 1
     assert LEGACY_OPERATIONS_REF not in deployment
     assert 'git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git"' in deployment
     assert '"github:${OPERATIONS_REF}"' in deployment
