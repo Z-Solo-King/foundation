@@ -228,6 +228,7 @@ jobs:
             --output ../benchmark-output/receipts.jsonl
 
       - name: Normalize extractor receipts
+        # Versioned producer/evaluator tooling is intentionally immutable.
         if: always()
         run: |
           set -euo pipefail
