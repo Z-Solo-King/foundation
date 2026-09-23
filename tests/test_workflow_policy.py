@@ -522,3 +522,10 @@ def test_live_probe_acceptance_does_not_depend_on_issue_comment_permissions():
     texts = _workflow_texts()
     assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["public-worker-live-probe.yml"]
     assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["live-chatbot-production-smoke.yml"]
+
+
+def test_exhaustive_audit_does_not_infer_operations_branch_from_foundation_pr():
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "exhaustive-six-lane-audit.yml").read_text(encoding="utf-8")
+    assert 'context.payload.pull_request?.head?.ref' not in workflow
+    assert 'github.rest.repos.getBranch' not in workflow
+    assert 'core.setOutput("ref", "main")' in workflow

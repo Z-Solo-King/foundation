@@ -16,3 +16,4 @@ def test_deep_scan_workflow_uses_real_matrix_expressions_and_expanded_provenance
 def test_deep_scan_lane_receipts_upload_even_when_scan_fails():
     text = WORKFLOW.read_text(encoding="utf-8")
     assert '      - name: Upload lane receipt\n        if: always()' in text
+

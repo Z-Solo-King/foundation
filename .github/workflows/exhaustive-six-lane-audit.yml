@@ -65,14 +65,8 @@ jobs:
               core.setOutput("ref", requested);
               return;
             }
-            const candidate = (context.payload.pull_request?.head?.ref || "").trim();
-            if (candidate) {
-              try {
-                await github.rest.repos.getBranch({ owner: "Z-Solo-King", repo: "operations", branch: candidate });
-                core.setOutput("ref", candidate);
-                return;
-              } catch {}
-            }
+            // Never infer a cross-repository branch from the Foundation PR branch name.
+            // Default to Operations main; an explicit operations_ref may override it.
             core.setOutput("ref", "main");
 
       - name: Checkout Operations runtime/source revision
