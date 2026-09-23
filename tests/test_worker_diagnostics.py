@@ -305,7 +305,11 @@ async def test_storage_diagnostic_dispatch_guard_routes_authenticated_requests()
 
 @pytest.mark.asyncio
 async def test_public_persistence_diagnostic_operations_are_forwarded(monkeypatch):
-    async def fake_private_diagnostic(env, request, operation="infrastructure_verify"):
+    forwarded_payload = {}
+
+    async def fake_private_diagnostic(env, request, operation="infrastructure_verify", payload=None):
+        if isinstance(payload, dict):
+            forwarded_payload.update(payload)
         return {
             "ok": True,
             "operation": operation,
@@ -327,3 +331,4 @@ async def test_public_persistence_diagnostic_operations_are_forwarded(monkeypatc
 
     assert "persistence_seed" in str(seed)
     assert "persistence_verify" in str(verify)
+    assert forwarded_payload.get("sentinel_id") == "covered"
