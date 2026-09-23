@@ -201,6 +201,27 @@ jobs:
             --input ../benchmark-input/target.json \
             --output ../benchmark-output/receipts.jsonl
 
+      - name: Normalize extractor receipts
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ -s benchmark-output/receipts.jsonl ]; then
+            echo "Extractor receipt contract: PASS (root receipts.jsonl)"
+          else
+            mapfile -t receipt_files < <(find benchmark-output -type f -name 'shard-*.jsonl' | sort)
+            test "${#receipt_files[@]}" -gt 0 || {
+              echo "No extractor JSONL receipt was produced for this case"
+              find benchmark-output -maxdepth 5 -type f -print 2>/dev/null || true
+              exit 1
+            }
+            : > benchmark-output/receipts.jsonl
+            for receipt in "${receipt_files[@]}"; do
+              cat "$receipt" >> benchmark-output/receipts.jsonl
+            done
+            test -s benchmark-output/receipts.jsonl
+            echo "Extractor receipt contract: PASS (normalized ${#receipt_files[@]} shard receipt(s))"
+          fi
+
       - name: Emit case manifest
         if: always()
         run: |
