@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 from typing import Any
 
 SCHEMA = "nightly-research-program/v1"
-_ALLOWED_TOP_LEVEL = frozenset({"schema", "program_id", "lane", "slot", "status", "measurement", "findings"})
+_ALLOWED_TOP_LEVEL = frozenset({"schema", "program_id", "lane", "slot", "status", "research_type", "topic", "measurement", "findings"})
 _ALLOWED_MEASUREMENT = frozenset({
     "allocated_agents",
     "completed_agents",
@@ -30,6 +30,10 @@ _ALLOWED_FINDING = frozenset({
     "evidence_status",
 })
 _ALLOWED_STATUS = frozenset({"completed", "partial", "blocked", "failed"})
+_ALLOWED_RESEARCH_TYPES = frozenset({
+    "acquisition", "mapper", "chatbot", "search", "models", "agents",
+    "architecture", "infrastructure", "performance", "alternatives", "evaluation",
+})
 _SECRET_PATTERN = re.compile(
     r"(?i)(?:api[_-]?key|access[_-]?token|private[_-]?key|password|authorization)\s*[:=]\s*\S+"
 )
@@ -91,6 +95,10 @@ def validate_record(record: object, *, expected_lane: int | None = None) -> dict
     status = record.get("status")
     if status not in _ALLOWED_STATUS:
         raise ValueError(f"unsupported program status: {status!r}")
+    research_type = _safe_text(record.get("research_type"), field="research_type", required=True)
+    if research_type not in _ALLOWED_RESEARCH_TYPES:
+        raise ValueError(f"unsupported research_type: {research_type!r}")
+    topic = _safe_text(record.get("topic"), field="topic", required=True)
 
     measurement = record.get("measurement")
     if not isinstance(measurement, dict):
@@ -123,6 +131,8 @@ def validate_record(record: object, *, expected_lane: int | None = None) -> dict
         "lane": lane,
         "slot": slot,
         "status": status,
+        "research_type": research_type,
+        "topic": topic,
         "finding_count": len(findings),
     }
 

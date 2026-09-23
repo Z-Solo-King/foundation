@@ -29,7 +29,7 @@ env:
   RESEARCH_LLM_API_KEY: ${{ secrets.RESEARCH_LLM_API_KEY }}
   RESEARCH_LLM_MODEL: ${{ secrets.RESEARCH_LLM_MODEL }}
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_RESEARCH_REF: 50e642dfb05846963a82fe76f4f5fe085d4b9a8c
+  OPERATIONS_RESEARCH_REF: 3a7e350ddd5648caf93f58651323425186544f66
 
 jobs:
   research:
@@ -216,7 +216,18 @@ jobs:
           completed = {row['program_id'] for row in rows if row.get('status') == 'completed' and 'program_id' in row}
           expected = {f'lane{lane}-slot{slot}' for slot in range(8)}
           assert completed == expected, f'lane {lane} coverage mismatch: expected {expected}, got {completed}'
-          print(f'lane {lane}: 8/8 programs completed')
+          allowed_types = {
+              'acquisition', 'mapper', 'chatbot', 'search', 'models',
+              'agents', 'architecture', 'infrastructure', 'performance',
+              'alternatives', 'evaluation',
+          }
+          for row in rows:
+              research_type = row.get('research_type')
+              topic = row.get('topic')
+              assert isinstance(research_type, str) and research_type.strip()
+              assert research_type in allowed_types
+              assert isinstance(topic, str) and topic.strip()
+          print(f'lane {lane}: 8/8 programs completed with explicit topic/type')
       - name: Materialize truthful lane status
         if: ${{ always() }}
         shell: python

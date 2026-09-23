@@ -15,6 +15,8 @@ def _record(**overrides: object) -> dict[str, object]:
         "lane": 0,
         "slot": 0,
         "status": "completed",
+        "research_type": "acquisition",
+        "topic": "HTML and structured extraction",
         "measurement": {
             "allocated_agents": 6,
             "completed_agents": 6,
@@ -45,6 +47,21 @@ def test_valid_public_research_artifact(tmp_path: Path) -> None:
     report = validate_jsonl(path, expected_lane=0)
     assert report["schema"] == "public-research-artifact-validation/v1"
     assert report["records"] == 1
+
+
+def test_rejects_missing_topic_and_invalid_research_type(tmp_path: Path) -> None:
+    missing_topic = _record()
+    missing_topic.pop("topic")
+    path = tmp_path / "missing-topic.jsonl"
+    path.write_text(json.dumps(missing_topic) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="topic"):
+        validate_jsonl(path, expected_lane=0)
+
+    invalid_type = _record(research_type="not-a-nightly-type")
+    path = tmp_path / "invalid-type.jsonl"
+    path.write_text(json.dumps(invalid_type) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="unsupported research_type"):
+        validate_jsonl(path, expected_lane=0)
 
 
 def test_rejects_private_agent_fields(tmp_path: Path) -> None:

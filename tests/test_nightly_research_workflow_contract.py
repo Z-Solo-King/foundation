@@ -18,7 +18,7 @@ def test_matrix_is_fail_fast_false_and_has_three_lanes():
 def test_private_operations_revision_and_app_auth_are_explicit():
     text = workflow_text()
     assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
-    assert "OPERATIONS_RESEARCH_REF: 50e642dfb05846963a82fe76f4f5fe085d4b9a8c" in text
+    assert "OPERATIONS_RESEARCH_REF: 3a7e350ddd5648caf93f58651323425186544f66" in text
     assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in text
     assert "OPERATIONS_APP_INSTALLATION_ID" not in text
     assert "resolve_operations_installation.py" in text

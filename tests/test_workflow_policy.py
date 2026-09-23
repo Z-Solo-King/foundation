@@ -347,7 +347,7 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_REF="{CANONICAL_OPERATIONS_REF}"' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v2.yml"]
-    assert "OPERATIONS_RESEARCH_REF: 50e642dfb05846963a82fe76f4f5fe085d4b9a8c" in nightly
+    assert "OPERATIONS_RESEARCH_REF: 3a7e350ddd5648caf93f58651323425186544f66" in nightly
 
 
 
