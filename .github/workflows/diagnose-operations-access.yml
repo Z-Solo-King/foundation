@@ -1,0 +1,71 @@
+name: Diagnose Operations audit access
+
+'on':
+  push:
+    branches:
+      - fix/nightly-research-topic-type-contract-20260923
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check secret presence without exposing values
+        id: secrets
+        env:
+          APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
+          APP_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          [[ -n "$APP_ID" ]] && echo 'app_id_set=true' >> "$GITHUB_OUTPUT" || echo 'app_id_set=false' >> "$GITHUB_OUTPUT"
+          [[ -n "$APP_KEY" ]] && echo 'app_key_set=true' >> "$GITHUB_OUTPUT" || echo 'app_key_set=false' >> "$GITHUB_OUTPUT"
+
+      - name: Mint Operations App token
+        id: app
+        continue-on-error: true
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Test Operations repository access
+        id: access
+        if: ${{ steps.app.outputs.token != '' }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set +e
+          gh api repos/Z-Solo-King/operations >/dev/null 2>&1
+          code=$?
+          echo "status=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Report diagnostic to PR
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APP_ID_SET: ${{ steps.secrets.outputs.app_id_set || 'unknown' }}
+          APP_KEY_SET: ${{ steps.secrets.outputs.app_key_set || 'unknown' }}
+          APP_OUTCOME: ${{ steps.app.outcome || 'unknown' }}
+          ACCESS_OUTCOME: ${{ steps.access.outcome || 'skipped' }}
+          ACCESS_STATUS: ${{ steps.access.outputs.status || 'n/a' }}
+        run: |
+          body="## Operations audit access diagnostic
+
+          - OPERATIONS_APP_ID configured: ${APP_ID_SET}
+          - OPERATIONS_APP_PRIVATE_KEY configured: ${APP_KEY_SET}
+          - GitHub App token step: ${APP_OUTCOME}
+          - Operations API access step: ${ACCESS_OUTCOME}
+          - Operations API exit status: ${ACCESS_STATUS}
+
+          This diagnostic exposes no secret material."
+          gh pr comment 1011 --repo "${GITHUB_REPOSITORY}" --body "${body}"
