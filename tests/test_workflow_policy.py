@@ -1,4 +1,5 @@
 from __future__ import annotations
+VALIDATION_TOOLS_REF = "92eb7a850dff11a10886a952d5db8a42dae2b318"
 
 import re
 from pathlib import Path
