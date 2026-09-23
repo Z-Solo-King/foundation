@@ -1,12 +1,12 @@
 ## 2026-09-23 CURRENT AUTHORITY RECONCILIATION
 
 **Live main heads verified:**
-- Foundation main: `978a2b0208cafeae8e740a07374ed78865a19e0b`
-- Operations main: `2d09b7306b1d383d3b715db789d199010c7bcb19`
+- Foundation main: `def68b8b637f61a9f052c55b2434d0112eabf2d9`
+- Operations main: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
 
 **Current audited runtime implementation pins:**
 - Foundation: `b1767a40c7b5f0b49429753365fa60dffe50119b`
-- Operations production: `4967fb56c5fcd0f0f393d06b327476c886cf3e05`
+- Operations production: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
 - Operations nightly research: `3a7e350ddd5648caf93f58651323425186544f66`
 
 Foundation #1037 and Operations #817 are merged. The current production pin is the Operations #817 merge above. Older dated reconciliation blocks below are historical provenance and must not override this section.
@@ -576,8 +576,8 @@ Everything else is actionable queue debt.
 Before any new mutation, read `docs/AI_AGENT_HANDOFF.md` and `docs/CURRENT_SOURCE_OF_TRUTH.md`. Live GitHub state and fresh runtime evidence override dated continuity text.
 
 Current verified family state:
-- Foundation main: `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`
-- Operations main: `c6f7ebaec4ebdf21cd1d036df073b90de5bc7129` (production pin target; last verified production remains `307ed38fe4c7902220cb981556bf08702babbae0`)
+- Foundation main: `def68b8b637f61a9f052c55b2434d0112eabf2d9`
+- Operations main: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f` (production pin target; last verified production remains `307ed38fe4c7902220cb981556bf08702babbae0`)
 - Latest canonical production receipt: run `35456292033` (#232), successful on Foundation `6a91fbd17143083882e9ac7ebfa52f0b06a344b2` with Cloudflare provenance last verified at `github:307ed38fe4c7902220cb981556bf08702babbae0`; re-certification target is `github:c6f7ebaec4ebdf21cd1d036df073b90de5bc7129`.
 - Current acceptance queue is the 13-issue set recorded in `docs/CURRENT_SOURCE_OF_TRUTH.md`.
 
