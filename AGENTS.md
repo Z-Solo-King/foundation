@@ -1,22 +1,32 @@
 ## 2026-09-23 CURRENT AUTHORITY RECONCILIATION
 
 **Live main heads verified:**
-- Foundation main: `2d830b5bcd8f18e0cd6b5690138bf70bbd8ec981`
-- Operations main: `91873d31b2afb4a8979149d80948b487322e1cef`
+- Foundation main: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
+- Operations main: `804981445fcabe770fc236fd27a650cb6ba183d0`
 
-**Current audited runtime implementation pins:**
-- Foundation: `e9a38063458b0a9a3eb29ea69438e12dc2440316`
-- Operations production: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
-- Operations nightly research: `3a7e350ddd5648caf93f58651323425186544f66`
+**Runtime/deployment pins actually observed:**
+- Foundation public Worker provenance: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
+- Operations production Worker provenance: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
+- Operations nightly research pin: `3a7e350ddd5648caf93f58651323425186544f66`
 
-Foundation #1041/#1043/#1047/#1050/#1051/#1052 and Operations #817/#821/#823/#829 are merged. The current production pin is the Operations #817 merge above. Older dated reconciliation blocks below are historical provenance and must not override this section.
+**Cloudflare production observations:**
+- `research-intelligence-engine-public`: 100% latest deployment at Foundation `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`.
+- `research-intelligence-engine-private`: 100% latest deployment at Operations `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`; cron `*/15 * * * *`.
+- The private Worker is intentionally behind Operations `main`; do not silently promote `804981445fcabe770fc236fd27a650cb6ba183d0` to production.
 
-**Current queue:** Foundation #58/#157; Operations #145/#197/#340/#352/#385/#597/#603/#699/#711. No open implementation PRs were found in the current live search.
+**Current queue:** 11 open issues: Foundation #58/#157; Operations #145/#197/#340/#352/#385/#597/#603/#699/#711.
+- 0 open implementation PRs.
+- Foundation PR #1049 is the only open PR and is documentation-only.
 
-**Current evidence boundary:** repository implementation/CI is not runtime certification. Live Cloudflare/provider/scheduler evidence remains required for the explicit acceptance-gated issues. Nightly research remains externally blocked until the authorized provider endpoint, API key and model are configured.
+**Latest evidence:**
+- Nightly research #861: FAIL / blocked before provider execution; all 24 program slots were skipped after preflight.
+- Nightly research contract #2302: PASS; contract-only evidence.
+- Extractor benchmark #330: FAIL; 40-case quality report = 4 ok, 32 empty, 4 blocked, 10% completion, 1 unstable repeated group. The run used Operations `246e563...` (#830), not the current main or production pin.
+- Coverage matrix #299: FAIL; 19/20 scenario artifacts pass, with idempotency failing on `test_initial_claim_retries_transient_d1_failure`. Stream/research scenario artifacts are internally marked passed despite workflow-level failure classification.
 
-**Deployment authority:** Foundation GitHub Actions remains the sole CI/CD and production deployment owner. Operations must remain free of GitHub Actions. Cloudflare Workers Builds and Deploy Hooks must not be re-enabled.
+**Deployment authority:** Foundation GitHub Actions remains the sole CI/CD/production deployment owner. Operations must remain free of GitHub-hosted workflows. Do not re-enable competing Cloudflare Workers Builds or Deploy Hooks.
 
+---
 ---
 
 ## 2026-09-22 FINAL LIVE REF RECONCILIATION
