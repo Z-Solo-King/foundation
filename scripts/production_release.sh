@@ -176,6 +176,17 @@ git -C "$RUNNER_TEMP/operations" fetch --no-tags --depth=1 origin "$OPERATIONS_R
 git -C "$RUNNER_TEMP/operations" checkout --detach "$OPERATIONS_REF"
 test "$(git -C "$RUNNER_TEMP/operations" rev-parse HEAD)" = "$OPERATIONS_REF"
 
+# The production code remains pinned to the approved immutable revision, while the
+# family semantic audit must consume the latest synchronized family-state snapshot.
+# Refresh only the state document from Operations main; do not alter the runtime pin.
+git -C "$RUNNER_TEMP/operations" fetch --no-tags --depth=1 origin main
+git -C "$RUNNER_TEMP/operations" show "origin/main:docs/FAMILY_SYNC_STATE.json" > "$RUNNER_TEMP/operations/docs/FAMILY_SYNC_STATE.json"
+jq -e '
+  (.repositories.foundation.last_audited_main_sha | type == "string" and length == 40)
+  and (.repositories.operations.last_audited_main_sha | type == "string" and length == 40)
+' "$RUNNER_TEMP/operations/docs/FAMILY_SYNC_STATE.json" >/dev/null
+echo "Family sync snapshot refresh: PASS (Operations main state overlaid; runtime remains ${OPERATIONS_REF})"
+
 # Fail closed if the promoted Operations pin does not contain the canonical
 # authenticated chatbot backend boundary and zero-cost Workers AI provider contract.
 grep -q '^CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"$' "$RUNNER_TEMP/operations/wrangler.toml"
