@@ -16,10 +16,13 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout Foundation
+        id: foundation
+        continue-on-error: true
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Create Operations read token
         id: operations-app
+        continue-on-error: true
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           app-id: ${{ secrets.OPERATIONS_APP_ID }}
@@ -29,6 +32,8 @@ jobs:
           permission-contents: read
 
       - name: Checkout Operations
+        id: operations
+        continue-on-error: true
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
@@ -37,6 +42,8 @@ jobs:
           path: operations
 
       - name: Setup Python
+        id: python
+        continue-on-error: true
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
@@ -44,69 +51,48 @@ jobs:
       - name: Run exact four-lane scan diagnostically
         id: scan
         continue-on-error: true
-        working-directory: operations
         run: |
           set +e
           mkdir -p .runtime/diagnostic
           for lane in L1 L2 L3 L4; do
-            python tools/open_issue_polyglot_scan.py               --foundation "$GITHUB_WORKSPACE"               --operations "$GITHUB_WORKSPACE/operations"               --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_52.json"               --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json"               --lane "$lane"               --output ".runtime/diagnostic/$lane.json" > ".runtime/diagnostic/$lane.out" 2>&1
-            echo "lane=$lane exit=$?"
+            (
+              cd operations
+              python tools/open_issue_polyglot_scan.py                 --foundation "$GITHUB_WORKSPACE"                 --operations "$GITHUB_WORKSPACE/operations"                 --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_52.json"                 --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json"                 --lane "$lane"                 --output ".runtime/diagnostic/$lane.json"
+            ) > ".runtime/diagnostic/$lane.out" 2>&1
+            echo "$?" > ".runtime/diagnostic/$lane.exit"
           done
+
+      - name: Build diagnostic summary
+        if: always()
+        run: |
           python - <<'PY'
-          import json
+          import json, os
           from pathlib import Path
-          root = Path(".runtime/diagnostic")
-          summary = {"schema":"diagnostic-open-issue-scan/v1","lanes":{},"failed_cases":[],"review_cases":[]}
+          root=Path("operations/.runtime/diagnostic")
+          summary={
+              "checkout_foundation":"${{ steps.foundation.outcome }}",
+              "operations_app":"${{ steps.operations-app.outcome }}",
+              "checkout_operations":"${{ steps.operations.outcome }}",
+              "setup_python":"${{ steps.python.outcome }}",
+              "scan_step":"${{ steps.scan.outcome }}",
+              "lanes":{},
+          }
           for lane in ("L1","L2","L3","L4"):
-              receipt = root / f"{lane}.json"
-              data = json.loads(receipt.read_text())
-              summary["lanes"][lane] = {
-                  "case_count": data.get("case_count"),
-                  "expected_case_count": data.get("expected_case_count"),
-                  "issue_count": data.get("issue_count"),
-                  "failed_cases": data.get("failed_cases"),
-                  "review_cases": data.get("review_cases"),
-                  "missing_cases": data.get("missing_cases"),
+              receipt=root/f"{lane}.json"
+              output=root/f"{lane}.out"
+              exit_file=root/f"{lane}.exit"
+              summary["lanes"][lane]={
+                  "exit": exit_file.read_text().strip() if exit_file.exists() else "missing",
+                  "receipt": receipt.exists(),
+                  "output_tail": output.read_text(errors="replace")[-5000:] if output.exists() else "",
               }
-              for row in data.get("results", []):
-                  if row.get("status") == "FAIL":
-                      summary["failed_cases"].append({
-                          "issue": row.get("issue"),
-                          "lane": row.get("lane"),
-                          "findings": row.get("findings", []),
-                      })
-                  elif row.get("status") == "REVIEW":
-                      summary["review_cases"].append({
-                          "issue": row.get("issue"),
-                          "lane": row.get("lane"),
-                          "findings": row.get("findings", []),
-                      })
-          Path(".runtime/diagnostic/summary.json").write_text(json.dumps(summary,indent=2,sort_keys=True)+"\n")
+          Path(".runtime-diagnostic-summary.json").write_text(json.dumps(summary,indent=2,sort_keys=True))
           print(json.dumps(summary,indent=2,sort_keys=True))
           PY
 
-      - name: Report exact scanner failures and remove diagnostic
+      - name: Report exact diagnostic
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set +e
-          summary="$(cat operations/.runtime/diagnostic/summary.json 2>/dev/null || echo '{"error":"summary not produced"}')"
-          python - "$summary" <<'PY' > /tmp/comment.txt
-          import json
-          import sys
-          try:
-              data=json.loads(sys.argv[1])
-          except Exception:
-              data={"error":sys.argv[1]}
-          print("Operations deep-scan diagnostic")
-          print()
-          print(json.dumps(data, indent=2, sort_keys=True))
-          PY
-          gh pr comment 1011 --repo "${GITHUB_REPOSITORY}" --body-file /tmp/comment.txt
-          git rm -f .github/workflows/diagnose-operations-access.yml
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          git commit -m 'chore: remove temporary Operations deep-scan diagnostic' || true
-          git push || true
+          gh pr comment 1011 --repo "${GITHUB_REPOSITORY}" --body-file .runtime-diagnostic-summary.json
