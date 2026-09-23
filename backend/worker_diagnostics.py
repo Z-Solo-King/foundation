@@ -25,6 +25,7 @@ def health_payload(env=None):
 
 
 async def readiness_payload(env):
+    # Release identity is part of readiness so external acceptance can verify immutable provenance.
     base = readiness_endpoint()
     database_ok = False
     try:
