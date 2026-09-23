@@ -460,3 +460,8 @@ def test_production_acceptance_keys_include_run_attempt():
     assert 'production-research-${ACCEPTANCE_RUN_ID}' in deployment
     assert 'persistence-bootstrap-${ACCEPTANCE_RUN_ID}' in deployment
     assert 'env.ACCEPTANCE_RUN_ID' in deployment
+def test_live_extractor_benchmark_aggregates_only_canonical_receipts():
+    workflow = _workflow_texts()["live-extractor-benchmark.yml"]
+    assert "find ../benchmark-artifacts -type f -name 'receipts.jsonl'" in workflow
+    assert "find ../benchmark-artifacts -type f -name '*.jsonl'" not in workflow
+    assert 'test "${#inputs[@]}" -eq 40' in workflow
