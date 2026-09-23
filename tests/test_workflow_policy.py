@@ -11,6 +11,7 @@ CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
 CANONICAL_OPERATIONS_REF = "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
 BENCHMARK_OPERATIONS_REF = CANONICAL_OPERATIONS_REF
 BENCHMARK_TOOLS_REF = "6613c86c81d1a72287a2733e14a8c0b5b7434a2a"
+VALIDATION_TOOLS_REF = "92eb7a850dff11a10886a952d5db8a42dae2b318"
 CANONICAL_OPERATIONS_SERVICE = "research-intelligence-engine-private"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 PRODUCTION_WORKFLOW = "heroic-ai-production-release.yml"
@@ -374,6 +375,14 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     assert "OPERATIONS_RESEARCH_REF: 3a7e350ddd5648caf93f58651323425186544f66" in nightly
 
 
+
+def test_coverage_runtime_matrix_uses_versioned_validation_tests():
+    workflow = _workflow_texts()["coverage-driven-runtime-matrix.yml"]
+    assert "validation_tools_ref:" in workflow
+    assert "VALIDATION_TOOLS_REF" in workflow
+    assert VALIDATION_TOOLS_REF in workflow
+    assert "Checkout versioned validation tests" in workflow
+    assert "Overlay exact validation test files" in workflow
 
 def test_coverage_runtime_matrix_validates_immutable_operations_pin():
     workflow = _workflow_texts()["coverage-driven-runtime-matrix.yml"]
