@@ -10,8 +10,8 @@
     },
     "operations": {
       "role": "private-control-plane-research-orchestration",
-      "last_audited_main_sha": "5338952a03dd850caca884b6995961d2baa20ba7",
-      "approved_production_revision": "5338952a03dd850caca884b6995961d2baa20ba7",
+      "last_audited_main_sha": "e2ae528f794e9d279704269f91883964904f9321",
+      "approved_production_revision": "e2ae528f794e9d279704269f91883964904f9321",
       "nightly_research_revision": "3a7e350ddd5648caf93f58651323425186544f66"
     }
   },
@@ -38,13 +38,13 @@
     "operations_open_prs": 0
   },
   "current_workflows": {
-    "production": "5338952a03dd850caca884b6995961d2baa20ba7",
+    "production": "e2ae528f794e9d279704269f91883964904f9321",
     "nightly_research": "3a7e350ddd5648caf93f58651323425186544f66",
     "live_extractor_benchmark": "5338952a03dd850caca884b6995961d2baa20ba7",
     "open_issue_scan": "PASS/13x4=52"
   },
   "current_evidence": {
-    "production_runtime": "IN_PROGRESS_RUN_444",
+    "production_runtime": "PENDING_FRESH_RUN_AFTER_CONCURRENCY_FIX",
     "extractor_40_case": "IN_PROGRESS_RUN_305",
     "nightly_live_execution": "BLOCKED_EXTERNAL_RESEARCH_EXECUTOR_CONFIGURATION",
     "autonomous_benchmark": "WARN_ACQUISITION",
@@ -52,8 +52,8 @@
     "exhaustive_six_lane_audit": "PASS"
   },
   "recent_runtime_fix": {
-    "operations_pr": "809",
-    "operations_revision": "5338952a03dd850caca884b6995961d2baa20ba7",
+    "operations_pr": "812",
+    "operations_revision": "e2ae528f794e9d279704269f91883964904f9321",
     "root_cause": "persistence diagnostic task envelope lifetime was 301 seconds against MAX_TTL_SECONDS=300",
     "foundation_promotion_pr": "1017"
   },
