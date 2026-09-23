@@ -5,11 +5,12 @@
 
 ## Current live revisions
 
-- Foundation `main`: `fe79e10c4f7e3ee17b9488848b90cf6b7e93f6fb`
-- Operations `main`: `1a12b98981f52de207fa8626cf2e1f5ad06659be`
+- Foundation `main`: `1c7e7e99a5229fc655b12bef782a2f2d05d8990a`
+- Operations `main`: `f0143668eb0283c9e9b6ceab92f6644f78d2ede1`
 - Public Worker deployed provenance: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
-- Private Worker deployed provenance: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
-- Production Operations promotion: Foundation PR #1071; blocked only by two required app checks.
+- Private Worker currently deployed provenance: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
+- Production release target Operations revision: `1a12b98981f52de207fa8626cf2e1f5ad06659be`
+- Production release: Foundation canonical release #483 is in progress; do not claim the target revision is deployed until its final receipt passes.
 - Nightly research Operations pin: `3a7e350ddd5648caf93f58651323425186544f66`
 
 ## Current open-issue queue
@@ -21,11 +22,12 @@
 
 ## Current evidence
 
-- Extractor benchmark #340: 40/40 execution jobs passed; strict quality gate PASS; provenance completeness 1.0; unstable repeated groups 0.
-- Open-issue deep scan: 10 active issues plus historical #197 regression coverage; four lanes pass with 11 cases each.
-- Coverage-driven runtime matrix: latest clean mainline run PASS; deterministic scenario failures 0.
-- Operations maintenance fix: scheduled() now emits revision-bound receipts and fails closed on reconciliation errors.
-- Nightly 24-program provider execution remains externally blocked because the authorized research-provider configuration is unavailable.
+- Extractor benchmark: latest completed 40-case run #340 is PASS (40/40 jobs, provenance 1.0, unstable repeated groups 0). Fresh post-merge run #344 is queued.
+- Open-issue deep scan: run #334 is PASS; 10 active issues plus explicit historical #197 regression coverage, four lanes with 11 cases each.
+- Coverage-driven runtime matrix: fresh post-merge run #315 is queued; previous deterministic mainline evidence is clean.
+- Maintenance: Operations main now contains the #145 fail-closed Cron receipt fix; live closure still requires an approved Cron receipt from the deployed target revision.
+- Nightly research: contract checks pass, but live provider preflight remains blocked because the authorized research endpoint/API key/model configuration is unavailable to the workflow.
+- Provider streaming, recovery, D1 governance and migration issues remain explicit L4/evidence gates.
 
 ## Evidence boundary
 
@@ -35,8 +37,9 @@ Never upgrade source/test/contract evidence into L4 certification.
 
 ## Synchronization
 
-Refresh live `main` heads and Cloudflare deployment receipts before new production claims. Runtime receipts outrank historical checkpoints.
+Refresh GitHub `main` heads and Cloudflare deployment receipts before new production claims. Runtime receipts outrank historical checkpoints.
 
+---
 ---
 # Historical checkpoint — 2026-09-23 Live Reconciliation (superseded)
 
