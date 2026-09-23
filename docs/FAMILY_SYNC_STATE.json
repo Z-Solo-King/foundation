@@ -1,10 +1,10 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT_RUNTIME_RECONCILIATION",
-  "audited_at": "2026-09-23",
+  "audited_at": "2026-09-24T00:34:00+05:30",
   "live_main": {
-    "foundation": "1c7e7e99a5229fc655b12bef782a2f2d05d8990a",
-    "operations": "f0143668eb0283c9e9b6ceab92f6644f78d2ede1"
+    "foundation": "bf49aeaa282f59105ba163f8f33419241b10b475",
+    "operations": "0589065d35bc9da39b17b36f93484236f444a508"
   },
   "runtime_pins": {
     "foundation_runtime": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2",
@@ -32,20 +32,19 @@
     }
   },
   "current_queue": {
-    "open_issue_count": 10,
+    "open_issue_count": 9,
     "foundation": [
       58,
       157
     ],
     "operations": [
-      699,
-      711,
-      603,
-      597,
-      385,
-      352,
+      145,
       340,
-      145
+      385,
+      597,
+      603,
+      699,
+      711
     ],
     "open_implementation_pr_count": 0,
     "foundation_open_prs": [],
@@ -53,12 +52,13 @@
     "open_pr_count": 0,
     "closed": [
       452,
-      197
+      197,
+      352
     ]
   },
   "latest_evidence": {
     "nightly_completed": {
-      "run": 861,
+      "run": 876,
       "state": "blocked_before_provider_execution",
       "provider_execution": false,
       "programs": 24,
@@ -66,48 +66,52 @@
       "operations_ref": "3a7e350ddd5648caf93f58651323425186544f66"
     },
     "nightly_current": {
-      "run": "current",
-      "state": "provider-gated"
+      "run": 876,
+      "state": "provider_gated",
+      "missing": [
+        "RESEARCH_LLM_ENDPOINT",
+        "RESEARCH_LLM_API_KEY",
+        "RESEARCH_LLM_MODEL"
+      ]
     },
     "extractor_completed": {
-      "run": 330,
-      "state": "failed_stale_pin",
+      "run": 346,
+      "state": "pass",
       "receipts": 40,
-      "operations_ref": "246e563e354c43962c988cf2794cb09ccd4fe723"
-    },
-    "extractor_current": {
-      "run": 344,
-      "state": "queued_post_merge",
-      "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
-    },
-    "coverage_previous": {
-      "run": 299,
-      "state": "failed_fixture",
-      "test_failure": "initial_claim_retries_transient_d1_failure"
-    },
-    "coverage_cancelled": {
-      "run": 301,
-      "state": "cancelled"
+      "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
+      "provenance_completeness": 1,
+      "route_provenance_completeness": 1,
+      "unstable_repeated_groups": 0
     },
     "coverage_current": {
-      "run": 315,
-      "state": "queued_post_merge",
+      "run": 317,
+      "state": "in_progress",
       "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
     },
     "deep_scan": {
-      "run": 334,
+      "run": 338,
       "state": "pass",
       "active_issue_count": 10,
       "historical_issue_count": 1,
-      "lane_count": 4
+      "lane_count": 4,
+      "cases_per_lane": 11
+    },
+    "production_release": {
+      "run": 485,
+      "state": "failed_before_deployment",
+      "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
+      "reason": "cross-repository semantic audit missing repositories.*.last_audited_main_sha"
     }
   },
   "known_findings": [
     "Operations #197 is closed.",
-    "Open issue inventory is 10 across the family.",
-    "Deep scan has 10 active issues plus one labeled historical #197 regression case per lane.",
-    "The canonical production release target is Operations 1a12b98981f52de207fa8626cf2e1f5ad06659be; the currently deployed private Worker remains bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f until release #483 passes.",
-    "Nightly live research remains externally blocked until authorized research endpoint/API key/model configuration is available.",
+    "Operations #352 is closed after the current 40-case extractor benchmark passed.",
+    "Open issue inventory is 9 across the family.",
+    "Deep scan preserves one explicitly historical #197 regression case per lane without counting it as an active issue.",
+    "The canonical production target is Operations 1a12b98981f52de207fa8626cf2e1f5ad06659be; release #485 failed before deployment.",
+    "The private Worker last verified deployed revision remains bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f.",
+    "Nightly live research is externally blocked because RESEARCH_LLM_ENDPOINT, RESEARCH_LLM_API_KEY and RESEARCH_LLM_MODEL are unset.",
+    "The current #157 credential model needs a research-provider credential, while GitHub App credentials remain the private Operations trust boundary.",
     "L4 evidence-only issues remain open until their explicit runtime conditions are demonstrated."
   ],
   "evidence_boundary": {
@@ -129,34 +133,54 @@
   "fixed_repository_defects": [
     "Operations #833 fixed case-sensitive transient D1 contention injection in tests/test_chat_idempotency.py.",
     "Foundation #1058 separates deterministic scenario test evidence from live production probe evidence.",
-    "Foundation #1057 aligns the live extractor benchmark default and policy guard with the canonical production Operations pin."
+    "Foundation #1057 aligns the live extractor benchmark default and policy guard with the canonical production Operations pin.",
+    "Operations #836 canonicalized browser benchmark receipts.",
+    "Operations #839/#841 aligned promotion and open-issue scanner contracts with current APIs.",
+    "Operations #844 made scheduled maintenance fail closed and emit revision-bound Cron receipts.",
+    "Foundation #1063 separated nightly migration tooling from the research runtime pin.",
+    "Foundation #1069 prepared immutable release identity injection for the maintenance-capable Operations revision."
   ],
   "current_evidence": {
     "extractor_benchmark": {
-      "run": 340,
+      "run": 346,
       "status": "pass",
       "case_jobs": 40,
       "provenance_completeness": 1,
+      "route_provenance_completeness": 1,
       "unstable_repeated_groups": 0
     },
     "deep_scan": {
-      "run": 334,
+      "run": 338,
+      "status": "pass",
       "active_issue_count": 10,
       "historical_issue_count": 1,
       "lane_count": 4,
-      "status": "pass"
+      "cases_per_lane": 11
     },
     "coverage_matrix": {
-      "run": 315,
-      "status": "queued_post_merge"
+      "run": 317,
+      "status": "in_progress"
     },
     "nightly_research": {
       "status": "blocked",
-      "reason": "missing authorized research endpoint/API key/model"
+      "reason": "missing RESEARCH_LLM_ENDPOINT, RESEARCH_LLM_API_KEY and RESEARCH_LLM_MODEL"
+    },
+    "production_release": {
+      "run": 485,
+      "status": "failed_before_deployment",
+      "reason": "missing repositories.*.last_audited_main_sha"
     },
     "maintenance": {
       "status": "pending-live-cron-receipt",
       "operations_revision": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
+    }
+  },
+  "repositories": {
+    "foundation": {
+      "last_audited_main_sha": "bf49aeaa282f59105ba163f8f33419241b10b475"
+    },
+    "operations": {
+      "last_audited_main_sha": "0589065d35bc9da39b17b36f93484236f444a508"
     }
   }
 }
