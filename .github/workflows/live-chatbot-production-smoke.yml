@@ -15,7 +15,7 @@ concurrency:
 
 env:
   PUBLIC_WORKER_URL: https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev
-  OPERATIONS_REF: 1e66e9dc85552f484b91041ff95783db82b73332
+  OPERATIONS_REF: 4967fb56c5fcd0f0f393d06b327476c886cf3e05
 
 jobs:
   smoke:
