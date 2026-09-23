@@ -324,5 +324,27 @@ jobs:
           import json
           from pathlib import Path
           payload=json.loads(Path('../live-extractor-quality.json').read_text())
-          raise SystemExit(0 if payload.get('pass') is True else 2)
+          status_counts=payload.get('status_counts', {})
+          empty_count=int(status_counts.get('empty', 0) or 0)
+          ok=(
+              payload.get('pass') is True
+              and empty_count == 0
+              and float(payload.get('provenance_completeness', 0.0)) == 1.0
+              and int(payload.get('invalid_resource_rows', 0) or 0) == 0
+              and int(payload.get('unstable_repeated_groups', 0) or 0) == 0
+              and not payload.get('missing_expected_platforms')
+          )
+          if not ok:
+              print(json.dumps({
+                  'strict_gate': 'FAIL',
+                  'pass': payload.get('pass'),
+                  'empty_count': empty_count,
+                  'completion_rate': payload.get('completion_rate'),
+                  'provenance_completeness': payload.get('provenance_completeness'),
+                  'invalid_resource_rows': payload.get('invalid_resource_rows'),
+                  'unstable_repeated_groups': payload.get('unstable_repeated_groups'),
+                  'missing_expected_platforms': payload.get('missing_expected_platforms'),
+              }, sort_keys=True))
+              raise SystemExit(2)
+          print(json.dumps({'strict_gate': 'PASS'}, sort_keys=True))
           PY
