@@ -440,3 +440,9 @@ def test_live_extractor_benchmark_normalizes_case_receipts_before_upload():
     assert "No extractor JSONL receipt was produced for this case" in workflow
     assert "find ../benchmark-artifacts -type f -name '*.jsonl'" in workflow
     assert 'test "${#inputs[@]}" -eq 40' in workflow
+def test_live_extractor_benchmark_uses_direct_callable_import_preflight():
+    workflow = _workflow_texts()["live-extractor-benchmark.yml"]
+    assert 'importlib.import_module("extractor_mapper.fast_engine")' in workflow
+    assert 'from extractor_mapper.fast_engine import extract_and_map' in workflow
+    assert 'extractor module:' in workflow
+    assert 'extractor symbol type:' in workflow

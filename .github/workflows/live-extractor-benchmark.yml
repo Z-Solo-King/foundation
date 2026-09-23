@@ -156,9 +156,15 @@ jobs:
         run: |
           set -euo pipefail
           python - <<'PY'
-          import extractor_mapper.fast_engine as engine
-          assert callable(engine.extract_and_map)
-          print("extractor import: PASS")
+          import importlib
+          import os
+          engine = importlib.import_module("extractor_mapper.fast_engine")
+          print(f"extractor module: {engine.__file__}")
+          print(f"extractor symbol type: {type(getattr(engine, 'extract_and_map', None)).__name__}")
+          from extractor_mapper.fast_engine import extract_and_map
+          assert callable(extract_and_map)
+          assert engine.__file__ is not None
+          print(f"extractor import: PASS ({os.path.abspath(engine.__file__)})")
           PY
       - name: Materialize one-target case
         run: |
