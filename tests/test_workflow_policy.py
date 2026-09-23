@@ -113,7 +113,9 @@ def test_production_release_has_one_minimal_main_push_job():
     assert "bash scripts/production_release.sh" in frontend
     assert "pull_request:" not in frontend
     assert "merge_group:" not in frontend
-    assert "if:" not in frontend
+    assert "      if:" not in frontend  # no job-level conditional; receipt steps may use step-level always()
+    assert "        if: always()" in frontend
+    assert "Publish sanitized production receipt" in frontend
     assert "needs:" not in frontend
     assert "gh workflow run" not in frontend
     assert "actions: write" not in frontend
