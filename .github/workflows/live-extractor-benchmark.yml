@@ -325,20 +325,19 @@ jobs:
           from pathlib import Path
           payload=json.loads(Path('../live-extractor-quality.json').read_text())
           status_counts=payload.get('status_counts', {})
-          empty_count=int(status_counts.get('empty', 0) or 0)
           ok=(
               payload.get('pass') is True
-              and empty_count == 0
               and float(payload.get('provenance_completeness', 0.0)) == 1.0
               and int(payload.get('invalid_resource_rows', 0) or 0) == 0
               and int(payload.get('unstable_repeated_groups', 0) or 0) == 0
+              and int(payload.get('missing_key_rows', 0) or 0) == 0
               and not payload.get('missing_expected_platforms')
           )
           if not ok:
               print(json.dumps({
                   'strict_gate': 'FAIL',
                   'pass': payload.get('pass'),
-                  'empty_count': empty_count,
+                  'status_counts': status_counts,
                   'completion_rate': payload.get('completion_rate'),
                   'provenance_completeness': payload.get('provenance_completeness'),
                   'invalid_resource_rows': payload.get('invalid_resource_rows'),
