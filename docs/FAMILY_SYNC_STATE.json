@@ -1,19 +1,15 @@
 {
   "schema_version": "family-sync-state/v1",
-  "status": "CURRENT_LIVE_RECONCILIATION",
+  "status": "CURRENT_RUNTIME_RECONCILIATION",
   "audited_at": "2026-09-23",
   "authority": "Foundation docs/FAMILY_SYNC_STANDARD.md",
-  "repositories": {
-    "foundation": {
-      "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup",
-      "last_observed_main_sha": "9ba648fe69bb8635be75b10210ec87c58563bb79"
-    },
-    "operations": {
-      "role": "private-control-plane-research-orchestration",
-      "last_observed_main_sha": "29f3484ab7beeaf04fa474da8aa0933b50b6d2fa",
-      "canonical_production_pin": "1e66e9dc85552f484b91041ff95783db82b73332",
-      "nightly_research_revision": "3a7e350ddd5648caf93f58651323425186544f66"
-    }
+  "runtime_implementation": {
+    "foundation": "b1767a40c7b5f0b49429753365fa60dffe50119b",
+    "operations": "4967fb56c5fcd0f0f393d06b327476c886cf3e05"
+  },
+  "canonical_pins": {
+    "production_operations": "4967fb56c5fcd0f0f393d06b327476c886cf3e05",
+    "nightly_research_operations": "3a7e350ddd5648caf93f58651323425186544f66"
   },
   "current_queue": {
     "open_issue_count": 13,
@@ -37,34 +33,13 @@
     "foundation_open_prs": 0,
     "operations_open_prs": 0
   },
-  "workflows": {
-    "production": {
-      "run": 456,
-      "status": "pending",
-      "operations_pin": "1e66e9dc85552f484b91041ff95783db82b73332",
-      "previous_run": 454,
-      "previous_run_result": "deployed_but_failed_policy_denial_acceptance"
-    },
-    "extractor": {
-      "run": 317,
-      "status": "pending",
-      "operations_pin": "1e66e9dc85552f484b91041ff95783db82b73332"
-    },
-    "coverage_matrix": {
-      "run": 286,
-      "status": "pending",
-      "operations_pin": "1e66e9dc85552f484b91041ff95783db82b73332"
-    },
-    "nightly_research": {
-      "latest_preflight": 27,
-      "status": "blocked_before_execution",
-      "operations_pin": "3a7e350ddd5648caf93f58651323425186544f66"
-    }
-  },
-  "runtime_evidence": {
-    "private_worker_version": "b4827ce0-6722-4dfc-a2d9-23f2dbf6841e",
-    "operations_provenance": "1e66e9dc85552f484b91041ff95783db82b73332",
-    "public_worker_live_probe": "PASS"
+  "current_evidence": {
+    "production_release": "458_IN_PROGRESS",
+    "previous_production_release": "456_DEPLOYED_PRIOR_PIN_BUT_CONCURRENT_DUPLICATE_FAILED",
+    "coverage_matrix": "288_PENDING",
+    "extractor_benchmark": "319_PENDING",
+    "public_worker_live_probe": "PENDING_CURRENT_REVISION",
+    "nightly_research": "BLOCKED_EXTERNAL_PROVIDER_CONFIGURATION"
   },
   "evidence_boundary": {
     "L0": "hypothesis",
@@ -74,12 +49,11 @@
     "L4": "approved runtime/production execution"
   },
   "sync_rules": {
-    "main_sha_is_audit_observation": true,
-    "live_main_out_ranks_recorded_sha": true,
-    "production_revision_is_separate_from_operations_main": true,
-    "nightly_revision_is_separate_from_operations_main": true,
-    "cloudflare_runtime_requires_dedicated_runtime_receipt": true,
-    "gitHub_actions_is_foundation_deployment_authority": true,
+    "live_main_must_be_refreshed_before_mutation": true,
+    "documentation_commits_may_advance_main_without_runtime_change": true,
+    "production_revision_separate_from_main": true,
+    "cloudflare_runtime_requires_dedicated_receipt": true,
+    "github_actions_is_foundation_deployment_authority": true,
     "operations_has_no_github_actions_authority": true
   }
 }
