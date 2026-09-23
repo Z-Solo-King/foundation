@@ -283,7 +283,7 @@ jobs:
         run: |
           set -euo pipefail
           inputs=()
-          while IFS= read -r file; do inputs+=(--input "$file"); done < <(find ../benchmark-artifacts -type f -name '*.jsonl' | sort)
+          while IFS= read -r file; do inputs+=(--input "$file"); done < <(find ../benchmark-artifacts -type f -name 'receipts.jsonl' | sort)
           test "${#inputs[@]}" -eq 40
           python scripts/site_benchmark_quality.py "${inputs[@]}" \
             --expected-platform api \
