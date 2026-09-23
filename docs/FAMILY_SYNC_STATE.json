@@ -2,24 +2,37 @@
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT_RUNTIME_RECONCILIATION",
   "audited_at": "2026-09-23",
-  "authority": "Foundation docs/FAMILY_SYNC_STANDARD.md",
-  "runtime_implementation": {
-    "foundation": "b1767a40c7b5f0b49429753365fa60dffe50119b",
-    "operations": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
+  "live_main": {
+    "foundation": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2",
+    "operations": "804981445fcabe770fc236fd27a650cb6ba183d0"
   },
-  "canonical_pins": {
+  "runtime_pins": {
+    "foundation_runtime": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2",
     "production_operations": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f",
     "nightly_research_operations": "3a7e350ddd5648caf93f58651323425186544f66"
   },
+  "cloudflare": {
+    "public_worker": {
+      "name": "research-intelligence-engine-public",
+      "deployed_provenance": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2",
+      "deployment_version": "1fe570c2-2ecb-472a-8713-773786d8e99a",
+      "deployment_percent": 100
+    },
+    "private_worker": {
+      "name": "research-intelligence-engine-private",
+      "deployed_provenance": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f",
+      "deployment_version": "1eea8019-9b90-4c61-aac9-13563d4b5c9e",
+      "deployment_percent": 100,
+      "cron": "*/15 * * * *"
+    }
+  },
   "current_queue": {
-    "open_issue_count": 13,
+    "open_issue_count": 11,
     "foundation": [
       58,
       157
     ],
     "operations": [
-      119,
-      132,
       145,
       197,
       340,
@@ -30,17 +43,58 @@
       699,
       711
     ],
-    "foundation_open_prs": 0,
-    "operations_open_prs": 0
+    "open_implementation_pr_count": 0,
+    "foundation_open_prs": [
+      1049
+    ],
+    "operations_open_prs": []
   },
-  "current_evidence": {
-    "production_release": "REQUIRES_RERUN_AFTER_FAMILY_SEMANTIC_SCHEMA_FIX",
-    "previous_production_release": "456_DEPLOYED_PRIOR_PIN_BUT_CONCURRENT_DUPLICATE_FAILED",
-    "coverage_matrix": "288_PENDING",
-    "extractor_benchmark": "319_PENDING",
-    "public_worker_live_probe": "PENDING_CURRENT_REVISION",
-    "nightly_research": "BLOCKED_EXTERNAL_PROVIDER_CONFIGURATION"
+  "latest_evidence": {
+    "nightly_multi_agent_research": {
+      "run_number": 861,
+      "conclusion": "failure",
+      "state": "blocked_before_execution",
+      "programs": 24,
+      "lanes": 3,
+      "provider_execution": false,
+      "artifact": "nightly-diagnosis",
+      "operations_revision": "3a7e350ddd5648caf93f58651323425186544f66"
+    },
+    "nightly_research_contract": {
+      "run_number": 2302,
+      "conclusion": "success"
+    },
+    "extractor_benchmark": {
+      "run_number": 330,
+      "conclusion": "failure",
+      "receipts": 40,
+      "status_counts": {
+        "ok": 4,
+        "empty": 32,
+        "blocked": 4
+      },
+      "completion_rate": 0.1,
+      "provenance_completeness": 1,
+      "unstable_repeated_groups": 1,
+      "benchmark_operations_revision": "246e563e354c43962c988cf2794cb09ccd4fe723"
+    },
+    "coverage_matrix": {
+      "run_number": 299,
+      "conclusion": "failure",
+      "scenario_count": 20,
+      "passed_count": 19,
+      "failed_count": 1,
+      "failing_scenario": "idempotency",
+      "failing_test": "test_initial_claim_retries_transient_d1_failure",
+      "failing_operations_revision": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
+    }
   },
+  "known_findings": [
+    "The live extractor benchmark workflow still defaults to Operations revision 246e563e354c43962c988cf2794cb09ccd4fe723 (#830), so the latest benchmark is not against current Operations main (#831 / 804981...) or the production pin.",
+    "Coverage run 299 has a receipt/job classification mismatch: the downloaded stream-contract and research-runtime scenario artifacts report passed, while the workflow receipt records those jobs as failed; idempotency is the only scenario artifact that actually fails.",
+    "Nightly research is externally blocked at live-provider preflight because the required endpoint, API key and model configuration are unavailable to the workflow.",
+    "Full L4 production certification remains open; green repository/contract/release-receipt jobs do not substitute for the explicit runtime acceptance receipts."
+  ],
   "evidence_boundary": {
     "L0": "hypothesis",
     "L1": "source inspected",
@@ -49,23 +103,12 @@
     "L4": "approved runtime/production execution"
   },
   "sync_rules": {
-    "live_main_must_be_refreshed_before_mutation": true,
-    "documentation_commits_may_advance_main_without_runtime_change": true,
+    "live_main_refresh_before_mutation": true,
+    "documentation_commits_may_advance_main": true,
     "production_revision_separate_from_main": true,
-    "cloudflare_runtime_requires_dedicated_receipt": true,
+    "cloudflare_runtime_requires_operational_receipt": true,
     "github_actions_is_foundation_deployment_authority": true,
-    "operations_has_no_github_actions_authority": true
-  },
-  "repositories": {
-    "foundation": {
-      "last_audited_main_sha": "b1767a40c7b5f0b49429753365fa60dffe50119b",
-      "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup"
-    },
-    "operations": {
-      "last_audited_main_sha": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f",
-      "role": "private-control-plane-research-orchestration",
-      "approved_production_revision": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f",
-      "nightly_research_revision": "3a7e350ddd5648caf93f58651323425186544f66"
-    }
+    "operations_has_no_current_github_workflows": true,
+    "no_competing_cloudflare_build_or_deploy_authority": true
   }
 }
