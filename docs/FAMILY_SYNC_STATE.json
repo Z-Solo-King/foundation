@@ -3,12 +3,12 @@
   "status": "CURRENT_RUNTIME_RECONCILIATION",
   "audited_at": "2026-09-23",
   "live_main": {
-    "foundation": "fe79e10c4f7e3ee17b9488848b90cf6b7e93f6fb",
-    "operations": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
+    "foundation": "1c7e7e99a5229fc655b12bef782a2f2d05d8990a",
+    "operations": "f0143668eb0283c9e9b6ceab92f6644f78d2ede1"
   },
   "runtime_pins": {
     "foundation_runtime": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2",
-    "production_operations": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f",
+    "production_operations": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
     "nightly_research_operations": "3a7e350ddd5648caf93f58651323425186544f66",
     "foundation_deployed": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2"
   },
@@ -47,10 +47,8 @@
       340,
       145
     ],
-    "open_implementation_pr_count": 1,
-    "foundation_open_prs": [
-      1071
-    ],
+    "open_implementation_pr_count": 0,
+    "foundation_open_prs": [],
     "operations_open_prs": [],
     "open_pr_count": 0,
     "closed": [
@@ -68,8 +66,8 @@
       "operations_ref": "3a7e350ddd5648caf93f58651323425186544f66"
     },
     "nightly_current": {
-      "run": 862,
-      "state": "in_progress"
+      "run": "current",
+      "state": "provider-gated"
     },
     "extractor_completed": {
       "run": 330,
@@ -78,9 +76,9 @@
       "operations_ref": "246e563e354c43962c988cf2794cb09ccd4fe723"
     },
     "extractor_current": {
-      "run": 333,
-      "state": "queued",
-      "operations_ref": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
+      "run": 344,
+      "state": "queued_post_merge",
+      "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
     },
     "coverage_previous": {
       "run": 299,
@@ -92,16 +90,25 @@
       "state": "cancelled"
     },
     "coverage_current": {
-      "run": 302,
-      "state": "queued",
-      "operations_ref": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
+      "run": 315,
+      "state": "queued_post_merge",
+      "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
+    },
+    "deep_scan": {
+      "run": 334,
+      "state": "pass",
+      "active_issue_count": 10,
+      "historical_issue_count": 1,
+      "lane_count": 4
     }
   },
   "known_findings": [
-    "The live extractor benchmark workflow still defaults to Operations revision 246e563e354c43962c988cf2794cb09ccd4fe723 (#830), so the latest benchmark is not against current Operations main (#831 / 804981...) or the production pin.",
-    "Coverage run 299 has a receipt/job classification mismatch: the downloaded stream-contract and research-runtime scenario artifacts report passed, while the workflow receipt records those jobs as failed; idempotency is the only scenario artifact that actually fails.",
-    "Nightly research is externally blocked at live-provider preflight because the required endpoint, API key and model configuration are unavailable to the workflow.",
-    "Full L4 production certification remains open; green repository/contract/release-receipt jobs do not substitute for the explicit runtime acceptance receipts."
+    "Operations #197 is closed.",
+    "Open issue inventory is 10 across the family.",
+    "Deep scan has 10 active issues plus one labeled historical #197 regression case per lane.",
+    "The canonical production release target is Operations 1a12b98981f52de207fa8626cf2e1f5ad06659be; the currently deployed private Worker remains bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f until release #483 passes.",
+    "Nightly live research remains externally blocked until authorized research endpoint/API key/model configuration is available.",
+    "L4 evidence-only issues remain open until their explicit runtime conditions are demonstrated."
   ],
   "evidence_boundary": {
     "L0": "hypothesis",
@@ -133,13 +140,15 @@
       "unstable_repeated_groups": 0
     },
     "deep_scan": {
+      "run": 334,
       "active_issue_count": 10,
       "historical_issue_count": 1,
       "lane_count": 4,
       "status": "pass"
     },
     "coverage_matrix": {
-      "status": "pass"
+      "run": 315,
+      "status": "queued_post_merge"
     },
     "nightly_research": {
       "status": "blocked",
