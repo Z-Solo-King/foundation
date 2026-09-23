@@ -24,8 +24,8 @@ Live GitHub issue search: 11 open issues; 0 open implementation PRs.
 
 - Operations #813/#817 fixed transient D1 idempotency contention; Operations #823 extends the canonical retry authority to D1 schema/PRAGMA contention before claims.
 - Foundation #1043 promotes the immutable Operations #823 fix across production, coverage, extractor benchmark and smoke pins; Foundation #1047 adds the bounded public ChatRequest operation/input-record contract.
-- Fresh extractor benchmark #323 is the current 40-case benchmark against the promoted Operations `bfcfaf59…` tree.
-- Production release #461 proved deployment, provenance, cross-version memory/replay, normal chat and serial idempotency; it failed at true concurrent duplicate convergence. The next canonical release must re-prove concurrency and the updated public policy-denial path.
+- Fresh extractor benchmark #324 is the latest completed 40-case benchmark; #327 is the new main-push run against the promoted Operations `bfcfaf59…` tree.
+- Production release #466 is the current main-push release; release #461 proved deployment, provenance, cross-version memory/replay, normal chat and serial idempotency; it failed at true concurrent duplicate convergence. The next canonical release must re-prove concurrency and the updated public policy-denial path.
 - Coverage matrix #292 is the latest promoted-pin matrix; post-#823/1047 L4 evidence remains outstanding.
 - Public Worker live probe is required to pass for the current runtime revision.
 - Nightly research remains externally blocked before live provider execution because the research endpoint, API key and model are not configured.
