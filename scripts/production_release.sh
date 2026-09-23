@@ -595,7 +595,8 @@ test "$stream_json_status" = '200' || {
   cat "$RUNNER_TEMP/live-stream-json.json" || true
   exit 1
 }
-jq -e '.ok == true and .response.response_id == ("chat-" + ("production-stream-request-" + env.ACCEPTANCE_RUN_ID))' "$RUNNER_TEMP/live-stream-json.json" >/dev/null || {
+expected_stream_response_id="chat-production-stream-request-${ACCEPTANCE_RUN_ID}"
+jq -e --arg expected_response_id "$expected_stream_response_id" '.ok == true and .response.response_id == $expected_response_id' "$RUNNER_TEMP/live-stream-json.json" >/dev/null || {
   echo "stream-payload JSON response contract failed:"
   cat "$RUNNER_TEMP/live-stream-json.json" || true
   exit 1
