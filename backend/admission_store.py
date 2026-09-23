@@ -142,6 +142,24 @@ async def _insert_new_admission(
         policy=policy,
     )
     if not inserted:
+        # Two identical concurrent requests may both observe no existing event
+        # before racing on the unique event_id. Re-read the canonical event and
+        # delegate protected routes to the downstream idempotency authority.
+        existing = await _existing_event(store.db, event_id)
+        if existing is not None:
+            return await _handle_existing_event(
+                store.db,
+                existing,
+                subject_fingerprint=subject_fingerprint,
+                route=route,
+                event_id=event_id,
+                window_start=window_start,
+                expires_at=expires_at,
+                now=now,
+                cost_units=cost_units,
+                decision=decision,
+                policy=policy,
+            )
         return AdmissionDecision(
             AdmissionOutcome.CONCURRENCY_LIMITED,
             route,
@@ -208,7 +226,7 @@ class D1AdmissionStore:
         policy: AdmissionPolicy,
     ) -> bool:
         result = await self.db.prepare(
-            """INSERT INTO public_admission_events
+            """INSERT OR IGNORE INTO public_admission_events
                  (event_id, window_start, subject_fingerprint, route,
                   cost_units, lease_expires_at, released_at)
                SELECT ?, ?, ?, ?, ?, ?, NULL
