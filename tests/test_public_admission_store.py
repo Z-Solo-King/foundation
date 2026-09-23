@@ -488,7 +488,7 @@ async def test_d1_store_returns_denied_decision_from_authoritative_snapshot(monk
 class ZeroInsertDB(FakeDB):
     def prepare(self, query):
         statement = super().prepare(query)
-        if query.lstrip().startswith("INSERT INTO public_admission_events"):
+        if query.lstrip().startswith("INSERT OR IGNORE INTO public_admission_events"):
             statement.run = self._zero_insert
         return statement
 
@@ -627,7 +627,7 @@ class IdempotentAdmissionDB(FakeDB):
                 if sql.startswith("delete from public_admission_events"):
                     return {"meta": {"changes": 0}}
 
-                if sql.startswith("insert into public_admission_events"):
+                if sql.startswith("insert or ignore into public_admission_events"):
                     event_id, window_start, subject, route, cost_units, expires_at = args[:6]
                     if event_id in db.events:
                         return {"meta": {"changes": 0}}
