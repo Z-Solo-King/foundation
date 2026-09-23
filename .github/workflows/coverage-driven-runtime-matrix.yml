@@ -10,6 +10,11 @@ on:
         required: false
         default: bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f
         type: string
+      validation_tools_ref:
+        description: Exact Operations revision containing validation tests
+        required: false
+        default: 92eb7a850dff11a10886a952d5db8a42dae2b318
+        type: string
 
 permissions:
   contents: read
@@ -95,6 +100,7 @@ jobs:
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
       OPERATIONS_REF: ${{ inputs.operations_ref || 'bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f' }}
+      VALIDATION_TOOLS_REF: ${{ inputs.validation_tools_ref || '92eb7a850dff11a10886a952d5db8a42dae2b318' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Checkout Foundation
@@ -132,6 +138,24 @@ jobs:
           ref: ${{ env.OPERATIONS_REF }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
+
+      - name: Checkout versioned validation tests
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.OPERATIONS_REPOSITORY }}
+          ref: ${{ env.VALIDATION_TOOLS_REF }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: validation-tools
+
+      - name: Overlay exact validation test files
+        if: matrix.id != 'repository-policy'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test_path in ${{ matrix.tests }}; do
+            test -f "validation-tools/$test_path"
+            cp "validation-tools/$test_path" "operations/$test_path"
+          done
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
