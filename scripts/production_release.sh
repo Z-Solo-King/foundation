@@ -23,7 +23,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = 'bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f'
+test "$OPERATIONS_REF" = '1a12b98981f52de207fa8626cf2e1f5ad06659be'
 
 after_install_marker=''
 
