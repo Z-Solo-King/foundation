@@ -269,6 +269,7 @@ jobs:
           exit "$status"
 
       - name: Run live production acceptance probe
+        id: live_probe
         if: github.ref == 'refs/heads/main' && matrix.live_probe
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
@@ -350,6 +351,35 @@ jobs:
           esac
           echo "live probe ${{ matrix.live_probe }}: PASS"
 
+      - name: Finalize scenario evidence
+        if: always()
+        env:
+          TEST_OUTCOME: ${{ steps.run.outcome || steps.foundation-policy-run.outcome || 'not_run' }}
+          LIVE_PROBE_EXPECTED: ${{ matrix.live_probe != '' }}
+          LIVE_PROBE_OUTCOME: ${{ steps.live_probe.outcome || 'not_run' }}
+        working-directory: operations
+        shell: python
+        run: |
+          import json, os
+          from pathlib import Path
+
+          scenario = Path(f"../coverage-artifacts/${{ matrix.id }}/scenario.json")
+          if not scenario.exists():
+              raise SystemExit("scenario artifact missing before finalization")
+
+          payload = json.loads(scenario.read_text())
+          test_passed = payload.get("passed") is True
+          probe_expected = os.environ.get("LIVE_PROBE_EXPECTED", "false").lower() == "true"
+          probe_outcome = os.environ.get("LIVE_PROBE_OUTCOME", "not_run")
+          payload.update({
+              "test_outcome": os.environ.get("TEST_OUTCOME", "not_run"),
+              "test_passed": test_passed,
+              "live_probe_expected": probe_expected,
+              "live_probe_outcome": probe_outcome,
+              "live_probe_passed": (not probe_expected) or probe_outcome == "success",
+              "acceptance_passed": test_passed and ((not probe_expected) or probe_outcome == "success"),
+          })
+          scenario.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
       - name: Upload scenario evidence
         if: always() && matrix.id != 'repository-policy'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -382,27 +412,37 @@ jobs:
           path: coverage-artifacts
           merge-multiple: false
 
-      - name: Build coverage/failure map
+      - name: Build coverage/evidence map
         id: report
         shell: python
         run: |
           import json
           from pathlib import Path
-          results=[]
+
+          results = []
           for p in Path("coverage-artifacts").glob("**/scenario.json"):
               results.append(json.loads(p.read_text()))
-          results.sort(key=lambda x:x["scenario"])
-          failed=[x for x in results if not x["passed"]]
-          report={
-              "schema":"coverage-matrix-report/v1",
-              "scenario_count":len(results),
-              "passed_count":len(results)-len(failed),
-              "failed_count":len(failed),
-              "failed":failed,
+          results.sort(key=lambda x: x["scenario"])
+
+          test_failures = [x for x in results if not x.get("test_passed", x.get("passed") is True)]
+          runtime_failures = [x for x in results if x.get("live_probe_expected") and not x.get("live_probe_passed")]
+          runtime_expected = [x for x in results if x.get("live_probe_expected")]
+          runtime_passed = [x for x in runtime_expected if x.get("live_probe_passed")]
+          report = {
+              "schema": "coverage-matrix-report/v2",
+              "scenario_count": len(results),
+              "test_passed_count": len(results) - len(test_failures),
+              "test_failed_count": len(test_failures),
+              "runtime_probe_expected_count": len(runtime_expected),
+              "runtime_probe_passed_count": len(runtime_passed),
+              "runtime_probe_failed_count": len(runtime_failures),
+              "acceptance_passed": not test_failures and not runtime_failures,
+              "test_failures": test_failures,
+              "runtime_failures": runtime_failures,
           }
-          Path("coverage-matrix-report.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
-          print(json.dumps(report,indent=2,sort_keys=True))
-          raise SystemExit(1 if failed else 0)
+          Path("coverage-matrix-report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(report, indent=2, sort_keys=True))
+          raise SystemExit(1 if test_failures or runtime_failures else 0)
 
       - name: Upload aggregate report
         if: always()
