@@ -1,17 +1,24 @@
 # 2026-09-23 CURRENT AUTHORITY OVERRIDE
 
-The following values are authoritative for the current handoff. Older dated checkpoints in this document are historical provenance only.
+The values below are the current family state. Older dated sections are historical provenance only.
 
-- Foundation main: `2d830b5bcd8f18e0cd6b5690138bf70bbd8ec981`
-- Operations main: `91873d31b2afb4a8979149d80948b487322e1cef`
-- Audited Foundation runtime implementation: `e9a38063458b0a9a3eb29ea69438e12dc2440316`
-- Audited Operations production implementation: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
-- Audited Operations nightly research pin: `3a7e350ddd5648caf93f58651323425186544f66`
-- Foundation production deployment owner: GitHub Actions / `scripts/production_release.sh`
-- Operations remains private runtime/control-plane authority and must not own GitHub Actions.
-- Current open queue: Foundation #58/#157; Operations #145/#197/#340/#352/#385/#597/#603/#699/#711.
-- Remaining open issues are acceptance gates; do not infer live closure from source inspection or deterministic CI.
+- Foundation main: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
+- Operations main: `804981445fcabe770fc236fd27a650cb6ba183d0`
+- Foundation runtime/deployment provenance: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
+- Operations production runtime/deployment provenance: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
+- Operations nightly research pin: `3a7e350ddd5648caf93f58651323425186544f66`
+- Public Worker version observed: `1fe570c2-2ecb-472a-8713-773786d8e99a`
+- Private Worker version observed: `1eea8019-9b90-4c61-aac9-13563d4b5c9e`
+- Current open issue queue: Foundation #58/#157; Operations #145/#197/#340/#352/#385/#597/#603/#699/#711.
+- No open implementation PRs. Foundation #1049 is the only open documentation PR.
+- Nightly research #861 is blocked before provider execution.
+- Extractor benchmark #330 failed its quality gate and is additionally pinned to Operations #830 (`246e563...`), so it is not current-main evidence.
+- Coverage matrix #299 has one failing scenario: idempotency.
+- Full L4 runtime certification remains evidence-gated.
 
+The authoritative machine-readable snapshot is `docs/FAMILY_SYNC_STATE.json`.
+
+---
 ---
 
 ## 2026-09-22 FINAL LIVE REF RECONCILIATION
