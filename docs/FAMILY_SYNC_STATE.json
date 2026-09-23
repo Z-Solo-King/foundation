@@ -3,8 +3,8 @@
   "status": "CURRENT_RUNTIME_RECONCILIATION",
   "audited_at": "2026-09-23",
   "live_main": {
-    "foundation": "121ff5017c6b11ebc103dbbd26bdffe639fcc8cb",
-    "operations": "b47aa056f50d27df9b5f552495a6cd862ae8a697"
+    "foundation": "fe79e10c4f7e3ee17b9488848b90cf6b7e93f6fb",
+    "operations": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
   },
   "runtime_pins": {
     "foundation_runtime": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2",
@@ -32,28 +32,31 @@
     }
   },
   "current_queue": {
-    "open_issue_count": 11,
+    "open_issue_count": 10,
     "foundation": [
       58,
       157
     ],
     "operations": [
-      145,
-      197,
-      340,
-      352,
-      385,
-      597,
-      603,
       699,
-      711
+      711,
+      603,
+      597,
+      385,
+      352,
+      340,
+      145
     ],
-    "open_implementation_pr_count": 0,
+    "open_implementation_pr_count": 1,
     "foundation_open_prs": [
-      1049
+      1071
     ],
     "operations_open_prs": [],
-    "open_pr_count": 0
+    "open_pr_count": 0,
+    "closed": [
+      452,
+      197
+    ]
   },
   "latest_evidence": {
     "nightly_completed": {
@@ -120,5 +123,31 @@
     "Operations #833 fixed case-sensitive transient D1 contention injection in tests/test_chat_idempotency.py.",
     "Foundation #1058 separates deterministic scenario test evidence from live production probe evidence.",
     "Foundation #1057 aligns the live extractor benchmark default and policy guard with the canonical production Operations pin."
-  ]
+  ],
+  "current_evidence": {
+    "extractor_benchmark": {
+      "run": 340,
+      "status": "pass",
+      "case_jobs": 40,
+      "provenance_completeness": 1,
+      "unstable_repeated_groups": 0
+    },
+    "deep_scan": {
+      "active_issue_count": 10,
+      "historical_issue_count": 1,
+      "lane_count": 4,
+      "status": "pass"
+    },
+    "coverage_matrix": {
+      "status": "pass"
+    },
+    "nightly_research": {
+      "status": "blocked",
+      "reason": "missing authorized research endpoint/API key/model"
+    },
+    "maintenance": {
+      "status": "pending-live-cron-receipt",
+      "operations_revision": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
+    }
+  }
 }
