@@ -1,17 +1,17 @@
 ## 2026-09-23 CURRENT AUTHORITY RECONCILIATION
 
 **Live main heads verified:**
-- Foundation main: `978a2b0208cafeae8e740a07374ed78865a19e0b`
-- Operations main: `2d09b7306b1d383d3b715db789d199010c7bcb19`
+- Foundation main: `2d830b5bcd8f18e0cd6b5690138bf70bbd8ec981`
+- Operations main: `91873d31b2afb4a8979149d80948b487322e1cef`
 
 **Current audited runtime implementation pins:**
-- Foundation: `b1767a40c7b5f0b49429753365fa60dffe50119b`
-- Operations production: `4967fb56c5fcd0f0f393d06b327476c886cf3e05`
+- Foundation: `e9a38063458b0a9a3eb29ea69438e12dc2440316`
+- Operations production: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
 - Operations nightly research: `3a7e350ddd5648caf93f58651323425186544f66`
 
-Foundation #1037 and Operations #817 are merged. The current production pin is the Operations #817 merge above. Older dated reconciliation blocks below are historical provenance and must not override this section.
+Foundation #1041/#1043/#1047/#1050/#1051/#1052 and Operations #817/#821/#823/#829 are merged. The current production pin is the Operations #817 merge above. Older dated reconciliation blocks below are historical provenance and must not override this section.
 
-**Current queue:** Foundation #58/#157; Operations #119/#132/#145/#197/#340/#352/#385/#597/#603/#699/#711. No open implementation PRs were found in the current live search.
+**Current queue:** Foundation #58/#157; Operations #145/#197/#340/#352/#385/#597/#603/#699/#711. No open implementation PRs were found in the current live search.
 
 **Current evidence boundary:** repository implementation/CI is not runtime certification. Live Cloudflare/provider/scheduler evidence remains required for the explicit acceptance-gated issues. Nightly research remains externally blocked until the authorized provider endpoint, API key and model are configured.
 
