@@ -11,6 +11,7 @@ CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
 CANONICAL_OPERATIONS_REF = "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
 BENCHMARK_OPERATIONS_REF = CANONICAL_OPERATIONS_REF
 BENCHMARK_TOOLS_REF = "6613c86c81d1a72287a2733e14a8c0b5b7434a2a"
+MIGRATION_TOOLS_REF = BENCHMARK_TOOLS_REF
 VALIDATION_TOOLS_REF = "92eb7a850dff11a10886a952d5db8a42dae2b318"
 CANONICAL_OPERATIONS_SERVICE = "research-intelligence-engine-private"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
@@ -366,6 +367,15 @@ def test_live_extractor_benchmark_uses_versioned_runtime_and_tool_pins():
     assert extractor_ref in workflow
     assert BENCHMARK_TOOLS_REF in workflow
     assert CANONICAL_OPERATIONS_REF in production
+
+
+def test_nightly_migration_review_uses_separate_immutable_tooling_pin():
+    workflow = _workflow_texts()["nightly-multi-agent-research-v2.yml"]
+    assert "OPERATIONS_MIGRATION_TOOLS_REF:" in workflow
+    assert MIGRATION_TOOLS_REF in workflow
+    assert MIGRATION_TOOLS_REF != "3a7e350ddd5648caf93f58651323425186544f66"
+    assert "Checkout pinned Operations migration tooling" in workflow
+    assert "Verify Operations migration-tools revision" in workflow
 
 
 def test_canonical_operations_pin_matches_latest_migration_head():
