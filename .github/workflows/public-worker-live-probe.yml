@@ -53,23 +53,6 @@ jobs:
           print(json.dumps(out,indent=2,sort_keys=True))
           PY
           exit 0
-      - name: Publish receipt
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          body="$(python - <<PY
-          import json
-          from pathlib import Path
-          p=Path("probe/receipt.json")
-          d=json.loads(p.read_text()) if p.exists() else {"ok":False,"error":"no receipt"}
-          print("### Public Worker live probe")
-          print("```json")
-          print(json.dumps(d,indent=2,sort_keys=True))
-          print("```")
-          PY
-          )"
-          gh api "repos/$GITHUB_REPOSITORY/issues/197/comments" -f body="$body"
       - name: Upload receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
