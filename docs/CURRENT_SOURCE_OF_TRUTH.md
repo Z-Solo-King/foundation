@@ -7,8 +7,8 @@
 ## Current repository revisions
 
 - Foundation main: 2fee4df2b2fdaf7a4676268ab509e7366b703888
-- Operations main: 5338952a03dd850caca884b6995961d2baa20ba7
-- Canonical production Operations revision: 5338952a03dd850caca884b6995961d2baa20ba7
+- Operations main: e2ae528f794e9d279704269f91883964904f9321
+- Canonical production Operations revision: e2ae528f794e9d279704269f91883964904f9321
 - Canonical nightly research Operations revision: 3a7e350ddd5648caf93f58651323425186544f66
 
 Production and nightly runtime revisions are immutable pins and are intentionally separate from floating Operations main.
@@ -29,8 +29,8 @@ Open implementation PR queues: Foundation 0; Operations 0.
 - Polyglot governance audit: PASS on main.
 - Nightly research contract: PASS; live research execution remains blocked by missing provider configuration.
 - Autonomous benchmark: latest scheduled run executed successfully, but acquisition quality remains WARN/FAIL and is not production acceptance evidence.
-- Live extractor benchmark: fresh 40-case main run is currently in progress against Operations 5338952a03dd850caca884b6995961d2baa20ba7.
-- Canonical production release: run #444 is currently in progress against Operations 5338952a03dd850caca884b6995961d2baa20ba7.
+- Live extractor benchmark: fresh 40-case main run is currently in progress against Operations e2ae528f794e9d279704269f91883964904f9321.
+- Canonical production release: run #444 is currently in progress against Operations e2ae528f794e9d279704269f91883964904f9321.
 
 ## Current known runtime history
 
