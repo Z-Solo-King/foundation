@@ -216,6 +216,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            try {
             const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
               owner: context.repo.owner, repo: context.repo.repo, run_id: context.runId, per_page: 100
             });
@@ -228,6 +229,9 @@ jobs:
             })).sort((a,b) => a.name.localeCompare(b.name));
             const body = '## Deep-scan lane job diagnostics\n\n```json\n' + JSON.stringify(diagnostics, null, 2) + '\n```';
             await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body });
+            } catch (error) {
+              core.warning(String(error));
+            }
 
       - name: Download lane receipts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
