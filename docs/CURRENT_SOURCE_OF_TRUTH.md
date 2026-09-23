@@ -6,6 +6,63 @@
 
 ## Current repository revisions
 
+- Foundation main: 2fee4df2b2fdaf7a4676268ab509e7366b703888
+- Operations main: 5338952a03dd850caca884b6995961d2baa20ba7
+- Canonical production Operations revision: 5338952a03dd850caca884b6995961d2baa20ba7
+- Canonical nightly research Operations revision: 3a7e350ddd5648caf93f58651323425186544f66
+
+Production and nightly runtime revisions are immutable pins and are intentionally separate from floating Operations main.
+
+## Current queue
+
+Live GitHub issue search reports 13 open issues:
+
+- Foundation: #58, #157
+- Operations: #119, #132, #145, #197, #340, #352, #385, #597, #603, #699, #711
+
+Open implementation PR queues: Foundation 0; Operations 0.
+
+## Current CI / benchmark state
+
+- 52-case open-issue deep scan: PASS on main (13 issues × 4 lanes, all lanes and aggregate green).
+- Exhaustive six-lane repository audit: PASS on the promotion branch.
+- Polyglot governance audit: PASS on main.
+- Nightly research contract: PASS; live research execution remains blocked by missing provider configuration.
+- Autonomous benchmark: latest scheduled run executed successfully, but acquisition quality remains WARN/FAIL and is not production acceptance evidence.
+- Live extractor benchmark: fresh 40-case main run is currently in progress against Operations 5338952a03dd850caca884b6995961d2baa20ba7.
+- Canonical production release: run #444 is currently in progress against Operations 5338952a03dd850caca884b6995961d2baa20ba7.
+
+## Current known runtime history
+
+- The previous production persistence acceptance failed closed because the persistence diagnostic created a 301-second task-envelope lifetime against the canonical 300-second maximum.
+- Operations #809 corrected that authority to a 300-second inclusive window; Foundation #1017 promoted the immutable fix.
+- The current production run is the first post-fix runtime certification attempt.
+
+## Evidence boundary
+
+L0 hypothesis -> L1 source -> L2 repository -> L3 GitHub Actions/control-plane -> L4 approved runtime/production
+
+No source-only or deterministic test result is treated as L4 runtime certification.
+
+## Runtime boundary
+
+Foundation owns public-safe contracts, deterministic public algorithms, public Worker/API, GitHub Actions and canonical production deployment. Operations remains the private runtime/control plane. Cloudflare runtime state must be refreshed from its dedicated runtime evidence path before making a new L4 claim.
+
+## Synchronization rule
+
+This top section is the current checkpoint. Older dated sections below remain historical provenance and must not override the revisions, queue or evidence classification above.
+
+FAMILY_SYNC_STATE.json records the same current observations in machine-readable form.
+
+---
+# Current Source of Truth — 2026-09-23 Live Reconciliation
+
+**Status:** CURRENT
+**Owner:** Foundation family boundary
+**Audit date:** 2026-09-23
+
+## Current repository revisions
+
 - Foundation main: 64f58e390c3cb2646e5aa65c25cbb5cb4d907878
 - Operations main: 84b38e6a1d5ffb279014763183e14265e2d5573d
 - Canonical production Operations revision: 69f526f17a97fc29e478329db754658dd0fa383c
