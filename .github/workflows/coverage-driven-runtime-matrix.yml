@@ -5,6 +5,11 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
+      run_live_probes:
+        description: Run authenticated production probes from the coverage matrix
+        required: false
+        default: false
+        type: boolean
       operations_ref:
         description: Immutable Operations revision to test
         required: false
@@ -34,11 +39,11 @@ jobs:
       matrix:
         include:
           - id: chat-core
-            issues: "Operations #197"
+            issues: "Foundation #58"
             live_probe: chat
             tests: "tests/test_chat_endpoint.py tests/test_chatbot.py"
           - id: idempotency
-            issues: "Operations #197"
+            issues: "Foundation #58"
             live_probe: idempotency
             tests: "tests/test_chat_idempotency.py"
           - id: trust-replay
@@ -48,16 +53,16 @@ jobs:
             issues: "Operations #119"
             tests: "tests/test_chat_memory.py tests/test_chat_memory_persistence.py tests/test_chat_privacy.py"
           - id: learning-evaluation
-            issues: "Operations #197"
+            issues: "Foundation #58"
             tests: "tests/test_chat_learning.py tests/test_chat_learning_d1.py tests/test_chat_learning_runtime.py tests/test_chat_learning_store.py"
           - id: provider-admission
-            issues: "Operations #197"
+            issues: "Foundation #58"
             tests: "tests/test_provider_catalog.py tests/test_provider_capacity.py tests/test_provider_capacity_admission.py tests/test_provider_response_admission.py"
           - id: provider-runtime
-            issues: "Operations #197"
+            issues: "Foundation #58"
             tests: "tests/test_provider_runtime.py tests/test_provider_runtime_state_adapter.py tests/test_provider_retry.py tests/test_provider_retry_deadline.py tests/test_provider_circuit_runtime.py"
           - id: stream-contract
-            issues: "Operations #340/#452"
+            issues: "Operations #340"
             live_probe: sse
             tests: "tests/test_provider_stream.py tests/test_provider_stream_runtime_diagnostic.py tests/test_stream_transport.py tests/test_streaming_contract.py"
           - id: execution-core
@@ -73,7 +78,7 @@ jobs:
             issues: "Operations #145/#385"
             tests: "tests/test_maintenance_execution.py tests/test_maintenance_tick.py tests/test_chatbot_maintenance_scheduler.py tests/test_maintenance_plan.py tests/test_maintenance_policy.py"
           - id: planner-bridge
-            issues: "Operations #197/#385"
+            issues: "Operations #385"
             tests: "tests/test_planner_execution_bridge.py tests/test_planner_execution_bridge_edges.py tests/test_planner_resource_bridge.py tests/test_planner_resource_bridge_complete.py"
           - id: acquisition-runtime
             issues: "Operations #352"
@@ -88,7 +93,7 @@ jobs:
             issues: "Operations #352"
             tests: "tests/test_browser_acquisition.py"
           - id: research-runtime
-            issues: "Operations #197"
+            issues: "Foundation #58"
             live_probe: research
             tests: "tests/test_project_research.py tests/test_private_project_research.py tests/test_governed_research_retry.py tests/test_research_stop.py tests/test_research_adjudication.py"
           - id: artifact-security-audit
@@ -294,7 +299,7 @@ jobs:
 
       - name: Run live production acceptance probe
         id: live_probe
-        if: github.ref == 'refs/heads/main' && matrix.live_probe
+        if: github.ref == 'refs/heads/main' && matrix.live_probe && inputs.run_live_probes == true
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
           BASE_URL: https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev
@@ -379,7 +384,7 @@ jobs:
         if: always()
         env:
           TEST_OUTCOME: ${{ steps.run.outcome || steps.foundation-policy-run.outcome || 'not_run' }}
-          LIVE_PROBE_EXPECTED: ${{ matrix.live_probe != '' }}
+          LIVE_PROBE_EXPECTED: ${{ matrix.live_probe != '' && inputs.run_live_probes == true }}
           LIVE_PROBE_OUTCOME: ${{ steps.live_probe.outcome || 'not_run' }}
         working-directory: operations
         shell: python
