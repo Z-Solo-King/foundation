@@ -461,7 +461,7 @@ def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
 def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
-    expected_production = "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
+    expected_production = "1a12b98981f52de207fa8626cf2e1f5ad06659be"
     expected_nightly = "3a7e350ddd5648caf93f58651323425186544f66"
     auxiliary = {
         "live-chatbot-production-smoke.yml": expected_production,
