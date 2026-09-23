@@ -33,7 +33,7 @@ jobs:
           if [ "$app_id" = true ] && [ "$app_key" = true ] && [ "$endpoint" = true ] && [ "$api_key" = true ] && [ "$model" = true ]; then ready=true; fi
           python - <<PY
           import json
-          d={"schema":"live-nightly-preflight/v1","ready":${ready},"operations_app_id_set":${app_id},"operations_app_private_key_set":${app_key},"research_endpoint_set":${endpoint},"research_api_key_set":${api_key},"research_model_set":${model},"operations_ref":"50e642dfb05846963a82fe76f4f5fe085d4b9a8c"}
+          d={"schema":"live-nightly-preflight/v1","ready":${ready},"operations_app_id_set":${app_id},"operations_app_private_key_set":${app_key},"research_endpoint_set":${endpoint},"research_api_key_set":${api_key},"research_model_set":${model},"operations_ref":"3a7e350ddd5648caf93f58651323425186544f66"}
           open("preflight.json","w").write(json.dumps(d,indent=2,sort_keys=True)+"\n")
           print(json.dumps(d,indent=2,sort_keys=True))
           PY
