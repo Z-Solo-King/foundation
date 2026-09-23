@@ -1,97 +1,68 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT_LIVE_RECONCILIATION",
-  "audited_at": "2026-09-20",
+  "audited_at": "2026-09-23",
   "authority": "Foundation docs/CURRENT_SOURCE_OF_TRUTH.md",
   "repositories": {
     "foundation": {
       "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup",
-      "last_audited_main_sha": "2d3dee41fde834b0ef894cd1a54fe4417a748cd4"
+      "last_audited_main_sha": "64f58e390c3cb2646e5aa65c25cbb5cb4d907878"
     },
     "operations": {
       "role": "private-control-plane-research-orchestration",
-      "last_audited_main_sha": "dd30834aec8f1263d9b35142b1bd16b4ba95f1ca",
-      "approved_production_revision": "dd30834aec8f1263d9b35142b1bd16b4ba95f1ca",
-      "nightly_research_revision": "f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5"
+      "last_audited_main_sha": "84b38e6a1d5ffb279014763183e14265e2d5573d",
+      "approved_production_revision": "69f526f17a97fc29e478329db754658dd0fa383c",
+      "nightly_research_revision": "3a7e350ddd5648caf93f58651323425186544f66"
     }
   },
-  "production": {
-    "workflow_run_id": 35519167159,
-    "workflow_run_number": 321,
-    "foundation_revision": "d4f8be98447d2b6c6d05d1b213941e029f8649a6",
-    "operations_revision": "dd30834aec8f1263d9b35142b1bd16b4ba95f1ca",
-    "cloudflare_operations_version_id": "0dae35f1-854b-49e4-b278-f3a17af3aa00",
-    "cross_repository_audit_artifact": "cross-repository-audit-receipt",
-    "result": "PRODUCTION_CERTIFIED"
-  },
-  "acceptance": {
+  "current_queue": {
+    "open_issue_count": 13,
     "foundation": [
-      157,
-      452
+      58,
+      157
     ],
     "operations": [
       119,
-      120,
       132,
       145,
       197,
       340,
       352,
-      385
+      385,
+      597,
+      603,
+      699,
+      711
     ],
-    "meta": [
-      58
-    ]
+    "foundation_open_prs": 0,
+    "operations_open_prs": 0
   },
-  "completed_recently": {
-    "foundation_prs": [
-      858,
-      861,
-      862
-    ],
-    "operations_prs": [
-      613,
-      614,
-      617,
-      619,
-      620,
-      622,
-      625
-    ]
+  "current_workflows": {
+    "nightly_research": "3a7e350ddd5648caf93f58651323425186544f66",
+    "live_extractor_benchmark": "69f526f17a97fc29e478329db754658dd0fa383c",
+    "production": "69f526f17a97fc29e478329db754658dd0fa383c"
+  },
+  "current_evidence": {
+    "nightly_live_execution": "BLOCKED_EXTERNAL_RESEARCH_EXECUTOR_CONFIGURATION",
+    "autonomous_benchmark": "WARN_ACQUISITION",
+    "extractor_40_case": "REQUIRES_FRESH_LIVE_RUN",
+    "open_issue_scan": "13_ISSUES_X_4_LANES=52"
   },
   "evidence_boundary": {
     "L0": "hypothesis",
     "L1": "source inspected",
-    "L2": "repository tests/contracts",
+    "L2": "repository inspection including callers/tests/ownership",
     "L3": "current GitHub Actions/control-plane execution",
     "L4": "approved runtime/production execution"
   },
-  "control_plane": {
-    "main_push_probe": "success_with_job_creation",
-    "main_push_secret_probe": "success_with_job_creation",
-    "workflow_dispatch_bridge": "success_with_job_creation_on_current_release",
-    "nightly_program_execution": "blocked_by_live_research_executor_configuration"
+  "sync_rules": {
+    "main_sha_is_audit_observation": true,
+    "live_main_out_ranks_recorded_sha": true,
+    "production_revision_is_separate_from_operations_main": true,
+    "nightly_revision_is_separate_from_operations_main": true,
+    "cloudflare_runtime_requires_dedicated_runtime_receipt": true,
+    "gitHub_actions_is_foundation_deployment_authority": true,
+    "operations_has_no_github_actions_authority": true
   },
-  "runtime_summary": {
-    "chat": "pass",
-    "chat_idempotency": "pass",
-    "sse_lifecycle": "pass",
-    "permitted_source_ingestion_readback": "pass",
-    "d1_b2": "pass",
-    "memory_store_query_delete_owner_boundary": "pass",
-    "task_envelope_replay_guard": "pass",
-    "candidate_learning_feedback": "pass",
-    "terminalization_cas": "pass",
-    "resource_reservation_reconciliation": "pass",
-    "maintenance_reconciliation": "pass",
-    "provider_stream_contract": "pass",
-    "memory_cross_version": "deferred",
-    "external_provider_partial_stream": "not_reachable_under_current_architecture"
-  },
-  "rules": [
-    "Current merged source and fresh runtime evidence outrank historical handoff text.",
-    "Production certification applies only to Foundation d4f8be98447d2b6c6d05d1b213941e029f8649a6 deploying Operations dd30834aec8f1263d9b35142b1bd16b4ba95f1ca.",
-    "Do not claim L4 acceptance for an issue whose remaining criterion is restart, scheduler, cancellation, provider failure, or other unobserved external/runtime evidence.",
-    "Do not introduce competing deployment, automation, resource, lifecycle, replay, memory, evaluation, or publication authorities."
-  ]
+  "historical_state_rule": "Older dated reconciliation records remain provenance only and must not override this snapshot."
 }

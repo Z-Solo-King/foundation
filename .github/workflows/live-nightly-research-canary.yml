@@ -15,7 +15,7 @@ concurrency:
 
 env:
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_REF: 50e642dfb05846963a82fe76f4f5fe085d4b9a8c
+  OPERATIONS_REF: 3a7e350ddd5648caf93f58651323425186544f66
 
 jobs:
   canary:
@@ -26,7 +26,7 @@ jobs:
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
           repositories: operations
@@ -68,7 +68,7 @@ jobs:
           rows=[json.loads(line) for line in Path('.runtime/live-nightly-canary/research.jsonl').read_text().splitlines() if line.strip()]
           expected={f'lane{lane}-slot{slot}' for lane in range(3) for slot in range(2)}
           completed={row.get('program_id') for row in rows if row.get('status') == 'completed'}
-          summary={'schema':'live-nightly-canary/v1','ok':completed == expected,'programs_expected':len(expected),'programs_completed':len(completed),'program_ids':sorted(completed),'operations_ref':'50e642dfb05846963a82fe76f4f5fe085d4b9a8c'}
+          summary={'schema':'live-nightly-canary/v1','ok':completed == expected,'programs_expected':len(expected),'programs_completed':len(completed),'program_ids':sorted(completed),'operations_ref':'3a7e350ddd5648caf93f58651323425186544f66'}
           Path('.runtime/live-nightly-canary/summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
           print(json.dumps(summary,indent=2,sort_keys=True))
           raise SystemExit(0 if summary['ok'] else 1)

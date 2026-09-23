@@ -413,3 +413,22 @@ def test_live_acceptance_is_gated_by_runtime_provenance():
 def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
+def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
+    expected_production = "69f526f17a97fc29e478329db754658dd0fa383c"
+    expected_nightly = "3a7e350ddd5648caf93f58651323425186544f66"
+    auxiliary = {
+        "live-chatbot-production-smoke.yml": expected_production,
+        "coverage-driven-runtime-matrix.yml": expected_production,
+        "polyglot-governance-audit.yml": expected_production,
+        "live-nightly-research-canary.yml": expected_nightly,
+        "nightly-research-provider-preflight.yml": expected_nightly,
+    }
+    for filename, expected in auxiliary.items():
+        workflow = (WORKFLOW_ROOT / filename).read_text(encoding="utf-8")
+        assert expected in workflow
+        assert "50e642dfb05846963a82fe76f4f5fe085d4b9a8c" not in workflow
+def test_github_app_token_inputs_use_client_id():
+    for name, text in _workflow_texts().items():
+        if "actions/create-github-app-token@" in text:
+            assert "app-id: $" + "{{ secrets.OPERATIONS_APP_ID }}" not in text, name
+            assert "client-id: $" + "{{ secrets.OPERATIONS_APP_ID }}" in text, name

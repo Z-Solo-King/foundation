@@ -1,3 +1,52 @@
+# Current Source of Truth — 2026-09-23 Live Reconciliation
+
+**Status:** CURRENT
+**Owner:** Foundation family boundary
+**Audit date:** 2026-09-23
+
+## Current repository revisions
+
+- Foundation main: 64f58e390c3cb2646e5aa65c25cbb5cb4d907878
+- Operations main: 84b38e6a1d5ffb279014763183e14265e2d5573d
+- Canonical production Operations revision: 69f526f17a97fc29e478329db754658dd0fa383c
+- Canonical nightly research Operations revision: 3a7e350ddd5648caf93f58651323425186544f66
+
+Live branch heads are observations. Production and nightly runtime revisions remain separate immutable pins and must not be replaced by a floating operations/main reference.
+
+## Current queue
+
+Live GitHub issue search reports 13 open issues:
+
+- Foundation: #58, #157
+- Operations: #119, #132, #145, #197, #340, #352, #385, #597, #603, #699, #711
+
+There are 0 open Operations PRs and the Foundation repair PR wave #1009, #1010, #1011 and #1013 is merged.
+
+## Current CI / benchmark state
+
+- Nightly research: implementation and truthful artifact handling are current; the last scheduled live run was blocked before provider execution because the required research executor secrets were absent.
+- Autonomous benchmark: latest scheduled run executed successfully, but acquisition quality remains a WARN/FAIL condition and is not production acceptance evidence.
+- Live extractor benchmark: canonical Operations production pin is now 69f526f17a97fc29e478329db754658dd0fa383c; a fresh 40-case run is still required for #352.
+- Mapper/extractor/open-issue audit: current contract is 13 issues × 4 lanes = 52 cases.
+- Repository validation: current Operations tests include media/image coverage; centralized validation installs the corresponding media extra.
+
+## Evidence boundary
+
+L0 hypothesis -> L1 source -> L2 repository -> L3 GitHub Actions/control-plane -> L4 approved runtime/production
+
+No source-only or deterministic test result is treated as L4 runtime certification.
+
+## Runtime boundary
+
+Foundation owns public-safe contracts, deterministic public algorithms, public Worker/API, GitHub Actions and canonical production deployment. Operations remains the private runtime/control plane. Cloudflare runtime state must be refreshed from the dedicated Cloudflare evidence path before making a new L4 claim.
+
+## Synchronization rule
+
+This section is the current checkpoint. Older dated sections below remain historical provenance and must not override the revisions, queue or evidence classification above.
+
+FAMILY_SYNC_STATE.json records the same current observations in machine-readable form.
+
+---
 ## 2026-09-22 FINAL LIVE REF RECONCILIATION
 
 **Live branch heads queried from GitHub:**

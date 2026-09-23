@@ -31,28 +31,50 @@ jobs:
           [ -n "${RESEARCH_LLM_MODEL:-}" ] && model=true
           ready=false
           if [ "$app_id" = true ] && [ "$app_key" = true ] && [ "$endpoint" = true ] && [ "$api_key" = true ] && [ "$model" = true ]; then ready=true; fi
-          python - <<PY
-          import json
-          d={"schema":"live-nightly-preflight/v1","ready":${ready},"operations_app_id_set":${app_id},"operations_app_private_key_set":${app_key},"research_endpoint_set":${endpoint},"research_api_key_set":${api_key},"research_model_set":${model},"operations_ref":"50e642dfb05846963a82fe76f4f5fe085d4b9a8c"}
-          open("preflight.json","w").write(json.dumps(d,indent=2,sort_keys=True)+"\n")
-          print(json.dumps(d,indent=2,sort_keys=True))
+          export PREFLIGHT_APP_ID="$app_id"
+          export PREFLIGHT_APP_KEY="$app_key"
+          export PREFLIGHT_ENDPOINT="$endpoint"
+          export PREFLIGHT_API_KEY="$api_key"
+          export PREFLIGHT_MODEL="$model"
+          export PREFLIGHT_READY="$ready"
+          python - <<'PY'
+          import json, os
+          d = {
+              "schema": "live-nightly-preflight/v1",
+              "ready": os.environ["PREFLIGHT_READY"] == "true",
+              "operations_app_id_set": os.environ["PREFLIGHT_APP_ID"] == "true",
+              "operations_app_private_key_set": os.environ["PREFLIGHT_APP_KEY"] == "true",
+              "research_endpoint_set": os.environ["PREFLIGHT_ENDPOINT"] == "true",
+              "research_api_key_set": os.environ["PREFLIGHT_API_KEY"] == "true",
+              "research_model_set": os.environ["PREFLIGHT_MODEL"] == "true",
+              "operations_ref": "3a7e350ddd5648caf93f58651323425186544f66",
+          }
+          with open("preflight.json", "w", encoding="utf-8") as handle:
+              json.dump(d, handle, indent=2, sort_keys=True)
+              handle.write("\n")
+          print(json.dumps(d, indent=2, sort_keys=True))
           PY
+          if [ "$ready" != "true" ]; then
+            echo "Nightly research executor configuration is incomplete; receipt recorded and live research remains blocked."
+            exit 1
+          fi
       - name: Publish preflight receipt
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          body="$(python - <<PY
-          import json, os
-          p="preflight.json"
-          d=json.load(open(p)) if os.path.exists(p) else {"ready":False,"error":"no receipt"}
+          python - <<'PY' > preflight-comment.md
+          import json
+          from pathlib import Path
+          path = Path("preflight.json")
+          data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {"ready": False, "error": "no receipt"}
           print("### Live nightly research preflight")
+          print()
           print("```json")
-          print(json.dumps(d,indent=2,sort_keys=True))
+          print(json.dumps(data, indent=2, sort_keys=True))
           print("```")
           PY
-          )"
-          gh api "repos/$GITHUB_REPOSITORY/issues/157/comments" -f body="$body"
+          gh api "repos/$GITHUB_REPOSITORY/issues/157/comments" -f body="$(cat preflight-comment.md)" || true
       - name: Upload preflight receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
