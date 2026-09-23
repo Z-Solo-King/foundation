@@ -11,9 +11,9 @@ on:
         default: bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f
         type: string
       benchmark_tools_ref:
-        description: Exact Operations revision containing benchmark evaluator tooling
+        description: Exact Operations revision containing benchmark producer/evaluator tooling
         required: false
-        default: 6613c86c81d1a72287a2733e14a8c0b5b7434a2a
+        default: d4ef2e6d28435a59c735b9dc4d0de31f44b9cf29
         type: string
 
 permissions:
@@ -77,7 +77,7 @@ jobs:
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
       OPERATIONS_REF: ${{ inputs.operations_ref || 'bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f' }}
-      BENCHMARK_TOOLS_REF: ${{ inputs.benchmark_tools_ref || '6613c86c81d1a72287a2733e14a8c0b5b7434a2a' }}
+      BENCHMARK_TOOLS_REF: ${{ inputs.benchmark_tools_ref || 'd4ef2e6d28435a59c735b9dc4d0de31f44b9cf29' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Create Operations read token
@@ -97,6 +97,19 @@ jobs:
           ref: ${{ env.OPERATIONS_REF }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
+
+      - name: Checkout versioned benchmark tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.OPERATIONS_REPOSITORY }}
+          ref: ${{ env.BENCHMARK_TOOLS_REF }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: benchmark-tools
+
+      - name: Overlay benchmark producer tooling
+        run: |
+          set -euo pipefail
+          cp benchmark-tools/scripts/browser_site_benchmark.py operations/scripts/browser_site_benchmark.py
 
       - name: Determine pinned Foundation public-core revision
         id: foundation-core-pin
