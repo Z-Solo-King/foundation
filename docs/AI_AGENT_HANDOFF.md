@@ -2,8 +2,8 @@
 
 The following values are authoritative for the current handoff. Older dated checkpoints in this document are historical provenance only.
 
-- Foundation main: `978a2b0208cafeae8e740a07374ed78865a19e0b`
-- Operations main: `2d09b7306b1d383d3b715db789d199010c7bcb19`
+- Foundation main: `1660243bf4610e7b3c07e32a623ddbe6f3e37de6`
+- Operations main: `3b0a83894cdc75c01bd8c441fd0ae20628da9b55`
 - Audited Foundation runtime implementation: `b1767a40c7b5f0b49429753365fa60dffe50119b`
 - Audited Operations production implementation: `4967fb56c5fcd0f0f393d06b327476c886cf3e05`
 - Audited Operations nightly research pin: `3a7e350ddd5648caf93f58651323425186544f66`
