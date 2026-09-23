@@ -110,6 +110,7 @@ jobs:
         run: |
           set -euo pipefail
           cp benchmark-tools/scripts/browser_site_benchmark.py operations/scripts/browser_site_benchmark.py
+          cp benchmark-tools/scripts/site_benchmark_execution.py operations/scripts/site_benchmark_execution.py
 
       - name: Determine pinned Foundation public-core revision
         id: foundation-core-pin
