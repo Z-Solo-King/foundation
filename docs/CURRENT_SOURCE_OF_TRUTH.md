@@ -1,39 +1,39 @@
-# Current Source of Truth — 2026-09-23 Live Reconciliation
+# Current Source of Truth — 2026-09-23 Runtime Reconciliation
 
 **Status:** CURRENT
 **Owner:** Foundation family boundary
 **Audit date:** 2026-09-23
 
-## Current repository revisions
+## Head/implementation distinction
 
-- Foundation main: 9ba648fe69bb8635be75b10210ec87c58563bb79
-- Operations main: 29f3484ab7beeaf04fa474da8aa0933b50b6d2fa
-- Canonical production Operations pin: 1e66e9dc85552f484b91041ff95783db82b73332
-- Canonical nightly research Operations pin: 3a7e350ddd5648caf93f58651323425186544f66
-
-Production and nightly runtime revisions are immutable pins and remain distinct from floating repository heads.
+- `main` is a live Git reference and must be queried before every mutation; this document does not freeze the current branch head.
+- Audited Foundation runtime implementation revision: `b1767a40c7b5f0b49429753365fa60dffe50119b`.
+- Audited Operations runtime implementation revision: `4967fb56c5fcd0f0f393d06b327476c886cf3e05`.
+- Documentation-only commits may advance `main` without changing those runtime implementation revisions.
+- Canonical production Operations pin: `4967fb56c5fcd0f0f393d06b327476c886cf3e05`.
+- Canonical nightly research Operations pin: `3a7e350ddd5648caf93f58651323425186544f66`.
 
 ## Current queue
 
-Live GitHub state: 13 open issues; 0 open PRs in either repository.
+Live GitHub issue search: 13 open issues; 0 open implementation PRs.
 
 - Foundation: #58, #157
 - Operations: #119, #132, #145, #197, #340, #352, #385, #597, #603, #699, #711
 
 ## Current evidence
 
-- Foundation promotion work is merged through 9ba648fe; the canonical production pin is now 1e66e9d.
-- Operations #813 fixed the stale public-core mapper pin that caused the previous #132 replay regression; the current coverage matrix is being rerun against the promoted pin.
-- The previous 40-case extractor aggregate failure was fixed by counting 40 receipt files before expanding each —-input argument. The benchmark default is now aligned to the production Operations pin; fresh run #317 is pending.
-- The previous canonical production run #454 deployed Operations 1e66e9d to Cloudflare and passed deployment provenance, replay, persistence, chat, idempotency and concurrent-idempotency acceptance, but failed at the policy-denial acceptance probe. The corrected canonical production run #456 is pending.
-- Public Worker live probe for the current Foundation revision passed.
-- Nightly live research remains blocked before provider execution because the authorized research endpoint, API key and model configuration are absent.
+- Operations #813 fixed transient D1 duplicate-waiter claim failures; Operations #817 extends the same bounded retry authority to the initial claim.
+- Foundation #1037 promotes the immutable Operations #817 fix across production, coverage, extractor benchmark and smoke pins.
+- Fresh extractor benchmark #319 is the current benchmark against Operations `4967fb56…`; prior benchmark #317 passed against `1e66e9d`.
+- Canonical production release #458 is the current post-promotion runtime certification run. Release #456 deployed the prior pin but failed at the concurrent duplicate acceptance before policy denial.
+- Coverage matrix #288 is the current promoted-pin runtime matrix.
+- Public Worker live probe is required to pass for the current runtime revision.
+- Nightly research remains externally blocked before live provider execution because the research endpoint, API key and model are not configured.
 
 ## Runtime evidence
 
-- Cloudflare private Worker version observed from release #454: b4827ce0-6722-4dfc-a2d9-23f2dbf6841e.
-- Cloudflare Operations provenance observed by release #454: github:1e66e9dc85552f484b91041ff95783db82b73332.
-- Runtime certification is not claimed until the corrected canonical release reaches its final acceptance gate.
+- The prior Cloudflare private Worker deployment from release #456 was version `76bf696d-8921-4510-a43b-84ad1cfa811f` and carried Operations provenance `1e66e9d`.
+- The current release target is Operations `4967fb56…`; L4 production certification is not claimed until #458 completes its final acceptance gates.
 
 ## Evidence boundary
 
@@ -43,9 +43,9 @@ No source-only or deterministic test result is treated as L4 runtime certificati
 
 ## Synchronization rule
 
-This top section is the current checkpoint. Older dated sections below remain historical provenance only and must not override these revisions, queue values or evidence classifications.
+Refresh live `refs/heads/main` before mutation. Runtime/production pins and actual Cloudflare receipts outrank historical checkpoints.
 
-FAMILY_SYNC_STATE.json records the same current observations in machine-readable form.
+Older dated sections below are historical provenance only.
 
 ---
 # Current Source of Truth — 2026-09-23 Live Reconciliation
