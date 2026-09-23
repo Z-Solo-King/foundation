@@ -1,0 +1,117 @@
+name: Operations full acceptance suite
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/operations-full-acceptance-suite.yml
+  workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: Immutable Operations revision to validate
+        required: false
+        default: bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: operations-full-acceptance-suite
+  cancel-in-progress: false
+
+jobs:
+  full-suite:
+    name: Full Operations Python 3.14 acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Checkout immutable Operations runtime
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref || 'bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f' }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Verify immutable Operations revision
+        working-directory: operations
+        env:
+          EXPECTED: ${{ inputs.operations_ref || 'bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f' }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED"
+          test "$EXPECTED" =~ ^[0-9a-f]{40}$
+
+      - name: Setup Python 3.14
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Materialize pinned Foundation public core
+        working-directory: operations
+        run: python scripts/sync_public_core.py
+
+      - name: Install Operations test environment
+        working-directory: operations
+        run: |
+          python -m pip install --disable-pip-version-check -e ".[test,media,browser]"
+          python -m pip install --disable-pip-version-check workers-py workers-runtime-sdk coverage
+
+      - name: Run complete Operations test suite
+        working-directory: operations
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m pytest tests -q -rA 2>&1 | tee "${RUNNER_TEMP}/operations-full-suite.log"
+
+      - name: Emit acceptance receipt
+        if: always()
+        shell: bash
+        env:
+          OPERATIONS_REF: ${{ inputs.operations_ref || 'bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f' }}
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          payload = {
+              "schema": "operations-full-acceptance/v1",
+              "operations_ref": os.environ["OPERATIONS_REF"],
+              "python": "3.14",
+              "suite": "tests",
+              "status": "completed",
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "commit": os.environ["GITHUB_SHA"],
+          }
+          Path(".runtime/operations-full-acceptance.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Upload acceptance diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: operations-full-acceptance
+          path: |
+            .runtime/operations-full-acceptance.json
+            ${{ runner.temp }}/operations-full-suite.log
+          if-no-files-found: error
+          retention-days: 30
