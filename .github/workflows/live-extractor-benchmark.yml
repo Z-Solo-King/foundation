@@ -282,9 +282,11 @@ jobs:
         working-directory: operations
         run: |
           set -euo pipefail
+          receipt_files=()
+          while IFS= read -r file; do receipt_files+=("$file"); done < <(find ../benchmark-artifacts -type f -name 'receipts.jsonl' | sort)
+          test "${#receipt_files[@]}" -eq 40
           inputs=()
-          while IFS= read -r file; do inputs+=(--input "$file"); done < <(find ../benchmark-artifacts -type f -name 'receipts.jsonl' | sort)
-          test "${#inputs[@]}" -eq 40
+          for file in "${receipt_files[@]}"; do inputs+=(--input "$file"); done
           python scripts/site_benchmark_quality.py "${inputs[@]}" \
             --expected-platform api \
             --expected-platform feed \
