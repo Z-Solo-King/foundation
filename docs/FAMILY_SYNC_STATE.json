@@ -3,8 +3,8 @@
   "status": "CURRENT_RUNTIME_RECONCILIATION",
   "audited_at": "2026-09-23",
   "live_main": {
-    "foundation": "121ff5017c6b11ebc103dbbd26bdffe639fcc8cb",
-    "operations": "b47aa056f50d27df9b5f552495a6cd862ae8a697"
+    "foundation": "c8e35aa09f5780c4e3d662860c74beefbfa21c1c",
+    "operations": "a65410989a991439aece942a98796f5a8a967ce3"
   },
   "runtime_pins": {
     "foundation_runtime": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2",
@@ -32,14 +32,13 @@
     }
   },
   "current_queue": {
-    "open_issue_count": 11,
+    "open_issue_count": 10,
     "foundation": [
       58,
       157
     ],
     "operations": [
       145,
-      197,
       340,
       352,
       385,
@@ -49,9 +48,7 @@
       711
     ],
     "open_implementation_pr_count": 0,
-    "foundation_open_prs": [
-      1049
-    ],
+    "foundation_open_prs": [],
     "operations_open_prs": [],
     "open_pr_count": 0
   },
@@ -65,8 +62,8 @@
       "operations_ref": "3a7e350ddd5648caf93f58651323425186544f66"
     },
     "nightly_current": {
-      "run": 862,
-      "state": "in_progress"
+      "run": "current",
+      "state": "provider-gated"
     },
     "extractor_completed": {
       "run": 330,
@@ -75,8 +72,8 @@
       "operations_ref": "246e563e354c43962c988cf2794cb09ccd4fe723"
     },
     "extractor_current": {
-      "run": 333,
-      "state": "queued",
+      "run": "next",
+      "state": "fresh run pending after canonical producer pin",
       "operations_ref": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
     },
     "coverage_previous": {
@@ -89,16 +86,18 @@
       "state": "cancelled"
     },
     "coverage_current": {
-      "run": 302,
-      "state": "queued",
+      "run": "next",
+      "state": "fresh run after readiness provenance fix",
       "operations_ref": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
     }
   },
   "known_findings": [
-    "The live extractor benchmark workflow still defaults to Operations revision 246e563e354c43962c988cf2794cb09ccd4fe723 (#830), so the latest benchmark is not against current Operations main (#831 / 804981...) or the production pin.",
-    "Coverage run 299 has a receipt/job classification mismatch: the downloaded stream-contract and research-runtime scenario artifacts report passed, while the workflow receipt records those jobs as failed; idempotency is the only scenario artifact that actually fails.",
-    "Nightly research is externally blocked at live-provider preflight because the required endpoint, API key and model configuration are unavailable to the workflow.",
-    "Full L4 production certification remains open; green repository/contract/release-receipt jobs do not substitute for the explicit runtime acceptance receipts."
+    "Operations #197 is closed on current production receipts.",
+    "Open issue inventory is 10 across the family.",
+    "Extractor benchmark tooling now has an immutable producer/evaluator pin separate from the production runtime.",
+    "Coverage validation now separates immutable runtime-under-test from versioned validation tests and verifies release provenance through readiness.",
+    "Nightly live research remains externally blocked until authorized research endpoint/API key/model configuration is present.",
+    "L4 evidence-only issues remain open until their explicit runtime conditions are demonstrated."
   ],
   "evidence_boundary": {
     "L0": "hypothesis",
