@@ -33,7 +33,15 @@ async def readiness_payload(env):
     except Exception:
         database_ok = False
     ready = base["ready"] and database_ok
-    return {**base, "database": database_ok}, 200 if ready else 503
+    payload = {**base, "database": database_ok}
+    foundation_sha = str(getattr(env, "RELEASE_FOUNDATION_SHA", "") or "").strip()
+    operations_ref = str(getattr(env, "RELEASE_OPERATIONS_REF", "") or "").strip()
+    if foundation_sha or operations_ref:
+        payload["release"] = {
+            "foundation_sha": foundation_sha or None,
+            "operations_ref": operations_ref or None,
+        }
+    return payload, 200 if ready else 503
 
 
 async def storage_diagnostic(env, run_id, *, persistence_cls):
