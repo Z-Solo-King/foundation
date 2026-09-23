@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="69f526f17a97fc29e478329db754658dd0fa383c"
+OPERATIONS_REF="5338952a03dd850caca884b6995961d2baa20ba7"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 
@@ -22,7 +22,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = '69f526f17a97fc29e478329db754658dd0fa383c'
+test "$OPERATIONS_REF" = '5338952a03dd850caca884b6995961d2baa20ba7'
 
 after_install_marker=''
 
@@ -405,6 +405,7 @@ if [ "$persistence_bootstrap_deferred" = "true" ]; then
     -d "$persistence_seed_payload" \
     "$BASE_URL/api/v1/chatbot/diagnostic" || true)
   echo "POST persistence_seed after bootstrap deployment -> HTTP $persistence_bootstrap_status"
+  jq -c '.' "$RUNNER_TEMP/persistence-bootstrap-seed.json" 2>/dev/null || cat "$RUNNER_TEMP/persistence-bootstrap-seed.json" 2>/dev/null || true
   test "$persistence_bootstrap_status" = "200"
   jq -e '.ok == true and (.sentinel_id | type == "string" and length > 0)' "$RUNNER_TEMP/persistence-bootstrap-seed.json" >/dev/null
   sentinel_bootstrap_id=$(jq -r '.sentinel_id' "$RUNNER_TEMP/persistence-bootstrap-seed.json")

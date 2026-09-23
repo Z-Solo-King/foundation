@@ -307,7 +307,7 @@ async def _operations_chat_stream(env, payload, request):
     return body, status
 
 
-async def _operations_chatbot_diagnostic(env, request=None, operation="infrastructure_verify"):
+async def _operations_chatbot_diagnostic(env, request=None, operation="infrastructure_verify", payload=None):
     """Exercise the private chatbot routing/diagnostic boundary without provider execution."""
     operations = getattr(env, "OPERATIONS", None)
     if operations is None:
@@ -317,12 +317,20 @@ async def _operations_chatbot_diagnostic(env, request=None, operation="infrastru
         token = _bearer_token(request) if request is not None else None
         if token:
             headers["Authorization"] = f"Bearer {token}"
+        diagnostic_payload = {
+            "operation": operation,
+            "question": "Infrastructure diagnostic only; do not execute a model provider.",
+        }
+        if operation in {"persistence_seed", "persistence_verify"} and isinstance(payload, dict):
+            sentinel_id = str(payload.get("sentinel_id", "")).strip()
+            if sentinel_id:
+                diagnostic_payload["sentinel_id"] = sentinel_id
         upstream = await operations.fetch(
             _service_request(
                 "https://private/v1/diagnostics/chatbot",
                 method="POST",
                 headers=headers,
-                body=json.dumps({"operation": operation, "question": "Infrastructure diagnostic only; do not execute a model provider."}),
+                body=json.dumps(diagnostic_payload),
             )
         )
         body = await upstream.json()
@@ -475,7 +483,7 @@ class Default(WorkerEntrypoint):
                 return _authenticated_json(body, status=200 if body["ok"] else 503)
             if operation in {"persistence_seed", "persistence_verify"}:
                 private_body, private_status = await _operations_chatbot_diagnostic(
-                    self.env, request, operation=operation
+                    self.env, request, operation=operation, payload=payload
                 )
                 return _authenticated_json(private_body, status=private_status)
             return _authenticated_json({"ok": False, "error": "unsupported public diagnostic operation"}, status=400)

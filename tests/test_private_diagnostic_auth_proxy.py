@@ -40,6 +40,42 @@ def test_private_chatbot_diagnostic_forwards_bearer_auth():
     assert binding.requests[0].headers["Authorization"] == "Bearer secret"
 
 
+def test_persistence_verify_forwards_sentinel_identity():
+    binding = Binding()
+    env = SimpleNamespace(OPERATIONS=binding)
+    result, status = asyncio.run(
+        _operations_chatbot_diagnostic(
+            env,
+            Request("Bearer secret"),
+            operation="persistence_verify",
+            payload={"operation": "persistence_verify", "sentinel_id": "sentinel-123"},
+        )
+    )
+    assert status == 200
+    assert result["ok"] is True
+    assert len(binding.requests) == 1
+    forwarded = __import__("json").loads(binding.requests[0].body)
+    assert forwarded["operation"] == "persistence_verify"
+    assert forwarded["sentinel_id"] == "sentinel-123"
+
+
+def test_persistence_verify_omits_empty_sentinel_identity():
+    binding = Binding()
+    env = SimpleNamespace(OPERATIONS=binding)
+    result, status = asyncio.run(
+        _operations_chatbot_diagnostic(
+            env,
+            Request("Bearer secret"),
+            operation="persistence_verify",
+            payload={"operation": "persistence_verify", "sentinel_id": ""},
+        )
+    )
+    assert status == 200
+    assert result["ok"] is True
+    forwarded = __import__("json").loads(binding.requests[0].body)
+    assert "sentinel_id" not in forwarded
+
+
 def test_persistence_seed_operation_is_forwarded_verbatim():
     binding = Binding()
     env = SimpleNamespace(OPERATIONS=binding)
