@@ -5,6 +5,7 @@ OPERATIONS_REPOSITORY="Z-Solo-King/operations"
 OPERATIONS_REF="5338952a03dd850caca884b6995961d2baa20ba7"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
+ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"
 
 cleanup() {
   rm -rf "$RUNNER_TEMP/operations" "$RUNNER_TEMP/operations-secrets.env" "$RUNNER_TEMP/public-secrets.env" \
@@ -365,10 +366,10 @@ jq -e --arg expected "github:${OPERATIONS_REF}" '
 # The identical idempotency key is replayed after deployment to prove durable recovery across
 # the private-worker version boundary.
 chat_rollover_payload=$(jq -nc \
-  --arg chat_id "production-chat-rollover-${GITHUB_RUN_ID}" \
-  --arg request_id "production-chat-rollover-request-${GITHUB_RUN_ID}" \
+  --arg chat_id "production-chat-rollover-${ACCEPTANCE_RUN_ID}" \
+  --arg request_id "production-chat-rollover-request-${ACCEPTANCE_RUN_ID}" \
   '{chat_id:$chat_id,request_id:$request_id,message:"Return one concise sentence explaining why the public Worker uses an authenticated private service binding.",mode:"chat",strict_zero_cost_only:true}')
-chat_rollover_key="production-chat-rollover-${GITHUB_RUN_ID}"
+chat_rollover_key="production-chat-rollover-${ACCEPTANCE_RUN_ID}"
 chat_rollover_status=$(curl -sS --max-time 90 \
   -o "$RUNNER_TEMP/chat-rollover-before.json" -w '%{http_code}' \
   -H "Authorization: Bearer ${AUTH_TOKEN}" \
@@ -412,7 +413,7 @@ if [ "$persistence_bootstrap_deferred" = "true" ]; then
   cp "$RUNNER_TEMP/persistence-bootstrap-seed.json" .runtime/persistence-rollover-seed.json
 
   bootstrap_version_before="$operations_version_id"
-  (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:persistence-bootstrap-${GITHUB_RUN_ID}")
+  (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:persistence-bootstrap-${ACCEPTANCE_RUN_ID}")
 
   bootstrap_deployments_status=$(curl -sS -o "$RUNNER_TEMP/operations-bootstrap-deployments.json" -w '%{http_code}' \
     -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
@@ -468,10 +469,10 @@ fi
 # Exercise the real public-to-private conversational and research paths only after
 # both Workers are deployed and the private provenance gate has passed.
 live_chat_payload=$(jq -nc \
-  --arg chat_id "production-live-${GITHUB_RUN_ID}" \
-  --arg request_id "production-chat-${GITHUB_RUN_ID}" \
+  --arg chat_id "production-live-${ACCEPTANCE_RUN_ID}" \
+  --arg request_id "production-chat-${ACCEPTANCE_RUN_ID}" \
   '{chat_id:$chat_id,request_id:$request_id,message:"Give a concise explanation of why authenticated service bindings are used between Foundation and the private control plane.",mode:"chat",strict_zero_cost_only:true}')
-live_chat_key="production-chat-${GITHUB_RUN_ID}"
+live_chat_key="production-chat-${ACCEPTANCE_RUN_ID}"
 live_chat_status=$(curl -sS --max-time 90 \
   -o "$RUNNER_TEMP/live-chat.json" -w '%{http_code}' \
   -H "Authorization: Bearer ${AUTH_TOKEN}" \
@@ -501,17 +502,17 @@ live_chat_replay_status=$(curl -sS --max-time 30 \
   "${BASE_URL}/api/v1/chat")
 echo "POST /api/v1/chat replay -> HTTP ${live_chat_replay_status}"
 test "$live_chat_replay_status" = '200'
-jq -e --arg request_id "production-chat-${GITHUB_RUN_ID}" \
+jq -e --arg request_id "production-chat-${ACCEPTANCE_RUN_ID}" \
   '.ok == true and .request_id == $request_id and .response.response_id == ("chat-" + $request_id)' \
   "$RUNNER_TEMP/live-chat-replay.json" >/dev/null
 echo "Live chat idempotency acceptance: PASS"
 
 # True concurrent P0 duplicate acceptance: both requests must converge on one durable response.
 concurrent_chat_payload=$(jq -nc \
-  --arg chat_id "production-concurrent-${GITHUB_RUN_ID}" \
-  --arg request_id "production-concurrent-request-${GITHUB_RUN_ID}" \
+  --arg chat_id "production-concurrent-${ACCEPTANCE_RUN_ID}" \
+  --arg request_id "production-concurrent-request-${ACCEPTANCE_RUN_ID}" \
   '{chat_id:$chat_id,request_id:$request_id,message:"Return one concise sentence about authenticated service bindings.",mode:"chat",strict_zero_cost_only:true}')
-concurrent_chat_key="production-concurrent-${GITHUB_RUN_ID}"
+concurrent_chat_key="production-concurrent-${ACCEPTANCE_RUN_ID}"
 curl -sS --max-time 90 -o "$RUNNER_TEMP/concurrent-chat-1.json" -w '%{http_code}' \
   -H "Authorization: Bearer ${AUTH_TOKEN}" -H 'Content-Type: application/json' \
   -H "Idempotency-Key: ${concurrent_chat_key}" -d "$concurrent_chat_payload" "$BASE_URL/api/v1/chat" > "$RUNNER_TEMP/concurrent-chat-1.status" &
@@ -529,12 +530,12 @@ echo "Live concurrent chat idempotency acceptance: PASS"
 
 # Explicit governed policy denial must be BLOCKED, not a provider call or a transport error.
 policy_block_payload=$(jq -nc \
-  --arg chat_id "production-policy-${GITHUB_RUN_ID}" \
-  --arg request_id "production-policy-request-${GITHUB_RUN_ID}" \
+  --arg chat_id "production-policy-${ACCEPTANCE_RUN_ID}" \
+  --arg request_id "production-policy-request-${ACCEPTANCE_RUN_ID}" \
   '{chat_id:$chat_id,request_id:$request_id,message:"https://example.com/",operation:"map",input_records:[{"id":"policy-probe"}],strict_zero_cost_only:true}')
 policy_block_status=$(curl -sS --max-time 30 -o "$RUNNER_TEMP/policy-block.json" -w '%{http_code}' \
   -H "Authorization: Bearer ${AUTH_TOKEN}" -H 'Content-Type: application/json' \
-  -H "Idempotency-Key: production-policy-${GITHUB_RUN_ID}" -d "$policy_block_payload" "$BASE_URL/api/v1/chat")
+  -H "Idempotency-Key: production-policy-${ACCEPTANCE_RUN_ID}" -d "$policy_block_payload" "$BASE_URL/api/v1/chat")
 test "$policy_block_status" = '200'
 jq -e '.ok == true and .response.status == "blocked" and .response.result_state == "BLOCKED" and .response.operation == "map"' "$RUNNER_TEMP/policy-block.json" >/dev/null
 echo "Live policy denial acceptance: PASS"
@@ -546,14 +547,14 @@ cp "$RUNNER_TEMP/concurrent-chat-2.json" .runtime/concurrent-chat-2.json
 cp "$RUNNER_TEMP/policy-block.json" .runtime/policy-block.json
 
 stream_payload=$(jq -nc \
-  --arg chat_id "production-stream-${GITHUB_RUN_ID}" \
-  --arg request_id "production-stream-request-${GITHUB_RUN_ID}" \
+  --arg chat_id "production-stream-${ACCEPTANCE_RUN_ID}" \
+  --arg request_id "production-stream-request-${ACCEPTANCE_RUN_ID}" \
   '{chat_id:$chat_id,request_id:$request_id,message:"Give a concise explanation of why authenticated service bindings are used between Foundation and the private control plane.",mode:"chat",strict_zero_cost_only:true}')
 stream_json_status=$(curl -sS --max-time 90 \
   -o "$RUNNER_TEMP/live-stream-json.json" -w '%{http_code}' \
   -H "Authorization: Bearer ${AUTH_TOKEN}" \
   -H 'Content-Type: application/json' \
-  -H "Idempotency-Key: production-stream-json-${GITHUB_RUN_ID}" \
+  -H "Idempotency-Key: production-stream-json-${ACCEPTANCE_RUN_ID}" \
   -d "${stream_payload}" \
   "${BASE_URL}/api/v1/chat")
 echo "POST /api/v1/chat with stream payload -> HTTP ${stream_json_status}"
@@ -563,7 +564,7 @@ test "$stream_json_status" = '200' || {
   cat "$RUNNER_TEMP/live-stream-json.json" || true
   exit 1
 }
-jq -e '.ok == true and .response.response_id == ("chat-" + ("production-stream-request-" + env.GITHUB_RUN_ID))' "$RUNNER_TEMP/live-stream-json.json" >/dev/null || {
+jq -e '.ok == true and .response.response_id == ("chat-" + ("production-stream-request-" + env.ACCEPTANCE_RUN_ID))' "$RUNNER_TEMP/live-stream-json.json" >/dev/null || {
   echo "stream-payload JSON response contract failed:"
   cat "$RUNNER_TEMP/live-stream-json.json" || true
   exit 1
@@ -575,7 +576,7 @@ stream_status=$(curl -sS --no-buffer --max-time 90 \
   -w '%{http_code}' \
   -H "Authorization: Bearer ${AUTH_TOKEN}" \
   -H 'Content-Type: application/json' \
-  -H "Idempotency-Key: production-stream-${GITHUB_RUN_ID}" \
+  -H "Idempotency-Key: production-stream-${ACCEPTANCE_RUN_ID}" \
   -d "${stream_payload}" \
   "${BASE_URL}/api/v1/chat/stream")
 echo "POST /api/v1/chat/stream -> HTTP ${stream_status}"
@@ -596,7 +597,7 @@ live_research_status=$(curl -sS --max-time 90 \
   -o "$RUNNER_TEMP/live-research.json" -w '%{http_code}' \
   -H "Authorization: Bearer ${AUTH_TOKEN}" \
   -H 'Content-Type: application/json' \
-  -H "Idempotency-Key: production-research-${GITHUB_RUN_ID}" \
+  -H "Idempotency-Key: production-research-${ACCEPTANCE_RUN_ID}" \
   -d "${live_research_payload}" \
   "${BASE_URL}/api/v1/research")
 echo "POST /api/v1/research -> HTTP ${live_research_status}"
