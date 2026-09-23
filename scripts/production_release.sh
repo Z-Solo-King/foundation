@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="c159ec37ff2cdce5f29dc3859a53dbd63b1ee2cf"
+OPERATIONS_REF="bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"
@@ -23,7 +23,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = 'c159ec37ff2cdce5f29dc3859a53dbd63b1ee2cf'
+test "$OPERATIONS_REF" = 'bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f'
 
 after_install_marker=''
 
@@ -521,11 +521,30 @@ curl -sS --max-time 90 -o "$RUNNER_TEMP/concurrent-chat-2.json" -w '%{http_code}
   -H "Authorization: Bearer ${AUTH_TOKEN}" -H 'Content-Type: application/json' \
   -H "Idempotency-Key: ${concurrent_chat_key}" -d "$concurrent_chat_payload" "$BASE_URL/api/v1/chat" > "$RUNNER_TEMP/concurrent-chat-2.status" &
 concurrent_pid_2=$!
+set +e
 wait "$concurrent_pid_1"
+concurrent_wait_1=$?
 wait "$concurrent_pid_2"
-test "$(cat "$RUNNER_TEMP/concurrent-chat-1.status")" = '200'
-test "$(cat "$RUNNER_TEMP/concurrent-chat-2.status")" = '200'
-jq -e --slurpfile second "$RUNNER_TEMP/concurrent-chat-2.json" '.ok == true and .response.response_id == ($second[0].response.response_id) and .response.result_state == ($second[0].response.result_state)' "$RUNNER_TEMP/concurrent-chat-1.json" >/dev/null
+concurrent_wait_2=$?
+set -e
+concurrent_status_1="$(cat "$RUNNER_TEMP/concurrent-chat-1.status" 2>/dev/null || true)"
+concurrent_status_2="$(cat "$RUNNER_TEMP/concurrent-chat-2.status" 2>/dev/null || true)"
+echo "Concurrent chat curl exit codes: request1=${concurrent_wait_1} request2=${concurrent_wait_2}"
+echo "Concurrent chat HTTP statuses: request1=${concurrent_status_1} request2=${concurrent_status_2}"
+if [ "$concurrent_wait_1" -ne 0 ] || [ "$concurrent_wait_2" -ne 0 ] || [ "$concurrent_status_1" != '200' ] || [ "$concurrent_status_2" != '200' ]; then
+  echo '--- concurrent-chat-1.body ---'
+  cat "$RUNNER_TEMP/concurrent-chat-1.json" 2>/dev/null || true
+  echo '--- concurrent-chat-2.body ---'
+  cat "$RUNNER_TEMP/concurrent-chat-2.json" 2>/dev/null || true
+  echo '--- end concurrent chat diagnostics ---'
+  exit 1
+fi
+if ! jq -e --slurpfile second "$RUNNER_TEMP/concurrent-chat-2.json" '.ok == true and .response.response_id == ($second[0].response.response_id) and .response.result_state == ($second[0].response.result_state)' "$RUNNER_TEMP/concurrent-chat-1.json" >/dev/null; then
+  echo 'Concurrent chat terminal convergence contract failed:'
+  cat "$RUNNER_TEMP/concurrent-chat-1.json" 2>/dev/null || true
+  cat "$RUNNER_TEMP/concurrent-chat-2.json" 2>/dev/null || true
+  exit 1
+fi
 echo "Live concurrent chat idempotency acceptance: PASS"
 
 # Explicit governed policy denial must be BLOCKED, not a provider call or a transport error.
