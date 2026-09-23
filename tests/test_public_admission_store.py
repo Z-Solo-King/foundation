@@ -131,6 +131,48 @@ def accepted_admission(lease):
 
 
 @pytest.mark.asyncio
+async def test_concurrent_same_event_id_rechecks_existing_event(monkeypatch):
+    db = FakeDB()
+    store = D1AdmissionStore(db)
+
+    existing = {
+        "event_id": "event-race",
+        "subject_fingerprint": "subject-1",
+        "route": "chat",
+        "window_start": 120,
+        "lease_expires_at": 180,
+        "released_at": None,
+    }
+
+    class ExistingDB(FakeDB):
+        def prepare(self, query):
+            if "SELECT event_id, window_start" in query:
+                statement = FakeStatement(query)
+                async def first():
+                    return existing
+                statement.first = first
+                return statement
+            return super().prepare(query)
+
+    store.db = ExistingDB()
+    async def lost_insert(*args, **kwargs):
+        return False
+    monkeypatch.setattr(store, "_insert_if_admissible", lost_insert)
+
+    decision, lease = await store.acquire(
+        subject_fingerprint="subject-1",
+        route=AdmissionRoute.CHAT,
+        policy=AdmissionPolicy(),
+        event_id="event-race",
+        now=120,
+    )
+
+    assert decision.allowed is True
+    assert decision.outcome.value == "accepted"
+    assert lease is None
+
+
+@pytest.mark.asyncio
 async def test_worker_chat_and_stream_release_admission_lease(monkeypatch):
     import worker
 
