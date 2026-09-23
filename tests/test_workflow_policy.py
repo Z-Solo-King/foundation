@@ -427,4 +427,8 @@ def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
         workflow = (WORKFLOW_ROOT / filename).read_text(encoding="utf-8")
         assert expected in workflow
         assert "50e642dfb05846963a82fe76f4f5fe085d4b9a8c" not in workflow
-
+def test_github_app_token_inputs_use_client_id():
+    for name, text in _workflow_texts().items():
+        if "actions/create-github-app-token@" in text:
+            assert "app-id: $" + "{{ secrets.OPERATIONS_APP_ID }}" not in text, name
+            assert "client-id: $" + "{{ secrets.OPERATIONS_APP_ID }}" in text, name
