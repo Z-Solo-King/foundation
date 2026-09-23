@@ -8,9 +8,9 @@
 
 - `main` is a live Git reference and must be queried before every mutation; this document does not freeze the current branch head.
 - Audited Foundation runtime implementation revision: `b1767a40c7b5f0b49429753365fa60dffe50119b`.
-- Audited Operations runtime implementation revision: `4967fb56c5fcd0f0f393d06b327476c886cf3e05`.
+- Audited Operations runtime implementation revision: `c159ec37ff2cdce5f29dc3859a53dbd63b1ee2cf`.
 - Documentation-only commits may advance `main` without changing those runtime implementation revisions.
-- Canonical production Operations pin: `4967fb56c5fcd0f0f393d06b327476c886cf3e05`.
+- Canonical production Operations pin: `c159ec37ff2cdce5f29dc3859a53dbd63b1ee2cf`.
 - Canonical nightly research Operations pin: `3a7e350ddd5648caf93f58651323425186544f66`.
 
 ## Current queue
