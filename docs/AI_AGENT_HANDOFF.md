@@ -2,13 +2,14 @@
 
 The following values are authoritative for the current handoff. Older dated checkpoints in this document are historical provenance only.
 
-- Foundation main: `978a2b0208cafeae8e740a07374ed78865a19e0b`
-- Operations main: `2d09b7306b1d383d3b715db789d199010c7bcb19`
-- Audited Foundation runtime implementation: `b1767a40c7b5f0b49429753365fa60dffe50119b`
-- Audited Operations production implementation: `4967fb56c5fcd0f0f393d06b327476c886cf3e05`
+- Foundation main: `2d830b5bcd8f18e0cd6b5690138bf70bbd8ec981`
+- Operations main: `91873d31b2afb4a8979149d80948b487322e1cef`
+- Audited Foundation runtime implementation: `e9a38063458b0a9a3eb29ea69438e12dc2440316`
+- Audited Operations production implementation: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
 - Audited Operations nightly research pin: `3a7e350ddd5648caf93f58651323425186544f66`
 - Foundation production deployment owner: GitHub Actions / `scripts/production_release.sh`
 - Operations remains private runtime/control-plane authority and must not own GitHub Actions.
+- Current open queue: Foundation #58/#157; Operations #145/#197/#340/#352/#385/#597/#603/#699/#711.
 - Remaining open issues are acceptance gates; do not infer live closure from source inspection or deterministic CI.
 
 ---
