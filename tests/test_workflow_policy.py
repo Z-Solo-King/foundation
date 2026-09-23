@@ -452,3 +452,7 @@ def test_live_extractor_benchmark_uses_case_mode_matrix_condition():
     assert "if: matrix.case.mode == 'browser'" in workflow
     assert "if: matrix.mode == 'http'" not in workflow
     assert "if: matrix.mode == 'browser'" not in workflow
+def test_live_extractor_benchmark_aggregates_root_receipts_only():
+    workflow = _workflow_texts()["live-extractor-benchmark.yml"]
+    assert "find ../benchmark-artifacts -type f -name 'receipts.jsonl'" in workflow
+    assert "find ../benchmark-artifacts -type f -name '*.jsonl'" not in workflow
