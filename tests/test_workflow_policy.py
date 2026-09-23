@@ -372,6 +372,15 @@ def test_canonical_operations_pin_matches_latest_migration_head():
 
 
 
+def test_coverage_runtime_matrix_uses_versioned_validation_tests():
+    workflow = _workflow_texts()["coverage-driven-runtime-matrix.yml"]
+    assert "validation_tools_ref:" in workflow
+    assert "VALIDATION_TOOLS_REF" in workflow
+    assert VALIDATION_TOOLS_REF in workflow
+    assert "Checkout versioned validation tests" in workflow
+    assert "Overlay exact validation test files" in workflow
+
+
 def test_coverage_runtime_matrix_validates_immutable_operations_pin():
     workflow = _workflow_texts()["coverage-driven-runtime-matrix.yml"]
     assert "Validate immutable Operations acceptance pin" in workflow
