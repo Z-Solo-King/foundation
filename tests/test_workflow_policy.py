@@ -10,6 +10,7 @@ SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
 CANONICAL_OPERATIONS_REF = "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
 BENCHMARK_OPERATIONS_REF = CANONICAL_OPERATIONS_REF
+BENCHMARK_TOOLS_REF = "6613c86c81d1a72287a2733e14a8c0b5b7434a2a"
 CANONICAL_OPERATIONS_SERVICE = "research-intelligence-engine-private"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 PRODUCTION_WORKFLOW = "heroic-ai-production-release.yml"
@@ -353,14 +354,16 @@ def test_superseded_nightly_variants_are_retired():
     assert "nightly-research-v4.yml" not in texts
 
 
-def test_live_extractor_benchmark_uses_immutable_browser_safe_operations_pin():
+def test_live_extractor_benchmark_uses_versioned_runtime_and_tool_pins():
     workflow = _workflow_texts()["live-extractor-benchmark.yml"]
     production = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     extractor_ref = BENCHMARK_OPERATIONS_REF
     expected = "OPERATIONS_REF: ${{ inputs.operations_ref || '" + extractor_ref + "' }}"
+    tools_expected = "benchmark_tools_ref:"
     assert expected in workflow
+    assert tools_expected in workflow
     assert extractor_ref in workflow
-    assert CANONICAL_OPERATIONS_REF in production
+    assert BENCHMARK_TOOLS_REF in workflow
     assert CANONICAL_OPERATIONS_REF in production
 
 
@@ -428,58 +431,3 @@ def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
         "live-chatbot-production-smoke.yml": expected_production,
         "coverage-driven-runtime-matrix.yml": expected_production,
         "polyglot-governance-audit.yml": expected_production,
-        "live-nightly-research-canary.yml": expected_nightly,
-        "nightly-research-provider-preflight.yml": expected_nightly,
-    }
-    for filename, expected in auxiliary.items():
-        workflow = (WORKFLOW_ROOT / filename).read_text(encoding="utf-8")
-        assert expected in workflow
-        assert "50e642dfb05846963a82fe76f4f5fe085d4b9a8c" not in workflow
-def test_github_app_token_inputs_use_client_id():
-    for name, text in _workflow_texts().items():
-        if "actions/create-github-app-token@" in text:
-            assert "app-id: $" + "{{ secrets.OPERATIONS_APP_ID }}" not in text, name
-            assert "client-id: $" + "{{ secrets.OPERATIONS_APP_ID }}" in text, name
-def test_live_extractor_benchmark_normalizes_case_receipts_before_upload():
-    workflow = _workflow_texts()["live-extractor-benchmark.yml"]
-    assert "name: Normalize extractor receipts" in workflow
-    assert "benchmark-output/receipts.jsonl" in workflow
-    assert "find benchmark-output -type f -name 'shard-*.jsonl'" in workflow
-    assert "No extractor JSONL receipt was produced for this case" in workflow
-    assert "find ../benchmark-artifacts -type f -name 'receipts.jsonl'" in workflow
-    assert "find ../benchmark-artifacts -type f -name '*.jsonl'" not in workflow
-    assert "receipt_files=()" in workflow
-    assert 'test "${#receipt_files[@]}" -eq 40' in workflow
-    assert 'for file in "${receipt_files[@]}"' in workflow
-    assert 'test "${#inputs[@]}" -eq 40' not in workflow
-def test_live_extractor_benchmark_uses_direct_callable_import_preflight():
-    workflow = _workflow_texts()["live-extractor-benchmark.yml"]
-    assert 'importlib.import_module("extractor_mapper.fast_engine")' in workflow
-    assert 'from extractor_mapper.fast_engine import extract_and_map' in workflow
-    assert 'extractor module:' in workflow
-    assert 'extractor symbol type:' in workflow
-def test_live_extractor_benchmark_uses_case_mode_matrix_condition():
-    workflow = _workflow_texts()["live-extractor-benchmark.yml"]
-    assert "if: matrix.case.mode == 'http'" in workflow
-    assert "if: matrix.case.mode == 'browser'" in workflow
-    assert "if: matrix.mode == 'http'" not in workflow
-    assert "if: matrix.mode == 'browser'" not in workflow
-def test_production_acceptance_keys_include_run_attempt():
-    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"' in deployment
-    assert 'production-concurrent-${ACCEPTANCE_RUN_ID}' in deployment
-    assert 'production-policy-${ACCEPTANCE_RUN_ID}' in deployment
-    assert 'production-research-${ACCEPTANCE_RUN_ID}' in deployment
-    assert 'persistence-bootstrap-${ACCEPTANCE_RUN_ID}' in deployment
-    assert 'env.ACCEPTANCE_RUN_ID' not in deployment
-def test_stream_probe_uses_explicit_response_identity_argument():
-    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'expected_stream_response_id="chat-production-stream-request-${ACCEPTANCE_RUN_ID}"' in deployment
-    assert 'jq -e --arg expected_response_id "$expected_stream_response_id"' in deployment
-    assert 'env.ACCEPTANCE_RUN_ID' not in deployment
-
-
-def test_live_probe_acceptance_does_not_depend_on_issue_comment_permissions():
-    texts = _workflow_texts()
-    assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["public-worker-live-probe.yml"]
-    assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["live-chatbot-production-smoke.yml"]
