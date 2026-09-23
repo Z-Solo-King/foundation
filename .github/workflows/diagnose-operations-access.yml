@@ -1,0 +1,97 @@
+name: Diagnose deep-scan wrapper
+
+'on':
+  push:
+    branches:
+      - fix/nightly-research-topic-type-contract-20260923
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - id: foundation
+        continue-on-error: true
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: app
+        continue-on-error: true
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - id: operations
+        continue-on-error: true
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: main
+          token: ${{ steps.app.outputs.token }}
+          path: operations
+      - id: python
+        continue-on-error: true
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - id: matrix
+        continue-on-error: true
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          from tests.test_open_issue_polyglot_scan import (
+              test_open_issue_matrix_covers_all_issues_and_four_lanes,
+              test_open_issue_scan_methods_are_broader_than_language_only_checks,
+              test_all_open_issue_policies_have_lane_coverage_and_requirements,
+              test_open_issue_surface_map_matches_scan_contract,
+          )
+          test_open_issue_matrix_covers_all_issues_and_four_lanes()
+          test_open_issue_scan_methods_are_broader_than_language_only_checks()
+          test_all_open_issue_policies_have_lane_coverage_and_requirements()
+          test_open_issue_surface_map_matches_scan_contract()
+          print("PASS")
+          PY
+      - id: scanner
+        continue-on-error: true
+        working-directory: operations
+        run: |
+          mkdir -p .runtime/wrapper
+          python tools/open_issue_polyglot_scan.py             --foundation "$GITHUB_WORKSPACE"             --operations "$GITHUB_WORKSPACE/operations"             --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_52.json"             --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json"             --lane L1             --output ".runtime/wrapper/L1.json"
+      - id: provenance
+        continue-on-error: true
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          lane="L1"
+          workspace=Path(os.environ["GITHUB_WORKSPACE"])
+          operations_root=workspace/"operations"
+          path=Path(".runtime/wrapper")/"L1.json"
+          payload=json.loads(path.read_text())
+          payload["foundation_revision"]=subprocess.check_output(["git","-C",str(workspace),"rev-parse","HEAD"],text=True).strip()
+          payload["operations_revision"]=subprocess.check_output(["git","-C",str(operations_root),"rev-parse","HEAD"],text=True).strip()
+          path.write_text(json.dumps(payload,indent=2)+"\n")
+          print(json.dumps(payload,indent=2))
+          PY
+      - name: report
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > report.md <<EOF
+          ## Deep-scan wrapper diagnostic
+          - foundation: ${{ steps.foundation.outcome }}
+          - operations_app: ${{ steps.app.outcome }}
+          - operations_checkout: ${{ steps.operations.outcome }}
+          - python: ${{ steps.python.outcome }}
+          - matrix_contract: ${{ steps.matrix.outcome }}
+          - scanner_L1: ${{ steps.scanner.outcome }}
+          - provenance_L1: ${{ steps.provenance.outcome }}
+          EOF
+          gh pr comment 1011 --repo "Z-Solo-King/foundation" --body-file report.md
