@@ -9,6 +9,7 @@ name: One-shot nightly pin synchronization
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   sync:
@@ -18,10 +19,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - name: Synchronize nightly Operations pin and remove helper
+      - name: Prepare repair branch and PR
         env:
           BRANCH: fix/nightly-research-topic-type-contract-20260923
           NEW_REF: ec43fcaac634895deebeb5c77b4a42d54ef664f4
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           python - "$NEW_REF" <<'PY'
@@ -46,12 +48,13 @@ jobs:
               for old, replacement in replacements.items():
                   text = text.replace(old, replacement)
               path.write_text(text, encoding="utf-8")
-          print(f"synchronized nightly Operations revision to {new_ref}")
           PY
-          rm -f .github/workflows/one-shot-nightly-pin-sync.yml
+          repair_branch="repair/nightly-pin-sync-${GITHUB_RUN_ID}"
+          git switch --create "$repair_branch"
+          git rm -f .github/workflows/one-shot-nightly-pin-sync.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .github/workflows/nightly-multi-agent-research-v2.yml                   tests/test_nightly_research_matrix.py                   tests/test_fresh_workflow_identities.py                   tests/test_nightly_research_workflow_contract.py                   tests/test_workflow_policy.py                   .github/workflows/one-shot-nightly-pin-sync.yml
-          git diff --cached --quiet && { echo 'No nightly pin changes required'; exit 0; }
+          git add .github/workflows/nightly-multi-agent-research-v2.yml                   tests/test_nightly_research_matrix.py                   tests/test_fresh_workflow_identities.py                   tests/test_nightly_research_workflow_contract.py                   tests/test_workflow_policy.py
           git commit -m "fix: synchronize nightly Operations pin with canonical main"
-          git push origin "HEAD:${BRANCH}"
+          git push --set-upstream origin "$repair_branch"
+          gh pr create             --repo "${GITHUB_REPOSITORY}"             --base "$BRANCH"             --head "$repair_branch"             --title "fix: synchronize nightly Operations pin with canonical main"             --body "Updates the nightly research immutable Operations pin and its synchronized Foundation regression assertions. Base branch remains the topic/type contract PR."
