@@ -1,45 +1,124 @@
-# Current Source of Truth — 2026-09-23 Runtime Reconciliation
+# Current Source of Truth — 2026-09-24 GitHub Handoff
 
 **Status:** CURRENT  
-**Live Git reconciliation:** 2026-09-23
+**Reconciliation timestamp:** 2026-09-24 00:34 IST  
+**Authority:** live GitHub refs + current workflow receipts; historical sections below are provenance only.
 
-## Current live revisions
+## Family repositories
 
-- Foundation `main`: `1c7e7e99a5229fc655b12bef782a2f2d05d8990a`
-- Operations `main`: `f0143668eb0283c9e9b6ceab92f6644f78d2ede1`
-- Public Worker deployed provenance: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
-- Private Worker currently deployed provenance: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
-- Production release target Operations revision: `1a12b98981f52de207fa8626cf2e1f5ad06659be`
-- Production release: Foundation canonical release #483 is in progress; do not claim the target revision is deployed until its final receipt passes.
+- Foundation: `Z-Solo-King/foundation`
+- Operations: `Z-Solo-King/operations`
+- Foundation owns public-safe contracts, deterministic public core, public Worker/API, GitHub Actions and the sole canonical production deployment.
+- Operations owns the private runtime/control plane.
+- Operations must remain free of `.github/workflows`.
+- Do not enable Cloudflare Workers Builds or Deploy Hooks as competing deployment authorities.
+
+## GitHub refs observed at handoff
+
+- Foundation `main`: `bf49aeaa282f59105ba163f8f33419241b10b475`
+- Operations `main`: `0589065d35bc9da39b17b36f93484236f444a508`
+- Production Operations target in Foundation release script: `1a12b98981f52de207fa8626cf2e1f5ad06659be`
 - Nightly research Operations pin: `3a7e350ddd5648caf93f58651323425186544f66`
+
+These are the refs observed immediately before this documentation synchronization. The documentation commits themselves may advance `main`; query GitHub `main` for the post-sync live head.
+
+## Runtime/deployment state
+
+- Last verified public Worker provenance: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
+- Last verified private Worker provenance: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
+- Canonical production release #485 (run ID `35906279987`) failed before deployment, during the cross-repository semantic audit because the Operations family state lacked `repositories.*.last_audited_main_sha`.
+- Therefore the production target `1a12b98981f52de207fa8626cf2e1f5ad06659be` must not be described as deployed from that run.
+- The private Worker remains on the last verified deployed revision until a later canonical release passes.
 
 ## Current open-issue queue
 
-10 actual open issues:
-- Foundation: #58, #157
-- Operations: #699, #711, #603, #597, #385, #352, #340, #145
-- Closed: Operations #197; Foundation #452
+**9 actual open issues:**
 
-## Current evidence
+Foundation:
+- #58 — exhaustive family coverage/meta tracker
+- #157 — complete 24-program nightly Heroic AI research
 
-- Extractor benchmark: latest completed 40-case run #340 is PASS (40/40 jobs, provenance 1.0, unstable repeated groups 0). Fresh post-merge run #344 is queued.
-- Open-issue deep scan: run #334 is PASS; 10 active issues plus explicit historical #197 regression coverage, four lanes with 11 cases each.
-- Coverage-driven runtime matrix: fresh post-merge run #315 is queued; previous deterministic mainline evidence is clean.
-- Maintenance: Operations main now contains the #145 fail-closed Cron receipt fix; live closure still requires an approved Cron receipt from the deployed target revision.
-- Nightly research: contract checks pass, but live provider preflight remains blocked because the authorized research endpoint/API key/model configuration is unavailable to the workflow.
-- Provider streaming, recovery, D1 governance and migration issues remain explicit L4/evidence gates.
+Operations:
+- #145 — periodic maintenance tick
+- #340 — governed provider streaming/cancellation
+- #385 — terminalization/recovery
+- #597 — mapper migration evidence
+- #603 — AI-model/tooling portability evidence
+- #699 — aggregate audit tracker
+- #711 — DurableResourceLedger runtime/D1 evidence
+
+Closed since the prior 10-issue checkpoint:
+- Operations #352 — extractor/mapper reliability and replay acceptance
+- Operations #197 — chat/conversational runtime acceptance
+
+Open PRs observed at handoff: **0** in both repositories.
+
+## Latest evidence
+
+- Extractor benchmark #346 (run ID `35906280210`): **PASS**; 40/40 case jobs, quality gate PASS, provenance completeness 1.0, route provenance 1.0, zero unstable repeated groups, zero missing-key rows, zero invalid-resource rows.
+- Open-issue polyglot deep scan #338 (run ID `35906280067`): **PASS**; 10 active issues plus one explicitly historical #197 regression case per lane, four lanes with 11 cases each.
+- Polyglot governance audit #103: **PASS**.
+- Coverage-driven runtime matrix #317 (run ID `35906280318`): in progress at handoff.
+- Live chatbot production smoke #55 (run ID `35906280121`): in progress at handoff.
+- Nightly multi-agent research #876 (run ID `35906297317`): failed before provider execution.
+- Nightly provider preflight #56 (run ID `35906280013`): failed because `RESEARCH_LLM_ENDPOINT`, `RESEARCH_LLM_API_KEY`, and `RESEARCH_LLM_MODEL` are unset.
+- Live nightly canary #54 (run ID `35906280194`): failed for the same preflight blocker.
+- Production release #485: failed before deployment for the family semantic-audit snapshot contract, not because the target Worker deployment was rejected.
+
+## #157 credential handoff
+
+The current nightly workflow separates GitHub identity, private-Operations access and research-provider configuration.
+
+Already present:
+- `OPERATIONS_APP_ID`
+- `OPERATIONS_APP_PRIVATE_KEY`
+
+Required for live research preflight:
+- `RESEARCH_LLM_ENDPOINT` — provider endpoint/configuration value
+- `RESEARCH_LLM_API_KEY` — external research-provider credential
+- `RESEARCH_LLM_MODEL` — provider model/configuration value
+
+Operational interpretation:
+- Do not create a cross-service “master token”.
+- The GitHub App remains the private Operations trust boundary.
+- The research provider remains its own authentication issuer.
+- The minimal new **secret** required for the current #157 blocker is the research-provider API key; endpoint/model are configuration values where the provider permits non-secret configuration.
+- Do not repurpose `GITHUB_TOKEN`, `AUTH_TOKEN`, or `CLOUDFLARE_API_TOKEN` across these trust domains.
+
+## Recent repository repairs carried into this handoff
+
+- Operations #833: fixed case-sensitive transient D1 fault injection in the idempotency test harness.
+- Foundation #1057: corrected the live extractor benchmark runtime pin.
+- Foundation #1058: separated deterministic scenario outcomes from live-probe outcomes.
+- Foundation #1060: decoupled benchmark evaluator tooling from the production runtime.
+- Foundation #1062: decoupled coverage validation tooling from the production runtime.
+- Foundation #1063: separated nightly migration-review tooling from the research runtime.
+- Operations #836: canonicalized browser benchmark receipts.
+- Operations #837/#838: synchronized issue inventory and audit fixtures after closing #197.
+- Operations #839/#841: aligned promotion/scanner contracts with current Operations APIs.
+- Operations #844: made scheduled maintenance fail closed and emit revision-bound Cron receipts.
+- Foundation #1069: prepared promotion of the maintenance-capable Operations revision and release identity injection; canonical release #485 exposed the missing family snapshot fields.
+- Operations #840: removed the closed #197 governance rule.
+- Operations #841: made the open-issue scanner inventory-driven.
+- Operations #844: made the scheduled maintenance path fail closed and emit provenance-bound receipts.
 
 ## Evidence boundary
 
 `L0 hypothesis -> L1 source -> L2 repository -> L3 GitHub Actions/control-plane -> L4 approved runtime/production`
 
-Never upgrade source/test/contract evidence into L4 certification.
+Never upgrade source inspection, unit tests, dry-runs or contract-only runs into L4 runtime certification.
 
-## Synchronization
+## Next-chat operating rules
 
-Refresh GitHub `main` heads and Cloudflare deployment receipts before new production claims. Runtime receipts outrank historical checkpoints.
+1. Query both `main` refs before any mutation.
+2. Treat the production Operations pin and nightly research pin as separate immutable authorities.
+3. Use parallel lanes for independent issue-specific evidence, but do not duplicate shared root fixes.
+4. Close an issue only when its explicit acceptance receipt exists.
+5. Record external-provider blockers without manufacturing evidence.
+6. Treat the current GitHub ref and current workflow receipts as higher authority than older dated comments.
 
 ---
+
 ---
 # Historical checkpoint — 2026-09-23 Live Reconciliation (superseded)
 
