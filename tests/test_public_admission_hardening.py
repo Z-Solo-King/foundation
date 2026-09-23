@@ -84,6 +84,23 @@ def test_chat_admission_rejects_metadata_and_history_amplification():
         ChatRequest("c", "r", "m", history=history).validate()
 
 
+def test_chat_admission_accepts_governed_operation_fields():
+    request = ChatRequest(
+        "c",
+        "r",
+        "https://example.com/",
+        operation="map",
+        input_records=({"id": "policy-probe"},),
+    )
+    request.validate()
+
+    with pytest.raises(ValueError, match="unsupported chat operation"):
+        ChatRequest("c", "r", "m", operation="unsupported").validate()
+
+    with pytest.raises(ValueError, match="input_records must be a list or tuple"):
+        ChatRequest("c", "r", "m", operation="map", input_records="bad").validate()
+
+
 def test_auth_requires_explicit_development_bypass():
     request = Request({}, {})
     assert authorized(request, type("Env", (), {"ENVIRONMENT": "development", "AUTH_TOKEN": None, "LOCAL_DEVELOPMENT_AUTH_BYPASS": "true"})()) is True
