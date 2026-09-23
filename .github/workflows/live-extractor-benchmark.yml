@@ -10,6 +10,11 @@ on:
         required: false
         default: bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f
         type: string
+      benchmark_tools_ref:
+        description: Exact Operations revision containing benchmark evaluator tooling
+        required: false
+        default: 6613c86c81d1a72287a2733e14a8c0b5b7434a2a
+        type: string
 
 permissions:
   contents: read
@@ -72,6 +77,7 @@ jobs:
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
       OPERATIONS_REF: ${{ inputs.operations_ref || 'bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f' }}
+      BENCHMARK_TOOLS_REF: ${{ inputs.benchmark_tools_ref || '6613c86c81d1a72287a2733e14a8c0b5b7434a2a' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Create Operations read token
@@ -271,6 +277,14 @@ jobs:
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
+      - name: Checkout versioned benchmark tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.benchmark_tools_ref || '6613c86c81d1a72287a2733e14a8c0b5b7434a2a' }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: benchmark-tools
+
       - name: Download all case artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
@@ -280,6 +294,8 @@ jobs:
 
       - name: Build aggregate quality report
         working-directory: operations
+        env:
+          PYTHONPATH: ${{ github.workspace }}/benchmark-tools:${{ github.workspace }}/operations
         run: |
           set -euo pipefail
           receipt_files=()
