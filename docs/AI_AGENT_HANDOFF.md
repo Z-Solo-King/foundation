@@ -1,23 +1,23 @@
 # 2026-09-23 CURRENT AUTHORITY OVERRIDE
 
-The values below are the current family state. Older dated sections are historical provenance only.
+Current family state:
+- Foundation main: `121ff5017c6b11ebc103dbbd26bdffe639fcc8cb`
+- Operations main: `b47aa056f50d27df9b5f552495a6cd862ae8a697`
+- Public Worker deployed provenance: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
+- Private Worker production provenance: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
+- Nightly research Operations pin: `3a7e350ddd5648caf93f58651323425186544f66`
+- Current open issue queue: Foundation #58/#157; Operations #145/#197/#340/#352/#385/#597/#603/#699/#711
+- Open implementation PRs: 0
+- Open PRs after the completed synchronization merges: 0
+- Latest completed nightly research #861: blocked before provider execution; #862 is the next scheduled run and remains provider-gated
+- Latest completed extractor benchmark #330: failed using stale Operations #830 (`246e563...`); corrected benchmark #333 is queued against `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
+- Coverage matrix #301: cancelled after the follow-up commit; corrected #302 is queued against `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
+- Current deployed public Worker probe on `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`: PASS
+- Full L4 runtime certification remains evidence-gated
 
-- Foundation main: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
-- Operations main: `804981445fcabe770fc236fd27a650cb6ba183d0`
-- Foundation runtime/deployment provenance: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
-- Operations production runtime/deployment provenance: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
-- Operations nightly research pin: `3a7e350ddd5648caf93f58651323425186544f66`
-- Public Worker version observed: `1fe570c2-2ecb-472a-8713-773786d8e99a`
-- Private Worker version observed: `1eea8019-9b90-4c61-aac9-13563d4b5c9e`
-- Current open issue queue: Foundation #58/#157; Operations #145/#197/#340/#352/#385/#597/#603/#699/#711.
-- No open implementation PRs. Foundation #1049 is the only open documentation PR.
-- Nightly research #861 is blocked before provider execution.
-- Extractor benchmark #330 failed its quality gate and is additionally pinned to Operations #830 (`246e563...`), so it is not current-main evidence.
-- Coverage matrix #299 has one failing scenario: idempotency.
-- Full L4 runtime certification remains evidence-gated.
+Older dated checkpoints remain historical provenance only.
 
-The authoritative machine-readable snapshot is `docs/FAMILY_SYNC_STATE.json`.
-
+---
 ---
 ---
 

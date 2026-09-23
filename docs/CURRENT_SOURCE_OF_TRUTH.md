@@ -6,50 +6,40 @@
 
 ## Current repository revisions
 
-- Foundation `main`: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
-- Operations `main`: `804981445fcabe770fc236fd27a650cb6ba183d0`
-- Foundation runtime/deployment revision observed in production: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
-- Canonical production Operations pin actually deployed: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
+- Foundation `main`: `121ff5017c6b11ebc103dbbd26bdffe639fcc8cb`
+- Operations `main`: `b47aa056f50d27df9b5f552495a6cd862ae8a697`
+- Public Worker deployed provenance: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
+- Private Worker production provenance: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
 - Canonical nightly research Operations pin: `3a7e350ddd5648caf93f58651323425186544f66`
 
-The Operations production pin is intentionally separate from Operations `main`; current `main` contains later repository work.
-
-## Cloudflare runtime state
-
-- Public Worker: `research-intelligence-engine-public` — 100% current deployment, provenance `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`, version `1fe570c2-2ecb-472a-8713-773786d8e99a`.
-- Private Worker: `research-intelligence-engine-private` — 100% current deployment, provenance `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`, version `1eea8019-9b90-4c61-aac9-13563d4b5c9e`, cron `*/15 * * * *`.
-- The private Worker is not synchronized to Operations `main`; this is a controlled production-pin divergence.
+Repository heads and deployed immutable runtime pins are intentionally separate.
 
 ## Current queue
 
-- 11 open issues; 0 open implementation PRs.
-- Foundation: #58, #157.
-- Operations: #145, #197, #340, #352, #385, #597, #603, #699, #711.
-- Foundation #1049 is the only open PR and is documentation-only.
+11 open issues:
+- Foundation: #58, #157
+- Operations: #145, #197, #340, #352, #385, #597, #603, #699, #711
 
-## Current evidence
+No open implementation PRs remain.
 
-- Nightly multi-agent research #861: **BLOCKED/FAIL** before provider execution. Three lanes × eight programs = 24 slots; all lanes stopped at preflight. The retained diagnosis and lane-status artifacts explicitly forbid treating this run as real research.
-- Nightly research contract #2302: **PASS**; this validates workflow contracts, not provider-backed research.
-- Live extractor benchmark #330: **FAIL**. Quality report: 40 receipts; 4 `ok`, 32 `empty`, 4 `blocked`; completion rate 10%; provenance completeness 100%; one unstable repeated group. All case manifests used Operations `246e563e...` (#830).
-- Coverage matrix #299: **FAIL**. 19/20 scenario artifacts pass; the idempotency artifact fails `test_initial_claim_retries_transient_d1_failure`. The stream-contract and research-runtime artifacts themselves report passed, so the workflow-level job classification needs reconciliation.
-- Production release/observer jobs can be green while L4 acceptance remains open; runtime acceptance must use the required production receipts.
+## Current CI / evidence
 
-## Known current CI/data problems
-
-1. The extractor benchmark workflow still defaults to Operations `246e563e...` (#830). Current Operations `main` is `804981445fcabe770fc236fd27a650cb6ba183d0` (#831), and production is `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`. The benchmark therefore does not currently prove either latest-main or production-pin behavior.
-2. The coverage receipt and workflow job summary disagree on which scenarios failed; the artifact truth needs to be reconciled before using the aggregate result as an issue-closure receipt.
-3. Nightly research cannot produce live findings until the authorized research endpoint, API key and model configuration are supplied to GitHub Actions.
+- Nightly research #861: BLOCKED before provider execution; the required research endpoint/API key/model remain absent. Run #862 is the newer scheduled run.
+- Nightly contract #2302: PASS; contract-only evidence.
+- Extractor benchmark #330: FAIL on the old Operations #830 (`246e563...`). The workflow default is now corrected to the canonical production pin `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`; run #333 is the fresh benchmark.
+- Coverage matrix #299: deterministic idempotency test-fixture failure. Operations #833 corrected the case-sensitive matcher and merged. Run #301 was cancelled; corrected #302 is queued.
+- Live Worker probe on deployed Foundation `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`: PASS. New main-push runtime checks are queued for current source.
+- Full L4 runtime acceptance remains separate from repository CI.
 
 ## Evidence boundary
 
 `L0 hypothesis -> L1 source -> L2 repository -> L3 GitHub Actions/control-plane -> L4 approved runtime/production`
 
-Do not upgrade source, tests, dry-runs or successful contract jobs into L4 certification.
+Never upgrade source/test/contract evidence into L4 certification.
 
-## Synchronization rule
+## Synchronization
 
-Refresh live GitHub `main` refs and the Cloudflare runtime receipt before mutations or new production claims. Runtime/deployment receipts outrank historical checkpoints.
+Refresh live `main` heads and Cloudflare deployment receipts before new production claims. Runtime receipts outrank historical checkpoints.
 
 ---
 # Historical checkpoint — 2026-09-23 Live Reconciliation (superseded)

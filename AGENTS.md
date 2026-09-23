@@ -1,31 +1,28 @@
 ## 2026-09-23 CURRENT AUTHORITY RECONCILIATION
 
 **Live main heads verified:**
-- Foundation main: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
-- Operations main: `804981445fcabe770fc236fd27a650cb6ba183d0`
+- Foundation main: `121ff5017c6b11ebc103dbbd26bdffe639fcc8cb`
+- Operations main: `b47aa056f50d27df9b5f552495a6cd862ae8a697`
 
-**Runtime/deployment pins actually observed:**
-- Foundation public Worker provenance: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
-- Operations production Worker provenance: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
-- Operations nightly research pin: `3a7e350ddd5648caf93f58651323425186544f66`
+**Runtime/deployment provenance actually observed:**
+- Public Worker: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
+- Private production Worker: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
+- Nightly research pin: `3a7e350ddd5648caf93f58651323425186544f66`
 
-**Cloudflare production observations:**
-- `research-intelligence-engine-public`: 100% latest deployment at Foundation `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`.
-- `research-intelligence-engine-private`: 100% latest deployment at Operations `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`; cron `*/15 * * * *`.
-- The private Worker is intentionally behind Operations `main`; do not silently promote `804981445fcabe770fc236fd27a650cb6ba183d0` to production.
+**Current queue:** Foundation #58/#157; Operations #145/#197/#340/#352/#385/#597/#603/#699/#711.
+- No open implementation PRs.
+- No open documentation PRs after the completed synchronization merges.
 
-**Current queue:** 11 open issues: Foundation #58/#157; Operations #145/#197/#340/#352/#385/#597/#603/#699/#711.
-- 0 open implementation PRs.
-- Foundation PR #1049 is the only open PR and is documentation-only.
+**Current evidence:**
+- Latest completed nightly research #861 is blocked before provider execution; the newer scheduled run #862 is in progress.
+- Latest completed extractor benchmark #330 failed its gate and used stale Operations #830 (`246e563...`); corrected benchmark run #333 has been queued from the fixed main branch.
+- Coverage matrix #301 was cancelled when the follow-up commit arrived; corrected coverage run #302 is queued from the fixed main branch.
+- Current live Worker probe on deployed Foundation `c465ed8...` has passed; new main-push runtime checks are queued against the newer repository head.
+- Full L4 certification remains evidence-gated.
 
-**Latest evidence:**
-- Nightly research #861: FAIL / blocked before provider execution; all 24 program slots were skipped after preflight.
-- Nightly research contract #2302: PASS; contract-only evidence.
-- Extractor benchmark #330: FAIL; 40-case quality report = 4 ok, 32 empty, 4 blocked, 10% completion, 1 unstable repeated group. The run used Operations `246e563...` (#830), not the current main or production pin.
-- Coverage matrix #299: FAIL; 19/20 scenario artifacts pass, with idempotency failing on `test_initial_claim_retries_transient_d1_failure`. Stream/research scenario artifacts are internally marked passed despite workflow-level failure classification.
+**Deployment authority:** Foundation GitHub Actions is the sole CI/CD and production deployment owner. Operations must remain without GitHub-hosted workflows. Do not re-enable Cloudflare Workers Builds or Deploy Hooks.
 
-**Deployment authority:** Foundation GitHub Actions remains the sole CI/CD/production deployment owner. Operations must remain free of GitHub-hosted workflows. Do not re-enable competing Cloudflare Workers Builds or Deploy Hooks.
-
+---
 ---
 ---
 

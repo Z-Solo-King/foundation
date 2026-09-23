@@ -3,27 +3,32 @@
   "status": "CURRENT_RUNTIME_RECONCILIATION",
   "audited_at": "2026-09-23",
   "live_main": {
-    "foundation": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2",
-    "operations": "804981445fcabe770fc236fd27a650cb6ba183d0"
+    "foundation": "121ff5017c6b11ebc103dbbd26bdffe639fcc8cb",
+    "operations": "b47aa056f50d27df9b5f552495a6cd862ae8a697"
   },
   "runtime_pins": {
     "foundation_runtime": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2",
     "production_operations": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f",
-    "nightly_research_operations": "3a7e350ddd5648caf93f58651323425186544f66"
+    "nightly_research_operations": "3a7e350ddd5648caf93f58651323425186544f66",
+    "foundation_deployed": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2"
   },
   "cloudflare": {
     "public_worker": {
       "name": "research-intelligence-engine-public",
       "deployed_provenance": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2",
       "deployment_version": "1fe570c2-2ecb-472a-8713-773786d8e99a",
-      "deployment_percent": 100
+      "deployment_percent": 100,
+      "provenance": "c465ed8cff860cf0f1a1d6de6655aaf9594f02d2",
+      "percent": 100
     },
     "private_worker": {
       "name": "research-intelligence-engine-private",
       "deployed_provenance": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f",
       "deployment_version": "1eea8019-9b90-4c61-aac9-13563d4b5c9e",
       "deployment_percent": 100,
-      "cron": "*/15 * * * *"
+      "cron": "*/15 * * * *",
+      "provenance": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f",
+      "percent": 100
     }
   },
   "current_queue": {
@@ -47,46 +52,46 @@
     "foundation_open_prs": [
       1049
     ],
-    "operations_open_prs": []
+    "operations_open_prs": [],
+    "open_pr_count": 0
   },
   "latest_evidence": {
-    "nightly_multi_agent_research": {
-      "run_number": 861,
-      "conclusion": "failure",
-      "state": "blocked_before_execution",
+    "nightly_completed": {
+      "run": 861,
+      "state": "blocked_before_provider_execution",
+      "provider_execution": false,
       "programs": 24,
       "lanes": 3,
-      "provider_execution": false,
-      "artifact": "nightly-diagnosis",
-      "operations_revision": "3a7e350ddd5648caf93f58651323425186544f66"
+      "operations_ref": "3a7e350ddd5648caf93f58651323425186544f66"
     },
-    "nightly_research_contract": {
-      "run_number": 2302,
-      "conclusion": "success"
+    "nightly_current": {
+      "run": 862,
+      "state": "in_progress"
     },
-    "extractor_benchmark": {
-      "run_number": 330,
-      "conclusion": "failure",
+    "extractor_completed": {
+      "run": 330,
+      "state": "failed_stale_pin",
       "receipts": 40,
-      "status_counts": {
-        "ok": 4,
-        "empty": 32,
-        "blocked": 4
-      },
-      "completion_rate": 0.1,
-      "provenance_completeness": 1,
-      "unstable_repeated_groups": 1,
-      "benchmark_operations_revision": "246e563e354c43962c988cf2794cb09ccd4fe723"
+      "operations_ref": "246e563e354c43962c988cf2794cb09ccd4fe723"
     },
-    "coverage_matrix": {
-      "run_number": 299,
-      "conclusion": "failure",
-      "scenario_count": 20,
-      "passed_count": 19,
-      "failed_count": 1,
-      "failing_scenario": "idempotency",
-      "failing_test": "test_initial_claim_retries_transient_d1_failure",
-      "failing_operations_revision": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
+    "extractor_current": {
+      "run": 333,
+      "state": "queued",
+      "operations_ref": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
+    },
+    "coverage_previous": {
+      "run": 299,
+      "state": "failed_fixture",
+      "test_failure": "initial_claim_retries_transient_d1_failure"
+    },
+    "coverage_cancelled": {
+      "run": 301,
+      "state": "cancelled"
+    },
+    "coverage_current": {
+      "run": 302,
+      "state": "queued",
+      "operations_ref": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
     }
   },
   "known_findings": [
@@ -110,5 +115,10 @@
     "github_actions_is_foundation_deployment_authority": true,
     "operations_has_no_current_github_workflows": true,
     "no_competing_cloudflare_build_or_deploy_authority": true
-  }
+  },
+  "fixed_repository_defects": [
+    "Operations #833 fixed case-sensitive transient D1 contention injection in tests/test_chat_idempotency.py.",
+    "Foundation #1058 separates deterministic scenario test evidence from live production probe evidence.",
+    "Foundation #1057 aligns the live extractor benchmark default and policy guard with the canonical production Operations pin."
+  ]
 }
