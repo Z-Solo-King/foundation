@@ -6,37 +6,34 @@
 
 ## Current repository revisions
 
-- Foundation main: 2fee4df2b2fdaf7a4676268ab509e7366b703888
-- Operations main: 5338952a03dd850caca884b6995961d2baa20ba7
-- Canonical production Operations revision: 5338952a03dd850caca884b6995961d2baa20ba7
-- Canonical nightly research Operations revision: 3a7e350ddd5648caf93f58651323425186544f66
+- Foundation main: 9ba648fe69bb8635be75b10210ec87c58563bb79
+- Operations main: 29f3484ab7beeaf04fa474da8aa0933b50b6d2fa
+- Canonical production Operations pin: 1e66e9dc85552f484b91041ff95783db82b73332
+- Canonical nightly research Operations pin: 3a7e350ddd5648caf93f58651323425186544f66
 
-Production and nightly runtime revisions are immutable pins and are intentionally separate from floating Operations main.
+Production and nightly runtime revisions are immutable pins and remain distinct from floating repository heads.
 
 ## Current queue
 
-Live GitHub issue search reports 13 open issues:
+Live GitHub state: 13 open issues; 0 open PRs in either repository.
 
 - Foundation: #58, #157
 - Operations: #119, #132, #145, #197, #340, #352, #385, #597, #603, #699, #711
 
-Open implementation PR queues: Foundation 0; Operations 0.
+## Current evidence
 
-## Current CI / benchmark state
+- Foundation promotion work is merged through 9ba648fe; the canonical production pin is now 1e66e9d.
+- Operations #813 fixed the stale public-core mapper pin that caused the previous #132 replay regression; the current coverage matrix is being rerun against the promoted pin.
+- The previous 40-case extractor aggregate failure was fixed by counting 40 receipt files before expanding each —-input argument. The benchmark default is now aligned to the production Operations pin; fresh run #317 is pending.
+- The previous canonical production run #454 deployed Operations 1e66e9d to Cloudflare and passed deployment provenance, replay, persistence, chat, idempotency and concurrent-idempotency acceptance, but failed at the policy-denial acceptance probe. The corrected canonical production run #456 is pending.
+- Public Worker live probe for the current Foundation revision passed.
+- Nightly live research remains blocked before provider execution because the authorized research endpoint, API key and model configuration are absent.
 
-- 52-case open-issue deep scan: PASS on main (13 issues × 4 lanes, all lanes and aggregate green).
-- Exhaustive six-lane repository audit: PASS on the promotion branch.
-- Polyglot governance audit: PASS on main.
-- Nightly research contract: PASS; live research execution remains blocked by missing provider configuration.
-- Autonomous benchmark: latest scheduled run executed successfully, but acquisition quality remains WARN/FAIL and is not production acceptance evidence.
-- Live extractor benchmark: fresh 40-case main run is currently in progress against Operations 5338952a03dd850caca884b6995961d2baa20ba7.
-- Canonical production release: run #444 is currently in progress against Operations 5338952a03dd850caca884b6995961d2baa20ba7.
+## Runtime evidence
 
-## Current known runtime history
-
-- The previous production persistence acceptance failed closed because the persistence diagnostic created a 301-second task-envelope lifetime against the canonical 300-second maximum.
-- Operations #809 corrected that authority to a 300-second inclusive window; Foundation #1017 promoted the immutable fix.
-- The current production run is the first post-fix runtime certification attempt.
+- Cloudflare private Worker version observed from release #454: b4827ce0-6722-4dfc-a2d9-23f2dbf6841e.
+- Cloudflare Operations provenance observed by release #454: github:1e66e9dc85552f484b91041ff95783db82b73332.
+- Runtime certification is not claimed until the corrected canonical release reaches its final acceptance gate.
 
 ## Evidence boundary
 
@@ -44,13 +41,9 @@ L0 hypothesis -> L1 source -> L2 repository -> L3 GitHub Actions/control-plane -
 
 No source-only or deterministic test result is treated as L4 runtime certification.
 
-## Runtime boundary
-
-Foundation owns public-safe contracts, deterministic public algorithms, public Worker/API, GitHub Actions and canonical production deployment. Operations remains the private runtime/control plane. Cloudflare runtime state must be refreshed from its dedicated runtime evidence path before making a new L4 claim.
-
 ## Synchronization rule
 
-This top section is the current checkpoint. Older dated sections below remain historical provenance and must not override the revisions, queue or evidence classification above.
+This top section is the current checkpoint. Older dated sections below remain historical provenance only and must not override these revisions, queue values or evidence classifications.
 
 FAMILY_SYNC_STATE.json records the same current observations in machine-readable form.
 
