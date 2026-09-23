@@ -1,7 +1,7 @@
 import pytest
 
 from backend.admission import AdmissionPolicy, AdmissionRoute
-from backend.admission_store import D1AdmissionStore, ROUTE_COST_UNITS
+from backend.admission_store import D1AdmissionStore, ROUTE_COST_UNITS, _insert_new_admission
 
 
 class FakeStatement:
@@ -69,6 +69,52 @@ async def test_d1_store_release_is_idempotent_at_statement_level():
     await store.release(lease)
     await store.release(lease)
     assert sum("UPDATE public_admission_events" in query for query in db.queries) == 2
+
+
+@pytest.mark.asyncio
+async def test_concurrent_insert_loss_replays_existing_protected_event():
+    from backend.admission import AdmissionDecision, AdmissionOutcome
+
+    db = IdempotentAdmissionDB()
+    existing = {
+        "event_id": "protected-race",
+        "window_start": 120,
+        "subject_fingerprint": "subject-1",
+        "route": "chat",
+        "cost_units": 2,
+        "lease_expires_at": 180,
+        "released_at": None,
+    }
+    db.events["protected-race"] = existing
+    store = D1AdmissionStore(db)
+
+    async def lost_insert(**_kwargs):
+        return False
+
+    store._insert_if_admissible = lost_insert
+    decision = AdmissionDecision(
+        AdmissionOutcome.ACCEPTED,
+        AdmissionRoute.CHAT,
+        True,
+        "admission accepted",
+    )
+
+    result, lease = await _insert_new_admission(
+        store,
+        decision,
+        event_id="protected-race",
+        window_start=120,
+        subject_fingerprint="subject-1",
+        route=AdmissionRoute.CHAT,
+        cost_units=2,
+        expires_at=181,
+        now=121,
+        policy=AdmissionPolicy(),
+    )
+
+    assert result.outcome is AdmissionOutcome.ACCEPTED
+    assert result.allowed is True
+    assert lease is None
 
 
 def test_public_admission_insert_is_idempotent_source_contract():
