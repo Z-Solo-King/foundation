@@ -138,3 +138,20 @@ def test_chat_request_rejects_unknown_operation_and_oversized_input_records():
         pass
     else:
         raise AssertionError("oversized input record was accepted")
+
+
+
+def test_chat_request_rejects_malformed_input_records_shapes():
+    from backend.api.models import ChatRequest
+
+    invalid_shapes = (
+        ChatRequest("chat", "request", "hello", operation="map", input_records={"id": "wrong-shape"}),
+        ChatRequest("chat", "request", "hello", operation="map", input_records=["not-an-object"]),
+    )
+    for request in invalid_shapes:
+        try:
+            request.validate()
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("malformed input_records shape was accepted")
