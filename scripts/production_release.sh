@@ -180,6 +180,11 @@ test "$(git -C "$RUNNER_TEMP/operations" rev-parse HEAD)" = "$OPERATIONS_REF"
 # family semantic audit must consume the latest synchronized family-state snapshot.
 # Refresh only the state document from Operations main; do not alter the runtime pin.
 git -C "$RUNNER_TEMP/operations" fetch --no-tags --depth=1 origin main
+# The architecture lint intentionally compares the immutable production checkout
+# against Operations main. Materialize that remote-tracking base as a local branch
+# because the lint contract uses the literal `main...HEAD` revision range.
+git -C "$RUNNER_TEMP/operations" branch --force main origin/main
+test "$(git -C "$RUNNER_TEMP/operations" rev-parse main)" = "$(git -C "$RUNNER_TEMP/operations" rev-parse origin/main)"
 git -C "$RUNNER_TEMP/operations" show "origin/main:docs/FAMILY_SYNC_STATE.json" > "$RUNNER_TEMP/operations/docs/FAMILY_SYNC_STATE.json"
 jq -e '
   (.repositories.foundation.last_audited_main_sha | type == "string" and length == 40)
