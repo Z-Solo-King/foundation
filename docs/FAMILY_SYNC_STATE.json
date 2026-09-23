@@ -34,7 +34,7 @@
     "operations_open_prs": 0
   },
   "current_evidence": {
-    "production_release": "458_IN_PROGRESS",
+    "production_release": "REQUIRES_RERUN_AFTER_FAMILY_SEMANTIC_SCHEMA_FIX",
     "previous_production_release": "456_DEPLOYED_PRIOR_PIN_BUT_CONCURRENT_DUPLICATE_FAILED",
     "coverage_matrix": "288_PENDING",
     "extractor_benchmark": "319_PENDING",
@@ -55,5 +55,17 @@
     "cloudflare_runtime_requires_dedicated_receipt": true,
     "github_actions_is_foundation_deployment_authority": true,
     "operations_has_no_github_actions_authority": true
+  },
+  "repositories": {
+    "foundation": {
+      "last_audited_main_sha": "b1767a40c7b5f0b49429753365fa60dffe50119b",
+      "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup"
+    },
+    "operations": {
+      "last_audited_main_sha": "4967fb56c5fcd0f0f393d06b327476c886cf3e05",
+      "role": "private-control-plane-research-orchestration",
+      "approved_production_revision": "4967fb56c5fcd0f0f393d06b327476c886cf3e05",
+      "nightly_research_revision": "3a7e350ddd5648caf93f58651323425186544f66"
+    }
   }
 }
