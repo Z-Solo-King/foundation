@@ -350,8 +350,8 @@ def test_superseded_nightly_variants_are_retired():
 def test_live_extractor_benchmark_uses_immutable_browser_safe_operations_pin():
     workflow = _workflow_texts()["live-extractor-benchmark.yml"]
     production = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    extractor_ref = "659d31660ef5dbea5fc72dc8e5fe3fdf91424fc8"
-    assert "OPERATIONS_REF: ${{ inputs.operations_ref || '659d31660ef5dbea5fc72dc8e5fe3fdf91424fc8' }}" in workflow
+    extractor_ref = "1e66e9dc85552f484b91041ff95783db82b73332"
+    assert "OPERATIONS_REF: ${{ inputs.operations_ref || '1e66e9dc85552f484b91041ff95783db82b73332' }}" in workflow
     assert extractor_ref in workflow
     assert CANONICAL_OPERATIONS_REF in production
 
