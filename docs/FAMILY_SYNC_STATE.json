@@ -2,16 +2,16 @@
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT_LIVE_RECONCILIATION",
   "audited_at": "2026-09-23",
-  "authority": "Foundation docs/CURRENT_SOURCE_OF_TRUTH.md",
+  "authority": "Foundation docs/FAMILY_SYNC_STANDARD.md",
   "repositories": {
     "foundation": {
       "role": "public-safe-contract-deterministic-core-worker-ci-deployment-backup",
-      "last_audited_main_sha": "2fee4df2b2fdaf7a4676268ab509e7366b703888"
+      "last_observed_main_sha": "9ba648fe69bb8635be75b10210ec87c58563bb79"
     },
     "operations": {
       "role": "private-control-plane-research-orchestration",
-      "last_audited_main_sha": "5338952a03dd850caca884b6995961d2baa20ba7",
-      "approved_production_revision": "5338952a03dd850caca884b6995961d2baa20ba7",
+      "last_observed_main_sha": "29f3484ab7beeaf04fa474da8aa0933b50b6d2fa",
+      "canonical_production_pin": "1e66e9dc85552f484b91041ff95783db82b73332",
       "nightly_research_revision": "3a7e350ddd5648caf93f58651323425186544f66"
     }
   },
@@ -37,25 +37,34 @@
     "foundation_open_prs": 0,
     "operations_open_prs": 0
   },
-  "current_workflows": {
-    "production": "5338952a03dd850caca884b6995961d2baa20ba7",
-    "nightly_research": "3a7e350ddd5648caf93f58651323425186544f66",
-    "live_extractor_benchmark": "5338952a03dd850caca884b6995961d2baa20ba7",
-    "open_issue_scan": "PASS/13x4=52"
+  "workflows": {
+    "production": {
+      "run": 456,
+      "status": "pending",
+      "operations_pin": "1e66e9dc85552f484b91041ff95783db82b73332",
+      "previous_run": 454,
+      "previous_run_result": "deployed_but_failed_policy_denial_acceptance"
+    },
+    "extractor": {
+      "run": 317,
+      "status": "pending",
+      "operations_pin": "1e66e9dc85552f484b91041ff95783db82b73332"
+    },
+    "coverage_matrix": {
+      "run": 286,
+      "status": "pending",
+      "operations_pin": "1e66e9dc85552f484b91041ff95783db82b73332"
+    },
+    "nightly_research": {
+      "latest_preflight": 27,
+      "status": "blocked_before_execution",
+      "operations_pin": "3a7e350ddd5648caf93f58651323425186544f66"
+    }
   },
-  "current_evidence": {
-    "production_runtime": "IN_PROGRESS_RUN_444",
-    "extractor_40_case": "IN_PROGRESS_RUN_305",
-    "nightly_live_execution": "BLOCKED_EXTERNAL_RESEARCH_EXECUTOR_CONFIGURATION",
-    "autonomous_benchmark": "WARN_ACQUISITION",
-    "polyglot_governance": "PASS",
-    "exhaustive_six_lane_audit": "PASS"
-  },
-  "recent_runtime_fix": {
-    "operations_pr": "809",
-    "operations_revision": "5338952a03dd850caca884b6995961d2baa20ba7",
-    "root_cause": "persistence diagnostic task envelope lifetime was 301 seconds against MAX_TTL_SECONDS=300",
-    "foundation_promotion_pr": "1017"
+  "runtime_evidence": {
+    "private_worker_version": "b4827ce0-6722-4dfc-a2d9-23f2dbf6841e",
+    "operations_provenance": "1e66e9dc85552f484b91041ff95783db82b73332",
+    "public_worker_live_probe": "PASS"
   },
   "evidence_boundary": {
     "L0": "hypothesis",
@@ -72,6 +81,5 @@
     "cloudflare_runtime_requires_dedicated_runtime_receipt": true,
     "gitHub_actions_is_foundation_deployment_authority": true,
     "operations_has_no_github_actions_authority": true
-  },
-  "historical_state_rule": "Older dated reconciliation records remain provenance only and must not override this snapshot."
+  }
 }
