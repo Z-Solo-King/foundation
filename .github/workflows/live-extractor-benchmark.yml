@@ -8,7 +8,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to benchmark
         required: false
-        default: 246e563e354c43962c988cf2794cb09ccd4fe723
+        default: 804981445fcabe770fc236fd27a650cb6ba183d0
         type: string
 
 permissions:
