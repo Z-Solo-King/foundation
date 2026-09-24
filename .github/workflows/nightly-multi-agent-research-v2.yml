@@ -25,9 +25,11 @@ concurrency:
 
 env:
   PYTHONUNBUFFERED: "1"
-  RESEARCH_LLM_ENDPOINT: ${{ secrets.RESEARCH_LLM_ENDPOINT }}
-  RESEARCH_LLM_API_KEY: ${{ secrets.RESEARCH_LLM_API_KEY }}
-  RESEARCH_LLM_MODEL: ${{ secrets.RESEARCH_LLM_MODEL }}
+  # Use the existing Cloudflare account credential as the Workers AI research provider.
+  # The existing executor speaks OpenAI-compatible Chat Completions, so no separate RESEARCH_LLM_* secrets are required.
+  RESEARCH_LLM_ENDPOINT: "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/ai/v1"
+  RESEARCH_LLM_API_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  RESEARCH_LLM_MODEL: "@cf/meta/llama-3.1-8b-instruct-fast"
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
   OPERATIONS_RESEARCH_REF: 41db817dee6aa7d369ea9a07dd072b58ece1695a
   OPERATIONS_MIGRATION_TOOLS_REF: 41db817dee6aa7d369ea9a07dd072b58ece1695a
