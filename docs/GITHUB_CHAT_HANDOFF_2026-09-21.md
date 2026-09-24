@@ -1,3 +1,18 @@
+# 2026-09-24 LIVE GITHUB/CHAT HANDOFF — CYCLE 7
+
+- Foundation main: `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`
+- Operations main: `1fd629cae593959249107ddb8c7af3f55292e9df`
+- Production Operations pin: `fda24660843cacfe28de661cf170789af542d28f`
+- Production Foundation revision: `725e1b9cdaa637f07d4264673cddfc8ab806b3c6`
+- Open issues: Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
+- Open PRs: Foundation #1137 (docs/session checkpoint only); Operations: none.
+- Latest production release: `36030977718` PASS.
+- Latest nightly research: `36030996071` FAIL at public Worker 403 / local 502 `upstream_worker_rejected`.
+- Cloudflare basic control-plane reads: account membership/Workers/D1 all returned HTTP 200; exact deployment-history/version freshness is not newly certified by this checkpoint.
+- Start every new chat by refreshing live heads and issue/PR state. Do not use historical handoff SHAs as current.
+
+---
+
 ## 2026-09-24 CURRENT AUTHORITY RECONCILIATION
 
 - Foundation `main` observed before this doc-only sync: `825d301d10d201cd9b74dd018973769aeb03f381`

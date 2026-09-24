@@ -1,3 +1,15 @@
+# Cycle 7 — 2026-09-24 — live cross-surface reconciliation
+
+- Current GitHub heads: Foundation `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`; Operations `1fd629cae593959249107ddb8c7af3f55292e9df`.
+- Current queue: 8 open issues and 1 open documentation PR (#1137); no open implementation PRs.
+- Production release `36030977718` passed using Foundation `725e1b9cdaa637f07d4264673cddfc8ab806b3c6` and Operations production pin `fda24660843cacfe28de661cf170789af542d28f`.
+- Nightly research `36030996071` and canary `36030977932` remain blocked by the same upstream public Worker HTTP 403 / local 502 boundary.
+- Cloudflare account membership, Worker listing and D1 listing were successfully read during this audit. The connector is available; the remaining unverified item is a fresh deployment-history/version/provenance read, not basic access.
+- The project documentation must distinguish: current GitHub branch heads; immutable production pins; fresh Cloudflare runtime receipts; and historical continuity notes.
+- The conversation/UI is not authoritative for backend execution. Use GitHub/Cloudflare receipts, commits and workflow runs as the execution ledger.
+
+---
+
 # ChatGPT Session Observations
 
 **Observed:** 2026-09-24
@@ -71,3 +83,16 @@ Target 4 lanes by default; expand to 6 only when lanes are genuinely independent
 - Broad Operations issue lanes remained evidence-gated rather than producing speculative code changes; current open issue count remains 8.
 - No fresh Cloudflare runtime claim was made because the active Cloudflare action was not exposed to this chat.
 - Session optimization result: bounded parallel diagnosis plus immediate targeted verification produced more verified progress than broad rescans. The remaining runtime/provider blockers should be resumed from the compact checkpoint rather than through continuous polling.
+
+
+## Cycle 6 — 2026-09-24 — session/context boundary
+
+- The current ChatGPT conversation became unresponsive again and then reached the practical chat/session limit. This confirms that a single long-running engineering conversation must be treated as disposable transport state, not as the continuity mechanism for project work.
+- The user also observed a correlation between closing the ChatGPT Android app and the conversation becoming unavailable/unresponsive. Current evidence does **not** establish that force-closing the app either universally stops or universally preserves backend GitHub/runtime execution for ordinary Chat mode. Feature-specific behavior is documented separately by OpenAI, so repository evidence remains authoritative.
+- External September 2026 research reviewed during this cycle: OpenAI Help/Status, OpenAI Community, Reddit, GitHub/Codex, mainstream technical coverage, and searches of Zhihu, Baidu Tieba, Douban, PTT and Bilibili. The strongest matching signals concern long-chat/mobile message-stream or synchronization instability; Chinese-language results were comparatively sparse/generic and did not justify a stronger causal claim.
+- Reddit/community reports specifically include GPT-5.6 Sol/Thinking slow/stuck behavior, Android message-stream failures, and long-conversation freezing/stalling. These are community reports, not root-cause proof.
+- OpenAI's current troubleshooting guidance recommends starting a new chat for long or many-turn conversations when ChatGPT becomes slow/frozen/stuck. The project should therefore checkpoint before the conversation becomes large rather than trying to preserve one continuous chat.
+- Product terminology note: current OpenAI documentation describes GPT-5.6 Sol with reasoning levels such as Instant/Medium/High/Extra High; this project should not treat “Sol Light” as a formally documented product mode unless a current source explicitly establishes it.
+- New operating rule: if responsiveness degrades, the app is closed during a heavy cycle, or the session reaches context/length pressure, stop launching expensive work, write a compact GitHub checkpoint, and continue in a fresh chat. Do not infer completion or failure from the mobile UI alone.
+- This cycle's authoritative project state at checkpoint: Foundation main `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`, Operations main `ebf1e82734cb2fab0a8f4eddc8b1f342803740d1`, 8 open issues, 0 open PRs, canonical production Operations pin `fda24660843cacfe28de661cf170789af542d28f`, canonical production release run `36030977718` PASS, latest nightly research run `36030996071` blocked by upstream Worker HTTP 403 (local HTTP 502 `upstream_worker_rejected`), and live nightly canary `36030977932` failed on the same boundary.
+- Cloudflare control-plane state was not freshly verified in this chat because the dedicated Cloudflare action was not exposed. No new standalone Cloudflare deployment/version/binding/cron/secrets claim is made.

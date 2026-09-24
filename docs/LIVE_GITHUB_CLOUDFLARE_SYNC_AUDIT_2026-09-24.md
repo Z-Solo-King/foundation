@@ -1,3 +1,41 @@
+# LIVE GITHUB + CLOUDFLARE SYNC AUDIT — 2026-09-24 — CYCLE 7
+
+## Current verified snapshot
+
+| Surface | Current state |
+|---|---|
+| Foundation main | `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706` |
+| Operations main | `1fd629cae593959249107ddb8c7af3f55292e9df` |
+| Open issues | 8: Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699 |
+| Open PRs | 1: Foundation #1137 (docs-only); Operations 0 |
+| Production Foundation revision | `725e1b9cdaa637f07d4264673cddfc8ab806b3c6` |
+| Production Operations pin | `fda24660843cacfe28de661cf170789af542d28f` |
+| Production release | Run `36030977718`: PASS |
+| Nightly research | Run `36030996071`: FAIL, upstream Worker 403 / local 502 |
+| Nightly canary | Run `36030977932`: FAIL, same boundary |
+| Cloudflare membership read | HTTP 200; Super Administrator - All Privileges |
+| Cloudflare Worker listing | HTTP 200; public/private Workers present |
+| Cloudflare D1 listing | HTTP 200; `research-intelligence` present |
+
+## Synchronization interpretation
+
+The repository heads are newer than the deployed production Foundation revision because the latest main commits are documentation/continuity commits. The immutable Operations production pin is also older than current Operations main by design; it is 25 commits behind current Operations main and 17 commits behind Operations `b01bf6160408f41bac2cc2767eabb2539728f055`, so later Operations changes are not production-certified merely by being on `main`.
+
+The current production boundary is therefore explicitly:
+`Foundation 725e1b9cdaa637f07d4264673cddfc8ab806b3c6` + `Operations fda24660843cacfe28de661cf170789af542d28f`.
+
+The latest nightly and canary share the public Worker authorization boundary (HTTP 403 upstream; local HTTP 502). No source or deterministic CI result should be promoted to L4 acceptance for that gate.
+
+## Cloudflare evidence boundary
+
+Basic control-plane access is verified. A new direct deployment-history/version/provenance read was not completed after the latest GitHub documentation commits; retain older version identifiers as historical unless re-sampled.
+
+## Rules
+
+Live GitHub refs and Cloudflare runtime receipts outrank historical documents and chat transcripts. Foundation remains the only GitHub Actions/deployment authority; Operations remains private.
+
+---
+
 # Live GitHub + Cloudflare Sync Audit — 2026-09-24
 
 ## CURRENT GITHUB CHECKPOINT — 2026-09-24

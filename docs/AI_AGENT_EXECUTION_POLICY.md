@@ -150,3 +150,13 @@ Therefore, an AI agent working in this project must not keep expanding a single 
 
 Source:
 https://help.openai.com/en/articles/7996703-troubleshooting-chatgpt-error-messages
+
+
+## 13. Mobile-app/session continuity
+
+- The visible ChatGPT mobile conversation is a transport/UI surface, not an authoritative execution ledger.
+- Do not assume that closing or reopening the app either stops or preserves ordinary Chat-mode tool execution. Only GitHub/Cloudflare control-plane receipts, workflow runs, artifacts, commits and runtime receipts establish progress.
+- When a long/tool-heavy cycle becomes unresponsive, reaches a practical context/length limit, or the app is closed during execution, checkpoint immediately and resume in a fresh chat. This is an **adaptive early checkpoint**, not a replacement for the 20-minute project ceiling.
+- Prefer compact checkpoint payloads over carrying historical chat context forward. A fresh chat should begin from current GitHub heads, the current open-issue queue, the latest accepted runtime evidence, and the next bounded action.
+- External user reports, Reddit threads, OpenAI Community posts and other platform reports may inform session-risk hypotheses, but must remain clearly separated from repository/runtime evidence.
+
