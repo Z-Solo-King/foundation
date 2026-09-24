@@ -304,8 +304,10 @@ for asset in styles.css app.js composer.js lifecycle_controller.js; do
 done
 
 # Rename-safe Cloudflare deployment sequence.
-# Bootstrap Operations temporarily against the legacy public Worker because the final
-# pair has a circular Service Binding dependency: Foundation -> Operations -> Foundation.
+# Foundation and Operations have reciprocal Service Bindings. Cloudflare requires the
+# target Worker to exist before deploying the caller, so first create the Operations
+# Worker without its reciprocal Foundation binding. Then deploy Foundation -> Operations,
+# and finally redeploy Operations with its canonical Foundation binding.
 persistence_seed_file="$RUNNER_TEMP/persistence-rollover-seed.json"
 persistence_seed_payload='{"operation":"persistence_seed"}'
 legacy_public_worker="${LEGACY_PUBLIC_WORKER:-}"
@@ -322,9 +324,22 @@ new_operations_status=$(curl -sS -o "$RUNNER_TEMP/operations-predeploy.json" -w 
 if [ "$new_operations_status" = "404" ]; then
   bootstrap_config="$RUNNER_TEMP/operations-bootstrap.toml"
   cp "$RUNNER_TEMP/operations/wrangler.toml" "$bootstrap_config"
-  sed -i "s/service = \"foundation\"/service = \"${legacy_public_worker}\"/" "$bootstrap_config"
+  python - "$bootstrap_config" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+text, removed = re.subn(r'(?ms)^\[\[services\]\]\n.*?(?=^\[\[d1_databases\]\])', '', text)
+if removed != 1:
+    raise SystemExit(f"expected exactly one Operations services block, removed={removed}")
+path.write_text(text, encoding="utf-8")
+PY
+  ! grep -q '^\[\[services\]\]$' "$bootstrap_config"
+  ! grep -q '^service = "foundation"$' "$bootstrap_config"
   (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config" --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:bootstrap-${ACCEPTANCE_RUN_ID}")
-  echo "Operations bootstrap deployment: PASS"
+  echo "Operations binding-free bootstrap deployment: PASS"
 elif [ "$new_operations_status" = "200" ]; then
   echo "Operations Worker already exists; proceeding with canonical deployment."
 else
