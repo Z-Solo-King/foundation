@@ -24,3 +24,10 @@ def test_operations_binding_is_generated_but_private_service_name_stays_out_of_w
 def test_production_health_check_requires_production_environment():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
     assert '.ok == true and .environment == "production"' in text
+
+def test_reciprocal_service_bindings_use_binding_free_bootstrap():
+    text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
+    assert "Operations binding-free bootstrap deployment: PASS" in text
+    assert 're.subn(r\'(?ms)^\\[\\[services\\]\\]\\n.*?(?=^\\[\\[d1_databases\\]\\])\', \'\', text)' in text
+    assert "Cloudflare requires the" in text
+    assert 'pywrangler deploy --config "$bootstrap_config"' in text
