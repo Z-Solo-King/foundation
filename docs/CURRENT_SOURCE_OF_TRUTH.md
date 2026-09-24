@@ -1,24 +1,32 @@
-# LIVE CURRENT CHECKPOINT — 2026-09-24 17:43 IST
+# LIVE CURRENT CHECKPOINT — 2026-09-24
 
-This checkpoint supersedes older dated entries below it. Live branch heads and current GitHub Actions receipts take precedence over historical snapshots.
+This checkpoint supersedes older dated entries below. Current GitHub branch heads and current GitHub Actions receipts take precedence. Cloudflare production state is **not independently verifiable from this GitHub-only chat** and is therefore not rewritten as current.
 
 ## Repository state
-- Foundation `main`: `ef380b5d5bee73a1ef3fce070754d447b3ac76ef`
-- Operations `main`: `7800e8c693f9f981fa0d78f4814641f9225a0908
-- Production Operations target pin: `7800e8c693f9f981fa0d78f4814641f9225a0908`
-- Nightly research Operations pin: `7800e8c693f9f981fa0d78f4814641f9225a0908`
+- Foundation `main`: `c519b56050632862fbac4f6d6841cbd725408cc8`
+- Operations `main`: `fda24660843cacfe28de661cf170789af542d28f`
+- Canonical Operations production/nightly pin in Foundation: `fda24660843cacfe28de661cf170789af542d28f`
+- Operations Workers AI provider: `cloudflare_workers_ai`
+- Operations Workers AI model: `@cf/zai-org/glm-4.7-flash`
+- `STRICT_ZERO_COST_ONLY`: `true`
+- Application Workers AI neuron limit: `10000`
 - Open issues: Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699
-- Open PRs: 0 in both repositories
+- Open PRs after this reconciliation: Foundation #1109; Operations none. Foundation #1112 was superseded by merged #1114 and is closed.
 
-## Current live findings
-- Latest nightly run #901 (run `35995628805`) reaches the authenticated local research proxy but the public Worker rejects the request with HTTP 403; the proxy reports `upstream_worker_rejected`.
-- The nightly research environment variables are present in the run: `RESEARCH_LLM_ENDPOINT`, `RESEARCH_LLM_API_KEY`, and `RESEARCH_LLM_MODEL`. The failure is therefore no longer a missing-secret preflight.
-- The native Workers AI implementation is present in Operations `7800e8c693f9f981fa0d78f4814641f9225a0908`, with the `AI` binding, model `@cf/meta/llama-3.1-8b-instruct-fast`, and a 10,000-neuron application limit.
-- The current production smoke workflow already uses the corrected diagnostic operation `infrastructure_verify_public_test`; older smoke #72 documentation describing `infrastructure_verify` is historical and stale.
-- The current canonical production-release script already targets Operations `7800e8c693f9f981fa0d78f4814641f9225a0908`.
-- Last independently verified Cloudflare runtime state remains the pre-refresh deployment: public Worker provenance `825d301d10d201cd9b74dd018973769aeb03f381`, private Worker provenance `1a12b98981f52de207fa8626cf2e1f5ad06659be`, private cron `*/15 * * * *`. A new canonical production release is required before claiming the live runtime has moved to the `44f53283…` target.
+## Current GitHub Actions evidence
+- Foundation `main` currently has 95 reported check-runs at the latest observation: 89 completed-success, 5 failed, and 1 still in progress.
+- The five failures are the nightly research lanes/canary and the truthful-result gate. Their logs show the private Operations checkout and current `fda246...` pin succeed, the local research proxy starts, and the Worker-backed AI probe receives HTTP 502 with upstream Worker HTTP 403 (`upstream_worker_rejected`). The research configuration variables are present in those runs.
+- The current production smoke check was still in progress at the latest observation; its workflow now uses the current `infrastructure_verify_public_test` diagnostic operation.
+- This is runtime/control-plane evidence. It is not a claim that Cloudflare production has been reconciled to the current GitHub heads.
+
+## Cloudflare boundary
+- Cloudflare Worker versions, routes, service bindings, D1 state, cron execution, and live deployment provenance are not independently readable in this chat.
+- Preserve older Cloudflare observations below as historical evidence only.
+- The next runtime reconciliation must be performed from the dedicated Cloudflare connection and must verify the public Worker, private Worker, D1 binding, service binding, cron, release provenance, and authenticated Workers AI path against the GitHub refs above.
 
 ## Evidence boundary
+Do not close #157 or #699 from source inspection, deterministic tests, GitHub-only logs, or dry-run artifacts. Closure requires the specified live runtime/control-plane evidence.
+
 Do not close #157 or #699 from source inspection, deterministic tests, or a dry-run. Closure requires the specified live runtime/control-plane evidence. Do not post secret values.
 
 ## Current live synchronization — 2026-09-24
