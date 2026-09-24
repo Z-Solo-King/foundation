@@ -61,7 +61,8 @@ jobs:
         with:
           name: production-runtime-acceptance-receipts
           path: .runtime/*.json
-          if-no-files-found: warn
+          if-no-files-found: error
+          include-hidden-files: true
       - name: Publish sanitized production receipt
         if: always()
         env:
