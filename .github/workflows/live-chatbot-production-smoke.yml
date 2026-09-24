@@ -1,8 +1,9 @@
 name: Live chatbot production smoke
 
 on:
-  push:
-    branches: [main]
+  workflow_run:
+    workflows: ["Heroic AI production release"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -19,12 +20,13 @@ env:
 
 jobs:
   smoke:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - name: Wait for deployed revision
         env:
-          EXPECTED_FOUNDATION: ${{ github.sha }}
+          EXPECTED_FOUNDATION: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           set -euo pipefail
           for _ in {1..90}; do
@@ -43,6 +45,9 @@ jobs:
           python-version: "3.14"
       - name: Install HTTP client
         run: python -m pip install --disable-pip-version-check httpx
+      # This workflow is intentionally sequenced after the canonical production release.
+      # A push-triggered smoke can race the public Worker deployment before the private
+      # Operations revision is live, producing a transient /research 503.
       - name: Run live production chatbot smoke
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
