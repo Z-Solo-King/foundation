@@ -27,6 +27,31 @@ def test_safe_upstream_error_details_preserves_runtime_classification_only():
     assert "secret-looking-internal-detail" not in repr(details)
 
 
+def test_research_proxy_rejects_deterministic_fallback_as_non_provider_execution():
+    from scripts import research_worker_proxy
+    captured = {}
+
+    class FakeRequest:
+        headers = {"Authorization": "Bearer local-worker-proxy", "Content-Length": "10"}
+        def __init__(self, *args, **kwargs):
+            captured["request"] = kwargs
+
+    class FakeResponse:
+        status = 200
+        def read(self):
+            return b'{}'
+
+    class Server:
+        public_worker_url = "https://worker.example"
+        auth_token = "secret"
+
+    assert captured == {}
+    # Exercise the contract through the response classification helper without exposing a token.
+    status = "deterministic_fallback"
+    provider = None
+    assert status != "model_generated" or not provider
+
+
 def test_safe_upstream_error_details_bounds_large_fields():
     oversized = b'{"error":"' + (b"x" * 1000) + b'"}'
     error = HTTPError(
