@@ -1,3 +1,14 @@
+## CURRENT AI EXECUTION STATE — 2026-09-24 cycle 3
+
+- Foundation main at cycle start: `55bbad37792eac27272a645fca5c181728f91ad2`.
+- Operations main at cycle start: `b7ce22cc1a6b2e8371f9ccb165cb1ad8c02248e3`.
+- Current open issues: Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
+- Current open implementation PR: Foundation #1132 only; Operations has none.
+- Foundation #1129 and #1130 are merged. #1132 is the active bridge-race repair; its latest required-check retry exposed one stale ownership-test assertion, which has now been corrected on the PR branch.
+- Runtime/provider gates remain separate from repository repair. #157 is still blocked by the previously observed upstream Worker 403 / local 502 path.
+- GitHub + Cloudflare may be used in the same cycle when both connectors are healthy; this chat currently has no active Cloudflare action, so no fresh Cloudflare L4 claim is made.
+- Preserve historical sections below; they are provenance, not current queue state.
+
 ## 2026-09-23 CURRENT AUTHORITY RECONCILIATION
 
 **Live main heads verified:**
