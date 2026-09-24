@@ -1,3 +1,41 @@
+# LIVE CURRENT CHECKPOINT — 2026-09-24 — Cycle 6
+
+This checkpoint supersedes the older dated sections below.
+
+## Current repository state
+- Foundation main: `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`
+- Operations main: `ebf1e82734cb2fab0a8f4eddc8b1f342803740d1`
+- Open issues: 8 total — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
+- Open implementation PRs: 0. Foundation documentation PR #1136 and Operations documentation PR #893 are merged.
+- Foundation PRs #1132/#1134/#1135 and Operations #890/#891 are already merged.
+- Canonical Operations production/nightly pin: `fda24660843cacfe28de661cf170789af542d28f`.
+
+## Fresh release/evidence state
+- Canonical Foundation production release run `36030977718`: PASS against Operations `fda24660843cacfe28de661cf170789af542d28f`. The release exercised authenticated chat, replay/idempotency, concurrent idempotency, authenticated SSE HTTP 200/lifecycle, research ingestion/readback, D1/B2 diagnostics, terminalization CAS, resource reconciliation, maintenance reconciliation and provider-stream contract.
+- Latest Foundation nightly research run `36030996071`: FAIL at the authenticated research boundary. Preflight/configuration passed, the authenticated proxy reached the public Worker, the upstream Worker returned HTTP 403, surfaced locally as `upstream_worker_rejected` / HTTP 502. This remains Foundation #157's current provider/runtime blocker.
+- Live nightly canary `36030977932`: FAIL with the same upstream 403/502 condition.
+- Deterministic repository-side CI/contract evidence is not treated as L4 runtime acceptance for the remaining evidence-gated issues.
+
+## Session-boundary evidence
+- The ChatGPT conversation became unresponsive again and reached its practical chat/context limit. This is a session transport/context observation, not evidence that GitHub work stopped.
+- The user observed that closing the Android app may correlate with the UI/session becoming unavailable. No causal rule is inferred for ordinary Chat-mode tool execution.
+- External September 2026 research supports a broader long-chat/mobile instability signal; Chinese-language searches were sparse/generic for this exact failure mode.
+- The project treats exact GitHub/Cloudflare receipts as authoritative and requires a fresh chat after context pressure or unresponsiveness.
+
+## Current acceptance classification
+- #157: **C/E** — repository research path is present; provider/runtime acceptance is blocked at the public Worker authorization boundary.
+- #145/#340/#385/#597/#603: **E** — implementation exists, but issue-specific scheduler/interruption/recovery/migration/performance/rollback/shadow/canary/portability receipts remain required.
+- #699: aggregate **E** tracker.
+- #58: meta **E** tracker.
+
+## Runtime/ownership boundary
+Foundation remains the public-safe research core, public Worker/API, GitHub Actions and canonical production deployment authority. Operations remains the private runtime/control plane. The dedicated Cloudflare control-plane action was not available in this chat, so no new standalone Cloudflare L4 claim is made.
+
+## Next bounded action
+Start the next chat from this checkpoint. Refresh current GitHub heads/open issues and, when the Cloudflare control plane is available, use the #157 403 receipt for authorization/service-binding diagnosis. Keep repository mutations limited to newly reproducible defects and evidence required by the acceptance contracts.
+
+---
+
 # LIVE CURRENT CHECKPOINT — 2026-09-24 — Cycle 5
 
 This checkpoint supersedes older dated sections below.
