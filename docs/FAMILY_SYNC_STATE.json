@@ -3,13 +3,13 @@
   "status": "CURRENT_RUNTIME_RECONCILIATION",
   "audited_at": "2026-09-24",
   "live_main": {
-    "foundation": "825d301d10d201cd9b74dd018973769aeb03f381",
-    "operations": "994793431981b87cd37f2ee1eabf8a2b11914c34"
+    "foundation": "adb4bd994cd24b17d018e22dc22a5516da65b4c8",
+    "operations": "44f53283aa308e8a294ae9fe716ab9200a44809b"
   },
   "runtime_pins": {
     "foundation_runtime": "825d301d10d201cd9b74dd018973769aeb03f381",
     "production_operations": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
-    "nightly_research_operations": "41db817dee6aa7d369ea9a07dd072b58ece1695a",
+    "nightly_research_operations": "44f53283aa308e8a294ae9fe716ab9200a44809b",
     "foundation_deployed": "825d301d10d201cd9b74dd018973769aeb03f381"
   },
   "cloudflare": {
@@ -54,7 +54,8 @@
       352,
       452,
       711
-    ]
+    ],
+    "open_pull_request_count": 0
   },
   "latest_evidence": {
     "nightly_research": {
@@ -221,5 +222,26 @@
     "github_actions_is_foundation_deployment_authority": true,
     "operations_has_no_current_github_workflows": true,
     "no_competing_cloudflare_build_or_deploy_authority": true
+  },
+  "nightly_research": {
+    "operations_ref": "44f53283aa308e8a294ae9fe716ab9200a44809b",
+    "last_run_id": 35994287754,
+    "last_run_conclusion": "failure",
+    "blocked_reason": "worker_ai_path_unavailable"
+  },
+  "nightly_preflight": {
+    "run_id": 35994265823,
+    "conclusion": "failure",
+    "worker_ai_path_verified": false
+  },
+  "nightly_canary": {
+    "run_id": 35994265831,
+    "conclusion": "failure",
+    "status": "blocked_before_execution"
+  },
+  "post_merge_validation": {
+    "production_smoke_run_id": 35994616511,
+    "production_smoke_conclusion": "success",
+    "foundation_main": "adb4bd994cd24b17d018e22dc22a5516da65b4c8"
   }
 }
