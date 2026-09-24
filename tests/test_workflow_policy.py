@@ -225,14 +225,12 @@ def test_public_foundation_is_the_only_github_actions_bridge_owner():
     assert "workflow-dispatch-bridge-receipt/v2" in workflow
     assert "canonical-bridge-v3-receipt" in workflow
     assert "workflow_dispatch:" in workflow
-    assert "actions/workflows/${TARGET}/dispatches" in workflow
-    for target in (
-        "nightly-multi-agent-research-v2.yml",
-        "main-push-actions-control-plane-probe-v2.yml",
-    ):
-        assert target in workflow
+    assert 'gh workflow run "$TARGET"' in workflow
+    assert "run_url=" in workflow
     assert "foundation-canonical-workflow-bridge-v2.yml" not in workflow
     assert "foundation-canonical-workflow-bridge.yml" not in workflow
+
+
 
 
 def test_all_canonical_workflow_dispatch_requests_use_the_public_router():
