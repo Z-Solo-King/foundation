@@ -1,3 +1,31 @@
+# 2026-09-24 LIVE FAMILY CHECKPOINT — CYCLE 7
+
+This header is the current synchronization override. Live GitHub state and fresh runtime receipts outrank all older dated checkpoints below.
+
+## GitHub
+- Foundation `main`: `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`
+- Operations `main`: `1fd629cae593959249107ddb8c7af3f55292e9df`
+- Open issues: 8 total — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
+- Open PRs: 1 total — Foundation #1137, documentation/session-evidence only; Operations: 0.
+- Latest Foundation code change before current documentation commits: #1134 `07ef89f3ebbcd84fa3b04fc0cf2d8f4693678f91`; later Foundation commits through current head are documentation/continuity changes.
+- Latest Operations code change before current documentation commits: #890 `b01bf6160408f41bac2cc2767eabb2539728f055`; later Operations commits through current head are documentation/continuity changes.
+
+## Runtime / Cloudflare
+- Canonical Operations production/nightly pin: `fda24660843cacfe28de661cf170789af542d28f`.
+- Canonical production release `36030977718`: PASS against that Operations pin.
+- Latest nightly research `36030996071`: upstream public Worker HTTP 403, surfaced locally as `upstream_worker_rejected` / HTTP 502.
+- Nightly canary `36030977932`: same 403/502 boundary.
+- Cloudflare control-plane reads verified during this project audit: account-members GET 200 with Super Administrator - All Privileges; Workers listing GET 200; D1 listing GET 200.
+- Workers observed: `research-intelligence-engine-public` tag `e84124529c014c0ea8c89b6e524e8264`; `research-intelligence-engine-private` tag `21801b08ec8c4f55aeddbcfae9ded48b`.
+- D1 observed: `research-intelligence`, id `19f51638-47a5-4218-a9dc-73dbfd6156fe`.
+- Deployment-version/provenance endpoints were not re-queried after the latest GitHub docs commits; do not present a new standalone deployment-version freshness claim from this checkpoint alone.
+
+## ChatGPT continuity
+- Treat the visible ChatGPT mobile conversation as transport/UI state, not authoritative execution state.
+- If the conversation becomes slow/unresponsive or reaches practical context pressure, checkpoint to GitHub and resume in a fresh chat.
+- App closure is an observed correlation only; never infer backend completion/failure without GitHub/Cloudflare receipts.
+
+---
 # 2026-09-24 CURRENT AUTHORITY RECONCILIATION — CYCLE 6
 
 **Status:** LIVE — this header supersedes older dated authority/handoff sections below.
