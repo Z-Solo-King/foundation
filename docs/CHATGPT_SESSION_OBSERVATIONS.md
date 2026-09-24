@@ -2,6 +2,23 @@
 
 **Observed:** 2026-09-24
 
+# Cycle 5 observations — 2026-09-24
+
+- This observation cycle is intentionally being run with the ChatGPT Android app kept open rather than closed/backgrounded. That creates a useful controlled contrast with earlier cycles, but it is not by itself proof that app closure causes backend/connector execution to stop.
+- Current research across OpenAI's Help/Status material, OpenAI Community, Reddit, GitHub/Codex issues, mainstream technical coverage, and searched Chinese-language communities supports a broader pattern of long-chat/mobile state or message-stream instability. OpenAI's troubleshooting guidance explicitly recommends starting a new chat for long or many-turn conversations and restarting the app for lag/freezing; the status history also records September 23, 2026 mobile and Conversation incidents. Community and Reddit reports include Android "Error in message stream", long-chat freezing/stalling, stale or unsynchronized mobile views, and GPT-5.6 Sol/Thinking-specific complaints. These are reports and troubleshooting signals, not proof of one shared root cause.
+- GitHub/Codex reports are particularly relevant to this project's workflow shape: Android/Desktop remote sessions have been reported to show stale state or reasoning-effort mismatches while host-side work exists, which supports treating the visible mobile conversation as non-authoritative for backend progress.
+- Chinese-language searches (Zhihu, Baidu Tieba, Douban, PTT, Bilibili) produced sparse or generic indexed results for this exact failure mode. No strong platform-specific evidence was found there that would justify a stronger causal claim.
+- Engineering rule for this project: keep heavy GitHub/runtime work resumable, prefer exact run IDs and compact checkpoints, avoid continuous polling/large log dumps, and treat repository/control-plane receipts as authoritative even when the mobile UI is stale.
+- When the app remains open, continue observing whether responsiveness improves or deteriorates before the adaptive early-checkpoint threshold. Record the actual observed outcome in the next checkpoint rather than assuming the result.
+
+Useful external references:
+- OpenAI troubleshooting: https://help.openai.com/en/articles/7996703-troubleshooting-chatgpt-error-messages
+- OpenAI status history: https://status.openai.com/history
+- OpenAI Community Android message-stream report: https://community.openai.com/t/chatgpt-android-error-in-message-stream-interrupts-long-conversations/1399948
+- Reddit GPT-5.6 Sol issues: https://www.reddit.com/r/ChatGPT/comments/1w8ebl6/gpt_56_sol_issues/
+- Reddit current slow/unresponsive Sol report: https://www.reddit.com/r/ChatGPT/comments/1wokavg/chatgpt_has_been_slow_and_completely_scuffed_for/
+- GitHub/Codex Android reasoning sync report: https://github.com/openai/codex/issues/42301
+
 
 ## Cycle 4 observations — 2026-09-24
 
