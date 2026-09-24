@@ -1,94 +1,63 @@
 # Current Source of Truth — 2026-09-24 Live Reconciliation
 
 **Status:** CURRENT
-**Reconciliation timestamp:** 2026-09-24 00:35 IST
-**Authority:** live GitHub refs + current GitHub Actions receipts + Cloudflare deployment/health receipts. Historical sections below are provenance only.
+**Reconciliation timestamp:** 2026-09-24 10:10 IST
+**Authority:** live GitHub refs + current GitHub Actions receipts + explicitly identified runtime receipts. Historical sections below are provenance only.
 
 ## Family repositories
 
 - Foundation: `Z-Solo-King/foundation`
 - Operations: `Z-Solo-King/operations`
 - Foundation owns public-safe contracts, deterministic public core, public Worker/API, GitHub Actions and the sole canonical production deployment.
-- Operations owns the private runtime/control plane and remains free of `.github/workflows`.
-- Cloudflare Workers Builds and Deploy Hooks remain non-authoritative; Deploy Hooks are currently absent for both Workers.
+- Operations owns the private runtime control plane and remains free of `.github/workflows`.
+- Cloudflare Workers Builds and Deploy Hooks remain non-authoritative.
 
 ## Live GitHub refs
 
-- Foundation `main`: `0038189a25c6fd74af11600648321e87e9810b3d`
-- Operations `main`: `9ad378bc5c2b68408636cd9c574ffbf977758adf`
-- Production Operations target in Foundation release script: `1a12b98981f52de207fa8626cf2e1f5ad06659be`
-- Nightly research Operations pin: `3a7e350ddd5648caf93f58651323425186544f66`
+- Foundation `main`: `392c94795936a427ecd78ed192c24df65c3b5596`
+- Operations `main`: `05a8cd7a459626386c0574fdb6bcd273d68bb84f`
+- Canonical production Operations target: `1a12b98981f52de207fa8626cf2e1f5ad06659be`
+- Canonical nightly research Operations pin: `3a7e350ddd5648caf93f58651323425186544f66`
 
-## Cloudflare production state
+## Current issue / PR state
 
-- Public Worker: `research-intelligence-engine-public`
-  - deployed Foundation provenance: `fe79e10c4f7e3ee17b9488848b90cf6b7e93f6fb`
-  - deployed Operations provenance: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
-  - latest deployment version observed: `b5a03b24-2fde-4347-8cd4-356250c139ca`
-  - subdomain enabled; no scheduled Cron
-- Private Worker: `research-intelligence-engine-private`
-  - deployed Operations provenance: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
-  - latest deployment version observed: `1e05b73f-b18b-4720-816f-21823fc17534`
-  - production Cron: `*/15 * * * *`
-  - subdomain disabled
-- Public Worker probe run #58 returned HTTP 200 for `/`, `/health` and `/readiness`; readiness reported `ready=true` and `database=true` with the same deployed release pair.
-- Canonical production release run #487 failed before deployment during the family-semantic snapshot audit. Therefore the production target `1a12b98981f52de207fa8626cf2e1f5ad06659be` is not the current deployed Operations revision.
+- **8 actual open issues:** Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
+- Operations #711 is closed with L4 production evidence from canonical release #492.
+- Foundation #1085 is the only current open implementation PR; Operations has no open PR.
+- Operations #853 corrected the live open-issue inventory after #711 closed.
 
-## Current open-issue queue
+## Nightly research + artifact audit
 
-**9 actual open issues:**
+- Canonical workflow: `.github/workflows/nightly-multi-agent-research-v2.yml`.
+- Latest observed nightly run #878 created three lanes × eight slots = **24 program slots**, but all three lanes were **blocked before provider execution** because `RESEARCH_LLM_ENDPOINT`, `RESEARCH_LLM_API_KEY` and `RESEARCH_LLM_MODEL` were absent.
+- Lane artifacts are truthful: eight blocked rows per lane and no provider-backed findings.
+- Nightly diagnosis artifact **10771684062** (SHA-256 `1a023e57acde5635bf4e98b0afecf547c062f93ee46cccc7057669a046593785`) is truthful about provider blocking but was generated before the diagnosis-count fix and still carries the obsolete `migration_review_incomplete` blocker.
+- Nightly migration-review artifact **10772875132** (SHA-256 `129d71b267088a7138b3a97f3f7d0c9bee272a4a16a59168c8601e503ff34c62`) is internally coherent: **40 matrix cases**, **24 capacity-sweep cases**, **40 language-review rows**, score **70.0/100**, 875 migration candidates and 1,371 source files.
+- The current workflow code now distinguishes the 40-case matrix from the 24-case capacity sweep; the next nightly run should supersede the old diagnosis artifact.
 
-Foundation:
-- #58 — exhaustive family coverage/meta tracker
-- #157 — complete 24-program nightly Heroic AI research
+## Benchmark / audit evidence
 
-Operations:
-- #145 — periodic maintenance tick
-- #340 — governed provider streaming/cancellation
-- #385 — terminalization/recovery
-- #597 — mapper migration evidence
-- #603 — AI-model/tooling portability evidence
-- #699 — aggregate audit tracker
-- #711 — DurableResourceLedger runtime/D1 evidence
+- Latest extractor benchmark #348 remains the completed strict-quality pass: 40 receipts; 4 `ok`, 32 `empty`, 4 `blocked`; provenance and route provenance 1.0; repeat reliability 1.0; zero unstable repeated groups.
+- Latest open-issue deep scan #345 passed with the prior 9 active + one historical regression case. A fresh rerun is required after the #711 inventory correction.
+- Coverage-driven runtime matrix #319 remains an in-progress evidence item.
+- Foundation PR #1085 changes live coverage probes to explicit workflow-dispatch opt-in. Required PR checks and the nightly research contract pass; its exhaustive-audit rerun is pending.
 
-Closed:
-- Foundation #452
-- Operations #197
-- Operations #352
+## Production / runtime evidence
 
-Open implementation PRs observed: **0** in both repositories.
+- Canonical production release #492 used Foundation `5eadf8c8813c0724918129da7fe120263a5e06fb` and Operations `1a12b98981f52de207fa8626cf2e1f5ad06659be` and supplied L4 runtime evidence for the DurableResourceLedger acceptance gate.
+- The last directly available public-worker probe is run #58 against the older pair `fe79e10c...` + `bfcfaf594...`; it is historical and should not be treated as current Cloudflare provenance without a fresh runtime-specific probe.
 
-## Latest nightly research state
-
-- Canonical workflow: `.github/workflows/nightly-multi-agent-research-v2.yml`
-- Run #878 failed before provider execution.
-- Three lanes were created, eight program slots per lane (24 total), and all three lane receipts truthfully report `blocked_before_execution`.
-- Preflight run #58 confirms the Operations GitHub App credentials are present, while `RESEARCH_LLM_ENDPOINT`, `RESEARCH_LLM_API_KEY` and `RESEARCH_LLM_MODEL` are all unset.
-- The run retained truthful artifacts for migration review, all three blocked lane receipts, and nightly diagnosis; it did not produce real provider-backed research findings.
-- Nightly migration review completed successfully but reports 40 matrix/language cases separately from a 24-case capacity sweep, with 875 migration candidates, 1,371 source files, four high findings and an internal review score of 70.0/100.
-- The nightly diagnosis currently labels `migration_review_incomplete` because it compares the capacity-sweep case count to 40. That comparison is inconsistent with the migration-review artifact schema and is a reporting bug distinct from the real provider-configuration blocker.
-
-## Latest benchmark and audit evidence
-
-- Live extractor benchmark run #348: **strict evidence-quality gate PASS**.
-- It produced 40 receipts across API/feed/HTML/browser: 4 `ok`, 32 `empty`, 4 `blocked`; provenance completeness 1.0, route-provenance completeness 1.0, repeat reliability 1.0, and zero unstable repeated groups.
-- Aggregate artifact: `live-extractor-benchmark-40way`, artifact ID `10772855635`, SHA-256 `a15e3aab4ee0b52aa6d405d64e8fc91914d1a5fe74dca41a621f758bdcae215a`.
-- Open-issue deep scan run #345: **PASS**, covering 9 active issues plus one explicitly historical #197 regression case across four lanes (10 cases per lane).
-- Coverage-driven runtime matrix run #319 is still in progress.
-- Live chatbot production smoke run #57 is still pending.
-- Hybrid language pilots run #144 failed on the current push batch; it is not an open issue and does not supersede the current evidence gates.
-
-## Evidence boundary and ownership
+## Evidence boundary
 
 `L0 hypothesis -> L1 source -> L2 repository -> L3 GitHub Actions/control-plane -> L4 approved runtime/production`
 
-Do not upgrade source inspection, unit tests, or dry-runs into L4 certification. Foundation owns CI/CD and production deployment authority; Operations remains the private runtime/control plane.
+Do not upgrade source inspection, unit tests, dry-runs or old runtime probes into current L4 certification.
 
 ## Current blockers
 
-1. Authorized research-provider endpoint/API key/model configuration is missing for #157.
-2. The canonical production release must be rerun after the family-state snapshot is current; no new Cloudflare deployment should be inferred from failed run #487.
-3. The nightly diagnosis case-count comparison requires a code fix so a valid 40-case migration review is not mislabeled incomplete.
+1. Authorized research-provider endpoint/API key/model configuration is still required for #157.
+2. Fresh exhaustive-audit/coverage acceptance must complete after the #711 inventory correction; merge #1085 after its checks are green.
+3. Candidate migration issues remain evidence-gated; protected policy/governance/persistence authority remains unchanged.
 
 ---
 
