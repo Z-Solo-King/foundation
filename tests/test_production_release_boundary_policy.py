@@ -40,3 +40,12 @@ def test_operations_bootstrap_config_lives_with_entrypoint_checkout():
     assert 'bootstrap_config="$RUNNER_TEMP/operations/wrangler.bootstrap.toml"' in text
     assert 'cp "$RUNNER_TEMP/operations/wrangler.toml" "$bootstrap_config"' in text
     assert '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config"' in text
+
+
+
+def test_production_preflights_heroic_ai_zone_before_public_deploy():
+    text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
+    assert 'zones?name=heroic-ai.dev&status=active' in text
+    assert 'zone_count=$(jq -r '.result | length' "$RUNNER_TEMP/cloudflare-zone.json")' in text
+    assert 'heroic-ai.dev is not an active zone in the configured account' in text
+    assert 'Add/delegate heroic-ai.dev to this Cloudflare account' in text
