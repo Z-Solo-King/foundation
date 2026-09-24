@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: live-chatbot-production-smoke
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   PUBLIC_WORKER_URL: https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev

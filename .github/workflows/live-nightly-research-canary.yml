@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: live-nightly-research-canary
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
@@ -67,6 +67,7 @@ jobs:
           probe_payload=$(jq -nc '{model:"@cf/zai-org/glm-4.7-flash",messages:[{role:"user",content:"Return exactly OK."}],max_tokens:1,temperature:0}')
           probe_response_file="$RUNNER_TEMP/research-worker-probe.json"
           probe_status=$(curl -sS --max-time 90 -o "$probe_response_file" -w '%{http_code}' -H "Authorization: Bearer local-worker-proxy" -H "Content-Type: application/json" -d "$probe_payload" http://127.0.0.1:8765/chat/completions)
+          printf '%s' "$probe_status" > "$RUNNER_TEMP/research-worker-probe.status"
           echo "Authenticated Worker-backed Workers AI probe -> HTTP ${probe_status}"
           if [ "${probe_status}" = "200" ] && jq -e '.choices[0].message.content | type == "string" and length > 0' "$probe_response_file" >/dev/null 2>&1; then
             echo "Authenticated Worker-backed Workers AI probe: PASS"
@@ -101,6 +102,51 @@ jobs:
           print(json.dumps(summary,indent=2,sort_keys=True))
           raise SystemExit(0 if summary['ok'] else 1)
           PY
+      - name: Ensure structured canary receipt
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p operations/.runtime/live-nightly-canary
+          summary_file="operations/.runtime/live-nightly-canary/summary.json"
+          if [ ! -f "$summary_file" ]; then
+            failure_stage="preflight_or_setup"
+            if [ -f "$RUNNER_TEMP/research-worker-probe.status" ]; then
+              failure_stage="worker_ai_probe"
+            elif [ -f "operations/.runtime/live-nightly-canary/research.jsonl" ]; then
+              failure_stage="research_runner"
+            fi
+            probe_http_status="unknown"
+            if [ -f "$RUNNER_TEMP/research-worker-probe.status" ]; then
+              probe_http_status="$(cat "$RUNNER_TEMP/research-worker-probe.status")"
+            fi
+            probe_error_code=""
+            probe_error_message=""
+            if [ -f "$RUNNER_TEMP/research-worker-probe.json" ]; then
+              probe_error_code="$(jq -r '.error.code // .code // empty' "$RUNNER_TEMP/research-worker-probe.json" 2>/dev/null | head -c 160 || true)"
+              probe_error_message="$(jq -r '.error.message // .message // empty' "$RUNNER_TEMP/research-worker-probe.json" 2>/dev/null | head -c 240 || true)"
+            fi
+            python - "$summary_file" "$failure_stage" "$JOB_STATUS" "$probe_http_status" "$probe_error_code" "$probe_error_message" <<'PY'
+          import json, sys
+          from pathlib import Path
+          out, stage, job_status, http_status, error_code, error_message = sys.argv[1:]
+          data = {
+              "schema": "live-nightly-canary/v1",
+              "ok": False,
+              "failure_stage": stage,
+              "job_status": job_status,
+              "probe_http_status": http_status,
+              "probe_error_code": error_code,
+              "probe_error_message": error_message,
+              "operations_ref": "fda24660843cacfe28de661cf170789af542d28f",
+          }
+          Path(out).write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(data, indent=2, sort_keys=True))
+          PY
+          fi
+
       - name: Remove authenticated Workers AI research proxy
         if: always()
         shell: bash
@@ -126,7 +172,7 @@ jobs:
             )
           else
             body='### Live nightly research canary'
-            body="$body\nNo receipt was produced; inspect the failed canary job."
+            body="$body\nStructured receipt generation failed unexpectedly; inspect the canary job."
           fi
           gh api "repos/$GITHUB_REPOSITORY/issues/157/comments" -f body="$body"
       - name: Upload canary evidence
