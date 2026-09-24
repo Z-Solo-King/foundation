@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EXCLUDED = {".git", ".venv", "__pycache__", "archive"}
-PROTECTED_PRIVATE_MARKERS = ("research-intelligence-engine-private",)
+PROTECTED_PRIVATE_MARKERS = ()
 FORBIDDEN_PRIVATE_MARKERS = (
     "private.chatbot",
     "resource_ledger",
