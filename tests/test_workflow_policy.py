@@ -225,14 +225,12 @@ def test_public_foundation_is_the_only_github_actions_bridge_owner():
     assert "workflow-dispatch-bridge-receipt/v2" in workflow
     assert "canonical-bridge-v3-receipt" in workflow
     assert "workflow_dispatch:" in workflow
-    assert "actions/workflows/${TARGET}/dispatches" in workflow
-    for target in (
-        "nightly-multi-agent-research-v2.yml",
-        "main-push-actions-control-plane-probe-v2.yml",
-    ):
-        assert target in workflow
+    assert 'gh workflow run "$TARGET"' in workflow
+    assert "run_url=" in workflow
     assert "foundation-canonical-workflow-bridge-v2.yml" not in workflow
     assert "foundation-canonical-workflow-bridge.yml" not in workflow
+
+
 
 
 def test_all_canonical_workflow_dispatch_requests_use_the_public_router():
@@ -314,15 +312,18 @@ def test_operations_public_core_is_materialized_before_worker_deploy():
 
 def test_foundation_bridge_records_run_and_job_creation_control_plane_evidence():
     workflow = _workflow_texts()["foundation-canonical-workflow-bridge-v3.yml"]
-    assert 'actions/workflows/${TARGET}/dispatches' in workflow
-    assert 'actions/workflows/${TARGET}/runs' in workflow
+    acceptance = _workflow_texts()["canonical-workflow-dispatch-acceptance.yml"]
+    assert 'actions/workflows/${TARGET}/dispatches' not in workflow
+    assert 'gh workflow run "$TARGET"' in workflow
+    assert 'run_url=' in workflow
     assert 'actions/runs/${target_run_id}/jobs' in workflow
-    assert 'dispatch_status=$(curl' in workflow
-    assert 'test "$dispatch_status" = "204"' in workflow
-    assert 'expected_sha="$(gh api ' in workflow
-    assert '/git/ref/heads/${FOUNDATION_REF}' in workflow
-    assert 'target_run_id' in workflow
     assert 'target_job_count' in workflow
+    assert 'gh workflow run foundation-canonical-workflow-bridge-v3.yml' in acceptance
+    assert 'bridge_run_url=' in acceptance
+    assert 'gh run download "$bridge_run_id"' in acceptance
+    assert 'canonical-bridge-v3-receipt' in acceptance
+    assert "jq -r '.target_run_id // empty'" in acceptance
+
 
 
 def test_hardened_workflows_have_timeout_and_concurrency_contract():

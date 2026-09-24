@@ -31,23 +31,15 @@ jobs:
         run: |
           set -euo pipefail
           expected_sha="$GITHUB_SHA"
-          dispatch_epoch="$(date -u +%s)"
-          payload="$(jq -nc --arg ref "$FOUNDATION_REF" --arg target "$TARGET" '{ref:$ref,inputs:{target:$target}}')"
-
           echo "Dispatching canonical bridge through gh workflow run"
-          GH_TOKEN="$GH_TOKEN" gh workflow run foundation-canonical-workflow-bridge-v3.yml \
+          bridge_url="$(GH_TOKEN="$GH_TOKEN" gh workflow run foundation-canonical-workflow-bridge-v3.yml \
             --repo "$GITHUB_REPOSITORY" \
             --ref "$FOUNDATION_REF" \
-            -f "target=$TARGET"
-          echo "Foundation bridge dispatch accepted"
-          bridge_run_id=""
-          for _ in {1..24}; do
-            runs_json="$(curl -fsS -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${GH_TOKEN}" -H 'X-GitHub-Api-Version: 2022-11-28' "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/foundation-canonical-workflow-bridge-v3.yml/runs?event=workflow_dispatch&branch=${FOUNDATION_REF}&per_page=20")"
-            bridge_run_id="$(jq -r --argjson epoch "$dispatch_epoch" --arg sha "$expected_sha" '.workflow_runs[] | select(.head_sha==$sha) | select((.created_at|fromdateiso8601) >= ($epoch-30)) | .id' <<<"$runs_json" | head -n1)"
-            [[ -n "$bridge_run_id" ]] && break
-            sleep 5
-          done
+            -f "target=$TARGET" 2>&1)"
+          bridge_run_url="$(printf '%s\n' "$bridge_url" | grep -Eo 'https://[^[:space:]]+/actions/runs/[0-9]+' | tail -n1 || true)"
+          bridge_run_id="$(printf '%s\n' "$bridge_run_url" | sed -n 's#.*/runs/\([0-9][0-9]*\).*#\1#p')"
           test -n "$bridge_run_id"
+          echo "Foundation bridge dispatch accepted: run_id=$bridge_run_id"
 
           bridge_conclusion=""
           for _ in {1..60}; do
@@ -60,24 +52,18 @@ jobs:
           done
           test "$bridge_conclusion" = "success"
 
-          target_run_id=""
-          for _ in {1..24}; do
-            target_runs="$(curl -fsS -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${GH_TOKEN}" -H 'X-GitHub-Api-Version: 2022-11-28' "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/${TARGET}/runs?event=workflow_dispatch&branch=${FOUNDATION_REF}&per_page=20")"
-            target_run_id="$(jq -r --argjson epoch "$dispatch_epoch" --arg sha "$expected_sha" '.workflow_runs[] | select(.head_sha==$sha) | select((.created_at|fromdateiso8601) >= ($epoch-30)) | .id' <<<"$target_runs" | head -n1)"
-            [[ -n "$target_run_id" ]] && break
-            sleep 5
-          done
-          test -n "$target_run_id"
-
-          job_count=0
-          for _ in {1..24}; do
-            jobs_json="$(curl -fsS -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${GH_TOKEN}" -H 'X-GitHub-Api-Version: 2022-11-28' "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${target_run_id}/jobs?per_page=100")"
-            job_count="$(jq '.total_count // (.jobs | length) // 0' <<<"$jobs_json")"
-            echo "Target run ${target_run_id}: job_count=${job_count}"
-            [[ "$job_count" -gt 0 ]] && break
-            sleep 5
-          done
+          rm -rf .runtime/bridge-receipt
+          mkdir -p .runtime/bridge-receipt
+          GH_TOKEN="$GH_TOKEN" gh run download "$bridge_run_id" --repo "$GITHUB_REPOSITORY" --name canonical-bridge-v3-receipt --dir .runtime/bridge-receipt
+          receipt_path="$(find .runtime/bridge-receipt -type f -name 'bridge-receipt.json' -print -quit)"
+          test -n "$receipt_path"
+          receipt_sha="$(jq -r '.foundation_sha // empty' "$receipt_path")"
+          target_run_id="$(jq -r '.target_run_id // empty' "$receipt_path")"
+          job_count="$(jq -r '.target_job_count // 0' "$receipt_path")"
+          test "$receipt_sha" = "$expected_sha"
+          test "$target_run_id" -gt 0
           test "$job_count" -gt 0
+          echo "Target run ${target_run_id}: bridge receipt reported job_count=${job_count}"
 
           mkdir -p .runtime
           jq -n --arg sha "$expected_sha" --argjson bridge "$bridge_run_id" --argjson target "$target_run_id" --argjson jobs "$job_count" '{schema:"foundation-workflow-dispatch-bridge-receipt/v1",target:"main-push-actions-control-plane-probe-v2.yml",foundation_sha:$sha,bridge_run_id:$bridge,target_run_id:$target,target_job_count:$jobs,status:"success"}' > .runtime/workflow-dispatch-bridge-receipt.json
