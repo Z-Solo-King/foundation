@@ -1,5 +1,18 @@
 # Live GitHub + Cloudflare Sync Audit — 2026-09-24
 
+## CURRENT LIVE CHECKPOINT — 2026-09-24 11:43 UTC
+
+- Foundation `main`: `adb4bd994cd24b17d018e22dc22a5516da65b4c8` (PR #1101 merged).
+- Operations `main`: `44f53283aa308e8a294ae9fe716ab9200a44809b`.
+- Production Operations pin: `1a12b98981f52de207fa8626cf2e1f5ad06659be`.
+- Nightly research / migration-review Operations pin: `44f53283aa308e8a294ae9fe716ab9200a44809b`.
+- Open issues: 8 total — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699. Open PRs: 0.
+- Post-merge Actions on the current Foundation `main`: Live chatbot production smoke run `35994616511` passed.
+- Nightly research run `35994287754`, live canary `35994265831`, and provider preflight `35994265823` are blocked by the Worker-backed AI path: preflight reached HTTP 200 but returned `generation_status=deterministic_fallback` with no provider, while the local research proxy path returned HTTP 502. The nightly lanes therefore correctly recorded `blocked_before_execution`.
+- The prior nightly shell quoting defect is fixed and the authenticated probe command is syntactically valid.
+- `OPERATIONS_MIGRATION_TOOLS_REF` remains `41db817dee6aa7d369ea9a07dd072b58ece1695a` as a separate immutable tooling pin; Foundation tests explicitly require it to remain distinct from the canonical runtime research pin.
+- Older dated sections below remain historical provenance and must not override this checkpoint.
+
 ## Current live synchronization — 2026-09-24
 
 This snapshot records live GitHub/Cloudflare observations made during the audit. The repository heads below are the implementation/revision observations immediately before this documentation-only synchronization branch; merging this documentation branch may advance `main` without changing runtime code.
