@@ -1,7 +1,7 @@
-# Current Source of Truth — 2026-09-24 Live Reconciliation
+# Current Source of Truth — 2026-09-24 Live Reconciliation — Foundation
 
 **Status:** CURRENT
-**Reconciliation timestamp:** 2026-09-24 10:10 IST
+**Reconciliation timestamp:** 2026-09-24 10:20 IST
 **Authority:** live GitHub refs + current GitHub Actions receipts + explicitly identified runtime receipts. Historical sections below are provenance only.
 
 ## Family repositories
@@ -14,8 +14,8 @@
 
 ## Live GitHub refs
 
-- Foundation `main`: `392c94795936a427ecd78ed192c24df65c3b5596`
-- Operations `main`: `05a8cd7a459626386c0574fdb6bcd273d68bb84f`
+- Foundation `main`: `a529b6f7ac9e62e4bcb112b4f84f130fdd33a365`
+- Operations `main`: `046c9318d9f14b9b9efd2e6ed4ea0303bb6ca1ef`
 - Canonical production Operations target: `1a12b98981f52de207fa8626cf2e1f5ad06659be`
 - Canonical nightly research Operations pin: `3a7e350ddd5648caf93f58651323425186544f66`
 
@@ -23,41 +23,42 @@
 
 - **8 actual open issues:** Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
 - Operations #711 is closed with L4 production evidence from canonical release #492.
-- Foundation #1085 is the only current open implementation PR; Operations has no open PR.
-- Operations #853 corrected the live open-issue inventory after #711 closed.
+- **No current implementation PR is open** in either repository.
+- Operations #853 corrected the live issue inventory; Operations #855 synchronized the exhaustive scan surface, matrix and policy to the closed issue.
 
 ## Nightly research + artifact audit
 
 - Canonical workflow: `.github/workflows/nightly-multi-agent-research-v2.yml`.
 - Latest observed nightly run #878 created three lanes × eight slots = **24 program slots**, but all three lanes were **blocked before provider execution** because `RESEARCH_LLM_ENDPOINT`, `RESEARCH_LLM_API_KEY` and `RESEARCH_LLM_MODEL` were absent.
-- Lane artifacts are truthful: eight blocked rows per lane and no provider-backed findings.
-- Nightly diagnosis artifact **10771684062** (SHA-256 `1a023e57acde5635bf4e98b0afecf547c062f93ee46cccc7057669a046593785`) is truthful about provider blocking but was generated before the diagnosis-count fix and still carries the obsolete `migration_review_incomplete` blocker.
-- Nightly migration-review artifact **10772875132** (SHA-256 `129d71b267088a7138b3a97f3f7d0c9bee272a4a16a59168c8601e503ff34c62`) is internally coherent: **40 matrix cases**, **24 capacity-sweep cases**, **40 language-review rows**, score **70.0/100**, 875 migration candidates and 1,371 source files.
-- The current workflow code now distinguishes the 40-case matrix from the 24-case capacity sweep; the next nightly run should supersede the old diagnosis artifact.
+- The three lane artifacts are truthful: each contains eight `blocked_before_execution` rows and the same exact Operations research revision.
+- Nightly diagnosis artifact **10771684062** is valid historical evidence of the provider block, but it was produced before Foundation #1081 and carries the obsolete `migration_review_incomplete` blocker.
+- Nightly migration-review artifact **10772875132** is internally coherent: **40 matrix cases**, **24 capacity-sweep cases**, **40 language-review rows**, 3 repeats, score **70.0/100**, 875 migration candidates and 1,371 source files.
+- The current nightly diagnosis code checks the 40-case matrix independently from the 24-case capacity sweep. The next real nightly run will supersede the old diagnosis artifact.
 
 ## Benchmark / audit evidence
 
-- Latest extractor benchmark #348 remains the completed strict-quality pass: 40 receipts; 4 `ok`, 32 `empty`, 4 `blocked`; provenance and route provenance 1.0; repeat reliability 1.0; zero unstable repeated groups.
-- Latest open-issue deep scan #345 passed with the prior 9 active + one historical regression case. A fresh rerun is required after the #711 inventory correction.
-- Coverage-driven runtime matrix #319 remains an in-progress evidence item.
-- Foundation PR #1085 changes live coverage probes to explicit workflow-dispatch opt-in. Required PR checks and the nightly research contract pass; its exhaustive-audit rerun is pending.
+- Latest extractor benchmark #348 remains the completed strict-quality pass: 40 receipts; 4 `ok`, 32 `empty`, 4 `blocked`; provenance completeness 1.0; route-provenance completeness 1.0; repeat reliability 1.0; zero unstable repeated groups.
+- Latest open-issue deep scan #345 passed against the older 9-active-issue register plus historical #197. A fresh deep-scan run is required to certify the current 8-issue queue.
+- Foundation exhaustive six-lane audit run #354 now **passes** after the #711 inventory/surface/matrix/policy correction.
+- Coverage-driven runtime matrix #319 remains an evidence item; no new runtime result is inferred merely from the #1085 merge.
+- Hybrid language pilots run #144 remains a historical failure and is not an open implementation defect.
 
 ## Production / runtime evidence
 
-- Canonical production release #492 used Foundation `5eadf8c8813c0724918129da7fe120263a5e06fb` and Operations `1a12b98981f52de207fa8626cf2e1f5ad06659be` and supplied L4 runtime evidence for the DurableResourceLedger acceptance gate.
-- The last directly available public-worker probe is run #58 against the older pair `fe79e10c...` + `bfcfaf594...`; it is historical and should not be treated as current Cloudflare provenance without a fresh runtime-specific probe.
+- Canonical production release #492 used Foundation `5eadf8c8813c0724918129da7fe120263a5e06fb` and Operations `1a12b98981f52de207fa8626cf2e1f5ad06659be` and supplied L4 evidence for the DurableResourceLedger acceptance gate.
+- The last directly available public-worker probe is run #58 against the older pair `fe79e10c...` + `bfcfaf594...`; it remains historical without a fresh Cloudflare-specific runtime receipt.
 
 ## Evidence boundary
 
 `L0 hypothesis -> L1 source -> L2 repository -> L3 GitHub Actions/control-plane -> L4 approved runtime/production`
 
-Do not upgrade source inspection, unit tests, dry-runs or old runtime probes into current L4 certification.
+Source inspection, unit tests, dry-runs and historical probes are never promoted to current L4 certification.
 
 ## Current blockers
 
-1. Authorized research-provider endpoint/API key/model configuration is still required for #157.
-2. Fresh exhaustive-audit/coverage acceptance must complete after the #711 inventory correction; merge #1085 after its checks are green.
-3. Candidate migration issues remain evidence-gated; protected policy/governance/persistence authority remains unchanged.
+1. #157 still requires authorized research-provider endpoint/API key/model configuration and a real 24-program provider-backed run.
+2. The current 8-issue deep scan, coverage matrix and remaining runtime acceptance issues still require their issue-specific L3/L4 receipts.
+3. Candidate language migrations remain shadow/evidence-gated; protected policy, governance, persistence, replay, provenance and rollback authority remains unchanged.
 
 ---
 
