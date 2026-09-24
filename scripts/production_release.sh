@@ -293,17 +293,29 @@ bootstrap_config="$RUNNER_TEMP/operations-bootstrap.toml"
 cp "$RUNNER_TEMP/operations/wrangler.toml" "$bootstrap_config"
 python - "$bootstrap_config" <<'PY'
 from pathlib import Path
-import re
 import sys
 
 path = Path(sys.argv[1])
 text = path.read_text(encoding="utf-8")
-text, removed = re.subn(r'(?ms)^\\[\\[services\\]\\]\\n.*?(?=^\\[\\[d1_databases\\]\\])', '', text)
-if removed != 1:
-    raise SystemExit(f"expected exactly one Operations services block, removed={removed}")
-path.write_text(text, encoding="utf-8")
+lines = text.splitlines(keepends=True)
+output = []
+skip = False
+removed = 0
+for line in lines:
+    stripped = line.strip()
+    if stripped == "[[services]]":
+        skip = True
+        removed += 1
+        continue
+    if skip and stripped.startswith("[["):
+        skip = False
+    if not skip:
+        output.append(line)
+if removed != 1 or skip:
+    raise SystemExit(f"expected exactly one complete Operations services block, removed={removed}, trailing_skip={skip}")
+path.write_text("".join(output), encoding="utf-8")
 PY
-! grep -q '^\\[\\[services\\]\\]$' "$bootstrap_config"
+! grep -q '^\[\[services\]\]$' "$bootstrap_config"
 ! grep -q '^service = "foundation"$' "$bootstrap_config"
 
 # Always bootstrap the Operations target without its reciprocal Foundation binding.
