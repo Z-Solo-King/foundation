@@ -354,7 +354,7 @@ jobs:
           invalid=["not-a-url","ftp://example.com/file","https:///missing-host","https://","http:///example.com","https://example.com:8443/a","https://user:pass@example.com/a","http://user@example.com/a","http://localhost/a","http://127.0.0.1/a","http://10.0.0.1/a","http://192.168.1.1/a","http://[::1]/a","http://[fc00::1]/a"]
           rows += [{"id":f"invalid-{i+1:02d}","input":value} for i,value in enumerate(invalid)]
           Path("benchmark/polyglot/rust_url_identity/differential_corpus.jsonl").write_text("\n".join(json.dumps(v) for v in rows)+"\n", encoding="utf-8")
-          assert len(rows) == 47
+          assert len(rows) == 61
           PY
       - name: Generate Python canonical outputs
         working-directory: operations
@@ -393,7 +393,7 @@ jobs:
               assert a["ok"]==b["ok"], (a,b)
               if a["ok"]:
                   assert a["output"]==b["output"], (a,b)
-          print("URL canonicalization differential parity: PASS (33 valid + 14 adversarial)")
+          print("URL canonicalization differential parity: PASS (47 valid + 14 adversarial)")
           PY
       - name: Benchmark Rust URL candidate
         working-directory: operations
