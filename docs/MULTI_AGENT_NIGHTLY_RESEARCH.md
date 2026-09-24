@@ -29,7 +29,7 @@ The matrix and orchestration implementation are private. Public Foundation CI ve
 
 The scheduled workflow starts at **01:00 IST** (`19:30 UTC` on the previous day) and starts all three lanes in parallel. Each lane validates exactly eight program IDs (`laneN-slot0` through `laneN-slot7`). A final summary combines the three lane artifacts and rejects the run unless all 24 programs are present.
 
-Before executing research, each Foundation lane uses the purpose-specific GitHub App installation credential to obtain a short-lived read token and checks out the exact immutable Operations revision recorded in `.github/workflows/nightly-multi-agent-research-v2.yml`.
+Before executing research, each Foundation lane uses the purpose-specific GitHub App installation credential to obtain a short-lived read token and checks out the exact immutable Operations revision recorded in `.github/workflows/nightly-multi-agent-research-v3.yml`.
 
 The private Operations repository does **not** need a GitHub Actions workflow for this path. The execution happens on the public Foundation runner using the private source checkout. No private Operations Actions quota is consumed by the nightly engine.
 
@@ -53,4 +53,4 @@ The target output includes benchmark regressions, ecosystem/platform knowledge, 
 
 Project-improvement findings produced by the private summarizer remain candidate evidence until the deterministic acquisition/evidence qualification path accepts them. They do not become authoritative policy, security, billing, or publication authority merely because the nightly run completed.
 
-For the exact schedule, artifact contract, coverage assertions and acceptance gates, see `docs/NIGHTLY_RESEARCH_RUNBOOK.md` and `.github/workflows/nightly-multi-agent-research-v2.yml`.
+For the exact schedule, artifact contract, coverage assertions and acceptance gates, see `docs/NIGHTLY_RESEARCH_RUNBOOK.md` and `.github/workflows/nightly-multi-agent-research-v3.yml`.
