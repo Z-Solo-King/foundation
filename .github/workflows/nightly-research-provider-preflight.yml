@@ -18,7 +18,7 @@ jobs:
         env:
           OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
           OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
-          RESEARCH_LLM_ENDPOINT: "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/ai/v1"
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           RESEARCH_LLM_API_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           RESEARCH_LLM_MODEL: "@cf/meta/llama-3.1-8b-instruct-fast"
         run: |
@@ -29,6 +29,8 @@ jobs:
           [ -n "${RESEARCH_LLM_ENDPOINT:-}" ] && endpoint=true
           [ -n "${RESEARCH_LLM_API_KEY:-}" ] && api_key=true
           [ -n "${RESEARCH_LLM_MODEL:-}" ] && model=true
+          ready=false
+          if [ "$app_id" = true ] && [ "$app_key" = true ] && [ "$endpoint" = true ] && [ "$api_key" = true ] && [ "$model" = true ]; then ready=true; fi
           if [ "$ready" = "true" ]; then
             probe=$(curl -fsS --max-time 30 \
               -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
@@ -42,8 +44,6 @@ jobs:
               echo "Cloudflare Workers AI inference probe: PASS"
             fi
           fi
-          ready=false
-          if [ "$app_id" = true ] && [ "$app_key" = true ] && [ "$endpoint" = true ] && [ "$api_key" = true ] && [ "$model" = true ]; then ready=true; fi
           export PREFLIGHT_APP_ID="$app_id"
           export PREFLIGHT_APP_KEY="$app_key"
           export PREFLIGHT_ENDPOINT="$endpoint"
