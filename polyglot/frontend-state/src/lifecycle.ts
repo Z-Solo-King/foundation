@@ -14,7 +14,7 @@
   const BACKEND_TO_UI: Readonly<Record<string, UiState>> = Object.freeze({
     new:'NEW_CHAT',new_chat:'NEW_CHAT',submitting:'SUBMITTING',submitted:'QUEUED',queued:'QUEUED',
     running:'RUNNING',streaming:'STREAMING',complete:'COMPLETE',completed:'COMPLETE',success:'COMPLETE',
-    succeeded:'COMPLETE',partial:'PARTIAL',cancelled:'CANCELLED',blocked:'BLOCKED',rejected:'REJECTED',unavailable:'UNAVAILABLE',
+    succeeded:'COMPLETE',partial:'PARTIAL',cancelled:'CANCELLED',failed:'FAILED',blocked:'BLOCKED',rejected:'REJECTED',unavailable:'UNAVAILABLE',
     unknown:'UNKNOWN',reconnecting:'RECONNECTING',resumed:'RESUMED',replayed:'REPLAYED',auth_expired:'AUTH_EXPIRED',
     unauthorized:'AUTH_EXPIRED',forbidden:'AUTH_EXPIRED',paused:'RECONNECTING',
   });
