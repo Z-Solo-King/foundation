@@ -3,7 +3,7 @@
 This checkpoint supersedes older dated entries below. Current GitHub branch heads and current GitHub Actions receipts take precedence. Cloudflare production state is **not independently verifiable from this GitHub-only chat** and is therefore not rewritten as current.
 
 ## Repository state
-- Foundation `main`: `c519b56050632862fbac4f6d6841cbd725408cc8`
+- Foundation implementation head at synchronization: `c519b56050632862fbac4f6d6841cbd725408cc8` (the documentation-only sync commit may advance `main` without changing runtime code)
 - Operations `main`: `fda24660843cacfe28de661cf170789af542d28f`
 - Canonical Operations production/nightly pin in Foundation: `fda24660843cacfe28de661cf170789af542d28f`
 - Operations Workers AI provider: `cloudflare_workers_ai`
@@ -11,12 +11,12 @@ This checkpoint supersedes older dated entries below. Current GitHub branch head
 - `STRICT_ZERO_COST_ONLY`: `true`
 - Application Workers AI neuron limit: `10000`
 - Open issues: Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699
-- Open PRs after this reconciliation: Foundation #1109; Operations none. Foundation #1112 was superseded by merged #1114 and is closed.
+- Open PRs after merging this documentation reconciliation: Foundation #1109; Operations none. Foundation #1112 was superseded by merged #1114 and is closed.
 
 ## Current GitHub Actions evidence
-- Foundation `main` currently has 95 reported check-runs at the latest observation: 89 completed-success, 5 failed, and 1 still in progress.
+- Foundation implementation head `c519b560...` has 95 reported check-runs at the latest observation: 90 completed-success and 5 failed.
 - The five failures are the nightly research lanes/canary and the truthful-result gate. Their logs show the private Operations checkout and current `fda246...` pin succeed, the local research proxy starts, and the Worker-backed AI probe receives HTTP 502 with upstream Worker HTTP 403 (`upstream_worker_rejected`). The research configuration variables are present in those runs.
-- The current production smoke check was still in progress at the latest observation; its workflow now uses the current `infrastructure_verify_public_test` diagnostic operation.
+- Production smoke run 85 (`36013041963`) completed successfully after the current `infrastructure_verify_public_test` diagnostic operation was exercised.
 - This is runtime/control-plane evidence. It is not a claim that Cloudflare production has been reconciled to the current GitHub heads.
 
 ## Cloudflare boundary
