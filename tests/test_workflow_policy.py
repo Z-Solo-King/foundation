@@ -138,6 +138,9 @@ def test_production_release_fails_closed_and_retains_chat_policy_receipts():
     assert "concurrent-chat-2.json" in deployment
     assert "policy-block.json" in deployment
     assert 'mode:"chat"' in deployment
+    assert 'require_model_generation:true' in deployment
+    assert 'generation_status == \"model_generated\"' in deployment
+    assert 'provider == \"cloudflare_workers_ai\"' in deployment
     assert "policy denial -> HTTP" in deployment
     assert "policy-block.body" in deployment
     assert "d1_reservation_reject_changes_semantics" in deployment
