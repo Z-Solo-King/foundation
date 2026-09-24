@@ -16,6 +16,7 @@ import json
 import os
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 
@@ -53,6 +54,30 @@ def _compact_messages(messages: object) -> str:
     if len(message) > MAX_MESSAGE_CHARS:
         message = message[:MAX_MESSAGE_CHARS]
     return message
+
+
+def _safe_upstream_error_details(error: HTTPError) -> dict[str, object]:
+    """Expose only bounded, non-secret fields from an upstream HTTP error."""
+    details: dict[str, object] = {"upstream_status": int(error.code)}
+    try:
+        raw = error.read(MAX_BODY_BYTES)
+        body = json.loads(raw.decode("utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return details
+    if not isinstance(body, dict):
+        return details
+    upstream_error = body.get("error")
+    if isinstance(upstream_error, str) and upstream_error.strip():
+        details["upstream_error"] = upstream_error.strip()[:200]
+    response = body.get("response")
+    if isinstance(response, dict):
+        generation_status = response.get("generation_status")
+        provider = response.get("provider")
+        if isinstance(generation_status, str) and generation_status.strip():
+            details["upstream_generation_status"] = generation_status.strip()[:80]
+        if isinstance(provider, str) and provider.strip():
+            details["upstream_provider"] = provider.strip()[:120]
+    return details
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -134,6 +159,13 @@ class Handler(BaseHTTPRequestHandler):
             with urlopen(request, timeout=90) as response:
                 body = json.loads(response.read().decode("utf-8"))
                 status = int(response.status)
+        except HTTPError as exc:
+            details = _safe_upstream_error_details(exc)
+            self._json(
+                {"error": {"message": "upstream_worker_rejected", "type": "upstream_http_error", **details}, "request_id": request_digest},
+                502,
+            )
+            return
         except Exception as exc:
             self._json(
                 {"error": {"message": "upstream_worker_failure", "type": type(exc).__name__}, "request_id": request_digest},
