@@ -28,3 +28,8 @@ def test_fresh_acceptance_workflow_dispatches_both_identities():
     assert "gh workflow run foundation-canonical-workflow-bridge-v3.yml" in text
     assert "gh workflow run nightly-multi-agent-research-v2.yml" in text
     assert "jobs?per_page=100" in text
+    assert 'jobs_status="$(curl -sS -o "$RUNNER_TEMP/bridge-jobs.json" -w \'%{http_code}\'' in text
+    assert 'jobs_status="$(curl -sS -o "$RUNNER_TEMP/nightly-jobs.json" -w \'%{http_code}\'' in text
+    assert "404) jobs=0" in text
+    assert "Unexpected bridge jobs HTTP status" in text
+    assert "Unexpected nightly jobs HTTP status" in text

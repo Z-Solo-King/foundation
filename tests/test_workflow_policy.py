@@ -317,6 +317,8 @@ def test_foundation_bridge_records_run_and_job_creation_control_plane_evidence()
     assert 'gh workflow run "$TARGET"' in workflow
     assert 'run_url=' in workflow
     assert 'actions/runs/${target_run_id}/jobs' in workflow
+    assert 'jobs_status="$(curl -sS -o "$RUNNER_TEMP/target-jobs.json" -w \'%{http_code}\'' in workflow
+    assert '404) job_count=0' in workflow
     assert 'target_job_count' in workflow
     assert 'gh workflow run foundation-canonical-workflow-bridge-v3.yml' in acceptance
     assert 'bridge_run_url=' in acceptance
