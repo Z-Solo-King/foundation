@@ -20,7 +20,7 @@ permissions:
 
 concurrency:
   group: foundation-hybrid-language-pilots-${{github.ref}}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   resolve_operations_ref:
@@ -354,7 +354,7 @@ jobs:
           invalid=["not-a-url","ftp://example.com/file","https:///missing-host","https://","http:///example.com","https://example.com:8443/a","https://user:pass@example.com/a","http://user@example.com/a","http://localhost/a","http://127.0.0.1/a","http://10.0.0.1/a","http://192.168.1.1/a","http://[::1]/a","http://[fc00::1]/a"]
           rows += [{"id":f"invalid-{i+1:02d}","input":value} for i,value in enumerate(invalid)]
           Path("benchmark/polyglot/rust_url_identity/differential_corpus.jsonl").write_text("\n".join(json.dumps(v) for v in rows)+"\n", encoding="utf-8")
-          assert len(rows) == 47
+          assert len(rows) == 61
           PY
       - name: Generate Python canonical outputs
         working-directory: operations
@@ -393,7 +393,7 @@ jobs:
               assert a["ok"]==b["ok"], (a,b)
               if a["ok"]:
                   assert a["output"]==b["output"], (a,b)
-          print("URL canonicalization differential parity: PASS (33 valid + 14 adversarial)")
+          print("URL canonicalization differential parity: PASS (47 valid + 14 adversarial)")
           PY
       - name: Benchmark Rust URL candidate
         working-directory: operations
@@ -503,26 +503,26 @@ jobs:
                           raise SystemExit
           raise SystemExit("FOUNDATION_COMMIT not found")
 
-      - name: Checkout exact pinned Foundation public core
+      - name: Checkout Foundation public core repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/foundation
-          ref: ${{ steps.foundation-core-pin.outputs.ref }}
           token: ${{ github.token }}
           path: foundation-core
           fetch-depth: 1
 
-      - name: Ensure exact Foundation Git object is present
+      - name: Select exact pinned Foundation public-core commit
         working-directory: foundation-core
         shell: bash
         env:
           FOUNDATION_COMMIT: ${{ steps.foundation-core-pin.outputs.ref }}
         run: |
           set -euo pipefail
+          test "$FOUNDATION_COMMIT" = "100a382a17ad793e267c96156320f2eae1c10ef9"
           git fetch --no-tags --depth=1 origin "$FOUNDATION_COMMIT"
           git cat-file -e "$FOUNDATION_COMMIT^{commit}"
           git cat-file -e "$FOUNDATION_COMMIT:foundation_core/__init__.py"
-
+          git checkout --detach "$FOUNDATION_COMMIT"
       - name: Materialize pinned public foundation_core
         working-directory: operations
         env:
