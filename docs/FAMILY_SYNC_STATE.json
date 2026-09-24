@@ -1,10 +1,10 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT_RUNTIME_RECONCILIATION",
-  "audited_at": "2026-09-24T00:35:00+05:30",
+  "audited_at": "2026-09-24T10:10:00+05:30",
   "live_main": {
-    "foundation": "0038189a25c6fd74af11600648321e87e9810b3d",
-    "operations": "9ad378bc5c2b68408636cd9c574ffbf977758adf"
+    "foundation": "392c94795936a427ecd78ed192c24df65c3b5596",
+    "operations": "05a8cd7a459626386c0574fdb6bcd273d68bb84f"
   },
   "runtime_pins": {
     "foundation_runtime": "fe79e10c4f7e3ee17b9488848b90cf6b7e93f6fb",
@@ -32,13 +32,12 @@
     }
   },
   "current_queue": {
-    "open_issue_count": 9,
+    "open_issue_count": 8,
     "foundation": [
       58,
       157
     ],
     "operations": [
-      711,
       699,
       603,
       597,
@@ -46,14 +45,17 @@
       340,
       145
     ],
-    "open_implementation_pr_count": 0,
-    "foundation_open_prs": [],
+    "open_implementation_pr_count": 1,
+    "foundation_open_prs": [
+      1085
+    ],
     "operations_open_prs": [],
-    "open_pr_count": 0,
+    "open_pr_count": 1,
     "closed": [
       197,
       352,
-      452
+      452,
+      711
     ]
   },
   "latest_evidence": {
@@ -91,7 +93,8 @@
       "capacity_cases": 24,
       "high_findings": 4,
       "migration_candidates": 875,
-      "source_files": 1371
+      "source_files": 1371,
+      "diagnosis_artifact_state": "superseded_on_next_corrected_run"
     },
     "extractor_completed": {
       "run": 348,
@@ -119,7 +122,8 @@
       "active_issue_count": 9,
       "historical_issue_count": 1,
       "lane_count": 4,
-      "cases_per_lane": 10
+      "cases_per_lane": 10,
+      "inventory_correction_pending_rerun": true
     },
     "public_worker_probe": {
       "run": 58,
@@ -132,10 +136,10 @@
       "operations_ref": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
     },
     "production_release": {
-      "run": 487,
-      "state": "failed_before_deployment",
-      "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
-      "reason": "family semantic audit snapshot was missing repositories.*.last_audited_main_sha at release time"
+      "run": 492,
+      "state": "success",
+      "foundation_ref": "5eadf8c8813c0724918129da7fe120263a5e06fb",
+      "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
     },
     "chatbot_smoke": {
       "run": 57,
@@ -147,15 +151,14 @@
     }
   },
   "known_findings": [
-    "Current open issue inventory is 9 across the family: Foundation #58/#157 and Operations #711/#699/#603/#597/#385/#340/#145.",
-    "Operations #197 and #352 plus Foundation #452 are closed; #197 remains historical regression coverage in the deep scan.",
-    "Latest open-issue deep scan #345 passed with 9 active issues plus one historical #197 case across four lanes.",
-    "Latest extractor benchmark #348 passed the strict evidence-quality gate with 40 receipts: 4 ok, 32 empty, 4 blocked; provenance and route provenance are complete; repeated groups are stable.",
-    "Nightly research #878 is blocked before provider execution because RESEARCH_LLM_ENDPOINT, RESEARCH_LLM_API_KEY and RESEARCH_LLM_MODEL are unset.",
-    "Nightly migration review reports 40 matrix/language cases and a separate 24-case capacity sweep; the diagnosis currently compares the capacity-sweep count to 40 and emits a misleading migration_review_incomplete blocker.",
-    "Canonical production target is Operations 1a12b98981f52de207fa8626cf2e1f5ad06659be. Release #487 failed before deployment during family-semantic snapshot validation, so Cloudflare remains on the verified deployed pair fe79... + bfc....",
-    "Public Worker live probe #58 returned /, /health and /readiness successfully; readiness reported ready=true and database=true for the deployed fe79... + bfc... pair.",
-    "Operations has no current GitHub Actions workflow surface; Foundation is the CI/CD owner. Cloudflare Deploy Hooks are empty for both Workers."
+    "Current live open issue inventory is 8: Foundation #58/#157 and Operations #145/#340/#385/#597/#603/#699.",
+    "Operations #711 is closed after canonical production release #492 supplied L4 D1 changes()/over-limit/reconciliation evidence.",
+    "Operations #197 and #352 plus Foundation #452 are closed; #197 remains historical regression coverage.",
+    "Operations #853 corrected current_open_issue_inventory.json after #711 closure.",
+    "Latest extractor benchmark #348 passed its strict evidence-quality gate with 40 receipts and complete provenance.",
+    "Nightly run #878 is blocked before provider execution because the three research-provider secrets are unset.",
+    "Nightly migration-review artifact #10772875132 is coherent at 40 matrix cases plus 24 capacity cases; the old diagnosis artifact #10771684062 contains a stale count blocker from the pre-fix workflow revision.",
+    "Foundation #1085 is the current coverage live-probe opt-in repair; its exhaustive audit rerun must consume the corrected 8-issue inventory."
   ],
   "evidence_boundary": {
     "L0": "hypothesis",
@@ -212,10 +215,10 @@
       "operations_revision": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
     },
     "production_release": {
-      "run": 487,
-      "status": "failed_before_deployment",
-      "operations_revision": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
-      "deployed_operations_revision": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
+      "run": 492,
+      "status": "success",
+      "foundation_revision": "5eadf8c8813c0724918129da7fe120263a5e06fb",
+      "operations_revision": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
     },
     "public_worker_probe": {
       "run": 58,
@@ -226,10 +229,10 @@
   },
   "repositories": {
     "foundation": {
-      "last_audited_main_sha": "0038189a25c6fd74af11600648321e87e9810b3d"
+      "last_audited_main_sha": "392c94795936a427ecd78ed192c24df65c3b5596"
     },
     "operations": {
-      "last_audited_main_sha": "9ad378bc5c2b68408636cd9c574ffbf977758adf"
+      "last_audited_main_sha": "05a8cd7a459626386c0574fdb6bcd273d68bb84f"
     }
   }
 }
