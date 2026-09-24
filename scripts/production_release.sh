@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="995c5040802881e629eed6f2f96f91e81c78fef8"
+OPERATIONS_REF="206cab0481fad40aaedbf70cf1a4a963c6007d8d"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"
@@ -23,7 +23,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = '995c5040802881e629eed6f2f96f91e81c78fef8'
+test "$OPERATIONS_REF" = '206cab0481fad40aaedbf70cf1a4a963c6007d8d'
 
 after_install_marker=''
 
