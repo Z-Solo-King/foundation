@@ -188,8 +188,15 @@ test -n "$operations_merge_base"
 echo "Operations architecture diff base: ${operations_merge_base}"
 git -C "$RUNNER_TEMP/operations" show "origin/main:docs/FAMILY_SYNC_STATE.json" > "$RUNNER_TEMP/operations/docs/FAMILY_SYNC_STATE.json"
 jq -e '
-  (.repositories.foundation.last_audited_main_sha | type == "string" and length == 40)
-  and (.repositories.operations.last_audited_main_sha | type == "string" and length == 40)
+  if (.repositories? != null) then
+    (.repositories.foundation.last_audited_main_sha | type == "string" and length == 40)
+    and (.repositories.operations.last_audited_main_sha | type == "string" and length == 40)
+  elif (.live_main? != null) then
+    (.live_main.foundation | type == "string" and length == 40)
+    and (.live_main.operations | type == "string" and length == 40)
+  else
+    false
+  end
 ' "$RUNNER_TEMP/operations/docs/FAMILY_SYNC_STATE.json" >/dev/null
 echo "Family sync snapshot refresh: PASS (Operations main state overlaid; runtime remains ${OPERATIONS_REF})"
 
