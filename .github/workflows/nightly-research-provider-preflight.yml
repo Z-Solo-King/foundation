@@ -37,6 +37,7 @@ jobs:
             health_headers="$RUNNER_TEMP/nightly-research-worker-health.headers"
             worker_health_status=$(curl -sS --max-time 30 -D "$health_headers" -o "$health_file" -w '%{http_code}' \
               "${PUBLIC_WORKER_URL}/health" || true)
+            worker_health_status="${worker_health_status:-000}"
             echo "Public Worker health probe -> HTTP ${worker_health_status}"
             echo "Worker health edge headers:"
             awk 'BEGIN{IGNORECASE=1} /^(cf-ray|server|content-type):/ {print}' "$health_headers" | head -20 || true
