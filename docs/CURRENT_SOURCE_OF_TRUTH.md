@@ -1,35 +1,35 @@
-# LIVE CURRENT CHECKPOINT — 2026-09-24 — Cycle 4
+# LIVE CURRENT CHECKPOINT — 2026-09-24 — Cycle 5
 
 This checkpoint supersedes older dated sections below.
 
 ## Current repository state
 - Foundation main: `725e1b9cdaa637f07d4264673cddfc8ab806b3c6`
-- Operations main: `5d6f903719ebb19d16e4426512ffdd6d308ee4dc`
+- Operations main: `9f1d3498ea6be4864bfa6f3e3a5e2b77661ea196`
 - Open issues: 8 total — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
-- Open pull requests: none.
-- Foundation #1132 and #1135 are merged; Operations #890 and #891 are merged.
+- Open implementation PRs: Foundation #1136 (documentation/session-evidence only); Operations none.
+- Foundation #1132/#1134/#1135 are merged; Operations #890/#891 are merged.
 - Canonical Operations production/nightly pin: `fda24660843cacfe28de661cf170789af542d28f`.
 
-## Fresh CI / runtime evidence
-- Foundation fresh control-plane acceptance on `725e1b9c...`: run `36030977790` PASS.
-- Foundation nightly research contract: run `36030977760` PASS.
-- Foundation polyglot governance audit: run `36030977701` PASS.
-- Foundation extractor benchmark: run `36030977702` was still in progress at the latest observation; no result is claimed here.
-- Latest nightly research run `36030996071` failed in all three research lanes after the authenticated proxy reached the public Worker and received upstream HTTP 403, surfaced locally as HTTP 502 `upstream_worker_rejected`. Research executor configuration preflight passed. This is the current #157 runtime/provider acceptance blocker.
-- Latest live nightly canary run `36030977932` reproduced the same authenticated Worker 403/502 blocker and emitted a structured receipt on Foundation #157.
-- Previous canonical production release run `36029349859` remains in progress; the newer release run `36030977718` is queued behind the active release because the canonical production workflow intentionally uses non-canceling concurrency. No conclusion is drawn from the queued run.
+## Fresh GitHub/runtime evidence
+- Fresh control-plane identity acceptance on Foundation `725e1b9...`: run `36030977790` PASS.
+- Nightly research contract: run `36030977760` PASS.
+- Polyglot governance audit: run `36030977701` PASS.
+- Live extractor benchmark: run `36030977702` PASS.
+- Canonical production release: run `36030977718` PASS. The release exercised authenticated chat, replay/idempotency, concurrent idempotency, policy denial, authenticated SSE with HTTP 200 and terminal partial lifecycle, permitted-source research ingestion/readback, D1/B2 diagnostics, durable chat terminalization CAS, resource reservation/reconciliation, maintenance reconciliation, and provider-stream contract. Operations provenance was observed as `github:fda24660843cacfe28de661cf170789af542d28f`.
+- Latest nightly multi-agent research: run `36030996071` FAIL; research executor preflight passed, but the authenticated proxy reached the public Worker and received upstream HTTP 403, surfaced locally as `upstream_worker_rejected` / HTTP 502. This remains the current #157 provider/runtime blocker.
+- Live nightly canary: run `36030977932` FAIL with the same upstream Worker 403/502 condition.
 
-## Current acceptance classification
-- #157: **C/E** — repository contract is present and current live GitHub evidence shows an external/runtime rejection at the public Worker boundary. Do not manufacture a code change without Cloudflare-side evidence.
-- #145/#340/#385/#597/#603: **E** — implementation is present; required runtime/benchmark/rollback evidence remains outstanding.
-- #699: aggregate **E** tracker for the remaining child acceptance gates.
-- #58: meta **E** tracker; remains open until dependent acceptance gates discharge.
+## Acceptance classification
+- #157: **C/E** — repository-side research path is implemented and configured; current authenticated runtime evidence still stops at the public Worker 403 boundary.
+- #145/#340/#385/#597/#603: **E** — repository implementation and deterministic/runtime smoke evidence are present, but each issue still requires its own external scheduler, interruption/recovery, migration parity/performance, rollback, shadow/canary, or portability receipt.
+- #699: aggregate **E** tracker until child evidence gates discharge.
+- #58: meta **E** tracker until dependent acceptance gates discharge.
 
 ## Runtime boundary
-Cloudflare production state must be refreshed from the Cloudflare control plane before being called current L4 evidence. The active Cloudflare action is not exposed to this chat, so no fresh Worker deployment/version/binding/cron claim is made here.
+The current GitHub production release provides runtime evidence through its controlled release path, but the dedicated Cloudflare control-plane connector is not exposed to this chat. Therefore no new standalone Cloudflare deployment/version/binding/cron/secrets claim is made outside the release evidence already recorded above.
 
 ## Next bounded action
-Use the fresh #157 403 receipt to drive Cloudflare-side diagnosis when that control plane is available; in parallel, reconcile the evidence-only children and avoid speculative implementation churn.
+Use the current #157 403 receipt for Cloudflare-side authorization/service-binding diagnosis when that control plane is available. Keep repository changes limited to newly reproducible defects; do not weaken acceptance gates to convert runtime failures into passes.
 
 ---
 # Historical checkpoint — 2026-09-23 Live Reconciliation (superseded)
