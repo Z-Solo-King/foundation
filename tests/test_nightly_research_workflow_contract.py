@@ -7,6 +7,16 @@ def workflow_text() -> str:
     return WORKFLOW.read_text(encoding="utf-8")
 
 
+def test_live_research_waits_for_exact_successful_production_release():
+    text = workflow_text()
+    assert "production_gate:" in text
+    assert "heroic-ai-production-release.yml" in text
+    assert 'target_sha="${GITHUB_SHA}"' in text
+    assert "select(.headSha == $sha)" in text
+    assert 'status == "completed" and .conclusion == "success"' in text
+    assert "sleep 10" in text
+    assert "needs: [production_gate]" in text
+
 def test_matrix_is_fail_fast_false_and_has_three_lanes():
     text = workflow_text()
     assert "fail-fast: false" in text
