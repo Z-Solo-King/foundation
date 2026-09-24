@@ -28,7 +28,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           APPLY: ${{ inputs.apply }}
           REPO: ${{ github.repository }}
-          TARGET_PATH: .github/workflows/nightly-multi-agent-research-v2.yml
+          TARGET_PATH: .github/workflows/nightly-multi-agent-research-v3.yml
         run: |
           set -euo pipefail
           [[ "$APPLY" == "true" ]] || { echo 'apply=false; refusing mutation.'; exit 0; }
