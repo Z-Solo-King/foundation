@@ -1,3 +1,32 @@
+# 2026-09-24 CURRENT AUTHORITY RECONCILIATION — CYCLE 6
+
+**Status:** LIVE — this header supersedes older dated authority/handoff sections below.
+
+## Current family state
+- Foundation main: `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`
+- Operations main: `ebf1e82734cb2fab0a8f4eddc8b1f342803740d1`
+- Open issues: 8 total — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
+- Open implementation PRs: 0 at the current checkpoint. Foundation documentation PR #1136 and Operations documentation PR #893 are merged.
+- Current documentation reconciliation is in Foundation #1137 and Operations #894; Operations #894 is already merged, while Foundation #1137 is awaiting its required PR check.
+- Canonical Operations production/nightly pin: `fda24660843cacfe28de661cf170789af542d28f`.
+
+## Current runtime/evidence
+- Canonical Foundation production release run `36030977718`: PASS against Operations `fda24660843cacfe28de661cf170789af542d28f`.
+- Latest nightly research run `36030996071`: upstream public Worker HTTP 403, surfaced locally as HTTP 502 `upstream_worker_rejected`; this remains Foundation #157's provider/runtime blocker.
+- Live nightly canary `36030977932`: same 403/502 boundary.
+- These results do not authorize closing the remaining L4 evidence gates.
+
+## Chat/session continuity
+- The ChatGPT conversation became unresponsive and reached a practical context/length boundary. Treat the conversation as transport state, not as the execution ledger.
+- Closing the Android app is an observed correlation only; do not infer that ordinary Chat-mode work either continued or stopped without authoritative receipts.
+- External September 2026 research reviewed OpenAI Help/Status, OpenAI Community, Reddit, GitHub/Codex, mainstream technical coverage, Zhihu, Baidu Tieba, Douban, PTT and Bilibili. Strongest matching signals concern long-chat/mobile message-stream or synchronization instability; Chinese-language evidence was comparatively sparse/generic.
+- Current operating rule: on responsiveness degradation, app closure during heavy work, or practical context/length pressure, stop expensive work, checkpoint in GitHub, and resume in a fresh chat.
+
+## Authority boundary
+Foundation owns public-safe core, GitHub Actions and canonical production deployment. Operations owns private runtime/control-plane behavior and must not become a competing GitHub Actions/deployment authority. Cloudflare L4 state requires a fresh Cloudflare control-plane receipt; no new standalone Cloudflare claim is inferred here.
+
+---
+
 ## 2026-09-23 CURRENT AUTHORITY RECONCILIATION
 
 **Live main heads verified:**
