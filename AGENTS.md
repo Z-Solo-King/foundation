@@ -1,3 +1,25 @@
+## 2026-09-24 CURRENT AUTHORITY RECONCILIATION
+
+Refresh live GitHub state before mutation. The current main heads immediately before this documentation-only update were:
+- Foundation main: 550da96babb5eb2c40b7d18a52774cfc23e03d2f
+- Operations main: d0f59b6376fde7a75ca4ea0b789889650684ffcb
+- Production Operations pin: 1a12b98981f52de207fa8626cf2e1f5ad06659be
+- Nightly research/migration pin: 41db817dee6aa7d369ea9a07dd072b58ece1695a
+
+Current live queue: Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699; 8 open issues and 0 open PRs at verification.
+
+Runtime/evidence:
+- Production release #501 succeeded with Foundation 825d301d... and Operations 1a12b989...; Cloudflare public/private provenance was verified against those pins.
+- Nightly #893 is provider-gated before LLM execution because the three research-provider configuration values are absent.
+- Extractor #362 passed the strict evidence-quality gate but produced 4 ok / 32 empty / 4 blocked receipts.
+- Deep scan #365 passed with 8 active issues plus historical #197.
+- Smoke #72 remains red on the diagnostic operation mismatch: infrastructure_verify versus infrastructure_verify_public_test.
+- Centralized Operations validation #24 remains red with broad test-suite contract mismatches.
+
+This header is current guidance. Older authority reconciliations below are historical. The documentation update itself may advance main; that does not change runtime implementation or deployment authority.
+
+---
+
 ## 2026-09-23 CURRENT AUTHORITY RECONCILIATION
 
 **Live main heads verified:**
