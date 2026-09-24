@@ -8,7 +8,7 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "1a12b98981f52de207fa8626cf2e1f5ad06659be"
+CANONICAL_OPERATIONS_REF = "fc2c94b5324800f455cd3f82a3bd1117eb23dff1"
 BENCHMARK_OPERATIONS_REF = CANONICAL_OPERATIONS_REF
 BENCHMARK_TOOLS_REF = "d4ef2e6d28435a59c735b9dc4d0de31f44b9cf29"
 MIGRATION_TOOLS_REF = None
@@ -463,7 +463,7 @@ def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
 def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
-    expected_production = "1a12b98981f52de207fa8626cf2e1f5ad06659be"
+    expected_production = "fc2c94b5324800f455cd3f82a3bd1117eb23dff1"
     expected_nightly = "41db817dee6aa7d369ea9a07dd072b58ece1695a"
     auxiliary = {
         "live-chatbot-production-smoke.yml": expected_production,
