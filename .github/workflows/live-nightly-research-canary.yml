@@ -72,10 +72,6 @@ jobs:
           echo 'research executor configuration: PASS'
       - name: Run live six-program canary across all three lanes
         working-directory: operations
-        env:
-          RESEARCH_LLM_ENDPOINT: "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/ai/v1"
-          RESEARCH_LLM_API_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          RESEARCH_LLM_MODEL: "@cf/meta/llama-3.1-8b-instruct-fast"
         shell: bash
         run: |
           set -euo pipefail
