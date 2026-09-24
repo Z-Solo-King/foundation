@@ -1,3 +1,45 @@
+# LIVE CURRENT CHECKPOINT — 2026-09-24 20:39 IST
+
+This checkpoint supersedes older dated snapshots for live repository/CI state. Historical records remain provenance only.
+
+## Live GitHub state
+- Foundation main: `d057e9f2b3da51ab965028cb94d61b8e48c1ec93`
+- Operations main: `c856bbde1cdf392baac9872f37e7da5c9ac93b70`
+- Open issues: 8 — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
+- Open PRs: 1 — Foundation #1118; Operations: none.
+- PR #1118 is mergeable and its required PR checks are successful.
+
+## Latest nightly research — run #909
+- Run ID: `36016344692`; aggregate state: `blocked_before_execution`.
+- All three live research lanes have `program_count=0`; runner and validation are skipped.
+- Provider preflight #88 is successful: configuration is present and Worker health returned HTTP 200.
+- The authenticated research proxy then receives upstream Worker HTTP 403 (`upstream_worker_rejected`) and exposes local HTTP 502.
+- No real provider-backed research findings were produced.
+
+## Latest extractor benchmark — run #378
+- 40 receipts across API 12 / browser 8 / feed 8 / HTML 12.
+- Quality gate: PASS.
+- Raw results: 4 ok / 32 empty / 4 blocked; 4 products total.
+- Completion 10%; error rate 0%; provenance 1.0; route provenance 1.0; repeat reliability 1.0; unstable groups 0.
+- This PASS is the receipt/evidence-integrity gate, not a claim that 40/40 cases substantively extracted products.
+
+## Latest coverage and deep scan
+- Coverage matrix #349: 20/20 scenarios passed, 0 test failures.
+- Open-issue deep scan #447: 4 lanes, 9 cases covering 8 active issues plus historical #197; 0 failed cases and no findings in the L4 artifact.
+- Migration review #132 completed successfully at repository/structural evidence level.
+
+## Current engineering failures
+Hybrid language pilots #155 remains red on migration/shadow work: TypeScript lifecycle state-contract drift; Rust HTML normalization parity; Rust URL canonicalization environment setup; Rust robots/sitemap parity and pilot build/checkout issues; TypeScript endpoint reference import failure; and Rust Link-header parity.
+
+## Cloudflare boundary
+A fresh Cloudflare runtime re-query was not completed in this audit. Earlier same-day connector observations showed public provenance `825d301d...`, private provenance `1a12b989...`, and private cron `*/15 * * * *`; these are retained as historical until freshly revalidated. GitHub current heads therefore must not be represented as current Cloudflare deployment provenance.
+
+## Evidence rule
+Repository source/tests = L1/L2; GitHub Actions/control-plane = L3; approved runtime/production receipts = L4. Do not close runtime acceptance issues from lower-level evidence alone.
+
+
+---
+
 # LIVE CURRENT CHECKPOINT — 2026-09-24
 
 This checkpoint supersedes older dated entries below. Current GitHub branch heads and current GitHub Actions receipts take precedence. Cloudflare production state is **not independently verifiable from this GitHub-only chat** and is therefore not rewritten as current.
