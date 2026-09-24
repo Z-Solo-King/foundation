@@ -230,7 +230,7 @@ Documentation-only handoff commits may advance `main` without changing the verif
 
 - Last verified Foundation implementation revision: `e5b26061861e570396b73993a3c8733496cb1956`
 - Last verified Operations implementation revision: `50e642dfb05846963a82fe76f4f5fe085d4b9a8c`
-- Canonical nightly research workflow: `.github/workflows/nightly-multi-agent-research-v2.yml`
+- Canonical nightly research workflow: `.github/workflows/nightly-multi-agent-research-v3.yml`
 - Nightly `OPERATIONS_RESEARCH_REF`: `50e642dfb05846963a82fe76f4f5fe085d4b9a8c`
 - Final implementation repair waves are merged through Foundation #960 and Operations #753.
 - Foundation #157 remains the canonical 24-program nightly acceptance gate.
@@ -443,7 +443,7 @@ The live chat response deliberately remained `PARTIAL` with deterministic fallba
 
 - Main-push Actions control-plane probe on current Foundation `main`: SUCCESS with job creation.
 - Main-push secret probe on current Foundation `main`: SUCCESS with job creation.
-- Current `nightly-multi-agent-research-v2.yml` push run `35456290060`: failure before job creation; this does not satisfy the real 24-program execution gate.
+- Current `nightly-multi-agent-research-v3.yml` push run `35456290060`: failure before job creation; this does not satisfy the real 24-program execution gate.
 - Current auxiliary nightly pin-repair, B2 backup/restore and cross-repository drift helper runs are separate automation evidence and are not production deployment authorities.
 - Foundation PR #812 is merged and the v3 bridge now dispatches the allowlisted target, verifies the exact SHA, polls the target run and requires job creation.
 - Foundation PRs #815 and #816 advanced the TypeScript edge shadow into Phase B route/SSE/JSON/public-HTTP contract coverage.
