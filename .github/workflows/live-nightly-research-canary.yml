@@ -40,9 +40,9 @@ jobs:
           path: operations
       - name: Verify research executor configuration
         env:
-          RESEARCH_LLM_ENDPOINT: ${{ secrets.RESEARCH_LLM_ENDPOINT }}
-          RESEARCH_LLM_API_KEY: ${{ secrets.RESEARCH_LLM_API_KEY }}
-          RESEARCH_LLM_MODEL: ${{ secrets.RESEARCH_LLM_MODEL }}
+          RESEARCH_LLM_ENDPOINT: "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/ai/v1"
+          RESEARCH_LLM_API_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RESEARCH_LLM_MODEL: "@cf/meta/llama-3.1-8b-instruct-fast"
         shell: bash
         run: |
           set -euo pipefail
@@ -54,9 +54,9 @@ jobs:
       - name: Run live six-program canary across all three lanes
         working-directory: operations
         env:
-          RESEARCH_LLM_ENDPOINT: ${{ secrets.RESEARCH_LLM_ENDPOINT }}
-          RESEARCH_LLM_API_KEY: ${{ secrets.RESEARCH_LLM_API_KEY }}
-          RESEARCH_LLM_MODEL: ${{ secrets.RESEARCH_LLM_MODEL }}
+          RESEARCH_LLM_ENDPOINT: "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/ai/v1"
+          RESEARCH_LLM_API_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RESEARCH_LLM_MODEL: "@cf/meta/llama-3.1-8b-instruct-fast"
         shell: bash
         run: |
           set -euo pipefail
