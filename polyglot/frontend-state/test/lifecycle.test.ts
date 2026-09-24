@@ -25,7 +25,7 @@ function machine() {
 test("preserves the canonical state vocabulary", () => {
   assert.deepEqual(Array.from(machine().STATES), [
     "NEW_CHAT","SUBMITTING","QUEUED","RUNNING","STREAMING","COMPLETE","PARTIAL",
-    "BLOCKED","REJECTED","UNAVAILABLE","UNKNOWN","RECONNECTING","RESUMED","REPLAYED","AUTH_EXPIRED",
+    "CANCELLED","FAILED","BLOCKED","REJECTED","UNAVAILABLE","UNKNOWN","RECONNECTING","RESUMED","REPLAYED","AUTH_EXPIRED",
   ]);
 });
 
@@ -34,6 +34,8 @@ test("normalizes backend state spellings exactly", () => {
   assert.equal(m.normalize("completed"), "COMPLETE");
   assert.equal(m.normalize("auth-expired"), "AUTH_EXPIRED");
   assert.equal(m.normalize("paused"), "RECONNECTING");
+  assert.equal(m.normalize("cancelled"), "CANCELLED");
+  assert.equal(m.normalize("failed"), "FAILED");
   assert.equal(m.normalize("not-a-state"), null);
 });
 
