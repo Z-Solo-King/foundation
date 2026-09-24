@@ -1,33 +1,34 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT_RUNTIME_RECONCILIATION",
-  "audited_at": "2026-09-24T10:20:00+05:30",
+  "audited_at": "2026-09-24",
   "live_main": {
-    "foundation": "a529b6f7ac9e62e4bcb112b4f84f130fdd33a365",
-    "operations": "046c9318d9f14b9b9efd2e6ed4ea0303bb6ca1ef"
+    "foundation": "825d301d10d201cd9b74dd018973769aeb03f381",
+    "operations": "994793431981b87cd37f2ee1eabf8a2b11914c34"
   },
   "runtime_pins": {
-    "foundation_runtime": "fe79e10c4f7e3ee17b9488848b90cf6b7e93f6fb",
+    "foundation_runtime": "825d301d10d201cd9b74dd018973769aeb03f381",
     "production_operations": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
-    "nightly_research_operations": "3a7e350ddd5648caf93f58651323425186544f66",
-    "foundation_deployed": "fe79e10c4f7e3ee17b9488848b90cf6b7e93f6fb"
+    "nightly_research_operations": "41db817dee6aa7d369ea9a07dd072b58ece1695a",
+    "foundation_deployed": "825d301d10d201cd9b74dd018973769aeb03f381"
   },
   "cloudflare": {
     "public_worker": {
       "name": "research-intelligence-engine-public",
-      "deployed_provenance": "fe79e10c4f7e3ee17b9488848b90cf6b7e93f6fb",
-      "deployment_version": "b5a03b24-2fde-4347-8cd4-356250c139ca",
+      "deployed_provenance": "825d301d10d201cd9b74dd018973769aeb03f381",
+      "deployment_version": "8e02eb65-344a-489e-ab11-7eb00db443b8",
       "deployment_percent": 100,
-      "provenance": "fe79e10c4f7e3ee17b9488848b90cf6b7e93f6fb",
+      "provenance": "825d301d10d201cd9b74dd018973769aeb03f381",
+      "production_operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
       "percent": 100
     },
     "private_worker": {
       "name": "research-intelligence-engine-private",
-      "deployed_provenance": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f",
-      "deployment_version": "1e05b73f-b18b-4720-816f-21823fc17534",
+      "deployed_provenance": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
+      "deployment_version": "e43463fd-4487-4248-94f0-503a405680cc",
       "deployment_percent": 100,
       "cron": "*/15 * * * *",
-      "provenance": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f",
+      "provenance": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
       "percent": 100
     }
   },
@@ -38,17 +39,16 @@
       157
     ],
     "operations": [
-      699,
-      603,
-      597,
-      385,
+      145,
       340,
-      145
+      385,
+      597,
+      603,
+      699
     ],
-    "open_implementation_pr_count": 0,
+    "open_pr_count": 0,
     "foundation_open_prs": [],
     "operations_open_prs": [],
-    "open_pr_count": 0,
     "closed": [
       197,
       352,
@@ -57,107 +57,154 @@
     ]
   },
   "latest_evidence": {
-    "nightly_completed": {
-      "run": 878,
+    "nightly_research": {
+      "run_number": 893,
+      "run_id": 35964787260,
       "state": "blocked_before_provider_execution",
       "provider_execution": false,
       "programs": 24,
       "lanes": 3,
-      "operations_ref": "3a7e350ddd5648caf93f58651323425186544f66"
-    },
-    "nightly_current": {
-      "run": 878,
-      "state": "provider_gated",
+      "operations_ref": "41db817dee6aa7d369ea9a07dd072b58ece1695a",
       "missing": [
         "RESEARCH_LLM_ENDPOINT",
         "RESEARCH_LLM_API_KEY",
         "RESEARCH_LLM_MODEL"
+      ],
+      "artifact_ids": [
+        10793980494,
+        10793582552,
+        10793537723,
+        10794095266,
+        10794105227
       ]
     },
-    "nightly_preflight": {
-      "run": 58,
-      "state": "failed",
-      "operations_app_id_set": true,
-      "operations_app_private_key_set": true,
-      "research_endpoint_set": false,
-      "research_api_key_set": false,
-      "research_model_set": false
-    },
     "nightly_migration_review": {
-      "run": 878,
+      "run_number": 893,
+      "run_id": 35964787260,
       "state": "completed",
       "score_0_to_100": 70,
       "matrix_cases": 40,
       "capacity_cases": 24,
-      "high_findings": 4,
+      "language_review_rows": 40,
+      "repeats": 3,
       "migration_candidates": 875,
       "source_files": 1371,
-      "diagnosis_artifact_state": "superseded_on_next_corrected_run"
+      "evidence_class": "deterministic-structural",
+      "runtime_performance_valid": false,
+      "artifact_id": 10794095266,
+      "diagnosis_artifact_id": 10794105227
     },
-    "extractor_completed": {
-      "run": 348,
-      "state": "pass",
+    "nightly_preflight": {
+      "run_number": 72,
+      "run_id": 35964770251,
+      "state": "failed",
+      "provider_configuration": false
+    },
+    "nightly_canary": {
+      "run_number": 70,
+      "run_id": 35964770313,
+      "state": "failed_closed"
+    },
+    "extractor_benchmark": {
+      "run_number": 362,
+      "run_id": 35964770398,
+      "status": "pass",
+      "artifact_id": 10794016192,
       "receipts": 40,
-      "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
+      "ok": 4,
+      "empty": 32,
+      "blocked": 4,
+      "completion_rate": 0.1,
+      "error_rate": 0,
       "provenance_completeness": 1,
       "route_provenance_completeness": 1,
-      "unstable_repeated_groups": 0,
-      "status_counts": {
-        "ok": 4,
-        "empty": 32,
-        "blocked": 4
-      },
-      "repeat_reliability": 1
+      "repeat_reliability": 1,
+      "unstable_repeated_groups": 0
     },
-    "coverage_current": {
-      "run": 319,
-      "state": "in_progress",
-      "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
+    "coverage_matrix": {
+      "run_number": 333,
+      "run_id": 35964770117,
+      "status": "success"
+    },
+    "polyglot_migration_review": {
+      "run_number": 117,
+      "run_id": 35964770331,
+      "status": "success",
+      "artifact_id": 10793627411
     },
     "deep_scan": {
-      "run": 345,
-      "state": "pass",
-      "active_issue_count": 9,
+      "run_number": 365,
+      "run_id": 35964770241,
+      "status": "pass",
+      "lanes": 4,
+      "active_issue_count": 8,
       "historical_issue_count": 1,
-      "lane_count": 4,
-      "cases_per_lane": 10,
-      "inventory_correction_pending_rerun": true
-    },
-    "public_worker_probe": {
-      "run": 58,
-      "state": "pass",
-      "health_status": 200,
-      "readiness_status": 200,
-      "ready": true,
-      "database": true,
-      "foundation_sha": "fe79e10c4f7e3ee17b9488848b90cf6b7e93f6fb",
-      "operations_ref": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
+      "cases_per_lane": 9,
+      "artifact_ids": [
+        10794045852,
+        10793791776,
+        10793349400,
+        10792759656,
+        10793054000
+      ],
+      "review_cases_by_lane": {
+        "L1": 1,
+        "L2": 2,
+        "L3": 2,
+        "L4": 0
+      }
     },
     "production_release": {
-      "run": 492,
-      "state": "success",
-      "foundation_ref": "5eadf8c8813c0724918129da7fe120263a5e06fb",
-      "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
+      "run_number": 501,
+      "run_id": 35964770238,
+      "status": "success",
+      "foundation_revision": "825d301d10d201cd9b74dd018973769aeb03f381",
+      "operations_revision": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
+      "artifact_ids": [
+        10793802150,
+        10793319943
+      ]
+    },
+    "public_worker_probe": {
+      "run_number": 72,
+      "run_id": 35964770235,
+      "status": "success",
+      "artifact_id": 10793284580
     },
     "chatbot_smoke": {
-      "run": 57,
-      "state": "pending"
+      "run_number": 72,
+      "run_id": 35965101632,
+      "status": "failed",
+      "artifact_id": 10794265185,
+      "failing_check": "diagnostic_infrastructure",
+      "http_status": 400,
+      "other_checks_status": 200,
+      "contract_expected_operation": "infrastructure_verify_public_test",
+      "workflow_sent_operation": "infrastructure_verify"
     },
-    "hybrid_language_pilots": {
-      "run": 144,
-      "state": "failure"
+    "centralized_operations_validation": {
+      "run_number": 24,
+      "run_id": 35964996777,
+      "status": "failed",
+      "job_id": 107521507087,
+      "broad_test_contract_failures": true
+    },
+    "cross_repository_audit": {
+      "run_number": 501,
+      "run_id": 35964770238,
+      "status": "pass",
+      "artifact_id": 10793802150
     }
   },
   "known_findings": [
-    "Current live open issue inventory is 8: Foundation #58/#157 and Operations #145/#340/#385/#597/#603/#699.",
-    "Operations #711 is closed after canonical production release #492 supplied L4 D1 changes()/over-limit/reconciliation evidence.",
-    "Operations #853 removed #711 from the live issue inventory; Operations #855 then removed it from the active surface map, 4-lane matrix and governance policy.",
-    "Foundation #1085 is merged; the deterministic coverage matrix no longer runs authenticated live production probes on every push. Live probes are explicit workflow-dispatch opt-in.",
-    "The six-lane exhaustive audit run #354 passed after the #711 inventory/surface/matrix/policy correction.",
-    "Latest extractor benchmark #348 passed its strict evidence-quality gate with 40 receipts and complete provenance.",
-    "Nightly run #878 is blocked before provider execution because the three research-provider secrets are unset.",
-    "Nightly migration-review artifact #10772875132 is coherent at 40 matrix cases plus 24 capacity cases; the old diagnosis artifact #10771684062 is historical pre-fix evidence and must not be used as current diagnosis.",
-    "No current repository implementation PR remains open."
+    "Production Cloudflare provenance is aligned with the approved production boundary.",
+    "Nightly #893 is provider-gated before LLM execution because the three authorized research-provider configuration values are absent.",
+    "Capacity-sweep measurements are deterministic structural evidence only.",
+    "Extractor #362 passes the strict evidence-quality gate but only 4 of 40 receipts are substantive ok results.",
+    "Deep scan #365 passes with 8 active issues plus historical #197.",
+    "Smoke #72 remains contract-red because the workflow sends infrastructure_verify while the current contract expects infrastructure_verify_public_test.",
+    "Centralized Operations validation #24 is red with broad test-suite compatibility/contract failures.",
+    "This synchronization changes documentation only."
   ],
   "evidence_boundary": {
     "L0": "hypothesis",
@@ -174,66 +221,5 @@
     "github_actions_is_foundation_deployment_authority": true,
     "operations_has_no_current_github_workflows": true,
     "no_competing_cloudflare_build_or_deploy_authority": true
-  },
-  "fixed_repository_defects": [
-    "Operations #833 fixed case-sensitive transient D1 contention injection in tests/test_chat_idempotency.py.",
-    "Foundation #1058 separates deterministic scenario test evidence from live production probe evidence.",
-    "Foundation #1057 aligns the live extractor benchmark default and policy guard with the canonical production Operations pin."
-  ],
-  "current_evidence": {
-    "extractor_benchmark": {
-      "run": 348,
-      "status": "pass",
-      "case_jobs": 40,
-      "ok": 4,
-      "empty": 32,
-      "blocked": 4,
-      "provenance_completeness": 1,
-      "route_provenance_completeness": 1,
-      "unstable_repeated_groups": 0
-    },
-    "deep_scan": {
-      "run": 345,
-      "status": "pass",
-      "active_issue_count": 9,
-      "historical_issue_count": 1,
-      "lane_count": 4,
-      "cases_per_lane": 10,
-      "note": "Completed before #711 closure; fresh open-issue deep scan has not yet been executed."
-    },
-    "coverage_matrix": {
-      "run": 319,
-      "status": "in_progress",
-      "note": "No new runtime result is inferred from the #1085 merge; live probes now require explicit workflow_dispatch opt-in."
-    },
-    "nightly_research": {
-      "run": 878,
-      "status": "blocked",
-      "reason": "missing authorized research endpoint/API key/model"
-    },
-    "maintenance": {
-      "status": "pending-live-cron-receipt",
-      "operations_revision": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
-    },
-    "production_release": {
-      "run": 492,
-      "status": "success",
-      "foundation_revision": "5eadf8c8813c0724918129da7fe120263a5e06fb",
-      "operations_revision": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
-    },
-    "public_worker_probe": {
-      "run": 58,
-      "status": "pass",
-      "foundation_sha": "fe79e10c4f7e3ee17b9488848b90cf6b7e93f4d2",
-      "operations_ref": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
-    }
-  },
-  "repositories": {
-    "foundation": {
-      "last_audited_main_sha": "a529b6f7ac9e62e4bcb112b4f84f130fdd33a365"
-    },
-    "operations": {
-      "last_audited_main_sha": "046c9318d9f14b9b9efd2e6ed4ea0303bb6ca1ef"
-    }
   }
 }
