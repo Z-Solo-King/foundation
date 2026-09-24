@@ -5,14 +5,14 @@
 This checkpoint supersedes older dated sections below. It records what is currently verifiable from the GitHub connection. Cloudflare runtime state is not independently verifiable from this chat and is not relabeled as current.
 
 ### GitHub repository state
-- Foundation `main`: `c519b56050632862fbac4f6d6841cbd725408cc8`
+- Foundation implementation head at synchronization: `c519b56050632862fbac4f6d6841cbd725408cc8` (documentation-only sync may advance `main`)
 - Operations `main`: `fda24660843cacfe28de661cf170789af542d28f`
 - Canonical Operations production/nightly pin in Foundation: `fda24660843cacfe28de661cf170789af542d28f`
 - Foundation open issues: #58, #157
 - Operations open issues: #145, #340, #385, #597, #603, #699
-- Foundation open PR: #1109 (Dependabot `actions/upload-artifact` 7.0.1)
+- Foundation open PR after this reconciliation: #1109 (Dependabot `actions/upload-artifact` 7.0.1)
 - Operations open PRs: none
-- Foundation #1112 is closed as superseded by merged #1114.
+- Foundation #1112 is closed as superseded by merged #1114; documentation reconciliation is PR #1115.
 
 ### Current repository runtime contract
 Operations `wrangler.toml` at `fda246...` declares:
@@ -23,7 +23,7 @@ Operations `wrangler.toml` at `fda246...` declares:
 - private Worker cron `*/15 * * * *`
 
 ### Current GitHub Actions evidence
-- The latest Foundation-main check set observed contains 95 check-runs: 89 completed-success, 5 failed, and 1 in progress.
+- The latest Foundation implementation-head check set observed contains 95 check-runs: 90 completed-success and 5 failed.
 - The failed nightly research lanes/canary authenticate and checkout the current Operations revision successfully. Their research configuration variables are present.
 - The authenticated research proxy then receives HTTP 502 because the upstream public Worker returns HTTP 403 with `upstream_worker_rejected`. The lanes correctly fail closed before provider-backed research execution.
 - The current production smoke workflow contains the corrected diagnostic operation `infrastructure_verify_public_test`; its current run was in progress at the latest observation.
