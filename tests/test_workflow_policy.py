@@ -542,7 +542,8 @@ def test_nightly_research_uses_authenticated_worker_ai_adapter():
         assert "secrets.RESEARCH_LLM_API_KEY" not in text
         assert "secrets.RESEARCH_LLM_MODEL" not in text
         assert "secrets.CLOUDFLARE_API_TOKEN" not in text
-        assert "@cf/meta/llama-3.1-8b-instruct-fast" in text
+    assert "@cf/meta/llama-3.1-8b-instruct-fast" in workflow
+    assert "@cf/meta/llama-3.1-8b-instruct-fast" in canary
     assert 'RESEARCH_LLM_ENDPOINT: "http://127.0.0.1:8765"' in workflow
     assert 'RESEARCH_LLM_API_KEY: "local-worker-proxy"' in workflow
     assert 'RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in workflow
