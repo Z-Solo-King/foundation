@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="fda24660843cacfe28de661cf170789af542d28f"
+OPERATIONS_REF="995c5040802881e629eed6f2f96f91e81c78fef8"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"
@@ -23,7 +23,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = 'fda24660843cacfe28de661cf170789af542d28f'
+test "$OPERATIONS_REF" = '995c5040802881e629eed6f2f96f91e81c78fef8'
 
 after_install_marker=''
 
@@ -495,7 +495,7 @@ fi
 live_chat_payload=$(jq -nc \
   --arg chat_id "production-live-${ACCEPTANCE_RUN_ID}" \
   --arg request_id "production-chat-${ACCEPTANCE_RUN_ID}" \
-  '{chat_id:$chat_id,request_id:$request_id,message:"Give a concise explanation of why authenticated service bindings are used between Foundation and the private control plane.",mode:"chat",strict_zero_cost_only:true}')
+  '{chat_id:$chat_id,request_id:$request_id,message:"Give a concise explanation of why authenticated service bindings are used between Foundation and the private control plane.",mode:"chat",strict_zero_cost_only:true,require_model_generation:true}')
 live_chat_key="production-chat-${ACCEPTANCE_RUN_ID}"
 live_chat_status=$(curl -sS --max-time 90 \
   -o "$RUNNER_TEMP/live-chat.json" -w '%{http_code}' \
@@ -511,7 +511,7 @@ if [ "$live_chat_status" != '200' ]; then
   echo '--- end live-chat.body ---'
   exit 1
 fi
-jq -e '.ok == true and (.response.result_state == "COMPLETE" or .response.result_state == "PARTIAL")' \
+jq -e '.ok == true and (.response.result_state == "COMPLETE" or .response.result_state == "PARTIAL") and .response.generation_status == "model_generated" and .response.provider == "cloudflare_workers_ai" and ((.response.text // "") | length > 0)' \
   "$RUNNER_TEMP/live-chat.json" >/dev/null
 live_chat_state=$(jq -r '.response.result_state' "$RUNNER_TEMP/live-chat.json")
 live_chat_generation=$(jq -r '.response.generation_status' "$RUNNER_TEMP/live-chat.json")
@@ -604,7 +604,7 @@ cp "$RUNNER_TEMP/policy-block.json" .runtime/policy-block.json
 stream_payload=$(jq -nc \
   --arg chat_id "production-stream-${ACCEPTANCE_RUN_ID}" \
   --arg request_id "production-stream-request-${ACCEPTANCE_RUN_ID}" \
-  '{chat_id:$chat_id,request_id:$request_id,message:"Give a concise explanation of why authenticated service bindings are used between Foundation and the private control plane.",mode:"chat",strict_zero_cost_only:true}')
+  '{chat_id:$chat_id,request_id:$request_id,message:"Give a concise explanation of why authenticated service bindings are used between Foundation and the private control plane.",mode:"chat",strict_zero_cost_only:true,require_model_generation:true}')
 stream_json_status=$(curl -sS --max-time 90 \
   -o "$RUNNER_TEMP/live-stream-json.json" -w '%{http_code}' \
   -H "Authorization: Bearer ${AUTH_TOKEN}" \
