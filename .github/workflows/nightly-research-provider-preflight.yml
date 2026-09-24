@@ -87,7 +87,7 @@ jobs:
               "research_endpoint_set": os.environ["PREFLIGHT_ENDPOINT"] == "true",
               "research_api_key_set": os.environ["PREFLIGHT_API_KEY"] == "true",
               "research_model_set": os.environ["PREFLIGHT_MODEL"] == "true",
-              "operations_ref": "64305affadd0fbe3ddb7c8ed16f4cd07771c30ab",
+              "operations_ref": "a3171f353539f1a31020c432f98cf0530cbf91ef",
               "workers_ai_model": "@cf/zai-org/glm-4.7-flash",
           }
           with open("preflight.json", "w", encoding="utf-8") as handle:
