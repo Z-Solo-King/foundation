@@ -10,7 +10,7 @@ def test_health_endpoint():
     response = health_endpoint()
     assert response["ok"] is True
     assert response["status"] == "ok"
-    assert response["app"] == "Research Intelligence Engine"
+    assert response["app"] == "Heroic AI"
     assert response["version"] == "0.1.0"
 
 
