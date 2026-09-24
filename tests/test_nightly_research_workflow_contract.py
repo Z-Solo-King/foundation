@@ -1,6 +1,6 @@
 from pathlib import Path
 
-WORKFLOW = Path(__file__).parents[1] / ".github" / "workflows" / "nightly-multi-agent-research-v2.yml"
+WORKFLOW = Path(__file__).parents[1] / ".github" / "workflows" / "nightly-multi-agent-research-v3.yml"
 
 
 def workflow_text() -> str:
@@ -99,7 +99,7 @@ def test_incomplete_runs_do_not_build_project_improvement_summary():
 
 def test_nightly_baseline_lookup_uses_only_current_registered_workflow():
     text = workflow_text()
-    assert "gh run list --workflow nightly-multi-agent-research-v2.yml" in text
+    assert "gh run list --workflow nightly-multi-agent-research-v3.yml" in text
     assert "nightly-multi-agent-research.yml" not in text
 
 
