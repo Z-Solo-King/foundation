@@ -1,6 +1,6 @@
 from pathlib import Path
 
-WORKFLOW = Path(__file__).parents[1] / ".github" / "workflows" / "nightly-multi-agent-research-v2.yml"
+WORKFLOW = Path(__file__).parents[1] / ".github" / "workflows" / "nightly-multi-agent-research-v3.yml"
 
 
 def test_nightly_workflow_uses_pinned_private_operations_matrix():
