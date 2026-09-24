@@ -45,8 +45,6 @@ jobs:
           python-version: "3.14"
       - name: Install HTTP client
         run: python -m pip install --disable-pip-version-check httpx
-      # Sequence smoke after the canonical production release so public and private
-      # Worker deployments cannot race and produce a transient provider/readiness failure.
       - name: Run live production chatbot smoke
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
@@ -54,69 +52,137 @@ jobs:
           set -euo pipefail
           mkdir -p live-chatbot
           cat > /tmp/live_chatbot_smoke.py <<'PY'
-          import json, os, sys, uuid
+          import json, os, uuid
           import httpx
 
-          base = os.environ['PUBLIC_WORKER_URL'].rstrip('/')
-          token = os.environ.get('AUTH_TOKEN', '')
+          base = os.environ["PUBLIC_WORKER_URL"].rstrip("/")
+          token = os.environ.get("AUTH_TOKEN", "")
           if not token:
-              print(json.dumps({'ok': False, 'error': 'AUTH_TOKEN missing'}))
+              print(json.dumps({"ok": False, "error": "AUTH_TOKEN missing"}))
               raise SystemExit(1)
-          headers = {'Authorization': f'Bearer {token}'}
-          result = {'ok': True, 'checks': {}}
 
-          def record(name, status, body=None, error=None):
-              item = {'status': status}
+          headers = {"Authorization": f"Bearer {token}"}
+          result = {"ok": True, "checks": {}}
+
+          def record(name, status, body=None):
+              item = {"status": status}
               if isinstance(body, dict):
-                  item['ok'] = body.get('ok')
-                  item['ready'] = body.get('ready')
-                  response = body.get('response') if isinstance(body.get('response'), dict) else {}
-                  item['result_state'] = response.get('result_state')
-                  item['response_status'] = response.get('status')
-              if error:
-                  item['error'] = str(error)
-              result['checks'][name] = item
-              if status >= 400 or item.get('ok') is False:
-                  result['ok'] = False
+                  item["ok"] = body.get("ok")
+                  item["ready"] = body.get("ready")
+                  response = body.get("response") if isinstance(body.get("response"), dict) else {}
+                  item["result_state"] = response.get("result_state")
+                  item["response_status"] = response.get("status")
+                  item["generation_status"] = response.get("generation_status")
+                  item["provider"] = response.get("provider")
+                  text = response.get("text")
+                  item["response_text_nonempty"] = isinstance(text, str) and bool(text.strip())
+                  item["runtime_status"] = body.get("runtime_status")
+              result["checks"][name] = item
+
+              if status != 200 or item.get("ok") is False:
+                  result["ok"] = False
 
           with httpx.Client(timeout=90.0) as client:
-              for path in ['/','/health','/readiness']:
+              for path in ["/", "/health", "/readiness"]:
                   r = client.get(base + path, headers=headers)
-                  body = r.json() if 'application/json' in r.headers.get('content-type','') else {'raw': r.text[:200]}
-                  record(path.strip('/').replace('/','_') or 'root', r.status_code, body)
-              rid = 'live-chat-' + uuid.uuid4().hex
-              payload = {'chat_id': rid, 'request_id': rid, 'message': 'Return one short sentence confirming the production chatbot is reachable.', 'mode': 'chat', 'strict_zero_cost_only': True}
-              r = client.post(base + '/api/v1/chat', headers={**headers, 'Content-Type': 'application/json', 'Idempotency-Key': rid}, json=payload)
-              body = r.json() if 'application/json' in r.headers.get('content-type','') else {'raw': r.text[:200]}
-              record('chat', r.status_code, body)
-              sse_rid = 'live-sse-' + uuid.uuid4().hex
-              r = client.post(base + '/api/v1/chat/stream', headers={**headers, 'Content-Type': 'application/json', 'Accept': 'text/event-stream', 'Idempotency-Key': sse_rid}, json={**payload, 'chat_id': sse_rid, 'request_id': sse_rid}, timeout=90.0)
-              record('chat_stream', r.status_code, {'ok': r.status_code == 200 and r.headers.get('content-type','').lower().startswith('text/event-stream')})
+                  body = r.json() if "application/json" in r.headers.get("content-type", "") else {"raw": r.text[:200]}
+                  record(path.strip("/").replace("/", "_") or "root", r.status_code, body)
+
+              rid = "live-chat-" + uuid.uuid4().hex
+              payload = {
+                  "chat_id": rid,
+                  "request_id": rid,
+                  "message": "Return one short sentence confirming the production chatbot is reachable.",
+                  "mode": "chat",
+                  "strict_zero_cost_only": True,
+                  "require_model_generation": True,
+              }
+              r = client.post(
+                  base + "/api/v1/chat",
+                  headers={**headers, "Content-Type": "application/json", "Idempotency-Key": rid},
+                  json=payload,
+              )
+              body = r.json() if "application/json" in r.headers.get("content-type", "") else {"raw": r.text[:200]}
+              record("chat", r.status_code, body)
+              chat_response = body.get("response") if isinstance(body, dict) and isinstance(body.get("response"), dict) else {}
+              if (
+                  r.status_code != 200
+                  or body.get("ok") is not True
+                  or chat_response.get("generation_status") != "model_generated"
+                  or chat_response.get("provider") != "cloudflare_workers_ai"
+                  or not isinstance(chat_response.get("text"), str)
+                  or not chat_response.get("text", "").strip()
+              ):
+                  result["ok"] = False
+
+              sse_rid = "live-sse-" + uuid.uuid4().hex
+              sse_payload = {
+                  **payload,
+                  "chat_id": sse_rid,
+                  "request_id": sse_rid,
+              }
+              r = client.post(
+                  base + "/api/v1/chat/stream",
+                  headers={
+                      **headers,
+                      "Content-Type": "application/json",
+                      "Accept": "text/event-stream",
+                      "Idempotency-Key": sse_rid,
+                  },
+                  json=sse_payload,
+                  timeout=90.0,
+              )
+              content_type = r.headers.get("content-type", "").lower()
+              stream_ok = r.status_code == 200 and content_type.startswith("text/event-stream")
               text = r.text
-              result['checks']['chat_stream']['has_start_event'] = 'event: start' in text
-              result['checks']['chat_stream']['has_done_event'] = 'event: done' in text
-              if not ('event: start' in text and 'event: done' in text):
-                  result['ok'] = False
-              for name, payload in {
-                  'infrastructure': {'operation':'infrastructure_verify_public_test'},
-              }.items():
-                  r = client.post(base + '/api/v1/chatbot/diagnostic', headers={**headers, 'Content-Type':'application/json'}, json=payload)
-                  body = r.json() if 'application/json' in r.headers.get('content-type','') else {'raw': r.text[:200]}
-                  record('diagnostic_' + name, r.status_code, body)
-              research = {'question':'Production runtime acceptance: verify the public research path can ingest a permitted source without inventing facts.', 'depth':'quick', 'require_citations':True, 'max_sources':1, 'max_evidence_items':4, 'strict_zero_cost_only':True, 'source_urls':['https://example.com/']}
-              r = client.post(base + '/api/v1/research', headers={**headers, 'Content-Type':'application/json', 'Idempotency-Key':'live-research-' + uuid.uuid4().hex}, json=research)
-              body = r.json() if 'application/json' in r.headers.get('content-type','') else {'raw': r.text[:200]}
-              record('research', r.status_code, body)
-              run_id = body.get('run_id') if isinstance(body, dict) else None
-              if run_id:
-                  r2 = client.post(base + '/api/v1/storage/diagnostic', headers={**headers, 'Content-Type':'application/json'}, json={'run_id':run_id})
-                  body2 = r2.json() if 'application/json' in r2.headers.get('content-type','') else {'raw': r2.text[:200]}
-                  record('storage_round_trip', r2.status_code, body2)
+              result["checks"]["chat_stream"] = {
+                  "status": r.status_code,
+                  "ok": stream_ok,
+                  "content_type": content_type,
+                  "has_start_event": "event: start" in text,
+                  "has_done_event": "event: done" in text,
+              }
+              if not stream_ok or "event: start" not in text or "event: done" not in text:
+                  result["ok"] = False
+
+              diagnostic = client.post(
+                  base + "/api/v1/chatbot/diagnostic",
+                  headers={**headers, "Content-Type": "application/json"},
+                  json={"operation": "infrastructure_verify_public_test"},
+              )
+              diagnostic_body = diagnostic.json() if "application/json" in diagnostic.headers.get("content-type", "") else {"raw": diagnostic.text[:200]}
+              record("diagnostic_infrastructure", diagnostic.status_code, diagnostic_body)
+
+              research = {
+                  "question": "Production runtime acceptance: verify the public research path can ingest a permitted source without inventing facts.",
+                  "depth": "quick",
+                  "require_citations": True,
+                  "max_sources": 1,
+                  "max_evidence_items": 4,
+                  "strict_zero_cost_only": True,
+                  "source_urls": ["https://example.com/"],
+              }
+              r = client.post(
+                  base + "/api/v1/research",
+                  headers={**headers, "Content-Type": "application/json", "Idempotency-Key": "live-research-" + uuid.uuid4().hex},
+                  json=research,
+              )
+              body = r.json() if "application/json" in r.headers.get("content-type", "") else {"raw": r.text[:200]}
+              record("research", r.status_code, body)
+              run_id = body.get("run_id") if isinstance(body, dict) else None
+              if not run_id:
+                  result["ok"] = False
+              else:
+                  r2 = client.get(base + f"/api/v1/research/{run_id}", headers=headers)
+                  body2 = r2.json() if "application/json" in r2.headers.get("content-type", "") else {"raw": r2.text[:200]}
+                  record("research_readback", r2.status_code, body2)
+                  if r2.status_code != 200 or body2.get("ok") is not True:
+                      result["ok"] = False
 
           print(json.dumps(result, indent=2, sort_keys=True))
-          with open('live-chatbot/receipt.json','w',encoding='utf-8') as f:
+          with open("live-chatbot/receipt.json", "w", encoding="utf-8") as f:
               json.dump(result, f, indent=2, sort_keys=True)
-          raise SystemExit(0 if result['ok'] else 1)
+          raise SystemExit(0 if result["ok"] else 1)
           PY
           PUBLIC_WORKER_URL="$PUBLIC_WORKER_URL" AUTH_TOKEN="$AUTH_TOKEN" python /tmp/live_chatbot_smoke.py
       - name: Upload live receipt
