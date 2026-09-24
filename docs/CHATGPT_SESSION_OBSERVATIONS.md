@@ -2,6 +2,14 @@
 
 **Observed:** 2026-09-24
 
+
+## Cycle 4 observations — 2026-09-24
+
+- The user reported that this ChatGPT session also became unresponsive. They observed that closing the ChatGPT app and later returning can coincide with repository work having continued, so the foreground mobile conversation state and backend/tool execution may not always fail at the same boundary. This is an observed behavior, not a proven causal diagnosis.
+- Current external evidence is consistent with session/thread synchronization and long-chat UI problems: OpenAI's current troubleshooting guide specifically recommends starting a new chat for long/many-turn conversations and restarting the app for lag/freezing. OpenAI Community reports from September 2026 describe long Android chats remaining visibly stale until force-close/reopen, and GPT-5.6 Thinking long requests ending with message-stream failures after several minutes. These reports are supporting context, not proof of the cause of this project session.
+- The engineering implication is to keep work resumable and compact: checkpoint before context pressure, avoid large log dumps, use targeted reads, do not continuously poll long-running workflows, and treat app/UI freshness separately from authoritative GitHub runtime state.
+- The current project cycle therefore uses an adaptive early checkpoint rule: if responsiveness degrades before the 20-minute ceiling, stop launching new expensive work and resume from the latest repository checkpoint in a fresh chat.
+
 ## Session execution observations
 
 - Work was performed as a bounded engineering session rather than an unbounded scan/fix/poll loop.
