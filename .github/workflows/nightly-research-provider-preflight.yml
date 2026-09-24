@@ -18,9 +18,9 @@ jobs:
         env:
           OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
           OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
-          RESEARCH_LLM_ENDPOINT: ${{ secrets.RESEARCH_LLM_ENDPOINT }}
-          RESEARCH_LLM_API_KEY: ${{ secrets.RESEARCH_LLM_API_KEY }}
-          RESEARCH_LLM_MODEL: ${{ secrets.RESEARCH_LLM_MODEL }}
+          RESEARCH_LLM_ENDPOINT: "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/ai/v1"
+          RESEARCH_LLM_API_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RESEARCH_LLM_MODEL: "@cf/meta/llama-3.1-8b-instruct-fast"
         run: |
           set +e
           app_id=false; app_key=false; endpoint=false; api_key=false; model=false
@@ -29,6 +29,19 @@ jobs:
           [ -n "${RESEARCH_LLM_ENDPOINT:-}" ] && endpoint=true
           [ -n "${RESEARCH_LLM_API_KEY:-}" ] && api_key=true
           [ -n "${RESEARCH_LLM_MODEL:-}" ] && model=true
+          if [ "$ready" = "true" ]; then
+            probe=$(curl -fsS --max-time 30 \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              -H 'Content-Type: application/json' \
+              -d '{"model":"@cf/meta/llama-3.1-8b-instruct-fast","messages":[{"role":"user","content":"Return OK"}],"max_tokens":1,"temperature":0}' \
+              "${RESEARCH_LLM_ENDPOINT}/chat/completions")
+            if ! printf '%s' "$probe" | jq -e '.choices[0].message.content | type == "string"' >/dev/null 2>&1; then
+              echo "Cloudflare Workers AI inference probe failed; live research remains blocked."
+              ready=false
+            else
+              echo "Cloudflare Workers AI inference probe: PASS"
+            fi
+          fi
           ready=false
           if [ "$app_id" = true ] && [ "$app_key" = true ] && [ "$endpoint" = true ] && [ "$api_key" = true ] && [ "$model" = true ]; then ready=true; fi
           export PREFLIGHT_APP_ID="$app_id"
