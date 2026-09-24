@@ -554,12 +554,17 @@ def test_nightly_research_uses_authenticated_worker_ai_adapter():
     assert 'transport": "authenticated_foundation_worker"' in preflight
     assert 'RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in canary
 
-def test_research_worker_proxy_never_logs_or_exposes_auth_token_in_process_arguments():
+def test_research_worker_proxy_keeps_auth_token_out_of_command_line_and_logs():
     proxy = (ROOT / "scripts" / "research_worker_proxy.py").read_text(encoding="utf-8")
-    assert "RESEARCH_PROXY_AUTH_TOKEN" not in proxy
+    workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v2.yml").read_text(encoding="utf-8")
+    canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
     assert 'os.environ.get("RESEARCH_PROXY_AUTH_TOKEN", "")' in proxy
     assert "server.serve_forever()" in proxy
     assert 'ThreadingHTTPServer((args.bind, args.port), Handler)' in proxy
+    assert '--auth-token' not in workflow
+    assert '--auth-token' not in canary
+    assert 'Authorization": "Bearer " + self.server.auth_token' in proxy
+    assert 'log_message(self, fmt: str, *args: object) -> None:' in proxy
 def test_production_release_enforces_cloudflare_free_neuron_cap():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert '"workers_ai_neurons":10000' in deployment
