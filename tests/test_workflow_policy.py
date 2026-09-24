@@ -626,3 +626,13 @@ def test_production_bootstrap_checks_worker_settings_not_deployments():
     assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings' in deployment
     window = deployment.split("Rename-safe Cloudflare deployment sequence.", 1)[1].split("# Deploy the renamed public Worker", 1)[0]
     assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments' not in window
+
+
+def test_current_public_runtime_identity_is_heroic_ai():
+    wrangler = WRANGLER.read_text(encoding="utf-8")
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'name = "foundation"' in wrangler
+    assert 'custom_domain = true' in wrangler
+    assert 'pattern = "heroic-ai.dev"' in wrangler
+    assert 'BASE_URL="https://Heroic-Ai.dev"' in deployment
+    assert 'OPERATIONS_SERVICE_NAME="operations"' in deployment
