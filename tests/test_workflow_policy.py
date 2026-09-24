@@ -356,7 +356,8 @@ def test_hardened_workflows_have_timeout_and_concurrency_contract():
 
 def test_superseded_nightly_variants_are_retired():
     texts = _workflow_texts()
-    assert "nightly-multi-agent-research-v3.yml" not in texts
+    assert "nightly-multi-agent-research-v3.yml" in texts
+    assert "nightly-multi-agent-research-v2.yml" not in texts
     assert "nightly-research-v4.yml" not in texts
 
 
