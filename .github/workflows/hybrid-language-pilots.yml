@@ -20,7 +20,7 @@ permissions:
 
 concurrency:
   group: foundation-hybrid-language-pilots-${{github.ref}}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   resolve_operations_ref:
