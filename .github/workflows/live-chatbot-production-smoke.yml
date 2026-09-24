@@ -16,7 +16,7 @@ concurrency:
 
 env:
   PUBLIC_WORKER_URL: https://Heroic-Ai.dev
-  OPERATIONS_REF: 7c5ff1465bab84cc697e482cc0625fd78b0a75ed
+  OPERATIONS_REF: 64305affadd0fbe3ddb7c8ed16f4cd07771c30ab
 
 jobs:
   smoke:
