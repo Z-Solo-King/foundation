@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Probe public surface
         env:
-          URL: https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev
+          URL: https://Heroic-Ai.dev
         run: |
           set +e
           mkdir -p probe
@@ -33,7 +33,7 @@ jobs:
           import json
           from pathlib import Path
           root=Path("probe")
-          out={"schema":"public-worker-probe/v2","url":"https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev","checks":{},"ok":True}
+          out={"schema":"public-worker-probe/v2","url":"https://Heroic-Ai.dev","checks":{},"ok":True}
           for name in ("root","health","readiness"):
               status=int((root/f"{name}.status").read_text().strip() or "0")
               body=(root/f"{name}.body").read_text(errors="replace")[:500]
