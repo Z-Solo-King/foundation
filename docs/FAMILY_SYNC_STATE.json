@@ -1,10 +1,10 @@
 {
   "schema_version": "family-sync-state/v1",
-  "status": "CURRENT_GITHUB_RECONCILIATION_CLOUDFLARE_PENDING",
+  "status": "CURRENT_RECONCILIATION_CLOUDFLARE_PENDING",
   "audited_at": "2026-09-24",
   "live_main": {
-    "foundation": "e541ac4d000ed4a0678aa1ef6ebe9faf6c119c0a",
-    "operations": "5f2c98fbf0bd8694c63b97a62e28b0bacf01923a"
+    "foundation": "2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706",
+    "operations": "ebf1e82734cb2fab0a8f4eddc8b1f342803740d1"
   },
   "runtime_pins": {
     "foundation_runtime": "825d301d10d201cd9b74dd018973769aeb03f381",
@@ -59,25 +59,13 @@
   },
   "latest_evidence": {
     "nightly_research": {
-      "run_number": 893,
-      "run_id": 35964787260,
-      "state": "blocked_before_provider_execution",
+      "run_id": 36030996071,
+      "state": "failed_at_public_worker_authorization",
       "provider_execution": false,
       "programs": 24,
-      "lanes": 3,
-      "operations_ref": "41db817dee6aa7d369ea9a07dd072b58ece1695a",
-      "missing": [
-        "RESEARCH_LLM_ENDPOINT",
-        "RESEARCH_LLM_API_KEY",
-        "RESEARCH_LLM_MODEL"
-      ],
-      "artifact_ids": [
-        10793980494,
-        10793582552,
-        10793537723,
-        10794095266,
-        10794105227
-      ]
+      "blocker": "public_worker_http_403",
+      "local_error": "upstream_worker_rejected",
+      "local_http_status": 502
     },
     "nightly_migration_review": {
       "run_number": 893,
@@ -102,9 +90,9 @@
       "provider_configuration": false
     },
     "nightly_canary": {
-      "run_number": 70,
-      "run_id": 35964770313,
-      "state": "failed_closed"
+      "run_id": 36030977932,
+      "state": "failed",
+      "blocker": "same_upstream_public_worker_http_403"
     },
     "extractor_benchmark": {
       "run_number": 362,
@@ -156,15 +144,10 @@
       }
     },
     "production_release": {
-      "run_number": 501,
-      "run_id": 35964770238,
+      "run_id": 36030977718,
       "status": "success",
-      "foundation_revision": "825d301d10d201cd9b74dd018973769aeb03f381",
-      "operations_revision": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
-      "artifact_ids": [
-        10793802150,
-        10793319943
-      ]
+      "operations_revision": "fda24660843cacfe28de661cf170789af542d28f",
+      "evidence_class": "L4 approved production execution"
     },
     "public_worker_probe": {
       "run_number": 72,
@@ -255,7 +238,12 @@
     "Deep scan #365 passes with 8 active issues plus historical #197.",
     "Smoke #72 remains contract-red because the workflow sends infrastructure_verify while the current contract expects infrastructure_verify_public_test.",
     "Centralized Operations validation #24 is red with broad test-suite compatibility/contract failures.",
-    "This synchronization changes documentation only."
+    "This synchronization changes documentation only.",
+    "2026-09-24 cycle6: the ChatGPT conversation became unresponsive and reached its practical context/length limit; this is recorded as session transport/context evidence, not a backend execution receipt.",
+    "2026-09-24 cycle6: external research across OpenAI Help/Status, OpenAI Community, Reddit, GitHub/Codex, mainstream technical coverage, Zhihu, Baidu Tieba, Douban, PTT and Bilibili found strongest matching signals around long-chat/mobile message-stream or synchronization instability; Chinese-language evidence was sparse/generic.",
+    "2026-09-24 cycle6: closing the Android app is a user-observed correlation only; no universal claim is made about ordinary Chat-mode backend execution after force-close.",
+    "2026-09-24 cycle6: canonical production release 36030977718 passed; nightly research 36030996071 and live canary 36030977932 remain blocked by the upstream public Worker 403/502 boundary.",
+    "2026-09-24 cycle6: zero open PRs and 8 open acceptance/evidence issues are the current repository queue."
   ],
   "evidence_boundary": {
     "L0": "hypothesis",
@@ -308,27 +296,11 @@
   },
   "github_sync": {
     "checked_at": "2026-09-24",
-    "foundation_main": "e541ac4d000ed4a0678aa1ef6ebe9faf6c119c0a",
-    "operations_main": "5f2c98fbf0bd8694c63b97a62e28b0bacf01923a",
+    "foundation_main": "2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706",
+    "operations_main": "ebf1e82734cb2fab0a8f4eddc8b1f342803740d1",
     "canonical_operations_pin": "fda24660843cacfe28de661cf170789af542d28f",
-    "superseded_pr_closed": 1112,
-    "remaining_foundation_pr": 1109,
-    "remaining_operations_prs": 0,
-    "current_main_check_runs": {
-      "total": 95,
-      "success": 90,
-      "failed": 5,
-      "in_progress": 0
-    },
-    "latest_nightly_provider_failure": "authenticated proxy -> upstream Worker HTTP 403 (local proxy HTTP 502, upstream_worker_rejected)",
-    "cloudflare_runtime_verification": "not_available_in_this_chat",
-    "production_smoke": {
-      "run_number": 85,
-      "run_id": 36013041963,
-      "status": "success",
-      "head": "c519b56050632862fbac4f6d6841cbd725408cc8"
-    },
-    "open_pr_count": 0
+    "open_pr_count": 0,
+    "cloudflare_runtime_verification": "not_available_in_this_chat"
   },
   "open_pr_reconciliation": {
     "documentation_pr": 1115,
@@ -337,5 +309,13 @@
       1109
     ],
     "post_merge_open_operations_prs": []
+  },
+  "session_boundary": {
+    "cycle": "2026-09-24-cycle6",
+    "conversation_became_unresponsive": true,
+    "practical_chat_context_limit_reached": true,
+    "app_closure_causal_proof": false,
+    "authoritative_state": "GitHub/Cloudflare receipts, workflow runs, artifacts, commits",
+    "next_action": "fresh-chat checkpoint resume"
   }
 }
