@@ -1,8 +1,9 @@
 name: Live nightly research canary
 
 on:
-  push:
-    branches: [main]
+  workflow_run:
+    workflows: ["Heroic AI production release"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -23,11 +24,28 @@ env:
 
 jobs:
   canary:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout Foundation research adapter
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Wait for canonical production revision
+        env:
+          EXPECTED_FOUNDATION: ${{ github.event.workflow_run.head_sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for _ in {1..60}; do
+            status=$(curl -sS --max-time 20 -o "$RUNNER_TEMP/live-nightly-readiness.json" -w '%{http_code}' "$PUBLIC_WORKER_URL/readiness" || true)
+            if [ "$status" = "200" ] && jq -e --arg f "$EXPECTED_FOUNDATION" --arg o "$OPERATIONS_REF" '.ready == true and .database == true and .release.foundation_sha == $f and .release.operations_ref == $o' "$RUNNER_TEMP/live-nightly-readiness.json" >/dev/null 2>&1; then
+              jq '{ready,database,release}' "$RUNNER_TEMP/live-nightly-readiness.json"
+              exit 0
+            fi
+            sleep 5
+          done
+          cat "$RUNNER_TEMP/live-nightly-readiness.json" 2>/dev/null || true
+          exit 1
       - name: Create Operations read token
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
