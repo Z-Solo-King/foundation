@@ -1,3 +1,23 @@
+## 2026-09-24 CURRENT AUTHORITY RECONCILIATION
+
+- Foundation `main` observed before this doc-only sync: `825d301d10d201cd9b74dd018973769aeb03f381`
+- Operations `main` observed before this doc-only sync: `994793431981b87cd37f2ee1eabf8a2b11914c34`
+- Production Operations pin: `1a12b98981f52de207fa8626cf2e1f5ad06659be`
+- Nightly research/migration pin: `41db817dee6aa7d369ea9a07dd072b58ece1695a`
+- Open issues: Foundation `#58/#157`; Operations `#145/#340/#385/#597/#603/#699`
+- Open PRs: 0 at audit start
+- Production release `#501`: success; current Cloudflare public/private provenance matches the production pins.
+- Nightly `#893`: provider-gated before provider execution because the three research-provider secrets are absent.
+- Extractor `#362`: strict evidence-quality pass; 40 receipts, 4 ok / 32 empty / 4 blocked.
+- Deep scan `#365`: pass; 8 active issues + historical `#197`, four lanes.
+- Smoke `#72`: contract-red on `infrastructure_verify` versus the current `infrastructure_verify_public_test` contract.
+- Centralized Operations validation `#24`: broad test-suite contract failures.
+- This synchronization changes documentation only; do not treat its resulting commit SHA as a new runtime implementation revision.
+
+Read `docs/CURRENT_SOURCE_OF_TRUTH.md` and `docs/LIVE_GITHUB_CLOUDFLARE_SYNC_AUDIT_2026-09-24.md` for the current snapshot.
+
+---
+
 ## 2026-09-22 CURRENT RECONCILIATION
 
 **Live-head rule:** query the current GitHub `main` refs at chat startup. Documentation-only commits may advance `main` and must not be mistaken for a new runtime implementation revision.
