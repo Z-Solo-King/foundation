@@ -1,10 +1,10 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT_RUNTIME_RECONCILIATION",
-  "audited_at": "2026-09-24T10:10:00+05:30",
+  "audited_at": "2026-09-24T10:20:00+05:30",
   "live_main": {
-    "foundation": "392c94795936a427ecd78ed192c24df65c3b5596",
-    "operations": "05a8cd7a459626386c0574fdb6bcd273d68bb84f"
+    "foundation": "a529b6f7ac9e62e4bcb112b4f84f130fdd33a365",
+    "operations": "046c9318d9f14b9b9efd2e6ed4ea0303bb6ca1ef"
   },
   "runtime_pins": {
     "foundation_runtime": "fe79e10c4f7e3ee17b9488848b90cf6b7e93f6fb",
@@ -45,12 +45,10 @@
       340,
       145
     ],
-    "open_implementation_pr_count": 1,
-    "foundation_open_prs": [
-      1085
-    ],
+    "open_implementation_pr_count": 0,
+    "foundation_open_prs": [],
     "operations_open_prs": [],
-    "open_pr_count": 1,
+    "open_pr_count": 0,
     "closed": [
       197,
       352,
@@ -153,12 +151,13 @@
   "known_findings": [
     "Current live open issue inventory is 8: Foundation #58/#157 and Operations #145/#340/#385/#597/#603/#699.",
     "Operations #711 is closed after canonical production release #492 supplied L4 D1 changes()/over-limit/reconciliation evidence.",
-    "Operations #197 and #352 plus Foundation #452 are closed; #197 remains historical regression coverage.",
-    "Operations #853 corrected current_open_issue_inventory.json after #711 closure.",
+    "Operations #853 removed #711 from the live issue inventory; Operations #855 then removed it from the active surface map, 4-lane matrix and governance policy.",
+    "Foundation #1085 is merged; the deterministic coverage matrix no longer runs authenticated live production probes on every push. Live probes are explicit workflow-dispatch opt-in.",
+    "The six-lane exhaustive audit run #354 passed after the #711 inventory/surface/matrix/policy correction.",
     "Latest extractor benchmark #348 passed its strict evidence-quality gate with 40 receipts and complete provenance.",
     "Nightly run #878 is blocked before provider execution because the three research-provider secrets are unset.",
-    "Nightly migration-review artifact #10772875132 is coherent at 40 matrix cases plus 24 capacity cases; the old diagnosis artifact #10771684062 contains a stale count blocker from the pre-fix workflow revision.",
-    "Foundation #1085 is the current coverage live-probe opt-in repair; its exhaustive audit rerun must consume the corrected 8-issue inventory."
+    "Nightly migration-review artifact #10772875132 is coherent at 40 matrix cases plus 24 capacity cases; the old diagnosis artifact #10771684062 is historical pre-fix evidence and must not be used as current diagnosis.",
+    "No current repository implementation PR remains open."
   ],
   "evidence_boundary": {
     "L0": "hypothesis",
@@ -199,11 +198,13 @@
       "active_issue_count": 9,
       "historical_issue_count": 1,
       "lane_count": 4,
-      "cases_per_lane": 10
+      "cases_per_lane": 10,
+      "note": "Completed before #711 closure; fresh open-issue deep scan has not yet been executed."
     },
     "coverage_matrix": {
       "run": 319,
-      "status": "in_progress"
+      "status": "in_progress",
+      "note": "No new runtime result is inferred from the #1085 merge; live probes now require explicit workflow_dispatch opt-in."
     },
     "nightly_research": {
       "run": 878,
@@ -229,10 +230,10 @@
   },
   "repositories": {
     "foundation": {
-      "last_audited_main_sha": "392c94795936a427ecd78ed192c24df65c3b5596"
+      "last_audited_main_sha": "a529b6f7ac9e62e4bcb112b4f84f130fdd33a365"
     },
     "operations": {
-      "last_audited_main_sha": "05a8cd7a459626386c0574fdb6bcd273d68bb84f"
+      "last_audited_main_sha": "046c9318d9f14b9b9efd2e6ed4ea0303bb6ca1ef"
     }
   }
 }
