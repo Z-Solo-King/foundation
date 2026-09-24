@@ -124,14 +124,22 @@ jobs:
             fi
             probe_error_code=""
             probe_error_message=""
+            probe_upstream_status=""
+            probe_upstream_error=""
+            probe_upstream_generation_status=""
+            probe_upstream_provider=""
             if [ -f "$RUNNER_TEMP/research-worker-probe.json" ]; then
               probe_error_code="$(jq -r '.error.code // .code // empty' "$RUNNER_TEMP/research-worker-probe.json" 2>/dev/null | head -c 160 || true)"
               probe_error_message="$(jq -r '.error.message // .message // empty' "$RUNNER_TEMP/research-worker-probe.json" 2>/dev/null | head -c 240 || true)"
+              probe_upstream_status="$(jq -r '.error.upstream_status // empty' "$RUNNER_TEMP/research-worker-probe.json" 2>/dev/null | head -c 16 || true)"
+              probe_upstream_error="$(jq -r '.error.upstream_error // empty' "$RUNNER_TEMP/research-worker-probe.json" 2>/dev/null | head -c 200 || true)"
+              probe_upstream_generation_status="$(jq -r '.error.upstream_generation_status // empty' "$RUNNER_TEMP/research-worker-probe.json" 2>/dev/null | head -c 80 || true)"
+              probe_upstream_provider="$(jq -r '.error.upstream_provider // empty' "$RUNNER_TEMP/research-worker-probe.json" 2>/dev/null | head -c 120 || true)"
             fi
-            python - "$summary_file" "$failure_stage" "$JOB_STATUS" "$probe_http_status" "$probe_error_code" "$probe_error_message" <<'PY'
+            python - "$summary_file" "$failure_stage" "$JOB_STATUS" "$probe_http_status" "$probe_error_code" "$probe_error_message" "$probe_upstream_status" "$probe_upstream_error" "$probe_upstream_generation_status" "$probe_upstream_provider" <<'PY'
           import json, sys
           from pathlib import Path
-          out, stage, job_status, http_status, error_code, error_message = sys.argv[1:]
+          out, stage, job_status, http_status, error_code, error_message, upstream_status, upstream_error, upstream_generation_status, upstream_provider = sys.argv[1:]
           data = {
               "schema": "live-nightly-canary/v1",
               "ok": False,
@@ -140,6 +148,10 @@ jobs:
               "probe_http_status": http_status,
               "probe_error_code": error_code,
               "probe_error_message": error_message,
+              "probe_upstream_status": upstream_status,
+              "probe_upstream_error": upstream_error,
+              "probe_upstream_generation_status": upstream_generation_status,
+              "probe_upstream_provider": upstream_provider,
               "operations_ref": "fda24660843cacfe28de661cf170789af542d28f",
           }
           Path(out).write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
