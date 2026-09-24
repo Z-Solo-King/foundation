@@ -619,3 +619,10 @@ def test_live_chatbot_smoke_requires_real_model_generation():
     assert 'chat_response.get("generation_status") != "model_generated"' in workflow
     assert 'chat_response.get("provider") != "cloudflare_workers_ai"' in workflow
     assert 'not chat_response.get("text", "").strip()' in workflow
+
+
+def test_production_bootstrap_checks_worker_settings_not_deployments():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings' in deployment
+    window = deployment.split("Rename-safe Cloudflare deployment sequence.", 1)[1].split("# Deploy the renamed public Worker", 1)[0]
+    assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments' not in window
