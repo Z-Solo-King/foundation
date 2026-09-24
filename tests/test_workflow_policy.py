@@ -533,7 +533,7 @@ def test_exhaustive_audit_does_not_infer_operations_branch_from_foundation_pr():
     assert 'core.setOutput("ref", "main")' in workflow
 
 
-def test_nightly_research_uses_existing_cloudflare_workers_ai_credentials():
+def test_nightly_research_uses_authenticated_worker_ai_adapter():
     workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v2.yml").read_text(encoding="utf-8")
     preflight = (WORKFLOW_ROOT / "nightly-research-provider-preflight.yml").read_text(encoding="utf-8")
     canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
@@ -541,14 +541,32 @@ def test_nightly_research_uses_existing_cloudflare_workers_ai_credentials():
         assert "secrets.RESEARCH_LLM_ENDPOINT" not in text
         assert "secrets.RESEARCH_LLM_API_KEY" not in text
         assert "secrets.RESEARCH_LLM_MODEL" not in text
-        assert "secrets.CLOUDFLARE_API_TOKEN" in text
-        assert "secrets.CLOUDFLARE_ACCOUNT_ID" in text
+        assert "secrets.CLOUDFLARE_API_TOKEN" not in text
         assert "@cf/meta/llama-3.1-8b-instruct-fast" in text
-    assert "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/ai/v1" in workflow
-    assert "/chat/completions" in preflight
-    assert "Cloudflare Workers AI inference probe: PASS" in preflight
+    assert 'RESEARCH_LLM_ENDPOINT: "http://127.0.0.1:8765"' in workflow
+    assert 'RESEARCH_LLM_API_KEY: "local-worker-proxy"' in workflow
+    assert 'RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in workflow
+    assert "scripts/research_worker_proxy.py" in workflow
+    assert 'PUBLIC_WORKER_URL' in workflow
+    assert 'AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in preflight
+    assert "/api/v1/chat" in preflight
+    assert 'worker_ai_path_verified' in preflight
+    assert 'transport": "authenticated_foundation_worker"' in preflight
+    assert 'RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in canary
 
+def test_research_worker_proxy_never_logs_or_exposes_auth_token_in_process_arguments():
+    proxy = (ROOT / "scripts" / "research_worker_proxy.py").read_text(encoding="utf-8")
+    assert "RESEARCH_PROXY_AUTH_TOKEN" not in proxy
+    assert 'os.environ.get("RESEARCH_PROXY_AUTH_TOKEN", "")' in proxy
+    assert "server.serve_forever()" in proxy
+    assert 'ThreadingHTTPServer((args.bind, args.port), Handler)' in proxy
 def test_production_release_enforces_cloudflare_free_neuron_cap():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert '"workers_ai_neurons":10000' in deployment
     assert '"workers_ai_neurons":9000' not in deployment
+
+def test_production_release_accepts_current_family_sync_state_schema():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert '.repositories?' in deployment
+    assert '.live_main?' in deployment
+    assert 'false' in deployment
