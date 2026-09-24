@@ -1,30 +1,35 @@
-# LIVE CURRENT CHECKPOINT — 2026-09-24 21:45 IST
+# LIVE CURRENT CHECKPOINT — 2026-09-24 — Cycle 5
 
 This checkpoint supersedes older dated sections below.
 
 ## Current repository state
-- Foundation main: `e541ac4d000ed4a0678aa1ef6ebe9faf6c119c0a`
-- Operations main: `5f2c98fbf0bd8694c63b97a62e28b0bacf01923a`
+- Foundation main: `725e1b9cdaa637f07d4264673cddfc8ab806b3c6`
+- Operations main: `9f1d3498ea6be4864bfa6f3e3a5e2b77661ea196`
 - Open issues: 8 total — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
-- Open implementation PRs: 0 after merging Foundation #1129 and #1130.
-- ChatGPT Policy is synchronized in both repositories: GitHub + Cloudflare may run in one cycle when healthy; 4-6 bounded lanes; 20-minute project session cap; context-pressure checkpointing.
+- Open implementation PRs: Foundation #1136 (documentation/session-evidence only); Operations none.
+- Foundation #1132/#1134/#1135 are merged; Operations #890/#891 are merged.
+- Canonical Operations production/nightly pin: `fda24660843cacfe28de661cf170789af542d28f`.
 
-## Cycle 2 verified repair state
-- Foundation #1129 merged as `5ab5eb1c5fc4dc07c7e0a533bbfc402cb766d424`: fresh workflow-dispatch checks now bind verification to the exact dispatched run ID and use a bounded 120-second job-materialization wait.
-- Foundation #1130 merged as `e541ac4d000ed4a0678aa1ef6ebe9faf6c119c0a`: Hybrid URL differential corpus asserts the 61-case corpus and nested Rust workspace setup disables cache targeting at repository root.
-- Operations #887 is merged on `main` at `5f2c98fbf0bd8694c63b97a62e28b0bacf01923a`, aligning the Rust HTML availability contract with the current generic extractor contract.
+## Fresh GitHub/runtime evidence
+- Fresh control-plane identity acceptance on Foundation `725e1b9...`: run `36030977790` PASS.
+- Nightly research contract: run `36030977760` PASS.
+- Polyglot governance audit: run `36030977701` PASS.
+- Live extractor benchmark: run `36030977702` PASS.
+- Canonical production release: run `36030977718` PASS. The release exercised authenticated chat, replay/idempotency, concurrent idempotency, policy denial, authenticated SSE with HTTP 200 and terminal partial lifecycle, permitted-source research ingestion/readback, D1/B2 diagnostics, durable chat terminalization CAS, resource reservation/reconciliation, maintenance reconciliation, and provider-stream contract. Operations provenance was observed as `github:fda24660843cacfe28de661cf170789af542d28f`.
+- Latest nightly multi-agent research: run `36030996071` FAIL; research executor preflight passed, but the authenticated proxy reached the public Worker and received upstream HTTP 403, surfaced locally as `upstream_worker_rejected` / HTTP 502. This remains the current #157 provider/runtime blocker.
+- Live nightly canary: run `36030977932` FAIL with the same upstream Worker 403/502 condition.
 
-## Remaining acceptance state
-- #157: L4 runtime/provider gate. Latest observed authenticated research path still hits upstream Worker HTTP 403 / local 502 `upstream_worker_rejected`; no 24-program provider-backed receipt yet.
-- #145/#340/#385/#597/#603: implementation materially present; remaining acceptance requires issue-specific runtime/evidence/benchmark/rollback receipts.
-- #699: aggregate tracker remains open until child acceptance gates discharge.
-- #58: meta coverage tracker remains open until dependent acceptance gates are truly discharged.
+## Acceptance classification
+- #157: **C/E** — repository-side research path is implemented and configured; current authenticated runtime evidence still stops at the public Worker 403 boundary.
+- #145/#340/#385/#597/#603: **E** — repository implementation and deterministic/runtime smoke evidence are present, but each issue still requires its own external scheduler, interruption/recovery, migration parity/performance, rollback, shadow/canary, or portability receipt.
+- #699: aggregate **E** tracker until child evidence gates discharge.
+- #58: meta **E** tracker until dependent acceptance gates discharge.
 
 ## Runtime boundary
-Cloudflare production state must be refreshed from the Cloudflare control plane before being called current L4 evidence. No new Cloudflare runtime claim is made in this cycle because the active Cloudflare action was not exposed to this chat.
+The current GitHub production release provides runtime evidence through its controlled release path, but the dedicated Cloudflare control-plane connector is not exposed to this chat. Therefore no new standalone Cloudflare deployment/version/binding/cron/secrets claim is made outside the release evidence already recorded above.
 
 ## Next bounded action
-Recheck the merged Foundation main CI surface and the current Operations acceptance blockers, then repair only newly reproduced repository defects; otherwise advance evidence-gated issues without speculative code churn.
+Use the current #157 403 receipt for Cloudflare-side authorization/service-binding diagnosis when that control plane is available. Keep repository changes limited to newly reproducible defects; do not weaken acceptance gates to convert runtime failures into passes.
 
 ---
 # Historical checkpoint — 2026-09-23 Live Reconciliation (superseded)
