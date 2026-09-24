@@ -8,7 +8,7 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "fc2c94b5324800f455cd3f82a3bd1117eb23dff1"
+CANONICAL_OPERATIONS_REF = "44f53283aa308e8a294ae9fe716ab9200a44809b"
 BENCHMARK_OPERATIONS_REF = CANONICAL_OPERATIONS_REF
 BENCHMARK_TOOLS_REF = "d4ef2e6d28435a59c735b9dc4d0de31f44b9cf29"
 MIGRATION_TOOLS_REF = None
@@ -463,7 +463,7 @@ def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
 def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
-    expected_production = "fc2c94b5324800f455cd3f82a3bd1117eb23dff1"
+    expected_production = "44f53283aa308e8a294ae9fe716ab9200a44809b"
     expected_nightly = "41db817dee6aa7d369ea9a07dd072b58ece1695a"
     auxiliary = {
         "live-chatbot-production-smoke.yml": expected_production,
@@ -554,6 +554,8 @@ def test_nightly_research_uses_authenticated_worker_ai_adapter():
     assert 'worker_ai_path_verified' in preflight
     assert 'transport": "authenticated_foundation_worker"' in preflight
     assert 'RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in canary
+    assert "Checkout Foundation research adapter" in canary
+    assert "uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in canary
 
 def test_research_worker_proxy_keeps_auth_token_out_of_command_line_and_logs():
     proxy = (ROOT / "scripts" / "research_worker_proxy.py").read_text(encoding="utf-8")
