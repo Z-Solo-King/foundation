@@ -20,7 +20,7 @@ from urllib.request import Request, urlopen
 from benchmark.evidence_tier import EvidenceTier, parse_evidence_tier
 from foundation_core.normalization import canonical_url as _canonical_url
 
-USER_AGENT = "ResearchIntelligenceEngine-Benchmark/2026.09"
+USER_AGENT = "HeroicAI-Benchmark/2026.09"
 PRODUCT_HINTS = ("product", "itemprop=\"name\"", "productid", "sku", "add-to-cart", "price")
 TRANSIENT_HTTP = {408, 425, 429, 500, 502, 503, 504}
 MAX_ATTEMPTS = 2

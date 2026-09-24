@@ -87,7 +87,7 @@ async def public_infrastructure_verify(env, *, persistence_cls):
         d1_ok = False
     checks.append({"name": "cloudflare_d1", "ok": d1_ok})
     key = f"diagnostics/chatbot/b2-lifecycle/{run_id}"
-    content = b"research-intelligence-engine-b2-lifecycle"
+    content = b"heroic-ai-b2-lifecycle"
     try:
         written = await persistence.put_artifact(key, content, content_type="text/plain")
         read_back = await persistence.get_artifact(key)

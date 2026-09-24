@@ -1,8 +1,8 @@
-name = "research-intelligence-engine-public"
+name = "foundation"
 main = "worker.py"
 compatibility_date = "2026-09-09"
 compatibility_flags = ["python_workers", "enable_request_signal", "request_signal_passthrough"]
-workers_dev = true
+workers_dev = false
 preview_urls = false
 
 [assets]
@@ -23,3 +23,7 @@ ENVIRONMENT = "production"
 STRICT_ZERO_COST_ONLY = "true"
 B2_BUCKET = "SoloKing"
 B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"
+
+[[routes]]
+pattern = "heroic-ai.dev"
+custom_domain = true

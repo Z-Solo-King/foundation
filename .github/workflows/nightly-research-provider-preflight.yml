@@ -17,7 +17,7 @@ jobs:
       - name: Verify authenticated Worker-backed Workers AI
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          PUBLIC_WORKER_URL: "https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
+          PUBLIC_WORKER_URL: "https://Heroic-Ai.dev"
           OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
           OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
         run: |
@@ -87,7 +87,7 @@ jobs:
               "research_endpoint_set": os.environ["PREFLIGHT_ENDPOINT"] == "true",
               "research_api_key_set": os.environ["PREFLIGHT_API_KEY"] == "true",
               "research_model_set": os.environ["PREFLIGHT_MODEL"] == "true",
-              "operations_ref": "8e7250aca439ded79c20bcda7441c6b0386f22a1",
+              "operations_ref": "a3171f353539f1a31020c432f98cf0530cbf91ef",
               "workers_ai_model": "@cf/zai-org/glm-4.7-flash",
           }
           with open("preflight.json", "w", encoding="utf-8") as handle:

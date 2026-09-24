@@ -37,7 +37,7 @@ async def _implementation(query: str, limit: int, *, fetcher=None) -> list[Searc
     response = await _call_fetcher(
         fetcher or _workers_fetch(),
         url,
-        {"headers": {"User-Agent": "ResearchIntelligenceEngine/0.1"}},
+        {"headers": {"User-Agent": "HeroicAI/0.1"}},
     )
     if int(response.status) != 200:
         raise RuntimeError(f"Wikimedia search failed with HTTP {response.status}")
