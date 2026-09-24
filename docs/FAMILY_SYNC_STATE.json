@@ -3,8 +3,8 @@
   "status": "CURRENT_POST_SYNC_VERIFIED_SNAPSHOT",
   "audited_at": "2026-09-24",
   "live_main": {
-    "foundation": "0bc02a8ef327e6414d7b7ed881d70f07f1bb5174",
-    "operations": "4d1f25a3cd08cccbdc343d22a18c0664c4e8b68d"
+    "foundation": "dac1cc9f0fd68fbc81bb98e14a399cf671edb527",
+    "operations": "4620fcbeaeef2bf1cffdc19b3d1dfe95fcf05315"
   },
   "runtime_pins": {
     "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
@@ -175,17 +175,16 @@
     },
     "github_reconciliation": {
       "checked_at": "2026-09-24",
-      "foundation_main": "2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706",
-      "operations_main": "1fd629cae593959249107ddb8c7af3f55292e9df",
+      "foundation_main": "dac1cc9f0fd68fbc81bb98e14a399cf671edb527",
+      "operations_main": "4620fcbeaeef2bf1cffdc19b3d1dfe95fcf05315",
       "canonical_operations_pin": "fda24660843cacfe28de661cf170789af542d28f",
-      "open_pr_count": 1,
-      "foundation_open_prs": [
-        1137
-      ],
+      "operations_main_ahead_of_production_pin": 25,
+      "open_pr_count": 0,
+      "foundation_open_prs": [],
       "operations_open_prs": [],
-      "runtime_production_foundation": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
       "latest_code_fix_foundation": "07ef89f3ebbcd84fa3b04fc0cf2d8f4693678f91",
-      "latest_code_fix_operations": "b01bf6160408f41bac2cc2767eabb2539728f055"
+      "latest_code_fix_operations": "b01bf6160408f41bac2cc2767eabb2539728f055",
+      "snapshot_semantics": "verified main heads immediately before this documentation commit"
     },
     "foundation_ci_repairs": {
       "cycle": "2026-09-24-cycle2",
