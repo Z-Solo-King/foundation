@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-WORKFLOW = ROOT / ".github/workflows/nightly-multi-agent-research-v2.yml"
+WORKFLOW = ROOT / ".github/workflows/nightly-multi-agent-research-v3.yml"
 SHA_REF = re.compile(r"OPERATIONS_RESEARCH_REF:\s*([0-9a-f]{40})")
 UPLOAD_STEP = re.compile(r"(?ms)^      - uses: actions/upload-artifact@.*?(?=^      - |\Z)")
 

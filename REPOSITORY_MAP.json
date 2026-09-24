@@ -53,7 +53,7 @@
     "private_runtime_actions_route": ".github/workflows/foundation-canonical-workflow-bridge-v3.yml",
     "private_runtime_must_not_dispatch_targets_directly": true,
     "foundation_app_dispatch_targets": [
-      ".github/workflows/nightly-multi-agent-research-v2.yml",
+      ".github/workflows/nightly-multi-agent-research-v3.yml",
       ".github/workflows/heroic-ai-production-release.yml",
       ".github/workflows/cross-repository-contract-drift.yml",
       ".github/workflows/operations-centralized-validation.yml",
