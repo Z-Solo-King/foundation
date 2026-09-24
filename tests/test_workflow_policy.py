@@ -531,3 +531,19 @@ def test_exhaustive_audit_does_not_infer_operations_branch_from_foundation_pr():
     assert 'context.payload.pull_request?.head?.ref' not in workflow
     assert 'github.rest.repos.getBranch' not in workflow
     assert 'core.setOutput("ref", "main")' in workflow
+
+
+def test_nightly_research_uses_existing_cloudflare_workers_ai_credentials():
+    workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v2.yml").read_text(encoding="utf-8")
+    preflight = (WORKFLOW_ROOT / "nightly-research-provider-preflight.yml").read_text(encoding="utf-8")
+    canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
+    for text in (workflow, preflight, canary):
+        assert "secrets.RESEARCH_LLM_ENDPOINT" not in text
+        assert "secrets.RESEARCH_LLM_API_KEY" not in text
+        assert "secrets.RESEARCH_LLM_MODEL" not in text
+        assert "secrets.CLOUDFLARE_API_TOKEN" in text
+        assert "secrets.CLOUDFLARE_ACCOUNT_ID" in text
+        assert "@cf/meta/llama-3.1-8b-instruct-fast" in text
+    assert "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/ai/v1" in workflow
+    assert "/chat/completions" in preflight
+    assert "Cloudflare Workers AI inference probe: PASS" in preflight
