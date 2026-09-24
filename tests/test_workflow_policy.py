@@ -10,8 +10,8 @@ SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
 CANONICAL_OPERATIONS_REF = "1a12b98981f52de207fa8626cf2e1f5ad06659be"
 BENCHMARK_OPERATIONS_REF = CANONICAL_OPERATIONS_REF
-BENCHMARK_TOOLS_REF = "d4ef2e6d28435a59c735b9dc4d0de31f44b9cf29"
-MIGRATION_TOOLS_REF = BENCHMARK_TOOLS_REF
+BENCHMARK_TOOLS_REF = CANONICAL_OPERATIONS_REF
+MIGRATION_TOOLS_REF = None
 VALIDATION_TOOLS_REF = "92eb7a850dff11a10886a952d5db8a42dae2b318"
 CANONICAL_OPERATIONS_SERVICE = "research-intelligence-engine-private"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
@@ -388,9 +388,11 @@ def test_live_extractor_benchmark_uses_versioned_runtime_and_tool_pins():
 
 def test_nightly_migration_review_uses_separate_immutable_tooling_pin():
     workflow = _workflow_texts()["nightly-multi-agent-research-v2.yml"]
-    assert "OPERATIONS_MIGRATION_TOOLS_REF:" in workflow
-    assert MIGRATION_TOOLS_REF in workflow
-    assert MIGRATION_TOOLS_REF != "3a7e350ddd5648caf93f58651323425186544f66"
+    match = re.search(r"^  OPERATIONS_MIGRATION_TOOLS_REF: ([0-9a-f]{40})$", workflow, re.MULTILINE)
+    assert match is not None
+    migration_tools_ref = match.group(1)
+    assert migration_tools_ref != "3a7e350ddd5648caf93f58651323425186544f66"
+    assert migration_tools_ref != CANONICAL_OPERATIONS_REF
     assert "Checkout pinned Operations migration tooling" in workflow
     assert "Verify Operations migration-tools revision" in workflow
 
