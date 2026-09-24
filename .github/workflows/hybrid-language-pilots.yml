@@ -503,26 +503,26 @@ jobs:
                           raise SystemExit
           raise SystemExit("FOUNDATION_COMMIT not found")
 
-      - name: Checkout exact pinned Foundation public core
+      - name: Checkout Foundation public core repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/foundation
-          ref: ${{ steps.foundation-core-pin.outputs.ref }}
           token: ${{ github.token }}
           path: foundation-core
           fetch-depth: 1
 
-      - name: Ensure exact Foundation Git object is present
+      - name: Select exact pinned Foundation public-core commit
         working-directory: foundation-core
         shell: bash
         env:
           FOUNDATION_COMMIT: ${{ steps.foundation-core-pin.outputs.ref }}
         run: |
           set -euo pipefail
+          test "$FOUNDATION_COMMIT" = "100a382a17ad793e267c96156320f2eae1c10ef9"
           git fetch --no-tags --depth=1 origin "$FOUNDATION_COMMIT"
           git cat-file -e "$FOUNDATION_COMMIT^{commit}"
           git cat-file -e "$FOUNDATION_COMMIT:foundation_core/__init__.py"
-
+          git checkout --detach "$FOUNDATION_COMMIT"
       - name: Materialize pinned public foundation_core
         working-directory: operations
         env:
