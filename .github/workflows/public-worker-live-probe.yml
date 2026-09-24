@@ -33,12 +33,12 @@ jobs:
           import json
           from pathlib import Path
           root=Path("probe")
-          out={"schema":"public-worker-probe/v2","url":"https://Heroic-Ai.dev","checks":{},"ok":True}
+          out={"schema":"public-worker-probe/v3","url":"https://Heroic-Ai.dev","checks":{},"ok":True}
           for name in ("root","health","readiness"):
-              status=int((root/f"{name}.status").read_text().strip() or "0")
-              body=(root/f"{name}.body").read_text(errors="replace")[:500]
+              status=int((root/(name+".status")).read_text().strip() or "0")
+              body=(root/(name+".body")).read_text(errors="replace")[:1000]
               item={"status":status,"body_prefix":body}
-              if name != "root" and 200 <= status < 500 and "json" in (root/f"{name}.headers").read_text(errors="replace").lower():
+              if "json" in (root/(name+".headers")).read_text(errors="replace").lower():
                   try:
                       data=json.loads(body)
                       item["ok"]=data.get("ok")
@@ -48,11 +48,21 @@ jobs:
                   except Exception:
                       item["json"]="invalid"
               out["checks"][name]=item
-              if status < 200 or status >= 500: out["ok"]=False
+
+              if status != 200:
+                  out["ok"]=False
+              if name == "health" and item.get("ok") is not True:
+                  out["ok"]=False
+              if name == "readiness" and (
+                  item.get("ok") is not True
+                  or item.get("ready") is not True
+                  or item.get("database") is not True
+              ):
+                  out["ok"]=False
           (root/"receipt.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
           print(json.dumps(out,indent=2,sort_keys=True))
+          raise SystemExit(0 if out["ok"] else 1)
           PY
-          exit 0
       - name: Upload receipt
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a

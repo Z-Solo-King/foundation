@@ -1,3 +1,32 @@
+# 2026-09-25 CURRENT AUTHORITY OVERRIDE
+
+This section supersedes older dated checkpoint values below.
+
+## Live repository state verified in this cycle
+- Foundation main: `c053a67defb72307c2d34ddfd8e94e3e1f339308`
+- Operations main: `8cf3533002a4779c19a18ed22f5600c1aa07d115`
+- Active public origin: `https://Heroic-Ai.dev`
+- Public Worker identity: `foundation`
+- Operations Worker identity: `operations`
+- Current production Operations pin: `a3171f353539f1a31020c432f98cf0530cbf91ef`
+
+## Current production blocker and correction
+- Production release `36052644242` failed while deploying Foundation because Cloudflare reported Service Binding `OPERATIONS -> operations` as missing.
+- The previous Worker-existence preflight queried the `/deployments` endpoint, which returned HTTP 200 even though the Worker was absent.
+- The release path is being corrected to query the Worker `/settings` endpoint, then perform a binding-free Operations bootstrap before deploying Foundation.
+- The public live probe and chatbot smoke are now required to fail closed: HTTP/DNS/readiness failures cannot produce a successful workflow, and chatbot acceptance requires real model generation, provider provenance, and non-empty text.
+
+## Evidence boundary
+Repository tests and GitHub checks are not Cloudflare L4 certification. Closure of runtime issues still requires a fresh approved live receipt tied to the exact deployed Foundation SHA and Operations pin.
+
+## ChatGPT/session continuity
+- GitHub commits, workflow run IDs, artifacts, and approved Cloudflare receipts are the authoritative engineering ledger.
+- Chat/mobile responsiveness is transport/session evidence only.
+- The execution environment currently cannot resolve `heroic-ai.dev`; this is recorded as an observed DNS failure from this environment, not a universal DNS diagnosis.
+- Do not infer runtime completion from an unverified URL or from green health/readiness alone.
+
+---
+
 # 2026-09-24 FINAL LIVE CHECKPOINT — POST-SYNC
 
 This checkpoint records the latest verified family state after the Cycle 7 documentation merges. The repository documentation commit that contains this section is itself documentation-only; refresh live `main` refs before any mutation.

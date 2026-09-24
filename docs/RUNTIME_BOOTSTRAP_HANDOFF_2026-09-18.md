@@ -14,7 +14,7 @@ This document is the current cross-chat handoff for the Foundation/Operations pr
 
 ## Cloudflare state reported/observed on 2026-09-18
 
-Worker: `research-intelligence-engine-private`
+Worker: `legacy private Worker`
 
 - active version: `15`
 - traffic: 100%
@@ -25,7 +25,7 @@ Worker: `research-intelligence-engine-private`
 Configured runtime topology reported by the Cloudflare recovery check:
 
 - `OPERATIONS_DB` -> D1 `research-intelligence`
-- `FOUNDATION` -> `research-intelligence-engine-public`
+- `FOUNDATION` -> `legacy public Worker`
 - `ENVIRONMENT=production`
 - `STRICT_ZERO_COST_ONLY=true`
 - cron `*/15 * * * *`

@@ -76,10 +76,10 @@ Foundation issue #487 remains open. The nightly research lane still uses the six
 
 ### Cloudflare runtime bootstrap — 2026-09-18
 
-The existing private Worker `research-intelligence-engine-private` now has a real configuration deployment reported as version `15` (version ID `5ee4364d-b26a-4a6e-b2e8-22e9129e1fdc`; deployment ID `61b1a4fe-be10-441a-9307-8301b5e3e94`). The reported configuration includes:
+The existing private Worker `legacy private Worker` now has a real configuration deployment reported as version `15` (version ID `5ee4364d-b26a-4a6e-b2e8-22e9129e1fdc`; deployment ID `61b1a4fe-be10-441a-9307-8301b5e3e94`). The reported configuration includes:
 
 - `OPERATIONS_DB` -> canonical D1 `research-intelligence`;
-- `FOUNDATION` -> `research-intelligence-engine-public`;
+- `FOUNDATION` -> `legacy public Worker`;
 - `ENVIRONMENT=production`;
 - `STRICT_ZERO_COST_ONLY=true`;
 - cron `*/15 * * * *`;

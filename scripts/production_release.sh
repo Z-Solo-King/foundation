@@ -320,7 +320,7 @@ chmod 600 "$secret_file"
 new_operations_status=$(curl -sS -o "$RUNNER_TEMP/operations-predeploy.json" -w '%{http_code}' \
   -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
   -H 'Content-Type: application/json' \
-  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments" || true)
+  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings" || true)
 if [ "$new_operations_status" = "404" ]; then
   bootstrap_config="$RUNNER_TEMP/operations-bootstrap.toml"
   cp "$RUNNER_TEMP/operations/wrangler.toml" "$bootstrap_config"
