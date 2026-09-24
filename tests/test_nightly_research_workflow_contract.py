@@ -95,5 +95,5 @@ def test_nightly_baseline_lookup_uses_only_current_registered_workflow():
 def test_live_worker_proxy_probe_shell_expression_is_closed_and_non_aborting():
     text = workflow_text()
     assert "probe_payload=$(jq -nc '{model:\"@cf/meta/llama-3.1-8b-instruct-fast\",messages:[{role:\"user\",content:\"Return exactly OK.\"}],max_tokens:1,temperature:0}')" in text
-    assert 'echo "Authenticated Worker-backed Workers AI probe: PASS"\\n       - name: Run complete research lane' not in text
+    assert 'name: Run complete research lane' in text
     assert 'cat "$RUNNER_TEMP/research-worker-proxy.log" 2>/dev/null || true\\n          exit 1' not in text
