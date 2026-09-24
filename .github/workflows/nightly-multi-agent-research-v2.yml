@@ -540,14 +540,14 @@ jobs:
           git -C "$RUNNER_TEMP/operations-research" checkout --detach "$OPERATIONS_RESEARCH_REF"
           test "$(git -C "$RUNNER_TEMP/operations-research" rev-parse HEAD)" = "$OPERATIONS_RESEARCH_REF"
       - name: Download all research lane artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4
         with:
           pattern: nightly-research-lane-*
           path: .runtime/artifacts
           merge-multiple: true
       - name: Download migration review artifact
         continue-on-error: true
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4
         with:
           name: nightly-migration-review
           path: .runtime/migration-review
