@@ -34,8 +34,45 @@ env:
   OPERATIONS_MIGRATION_TOOLS_REF: 41db817dee6aa7d369ea9a07dd072b58ece1695a
 
 jobs:
+  production_gate:
+    name: Wait for exact production release
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Require matching successful production release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ inputs.dry_run || false }}" == "true" ]]; then
+            echo "Explicit dry-run: production release gate is not required."
+            exit 0
+          fi
+          target_sha="${GITHUB_SHA}"
+          for attempt in $(seq 1 240); do
+            runs_json="$(gh run list --workflow heroic-ai-production-release.yml --repo "$GITHUB_REPOSITORY" --limit 20 --json databaseId,headSha,status,conclusion)"
+            matching="$(jq --arg sha "$target_sha" '[.[] | select(.headSha == $sha)]' <<<"$runs_json")"
+            success_count="$(jq '[.[] | select(.status == "completed" and .conclusion == "success")] | length' <<<"$matching")"
+            if [ "$success_count" -gt 0 ]; then
+              release_id="$(jq -r '[.[] | select(.status == "completed" and .conclusion == "success") | .databaseId] | max' <<<"$matching")"
+              echo "Exact production release gate: PASS (run ${release_id}, Foundation ${target_sha})"
+              exit 0
+            fi
+            active_count="$(jq '[.[] | select(.status != "completed")] | length' <<<"$matching")"
+            if [ "$active_count" -gt 0 ]; then
+              echo "Production release for ${target_sha} is still active/queued; continuing bounded wait."
+            else
+              echo "No completed successful production release for ${target_sha} yet; continuing bounded wait."
+            fi
+            sleep 10
+          done
+          echo "Timed out waiting for successful heroic-ai-production-release.yml for ${target_sha}"
+          gh run list --workflow heroic-ai-production-release.yml --repo "$GITHUB_REPOSITORY" --limit 20
+          exit 1
+
   research:
-    name: Nightly research lane ${{ matrix.lane }}
+    needs: [production_gate]    name: Nightly research lane ${{ matrix.lane }}
     runs-on: ubuntu-latest
     timeout-minutes: 350
     strategy:
