@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import threading
+import os
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.request import Request, urlopen
@@ -182,14 +182,17 @@ class Handler(BaseHTTPRequestHandler):
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--public-worker-url", required=True)
-    parser.add_argument("--auth-token", required=True)
+    parser.add_argument("--auth-token", default="")
     parser.add_argument("--bind", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
 
+    auth_token = args.auth_token or os.environ.get("RESEARCH_PROXY_AUTH_TOKEN", "")
+    if not auth_token:
+        parser.error("research proxy auth token is required")
     server = ThreadingHTTPServer((args.bind, args.port), Handler)
     server.public_worker_url = args.public_worker_url
-    server.auth_token = args.auth_token
+    server.auth_token = auth_token
     print(json.dumps({"ok": True, "bind": args.bind, "port": args.port, "service": "research-worker-proxy"}), flush=True)
     try:
         server.serve_forever()
