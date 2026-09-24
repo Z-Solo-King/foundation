@@ -1045,9 +1045,13 @@ jobs:
           from pathlib import Path
           py=[json.loads(v) for v in Path("python-link.jsonl").read_text().splitlines() if v]
           rs=[json.loads(v) for v in Path("rust-link.jsonl").read_text().splitlines() if v]
-          assert len(py)==len(rs)==32
-          assert py==rs, "Rust Link-header parser diverges from Python"
-          print("Link-header differential parity: PASS (32/32)")
+          assert len(py)==len(rs)==33, (len(py), len(rs))
+          for index, (python_row, rust_row) in enumerate(zip(py, rs)):
+              assert python_row == rust_row, (
+                  f"Rust Link-header parser diverges from Python at case {index}: "
+                  f"{rust_row!r} != {python_row!r}"
+              )
+          print("Link-header differential parity: PASS (33/33)")
           PY
       - name: Benchmark Rust candidate
         working-directory: operations
@@ -1103,8 +1107,12 @@ jobs:
           from pathlib import Path
           py=[json.loads(v) for v in Path("python-robots.jsonl").read_text().splitlines() if v]
           rs=[json.loads(v) for v in Path("rust-robots.jsonl").read_text().splitlines() if v]
-          assert len(py)==len(rs)==32
-          assert py==rs, "Rust robots/sitemap parser diverges from Python"
+          assert len(py)==len(rs)==32, (len(py), len(rs))
+          for index, (python_row, rust_row) in enumerate(zip(py, rs)):
+              assert python_row == rust_row, (
+                  f"Rust robots/sitemap parser diverges from Python at case {index}: "
+                  f"{rust_row!r} != {python_row!r}"
+              )
           print("robots/sitemap differential parity: PASS (32/32)")
           PY
       - name: Benchmark Rust candidate
