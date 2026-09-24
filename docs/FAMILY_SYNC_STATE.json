@@ -1,15 +1,15 @@
 {
   "schema_version": "family-sync-state/v1",
-  "status": "CURRENT_RUNTIME_RECONCILIATION",
+  "status": "CURRENT_GITHUB_RECONCILIATION_CLOUDFLARE_PENDING",
   "audited_at": "2026-09-24",
   "live_main": {
-    "foundation": "ef380b5d5bee73a1ef3fce070754d447b3ac76ef",
-    "operations": "7800e8c693f9f981fa0d78f4814641f9225a0908"
+    "foundation": "c519b56050632862fbac4f6d6841cbd725408cc8",
+    "operations": "fda24660843cacfe28de661cf170789af542d28f"
   },
   "runtime_pins": {
     "foundation_runtime": "825d301d10d201cd9b74dd018973769aeb03f381",
-    "production_operations": "7800e8c693f9f981fa0d78f4814641f9225a0908",
-    "nightly_research_operations": "7800e8c693f9f981fa0d78f4814641f9225a0908",
+    "production_operations": "fda24660843cacfe28de661cf170789af542d28f",
+    "nightly_research_operations": "fda24660843cacfe28de661cf170789af542d28f",
     "foundation_deployed": "825d301d10d201cd9b74dd018973769aeb03f381"
   },
   "cloudflare": {
@@ -46,8 +46,10 @@
       603,
       699
     ],
-    "open_pr_count": 0,
-    "foundation_open_prs": [],
+    "open_pr_count": 1,
+    "foundation_open_prs": [
+      1109
+    ],
     "operations_open_prs": [],
     "closed": [
       197,
@@ -200,6 +202,15 @@
       "operations_ref": "7800e8c693f9f981fa0d78f4814641f9225a0908",
       "merged": true,
       "live_release_pending": true
+    },
+    "github_reconciliation": {
+      "foundation_main": "c519b56050632862fbac4f6d6841cbd725408cc8",
+      "operations_main": "fda24660843cacfe28de661cf170789af542d28f",
+      "current_check_runs": 95,
+      "successful_check_runs": 89,
+      "failed_check_runs": 5,
+      "in_progress_check_runs": 1,
+      "nightly_provider_block": "upstream_worker_rejected_http_403"
     }
   },
   "known_findings": [
@@ -253,5 +264,29 @@
     "operations": "7800e8c693f9f981fa0d78f4814641f9225a0908",
     "status": "pending_live_release",
     "reason": "native_workers_ai_python_ffi_fix"
+  },
+  "native_workers_ai": {
+    "provider": "cloudflare_workers_ai",
+    "model": "@cf/zai-org/glm-4.7-flash",
+    "strict_zero_cost_only": true,
+    "workers_ai_neurons": 10000,
+    "source": "operations/wrangler.toml at fda24660843cacfe28de661cf170789af542d28f"
+  },
+  "github_sync": {
+    "checked_at": "2026-09-24",
+    "foundation_main": "c519b56050632862fbac4f6d6841cbd725408cc8",
+    "operations_main": "fda24660843cacfe28de661cf170789af542d28f",
+    "canonical_operations_pin": "fda24660843cacfe28de661cf170789af542d28f",
+    "superseded_pr_closed": 1112,
+    "remaining_foundation_pr": 1109,
+    "remaining_operations_prs": 0,
+    "current_main_check_runs": {
+      "total": 95,
+      "success": 89,
+      "failed": 5,
+      "in_progress": 1
+    },
+    "latest_nightly_provider_failure": "authenticated proxy -> upstream Worker HTTP 403 (local proxy HTTP 502, upstream_worker_rejected)",
+    "cloudflare_runtime_verification": "not_available_in_this_chat"
   }
 }
