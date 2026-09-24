@@ -547,3 +547,8 @@ def test_nightly_research_uses_existing_cloudflare_workers_ai_credentials():
     assert "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/ai/v1" in workflow
     assert "/chat/completions" in preflight
     assert "Cloudflare Workers AI inference probe: PASS" in preflight
+
+def test_production_release_enforces_cloudflare_free_neuron_cap():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert '"workers_ai_neurons":10000' in deployment
+    assert '"workers_ai_neurons":9000' not in deployment
