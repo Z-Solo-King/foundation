@@ -10,7 +10,7 @@ def test_public_lint_allows_memory_only_session_token():
 
 def test_public_lint_detects_private_marker(tmp_path: Path):
     path = tmp_path / "example.js"
-    path.write_text("const x = 'operations';\n", encoding="utf-8")
+    path.write_text("const x = '__HEROIC_PRIVATE_RUNTIME_MARKER__';\n", encoding="utf-8")
     assert any(f.rule == "private-marker" for f in lint_file(path, tmp_path))
 
 
