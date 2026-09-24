@@ -18,7 +18,7 @@ GitHub documents that GitHub App installation tokens can create workflow-dispatc
 
 The router currently permits only:
 
-- `.github/workflows/nightly-multi-agent-research-v2.yml`
+- `.github/workflows/nightly-multi-agent-research-v3.yml`
 - `.github/workflows/heroic-ai-production-release.yml`
 - `.github/workflows/cross-repository-contract-drift.yml`
 - `.github/workflows/operations-centralized-validation.yml`
@@ -28,7 +28,7 @@ No private Operations workflow is introduced.
 
 ## Nightly research
 
-The canonical nightly research workflow is `.github/workflows/nightly-multi-agent-research-v2.yml`. It pins the approved Operations revision and verifies the exact commit before checkout.
+The canonical nightly research workflow is `.github/workflows/nightly-multi-agent-research-v3.yml`. It pins the approved Operations revision and verifies the exact commit before checkout.
 
 `dry_run=true` is permitted only for explicit manual testing. Live research remains subject to its own preflight and evidence gates.
 
