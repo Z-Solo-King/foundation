@@ -275,34 +275,6 @@ public_secret_file="$RUNNER_TEMP/public-secrets.env"
 printf 'AUTH_TOKEN=%s\nB2_KEY_ID=%s\nB2_APPLICATION_KEY=%s\n' "$AUTH_TOKEN" "$B2_KEY_ID" "$B2_APPLICATION_KEY" > "$public_secret_file"
 chmod 600 "$public_secret_file"
 
-npx --yes wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
-pywrangler deploy --config wrangler.production.generated.toml --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}"
-
-health_status=$(curl -sS -o health.json -w '%{http_code}' "$BASE_URL/health")
-echo "GET /health -> HTTP ${health_status}"
-cat health.json
-test "$health_status" = '200'
-jq -e '.ok == true and .environment == "production"' health.json >/dev/null
-
-readiness=$(curl -sS -o readiness.json -w '%{http_code}' "$BASE_URL/readiness")
-echo "GET /readiness -> HTTP ${readiness}"
-cat readiness.json
-test "$readiness" = '200'
-jq -e '.ready == true and .database == true' readiness.json >/dev/null
-
-ui=$(curl -sS -o frontend.html -w '%{http_code}' "$BASE_URL/")
-echo "GET / -> HTTP ${ui}"
-test "$ui" = '200'
-grep -q '<title>Heroic AI — Chat & Research</title>' frontend.html
-test -s frontend.html
-
-for asset in styles.css app.js composer.js lifecycle_controller.js; do
-  asset_status=$(curl -sS -o "/tmp/${asset}" -w '%{http_code}' "$BASE_URL/${asset}")
-  echo "GET /${asset} -> HTTP ${asset_status}"
-  test "$asset_status" = '200'
-  test -s "/tmp/${asset}"
-done
-
 # Rename-safe Cloudflare deployment sequence.
 # Foundation and Operations have reciprocal Service Bindings. Cloudflare requires the
 # target Worker to exist before deploying the caller, so first create the Operations
@@ -347,6 +319,35 @@ else
   jq -c '{message,errors}' "$RUNNER_TEMP/operations-predeploy.json" 2>/dev/null || true
   exit 1
 fi
+
+
+npx --yes wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
+pywrangler deploy --config wrangler.production.generated.toml --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}"
+
+health_status=$(curl -sS -o health.json -w '%{http_code}' "$BASE_URL/health")
+echo "GET /health -> HTTP ${health_status}"
+cat health.json
+test "$health_status" = '200'
+jq -e '.ok == true and .environment == "production"' health.json >/dev/null
+
+readiness=$(curl -sS -o readiness.json -w '%{http_code}' "$BASE_URL/readiness")
+echo "GET /readiness -> HTTP ${readiness}"
+cat readiness.json
+test "$readiness" = '200'
+jq -e '.ready == true and .database == true' readiness.json >/dev/null
+
+ui=$(curl -sS -o frontend.html -w '%{http_code}' "$BASE_URL/")
+echo "GET / -> HTTP ${ui}"
+test "$ui" = '200'
+grep -q '<title>Heroic AI — Chat & Research</title>' frontend.html
+test -s frontend.html
+
+for asset in styles.css app.js composer.js lifecycle_controller.js; do
+  asset_status=$(curl -sS -o "/tmp/${asset}" -w '%{http_code}' "$BASE_URL/${asset}")
+  echo "GET /${asset} -> HTTP ${asset_status}"
+  test "$asset_status" = '200'
+  test -s "/tmp/${asset}"
+done
 
 # Deploy the renamed public Worker now that its Operations Service Binding target exists.
 npx --yes wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
