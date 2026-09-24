@@ -21,7 +21,9 @@ permissions:
 
 concurrency:
   group: nightly-multi-agent-research
-  cancel-in-progress: false
+  # A queued run for a newer immutable main SHA must be able to displace
+  # an obsolete run that is permanently blocked on a failed release gate.
+  cancel-in-progress: true
 
 env:
   PYTHONUNBUFFERED: "1"
