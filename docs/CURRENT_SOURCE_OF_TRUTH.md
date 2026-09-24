@@ -1,66 +1,54 @@
 # Current Source of Truth — 2026-09-24 Live Reconciliation — Foundation
 
 **Status:** CURRENT
-**Reconciliation timestamp:** 2026-09-24 10:20 IST
+**Reconciliation timestamp:** 2026-09-24 10:45 IST
 **Authority:** live GitHub refs + current GitHub Actions receipts + explicitly identified runtime receipts. Historical sections below are provenance only.
 
-## Family repositories
+## Current verified repository state
 
-- Foundation: `Z-Solo-King/foundation`
-- Operations: `Z-Solo-King/operations`
-- Foundation owns public-safe contracts, deterministic public core, public Worker/API, GitHub Actions and the sole canonical production deployment.
-- Operations owns the private runtime control plane and remains free of `.github/workflows`.
-- Cloudflare Workers Builds and Deploy Hooks remain non-authoritative.
+- Foundation `main`: `c54d3a66e486386e9540887abf68af38b8de096b`
+- Operations `main`: `ec14b2136d344946a551740ff9544a723695671e`
+- Open issues: **8** — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
+- Open implementation PRs: **0**.
+- Operations #711 is closed and is excluded from active issue inventory, surface map, matrix, governance policy and deep-scan executable.
+- Foundation #1081/#1084/#1085/#1086 and Operations #853/#855/#856/#857 are merged repair/synchronization changes.
 
-## Live GitHub refs
+## Nightly research benchmark and artifacts
 
-- Foundation `main`: `a529b6f7ac9e62e4bcb112b4f84f130fdd33a365`
-- Operations `main`: `046c9318d9f14b9b9efd2e6ed4ea0303bb6ca1ef`
-- Canonical production Operations target: `1a12b98981f52de207fa8626cf2e1f5ad06659be`
-- Canonical nightly research Operations pin: `3a7e350ddd5648caf93f58651323425186544f66`
+- Nightly run #878 prepared 24 program slots across three lanes, but provider execution was blocked before provider calls because `RESEARCH_LLM_ENDPOINT`, `RESEARCH_LLM_API_KEY` and `RESEARCH_LLM_MODEL` were absent.
+- Lane artifacts therefore truthfully record `blocked_before_execution`; they are not provider-backed research results.
+- Migration-review artifact #10772875132 is coherent: 40 matrix cases, 24 capacity-sweep cases, 40 language-review rows, 3 repeats, 875 migration candidates, 1,371 source files, review score 70.0/100.
+- Diagnosis artifact #10771684062 is historical pre-#1081 evidence and contains the obsolete capacity-vs-matrix blocker. Do not use it as the current diagnosis.
+- The current diagnosis implementation correctly checks the 40-case matrix independently of the 24-case capacity sweep.
 
-## Current issue / PR state
+## Benchmark / audit status
 
-- **8 actual open issues:** Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
-- Operations #711 is closed with L4 production evidence from canonical release #492.
-- **No current implementation PR is open** in either repository.
-- Operations #853 corrected the live issue inventory; Operations #855 synchronized the exhaustive scan surface, matrix and policy to the closed issue.
+- Extractor benchmark #348: strict evidence-quality PASS — 40 receipts; 4 ok, 32 empty, 4 blocked; provenance and route-provenance completeness 1.0; repeat reliability 1.0; zero unstable repeated groups.
+- Exhaustive six-lane repository audit run #354: PASS after the #711 synchronization fixes.
+- A fresh open-issue deep scan is still required after the #711 closure because the preceding clean run reflected the former active-issue set.
+- Candidate migrations remain evidence-gated; no protected policy/governance/persistence authority has moved languages.
 
-## Nightly research + artifact audit
+## Runtime evidence
 
-- Canonical workflow: `.github/workflows/nightly-multi-agent-research-v2.yml`.
-- Latest observed nightly run #878 created three lanes × eight slots = **24 program slots**, but all three lanes were **blocked before provider execution** because `RESEARCH_LLM_ENDPOINT`, `RESEARCH_LLM_API_KEY` and `RESEARCH_LLM_MODEL` were absent.
-- The three lane artifacts are truthful: each contains eight `blocked_before_execution` rows and the same exact Operations research revision.
-- Nightly diagnosis artifact **10771684062** is valid historical evidence of the provider block, but it was produced before Foundation #1081 and carries the obsolete `migration_review_incomplete` blocker.
-- Nightly migration-review artifact **10772875132** is internally coherent: **40 matrix cases**, **24 capacity-sweep cases**, **40 language-review rows**, 3 repeats, score **70.0/100**, 875 migration candidates and 1,371 source files.
-- The current nightly diagnosis code checks the 40-case matrix independently from the 24-case capacity sweep. The next real nightly run will supersede the old diagnosis artifact.
+- Canonical production release #492 successfully supplied L4 evidence for the DurableResourceLedger acceptance gate using Foundation `5eadf8c8813c0724918129da7fe120263a5e06fb` and Operations `1a12b98981f52de207fa8626cf2e1f5ad06659be`.
+- The last directly available public-worker probe is the older run #58; no newer Cloudflare provenance is asserted here without a fresh runtime-specific receipt.
 
-## Benchmark / audit evidence
+## Remaining external/evidence gates
 
-- Latest extractor benchmark #348 remains the completed strict-quality pass: 40 receipts; 4 `ok`, 32 `empty`, 4 `blocked`; provenance completeness 1.0; route-provenance completeness 1.0; repeat reliability 1.0; zero unstable repeated groups.
-- Latest open-issue deep scan #345 passed against the older 9-active-issue register plus historical #197. A fresh deep-scan run is required to certify the current 8-issue queue.
-- Foundation exhaustive six-lane audit run #354 now **passes** after the #711 inventory/surface/matrix/policy correction.
-- Coverage-driven runtime matrix #319 remains an evidence item; no new runtime result is inferred merely from the #1085 merge.
-- Hybrid language pilots run #144 remains a historical failure and is not an open implementation defect.
-
-## Production / runtime evidence
-
-- Canonical production release #492 used Foundation `5eadf8c8813c0724918129da7fe120263a5e06fb` and Operations `1a12b98981f52de207fa8626cf2e1f5ad06659be` and supplied L4 evidence for the DurableResourceLedger acceptance gate.
-- The last directly available public-worker probe is run #58 against the older pair `fe79e10c...` + `bfcfaf594...`; it remains historical without a fresh Cloudflare-specific runtime receipt.
+- #157: authorized research-provider configuration + real 24-program run.
+- #145: scheduled maintenance receipt.
+- #340: live interruption/cancellation + reconciliation evidence.
+- #385: cross-surface recovery evidence.
+- #597/#603: candidate parity/performance/shadow/canary/rollback evidence.
+- #58/#699: aggregate closure after child evidence is complete.
 
 ## Evidence boundary
 
 `L0 hypothesis -> L1 source -> L2 repository -> L3 GitHub Actions/control-plane -> L4 approved runtime/production`
 
-Source inspection, unit tests, dry-runs and historical probes are never promoted to current L4 certification.
+Historical artifacts, deterministic tests and repository inspection are not current L4 runtime certification.
 
-## Current blockers
 
-1. #157 still requires authorized research-provider endpoint/API key/model configuration and a real 24-program provider-backed run.
-2. The current 8-issue deep scan, coverage matrix and remaining runtime acceptance issues still require their issue-specific L3/L4 receipts.
-3. Candidate language migrations remain shadow/evidence-gated; protected policy, governance, persistence, replay, provenance and rollback authority remains unchanged.
-
----
 
 ---
 ---
