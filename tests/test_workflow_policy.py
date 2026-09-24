@@ -621,11 +621,22 @@ def test_live_chatbot_smoke_requires_real_model_generation():
     assert 'not chat_response.get("text", "").strip()' in workflow
 
 
-def test_production_bootstrap_checks_worker_settings_not_deployments():
+def test_production_bootstrap_precedes_foundation_deploy_and_is_unconditional():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings' in deployment
-    window = deployment.split("Rename-safe Cloudflare deployment sequence.", 1)[1].split("# Deploy the renamed public Worker", 1)[0]
-    assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments' not in window
+    start = deployment.index("# Rename-safe Cloudflare deployment sequence.")
+    bootstrap = deployment.index('pywrangler deploy --config "$bootstrap_config"', start)
+    public_deploy = deployment.index('pywrangler deploy --config wrangler.production.generated.toml --secrets-file "$public_secret_file"', start)
+    assert bootstrap < public_deploy
+    assert deployment.count('pywrangler deploy --config "$bootstrap_config"') == 1
+    assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings' not in deployment
+
+def test_public_probe_records_dns_failure_without_parser_crash():
+    workflow = _workflow_texts()["public-worker-live-probe.yml"]
+    assert ': > "probe/$item.body"' in workflow
+    assert ': > "probe/$item.headers"' in workflow
+    assert ': > "probe/$item.error"' in workflow
+    assert 'curl -sS --max-time 20' in workflow
+    assert '|| true)' in workflow
 
 
 def test_current_public_runtime_identity_is_heroic_ai():
