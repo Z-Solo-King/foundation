@@ -340,9 +340,8 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
         with:
           toolchain: stable
-      - name: Install Foundation and Operations runtimes
+      - name: Install Operations runtime
         run: |
-          python -m pip install --disable-pip-version-check -e .
           python -m pip install --disable-pip-version-check -e operations
       - name: Build corpus with adversarial URL cases
         working-directory: operations
@@ -1333,6 +1332,51 @@ jobs:
           python -m pip install --disable-pip-version-check -e ".[test]"
           cd polyglot/public-endpoint-discovery
           npm install --ignore-scripts --no-audit --no-fund
+      - name: Determine pinned Foundation public-core revision
+        id: foundation-core-pin
+        working-directory: operations
+        shell: python
+        run: |
+          import ast, os
+          from pathlib import Path
+          tree = ast.parse(Path("scripts/sync_public_core.py").read_text(encoding="utf-8"))
+          for node in tree.body:
+              if isinstance(node, ast.Assign):
+                  for target in node.targets:
+                      if isinstance(target, ast.Name) and target.id == "FOUNDATION_COMMIT":
+                          Path(os.environ["GITHUB_OUTPUT"]).write_text(f"ref={node.value.value}\\n", encoding="utf-8")
+                          raise SystemExit
+          raise SystemExit("FOUNDATION_COMMIT not found")
+
+      - name: Checkout exact pinned Foundation public core
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/foundation
+          ref: ${{ steps.foundation-core-pin.outputs.ref }}
+          token: ${{ github.token }}
+          path: foundation-core
+          fetch-depth: 1
+
+      - name: Ensure exact Foundation Git object is present
+        working-directory: foundation-core
+        shell: bash
+        env:
+          FOUNDATION_COMMIT: ${{ steps.foundation-core-pin.outputs.ref }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin "$FOUNDATION_COMMIT"
+          git cat-file -e "$FOUNDATION_COMMIT^{commit}"
+          git cat-file -e "$FOUNDATION_COMMIT:foundation_core/__init__.py"
+
+      - name: Materialize pinned public foundation_core
+        working-directory: operations
+        env:
+          FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core
+        run: |
+          set -euo pipefail
+          python scripts/sync_public_core.py
+          test -f foundation_core/__init__.py
+
       - name: Generate Python reference
         working-directory: operations
         run: python polyglot/public-endpoint-discovery/python_reference.py polyglot/public-endpoint-discovery/corpus.jsonl python-endpoint.jsonl
