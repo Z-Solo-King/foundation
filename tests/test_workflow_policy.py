@@ -564,8 +564,7 @@ def test_research_proxy_probe_preserves_non_2xx_response_diagnostics():
         assert "probe_status=$(curl -sS" in text
         assert '-o "$RUNNER_TEMP/research-worker-probe.json"' in text
         assert "probe_response=$(curl -fsS" not in text
-        assert 'jq -c \' . \' "$probe_response_file"' not in text
-        assert 'jq -c \' . \' "$probe_response_file" 2>/dev/null || true' not in text
+        assert 'jq -c \'.\' "$probe_response_file" 2>/dev/null || true' in text
 
 def test_research_worker_proxy_keeps_auth_token_out_of_command_line_and_logs():
     proxy = (ROOT / "scripts" / "research_worker_proxy.py").read_text(encoding="utf-8")
