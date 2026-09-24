@@ -98,13 +98,12 @@ jobs:
               if not ('event: start' in text and 'event: done' in text):
                   result['ok'] = False
               for name, payload in {
-                  'knowledge': {'operation':'knowledge','question':'Explain how the production chatbot should answer a stable architecture question.'},
-                  'planning': {'operation':'knowledge','question':'Make a short plan for verifying the Cloudflare integration.'},
+                  'infrastructure': {'operation':'infrastructure_verify'},
               }.items():
                   r = client.post(base + '/api/v1/chatbot/diagnostic', headers={**headers, 'Content-Type':'application/json'}, json=payload)
                   body = r.json() if 'application/json' in r.headers.get('content-type','') else {'raw': r.text[:200]}
                   record('diagnostic_' + name, r.status_code, body)
-              research = {'question':'Live acceptance probe; use only the permitted source and return citations.', 'depth':'shallow', 'require_citations':True, 'max_sources':1, 'max_evidence_items':3, 'strict_zero_cost_only':True, 'source_urls':['https://example.com/']}
+              research = {'question':'Production runtime acceptance: verify the public research path can ingest a permitted source without inventing facts.', 'depth':'quick', 'require_citations':True, 'max_sources':1, 'max_evidence_items':4, 'strict_zero_cost_only':True, 'source_urls':['https://example.com/']}
               r = client.post(base + '/api/v1/research', headers={**headers, 'Content-Type':'application/json', 'Idempotency-Key':'live-research-' + uuid.uuid4().hex}, json=research)
               body = r.json() if 'application/json' in r.headers.get('content-type','') else {'raw': r.text[:200]}
               record('research', r.status_code, body)
