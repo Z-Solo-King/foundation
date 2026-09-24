@@ -1,30 +1,35 @@
-# LIVE CURRENT CHECKPOINT — 2026-09-24 21:45 IST
+# LIVE CURRENT CHECKPOINT — 2026-09-24 — Cycle 4
 
 This checkpoint supersedes older dated sections below.
 
 ## Current repository state
-- Foundation main: `e541ac4d000ed4a0678aa1ef6ebe9faf6c119c0a`
-- Operations main: `5f2c98fbf0bd8694c63b97a62e28b0bacf01923a`
+- Foundation main: `725e1b9cdaa637f07d4264673cddfc8ab806b3c6`
+- Operations main: `5d6f903719ebb19d16e4426512ffdd6d308ee4dc`
 - Open issues: 8 total — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
-- Open implementation PRs: 0 after merging Foundation #1129 and #1130.
-- ChatGPT Policy is synchronized in both repositories: GitHub + Cloudflare may run in one cycle when healthy; 4-6 bounded lanes; 20-minute project session cap; context-pressure checkpointing.
+- Open pull requests: none.
+- Foundation #1132 and #1135 are merged; Operations #890 and #891 are merged.
+- Canonical Operations production/nightly pin: `fda24660843cacfe28de661cf170789af542d28f`.
 
-## Cycle 2 verified repair state
-- Foundation #1129 merged as `5ab5eb1c5fc4dc07c7e0a533bbfc402cb766d424`: fresh workflow-dispatch checks now bind verification to the exact dispatched run ID and use a bounded 120-second job-materialization wait.
-- Foundation #1130 merged as `e541ac4d000ed4a0678aa1ef6ebe9faf6c119c0a`: Hybrid URL differential corpus asserts the 61-case corpus and nested Rust workspace setup disables cache targeting at repository root.
-- Operations #887 is merged on `main` at `5f2c98fbf0bd8694c63b97a62e28b0bacf01923a`, aligning the Rust HTML availability contract with the current generic extractor contract.
+## Fresh CI / runtime evidence
+- Foundation fresh control-plane acceptance on `725e1b9c...`: run `36030977790` PASS.
+- Foundation nightly research contract: run `36030977760` PASS.
+- Foundation polyglot governance audit: run `36030977701` PASS.
+- Foundation extractor benchmark: run `36030977702` was still in progress at the latest observation; no result is claimed here.
+- Latest nightly research run `36030996071` failed in all three research lanes after the authenticated proxy reached the public Worker and received upstream HTTP 403, surfaced locally as HTTP 502 `upstream_worker_rejected`. Research executor configuration preflight passed. This is the current #157 runtime/provider acceptance blocker.
+- Latest live nightly canary run `36030977932` reproduced the same authenticated Worker 403/502 blocker and emitted a structured receipt on Foundation #157.
+- Previous canonical production release run `36029349859` remains in progress; the newer release run `36030977718` is queued behind the active release because the canonical production workflow intentionally uses non-canceling concurrency. No conclusion is drawn from the queued run.
 
-## Remaining acceptance state
-- #157: L4 runtime/provider gate. Latest observed authenticated research path still hits upstream Worker HTTP 403 / local 502 `upstream_worker_rejected`; no 24-program provider-backed receipt yet.
-- #145/#340/#385/#597/#603: implementation materially present; remaining acceptance requires issue-specific runtime/evidence/benchmark/rollback receipts.
-- #699: aggregate tracker remains open until child acceptance gates discharge.
-- #58: meta coverage tracker remains open until dependent acceptance gates are truly discharged.
+## Current acceptance classification
+- #157: **C/E** — repository contract is present and current live GitHub evidence shows an external/runtime rejection at the public Worker boundary. Do not manufacture a code change without Cloudflare-side evidence.
+- #145/#340/#385/#597/#603: **E** — implementation is present; required runtime/benchmark/rollback evidence remains outstanding.
+- #699: aggregate **E** tracker for the remaining child acceptance gates.
+- #58: meta **E** tracker; remains open until dependent acceptance gates discharge.
 
 ## Runtime boundary
-Cloudflare production state must be refreshed from the Cloudflare control plane before being called current L4 evidence. No new Cloudflare runtime claim is made in this cycle because the active Cloudflare action was not exposed to this chat.
+Cloudflare production state must be refreshed from the Cloudflare control plane before being called current L4 evidence. The active Cloudflare action is not exposed to this chat, so no fresh Worker deployment/version/binding/cron claim is made here.
 
 ## Next bounded action
-Recheck the merged Foundation main CI surface and the current Operations acceptance blockers, then repair only newly reproduced repository defects; otherwise advance evidence-gated issues without speculative code churn.
+Use the fresh #157 403 receipt to drive Cloudflare-side diagnosis when that control plane is available; in parallel, reconcile the evidence-only children and avoid speculative implementation churn.
 
 ---
 # Historical checkpoint — 2026-09-23 Live Reconciliation (superseded)
