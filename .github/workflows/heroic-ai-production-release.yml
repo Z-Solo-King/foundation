@@ -5,6 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+env:
+  LEGACY_PUBLIC_WORKER: research-intelligence-engine-public
+  LEGACY_PRIVATE_WORKER: research-intelligence-engine-private
+
 permissions:
   contents: read
   issues: write
