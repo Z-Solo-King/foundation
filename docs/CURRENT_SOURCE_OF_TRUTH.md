@@ -1,3 +1,38 @@
+# 2026-09-24 LIVE FAMILY STATE — CYCLE 7
+
+**Status: CURRENT.** This section supersedes all older dated sections below.
+
+## Repository state
+- Foundation `main`: `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`
+- Operations `main`: `1fd629cae593959249107ddb8c7af3f55292e9df`
+- Open issues: 8 total — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
+- Open PRs: 1 total — Foundation #1137 (docs/session only); Operations 0.
+- Open implementation PRs: 0.
+- Latest non-documentation repairs remain merged: Foundation #1134; Operations #890. Later commits are documentation/continuity checkpoints.
+
+## Runtime state
+- Canonical Operations production/nightly pin: `fda24660843cacfe28de661cf170789af542d28f`.
+- Canonical production release `36030977718`: PASS against the canonical Operations pin.
+- Latest nightly research `36030996071`: upstream public Worker HTTP 403, surfaced locally as `upstream_worker_rejected` / HTTP 502; this remains the #157 runtime blocker.
+- Live nightly canary `36030977932`: same boundary.
+- Remaining open issues are acceptance/evidence gates; do not manufacture closure from repository tests alone.
+
+## Cloudflare control-plane audit
+- Account membership read: HTTP 200; authenticated role reports **Super Administrator - All Privileges**.
+- Worker listing read: HTTP 200; public and private Workers are present.
+- D1 listing read: HTTP 200; database `research-intelligence` is present.
+- Observed public Worker tag: `e84124529c014c0ea8c89b6e524e8264`.
+- Observed private Worker tag: `21801b08ec8c4f55aeddbcfae9ded48b`.
+- Observed D1 database ID: `19f51638-47a5-4218-a9dc-73dbfd6156fe`.
+- Exact deployment-history/version freshness was not re-queried after the latest documentation commits, so deployment/version identifiers remain evidence from the earlier verified production/control-plane boundary rather than a newly sampled L4 receipt.
+
+## ChatGPT continuity
+- ChatGPT/mobile UI state is not authoritative execution state.
+- On unresponsiveness or context pressure, write a compact GitHub checkpoint and continue in a fresh chat.
+- App closure is only an observed correlation; completion/failure requires authoritative GitHub/Cloudflare evidence.
+
+---
+
 # LIVE CURRENT CHECKPOINT — 2026-09-24 — Cycle 6
 
 This checkpoint supersedes the older dated sections below.
