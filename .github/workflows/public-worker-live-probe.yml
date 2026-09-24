@@ -26,8 +26,11 @@ jobs:
               health) path="/health" ;;
               readiness) path="/readiness" ;;
             esac
-            status=$(curl -sS --max-time 20 -o "probe/$item.body" -D "probe/$item.headers" -w "%{http_code}" "$URL$path" 2> "probe/$item.error")
-            printf "%s" "$status" > "probe/$item.status"
+            : > "probe/$item.body"
+            : > "probe/$item.headers"
+            : > "probe/$item.error"
+            status=$(curl -sS --max-time 20 -o "probe/$item.body" -D "probe/$item.headers" -w "%{http_code}" "$URL$path" 2> "probe/$item.error" || true)
+            printf "%s" "${status:-000}" > "probe/$item.status"
           done
           python - <<PY
           import json
