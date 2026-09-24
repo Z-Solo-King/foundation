@@ -43,7 +43,7 @@ jobs:
           set -euo pipefail
           expected_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${FOUNDATION_REF}" --jq '.object.sha')"
           test "$expected_sha" = "${GITHUB_SHA}"
-url="$(gh workflow run "$TARGET" --repo "$GITHUB_REPOSITORY" --ref "$FOUNDATION_REF" 2>&1)"
+          url="$(gh workflow run "$TARGET" --repo "$GITHUB_REPOSITORY" --ref "$FOUNDATION_REF" 2>&1)"
           run_url="$(printf '%s\n' "$url" | grep -Eo 'https://[^[:space:]]+/actions/runs/[0-9]+' | tail -n1 || true)"
           target_run_id="$(printf '%s\n' "$run_url" | sed -n 's#.*/runs/\([0-9][0-9]*\).*#\1#p')"
           test -n "$target_run_id"
