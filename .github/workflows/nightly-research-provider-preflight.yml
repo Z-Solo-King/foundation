@@ -35,7 +35,7 @@ jobs:
           if [ "$ready" = true ]; then
             response_file="$RUNNER_TEMP/nightly-research-worker-preflight.json"
             probe_id="nightly-provider-preflight-${GITHUB_RUN_ID}"
-            probe_payload=$(jq -nc --arg id "$probe_id" '{chat_id:$id,request_id:$id,message:"Return exactly OK.",mode:"chat",operation:"knowledge",strict_zero_cost_only:true}')
+            probe_payload=$(jq -nc --arg id "$probe_id" '{chat_id:$id,request_id:$id,message:"Return exactly OK.",mode:"chat",operation:"knowledge",strict_zero_cost_only:true,require_model_generation:true}')
             status=$(curl -sS --max-time 90 -o "$response_file" -w '%{http_code}' \
               -H "Authorization: Bearer ${AUTH_TOKEN}" \
               -H 'Content-Type: application/json' \
