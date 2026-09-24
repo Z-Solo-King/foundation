@@ -629,8 +629,8 @@ The intended routing family documented in project research includes Cloudflare W
 ## 27. Known Cloudflare/runtime configuration baseline
 
 GitHub-side code must remain aligned with the separately owned runtime configuration:
-- Operations Worker: `research-intelligence-engine-private`;
-- public Foundation Worker: `research-intelligence-engine-public`;
+- Operations Worker: `legacy private Worker`;
+- public Foundation Worker: `legacy public Worker`;
 - Operations D1 binding: canonical governance/memory database;
 - production environment is explicit;
 - `STRICT_ZERO_COST_ONLY=true`;
