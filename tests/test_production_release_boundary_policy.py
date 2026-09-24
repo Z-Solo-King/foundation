@@ -28,7 +28,15 @@ def test_production_health_check_requires_production_environment():
 def test_reciprocal_service_bindings_use_binding_free_bootstrap():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
     assert "Operations binding-free bootstrap deployment: PASS" in text
-    assert 'bootstrap_config="$RUNNER_TEMP/operations-bootstrap.toml"' in text
+    assert 'bootstrap_config="$RUNNER_TEMP/operations/wrangler.bootstrap.toml"' in text
     assert '[[services]]' in text
     assert 'pywrangler deploy --config "$bootstrap_config"' in text
     assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings' not in text
+
+
+
+def test_operations_bootstrap_config_lives_with_entrypoint_checkout():
+    text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
+    assert 'bootstrap_config="$RUNNER_TEMP/operations/wrangler.bootstrap.toml"' in text
+    assert 'cp "$RUNNER_TEMP/operations/wrangler.toml" "$bootstrap_config"' in text
+    assert '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config"' in text
