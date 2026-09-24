@@ -208,9 +208,16 @@ jobs:
             sleep 1
           done
           probe_payload=$(jq -nc '{model:"@cf/meta/llama-3.1-8b-instruct-fast",messages:[{role:"user",content:"Return exactly OK."}],max_tokens:1,temperature:0}')
-          probe_response=$(curl -fsS --max-time 90 -H "Authorization: Bearer local-worker-proxy" -H "Content-Type: application/json" -d "$probe_payload" http://127.0.0.1:8765/chat/completions)
-          printf "%s" "$probe_response" | jq -e '.choices[0].message.content | type == "string" and length > 0' >/dev/null || { echo "Authenticated Worker-backed Workers AI probe failed."; exit 1; }
-          echo "Authenticated Worker-backed Workers AI probe: PASS"
+          probe_response_file="$RUNNER_TEMP/research-worker-probe.json"
+          probe_status=$(curl -sS --max-time 90 -o "$probe_response_file" -w '%{http_code}' -H "Authorization: Bearer local-worker-proxy" -H "Content-Type: application/json" -d "$probe_payload" http://127.0.0.1:8765/chat/completions)
+          echo "Authenticated Worker-backed Workers AI probe -> HTTP ${probe_status}"
+          if [ "${probe_status}" = "200" ] && jq -e '.choices[0].message.content | type == "string" and length > 0' "$probe_response_file" >/dev/null 2>&1; then
+            echo "Authenticated Worker-backed Workers AI probe: PASS"
+          else
+            echo "Authenticated Worker-backed Workers AI probe: FAIL"
+            jq -c '.' "$probe_response_file" 2>/dev/null || true
+            exit 1
+          fi
       - name: Run complete research lane
         id: run_lane
         shell: bash
