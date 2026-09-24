@@ -314,7 +314,7 @@ jobs:
           Path(f'.runtime/nightly-lane-{lane}-status.json').write_text(json.dumps(status, indent=2) + '\n')
           if not output.exists():
               output.write_text(''.join(json.dumps(row) + '\n' for row in rows))
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ always() }}
         with:
           name: nightly-research-lane-${{ matrix.lane }}
@@ -410,7 +410,7 @@ jobs:
           assert all(row["runtime_performance_valid"] is False for row in receipt["capacity_sweep"]["results"])
           assert len(receipt["language_review"]) == 40
           assert receipt["polyglot_audit"]["language_scoreboard"]
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: nightly-migration-review
           path: .runtime/nightly-migration-review.json
@@ -623,7 +623,7 @@ jobs:
           }
           Path('.runtime/nightly-diagnosis.json').write_text(json.dumps(diagnosis, indent=2) + '\n')
           print(json.dumps(diagnosis, indent=2))
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: nightly-diagnosis
           path: .runtime/nightly-diagnosis.json
@@ -698,13 +698,13 @@ jobs:
         run: |
           set -euo pipefail
           python -m benchmark.research_artifact_validator --root .
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
         with:
           name: nightly-project-improvement
           path: .runtime/nightly-project-improvement.json
           retention-days: 30
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
         with:
           name: nightly-project-improvement-baseline
