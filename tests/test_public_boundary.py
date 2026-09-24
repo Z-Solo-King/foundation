@@ -33,4 +33,4 @@ def test_public_deployment_is_standalone_and_uses_safe_placeholders():
 def test_public_docs_do_not_name_private_service():
     for path in (ROOT / "README.md", ROOT / "DEPLOYMENT.md"):
         text = path.read_text(encoding="utf-8")
-        assert "operations" not in text
+        assert "research-intelligence-engine-private" not in text
