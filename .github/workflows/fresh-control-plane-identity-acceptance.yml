@@ -72,23 +72,3 @@ jobs:
           echo "nightly run created without jobs after bounded 120s wait: run_id=$RUN_ID"
           gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json status,conclusion,url
           exit 1
-      - name: Verify nightly run has jobs
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          expected="$GITHUB_SHA"
-          run_id=""
-          for _ in {1..30}; do
-            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow nightly-multi-agent-research-v2.yml --event workflow_dispatch --branch main --limit 20 --json databaseId,headSha --jq '.[] | select(.headSha=="'"$expected"'") | .databaseId' | head -n1)"
-            [ -n "$run_id" ] && break
-            sleep 2
-          done
-          test -n "$run_id"
-          for _ in {1..30}; do
-            jobs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" --jq '.total_count // (.jobs|length)')"
-            if [ "$jobs" -gt 0 ]; then echo "nightly_run_id=$run_id jobs=$jobs"; exit 0; fi
-            sleep 2
-          done
-          echo "nightly run created without jobs"
-          exit 1
