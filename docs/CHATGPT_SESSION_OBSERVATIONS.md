@@ -1,3 +1,15 @@
+# Cycle 7 — 2026-09-24 — live cross-surface reconciliation
+
+- Current GitHub heads: Foundation `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`; Operations `1fd629cae593959249107ddb8c7af3f55292e9df`.
+- Current queue: 8 open issues and 1 open documentation PR (#1137); no open implementation PRs.
+- Production release `36030977718` passed using Foundation `725e1b9cdaa637f07d4264673cddfc8ab806b3c6` and Operations production pin `fda24660843cacfe28de661cf170789af542d28f`.
+- Nightly research `36030996071` and canary `36030977932` remain blocked by the same upstream public Worker HTTP 403 / local 502 boundary.
+- Cloudflare account membership, Worker listing and D1 listing were successfully read during this audit. The connector is available; the remaining unverified item is a fresh deployment-history/version/provenance read, not basic access.
+- The project documentation must distinguish: current GitHub branch heads; immutable production pins; fresh Cloudflare runtime receipts; and historical continuity notes.
+- The conversation/UI is not authoritative for backend execution. Use GitHub/Cloudflare receipts, commits and workflow runs as the execution ledger.
+
+---
+
 # ChatGPT Session Observations
 
 **Observed:** 2026-09-24
