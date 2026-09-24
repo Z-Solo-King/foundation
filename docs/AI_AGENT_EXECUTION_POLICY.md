@@ -47,7 +47,15 @@ Lane rules:
 - Do not create parallel lanes that all need continuous polling.
 - Prefer parallel reads and independent tests, then one consolidated repair batch.
 
-## 4. Context and output budget
+## 4. Context, output, and session budget
+
+A single ChatGPT Thinking work session is intentionally capped at **20 minutes for this project**, leaving a safety margin below longer platform-side thinking windows. This is a project execution limit, not a claim about an OpenAI product hard limit.
+
+For commands that authorize sustained execution, use explicit wording such as:
+
+> **Keep going until completed, within the 20-minute session limit.**
+
+The phrase means: continue through diagnosis, repair, verification, and checkpoint work within the current session; do not stop after the first useful finding. It does **not** authorize infinite loops or unbounded polling.
 
 To prevent ChatGPT or another AI agent from getting stuck in an oversized session:
 
@@ -58,7 +66,9 @@ To prevent ChatGPT or another AI agent from getting stuck in an oversized sessio
 - Prefer exact file ranges, failure excerpts, run IDs, artifact IDs, and hashes over full logs.
 - Reuse verified evidence while the referenced revision has not changed.
 - Never recursively launch scan -> repair -> poll -> rescan without a checkpoint.
+- When the 20-minute session window is near exhaustion, checkpoint immediately; do not begin a new expensive scan.
 - When context or tool volume becomes large, checkpoint and start a fresh AI chat/cycle.
+- At every session boundary, record observed behavior, bottlenecks, connector health, tool-call pattern, and what change should be made to improve the next session.
 
 The objective is not to make the agent stop early. The objective is to make each cycle **small, resumable, and information-dense**.
 
