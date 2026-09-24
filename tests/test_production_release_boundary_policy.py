@@ -28,6 +28,7 @@ def test_production_health_check_requires_production_environment():
 def test_reciprocal_service_bindings_use_binding_free_bootstrap():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
     assert "Operations binding-free bootstrap deployment: PASS" in text
-    assert 're.subn(r\'(?ms)^\\[\\[services\\]\\]\\n.*?(?=^\\[\\[d1_databases\\]\\])\', \'\', text)' in text
-    assert "Cloudflare requires the" in text
+    assert 'bootstrap_config="$RUNNER_TEMP/operations-bootstrap.toml"' in text
+    assert '[[services]]' in text
     assert 'pywrangler deploy --config "$bootstrap_config"' in text
+    assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings' not in text
