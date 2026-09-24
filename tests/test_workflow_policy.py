@@ -391,7 +391,7 @@ def test_live_extractor_benchmark_uses_versioned_runtime_and_tool_pins():
 
 
 def test_nightly_migration_review_uses_separate_immutable_tooling_pin():
-    workflow = _workflow_texts()["nightly-multi-agent-research-v2.yml"]
+    workflow = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
     match = re.search(r"^  OPERATIONS_MIGRATION_TOOLS_REF: ([0-9a-f]{40})$", workflow, re.MULTILINE)
     assert match is not None
     migration_tools_ref = match.group(1)
@@ -404,7 +404,7 @@ def test_nightly_migration_review_uses_separate_immutable_tooling_pin():
 def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_REF="{CANONICAL_OPERATIONS_REF}"' in deployment
-    nightly = texts = _workflow_texts()["nightly-multi-agent-research-v2.yml"]
+    nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
     assert "OPERATIONS_RESEARCH_REF: fda24660843cacfe28de661cf170789af542d28f" in nightly
 
 
@@ -538,7 +538,7 @@ def test_exhaustive_audit_does_not_infer_operations_branch_from_foundation_pr():
 
 
 def test_nightly_research_uses_authenticated_worker_ai_adapter():
-    workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v2.yml").read_text(encoding="utf-8")
+    workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
     preflight = (WORKFLOW_ROOT / "nightly-research-provider-preflight.yml").read_text(encoding="utf-8")
     canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
     for text in (workflow, preflight, canary):
@@ -562,7 +562,7 @@ def test_nightly_research_uses_authenticated_worker_ai_adapter():
     assert "uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in canary
 
 def test_research_proxy_probe_preserves_non_2xx_response_diagnostics():
-    workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v2.yml").read_text(encoding="utf-8")
+    workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
     canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
     for text in (workflow, canary):
         assert "probe_status=$(curl -sS" in text
@@ -572,7 +572,7 @@ def test_research_proxy_probe_preserves_non_2xx_response_diagnostics():
 
 def test_research_worker_proxy_keeps_auth_token_out_of_command_line_and_logs():
     proxy = (ROOT / "scripts" / "research_worker_proxy.py").read_text(encoding="utf-8")
-    workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v2.yml").read_text(encoding="utf-8")
+    workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
     canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
     assert 'os.environ.get("RESEARCH_PROXY_AUTH_TOKEN", "")' in proxy
     assert "server.serve_forever()" in proxy
