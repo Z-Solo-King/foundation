@@ -35,3 +35,12 @@ Target 4 lanes by default; expand to 6 only when lanes are genuinely independent
 - Operations main advanced independently to `5f2c98fbf0bd8694c63b97a62e28b0bacf01923a` via the Rust HTML availability contract repair (#887); the stale cross-repository checkpoint was therefore no longer safe to reuse unchanged.
 - The main execution bottleneck remains L4/runtime/provider evidence, especially the upstream Worker 403 blocking the 24-program research gate; repository-side CI defects are being reduced faster than runtime evidence can be refreshed.
 - Improvement for the next cycle: refresh live heads and open queues first, then inspect only newly changed commits/PRs and current blockers. Reconcile the checkpoint after every consolidated repair batch.
+
+
+## Cycle 3 observations — 2026-09-24
+
+- The user reported the previous session terminated after approximately 7 minutes, shorter than the project’s intended 20-minute cap. This is recorded as an observed session-duration anomaly, not attributed to a server outage.
+- In the current cycle, execution remained responsive through repeated bounded parallel GitHub reads and focused repair work; no tight polling loop was used.
+- A reproduced bridge-policy test mismatch was corrected after the first retry. The retry was useful because it distinguished stale-run behavior from a genuine remaining assertion mismatch.
+- The 20-minute project cap remains a safety ceiling, but an earlier context/runtime-pressure cutoff may still occur; next cycle should continue measuring actual wall-clock duration, tool volume, and response degradation.
+- Improvement: when a PR changes a workflow contract, search for all agent/policy assertions referencing the old contract before waiting for CI, reducing failure-and-retry cycles.
