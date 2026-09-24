@@ -1,54 +1,55 @@
-# Current Source of Truth — 2026-09-24 Live Reconciliation — Foundation
+## Current live synchronization — 2026-09-24
 
-**Status:** CURRENT
-**Reconciliation timestamp:** 2026-09-24 10:45 IST
-**Authority:** live GitHub refs + current GitHub Actions receipts + explicitly identified runtime receipts. Historical sections below are provenance only.
+This snapshot records live GitHub/Cloudflare observations made during the audit. The repository heads below are the implementation/revision observations immediately before this documentation-only synchronization branch; merging this documentation branch may advance `main` without changing runtime code.
 
-## Current verified repository state
+### Repository state
 
-- Foundation `main`: `c54d3a66e486386e9540887abf68af38b8de096b`
-- Operations `main`: `ec14b2136d344946a551740ff9544a723695671e`
-- Open issues: **8** — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
-- Open implementation PRs: **0**.
-- Operations #711 is closed and is excluded from active issue inventory, surface map, matrix, governance policy and deep-scan executable.
-- Foundation #1081/#1084/#1085/#1086 and Operations #853/#855/#856/#857 are merged repair/synchronization changes.
+- Foundation `main` observed: `825d301d10d201cd9b74dd018973769aeb03f381`
+- Operations `main` observed: `994793431981b87cd37f2ee1eabf8a2b11914c34`
+- Production Operations pin: `1a12b98981f52de207fa8626cf2e1f5ad06659be`
+- Nightly research / migration-review Operations pin: `41db817dee6aa7d369ea9a07dd072b58ece1695a`
+- Open issues: 8 total — Foundation `#58/#157`; Operations `#145/#340/#385/#597/#603/#699`
+- Open pull requests at audit start: 0
+- Operations `#711` is closed and excluded from the active issue inventory; historical `#197` remains a regression case in the deep-scan corpus.
 
-## Nightly research benchmark and artifacts
+### Cloudflare production state
 
-- Nightly run #878 prepared 24 program slots across three lanes, but provider execution was blocked before provider calls because `RESEARCH_LLM_ENDPOINT`, `RESEARCH_LLM_API_KEY` and `RESEARCH_LLM_MODEL` were absent.
-- Lane artifacts therefore truthfully record `blocked_before_execution`; they are not provider-backed research results.
-- Migration-review artifact #10772875132 is coherent: 40 matrix cases, 24 capacity-sweep cases, 40 language-review rows, 3 repeats, 875 migration candidates, 1,371 source files, review score 70.0/100.
-- Diagnosis artifact #10771684062 is historical pre-#1081 evidence and contains the obsolete capacity-vs-matrix blocker. Do not use it as the current diagnosis.
-- The current diagnosis implementation correctly checks the 40-case matrix independently of the 24-case capacity sweep.
+- Public Worker `research-intelligence-engine-public`: 100% on version `8e02eb65-344a-489e-ab11-7eb00db443b8`, GitHub provenance `825d301d10d201cd9b74dd018973769aeb03f381`.
+- Public Worker release identity reports Foundation `825d301d10d201cd9b74dd018973769aeb03f381` and Operations `1a12b98981f52de207fa8626cf2e1f5ad06659be`.
+- Private Worker `research-intelligence-engine-private`: 100% on version `e43463fd-4487-4248-94f0-503a405680cc`, GitHub provenance `1a12b98981f52de207fa8626cf2e1f5ad06659be`.
+- Private Worker cron: `*/15 * * * *`.
+- Public and private Workers share the production D1 boundary and intended service-binding relationship.
+- Production release run `#501` completed successfully.
 
-## Benchmark / audit status
+### Nightly research and artifact state
 
-- Extractor benchmark #348: strict evidence-quality PASS — 40 receipts; 4 ok, 32 empty, 4 blocked; provenance and route-provenance completeness 1.0; repeat reliability 1.0; zero unstable repeated groups.
-- Exhaustive six-lane repository audit run #354: PASS after the #711 synchronization fixes.
-- A fresh open-issue deep scan is still required after the #711 closure because the preceding clean run reflected the former active-issue set.
-- Candidate migrations remain evidence-gated; no protected policy/governance/persistence authority has moved languages.
+- Latest nightly run `#893` (run ID `35964787260`) prepared 24 programs across 3 lanes but was blocked before provider execution.
+- The blocker is missing authorized `RESEARCH_LLM_ENDPOINT`, `RESEARCH_LLM_API_KEY`, and `RESEARCH_LLM_MODEL`; no provider-backed research findings were produced.
+- Current nightly migration-review artifact `10794095266`: 40 migration-matrix cases + 24 capacity cases, 40 language-review rows, 3 repeats, 875 migration candidates, 1,371 source files, review score 70.0/100.
+- The 24 capacity cases are `deterministic-structural` evidence with `runtime_performance_valid=false`; their zero-duration measurements must not be treated as runtime performance or answer-quality evidence.
+- Nightly diagnosis artifact `10794105227` is current and correctly reports `blocked_before_execution`; older diagnosis artifact `10771684062` is historical and superseded.
 
-## Runtime evidence
+### Latest benchmark / audit state
 
-- Canonical production release #492 successfully supplied L4 evidence for the DurableResourceLedger acceptance gate using Foundation `5eadf8c8813c0724918129da7fe120263a5e06fb` and Operations `1a12b98981f52de207fa8626cf2e1f5ad06659be`.
-- The last directly available public-worker probe is the older run #58; no newer Cloudflare provenance is asserted here without a fresh runtime-specific receipt.
+- Extractor benchmark `#362` (run ID `35964770398`) passed the strict evidence-quality gate with 40 receipts, provenance completeness 1.0, route-provenance completeness 1.0, repeat reliability 1.0, and zero unstable repeated groups.
+- Its substantive result mix is 4 `ok`, 32 `empty`, 4 `blocked`; completion rate is 0.10 and error rate is 0.0. This is an evidence-contract pass, not a claim that 40 real acquisitions succeeded.
+- Coverage-driven runtime matrix `#333` succeeded.
+- Polyglot migration review `#117` succeeded.
+- Open-issue deep scan `#365` (run ID `35964770241`) passed across four lanes, covering 8 active issues plus historical `Operations #197` (9 scan cases per lane); no failed cases were recorded.
+- Deep-scan review findings are limited to lane/surface review conditions around Foundation `#157`; these do not constitute a new runtime failure.
 
-## Remaining external/evidence gates
+### Current CI / contract problems
 
-- #157: authorized research-provider configuration + real 24-program run.
-- #145: scheduled maintenance receipt.
-- #340: live interruption/cancellation + reconciliation evidence.
-- #385: cross-surface recovery evidence.
-- #597/#603: candidate parity/performance/shadow/canary/rollback evidence.
-- #58/#699: aggregate closure after child evidence is complete.
+1. **Nightly provider gate:** live 24-program provider execution remains externally blocked by the three missing research-provider secrets.
+2. **Production smoke contract mismatch:** latest smoke `#72` (run ID `35965101632`) fails because `live-chatbot-production-smoke.yml` posts diagnostic operation `infrastructure_verify`, while the current Foundation diagnostic contract/tests and production-release path expect `infrastructure_verify_public_test`. The live smoke returned HTTP 400 for that check; health, readiness, chat, SSE, research, storage and root checks returned HTTP 200.
+3. **Centralized Operations validation:** scheduled validation `#24` (run ID `35964996777`) is red with a broad current test-suite compatibility/contract mismatch surface, including evaluation-receipt signature expectations, D1 fake batch-call expectations, WorkerEntrypoint test harness assumptions, provider/search routing expectations, public-core synchronization assertions, maintenance/activity tests, and related contract tests. This is a repository/CI problem separate from the successful production release.
+4. These CI findings are current problems, not production outage claims. No runtime code or workflow was changed during this documentation reconciliation.
 
-## Evidence boundary
+### Evidence boundary
 
 `L0 hypothesis -> L1 source -> L2 repository -> L3 GitHub Actions/control-plane -> L4 approved runtime/production`
 
-Historical artifacts, deterministic tests and repository inspection are not current L4 runtime certification.
-
-
+Repository inspection, deterministic tests, structural benchmark artifacts and historical receipts must not be represented as L4 runtime certification.
 
 ---
 ---
