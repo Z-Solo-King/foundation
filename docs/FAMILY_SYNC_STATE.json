@@ -282,11 +282,25 @@
     "remaining_operations_prs": 0,
     "current_main_check_runs": {
       "total": 95,
-      "success": 89,
+      "success": 90,
       "failed": 5,
-      "in_progress": 1
+      "in_progress": 0
     },
     "latest_nightly_provider_failure": "authenticated proxy -> upstream Worker HTTP 403 (local proxy HTTP 502, upstream_worker_rejected)",
-    "cloudflare_runtime_verification": "not_available_in_this_chat"
+    "cloudflare_runtime_verification": "not_available_in_this_chat",
+    "production_smoke": {
+      "run_number": 85,
+      "run_id": 36013041963,
+      "status": "success",
+      "head": "c519b56050632862fbac4f6d6841cbd725408cc8"
+    }
+  },
+  "open_pr_reconciliation": {
+    "documentation_pr": 1115,
+    "state": "open_before_merge",
+    "post_merge_open_foundation_prs": [
+      1109
+    ],
+    "post_merge_open_operations_prs": []
   }
 }
