@@ -15,11 +15,11 @@ concurrency:
 
 env:
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_REF: 7800e8c693f9f981fa0d78f4814641f9225a0908
+  OPERATIONS_REF: 0f41c4be80a5533947789d24a83af4714552af0b
   PUBLIC_WORKER_URL: "https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
   RESEARCH_LLM_ENDPOINT: "http://127.0.0.1:8765"
   RESEARCH_LLM_API_KEY: "local-worker-proxy"
-  RESEARCH_LLM_MODEL: "@cf/meta/llama-3.1-8b-instruct-fast"
+  RESEARCH_LLM_MODEL: "@cf/zai-org/glm-4.7-flash"
 
 jobs:
   canary:
@@ -64,7 +64,7 @@ jobs:
             sleep 1
           done
           curl -fsS --max-time 2 http://127.0.0.1:8765/health >/dev/null || { cat "$RUNNER_TEMP/research-worker-proxy.log" 2>/dev/null || true; exit 1; }
-          probe_payload=$(jq -nc '{model:"@cf/meta/llama-3.1-8b-instruct-fast",messages:[{role:"user",content:"Return exactly OK."}],max_tokens:1,temperature:0}')
+          probe_payload=$(jq -nc '{model:"@cf/zai-org/glm-4.7-flash",messages:[{role:"user",content:"Return exactly OK."}],max_tokens:1,temperature:0}')
           probe_response_file="$RUNNER_TEMP/research-worker-probe.json"
           probe_status=$(curl -sS --max-time 90 -o "$probe_response_file" -w '%{http_code}' -H "Authorization: Bearer local-worker-proxy" -H "Content-Type: application/json" -d "$probe_payload" http://127.0.0.1:8765/chat/completions)
           echo "Authenticated Worker-backed Workers AI probe -> HTTP ${probe_status}"
@@ -96,7 +96,7 @@ jobs:
           rows=[json.loads(line) for line in Path('.runtime/live-nightly-canary/research.jsonl').read_text().splitlines() if line.strip()]
           expected={f'lane{lane}-slot{slot}' for lane in range(3) for slot in range(2)}
           completed={row.get('program_id') for row in rows if row.get('status') == 'completed'}
-          summary={'schema':'live-nightly-canary/v1','ok':completed == expected,'programs_expected':len(expected),'programs_completed':len(completed),'program_ids':sorted(completed),'operations_ref':'7800e8c693f9f981fa0d78f4814641f9225a0908'}
+          summary={'schema':'live-nightly-canary/v1','ok':completed == expected,'programs_expected':len(expected),'programs_completed':len(completed),'program_ids':sorted(completed),'operations_ref':'0f41c4be80a5533947789d24a83af4714552af0b'}
           Path('.runtime/live-nightly-canary/summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
           print(json.dumps(summary,indent=2,sort_keys=True))
           raise SystemExit(0 if summary['ok'] else 1)
