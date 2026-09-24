@@ -1,3 +1,37 @@
+# 2026-09-24 FINAL LIVE CHECKPOINT — POST-SYNC
+
+This checkpoint records the latest verified family state after the Cycle 7 documentation merges. The repository documentation commit that contains this section is itself documentation-only; refresh live `main` refs before any mutation.
+
+## Family state
+- Foundation `main` at verification start: `0bc02a8ef327e6414d7b7ed881d70f07f1bb5174`
+- Operations `main` at verification start: `4d1f25a3cd08cccbdc343d22a18c0664c4e8b68d`
+- Open issues: 8 — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
+- Open implementation PRs: 0.
+- The Cycle 7 documentation PRs #1137 and #896 are merged.
+- Production Operations pin: `fda24660843cacfe28de661cf170789af542d28f`.
+- Production release `36030977718`: PASS against Foundation `725e1b9cdaa637f07d4264673cddfc8ab806b3c6` + Operations `fda24660843cacfe28de661cf170789af542d28f`.
+
+## Runtime blockers
+- Nightly research `36030996071`: upstream public Worker HTTP 403, surfaced locally as `upstream_worker_rejected` / HTTP 502.
+- Live canary `36030977932`: same 403/502 boundary.
+- Remaining issues are runtime/evidence/admin gates; no closure is inferred from source inspection or deterministic CI.
+
+## Cloudflare
+- Account-members read: HTTP 200; role: Super Administrator - All Privileges.
+- Workers listing: HTTP 200; public/private Workers present.
+- D1 listing: HTTP 200; `research-intelligence` present.
+- Public Worker tag: `e84124529c014c0ea8c89b6e524e8264`.
+- Private Worker tag: `21801b08ec8c4f55aeddbcfae9ded48b`.
+- D1 ID: `19f51638-47a5-4218-a9dc-73dbfd6156fe`.
+- Exact deployment-history/version/provenance was not re-sampled after the latest documentation merge, so it remains unverified as a new L4 receipt.
+
+## ChatGPT continuity
+- The chat/mobile UI is transport state, not the execution ledger.
+- On context pressure or unresponsiveness, checkpoint and resume in a fresh chat.
+- App closure is an observed correlation only; backend completion requires authoritative GitHub/Cloudflare receipts.
+
+---
+
 # 2026-09-24 LIVE FAMILY STATE — CYCLE 7
 
 **Status: CURRENT.** This section supersedes all older dated sections below.
