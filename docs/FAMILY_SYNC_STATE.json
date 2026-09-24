@@ -1,10 +1,10 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT_RUNTIME_RECONCILIATION",
-  "audited_at": "2026-09-24T00:35:00+05:30",
+  "audited_at": "2026-09-24T10:20:00+05:30",
   "live_main": {
-    "foundation": "0038189a25c6fd74af11600648321e87e9810b3d",
-    "operations": "9ad378bc5c2b68408636cd9c574ffbf977758adf"
+    "foundation": "a529b6f7ac9e62e4bcb112b4f84f130fdd33a365",
+    "operations": "046c9318d9f14b9b9efd2e6ed4ea0303bb6ca1ef"
   },
   "runtime_pins": {
     "foundation_runtime": "fe79e10c4f7e3ee17b9488848b90cf6b7e93f6fb",
@@ -32,13 +32,12 @@
     }
   },
   "current_queue": {
-    "open_issue_count": 9,
+    "open_issue_count": 8,
     "foundation": [
       58,
       157
     ],
     "operations": [
-      711,
       699,
       603,
       597,
@@ -53,7 +52,8 @@
     "closed": [
       197,
       352,
-      452
+      452,
+      711
     ]
   },
   "latest_evidence": {
@@ -91,7 +91,8 @@
       "capacity_cases": 24,
       "high_findings": 4,
       "migration_candidates": 875,
-      "source_files": 1371
+      "source_files": 1371,
+      "diagnosis_artifact_state": "superseded_on_next_corrected_run"
     },
     "extractor_completed": {
       "run": 348,
@@ -119,7 +120,8 @@
       "active_issue_count": 9,
       "historical_issue_count": 1,
       "lane_count": 4,
-      "cases_per_lane": 10
+      "cases_per_lane": 10,
+      "inventory_correction_pending_rerun": true
     },
     "public_worker_probe": {
       "run": 58,
@@ -132,10 +134,10 @@
       "operations_ref": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
     },
     "production_release": {
-      "run": 487,
-      "state": "failed_before_deployment",
-      "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
-      "reason": "family semantic audit snapshot was missing repositories.*.last_audited_main_sha at release time"
+      "run": 492,
+      "state": "success",
+      "foundation_ref": "5eadf8c8813c0724918129da7fe120263a5e06fb",
+      "operations_ref": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
     },
     "chatbot_smoke": {
       "run": 57,
@@ -147,15 +149,15 @@
     }
   },
   "known_findings": [
-    "Current open issue inventory is 9 across the family: Foundation #58/#157 and Operations #711/#699/#603/#597/#385/#340/#145.",
-    "Operations #197 and #352 plus Foundation #452 are closed; #197 remains historical regression coverage in the deep scan.",
-    "Latest open-issue deep scan #345 passed with 9 active issues plus one historical #197 case across four lanes.",
-    "Latest extractor benchmark #348 passed the strict evidence-quality gate with 40 receipts: 4 ok, 32 empty, 4 blocked; provenance and route provenance are complete; repeated groups are stable.",
-    "Nightly research #878 is blocked before provider execution because RESEARCH_LLM_ENDPOINT, RESEARCH_LLM_API_KEY and RESEARCH_LLM_MODEL are unset.",
-    "Nightly migration review reports 40 matrix/language cases and a separate 24-case capacity sweep; the diagnosis currently compares the capacity-sweep count to 40 and emits a misleading migration_review_incomplete blocker.",
-    "Canonical production target is Operations 1a12b98981f52de207fa8626cf2e1f5ad06659be. Release #487 failed before deployment during family-semantic snapshot validation, so Cloudflare remains on the verified deployed pair fe79... + bfc....",
-    "Public Worker live probe #58 returned /, /health and /readiness successfully; readiness reported ready=true and database=true for the deployed fe79... + bfc... pair.",
-    "Operations has no current GitHub Actions workflow surface; Foundation is the CI/CD owner. Cloudflare Deploy Hooks are empty for both Workers."
+    "Current live open issue inventory is 8: Foundation #58/#157 and Operations #145/#340/#385/#597/#603/#699.",
+    "Operations #711 is closed after canonical production release #492 supplied L4 D1 changes()/over-limit/reconciliation evidence.",
+    "Operations #853 removed #711 from the live issue inventory; Operations #855 then removed it from the active surface map, 4-lane matrix and governance policy.",
+    "Foundation #1085 is merged; the deterministic coverage matrix no longer runs authenticated live production probes on every push. Live probes are explicit workflow-dispatch opt-in.",
+    "The six-lane exhaustive audit run #354 passed after the #711 inventory/surface/matrix/policy correction.",
+    "Latest extractor benchmark #348 passed its strict evidence-quality gate with 40 receipts and complete provenance.",
+    "Nightly run #878 is blocked before provider execution because the three research-provider secrets are unset.",
+    "Nightly migration-review artifact #10772875132 is coherent at 40 matrix cases plus 24 capacity cases; the old diagnosis artifact #10771684062 is historical pre-fix evidence and must not be used as current diagnosis.",
+    "No current repository implementation PR remains open."
   ],
   "evidence_boundary": {
     "L0": "hypothesis",
@@ -196,11 +198,13 @@
       "active_issue_count": 9,
       "historical_issue_count": 1,
       "lane_count": 4,
-      "cases_per_lane": 10
+      "cases_per_lane": 10,
+      "note": "Completed before #711 closure; fresh open-issue deep scan has not yet been executed."
     },
     "coverage_matrix": {
       "run": 319,
-      "status": "in_progress"
+      "status": "in_progress",
+      "note": "No new runtime result is inferred from the #1085 merge; live probes now require explicit workflow_dispatch opt-in."
     },
     "nightly_research": {
       "run": 878,
@@ -212,10 +216,10 @@
       "operations_revision": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
     },
     "production_release": {
-      "run": 487,
-      "status": "failed_before_deployment",
-      "operations_revision": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
-      "deployed_operations_revision": "bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f"
+      "run": 492,
+      "status": "success",
+      "foundation_revision": "5eadf8c8813c0724918129da7fe120263a5e06fb",
+      "operations_revision": "1a12b98981f52de207fa8626cf2e1f5ad06659be"
     },
     "public_worker_probe": {
       "run": 58,
@@ -226,10 +230,10 @@
   },
   "repositories": {
     "foundation": {
-      "last_audited_main_sha": "0038189a25c6fd74af11600648321e87e9810b3d"
+      "last_audited_main_sha": "a529b6f7ac9e62e4bcb112b4f84f130fdd33a365"
     },
     "operations": {
-      "last_audited_main_sha": "9ad378bc5c2b68408636cd9c574ffbf977758adf"
+      "last_audited_main_sha": "046c9318d9f14b9b9efd2e6ed4ea0303bb6ca1ef"
     }
   }
 }
