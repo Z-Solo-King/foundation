@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="1a12b98981f52de207fa8626cf2e1f5ad06659be"
+OPERATIONS_REF="fc2c94b5324800f455cd3f82a3bd1117eb23dff1"
 OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
 BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
 ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"
@@ -23,7 +23,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = '1a12b98981f52de207fa8626cf2e1f5ad06659be'
+test "$OPERATIONS_REF" = 'fc2c94b5324800f455cd3f82a3bd1117eb23dff1'
 
 after_install_marker=''
 
@@ -197,7 +197,7 @@ echo "Family sync snapshot refresh: PASS (Operations main state overlaid; runtim
 # authenticated chatbot backend boundary and zero-cost Workers AI provider contract.
 grep -q '^CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"$' "$RUNNER_TEMP/operations/wrangler.toml"
 grep -q '^CHAT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast"$' "$RUNNER_TEMP/operations/wrangler.toml"
-grep -q '"workers_ai_neurons":9000' "$RUNNER_TEMP/operations/wrangler.toml"
+grep -q '"workers_ai_neurons":10000' "$RUNNER_TEMP/operations/wrangler.toml"
 grep -q 'CHAT_BACKEND_TOKEN' "$RUNNER_TEMP/operations/worker.py"
 
 # Fail before deployment if the pinned Operations tree contains any Python syntax error.
