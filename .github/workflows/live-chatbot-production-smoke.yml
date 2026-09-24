@@ -98,7 +98,7 @@ jobs:
               if not ('event: start' in text and 'event: done' in text):
                   result['ok'] = False
               for name, payload in {
-                  'infrastructure': {'operation':'infrastructure_verify'},
+                  'infrastructure': {'operation':'infrastructure_verify_public_test'},
               }.items():
                   r = client.post(base + '/api/v1/chatbot/diagnostic', headers={**headers, 'Content-Type':'application/json'}, json=payload)
                   body = r.json() if 'application/json' in r.headers.get('content-type','') else {'raw': r.text[:200]}
