@@ -1,10 +1,10 @@
 {
   "schema_version": "family-sync-state/v1",
-  "status": "CURRENT_GITHUB_RECONCILIATION_CLOUDFLARE_PENDING",
+  "status": "CURRENT_GITHUB_RECONCILIATION_CLOUDFLARE_REFRESH_REQUIRED",
   "audited_at": "2026-09-24",
   "live_main": {
-    "foundation": "c519b56050632862fbac4f6d6841cbd725408cc8",
-    "operations": "fda24660843cacfe28de661cf170789af542d28f"
+    "foundation": "d057e9f2b3da51ab965028cb94d61b8e48c1ec93",
+    "operations": "c856bbde1cdf392baac9872f37e7da5c9ac93b70"
   },
   "runtime_pins": {
     "foundation_runtime": "825d301d10d201cd9b74dd018973769aeb03f381",
@@ -48,7 +48,7 @@
     ],
     "open_pr_count": 1,
     "foundation_open_prs": [
-      1109
+      1118
     ],
     "operations_open_prs": [],
     "closed": [
@@ -56,8 +56,7 @@
       352,
       452,
       711
-    ],
-    "open_pull_request_count": 0
+    ]
   },
   "latest_evidence": {
     "nightly_research": {
@@ -302,5 +301,140 @@
       1109
     ],
     "post_merge_open_operations_prs": []
+  },
+  "current_audit": {
+    "audited_at": "2026-09-24T20:39:00+05:30",
+    "github": {
+      "foundation_main": "d057e9f2b3da51ab965028cb94d61b8e48c1ec93",
+      "operations_main": "c856bbde1cdf392baac9872f37e7da5c9ac93b70",
+      "open_issue_count": 8,
+      "foundation_open_issues": [
+        58,
+        157
+      ],
+      "operations_open_issues": [
+        145,
+        340,
+        385,
+        597,
+        603,
+        699
+      ],
+      "open_pr_count": 1,
+      "foundation_open_prs": [
+        1118
+      ],
+      "operations_open_prs": []
+    },
+    "nightly_research": {
+      "workflow_run": 909,
+      "run_id": 36016344692,
+      "state": "blocked_before_execution",
+      "provider_preflight_run": 88,
+      "provider_preflight_ready": true,
+      "upstream_http_status": 403,
+      "upstream_error": "upstream_worker_rejected",
+      "local_http_status": 502,
+      "real_findings_produced": false,
+      "lanes": [
+        {
+          "lane": 0,
+          "program_count": 0,
+          "state": "blocked_before_execution"
+        },
+        {
+          "lane": 1,
+          "program_count": 0,
+          "state": "blocked_before_execution"
+        },
+        {
+          "lane": 2,
+          "program_count": 0,
+          "state": "blocked_before_execution"
+        }
+      ],
+      "operations_revision": "fda24660843cacfe28de661cf170789af542d28f"
+    },
+    "extractor_benchmark": {
+      "workflow_run": 378,
+      "run_id": 36016322798,
+      "status": "success",
+      "receipts": 40,
+      "platform_counts": {
+        "api": 12,
+        "browser": 8,
+        "feed": 8,
+        "html": 12
+      },
+      "status_counts": {
+        "ok": 4,
+        "empty": 32,
+        "blocked": 4
+      },
+      "completion_rate": 0.1,
+      "error_rate": 0,
+      "provenance_completeness": 1,
+      "route_provenance_completeness": 1,
+      "repeat_reliability": 1,
+      "unstable_repeated_groups": 0,
+      "substantive_products": 4,
+      "artifact_id": 10815250904,
+      "quality_gate_semantics": "evidence-integrity/receipt-quality; not 40/40 substantive extraction success"
+    },
+    "coverage_matrix": {
+      "workflow_run": 349,
+      "run_id": 36016322827,
+      "scenario_count": 20,
+      "test_passed_count": 20,
+      "test_failed_count": 0,
+      "acceptance_passed": true,
+      "artifact_id": 10814224228
+    },
+    "deep_scan": {
+      "workflow_run": 447,
+      "run_id": 36016322860,
+      "lane_count": 4,
+      "issue_count": 9,
+      "active_issue_count": 8,
+      "historical_issue_count": 1,
+      "failed_cases": 0,
+      "findings": [],
+      "aggregate_artifact_id": 10814911707,
+      "l4_artifact_id": 10815260064
+    },
+    "migration_review": {
+      "workflow_run": 132,
+      "run_id": 36016322768,
+      "status": "success"
+    },
+    "hybrid_language_pilots": {
+      "workflow_run": 155,
+      "run_id": 36016322797,
+      "status": "failure",
+      "failures": [
+        "TypeScript frontend lifecycle shadow: expected state vocabulary is stale; actual adds CANCELLED and FAILED.",
+        "Rust HTML 32x3 differential: normalized availability and MPN fields diverge.",
+        "Rust URL canonicalization: environment/setup fails before differential execution.",
+        "Rust robots/sitemap differential: exact Python/Rust outputs diverge.",
+        "Rust robots/sitemap pilot: private Operations checkout/tooling and missing parse_robots_sitemaps_for_agent function.",
+        "TypeScript endpoint differential: Python reference generation cannot import foundation_core.",
+        "Rust Link-header differential: exact-output parity assertion fails."
+      ]
+    },
+    "pull_request_1118": {
+      "state": "open",
+      "mergeable": true,
+      "head": "16ee7f02e7803b5f2bf2a90f48476141f15a3f01",
+      "required_checks": "success"
+    },
+    "cloudflare": {
+      "fresh_requery_completed": false,
+      "status": "FRESH_RUNTIME_RECEIPT_REQUIRED",
+      "last_same_day_observation": {
+        "public_worker_provenance": "825d301d10d201cd9b74dd018973769aeb03f381",
+        "private_worker_provenance": "1a12b98981f52de207fa8626cf2e1f5ad06659be",
+        "private_cron": "*/15 * * * *"
+      }
+    }
   }
 }
