@@ -557,6 +557,16 @@ def test_nightly_research_uses_authenticated_worker_ai_adapter():
     assert "Checkout Foundation research adapter" in canary
     assert "uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in canary
 
+def test_research_proxy_probe_preserves_non_2xx_response_diagnostics():
+    workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v2.yml").read_text(encoding="utf-8")
+    canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
+    for text in (workflow, canary):
+        assert "probe_status=$(curl -sS" in text
+        assert '-o "$RUNNER_TEMP/research-worker-probe.json"' in text
+        assert "probe_response=$(curl -fsS" not in text
+        assert 'jq -c \' . \' "$probe_response_file"' not in text
+        assert 'jq -c \' . \' "$probe_response_file" 2>/dev/null || true' not in text
+
 def test_research_worker_proxy_keeps_auth_token_out_of_command_line_and_logs():
     proxy = (ROOT / "scripts" / "research_worker_proxy.py").read_text(encoding="utf-8")
     workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v2.yml").read_text(encoding="utf-8")
