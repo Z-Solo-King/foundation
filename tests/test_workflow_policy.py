@@ -554,6 +554,8 @@ def test_nightly_research_uses_authenticated_worker_ai_adapter():
     assert 'worker_ai_path_verified' in preflight
     assert 'transport": "authenticated_foundation_worker"' in preflight
     assert 'RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in canary
+    assert "Checkout Foundation research adapter" in canary
+    assert "uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in canary
 
 def test_research_worker_proxy_keeps_auth_token_out_of_command_line_and_logs():
     proxy = (ROOT / "scripts" / "research_worker_proxy.py").read_text(encoding="utf-8")
