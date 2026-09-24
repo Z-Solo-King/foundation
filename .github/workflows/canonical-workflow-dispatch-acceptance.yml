@@ -57,8 +57,10 @@ jobs:
           GH_TOKEN="$GH_TOKEN" gh run download "$bridge_run_id" --repo "$GITHUB_REPOSITORY" --name canonical-bridge-v3-receipt --dir .runtime/bridge-receipt
           receipt_path="$(find .runtime/bridge-receipt -type f -name 'bridge-receipt.json' -print -quit)"
           test -n "$receipt_path"
+          receipt_sha="$(jq -r '.foundation_sha // empty' "$receipt_path")"
           target_run_id="$(jq -r '.target_run_id // empty' "$receipt_path")"
           job_count="$(jq -r '.target_job_count // 0' "$receipt_path")"
+          test "$receipt_sha" = "$expected_sha"
           test "$target_run_id" -gt 0
           test "$job_count" -gt 0
           echo "Target run ${target_run_id}: bridge receipt reported job_count=${job_count}"
