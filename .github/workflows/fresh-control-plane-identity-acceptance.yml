@@ -16,41 +16,62 @@ jobs:
     timeout-minutes: 12
     steps:
       - name: Dispatch bridge v3
+        id: dispatch_bridge
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh workflow run foundation-canonical-workflow-bridge-v3.yml --repo "$GITHUB_REPOSITORY" --ref main -f target=main-push-actions-control-plane-probe-v2.yml
+          url="$(gh workflow run foundation-canonical-workflow-bridge-v3.yml --repo "$GITHUB_REPOSITORY" --ref main -f target=main-push-actions-control-plane-probe-v2.yml)"
+          run_id="$(printf '%s\n' "$url" | sed -n 's#.*/runs/\([0-9][0-9]*\).*#\1#p')"
+          test -n "$run_id"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
       - name: Verify bridge run and job
         env:
           GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.dispatch_bridge.outputs.run_id }}
         run: |
           set -euo pipefail
-          expected="$GITHUB_SHA"
-          run_id=""
-          for _ in {1..30}; do
-            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow foundation-canonical-workflow-bridge-v3.yml --event workflow_dispatch --branch main --limit 20 --json databaseId,headSha --jq '.[] | select(.headSha=="'"$expected"'") | .databaseId' | head -n1)"
-            [ -n "$run_id" ] && break
-            sleep 2
-          done
-          test -n "$run_id"
-          jobs=0
-          for _ in {1..30}; do
-            jobs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" --jq '.total_count // (.jobs|length)')"
+          test -n "$RUN_ID"
+          for _ in {1..60}; do
+            jobs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100" --jq '.total_count // (.jobs|length)')"
             if [ "$jobs" -gt 0 ]; then
-              echo "bridge_run_id=$run_id jobs=$jobs"
+              echo "bridge_run_id=$RUN_ID jobs=$jobs"
               exit 0
             fi
             sleep 2
           done
-          echo "bridge run created without jobs after polling: run_id=$run_id"
+          echo "bridge run created without jobs after bounded 120s wait: run_id=$RUN_ID"
+          gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json status,conclusion,url
           exit 1
       - name: Dispatch nightly v3
+      - name: Dispatch nightly v3
+        id: dispatch_nightly
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh workflow run nightly-multi-agent-research-v2.yml --repo "$GITHUB_REPOSITORY" --ref main -f dry_run=false
+          url="$(gh workflow run nightly-multi-agent-research-v2.yml --repo "$GITHUB_REPOSITORY" --ref main -f dry_run=false)"
+          run_id="$(printf '%s\n' "$url" | sed -n 's#.*/runs/\([0-9][0-9]*\).*#\1#p')"
+          test -n "$run_id"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+      - name: Verify nightly run has jobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.dispatch_nightly.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          test -n "$RUN_ID"
+          for _ in {1..60}; do
+            jobs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100" --jq '.total_count // (.jobs|length)')"
+            if [ "$jobs" -gt 0 ]; then
+              echo "nightly_run_id=$RUN_ID jobs=$jobs"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "nightly run created without jobs after bounded 120s wait: run_id=$RUN_ID"
+          gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json status,conclusion,url
+          exit 1
       - name: Verify nightly run has jobs
         env:
           GH_TOKEN: ${{ github.token }}
