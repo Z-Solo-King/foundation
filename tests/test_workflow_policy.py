@@ -575,3 +575,10 @@ def test_production_release_accepts_current_family_sync_state_schema():
     assert '.repositories?' in deployment
     assert '.live_main?' in deployment
     assert 'false' in deployment
+
+def test_production_sync_guard_accepts_current_operations_family_state_shape():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'if (.repositories? != null) then' in deployment
+    assert 'elif (.live_main? != null) then' in deployment
+    assert '(.live_main.foundation | type == "string" and length == 40)' in deployment
+    assert '(.live_main.operations | type == "string" and length == 40)' in deployment
