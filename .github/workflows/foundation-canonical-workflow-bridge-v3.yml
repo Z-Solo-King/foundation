@@ -43,34 +43,13 @@ jobs:
           set -euo pipefail
           expected_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${FOUNDATION_REF}" --jq '.object.sha')"
           test "$expected_sha" = "${GITHUB_SHA}"
-          dispatch_epoch="$(date -u +%s)"
-          payload="$(jq -nc --arg ref "$FOUNDATION_REF" '{ref:$ref}')"
-          dispatch_status=$(curl -sS -o "$RUNNER_TEMP/target-dispatch-response.json" -w '%{http_code}' \
-            -X POST \
-            -H 'Accept: application/vnd.github+json' \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            -H 'Content-Type: application/json' \
-            -d "$payload" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/${TARGET}/dispatches")
-          echo "target dispatch -> HTTP ${dispatch_status}"
-          test "$dispatch_status" = "204"
-
-          target_run_id=""
-          for _ in {1..24}; do
-            target_runs="$(curl -fsS \
-              -H 'Accept: application/vnd.github+json' \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H 'X-GitHub-Api-Version: 2022-11-28' \
-              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/${TARGET}/runs?event=workflow_dispatch&branch=${FOUNDATION_REF}&per_page=20")"
-            target_run_id="$(jq -r --argjson epoch "$dispatch_epoch" --arg sha "$expected_sha" '.workflow_runs[] | select(.head_sha==$sha) | select((.created_at|fromdateiso8601) >= ($epoch-30)) | .id' <<<"$target_runs" | head -n1)"
-            [[ -n "$target_run_id" ]] && break
-            sleep 5
-          done
+url="$(gh workflow run "$TARGET" --repo "$GITHUB_REPOSITORY" --ref "$FOUNDATION_REF" 2>&1)"
+          run_url="$(printf '%s\n' "$url" | grep -Eo 'https://[^[:space:]]+/actions/runs/[0-9]+' | tail -n1 || true)"
+          target_run_id="$(printf '%s\n' "$run_url" | sed -n 's#.*/runs/\([0-9][0-9]*\).*#\1#p')"
           test -n "$target_run_id"
 
           job_count=0
-          for _ in {1..12}; do
+          for _ in {1..24}; do
             jobs_json="$(curl -fsS \
               -H 'Accept: application/vnd.github+json' \
               -H "Authorization: Bearer ${GH_TOKEN}" \
