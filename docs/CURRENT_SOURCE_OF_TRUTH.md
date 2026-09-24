@@ -1,3 +1,26 @@
+# LIVE CURRENT CHECKPOINT — 2026-09-24 17:43 IST
+
+This checkpoint supersedes older dated entries below it. Live branch heads and current GitHub Actions receipts take precedence over historical snapshots.
+
+## Repository state
+- Foundation `main`: `edbeb6931a31042cd1b30efb11f2ead1eac19adf`
+- Operations `main`: `77288c6ccc48f2b49c8bfe5048547398ca90790d`
+- Production Operations target pin: `44f53283aa308e8a294ae9fe716ab9200a44809b`
+- Nightly research Operations pin: `44f53283aa308e8a294ae9fe716ab9200a44809b`
+- Open issues: Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699
+- Open PRs: 0 in both repositories
+
+## Current live findings
+- Latest nightly run #901 (run `35995628805`) reaches the authenticated local research proxy but the public Worker rejects the request with HTTP 403; the proxy reports `upstream_worker_rejected`.
+- The nightly research environment variables are present in the run: `RESEARCH_LLM_ENDPOINT`, `RESEARCH_LLM_API_KEY`, and `RESEARCH_LLM_MODEL`. The failure is therefore no longer a missing-secret preflight.
+- The native Workers AI implementation is present in Operations `44f53283aa308e8a294ae9fe716ab9200a44809b`, with the `AI` binding, model `@cf/meta/llama-3.1-8b-instruct-fast`, and a 10,000-neuron application limit.
+- The current production smoke workflow already uses the corrected diagnostic operation `infrastructure_verify_public_test`; older smoke #72 documentation describing `infrastructure_verify` is historical and stale.
+- The current canonical production-release script already targets Operations `44f53283aa308e8a294ae9fe716ab9200a44809b`.
+- Last independently verified Cloudflare runtime state remains the pre-refresh deployment: public Worker provenance `825d301d10d201cd9b74dd018973769aeb03f381`, private Worker provenance `1a12b98981f52de207fa8626cf2e1f5ad06659be`, private cron `*/15 * * * *`. A new canonical production release is required before claiming the live runtime has moved to the `44f53283…` target.
+
+## Evidence boundary
+Do not close #157 or #699 from source inspection, deterministic tests, or a dry-run. Closure requires the specified live runtime/control-plane evidence. Do not post secret values.
+
 ## Current live synchronization — 2026-09-24
 
 ## CURRENT LIVE CHECKPOINT — 2026-09-24 11:43 UTC
