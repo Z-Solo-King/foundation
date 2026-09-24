@@ -289,7 +289,7 @@ test -n "$legacy_private_worker" || { echo 'Missing LEGACY_PRIVATE_WORKER migrat
 secret_file="$RUNNER_TEMP/operations-secrets.env"
 printf 'AUTH_TOKEN=%s\nCHAT_BACKEND_TOKEN=%s\n' "$AUTH_TOKEN" "$AUTH_TOKEN" > "$secret_file"
 chmod 600 "$secret_file"
-bootstrap_config="$RUNNER_TEMP/operations-bootstrap.toml"
+bootstrap_config="$RUNNER_TEMP/operations/wrangler.bootstrap.toml"
 cp "$RUNNER_TEMP/operations/wrangler.toml" "$bootstrap_config"
 python - "$bootstrap_config" <<'PY'
 from pathlib import Path
