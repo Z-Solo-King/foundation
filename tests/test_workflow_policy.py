@@ -162,6 +162,7 @@ def test_public_production_deploy_injects_required_b2_secrets():
     assert "B2_KEY_ID: ${{ secrets.B2_KEY_ID }}" in workflow
     assert "B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}" in workflow
     assert "--secrets-file \"$public_secret_file\"" in deployment
+    assert 'printf \'AUTH_TOKEN=%s\\nCHAT_BACKEND_TOKEN=%s\\n\' "$AUTH_TOKEN" "$AUTH_TOKEN" > "$secret_file"' in deployment
     assert 'printf \'AUTH_TOKEN=%s\\nB2_KEY_ID=%s\\nB2_APPLICATION_KEY=%s\\n\'' in deployment
     assert 'test -n "${B2_KEY_ID:-}"' in deployment
     assert 'test -n "${B2_APPLICATION_KEY:-}"' in deployment

@@ -352,7 +352,7 @@ npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
   --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql" \
   --config="$RUNNER_TEMP/operations/wrangler.toml"
 secret_file="$RUNNER_TEMP/operations-secrets.env"
-printf 'AUTH_TOKEN=%s\n' "$AUTH_TOKEN" > "$secret_file"
+printf 'AUTH_TOKEN=%s\nCHAT_BACKEND_TOKEN=%s\n' "$AUTH_TOKEN" "$AUTH_TOKEN" > "$secret_file"
 (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}")
 # Fail closed unless the active Cloudflare Operations deployment points to the
 # version carrying the exact canonical GitHub provenance annotation.
