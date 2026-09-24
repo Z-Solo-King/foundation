@@ -8,7 +8,7 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "fda24660843cacfe28de661cf170789af542d28f"
+CANONICAL_OPERATIONS_REF = "206cab0481fad40aaedbf70cf1a4a963c6007d8d"
 BENCHMARK_OPERATIONS_REF = CANONICAL_OPERATIONS_REF
 BENCHMARK_TOOLS_REF = "d4ef2e6d28435a59c735b9dc4d0de31f44b9cf29"
 MIGRATION_TOOLS_REF = None
@@ -138,6 +138,9 @@ def test_production_release_fails_closed_and_retains_chat_policy_receipts():
     assert "concurrent-chat-2.json" in deployment
     assert "policy-block.json" in deployment
     assert 'mode:"chat"' in deployment
+    assert 'require_model_generation:true' in deployment
+    assert 'generation_status == \"model_generated\"' in deployment
+    assert 'provider == \"cloudflare_workers_ai\"' in deployment
     assert "policy denial -> HTTP" in deployment
     assert "policy-block.body" in deployment
     assert "d1_reservation_reject_changes_semantics" in deployment
@@ -406,7 +409,7 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_REF="{CANONICAL_OPERATIONS_REF}"' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
-    assert "OPERATIONS_RESEARCH_REF: fda24660843cacfe28de661cf170789af542d28f" in nightly
+    assert "OPERATIONS_RESEARCH_REF: 206cab0481fad40aaedbf70cf1a4a963c6007d8d" in nightly
 
 
 
@@ -468,8 +471,8 @@ def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
 def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
-    expected_production = "fda24660843cacfe28de661cf170789af542d28f"
-    expected_nightly = "fda24660843cacfe28de661cf170789af542d28f"
+    expected_production = "206cab0481fad40aaedbf70cf1a4a963c6007d8d"
+    expected_nightly = "206cab0481fad40aaedbf70cf1a4a963c6007d8d"
     auxiliary = {
         "live-chatbot-production-smoke.yml": expected_production,
         "coverage-driven-runtime-matrix.yml": expected_production,
