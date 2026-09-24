@@ -289,36 +289,29 @@ test -n "$legacy_private_worker" || { echo 'Missing LEGACY_PRIVATE_WORKER migrat
 secret_file="$RUNNER_TEMP/operations-secrets.env"
 printf 'AUTH_TOKEN=%s\nCHAT_BACKEND_TOKEN=%s\n' "$AUTH_TOKEN" "$AUTH_TOKEN" > "$secret_file"
 chmod 600 "$secret_file"
-new_operations_status=$(curl -sS -o "$RUNNER_TEMP/operations-predeploy.json" -w '%{http_code}' \
-  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-  -H 'Content-Type: application/json' \
-  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings" || true)
-if [ "$new_operations_status" = "404" ]; then
-  bootstrap_config="$RUNNER_TEMP/operations-bootstrap.toml"
-  cp "$RUNNER_TEMP/operations/wrangler.toml" "$bootstrap_config"
-  python - "$bootstrap_config" <<'PY'
+bootstrap_config="$RUNNER_TEMP/operations-bootstrap.toml"
+cp "$RUNNER_TEMP/operations/wrangler.toml" "$bootstrap_config"
+python - "$bootstrap_config" <<'PY'
 from pathlib import Path
 import re
 import sys
 
 path = Path(sys.argv[1])
 text = path.read_text(encoding="utf-8")
-text, removed = re.subn(r'(?ms)^\[\[services\]\]\n.*?(?=^\[\[d1_databases\]\])', '', text)
+text, removed = re.subn(r'(?ms)^\\[\\[services\\]\\]\\n.*?(?=^\\[\\[d1_databases\\]\\])', '', text)
 if removed != 1:
     raise SystemExit(f"expected exactly one Operations services block, removed={removed}")
 path.write_text(text, encoding="utf-8")
 PY
-  ! grep -q '^\[\[services\]\]$' "$bootstrap_config"
-  ! grep -q '^service = "foundation"$' "$bootstrap_config"
-  (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config" --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:bootstrap-${ACCEPTANCE_RUN_ID}")
-  echo "Operations binding-free bootstrap deployment: PASS"
-elif [ "$new_operations_status" = "200" ]; then
-  echo "Operations Worker already exists; proceeding with canonical deployment."
-else
-  echo "Cloudflare Operations predeploy check failed: HTTP $new_operations_status"
-  jq -c '{message,errors}' "$RUNNER_TEMP/operations-predeploy.json" 2>/dev/null || true
-  exit 1
-fi
+! grep -q '^\\[\\[services\\]\\]$' "$bootstrap_config"
+! grep -q '^service = "foundation"$' "$bootstrap_config"
+
+# Always bootstrap the Operations target without its reciprocal Foundation binding.
+# Cloudflare service-binding deployment fails closed when the target Worker is absent;
+# making this idempotent removes the unreliable existence-probe dependency.
+(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config" --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:bootstrap-${ACCEPTANCE_RUN_ID}")
+echo "Operations binding-free bootstrap deployment: PASS"
+
 
 
 npx --yes wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
@@ -346,35 +339,6 @@ for asset in styles.css app.js composer.js lifecycle_controller.js; do
   asset_status=$(curl -sS -o "/tmp/${asset}" -w '%{http_code}' "$BASE_URL/${asset}")
   echo "GET /${asset} -> HTTP ${asset_status}"
   test "$asset_status" = '200'
-  test -s "/tmp/${asset}"
-done
-
-# Deploy the renamed public Worker now that its Operations Service Binding target exists.
-npx --yes wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
-pywrangler deploy --config wrangler.production.generated.toml --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}"
-
-health_status=$(curl -sS -o health.json -w '%{http_code}' "$BASE_URL/health")
-echo "GET /health -> HTTP ${health_status}"
-cat health.json
-test "$health_status" = "200"
-jq -e '.ok == true and .environment == "production"' health.json >/dev/null
-
-readiness=$(curl -sS -o readiness.json -w '%{http_code}' "$BASE_URL/readiness")
-echo "GET /readiness -> HTTP ${readiness}"
-cat readiness.json
-test "$readiness" = "200"
-jq -e '.ready == true and .database == true' readiness.json >/dev/null
-
-ui=$(curl -sS -o frontend.html -w '%{http_code}' "$BASE_URL/")
-echo "GET / -> HTTP ${ui}"
-test "$ui" = "200"
-grep -q '<title>Heroic AI — Chat & Research</title>' frontend.html
-test -s frontend.html
-
-for asset in styles.css app.js composer.js lifecycle_controller.js; do
-  asset_status=$(curl -sS -o "/tmp/${asset}" -w '%{http_code}' "$BASE_URL/${asset}")
-  echo "GET /${asset} -> HTTP ${asset_status}"
-  test "$asset_status" = "200"
   test -s "/tmp/${asset}"
 done
 
