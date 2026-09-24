@@ -2,9 +2,9 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="8e7250aca439ded79c20bcda7441c6b0386f22a1"
-OPERATIONS_SERVICE_NAME="research-intelligence-engine-private"
-BASE_URL="https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
+OPERATIONS_REF="7c5ff1465bab84cc697e482cc0625fd78b0a75ed"
+OPERATIONS_SERVICE_NAME="operations"
+BASE_URL="https://Heroic-Ai.dev"
 ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"
 
 cleanup() {
@@ -23,7 +23,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = '8e7250aca439ded79c20bcda7441c6b0386f22a1'
+test "$OPERATIONS_REF" = '7c5ff1465bab84cc697e482cc0625fd78b0a75ed'
 
 after_install_marker=''
 
@@ -43,8 +43,8 @@ test ! -e backend/learning/promotion.py
 # The public Worker intentionally references the abstract OPERATIONS service binding.
 # Scan production source for private implementation markers and concrete private
 # service topology instead of the generic binding identifier.
-! grep -RniE 'extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-private' foundation_core backend wrangler.toml migrations
-! grep -nE 'extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-private' worker.py
+! grep -RniE 'extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE' foundation_core backend wrangler.toml migrations
+! grep -nE 'extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE' worker.py
 ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' foundation_core backend worker.py wrangler.toml migrations tests
 
 token_verify_status=$(curl -sS -o "$RUNNER_TEMP/cloudflare-token-verify.json" -w '%{http_code}' \
@@ -230,11 +230,11 @@ test -f "$RUNNER_TEMP/operations/foundation_core/__init__.py"
 
 
 printf '%s\n' \
-  'name = "research-intelligence-engine-public"' \
+  'name = "foundation"' \
   'main = "worker.py"' \
   'compatibility_date = "2026-09-09"' \
   'compatibility_flags = ["python_workers", "enable_request_signal", "request_signal_passthrough"]' \
-  'workers_dev = true' \
+  'workers_dev = false' \
   'preview_urls = false' \
   '' \
   '[assets]' \
@@ -242,6 +242,9 @@ printf '%s\n' \
   'binding = "ASSETS"' \
   'not_found_handling = "single-page-application"' \
   '' \
+  '[[routes]]' \
+  'pattern = "heroic-ai.dev"' \
+  'custom_domain = true' \
   '[[d1_databases]]' \
   'binding = "DB"' \
   'database_name = "research-intelligence"' \
@@ -300,54 +303,127 @@ for asset in styles.css app.js composer.js lifecycle_controller.js; do
   test -s "/tmp/${asset}"
 done
 
-# Determine whether the currently active private Worker already implements the persistence
-# boundary probe. During first promotion of a newer immutable Operations pin, the old Worker
-# may legitimately return 400/404/503 because the diagnostic did not exist yet. In that case
-# the canonical release performs an automatic bootstrap rollover instead of requiring a human
-# override: deploy the new pin, seed on the new version, then deploy the same immutable pin a
-# second time with a unique tag to create a real version boundary and verify persistence/replay.
+# Rename-safe Cloudflare deployment sequence.
+# Bootstrap Operations temporarily against the legacy public Worker because the final
+# pair has a circular Service Binding dependency: Foundation -> Operations -> Foundation.
 persistence_seed_file="$RUNNER_TEMP/persistence-rollover-seed.json"
 persistence_seed_payload='{"operation":"persistence_seed"}'
-persistence_seed_ready=false
-persistence_bootstrap_deferred=false
-
-predeploy_operations_status=$(curl -sS -o "$RUNNER_TEMP/operations-predeploy.json" -w '%{http_code}' \
+legacy_public_worker="${LEGACY_PUBLIC_WORKER:-}"
+legacy_private_worker="${LEGACY_PRIVATE_WORKER:-}"
+test -n "$legacy_public_worker" || { echo 'Missing LEGACY_PUBLIC_WORKER migration input'; exit 1; }
+test -n "$legacy_private_worker" || { echo 'Missing LEGACY_PRIVATE_WORKER migration input'; exit 1; }
+secret_file="$RUNNER_TEMP/operations-secrets.env"
+printf 'AUTH_TOKEN=%s\nCHAT_BACKEND_TOKEN=%s\n' "$AUTH_TOKEN" "$AUTH_TOKEN" > "$secret_file"
+chmod 600 "$secret_file"
+new_operations_status=$(curl -sS -o "$RUNNER_TEMP/operations-predeploy.json" -w '%{http_code}' \
   -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
   -H 'Content-Type: application/json' \
   "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments" || true)
-test "$predeploy_operations_status" = '200' || {
-  echo "Cloudflare Operations predeploy state check failed: HTTP $predeploy_operations_status"
-  jq -c '{message,errors}' "$RUNNER_TEMP/operations-predeploy.json" 2>/dev/null || cat "$RUNNER_TEMP/operations-predeploy.json"
-  exit 1
-}
-predeploy_operations_version_id=$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id' "$RUNNER_TEMP/operations-predeploy.json" | head -n1)
-test -n "$predeploy_operations_version_id" || { echo 'No 100% active Operations Worker version found before deployment'; exit 1; }
-predeploy_operations_matches_target=$(jq -r --arg expected "github:${OPERATIONS_REF}" '
-  (((.result.deployments[0].annotations["workers/message"] // "") == $expected) or
-   ((.result.deployments[0].annotations["workers/tag"] // "") == $expected))
-' "$RUNNER_TEMP/operations-predeploy.json")
-echo "Operations predeploy provenance matches target: ${predeploy_operations_matches_target}"
-
-persistence_seed_status=$(curl -sS --max-time 30 \
-  -o "$persistence_seed_file" -w '%{http_code}' \
-  -H "Authorization: Bearer $AUTH_TOKEN" \
-  -H 'Content-Type: application/json' \
-  -d "$persistence_seed_payload" \
-  "$BASE_URL/api/v1/chatbot/diagnostic" || true)
-echo "POST persistence_seed -> HTTP $persistence_seed_status"
-if [ "$persistence_seed_status" = "200" ] && jq -e '.ok == true and (.sentinel_id | type == "string" and length > 0)' "$persistence_seed_file" >/dev/null 2>&1; then
-  persistence_seed_ready=true
-  echo "Persistence rollover seed: READY"
-elif { [ "$persistence_seed_status" = "400" ] || [ "$persistence_seed_status" = "404" ] || [ "$persistence_seed_status" = "503" ]; } && [ "$predeploy_operations_matches_target" != "true" ]; then
-  persistence_bootstrap_deferred=true
-  echo "Persistence rollover seed unsupported on the older active Operations revision; automatic bootstrap rollover is required."
-  cp "$persistence_seed_file" .runtime/persistence-rollover-seed.json
+if [ "$new_operations_status" = "404" ]; then
+  bootstrap_config="$RUNNER_TEMP/operations-bootstrap.toml"
+  cp "$RUNNER_TEMP/operations/wrangler.toml" "$bootstrap_config"
+  sed -i "s/service = \"foundation\"/service = \"${legacy_public_worker}\"/" "$bootstrap_config"
+  (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config" --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:bootstrap-${ACCEPTANCE_RUN_ID}")
+  echo "Operations bootstrap deployment: PASS"
+elif [ "$new_operations_status" = "200" ]; then
+  echo "Operations Worker already exists; proceeding with canonical deployment."
 else
-  echo "Persistence rollover seed failed on an already-targeted or unexpected runtime state; failing closed."
-  cat "$persistence_seed_file" || true
+  echo "Cloudflare Operations predeploy check failed: HTTP $new_operations_status"
+  jq -c '{message,errors}' "$RUNNER_TEMP/operations-predeploy.json" 2>/dev/null || true
   exit 1
 fi
-# Only the canonical private Operations deployment now follows the public asset smoke.
+
+# Deploy the renamed public Worker now that its Operations Service Binding target exists.
+npx --yes wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
+pywrangler deploy --config wrangler.production.generated.toml --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}"
+
+health_status=$(curl -sS -o health.json -w '%{http_code}' "$BASE_URL/health")
+echo "GET /health -> HTTP ${health_status}"
+cat health.json
+test "$health_status" = "200"
+jq -e '.ok == true and .environment == "production"' health.json >/dev/null
+
+readiness=$(curl -sS -o readiness.json -w '%{http_code}' "$BASE_URL/readiness")
+echo "GET /readiness -> HTTP ${readiness}"
+cat readiness.json
+test "$readiness" = "200"
+jq -e '.ready == true and .database == true' readiness.json >/dev/null
+
+ui=$(curl -sS -o frontend.html -w '%{http_code}' "$BASE_URL/")
+echo "GET / -> HTTP ${ui}"
+test "$ui" = "200"
+grep -q '<title>Heroic AI — Chat & Research</title>' frontend.html
+test -s frontend.html
+
+for asset in styles.css app.js composer.js lifecycle_controller.js; do
+  asset_status=$(curl -sS -o "/tmp/${asset}" -w '%{http_code}' "$BASE_URL/${asset}")
+  echo "GET /${asset} -> HTTP ${asset_status}"
+  test "$asset_status" = "200"
+  test -s "/tmp/${asset}"
+done
+
+# Redeploy Operations against the new Foundation Worker, proving the final private binding.
+npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
+  --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql" \
+  --config="$RUNNER_TEMP/operations/wrangler.toml"
+(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:foundation-binding-${ACCEPTANCE_RUN_ID}")
+
+operations_deployments_status=$(curl -sS -o "$RUNNER_TEMP/operations-deployments.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments" || true)
+echo "GET Operations deployments -> HTTP ${operations_deployments_status}"
+test "$operations_deployments_status" = "200" || {
+  jq -c '{message,errors}' "$RUNNER_TEMP/operations-deployments.json" 2>/dev/null || cat "$RUNNER_TEMP/operations-deployments.json"
+  exit 1
+}
+operations_version_id=$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id' "$RUNNER_TEMP/operations-deployments.json" | head -n1)
+test -n "$operations_version_id" || { echo 'No 100% active Operations Worker version found'; exit 1; }
+
+operations_version_status=$(curl -sS -o "$RUNNER_TEMP/operations-version.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/versions/${operations_version_id}" || true)
+echo "GET Operations active version -> HTTP ${operations_version_status}"
+test "$operations_version_status" = "200"
+jq -e --arg expected "github:${OPERATIONS_REF}" '((.result.annotations["workers/message"] // "") == $expected) or ((.result.annotations["workers/tag"] // "") == $expected)' "$RUNNER_TEMP/operations-version.json" >/dev/null
+echo "Operations Cloudflare provenance: PASS (github:${OPERATIONS_REF})"
+
+# P0 deployment-boundary persistence/replay acceptance on the renamed Worker pair.
+persistence_seed_status=$(curl -sS --max-time 30 -o "$persistence_seed_file" -w '%{http_code}' \
+  -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' \
+  -d "$persistence_seed_payload" "$BASE_URL/api/v1/chatbot/diagnostic" || true)
+echo "POST persistence_seed -> HTTP $persistence_seed_status"
+test "$persistence_seed_status" = "200"
+jq -e '.ok == true and (.sentinel_id | type == "string" and length > 0)' "$persistence_seed_file" >/dev/null
+
+chat_rollover_payload=$(jq -nc --arg chat_id "production-chat-rollover-${ACCEPTANCE_RUN_ID}" --arg request_id "production-chat-rollover-request-${ACCEPTANCE_RUN_ID}" '{chat_id:$chat_id,request_id:$request_id,message:"Return one concise sentence explaining why the public Worker uses an authenticated private service binding.",mode:"chat",strict_zero_cost_only:true}')
+chat_rollover_key="production-chat-rollover-${ACCEPTANCE_RUN_ID}"
+chat_rollover_status=$(curl -sS --max-time 90 -o "$RUNNER_TEMP/chat-rollover-before.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" -H 'Content-Type: application/json' -H "Idempotency-Key: ${chat_rollover_key}" \
+  -d "$chat_rollover_payload" "$BASE_URL/api/v1/chat")
+echo "POST /api/v1/chat rollover seed -> HTTP ${chat_rollover_status}"
+test "$chat_rollover_status" = "200"
+jq -e '.ok == true and (.response.result_state == "COMPLETE" or .response.result_state == "PARTIAL") and (.response.response_id | type == "string" and length > 0)' "$RUNNER_TEMP/chat-rollover-before.json" >/dev/null
+
+# Create an additional Operations version, then verify the durable chat/persistence state survives it.
+(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:persistence-boundary-${ACCEPTANCE_RUN_ID}")
+boundary_deployments_status=$(curl -sS -o "$RUNNER_TEMP/operations-boundary-deployments.json" -w '%{http_code}' -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments" || true)
+test "$boundary_deployments_status" = "200"
+boundary_version_id=$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id' "$RUNNER_TEMP/operations-boundary-deployments.json" | head -n1)
+test -n "$boundary_version_id" || { echo 'No active Operations boundary version found'; exit 1; }
+echo "Operations version boundary: PASS (${operations_version_id} -> ${boundary_version_id})"
+persistence_sentinel_id=$(jq -r '.sentinel_id' "$persistence_seed_file")
+persistence_verify_payload=$(jq -nc --arg operation "persistence_verify" --arg sentinel_id "$persistence_sentinel_id" '{operation:$operation,sentinel_id:$sentinel_id}')
+persistence_verify_status=$(curl -sS --max-time 30 -o "$RUNNER_TEMP/persistence-rollover-verify.json" -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -d "$persistence_verify_payload" "$BASE_URL/api/v1/chatbot/diagnostic" || true)
+echo "POST persistence_verify -> HTTP ${persistence_verify_status}"
+test "$persistence_verify_status" = "200"
+jq -e '.ok == true and .memory_persisted_across_version == true and .replay_nonce_rejected_after_version_change == true and .cleanup_status == 200' "$RUNNER_TEMP/persistence-rollover-verify.json" >/dev/null
+chat_rollover_after_status=$(curl -sS --max-time 60 -o "$RUNNER_TEMP/chat-rollover-after.json" -w '%{http_code}' -H "Authorization: Bearer ${AUTH_TOKEN}" -H 'Content-Type: application/json' -H "Idempotency-Key: ${chat_rollover_key}" -d "$chat_rollover_payload" "$BASE_URL/api/v1/chat")
+echo "POST /api/v1/chat rollover replay -> HTTP ${chat_rollover_after_status}"
+test "$chat_rollover_after_status" = "200"
+jq -e --arg expected_id "$(jq -r '.response.response_id' "$RUNNER_TEMP/chat-rollover-before.json")" '.ok == true and .response.response_id == $expected_id' "$RUNNER_TEMP/chat-rollover-after.json" >/dev/null
+echo "Live chat redeployment replay acceptance: PASS"
 npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
   --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql" \
   --config="$RUNNER_TEMP/operations/wrangler.toml"
@@ -501,6 +577,15 @@ echo "--- model-call-quota.snapshot ---"
 cat "$RUNNER_TEMP/model-call-quota.json"
 echo "--- end model-call-quota.snapshot ---"
 cp "$RUNNER_TEMP/model-call-quota.json" .runtime/model-call-quota.json
+
+npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
+  --config="$RUNNER_TEMP/operations/wrangler.toml" \
+  --command="SELECT reservation_id, scope, window_id, resource_kind, amount, state, idempotency_key, lease_expires_at, updated_at FROM resource_governance_reservations WHERE resource_kind = 'model_calls' ORDER BY updated_at DESC LIMIT 10;" \
+  --json > "$RUNNER_TEMP/model-call-reservations.json"
+echo "--- model-call-reservations.snapshot ---"
+cat "$RUNNER_TEMP/model-call-reservations.json"
+echo "--- end model-call-reservations.snapshot ---"
+cp "$RUNNER_TEMP/model-call-reservations.json" .runtime/model-call-reservations.json
 
 # Exercise the real public-to-private conversational and research paths only after
 # both Workers are deployed and the private provenance gate has passed.
@@ -717,4 +802,17 @@ else
 fi
 
 
+# Retire the legacy Worker pair only after the renamed pair has passed all live acceptance checks.
+for legacy_worker in "$legacy_public_worker" "$legacy_private_worker"; do
+  if [ "$legacy_worker" != "foundation" ] && [ "$legacy_worker" != "operations" ]; then
+    delete_status=$(curl -sS -o "$RUNNER_TEMP/legacy-worker-delete.json" -w '%{http_code}' \
+      -X DELETE -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' \
+      "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/$legacy_worker" || true)
+    echo "DELETE legacy Worker $legacy_worker -> HTTP $delete_status"
+    if [ "$delete_status" != "200" ] && [ "$delete_status" != "404" ]; then
+      jq -c '{success,message,errors}' "$RUNNER_TEMP/legacy-worker-delete.json" 2>/dev/null || true
+      exit 1
+    fi
+  fi
+done
 echo "Production release completed for ${GITHUB_SHA} using Operations ${OPERATIONS_REF}"
