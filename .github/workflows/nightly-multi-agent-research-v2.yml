@@ -45,6 +45,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ inputs.dry_run || false }}" == "true" ]]; then
+            echo "Explicit dry-run: production release gate is not required."
+            exit 0
+          fi
           target_sha="${GITHUB_SHA}"
           for attempt in $(seq 1 240); do
             runs_json="$(gh run list --workflow heroic-ai-production-release.yml --repo "$GITHUB_REPOSITORY" --limit 20 --json databaseId,headSha,status,conclusion)"
