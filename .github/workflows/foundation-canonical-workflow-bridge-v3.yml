@@ -9,7 +9,7 @@ on:
         type: choice
         options:
           - main-push-actions-control-plane-probe-v2.yml
-          - nightly-multi-agent-research-v2.yml
+          - nightly-multi-agent-research-v3.yml
         default: main-push-actions-control-plane-probe-v2.yml
 
 permissions:
