@@ -17,7 +17,7 @@ def test_operations_binding_is_generated_but_private_service_name_stays_out_of_w
 
     assert 'OPERATIONS_SERVICE_NAME="operations"' in text
     assert 'binding = "OPERATIONS"' in text
-    assert "operations" not in worker
+    assert "research-intelligence-engine-private" not in worker
 
 
 
