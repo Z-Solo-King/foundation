@@ -602,3 +602,20 @@ def test_production_sync_guard_accepts_current_operations_family_state_shape():
     assert 'elif (.live_main? != null) then' in deployment
     assert '(.live_main.foundation | type == "string" and length == 40)' in deployment
     assert '(.live_main.operations | type == "string" and length == 40)' in deployment
+
+
+def test_public_live_probe_fails_closed_on_dns_or_http_failure():
+    workflow = _workflow_texts()["public-worker-live-probe.yml"]
+    assert 'URL: https://Heroic-Ai.dev' in workflow
+    assert 'raise SystemExit(0 if out["ok"] else 1)' in workflow
+    assert 'if status != 200:' in workflow
+    assert 'item.get("ready") is not True' in workflow
+
+
+def test_live_chatbot_smoke_requires_real_model_generation():
+    workflow = _workflow_texts()["live-chatbot-production-smoke.yml"]
+    assert "PUBLIC_WORKER_URL: https://Heroic-Ai.dev" in workflow
+    assert '"require_model_generation": True' in workflow
+    assert 'chat_response.get("generation_status") != "model_generated"' in workflow
+    assert 'chat_response.get("provider") != "cloudflare_workers_ai"' in workflow
+    assert 'not chat_response.get("text", "").strip()' in workflow
