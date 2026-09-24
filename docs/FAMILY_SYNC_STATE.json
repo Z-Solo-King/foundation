@@ -1,10 +1,10 @@
 {
   "schema_version": "family-sync-state/v1",
-  "status": "CURRENT_POST_SYNC_VERIFIED_SNAPSHOT",
-  "audited_at": "2026-09-24",
+  "status": "CURRENT_POST_HEROIC_AI_RENAME",
+  "audited_at": "2026-09-25",
   "live_main": {
-    "foundation": "0bc02a8ef327e6414d7b7ed881d70f07f1bb5174",
-    "operations": "4d1f25a3cd08cccbdc343d22a18c0664c4e8b68d"
+    "foundation": "c053a67defb72307c2d34ddfd8e94e3e1f339308",
+    "operations": "0bddf1b8b2741ac277a3751e531a3b9714484ad9"
   },
   "runtime_pins": {
     "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
@@ -16,22 +16,27 @@
     "control_plane_snapshot": "verified_basic_reads_only",
     "fresh_deployment_receipt": false,
     "workers": [
-      "research-intelligence-engine-public",
-      "research-intelligence-engine-private"
+      "foundation",
+      "operations"
     ],
     "public_worker_tag": "e84124529c014c0ea8c89b6e524e8264",
     "private_worker_tag": "21801b08ec8c4f55aeddbcfae9ded48b",
     "d1_database": "research-intelligence",
-    "d1_database_id": "19f51638-47a5-4218-a9dc-73dbfd6156fe"
+    "d1_database_id": "19f51638-47a5-4218-a9dc-73dbfd6156fe",
+    "public_worker": "foundation",
+    "private_worker": "operations",
+    "canonical_public_url": "https://Heroic-Ai.dev"
   },
   "current_queue": {
-    "open_issue_count": 8,
+    "open_issue_count": 10,
     "foundation": [
       58,
-      157
+      157,
+      282
     ],
     "operations": [
       145,
+      197,
       340,
       385,
       597,
@@ -132,11 +137,12 @@
       }
     },
     "production_release": {
-      "run_id": 36030977718,
-      "status": "success",
-      "foundation_revision": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
-      "operations_revision": "fda24660843cacfe28de661cf170789af542d28f",
-      "evidence_class": "L4 approved production execution"
+      "run_id": 36052644242,
+      "status": "failed",
+      "foundation_revision": "c053a67defb72307c2d34ddfd8e94e3e1f339308",
+      "operations_revision": "a3171f353539f1a31020c432f98cf0530cbf91ef",
+      "failure_phase": "Foundation deploy",
+      "failure": "Cloudflare Service Binding target Worker operations was not found"
     },
     "public_worker_probe": {
       "run_number": 72,
@@ -220,6 +226,12 @@
       "cloudflare_connector_available": false,
       "evidence_class": "L3 repository/control-plane",
       "next_action": "refresh newly changed CI plus remaining evidence gates only"
+    },
+    "current_fixes": {
+      "live_probe_fail_closed": true,
+      "chatbot_requires_model_generation": true,
+      "operations_worker_preflight_endpoint": "/workers/scripts/{script}/settings",
+      "current_operations_main": "0bddf1b8b2741ac277a3751e531a3b9714484ad9"
     }
   },
   "known_findings": [
@@ -315,9 +327,9 @@
     "workers_list_http": 200,
     "d1_list_http": 200,
     "account_role": "Super Administrator - All Privileges",
-    "public_worker": "research-intelligence-engine-public",
+    "public_worker": "legacy public Worker",
     "public_worker_tag": "e84124529c014c0ea8c89b6e524e8264",
-    "private_worker": "research-intelligence-engine-private",
+    "private_worker": "legacy private Worker",
     "private_worker_tag": "21801b08ec8c4f55aeddbcfae9ded48b",
     "d1_database": "research-intelligence",
     "d1_database_id": "19f51638-47a5-4218-a9dc-73dbfd6156fe",
