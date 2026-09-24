@@ -1,16 +1,16 @@
 {
   "schema_version": "family-sync-state/v1",
-  "status": "CURRENT_RECONCILIATION_CLOUDFLARE_PENDING",
+  "status": "CURRENT_CROSS_SURFACE_RECONCILIATION",
   "audited_at": "2026-09-24",
   "live_main": {
     "foundation": "2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706",
-    "operations": "ebf1e82734cb2fab0a8f4eddc8b1f342803740d1"
+    "operations": "1fd629cae593959249107ddb8c7af3f55292e9df"
   },
   "runtime_pins": {
-    "foundation_runtime": "825d301d10d201cd9b74dd018973769aeb03f381",
+    "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
     "production_operations": "fda24660843cacfe28de661cf170789af542d28f",
     "nightly_research_operations": "fda24660843cacfe28de661cf170789af542d28f",
-    "foundation_deployed": "825d301d10d201cd9b74dd018973769aeb03f381"
+    "foundation_deployed": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6"
   },
   "cloudflare": {
     "public_worker": {
@@ -46,16 +46,11 @@
       603,
       699
     ],
-    "open_pr_count": 0,
-    "foundation_open_prs": [],
-    "operations_open_prs": [],
-    "closed": [
-      197,
-      352,
-      452,
-      711
+    "open_pr_count": 1,
+    "foundation_open_prs": [
+      1137
     ],
-    "open_pull_request_count": 0
+    "operations_open_prs": []
   },
   "latest_evidence": {
     "nightly_research": {
@@ -65,7 +60,9 @@
       "programs": 24,
       "blocker": "public_worker_http_403",
       "local_error": "upstream_worker_rejected",
-      "local_http_status": 502
+      "local_http_status": 502,
+      "foundation_revision": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
+      "operations_ref": "fda24660843cacfe28de661cf170789af542d28f"
     },
     "nightly_migration_review": {
       "run_number": 893,
@@ -92,7 +89,8 @@
     "nightly_canary": {
       "run_id": 36030977932,
       "state": "failed",
-      "blocker": "same_upstream_public_worker_http_403"
+      "blocker": "same_upstream_public_worker_http_403",
+      "local_http_status": 502
     },
     "extractor_benchmark": {
       "run_number": 362,
@@ -146,6 +144,7 @@
     "production_release": {
       "run_id": 36030977718,
       "status": "success",
+      "foundation_revision": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
       "operations_revision": "fda24660843cacfe28de661cf170789af542d28f",
       "evidence_class": "L4 approved production execution"
     },
@@ -185,13 +184,18 @@
       "live_release_pending": true
     },
     "github_reconciliation": {
-      "foundation_main": "c519b56050632862fbac4f6d6841cbd725408cc8",
-      "operations_main": "fda24660843cacfe28de661cf170789af542d28f",
-      "current_check_runs": 95,
-      "successful_check_runs": 89,
-      "failed_check_runs": 5,
-      "in_progress_check_runs": 1,
-      "nightly_provider_block": "upstream_worker_rejected_http_403"
+      "checked_at": "2026-09-24",
+      "foundation_main": "2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706",
+      "operations_main": "1fd629cae593959249107ddb8c7af3f55292e9df",
+      "canonical_operations_pin": "fda24660843cacfe28de661cf170789af542d28f",
+      "open_pr_count": 1,
+      "foundation_open_prs": [
+        1137
+      ],
+      "operations_open_prs": [],
+      "runtime_production_foundation": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
+      "latest_code_fix_foundation": "07ef89f3ebbcd84fa3b04fc0cf2d8f4693678f91",
+      "latest_code_fix_operations": "b01bf6160408f41bac2cc2767eabb2539728f055"
     },
     "foundation_ci_repairs": {
       "cycle": "2026-09-24-cycle2",
@@ -311,11 +315,22 @@
     "post_merge_open_operations_prs": []
   },
   "session_boundary": {
-    "cycle": "2026-09-24-cycle6",
-    "conversation_became_unresponsive": true,
-    "practical_chat_context_limit_reached": true,
-    "app_closure_causal_proof": false,
-    "authoritative_state": "GitHub/Cloudflare receipts, workflow runs, artifacts, commits",
+    "cycle": "2026-09-24-cycle7",
+    "authoritative_state": "GitHub commits/workflow runs and Cloudflare receipts",
     "next_action": "fresh-chat checkpoint resume"
+  },
+  "cloudflare_live_read": {
+    "verified": true,
+    "account_members_http": 200,
+    "workers_list_http": 200,
+    "d1_list_http": 200,
+    "account_role": "Super Administrator - All Privileges",
+    "public_worker": "research-intelligence-engine-public",
+    "public_worker_tag": "e84124529c014c0ea8c89b6e524e8264",
+    "private_worker": "research-intelligence-engine-private",
+    "private_worker_tag": "21801b08ec8c4f55aeddbcfae9ded48b",
+    "d1_database": "research-intelligence",
+    "d1_database_id": "19f51638-47a5-4218-a9dc-73dbfd6156fe",
+    "deployment_detail_resampled": false
   }
 }
