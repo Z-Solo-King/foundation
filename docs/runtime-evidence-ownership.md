@@ -2,6 +2,8 @@
 
 Documentation only. No code or workflow changes.
 
+**Current boundary — 2026-09-24:** GitHub repository and Actions state can be checked from the GitHub connection used for this chat. Cloudflare Worker/runtime state requires the dedicated Cloudflare connection and must not be inferred from GitHub-only evidence.
+
 Repository-side implementation for the open acceptance issues is merged (see META #58). What remains is
 evidence that can only be produced in a live environment. This page records who can produce each receipt,
 so a limited-permission AI assistant does not guess at fixes it cannot verify.
@@ -30,9 +32,6 @@ so a limited-permission AI assistant does not guess at fixes it cannot verify.
 4. If an action needs a permission the assistant lacks, say so in the issue and name the owner.
 5. Never post secret values in issues, comments, or PRs.
 
-## Known open finding
+## Historical note
 
-Operations #145 references a `maintenance_receipts` table that is not present in the D1 database
-`research-intelligence` (migrations 0001 to 0010 applied). Resolve before collecting the receipt.
-
-Tracking issue: #953.
+An older reconciliation referenced a `maintenance_receipts` table and tracking issue #953. Operations #145 now explicitly defines the canonical acceptance path as the existing Worker `scheduled()` resource-governance reconciliation and its scheduler coordination; a nonexistent D1 table must not be used as acceptance evidence. A fresh live maintenance receipt is still required.
