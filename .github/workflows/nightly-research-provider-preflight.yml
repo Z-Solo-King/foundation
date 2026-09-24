@@ -47,7 +47,7 @@ jobs:
               "research_endpoint_set": os.environ["PREFLIGHT_ENDPOINT"] == "true",
               "research_api_key_set": os.environ["PREFLIGHT_API_KEY"] == "true",
               "research_model_set": os.environ["PREFLIGHT_MODEL"] == "true",
-              "operations_ref": "3a7e350ddd5648caf93f58651323425186544f66",
+              "operations_ref": "41db817dee6aa7d369ea9a07dd072b58ece1695a",
           }
           with open("preflight.json", "w", encoding="utf-8") as handle:
               json.dump(d, handle, indent=2, sort_keys=True)
