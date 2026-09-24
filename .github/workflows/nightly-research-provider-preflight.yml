@@ -14,48 +14,61 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Check protected configuration presence
+      - name: Verify authenticated Worker-backed Workers AI
         env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          PUBLIC_WORKER_URL: "https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
           OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
           OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          RESEARCH_LLM_ENDPOINT: "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/ai/v1"
-          RESEARCH_LLM_API_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          RESEARCH_LLM_MODEL: "@cf/meta/llama-3.1-8b-instruct-fast"
         run: |
           set +e
-          app_id=false; app_key=false; endpoint=false; api_key=false; model=false
+          auth_token=false; app_id=false; app_key=false; endpoint=false; api_key=false; model=false
+          [ -n "${AUTH_TOKEN:-}" ] && auth_token=true
           [ -n "${OPERATIONS_APP_ID:-}" ] && app_id=true
           [ -n "${OPERATIONS_APP_PRIVATE_KEY:-}" ] && app_key=true
-          [ -n "${RESEARCH_LLM_ENDPOINT:-}" ] && endpoint=true
-          [ -n "${RESEARCH_LLM_API_KEY:-}" ] && api_key=true
-          [ -n "${RESEARCH_LLM_MODEL:-}" ] && model=true
+          [ -n "${PUBLIC_WORKER_URL:-}" ] && endpoint=true
+          [ "$auth_token" = true ] && api_key=true
+          model=true
           ready=false
-          if [ "$app_id" = true ] && [ "$app_key" = true ] && [ "$endpoint" = true ] && [ "$api_key" = true ] && [ "$model" = true ]; then ready=true; fi
-          if [ "$ready" = "true" ]; then
-            probe=$(curl -fsS --max-time 30 \
-              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+          if [ "$auth_token" = true ] && [ "$app_id" = true ] && [ "$app_key" = true ] && [ "$endpoint" = true ]; then ready=true; fi
+          worker_ai_verified=false
+          if [ "$ready" = true ]; then
+            response_file="$RUNNER_TEMP/nightly-research-worker-preflight.json"
+            probe_id="nightly-provider-preflight-${GITHUB_RUN_ID}"
+            probe_payload=$(jq -nc --arg id "$probe_id" '{chat_id:$id,request_id:$id,message:"Return exactly OK.",mode:"chat",operation:"knowledge",strict_zero_cost_only:true}')
+            status=$(curl -sS --max-time 90 -o "$response_file" -w '%{http_code}' \
+              -H "Authorization: Bearer ${AUTH_TOKEN}" \
               -H 'Content-Type: application/json' \
-              -d '{"model":"@cf/meta/llama-3.1-8b-instruct-fast","messages":[{"role":"user","content":"Return OK"}],"max_tokens":1,"temperature":0}' \
-              "${RESEARCH_LLM_ENDPOINT}/chat/completions")
-            if ! printf '%s' "$probe" | jq -e '.choices[0].message.content | type == "string"' >/dev/null 2>&1; then
-              echo "Cloudflare Workers AI inference probe failed; live research remains blocked."
-              ready=false
+              -H "Idempotency-Key: ${probe_id}" \
+              -d "$probe_payload" \
+              "${PUBLIC_WORKER_URL}/api/v1/chat")
+            echo "Worker-backed Workers AI probe -> HTTP ${status}"
+            if [ "$status" = "200" ] && jq -e '.ok == true and .response.generation_status == "model_generated" and .response.provider == "cloudflare_workers_ai"' "$response_file" >/dev/null 2>&1; then
+              worker_ai_verified=true
+              echo "Worker-backed Workers AI probe: PASS"
             else
-              echo "Cloudflare Workers AI inference probe: PASS"
+              echo "Worker-backed Workers AI probe: FAIL"
+              jq -c '{ok,error,response:{generation_status:.response.generation_status,provider:.response.provider}}' "$response_file" 2>/dev/null || true
             fi
           fi
+          ready=false
+          if [ "$auth_token" = true ] && [ "$app_id" = true ] && [ "$app_key" = true ] && [ "$endpoint" = true ] && [ "$worker_ai_verified" = true ]; then ready=true; fi
           export PREFLIGHT_APP_ID="$app_id"
           export PREFLIGHT_APP_KEY="$app_key"
           export PREFLIGHT_ENDPOINT="$endpoint"
           export PREFLIGHT_API_KEY="$api_key"
           export PREFLIGHT_MODEL="$model"
+          export PREFLIGHT_AUTH_TOKEN="$auth_token"
+          export PREFLIGHT_WORKER_AI="$worker_ai_verified"
           export PREFLIGHT_READY="$ready"
           python - <<'PY'
           import json, os
           d = {
-              "schema": "live-nightly-preflight/v1",
+              "schema": "live-nightly-preflight/v2",
               "ready": os.environ["PREFLIGHT_READY"] == "true",
+              "transport": "authenticated_foundation_worker",
+              "worker_ai_path_verified": os.environ["PREFLIGHT_WORKER_AI"] == "true",
+              "auth_token_set": os.environ["PREFLIGHT_AUTH_TOKEN"] == "true",
               "operations_app_id_set": os.environ["PREFLIGHT_APP_ID"] == "true",
               "operations_app_private_key_set": os.environ["PREFLIGHT_APP_KEY"] == "true",
               "research_endpoint_set": os.environ["PREFLIGHT_ENDPOINT"] == "true",
@@ -69,7 +82,7 @@ jobs:
           print(json.dumps(d, indent=2, sort_keys=True))
           PY
           if [ "$ready" != "true" ]; then
-            echo "Nightly research executor configuration is incomplete; receipt recorded and live research remains blocked."
+            echo "Nightly research Worker-backed Workers AI path is unavailable; live research remains blocked."
             exit 1
           fi
       - name: Publish preflight receipt

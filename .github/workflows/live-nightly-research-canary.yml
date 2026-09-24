@@ -16,6 +16,10 @@ concurrency:
 env:
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
   OPERATIONS_REF: 41db817dee6aa7d369ea9a07dd072b58ece1695a
+  PUBLIC_WORKER_URL: "https://research-intelligence-engine-public.soloking-research-intelligence.workers.dev"
+  RESEARCH_LLM_ENDPOINT: "http://127.0.0.1:8765"
+  RESEARCH_LLM_API_KEY: "local-worker-proxy"
+  RESEARCH_LLM_MODEL: "@cf/meta/llama-3.1-8b-instruct-fast"
 
 jobs:
   canary:
@@ -38,25 +42,40 @@ jobs:
           ref: ${{ env.OPERATIONS_REF }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
-      - name: Verify research executor configuration
+      - name: Start authenticated Workers AI research proxy
         env:
-          RESEARCH_LLM_ENDPOINT: "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/ai/v1"
-          RESEARCH_LLM_API_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          RESEARCH_LLM_MODEL: "@cf/meta/llama-3.1-8b-instruct-fast"
+          RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          test -n "${RESEARCH_LLM_ENDPOINT:-}" || { echo 'Missing RESEARCH_LLM_ENDPOINT'; exit 1; }
-          test -n "${RESEARCH_LLM_API_KEY:-}" || { echo 'Missing RESEARCH_LLM_API_KEY'; exit 1; }
-          test -n "${RESEARCH_LLM_MODEL:-}" || { echo 'Missing RESEARCH_LLM_MODEL'; exit 1; }
-          case "$RESEARCH_LLM_ENDPOINT" in http://*|https://*) ;; *) echo 'RESEARCH_LLM_ENDPOINT must be HTTP(S)'; exit 1;; esac
-          echo 'research executor preflight: PASS'
+          test -n "${RESEARCH_PROXY_AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN'; exit 1; }
+          nohup python scripts/research_worker_proxy.py \
+            --public-worker-url "${PUBLIC_WORKER_URL}" \
+            --port 8765 \
+            > "$RUNNER_TEMP/research-worker-proxy.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/research-worker-proxy.pid"
+          for attempt in $(seq 1 20); do
+            if curl -fsS --max-time 2 http://127.0.0.1:8765/health >/dev/null; then
+              echo 'authenticated Workers AI research proxy: READY'
+              break
+            fi
+            sleep 1
+          done
+          curl -fsS --max-time 2 http://127.0.0.1:8765/health >/dev/null || { cat "$RUNNER_TEMP/research-worker-proxy.log" 2>/dev/null || true; exit 1; }
+          probe_payload=$(jq -nc '{model:"@cf/meta/llama-3.1-8b-instruct-fast",messages:[{role:"user",content:"Return exactly OK."}],max_tokens:1,temperature:0}')
+          probe_response=$(curl -fsS --max-time 90 -H "Authorization: Bearer local-worker-proxy" -H "Content-Type: application/json" -d "$probe_payload" http://127.0.0.1:8765/chat/completions)
+          printf "%s" "$probe_response" | jq -e '.choices[0].message.content | type == "string" and length > 0' >/dev/null || { echo "Authenticated Worker-backed Workers AI probe failed."; exit 1; }
+          echo "Authenticated Worker-backed Workers AI probe: PASS"
+      - name: Verify research executor configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${RESEARCH_LLM_ENDPOINT:-}" || { echo 'Missing local research adapter endpoint'; exit 1; }
+          test -n "${RESEARCH_LLM_API_KEY:-}" || { echo 'Missing local research adapter credential'; exit 1; }
+          test -n "${RESEARCH_LLM_MODEL:-}" || { echo 'Missing research model'; exit 1; }
+          echo 'research executor configuration: PASS'
       - name: Run live six-program canary across all three lanes
         working-directory: operations
-        env:
-          RESEARCH_LLM_ENDPOINT: "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/ai/v1"
-          RESEARCH_LLM_API_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          RESEARCH_LLM_MODEL: "@cf/meta/llama-3.1-8b-instruct-fast"
         shell: bash
         run: |
           set -euo pipefail
@@ -73,6 +92,12 @@ jobs:
           print(json.dumps(summary,indent=2,sort_keys=True))
           raise SystemExit(0 if summary['ok'] else 1)
           PY
+      - name: Remove authenticated Workers AI research proxy
+        if: always()
+        shell: bash
+        run: |
+          if [ -f "$RUNNER_TEMP/research-worker-proxy.pid" ]; then kill "$(cat "$RUNNER_TEMP/research-worker-proxy.pid")" 2>/dev/null || true; fi
+          rm -f "$RUNNER_TEMP/research-worker-proxy.pid" "$RUNNER_TEMP/research-worker-proxy.log"
       - name: Publish sanitized canary receipt
         if: always()
         env:
