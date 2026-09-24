@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: live-nightly-research-canary
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
