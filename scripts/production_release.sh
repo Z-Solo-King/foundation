@@ -490,6 +490,18 @@ jq -e '.ok == true and .memory_persisted_across_version == true and .replay_nonc
 cp "$RUNNER_TEMP/persistence-rollover-verify.json" .runtime/persistence-rollover-verify.json
 echo "Live memory/replay deployment-boundary acceptance: PASS"
 fi
+# Record the live durable MODEL_CALLS quota state before the required model-generation
+# acceptance. This is a bounded non-secret diagnostic: no auth token or provider payload
+# is queried, only governance counters from the canonical D1 authority.
+npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
+  --config="$RUNNER_TEMP/operations/wrangler.toml" \
+  --command="SELECT scope, window_id, resource_kind, limit_units, reserved_units, consumed_units, updated_at FROM resource_governance_quota WHERE resource_kind = 'model_calls' ORDER BY updated_at DESC LIMIT 5;" \
+  --json > "$RUNNER_TEMP/model-call-quota.json"
+echo "--- model-call-quota.snapshot ---"
+cat "$RUNNER_TEMP/model-call-quota.json"
+echo "--- end model-call-quota.snapshot ---"
+cp "$RUNNER_TEMP/model-call-quota.json" .runtime/model-call-quota.json
+
 # Exercise the real public-to-private conversational and research paths only after
 # both Workers are deployed and the private provenance gate has passed.
 live_chat_payload=$(jq -nc \
