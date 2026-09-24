@@ -4,7 +4,7 @@ This checkpoint supersedes older dated entries below it. Live branch heads and c
 
 ## Repository state
 - Foundation `main`: `edbeb6931a31042cd1b30efb11f2ead1eac19adf`
-- Operations `main`: `ea35c9d5a5ad746aab6b337f16f96ae4e3fb8bb6`
+- Operations `main`: `77288c6ccc48f2b49c8bfe5048547398ca90790d`
 - Production Operations target pin: `44f53283aa308e8a294ae9fe716ab9200a44809b`
 - Nightly research Operations pin: `44f53283aa308e8a294ae9fe716ab9200a44809b`
 - Open issues: Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699
