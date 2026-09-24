@@ -27,7 +27,7 @@ def test_public_deployment_is_standalone_and_uses_safe_placeholders():
     assert "REPLACE_WITH_PRIVATE_CONTROL_PLANE_SERVICE" not in text
     assert "[[r2_buckets]]" not in text
     assert "ARTIFACTS" not in text
-    assert "operations" not in text
+    assert "research-intelligence-engine-private" not in text
 
 
 def test_public_docs_do_not_name_private_service():
