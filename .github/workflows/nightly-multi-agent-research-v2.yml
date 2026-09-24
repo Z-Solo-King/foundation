@@ -30,7 +30,7 @@ env:
   RESEARCH_LLM_API_KEY: "local-worker-proxy"
   RESEARCH_LLM_MODEL: "@cf/meta/llama-3.1-8b-instruct-fast"
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_RESEARCH_REF: 41db817dee6aa7d369ea9a07dd072b58ece1695a
+  OPERATIONS_RESEARCH_REF: 44f53283aa308e8a294ae9fe716ab9200a44809b
   OPERATIONS_MIGRATION_TOOLS_REF: 41db817dee6aa7d369ea9a07dd072b58ece1695a
 
 jobs:
@@ -207,12 +207,10 @@ jobs:
             fi
             sleep 1
           done
-          probe_payload=$(jq -nc '{model:"@cf/meta/llama-3.1-8b-instruct-fast",messages:[{role:"user",content:"Return exactly OK."}],max_tokens:1,temperature:0})
+          probe_payload=$(jq -nc '{model:"@cf/meta/llama-3.1-8b-instruct-fast",messages:[{role:"user",content:"Return exactly OK."}],max_tokens:1,temperature:0}')
           probe_response=$(curl -fsS --max-time 90 -H "Authorization: Bearer local-worker-proxy" -H "Content-Type: application/json" -d "$probe_payload" http://127.0.0.1:8765/chat/completions)
           printf "%s" "$probe_response" | jq -e '.choices[0].message.content | type == "string" and length > 0' >/dev/null || { echo "Authenticated Worker-backed Workers AI probe failed."; exit 1; }
           echo "Authenticated Worker-backed Workers AI probe: PASS"
-          cat "$RUNNER_TEMP/research-worker-proxy.log" 2>/dev/null || true
-          exit 1
       - name: Run complete research lane
         id: run_lane
         shell: bash

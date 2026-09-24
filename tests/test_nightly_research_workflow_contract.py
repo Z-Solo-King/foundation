@@ -18,7 +18,7 @@ def test_matrix_is_fail_fast_false_and_has_three_lanes():
 def test_private_operations_revision_and_app_auth_are_explicit():
     text = workflow_text()
     assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
-    assert "OPERATIONS_RESEARCH_REF: 41db817dee6aa7d369ea9a07dd072b58ece1695a" in text
+    assert "OPERATIONS_RESEARCH_REF: 44f53283aa308e8a294ae9fe716ab9200a44809b" in text
     assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in text
     assert "OPERATIONS_APP_INSTALLATION_ID" not in text
     assert "resolve_operations_installation.py" in text
@@ -90,3 +90,10 @@ def test_nightly_baseline_lookup_uses_only_current_registered_workflow():
     text = workflow_text()
     assert "gh run list --workflow nightly-multi-agent-research-v2.yml" in text
     assert "nightly-multi-agent-research.yml" not in text
+
+
+def test_live_worker_proxy_probe_shell_expression_is_closed_and_non_aborting():
+    text = workflow_text()
+    assert "probe_payload=$(jq -nc '{model:\"@cf/meta/llama-3.1-8b-instruct-fast\",messages:[{role:\"user\",content:\"Return exactly OK.\"}],max_tokens:1,temperature:0}')" in text
+    assert 'name: Run complete research lane' in text
+    assert 'cat "$RUNNER_TEMP/research-worker-proxy.log" 2>/dev/null || true\\n          exit 1' not in text
