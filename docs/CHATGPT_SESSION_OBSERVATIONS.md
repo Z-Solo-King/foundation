@@ -25,3 +25,13 @@
 **Parallel diagnosis -> one consolidated repair batch -> targeted verification -> checkpoint.**
 
 Target 4 lanes by default; expand to 6 only when lanes are genuinely independent. Avoid continuous polling and avoid feeding complete logs into the chat.
+
+
+## Cycle 2 observations — 2026-09-24
+
+- Session remained responsive under bounded parallel reads and focused writes; no continuous workflow polling was used.
+- Parallel diagnosis found two fresh confirmed Foundation CI defects beyond the prior checkpoint: PR #1129 fixed workflow-dispatch run identity tracking, and PR #1130 fixed the Hybrid URL corpus count plus an invalid Rust cache target. Both PRs had fresh required checks, exhaustive-audit checks, and nightly-contract checks passing before merge.
+- Both repairs were merged during this cycle: #1129 -> `5ab5eb1c5fc4dc07c7e0a533bbfc402cb766d424`; #1130 -> `e541ac4d000ed4a0678aa1ef6ebe9faf6c119c0a`.
+- Operations main advanced independently to `5f2c98fbf0bd8694c63b97a62e28b0bacf01923a` via the Rust HTML availability contract repair (#887); the stale cross-repository checkpoint was therefore no longer safe to reuse unchanged.
+- The main execution bottleneck remains L4/runtime/provider evidence, especially the upstream Worker 403 blocking the 24-program research gate; repository-side CI defects are being reduced faster than runtime evidence can be refreshed.
+- Improvement for the next cycle: refresh live heads and open queues first, then inspect only newly changed commits/PRs and current blockers. Reconcile the checkpoint after every consolidated repair batch.

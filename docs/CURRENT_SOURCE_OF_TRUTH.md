@@ -1,28 +1,31 @@
-# LIVE CURRENT CHECKPOINT — 2026-09-24 16:00 IST
+# LIVE CURRENT CHECKPOINT — 2026-09-24 21:45 IST
 
 This checkpoint supersedes older dated sections below.
 
 ## Current repository state
-- Foundation main: `307e2c2a0d2813453c9f4da920e7fd481097a777`
-- Operations main: `17df99ca4989b40171b9ba1e25b71b9a8cf18465`
+- Foundation main: `e541ac4d000ed4a0678aa1ef6ebe9faf6c119c0a`
+- Operations main: `5f2c98fbf0bd8694c63b97a62e28b0bacf01923a`
 - Open issues: 8 total — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
-- Open PRs: 0.
-- The **ChatGPT Policy** is merged in both repositories. It permits healthy GitHub + Cloudflare work in one cycle, uses 4-6 bounded parallel lanes, caps a project Thinking session at 20 minutes, and requires a checkpoint at the boundary.
-- Foundation #1126 is merged: supersedable expensive main workflows cancel stale runs; the nightly canary now preserves structured failure diagnostics.
+- Open implementation PRs: 0 after merging Foundation #1129 and #1130.
+- ChatGPT Policy is synchronized in both repositories: GitHub + Cloudflare may run in one cycle when healthy; 4-6 bounded lanes; 20-minute project session cap; context-pressure checkpointing.
 
-## Current issue classification
-- #157: runtime/evidence gate. Provider configuration is now reported present, but the latest observed Worker-backed research path returned upstream HTTP 403 / local HTTP 502 (`upstream_worker_rejected`). Real 24-program provider-backed evidence is still required.
-- #145/#340/#385/#597/#603: repository-side implementation is substantially present; remaining acceptance is issue-specific runtime/evidence, benchmark, portability, rollback, or production receipt work.
-- #699: parent evidence tracker; remains open until child acceptance gates are discharged.
-- #58: meta coverage tracker.
+## Cycle 2 verified repair state
+- Foundation #1129 merged as `5ab5eb1c5fc4dc07c7e0a533bbfc402cb766d424`: fresh workflow-dispatch checks now bind verification to the exact dispatched run ID and use a bounded 120-second job-materialization wait.
+- Foundation #1130 merged as `e541ac4d000ed4a0678aa1ef6ebe9faf6c119c0a`: Hybrid URL differential corpus asserts the 61-case corpus and nested Rust workspace setup disables cache targeting at repository root.
+- Operations #887 is merged on `main` at `5f2c98fbf0bd8694c63b97a62e28b0bacf01923a`, aligning the Rust HTML availability contract with the current generic extractor contract.
 
-## Current runtime evidence boundary
-Cloudflare production state must be verified from the Cloudflare control plane before being called current L4 evidence. GitHub source, CI, and historical Cloudflare receipts remain lower-level or historical evidence.
+## Remaining acceptance state
+- #157: L4 runtime/provider gate. Latest observed authenticated research path still hits upstream Worker HTTP 403 / local 502 `upstream_worker_rejected`; no 24-program provider-backed receipt yet.
+- #145/#340/#385/#597/#603: implementation materially present; remaining acceptance requires issue-specific runtime/evidence/benchmark/rollback receipts.
+- #699: aggregate tracker remains open until child acceptance gates discharge.
+- #58: meta coverage tracker remains open until dependent acceptance gates are truly discharged.
 
-## Session observation
-This cycle demonstrated that compact parallel diagnosis plus targeted fixes is faster and safer than repeated whole-repository rescans. The main remaining execution bottleneck is runtime evidence dependent on Cloudflare/provider behavior, not routine repository code repair.
+## Runtime boundary
+Cloudflare production state must be refreshed from the Cloudflare control plane before being called current L4 evidence. No new Cloudflare runtime claim is made in this cycle because the active Cloudflare action was not exposed to this chat.
 
----
+## Next bounded action
+Recheck the merged Foundation main CI surface and the current Operations acceptance blockers, then repair only newly reproduced repository defects; otherwise advance evidence-gated issues without speculative code churn.
+
 ---
 # Historical checkpoint — 2026-09-23 Live Reconciliation (superseded)
 

@@ -3,8 +3,8 @@
   "status": "CURRENT_GITHUB_RECONCILIATION_CLOUDFLARE_PENDING",
   "audited_at": "2026-09-24",
   "live_main": {
-    "foundation": "c519b56050632862fbac4f6d6841cbd725408cc8",
-    "operations": "fda24660843cacfe28de661cf170789af542d28f"
+    "foundation": "e541ac4d000ed4a0678aa1ef6ebe9faf6c119c0a",
+    "operations": "5f2c98fbf0bd8694c63b97a62e28b0bacf01923a"
   },
   "runtime_pins": {
     "foundation_runtime": "825d301d10d201cd9b74dd018973769aeb03f381",
@@ -46,10 +46,8 @@
       603,
       699
     ],
-    "open_pr_count": 1,
-    "foundation_open_prs": [
-      1109
-    ],
+    "open_pr_count": 0,
+    "foundation_open_prs": [],
     "operations_open_prs": [],
     "closed": [
       197,
@@ -211,9 +209,45 @@
       "failed_check_runs": 5,
       "in_progress_check_runs": 1,
       "nightly_provider_block": "upstream_worker_rejected_http_403"
+    },
+    "foundation_ci_repairs": {
+      "cycle": "2026-09-24-cycle2",
+      "pr_1129": {
+        "merged": true,
+        "merge_commit": "5ab5eb1c5fc4dc07c7e0a533bbfc402cb766d424",
+        "head": "819b59a5fcee4e0a04dcc9b5d3c6901f1d43b9a7",
+        "checks": [
+          36025685457,
+          36025685437,
+          36025685754
+        ]
+      },
+      "pr_1130": {
+        "merged": true,
+        "merge_commit": "e541ac4d000ed4a0678aa1ef6ebe9faf6c119c0a",
+        "head": "88cee196311905358e7eb47742fc4c6e18272e56",
+        "checks": [
+          36026034798,
+          36026034772,
+          36026034868
+        ]
+      }
+    },
+    "operations_head": {
+      "sha": "5f2c98fbf0bd8694c63b97a62e28b0bacf01923a",
+      "change": "Operations #887 Rust HTML availability contract alignment"
+    },
+    "chatgpt_session_cycle2": {
+      "observed": "bounded parallel diagnosis -> two focused CI repairs -> targeted verification -> checkpoint",
+      "responsive": true,
+      "cloudflare_connector_available": false,
+      "evidence_class": "L3 repository/control-plane",
+      "next_action": "refresh newly changed CI plus remaining evidence gates only"
     }
   },
   "known_findings": [
+    "2026-09-24 cycle2: Foundation #1129 and #1130 were merged after fresh passing required/audit/nightly-contract checks.",
+    "2026-09-24 cycle2: Operations main is now 5f2c98fbf0bd8694c63b97a62e28b0bacf01923a after Rust HTML availability contract alignment (#887).",
     "Production Cloudflare provenance is aligned with the approved production boundary.",
     "Nightly #893 is provider-gated before LLM execution because the three authorized research-provider configuration values are absent.",
     "Capacity-sweep measurements are deterministic structural evidence only.",
@@ -274,8 +308,8 @@
   },
   "github_sync": {
     "checked_at": "2026-09-24",
-    "foundation_main": "c519b56050632862fbac4f6d6841cbd725408cc8",
-    "operations_main": "fda24660843cacfe28de661cf170789af542d28f",
+    "foundation_main": "e541ac4d000ed4a0678aa1ef6ebe9faf6c119c0a",
+    "operations_main": "5f2c98fbf0bd8694c63b97a62e28b0bacf01923a",
     "canonical_operations_pin": "fda24660843cacfe28de661cf170789af542d28f",
     "superseded_pr_closed": 1112,
     "remaining_foundation_pr": 1109,
@@ -293,7 +327,8 @@
       "run_id": 36013041963,
       "status": "success",
       "head": "c519b56050632862fbac4f6d6841cbd725408cc8"
-    }
+    },
+    "open_pr_count": 0
   },
   "open_pr_reconciliation": {
     "documentation_pr": 1115,
