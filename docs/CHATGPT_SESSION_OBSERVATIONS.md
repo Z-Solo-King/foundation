@@ -44,3 +44,13 @@ Target 4 lanes by default; expand to 6 only when lanes are genuinely independent
 - A reproduced bridge-policy test mismatch was corrected after the first retry. The retry was useful because it distinguished stale-run behavior from a genuine remaining assertion mismatch.
 - The 20-minute project cap remains a safety ceiling, but an earlier context/runtime-pressure cutoff may still occur; next cycle should continue measuring actual wall-clock duration, tool volume, and response degradation.
 - Improvement: when a PR changes a workflow contract, search for all agent/policy assertions referencing the old contract before waiting for CI, reducing failure-and-retry cycles.
+
+
+## Cycle 3 closeout update — 2026-09-24
+
+- Foundation bridge repair PR #1132 is now merged at `326e587a9898ccbb9c18aaf8afb361267a5124d8`.
+- The merged repair replaced fragile SHA/time-window run rediscovery with exact dispatched workflow-run identity and receipt-based target-run verification.
+- Fresh required PR checks, exhaustive six-lane audit and nightly-contract checks for the corrected #1132 head all passed before merge.
+- The prior retry failure was a stale policy assertion; the corrected assertion also passed in the final required-check run.
+- Current runtime acceptance gates remain unchanged: repository CI does not substitute for Cloudflare/provider L4 evidence.
+- Next session should refresh live heads first; the documentation commits from this cycle may advance main without changing runtime authority.
