@@ -65,6 +65,7 @@ class ChatRequest:
     history: tuple[dict[str, str], ...] = ()
     operation: str | None = None
     input_records: Any = ()
+    require_model_generation: bool = False
 
     def validate(self) -> None:
         if not self.chat_id.strip():
@@ -79,6 +80,8 @@ class ChatRequest:
             raise ValueError("Heroic AI public chat contract accepts mode=chat only")
         if not self.strict_zero_cost_only:
             raise ValueError("strict $0 cost mode is mandatory: strict_zero_cost_only must be true")
+        if not isinstance(self.require_model_generation, bool):
+            raise ValueError("require_model_generation must be a boolean")
         if len(self.metadata) > MAX_METADATA_FIELDS:
             raise ValueError("metadata exceeds the supported field count")
         for key, value in self.metadata.items():

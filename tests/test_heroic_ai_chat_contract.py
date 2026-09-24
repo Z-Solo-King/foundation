@@ -2,6 +2,18 @@ import asyncio
 from types import SimpleNamespace
 
 
+def test_chat_request_validates_provider_required_flag():
+    from backend.api.models import ChatRequest
+
+    ChatRequest("chat", "request", "hello", require_model_generation=True).validate()
+    try:
+        ChatRequest("chat", "request", "hello", require_model_generation="true").validate()
+    except ValueError as exc:
+        assert "require_model_generation" in str(exc)
+    else:
+        raise AssertionError("non-boolean provider requirement was accepted")
+
+
 def test_chat_request_rejects_invalid_modes_paid_execution_and_bounds():
     from backend.api.models import ChatRequest
     valid = ChatRequest("chat", "request", "hello"); valid.validate()

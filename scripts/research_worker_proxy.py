@@ -141,6 +141,8 @@ class Handler(BaseHTTPRequestHandler):
             "mode": "chat",
             "operation": "knowledge",
             "strict_zero_cost_only": True,
+            # Nightly research is evidence-gated: deterministic fallback cannot count as provider execution.
+            "require_model_generation": True,
         }
 
         url = self.server.public_worker_url.rstrip("/") + "/api/v1/chat"
@@ -188,6 +190,22 @@ class Handler(BaseHTTPRequestHandler):
         text = response.get("text")
         if not isinstance(text, str) or not text.strip():
             self._json({"error": {"message": "upstream_model_text_missing", "type": "protocol_error"}}, 502)
+            return
+
+        generation_status = response.get("generation_status")
+        if generation_status != "model_generated" or not response.get("provider"):
+            self._json(
+                {
+                    "error": {
+                        "message": "provider_required_but_unavailable",
+                        "type": "provider_execution_not_proven",
+                        "generation_status": str(generation_status or "unknown")[:80],
+                        "provider": str(response.get("provider") or "")[:120],
+                    },
+                    "request_id": request_digest,
+                },
+                502,
+            )
             return
 
         usage = response.get("usage")
