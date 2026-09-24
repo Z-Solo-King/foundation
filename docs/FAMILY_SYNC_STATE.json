@@ -251,7 +251,7 @@
   },
   "pending_promotion": {
     "operations": "7800e8c693f9f981fa0d78f4814641f9225a0908",
-    "reason": "native_workers_ai_python_ffi_fix",
-    "status": "pending_live_release"
+    "status": "pending_live_release",
+    "reason": "native_workers_ai_python_ffi_fix"
   }
 }
