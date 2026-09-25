@@ -425,7 +425,7 @@ jobs:
           from pathlib import Path
           py=[json.loads(v) for v in Path("python-url.jsonl").read_text().splitlines() if v]
           rs=[json.loads(v) for v in Path("rust-url.jsonl").read_text().splitlines() if v]
-          assert len(py)==len(rs)==61
+          assert len(py)==len(rs)==71
           for a,b in zip(py,rs):
               assert a["id"]==b["id"]
               assert a["ok"]==b["ok"], (a,b)
