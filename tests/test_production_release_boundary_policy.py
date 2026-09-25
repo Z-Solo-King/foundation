@@ -5,6 +5,11 @@ ROOT = Path(__file__).resolve().parents[1]
 PRODUCTION_SCRIPT = ROOT / "scripts" / "production_release.sh"
 
 
+def test_production_release_defines_git_askpass_path():
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'askpass="$RUNNER_TEMP/git-askpass-operations.sh"' in text
+    assert '\\n\\n\\naskpass=' not in text
+
 def test_production_release_shell_syntax_is_valid():
     result = subprocess.run(["bash", "-n", str(PRODUCTION_SCRIPT)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
