@@ -541,6 +541,19 @@ def test_nightly_research_preflight_waits_for_successful_production_release_r2()
     assert "github.event.workflow_run.conclusion == 'success'" in text
     assert "github.event.workflow_run.head_branch == 'main'" in text
 
+
+def test_rust_url_differential_uses_current_foundation_revision_r2():
+    text = (ROOT / '.github/workflows/hybrid-language-pilots.yml').read_text(encoding='utf-8')
+    assert 'Determine current Foundation URL-reference revision' in text
+    assert 'echo "ref=${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"' in text
+    assert 'git cat-file -e "$FOUNDATION_COMMIT:backend/sources/http.py"' in text
+
+def test_typescript_endpoint_differential_materializes_public_core_r2():
+    text = (ROOT / '.github/workflows/hybrid-language-pilots.yml').read_text(encoding='utf-8')
+    assert 'Materialize pinned Foundation public core for Python reference' in text
+    assert 'FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core' in text
+    assert 'python scripts/sync_public_core.py' in text
+
 def test_live_probe_acceptance_does_not_depend_on_issue_comment_permissions():
     texts = _workflow_texts()
     assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["public-worker-live-probe.yml"]
