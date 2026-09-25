@@ -1,3 +1,60 @@
+# 2026-09-25 CURRENT LIVE SNAPSHOT
+
+This section is authoritative for the current audit cycle. Fresh GitHub/Cloudflare reads and workflow receipts outrank historical dated sections below.
+
+## GitHub
+- Foundation main: dbab61bb15aae22ca19787ddc70283af2617620e
+- Operations main: 300bb0cf8dc8f8a3a874c2bbeadc7ee5ddc6eb8c
+- Open issues: 11 total — Foundation #58/#157/#1157; Operations #145/#197/#340/#385/#597/#603/#699/#713.
+- Open PRs at this checkpoint: Foundation #1203 (older documentation PR, now stale-base); Operations #914/#915 (Dependabot).
+- Implementation/security fixes merged in this cycle:
+  - Operations #953 -> 4c6432a8 (NAT64 private/reserved destination rejection + expanded negative corpus).
+  - Operations #954 -> b0c8503a (live issue inventory/surface-map reconciliation for reopened #713).
+  - Operations #955 -> 7f471efc (Foundation public-core pin advanced to dbab61bb).
+  - Operations #956 -> 300bb0cf (governance + four-lane matrix reconciliation for #713).
+  - Foundation #1204 -> dbab61bb (NAT64 URL safety + hybrid workflow ref-output regression fix).
+
+## Cloudflare
+- Cloudflare account, Worker list, D1 list, zone list, Worker settings and Worker versions are readable through the connected control plane.
+- Canonical Workers: foundation (public) and operations (private).
+- Deployed production provenance remains separate from GitHub main:
+  - foundation: github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c
+  - operations: github:a3171f353539f1a31020c432f98cf0530cbf91ef
+- heroic-ai.dev zone: pending; activation failure reason: unresolvable.
+- Public hostname cannot currently be resolved by the production/preflight probes.
+- D1 research-intelligence: 19f51638-47a5-4218-a9dc-73dbfd6156fe. Direct read-only schema/query access succeeds; control-plane table-count metadata is stale (reports 0 tables while sqlite_master exposes the live schema).
+
+## Nightly research / runtime
+- Latest nightly multi-agent research: run 36141145555 (#375), waiting at the exact production-release gate.
+- Latest production release attempt: run 36141127503 (#587), failed at the Cloudflare zone prerequisite.
+- Latest provider preflight: run 36141127495 (#158), fail-closed with HTTP 000 / curl exit 6 / DNS-unreachable classification.
+- Latest public Worker probe: run 36141127548 (#158), same DNS boundary.
+- No provider-backed 24-program acceptance receipt is certified.
+- Direct D1 counts currently observed: 442 completed research_runs, 202 planned; 398 observations; 0 research_publications; 0 stuck resource reservations; 422 resource-governance quota rows; 110 chat-idempotency rows.
+
+## Latest extractor benchmark
+- Run 36141127492, number 448, completed successfully on Foundation dbab61bb.
+- Aggregate artifact: 10867020802; SHA-256 sha256:073ad2ba3df5bad3f9536abe95281ec596e109d7293b4bc4d30499e11cb21e62.
+- 40 receipts; platform coverage API 12 / browser 8 / feed 8 / HTML 12.
+- Structural quality: pass=true; error_rate=0; invalid_resource_rows=0; missing_key_rows=0; provenance=1.0; route provenance=1.0; repeat reliability=1.0; unstable repeated groups=0.
+- Status mix remains 4 ok / 32 empty / 4 blocked and completion_rate=0.1.
+- The four ok receipts are repeated synthetic ecommerce listing-level placeholders with no price, brand, specs, images or offers. Treat this as a structural/integrity pass, not 40 successful business-data acquisitions.
+- Benchmark producer intentionally records an immutable Operations benchmark ref; the run's case metadata used production Operations ref a3171f353539f1a31020c432f98cf0530cbf91ef rather than moving automatically with Operations main.
+
+## Cross-language / issue #713
+- Operations #713 is open pending fresh shared acceptance.
+- The first post-fix hybrid run 36141127526 (#188) failed only because it began before Operations #955 merged and resolved the old Foundation pin 100a382a..., causing ModuleNotFoundError in the generated Python reference step.
+- Current Operations main pins dbab61bb; the next Foundation-triggered hybrid run is the authoritative re-test.
+
+## ChatGPT continuity
+- ChatGPT/UI state is transport state only.
+- GitHub commits, workflow runs/artifacts, and Cloudflare runtime/control-plane receipts are authoritative.
+- Refresh live heads, open issues/PRs, and deployment pins before mutation.
+- Keep production pins separate from branch heads.
+- Do not close runtime/L4 issues from deterministic CI alone.
+- Do not claim the DNS/registrar blocker is fixed without an active Cloudflare zone and successful public resolution.
+- Authenticated GitHub numeric rate-limit allowance is not independently available through the connected fetch surface; do not infer it from successful repository operations.
+
 # 2026-09-25 POST-MERGE LIVE AUDIT OVERRIDE
 
 This is the current post-merge source-of-truth snapshot.
