@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import subprocess
 
 
@@ -17,7 +18,8 @@ def test_expanded_20_job_workflow_has_seeded_and_qualified_matrix():
         if 'id: "' in line and "seed_repos:" in line and "issues:" in line
     ]
     assert len(matrix_rows) == 20
-    assert all("foundation#" in line or "operations#" in line for line in matrix_rows)
+    qualified = re.compile(r'issues: "((?:foundation|operations)#\\d+(?:,(?:foundation|operations)#\\d+)*)"')
+    assert all(qualified.search(line) for line in matrix_rows)
     assert "PieroSierra/SecondBrain" in text
     assert "Shubhamsaboo/awesome-llm-apps" in text
     assert "NipunaRanasinghe/awesome-ai-agents" in text
