@@ -1,0 +1,101 @@
+name: unresolved retailer API proof
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  unresolved:
+    name: ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [Acer, ASUS, Samsung]
+    env:
+      TARGET: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "24"
+      - name: Install Playwright
+        if: env.TARGET == 'Samsung'
+        run: |
+          npm install --no-save --no-package-lock playwright@1.63.0
+          npx playwright install --with-deps chromium
+      - name: Probe unresolved retailer
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$TARGET" in
+            Acer)
+              echo "=== ACER HOME ==="
+              curl --http1.1 -sS --max-time 45 -D acer-home.headers -o acer-home.html "https://store.acer.com/en-in/" || true
+              head -c 500 acer-home.html || true
+              echo
+              echo "=== ACER GRAPHQL ==="
+              curl --http1.1 -sS --max-time 45 \
+                -H "Content-Type: application/json" \
+                -H "Accept: application/json" \
+                -H "Store: default" \
+                -H "Origin: https://store.acer.com" \
+                -H "Referer: https://store.acer.com/en-in/" \
+                --data '{"query":"query($search:String,$pageSize:Int=20,$currentPage:Int=1){products(search:$search,pageSize:$pageSize,currentPage:$currentPage){total_count page_info{current_page page_size total_pages} items{sku name url_key}}}","variables":{"search":"laptop","pageSize":50,"currentPage":1}}' \
+                "https://store.acer.com/en-in/graphql" || true
+              ;;
+            ASUS)
+              echo "=== ASUS SEARCH ==="
+              curl -sS --max-time 45 \
+                -H "Accept: application/json" \
+                -H "Referer: https://www.asus.com/in/" \
+                "https://odinapi.asus.com/recent-data/apiv2/SearchResult?SystemCode=asus&WebsiteCode=in&SearchKey=laptop&SearchType=products&SearchPDLine=&SearchPDLine2=&PDLineFilter=&TopicFilter=&CateFilter=&PageSize=20&Pages=1&LocalFlag=0&siteID=www&sitelang=" | head -c 12000
+              echo
+              for u in \
+                "https://odinapi.asus.com/recent-data/apiv2/GetPrice?SystemCode=asus&WebsiteCode=in&ProductId=R_90NR0NR2-M002Y0" \
+                "https://odinapi.asus.com/recent-data/apiv2/GetPrice?SystemCode=asus&WebsiteCode=in&ProductId=90NR0NR2-M002Y0" \
+                "https://odinapi.asus.com/recent-data/apiv2/GetPrice?SystemCode=asus&WebsiteCode=asus&ProductId=R_90NR0NR2-M002Y0" \
+                "https://odinapi.asus.com/recent-data/apiv2/GetPrice?SystemCode=asus&WebsiteCode=in&ProductId=R_90NR0NT2-M004B0"; do
+                  echo "=== ASUS PRICE $u ==="
+                  curl -sS --max-time 45 -H "Accept: application/json" -H "Referer: https://www.asus.com/in/" "$u" || true
+                  echo
+              done
+              ;;
+            Samsung)
+              cat > samsung.mjs <<'JS'
+              import { chromium } from "playwright";
+              const browser=await chromium.launch({headless:true});
+              const context=await browser.newContext({userAgent:"Mozilla/5.0",locale:"en-IN",viewport:{width:1440,height:1200}});
+              const page=await context.newPage();
+              const seen=new Set();
+              page.on("response",r=>{
+                const u=r.url();
+                if(/searchapi\.samsung\.com/i.test(u)){
+                  const req=r.request();
+                  if(!seen.has(u)){
+                    seen.add(u);
+                    console.log(JSON.stringify({url:u,status:r.status(),contentType:r.headers()["content-type"]||"",method:req.method(),postData:req.postData()?.slice(0,3000)||null}));
+                  }
+                }
+              });
+              for(const u of [
+                "https://www.samsung.com/in/aisearch/?searchvalue=galaxy",
+                "https://www.samsung.com/in/search/?searchvalue=galaxy"
+              ]){
+                try{
+                  const r=await page.goto(u,{waitUntil:"domcontentloaded",timeout:90000});
+                  await page.waitForTimeout(9000);
+                  console.log(JSON.stringify({page:u,status:r?.status()??null,finalUrl:page.url(),title:await page.title()}));
+                }catch(e){console.log(JSON.stringify({page:u,error:String(e)}))}
+              }
+              const html=await page.content();
+              const clues=[...html.matchAll(/https?:\/\/[^"'\s<>]*searchapi\.samsung\.com[^"'\s<>]*/gi)].slice(0,30).map(m=>m[0]);
+              console.log(JSON.stringify({clues}));
+              await browser.close();
+              JS
+              node samsung.mjs
+              ;;
+          esac
