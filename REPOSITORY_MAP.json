@@ -9,6 +9,7 @@
     "docs/DOCUMENTATION_INDEX.md",
     "docs/FAMILY_CONTRACT.json",
     "docs/FAMILY_ARCHITECTURE.md",
+    "docs/FAMILY_INTEGRATION_GRAPH.json",
     "Z-Solo-King/operations:docs/CURRENT_SOURCE_OF_TRUTH.md"
   ],
   "canonical": {
@@ -30,7 +31,9 @@
     "research_pipeline": "backend/execution/pipeline.py",
     "public_worker_boundary": "backend/execution/worker_boundary.py",
     "artifacts": "backend/artifacts/manifest.py",
-    "benchmarks": "benchmark/"
+    "benchmarks": "benchmark/",
+    "family_integration_graph": "docs/FAMILY_INTEGRATION_GRAPH.json",
+    "family_integration_architecture": "docs/FAMILY_INTEGRATION_ARCHITECTURE_2026-09-25.md"
   },
   "boundary": {
     "private_operations": "Z-Solo-King/operations",
@@ -58,7 +61,8 @@
       ".github/workflows/cross-repository-contract-drift.yml",
       ".github/workflows/operations-centralized-validation.yml",
       ".github/workflows/main-push-actions-control-plane-probe-v2.yml"
-    ]
+    ],
+    "family_sync_state": "docs/FAMILY_SYNC_STATE.json"
   },
   "method": [
     "accept Heroic AI request",

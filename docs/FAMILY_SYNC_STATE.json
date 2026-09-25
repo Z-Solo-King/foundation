@@ -1,10 +1,10 @@
 {
   "schema_version": "family-sync-state/v1",
-  "status": "CURRENT_POST_HEROIC_AI_RENAME",
+  "status": "CURRENT",
   "audited_at": "2026-09-25",
   "live_main": {
-    "foundation": "c053a67defb72307c2d34ddfd8e94e3e1f339308",
-    "operations": "0bddf1b8b2741ac277a3751e531a3b9714484ad9"
+    "foundation": "6183a18a8f4373099264b3c193bc91402045d091",
+    "operations": "06c763aba521b0d7060b22e10ea8f195008a63a3"
   },
   "runtime_pins": {
     "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
@@ -28,11 +28,12 @@
     "canonical_public_url": "https://Heroic-Ai.dev"
   },
   "current_queue": {
-    "open_issue_count": 10,
+    "open_issue_count": 11,
     "foundation": [
       58,
-      157,
-      282
+      1157,
+      154,
+      157
     ],
     "operations": [
       145,
@@ -235,7 +236,11 @@
     }
   },
   "known_findings": [
-    "2026-09-24 cycle2: Foundation #1129 and #1130 were merged after fresh passing required/audit/nightly-contract checks.",
+    "2026-09-25: Foundation family integration graph merged in #1165; Operations consumer merged in #936; nightly 20-job research packets are now bound to the family graph digest by #1166.",
+    "2026-09-25: Foundation main is 6183a18a8f4373099264b3c193bc91402045d091; Operations main is 06c763aba521b0d7060b22e10ea8f195008a63a3.",
+    "2026-09-25: Foundation has 4 open issues (#58, #1157, #154, #157); Operations has 7 open issues (#145, #197, #340, #385, #597, #603, #699); open PR count is 0.",
+    "2026-09-25: #1160 was closed as superseded; its useful benchmark/context material is preserved in canonical graph and benchmark documentation.",
+    "2026-09-25: 20 research jobs cover AI agents, orchestration, MCP/tools, CLI agents, testing, memory/context, browser use, inference, benchmarks, Rust/Go/TypeScript/Java/.NET/C++/Zig migration, parallelism, GitHub Actions, research evidence, security and Heroic AI issue-driven research.",
     "2026-09-24 cycle2: Operations main is now 5f2c98fbf0bd8694c63b97a62e28b0bacf01923a after Rust HTML availability contract alignment (#887).",
     "Production Cloudflare provenance is aligned with the approved production boundary.",
     "Nightly #893 is provider-gated before LLM execution because the three authorized research-provider configuration values are absent.",
@@ -334,5 +339,15 @@
     "d1_database": "research-intelligence",
     "d1_database_id": "19f51638-47a5-4218-a9dc-73dbfd6156fe",
     "fresh_deployment_receipt": false
+  },
+  "current_integration": {
+    "canonical_graph": "docs/FAMILY_INTEGRATION_GRAPH.json",
+    "graph_schema": "family-integration-graph/v1",
+    "graph_blob_sha": "6b86edcc2bb4ce72654837c76dd5835477c2d8d4",
+    "foundation_family_integration_merge": "bd7f36d550f47506268a1d78d2d69e1be3f54bcc",
+    "nightly_graph_provenance_merge": "6183a18a8f4373099264b3c193bc91402045d091",
+    "operations_consumer_merge": "06c763aba521b0d7060b22e10ea8f195008a63a3",
+    "material_count": 20,
+    "benchmark_probe_count": 11
   }
 }
