@@ -13,7 +13,9 @@ Compact routing index for human and AI repository analysis. Read this before ope
 7. `docs/FAMILY_SYNC_STANDARD.md` for cross-repository synchronization, status, ownership and evidence rules
 8. `docs/FAMILY_SYNC_STATE.json` for the latest recorded family synchronization snapshot
 9. `docs/REQUIREMENT_COVERAGE_RECONCILIATION_2026-09-17.md` for the latest implementation-vs-plan reconciliation
-10. Then open the canonical implementation and focused feature-owned tests.
+10. `docs/FAMILY_INTEGRATION_GRAPH.json` for cross-surface family topology, material-derived benchmark probes and integration loops.
+11. `docs/FAMILY_INTEGRATION_ARCHITECTURE_2026-09-25.md` for the narrative integration spine.
+12. Then open the canonical implementation and focused feature-owned tests.
 
 ## Focused test navigation
 
@@ -30,7 +32,7 @@ The former `test_coverage_*` files were broad aggregators. They were audited by 
 
 ## High-analysis-cost areas
 
-`.github/workflows/nightly-multi-agent-research-v3.yml` contains orchestration, matrix lanes, preflight policy, artifact handling, diagnosis, baseline comparison, attestation, and final gating. For narrow questions inspect the relevant job first, then the invoked benchmark module. Research logic belongs in the benchmark package.
+`.github/workflows/nightly-multi-agent-research-v3.yml` contains orchestration, matrix lanes, preflight policy, artifact handling, diagnosis, baseline comparison, attestation, and final gating. `.github/workflows/nightly-ai-research-20jobs.yml` is the ecosystem-research feed and must remain research-signal evidence only. For narrow questions inspect the relevant job first, then the invoked benchmark module. Research logic belongs in the benchmark package.
 
 `.github/workflows/heroic-ai-production-release.yml` is the single production deployment owner. `.github/workflows/codeql.yml` is security analysis only. `.github/workflows/autonomous-benchmark.yml` is benchmark orchestration. `.github/workflows/b2-repository-backup.yml` is the repository backup/B2 evidence boundary. These are orchestration/evidence boundaries, not application runtime modules.
 
@@ -51,3 +53,7 @@ The former `test_coverage_*` files were broad aggregators. They were audited by 
 - Current code/docs/PR/workflow evidence outranks dated plans and chat history.
 - A `main` SHA recorded in a sync document is an audit observation, not a replacement for the actual current branch tip.
 - Never treat source existence as L3/L4 runtime evidence.
+
+## Cross-surface family navigation
+
+Use `docs/FAMILY_INTEGRATION_GRAPH.json` before changing behavior that crosses UI, public Worker, private Operations, extractor/mapper, chatbot, resource governance, research, benchmark or observability boundaries. The graph is a routing aid; canonical ownership still comes from `docs/FAMILY_CONTRACT.json` and executable source.
