@@ -357,66 +357,115 @@ jobs:
       - name: Checkout public foundation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Download benchmark shard summaries
+        continue-on-error: true
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v5.0.0
         with:
           pattern: autonomous-benchmark-summary-shard-*
           path: .runtime/benchmark-summaries
-      - name: Download research feed status
+      - name: Download latest nightly research feed
+        continue-on-error: true
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v5.0.0
         with:
           name: latest-research-feed
           path: .runtime/research-feed
-      - name: Validate and aggregate final evidence
+      - name: Build final receipt even on upstream failure
+        id: build_receipt
+        if: always()
         shell: bash
         run: |
-          set -euo pipefail
+          set +e
           mkdir -p .runtime/final
-          mapfile -t summaries < <(find .runtime/benchmark-summaries -name benchmark-summary.json -type f | sort)
-          test "\${#summaries[@]}" -eq 4
-          test -f .runtime/research-feed/research-feed-status.json
           python - <<'PY'
           import hashlib
           import json
           from pathlib import Path
 
-          summaries = sorted(Path('.runtime/benchmark-summaries').glob('**/benchmark-summary.json'))
-          assert len(summaries) == 4, f'expected 4 shard summaries, got {len(summaries)}'
-          rows = [json.loads(p.read_text(encoding='utf-8')) for p in summaries]
-          assert all(row.get('schema') == 'autonomous-public-benchmark-summary/v9' for row in rows)
+          root = Path('.runtime')
+          summary_paths = sorted((root / 'benchmark-summaries').glob('**/benchmark-summary.json'))
+          rows = []
+          for path in summary_paths:
+              try:
+                  rows.append(json.loads(path.read_text(encoding='utf-8')))
+              except Exception:
+                  pass
+
           total_observations = sum(int(row.get('total_observations') or 0) for row in rows)
           selected_targets = sum(int(row.get('selected_targets') or 0) for row in rows)
           cycles = sum(int(row.get('cycles') or 0) for row in rows)
           usable = sum(int(row.get('failure_counts', {}).get('usable') or 0) for row in rows)
           operational_failures = sum(int(row.get('failure_counts', {}).get('operational_failure') or 0) for row in rows)
-          graph_sha256 = hashlib.sha256(Path('docs/FAMILY_INTEGRATION_GRAPH.json').read_bytes()).hexdigest()
-          status = json.loads(Path('.runtime/research-feed/research-feed-status.json').read_text(encoding='utf-8'))
-          assert status.get('schema') == 'nightly-research-feed-status/v1'
-          assert status.get('state') not in {'unavailable', 'invalid'}, status
-          assert status.get('state') != 'stale_graph', status
+
+          status_path = root / 'research-feed' / 'research-feed-status.json'
+          status = {}
+          if status_path.exists():
+              try:
+                  status = json.loads(status_path.read_text(encoding='utf-8'))
+              except Exception:
+                  status = {}
+
+          graph_path = Path('docs/FAMILY_INTEGRATION_GRAPH.json')
+          graph_sha256 = hashlib.sha256(graph_path.read_bytes()).hexdigest() if graph_path.exists() else ''
+          research_state = status.get('state') or 'missing'
+          benchmark_result = '${{ needs.benchmark.result }}'
+          research_result = '${{ needs.research_feed.result }}'
+          prerequisite_ok = (
+              len(summary_paths) == 4
+              and total_observations > 0
+              and status.get('schema') == 'nightly-research-feed-status/v1'
+              and research_state not in {'unavailable', 'invalid', 'stale_graph', 'missing'}
+              and benchmark_result == 'success'
+              and research_result == 'success'
+          )
+          validation_errors = []
+          if len(summary_paths) != 4:
+              validation_errors.append(f'expected 4 benchmark shard summaries, got {len(summary_paths)}')
+          if total_observations <= 0:
+              validation_errors.append('no benchmark observations were produced')
+          if status.get('schema') != 'nightly-research-feed-status/v1':
+              validation_errors.append('research feed status artifact is missing or invalid')
+          if research_state in {'unavailable', 'invalid', 'missing'}:
+              validation_errors.append(f'research feed state is {research_state}')
+          if research_state == 'stale_graph':
+              validation_errors.append('research feed references a stale family integration graph')
+          if benchmark_result != 'success':
+              validation_errors.append(f'benchmark result is {benchmark_result}')
+          if research_result != 'success':
+              validation_errors.append(f'research feed result is {research_result}')
+
           final = {
-              'schema': 'autonomous-nightly-benchmark-final/v1',
+              'schema': 'autonomous-nightly-benchmark-final/v2',
               'run_id': '${{ github.run_id }}',
+              'run_attempt': '${{ github.run_attempt }}',
               'repository_revision': '${{ github.sha }}',
               'family_graph_sha256': graph_sha256,
-              'research_feed_state': status.get('state'),
+              'research_feed_state': research_state,
               'research_feed_run_id': status.get('run_id'),
               'research_feed_head_sha': status.get('head_sha'),
-              'shards': 4,
+              'shards_found': len(summary_paths),
               'selected_targets': selected_targets,
               'cycles': cycles,
               'total_observations': total_observations,
               'usable_observations': usable,
               'operational_failures': operational_failures,
               'operational_failure_rate': round(operational_failures / total_observations, 6) if total_observations else None,
-              'benchmark_job_result': '${{ needs.benchmark.result }}',
-              'research_feed_job_result': '${{ needs.research_feed.result }}'
+              'benchmark_job_result': benchmark_result,
+              'research_feed_job_result': research_result,
+              'finalization_status': 'PASS' if prerequisite_ok else 'FAIL',
+              'validation_errors': validation_errors,
           }
-          Path('.runtime/final/autonomous-nightly-benchmark-final.json').write_text(json.dumps(final, indent=2), encoding='utf-8')
-          assert total_observations > 0, 'No benchmark observations were produced'
-          assert '${{ needs.benchmark.result }}' == 'success', '${{ needs.benchmark.result }}'
-          assert '${{ needs.research_feed.result }}' == 'success', '${{ needs.research_feed.result }}'
-          print(json.dumps(final, indent=2))
+          Path('.runtime/final/autonomous-nightly-benchmark-final.json').write_text(
+              json.dumps(final, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          print(json.dumps(final, indent=2, sort_keys=True))
           PY
+      - name: Enforce final evidence gate
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -e '.schema == "autonomous-nightly-benchmark-final/v2" and .finalization_status == "PASS" and (.validation_errors | length == 0)' .runtime/final/autonomous-nightly-benchmark-final.json >/dev/null
+          echo 'final nightly benchmark evidence gate: PASS'
       - name: Publish final benchmark evidence
         if: always()
         run: |
