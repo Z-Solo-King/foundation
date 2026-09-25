@@ -10,8 +10,8 @@ This section supersedes older checkpoint values below.
 - Foundation PR #1210 contains the final application Worker identity/configuration and is not yet production-certified.
 
 ## GitHub
-- Foundation PR #1210: `worker-identity-heroic-ai-2026-09-25`.
-- Operations migration PR #965 is merged as `9bb210d36f41afaa1bedc1be65e89ba6444d3f78`.
+- Foundation public Worker identity migration is merged; current main is `f248e83cf22e3359f57bbea190aaf150249ba2f6`..
+- Operations model/runtime pin PR #970 is merged as `d89e119722f3017cedf0cc175ba55871a65846ed`..
 - Operations `wrangler.toml` targets `heroic` through the `FOUNDATION` service binding.
 - Current branch acceptance tests and live probes target the Pages front door.
 
@@ -65,7 +65,7 @@ This checkpoint records the latest verified family state after the Cycle 7 docum
 - Foundation `main` at verification start: `0bc02a8ef327e6414d7b7ed881d70f07f1bb5174`
 - Operations `main` at verification start: `4d1f25a3cd08cccbdc343d22a18c0664c4e8b68d`
 - Open issues: 8 — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
-- Open implementation PRs: 0.
+- Open implementation PRs: none in Operations; Foundation runtime pin synchronization is in progress on a release branch.
 - The Cycle 7 documentation PRs #1137 and #896 are merged.
 - Production Operations pin: `fda24660843cacfe28de661cf170789af542d28f`.
 - Production release `36030977718`: PASS against Foundation `725e1b9cdaa637f07d4264673cddfc8ab806b3c6` + Operations `fda24660843cacfe28de661cf170789af542d28f`.
@@ -99,7 +99,7 @@ This header is the current synchronization override. Live GitHub state and fresh
 - Foundation `main`: `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`
 - Operations `main`: `1fd629cae593959249107ddb8c7af3f55292e9df`
 - Open issues: 8 total — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
-- Open PRs: 1 total — Foundation #1137, documentation/session-evidence only; Operations: 0.
+- Open PRs: Foundation #1219 was merged as f248e83c; the next runtime pin synchronization is carried by this release branch.
 - Latest Foundation code change before current documentation commits: #1134 `07ef89f3ebbcd84fa3b04fc0cf2d8f4693678f91`; later Foundation commits through current head are documentation/continuity changes.
 - Latest Operations code change before current documentation commits: #890 `b01bf6160408f41bac2cc2767eabb2539728f055`; later Operations commits through current head are documentation/continuity changes.
 
@@ -127,7 +127,7 @@ This header is the current synchronization override. Live GitHub state and fresh
 - Foundation main: `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`
 - Operations main: `ebf1e82734cb2fab0a8f4eddc8b1f342803740d1`
 - Open issues: 8 total — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
-- Open implementation PRs: 0 at the current checkpoint. Foundation documentation PR #1136 and Operations documentation PR #893 are merged.
+- Open implementation PRs: none in Operations; Foundation runtime pin synchronization is in progress on a release branch.
 - Current documentation reconciliation is in Foundation #1137 and Operations #894; Operations #894 is already merged, while Foundation #1137 is awaiting its required PR check.
 - Canonical Operations production/nightly pin: `fda24660843cacfe28de661cf170789af542d28f`.
 
@@ -239,7 +239,7 @@ Do not treat a merged PR, repository test, or GitHub Actions success as Cloudfla
 ## 2026-09-20 PRODUCTION PIN PROMOTION OVERRIDE
 
 - Foundation main at promotion preparation: 62ff421534034d70a110f1dba32f71975c7e5a2d.
-- Operations main: 277ccb9ee33221038c7ca5647f19e27a00d84ea3.
+- Operations main: d89e119722f3017cedf0cc175ba55871a65846ed.
 - Canonical production Operations revision for the next release: dd30834aec8f1263d9b35142b1bd16b4ba95f1ca (Operations #610 merge; fixes the previously observed Worker package omission of generated foundation_core).
 - Nightly research remains separately pinned to its research revision; production promotion and nightly research are distinct authorities.
 - Do not treat this pin promotion as a live runtime certificate until the canonical production workflow succeeds against the exact Foundation revision and emits a fresh Cloudflare provenance receipt.
@@ -249,8 +249,8 @@ Do not treat a merged PR, repository test, or GitHub Actions success as Cloudfla
 Refresh live GitHub refs before every mutation.
 
 ### Current repository heads
-- Foundation main: 12cf25f6a5688522f945e48efed915a5d5902703.
-- Operations main: b5982fd9c3203d360584f955b8adfcf85cfd1315.
+- Foundation main: f248e83cf22e3359f57bbea190aaf150249ba2f6.
+- Operations main: d89e119722f3017cedf0cc175ba55871a65846ed.
 
 ### Active migration work
 - Foundation #835 (TypeScript frontend controls) is merged.

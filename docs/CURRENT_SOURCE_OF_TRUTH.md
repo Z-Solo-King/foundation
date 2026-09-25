@@ -10,8 +10,8 @@ This section supersedes older checkpoint values below.
 - Foundation PR #1210 contains the final application Worker identity/configuration and is not yet production-certified.
 
 ## GitHub
-- Foundation PR #1210: `worker-identity-heroic-ai-2026-09-25`.
-- Operations migration PR #965 is merged as `9bb210d36f41afaa1bedc1be65e89ba6444d3f78`.
+- Foundation public Worker identity migration is merged; current main is `f248e83cf22e3359f57bbea190aaf150249ba2f6`..
+- Operations model/runtime pin PR #970 is merged as `d89e119722f3017cedf0cc175ba55871a65846ed`..
 - Operations `wrangler.toml` targets `heroic` through the `FOUNDATION` service binding.
 - Current branch acceptance tests and live probes target the Pages front door.
 
@@ -32,10 +32,10 @@ This section supersedes older checkpoint values below.
 
 This is the current post-merge source-of-truth snapshot.
 
-- Foundation main: e6514890548278e26331269e4abb0818b119233a
-- Operations main: add667236a17f2b845a39ae539f3dfe137d806a2
-- Open issues: 10 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
-- Open PRs: 2 — Operations #914/#915 (Dependabot development dependencies). Foundation has none. No project implementation PR remains open.
+- Foundation main: f248e83cf22e3359f57bbea190aaf150249ba2f6
+- Operations main: d89e119722f3017cedf0cc175ba55871a65846ed
+- Open issues: 11 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
+- Open PRs: Foundation #1219 was merged as f248e83c; the next runtime pin synchronization is carried by this release branch.
 - Repository fixes merged in this cycle: Foundation #1194, #1196, #1197, #1198, #1199, #1200, #1201, plus documentation #1195.
 - Latest clean family-integrity run on corrected main: 36119501613 PASS.
 - Latest production run 36119501519: FAIL only at Cloudflare zone activation prerequisite after 1040 repository tests and Cloudflare account/D1 authorization checks passed.
@@ -52,9 +52,9 @@ This is the current post-merge source-of-truth snapshot.
 
 Current verified cross-surface snapshot. Live workflow receipts and Cloudflare control-plane state outrank older dated sections.
 
-- Foundation main: f7f824fde15e66d6ec6b4c9065feed124a1ce78d
-- Operations main: 24ad53750ecf95084a468ebdb91dc6a3f34ab466
-- Open issues: 10 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
+- Foundation main: f248e83cf22e3359f57bbea190aaf150249ba2f6
+- Operations main: d89e119722f3017cedf0cc175ba55871a65846ed
+- Open issues: 11 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
 - Open PRs at audit snapshot: Foundation #1195 (this documentation reconciliation); Operations #914/#915 (Dependabot). No implementation PR remains open.
 - Merged repairs in this cycle: #1194 Cloudflare release authentication header; #1196 nightly preflight network diagnostics; #1197 dual GitHub-token family scan; #1198/#1199 family issue-key normalization; #1200 truthful cancelled-lane nightly fan-in; #1201 canonical nightly workflow structure.
 - Family integrity on corrected main: run 36119000013 PASS.
@@ -72,9 +72,9 @@ Current verified cross-surface snapshot. Live workflow receipts and Cloudflare c
 
 This section is the current cross-surface continuation point. Live GitHub/Cloudflare evidence outranks older checkpoint values below.
 
-- Foundation main: 6b43bafa0f1d298e9a1a2c84b6721bb1eea4d0ac
-- Operations main: b370dc959171dbfb35eae42c2acdee827917ee3f
-- Open issues: 10 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
+- Foundation main: f248e83cf22e3359f57bbea190aaf150249ba2f6
+- Operations main: d89e119722f3017cedf0cc175ba55871a65846ed
+- Open issues: 11 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
 - Open project PRs: Foundation #1195; Operations #914/#915. No implementation PR remains open.
 - Repository fixes merged this cycle: #1194 (Cloudflare release auth), #1196 (nightly preflight diagnostics), #1197 (dual family tokens), #1198/#1199 (family issue-key normalization), #1200 (truthful nightly fan-in for cancelled lanes).
 - Current production release 36118107525: FAIL at the Cloudflare zone prerequisite after repository and Cloudflare account/D1 authorization checks passed. heroic-ai.dev is not an active Cloudflare zone in the configured account.
@@ -93,9 +93,9 @@ This section is the current cross-surface continuation point. Live GitHub/Cloudf
 
 This section is the current cross-surface continuation point. Live GitHub and Cloudflare evidence outrank older checkpoint values below.
 
-- Foundation main: 70093db359570b3f87d135e26b525645135fa517
-- Operations main: b370dc959171dbfb35eae42c2acdee827917ee3f
-- Open issues: 10 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
+- Foundation main: f248e83cf22e3359f57bbea190aaf150249ba2f6
+- Operations main: d89e119722f3017cedf0cc175ba55871a65846ed
+- Open issues: 11 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
 - Open project PRs: 3 — Foundation #1195 (this documentation reconciliation); Operations #914/#915 (Dependabot development-dependency updates). No implementation PR remains open.
 - Foundation PRs #1194, #1196, #1197, #1198, #1199 fixed confirmed Cloudflare-release/family-integrity/preflight defects and are merged.
 - Current production release 36118107525: FAIL at the Cloudflare zone prerequisite after repository and Cloudflare account/D1 authorization checks passed. heroic-ai.dev is not an active zone in the configured account.
@@ -114,9 +114,9 @@ This section is the current cross-surface continuation point. Live GitHub and Cl
 
 This section is the current cross-surface continuation point. Live GitHub and Cloudflare evidence overrides older checkpoint values below.
 
-- Foundation main: 6eb531095148cb6657bccc72a64542691dbb6fa1
-- Operations main: 207d8a3f081f58702b56fe64c57fe2c3042ce75d
-- Open issues: 10 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
+- Foundation main: f248e83cf22e3359f57bbea190aaf150249ba2f6
+- Operations main: d89e119722f3017cedf0cc175ba55871a65846ed
+- Open issues: 11 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
 - Open project PRs: Foundation #1195; Operations #914/#915. Older duplicate implementation/documentation PRs #1186/#1187/#951 are closed as superseded.
 - Production release 36117585242 is the current fresh run; the prior current-head run was blocked because heroic-ai.dev is not an active Cloudflare zone.
 - Provider preflight 36117585207 is the current fresh run; the immediately prior corrected preflight recorded HTTP 000 / curl exit 6 / DNS resolution failure without crashing.
@@ -153,7 +153,7 @@ This checkpoint records the latest verified family state after the Cycle 7 docum
 - Foundation `main` at verification start: `0bc02a8ef327e6414d7b7ed881d70f07f1bb5174`
 - Operations `main` at verification start: `4d1f25a3cd08cccbdc343d22a18c0664c4e8b68d`
 - Open issues: 8 — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
-- Open implementation PRs: 0.
+- Open implementation PRs: none in Operations; Foundation runtime pin synchronization is in progress on a release branch.
 - The Cycle 7 documentation PRs #1137 and #896 are merged.
 - Production Operations pin: `fda24660843cacfe28de661cf170789af542d28f`.
 - Production release `36030977718`: PASS against Foundation `725e1b9cdaa637f07d4264673cddfc8ab806b3c6` + Operations `fda24660843cacfe28de661cf170789af542d28f`.
@@ -187,8 +187,8 @@ This checkpoint records the latest verified family state after the Cycle 7 docum
 - Foundation `main`: `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`
 - Operations `main`: `1fd629cae593959249107ddb8c7af3f55292e9df`
 - Open issues: 8 total — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
-- Open PRs: 1 total — Foundation #1137 (docs/session only); Operations 0.
-- Open implementation PRs: 0.
+- Open PRs: Foundation #1219 was merged as f248e83c; the next runtime pin synchronization is carried by this release branch.
+- Open implementation PRs: none in Operations; Foundation runtime pin synchronization is in progress on a release branch.
 - Latest non-documentation repairs remain merged: Foundation #1134; Operations #890. Later commits are documentation/continuity checkpoints.
 
 ## Runtime state
@@ -222,7 +222,7 @@ This checkpoint supersedes the older dated sections below.
 - Foundation main: `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`
 - Operations main: `ebf1e82734cb2fab0a8f4eddc8b1f342803740d1`
 - Open issues: 8 total — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
-- Open implementation PRs: 0. Foundation documentation PR #1136 and Operations documentation PR #893 are merged.
+- Open implementation PRs: none in Operations; Foundation runtime pin synchronization is in progress on a release branch.
 - Foundation PRs #1132/#1134/#1135 and Operations #890/#891 are already merged.
 - Canonical Operations production/nightly pin: `fda24660843cacfe28de661cf170789af542d28f`.
 
@@ -260,7 +260,7 @@ This checkpoint supersedes older dated sections below.
 - Foundation main: `725e1b9cdaa637f07d4264673cddfc8ab806b3c6`
 - Operations main: `9f1d3498ea6be4864bfa6f3e3a5e2b77661ea196`
 - Open issues: 8 total — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
-- Open implementation PRs: Foundation #1136 (documentation/session-evidence only); Operations none.
+- Open implementation PRs: none in Operations; Foundation runtime pin synchronization is in progress on a release branch.
 - Foundation #1132/#1134/#1135 are merged; Operations #890/#891 are merged.
 - Canonical Operations production/nightly pin: `fda24660843cacfe28de661cf170789af542d28f`.
 
@@ -294,8 +294,8 @@ Use the current #157 403 receipt for Cloudflare-side authorization/service-bindi
 
 ## Current repository revisions
 
-- Foundation main: 64f58e390c3cb2646e5aa65c25cbb5cb4d907878
-- Operations main: 84b38e6a1d5ffb279014763183e14265e2d5573d
+- Foundation main: f248e83cf22e3359f57bbea190aaf150249ba2f6
+- Operations main: d89e119722f3017cedf0cc175ba55871a65846ed
 - Canonical production Operations revision: 69f526f17a97fc29e478329db754658dd0fa383c
 - Canonical nightly research Operations revision: 3a7e350ddd5648caf93f58651323425186544f66
 
@@ -411,8 +411,8 @@ Repository implementation and CI evidence are complete for the repaired slices. 
 
 ## 2026-09-21 FINAL LIVE SYNC
 
-- Foundation main: 985fd526913bdf48fffc73cfc7e834d38dd449de
-- Operations main: 2da42873fa2ff7ae05df00973a7ba584cdd1c6a9
+- Foundation main: f248e83cf22e3359f57bbea190aaf150249ba2f6
+- Operations main: d89e119722f3017cedf0cc175ba55871a65846ed
 - Foundation #921 merged; #909 and #910 are closed as completed.
 - Foundation documentation synchronization #922 is merged.
 - Operations documentation synchronization #670 is merged.
@@ -427,8 +427,8 @@ Repository implementation and CI evidence are complete for the repaired slices. 
 ## 2026-09-21 CURRENT LIVE SYNC
 
 Live Git refs at sync time:
-- Foundation main: e50a84ee239937967f9c23412e94521d347e3466
-- Operations main: 44c4dc2189efa9b5a6f0e5648f5c892c55b45746
+- Foundation main: f248e83cf22e3359f57bbea190aaf150249ba2f6
+- Operations main: d89e119722f3017cedf0cc175ba55871a65846ed
 - Foundation PR #921: lifecycle/materialization fix for #909/#910, awaiting required checks.
 - No other open pull requests were present at sync time.
 
@@ -511,7 +511,7 @@ The migration/extractor workflows now verify an exact Foundation public-core rev
 
 Current live preparation state:
 - Foundation main before promotion: 62ff421534034d70a110f1dba32f71975c7e5a2d.
-- Operations main: 277ccb9ee33221038c7ca5647f19e27a00d84ea3.
+- Operations main: d89e119722f3017cedf0cc175ba55871a65846ed.
 - Canonical production Operations pin target: dd30834aec8f1263d9b35142b1bd16b4ba95f1ca.
 - Reason: Operations #610 is the exact merged fix for the production release failure caused by generated foundation_core being excluded from Worker package discovery.
 - Certification rule: current production state remains unverified until the canonical production workflow runs successfully and Cloudflare provenance matches dd30834aec8f1263d9b35142b1bd16b4ba95f1ca.
@@ -521,8 +521,8 @@ Current live preparation state:
 Refresh live GitHub refs before every mutation.
 
 ### Current repository heads
-- Foundation main: 12cf25f6a5688522f945e48efed915a5d5902703.
-- Operations main: b5982fd9c3203d360584f955b8adfcf85cfd1315.
+- Foundation main: f248e83cf22e3359f57bbea190aaf150249ba2f6.
+- Operations main: d89e119722f3017cedf0cc175ba55871a65846ed.
 
 ### Active migration work
 - Foundation #835 (TypeScript frontend controls) is merged.

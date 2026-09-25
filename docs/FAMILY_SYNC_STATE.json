@@ -3,14 +3,14 @@
   "status": "CURRENT",
   "audited_at": "2026-09-25",
   "live_main": {
-    "foundation": "e259abff0a70671da72acbb0190c8f027cea7617",
-    "operations": "a192c90dffb0117962b947cd525f89af5df7ba1e"
+    "foundation": "f248e83cf22e3359f57bbea190aaf150249ba2f6",
+    "operations": "d89e119722f3017cedf0cc175ba55871a65846ed"
   },
   "runtime_pins": {
-    "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
-    "production_operations": "fda24660843cacfe28de661cf170789af542d28f",
-    "nightly_research_operations": "fda24660843cacfe28de661cf170789af542d28f",
-    "foundation_deployed": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6"
+    "foundation_runtime": "2d8e2a6bdbb9279892eb4ad2095fbacc1adae9d4",
+    "production_operations": "d89e119722f3017cedf0cc175ba55871a65846ed",
+    "nightly_research_operations": "d89e119722f3017cedf0cc175ba55871a65846ed",
+    "foundation_deployed": "2d8e2a6bdbb9279892eb4ad2095fbacc1adae9d4"
   },
   "cloudflare": {
     "control_plane_snapshot": "live_verified_2026-09-25_R4",
@@ -33,8 +33,8 @@
     "zone_status": "pending",
     "activation_failure_reason": "unresolvable",
     "custom_domain_enabled": true,
-    "deployed_foundation_provenance": "github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c",
-    "deployed_operations_provenance": "github:a3171f353539f1a31020c432f98cf0530cbf91ef",
+    "deployed_foundation_provenance": "github:2d8e2a6bdbb9279892eb4ad2095fbacc1adae9d4",
+    "deployed_operations_provenance": "github:d89e119722f3017cedf0cc175ba55871a65846ed",
     "pages_project": "ai",
     "pages_subdomain": "ai-cio.pages.dev",
     "pages_production_deployment_id": "c25b130b-055a-470f-b8f8-bc29a8e62c7e",
@@ -42,9 +42,9 @@
     "workers_dev_subdomain": "heroic-ai",
     "backend_worker_url": "https://heroic.heroic-ai.workers.dev",
     "custom_domain": "heroic-ai.dev",
-    "custom_domain_status": "pending",
+    "custom_domain_status": "pending/unresolvable",
     "heroic_bootstrap": "compatibility proxy -> foundation production",
-    "last_sync": "2026-09-25 R4",
+    "last_sync": "2026-09-25 R6",
     "public_front_door": "https://ai-cio.pages.dev",
     "backend_worker": "heroic",
     "backend_origin": "https://heroic.heroic-ai.workers.dev"
@@ -397,8 +397,8 @@
   ],
   "open_implementation_pr_count": 0,
   "github_current_branch": {
-    "foundation_pr": 1210,
-    "foundation_ref": "worker-identity-heroic-ai-2026-09-25",
-    "operations_ref": "9bb210d36f41afaa1bedc1be65e89ba6444d3f78"
+    "foundation_main": "f248e83cf22e3359f57bbea190aaf150249ba2f6",
+    "operations_main": "d89e119722f3017cedf0cc175ba55871a65846ed",
+    "production_operations_pin": "d89e119722f3017cedf0cc175ba55871a65846ed"
   }
 }
