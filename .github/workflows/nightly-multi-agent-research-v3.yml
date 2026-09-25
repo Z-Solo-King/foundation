@@ -597,10 +597,387 @@ jobs:
           import json
           from pathlib import Path
 
+          research_result = "${{ needs.research.result }}"
           statuses = []
           for lane in range(3):
               path = Path(f'.runtime/artifacts/nightly-lane-{lane}-status.json')
-              statuses.append(json.loads(path.read_text()))
+              if path.exists():
+                  statuses.append(json.loads(path.read_text()))
+                  continue
+              if research_result in {'cancelled', 'skipped'}:
+                  expected = [f"lane{lane}-slot{slot}" for slot in range(8)]
+                  statuses.append({
+                      'schema': 'nightly-research-lane-status/v1',
+                      'run_id': '
+          if 'lane_failure' in states:
+              aggregate = 'lane_specific_failure'
+          elif 'blocked_before_execution' in states:
+              aggregate = 'blocked_before_execution'
+          elif states == {'dry_run'}:
+              aggregate = 'dry_run'
+          elif states == {'live_research_executed'}:
+              aggregate = 'live_research_executed'
+          else:
+              aggregate = 'partial_or_mixed'
+
+          migration_path = Path('.runtime/migration-review/nightly-migration-review.json')
+          migration_review = (
+              json.loads(migration_path.read_text())
+              if migration_path.exists()
+              else {
+                  'review_score_0_to_100': 0,
+                  'capacity_sweep': {'cases': 0},
+                  'language_review': [],
+              }
+          )
+          matrix_case_count = migration_review.get('matrix', {}).get('case_count', 0)
+          capacity_case_count = migration_review.get('capacity_sweep', {}).get('cases', 0)
+
+          blockers = []
+          if 'blocked_before_execution' in states:
+              blockers.append('research_preflight_blocked')
+          if 'lane_failure' in states:
+              blockers.append('research_lane_failure')
+          if '${{ needs.research.result }}' != 'success':
+              blockers.append('research_job_not_successful')
+          if '${{ needs.migration_review.result }}' != 'success':
+              blockers.append('migration_review_job_not_successful')
+          # The 40-case migration matrix and the 24-case capacity sweep are
+          # distinct evidence dimensions. Only the matrix is required to have
+          # exactly 40 migration-review cases.
+          if matrix_case_count != 40:
+              blockers.append('migration_review_incomplete')
+          if any(item.get('validation') != 'success' for item in statuses):
+              blockers.append('lane_validation_incomplete')
+          blockers = sorted(set(blockers))[:8]
+          diagnosis = {
+              'schema': 'nightly-research-diagnosis/v1',
+              'run_id': '${{ github.run_id }}',
+              'aggregate_state': aggregate,
+              'research_job_result': '${{ needs.research.result }}',
+              'migration_review_job_result': '${{ needs.migration_review.result }}',
+              'migration_review_score_0_to_100': migration_review['review_score_0_to_100'],
+              'migration_review_cases': matrix_case_count,
+              'migration_review_capacity_cases': capacity_case_count,
+              'migration_review_languages': sorted({item['language'] for item in migration_review['language_review']}),
+              'blockers': blockers,
+              'lanes': statuses,
+              'operations_revision': '${{ env.OPERATIONS_RESEARCH_REF }}',
+              'real_research_findings_allowed': aggregate == 'live_research_executed' and '${{ inputs.dry_run || false }}' != 'true',
+              'historical_dry_run_findings_are_real_research': False,
+              'evidence_rule': 'LLM output is candidate-only until deterministic acquisition/evidence receipt qualification.',
+          }
+          Path('.runtime/nightly-diagnosis.json').write_text(json.dumps(diagnosis, indent=2) + '\n')
+          print(json.dumps(diagnosis, indent=2))
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-diagnosis
+          path: .runtime/nightly-diagnosis.json
+          retention-days: 30
+      - name: Build project research only from complete live research
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/operations-research" python -m private.multi_agent.project_research \
+            --input \
+              .runtime/artifacts/nightly-lane-0.jsonl \
+              .runtime/artifacts/nightly-lane-1.jsonl \
+              .runtime/artifacts/nightly-lane-2.jsonl \
+            --output .runtime/nightly-project-improvement.json \
+            --run-id "${GITHUB_RUN_ID}"
+      - name: Validate and publish complete-live project research
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          summary = json.loads(Path('.runtime/nightly-project-improvement.json').read_text())
+          assert summary['schema'] == 'project-improvement-research/v1'
+          assert summary['research_mode'] == 'project_improvement'
+          assert summary['project_snapshot']['revision']
+          assert summary['program_count'] == 24
+          assert 'improvement_signals' in summary
+          assert summary['evidence_policy']['llm_findings'] == 'candidate_only_until_acquisition_receipt'
+      - name: Download previous successful nightly baseline
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          previous_run="$(gh run list --workflow nightly-multi-agent-research-v3.yml --status success --limit 20 --json databaseId --jq 'map(select(.databaseId != (env.GITHUB_RUN_ID|tonumber))) | .[0].databaseId // empty')"
+          if [ -z "$previous_run" ]; then
+            echo 'No previous successful nightly run is available; producing NO_BASELINE.'
+            mkdir -p .runtime/previous
+            printf '%s\n' '{"decision":"NO_BASELINE"}' > .runtime/previous/nightly-baseline-placeholder.json
+            exit 0
+          fi
+          mkdir -p .runtime/previous
+          if ! gh run download "$previous_run" --name nightly-project-improvement --dir .runtime/previous; then
+            echo 'Previous nightly run exists but has no downloadable project-improvement artifact; producing NO_BASELINE.'
+            rm -rf .runtime/previous
+            mkdir -p .runtime/previous
+          fi
+      - name: Compare current run with previous baseline
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        run: |
+          previous='.runtime/previous/nightly-project-improvement.json'
+          if [[ ! -f "$previous" ]]; then
+            printf '%s\n' '{"schema":"project-improvement-baseline/v1","decision":"NO_BASELINE"}' > .runtime/nightly-baseline.json
+          else
+            python -m benchmark.multi_agent.baseline \
+              --current .runtime/nightly-project-improvement.json \
+              --previous "$previous" \
+              --output .runtime/nightly-baseline.json
+          fi
+      - name: Validate baseline contract
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          baseline = json.loads(Path('.runtime/nightly-baseline.json').read_text())
+          assert baseline['schema'] == 'project-improvement-baseline/v1'
+          assert baseline['decision'] in {'NO_BASELINE', 'IMPROVED', 'REGRESSED', 'STABLE'}
+      - name: Validate complete nightly artifact bundle
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m benchmark.research_artifact_validator --root .
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        with:
+          name: nightly-project-improvement
+          path: .runtime/nightly-project-improvement.json
+          retention-days: 30
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        with:
+          name: nightly-project-improvement-baseline
+          path: .runtime/nightly-baseline.json
+          retention-days: 30
+      - name: Attest project improvement summary
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: .runtime/nightly-project-improvement.json
+      - name: Attest project improvement baseline
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: .runtime/nightly-baseline.json
+      - name: Remove private project-research checkout and credentials
+        if: ${{ always() }}
+        shell: bash
+        run: rm -rf "$RUNNER_TEMP/operations-research" "$RUNNER_TEMP/operations-summary-app.pem" "$RUNNER_TEMP/operations-summary-jwt.txt" "$RUNNER_TEMP/operations-summary-installation.json" "$RUNNER_TEMP/git-askpass-operations-summary.sh"
+
+  final-gate:
+    name: Preserve truthful nightly result
+    needs: [research, migration_review, project-summary]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify research and diagnosis outcomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "research=${{ needs.research.result }}"
+          echo "diagnosis=${{ needs.project-summary.result }}"
+          echo "migration-review=${{ needs.migration_review.result }}"
+          test "${{ needs.migration_review.result }}" = "success" || { echo "Nightly migration review failed; truthful migration evidence remains failed."; exit 1; }
+          test "${{ needs.project-summary.result }}" = "success" || { echo 'Nightly diagnosis failed.'; exit 1; }
+          test "${{ needs.research.result }}" = "success" || { echo 'One or more research lanes failed/blocked; truthful nightly result remains failed.'; exit 1; } + '{{ github.run_id }}',
+                      'lane': lane,
+                      'mode': 'live',
+                      'state': 'blocked_before_execution',
+                      'preflight': 'blocked_by_production_gate',
+                      'runner': 'cancelled',
+                      'validation': 'skipped',
+                      'program_count': 8,
+                      'programs': expected,
+                      'operations_revision': '
+          if 'lane_failure' in states:
+              aggregate = 'lane_specific_failure'
+          elif 'blocked_before_execution' in states:
+              aggregate = 'blocked_before_execution'
+          elif states == {'dry_run'}:
+              aggregate = 'dry_run'
+          elif states == {'live_research_executed'}:
+              aggregate = 'live_research_executed'
+          else:
+              aggregate = 'partial_or_mixed'
+
+          migration_path = Path('.runtime/migration-review/nightly-migration-review.json')
+          migration_review = (
+              json.loads(migration_path.read_text())
+              if migration_path.exists()
+              else {
+                  'review_score_0_to_100': 0,
+                  'capacity_sweep': {'cases': 0},
+                  'language_review': [],
+              }
+          )
+          matrix_case_count = migration_review.get('matrix', {}).get('case_count', 0)
+          capacity_case_count = migration_review.get('capacity_sweep', {}).get('cases', 0)
+
+          blockers = []
+          if 'blocked_before_execution' in states:
+              blockers.append('research_preflight_blocked')
+          if 'lane_failure' in states:
+              blockers.append('research_lane_failure')
+          if '${{ needs.research.result }}' != 'success':
+              blockers.append('research_job_not_successful')
+          if '${{ needs.migration_review.result }}' != 'success':
+              blockers.append('migration_review_job_not_successful')
+          # The 40-case migration matrix and the 24-case capacity sweep are
+          # distinct evidence dimensions. Only the matrix is required to have
+          # exactly 40 migration-review cases.
+          if matrix_case_count != 40:
+              blockers.append('migration_review_incomplete')
+          if any(item.get('validation') != 'success' for item in statuses):
+              blockers.append('lane_validation_incomplete')
+          blockers = sorted(set(blockers))[:8]
+          diagnosis = {
+              'schema': 'nightly-research-diagnosis/v1',
+              'run_id': '${{ github.run_id }}',
+              'aggregate_state': aggregate,
+              'research_job_result': '${{ needs.research.result }}',
+              'migration_review_job_result': '${{ needs.migration_review.result }}',
+              'migration_review_score_0_to_100': migration_review['review_score_0_to_100'],
+              'migration_review_cases': matrix_case_count,
+              'migration_review_capacity_cases': capacity_case_count,
+              'migration_review_languages': sorted({item['language'] for item in migration_review['language_review']}),
+              'blockers': blockers,
+              'lanes': statuses,
+              'operations_revision': '${{ env.OPERATIONS_RESEARCH_REF }}',
+              'real_research_findings_allowed': aggregate == 'live_research_executed' and '${{ inputs.dry_run || false }}' != 'true',
+              'historical_dry_run_findings_are_real_research': False,
+              'evidence_rule': 'LLM output is candidate-only until deterministic acquisition/evidence receipt qualification.',
+          }
+          Path('.runtime/nightly-diagnosis.json').write_text(json.dumps(diagnosis, indent=2) + '\n')
+          print(json.dumps(diagnosis, indent=2))
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-diagnosis
+          path: .runtime/nightly-diagnosis.json
+          retention-days: 30
+      - name: Build project research only from complete live research
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/operations-research" python -m private.multi_agent.project_research \
+            --input \
+              .runtime/artifacts/nightly-lane-0.jsonl \
+              .runtime/artifacts/nightly-lane-1.jsonl \
+              .runtime/artifacts/nightly-lane-2.jsonl \
+            --output .runtime/nightly-project-improvement.json \
+            --run-id "${GITHUB_RUN_ID}"
+      - name: Validate and publish complete-live project research
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          summary = json.loads(Path('.runtime/nightly-project-improvement.json').read_text())
+          assert summary['schema'] == 'project-improvement-research/v1'
+          assert summary['research_mode'] == 'project_improvement'
+          assert summary['project_snapshot']['revision']
+          assert summary['program_count'] == 24
+          assert 'improvement_signals' in summary
+          assert summary['evidence_policy']['llm_findings'] == 'candidate_only_until_acquisition_receipt'
+      - name: Download previous successful nightly baseline
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          previous_run="$(gh run list --workflow nightly-multi-agent-research-v3.yml --status success --limit 20 --json databaseId --jq 'map(select(.databaseId != (env.GITHUB_RUN_ID|tonumber))) | .[0].databaseId // empty')"
+          if [ -z "$previous_run" ]; then
+            echo 'No previous successful nightly run is available; producing NO_BASELINE.'
+            mkdir -p .runtime/previous
+            printf '%s\n' '{"decision":"NO_BASELINE"}' > .runtime/previous/nightly-baseline-placeholder.json
+            exit 0
+          fi
+          mkdir -p .runtime/previous
+          if ! gh run download "$previous_run" --name nightly-project-improvement --dir .runtime/previous; then
+            echo 'Previous nightly run exists but has no downloadable project-improvement artifact; producing NO_BASELINE.'
+            rm -rf .runtime/previous
+            mkdir -p .runtime/previous
+          fi
+      - name: Compare current run with previous baseline
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        run: |
+          previous='.runtime/previous/nightly-project-improvement.json'
+          if [[ ! -f "$previous" ]]; then
+            printf '%s\n' '{"schema":"project-improvement-baseline/v1","decision":"NO_BASELINE"}' > .runtime/nightly-baseline.json
+          else
+            python -m benchmark.multi_agent.baseline \
+              --current .runtime/nightly-project-improvement.json \
+              --previous "$previous" \
+              --output .runtime/nightly-baseline.json
+          fi
+      - name: Validate baseline contract
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          baseline = json.loads(Path('.runtime/nightly-baseline.json').read_text())
+          assert baseline['schema'] == 'project-improvement-baseline/v1'
+          assert baseline['decision'] in {'NO_BASELINE', 'IMPROVED', 'REGRESSED', 'STABLE'}
+      - name: Validate complete nightly artifact bundle
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m benchmark.research_artifact_validator --root .
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        with:
+          name: nightly-project-improvement
+          path: .runtime/nightly-project-improvement.json
+          retention-days: 30
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        with:
+          name: nightly-project-improvement-baseline
+          path: .runtime/nightly-baseline.json
+          retention-days: 30
+      - name: Attest project improvement summary
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: .runtime/nightly-project-improvement.json
+      - name: Attest project improvement baseline
+        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: .runtime/nightly-baseline.json
+      - name: Remove private project-research checkout and credentials
+        if: ${{ always() }}
+        shell: bash
+        run: rm -rf "$RUNNER_TEMP/operations-research" "$RUNNER_TEMP/operations-summary-app.pem" "$RUNNER_TEMP/operations-summary-jwt.txt" "$RUNNER_TEMP/operations-summary-installation.json" "$RUNNER_TEMP/git-askpass-operations-summary.sh"
+
+  final-gate:
+    name: Preserve truthful nightly result
+    needs: [research, migration_review, project-summary]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify research and diagnosis outcomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "research=${{ needs.research.result }}"
+          echo "diagnosis=${{ needs.project-summary.result }}"
+          echo "migration-review=${{ needs.migration_review.result }}"
+          test "${{ needs.migration_review.result }}" = "success" || { echo "Nightly migration review failed; truthful migration evidence remains failed."; exit 1; }
+          test "${{ needs.project-summary.result }}" = "success" || { echo 'Nightly diagnosis failed.'; exit 1; }
+          test "${{ needs.research.result }}" = "success" || { echo 'One or more research lanes failed/blocked; truthful nightly result remains failed.'; exit 1; } + '{{ env.OPERATIONS_RESEARCH_REF }}',
+                      'artifact_missing': True,
+                  })
+                  continue
+              raise FileNotFoundError(path)
 
           states = {item['state'] for item in statuses}
           if 'lane_failure' in states:
