@@ -8,10 +8,10 @@
   },
   "runtime_pins": {
     "foundation_runtime": "d30309117d65a52c20c09f88b9f03801b2710249",
-    "production_operations": "7015d674036645c6c6a34150bd41874a876dcb35",
-    "nightly_research_operations": "7015d674036645c6c6a34150bd41874a876dcb35",
+    "production_operations": "327d7548da60de3a3378ea1586df69ae5f3e1d40",
+    "nightly_research_operations": "327d7548da60de3a3378ea1586df69ae5f3e1d40",
     "foundation_deployed": "d30309117d65a52c20c09f88b9f03801b2710249",
-    "deployed_operations_pending": "7015d674036645c6c6a34150bd41874a876dcb35"
+    "deployed_operations_pending": "327d7548da60de3a3378ea1586df69ae5f3e1d40"
   },
   "cloudflare": {
     "control_plane_snapshot": "live_verified_2026-09-25_R7",
@@ -49,7 +49,7 @@
     "public_front_door": "https://ai-cio.pages.dev",
     "backend_worker": "heroic",
     "backend_origin": "https://heroic.heroic-ai.workers.dev",
-    "approved_operations_provenance": "github:7015d674036645c6c6a34150bd41874a876dcb35",
+    "approved_operations_provenance": "github:327d7548da60de3a3378ea1586df69ae5f3e1d40",
     "deployed_operations_status": "pending_promotion_to_3e0d"
   },
   "current_queue": {
@@ -343,7 +343,7 @@
     "checked_at": "2026-09-25",
     "foundation_main": "d30309117d65a52c20c09f88b9f03801b2710249",
     "operations_main": "3334fa19e72ff0fb6f4e318da216b216cd05e903",
-    "canonical_operations_pin": "7015d674036645c6c6a34150bd41874a876dcb35",
+    "canonical_operations_pin": "327d7548da60de3a3378ea1586df69ae5f3e1d40",
     "open_pr_count": 0,
     "cloudflare_runtime_verification": "live_verified",
     "foundation_open_prs": [],
@@ -397,6 +397,6 @@
   "github_current_branch": {
     "foundation_main": "d30309117d65a52c20c09f88b9f03801b2710249",
     "operations_main": "3334fa19e72ff0fb6f4e318da216b216cd05e903",
-    "production_operations_pin": "7015d674036645c6c6a34150bd41874a876dcb35"
+    "production_operations_pin": "327d7548da60de3a3378ea1586df69ae5f3e1d40"
   }
 }
