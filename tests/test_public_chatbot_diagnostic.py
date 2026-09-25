@@ -35,7 +35,7 @@ async def test_public_chatbot_infrastructure_route_requires_auth(monkeypatch):
     authorized = await entry.fetch(
         Request(
             {"operation": "infrastructure_verify_public_test"},
-            {"Authorization": "Bearer secret"},
+            {"Authorization": "Bearer secret", "Content-Type": "application/json"},
         )
     )
     assert "ok" in str(authorized)
@@ -67,7 +67,7 @@ async def test_public_chatbot_diagnostic_uses_private_result_fail_closed(monkeyp
     response = await entry.fetch(
         Request(
             {"operation": "infrastructure_verify_public_test"},
-            {"Authorization": "Bearer secret"},
+            {"Authorization": "Bearer secret", "Content-Type": "application/json"},
         )
     )
     text = str(response)
