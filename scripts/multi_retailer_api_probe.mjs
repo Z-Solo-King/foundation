@@ -184,7 +184,7 @@ async function samsung(){
     ...[...raw.text.matchAll(/(?:\/|https?:)[^"'\\s<>]*(?:products\/search|\/products\?productCodes=|searchapi)[^"'\\s<>]*/gi)].map(m=>m[0])
   ])].filter(x=>/products|searchapi|productCodes/i.test(x)).slice(0,50);
   add("source-clues",{status:raw.status,bytes:raw.text.length,clues});
-  add("product-network",{requests:OUT.network.filter(x=>/products\\/search|\\/products\\?productCodes=|searchapi/i.test(x.url)).slice(0,30)});
+  add("product-network",{requests:OUT.network.filter(x=>/products\/search|\/products\?productCodes=|searchapi/i.test(x.url)).slice(0,30)});
 }
 async function vijay(){
   const url="https://www.vijaysales.com/c/laptops";
