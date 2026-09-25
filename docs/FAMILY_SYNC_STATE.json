@@ -3,8 +3,8 @@
   "status": "CURRENT",
   "audited_at": "2026-09-25",
   "live_main": {
-    "foundation": "f7f824fde15e66d6ec6b4c9065feed124a1ce78d",
-    "operations": "24ad53750ecf95084a468ebdb91dc6a3f34ab466"
+    "foundation": "e6514890548278e26331269e4abb0818b119233a",
+    "operations": "add667236a17f2b845a39ae539f3dfe137d806a2"
   },
   "runtime_pins": {
     "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
@@ -13,7 +13,7 @@
     "foundation_deployed": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6"
   },
   "cloudflare": {
-    "control_plane_snapshot": "verified_basic_reads_only",
+    "control_plane_snapshot": "live_verified_2026-09-25",
     "fresh_deployment_receipt": false,
     "workers": [
       "foundation",
@@ -79,7 +79,7 @@
       "diagnosis_artifact_id": 10794105227
     },
     "nightly_preflight": {
-      "run_id": 36118999990,
+      "run_id": 36119501717,
       "status": "failed",
       "network_classification": "dns_or_network_unreachable",
       "http_status": 0,
@@ -140,15 +140,14 @@
       }
     },
     "production_release": {
-      "run_id": 36119000062,
+      "run_id": 36119501519,
       "status": "failed",
       "failure": "heroic-ai.dev is not an active Cloudflare zone"
     },
     "public_worker_probe": {
-      "run_number": 72,
-      "run_id": 35964770235,
-      "status": "success",
-      "artifact_id": 10793284580
+      "run_id": 36119501481,
+      "status": "failed",
+      "blocker": "public-domain-DNS"
     },
     "chatbot_smoke": {
       "run_number": 72,
@@ -242,7 +241,7 @@
       "notes": "Foundation #154 completed from fresh GitHub Actions evidence; Operations four-lane open-issue scan synchronized to 10 active cases; current Family graph FI-06 excludes the completed issue."
     },
     "family_integrity": {
-      "run_id": 36119000013,
+      "run_id": 36119501613,
       "status": "success"
     }
   },
@@ -322,14 +321,12 @@
   },
   "github_sync": {
     "checked_at": "2026-09-25",
-    "foundation_main": "6b43bafa0f1d298e9a1a2c84b6721bb1eea4d0ac",
-    "operations_main": "b370dc959171dbfb35eae42c2acdee827917ee3f",
+    "foundation_main": "e6514890548278e26331269e4abb0818b119233a",
+    "operations_main": "add667236a17f2b845a39ae539f3dfe137d806a2",
     "canonical_operations_pin": "fda24660843cacfe28de661cf170789af542d28f",
-    "open_pr_count": 3,
+    "open_pr_count": 2,
     "cloudflare_runtime_verification": "not_available_in_this_chat",
-    "foundation_open_prs": [
-      1195
-    ],
+    "foundation_open_prs": [],
     "operations_open_prs": [
       914,
       915
@@ -375,10 +372,8 @@
     "foundation_main_at_sync": "ec143386e0258d9cb5aeaf13cde95f66814a7c0b",
     "graph_version": "1.1"
   },
-  "open_pr_count": 3,
-  "foundation_open_prs": [
-    1195
-  ],
+  "open_pr_count": 2,
+  "foundation_open_prs": [],
   "operations_open_prs": [
     914,
     915
