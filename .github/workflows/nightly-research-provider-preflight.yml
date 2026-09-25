@@ -71,6 +71,11 @@ jobs:
           export PREFLIGHT_AUTH_TOKEN="$auth_token"
           export PREFLIGHT_WORKER_AI="$worker_ai_verified"
           export PREFLIGHT_WORKER_HEALTH_STATUS="$worker_health_status"
+          export PREFLIGHT_WORKER_HEALTH_CURL_EXIT="$worker_health_curl_exit"
+          export PREFLIGHT_WORKER_HEALTH_CURL_ERROR="$worker_health_curl_error"
+          export PREFLIGHT_WORKER_DNS="$worker_dns"
+          export PREFLIGHT_PROBE_CURL_EXIT="${probe_curl_exit:-0}"
+          export PREFLIGHT_PROBE_CURL_ERROR="${probe_curl_error:-}"
           export PREFLIGHT_READY="$ready"
           python - <<'PY'
           import json, os
@@ -80,6 +85,11 @@ jobs:
               "transport": "authenticated_foundation_worker",
               "worker_ai_path_verified": os.environ["PREFLIGHT_WORKER_AI"] == "true",
               "worker_health_http_status": int(os.environ["PREFLIGHT_WORKER_HEALTH_STATUS"]),
+              "worker_health_curl_exit": int(os.environ["PREFLIGHT_WORKER_HEALTH_CURL_EXIT"]),
+              "worker_health_transport_error": os.environ["PREFLIGHT_WORKER_HEALTH_CURL_ERROR"][:240],
+              "worker_dns_ipv4": os.environ["PREFLIGHT_WORKER_DNS"][:512],
+              "probe_curl_exit": int(os.environ["PREFLIGHT_PROBE_CURL_EXIT"]),
+              "probe_transport_error": os.environ["PREFLIGHT_PROBE_CURL_ERROR"][:240],
               "edge_gate_suspected": int(os.environ["PREFLIGHT_WORKER_HEALTH_STATUS"]) == 403,
               "auth_token_set": os.environ["PREFLIGHT_AUTH_TOKEN"] == "true",
               "operations_app_id_set": os.environ["PREFLIGHT_APP_ID"] == "true",
@@ -89,6 +99,12 @@ jobs:
               "research_model_set": os.environ["PREFLIGHT_MODEL"] == "true",
               "operations_ref": "a3171f353539f1a31020c432f98cf0530cbf91ef",
               "workers_ai_model": "@cf/zai-org/glm-4.7-flash",
+              "network_classification": (
+                  "dns_or_network_unreachable" if int(os.environ["PREFLIGHT_WORKER_HEALTH_STATUS"]) == 0 else
+                  "edge_http_403" if int(os.environ["PREFLIGHT_WORKER_HEALTH_STATUS"]) == 403 else
+                  "worker_health_non_200" if int(os.environ["PREFLIGHT_WORKER_HEALTH_STATUS"]) != 200 else
+                  "worker_health_ok_model_path_unverified"
+              ),
           }
           with open("preflight.json", "w", encoding="utf-8") as handle:
               json.dump(d, handle, indent=2, sort_keys=True)
