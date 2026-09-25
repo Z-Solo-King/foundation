@@ -71,3 +71,17 @@ def test_autonomous_benchmark_consumes_latest_research_feed():
     assert "nightly-ai-research-20jobs.yml" in text
     assert "latest-research-feed" in text
     assert "research-feed-status/v1" in text
+
+
+def test_family_integrity_normalizes_issue_targets_before_comparison():
+    checker = (ROOT / "scripts" / "family_integrity_check.js").read_text(encoding="utf-8")
+    assert "normalizeIssueNumbers" in checker
+    assert "normalizeIssueKeys" in checker
+
+
+def test_nightly_preflight_preserves_network_failure_receipt_without_parse_crash():
+    text = (ROOT / ".github" / "workflows" / "nightly-research-provider-preflight.yml").read_text(encoding="utf-8")
+    assert "worker_health_curl_exit=0" in text
+    assert "worker_health_curl_error=\"\"" in text
+    assert "probe_curl_exit=0" in text
+    assert "int(os.environ.get(\"PREFLIGHT_WORKER_HEALTH_STATUS\") or \"0\")" in text
