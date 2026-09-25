@@ -1,6 +1,9 @@
 name: Nightly AI research — 20 parallel jobs
 
 on:
+  push:
+    branches:
+      - research-now-2026-09-25
   schedule:
     - cron: "0 18 * * *"
   workflow_dispatch:
