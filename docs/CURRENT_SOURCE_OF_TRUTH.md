@@ -1,3 +1,33 @@
+# 2026-09-25 CURRENT GITHUB ↔ CLOUDFLARE AUTHORITY OVERRIDE
+
+This section supersedes older checkpoint values below.
+
+## Public runtime
+- Public front door: Cloudflare Pages project `ai`, assigned hostname `ai-cio.pages.dev`.
+- Public backend Worker target: `heroic`.
+- Account Workers.dev subdomain: `heroic-ai`; backend URL: `heroic.heroic-ai.workers.dev`.
+- `heroic` currently exists in Cloudflare as a temporary compatibility bootstrap bound to the existing `foundation` production Worker.
+- Foundation PR #1210 contains the final application Worker identity/configuration and is not yet production-certified.
+
+## GitHub
+- Foundation PR #1210: `worker-identity-heroic-ai-2026-09-25`.
+- Operations migration PR #965 is merged as `b82b142ffc3a5418f704f85c737953afb5783b99`.
+- Operations `wrangler.toml` targets `heroic` through the `FOUNDATION` service binding.
+- Current branch acceptance tests and live probes target the Pages front door.
+
+## Cloudflare
+- Workers currently present: `foundation`, `heroic`, `operations`, `research-intelligence-engine-private`, `research-intelligence-engine-public`.
+- Pages project `ai`: production deployment `6ffb759a-a33c-4dc1-b532-a6032ffb07c5`, status `success`.
+- Pages production binding: `HEROIC_BACKEND -> heroic (production)`.
+- D1 `research-intelligence`: ID `19f51638-47a5-4218-a9dc-73dbfd6156fe`.
+- `heroic-ai.dev` remains pending/unresolvable and is not part of the new release path.
+
+## Evidence boundary
+- The new Pages deployment and Worker bootstrap are Cloudflare control-plane evidence, not final L4 application acceptance.
+- Runtime closure still requires a fresh canonical GitHub production release proving final Worker provenance, private binding, model generation, replay/convergence, SSE, research readback, persistence rollover, resource governance, and provenance.
+
+---
+
 # 2026-09-25 POST-MERGE LIVE AUDIT OVERRIDE
 
 This is the current post-merge source-of-truth snapshot.
