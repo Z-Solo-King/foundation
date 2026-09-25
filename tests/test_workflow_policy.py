@@ -639,12 +639,13 @@ def test_public_probe_records_dns_failure_without_parser_crash():
     assert '|| true)' in workflow
 
 
-def test_current_public_runtime_identity_is_heroic_ai():
+def test_current_public_runtime_identity_is_heroic_backend():
     wrangler = WRANGLER.read_text(encoding="utf-8")
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'name = "foundation"' in wrangler
-    assert 'custom_domain = true' in wrangler
-    assert 'pattern = "heroic-ai.dev"' in wrangler
+    assert 'name = "heroic"' in wrangler
+    assert 'workers_dev = true' in wrangler
+    assert '[[routes]]' not in wrangler
+    assert 'custom_domain = true' not in wrangler
     assert 'BASE_URL="https://heroic.heroic-ai.workers.dev"' in deployment
     assert 'OPERATIONS_SERVICE_NAME="operations"' in deployment
 
