@@ -17,8 +17,8 @@ on:
       - "docs/FAMILY_INTEGRATION_GRAPH.json"
       - "benchmark/ai_agent_task_matrix_v1.json"
   schedule:
-    # 01:15 IST = 19:45 UTC on the previous day. Staggered away from 01:00.
-    - cron: "45 19 * * *"
+    # 21:15 IST = 15:45 UTC. Nightly benchmark run.
+    - cron: "45 15 * * *"
   workflow_dispatch:
 
 permissions:
