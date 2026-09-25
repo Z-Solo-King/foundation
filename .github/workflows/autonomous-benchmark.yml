@@ -59,10 +59,12 @@ jobs:
           gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name nightly-ai-research-synthesis --dir .runtime/research-feed
           test -f .runtime/research-feed/nightly_ai_research_report.json
           test -f .runtime/research-feed/benchmark_improvement_candidates.json
+          candidates=.runtime/research-feed/benchmark_improvement_candidates.json
+          jq -e '.schema == "nightly-ai-research-improvement-candidates/v2" and .evidence_class == "research-signal" and (.candidate_count|tonumber) > 0 and (.signal_candidates|length == .candidate_count)' "$candidates" >/dev/null
           report=.runtime/research-feed/nightly_ai_research_report.json
           current_graph_sha256="$(sha256sum docs/FAMILY_INTEGRATION_GRAPH.json | awk '{print $1}')"
           report_graph_sha256="$(jq -r '.family_graph_digests[0] // empty' "$report")"
-          if ! jq -e '.schema == "nightly-ai-research-report/v2" and .expected_jobs == 20 and (.missing_jobs|length == 0) and (.invalid_jobs|length == 0) and (.benchmark_targets|length > 0) and (.stale_benchmark_targets|length == 0)' "$report" >/dev/null; then
+          if ! jq -e '.schema == "nightly-ai-research-report/v2" and .expected_jobs == 20 and (.missing_jobs|length == 0) and (.invalid_jobs|length == 0) and (.benchmark_targets|length > 0) and (.stale_benchmark_targets|length == 0) and (.candidate_count|tonumber) > 0 and (.signal_candidates|length == .candidate_count)' "$report" >/dev/null; then
             jq -n --arg state "invalid" --arg reason "latest research synthesis failed integrity validation" --arg run_id "$run_id" --arg head_sha "$head_sha" --arg current_sha "$GITHUB_SHA" --arg created_at "$created_at" \
               '{schema:"nightly-research-feed-status/v1",state:$state,reason:$reason,run_id:($run_id|tonumber),head_sha:$head_sha,benchmark_sha:$current_sha,created_at:$created_at}' > .runtime/research-feed/research-feed-status.json
             exit 1
