@@ -11,7 +11,7 @@ This section supersedes older checkpoint values below.
 
 ## GitHub
 - Foundation PR #1210: `worker-identity-heroic-ai-2026-09-25`.
-- Operations migration PR #965 is merged as `b82b142ffc3a5418f704f85c737953afb5783b99`.
+- Operations migration PR #965 is merged as `9bb210d36f41afaa1bedc1be65e89ba6444d3f78`.
 - Operations `wrangler.toml` targets `heroic` through the `FOUNDATION` service binding.
 - Current branch acceptance tests and live probes target the Pages front door.
 
