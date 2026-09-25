@@ -3,17 +3,18 @@
   "status": "CURRENT",
   "audited_at": "2026-09-25",
   "live_main": {
-    "foundation": "f248e83cf22e3359f57bbea190aaf150249ba2f6",
-    "operations": "d89e119722f3017cedf0cc175ba55871a65846ed"
+    "foundation": "d30309117d65a52c20c09f88b9f03801b2710249",
+    "operations": "3e0d3bbbf191361717e7a01ebaa6e2a1af689382"
   },
   "runtime_pins": {
-    "foundation_runtime": "2d8e2a6bdbb9279892eb4ad2095fbacc1adae9d4",
-    "production_operations": "d89e119722f3017cedf0cc175ba55871a65846ed",
-    "nightly_research_operations": "d89e119722f3017cedf0cc175ba55871a65846ed",
-    "foundation_deployed": "2d8e2a6bdbb9279892eb4ad2095fbacc1adae9d4"
+    "foundation_runtime": "d30309117d65a52c20c09f88b9f03801b2710249",
+    "production_operations": "3e0d3bbbf191361717e7a01ebaa6e2a1af689382",
+    "nightly_research_operations": "3e0d3bbbf191361717e7a01ebaa6e2a1af689382",
+    "foundation_deployed": "d30309117d65a52c20c09f88b9f03801b2710249",
+    "deployed_operations_pending": "3e0d3bbbf191361717e7a01ebaa6e2a1af689382"
   },
   "cloudflare": {
-    "control_plane_snapshot": "live_verified_2026-09-25_R4",
+    "control_plane_snapshot": "live_verified_2026-09-25_R7",
     "fresh_deployment_receipt": true,
     "workers": [
       "foundation",
@@ -33,8 +34,8 @@
     "zone_status": "pending",
     "activation_failure_reason": "unresolvable",
     "custom_domain_enabled": true,
-    "deployed_foundation_provenance": "github:2d8e2a6bdbb9279892eb4ad2095fbacc1adae9d4",
-    "deployed_operations_provenance": "github:d89e119722f3017cedf0cc175ba55871a65846ed",
+    "deployed_foundation_provenance": "github:d30309117d65a52c20c09f88b9f03801b2710249",
+    "deployed_operations_provenance": "github:ca9cc887049b2800361b222bbdae7f56100f4f7c",
     "pages_project": "ai",
     "pages_subdomain": "ai-cio.pages.dev",
     "pages_production_deployment_id": "c25b130b-055a-470f-b8f8-bc29a8e62c7e",
@@ -44,10 +45,11 @@
     "custom_domain": "heroic-ai.dev",
     "custom_domain_status": "pending/unresolvable",
     "heroic_bootstrap": "compatibility proxy -> foundation production",
-    "last_sync": "2026-09-25 R6",
+    "last_sync": "2026-09-25 R7",
     "public_front_door": "https://ai-cio.pages.dev",
     "backend_worker": "heroic",
-    "backend_origin": "https://heroic.heroic-ai.workers.dev"
+    "backend_origin": "https://heroic.heroic-ai.workers.dev",
+    "approved_operations_provenance": "github:3e0d3bbbf191361717e7a01ebaa6e2a1af689382"
   },
   "current_queue": {
     "open_issue_count": 11,
@@ -338,16 +340,14 @@
   },
   "github_sync": {
     "checked_at": "2026-09-25",
-    "foundation_main": "e6514890548278e26331269e4abb0818b119233a",
-    "operations_main": "add667236a17f2b845a39ae539f3dfe137d806a2",
-    "canonical_operations_pin": "fda24660843cacfe28de661cf170789af542d28f",
-    "open_pr_count": 2,
-    "cloudflare_runtime_verification": "not_available_in_this_chat",
+    "foundation_main": "d30309117d65a52c20c09f88b9f03801b2710249",
+    "operations_main": "3e0d3bbbf191361717e7a01ebaa6e2a1af689382",
+    "canonical_operations_pin": "3e0d3bbbf191361717e7a01ebaa6e2a1af689382",
+    "open_pr_count": 0,
+    "cloudflare_runtime_verification": "live_verified",
     "foundation_open_prs": [],
-    "operations_open_prs": [
-      914,
-      915
-    ]
+    "operations_open_prs": [],
+    "deployment_state": "Foundation pin update pending next production release"
   },
   "open_pr_reconciliation": {
     "documentation_pr": 1115,
@@ -389,16 +389,13 @@
     "foundation_main_at_sync": "ec143386e0258d9cb5aeaf13cde95f66814a7c0b",
     "graph_version": "1.1"
   },
-  "open_pr_count": 2,
+  "open_pr_count": 0,
   "foundation_open_prs": [],
-  "operations_open_prs": [
-    914,
-    915
-  ],
+  "operations_open_prs": [],
   "open_implementation_pr_count": 0,
   "github_current_branch": {
-    "foundation_main": "f248e83cf22e3359f57bbea190aaf150249ba2f6",
-    "operations_main": "d89e119722f3017cedf0cc175ba55871a65846ed",
-    "production_operations_pin": "d89e119722f3017cedf0cc175ba55871a65846ed"
+    "foundation_main": "d30309117d65a52c20c09f88b9f03801b2710249",
+    "operations_main": "3e0d3bbbf191361717e7a01ebaa6e2a1af689382",
+    "production_operations_pin": "3e0d3bbbf191361717e7a01ebaa6e2a1af689382"
   }
 }
