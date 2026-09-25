@@ -60,21 +60,33 @@ jobs:
           test -f .runtime/research-feed/nightly_ai_research_report.json
           test -f .runtime/research-feed/benchmark_improvement_candidates.json
           candidates=.runtime/research-feed/benchmark_improvement_candidates.json
-          jq -e '.schema == "nightly-ai-research-improvement-candidates/v2" and .evidence_class == "research-signal" and (.candidate_count|tonumber) > 0 and ((.signal_candidates|length) == .candidate_count)' "$candidates" >/dev/null
+          candidate_schema="$(jq -r '.schema // empty' "$candidates")"
+          candidate_count="$(jq -r '.candidate_count // empty' "$candidates")"
+          candidate_state="structured"
+          if [ "$candidate_schema" != "nightly-ai-research-improvement-candidates/v2" ]; then
+            jq -n --arg state "invalid" --arg reason "latest research candidate feed has an unknown schema" --arg run_id "$run_id" --arg head_sha "$head_sha" --arg current_sha "$GITHUB_SHA" --arg created_at "$created_at"               '{schema:"nightly-research-feed-status/v1",state:$state,reason:$reason,run_id:($run_id|tonumber),head_sha:$head_sha,benchmark_sha:$current_sha,created_at:$created_at,candidate_feed_state:"invalid"}' > .runtime/research-feed/research-feed-status.json
+            exit 1
+          fi
+          if [ -z "$candidate_count" ]; then
+            candidate_state="legacy"
+          elif ! jq -e '(.candidate_count|tonumber) > 0 and ((.signal_candidates|length) == .candidate_count)' "$candidates" >/dev/null; then
+            jq -n --arg state "invalid" --arg reason "latest research candidate feed has inconsistent candidate_count" --arg run_id "$run_id" --arg head_sha "$head_sha" --arg current_sha "$GITHUB_SHA" --arg created_at "$created_at"               '{schema:"nightly-research-feed-status/v1",state:$state,reason:$reason,run_id:($run_id|tonumber),head_sha:$head_sha,benchmark_sha:$current_sha,created_at:$created_at,candidate_feed_state:"invalid"}' > .runtime/research-feed/research-feed-status.json
+            exit 1
+          fi
           report=.runtime/research-feed/nightly_ai_research_report.json
           current_graph_sha256="$(sha256sum docs/FAMILY_INTEGRATION_GRAPH.json | awk '{print $1}')"
           report_graph_sha256="$(jq -r '.family_graph_digests[0] // empty' "$report")"
-          if ! jq -e '.schema == "nightly-ai-research-report/v2" and .expected_jobs == 20 and (.missing_jobs|length == 0) and (.invalid_jobs|length == 0) and (.benchmark_targets|length > 0) and (.stale_benchmark_targets|length == 0) and (.candidate_count|tonumber) > 0 and ((.signal_candidates|length) == .candidate_count)' "$report" >/dev/null; then
-            jq -n --arg state "invalid" --arg reason "latest research synthesis failed integrity validation" --arg run_id "$run_id" --arg head_sha "$head_sha" --arg current_sha "$GITHUB_SHA" --arg created_at "$created_at" \
-              '{schema:"nightly-research-feed-status/v1",state:$state,reason:$reason,run_id:($run_id|tonumber),head_sha:$head_sha,benchmark_sha:$current_sha,created_at:$created_at}' > .runtime/research-feed/research-feed-status.json
+          if ! jq -e '.schema == "nightly-ai-research-report/v2" and .expected_jobs == 20 and (.missing_jobs|length == 0) and (.invalid_jobs|length == 0) and (.benchmark_targets|length > 0) and (.stale_benchmark_targets|length == 0)' "$report" >/dev/null; then
+            jq -n --arg state "invalid" --arg reason "latest research synthesis failed core integrity validation" --arg run_id "$run_id" --arg head_sha "$head_sha" --arg current_sha "$GITHUB_SHA" --arg created_at "$created_at"               '{schema:"nightly-research-feed-status/v1",state:$state,reason:$reason,run_id:($run_id|tonumber),head_sha:$head_sha,benchmark_sha:$current_sha,created_at:$created_at,candidate_feed_state:"invalid"}' > .runtime/research-feed/research-feed-status.json
             exit 1
           fi
           state="available"
           reason="latest successful research synthesis is structurally valid"
-          if [ "$head_sha" != "$GITHUB_SHA" ]; then state="stale_head"; reason="latest successful research synthesis is from a different Foundation revision"; fi
+          if [ "$candidate_state" = "legacy" ]; then state="legacy_feed"; reason="latest successful research synthesis predates structured signal-candidate fields"; fi
+          if [ "$head_sha" != "$GITHUB_SHA" ] && [ "$state" = "available" ]; then state="stale_head"; reason="latest successful research synthesis is from a different Foundation revision"; fi
+          if [ "$head_sha" != "$GITHUB_SHA" ] && [ "$state" = "legacy_feed" ]; then state="stale_legacy_feed"; reason="latest research feed is structurally valid but predates structured signal-candidate fields and uses a different Foundation revision"; fi
           if [ -n "$report_graph_sha256" ] && [ "$report_graph_sha256" != "$current_graph_sha256" ]; then state="stale_graph"; reason="latest research synthesis references an older family integration graph"; fi
-          jq -n --arg state "$state" --arg reason "$reason" --arg run_id "$run_id" --arg head_sha "$head_sha" --arg benchmark_sha "$GITHUB_SHA" --arg created_at "$created_at" --arg report_graph_sha256 "$report_graph_sha256" --arg current_graph_sha256 "$current_graph_sha256" \
-            '{schema:"nightly-research-feed-status/v1",state:$state,reason:$reason,run_id:($run_id|tonumber),head_sha:$head_sha,benchmark_sha:$benchmark_sha,created_at:$created_at,report_graph_sha256:$report_graph_sha256,current_graph_sha256:$current_graph_sha256}' > .runtime/research-feed/research-feed-status.json
+          jq -n --arg state "$state" --arg reason "$reason" --arg run_id "$run_id" --arg head_sha "$head_sha" --arg benchmark_sha "$GITHUB_SHA" --arg created_at "$created_at" --arg report_graph_sha256 "$report_graph_sha256" --arg current_graph_sha256 "$current_graph_sha256" --arg candidate_state "$candidate_state" --arg candidate_count "$candidate_count"             '{schema:"nightly-research-feed-status/v1",state:$state,reason:$reason,run_id:($run_id|tonumber),head_sha:$head_sha,benchmark_sha:$benchmark_sha,created_at:$created_at,report_graph_sha256:$report_graph_sha256,current_graph_sha256:$current_graph_sha256,candidate_feed_state:$candidate_state,candidate_count:(if $candidate_count=="" then null else ($candidate_count|tonumber) end)}' > .runtime/research-feed/research-feed-status.json
       - name: Upload research feed
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
