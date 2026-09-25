@@ -1,0 +1,28 @@
+name: AI agent benchmark contract
+on:
+  push:
+    paths:
+      - "benchmark/ai_agent_task_matrix_v1.json"
+      - "benchmark/ai_agent_benchmark_contract.py"
+      - "benchmark/test_ai_agent_benchmark_contract.py"
+      - ".github/workflows/ai-agent-benchmark-contract.yml"
+  pull_request:
+    paths:
+      - "benchmark/ai_agent_task_matrix_v1.json"
+      - "benchmark/ai_agent_benchmark_contract.py"
+      - "benchmark/test_ai_agent_benchmark_contract.py"
+      - ".github/workflows/ai-agent-benchmark-contract.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Validate AI-agent benchmark contract
+        run: python -m pytest -q benchmark/test_ai_agent_benchmark_contract.py

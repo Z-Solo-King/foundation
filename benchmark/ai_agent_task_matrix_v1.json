@@ -1,0 +1,799 @@
+{
+  "schema": "ai-agent-benchmark-task-matrix/v1",
+  "version": "1.0",
+  "purpose": "Project-native benchmark for model/agent behavior in the Foundation + Operations hybrid engineering workflow.",
+  "task_count": 24,
+  "lanes": [
+    {
+      "code": "A",
+      "slug": "planning-architecture",
+      "title": "Planning & architecture",
+      "language_lens": "Python/reference"
+    },
+    {
+      "code": "B",
+      "slug": "code-execution",
+      "title": "Code understanding & implementation",
+      "language_lens": "TypeScript/Worker"
+    },
+    {
+      "code": "C",
+      "slug": "testing-verification",
+      "title": "Testing & verification",
+      "language_lens": "Rust/systems"
+    },
+    {
+      "code": "D",
+      "slug": "research-evidence",
+      "title": "Research & evidence",
+      "language_lens": "YAML/JSON/Markdown"
+    },
+    {
+      "code": "E",
+      "slug": "adversarial-reliability",
+      "title": "Security, reliability & recovery",
+      "language_lens": "Go/concurrency"
+    },
+    {
+      "code": "F",
+      "slug": "migration-portability",
+      "title": "Cross-language & tooling portability",
+      "language_lens": "Polyglot"
+    }
+  ],
+  "tasks": [
+    {
+      "task_id": "ai-a-01",
+      "lane": "A",
+      "lane_slug": "planning-architecture",
+      "category": "Planning & architecture",
+      "language_lens": "Python/reference",
+      "focus": "baseline execution",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-a-02",
+      "lane": "A",
+      "lane_slug": "planning-architecture",
+      "category": "Planning & architecture",
+      "language_lens": "Python/reference",
+      "focus": "adversarial/incomplete evidence",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-a-03",
+      "lane": "A",
+      "lane_slug": "planning-architecture",
+      "category": "Planning & architecture",
+      "language_lens": "Python/reference",
+      "focus": "induced failure/recovery",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-a-04",
+      "lane": "A",
+      "lane_slug": "planning-architecture",
+      "category": "Planning & architecture",
+      "language_lens": "Python/reference",
+      "focus": "cross-agent handoff",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-b-01",
+      "lane": "B",
+      "lane_slug": "code-execution",
+      "category": "Code understanding & implementation",
+      "language_lens": "TypeScript/Worker",
+      "focus": "baseline execution",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-b-02",
+      "lane": "B",
+      "lane_slug": "code-execution",
+      "category": "Code understanding & implementation",
+      "language_lens": "TypeScript/Worker",
+      "focus": "adversarial/incomplete evidence",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-b-03",
+      "lane": "B",
+      "lane_slug": "code-execution",
+      "category": "Code understanding & implementation",
+      "language_lens": "TypeScript/Worker",
+      "focus": "induced failure/recovery",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-b-04",
+      "lane": "B",
+      "lane_slug": "code-execution",
+      "category": "Code understanding & implementation",
+      "language_lens": "TypeScript/Worker",
+      "focus": "cross-agent handoff",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-c-01",
+      "lane": "C",
+      "lane_slug": "testing-verification",
+      "category": "Testing & verification",
+      "language_lens": "Rust/systems",
+      "focus": "baseline execution",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-c-02",
+      "lane": "C",
+      "lane_slug": "testing-verification",
+      "category": "Testing & verification",
+      "language_lens": "Rust/systems",
+      "focus": "adversarial/incomplete evidence",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-c-03",
+      "lane": "C",
+      "lane_slug": "testing-verification",
+      "category": "Testing & verification",
+      "language_lens": "Rust/systems",
+      "focus": "induced failure/recovery",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-c-04",
+      "lane": "C",
+      "lane_slug": "testing-verification",
+      "category": "Testing & verification",
+      "language_lens": "Rust/systems",
+      "focus": "cross-agent handoff",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-d-01",
+      "lane": "D",
+      "lane_slug": "research-evidence",
+      "category": "Research & evidence",
+      "language_lens": "YAML/JSON/Markdown",
+      "focus": "baseline execution",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-d-02",
+      "lane": "D",
+      "lane_slug": "research-evidence",
+      "category": "Research & evidence",
+      "language_lens": "YAML/JSON/Markdown",
+      "focus": "adversarial/incomplete evidence",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-d-03",
+      "lane": "D",
+      "lane_slug": "research-evidence",
+      "category": "Research & evidence",
+      "language_lens": "YAML/JSON/Markdown",
+      "focus": "induced failure/recovery",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-d-04",
+      "lane": "D",
+      "lane_slug": "research-evidence",
+      "category": "Research & evidence",
+      "language_lens": "YAML/JSON/Markdown",
+      "focus": "cross-agent handoff",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-e-01",
+      "lane": "E",
+      "lane_slug": "adversarial-reliability",
+      "category": "Security, reliability & recovery",
+      "language_lens": "Go/concurrency",
+      "focus": "baseline execution",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-e-02",
+      "lane": "E",
+      "lane_slug": "adversarial-reliability",
+      "category": "Security, reliability & recovery",
+      "language_lens": "Go/concurrency",
+      "focus": "adversarial/incomplete evidence",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-e-03",
+      "lane": "E",
+      "lane_slug": "adversarial-reliability",
+      "category": "Security, reliability & recovery",
+      "language_lens": "Go/concurrency",
+      "focus": "induced failure/recovery",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-e-04",
+      "lane": "E",
+      "lane_slug": "adversarial-reliability",
+      "category": "Security, reliability & recovery",
+      "language_lens": "Go/concurrency",
+      "focus": "cross-agent handoff",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-f-01",
+      "lane": "F",
+      "lane_slug": "migration-portability",
+      "category": "Cross-language & tooling portability",
+      "language_lens": "Polyglot",
+      "focus": "baseline execution",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-f-02",
+      "lane": "F",
+      "lane_slug": "migration-portability",
+      "category": "Cross-language & tooling portability",
+      "language_lens": "Polyglot",
+      "focus": "adversarial/incomplete evidence",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-f-03",
+      "lane": "F",
+      "lane_slug": "migration-portability",
+      "category": "Cross-language & tooling portability",
+      "language_lens": "Polyglot",
+      "focus": "induced failure/recovery",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    },
+    {
+      "task_id": "ai-f-04",
+      "lane": "F",
+      "lane_slug": "migration-portability",
+      "category": "Cross-language & tooling portability",
+      "language_lens": "Polyglot",
+      "focus": "cross-agent handoff",
+      "required_outputs": [
+        "decision_or_result",
+        "evidence_packet",
+        "remaining_rungs",
+        "artifact_provenance"
+      ],
+      "required_checks": [
+        "canonical_owner",
+        "exact_revision",
+        "evidence_ladder",
+        "no_unsupported_completion_claim"
+      ],
+      "repeat_count": 3,
+      "agent_roles": [
+        "main",
+        "explorer",
+        "worker",
+        "researcher",
+        "advisor"
+      ],
+      "evidence_tier_required": "R1"
+    }
+  ],
+  "repeat_policy": "Three identical attempts per model/role/task when stochastic execution is available; preserve each observation separately.",
+  "scoring_dimensions": [
+    {
+      "name": "correctness",
+      "weight": 0.24
+    },
+    {
+      "name": "evidence_quality",
+      "weight": 0.18
+    },
+    {
+      "name": "completeness",
+      "weight": 0.16
+    },
+    {
+      "name": "precision",
+      "weight": 0.14
+    },
+    {
+      "name": "token_efficiency",
+      "weight": 0.1
+    },
+    {
+      "name": "tool_efficiency",
+      "weight": 0.06
+    },
+    {
+      "name": "context_efficiency",
+      "weight": 0.07
+    },
+    {
+      "name": "self_correction",
+      "weight": 0.05
+    }
+  ],
+  "hard_gates": [
+    "security/policy/provenance invariants",
+    "canonical ownership",
+    "evidence-tier integrity",
+    "no fabricated runtime/production evidence"
+  ],
+  "comparison_rule": "Compare outcomes and reproducible observations on the same task/tool policy. Do not rank models by personality, confidence, or verbosity.",
+  "provenance_fields": [
+    "run_id",
+    "provider",
+    "model",
+    "agent_role",
+    "task_id",
+    "repo",
+    "repo_sha",
+    "prompt_contract_version",
+    "language_lens",
+    "evidence_tier",
+    "artifact_digest",
+    "started_at",
+    "completed_at"
+  ]
+}
