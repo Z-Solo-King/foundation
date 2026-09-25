@@ -12,6 +12,11 @@ def test_pinned_foundation_reference_checkouts_use_manual_sha_fetch():
     assert 'git checkout --detach "$FOUNDATION_COMMIT"' in exact_block
 
 
+def test_foundation_ref_output_does_not_emit_literal_backslash_newline():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert 'write_text(f"ref={node.value.value}\\\\n", encoding="utf-8")' not in text
+
+
 def test_url_reference_uses_foundation_backend_source_not_removed_operations_backend():
     text = WORKFLOW.read_text(encoding="utf-8")
     start = text.index("name: Rust URL canonicalization Python differential")

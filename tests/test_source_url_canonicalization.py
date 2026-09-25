@@ -32,6 +32,8 @@ def test_canonicalize_url_normalizes_security_neutral_variants(source, expected)
         "ftp://example.com",
         "https://user:pass@example.com",
         "https://127.0.0.1",
+        "https://[64:ff9b::127.0.0.1]",
+        "https://[64:ff9b::10.0.0.1]",
         "https://example.com:8443",
     ],
 )
@@ -93,3 +95,9 @@ def test_safe_ip_rejects_provider_and_shared_address_space(value):
 def test_safe_ip_accepts_public_ipv4_and_ipv4_mapped_public_ipv4():
     assert source_http._safe_ip("8.8.8.8") is True
     assert source_http._safe_ip("::ffff:8.8.8.8") is True
+
+
+def test_safe_ip_rejects_nat64_embedded_private_ipv4():
+    assert source_http._safe_ip("64:ff9b::127.0.0.1") is False
+    assert source_http._safe_ip("64:ff9b::10.0.0.1") is False
+    assert source_http._safe_ip("64:ff9b::169.254.1.1") is False
