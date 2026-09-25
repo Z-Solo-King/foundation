@@ -296,3 +296,178 @@ jobs:
           path: furtados-home-direct.html
           if-no-files-found: warn
           retention-days: 14
+
+
+  furtados-graphql-direct:
+    name: Furtados direct GraphQL product API
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Probe GraphQL GET and POST product search
+        shell: python
+        run: |
+          import json
+          from urllib.parse import urlencode
+          from urllib.request import Request, urlopen
+
+          endpoint = "https://www.furtadosonline.com/graphql"
+          query = """
+          query ProductSearchResults($currentPage:Int=1,$pageSize:Int=40,$search:String!,$filters:ProductAttributeFilterInput,$sort:[SortFieldInput],$context:SearchRequestContextInput){
+            wizzyProducts(
+              currentPage:$currentPage
+              pageSize:$pageSize
+              search:$search
+              filter:$filters
+              sort:$sort
+              context:$context
+            ){
+              items{
+                id uid name sku call_for_price stock_status
+                price_range{
+                  maximum_price{
+                    regular_price{value currency}
+                    final_price{value currency}
+                    discount{amount_off percent_off}
+                  }
+                }
+                small_image{url}
+                url_key
+              }
+              page_info{current_page page_size total_pages}
+              total_count
+              responseID
+              hasToRedirect
+              redirectTo
+              searchedKey
+            }
+          }
+          """
+          variables = {
+              "currentPage": 1,
+              "pageSize": 40,
+              "search": "guitar",
+              "context": {
+                  "hasFilters": False,
+                  "hasSort": False,
+                  "isPagination": False,
+                  "selectedFilters": [],
+                  "searchedKey": None,
+              },
+          }
+
+          def call_get(page_size):
+              v = dict(variables)
+              v["pageSize"] = page_size
+              params = {
+                  "query": query,
+                  "operationName": "ProductSearchResults",
+                  "variables": json.dumps(v, separators=(",", ":")),
+              }
+              url = endpoint + "?" + urlencode(params)
+              req = Request(
+                  url,
+                  headers={
+                      "User-Agent": "Mozilla/5.0",
+                      "Accept": "application/json",
+                      "Referer": "https://www.furtadosonline.com/",
+                  },
+              )
+              with urlopen(req, timeout=30) as resp:
+                  data = json.load(resp)
+                  return resp.status, resp.headers.get("content-type", ""), url, data
+
+          def call_post(page_size):
+              v = dict(variables)
+              v["pageSize"] = page_size
+              payload = json.dumps({
+                  "query": query,
+                  "operationName": "ProductSearchResults",
+                  "variables": v,
+              }).encode()
+              req = Request(
+                  endpoint,
+                  data=payload,
+                  method="POST",
+                  headers={
+                      "User-Agent": "Mozilla/5.0",
+                      "Content-Type": "application/json",
+                      "Accept": "application/json",
+                      "Referer": "https://www.furtadosonline.com/",
+                  },
+              )
+              with urlopen(req, timeout=30) as resp:
+                  data = json.load(resp)
+                  return resp.status, resp.headers.get("content-type", ""), endpoint, data
+
+          def summarize(label, result):
+              status, ct, url, data = result
+              print("=== " + label + " ===")
+              print("status=", status, "content_type=", ct)
+              print("url=", url)
+              print(json.dumps(data, ensure_ascii=False)[:12000])
+              payload = data.get("data", {}) if isinstance(data, dict) else {}
+              products = payload.get("wizzyProducts", {}) if isinstance(payload, dict) else {}
+              items = products.get("items", []) if isinstance(products, dict) else []
+              page = products.get("page_info", {}) if isinstance(products, dict) else {}
+              print("ITEM_COUNT=", len(items))
+              print("TOTAL_COUNT=", products.get("total_count") if isinstance(products, dict) else None)
+              print("PAGE_INFO=", json.dumps(page, ensure_ascii=False))
+              if items:
+                  print("FIRST_ITEM=", json.dumps(items[0], ensure_ascii=False))
+              assert not data.get("errors"), data.get("errors")
+
+          for size in (40, 100):
+              try:
+                  summarize(f"GET ProductSearchResults pageSize={size}", call_get(size))
+              except Exception as exc:
+                  print(f"GET_FAIL size={size} type={type(exc).__name__} detail={exc}")
+
+          try:
+              summarize("POST ProductSearchResults pageSize=40", call_post(40))
+          except Exception as exc:
+              print(f"POST_FAIL type={type(exc).__name__} detail={exc}")
+
+          # Also test the native Magento product query independently of the Wizzy module.
+          native_query = """
+          query NativeProducts($search:String!,$pageSize:Int=20,$currentPage:Int=1){
+            products(search:$search,pageSize:$pageSize,currentPage:$currentPage){
+              total_count
+              page_info{current_page page_size total_pages}
+              items{uid name sku url_key}
+            }
+          }
+          """
+          native_payload = json.dumps({
+              "query": native_query,
+              "variables": {"search":"guitar","pageSize":40,"currentPage":1},
+          }).encode()
+          try:
+              req = Request(
+                  endpoint,
+                  data=native_payload,
+                  method="POST",
+                  headers={
+                      "User-Agent":"Mozilla/5.0",
+                      "Content-Type":"application/json",
+                      "Accept":"application/json",
+                      "Referer": "https://www.furtadosonline.com/",
+                  },
+              )
+              with urlopen(req, timeout=30) as resp:
+                  data=json.load(resp)
+                  print("=== POST Native Magento products ===")
+                  print("status=",resp.status,"content_type=",resp.headers.get("content-type",""))
+                  print(json.dumps(data,ensure_ascii=False)[:12000])
+          except Exception as exc:
+              print(f"NATIVE_FAIL type={type(exc).__name__} detail={exc}")
+
+      - name: Probe exact sitemap declared by robots
+        shell: bash
+        run: |
+          set -e
+          echo "=== ROBOTS ==="
+          curl -fsSL --max-time 30 https://www.furtadosonline.com/robots.txt
+          echo
+          echo "=== DECLARED SITEMAP ==="
+          curl -fsSL --max-time 30 https://www.furtadosonline.com/sitemap/sitemap.xml | head -c 20000
