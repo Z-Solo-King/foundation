@@ -18,6 +18,6 @@ def test_family_sync_state_matches_current_main_and_graph():
     assert state["current_integration"]["graph_schema"] == "family-integration-graph/v1"
     assert state["current_integration"]["graph_blob_sha"]
     assert state["current_integration"]["material_count"] == 20
-    assert state["current_integration"]["benchmark_probe_count"] == 10
+    assert state["current_integration"]["benchmark_probe_count"] == 11
     assert graph["schema"] == "family-integration-graph/v1"
     assert len(graph["material_registry"]) == 20
