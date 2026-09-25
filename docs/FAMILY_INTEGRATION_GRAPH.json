@@ -1,6 +1,6 @@
 {
   "schema": "family-integration-graph/v1",
-  "version": "1.1",
+  "version": "1.2",
   "status": "CURRENT",
   "purpose": "Cross-surface integration map for Foundation + Operations. Links docs, AI navigation, research, benchmark, extractor/mapper, chatbot, UI, persistence, runtime, resource, security and observability without creating new authority.",
   "hard_rules": [
@@ -488,8 +488,7 @@
       "targets": [
         "foundation#58",
         "foundation#157",
-        "operations#197",
-        "operations#352"
+        "operations#197"
       ]
     },
     {
