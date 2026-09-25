@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  issues: read
 
 concurrency:
   group: family-integrity-gate
@@ -32,7 +33,8 @@ jobs:
           permission-issues: read
       - name: Verify family contracts and live issue inventory
         env:
-          GH_TOKEN: ${{ steps.operations-app.outputs.token }}
+          FOUNDATION_GH_TOKEN: ${{ github.token }}
+          OPERATIONS_GH_TOKEN: ${{ steps.operations-app.outputs.token }}
         run: node scripts/family_integrity_check.js
       - name: Upload integrity receipt
         if: ${{ always() }}

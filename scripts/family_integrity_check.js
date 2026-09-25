@@ -7,7 +7,14 @@ const path = require("path");
 
 const ROOT = process.cwd();
 const readJson = (p) => JSON.parse(fs.readFileSync(path.join(ROOT, p), "utf8"));
-const gh = (api) => JSON.parse(cp.execFileSync("gh", ["api", api, "--paginate"], {encoding:"utf8"}));
+const gh = (repo, api) => {
+  const token = repo === "foundation" ? process.env.FOUNDATION_GH_TOKEN : process.env.OPERATIONS_GH_TOKEN;
+  if (!token) throw new Error("missing GitHub token for " + repo);
+  return JSON.parse(cp.execFileSync("gh", ["api", api, "--paginate"], {
+    encoding: "utf8",
+    env: { ...process.env, GH_TOKEN: token }
+  }));
+};
 
 const failures = [];
 
@@ -41,7 +48,7 @@ const normalizeIssueKeys = (pairs) =>
 
 const activeIssues = {};
 for (const repo of ["foundation", "operations"]) {
-  const rows = gh(`repos/Z-Solo-King/${repo}/issues?state=open&per_page=100`);
+  const rows = gh(repo, `repos/Z-Solo-King/${repo}/issues?state=open&per_page=100`);
   activeIssues[repo] = normalizeIssueNumbers(rows.filter(x => !x.pull_request).map(x => x.number));
 }
 

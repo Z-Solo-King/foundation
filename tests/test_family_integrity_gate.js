@@ -20,3 +20,10 @@ assert(checker.includes("Foundation #154"), "closed-credential stale guard missi
 
 cp.execFileSync("node", ["--check", path.join(root, "scripts/family_integrity_check.js")], {stdio:"inherit"});
 console.log("family integrity static contract: PASS");
+
+
+const workflow = require("fs").readFileSync(require("path").join(__dirname, "..", ".github/workflows/family-integrity-gate.yml"), "utf8");
+assert(workflow.includes("FOUNDATION_GH_TOKEN: ${{ github.token }}"), "Foundation token boundary missing");
+assert(workflow.includes("OPERATIONS_GH_TOKEN: ${{ steps.operations-app.outputs.token }}"), "Operations App token boundary missing");
+assert(checker.includes("FOUNDATION_GH_TOKEN"), "checker Foundation token support missing");
+assert(checker.includes("OPERATIONS_GH_TOKEN"), "checker Operations token support missing");
