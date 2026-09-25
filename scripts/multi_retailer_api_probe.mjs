@@ -180,8 +180,8 @@ async function samsung(){
   await browse(pages,6000);
   const raw=await http("https://www.samsung.com/in/search/?searchvalue=galaxy",{headers:{accept:"text/html"}});
   const clues=[...new Set([
-    ...[...raw.text.matchAll(/https?:\\?\/\\?\/[^"'\\s<>]+/gi)].map(m=>m[0]),
-    ...[...raw.text.matchAll(/(?:\\/|https?:)[^"'\\s<>]*(?:products\\/search|\\/products\\?productCodes=|searchapi)[^"'\\s<>]*/gi)].map(m=>m[0])
+    ...[...raw.text.matchAll(/https?:\/\/[^"'\\s<>]+/gi)].map(m=>m[0]),
+    ...[...raw.text.matchAll(/(?:\/|https?:)[^"'\\s<>]*(?:products\/search|\/products\?productCodes=|searchapi)[^"'\\s<>]*/gi)].map(m=>m[0])
   ])].filter(x=>/products|searchapi|productCodes/i.test(x)).slice(0,50);
   add("source-clues",{status:raw.status,bytes:raw.text.length,clues});
   add("product-network",{requests:OUT.network.filter(x=>/products\\/search|\\/products\\?productCodes=|searchapi/i.test(x.url)).slice(0,30)});
@@ -189,8 +189,8 @@ async function samsung(){
 async function vijay(){
   const url="https://www.vijaysales.com/c/laptops";
   const p=await http(url,{headers:{accept:"text/html"}});
-  const hrefs=[...p.text.matchAll(/href=["']([^"']*\\/p\\/[0-9]+[^"']*)["']/gi)].map(m=>m[1]);
-  add("category",{status:p.status,bytes:p.text.length,pdpHrefs:hrefs.slice(0,12),ids:[...new Set(hrefs.map(h=>(h.match(/\\/p\\/(\\d+)/)||[])[1]).filter(Boolean))].slice(0,20)});
+  const hrefs=[...p.text.matchAll(/href=["']([^"']*\/p\/[0-9]+[^"']*)["']/gi)].map(m=>m[1]);
+  add("category",{status:p.status,bytes:p.text.length,pdpHrefs:hrefs.slice(0,12),ids:[...new Set(hrefs.map(h=>(h.match(/\/p\/(\d+)/)||[])[1]).filter(Boolean))].slice(0,20)});
   await browse([url],5000);
   const networks=OUT.network.filter(x=>/vijaysales\.com/i.test(x.url)&&/api|search|product|catalog|ajax|graphql/i.test(x.url)).slice(0,50);
   add("product-network",{requests:networks});
