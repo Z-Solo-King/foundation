@@ -12,6 +12,9 @@ function assert(condition, message) {
 
 assert(workflow.includes('cron: "45 17 * * *"'), "family integrity schedule missing");
 assert(workflow.includes("node scripts/family_integrity_check.js"), "family integrity checker missing");
+assert(workflow.includes("OPERATIONS_APP_ID"), "private Operations App ID secret missing");
+assert(workflow.includes("OPERATIONS_APP_PRIVATE_KEY"), "private Operations App key secret missing");
+assert(workflow.includes("api.github.com/app/installations"), "GitHub App installation token mint path missing");
 assert(workflow.includes("actions/upload-artifact@"), "integrity receipt upload missing");
 assert(checker.includes("issues?state=open"), "live issue query missing");
 assert(checker.includes("FAMILY_INTEGRITY_PASS"), "pass receipt missing");
