@@ -44,7 +44,7 @@
     "custom_domain": "heroic-ai.dev",
     "custom_domain_status": "pending/unresolvable",
     "heroic_bootstrap": "compatibility proxy -> foundation production",
-    "last_sync": "2026-09-25 R6",
+    "last_sync": "2026-09-25 R8",
     "public_front_door": "https://ai-cio.pages.dev",
     "backend_worker": "heroic",
     "backend_origin": "https://heroic.heroic-ai.workers.dev"
