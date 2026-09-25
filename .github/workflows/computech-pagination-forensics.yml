@@ -1,0 +1,124 @@
+name: Computech custom pagination forensics
+
+on:
+  push:
+    branches:
+      - diag/computech-pagination-api-2026-09-26
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+      - name: Install Playwright
+        run: |
+          python -m pip install --disable-pip-version-check playwright
+          python -m playwright install --with-deps chromium
+      - name: Inspect catalog transport
+        run: |
+          python - <<'PY'
+          import asyncio, json, re
+          from urllib.parse import urljoin, urlsplit
+          from playwright.async_api import async_playwright
+
+          ROOT="https://computechstore.in"
+          def count_products(html):
+              return len(re.findall(r'<a[^>]+href="/product/[^"]+"[^>]*>',html,re.I))
+          def urls(html):
+              return sorted(set(
+                re.findall(r'(?:hx-get|hx-post|action|data-url|data-endpoint|data-api|data-action)="([^"]+)"',html,re.I)
+              ))
+          async def main():
+            async with async_playwright() as p:
+              browser=await p.chromium.launch(headless=True,args=["--no-sandbox"])
+              ctx=await browser.new_context(
+                user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36",
+                locale="en-IN",timezone_id="Asia/Kolkata"
+              )
+              page=await ctx.new_page()
+              requests=[]
+              responses=[]
+              async def on_request(r):
+                if r.resource_type in ("xhr","fetch"):
+                  requests.append({"method":r.method,"url":r.url,"post_data":(r.post_data or "")[:3000]})
+              async def on_response(r):
+                if r.request.resource_type in ("xhr","fetch") and r.status==200:
+                  body=""
+                  try: body=await r.text()
+                  except: pass
+                  responses.append({"method":r.request.method,"url":r.url,"ct":r.headers.get("content-type",""),"len":len(body),"products":count_products(body),"sample":re.sub(r"\\s+"," ",body[:900])})
+              ctx.on("request",on_request); ctx.on("response",on_response)
+
+              # 1) Browser DOM attributes on the live shop.
+              await page.goto(ROOT+"/shop/",wait_until="domcontentloaded",timeout=60000)
+              await page.wait_for_timeout(1800)
+              html=await page.content()
+              dom_attrs=await page.evaluate("""() => [...document.querySelectorAll('[hx-get],[hx-post],[data-hx-get],[data-hx-post],[hx-trigger],[data-url],[data-endpoint],[data-api],[data-action],[form]')].slice(0,300).map(e => ({
+                tag:e.tagName,id:e.id||'',cls:(e.className||'').toString().slice(0,180),
+                hx_get:e.getAttribute('hx-get'),hx_post:e.getAttribute('hx-post'),
+                data_hx_get:e.getAttribute('data-hx-get'),data_hx_post:e.getAttribute('data-hx-post'),
+                hx_trigger:e.getAttribute('hx-trigger'),hx_target:e.getAttribute('hx-target'),
+                data_url:e.getAttribute('data-url'),data_endpoint:e.getAttribute('data-endpoint'),
+                data_api:e.getAttribute('data-api'),data_action:e.getAttribute('data-action'),
+                action:e.getAttribute('action'),method:e.getAttribute('method'),
+                text:(e.innerText||'').trim().replace(/\\s+/g,' ').slice(0,180)
+              }))""")
+              print("SHOP_HTML_LEN",len(html),"PRODUCT_LINKS",count_products(html))
+              print("DOM_ASYNC_ELEMENTS",json.dumps(dom_attrs,ensure_ascii=False))
+
+              # 2) Exact catalog responses and parameter behavior.
+              req=await p.request.new_context(storage_state=await ctx.storage_state())
+              paths=[]
+              for path in [
+                "/shop/","/shop/?page=1","/shop/?page=1&sort=newest","/shop/?page=2","/shop/?page=2&sort=newest",
+                "/shop/?page=3&sort=newest","/shop/?page=4&sort=newest",
+                "/shop/?page=2&sort=newest&limit=100","/shop/?page=2&sort=newest&per_page=100",
+                "/shop/?page=2&sort=newest&page_size=100","/shop/?page=2&sort=newest&size=100",
+                "/shop/?page=2&sort=newest&ajax=1","/shop/?page=2&sort=newest&partial=1",
+              ]: paths.append(ROOT+path)
+              sem=asyncio.Semaphore(6)
+              out=[]
+              async def probe(u):
+                async with sem:
+                  for headers in ({},{"HX-Request":"true","HX-Trigger":"load-more"}):
+                    try:
+                      r=await req.get(u,headers=headers,timeout=15000)
+                      body=await r.text()
+                      out.append({
+                        "url":u,"headers":headers,"status":r.status,
+                        "ct":r.headers.get("content-type",""),"len":len(body),
+                        "products":count_products(body),
+                        "canonical":re.findall(r'<link[^>]+rel=["\']canonical["\'][^>]+href=["\']([^"\']+)',body,re.I)[:2],
+                        "pagination":sorted(set(re.findall(r'(?:href|hx-get)=["\']([^"\']*page=[0-9][^"\']*)',body,re.I)))[:30],
+                        "async_urls":urls(body)[:80],
+                        "title":(re.search(r'<title[^>]*>(.*?)</title>',body,re.I|re.S).group(1).strip() if re.search(r'<title[^>]*>(.*?)</title>',body,re.I|re.S) else ""),
+                        "sample":re.sub(r"\\s+"," ",body[:700])
+                      })
+                    except Exception as e:
+                      out.append({"url":u,"headers":headers,"error":repr(e)})
+              await asyncio.gather(*(probe(u) for u in paths))
+              await req.dispose()
+
+              # 3) Trigger actual load-more and inspect its network request.
+              try:
+                btn=page.get_by_text("View More Gear",exact=True).first
+                if await btn.count():
+                  await btn.click(timeout=4000)
+                  await page.wait_for_timeout(1800)
+              except Exception as e:
+                print("LOADMORE_ERROR",repr(e))
+
+              print("NETWORK_REQUESTS",json.dumps(requests,ensure_ascii=False)[:25000])
+              print("NETWORK_RESPONSES",json.dumps(responses,ensure_ascii=False)[:40000])
+              print("PARAM_PROBES",json.dumps(out,ensure_ascii=False)[:60000])
+              await ctx.close(); await browser.close()
+          asyncio.run(main())
+          PY
