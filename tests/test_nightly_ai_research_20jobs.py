@@ -93,3 +93,20 @@ def test_nightly_diagnosis_synthesizes_cancelled_research_lanes_without_masking_
     assert "research_result in {'cancelled', 'skipped'}" in text
     assert "'state': 'blocked_before_execution'" in text
     assert 'raise FileNotFoundError(path)' in text
+
+
+def test_nightly_workflow_has_one_canonical_summary_and_final_gate():
+    workflow = (ROOT / '.github' / 'workflows' / 'nightly-multi-agent-research-v3.yml').read_text(encoding='utf-8')
+    assert workflow.count('  project-summary:') == 1
+    assert workflow.count('  final-gate:') == 1
+    assert workflow.count('      - name: Build truthful nightly diagnosis') == 1
+    assert workflow.count('          research_result = "${{ needs.research.result }}"') == 1
+    assert ' + \'{{' not in workflow
+
+
+def test_nightly_workflow_handles_cancelled_research_without_masking_unexpected_missing_artifacts():
+    workflow = (ROOT / '.github' / 'workflows' / 'nightly-multi-agent-research-v3.yml').read_text(encoding='utf-8')
+    assert "research_result in {'cancelled', 'skipped'}" in workflow
+    assert "'state': 'blocked_before_execution'" in workflow
+    assert 'raise FileNotFoundError(path)' in workflow
+    assert "'artifact_missing': True" in workflow
