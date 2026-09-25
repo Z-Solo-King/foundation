@@ -35,3 +35,16 @@
 ## Completion boundary
 
 This plan improves development-agent orchestration. It does not certify GitHub Actions, Cloudflare bindings, nightly research, chatbot runtime behavior, or production deployment.
+
+## AI-agent benchmark adoption
+
+- [x] Reuse the existing provider-neutral agent-behavior scoring primitives instead of creating a second scoring engine.
+- [x] Add a six-lane project-native AI-agent task matrix covering planning, implementation, verification, research/evidence, security/reliability, and cross-language portability.
+- [x] Require three repeat observations where stochastic execution is available.
+- [x] Require exact revision, agent role, model/provider, evidence tier, and artifact provenance in benchmark observations.
+- [x] Separate numeric benchmark scores from hard security/policy/provenance/runtime gates.
+- [x] Add a Foundation-only contract-validation workflow; Operations remains without GitHub Actions.
+- [ ] Run the first baseline matrix across the selected models/agents and retain the result artifacts.
+- [ ] Convert reproducible benchmark failures into regression fixtures or agent-policy improvements.
+
+The benchmark adopts the same audit philosophy as the project's polyglot scan: independent lanes, language diversity, differential testing, adversarial cases, evidence tiers, exact revisions, and explicit non-closure states.

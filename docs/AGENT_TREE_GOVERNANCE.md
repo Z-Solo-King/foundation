@@ -76,3 +76,17 @@ Every substantial task should leave:
 - completed evidence rung;
 - remaining runtime, control-plane, provider, or administrative evidence;
 - next reproducible action if blocked.
+
+## AI-agent benchmark integration
+
+The agent tree is evaluated by the project-native AI Agent Benchmark System, not by model reputation or generic coding benchmarks.
+
+- Use the versioned `benchmark/ai_agent_task_matrix_v1.json` task matrix.
+- Reuse the existing provider-neutral `benchmark/agent_behavior_benchmark.py` scoring primitives.
+- Evaluate six independent lenses: planning/architecture, code/implementation, testing/verification, research/evidence, security/reliability, and migration/portability.
+- Use different language paradigms as audit lenses, not as competing semantic authorities.
+- Preserve three repeated observations per model/role/task when stochastic execution is available.
+- Record exact repository revision, role, model/provider, prompt contract version, evidence tier, and artifact digest.
+- Keep hard security/policy/provenance/runtime gates independent of the numeric benchmark score.
+- Use Explorer, Worker, Researcher, and Advisor roles as benchmark dimensions so delegation can be evaluated rather than assumed beneficial.
+- Benchmark results may drive tooling/agent improvements and regression coverage; they never authorize a change of policy, security, resource, evaluation, or deployment authority.
