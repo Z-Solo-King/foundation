@@ -3,8 +3,8 @@
   "status": "CURRENT",
   "audited_at": "2026-09-25",
   "live_main": {
-    "foundation": "9d09c6728861e2396c2e4e1f4e81e79e7d607429",
-    "operations": "bb968069dd9c50945a86c4d637802818450899a0"
+    "foundation": "cc4b0df5cea2590b2ec73b00be8600bc58d9be61",
+    "operations": "f12027ca1e0f6ee0484e53c960ffff9242204eba"
   },
   "runtime_pins": {
     "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
@@ -50,7 +50,7 @@
       915
     ],
     "open_implementation_pr_count": 0,
-    "note": "Open Operations PRs #914/#915 are Dependabot dependency updates; no project implementation PRs are open."
+    "note": "Operations #914/#915 are Dependabot-only dependency updates; no project implementation PRs are open."
   },
   "latest_evidence": {
     "nightly_research": {
@@ -248,7 +248,7 @@
     }
   },
   "known_findings": [
-    "2026-09-25: Final live-head refresh — Foundation 9d09c6728861e2396c2e4e1f4e81e79e7d607429; Operations bb968069dd9c50945a86c4d637802818450899a0; 10 open issues; 2 Dependabot PRs; 0 implementation PRs.",
+    "2026-09-25: Current live state — Foundation cc4b0df5cea2590b2ec73b00be8600bc58d9be61; Operations f12027ca1e0f6ee0484e53c960ffff9242204eba; 10 open issues; 2 Dependabot PRs; 0 implementation PRs.",
     "2026-09-25: Fresh live-head audit: Foundation main 53cf7651309e05c2ed76470c0f4cf5e4b221dd71; Operations main 2750f73bd0a53b767d9098c4dde80d213fdcfccf; 10 open issues, 0 open PRs.",
     "2026-09-25: FINAL repository sync after Foundation #1175 merge: Foundation main ec143386e0258d9cb5aeaf13cde95f66814a7c0b, Operations main d4bc9af7ea831c4b768d760d375fe50b2a7f2659; 10 open issues, 0 open PRs.",
     "2026-09-25: Foundation #154 completed from fresh GitHub Actions six-lane audit evidence; the current open queue is 10 issues: Foundation #58/#1157/#157 and Operations #145/#197/#340/#385/#597/#603/#699.",
