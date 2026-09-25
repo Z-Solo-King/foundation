@@ -1,3 +1,23 @@
+# 2026-09-25 POST-MERGE LIVE AUDIT OVERRIDE
+
+This is the current post-merge source-of-truth snapshot.
+
+- Foundation main: e6514890548278e26331269e4abb0818b119233a
+- Operations main: add667236a17f2b845a39ae539f3dfe137d806a2
+- Open issues: 10 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
+- Open PRs: 2 — Operations #914/#915 (Dependabot development dependencies). Foundation has none. No project implementation PR remains open.
+- Repository fixes merged in this cycle: Foundation #1194, #1196, #1197, #1198, #1199, #1200, #1201, plus documentation #1195.
+- Latest clean family-integrity run on corrected main: 36119501613 PASS.
+- Latest production run 36119501519: FAIL only at Cloudflare zone activation prerequisite after 1040 repository tests and Cloudflare account/D1 authorization checks passed.
+- Latest provider preflight 36119501717: FAIL CLOSED on DNS — HTTP 000, curl exit 6, dns_or_network_unreachable.
+- Latest public Worker live probe 36119501481: FAIL at the same public-domain DNS boundary.
+- Latest completed extractor benchmark remains run 36118106992, artifact 10855896489, digest sha256:8b37d570f60d0cf44a6353e23955a945e69c45b54db59b25f9e402789d72f37d; 40 receipts, 4 ok / 32 empty / 4 blocked, provenance 1.0, route provenance 1.0, repeat reliability 1.0, 0 unstable groups, 0 invalid resource rows, 0 missing key rows.
+- Active nightly run 36119514469 remains behind the exact production gate; no provider-backed 24-program acceptance receipt is certified.
+- Cloudflare account role: Super Administrator - All Privileges. Zone heroic-ai.dev remains pending/unresolvable; custom domain enabled on foundation; deployed Foundation provenance github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c; deployed Operations provenance github:a3171f353539f1a31020c432f98cf0530cbf91ef.
+- ChatGPT/UI state is transport state only. GitHub workflow/artifact receipts and Cloudflare control-plane/runtime evidence are authoritative.
+
+---
+
 # 2026-09-25 FINAL LIVE AUDIT OVERRIDE
 
 Current verified cross-surface snapshot. Live workflow receipts and Cloudflare control-plane state outrank older dated sections.
