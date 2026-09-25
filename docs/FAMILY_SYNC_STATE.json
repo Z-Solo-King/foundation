@@ -4,7 +4,7 @@
   "audited_at": "2026-09-25",
   "live_main": {
     "foundation": "dbab61bb15aae22ca19787ddc70283af2617620e",
-    "operations": "cc4d885f09d2275192631ce56ba3429a4c3396a9"
+    "operations": "7d77056cbdd72fae4c3bc73ab9a980f8a888a64e"
   },
   "runtime_pins": {
     "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
@@ -327,7 +327,7 @@
   "github_sync": {
     "checked_at": "2026-09-25",
     "foundation_main": "dbab61bb15aae22ca19787ddc70283af2617620e",
-    "operations_main": "cc4d885f09d2275192631ce56ba3429a4c3396a9",
+    "operations_main": "7d77056cbdd72fae4c3bc73ab9a980f8a888a64e",
     "canonical_operations_pin": "fda24660843cacfe28de661cf170789af542d28f",
     "open_pr_count": 2,
     "cloudflare_runtime_verification": "not_available_in_this_chat",
