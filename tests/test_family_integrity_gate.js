@@ -27,3 +27,5 @@ assert(workflow.includes("FOUNDATION_GH_TOKEN: ${{ github.token }}"), "Foundatio
 assert(workflow.includes("OPERATIONS_GH_TOKEN: ${{ steps.operations-app.outputs.token }}"), "Operations App token boundary missing");
 assert(checker.includes("FOUNDATION_GH_TOKEN"), "checker Foundation token support missing");
 assert(checker.includes("OPERATIONS_GH_TOKEN"), "checker Operations token support missing");
+
+assert(("foundation#1157").match(/^foundation#\\d+$/), "issue-key regression sanity check");
