@@ -298,6 +298,7 @@ jobs:
           retention-days: 14
 
 
+  # Final proof lane: exercise the exact browser-observed Magento/Wizzy GraphQL transport.
   furtados-graphql-direct:
     name: Furtados direct GraphQL product API
     runs-on: ubuntu-latest
