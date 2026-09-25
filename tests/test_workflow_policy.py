@@ -647,3 +647,15 @@ def test_current_public_runtime_identity_is_heroic_ai():
     assert 'pattern = "heroic-ai.dev"' in wrangler
     assert 'BASE_URL="https://Heroic-Ai.dev"' in deployment
     assert 'OPERATIONS_SERVICE_NAME="operations"' in deployment
+
+
+def test_nightly_research_preflight_has_network_failure_classification():
+    preflight = (WORKFLOW_ROOT / "nightly-research-provider-preflight.yml").read_text(encoding="utf-8")
+    assert "worker_health_curl_exit" in preflight
+    assert "worker_health_transport_error" in preflight
+    assert "worker_dns_ipv4" in preflight
+    assert "probe_curl_exit" in preflight
+    assert "probe_transport_error" in preflight
+    assert '"network_classification"' in preflight
+    assert "dns_or_network_unreachable" in preflight
+    assert "edge_http_403" in preflight
