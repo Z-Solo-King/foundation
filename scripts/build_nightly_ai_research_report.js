@@ -57,6 +57,12 @@ const invalidJobs = jobs.filter(job => !Object.values(job.source_status).some(va
 const familyGraphDigests = [...new Set(jobs.map(job => job.family_graph_sha256).filter(Boolean))];
 const missingFamilyGraphJobs = jobs.filter(job => !job.family_graph_sha256).map(job => job.job_id);
 const benchmarkTargets = [...new Set(jobs.flatMap(j => j.target_issues))].sort();
+const acceptanceMatrixPath = path.join(process.cwd(), "docs", "OPEN_ISSUE_ACCEPTANCE_MATRIX.json");
+const acceptanceMatrix = readJson(acceptanceMatrixPath, {issues:[]});
+const openIssueIds = new Set(
+  (acceptanceMatrix.issues || []).map(item => `${item.repo}#${item.number}`)
+);
+const staleBenchmarkTargets = benchmarkTargets.filter(issue => !openIssueIds.has(issue));
 
 const sourceCounts = {};
 for (const source of ["github_repositories", "github_issues", "github_seed_repositories", "reddit", "x_twitter"]) {
@@ -84,6 +90,8 @@ const report = {
   missing_jobs: missingJobs,
   invalid_jobs: invalidJobs.map(j => j.job_id),
   benchmark_targets: benchmarkTargets,
+  open_issue_targets: [...openIssueIds].sort(),
+  stale_benchmark_targets: staleBenchmarkTargets,
   source_success_counts: sourceCounts,
   family_graph_digests: familyGraphDigests,
   family_graph_digest_count: familyGraphDigests.length,
@@ -112,6 +120,7 @@ const lines = [
   "Family graph digest count: " + familyGraphDigests.length,
   "Jobs missing family graph digest: " + (missingFamilyGraphJobs.length ? missingFamilyGraphJobs.join(", ") : "none"),
   "Benchmark targets: " + benchmarkTargets.join(", "),
+  "Stale benchmark targets: " + (staleBenchmarkTargets.length ? staleBenchmarkTargets.join(", ") : "none"),
   "",
   "## Source coverage",
   "",
@@ -170,4 +179,11 @@ lines.push(
 
 fs.writeFileSync(path.join(root, "nightly_ai_research_report.md"), lines.join("\n") + "\n");
 
-if (jobs.length !== expectedJobs || missingJobs.length || invalidJobs.length || familyGraphDigests.length !== 1 || missingFamilyGraphJobs.length) process.exitCode = 1;
+if (
+  jobs.length !== expectedJobs ||
+  missingJobs.length ||
+  invalidJobs.length ||
+  familyGraphDigests.length !== 1 ||
+  missingFamilyGraphJobs.length ||
+  staleBenchmarkTargets.length
+) process.exitCode = 1;
