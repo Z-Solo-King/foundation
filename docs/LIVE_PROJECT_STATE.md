@@ -22,10 +22,10 @@ Operations
 - Repository: Z-Solo-King/operations
 - Visibility: private
 - Default branch: main
-- Audited main head: d2965d69817c66b8b48d5002eae019a99a63e263
+- Audited main head: 3c5b6a45ca2017548f4b8b97d43a25af6f562084
 - Open issues: #145, #197, #340, #385, #597, #603, #699, #713
 - Open PRs on Operations main snapshot: #914, #915
-- Audit documentation PR created during this reconciliation: Operations #952 (docs-only, pending)
+- Operations canonical live-state documentation merged as commit 3c5b6a45ca2017548f4b8b97d43a25af6f562084
 - PR #914: pytest-asyncio dependency range update; current PR checks are not exposed by the connected GitHub endpoint.
 - PR #915: setuptools dependency range update; current PR checks are not exposed by the connected GitHub endpoint.
 - Both Dependabot PRs target an older Operations base than the current main and should be treated as dependency-maintenance branches, not current main evidence.
