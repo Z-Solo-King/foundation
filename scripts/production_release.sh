@@ -4,7 +4,7 @@ set -euo pipefail
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
 OPERATIONS_REF="b82b142ffc3a5418f704f85c737953afb5783b99"
 OPERATIONS_SERVICE_NAME="operations"
-BASE_URL="https://heroic.ai.workers.dev"
+BASE_URL="https://heroic.heroic-ai.workers.dev"
 ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"
 
 cleanup() {
