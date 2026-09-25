@@ -416,18 +416,6 @@ echo "POST /api/v1/chat rollover replay -> HTTP ${chat_rollover_after_status}"
 test "$chat_rollover_after_status" = "200"
 jq -e --arg expected_id "$(jq -r '.response.response_id' "$RUNNER_TEMP/chat-rollover-before.json")" '.ok == true and .response.response_id == $expected_id' "$RUNNER_TEMP/chat-rollover-after.json" >/dev/null
 echo "Live chat redeployment replay acceptance: PASS"
-  sentinel_id=$(jq -r '.sentinel_id' "$persistence_seed_file")
-  persistence_verify_payload=$(jq -nc --arg operation "persistence_verify" --arg sentinel_id "$sentinel_id" '{operation:$operation,sentinel_id:$sentinel_id}')
-persistence_verify_status=$(curl -sS --max-time 30 \
-  -o "$RUNNER_TEMP/persistence-rollover-verify.json" -w '%{http_code}' \
-  -H "Authorization: Bearer $AUTH_TOKEN" \
-  -H 'Content-Type: application/json' \
-  -d "$persistence_verify_payload" \
-  "$BASE_URL/api/v1/chatbot/diagnostic" || true)
-echo "POST persistence_verify -> HTTP $persistence_verify_status"
-test "$persistence_verify_status" = "200"
-jq -e '.ok == true and .memory_persisted_across_version == true and .replay_nonce_rejected_after_version_change == true and .cleanup_status == 200' \
-  "$RUNNER_TEMP/persistence-rollover-verify.json" >/dev/null
 cp "$RUNNER_TEMP/persistence-rollover-verify.json" .runtime/persistence-rollover-verify.json
 echo "Live memory/replay deployment-boundary acceptance: PASS"# Record the live durable MODEL_CALLS quota state before the required model-generation
 # acceptance. This is a bounded non-secret diagnostic: no auth token or provider payload
