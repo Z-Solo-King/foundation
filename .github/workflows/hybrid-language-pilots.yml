@@ -346,7 +346,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "${GITHUB_SHA}" =~ ^[0-9a-f]{40}$
+          [[ "${GITHUB_SHA}" =~ ^[0-9a-f]{40}$ ]]
           echo "ref=${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
       - name: Checkout Foundation URL-reference repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
