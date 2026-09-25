@@ -27,7 +27,7 @@ concurrency:
 
 env:
   PYTHONUNBUFFERED: "1"
-  PUBLIC_WORKER_URL: "https://heroic.ai.workers.dev"
+  PUBLIC_WORKER_URL: "https://ai-cio.pages.dev"
   RESEARCH_LLM_ENDPOINT: "http://127.0.0.1:8765"
   RESEARCH_LLM_API_KEY: "local-worker-proxy"
   RESEARCH_LLM_MODEL: "@cf/zai-org/glm-4.7-flash"
