@@ -1,5 +1,26 @@
 # 2026-09-25 FINAL LIVE AUDIT OVERRIDE
 
+This section is the current cross-surface continuation point. Live GitHub and Cloudflare evidence outrank older checkpoint values below.
+
+- Foundation main: 70093db359570b3f87d135e26b525645135fa517
+- Operations main: b370dc959171dbfb35eae42c2acdee827917ee3f
+- Open issues: 10 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
+- Open project PRs: 3 — Foundation #1195 (this documentation reconciliation); Operations #914/#915 (Dependabot development-dependency updates). No implementation PR remains open.
+- Foundation PRs #1194, #1196, #1197, #1198, #1199 fixed confirmed Cloudflare-release/family-integrity/preflight defects and are merged.
+- Current production release 36118107525: FAIL at the Cloudflare zone prerequisite after repository and Cloudflare account/D1 authorization checks passed. heroic-ai.dev is not an active zone in the configured account.
+- Current provider preflight 36118107000: FAIL closed with truthful transport evidence — HTTP 000, curl exit 6, network_classification dns_or_network_unreachable, Could not resolve host: Heroic-Ai.dev. No parser crash.
+- Current family integrity 36118107049: PASS.
+- Latest completed extractor benchmark 36115560009: PASS; artifact 10855326519; digest sha256:1890da70d49377f2f89ee11daa644882a90972666916c07e7aa4edc8066c449e; 40 receipts; 4 ok / 32 empty / 4 blocked; provenance 1.0; route provenance 1.0; repeat reliability 1.0; unstable repeated groups 0.
+- The newer current-main extractor benchmark (36118106992) has not yet produced a completed replacement artifact; retain 36115560009 as the latest completed benchmark.
+- Cloudflare account role: Super Administrator - All Privileges. Zone heroic-ai.dev remains pending/unresolvable; custom domain is enabled on foundation; deployed Foundation provenance is github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c; deployed Operations provenance is github:a3171f353539f1a31020c432f98cf0530cbf91ef; D1 research-intelligence ID is 19f51638-47a5-4218-a9dc-73dbfd6156fe.
+- Nightly multi-agent research is correctly blocked behind the exact production gate; no provider-backed 24-program receipt is certified.
+- ChatGPT/UI state is transport state only; GitHub workflow/artifact receipts and Cloudflare control-plane/runtime evidence are authoritative.
+- No runtime or production issue is closed without its required live receipt.
+
+---
+
+# 2026-09-25 FINAL LIVE AUDIT OVERRIDE
+
 This section is the current cross-surface continuation point. Live GitHub and Cloudflare evidence overrides older checkpoint values below.
 
 - Foundation main: 6eb531095148cb6657bccc72a64542691dbb6fa1
