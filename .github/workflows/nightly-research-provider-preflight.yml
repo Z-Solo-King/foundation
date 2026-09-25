@@ -17,7 +17,7 @@ jobs:
       - name: Verify authenticated Worker-backed Workers AI
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          PUBLIC_WORKER_URL: "https://heroic.ai.workers.dev"
+          PUBLIC_WORKER_URL: "https://ai-cio.pages.dev"
           OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
           OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
         run: |
