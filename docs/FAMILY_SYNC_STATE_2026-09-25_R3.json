@@ -1,0 +1,107 @@
+{
+  "schema_version": "family-sync-state/v3",
+  "status": "CURRENT",
+  "audited_at": "2026-09-25",
+  "repository": "foundation",
+  "audited_code_heads": {
+    "foundation": "dbab61bb15aae22ca19787ddc70283af2617620e",
+    "operations": "cc4d885f09d2275192631ce56ba3429a4c3396a9"
+  },
+  "open_issues": {
+    "count": 11,
+    "foundation": [
+      58,
+      1157,
+      157
+    ],
+    "operations": [
+      145,
+      197,
+      340,
+      385,
+      597,
+      603,
+      699,
+      713
+    ]
+  },
+  "open_prs": {
+    "count": 3,
+    "foundation": [
+      1206
+    ],
+    "operations": [
+      914,
+      915
+    ],
+    "open_implementation_pr_count": 0
+  },
+  "cloudflare": {
+    "account_membership_http": 200,
+    "workers_list_http": 200,
+    "d1_list_http": 200,
+    "role": "Super Administrator - All Privileges",
+    "canonical_public_worker": "foundation",
+    "canonical_private_worker": "operations",
+    "public_version": "93aa2e4e-cf67-41de-9933-95f8822de423",
+    "private_version": "66e335b9-68da-429b-abcf-29f9c7e2f5ac",
+    "public_provenance": "github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c",
+    "private_provenance": "github:a3171f353539f1a31020c432f98cf0530cbf91ef",
+    "zone": "heroic-ai.dev",
+    "zone_status": "pending",
+    "activation_failure_reason": "unresolvable",
+    "d1_database_id": "19f51638-47a5-4218-a9dc-73dbfd6156fe"
+  },
+  "d1_counts": {
+    "research_runs": 644,
+    "observations": 398,
+    "research_publications": 0,
+    "resource_governance_reservations": 422,
+    "resource_governance_quota": 110,
+    "chat_idempotency": 1278,
+    "chat_memory_records": 3,
+    "chat_learning_observations": 0
+  },
+  "nightly": {
+    "run_id": 36141145555,
+    "state": "blocked_before_execution",
+    "production_gate_run_id": 36141127503,
+    "preflight_run_id": 36141127495,
+    "public_probe_run_id": 36141127548,
+    "diagnosis_artifact_id": 10868805522,
+    "migration_review_artifact_id": 10866905405,
+    "provider_backed_24_program_receipt": false
+  },
+  "extractor_benchmark": {
+    "run_id": 36141127492,
+    "run_number": 448,
+    "artifact_id": 10867020802,
+    "digest": "sha256:073ad2ba3df5bad3f9536abe95281ec596e109d7293b4bc4d30499e11cb21e62",
+    "foundation_revision": "dbab61bb15aae22ca19787ddc70283af2617620e",
+    "operations_ref": "a3171f353539f1a31020c432f98cf0530cbf91ef",
+    "pass": true,
+    "receipts": 40,
+    "ok": 4,
+    "empty": 32,
+    "blocked": 4,
+    "provenance_completeness": 1,
+    "route_provenance_completeness": 1,
+    "repeat_reliability": 1,
+    "unstable_repeated_groups": 0,
+    "validated_full_current_heads": false
+  },
+  "issue_713": {
+    "state": "open",
+    "reproducer_run_id": 36119832079,
+    "corpus_case": "u47",
+    "parity_mismatch": true,
+    "post_fix_differential_receipt": false
+  },
+  "authority": {
+    "production_revision_separate_from_main": true,
+    "github_actions_is_foundation_deployment_authority": true,
+    "cloudflare_runtime_requires_live_receipt": true,
+    "chatgpt_ui_is_transport_state": true,
+    "no_competing_deployment_authority": true
+  }
+}
