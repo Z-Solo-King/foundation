@@ -7,6 +7,7 @@ ROOT = Path(__file__).parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "nightly-ai-research-20jobs.yml"
 COLLECTOR = ROOT / "scripts" / "nightly_ai_research_job.sh"
 REPORT = ROOT / "scripts" / "build_nightly_ai_research_report.js"
+AUTONOMOUS_WORKFLOW = ROOT / ".github" / "workflows" / "autonomous-benchmark.yml"
 
 
 def test_expanded_20_job_workflow_has_seeded_and_qualified_matrix():
@@ -61,12 +62,11 @@ def test_research_report_produces_deterministic_signal_candidates():
     text = REPORT.read_text(encoding="utf-8")
     assert "buildSignalCandidates" in text
     assert 'signal_candidates: signalCandidates' in text
-    assert '"evidence_class:"research-signal""' in text or 'evidence_class:"research-signal"' in text
+    assert 'evidence_class:"research-signal"' in text
 
 
 def test_autonomous_benchmark_consumes_latest_research_feed():
-    workflow = WORKFLOW.parent.parent / ".github" / "workflows" / "autonomous-benchmark.yml"
-    text = workflow.read_text(encoding="utf-8")
+    text = AUTONOMOUS_WORKFLOW.read_text(encoding="utf-8")
     assert "research_feed:" in text
     assert "nightly-ai-research-20jobs.yml" in text
     assert "latest-research-feed" in text
