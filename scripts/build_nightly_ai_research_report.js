@@ -46,7 +46,7 @@ const jobs = dirs.map(dir => {
 
 const benchmarkTargets = [...new Set(jobs.flatMap(j => j.target_issues))].sort();
 const sourceCounts = {};
-for (const source of ["github_repositories","github_issues","reddit","x_twitter"]) {
+for (const source of ["github_repositories","reddit","x_twitter"]) {
   sourceCounts[source] = jobs.filter(j => j.source_status[source] === 200).length;
 }
 
@@ -94,7 +94,6 @@ const lines = [
   "## Source coverage",
   "",
   "- GitHub repositories: " + sourceCounts.github_repositories + "/" + expectedJobs,
-  "- GitHub issues: " + sourceCounts.github_issues + "/" + expectedJobs,
   "- Reddit: " + sourceCounts.reddit + "/" + expectedJobs,
   "- X/Twitter: " + sourceCounts.x_twitter + "/" + expectedJobs,
   "",
@@ -108,7 +107,6 @@ for (const job of jobs) {
   lines.push("Focus: " + job.research_focus);
   lines.push(
     "Sources: GitHub repos=" + (job.source_status.github_repositories === 200 ? "PASS" : "MISS") +
-    ", GitHub issues=" + (job.source_status.github_issues === 200 ? "PASS" : "MISS") +
     ", Reddit=" + (job.source_status.reddit === 200 ? "PASS" : "MISS") +
     ", X/Twitter=" + (job.source_status.x_twitter === 200 ? "PASS" : "MISS")
   );
