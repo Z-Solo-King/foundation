@@ -71,9 +71,33 @@ async function browserProbe(startUrls, opts={}) {
 }
 
 async function probeAcer() {
-  await browserProbe(["https://store.acer.com/en-in/"], {wait:6000});
+  await browserProbe(["https://store.acer.com/en-in/"], {wait:5000});
   const graphql = results.network.find(x => x.url.includes("/graphql") && x.method === "POST");
   add("graphql-capture", graphql ? {found:true,url:graphql.url,postData:graphql.postData,storeHeader:"default"} : {found:false});
+  const direct = [
+    "https://store.acer.com/en-in/graphql",
+  ];
+  const nativeQuery = `query($search:String,$pageSize:Int=20,$currentPage:Int=1){
+    products(search:$search,pageSize:$pageSize,currentPage:$currentPage){
+      total_count page_info{current_page page_size total_pages}
+      items{sku name url_key}
+    }
+  }`;
+  for (const ep of direct) {
+    try {
+      const home = await fetchText("https://store.acer.com/en-in/", {headers:{accept:"text/html"}});
+      const cookies = home.headers;
+      const resp = await fetchJson(ep,{
+        method:"POST",
+        headers:{
+          "content-type":"application/json","accept":"application/json","store":"default",
+          "origin":"https://store.acer.com","referer":"https://store.acer.com/en-in/"
+        },
+        body:JSON.stringify({query:nativeQuery,variables:{search:"laptop",pageSize:50,currentPage:1}})
+      });
+      add("native-graphql-replay",{url:ep,status:resp.status,contentType:resp.contentType,summary:bodySummary(resp.json),sample:resp.text.slice(0,3500),parseError:resp.parseError});
+    } catch(e){ results.errors.push({stage:"acer-native-graphql",error:String(e)}); }
+  }
   if (graphql?.postData) {
     try {
       const payload = JSON.parse(graphql.postData);
@@ -143,6 +167,8 @@ async function probeDell() {
 }
 
 async function probeFlipkart() {
+  const raw=await fetchText("https://www.flipkart.com/laptops/pr?sid=6bo,b5g",{headers:{accept:"text/html"}});
+  add("raw-html",{status:raw.status,bytes:raw.text.length,initialStateMarker:raw.text.includes("__INITIAL_STATE__"),productIdHits:[...raw.text.matchAll(/productId[^\\d]{0,40}(\\d{5,})/gi)].slice(0,10).map(m=>m[1]),finalPriceHits:[...raw.text.matchAll(/finalPrice[^\\d]{0,40}(\\d{3,})/gi)].slice(0,10).map(m=>m[1])});
   await browserProbe(["https://www.flipkart.com/laptops/pr?sid=6bo,b5g"],{wait:5000});
   // Re-run DOM inspection separately so the state blob is not lost in network capture.
   const browser=await chromium.launch({headless:true});
