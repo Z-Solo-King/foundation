@@ -1,0 +1,54 @@
+name: Left targets focused transport hunt
+
+on:
+  push:
+    branches:
+      - diag/left-targets-v4-2026-09-26
+
+permissions:
+  contents: read
+
+jobs:
+  acer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with: {node-version: "24"}
+      - name: Acer transport hunt
+        run: node scripts/acer_left_hunt.mjs
+      - name: Upload Acer evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with: {name: acer-left-hunt, path: acer-hunt.json, if-no-files-found: warn, retention-days: 14}
+  apple:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with: {node-version: "24"}
+      - name: Apple transport hunt
+        run: node scripts/apple_left_hunt.mjs
+      - name: Upload Apple evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with: {name: apple-left-hunt, path: apple-hunt.json, if-no-files-found: warn, retention-days: 14}
+  flipkart:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with: {node-version: "24"}
+      - name: Install browser runtime
+        run: |
+          npm install --no-save --no-package-lock playwright@1.63.0
+          npx playwright install --with-deps chromium
+      - name: Flipkart transport hunt
+        run: node scripts/flipkart_left_hunt.mjs
+      - name: Upload Flipkart evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with: {name: flipkart-left-hunt, path: flipkart-hunt.json, if-no-files-found: warn, retention-days: 14}
