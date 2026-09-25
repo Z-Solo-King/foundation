@@ -2,10 +2,10 @@
   "schema": "family-issue-acceptance-matrix/v1",
   "audited_at": "2026-09-25",
   "repository_heads": {
-    "foundation": "cc4b0df5cea2590b2ec73b00be8600bc58d9be61",
-    "operations": "f12027ca1e0f6ee0484e53c960ffff9242204eba"
+    "foundation": "b84bca4f127ff89852d524cd3b39eec18f3329cd",
+    "operations": "4ab0741c00e2d1aaf4b0a6e5de4bd5a5c6c3abf0"
   },
-  "open_issue_count": 10,
+  "open_issue_count": 11,
   "issues": [
     {
       "repo": "foundation",
@@ -231,6 +231,21 @@
       "probes": [
         "FI-05",
         "FI-07"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 713,
+      "title": "Rust URL identity security/parity",
+      "status": "OPEN",
+      "class": "security+parity",
+      "remaining": [
+        "fresh post-fix hybrid receipt"
+      ],
+      "evidence": [
+        "71-case Python/Rust URL differential",
+        "NAT64/private-reserved negative corpus",
+        "four-lane governance coverage"
       ]
     }
   ],

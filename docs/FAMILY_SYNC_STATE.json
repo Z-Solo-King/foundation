@@ -3,8 +3,8 @@
   "status": "CURRENT",
   "audited_at": "2026-09-25",
   "live_main": {
-    "foundation": "e6514890548278e26331269e4abb0818b119233a",
-    "operations": "add667236a17f2b845a39ae539f3dfe137d806a2"
+    "foundation": "b84bca4f127ff89852d524cd3b39eec18f3329cd",
+    "operations": "4ab0741c00e2d1aaf4b0a6e5de4bd5a5c6c3abf0"
   },
   "runtime_pins": {
     "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
@@ -34,11 +34,11 @@
     "deployed_operations_provenance": "github:a3171f353539f1a31020c432f98cf0530cbf91ef"
   },
   "current_queue": {
-    "open_issue_count": 10,
+    "open_issue_count": 11,
     "foundation": [
       58,
-      1157,
-      157
+      157,
+      1157
     ],
     "operations": [
       145,
@@ -47,7 +47,8 @@
       385,
       597,
       603,
-      699
+      699,
+      713
     ]
   },
   "latest_evidence": {
