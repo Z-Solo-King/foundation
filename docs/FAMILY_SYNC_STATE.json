@@ -3,8 +3,8 @@
   "status": "CURRENT",
   "audited_at": "2026-09-25",
   "live_main": {
-    "foundation": "c80cba8a320d45eedd0528797de97839af19f000",
-    "operations": "fd974fe9ce1793fed2d308519051e92d30d6d855"
+    "foundation": "81093f6ef3bd9998f1071a4765b06788956db6ef",
+    "operations": "3ecac088a3ace49f0a7133df60d075369223ae96"
   },
   "runtime_pins": {
     "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
@@ -236,6 +236,7 @@
     }
   },
   "known_findings": [
+    "2026-09-25: Live family sync re-audited: Foundation main 81093f6ef3bd9998f1071a4765b06788956db6ef; Operations main 3ecac088a3ace49f0a7133df60d075369223ae96; 11 open issues; 0 open PRs.",
     "2026-09-25: Operations main advanced to fd974fe9ce1793fed2d308519051e92d30d6d855 with the synchronized family-state checkpoint; Foundation/Operations live heads are now explicitly re-recorded.",
     "2026-09-25: Foundation family integration graph merged in #1165; Operations consumer merged in #936; nightly 20-job research packets are now bound to the family graph digest by #1166.",
     "2026-09-25: Foundation main is 6183a18a8f4373099264b3c193bc91402045d091; Operations main is 06c763aba521b0d7060b22e10ea8f195008a63a3.",
@@ -351,6 +352,8 @@
     "material_count": 20,
     "benchmark_probe_count": 11,
     "operations_sync_state_merge": "fd974fe9ce1793fed2d308519051e92d30d6d855",
-    "foundation_main_at_sync": "c80cba8a320d45eedd0528797de97839af19f000"
+    "foundation_main_at_sync": "c80cba8a320d45eedd0528797de97839af19f000",
+    "foundation_main": "81093f6ef3bd9998f1071a4765b06788956db6ef",
+    "operations_main": "3ecac088a3ace49f0a7133df60d075369223ae96"
   }
 }
