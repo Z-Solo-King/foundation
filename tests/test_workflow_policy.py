@@ -527,6 +527,20 @@ def test_stream_probe_uses_explicit_response_identity_argument():
     assert 'env.ACCEPTANCE_RUN_ID' not in deployment
 
 
+def test_live_probe_waits_for_successful_production_release_r2():
+    text = (ROOT / '.github/workflows/public-worker-live-probe.yml').read_text(encoding='utf-8')
+    assert 'workflows:' in text and '"Heroic AI production release"' in text
+    assert 'types: [completed]' in text
+    assert "github.event.workflow_run.conclusion == 'success'" in text
+    assert "github.event.workflow_run.head_branch == 'main'" in text
+
+def test_nightly_research_preflight_waits_for_successful_production_release_r2():
+    text = (ROOT / '.github/workflows/nightly-research-provider-preflight.yml').read_text(encoding='utf-8')
+    assert 'workflows:' in text and '"Heroic AI production release"' in text
+    assert 'types: [completed]' in text
+    assert "github.event.workflow_run.conclusion == 'success'" in text
+    assert "github.event.workflow_run.head_branch == 'main'" in text
+
 def test_live_probe_acceptance_does_not_depend_on_issue_comment_permissions():
     texts = _workflow_texts()
     assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["public-worker-live-probe.yml"]
