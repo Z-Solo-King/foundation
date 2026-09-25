@@ -3,7 +3,7 @@
   "status": "CURRENT",
   "audited_at": "2026-09-25",
   "live_main": {
-    "foundation": "96d1ad7a5afd0337f6c5cc896b444f7d823e267c",
+    "foundation": "ec143386e0258d9cb5aeaf13cde95f66814a7c0b",
     "operations": "d4bc9af7ea831c4b768d760d375fe50b2a7f2659"
   },
   "runtime_pins": {
@@ -235,29 +235,15 @@
     },
     "repository_audit": {
       "checked_at": "2026-09-25",
-      "foundation_main": "96d1ad7a5afd0337f6c5cc896b444f7d823e267c",
+      "foundation_main": "ec143386e0258d9cb5aeaf13cde95f66814a7c0b",
       "operations_main": "d4bc9af7ea831c4b768d760d375fe50b2a7f2659",
       "open_issue_count": 10,
       "open_pr_count": 0,
-      "foundation": [
-        58,
-        1157,
-        157
-      ],
-      "operations": [
-        145,
-        197,
-        340,
-        385,
-        597,
-        603,
-        699
-      ],
-      "credential_issue_154": "completed from fresh run 36106420946 evidence",
-      "scan_contract": "Operations 40-case matrix and scanner synchronized to 10 active issues"
+      "notes": "Foundation #154 completed from fresh GitHub Actions evidence; Operations four-lane open-issue scan synchronized to 10 active cases; current Family graph FI-06 excludes the completed issue."
     }
   },
   "known_findings": [
+    "2026-09-25: FINAL repository sync after Foundation #1175 merge: Foundation main ec143386e0258d9cb5aeaf13cde95f66814a7c0b, Operations main d4bc9af7ea831c4b768d760d375fe50b2a7f2659; 10 open issues, 0 open PRs.",
     "2026-09-25: Foundation #154 completed from fresh GitHub Actions six-lane audit evidence; the current open queue is 10 issues: Foundation #58/#1157/#157 and Operations #145/#197/#340/#385/#597/#603/#699.",
     "2026-09-25: Operations open-issue inventory, surface map, 40-case matrix and scanner are synchronized to the same 10 active issues; cross-lens Foundation #157 is counted as active.",
     "2026-09-25: Operations main advanced to fd974fe9ce1793fed2d308519051e92d30d6d855 with the synchronized family-state checkpoint; Foundation/Operations live heads are now explicitly re-recorded.",
@@ -373,7 +359,7 @@
     "material_count": 20,
     "benchmark_probe_count": 11,
     "operations_sync_state_merge": "fd974fe9ce1793fed2d308519051e92d30d6d855",
-    "foundation_main_at_sync": "c80cba8a320d45eedd0528797de97839af19f000",
+    "foundation_main_at_sync": "ec143386e0258d9cb5aeaf13cde95f66814a7c0b",
     "graph_version": "1.1"
   }
 }
