@@ -7,6 +7,11 @@ started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 lookback="${LOOKBACK_HOURS:-24}"
 since="$(date -u -d "${lookback} hours ago" +%Y-%m-%d 2>/dev/null || date -u -d "24 hours ago" +%Y-%m-%d)"
 encode() { printf '%s' "$1" | jq -sRr @uri; }
+family_graph_path="docs/FAMILY_INTEGRATION_GRAPH.json"
+family_graph_sha256=""
+if [ -f "$family_graph_path" ]; then
+  family_graph_sha256="$(sha256sum "$family_graph_path" | awk '{print $1}')"
+fi
 
 gh_status=1
 gh_issue_status=1
@@ -119,6 +124,7 @@ jq -n \
   --arg issues "${TARGET_ISSUES}" \
   --arg focus "${FOCUS}" \
   --arg seeds "${SEED_REPOS}" \
+  --arg family_graph_sha256 "${family_graph_sha256}" \
   --argjson gh_status "${gh_status}" \
   --argjson gh_issue_status "${gh_issue_status}" \
   --argjson gh_seed_status "${gh_seed_status}" \
@@ -149,12 +155,17 @@ jq -n \
     },
     seed_repository_count:$seed_count,
     seed_repository_success_count:$seed_success,
+    family_graph_sha256:$family_graph_sha256,
     evidence_class:"research-signal",
     hidden_reasoning_recorded:false
   }' > "$out/metadata.json"
 
 jq -e '.schema == "nightly-ai-research-observation/v3" and (.job_id|length>0) and (.topic|length>0) and (.target_issues|length>0) and (.research_focus|length>0) and (.seed_repositories|length>0) and (.evidence_class=="research-signal") and (.hidden_reasoning_recorded==false)' \
   "$out/metadata.json" >/dev/null
+if [ -z "$family_graph_sha256" ]; then
+  echo "FAMILY_INTEGRATION_GRAPH.json is missing; research packet is not bound to the canonical family graph." >&2
+  exit 1
+fi
 
 {
   echo "## ${TOPIC}"

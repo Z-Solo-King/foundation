@@ -36,6 +36,7 @@ const jobs = dirs.map(dir => {
     topic: meta.topic,
     target_issues: meta.target_issues || [],
     research_focus: meta.research_focus,
+    family_graph_sha256: meta.family_graph_sha256 || "",
     lookback_since_utc: meta.lookback_since_utc,
     source_status: meta.source_status || {},
     github_repositories: (github.repositories || []).slice(0, 5),
@@ -53,6 +54,8 @@ const expectedIds = Array.from({length: expectedJobs}, (_, i) => String(i + 1).p
 const foundIds = new Set(jobs.map(j => j.job_id));
 const missingJobs = expectedIds.filter(id => !foundIds.has(id));
 const invalidJobs = jobs.filter(job => !Object.values(job.source_status).some(value => value === 200));
+const familyGraphDigests = [...new Set(jobs.map(job => job.family_graph_sha256).filter(Boolean))];
+const missingFamilyGraphJobs = jobs.filter(job => !job.family_graph_sha256).map(job => job.job_id);
 const benchmarkTargets = [...new Set(jobs.flatMap(j => j.target_issues))].sort();
 
 const sourceCounts = {};
@@ -81,7 +84,10 @@ const report = {
   missing_jobs: missingJobs,
   invalid_jobs: invalidJobs.map(j => j.job_id),
   benchmark_targets: benchmarkTargets,
-  source_success_counts: sourceCounts
+  source_success_counts: sourceCounts,
+  family_graph_digests: familyGraphDigests,
+  family_graph_digest_count: familyGraphDigests.length,
+  missing_family_graph_jobs: missingFamilyGraphJobs
 };
 
 fs.mkdirSync(root, {recursive:true});
@@ -103,6 +109,8 @@ const lines = [
   "Job packets: " + jobs.length + "/" + expectedJobs,
   "Missing packets: " + (missingJobs.length ? missingJobs.join(", ") : "none"),
   "Packets with zero live sources: " + (invalidJobs.length ? invalidJobs.map(j => j.job_id).join(", ") : "none"),
+  "Family graph digest count: " + familyGraphDigests.length,
+  "Jobs missing family graph digest: " + (missingFamilyGraphJobs.length ? missingFamilyGraphJobs.join(", ") : "none"),
   "Benchmark targets: " + benchmarkTargets.join(", "),
   "",
   "## Source coverage",
@@ -162,4 +170,4 @@ lines.push(
 
 fs.writeFileSync(path.join(root, "nightly_ai_research_report.md"), lines.join("\n") + "\n");
 
-if (jobs.length !== expectedJobs || missingJobs.length || invalidJobs.length) process.exitCode = 1;
+if (jobs.length !== expectedJobs || missingJobs.length || invalidJobs.length || familyGraphDigests.length !== 1 || missingFamilyGraphJobs.length) process.exitCode = 1;

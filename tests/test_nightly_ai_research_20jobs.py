@@ -40,6 +40,9 @@ def test_research_collector_and_synthesis_scripts_are_syntactically_valid():
     assert bash.returncode == 0, bash.stderr
     node = subprocess.run(["node", "--check", str(REPORT)], capture_output=True, text=True)
     assert node.returncode == 0, node.stderr
+    report_text = REPORT.read_text(encoding="utf-8")
+    assert "family_graph_sha256" in report_text
+    assert "family_graph_digest_count" in report_text
 
 
 def test_research_collector_records_seed_repository_provenance():
@@ -48,3 +51,5 @@ def test_research_collector_records_seed_repository_provenance():
     assert "github_seed_repositories.json" in text
     assert "github_seed_summary.json" in text
     assert "nightly-ai-research-observation/v3" in text
+    assert "FAMILY_INTEGRATION_GRAPH.json" in text
+    assert "family_graph_sha256" in text

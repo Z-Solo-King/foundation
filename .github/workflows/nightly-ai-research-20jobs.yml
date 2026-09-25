@@ -91,8 +91,9 @@ jobs:
       - name: Require all 20 job packets
         run: |
           set -euo pipefail
-          jq -e '.schema == "nightly-ai-research-report/v2" and .expected_jobs == 20 and (.jobs | length == 20) and (.benchmark_targets | length > 0)' .runtime/nightly-ai-research/nightly_ai_research_report.json >/dev/null
+          jq -e '.schema == "nightly-ai-research-report/v2" and .expected_jobs == 20 and (.jobs | length == 20) and (.benchmark_targets | length > 0) and .family_graph_digest_count == 1 and (.missing_family_graph_jobs | length == 0)' .runtime/nightly-ai-research/nightly_ai_research_report.json >/dev/null
           echo "20-job completeness: PASS"
+          echo "family integration graph provenance: PASS"
       - name: Publish report to step summary
         run: |
           cat .runtime/nightly-ai-research/nightly_ai_research_report.md >> "$GITHUB_STEP_SUMMARY"
