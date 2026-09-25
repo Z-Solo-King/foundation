@@ -34,7 +34,7 @@
     "deployed_operations_provenance": "github:a3171f353539f1a31020c432f98cf0530cbf91ef"
   },
   "current_queue": {
-    "open_issue_count": 10,
+    "open_issue_count": 11,
     "foundation": [
       58,
       1157,
@@ -47,7 +47,8 @@
       385,
       597,
       603,
-      699
+      699,
+      713
     ]
   },
   "latest_evidence": {
@@ -230,7 +231,10 @@
       "run_number": 187,
       "run_id": 36119832079,
       "status": "failure",
-      "known_issue": "Operations #713 covers Rust URL IPv6/IPv4-mapped policy parity; current run also exposes TS endpoint-discovery checkout/ref handling failure"
+      "known_issues": [
+        "Operations #713 reopened for Rust URL policy parity after u47 mismatch",
+        "TypeScript endpoint differential lane failed in cross-repository ref checkout with invalid refspec"
+      ]
     }
   },
   "known_findings": [
@@ -360,13 +364,14 @@
     "foundation_main_at_sync": "ec143386e0258d9cb5aeaf13cde95f66814a7c0b",
     "graph_version": "1.1"
   },
-  "open_pr_count": 3,
+  "open_pr_count": 4,
   "foundation_open_prs": [
     1203
   ],
   "operations_open_prs": [
     914,
-    915
+    915,
+    952
   ],
   "open_implementation_pr_count": 0
 }
