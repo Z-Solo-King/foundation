@@ -3,8 +3,8 @@
   "status": "CURRENT",
   "audited_at": "2026-09-25",
   "live_main": {
-    "foundation": "c80cba8a320d45eedd0528797de97839af19f000",
-    "operations": "fd974fe9ce1793fed2d308519051e92d30d6d855"
+    "foundation": "96d1ad7a5afd0337f6c5cc896b444f7d823e267c",
+    "operations": "de7311f64518f2d0f3662a3b774bc13da0241879"
   },
   "runtime_pins": {
     "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
@@ -28,11 +28,10 @@
     "canonical_public_url": "https://Heroic-Ai.dev"
   },
   "current_queue": {
-    "open_issue_count": 11,
+    "open_issue_count": 10,
     "foundation": [
       58,
       1157,
-      154,
       157
     ],
     "operations": [
@@ -233,13 +232,22 @@
       "chatbot_requires_model_generation": true,
       "operations_worker_preflight_endpoint": "/workers/scripts/{script}/settings",
       "current_operations_main": "0bddf1b8b2741ac277a3751e531a3b9714484ad9"
+    },
+    "repository_audit": {
+      "foundation_main": "96d1ad7a5afd0337f6c5cc896b444f7d823e267c",
+      "operations_main": "de7311f64518f2d0f3662a3b774bc13da0241879",
+      "open_issue_count": 10,
+      "open_pr_count": 0,
+      "checked_at": "2026-09-25",
+      "notes": "Foundation #154 closed after fresh six-lane private-Operations audit evidence; Operations open-issue inventory and four-lane matrix synchronized."
     }
   },
   "known_findings": [
+    "2026-09-25: Fresh GitHub audit confirms Foundation #154 is completed; current open queue is Foundation #58/#1157/#157 plus Operations #145/#197/#340/#385/#597/#603/#699.",
+    "2026-09-25: Operations open-issue inventory, surface map, 40-case matrix and scanner are synchronized to 10 active issues; the scanner derives its active set from synchronized contracts rather than a hard-coded list.",
     "2026-09-25: Operations main advanced to fd974fe9ce1793fed2d308519051e92d30d6d855 with the synchronized family-state checkpoint; Foundation/Operations live heads are now explicitly re-recorded.",
     "2026-09-25: Foundation family integration graph merged in #1165; Operations consumer merged in #936; nightly 20-job research packets are now bound to the family graph digest by #1166.",
     "2026-09-25: Foundation main is 6183a18a8f4373099264b3c193bc91402045d091; Operations main is 06c763aba521b0d7060b22e10ea8f195008a63a3.",
-    "2026-09-25: Foundation has 4 open issues (#58, #1157, #154, #157); Operations has 7 open issues (#145, #197, #340, #385, #597, #603, #699); open PR count is 0.",
     "2026-09-25: #1160 was closed as superseded; its useful benchmark/context material is preserved in canonical graph and benchmark documentation.",
     "2026-09-25: 20 research jobs cover AI agents, orchestration, MCP/tools, CLI agents, testing, memory/context, browser use, inference, benchmarks, Rust/Go/TypeScript/Java/.NET/C++/Zig migration, parallelism, GitHub Actions, research evidence, security and Heroic AI issue-driven research.",
     "2026-09-24 cycle2: Operations main is now 5f2c98fbf0bd8694c63b97a62e28b0bacf01923a after Rust HTML availability contract alignment (#887).",
@@ -254,8 +262,7 @@
     "2026-09-24 cycle6: the ChatGPT conversation became unresponsive and reached its practical context/length limit; this is recorded as session transport/context evidence, not a backend execution receipt.",
     "2026-09-24 cycle6: external research across OpenAI Help/Status, OpenAI Community, Reddit, GitHub/Codex, mainstream technical coverage, Zhihu, Baidu Tieba, Douban, PTT and Bilibili found strongest matching signals around long-chat/mobile message-stream or synchronization instability; Chinese-language evidence was sparse/generic.",
     "2026-09-24 cycle6: closing the Android app is a user-observed correlation only; no universal claim is made about ordinary Chat-mode backend execution after force-close.",
-    "2026-09-24 cycle6: canonical production release 36030977718 passed; nightly research 36030996071 and live canary 36030977932 remain blocked by the upstream public Worker 403/502 boundary.",
-    "2026-09-24 cycle6: zero open PRs and 8 open acceptance/evidence issues are the current repository queue."
+    "2026-09-24 cycle6: canonical production release 36030977718 passed; nightly research 36030996071 and live canary 36030977932 remain blocked by the upstream public Worker 403/502 boundary."
   ],
   "evidence_boundary": {
     "L0": "hypothesis",
