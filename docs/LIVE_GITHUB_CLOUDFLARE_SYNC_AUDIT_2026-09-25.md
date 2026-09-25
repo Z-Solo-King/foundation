@@ -1,3 +1,13 @@
+# 2026-09-25 LATEST BENCHMARK UPDATE
+
+- Latest completed live extractor benchmark: run 36119832050, run number 447, Foundation head 07e12f5a1566ad216fbb998e31bd3a5e144e6d81.
+- Aggregate artifact: 10857765019 (live-extractor-benchmark-40way).
+- Artifact digest: sha256:c110306bffb021b51ffd304562f25bd77d010aadd81fa538871cfad7ab772544.
+- Direct aggregate quality receipt: pass=true; 40 receipts; API 12 / browser 8 / feed 8 / HTML 12; 4 ok / 32 empty / 4 blocked; error rate 0; invalid resource rows 0; missing key rows 0; provenance completeness 1.0; route provenance completeness 1.0; repeat reliability 1.0; unstable repeated groups 0; recovery rate 1.0.
+- This benchmark supersedes the earlier completed 36118106992 / artifact 10855896489 benchmark in the "latest completed benchmark" field. Historical references remain below.
+
+---
+
 # 2026-09-25 POST-MERGE LIVE AUDIT OVERRIDE
 
 This is the current post-merge source-of-truth snapshot.
