@@ -90,7 +90,7 @@ jobs:
       - name: Build report
         run: node scripts/build_nightly_ai_research_report.js
       - name: Audit agent instruction surfaces
-        run: python3 scripts/instruction_audit.py --output .runtime/instruction-audit.json AGENTS.md CLAUDE.md
+        run: PYTHONPATH="$GITHUB_WORKSPACE" python3 scripts/instruction_audit.py --output .runtime/instruction-audit.json AGENTS.md CLAUDE.md
       - name: Require all 20 job packets
         run: |
           set -euo pipefail
