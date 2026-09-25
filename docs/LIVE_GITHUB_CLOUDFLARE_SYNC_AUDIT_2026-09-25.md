@@ -6,7 +6,7 @@ This section is authoritative for the current audit cycle.
 
 ## GitHub
 - Foundation main: dbab61bb15aae22ca19787ddc70283af2617620e
-- Operations main: 300bb0cf8dc8f8a3a874c2bbeadc7ee5ddc6eb8c
+- Operations main: b7a19d97eb9ed4e63c45bd4622923bf20b4d5981
 - Open issues: 11 total — Foundation #58/#157/#1157; Operations #145/#197/#340/#385/#597/#603/#699/#713.
 - Open PRs at this checkpoint: Foundation #1203 (older documentation PR, now stale-base); Operations #914/#915 (Dependabot).
 - Implementation/security fixes merged in this cycle:
