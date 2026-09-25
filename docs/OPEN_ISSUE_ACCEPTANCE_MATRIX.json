@@ -200,11 +200,10 @@
       "status": "OPEN",
       "class": "production runtime",
       "fix_now": [
-        "canonical Heroic-Ai.dev path definition",
+        "verified Pages front door",
         "family graph UI→edge→chatbot→research/resource chain"
       ],
       "remaining": [
-        "DNS/custom domain active",
         "live model generation",
         "replay/concurrency/policy denial/SSE/research/provenance/resource evidence"
       ],
