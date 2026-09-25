@@ -1,3 +1,13 @@
+# CURRENT LIVE SNAPSHOT
+
+**Authoritative current state:** `docs/LIVE_PROJECT_STATE.md` in this repository. It is the compact cross-surface checkpoint for GitHub, Cloudflare, nightly research, benchmarks, artifacts, and ChatGPT continuity.
+
+Historical dated sections below are preserved for provenance only. They MUST NOT override a fresh GitHub/Cloudflare read.
+
+**Audit date:** 2026-09-25
+
+---
+
 # 2026-09-25 LATEST BENCHMARK UPDATE
 
 - Latest completed live extractor benchmark: run 36119832050, run number 447, Foundation head 07e12f5a1566ad216fbb998e31bd3a5e144e6d81.
