@@ -11,7 +11,7 @@ REPORT = ROOT / 'scripts' / 'build_nightly_ai_research_report.js'
 def test_expanded_20_job_workflow_has_seeded_and_qualified_matrix():
     text = WORKFLOW.read_text(encoding='utf-8')
     assert text.count('seed_repos:') == 20
-    assert text.count('issues: "foundation#') + text.count('issues: "operations#') >= 20
+    matrix_rows = [line for line in text.splitlines() if 'id: "' in line and 'seed_repos:' in line and 'issues:' in line]\n    assert len(matrix_rows) == 20\n    assert all('foundation#' in line or 'operations#' in line for line in matrix_rows)
     assert 'PieroSierra/SecondBrain' in text
     assert 'Shubhamsaboo/awesome-llm-apps' in text
     assert 'NipunaRanasinghe/awesome-ai-agents' in text
