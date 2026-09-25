@@ -2,6 +2,9 @@ name: Deep retailer API and feed discovery
 
 on:
   pull_request:
+  push:
+    branches:
+      - diag/multi-retailer-api-proof-v3-2026-09-26
 
 permissions:
   contents: read
