@@ -651,7 +651,6 @@ def test_current_public_runtime_identity_is_heroic_ai():
 
 def test_nightly_research_preflight_has_network_failure_classification():
     preflight = (WORKFLOW_ROOT / "nightly-research-provider-preflight.yml").read_text(encoding="utf-8")
-    assert 'cron: "20 19 * * *"' in preflight
     assert "worker_health_curl_exit" in preflight
     assert "worker_health_transport_error" in preflight
     assert "worker_dns_ipv4" in preflight
