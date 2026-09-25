@@ -3,8 +3,8 @@
   "status": "CURRENT",
   "audited_at": "2026-09-25",
   "live_main": {
-    "foundation": "e6514890548278e26331269e4abb0818b119233a",
-    "operations": "add667236a17f2b845a39ae539f3dfe137d806a2"
+    "foundation": "07e12f5a1566ad216fbb998e31bd3a5e144e6d81",
+    "operations": "84d39cc7a6faf858cde28cb4c52dc1b4e09d38e0"
   },
   "runtime_pins": {
     "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
@@ -92,11 +92,11 @@
       "local_http_status": 502
     },
     "extractor_benchmark": {
-      "run_number": 443,
-      "run_id": 36118106992,
+      "run_number": 447,
+      "run_id": 36119832050,
       "status": "pass",
-      "artifact_id": 10855896489,
-      "artifact_digest": "sha256:8b37d570f60d0cf44a6353e23955a945e69c45b54db59b25f9e402789d72f37d",
+      "artifact_id": 10857765019,
+      "artifact_digest": "sha256:c110306bffb021b51ffd304562f25bd77d010aadd81fa538871cfad7ab772544",
       "receipts": 40,
       "ok": 4,
       "empty": 32,
@@ -104,7 +104,8 @@
       "provenance_completeness": 1,
       "route_provenance_completeness": 1,
       "repeat_reliability": 1,
-      "unstable_repeated_groups": 0
+      "unstable_repeated_groups": 0,
+      "recovery_rate": 1
     },
     "coverage_matrix": {
       "run_number": 333,
