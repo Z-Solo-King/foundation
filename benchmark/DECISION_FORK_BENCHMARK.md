@@ -31,3 +31,7 @@ Use the same state, candidates, tool policy, fixture revision, and evidence rule
 ## Boundary
 
 Decision-fork data is benchmark evidence only. It does not replace deterministic validation, authorization, release checks, or runtime evidence.
+
+
+## 2026-09-25 sync
+The decision-fork contract is now part of the nightly benchmark research path. Research findings may nominate forks for this benchmark, but hindsight labels remain external to the decision request.
