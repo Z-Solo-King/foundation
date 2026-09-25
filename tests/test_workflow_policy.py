@@ -61,7 +61,7 @@ def test_production_deployment_has_one_owner():
     assert not violations, "Competing Cloudflare deployment references:\n" + "\n".join(violations)
 
 
-# Canonical Operations revision is declared once and used by the release self-check.\ndef test_canonical_operations_production_pin_is_current_and_immutable():
+# Canonical Operations revision is declared once and used by the release self-check.\n\ndef test_canonical_operations_production_pin_is_current_and_immutable():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_REPOSITORY="{CANONICAL_OPERATIONS_REPOSITORY}"' in deployment
     assert f'OPERATIONS_REF="{CANONICAL_OPERATIONS_REF}"' in deployment
