@@ -13,25 +13,37 @@
     "foundation_deployed": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6"
   },
   "cloudflare": {
-    "control_plane_snapshot": "live_verified_2026-09-25",
-    "fresh_deployment_receipt": false,
+    "control_plane_snapshot": "live_verified_2026-09-25_R4",
+    "fresh_deployment_receipt": true,
     "workers": [
       "foundation",
-      "operations"
+      "heroic",
+      "operations",
+      "research-intelligence-engine-private",
+      "research-intelligence-engine-public"
     ],
     "public_worker_tag": "e84124529c014c0ea8c89b6e524e8264",
     "private_worker_tag": "21801b08ec8c4f55aeddbcfae9ded48b",
     "d1_database": "research-intelligence",
     "d1_database_id": "19f51638-47a5-4218-a9dc-73dbfd6156fe",
-    "public_worker": "foundation",
+    "public_worker": "heroic",
     "private_worker": "operations",
-    "canonical_public_url": "https://Heroic-Ai.dev",
+    "canonical_public_url": "https://ai-cio.pages.dev",
     "zone": "heroic-ai.dev",
     "zone_status": "pending",
     "activation_failure_reason": "unresolvable",
     "custom_domain_enabled": true,
     "deployed_foundation_provenance": "github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c",
-    "deployed_operations_provenance": "github:a3171f353539f1a31020c432f98cf0530cbf91ef"
+    "deployed_operations_provenance": "github:a3171f353539f1a31020c432f98cf0530cbf91ef",
+    "pages_project": "ai",
+    "pages_subdomain": "ai-cio.pages.dev",
+    "pages_production_deployment_id": "6ffb759a-a33c-4dc1-b532-a6032ffb07c5",
+    "pages_backend_binding": "HEROIC_BACKEND -> heroic (production)",
+    "workers_dev_subdomain": "heroic-ai",
+    "backend_worker_url": "https://heroic.heroic-ai.workers.dev",
+    "custom_domain": "heroic-ai.dev",
+    "custom_domain_status": "pending",
+    "heroic_bootstrap": "compatibility proxy -> foundation production"
   },
   "current_queue": {
     "open_issue_count": 11,
@@ -379,5 +391,10 @@
     914,
     915
   ],
-  "open_implementation_pr_count": 0
+  "open_implementation_pr_count": 0,
+  "github_current_branch": {
+    "foundation_pr": 1210,
+    "foundation_ref": "worker-identity-heroic-ai-2026-09-25",
+    "operations_ref": "b82b142ffc3a5418f704f85c737953afb5783b99"
+  }
 }
