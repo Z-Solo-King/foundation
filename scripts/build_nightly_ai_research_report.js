@@ -30,6 +30,7 @@ const jobs = dirs.map(dir => {
   const meta = readJson(path.join(dir, "metadata.json"));
   const github = readJson(path.join(dir, "github_summary.json"), {repositories:[]});
   const githubIssues = readJson(path.join(dir, "github_issue_summary.json"), {issues:[]});
+  const githubSeeds = readJson(path.join(dir, "github_seed_summary.json"), {repositories:[]});
   return {
     job_id: meta.job_id,
     topic: meta.topic,
@@ -38,6 +39,9 @@ const jobs = dirs.map(dir => {
     lookback_since_utc: meta.lookback_since_utc,
     source_status: meta.source_status || {},
     github_repositories: (github.repositories || []).slice(0, 5),
+    github_seed_repositories: (githubSeeds.repositories || []).slice(0, 5),
+    seed_repository_count: githubSeeds.seed_count || 0,
+    seed_repository_success_count: githubSeeds.seed_success || 0,
     github_issues: (githubIssues.issues || []).slice(0, 5),
     reddit_excerpt: excerpt(dir, ["reddit.rss.excerpt", "reddit_fallback.txt.excerpt", "reddit.error.excerpt"]),
     x_twitter_excerpt: excerpt(dir, ["x_search.txt.excerpt", "x.error.excerpt"]),
@@ -52,7 +56,7 @@ const invalidJobs = jobs.filter(job => !Object.values(job.source_status).some(va
 const benchmarkTargets = [...new Set(jobs.flatMap(j => j.target_issues))].sort();
 
 const sourceCounts = {};
-for (const source of ["github_repositories", "github_issues", "reddit", "x_twitter"]) {
+for (const source of ["github_repositories", "github_issues", "github_seed_repositories", "reddit", "x_twitter"]) {
   sourceCounts[source] = jobs.filter(j => j.source_status[source] === 200).length;
 }
 
@@ -103,7 +107,8 @@ const lines = [
   "",
   "## Source coverage",
   "",
-  "- GitHub repositories: " + sourceCounts.github_repositories + "/" + expectedJobs,
+  "- GitHub repository search: " + sourceCounts.github_repositories + "/" + expectedJobs,
+  "- GitHub curated seed repositories: " + sourceCounts.github_seed_repositories + "/" + expectedJobs,
   "- GitHub issues/PRs: " + sourceCounts.github_issues + "/" + expectedJobs,
   "- Reddit: " + sourceCounts.reddit + "/" + expectedJobs,
   "- X/Twitter: " + sourceCounts.x_twitter + "/" + expectedJobs,
@@ -119,11 +124,15 @@ for (const job of jobs) {
   lines.push(
     "Sources: GitHub repos=" + (job.source_status.github_repositories === 200 ? "PASS" : "MISS") +
     ", GitHub issues/PRs=" + (job.source_status.github_issues === 200 ? "PASS" : "MISS") +
+    ", GitHub seeds=" + (job.source_status.github_seed_repositories === 200 ? "PASS" : "MISS") +
     ", Reddit=" + (job.source_status.reddit === 200 ? "PASS" : "MISS") +
     ", X/Twitter=" + (job.source_status.x_twitter === 200 ? "PASS" : "MISS")
   );
   for (const repo of job.github_repositories) {
     lines.push("- Repo: " + repo.full_name + " — " + (repo.language || "unknown") + " — updated " + (repo.updated_at || "unknown") + " — " + repo.html_url);
+  }
+  for (const repo of job.github_seed_repositories) {
+    lines.push("- Seed repo: " + repo.full_name + " — " + (repo.language || "unknown") + " — updated " + (repo.updated_at || "unknown") + " — " + repo.html_url);
   }
   for (const issue of job.github_issues) {
     lines.push("- GitHub: " + issue.title + " — " + (issue.pull_request ? "PR" : "issue") + " — updated " + (issue.updated_at || "unknown") + " — " + issue.html_url);
@@ -146,7 +155,7 @@ for (const job of jobs) {
 lines.push(
   "## Evidence boundary",
   "",
-  "Research-signal evidence can propose benchmark fixtures, migration experiments, security tests, decision-fork cases, and evidence requests. It cannot certify runtime or production behavior.",
+  "Research-signal evidence can propose benchmark fixtures, migration experiments, security tests, decision-fork cases, and evidence requests. Curated seed repositories are reference anchors, not endorsements or production authorities. It cannot certify runtime or production behavior.",
   "",
   "Promotion loop: research-signal → candidate benchmark slice → independent reproduction → regression fixture / issue update → nightly benchmark → runtime evidence where required."
 );
