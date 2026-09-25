@@ -132,7 +132,7 @@ def test_production_release_fails_closed_and_retains_chat_policy_receipts():
     workflow = (ROOT / ".github/workflows/heroic-ai-production-release.yml").read_text(encoding="utf-8")
     assert "ALLOW_PERSISTENCE_DEFERRED" not in deployment
     assert "persistence-boundary-${ACCEPTANCE_RUN_ID}" in deployment
-    assert "did not create a new Worker version" in deployment
+    assert "Operations version boundary: PASS" in deployment
     assert "concurrent-chat-1.json" in deployment
     assert "concurrent-chat-2.json" in deployment
     assert "policy-block.json" in deployment
