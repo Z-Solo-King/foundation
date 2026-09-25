@@ -43,7 +43,7 @@ def test_operations_bootstrap_config_lives_with_entrypoint_checkout():
 
 def test_production_uses_free_workers_dev_origin_without_custom_zone_preflight():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
-    assert 'BASE_URL="https://heroic.ai.workers.dev"' in text
+    assert 'BASE_URL="https://heroic.heroic-ai.workers.dev"' in text
     assert 'workers_dev = true' in text
     assert 'name = "heroic"' in text
     assert 'zones?name=heroic-ai.dev&status=active' not in text
