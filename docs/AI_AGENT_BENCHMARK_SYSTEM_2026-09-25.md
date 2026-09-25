@@ -179,3 +179,29 @@ The benchmark system is adopted when:
 - instruction/skill audit findings are machine-readable;
 - hard-gate failures cannot be hidden by aggregate score;
 - benchmark outputs are connected to issues/PRs without being treated as runtime certification.
+
+
+## Family-integration benchmark layer
+
+The benchmark now has a cross-surface integration layer in `docs/FAMILY_INTEGRATION_GRAPH.json`. It does not replace the canonical six lanes. It supplies bounded probes that exercise relationships among them.
+
+The first probe set covers:
+- true dependency-edge parallelism and unit-level correction;
+- token/cache/context efficiency;
+- typed decision forks and task-fit routing;
+- evidence/provenance continuity across extractor, mapper, research, chatbot and UI;
+- resource admission, reservation, reclaim and reconciliation;
+- security/identity/secret boundaries;
+- observability correlation;
+- language migration parity;
+- instruction hygiene.
+
+Each probe references specific material-derived hypotheses and existing acceptance issues. A probe can produce a benchmark candidate or regression fixture; it cannot by itself certify production/runtime behavior.
+
+## Source-material interpretation
+
+The attached engineering material is used as a research corpus. Reusable engineering patterns are translated into provider-neutral benchmark tasks. Domain-specific assumptions such as trading thresholds, financial exposure values, vendor rankings or social popularity are not promoted to project policy.
+
+The token-efficiency material also adds a benchmark requirement: optimize the harness and request assembly, measure the real token/caching effect, and do not remove constraints merely to reduce input size.
+
+The loop/graph material adds a topology requirement: an arrow must correspond to a real data dependency before it is allowed to serialize execution. Mechanical merges, deduplication and other deterministic transformations should remain code-owned rather than becoming additional model calls.

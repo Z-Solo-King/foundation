@@ -56,7 +56,9 @@ def test_project_research_corpus_has_broad_project_coverage() -> None:
     }
     assert project_categories <= categories
     project_rows = [row for row in queries if row["category"] in project_categories]
-    assert len(project_rows) == len(project_categories)
+    project_category_counts = {category: sum(1 for row in project_rows if row["category"] == category) for category in project_categories}
+    assert all(count >= 1 for count in project_category_counts.values())
+    assert len(project_rows) >= len(project_categories)
     assert all("github" in row["required_sources"] for row in project_rows)
     assert any(row["temporal"] == "old_vs_new" for row in project_rows)
 

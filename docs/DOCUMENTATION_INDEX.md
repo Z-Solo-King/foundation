@@ -13,10 +13,12 @@
 6. `docs/FAMILY_ARCHITECTURE.md` — repository roles and dependency direction.
 7. `docs/FAMILY_SYNC_STANDARD.md` — uniform cross-repository synchronization, status and evidence format.
 8. `docs/FAMILY_SYNC_STATE.json` — latest recorded family synchronization snapshot.
-9. `docs/REQUIREMENT_COVERAGE_RECONCILIATION_2026-09-17.md` — current implementation-vs-plan reconciliation.
-10. `docs/PUBLIC_DETERMINISTIC_CORE.md` — public implementation boundary.
-11. `docs/RUN_RECORD_PUBLIC_BOUNDARY.md` — public/private run-record boundary.
-12. `DEPLOYMENT.md` and `.github/workflows/heroic-ai-production-release.yml` — public deployment path.
+9. `docs/FAMILY_INTEGRATION_GRAPH.json` — machine-readable cross-surface topology, material-derived benchmark probes and integration loops.
+10. `docs/FAMILY_INTEGRATION_ARCHITECTURE_2026-09-25.md` — narrative integration spine and maintenance questions.
+11. `docs/REQUIREMENT_COVERAGE_RECONCILIATION_2026-09-17.md` — current implementation-vs-plan reconciliation.
+12. `docs/PUBLIC_DETERMINISTIC_CORE.md` — public implementation boundary.
+13. `docs/RUN_RECORD_PUBLIC_BOUNDARY.md` — public/private run-record boundary.
+14. `DEPLOYMENT.md` and `.github/workflows/heroic-ai-production-release.yml` — public deployment path.
 
 ## Source of truth
 

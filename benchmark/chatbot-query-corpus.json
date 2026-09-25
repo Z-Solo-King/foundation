@@ -1,34 +1,423 @@
 {
   "schema": "chatbot-research-query-corpus/v3",
   "queries": [
-    {"id":"guide-laptop-budget","category":"buying_guide","query":"Make me a complete laptop buying guide under ₹70,000 in India. Compare current prices, specifications, Amazon and Flipkart ratings and recent buyer reviews, plus Reddit ownership feedback.","required_sources":["amazon","flipkart","reddit","retailers","oem"],"temporal":"current"},
-    {"id":"monitor-best-value","category":"best_product","query":"What is the best 27-inch 1440p monitor under ₹30,000 right now? Check current price, stock, Amazon and Flipkart reviews, Reddit complaints, and recent professional reviews.","required_sources":["amazon","flipkart","reddit","retailers","professional_reviews"],"temporal":"current"},
-    {"id":"keyboard-deep","category":"deep_hardware","query":"Find the best mechanical keyboard under ₹10,000, but investigate PCB, MCU, stabilizers, switches, firmware and internal build quality using Reddit and Chinese teardown/community sources as well as marketplace reviews.","required_sources":["reddit","amazon","flipkart","bilibili","zhihu","baidu_tieba"],"temporal":"current"},
-    {"id":"old-vs-new","category":"temporal_reconciliation","query":"Was this product actually better in 2024 than it is now in 2026? Compare older reviews with the latest 3-6 months of buyer feedback and identify hardware or firmware revisions.","required_sources":["amazon","flipkart","reddit","youtube","oem","regional_communities"],"temporal":"old_vs_new"},
-    {"id":"negative-review-investigation","category":"review_forensics","query":"Find the biggest recurring complaints in the latest buyer reviews. Separate product defects from seller, delivery and setup complaints, then compare them with older reviews.","required_sources":["amazon","flipkart","reddit"],"temporal":"old_vs_new"},
-    {"id":"social-crosscheck","category":"cross_source","query":"Compare Amazon, Flipkart, Reddit, YouTube and community reviews for this product. Tell me where sources agree and where they contradict each other.","required_sources":["amazon","flipkart","reddit","youtube","social_communities"],"temporal":"current"},
-    {"id":"social-media-crosscheck","category":"social_media","query":"Check Reddit, X/Twitter, Instagram, Facebook and YouTube for real user feedback, complaints, long-term ownership posts and recent discussion about this product, then compare the social evidence with Amazon and Flipkart buyer reviews.","required_sources":["reddit","social_media","youtube","amazon","flipkart"],"temporal":"current"},
-    {"id":"chinese-component","category":"restricted_evidence","query":"Check Chinese-language communities for teardown or internal component reports that mainstream English reviews may have missed, especially PCB, controller, soldering and component-quality issues.","required_sources":["bilibili","zhihu","baidu_tieba","douban","ptt"],"temporal":"current"},
-    {"id":"phone-under-20k","category":"best_product","query":"Best phone under ₹20,000 in India right now. Prioritize buyer satisfaction and reliability over benchmark scores; check marketplace ratings, recent reviews and Reddit owner reports.","required_sources":["amazon","flipkart","reddit","retailers","professional_reviews"],"temporal":"current"},
-    {"id":"pc-build","category":"build","query":"Build the best gaming PC under ₹1,00,000 in India using current prices. Cross-check retailer availability, component reviews, Reddit owner experience and warranty/service concerns.","required_sources":["retailers","amazon","flipkart","reddit","oem"],"temporal":"current"},
-    {"id":"hinglish-laptop","category":"hinglish","query":"₹50k ke andar best laptop kaunsa hai? Amazon Flipkart rating aur recent buyers ke reviews check karo, Reddit pe koi major problem hai kya woh bhi dekho.","required_sources":["amazon","flipkart","reddit","retailers"],"temporal":"current"},
-    {"id":"followup-battery","category":"follow_up","query":"What about battery life and long-term reliability compared with the other two options? Use recent owner reports and not just specifications.","required_sources":["reddit","amazon","flipkart","youtube"],"temporal":"current"},
-    {"id":"seller-vs-product","category":"review_forensics","query":"Are the recent negative reviews caused by the product itself or by bad sellers, shipping and packaging? Quantify the distinction where possible.","required_sources":["amazon","flipkart","reddit"],"temporal":"old_vs_new"},
-    {"id":"revision-check","category":"hardware_revision","query":"Find evidence of a hardware revision or changed internal components between the launch unit and units currently being sold in India.","required_sources":["oem","reddit","bilibili","zhihu","youtube","retailers"],"temporal":"old_vs_new"},
-    {"id":"service-warranty","category":"service","query":"Which option has the best real-world service and warranty experience in India? Check official warranty terms against recent buyer and Reddit service reports.","required_sources":["oem","amazon","flipkart","reddit","retailers"],"temporal":"current"},
-    {"id":"trend-query","category":"trending","query":"What products in this category are currently trending in India, and which ones are actually worth buying after checking recent reviews rather than just search popularity?","required_sources":["search_trends","amazon","flipkart","reddit","retailers"],"temporal":"current"},
-    {"id":"restricted-review-discovery","category":"restricted_evidence","query":"Find useful product evidence that mainstream AI assistants may miss because a source is restricted or difficult to access. Prioritize Reddit, Chinese communities, regional forums and social media, and explain what unique evidence each source contributes.","required_sources":["reddit","chinese_communities","social_communities","social_media"],"temporal":"current"},
-    {"id":"project-architecture-map","category":"project_architecture","query":"Research the current Research Intelligence Engine architecture from the GitHub repositories. Trace the public Foundation boundary, research planning, acquisition, evidence/lineage, verification, persistence and the private Operations boundary, and identify the authoritative owner of each stage.","required_sources":["github"],"temporal":"current"},
-    {"id":"project-open-blockers","category":"project_status","query":"Audit the current GitHub project state for genuine open blockers, unresolved acceptance gates, stale issues and already-resolved items. Distinguish source-level completion from runtime or production verification.","required_sources":["github"],"temporal":"current"},
-    {"id":"project-research-artifacts","category":"research_artifacts","query":"Find and inspect all current research artifacts for the Research Intelligence Engine: query corpora, nightly research plans, research ledgers, benchmark summaries, scorecards, baselines and schemas. Explain which artifacts contain reusable evidence versus only benchmark definitions.","required_sources":["github"],"temporal":"current"},
-    {"id":"project-extraction-gaps","category":"extraction_quality","query":"Audit the project's current extraction research and tests across HTML, JSON-LD, embedded state, APIs, GraphQL, XHR/fetch, sitemaps, feeds, pagination, browser and image evidence. Identify missing empirical coverage and evidence-quality gaps.","required_sources":["github","technical_articles"],"temporal":"current"},
-    {"id":"project-research-regressions","category":"regression_analysis","query":"Compare the latest research benchmark results with the previous baseline. Look for regressions in completed research programs, useful findings, high-severity signals, source coverage, acquisition failures and contract pass rates.","required_sources":["github"],"temporal":"old_vs_new"},
-    {"id":"project-ci-research-health","category":"ci_health","query":"Audit GitHub Actions relevant to research: autonomous benchmark, nightly research contract, scorecard, multi-agent research, context budget and required PR checks. Identify failures, skipped work, pre-job rejection risk and artifact-publication gaps.","required_sources":["github"],"temporal":"current"},
-    {"id":"project-source-novelty","category":"source_novelty","query":"Determine whether nightly research is actually discovering new evidence instead of repeating the same sources. Inspect canonical URL deduplication, revisit reasons, unseen-domain preference, stale evidence handling and next-night avoidance rules.","required_sources":["github"],"temporal":"current"},
-    {"id":"project-evidence-quality","category":"evidence_quality","query":"Audit how the project distinguishes useful findings, duplicate evidence, contradictory evidence, blocked sources, stale evidence and unsupported claims. Identify where transport success is being confused with field-level research correctness.","required_sources":["github"],"temporal":"current"},
-    {"id":"project-search-efficiency","category":"research_efficiency","query":"Find the strongest repository evidence for improving research quality per token, per web request and per second. Compare query expansion, source selection, caching, model routing, evidence density and failure-aware retries.","required_sources":["github","technical_articles","research_papers"],"temporal":"current"},
-    {"id":"project-frontend-research-path","category":"frontend_research","query":"Trace the user-facing Research mode from the frontend queue/composer through the public Worker to research execution and result polling. Identify any remaining UI/backend contract gaps that could prevent a usable research experience.","required_sources":["github"],"temporal":"current"},
-    {"id":"project-acceptance-boundary","category":"acceptance","query":"Map the exact acceptance boundary for the Research Intelligence Engine, including what can be proven by repository tests, GitHub Actions and approved external runtime evidence. Highlight any claims that must not be inferred from source inspection.","required_sources":["github"],"temporal":"current"},
-    {"id":"project-nightly-artifact-integrity","category":"nightly_artifact_integrity","query":"Inspect the latest nightly research artifact bundle and verify the three lane manifests, 24-program coverage, shared run ID and Operations revision, truthful diagnosis state, project-improvement evidence policy, and baseline decision. Compare it with the previous successful baseline and treat missing or internally inconsistent artifacts as absence of evidence rather than success.","required_sources":["github"],"temporal":"old_vs_new"}
+    {
+      "id": "guide-laptop-budget",
+      "category": "buying_guide",
+      "query": "Make me a complete laptop buying guide under ₹70,000 in India. Compare current prices, specifications, Amazon and Flipkart ratings and recent buyer reviews, plus Reddit ownership feedback.",
+      "required_sources": [
+        "amazon",
+        "flipkart",
+        "reddit",
+        "retailers",
+        "oem"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "monitor-best-value",
+      "category": "best_product",
+      "query": "What is the best 27-inch 1440p monitor under ₹30,000 right now? Check current price, stock, Amazon and Flipkart reviews, Reddit complaints, and recent professional reviews.",
+      "required_sources": [
+        "amazon",
+        "flipkart",
+        "reddit",
+        "retailers",
+        "professional_reviews"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "keyboard-deep",
+      "category": "deep_hardware",
+      "query": "Find the best mechanical keyboard under ₹10,000, but investigate PCB, MCU, stabilizers, switches, firmware and internal build quality using Reddit and Chinese teardown/community sources as well as marketplace reviews.",
+      "required_sources": [
+        "reddit",
+        "amazon",
+        "flipkart",
+        "bilibili",
+        "zhihu",
+        "baidu_tieba"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "old-vs-new",
+      "category": "temporal_reconciliation",
+      "query": "Was this product actually better in 2024 than it is now in 2026? Compare older reviews with the latest 3-6 months of buyer feedback and identify hardware or firmware revisions.",
+      "required_sources": [
+        "amazon",
+        "flipkart",
+        "reddit",
+        "youtube",
+        "oem",
+        "regional_communities"
+      ],
+      "temporal": "old_vs_new"
+    },
+    {
+      "id": "negative-review-investigation",
+      "category": "review_forensics",
+      "query": "Find the biggest recurring complaints in the latest buyer reviews. Separate product defects from seller, delivery and setup complaints, then compare them with older reviews.",
+      "required_sources": [
+        "amazon",
+        "flipkart",
+        "reddit"
+      ],
+      "temporal": "old_vs_new"
+    },
+    {
+      "id": "social-crosscheck",
+      "category": "cross_source",
+      "query": "Compare Amazon, Flipkart, Reddit, YouTube and community reviews for this product. Tell me where sources agree and where they contradict each other.",
+      "required_sources": [
+        "amazon",
+        "flipkart",
+        "reddit",
+        "youtube",
+        "social_communities"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "social-media-crosscheck",
+      "category": "social_media",
+      "query": "Check Reddit, X/Twitter, Instagram, Facebook and YouTube for real user feedback, complaints, long-term ownership posts and recent discussion about this product, then compare the social evidence with Amazon and Flipkart buyer reviews.",
+      "required_sources": [
+        "reddit",
+        "social_media",
+        "youtube",
+        "amazon",
+        "flipkart"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "chinese-component",
+      "category": "restricted_evidence",
+      "query": "Check Chinese-language communities for teardown or internal component reports that mainstream English reviews may have missed, especially PCB, controller, soldering and component-quality issues.",
+      "required_sources": [
+        "bilibili",
+        "zhihu",
+        "baidu_tieba",
+        "douban",
+        "ptt"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "phone-under-20k",
+      "category": "best_product",
+      "query": "Best phone under ₹20,000 in India right now. Prioritize buyer satisfaction and reliability over benchmark scores; check marketplace ratings, recent reviews and Reddit owner reports.",
+      "required_sources": [
+        "amazon",
+        "flipkart",
+        "reddit",
+        "retailers",
+        "professional_reviews"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "pc-build",
+      "category": "build",
+      "query": "Build the best gaming PC under ₹1,00,000 in India using current prices. Cross-check retailer availability, component reviews, Reddit owner experience and warranty/service concerns.",
+      "required_sources": [
+        "retailers",
+        "amazon",
+        "flipkart",
+        "reddit",
+        "oem"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "hinglish-laptop",
+      "category": "hinglish",
+      "query": "₹50k ke andar best laptop kaunsa hai? Amazon Flipkart rating aur recent buyers ke reviews check karo, Reddit pe koi major problem hai kya woh bhi dekho.",
+      "required_sources": [
+        "amazon",
+        "flipkart",
+        "reddit",
+        "retailers"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "followup-battery",
+      "category": "follow_up",
+      "query": "What about battery life and long-term reliability compared with the other two options? Use recent owner reports and not just specifications.",
+      "required_sources": [
+        "reddit",
+        "amazon",
+        "flipkart",
+        "youtube"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "seller-vs-product",
+      "category": "review_forensics",
+      "query": "Are the recent negative reviews caused by the product itself or by bad sellers, shipping and packaging? Quantify the distinction where possible.",
+      "required_sources": [
+        "amazon",
+        "flipkart",
+        "reddit"
+      ],
+      "temporal": "old_vs_new"
+    },
+    {
+      "id": "revision-check",
+      "category": "hardware_revision",
+      "query": "Find evidence of a hardware revision or changed internal components between the launch unit and units currently being sold in India.",
+      "required_sources": [
+        "oem",
+        "reddit",
+        "bilibili",
+        "zhihu",
+        "youtube",
+        "retailers"
+      ],
+      "temporal": "old_vs_new"
+    },
+    {
+      "id": "service-warranty",
+      "category": "service",
+      "query": "Which option has the best real-world service and warranty experience in India? Check official warranty terms against recent buyer and Reddit service reports.",
+      "required_sources": [
+        "oem",
+        "amazon",
+        "flipkart",
+        "reddit",
+        "retailers"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "trend-query",
+      "category": "trending",
+      "query": "What products in this category are currently trending in India, and which ones are actually worth buying after checking recent reviews rather than just search popularity?",
+      "required_sources": [
+        "search_trends",
+        "amazon",
+        "flipkart",
+        "reddit",
+        "retailers"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "restricted-review-discovery",
+      "category": "restricted_evidence",
+      "query": "Find useful product evidence that mainstream AI assistants may miss because a source is restricted or difficult to access. Prioritize Reddit, Chinese communities, regional forums and social media, and explain what unique evidence each source contributes.",
+      "required_sources": [
+        "reddit",
+        "chinese_communities",
+        "social_communities",
+        "social_media"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "project-architecture-map",
+      "category": "project_architecture",
+      "query": "Research the current Research Intelligence Engine architecture from the GitHub repositories. Trace the public Foundation boundary, research planning, acquisition, evidence/lineage, verification, persistence and the private Operations boundary, and identify the authoritative owner of each stage.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "project-open-blockers",
+      "category": "project_status",
+      "query": "Audit the current GitHub project state for genuine open blockers, unresolved acceptance gates, stale issues and already-resolved items. Distinguish source-level completion from runtime or production verification.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "project-research-artifacts",
+      "category": "research_artifacts",
+      "query": "Find and inspect all current research artifacts for the Research Intelligence Engine: query corpora, nightly research plans, research ledgers, benchmark summaries, scorecards, baselines and schemas. Explain which artifacts contain reusable evidence versus only benchmark definitions.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "project-extraction-gaps",
+      "category": "extraction_quality",
+      "query": "Audit the project's current extraction research and tests across HTML, JSON-LD, embedded state, APIs, GraphQL, XHR/fetch, sitemaps, feeds, pagination, browser and image evidence. Identify missing empirical coverage and evidence-quality gaps.",
+      "required_sources": [
+        "github",
+        "technical_articles"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "project-research-regressions",
+      "category": "regression_analysis",
+      "query": "Compare the latest research benchmark results with the previous baseline. Look for regressions in completed research programs, useful findings, high-severity signals, source coverage, acquisition failures and contract pass rates.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "old_vs_new"
+    },
+    {
+      "id": "project-ci-research-health",
+      "category": "ci_health",
+      "query": "Audit GitHub Actions relevant to research: autonomous benchmark, nightly research contract, scorecard, multi-agent research, context budget and required PR checks. Identify failures, skipped work, pre-job rejection risk and artifact-publication gaps.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "project-source-novelty",
+      "category": "source_novelty",
+      "query": "Determine whether nightly research is actually discovering new evidence instead of repeating the same sources. Inspect canonical URL deduplication, revisit reasons, unseen-domain preference, stale evidence handling and next-night avoidance rules.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "project-evidence-quality",
+      "category": "evidence_quality",
+      "query": "Audit how the project distinguishes useful findings, duplicate evidence, contradictory evidence, blocked sources, stale evidence and unsupported claims. Identify where transport success is being confused with field-level research correctness.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "project-search-efficiency",
+      "category": "research_efficiency",
+      "query": "Find the strongest repository evidence for improving research quality per token, per web request and per second. Compare query expansion, source selection, caching, model routing, evidence density and failure-aware retries.",
+      "required_sources": [
+        "github",
+        "technical_articles",
+        "research_papers"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "project-frontend-research-path",
+      "category": "frontend_research",
+      "query": "Trace the user-facing Research mode from the frontend queue/composer through the public Worker to research execution and result polling. Identify any remaining UI/backend contract gaps that could prevent a usable research experience.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "project-acceptance-boundary",
+      "category": "acceptance",
+      "query": "Map the exact acceptance boundary for the Research Intelligence Engine, including what can be proven by repository tests, GitHub Actions and approved external runtime evidence. Highlight any claims that must not be inferred from source inspection.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "project-nightly-artifact-integrity",
+      "category": "nightly_artifact_integrity",
+      "query": "Inspect the latest nightly research artifact bundle and verify the three lane manifests, 24-program coverage, shared run ID and Operations revision, truthful diagnosis state, project-improvement evidence policy, and baseline decision. Compare it with the previous successful baseline and treat missing or internally inconsistent artifacts as absence of evidence rather than success.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "old_vs_new"
+    },
+    {
+      "id": "family-integration-spine",
+      "category": "project_architecture",
+      "query": "Trace the full Heroic AI family from frontend intent through the public Worker, private Operations routing, chatbot/research/extractor/mapper, evidence/provenance, benchmark, CI and back into the AI Analysis Map. Identify the canonical owner and contract at every boundary.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "agent-graph-vs-loop",
+      "category": "project_architecture",
+      "query": "Audit the agent workflow for unnecessary sequential dependencies. Separate bounded produce-check-correct loops from graph-level split/fan-out/merge/gate edges, and identify where independent work can run in parallel without sharing mutable context.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "research-memory",
+      "category": "research_efficiency",
+      "query": "Design a safe persistent research-memory flow for the project using raw evidence, structured knowledge, generated outputs and retrievable history. Identify what can be reused, what must remain immutable, and what is still only a planning scaffold.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "token-efficiency-harness",
+      "category": "research_efficiency",
+      "query": "Measure the research/chatbot harness rather than only the model: static prompt tokens, tool schemas, cacheable prefixes, tool-result bloat, compaction, subagent overhead and model routing. Identify safe savings without deleting constraints or evidence rules.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "typed-decision-routing",
+      "category": "project_architecture",
+      "query": "Identify project decisions that can be expressed as bounded typed choices instead of prose generation. Compare schema-specialized decisions, deterministic gates and optional expensive research while preserving policy authority and uncertainty.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "resource-governance-flow",
+      "category": "acceptance",
+      "query": "Trace request, admission, limits, reservation, execution, usage, settlement and reclaim through the project's resource governance. Check whether local counters or model decisions could accidentally become a second resource authority.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "security-config-observability",
+      "category": "acceptance",
+      "query": "Cross-check the project's security, configuration and observability surfaces: identity, secrets, runtime restrictions, network boundaries, immutable configuration, metrics, logs, events, traces and evidence correlation.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "migration-language-fit",
+      "category": "regression_analysis",
+      "query": "Compare Python, Rust, Go, TypeScript/edge, Java/Kotlin, .NET, C++ and Zig as migration candidates for current extractor/mapper, chatbot and runtime workloads. Require parity, performance, conversion, shadow/canary and rollback evidence before any authority change.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "model-routing-economics",
+      "category": "research_efficiency",
+      "query": "Evaluate model routing by task fit using identical project fixtures. Record quality, latency, token cost, tool efficiency and recovery behavior; do not use a static leaderboard or model popularity as authority.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    },
+    {
+      "id": "learning-edge",
+      "category": "research_artifacts",
+      "query": "Find accepted benchmark or research results that can become reusable constraints for future task splitting and prompts. Distinguish a real learning edge from a report that is merely stored and never changes future execution.",
+      "required_sources": [
+        "github"
+      ],
+      "temporal": "current"
+    }
   ]
 }
