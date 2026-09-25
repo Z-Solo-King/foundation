@@ -12,12 +12,17 @@ on:
       - "backend/intelligence/planning.py"
       - "backend/intelligence/contracts.py"
       - ".github/workflows/autonomous-benchmark.yml"
+      - ".github/workflows/nightly-ai-research-20jobs.yml"
+      - "scripts/build_nightly_ai_research_report.js"
+      - "docs/FAMILY_INTEGRATION_GRAPH.json"
+      - "benchmark/ai_agent_task_matrix_v1.json"
   schedule:
     # 01:15 IST = 19:45 UTC on the previous day. Staggered away from 01:00.
     - cron: "45 19 * * *"
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -28,7 +33,57 @@ env:
   BENCHMARK_MINUTES: "18"
 
 jobs:
+  research_feed:
+    name: Validate latest nightly research feed
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout public foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Locate latest successful 20-job research
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime/research-feed
+          latest="$(gh run list --workflow nightly-ai-research-20jobs.yml --repo "$GITHUB_REPOSITORY" --limit 25 --json databaseId,status,conclusion,headSha,createdAt --jq '[.[] | select(.status=="completed" and .conclusion=="success")] | sort_by(.createdAt) | reverse | .[0]')"
+          if [ -z "$latest" ] || [ "$latest" = "null" ]; then
+            jq -n --arg state "unavailable" --arg reason "no successful nightly-ai-research-20jobs run is available" --arg current_sha "$GITHUB_SHA" \
+              '{schema:"nightly-research-feed-status/v1",state:$state,reason:$reason,benchmark_sha:$current_sha}' > .runtime/research-feed/research-feed-status.json
+            exit 0
+          fi
+          run_id="$(jq -r '.databaseId' <<<"$latest")"
+          head_sha="$(jq -r '.headSha' <<<"$latest")"
+          created_at="$(jq -r '.createdAt' <<<"$latest")"
+          gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name nightly-ai-research-synthesis --dir .runtime/research-feed
+          test -f .runtime/research-feed/nightly_ai_research_report.json
+          test -f .runtime/research-feed/benchmark_improvement_candidates.json
+          report=.runtime/research-feed/nightly_ai_research_report.json
+          current_graph_sha256="$(sha256sum docs/FAMILY_INTEGRATION_GRAPH.json | awk '{print $1}')"
+          report_graph_sha256="$(jq -r '.family_graph_digests[0] // empty' "$report")"
+          if ! jq -e '.schema == "nightly-ai-research-report/v2" and .expected_jobs == 20 and (.missing_jobs|length == 0) and (.invalid_jobs|length == 0) and (.benchmark_targets|length > 0) and (.stale_benchmark_targets|length == 0)' "$report" >/dev/null; then
+            jq -n --arg state "invalid" --arg reason "latest research synthesis failed integrity validation" --arg run_id "$run_id" --arg head_sha "$head_sha" --arg current_sha "$GITHUB_SHA" --arg created_at "$created_at" \
+              '{schema:"nightly-research-feed-status/v1",state:$state,reason:$reason,run_id:($run_id|tonumber),head_sha:$head_sha,benchmark_sha:$current_sha,created_at:$created_at}' > .runtime/research-feed/research-feed-status.json
+            exit 1
+          fi
+          state="available"
+          reason="latest successful research synthesis is structurally valid"
+          if [ "$head_sha" != "$GITHUB_SHA" ]; then state="stale_head"; reason="latest successful research synthesis is from a different Foundation revision"; fi
+          if [ -n "$report_graph_sha256" ] && [ "$report_graph_sha256" != "$current_graph_sha256" ]; then state="stale_graph"; reason="latest research synthesis references an older family integration graph"; fi
+          jq -n --arg state "$state" --arg reason "$reason" --arg run_id "$run_id" --arg head_sha "$head_sha" --arg benchmark_sha "$GITHUB_SHA" --arg created_at "$created_at" --arg report_graph_sha256 "$report_graph_sha256" --arg current_graph_sha256 "$current_graph_sha256" \
+            '{schema:"nightly-research-feed-status/v1",state:$state,reason:$reason,run_id:($run_id|tonumber),head_sha:$head_sha,benchmark_sha:$benchmark_sha,created_at:$created_at,report_graph_sha256:$report_graph_sha256,current_graph_sha256:$current_graph_sha256}' > .runtime/research-feed/research-feed-status.json
+      - name: Upload research feed
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: latest-research-feed
+          path: .runtime/research-feed
+          retention-days: 30
+          if-no-files-found: error
+
   benchmark:
+    needs: [research_feed]
     name: Benchmark shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -39,6 +94,21 @@ jobs:
     steps:
       - name: Checkout public foundation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download latest nightly research feed
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v5.0.0
+        with:
+          name: latest-research-feed
+          path: .runtime/research-feed
+
+      - name: Validate research feed handoff
+        shell: bash
+        run: |
+          set -euo pipefail
+          status=.runtime/research-feed/research-feed-status.json
+          test -f "$status"
+          jq -e '.schema == "nightly-research-feed-status/v1"' "$status" >/dev/null
+          cat "$status" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Test public chatbot durable contract
         run: |
