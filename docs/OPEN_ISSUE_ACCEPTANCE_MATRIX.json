@@ -2,7 +2,7 @@
   "schema": "family-issue-acceptance-matrix/v1",
   "audited_at": "2026-09-25",
   "repository_heads": {
-    "foundation": "30e4ff5174d38944306210b20aecf054d3b36585",
+    "foundation": "f248e83cf22e3359f57bbea190aaf150249ba2f6",
     "operations": "d89e119722f3017cedf0cc175ba55871a65846ed"
   },
   "open_issue_count": 11,
@@ -286,6 +286,8 @@
     "backend_worker": "heroic",
     "backend_origin": "https://heroic.heroic-ai.workers.dev",
     "canonical_domain_status": "heroic-ai.dev pending/unresolvable",
-    "certification": "OPEN / NOT CERTIFIED"
+    "certification": "OPEN / NOT CERTIFIED",
+    "deployed_foundation_sha": "2d8e2a6bdbb9279892eb4ad2095fbacc1adae9d4",
+    "deployed_operations_sha": "d89e119722f3017cedf0cc175ba55871a65846ed"
   }
 }
