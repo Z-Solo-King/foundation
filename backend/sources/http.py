@@ -24,6 +24,7 @@ DNS_OVER_HTTPS_ENDPOINTS = (
     "https://dns.google/dns-query",
 )
 _PROVIDER_DENYLIST = frozenset({"168.63.129.16"})
+_NAT64_PREFIX = ip_address("64:ff9b::").packed[:12]
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,8 @@ def _safe_ip(value: str) -> bool:
     mapped = getattr(ip, "ipv4_mapped", None)
     if mapped is not None:
         ip = mapped
+    if isinstance(ip, IPv6Address) and ip.packed[:12] == _NAT64_PREFIX:
+        ip = IPv4Address(ip.packed[12:])
     if str(ip) in _PROVIDER_DENYLIST:
         return False
     return bool(ip.is_global)

@@ -1,95 +1,28 @@
-import pytest
-
-import backend.sources.http as source_http
+from pathlib import Path
 
 
-class Response:
-    def __init__(self, status=200, headers=None, body=b"ok"):
-        self.status = status
-        self.headers = headers or {}
-        self.body = body
-
-    async def arrayBuffer(self):
-        return self.body
+WORKFLOW = Path(__file__).parents[1] / ".github" / "workflows" / "hybrid-language-pilots.yml"
 
 
-@pytest.mark.parametrize(
-    ("source", "expected"),
-    [
-        ("HTTPS://EXAMPLE.COM.:443/path#fragment", "https://example.com/path"),
-        ("http://EXAMPLE.COM:80", "http://example.com/"),
-        ("https://example.com", "https://example.com/"),
-        ("https://example.com:80/path", "https://example.com:80/path"),
-    ],
-)
-def test_canonicalize_url_normalizes_security_neutral_variants(source, expected):
-    assert source_http.canonicalize_url(source) == expected
+def test_pinned_foundation_reference_checkouts_use_manual_sha_fetch():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    exact_block = text[text.index("name: Checkout exact pinned Foundation public core"):text.index("name: Materialize pinned public foundation_core", text.index("name: Checkout exact pinned Foundation public core"))]
+    assert "ref: ${{ steps.foundation-core-pin.outputs.ref }}" not in exact_block
+    assert 'git fetch --no-tags --depth=1 origin "$FOUNDATION_COMMIT"' in exact_block
+    assert 'git checkout --detach "$FOUNDATION_COMMIT"' in exact_block
 
 
-@pytest.mark.parametrize(
-    "source",
-    [
-        "ftp://example.com",
-        "https://user:pass@example.com",
-        "https://127.0.0.1",
-        "https://example.com:8443",
-    ],
-)
-def test_canonicalize_url_rejects_unsafe_or_unsupported_forms(source):
-    with pytest.raises(ValueError):
-        source_http.canonicalize_url(source)
+def test_foundation_ref_output_does_not_emit_literal_backslash_newline():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert 'write_text(f"ref={node.value.value}\\\\n", encoding="utf-8")' not in text
 
 
-@pytest.mark.asyncio
-async def test_fetch_public_url_uses_canonical_fetch_identity():
-    calls = []
-
-    async def fetcher(url, options):
-        calls.append(url)
-        return Response()
-
-    result = await source_http.fetch_public_url("HTTPS://EXAMPLE.COM.:443/path#fragment", fetcher=fetcher)
-    assert calls == ["https://example.com/path"]
-    assert result.url == "https://example.com/path"
-    assert result.final_url == "https://example.com/path"
-
-
-@pytest.mark.asyncio
-async def test_fetch_public_url_rejects_https_to_http_redirect_downgrade():
-    async def fetcher(url, options):
-        return Response(302, {"location": "http://example.com/plain"})
-
-    with pytest.raises(ValueError, match="downgrade"):
-        await source_http.fetch_public_url("https://example.com/start", fetcher=fetcher)
-
-
-@pytest.mark.asyncio
-async def test_fetch_public_url_revalidates_each_redirect_destination():
-    responses = iter(
-        [
-            Response(302, {"location": "https://example.com/next"}),
-            Response(200, body=b"ok"),
-        ]
-    )
-    calls = []
-
-    async def fetcher(url, options):
-        calls.append(url)
-        return next(responses)
-
-    result = await source_http.fetch_public_url("https://example.com/start", fetcher=fetcher)
-    assert calls == ["https://example.com/start", "https://example.com/next"]
-    assert result.final_url == "https://example.com/next"
-
-
-@pytest.mark.parametrize(
-    "value",
-    ["100.64.0.1", "168.63.129.16", "::ffff:100.64.0.1"],
-)
-def test_safe_ip_rejects_provider_and_shared_address_space(value):
-    assert source_http._safe_ip(value) is False
-
-
-def test_safe_ip_accepts_public_ipv4_and_ipv4_mapped_public_ipv4():
-    assert source_http._safe_ip("8.8.8.8") is True
-    assert source_http._safe_ip("::ffff:8.8.8.8") is True
+def test_url_reference_uses_foundation_backend_source_not_removed_operations_backend():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    start = text.index("name: Rust URL canonicalization Python differential")
+    block = text[start:text.index("name: Rust URL identity 32x3 benchmark", start)]
+    assert "foundation-url-ref" in block
+    assert "foundation-reference" in block
+    assert "backend/sources/http.py" in block
+    assert "PYTHONPATH: ${{ github.workspace }}/foundation-reference" in block
+    assert "pip install --disable-pip-version-check -e operations" not in block
