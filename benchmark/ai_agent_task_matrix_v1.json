@@ -1,6 +1,6 @@
 {
   "schema": "ai-agent-benchmark-task-matrix/v1",
-  "version": "1.2",
+  "version": "1.4",
   "purpose": "Project-native benchmark for model/agent behavior in the Foundation + Operations hybrid engineering workflow.",
   "task_count": 24,
   "lanes": [
@@ -897,7 +897,6 @@
     "foundation": [
       58,
       1157,
-      154,
       157
     ],
     "operations": [
