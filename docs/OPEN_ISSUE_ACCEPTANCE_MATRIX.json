@@ -5,30 +5,264 @@
     "foundation": "81093f6ef3bd9998f1071a4765b06788956db6ef",
     "operations": "3ecac088a3ace49f0a7133df60d075369223ae96"
   },
-  "open_issue_count": 11,
+  "open_issue_count": 10,
   "issues": [
-    {"repo":"foundation","number":1157,"title":"Project-native AI/agent benchmark","status":"OPEN","class":"repo+benchmark+runtime","fix_now":["current benchmark matrix","decision-fork probes","20-job research feed","family graph provenance"],"remaining":["real repeated provider/model/agent baseline","retained benchmark run artifacts","runtime evidence where required"],"probes":["FI-01","FI-02","FI-03","FI-08","FI-10","FI-11"]},
-    {"repo":"foundation","number":157,"title":"24-program nightly research","status":"OPEN","class":"runtime+configuration","fix_now":["20-job research evidence feed","provenance binding","fail-closed source validation"],"remaining":["authorized research provider configuration","real 24-program provider-backed run","complete lane artifacts"],"probes":["FI-02","FI-04","FI-10"]},
-    {"repo":"foundation","number":154,"title":"GitHub Actions access to private Operations","status":"OPEN","class":"external-secret+runtime","fix_now":["fail-closed credential checks","current benchmark task coverage","security probe"],"remaining":["OPERATIONS_APP_ID","OPERATIONS_APP_PRIVATE_KEY","successful private Operations checkout and six-lane audit"],"probes":["FI-06"]},
-    {"repo":"foundation","number":58,"title":"Exhaustive Research Intelligence Engine coverage tracker","status":"OPEN","class":"meta+evidence","fix_now":["family integration graph","11-probe coverage","current issue/PR state"],"remaining":["close only after each linked acceptance gate is discharged"],"probes":["FI-01","FI-02","FI-03","FI-04","FI-05","FI-06","FI-07","FI-08","FI-09","FI-10","FI-11"]},
-    {"repo":"operations","number":699,"title":"Deep-scan findings and roadmap","status":"OPEN","class":"meta+evidence","fix_now":["canonical Foundation graph consumer","current 44-case lane map"],"remaining":["all child/evidence gates represented by live receipts"],"probes":["FI-01","FI-04","FI-08","FI-09"]},
-    {"repo":"operations","number":603,"title":"AI-model/tooling portability","status":"OPEN","class":"migration+runtime","fix_now":["language/tool inventory","benchmark probes","migration reference corpus"],"remaining":["candidate-specific parity","performance/conversion","shadow/canary","rollback"],"probes":["FI-02","FI-03","FI-06","FI-09","FI-11"]},
-    {"repo":"operations","number":597,"title":"Mapper capability migration","status":"OPEN","class":"migration+runtime","fix_now":["six capability lanes","graph topology","reference corpus"],"remaining":["frozen baseline","differential parity/error taxonomy","p50/p95/p99 + CPU/memory/conversion","shadow/canary/rollback"],"probes":["FI-01","FI-09"]},
-    {"repo":"operations","number":385,"title":"Terminalization/recovery","status":"OPEN","class":"reliability+runtime","fix_now":["canonical lifecycle remains authoritative","unit-level recovery/graph probes","resource/recovery integration map"],"remaining":["cross-surface crash-after-side-effect","late output/restart receipts","L3/L4 runtime evidence"],"probes":["FI-01","FI-05","FI-08"]},
-    {"repo":"operations","number":340,"title":"Provider streaming/token accounting","status":"OPEN","class":"runtime","fix_now":["reachable-path contract","typed decision/resource/observability probes"],"remaining":["live interruption/cancellation","resource/token reconciliation","duplicate/restart/orphan-state receipt"],"probes":["FI-03","FI-05","FI-07"]},
-    {"repo":"operations","number":197,"title":"Heroic AI conversational execution","status":"OPEN","class":"production runtime","fix_now":["canonical Heroic-Ai.dev path definition","family graph UI→edge→chatbot→research/resource chain"],"remaining":["DNS/custom domain active","live model generation","replay/concurrency/policy denial/SSE/research/provenance/resource evidence"],"probes":["FI-04","FI-05","FI-06","FI-07"]},
-    {"repo":"operations","number":145,"title":"Periodic maintenance tick","status":"OPEN","class":"runtime+observability","fix_now":["existing scheduler/reconciliation authority","resource/observability graph coverage"],"remaining":["approved live scheduler receipt with exact revision/time/result/provenance"],"probes":["FI-05","FI-07"]}
+    {
+      "repo": "foundation",
+      "number": 58,
+      "title": "Exhaustive Research Intelligence Engine coverage tracker",
+      "status": "OPEN",
+      "class": "meta+evidence",
+      "fix_now": [
+        "family integration graph",
+        "11-probe coverage",
+        "current issue/PR state"
+      ],
+      "remaining": [
+        "close only after each linked acceptance gate is discharged"
+      ],
+      "probes": [
+        "FI-01",
+        "FI-02",
+        "FI-03",
+        "FI-04",
+        "FI-05",
+        "FI-06",
+        "FI-07",
+        "FI-08",
+        "FI-09",
+        "FI-10",
+        "FI-11"
+      ]
+    },
+    {
+      "repo": "foundation",
+      "number": 157,
+      "title": "24-program nightly research",
+      "status": "OPEN",
+      "class": "runtime+configuration",
+      "fix_now": [
+        "20-job research evidence feed",
+        "provenance binding",
+        "fail-closed source validation"
+      ],
+      "remaining": [
+        "authorized research provider configuration",
+        "real 24-program provider-backed run",
+        "complete lane artifacts"
+      ],
+      "probes": [
+        "FI-02",
+        "FI-04",
+        "FI-10"
+      ]
+    },
+    {
+      "repo": "foundation",
+      "number": 1157,
+      "title": "Project-native AI/agent benchmark",
+      "status": "OPEN",
+      "class": "repo+benchmark+runtime",
+      "fix_now": [
+        "current benchmark matrix",
+        "decision-fork probes",
+        "20-job research feed",
+        "family graph provenance"
+      ],
+      "remaining": [
+        "real repeated provider/model/agent baseline",
+        "retained benchmark run artifacts",
+        "runtime evidence where required"
+      ],
+      "probes": [
+        "FI-01",
+        "FI-02",
+        "FI-03",
+        "FI-08",
+        "FI-10",
+        "FI-11"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 145,
+      "title": "Periodic maintenance tick",
+      "status": "OPEN",
+      "class": "runtime+observability",
+      "fix_now": [
+        "existing scheduler/reconciliation authority",
+        "resource/observability graph coverage"
+      ],
+      "remaining": [
+        "approved live scheduler receipt with exact revision/time/result/provenance"
+      ],
+      "probes": [
+        "FI-05",
+        "FI-07"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 197,
+      "title": "Heroic AI conversational execution",
+      "status": "OPEN",
+      "class": "production runtime",
+      "fix_now": [
+        "canonical Heroic-Ai.dev path definition",
+        "family graph UI→edge→chatbot→research/resource chain"
+      ],
+      "remaining": [
+        "DNS/custom domain active",
+        "live model generation",
+        "replay/concurrency/policy denial/SSE/research/provenance/resource evidence"
+      ],
+      "probes": [
+        "FI-04",
+        "FI-05",
+        "FI-06",
+        "FI-07"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 340,
+      "title": "Provider streaming/token accounting",
+      "status": "OPEN",
+      "class": "runtime",
+      "fix_now": [
+        "reachable-path contract",
+        "typed decision/resource/observability probes"
+      ],
+      "remaining": [
+        "live interruption/cancellation",
+        "resource/token reconciliation",
+        "duplicate/restart/orphan-state receipt"
+      ],
+      "probes": [
+        "FI-03",
+        "FI-05",
+        "FI-07"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 385,
+      "title": "Terminalization/recovery",
+      "status": "OPEN",
+      "class": "reliability+runtime",
+      "fix_now": [
+        "canonical lifecycle remains authoritative",
+        "unit-level recovery/graph probes",
+        "resource/recovery integration map"
+      ],
+      "remaining": [
+        "cross-surface crash-after-side-effect",
+        "late output/restart receipts",
+        "L3/L4 runtime evidence"
+      ],
+      "probes": [
+        "FI-01",
+        "FI-05",
+        "FI-08"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 597,
+      "title": "Mapper capability migration",
+      "status": "OPEN",
+      "class": "migration+runtime",
+      "fix_now": [
+        "six capability lanes",
+        "graph topology",
+        "reference corpus"
+      ],
+      "remaining": [
+        "frozen baseline",
+        "differential parity/error taxonomy",
+        "p50/p95/p99 + CPU/memory/conversion",
+        "shadow/canary/rollback"
+      ],
+      "probes": [
+        "FI-01",
+        "FI-09"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 603,
+      "title": "AI-model/tooling portability",
+      "status": "OPEN",
+      "class": "migration+runtime",
+      "fix_now": [
+        "language/tool inventory",
+        "benchmark probes",
+        "migration reference corpus"
+      ],
+      "remaining": [
+        "candidate-specific parity",
+        "performance/conversion",
+        "shadow/canary",
+        "rollback"
+      ],
+      "probes": [
+        "FI-02",
+        "FI-03",
+        "FI-06",
+        "FI-09",
+        "FI-11"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 699,
+      "title": "Deep-scan findings and roadmap",
+      "status": "OPEN",
+      "class": "meta+evidence",
+      "fix_now": [
+        "canonical Foundation graph consumer",
+        "current 44-case lane map"
+      ],
+      "remaining": [
+        "all child/evidence gates represented by live receipts"
+      ],
+      "probes": [
+        "FI-01",
+        "FI-04",
+        "FI-08",
+        "FI-09"
+      ]
+    }
   ],
   "evidence_rules": {
-    "research_signal":"discovery/candidate evidence only",
-    "benchmark":"deterministic or controlled comparative evidence; not runtime certification",
-    "runtime":"required for production/L4 acceptance where issue specifies it",
-    "closure":"do not close from documentation, tests, dry-runs, popularity or historical receipts alone"
+    "research_signal": "discovery/candidate evidence only",
+    "benchmark": "deterministic or controlled comparative evidence; not runtime certification",
+    "runtime": "required for production/L4 acceptance where issue specifies it",
+    "closure": "do not close from documentation, tests, dry-runs, popularity or historical receipts alone"
   },
   "ownership": {
-    "foundation":["public contracts","AI navigation","benchmark","GitHub Actions/CI"],
-    "operations":["private runtime","chatbot","extractor/mapper","resource governance","AI/model tooling governance"],
-    "external":["DNS/custom-domain activation","runtime configuration/secrets not exposed to repository connector"]
+    "foundation": [
+      "public contracts",
+      "AI navigation",
+      "benchmark",
+      "GitHub Actions/CI"
+    ],
+    "operations": [
+      "private runtime",
+      "chatbot",
+      "extractor/mapper",
+      "resource governance",
+      "AI/model tooling governance"
+    ],
+    "external": [
+      "DNS/custom-domain activation",
+      "runtime configuration/secrets not exposed to repository connector"
+    ]
   },
-  "graph_reference":{"schema":"family-integration-graph/v1","sha":"6b86edcc2bb4ce72654837c76dd5835477c2d8d4","materials":20,"probes":11}
+  "graph_reference": {
+    "schema": "family-integration-graph/v1",
+    "sha": "6b86edcc2bb4ce72654837c76dd5835477c2d8d4",
+    "materials": 20,
+    "probes": 11
+  }
 }
