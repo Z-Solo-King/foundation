@@ -46,4 +46,5 @@ def test_production_uses_free_workers_dev_origin_without_custom_zone_preflight()
     assert 'BASE_URL=' in text and 'ai-cio.pages.dev' in text
     assert 'workers_dev = true' in text
     assert 'name = "heroic"' in text
+    assert '! grep -q \'^service = "heroic"$\' "$bootstrap_config"' in text
     assert 'zones?name=heroic-ai.dev&status=active' not in text
