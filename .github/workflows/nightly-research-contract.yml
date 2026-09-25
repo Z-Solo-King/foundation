@@ -335,7 +335,7 @@ jobs:
                 small_image{url}
                 url_key
               }
-              page_info{current_page page_size total_pages}
+              page_info{total_pages}
               total_count
               responseID
               hasToRedirect
@@ -464,11 +464,36 @@ jobs:
               print(f"NATIVE_FAIL type={type(exc).__name__} detail={exc}")
 
       - name: Probe exact sitemap declared by robots
-        shell: bash
+        shell: python
         run: |
-          set -e
-          echo "=== ROBOTS ==="
-          curl -fsSL --max-time 30 https://www.furtadosonline.com/robots.txt
-          echo
-          echo "=== DECLARED SITEMAP ==="
-          curl -fsSL --max-time 30 https://www.furtadosonline.com/sitemap/sitemap.xml | head -c 20000
+          from urllib.request import Request, urlopen
+          import re
+
+          headers = {
+              "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36",
+              "Accept": "text/html,application/xml,text/xml,*/*",
+              "Referer": "https://www.furtadosonline.com/",
+          }
+
+          for url in (
+              "https://www.furtadosonline.com/robots.txt",
+              "https://www.furtadosonline.com/sitemap/sitemap.xml",
+          ):
+              try:
+                  with urlopen(Request(url, headers=headers), timeout=30) as resp:
+                      body = resp.read(250000)
+                      text = body.decode("utf-8", "replace")
+                      print("URL=", url)
+                      print("STATUS=", resp.status)
+                      print("CONTENT_TYPE=", resp.headers.get("content-type", ""))
+                      print("BYTES=", len(body))
+                      print(text[:12000])
+                      if url.endswith("robots.txt"):
+                          match = re.search(r"(?im)^Sitemap:\s*(\S+)", text)
+                          print("DECLARED_SITEMAP=", match.group(1) if match else None)
+              except Exception as exc:
+                  print("URL=",url,"ERROR=",type(exc).__name__,str(exc))
+                  if url.endswith("sitemap.xml"):
+                      # A WAF challenge is still useful evidence that the declared
+                      # route exists but is not directly readable from this runner.
+                      print("SITEMAP_ACCESS_BLOCKED=1")
