@@ -2,7 +2,7 @@ import { writeFile } from "node:fs/promises";
 const UA="Mozilla/5.0 AppleWebKit/537.36 Chrome/153 Safari/537.36";
 const seen=new Set(), out={pages:[],scripts:[],direct:[],errors:[]};
 async function get(url,opt={}){const r=await fetch(url,{redirect:"follow",headers:{"user-agent":UA,"accept":"*/*",...(opt.headers||{})},...opt});const t=await r.text();return {url:r.url,status:r.status,ct:r.headers.get("content-type")||"",text:t};}
-function paths(t){return [...new Set((t.match(/(?:https?:\\/\\/[^"\'\\s<>]+|\\/[^"\'\\s<>]{2,160})/g)||[]))].filter(x=>/api|shop|product|catalog|commerce|search|fulfill|pricing|inventory|availability|parts|config|model/i.test(x));}
+function paths(t){ const hits=t.match(/(?:https?:\\/\\/|\\/)[^"'\\s<>]{2,220}/g)||[]; return [...new Set(hits)].filter(x=>/api|shop|product|catalog|commerce|search|fulfill|pricing|inventory|availability|parts|config|model/i.test(x)); }
 function productish(t){return /(?:partNumber|productNumber|sku|price|finalPrice|productId|modelCode|productName|retailPrice)/i.test(t)&&/(?:json|items|products|parts|product)/i.test(t)}
 async function main(){
  for(const u of ["https://www.apple.com/in/shop/buy-iphone/iphone-17","https://www.apple.com/in/shop/buy-iphone/iphone-17-pro","https://www.apple.com/in/shop/buy-iphone"]){
