@@ -3,8 +3,8 @@
   "status": "CURRENT",
   "audited_at": "2026-09-25",
   "live_main": {
-    "foundation": "cc4b0df5cea2590b2ec73b00be8600bc58d9be61",
-    "operations": "f12027ca1e0f6ee0484e53c960ffff9242204eba"
+    "foundation": "6eb531095148cb6657bccc72a64542691dbb6fa1",
+    "operations": "207d8a3f081f58702b56fe64c57fe2c3042ce75d"
   },
   "runtime_pins": {
     "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
@@ -42,15 +42,7 @@
       597,
       603,
       699
-    ],
-    "open_pr_count": 2,
-    "foundation_open_prs": [],
-    "operations_open_prs": [
-      914,
-      915
-    ],
-    "open_implementation_pr_count": 0,
-    "note": "Operations #914/#915 are Dependabot-only dependency updates; no project implementation PRs are open."
+    ]
   },
   "latest_evidence": {
     "nightly_research": {
@@ -81,10 +73,8 @@
       "diagnosis_artifact_id": 10794105227
     },
     "nightly_preflight": {
-      "run_number": 72,
-      "run_id": 35964770251,
-      "state": "failed",
-      "provider_configuration": false
+      "run_id": 36117585207,
+      "status": "in_progress"
     },
     "nightly_canary": {
       "run_id": 36030977932,
@@ -142,12 +132,8 @@
       }
     },
     "production_release": {
-      "run_id": 36052644242,
-      "status": "failed",
-      "foundation_revision": "c053a67defb72307c2d34ddfd8e94e3e1f339308",
-      "operations_revision": "a3171f353539f1a31020c432f98cf0530cbf91ef",
-      "failure_phase": "Foundation deploy",
-      "failure": "Cloudflare Service Binding target Worker operations was not found"
+      "run_id": 36117585242,
+      "status": "in_progress"
     },
     "public_worker_probe": {
       "run_number": 72,
@@ -245,6 +231,10 @@
       "open_issue_count": 10,
       "open_pr_count": 0,
       "notes": "Foundation #154 completed from fresh GitHub Actions evidence; Operations four-lane open-issue scan synchronized to 10 active cases; current Family graph FI-06 excludes the completed issue."
+    },
+    "family_integrity": {
+      "run_id": 36117585223,
+      "status": "in_progress"
     }
   },
   "known_findings": [
@@ -368,5 +358,14 @@
     "operations_sync_state_merge": "fd974fe9ce1793fed2d308519051e92d30d6d855",
     "foundation_main_at_sync": "ec143386e0258d9cb5aeaf13cde95f66814a7c0b",
     "graph_version": "1.1"
-  }
+  },
+  "open_pr_count": 3,
+  "foundation_open_prs": [
+    1195
+  ],
+  "operations_open_prs": [
+    914,
+    915
+  ],
+  "open_implementation_pr_count": 0
 }
