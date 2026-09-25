@@ -1,0 +1,102 @@
+name: Computech XHR fast probe
+
+on:
+  push:
+    branches:
+      - diag/computech-xhr-fast-2026-09-26
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: computech-xhr-fast
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+      - name: Browser setup
+        run: |
+          python -m pip install --disable-pip-version-check playwright
+          python -m playwright install --with-deps chromium
+      - name: Capture network and high-signal API routes
+        run: |
+          python - <<'PY'
+          import asyncio, json, re
+          from urllib.parse import urljoin, urlsplit
+          from playwright.async_api import async_playwright
+
+          ROOT = "https://computechstore.in"
+          pages = [ROOT + "/", ROOT + "/shop/", ROOT + "/product-category/graphics-card/",
+                   ROOT + "/?dgwt_wcas=1&post_type=product&s=RTX%205080"]
+          keywords = ("api","ajax","graphql","json","product","search","catalog","item","inventory","filter","load")
+          assets = re.compile(r"\.(?:css|js|png|jpe?g|gif|svg|ico|woff2?|ttf|webp|avif)(?:[?#].*)?$", re.I)
+
+          async def main():
+              async with async_playwright() as p:
+                  browser = await p.chromium.launch(headless=True)
+                  context = await browser.new_context(
+                      user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36",
+                      locale="en-IN", timezone_id="Asia/Kolkata"
+                  )
+                  events=[]
+                  seen=set()
+                  async def on_resp(resp):
+                      try:
+                          req=resp.request; u=resp.url; path=urlsplit(u).path.lower()
+                          ct=(resp.headers.get("content-type") or "").lower()
+                          if assets.search(path): return
+                          if not (any(k in (path + "?" + urlsplit(u).query.lower()) for k in keywords) or "json" in ct or "html" in ct):
+                              return
+                          key=(req.method,u,resp.status)
+                          if key in seen: return
+                          seen.add(key)
+                          body=""
+                          if resp.status==200:
+                              try: body=await resp.text()
+                              except: pass
+                          events.append({
+                              "method":req.method,"status":resp.status,"url":u,"content_type":ct,
+                              "post_data":(req.post_data or "")[:1500],
+                              "len":len(body),
+                              "sample":re.sub(r"\\s+"," ",body[:1600])
+                          })
+                      except: pass
+                  context.on("response",on_resp)
+                  out={}
+                  for u in pages:
+                      try:
+                          pg=await context.new_page()
+                          await pg.goto(u,wait_until="domcontentloaded",timeout=60000)
+                          await pg.wait_for_timeout(2200)
+                          html=await pg.content()
+                          attrs=re.findall(r'(?is)\\b(?:hx-get|hx-post|hx-trigger|hx-target|hx-include|hx-vals|data-url|data-endpoint|data-api|data-action|formaction|action)=["\\\']([^"\\\']+)["\\\']',html)
+                          endpoints=sorted(set(re.findall(r'(?i)(?:https?://[^"\\\'\\s<>]+|/[^"\\\'\\s<>]*(?:api|ajax|graphql|json|product|catalog|search|filter|load)[^"\\\'\\s<>]*)',html)))
+                          forms=re.findall(r'(?is)<form[^>]*(?:action|method)=[^>]*>',html)[:50]
+                          buttons=re.findall(r'(?is)<(?:button|a)[^>]*(?:load|more|search|filter|product)[^>]*>',html)[:80]
+                          out[u]={"html_len":len(html),"attrs":sorted(set(attrs))[:200],"endpoints":endpoints[:200],
+                                 "forms":forms,"buttons":buttons}
+                          print("\\nPAGE",u,"HTML",len(html))
+                          for x in sorted(set(attrs)): print("ATTR",x)
+                          for x in endpoints[:80]: print("ENDPOINT",x)
+                          await pg.close()
+                      except Exception as e:
+                          print("NAVERR",u,repr(e))
+                  await context.close()
+                  await browser.close()
+                  print("\\n=== NETWORK EVENTS",len(events))
+                  for e in events: print(json.dumps(e,ensure_ascii=False))
+                  print("\\n=== DOM SIGNALS")
+                  print(json.dumps(out,ensure_ascii=False,indent=2)[:80000])
+                  print("\\n=== CANDIDATE API/ASYNC URLS")
+                  urls=sorted(set(e["url"] for e in events if any(k in e["url"].lower() for k in ("api","ajax","graphql","json","product","search","catalog","inventory","filter","load"))))
+                  for u in urls: print(u)
+          asyncio.run(main())
+          PY
