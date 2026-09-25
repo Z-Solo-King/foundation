@@ -4,7 +4,7 @@
   "audited_at": "2026-09-25",
   "live_main": {
     "foundation": "07e12f5a1566ad216fbb998e31bd3a5e144e6d81",
-    "operations": "d2965d69817c66b8b48d5002eae019a99a63e263"
+    "operations": "3c5b6a45ca2017548f4b8b97d43a25af6f562084"
   },
   "runtime_pins": {
     "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
@@ -364,14 +364,13 @@
     "foundation_main_at_sync": "ec143386e0258d9cb5aeaf13cde95f66814a7c0b",
     "graph_version": "1.1"
   },
-  "open_pr_count": 4,
+  "open_pr_count": 3,
   "foundation_open_prs": [
     1203
   ],
   "operations_open_prs": [
     914,
-    915,
-    952
+    915
   ],
   "open_implementation_pr_count": 0
 }
