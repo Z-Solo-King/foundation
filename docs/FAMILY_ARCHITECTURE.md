@@ -27,6 +27,10 @@ Backblaze B2 is artifact/backup storage authority only. `B2_KEY_ID`, `B2_APPLICA
 
 Backup manifests are evidence records only. Secret values must never appear in manifests or durable handoff records. Backup integrity, GitHub CI, Cloudflare deployment and application runtime are separate evidence classes.
 
+## Family integration graph
+
+`docs/FAMILY_INTEGRATION_GRAPH.json` is the machine-readable cross-surface navigation map. It connects the public UI/Worker boundary, private chatbot, research, extractor/mapper, resource governance, benchmark, CI and observability loops. It must not redefine the canonical owner rules in `docs/FAMILY_CONTRACT.json`; it exists to make dependencies, evidence flow and benchmark coverage discoverable.
+
 ## Repository structure rule
 
 New modules belong under the layer that owns their responsibility. Do not create a convenient top-level module when an existing owning package already exists. Keep public contracts, evidence semantics, execution state, protected policy and orchestration separated by ownership.
@@ -47,9 +51,10 @@ Use one coherent feature branch and one PR per owning repository. For a cross-re
 4. Extend that owner rather than duplicating it.
 5. Expose the minimum stable typed/versioned contract needed by consumers.
 6. Add owner-level tests plus boundary/golden-vector tests where repositories interact.
-7. Run repository-local validation and the family overlap audit for structural changes.
-8. Update the canonical documentation in the same change set when ownership, contract, policy or methodology changes.
-9. Remove duplicate, obsolete or completed compatibility code after parity evidence.
+7. For cross-surface changes, update or validate `docs/FAMILY_INTEGRATION_GRAPH.json` and its focused tests.
+8. Run repository-local validation and the family overlap audit for structural changes.
+9. Update the canonical documentation in the same change set when ownership, contract, policy or methodology changes.
+10. Remove duplicate, obsolete or completed compatibility code after parity evidence.
 
 ## Splitting and moving code
 
