@@ -375,10 +375,12 @@ jobs:
           import json
           from pathlib import Path
           rows=[json.loads(v) for v in Path("benchmark/polyglot/rust_url_identity/corpus.jsonl").read_text().splitlines() if v]
+          base_case_count = len(rows)
           invalid=["not-a-url","ftp://example.com/file","https:///missing-host","https://","http:///example.com","https://example.com:8443/a","https://user:pass@example.com/a","http://user@example.com/a","http://localhost/a","http://127.0.0.1/a","http://10.0.0.1/a","http://192.168.1.1/a","http://[::1]/a","http://[fc00::1]/a"]
           rows += [{"id":f"invalid-{i+1:02d}","input":value} for i,value in enumerate(invalid)]
           Path("benchmark/polyglot/rust_url_identity/differential_corpus.jsonl").write_text("\n".join(json.dumps(v) for v in rows)+"\n", encoding="utf-8")
-          assert len(rows) == 71
+          assert len(rows) == base_case_count + len(invalid)
+          assert len(invalid) == 14
           PY
       - name: Generate Python canonical outputs
         working-directory: operations
