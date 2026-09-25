@@ -33,6 +33,7 @@ def test_expanded_20_job_workflow_has_seeded_and_qualified_matrix():
     assert "ashishps1/awesome-system-design-resources" in text
     assert "ByteByteGoHq/system-design-101" in text
     assert "rafska/Awesome-local-LLM" in text
+    assert "foundation#154" not in text
 
 
 def test_research_collector_and_synthesis_scripts_are_syntactically_valid():
@@ -43,6 +44,7 @@ def test_research_collector_and_synthesis_scripts_are_syntactically_valid():
     report_text = REPORT.read_text(encoding="utf-8")
     assert "family_graph_sha256" in report_text
     assert "family_graph_digest_count" in report_text
+    assert "stale_benchmark_targets" in report_text
 
 
 def test_research_collector_records_seed_repository_provenance():
