@@ -18,8 +18,12 @@ def test_expanded_20_job_workflow_has_seeded_and_qualified_matrix():
         if 'id: "' in line and "seed_repos:" in line and "issues:" in line
     ]
     assert len(matrix_rows) == 20
-    qualified = re.compile(r'issues: "((?:foundation|operations)#\\d+(?:,(?:foundation|operations)#\\d+)*)"')
-    assert all(qualified.search(line) for line in matrix_rows)
+    issue_fields = [re.search(r'issues: "([^"]+)"', line) for line in matrix_rows]
+    assert all(match for match in issue_fields)
+    assert all(
+        all(part.startswith(("foundation#", "operations#")) for part in match.group(1).split(","))
+        for match in issue_fields
+    )
     assert "PieroSierra/SecondBrain" in text
     assert "Shubhamsaboo/awesome-llm-apps" in text
     assert "NipunaRanasinghe/awesome-ai-agents" in text
