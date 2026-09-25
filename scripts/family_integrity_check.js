@@ -40,11 +40,17 @@ const normalizeIssueNumbers = (value) =>
     .filter((value) => Number.isInteger(value)))]
     .sort((a, b) => a - b);
 
-const normalizeIssueKeys = (pairs) =>
-  [...new Set((Array.isArray(pairs) ? pairs : [])
-    .map(([repo, number]) => `${repo}#${Number(number)}`)
-    .filter((value) => /^(foundation|operations)#\\d+$/.test(value)))]
-    .sort();
+const normalizeIssueKeys = (pairs) => {
+  const normalized = [];
+  for (const pair of Array.isArray(pairs) ? pairs : []) {
+    const repo = pair && pair[0];
+    const number = Number(pair && pair[1]);
+    if ((repo === "foundation" || repo === "operations") && Number.isInteger(number) && number > 0) {
+      normalized.push(repo + "#" + number);
+    }
+  }
+  return [...new Set(normalized)].sort();
+};
 
 const activeIssues = {};
 for (const repo of ["foundation", "operations"]) {
