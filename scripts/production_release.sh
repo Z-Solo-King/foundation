@@ -157,7 +157,8 @@ jq -e --arg expected "$OPERATIONS_REF" '.sha == $expected' "$RUNNER_TEMP/operati
 
 echo "private Operations access: PASS (${OPERATIONS_REF})"
 
-# The canonical public origin is the free workers.dev endpoint; no custom-domain zone is required for this release.\n\n\naskpass="$RUNNER_TEMP/git-askpass-operations.sh"
+# The canonical public origin is the Pages front door; no custom-domain zone is required for this release.
+askpass="$RUNNER_TEMP/git-askpass-operations.sh"
 cat > "$askpass" <<'EOF'
 #!/bin/sh
 case "$1" in
