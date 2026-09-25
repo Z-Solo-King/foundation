@@ -1,0 +1,44 @@
+name: Left retailer API hunt v2
+
+on:
+  push:
+    branches:
+      - diag/multi-retailer-api-proof-v3-2026-09-26
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  hunt:
+    name: Left target (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - Apple
+          - Acer
+          - Flipkart
+    env:
+      TARGET: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: "24"
+      - name: Install browser runtime
+        run: |
+          npm install --no-save --no-package-lock playwright@1.63.0
+          npx playwright install --with-deps chromium
+      - name: Run left-target API hunt
+        run: node scripts/left_targets_api_hunt_v2.mjs
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: left-target-api-${{ matrix.target }}
+          path: left-targets-v2.json
+          if-no-files-found: warn
+          retention-days: 14
