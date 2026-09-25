@@ -138,7 +138,7 @@ async function asus(){
   await scriptsFor(home); await browserProbe([home,"https://in.store.asus.com/laptops"]);
   const gql=`query($search:String,$pageSize:Int=50,$currentPage:Int=1){products(search:$search,pageSize:$pageSize,currentPage:$currentPage){total_count page_info{current_page page_size total_pages}items{sku name url_key}}}`;
   for(const u of ["https://in.store.asus.com/graphql","https://in.store.asus.com/en-in/graphql"]){
-    try{const r=await json(u,{method:"POST",headers:{"content-type":"application/json","store":"default","origin":"https://in.store.asus.com","referer:home},body:JSON.stringify({query:gql,variables:{search:"laptop",pageSize:50,currentPage:1}})}); add("direct",{label:"asus-graphql",url:u,...summarize(r),sample:trim(r.text,6000),qualifies:Boolean(r.data?.data?.products?.items?.length)});}catch(e){add("errors",{stage:"asus-graphql",url:u,error:String(e)})}
+    try{const r=await json(u,{method:"POST",headers:{"content-type":"application/json","store":"default","origin":"https://in.store.asus.com","referer":home},body:JSON.stringify({query:gql,variables:{search:"laptop",pageSize:50,currentPage:1}})}); add("direct",{label:"asus-graphql",url:u,...summarize(r),sample:trim(r.text,6000),qualifies:Boolean(r.data?.data?.products?.items?.length)});}catch(e){add("errors",{stage:"asus-graphql",url:u,error:String(e)})}
   }
   const odin=[
     ["SearchResult","https://odinapi.asus.com/recent-data/apiv2/SearchResult?SystemCode=asus&WebsiteCode=in&SearchKey=laptop&SearchType=products&SearchPDLine=&SearchPDLine2=&PDLineFilter=&TopicFilter=&CateFilter=&PageSize=50&Pages=1&LocalFlag=0&siteID=www&sitelang="],
