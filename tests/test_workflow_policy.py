@@ -72,6 +72,12 @@ def test_production_deployment_has_one_owner():
     assert '.private == true' in deployment
 
 
+def test_production_pin_self_check_matches_canonical_operations_revision():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert "test \"$OPERATIONS_REF\" = '3e0d3bbbf191361717e7a01ebaa6e2a1af689382'" in deployment
+    assert "test \"$OPERATIONS_REF\" = 'ca9cc887049b2800361b222bbdae7f56100f4f7c'" not in deployment
+
+
 def test_production_generates_private_operations_service_binding():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_SERVICE_NAME="{CANONICAL_OPERATIONS_SERVICE}"' in deployment
