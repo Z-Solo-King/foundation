@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: foundation-nightly-research-contract-${{ github.ref }}
+  group: foundation-nightly-research-contract-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
