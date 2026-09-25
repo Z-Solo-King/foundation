@@ -653,7 +653,7 @@ def test_public_pages_front_door_is_documented_and_distinct_from_backend():
     docs = (ROOT / "docs" / "WORKER_IDENTITY_2026-09-25.md").read_text(encoding="utf-8")
     assert "ai-cio.pages.dev/" in docs
     assert "heroic.heroic-ai.workers.dev/" in docs
-    assert "https://ai.pages.dev/" not in docs
+    assert "hostname was not assignable to this account" in docs
 
 
 
