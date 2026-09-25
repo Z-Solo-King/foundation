@@ -1,0 +1,37 @@
+name: Family integrity gate
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "45 17 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: family-integrity-gate
+  cancel-in-progress: true
+
+jobs:
+  family-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify family contracts and live issue inventory
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/family_integrity_check.js
+      - name: Upload integrity receipt
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: family-integrity-receipt-${{ github.run_id }}
+          path: |
+            docs/FAMILY_INTEGRATION_GRAPH.json
+            docs/OPEN_ISSUE_ACCEPTANCE_MATRIX.json
+            docs/FAMILY_SYNC_STATE.json
+          retention-days: 30
+          if-no-files-found: error
