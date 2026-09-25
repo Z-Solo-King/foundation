@@ -3,8 +3,8 @@
   "status": "CURRENT",
   "audited_at": "2026-09-25",
   "live_main": {
-    "foundation": "e6514890548278e26331269e4abb0818b119233a",
-    "operations": "add667236a17f2b845a39ae539f3dfe137d806a2"
+    "foundation": "dbab61bb15aae22ca19787ddc70283af2617620e",
+    "operations": "300bb0cf8dc8f8a3a874c2bbeadc7ee5ddc6eb8c"
   },
   "runtime_pins": {
     "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
@@ -34,7 +34,7 @@
     "deployed_operations_provenance": "github:a3171f353539f1a31020c432f98cf0530cbf91ef"
   },
   "current_queue": {
-    "open_issue_count": 10,
+    "open_issue_count": 11,
     "foundation": [
       58,
       1157,
@@ -47,20 +47,18 @@
       385,
       597,
       603,
-      699
+      699,
+      713
     ]
   },
   "latest_evidence": {
     "nightly_research": {
-      "run_id": 36030996071,
-      "state": "failed_at_public_worker_authorization",
+      "run_id": 36141145555,
+      "state": "waiting_for_exact_production_release",
       "provider_execution": false,
       "programs": 24,
-      "blocker": "public_worker_http_403",
-      "local_error": "upstream_worker_rejected",
-      "local_http_status": 502,
-      "foundation_revision": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
-      "operations_ref": "fda24660843cacfe28de661cf170789af542d28f"
+      "foundation_revision": "dbab61bb15aae22ca19787ddc70283af2617620e",
+      "operations_ref": "300bb0cf8dc8f8a3a874c2bbeadc7ee5ddc6eb8c"
     },
     "nightly_migration_review": {
       "run_number": 893,
@@ -79,8 +77,8 @@
       "diagnosis_artifact_id": 10794105227
     },
     "nightly_preflight": {
-      "run_id": 36119501717,
-      "status": "failed",
+      "run_id": 36141127495,
+      "status": "failed_closed",
       "network_classification": "dns_or_network_unreachable",
       "http_status": 0,
       "curl_exit": 6
@@ -92,11 +90,11 @@
       "local_http_status": 502
     },
     "extractor_benchmark": {
-      "run_number": 443,
-      "run_id": 36118106992,
-      "status": "pass",
-      "artifact_id": 10855896489,
-      "artifact_digest": "sha256:8b37d570f60d0cf44a6353e23955a945e69c45b54db59b25f9e402789d72f37d",
+      "run_number": 448,
+      "run_id": 36141127492,
+      "status": "pass_structural_integrity",
+      "artifact_id": 10867020802,
+      "artifact_digest": "sha256:073ad2ba3df5bad3f9536abe95281ec596e109d7293b4bc4d30499e11cb21e62",
       "receipts": 40,
       "ok": 4,
       "empty": 32,
@@ -140,12 +138,12 @@
       }
     },
     "production_release": {
-      "run_id": 36119501519,
+      "run_id": 36141127503,
       "status": "failed",
       "failure": "heroic-ai.dev is not an active Cloudflare zone"
     },
     "public_worker_probe": {
-      "run_id": 36119501481,
+      "run_id": 36141127548,
       "status": "failed",
       "blocker": "public-domain-DNS"
     },
@@ -241,11 +239,18 @@
       "notes": "Foundation #154 completed from fresh GitHub Actions evidence; Operations four-lane open-issue scan synchronized to 10 active cases; current Family graph FI-06 excludes the completed issue."
     },
     "family_integrity": {
-      "run_id": 36119501613,
-      "status": "success"
+      "run_id": 36141127537,
+      "status": "failed_stale_issue_register_before_300bb0cf_merge"
+    },
+    "hybrid_language_pilots": {
+      "run_id": 36141127526,
+      "status": "failed_premerge_dependency_pin",
+      "details": "run resolved Operations main before #955 merged and attempted Foundation ref 100a382a17ad793e267c96156320f2eae1c10ef9; current Operations main now pins dbab61bb"
     }
   },
   "known_findings": [
+    "2026-09-25 current benchmark 448: artifact 10867020802, structural pass, 4 ok / 32 empty / 4 blocked, semantic/business completeness unresolved.",
+    "2026-09-25 current-cycle: Foundation dbab61bb and Operations 300bb0cf are the live GitHub heads; 11 open issues; #713 remains open pending a fresh post-pin hybrid receipt; production remains blocked by heroic-ai.dev zone activation.",
     "2026-09-25: Current live state — Foundation cc4b0df5cea2590b2ec73b00be8600bc58d9be61; Operations f12027ca1e0f6ee0484e53c960ffff9242204eba; 10 open issues; 2 Dependabot PRs; 0 implementation PRs.",
     "2026-09-25: Fresh live-head audit: Foundation main 53cf7651309e05c2ed76470c0f4cf5e4b221dd71; Operations main 2750f73bd0a53b767d9098c4dde80d213fdcfccf; 10 open issues, 0 open PRs.",
     "2026-09-25: FINAL repository sync after Foundation #1175 merge: Foundation main ec143386e0258d9cb5aeaf13cde95f66814a7c0b, Operations main d4bc9af7ea831c4b768d760d375fe50b2a7f2659; 10 open issues, 0 open PRs.",
@@ -321,12 +326,14 @@
   },
   "github_sync": {
     "checked_at": "2026-09-25",
-    "foundation_main": "e6514890548278e26331269e4abb0818b119233a",
-    "operations_main": "add667236a17f2b845a39ae539f3dfe137d806a2",
+    "foundation_main": "dbab61bb15aae22ca19787ddc70283af2617620e",
+    "operations_main": "300bb0cf8dc8f8a3a874c2bbeadc7ee5ddc6eb8c",
     "canonical_operations_pin": "fda24660843cacfe28de661cf170789af542d28f",
-    "open_pr_count": 2,
+    "open_pr_count": 3,
     "cloudflare_runtime_verification": "not_available_in_this_chat",
-    "foundation_open_prs": [],
+    "foundation_open_prs": [
+      1203
+    ],
     "operations_open_prs": [
       914,
       915
