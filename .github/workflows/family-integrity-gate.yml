@@ -20,9 +20,35 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Mint private Operations inspection token
+        env:
+          APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
+          APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          jwt="$(node <<'NODE'"
+          const crypto = require("crypto");
+          const appId = process.env.APP_ID;
+          const privateKey = crypto.createPrivateKey(process.env.APP_PRIVATE_KEY);
+          const b64 = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
+          const iat = Math.floor(Date.now() / 1000) - 60;
+          const exp = iat + 540;
+          const header = b64({ alg: "RS256", typ: "JWT" });
+          const payload = b64({ iss: appId, iat, exp });
+          const unsigned = header + "." + payload;
+          const signature = crypto.sign("RSA-SHA256", Buffer.from(unsigned), privateKey).toString("base64url");
+          process.stdout.write(unsigned + "." + signature);
+          NODE
+          )"
+          installation_id="$(curl -fsSL -H "Authorization: Bearer $jwt" -H "Accept: application/vnd.github+json" "https://api.github.com/app/installations?per_page=100" | jq -r '.[] | select(.account.login == "Z-Solo-King") | .id' | head -n 1)"
+          test -n "$installation_id" || { echo "Operations GitHub App installation not found" >&2; exit 1; }
+          app_token="$(curl -fsSL -X POST -H "Authorization: Bearer $jwt" -H "Accept: application/vnd.github+json" "https://api.github.com/app/installations/$installation_id/access_tokens" | jq -r '.token')"
+          test -n "$app_token" && [ "$app_token" != "null" ] || { echo "Operations inspection token mint failed" >&2; exit 1; }
+          echo "GH_TOKEN=$app_token" >> "$GITHUB_ENV"
       - name: Verify family contracts and live issue inventory
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ env.GH_TOKEN }}
         run: node scripts/family_integrity_check.js
       - name: Upload integrity receipt
         if: ${{ always() }}
