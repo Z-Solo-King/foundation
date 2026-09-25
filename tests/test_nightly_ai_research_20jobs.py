@@ -55,3 +55,19 @@ def test_research_collector_records_seed_repository_provenance():
     assert "nightly-ai-research-observation/v3" in text
     assert "FAMILY_INTEGRATION_GRAPH.json" in text
     assert "family_graph_sha256" in text
+
+
+def test_research_report_produces_deterministic_signal_candidates():
+    text = REPORT.read_text(encoding="utf-8")
+    assert "buildSignalCandidates" in text
+    assert 'signal_candidates: signalCandidates' in text
+    assert '"evidence_class:"research-signal""' in text or 'evidence_class:"research-signal"' in text
+
+
+def test_autonomous_benchmark_consumes_latest_research_feed():
+    workflow = WORKFLOW.parent.parent / ".github" / "workflows" / "autonomous-benchmark.yml"
+    text = workflow.read_text(encoding="utf-8")
+    assert "research_feed:" in text
+    assert "nightly-ai-research-20jobs.yml" in text
+    assert "latest-research-feed" in text
+    assert "research-feed-status/v1" in text
