@@ -155,7 +155,31 @@ echo "GET Operations approved commit -> HTTP ${ref_status}"
 test "$ref_status" = '200' || { jq -c '{message,errors,documentation_url}' "$RUNNER_TEMP/operations-ref-response.json" || cat "$RUNNER_TEMP/operations-ref-response.json"; exit 1; }
 jq -e --arg expected "$OPERATIONS_REF" '.sha == $expected' "$RUNNER_TEMP/operations-ref-response.json" >/dev/null
 
-echo "private Operations access: PASS (${OPERATIONS_REF})"
+echo "private Operations access: PASS (\${OPERATIONS_REF})"
+
+# Fail early with an actionable diagnostic when the canonical custom-domain zone is
+# not present on the Cloudflare account. A Worker deploy cannot create a route for a
+# zone that is not delegated to this account, so do not spend deployment budget only
+# to fail at the custom-domain step.
+zone_status=$(curl -sS -o "$RUNNER_TEMP/cloudflare-zone.json" -w '%{http_code}' \
+  -H "Authorization: Bearer \${CLOUDFLARE_API_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  "https://api.cloudflare.com/client/v4/zones?name=heroic-ai.dev&status=active&per_page=5" || true)
+if [ "$zone_status" != "200" ]; then
+  echo "Cloudflare zone lookup failed: HTTP \${zone_status}"
+  jq -c '{success,message,errors}' "$RUNNER_TEMP/cloudflare-zone.json" 2>/dev/null || true
+  exit 1
+fi
+zone_count=$(jq -r '.result | length' "$RUNNER_TEMP/cloudflare-zone.json")
+if [ "$zone_count" != "1" ]; then
+  echo 'Cloudflare zone prerequisite missing: heroic-ai.dev is not an active zone in the configured account.'
+  echo 'Add/delegate heroic-ai.dev to this Cloudflare account and enable proxied DNS before production release.'
+  jq -c '.result[]? | {id,name,status,name_servers}' "$RUNNER_TEMP/cloudflare-zone.json" 2>/dev/null || true
+  exit 1
+fi
+heroic_ai_zone_id=$(jq -r '.result[0].id' "$RUNNER_TEMP/cloudflare-zone.json")
+echo "Cloudflare canonical zone: PASS (\${heroic_ai_zone_id})"
+
 
 askpass="$RUNNER_TEMP/git-askpass-operations.sh"
 cat > "$askpass" <<'EOF'
