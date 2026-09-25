@@ -1,0 +1,30 @@
+name: Apple direct API feed hunt
+
+on:
+  push:
+    branches:
+      - diag/multi-retailer-api-proof-v3-2026-09-26
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  apple:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: "24"
+      - name: Run Apple direct feed hunt
+        run: node scripts/apple_direct_feed_probe.mjs
+      - name: Upload Apple evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: apple-direct-feed-hunt
+          path: apple-direct-probe.json
+          if-no-files-found: warn
+          retention-days: 14
