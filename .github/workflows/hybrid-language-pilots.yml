@@ -341,21 +341,13 @@ jobs:
         with:
           toolchain: stable
           cache: false
-      - name: Determine pinned Foundation URL-reference revision
+      - name: Determine current Foundation URL-reference revision
         id: foundation-url-ref
-        working-directory: operations
-        shell: python
+        shell: bash
         run: |
-          import ast, os
-          from pathlib import Path
-          tree = ast.parse(Path("scripts/sync_public_core.py").read_text(encoding="utf-8"))
-          for node in tree.body:
-              if isinstance(node, ast.Assign):
-                  for target in node.targets:
-                      if isinstance(target, ast.Name) and target.id == "FOUNDATION_COMMIT":
-                          Path(os.environ["GITHUB_OUTPUT"]).write_text(f"ref={node.value.value}\n", encoding="utf-8")
-                          raise SystemExit
-          raise SystemExit("FOUNDATION_COMMIT not found")
+          set -euo pipefail
+          test "${GITHUB_SHA}" =~ ^[0-9a-f]{40}$
+          echo "ref=${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
       - name: Checkout Foundation URL-reference repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -905,6 +897,14 @@ jobs:
           path: foundation-core
           fetch-depth: 1
 
+      - name: Materialize pinned Foundation public core for Python reference
+        working-directory: operations
+        env:
+          FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core
+        run: |
+          set -euo pipefail
+          python scripts/sync_public_core.py
+          test -f foundation_core/__init__.py
       - name: Ensure exact Foundation Git object is present
         working-directory: foundation-core
         shell: bash
