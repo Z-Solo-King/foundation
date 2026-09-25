@@ -2,6 +2,7 @@ from pathlib import Path
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
+PRODUCTION_SCRIPT = ROOT / "scripts" / "production_release.sh"
 
 
 def test_production_release_shell_syntax_is_valid():
@@ -36,7 +37,8 @@ def test_reciprocal_service_bindings_use_binding_free_bootstrap():
     assert "Operations binding-free bootstrap deployment: PASS" in text
     assert 'bootstrap_config="$RUNNER_TEMP/operations/wrangler.bootstrap.toml"' in text
     assert '[[services]]' in text
-    assert 'pywrangler deploy --config "$bootstrap_config"' in text
+    assert '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config"' in text
+    assert text.count('(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config"') == 1
     assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings' not in text
 
 
