@@ -1,0 +1,21 @@
+name: Acer GraphQL GET probe
+
+on:
+  push:
+    branches:
+      - diag/left-targets-v4-2026-09-26
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  acer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with: {node-version: "24"}
+      - name: Acer GraphQL GET probe
+        run: node scripts/acer_graphql_get_probe.mjs
