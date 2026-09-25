@@ -1,0 +1,12 @@
+import { execFileSync } from "node:child_process"; import { writeFileSync } from "node:fs";
+const UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/153 Safari/537.36"; const out={probes:[],errors:[]};
+function curl(args){try{return execFileSync("curl",["--silent","--show-error","--compressed","--connect-timeout","12","--max-time","30","-4","--http1.1","-A",UA,...args],{encoding:"utf8",maxBuffer:15*1024*1024})}catch(e){return "CURL_ERROR:"+String(e)}}
+function probe(label,args){const t=curl(args); out.probes.push({label,args,status: t.startsWith("CURL_ERROR")?null:0,bytes:t.length,productish:/(products|items|sku|price|catalog|graphql)/i.test(t),sample:t.slice(0,8000)});}
+const query=JSON.stringify({query:"query($search:String,$pageSize:Int=50,$currentPage:Int=1){products(search:$search,pageSize:$pageSize,currentPage:$currentPage){total_count page_info{current_page page_size total_pages}items{sku name url_key}}}",variables:{search:"laptop",pageSize:50,currentPage:1}});
+probe("home-http1",["-D","-","https://store.acer.com/en-in/"]);
+probe("home-http2",["--http2","-D","-","https://store.acer.com/en-in/"]);
+probe("graphql-post-cookie",["-c","/tmp/acer-cookies.txt","-b","/tmp/acer-cookies.txt","https://store.acer.com/en-in/"]);
+probe("graphql-post",["-c","/tmp/acer-cookies.txt","-b","/tmp/acer-cookies.txt","-H","Content-Type: application/json","-H","Accept: application/json","-H","Store: default","-H","Origin: https://store.acer.com","-H","Referer: https://store.acer.com/en-in/","--data",query,"https://store.acer.com/en-in/graphql"]);
+probe("graphql-root",["-c","/tmp/acer-cookies.txt","-b","/tmp/acer-cookies.txt","-H","Content-Type: application/json","-H","Accept: application/json","-H","Store: default","--data",query,"https://store.acer.com/graphql"]);
+for (const u of ["https://store.acer.com/en-in/rest/V1/products?searchCriteria%5BpageSize%5D=20&searchCriteria%5BcurrentPage%5D=1","https://store.acer.com/rest/V1/products?searchCriteria%5BpageSize%5D=20&searchCriteria%5BcurrentPage%5D=1","https://store.acer.com/en-in/rest/V1/searchsuggest","https://store.acer.com/en-in/catalogsearch/result/?q=laptop"]) probe("endpoint-"+u,["-c","/tmp/acer-cookies.txt","-b","/tmp/acer-cookies.txt","-H","Accept: application/json,text/html,*/*",u]);
+writeFileSync("acer-hunt.json",JSON.stringify(out,null,2)); console.log(JSON.stringify(out,null,2));
