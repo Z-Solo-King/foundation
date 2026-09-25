@@ -55,3 +55,21 @@ def test_family_integration_graph_does_not_create_forbidden_authorities():
     assert "no second resource ledger" in forbidden
     assert "no private operations policy copied into foundation" in forbidden
     assert "no ui transport state treated as execution truth" in forbidden
+
+
+def test_chatbot_corpus_contains_family_integration_queries():
+    corpus = json.loads((ROOT / "benchmark" / "chatbot-query-corpus.json").read_text(encoding="utf-8"))
+    ids = {row["id"] for row in corpus["queries"]}
+    expected = {
+        "family-integration-spine",
+        "agent-graph-vs-loop",
+        "research-memory",
+        "token-efficiency-harness",
+        "typed-decision-routing",
+        "resource-governance-flow",
+        "security-config-observability",
+        "migration-language-fit",
+        "model-routing-economics",
+        "learning-edge",
+    }
+    assert expected <= ids
