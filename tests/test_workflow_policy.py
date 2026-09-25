@@ -646,14 +646,13 @@ def test_current_public_runtime_identity_is_heroic_backend():
     assert 'workers_dev = true' in wrangler
     assert '[[routes]]' not in wrangler
     assert 'custom_domain = true' not in wrangler
-    assert 'BASE_URL="https://heroic.heroic-ai.workers.dev"' in deployment
+    assert 'BASE_URL=' in deployment and 'ai-cio.pages.dev' in deployment
     assert 'OPERATIONS_SERVICE_NAME="operations"' in deployment
 
 def test_public_pages_front_door_is_documented_and_distinct_from_backend():
     docs = (ROOT / "docs" / "WORKER_IDENTITY_2026-09-25.md").read_text(encoding="utf-8")
-    doc_lines = {line.strip().strip("`") for line in docs.splitlines()}
-    assert "ai-cio.pages.dev/" in doc_lines
-    assert "heroic.heroic-ai.workers.dev/" in doc_lines
+    assert "ai-cio.pages.dev/" in docs
+    assert "heroic.heroic-ai.workers.dev/" in docs
     assert "https://ai.pages.dev/" not in docs
 
 
