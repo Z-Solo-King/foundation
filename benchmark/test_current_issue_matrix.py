@@ -12,12 +12,11 @@ def test_open_issue_acceptance_matrix_is_current_and_complete() -> None:
         (ROOT / "docs" / "OPEN_ISSUE_ACCEPTANCE_MATRIX.json").read_text(encoding="utf-8")
     )
     assert matrix["schema"] == "family-issue-acceptance-matrix/v1"
-    assert matrix["open_issue_count"] == 11
+    assert matrix["open_issue_count"] == 10
     issues = {(row["repo"], row["number"]) for row in matrix["issues"]}
     assert issues == {
         ("foundation", 58),
         ("foundation", 1157),
-        ("foundation", 154),
         ("foundation", 157),
         ("operations", 145),
         ("operations", 197),
