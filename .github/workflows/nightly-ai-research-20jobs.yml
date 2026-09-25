@@ -3,8 +3,6 @@ name: Nightly AI research — 20 parallel jobs
 on:
   schedule:
     - cron: "0 18 * * *"
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       lookback_hours:
