@@ -1,6 +1,6 @@
 {
   "schema": "ai-agent-benchmark-task-matrix/v1",
-  "version": "1.2",
+  "version": "1.4",
   "purpose": "Project-native benchmark for model/agent behavior in the Foundation + Operations hybrid engineering workflow.",
   "task_count": 24,
   "lanes": [
@@ -180,9 +180,9 @@
       "lane_slug": "code-execution",
       "category": "Code understanding & implementation",
       "language_lens": "TypeScript/Worker",
-      "project_surface": "Foundation #154",
+      "project_surface": "Foundation #157",
       "paths": ".github/workflows/nightly-multi-agent-research-v3.yml + docs/AI_ANALYSIS_MAP.md",
-      "acceptance_target": "GitHub App credential admission/private Operations access",
+      "acceptance_target": "24-program nightly research credential admission",
       "focus": "credential boundary / fail-closed behavior",
       "task_instruction": "trace the private Operations credential admission path and identify the smallest safe repair without exposing secret values",
       "required_outputs": [
@@ -345,9 +345,9 @@
       "lane_slug": "testing-verification",
       "category": "Testing & verification",
       "language_lens": "Rust/systems",
-      "project_surface": "Foundation #154",
+      "project_surface": "Foundation #157",
       "paths": ".github/workflows/nightly-multi-agent-research-v3.yml + docs/AI_ANALYSIS_MAP.md",
-      "acceptance_target": "GitHub App credential admission/private Operations access",
+      "acceptance_target": "24-program nightly research credential admission",
       "focus": "credential boundary / fail-closed behavior",
       "task_instruction": "write or identify a regression fixture proving missing or invalid App credentials fail closed and are never treated as successful private access",
       "required_outputs": [
@@ -576,9 +576,9 @@
       "lane_slug": "adversarial-reliability",
       "category": "Security, reliability & recovery",
       "language_lens": "Go/concurrency",
-      "project_surface": "Foundation #154",
+      "project_surface": "Foundation #157",
       "paths": ".github/workflows/nightly-multi-agent-research-v3.yml + docs/AI_ANALYSIS_MAP.md",
-      "acceptance_target": "GitHub App credential admission/private Operations access",
+      "acceptance_target": "24-program nightly research credential admission",
       "focus": "credential boundary / fail-closed behavior",
       "task_instruction": "analyze credential-boundary failure/recovery races and verify the audit cannot be bypassed when App credentials are unavailable",
       "required_outputs": [
@@ -897,7 +897,6 @@
     "foundation": [
       58,
       1157,
-      154,
       157
     ],
     "operations": [
