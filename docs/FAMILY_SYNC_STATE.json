@@ -4,7 +4,7 @@
   "audited_at": "2026-09-25",
   "live_main": {
     "foundation": "d30309117d65a52c20c09f88b9f03801b2710249",
-    "operations": "3e0d3bbbf191361717e7a01ebaa6e2a1af689382"
+    "operations": "3334fa19e72ff0fb6f4e318da216b216cd05e903"
   },
   "runtime_pins": {
     "foundation_runtime": "d30309117d65a52c20c09f88b9f03801b2710249",
@@ -49,7 +49,8 @@
     "public_front_door": "https://ai-cio.pages.dev",
     "backend_worker": "heroic",
     "backend_origin": "https://heroic.heroic-ai.workers.dev",
-    "approved_operations_provenance": "github:3e0d3bbbf191361717e7a01ebaa6e2a1af689382"
+    "approved_operations_provenance": "github:3e0d3bbbf191361717e7a01ebaa6e2a1af689382",
+    "deployed_operations_status": "pending_promotion_to_3e0d"
   },
   "current_queue": {
     "open_issue_count": 11,
@@ -341,7 +342,7 @@
   "github_sync": {
     "checked_at": "2026-09-25",
     "foundation_main": "d30309117d65a52c20c09f88b9f03801b2710249",
-    "operations_main": "3e0d3bbbf191361717e7a01ebaa6e2a1af689382",
+    "operations_main": "3334fa19e72ff0fb6f4e318da216b216cd05e903",
     "canonical_operations_pin": "3e0d3bbbf191361717e7a01ebaa6e2a1af689382",
     "open_pr_count": 0,
     "cloudflare_runtime_verification": "live_verified",
@@ -395,7 +396,7 @@
   "open_implementation_pr_count": 0,
   "github_current_branch": {
     "foundation_main": "d30309117d65a52c20c09f88b9f03801b2710249",
-    "operations_main": "3e0d3bbbf191361717e7a01ebaa6e2a1af689382",
+    "operations_main": "3334fa19e72ff0fb6f4e318da216b216cd05e903",
     "production_operations_pin": "3e0d3bbbf191361717e7a01ebaa6e2a1af689382"
   }
 }
