@@ -28,6 +28,12 @@ def test_production_release_has_one_canonical_operations_schema_and_two_intentio
     assert 'persistence_bootstrap_deferred' not in text
     assert text.count('echo "Production release completed for ${GITHUB_SHA} using Operations ${OPERATIONS_REF}"') == 1
 
+def test_persistence_rollover_verification_is_single_use_in_release_script():
+    text = PRODUCTION_SCRIPT.read_text(encoding='utf-8')
+    assert text.count('persistence_verify_status=$(curl -sS --max-time 30') == 1
+    assert text.count('echo "POST persistence_verify -> HTTP') == 1
+    assert text.count('memory_persisted_across_version == true') == 1
+
 def test_production_boundary_scan_matches_public_worker_architecture():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
 
