@@ -1,5 +1,26 @@
 # 2026-09-25 FINAL LIVE AUDIT OVERRIDE
 
+This section is the current cross-surface continuation point. Live GitHub/Cloudflare evidence outranks older checkpoint values below.
+
+- Foundation main: 6b43bafa0f1d298e9a1a2c84b6721bb1eea4d0ac
+- Operations main: b370dc959171dbfb35eae42c2acdee827917ee3f
+- Open issues: 10 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
+- Open project PRs: Foundation #1195; Operations #914/#915. No implementation PR remains open.
+- Repository fixes merged this cycle: #1194 (Cloudflare release auth), #1196 (nightly preflight diagnostics), #1197 (dual family tokens), #1198/#1199 (family issue-key normalization), #1200 (truthful nightly fan-in for cancelled lanes).
+- Current production release 36118107525: FAIL at the Cloudflare zone prerequisite after repository and Cloudflare account/D1 authorization checks passed. heroic-ai.dev is not an active Cloudflare zone in the configured account.
+- Current preflight 36118107000: FAIL closed with HTTP 000, curl exit 6, dns_or_network_unreachable, Could not resolve host: Heroic-Ai.dev; no diagnostic parser crash.
+- Current family integrity 36118107049: PASS after the final family normalization repair.
+- Newest completed live extractor benchmark: run 36118106992 on Foundation 70093db3; artifact 10855896489; digest sha256:8b37d570f60d0cf44a6353e23955a945e69c45b54db59b25f9e402789d72f37d. Direct artifact inspection confirms pass=true, 40 receipts, 0 invalid resource rows, 0 missing key rows, provenance completeness 1.0, route provenance 1.0, repeat reliability 1.0, 0 unstable repeated groups, status 4 ok / 32 empty / 4 blocked, recovery rate 1.0.
+- Latest nightly multi-agent cycle is correctly gated before provider execution because production is not certified; there is no new provider-backed 24-program acceptance receipt from this environment.
+- Cloudflare account role: Super Administrator - All Privileges. Zone heroic-ai.dev remains pending/unresolvable; custom domain is enabled on foundation; deployed Foundation provenance remains github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c; deployed Operations provenance remains github:a3171f353539f1a31020c432f98cf0530cbf91ef; D1 research-intelligence ID 19f51638-47a5-4218-a9dc-73dbfd6156fe.
+- Canonical Worker subdomains are disabled; do not create a competing public authority to bypass the requested heroic-ai.dev domain.
+- ChatGPT/UI state is transport state only; GitHub workflow/artifact receipts and Cloudflare control-plane/runtime evidence are authoritative.
+- No runtime or production issue is closed without the required live receipt.
+
+---
+
+# 2026-09-25 FINAL LIVE AUDIT OVERRIDE
+
 This section is the current cross-surface continuation point. Live GitHub and Cloudflare evidence outrank older checkpoint values below.
 
 - Foundation main: 70093db359570b3f87d135e26b525645135fa517
