@@ -1,0 +1,36 @@
+name: AI agent benchmark contract
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "benchmark/ai_agent_task_matrix_v1.json"
+      - "benchmark/ai_agent_benchmark_contract.py"
+      - "benchmark/test_ai_agent_benchmark_contract.py"
+      - "benchmark/ai_agent_observation.schema.json"
+      - ".github/workflows/ai-agent-benchmark-contract.yml"
+  pull_request:
+    paths:
+      - "benchmark/ai_agent_task_matrix_v1.json"
+      - "benchmark/ai_agent_benchmark_contract.py"
+      - "benchmark/test_ai_agent_benchmark_contract.py"
+      - "benchmark/ai_agent_observation.schema.json"
+      - ".github/workflows/ai-agent-benchmark-contract.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
+        with:
+          python-version: "3.14"
+      - name: Install benchmark contract test dependency
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Validate AI-agent benchmark contract
+        run: python -m pytest -q benchmark/test_ai_agent_benchmark_contract.py
