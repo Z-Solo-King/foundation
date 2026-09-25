@@ -1,0 +1,5 @@
+import { execFileSync } from "node:child_process";
+function run(data){try{return execFileSync("curl",["--silent","--show-error","--compressed","--connect-timeout","10","--max-time","20","-4","--http1.1","-A","Mozilla/5.0","-H","Accept: Application/json","-H","Content-Type: application/json","-H","Origin: https://www.apple.com","-H","Referer: https://www.apple.com/in/","--data",JSON.stringify(data),"https://www.apple.com/search-services/suggestions/"],{encoding:"utf8",maxBuffer:8000000})}catch(e){return "ERROR:"+String(e)}}
+const out=[];
+for(const query of ["iphone","macbook","airpods"]){const body={query,src:"globalnav",id:"left-target-20260926",locale:"en_IN"};const text=run(body);let j=null;try{j=JSON.parse(text)}catch{};out.push({query,bytes:text.length,json:Boolean(j),topKeys:j&&typeof j==="object"?Object.keys(j):[],sections:j?.results?.map(x=>({sectionName:x.sectionName,count:x.sectionResults?.length||0,sample:(x.sectionResults||[]).slice(0,20)})),sample:text.slice(0,12000)})}
+console.log(JSON.stringify(out,null,2));
