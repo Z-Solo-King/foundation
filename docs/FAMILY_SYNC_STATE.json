@@ -4,7 +4,7 @@
   "audited_at": "2026-09-25",
   "live_main": {
     "foundation": "dbab61bb15aae22ca19787ddc70283af2617620e",
-    "operations": "300bb0cf8dc8f8a3a874c2bbeadc7ee5ddc6eb8c"
+    "operations": "b7a19d97eb9ed4e63c45bd4622923bf20b4d5981"
   },
   "runtime_pins": {
     "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
@@ -58,7 +58,7 @@
       "provider_execution": false,
       "programs": 24,
       "foundation_revision": "dbab61bb15aae22ca19787ddc70283af2617620e",
-      "operations_ref": "300bb0cf8dc8f8a3a874c2bbeadc7ee5ddc6eb8c"
+      "operations_ref": "b7a19d97eb9ed4e63c45bd4622923bf20b4d5981"
     },
     "nightly_migration_review": {
       "run_number": 893,
@@ -327,7 +327,7 @@
   "github_sync": {
     "checked_at": "2026-09-25",
     "foundation_main": "dbab61bb15aae22ca19787ddc70283af2617620e",
-    "operations_main": "300bb0cf8dc8f8a3a874c2bbeadc7ee5ddc6eb8c",
+    "operations_main": "b7a19d97eb9ed4e63c45bd4622923bf20b4d5981",
     "canonical_operations_pin": "fda24660843cacfe28de661cf170789af542d28f",
     "open_pr_count": 3,
     "cloudflare_runtime_verification": "not_available_in_this_chat",
