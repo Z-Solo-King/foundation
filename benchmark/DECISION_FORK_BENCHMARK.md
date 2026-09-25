@@ -6,7 +6,7 @@ Measures decisions made during long-running agent tasks separately from final ta
 
 state -> candidate options -> decision -> execution -> eventual outcome
 
-The decision-maker sees only the pre-fork state and candidate set. The hindsight label is added only after execution.
+The decision-maker sees only the pre-fork state and candidate set. The hindsight label is added only after execution. The open-issue audit now tracks the current live issue inventory during its four-lane scan.
 
 ## Decision types
 
