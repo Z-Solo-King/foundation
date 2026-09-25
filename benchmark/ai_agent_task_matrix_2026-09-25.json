@@ -1,0 +1,41 @@
+{
+  "schema": "heroic-ai-agent-benchmark-matrix/v1",
+  "version": "2026-09-25",
+  "repetitions_per_task_model": 3,
+  "roles": ["main", "explorer", "worker", "researcher", "advisor"],
+  "lanes": {
+    "L1": {"name": "semantic-concurrency", "language_lenses": ["python", "javascript", "java", "kotlin"]},
+    "L2": {"name": "edge-transport-contracts", "language_lenses": ["typescript", "javascript", "csharp", "php"]},
+    "L3": {"name": "native-concurrency-safety", "language_lenses": ["rust", "go", "cpp", "zig"]},
+    "L4": {"name": "governance-evidence-doc-sync", "language_lenses": ["python", "yaml", "json", "markdown"]},
+    "L5": {"name": "cross-model-tool-portability", "language_lenses": ["model-neutral", "tool-neutral"]},
+    "L6": {"name": "benchmark-reproducibility-artifacts", "language_lenses": ["python", "json", "yaml"]}
+  },
+  "tasks": [
+    {"id":"issue-triage","lane":"L4","category":"project-maintenance","roles":["main","explorer","advisor"]},
+    {"id":"bug-regression","lane":"L1","category":"testing","roles":["explorer","worker","advisor"]},
+    {"id":"cloudflare-provenance","lane":"L4","category":"control-plane","roles":["explorer","researcher","advisor"]},
+    {"id":"deployment-gate","lane":"L2","category":"deployment","roles":["worker","explorer","advisor"]},
+    {"id":"nightly-research","lane":"L5","category":"research-runtime","roles":["researcher","worker","advisor"]},
+    {"id":"artifact-lineage","lane":"L6","category":"artifact-integrity","roles":["worker","researcher","advisor"]},
+    {"id":"runtime-evidence","lane":"L4","category":"acceptance","roles":["main","explorer","advisor"]},
+    {"id":"cross-language-contract","lane":"L2","category":"migration","roles":["explorer","worker","advisor"]},
+    {"id":"security-boundary","lane":"L3","category":"security","roles":["explorer","worker","advisor"]},
+    {"id":"concurrency-recovery","lane":"L1","category":"resilience","roles":["explorer","worker","advisor"]},
+    {"id":"documentation-sync","lane":"L4","category":"documentation","roles":["researcher","worker","advisor"]},
+    {"id":"benchmark-analysis","lane":"L6","category":"benchmarking","roles":["main","researcher","advisor"]},
+    {"id":"advisor-review","lane":"L5","category":"governance","roles":["advisor","main"]},
+    {"id":"research-accuracy","lane":"L4","category":"correctness","roles":["main","researcher","advisor"]},
+    {"id":"research-evidence","lane":"L4","category":"evidence","roles":["researcher","advisor"]},
+    {"id":"research-completeness","lane":"L4","category":"coverage","roles":["main","researcher"]},
+    {"id":"tool-selection","lane":"L5","category":"tool-efficiency","roles":["main","explorer"]},
+    {"id":"source-triage","lane":"L5","category":"precision","roles":["researcher","explorer"]},
+    {"id":"token-budget","lane":"L6","category":"token-efficiency","roles":["main","advisor"]},
+    {"id":"long-context","lane":"L6","category":"context-management","roles":["main","advisor"]},
+    {"id":"self-correction","lane":"L1","category":"recovery","roles":["main","advisor"]},
+    {"id":"anti-spam","lane":"L5","category":"answer-precision","roles":["main","explorer"]},
+    {"id":"adversarial-finding","lane":"L3","category":"verification","roles":["explorer","advisor"]},
+    {"id":"cross-model","lane":"L5","category":"comparison","roles":["main","researcher","advisor"]},
+    {"id":"learning-loop","lane":"L6","category":"improvement","roles":["main","advisor","worker"]}
+  ]
+}

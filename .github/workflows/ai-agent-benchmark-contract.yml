@@ -1,0 +1,31 @@
+name: AI agent benchmark contract
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "benchmark/ai_agent_task_matrix_2026-09-25.json"
+      - "benchmark/ai_agent_observation.schema.json"
+      - "benchmark/validate_ai_agent_benchmark.py"
+      - "docs/AI_AGENT_BENCHMARK_STANDARD_2026-09-25.md"
+  pull_request:
+    paths:
+      - "benchmark/ai_agent_task_matrix_2026-09-25.json"
+      - "benchmark/ai_agent_observation.schema.json"
+      - "benchmark/validate_ai_agent_benchmark.py"
+      - "docs/AI_AGENT_BENCHMARK_STANDARD_2026-09-25.md"
+  schedule:
+    - cron: "30 19 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Validate audit-derived AI/agent benchmark
+        run: python -m benchmark.validate_ai_agent_benchmark
