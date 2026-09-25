@@ -48,3 +48,5 @@ def test_research_collector_records_seed_repository_provenance():
     assert "github_seed_repositories.json" in text
     assert "github_seed_summary.json" in text
     assert "nightly-ai-research-observation/v3" in text
+    assert "FAMILY_INTEGRATION_GRAPH.json" in text
+    assert "family_graph_sha256" in text
