@@ -31,27 +31,39 @@ jobs:
           model=true
           ready=false
           if [ "$auth_token" = true ] && [ "$app_id" = true ] && [ "$app_key" = true ] && [ "$endpoint" = true ]; then ready=true; fi
-          worker_health_status=0
+          worker_health_status=000
+          worker_health_curl_exit=0
+          worker_health_curl_error=""
+          worker_dns=""
+          probe_curl_exit=0
+          probe_curl_error=""
+          worker_ai_verified=false
           if [ "$ready" = true ]; then
             health_file="$RUNNER_TEMP/nightly-research-worker-health.json"
             health_headers="$RUNNER_TEMP/nightly-research-worker-health.headers"
+            health_error="$RUNNER_TEMP/nightly-research-worker-health.error"
             worker_health_status=$(curl -sS --max-time 30 -D "$health_headers" -o "$health_file" -w '%{http_code}' \
-              "${PUBLIC_WORKER_URL}/health" || true)
+              "${PUBLIC_WORKER_URL}/health" 2>"$health_error")
+            worker_health_curl_exit=$?
             worker_health_status="${worker_health_status:-000}"
+            worker_health_curl_error="$(cat "$health_error" 2>/dev/null || true)"
+            worker_dns="$(getent ahostsv4 "${PUBLIC_WORKER_URL#https://}" 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ' || true)"
             echo "Public Worker health probe -> HTTP ${worker_health_status}"
             echo "Worker health edge headers:"
             awk 'BEGIN{IGNORECASE=1} /^(cf-ray|server|content-type):/ {print}' "$health_headers" | head -20 || true
 
-            worker_ai_verified=false
             response_file="$RUNNER_TEMP/nightly-research-worker-preflight.json"
             probe_id="nightly-provider-preflight-${GITHUB_RUN_ID}"
             probe_payload=$(jq -nc --arg id "$probe_id" '{chat_id:$id,request_id:$id,message:"Return exactly OK.",mode:"chat",operation:"knowledge",strict_zero_cost_only:true,require_model_generation:true}')
+            probe_error="$RUNNER_TEMP/nightly-research-worker-preflight.error"
             status=$(curl -sS --max-time 90 -o "$response_file" -w '%{http_code}' \
               -H "Authorization: Bearer ${AUTH_TOKEN}" \
               -H 'Content-Type: application/json' \
               -H "Idempotency-Key: ${probe_id}" \
               -d "$probe_payload" \
-              "${PUBLIC_WORKER_URL}/api/v1/chat")
+              "${PUBLIC_WORKER_URL}/api/v1/chat" 2>"$probe_error")
+            probe_curl_exit=$?
+            probe_curl_error="$(cat "$probe_error" 2>/dev/null || true)"
             echo "Worker-backed Workers AI probe -> HTTP ${status}"
             if [ "$status" = "200" ] && jq -e '.ok == true and .response.generation_status == "model_generated" and .response.provider == "cloudflare_workers_ai"' "$response_file" >/dev/null 2>&1; then
               worker_ai_verified=true
@@ -71,9 +83,9 @@ jobs:
           export PREFLIGHT_AUTH_TOKEN="$auth_token"
           export PREFLIGHT_WORKER_AI="$worker_ai_verified"
           export PREFLIGHT_WORKER_HEALTH_STATUS="$worker_health_status"
-          export PREFLIGHT_WORKER_HEALTH_CURL_EXIT="$worker_health_curl_exit"
-          export PREFLIGHT_WORKER_HEALTH_CURL_ERROR="$worker_health_curl_error"
-          export PREFLIGHT_WORKER_DNS="$worker_dns"
+          export PREFLIGHT_WORKER_HEALTH_CURL_EXIT="${worker_health_curl_exit:-0}"
+          export PREFLIGHT_WORKER_HEALTH_CURL_ERROR="${worker_health_curl_error:-}"
+          export PREFLIGHT_WORKER_DNS="${worker_dns:-}"
           export PREFLIGHT_PROBE_CURL_EXIT="${probe_curl_exit:-0}"
           export PREFLIGHT_PROBE_CURL_ERROR="${probe_curl_error:-}"
           export PREFLIGHT_READY="$ready"
@@ -84,13 +96,13 @@ jobs:
               "ready": os.environ["PREFLIGHT_READY"] == "true",
               "transport": "authenticated_foundation_worker",
               "worker_ai_path_verified": os.environ["PREFLIGHT_WORKER_AI"] == "true",
-              "worker_health_http_status": int(os.environ["PREFLIGHT_WORKER_HEALTH_STATUS"]),
-              "worker_health_curl_exit": int(os.environ["PREFLIGHT_WORKER_HEALTH_CURL_EXIT"]),
+              "worker_health_http_status": int(os.environ.get("PREFLIGHT_WORKER_HEALTH_STATUS") or "0"),
+              "worker_health_curl_exit": int(os.environ.get("PREFLIGHT_WORKER_HEALTH_CURL_EXIT") or "0"),
               "worker_health_transport_error": os.environ["PREFLIGHT_WORKER_HEALTH_CURL_ERROR"][:240],
               "worker_dns_ipv4": os.environ["PREFLIGHT_WORKER_DNS"][:512],
               "probe_curl_exit": int(os.environ["PREFLIGHT_PROBE_CURL_EXIT"]),
               "probe_transport_error": os.environ["PREFLIGHT_PROBE_CURL_ERROR"][:240],
-              "edge_gate_suspected": int(os.environ["PREFLIGHT_WORKER_HEALTH_STATUS"]) == 403,
+              "edge_gate_suspected": int(os.environ.get("PREFLIGHT_WORKER_HEALTH_STATUS") or "0") == 403,
               "auth_token_set": os.environ["PREFLIGHT_AUTH_TOKEN"] == "true",
               "operations_app_id_set": os.environ["PREFLIGHT_APP_ID"] == "true",
               "operations_app_private_key_set": os.environ["PREFLIGHT_APP_KEY"] == "true",
@@ -100,9 +112,9 @@ jobs:
               "operations_ref": "a3171f353539f1a31020c432f98cf0530cbf91ef",
               "workers_ai_model": "@cf/zai-org/glm-4.7-flash",
               "network_classification": (
-                  "dns_or_network_unreachable" if int(os.environ["PREFLIGHT_WORKER_HEALTH_STATUS"]) == 0 else
-                  "edge_http_403" if int(os.environ["PREFLIGHT_WORKER_HEALTH_STATUS"]) == 403 else
-                  "worker_health_non_200" if int(os.environ["PREFLIGHT_WORKER_HEALTH_STATUS"]) != 200 else
+                  "dns_or_network_unreachable" if int(os.environ.get("PREFLIGHT_WORKER_HEALTH_STATUS") or "0") == 0 else
+                  "edge_http_403" if int(os.environ.get("PREFLIGHT_WORKER_HEALTH_STATUS") or "0") == 403 else
+                  "worker_health_non_200" if int(os.environ.get("PREFLIGHT_WORKER_HEALTH_STATUS") or "0") != 200 else
                   "worker_health_ok_model_path_unverified"
               ),
           }
