@@ -10,7 +10,7 @@ encode() { printf '%s' "$1" | jq -sRr @uri; }
 family_graph_path="docs/FAMILY_INTEGRATION_GRAPH.json"
 family_graph_sha256=""
 if [ -f "$family_graph_path" ]; then
-  family_graph_sha256="$(sha256sum "$family_graph_path" | awk "{print $1}")"
+  family_graph_sha256="$(sha256sum "$family_graph_path" | awk '{print $1}')"
 fi
 
 gh_status=1
