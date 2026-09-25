@@ -3,8 +3,8 @@
   "status": "CURRENT",
   "audited_at": "2026-09-25",
   "live_main": {
-    "foundation": "e6514890548278e26331269e4abb0818b119233a",
-    "operations": "add667236a17f2b845a39ae539f3dfe137d806a2"
+    "foundation": "dbab61bb15aae22ca19787ddc70283af2617620e",
+    "operations": "b7a19d97eb9ed4e63c45bd4622923bf20b4d5981"
   },
   "runtime_pins": {
     "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
@@ -34,11 +34,11 @@
     "deployed_operations_provenance": "github:a3171f353539f1a31020c432f98cf0530cbf91ef"
   },
   "current_queue": {
-    "open_issue_count": 10,
+    "open_issue_count": 11,
     "foundation": [
       58,
-      1157,
-      157
+      157,
+      1157
     ],
     "operations": [
       145,
@@ -47,20 +47,16 @@
       385,
       597,
       603,
-      699
+      699,
+      713
     ]
   },
   "latest_evidence": {
     "nightly_research": {
-      "run_id": 36030996071,
-      "state": "failed_at_public_worker_authorization",
-      "provider_execution": false,
-      "programs": 24,
-      "blocker": "public_worker_http_403",
-      "local_error": "upstream_worker_rejected",
-      "local_http_status": 502,
-      "foundation_revision": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
-      "operations_ref": "fda24660843cacfe28de661cf170789af542d28f"
+      "run_id": 36141145555,
+      "status": "in_progress",
+      "gate": "exact production release",
+      "provider_backed_receipt": false
     },
     "nightly_migration_review": {
       "run_number": 893,
@@ -79,11 +75,11 @@
       "diagnosis_artifact_id": 10794105227
     },
     "nightly_preflight": {
-      "run_id": 36119501717,
-      "status": "failed",
-      "network_classification": "dns_or_network_unreachable",
+      "run_id": 36141127495,
+      "status": "failed_closed",
       "http_status": 0,
-      "curl_exit": 6
+      "curl_exit": 6,
+      "classification": "dns_or_network_unreachable"
     },
     "nightly_canary": {
       "run_id": 36030977932,
@@ -92,15 +88,18 @@
       "local_http_status": 502
     },
     "extractor_benchmark": {
-      "run_number": 443,
-      "run_id": 36118106992,
-      "status": "pass",
-      "artifact_id": 10855896489,
-      "artifact_digest": "sha256:8b37d570f60d0cf44a6353e23955a945e69c45b54db59b25f9e402789d72f37d",
+      "run_id": 36141127492,
+      "run_number": 448,
+      "head": "dbab61bb15aae22ca19787ddc70283af2617620e",
+      "artifact_id": 10867020802,
+      "digest": "sha256:073ad2ba3df5bad3f9536abe95281ec596e109d7293b4bc4d30499e11cb21e62",
+      "status": "completed_structural_pass",
       "receipts": 40,
       "ok": 4,
       "empty": 32,
       "blocked": 4,
+      "completion_rate": 0.1,
+      "error_rate": 0,
       "provenance_completeness": 1,
       "route_provenance_completeness": 1,
       "repeat_reliability": 1,
@@ -140,14 +139,14 @@
       }
     },
     "production_release": {
-      "run_id": 36119501519,
+      "run_id": 36141127503,
       "status": "failed",
-      "failure": "heroic-ai.dev is not an active Cloudflare zone"
+      "failure": "heroic-ai.dev active zone prerequisite"
     },
     "public_worker_probe": {
-      "run_id": 36119501481,
+      "run_id": 36141127548,
       "status": "failed",
-      "blocker": "public-domain-DNS"
+      "failure": "same public DNS boundary"
     },
     "chatbot_smoke": {
       "run_number": 72,
@@ -241,8 +240,14 @@
       "notes": "Foundation #154 completed from fresh GitHub Actions evidence; Operations four-lane open-issue scan synchronized to 10 active cases; current Family graph FI-06 excludes the completed issue."
     },
     "family_integrity": {
-      "run_id": 36119501613,
-      "status": "success"
+      "run_id": 36141127537,
+      "status": "obsolete_pre-merge-failure",
+      "note": "started before Operations #958; failed on stale issue rule"
+    },
+    "hybrid_language_pilots": {
+      "run_id": 36141127526,
+      "status": "obsolete_pre-merge-failure",
+      "note": "started before Operations #958; used stale Operations pin"
     }
   },
   "known_findings": [
@@ -321,8 +326,8 @@
   },
   "github_sync": {
     "checked_at": "2026-09-25",
-    "foundation_main": "e6514890548278e26331269e4abb0818b119233a",
-    "operations_main": "add667236a17f2b845a39ae539f3dfe137d806a2",
+    "foundation_main": "dbab61bb15aae22ca19787ddc70283af2617620e",
+    "operations_main": "b7a19d97eb9ed4e63c45bd4622923bf20b4d5981",
     "canonical_operations_pin": "fda24660843cacfe28de661cf170789af542d28f",
     "open_pr_count": 2,
     "cloudflare_runtime_verification": "not_available_in_this_chat",
@@ -330,7 +335,8 @@
     "operations_open_prs": [
       914,
       915
-    ]
+    ],
+    "open_issue_count": 11
   },
   "open_pr_reconciliation": {
     "documentation_pr": 1115,
