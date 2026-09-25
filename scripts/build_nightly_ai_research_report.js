@@ -44,7 +44,12 @@ const jobs = dirs.map(dir => {
   };
 });
 
+const expectedIds = Array.from({length:expectedJobs}, (_,i) => String(i+1).padStart(2,"0"));
+const foundIds = new Set(jobs.map(j => j.job_id));
+const missingJobs = expectedIds.filter(id => !foundIds.has(id));
+const invalidJobs = jobs.filter(job => !Object.values(job.source_status).some(value => value === 200));
 const benchmarkTargets = [...new Set(jobs.flatMap(j => j.target_issues))].sort();
+
 const sourceCounts = {};
 for (const source of ["github_repositories","reddit","x_twitter"]) {
   sourceCounts[source] = jobs.filter(j => j.source_status[source] === 200).length;
@@ -68,20 +73,23 @@ const report = {
   generated_at: new Date().toISOString(),
   expected_jobs: expectedJobs,
   jobs,
+  missing_jobs: missingJobs,
+  invalid_jobs: invalidJobs.map(j => j.job_id),
   benchmark_targets: benchmarkTargets,
   source_success_counts: sourceCounts
 };
 
 fs.mkdirSync(root, {recursive:true});
-fs.writeFileSync(path.join(root, "nightly_ai_research_report.json"), JSON.stringify(report, null, 2) + "\n");
-fs.writeFileSync(
-  path.join(root, "benchmark_improvement_candidates.json"),
+fs.writeFileSync(path.join(root, "nightly_ai_research_report.json"), JSON.stringify(report, null, 2) + "
+");
+fs.writeFileSync(path.join(root, "benchmark_improvement_candidates.json"),
   JSON.stringify({
     schema:"nightly-ai-research-improvement-candidates/v1",
     generated_at:report.generated_at,
     evidence_class:"research-signal",
     by_issue:candidates
-  }, null, 2) + "\n"
+  }, null, 2) + "
+"
 );
 
 const lines = [
@@ -89,6 +97,8 @@ const lines = [
   "",
   "Generated: " + report.generated_at,
   "Job packets: " + jobs.length + "/" + expectedJobs,
+  "Missing packets: " + (missingJobs.length ? missingJobs.join(", ") : "none"),
+  "Packets with zero live sources: " + (invalidJobs.length ? invalidJobs.map(j => j.job_id).join(", ") : "none"),
   "Benchmark targets: " + benchmarkTargets.join(", "),
   "",
   "## Source coverage",
@@ -136,6 +146,8 @@ lines.push(
   "Promotion loop: research-signal → candidate benchmark slice → independent reproduction → regression fixture / issue update → nightly benchmark → runtime evidence where required."
 );
 
-fs.writeFileSync(path.join(root, "nightly_ai_research_report.md"), lines.join("\n") + "\n");
+fs.writeFileSync(path.join(root, "nightly_ai_research_report.md"), lines.join("
+") + "
+");
 
-if (jobs.length !== expectedJobs) process.exitCode = 1;
+if (jobs.length !== expectedJobs || missingJobs.length || invalidJobs.length) process.exitCode = 1;
