@@ -1,0 +1,10 @@
+import { writeFileSync } from "node:fs";
+const UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36";
+const XUA=UA+" FKUA/website/42/website/Desktop";
+const headers={"Accept":"*/*","Accept-Language":"en-IN,en-GB;q=0.9,en-US;q=0.8,en;q=0.7","Content-Type":"application/json","Origin":"https://www.flipkart.com","Referer":"https://www.flipkart.com/","User-Agent":UA,"X-User-Agent":XUA};
+function uri(q,page=1){const p=new URLSearchParams({q,otracker:"search",otracker1:"search",marketplace:"FLIPKART","as-show":"on",as:"off"});if(page>1)p.set("page",String(page));return "/search?"+p.toString()}
+async function probe(url,body){try{const r=await fetch(url,{method:"POST",headers,body:JSON.stringify(body)});const t=await r.text();let j=null;try{j=JSON.parse(t)}catch{};const blob=JSON.stringify(j??t);const keys=j&&typeof j==="object"?Object.keys(j):[];return {url,status:r.status,ct:r.headers.get("content-type")||"",bytes:t.length,keys,statusCode:j?.STATUS_CODE??null,productish:/(productInfo|productDetails|listingId|productId|sellingPrice|mrp|price|sku|itemInfo|widgets|pageData)/i.test(blob),sample:t.slice(0,14000),body}}catch(e){return {url,error:String(e),body}}}
+const bodies=[];for(const page of [1,2]){bodies.push({page,type:"BROWSE_PAGE",pageUri:uri("laptop",page),pageContext:{fetchSeoData:true,paginatedFetch:false,pageNumber:page},requestContext:{type:"BROWSE_PAGE"}})}
+const out={probes:[]};for(const b of bodies){for(const u of ["https://2.rome.api.flipkart.com/api/4/page/fetch","https://www.flipkart.com/api/4/page/fetch"]){const r=await probe(u,b);out.probes.push(r);console.log(JSON.stringify({url:r.url,status:r.status,bytes:r.bytes,productish:r.productish,statusCode:r.statusCode,keys:r.keys},null,2))}}
+for(const b of bodies){const p={...b,requestContext:{type:"PRODUCT_PAGE"}};for(const u of ["https://2.rome.api.flipkart.com/api/4/page/fetch","https://www.flipkart.com/api/4/page/fetch"]){const r=await probe(u,{...p,pageUri:"/p/itm?pid=FAKEPID&marketplace=FLIPKART"});out.probes.push({...r,mode:"product-template"})}}
+writeFileSync("flipkart-rome-direct.json",JSON.stringify(out,null,2));
