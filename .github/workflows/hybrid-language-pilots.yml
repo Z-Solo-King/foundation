@@ -341,9 +341,41 @@ jobs:
         with:
           toolchain: stable
           cache: false
-      - name: Install Operations runtime
+      - name: Determine pinned Foundation URL-reference revision
+        id: foundation-url-ref
+        working-directory: operations
+        shell: python
         run: |
-          python -m pip install --disable-pip-version-check -e operations
+          import ast, os
+          from pathlib import Path
+          tree = ast.parse(Path("scripts/sync_public_core.py").read_text(encoding="utf-8"))
+          for node in tree.body:
+              if isinstance(node, ast.Assign):
+                  for target in node.targets:
+                      if isinstance(target, ast.Name) and target.id == "FOUNDATION_COMMIT":
+                          Path(os.environ["GITHUB_OUTPUT"]).write_text(f"ref={node.value.value}\n", encoding="utf-8")
+                          raise SystemExit
+          raise SystemExit("FOUNDATION_COMMIT not found")
+      - name: Checkout Foundation URL-reference repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/foundation
+          token: ${{ github.token }}
+          path: foundation-reference
+          fetch-depth: 1
+      - name: Select exact pinned Foundation URL-reference commit
+        working-directory: foundation-reference
+        shell: bash
+        env:
+          FOUNDATION_COMMIT: ${{ steps.foundation-url-ref.outputs.ref }}
+        run: |
+          set -euo pipefail
+          FOUNDATION_COMMIT="$(printf "%s" "$FOUNDATION_COMMIT" | tr -d "\r\n" | xargs)"
+          test -n "$FOUNDATION_COMMIT"
+          git fetch --no-tags --depth=1 origin "$FOUNDATION_COMMIT"
+          git cat-file -e "$FOUNDATION_COMMIT^{commit}"
+          git cat-file -e "$FOUNDATION_COMMIT:backend/sources/http.py"
+          git checkout --detach "$FOUNDATION_COMMIT"
       - name: Build corpus with adversarial URL cases
         working-directory: operations
         run: |
@@ -359,7 +391,8 @@ jobs:
       - name: Generate Python canonical outputs
         working-directory: operations
         env:
-          PYTHONPATH: ${{github.workspace}}
+          PYTHONPATH: ${{ github.workspace }}/foundation-reference
+
         run: |
           python - <<'PY'
           import json
@@ -376,6 +409,11 @@ jobs:
               out.append({"id":row["id"],"ok":True,"output":value})
           Path("python-url.jsonl").write_text("\n".join(json.dumps(v,sort_keys=True) for v in out)+"\n")
           PY
+      - name: Verify URL Python reference import
+        working-directory: operations
+        env:
+          PYTHONPATH: ${{ github.workspace }}/foundation-reference
+        run: python -c "from backend.sources.http import canonicalize_url; assert callable(canonicalize_url)"
       - name: Generate Rust candidate outputs
         working-directory: operations
         run: cargo run --quiet --manifest-path benchmark/polyglot/rust_url_identity/Cargo.toml --bin differential -- benchmark/polyglot/rust_url_identity/differential_corpus.jsonl rust-url.jsonl
@@ -860,7 +898,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/foundation
-          ref: ${{ steps.foundation-core-pin.outputs.ref }}
           token: ${{ github.token }}
           path: foundation-core
           fetch-depth: 1
@@ -875,6 +912,7 @@ jobs:
           git fetch --no-tags --depth=1 origin "$FOUNDATION_COMMIT"
           git cat-file -e "$FOUNDATION_COMMIT^{commit}"
           git cat-file -e "$FOUNDATION_COMMIT:foundation_core/__init__.py"
+          git checkout --detach "$FOUNDATION_COMMIT"
 
       - name: Materialize pinned public foundation_core
         working-directory: operations
