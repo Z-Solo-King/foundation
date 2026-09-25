@@ -1,0 +1,106 @@
+name: Nightly AI research — 20 parallel jobs
+
+on:
+  schedule:
+    - cron: "0 18 * * *"
+  workflow_dispatch:
+    inputs:
+      lookback_hours:
+        description: "Look back window for current GitHub/Reddit/X signals"
+        required: false
+        default: "24"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-ai-research-20jobs
+  cancel-in-progress: true
+
+jobs:
+  research:
+    name: "Research ${{ matrix.id }} — ${{ matrix.topic }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include:
+          - { id: "01", topic: "Open-source coding agents", github_query: "coding agent autonomous software engineering open source", social_query: "open source coding agents", issues: "#1157,#157,#58", focus: "agent loops, repo editing, tests, recovery" }
+          - { id: "02", topic: "Agent frameworks and orchestration", github_query: "open source agent framework orchestration multi-agent", social_query: "agent framework orchestration multi agent", issues: "#1157,#58", focus: "delegation, state machines, retries, handoffs" }
+          - { id: "03", topic: "MCP and tool ecosystems", github_query: "MCP model context protocol servers agents developer tools", social_query: "MCP server agent tools developer", issues: "#1157,#603", focus: "tool schemas, permissions, portability, failure handling" }
+          - { id: "04", topic: "Terminal and CLI coding agents", github_query: "open source terminal coding agent CLI", social_query: "terminal coding agent CLI review tips", issues: "#1157,#157", focus: "terminal safety, commands, context, autonomous loops" }
+          - { id: "05", topic: "Code review and test-generation agents", github_query: "AI code review test generation agent open source", social_query: "AI code review agent tests", issues: "#1157,#58,#385", focus: "review quality, regression discovery, adversarial tests" }
+          - { id: "06", topic: "Repo indexing memory and context", github_query: "open source coding agent codebase indexing memory context", social_query: "AI coding agent context memory codebase indexing", issues: "#1157,#157", focus: "retrieval, repo maps, caching, memory, compaction" }
+          - { id: "07", topic: "Browser and computer-use agents", github_query: "open source browser computer use AI agent", social_query: "browser agent computer use coding review", issues: "#157,#197", focus: "browser automation, page budgets, cancellation, evidence" }
+          - { id: "08", topic: "Open-weight models and inference runtimes", github_query: "open source LLM inference runtime serving agent", social_query: "open weight model inference runtime coding agent", issues: "#1157,#603", focus: "local inference, routing, fallbacks, latency, memory" }
+          - { id: "09", topic: "Agent benchmarks and evaluation", github_query: "agent benchmark coding software engineering benchmark open source", social_query: "coding agent benchmark review SWE benchmark", issues: "#1157,#157", focus: "reproducibility, holdouts, contamination, independent verification" }
+          - { id: "10", topic: "Python to Rust migration", github_query: "Python Rust migration AI agent performance open source", social_query: "Python Rust migration AI coding agent", issues: "#597,#603", focus: "parity, serialization, CPU, memory, FFI, canary" }
+          - { id: "11", topic: "Python to Go migration and concurrency", github_query: "Python Go migration concurrency worker agent open source", social_query: "Python Go migration concurrency AI agent", issues: "#597,#603,#385", focus: "goroutines, cancellation, queues, retries, contention" }
+          - { id: "12", topic: "TypeScript Node and edge migration", github_query: "TypeScript Node edge worker migration AI agent open source", social_query: "TypeScript Node edge worker migration agent", issues: "#603,#340,#197", focus: "Web APIs, SSE, AbortSignal, edge limits, serialization" }
+          - { id: "13", topic: "Java and Kotlin agent backends", github_query: "Java Kotlin AI agent framework open source", social_query: "Java Kotlin AI coding agent review", issues: "#603,#597", focus: "JVM concurrency, structured concurrency, serialization" }
+          - { id: "14", topic: ".NET and C# agent tooling", github_query: "C# .NET AI agent framework open source", social_query: "C# .NET coding agent review", issues: "#603,#597", focus: "async semantics, cancellation, worker services, schema contracts" }
+          - { id: "15", topic: "C++ and Zig systems tooling", github_query: "C++ Zig AI agent systems tooling open source", social_query: "Zig C++ AI coding agent systems", issues: "#597,#603", focus: "native safety, ownership, allocators, FFI, deterministic kernels" }
+          - { id: "16", topic: "Parallel execution and distributed agents", github_query: "multi agent parallel execution distributed workflow open source", social_query: "parallel AI agents execution concurrency review", issues: "#1157,#385,#597", focus: "fan-out/fan-in, barriers, leases, retries, backpressure" }
+          - { id: "17", topic: "GitHub Actions and agentic CI", github_query: "GitHub Actions AI agent automation developer workflow open source", social_query: "GitHub Actions coding agent automation tips", issues: "#157,#58", focus: "CI orchestration, permissions, artifacts, workflow design" }
+          - { id: "18", topic: "Research agents search and evidence", github_query: "open source research agent search browser evidence", social_query: "AI research agent search citations review", issues: "#157,#58", focus: "freshness, provenance, contradictions, citation quality" }
+          - { id: "19", topic: "AI coding security and supply chain", github_query: "AI coding agent security prompt injection supply chain open source", social_query: "AI coding agent security prompt injection review", issues: "#154,#197,#603,#385", focus: "credentials, prompt injection, malicious repos, sandboxing" }
+          - { id: "20", topic: "Heroic AI issue-driven benchmark research", github_query: "AI agent orchestration research extractor mapper concurrency provenance benchmark", social_query: "AI agent orchestration migration benchmark provenance", issues: "#1157,#157,#58,#699,#603,#597,#385,#340,#197,#145", focus: "directly discover benchmark improvements for current Heroic AI issues" }
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Run research collector
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_ID: ${{ matrix.id }}
+          TOPIC: ${{ matrix.topic }}
+          GITHUB_QUERY: ${{ matrix.github_query }}
+          SOCIAL_QUERY: ${{ matrix.social_query }}
+          TARGET_ISSUES: ${{ matrix.issues }}
+          FOCUS: ${{ matrix.focus }}
+          LOOKBACK_HOURS: ${{ inputs.lookback_hours || '24' }}
+        shell: bash
+        run: bash scripts/nightly_ai_research_job.sh
+      - name: Upload research packet
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-ai-research-${{ matrix.id }}
+          path: .runtime/nightly-ai-research/${{ matrix.id }}
+          retention-days: 30
+          if-no-files-found: error
+
+  synthesize:
+    name: Synthesize 20-job research into benchmark feed
+    needs: [research]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v5.0.0
+        with:
+          pattern: nightly-ai-research-*
+          path: .runtime/nightly-ai-research
+      - name: Build report
+        run: node scripts/build_nightly_ai_research_report.js
+      - name: Require all 20 job packets
+        run: |
+          set -euo pipefail
+          jq -e '.schema == "nightly-ai-research-report/v1" and .expected_jobs == 20 and (.jobs | length == 20) and (.benchmark_targets | length > 0)' \
+            .runtime/nightly-ai-research/nightly_ai_research_report.json >/dev/null
+          echo "20-job completeness: PASS"
+      - name: Publish report to step summary
+        run: cat .runtime/nightly-ai-research/nightly_ai_research_report.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload synthesis
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-ai-research-synthesis
+          path: |
+            .runtime/nightly-ai-research/nightly_ai_research_report.md
+            .runtime/nightly-ai-research/nightly_ai_research_report.json
+            .runtime/nightly-ai-research/benchmark_improvement_candidates.json
+          retention-days: 30
+          if-no-files-found: error
