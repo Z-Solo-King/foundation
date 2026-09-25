@@ -1,6 +1,8 @@
 # 2026-09-25 CURRENT LIVE SNAPSHOT
 
-This section is authoritative for the current audit cycle. Fresh GitHub/Cloudflare reads and workflow receipts outrank historical dated sections below.
+This section is authoritative for the current audit cycle.
+
+- Operations governance follow-up #958 is merged as b7a19d97; the live open-issue scan rules now include operations#713. Fresh GitHub/Cloudflare reads and workflow receipts outrank historical dated sections below.
 
 ## GitHub
 - Foundation main: dbab61bb15aae22ca19787ddc70283af2617620e
