@@ -606,7 +606,7 @@ def test_production_sync_guard_accepts_current_operations_family_state_shape():
 
 def test_public_live_probe_fails_closed_on_dns_or_http_failure():
     workflow = _workflow_texts()["public-worker-live-probe.yml"]
-    assert 'URL: https://Heroic-Ai.dev' in workflow
+    assert 'URL: https://heroic.ai.workers.dev' in workflow
     assert 'raise SystemExit(0 if out["ok"] else 1)' in workflow
     assert 'if status != 200:' in workflow
     assert 'item.get("ready") is not True' in workflow
@@ -614,7 +614,7 @@ def test_public_live_probe_fails_closed_on_dns_or_http_failure():
 
 def test_live_chatbot_smoke_requires_real_model_generation():
     workflow = _workflow_texts()["live-chatbot-production-smoke.yml"]
-    assert "PUBLIC_WORKER_URL: https://Heroic-Ai.dev" in workflow
+    assert "PUBLIC_WORKER_URL: https://heroic.ai.workers.dev" in workflow
     assert '"require_model_generation": True' in workflow
     assert 'chat_response.get("generation_status") != "model_generated"' in workflow
     assert 'chat_response.get("provider") != "cloudflare_workers_ai"' in workflow
@@ -645,7 +645,7 @@ def test_current_public_runtime_identity_is_heroic_ai():
     assert 'name = "foundation"' in wrangler
     assert 'custom_domain = true' in wrangler
     assert 'pattern = "heroic-ai.dev"' in wrangler
-    assert 'BASE_URL="https://Heroic-Ai.dev"' in deployment
+    assert 'BASE_URL="https://heroic.ai.workers.dev"' in deployment
     assert 'OPERATIONS_SERVICE_NAME="operations"' in deployment
 
 
