@@ -10,6 +10,9 @@ on:
         required: false
         default: "24"
         type: string
+  push:
+    branches:
+      - feat/jev-decision-benchmark-2026-09-25
 
 permissions:
   contents: read
