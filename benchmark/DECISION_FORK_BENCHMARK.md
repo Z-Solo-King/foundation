@@ -38,3 +38,6 @@ The decision-fork contract is now part of the nightly benchmark research path. R
 
 ## Live scan synchronization
 The decision-fork benchmark is synchronized with the current 11-issue open-issue scan inventory.
+
+## 2026-09-25 live issue-rule sync
+Open-issue benchmark references are aligned with the current 11-issue Operations scan contract.
