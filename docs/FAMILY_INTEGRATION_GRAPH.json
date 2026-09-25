@@ -1,0 +1,592 @@
+{
+  "schema": "family-integration-graph/v1",
+  "version": "1.0",
+  "status": "CURRENT",
+  "purpose": "Cross-surface integration map for Foundation + Operations. Links docs, AI navigation, research, benchmark, extractor/mapper, chatbot, UI, persistence, runtime, resource, security and observability without creating new authority.",
+  "hard_rules": [
+    "one canonical owner per behavior",
+    "foundation public contracts/core -> operations consumer",
+    "Operations remains private runtime/control-plane authority and does not gain GitHub Actions or competing deployment authority",
+    "research-signal evidence cannot certify runtime/production behavior",
+    "model confidence, popularity or benchmark scores cannot override security/policy/provenance/resource/recovery/deployment gates"
+  ],
+  "nodes": [
+    {
+      "id": "foundation.docs",
+      "repo": "foundation",
+      "role": "public contracts/current-state docs",
+      "paths": [
+        "docs/FAMILY_CONTRACT.json",
+        "docs/FAMILY_ARCHITECTURE.md",
+        "docs/FAMILY_SYNC_STANDARD.md",
+        "docs/CURRENT_SOURCE_OF_TRUTH.md"
+      ]
+    },
+    {
+      "id": "foundation.ai_map",
+      "repo": "foundation",
+      "role": "AI navigation",
+      "paths": [
+        "docs/AI_ANALYSIS_MAP.md",
+        "REPOSITORY_MAP.json"
+      ]
+    },
+    {
+      "id": "foundation.research",
+      "repo": "foundation",
+      "role": "deterministic research planning/evidence",
+      "paths": [
+        "backend/intelligence/knowledge.py",
+        "backend/intelligence/contracts.py",
+        "backend/intelligence/planning.py",
+        "benchmark/chatbot_query_benchmark.py"
+      ]
+    },
+    {
+      "id": "foundation.benchmark",
+      "repo": "foundation",
+      "role": "agent/research benchmark",
+      "paths": [
+        "benchmark/ai_agent_benchmark_contract.py",
+        "benchmark/ai_agent_task_matrix_v1.json",
+        "benchmark/decision_fork_schema.json",
+        "benchmark/public_chatbot_runner.py",
+        ".github/workflows/nightly-ai-research-20jobs.yml"
+      ]
+    },
+    {
+      "id": "foundation.edge",
+      "repo": "foundation",
+      "role": "public Worker/API boundary",
+      "paths": [
+        "polyglot/edge-worker/src/router.ts",
+        "polyglot/edge-worker/src/contracts.ts",
+        "worker.py"
+      ]
+    },
+    {
+      "id": "foundation.ui",
+      "repo": "foundation",
+      "role": "UI state/composer/chat/research lifecycle",
+      "paths": [
+        "frontend/index.html",
+        "frontend/app.js",
+        "frontend/frontend_state.js",
+        "frontend/chat_store.js",
+        "frontend/chat_view.js",
+        "frontend/workspace_view.js",
+        "frontend/lifecycle_controller.js",
+        "frontend/ui_contract_test.mjs"
+      ]
+    },
+    {
+      "id": "foundation.persistence",
+      "repo": "foundation",
+      "role": "public persistence/lineage structures",
+      "paths": [
+        "backend/persistence/d1.py",
+        "backend/run_record.py",
+        "backend/artifacts/manifest.py"
+      ]
+    },
+    {
+      "id": "operations.extractor_mapper",
+      "repo": "operations",
+      "role": "acquisition/extraction/mapping/adapters",
+      "paths": [
+        "extractor_mapper/contracts.py",
+        "extractor_mapper/observation_contract.py",
+        "extractor_mapper/mapping/product.py",
+        "extractor_mapper/adapters/platforms.py"
+      ]
+    },
+    {
+      "id": "operations.chatbot",
+      "repo": "operations",
+      "role": "private chat routing/provider/idempotency/streaming",
+      "paths": [
+        "private/chatbot/chat_endpoint.py",
+        "private/chatbot/provider_stream.py",
+        "private/chatbot/provider_response_contract.py",
+        "private/chatbot/streaming.py",
+        "private/chatbot/idempotency.py"
+      ]
+    },
+    {
+      "id": "operations.resource",
+      "repo": "operations",
+      "role": "resource admission/ledger/reconcile",
+      "paths": [
+        "private/durable_resource_ledger.py",
+        "private/durable_resource_contract.py",
+        "private/resource_governance_window.py",
+        "private/resource_governance_scheduler.py"
+      ]
+    },
+    {
+      "id": "operations.governance",
+      "repo": "operations",
+      "role": "AI/model/tooling policy",
+      "paths": [
+        "private/language_governance_policy.py",
+        "private/runtime_language_policy.py",
+        "docs/AI_GOVERNANCE_STANDARD.md"
+      ]
+    },
+    {
+      "id": "operations.runtime",
+      "repo": "operations",
+      "role": "private orchestration/recovery/verification",
+      "paths": [
+        "worker.py",
+        "private/control_plane_diagnostics.py",
+        "private/queue_job.py",
+        "private/provider_runtime.py"
+      ]
+    },
+    {
+      "id": "family.ci",
+      "repo": "foundation",
+      "role": "GitHub Actions/deployment/backup orchestration",
+      "paths": [
+        ".github/workflows/heroic-ai-production-release.yml",
+        ".github/workflows/nightly-multi-agent-research-v3.yml",
+        ".github/workflows/nightly-ai-research-20jobs.yml",
+        ".github/workflows/autonomous-benchmark.yml"
+      ]
+    },
+    {
+      "id": "family.observability",
+      "repo": "foundation+operations",
+      "role": "metrics/logs/events/traces/evidence",
+      "paths": [
+        "docs/runtime-evidence-ownership.md",
+        "docs/AI_AUDIT_AND_VERIFICATION_STANDARD.md"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "foundation.ui",
+      "to": "foundation.edge",
+      "contract": "public JSON/SSE contract"
+    },
+    {
+      "from": "foundation.edge",
+      "to": "operations.chatbot",
+      "contract": "authenticated public/private boundary"
+    },
+    {
+      "from": "foundation.edge",
+      "to": "operations.extractor_mapper",
+      "contract": "public-safe execution envelope"
+    },
+    {
+      "from": "operations.extractor_mapper",
+      "to": "foundation.research",
+      "contract": "stable observation/evidence contract"
+    },
+    {
+      "from": "operations.chatbot",
+      "to": "foundation.research",
+      "contract": "research request/evidence planning contract"
+    },
+    {
+      "from": "operations.chatbot",
+      "to": "operations.resource",
+      "contract": "resource admission/settlement"
+    },
+    {
+      "from": "operations.runtime",
+      "to": "operations.resource",
+      "contract": "lease/reservation/reclaim/reconciliation"
+    },
+    {
+      "from": "foundation.research",
+      "to": "foundation.benchmark",
+      "contract": "deterministic planning/evidence inputs"
+    },
+    {
+      "from": "foundation.benchmark",
+      "to": "foundation.ai_map",
+      "contract": "canonical task/path navigation"
+    },
+    {
+      "from": "foundation.benchmark",
+      "to": "foundation.docs",
+      "contract": "status/evidence/closure semantics"
+    },
+    {
+      "from": "foundation.benchmark",
+      "to": "family.ci",
+      "contract": "scheduled research/benchmark artifacts"
+    },
+    {
+      "from": "family.observability",
+      "to": "foundation.benchmark",
+      "contract": "observation/evidence tier"
+    },
+    {
+      "from": "family.observability",
+      "to": "operations.runtime",
+      "contract": "runtime evidence ownership"
+    }
+  ],
+  "loops": {
+    "research_learning": [
+      "research signal",
+      "deterministic benchmark candidate",
+      "independent reproduction",
+      "regression fixture",
+      "repeated benchmark",
+      "runtime evidence where required",
+      "updated issue/docs/map"
+    ],
+    "failure_correction": [
+      "bounded worker",
+      "deterministic check",
+      "unit-level failure",
+      "scoped correction",
+      "recheck"
+    ],
+    "family_sync": [
+      "source change",
+      "owner tests",
+      "AI map/current-state update",
+      "family audit",
+      "issue/PR sync"
+    ],
+    "resource": [
+      "request",
+      "admission",
+      "limit",
+      "reservation",
+      "execution",
+      "usage",
+      "settlement",
+      "reclaim"
+    ],
+    "chat_research": [
+      "UI intent",
+      "public edge",
+      "private routing",
+      "research/extraction",
+      "evidence",
+      "result state",
+      "UI render"
+    ]
+  },
+  "material_registry": {
+    "M01": [
+      "Second Brain",
+      "persistent memory",
+      "raw/wiki/output/context/memory separation"
+    ],
+    "M02": [
+      "Token-efficient harness",
+      "measurement",
+      "tool loading",
+      "cache",
+      "compaction",
+      "model routing"
+    ],
+    "M03": [
+      "Mixture of Schemas",
+      "specialist typed decisions",
+      "routing",
+      "confidence"
+    ],
+    "M04": [
+      "Behavioral wallet classification",
+      "behavior classification",
+      "live evidence",
+      "outcome pairing"
+    ],
+    "M05": [
+      "HMM + JEV cascade",
+      "state/regime detection",
+      "typed decision",
+      "deterministic limits"
+    ],
+    "M06": [
+      "Algorithmic trader workflow",
+      "specification",
+      "backtest",
+      "execution",
+      "monitoring",
+      "walk-forward"
+    ],
+    "M07": [
+      "Multi-agent city",
+      "orchestrator",
+      "specialists",
+      "memory",
+      "tools",
+      "actions"
+    ],
+    "M08": [
+      "AI agent build map",
+      "purpose",
+      "prompt",
+      "model",
+      "tools",
+      "memory",
+      "orchestration",
+      "UI",
+      "testing"
+    ],
+    "M09": [
+      "Kubernetes resource management",
+      "requests",
+      "limits",
+      "QoS",
+      "quota",
+      "overcommit"
+    ],
+    "M10": [
+      "Kubernetes security",
+      "RBAC",
+      "service accounts",
+      "secrets",
+      "security context",
+      "network policy",
+      "admission"
+    ],
+    "M11": [
+      "Kubernetes configuration",
+      "ConfigMap",
+      "Secret",
+      "env",
+      "volume",
+      "immutable",
+      "external secrets"
+    ],
+    "M12": [
+      "Kubernetes observability",
+      "metrics",
+      "logs",
+      "events",
+      "traces",
+      "Prometheus",
+      "OpenTelemetry"
+    ],
+    "M13": [
+      "Claude mastery roadmap",
+      "prompting",
+      "automation",
+      "coding",
+      "advanced workflows"
+    ],
+    "M14": [
+      "System Design roadmap",
+      "requirements",
+      "architecture",
+      "scalability",
+      "distributed systems",
+      "security"
+    ],
+    "M15": [
+      "RAG judgment pipeline",
+      "retrieval score",
+      "rerank",
+      "context selection",
+      "grounding",
+      "citation"
+    ],
+    "M16": [
+      "AI model-selection card",
+      "task fit",
+      "quality",
+      "latency",
+      "cost trade-offs"
+    ],
+    "M17": [
+      "Autonomous research-agent prompt",
+      "research organization",
+      "typed decisions",
+      "risk limits",
+      "learning/calibration"
+    ],
+    "M18": [
+      "Java/Python/frontend/backend/AI/DSA/system-design repo lists",
+      "reference corpus",
+      "language migration",
+      "patterns",
+      "algorithms"
+    ],
+    "M19": [
+      "Loops and Graphs",
+      "loop inside node",
+      "graph between nodes",
+      "splitter/worker/gate",
+      "learning edge"
+    ],
+    "M20": [
+      "Jev ecosystem research",
+      "typed decisions",
+      "fast calls",
+      "calibration",
+      "outcome logs",
+      "threshold policy"
+    ]
+  },
+  "benchmark_probes": [
+    {
+      "id": "FI-01",
+      "name": "True-edge parallelism",
+      "materials": [
+        "M07",
+        "M14",
+        "M19"
+      ],
+      "targets": [
+        "foundation#1157",
+        "operations#385",
+        "operations#597"
+      ]
+    },
+    {
+      "id": "FI-02",
+      "name": "Token/cache/context efficiency",
+      "materials": [
+        "M01",
+        "M02",
+        "M15",
+        "M16"
+      ],
+      "targets": [
+        "foundation#1157",
+        "foundation#157",
+        "operations#603"
+      ]
+    },
+    {
+      "id": "FI-03",
+      "name": "Typed decision fork",
+      "materials": [
+        "M03",
+        "M04",
+        "M05",
+        "M20"
+      ],
+      "targets": [
+        "foundation#1157",
+        "operations#603",
+        "operations#340"
+      ]
+    },
+    {
+      "id": "FI-04",
+      "name": "Evidence/provenance chain",
+      "materials": [
+        "M01",
+        "M06",
+        "M12",
+        "M15",
+        "M17"
+      ],
+      "targets": [
+        "foundation#58",
+        "foundation#157",
+        "operations#197",
+        "operations#352"
+      ]
+    },
+    {
+      "id": "FI-05",
+      "name": "Resource admission/reclaim",
+      "materials": [
+        "M09"
+      ],
+      "targets": [
+        "operations#145",
+        "operations#340",
+        "operations#385"
+      ]
+    },
+    {
+      "id": "FI-06",
+      "name": "Security/identity/secret boundary",
+      "materials": [
+        "M10",
+        "M11"
+      ],
+      "targets": [
+        "foundation#154",
+        "operations#197",
+        "operations#603"
+      ]
+    },
+    {
+      "id": "FI-07",
+      "name": "Observability correlation",
+      "materials": [
+        "M12",
+        "M17"
+      ],
+      "targets": [
+        "operations#340",
+        "operations#385"
+      ]
+    },
+    {
+      "id": "FI-08",
+      "name": "Graph vs loop recovery",
+      "materials": [
+        "M07",
+        "M08",
+        "M19"
+      ],
+      "targets": [
+        "foundation#1157",
+        "operations#385",
+        "operations#699"
+      ]
+    },
+    {
+      "id": "FI-09",
+      "name": "Migration parity",
+      "materials": [
+        "M02",
+        "M14",
+        "M18"
+      ],
+      "targets": [
+        "operations#597",
+        "operations#603"
+      ]
+    },
+    {
+      "id": "FI-10",
+      "name": "Instruction hygiene",
+      "materials": [
+        "M13",
+        "M17"
+      ],
+      "targets": [
+        "foundation#1157",
+        "foundation#157"
+      ]
+    },
+    {
+      "id": "FI-11",
+      "name": "Task-fit routing without leaderboard authority",
+      "materials": [
+        "M02",
+        "M16",
+        "M20"
+      ],
+      "targets": [
+        "foundation#1157",
+        "operations#603"
+      ]
+    }
+  ],
+  "non_goals": [
+    "no second resource ledger",
+    "no private Operations policy copied into Foundation",
+    "no production wiring of the research-memory scaffold without an owner/integration decision",
+    "no financial trading parameters in Heroic AI runtime",
+    "no UI transport state treated as execution truth"
+  ]
+}
