@@ -4,7 +4,7 @@ This section is authoritative for this audit cycle. Fresh GitHub/Cloudflare read
 
 ## GitHub
 - Foundation main code baseline: dbab61bb15aae22ca19787ddc70283af2617620e
-- Operations main code baseline: b7a19d97eb9ed4e63c45bd4622923bf20b4d5981
+- Operations main code baseline: cc4d885f09d2275192631ce56ba3429a4c3396a9
 - Open issues: 11 total — Foundation #58/#157/#1157; Operations #145/#197/#340/#385/#597/#603/#699/#713.
 - Open PRs: Operations #914/#915. No Foundation implementation PR remains open; superseded docs PRs #1203/#1205 are closed.
 - #713 remains open pending a fresh hybrid differential receipt on the current cross-repo pins.
