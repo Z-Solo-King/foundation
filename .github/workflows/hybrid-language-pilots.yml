@@ -557,7 +557,10 @@ jobs:
           FOUNDATION_COMMIT: ${{ steps.foundation-core-pin.outputs.ref }}
         run: |
           set -euo pipefail
-          test "$FOUNDATION_COMMIT" = "100a382a17ad793e267c96156320f2eae1c10ef9"
+          if [[ ! "$FOUNDATION_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "foundation_core_pin_must_be_immutable_sha: $FOUNDATION_COMMIT"
+            exit 1
+          fi
           git fetch --no-tags --depth=1 origin "$FOUNDATION_COMMIT"
           git cat-file -e "$FOUNDATION_COMMIT^{commit}"
           git cat-file -e "$FOUNDATION_COMMIT:foundation_core/__init__.py"
