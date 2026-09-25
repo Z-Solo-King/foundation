@@ -54,3 +54,173 @@ jobs:
         run: python -m pip install --disable-pip-version-check pytest workers-py workers-runtime-sdk
       - name: Verify scheduled live mode and explicit dry-run boundary
         run: python -m pytest tests/test_nightly_research_workflow_contract.py -q -k 'dry_run or scheduled'
+
+
+  furtados-feed-discovery:
+    name: Furtados live product/feed discovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - name: Install Playwright
+        run: |
+          python -m pip install --disable-pip-version-check "playwright>=1.45,<2"
+          python -m playwright install --with-deps chromium
+      - name: Probe Furtados storefront, browser network, and public feed/API candidates
+        shell: python
+        run: |
+          from pathlib import Path
+          from urllib.parse import urljoin, urlsplit
+          import json, re
+          from playwright.sync_api import sync_playwright
+
+          BASE = "https://www.furtadosonline.com/"
+          candidates = [
+              "robots.txt", "sitemap.xml", "sitemap_index.xml", "feed.xml", "rss.xml",
+              "atom.xml", "products.xml", "product-feed.xml", "productfeed.xml",
+              "google.xml", "google-feed.xml", "google_shopping.xml", "google-shopping.xml",
+              "googlemerchant.xml", "google-merchant.xml", "merchant.xml",
+              "feeds/google.xml", "feed/google.xml", "feeds/google-shopping.xml",
+              "feed/google-shopping.xml", "google-shopping-feed.xml", "google-product-feed.xml",
+              "products.json", "collections/all/products.json", "api/products",
+              "api/catalog", "api/products.json", "api/graphql", "graphql",
+              "wp-json/wp/v2/product", "wp-json/wc/v3/products", "rest/V1/products",
+              "search.json?q=guitar", "search?q=guitar", "search/suggestions?q=guitar"
+          ]
+          interesting = re.compile(r"(api|graphql|json|xml|feed|product|catalog|search|sitemap|collection|cart|variant)", re.I)
+          evidence = {"navigation": {}, "network": [], "source_urls": [], "candidates": []}
+
+          with sync_playwright() as p:
+              browser = p.chromium.launch(headless=True)
+              context = browser.new_context(
+                  user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36",
+                  locale="en-IN",
+                  viewport={"width": 1440, "height": 1200},
+              )
+              page = context.new_page()
+
+              def capture(resp):
+                  try:
+                      if interesting.search(resp.url) or resp.request.resource_type in {"xhr", "fetch"}:
+                          evidence["network"].append({
+                              "url": resp.url,
+                              "status": resp.status,
+                              "content_type": resp.headers.get("content-type", ""),
+                              "resource_type": resp.request.resource_type,
+                          })
+                  except Exception:
+                      pass
+
+              page.on("response", capture)
+
+              try:
+                  resp = page.goto(BASE, wait_until="domcontentloaded", timeout=90000)
+                  page.wait_for_timeout(6000)
+                  evidence["navigation"] = {
+                      "status": resp.status if resp else None,
+                      "final_url": page.url,
+                      "title": page.title(),
+                  }
+              except Exception as exc:
+                  evidence["navigation"] = {"error": f"{type(exc).__name__}: {exc}"}
+
+              html = page.content()
+              Path("furtados-home.html").write_text(html, encoding="utf-8")
+
+              urls = set()
+              for selector, attrs in [
+                  ("a[href]", ["href"]),
+                  ("form", ["action", "data-action"]),
+                  ("[hx-get],[data-hx-get],[data-url],[data-endpoint]",
+                   ["hx-get", "data-hx-get", "data-url", "data-endpoint"]),
+              ]:
+                  nodes = page.locator(selector)
+                  for i in range(min(nodes.count(), 3000)):
+                      for attr in attrs:
+                          try:
+                              value = nodes.nth(i).get_attribute(attr) or ""
+                              if value:
+                                  urls.add(urljoin(page.url, value))
+                          except Exception:
+                              pass
+              evidence["source_urls"] = sorted(
+                  u for u in urls
+                  if urlsplit(u).netloc == urlsplit(page.url).netloc and interesting.search(u)
+              )[:1500]
+
+              # Exercise the visible search control, when present, so network traffic
+              # generated by a real product-search interaction is captured.
+              inputs = page.locator("input")
+              for i in range(min(inputs.count(), 200)):
+                  try:
+                      blob = " ".join(
+                          inputs.nth(i).get_attribute(a) or ""
+                          for a in ("type", "name", "placeholder", "aria-label")
+                      ).lower()
+                      if "search" in blob or (inputs.nth(i).get_attribute("type") or "").lower() == "search":
+                          inputs.nth(i).fill("guitar")
+                          inputs.nth(i).press("Enter")
+                          page.wait_for_timeout(4000)
+                          break
+                  except Exception:
+                      pass
+
+              for suffix in candidates:
+                  target = urljoin(BASE, suffix)
+                  row = {"url": target}
+                  try:
+                      resp = context.request.get(
+                          target,
+                          headers={"Accept": "text/html,application/json,application/xml,text/xml,*/*",
+                                   "Referer": BASE},
+                          timeout=30000,
+                          fail_on_status_code=False,
+                      )
+                      body = resp.body()
+                      sample = body[:4000].decode("utf-8", errors="replace")
+                      row.update({
+                          "status": resp.status,
+                          "content_type": resp.headers.get("content-type", ""),
+                          "bytes": len(body),
+                          "sample": sample[:1500],
+                          "looks_product": bool(re.search(r"(product|price|sku|gtin|mpn|item)", sample, re.I)),
+                          "looks_feed": bool(re.search(r"(rss|feed|channel|g:price|product_type|offer|sku)", sample, re.I)),
+                      })
+                  except Exception as exc:
+                      row["error"] = f"{type(exc).__name__}: {exc}"
+                  evidence["candidates"].append(row)
+
+              dedup = {(x["url"], x["status"], x["content_type"]): x for x in evidence["network"]}
+              evidence["network"] = list(dedup.values())[:2500]
+
+              Path("furtados-discovery.json").write_text(
+                  json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8"
+              )
+
+              print("=== NAVIGATION ===")
+              print(json.dumps(evidence["navigation"], indent=2, ensure_ascii=False))
+              print("=== OBSERVED NETWORK ===")
+              for row in evidence["network"]:
+                  print(json.dumps(row, ensure_ascii=False))
+              print("=== SOURCE URL CLUES ===")
+              for row in evidence["source_urls"]:
+                  print(row)
+              print("=== CANDIDATE HITS ===")
+              for row in evidence["candidates"]:
+                  if row.get("status") in {200, 301, 302, 304} or row.get("looks_product") or row.get("looks_feed"):
+                      print(json.dumps(row, ensure_ascii=False))
+
+              browser.close()
+      - name: Upload Furtados discovery evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: furtados-feed-api-discovery
+          path: |
+            furtados-discovery.json
+            furtados-home.html
+          if-no-files-found: warn
+          retention-days: 14
