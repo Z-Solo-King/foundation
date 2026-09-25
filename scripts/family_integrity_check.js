@@ -9,9 +9,10 @@ const ROOT = process.cwd();
 const readJson = (p) => JSON.parse(fs.readFileSync(path.join(ROOT, p), "utf8"));
 const gh = (api) => JSON.parse(cp.execFileSync("gh", ["api", api, "--paginate"], {encoding:"utf8"}));
 
+const failures = [];
 function fail(msg) {
+  failures.push(msg);
   console.error("FAMILY_INTEGRITY_FAIL:", msg);
-  process.exitCode = 1;
 }
 
 const graph = readJson("docs/FAMILY_INTEGRATION_GRAPH.json");
@@ -74,6 +75,10 @@ if (familyState.current_queue.open_issue_count !== liveIssues.length) {
   fail("family sync state open issue count is stale");
 }
 
+if (failures.length) {
+  console.error(JSON.stringify({ failures }, null, 2));
+  process.exit(1);
+}
 console.log("FAMILY_INTEGRITY_PASS");
 console.log(JSON.stringify({
   live_issues: { foundation: activeIssues.foundation, operations: activeIssues.operations },
