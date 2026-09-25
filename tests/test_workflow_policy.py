@@ -8,7 +8,7 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "ca9cc887049b2800361b222bbdae7f56100f4f7c"
+CANONICAL_OPERATIONS_REF = "3e0d3bbbf191361717e7a01ebaa6e2a1af689382"
 BENCHMARK_OPERATIONS_REF = CANONICAL_OPERATIONS_REF
 BENCHMARK_TOOLS_REF = "d4ef2e6d28435a59c735b9dc4d0de31f44b9cf29"
 MIGRATION_TOOLS_REF = None
@@ -408,7 +408,7 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_REF="{CANONICAL_OPERATIONS_REF}"' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
-    assert "OPERATIONS_RESEARCH_REF: ca9cc887049b2800361b222bbdae7f56100f4f7c" in nightly
+    assert "OPERATIONS_RESEARCH_REF: 3e0d3bbbf191361717e7a01ebaa6e2a1af689382" in nightly
 
 
 
@@ -470,8 +470,8 @@ def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
 def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
-    expected_production = "ca9cc887049b2800361b222bbdae7f56100f4f7c"
-    expected_nightly = "ca9cc887049b2800361b222bbdae7f56100f4f7c"
+    expected_production = "3e0d3bbbf191361717e7a01ebaa6e2a1af689382"
+    expected_nightly = "3e0d3bbbf191361717e7a01ebaa6e2a1af689382"
     auxiliary = {
         "live-chatbot-production-smoke.yml": expected_production,
         "coverage-driven-runtime-matrix.yml": expected_production,
