@@ -224,3 +224,75 @@ jobs:
             furtados-home.html
           if-no-files-found: warn
           retention-days: 14
+
+
+  furtados-direct-http-probe:
+    name: Furtados direct HTTP endpoint probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Probe homepage and public API/XML candidates
+        shell: python
+        run: |
+          from urllib.request import Request, urlopen
+          from urllib.parse import urljoin
+          import re
+
+          base = "https://www.furtadosonline.com/"
+          candidates = [
+              "", "robots.txt", "sitemap.xml", "sitemap_index.xml", "feed.xml", "rss.xml",
+              "atom.xml", "products.xml", "product-feed.xml", "productfeed.xml",
+              "google.xml", "google-feed.xml", "google_shopping.xml", "google-shopping.xml",
+              "googlemerchant.xml", "google-merchant.xml", "merchant.xml",
+              "feeds/google.xml", "feed/google.xml", "feeds/google-shopping.xml",
+              "feed/google-shopping.xml", "google-shopping-feed.xml", "google-product-feed.xml",
+              "products.json", "collections/all/products.json", "api/products",
+              "api/catalog", "api/products.json", "api/graphql", "graphql",
+              "wp-json/wp/v2/product", "wp-json/wc/v3/products", "rest/V1/products",
+              "search.json?q=guitar", "search?q=guitar", "search/suggestions?q=guitar"
+          ]
+          headers = {
+              "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36",
+              "Accept": "text/html,application/json,application/xml,text/xml,*/*",
+          }
+
+          for suffix in candidates:
+              target = urljoin(base, suffix)
+              try:
+                  req = Request(target, headers=headers)
+                  with urlopen(req, timeout=25) as resp:
+                      body = resp.read(250000)
+                      text = body.decode("utf-8", "replace")
+                      ct = resp.headers.get("content-type", "")
+                      hits = []
+                      for pattern, label in [
+                          (r"<rss\b|<feed\b|g:price|merchant", "feed"),
+                          (r"application/(?:json|ld\+json)|\bproducts?\b|\bsku\b|\bgtin\b|\bmpn\b", "product"),
+                          (r"api|graphql|xhr|fetch|ajax", "api"),
+                          (r"shopify|woocommerce|magento|opencart|prestashop", "platform"),
+                      ]:
+                          if re.search(pattern, text, re.I):
+                              hits.append(label)
+                      print(f"STATUS {resp.status} CT={ct} BYTES={len(body)} URL={target} HITS={','.join(sorted(set(hits)))}")
+                      if suffix == "":
+                          open("furtados-home-direct.html","wb").write(body)
+                          for line in re.findall(r"https?://[^\"'\s<>]+|(?:/[^\"'\s<>]*(?:api|graphql|json|xml|feed|search|product|catalog)[^\"'\s<>]*)", text, re.I)[:300]:
+                              print("HOME_CLUE", line[:500])
+                          for m in re.findall(r"(?:href|src|action|data-url|data-endpoint|hx-get)=[\"']([^\"']+)", text, re.I)[:500]:
+                              if re.search(r"(api|graphql|json|xml|feed|search|product|catalog|sitemap|cart)", m, re.I):
+                                  print("ATTR_CLUE", m[:500])
+                      else:
+                          sample = text[:800].replace("\\n"," ")
+                          if re.search(r"(feed|product|price|sku|gtin|mpn|rss|channel|offer)", text, re.I):
+                              print("CONTENT", sample)
+              except Exception as exc:
+                  print(f"ERROR URL={target} TYPE={type(exc).__name__} DETAIL={exc}")
+      - name: Upload direct probe source
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: furtados-direct-http
+          path: furtados-home-direct.html
+          if-no-files-found: warn
+          retention-days: 14
