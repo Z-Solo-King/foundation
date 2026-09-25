@@ -3,8 +3,8 @@
   "status": "CURRENT",
   "audited_at": "2026-09-25",
   "live_main": {
-    "foundation": "6b43bafa0f1d298e9a1a2c84b6721bb1eea4d0ac",
-    "operations": "b370dc959171dbfb35eae42c2acdee827917ee3f"
+    "foundation": "f7f824fde15e66d6ec6b4c9065feed124a1ce78d",
+    "operations": "24ad53750ecf95084a468ebdb91dc6a3f34ab466"
   },
   "runtime_pins": {
     "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
@@ -79,7 +79,7 @@
       "diagnosis_artifact_id": 10794105227
     },
     "nightly_preflight": {
-      "run_id": 36118107000,
+      "run_id": 36118999990,
       "status": "failed",
       "network_classification": "dns_or_network_unreachable",
       "http_status": 0,
@@ -104,8 +104,7 @@
       "provenance_completeness": 1,
       "route_provenance_completeness": 1,
       "repeat_reliability": 1,
-      "unstable_repeated_groups": 0,
-      "recovery_rate": 1
+      "unstable_repeated_groups": 0
     },
     "coverage_matrix": {
       "run_number": 333,
@@ -141,7 +140,7 @@
       }
     },
     "production_release": {
-      "run_id": 36118107525,
+      "run_id": 36119000062,
       "status": "failed",
       "failure": "heroic-ai.dev is not an active Cloudflare zone"
     },
@@ -243,7 +242,7 @@
       "notes": "Foundation #154 completed from fresh GitHub Actions evidence; Operations four-lane open-issue scan synchronized to 10 active cases; current Family graph FI-06 excludes the completed issue."
     },
     "family_integrity": {
-      "run_id": 36118107049,
+      "run_id": 36119000013,
       "status": "success"
     }
   },
