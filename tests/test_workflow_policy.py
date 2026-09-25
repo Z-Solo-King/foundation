@@ -553,6 +553,150 @@ def test_typescript_endpoint_differential_materializes_public_core_r3():
     assert 'FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core' in text
     assert 'python scripts/sync_public_core.py' in text
 
+def test_rust_url_reference_sha_guard_uses_bash_regex_syntax_r4():
+    text = (ROOT / '.github/workflows/hybrid-language-pilots.yml').read_text(encoding='utf-8')
+    assert '[[ "${GITHUB_SHA}" =~ ^[0-9a-f]{40}$ ]]' in text
+    assert 'test "${GITHUB_SHA}" =~ ^[0-9a-f]{40}
+    texts = _workflow_texts()
+    assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["public-worker-live-probe.yml"]
+    assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["live-chatbot-production-smoke.yml"]
+
+
+def test_exhaustive_audit_does_not_infer_operations_branch_from_foundation_pr():
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "exhaustive-six-lane-audit.yml").read_text(encoding="utf-8")
+    assert 'context.payload.pull_request?.head?.ref' not in workflow
+    assert 'github.rest.repos.getBranch' not in workflow
+    assert 'core.setOutput("ref", "main")' in workflow
+
+
+def test_nightly_research_uses_authenticated_worker_ai_adapter():
+    workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
+    preflight = (WORKFLOW_ROOT / "nightly-research-provider-preflight.yml").read_text(encoding="utf-8")
+    canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
+    for text in (workflow, preflight, canary):
+        assert "secrets.RESEARCH_LLM_ENDPOINT" not in text
+        assert "secrets.RESEARCH_LLM_API_KEY" not in text
+        assert "secrets.RESEARCH_LLM_MODEL" not in text
+        assert "secrets.CLOUDFLARE_API_TOKEN" not in text
+    assert "@cf/zai-org/glm-4.7-flash" in workflow
+    assert "@cf/zai-org/glm-4.7-flash" in canary
+    assert 'RESEARCH_LLM_ENDPOINT: "http://127.0.0.1:8765"' in workflow
+    assert 'RESEARCH_LLM_API_KEY: "local-worker-proxy"' in workflow
+    assert 'RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in workflow
+    assert "scripts/research_worker_proxy.py" in workflow
+    assert 'PUBLIC_WORKER_URL' in workflow
+    assert 'AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in preflight
+    assert "/api/v1/chat" in preflight
+    assert 'worker_ai_path_verified' in preflight
+    assert 'transport": "authenticated_foundation_worker"' in preflight
+    assert 'RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in canary
+    assert "Checkout Foundation research adapter" in canary
+    assert "uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in canary
+
+def test_research_proxy_probe_preserves_non_2xx_response_diagnostics():
+    workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
+    canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
+    for text in (workflow, canary):
+        assert "probe_status=$(curl -sS" in text
+        assert 'probe_response_file="$RUNNER_TEMP/research-worker-probe.json"' in text
+        assert "probe_response=$(curl -fsS" not in text
+        assert 'jq -c \'.\' "$probe_response_file" 2>/dev/null || true' in text
+
+def test_research_worker_proxy_keeps_auth_token_out_of_command_line_and_logs():
+    proxy = (ROOT / "scripts" / "research_worker_proxy.py").read_text(encoding="utf-8")
+    workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
+    canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
+    assert 'os.environ.get("RESEARCH_PROXY_AUTH_TOKEN", "")' in proxy
+    assert "server.serve_forever()" in proxy
+    assert 'ThreadingHTTPServer((args.bind, args.port), Handler)' in proxy
+    assert '--auth-token' not in workflow
+    assert '--auth-token' not in canary
+    assert 'Authorization": "Bearer " + self.server.auth_token' in proxy
+    assert 'log_message(self, fmt: str, *args: object) -> None:' in proxy
+def test_production_release_enforces_cloudflare_free_neuron_cap():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert '"workers_ai_neurons":10000' in deployment
+    assert '"workers_ai_neurons":9000' not in deployment
+
+def test_production_release_accepts_current_family_sync_state_schema():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert '.repositories?' in deployment
+    assert '.live_main?' in deployment
+    assert 'false' in deployment
+
+def test_production_sync_guard_accepts_current_operations_family_state_shape():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'if (.repositories? != null) then' in deployment
+    assert 'elif (.live_main? != null) then' in deployment
+    assert '(.live_main.foundation | type == "string" and length == 40)' in deployment
+    assert '(.live_main.operations | type == "string" and length == 40)' in deployment
+
+
+def test_public_live_probe_fails_closed_on_dns_or_http_failure():
+    workflow = _workflow_texts()["public-worker-live-probe.yml"]
+    assert 'URL:' in workflow and 'ai-cio.pages.dev' in workflow
+    assert 'raise SystemExit(0 if out["ok"] else 1)' in workflow
+    assert 'if status != 200:' in workflow
+    assert 'item.get("ready") is not True' in workflow
+
+
+def test_live_chatbot_smoke_requires_real_model_generation():
+    workflow = _workflow_texts()["live-chatbot-production-smoke.yml"]
+    assert 'PUBLIC_WORKER_URL:' in workflow and 'ai-cio.pages.dev' in workflow
+    assert '"require_model_generation": True' in workflow
+    assert 'chat_response.get("generation_status") != "model_generated"' in workflow
+    assert 'chat_response.get("provider") != "cloudflare_workers_ai"' in workflow
+    assert 'not chat_response.get("text", "").strip()' in workflow
+
+
+def test_production_bootstrap_precedes_foundation_deploy_and_is_unconditional():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    start = deployment.index("# Rename-safe Cloudflare deployment sequence.")
+    bootstrap = deployment.index('pywrangler deploy --config "$bootstrap_config"', start)
+    public_deploy = deployment.index('pywrangler deploy --config wrangler.production.generated.toml --secrets-file "$public_secret_file"', start)
+    assert bootstrap < public_deploy
+    assert deployment.count('pywrangler deploy --config "$bootstrap_config"') == 1
+    assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings' not in deployment
+
+def test_public_probe_records_dns_failure_without_parser_crash():
+    workflow = _workflow_texts()["public-worker-live-probe.yml"]
+    assert ': > "probe/$item.body"' in workflow
+    assert ': > "probe/$item.headers"' in workflow
+    assert ': > "probe/$item.error"' in workflow
+    assert 'curl -sS --max-time 20' in workflow
+    assert '|| true)' in workflow
+
+
+def test_current_public_runtime_identity_is_heroic_backend():
+    wrangler = WRANGLER.read_text(encoding="utf-8")
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'name = "heroic"' in wrangler
+    assert 'workers_dev = true' in wrangler
+    assert '[[routes]]' not in wrangler
+    assert 'custom_domain = true' not in wrangler
+    assert 'BASE_URL=' in deployment and 'ai-cio.pages.dev' in deployment
+    assert 'OPERATIONS_SERVICE_NAME="operations"' in deployment
+
+def test_public_pages_front_door_is_documented_and_distinct_from_backend():
+    docs = (ROOT / "docs" / "WORKER_IDENTITY_2026-09-25.md").read_text(encoding="utf-8")
+    assert "ai-cio.pages.dev/" in docs
+    assert "heroic.heroic-ai.workers.dev/" in docs
+    assert "hostname was not assignable to this account" in docs
+
+
+
+def test_nightly_research_preflight_has_network_failure_classification():
+    preflight = (WORKFLOW_ROOT / "nightly-research-provider-preflight.yml").read_text(encoding="utf-8")
+    assert "worker_health_curl_exit" in preflight
+    assert "worker_health_transport_error" in preflight
+    assert "worker_dns_ipv4" in preflight
+    assert "probe_curl_exit" in preflight
+    assert "probe_transport_error" in preflight
+    assert '"network_classification"' in preflight
+    assert "dns_or_network_unreachable" in preflight
+    assert "edge_http_403" in preflight
+ not in text
+
 def test_live_probe_acceptance_does_not_depend_on_issue_comment_permissions():
     texts = _workflow_texts()
     assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["public-worker-live-probe.yml"]
