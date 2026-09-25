@@ -107,6 +107,8 @@ async function apple(){
   const pages=["https://www.apple.com/in/","https://www.apple.com/in/shop/search?query=iphone","https://www.apple.com/in/shop/buy-iphone/iphone-17"];
   await browserProbe(pages,{clickSearch:true});
   await scriptsFor("https://www.apple.com/in/");
+  await scriptsFor("https://www.apple.com/in/shop/buy-iphone/iphone-17");
+  await scriptsFor("https://www.apple.com/in/shop/buy-iphone/iphone-17-pro");
   const direct=[
     ["search-html","https://www.apple.com/in/shop/search?query=iphone"],
     ["search-json","https://www.apple.com/in/shop/search?query=iphone&format=json"],
