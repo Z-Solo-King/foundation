@@ -4,7 +4,7 @@
   "audited_at": "2026-09-25",
   "live_main": {
     "foundation": "07e12f5a1566ad216fbb998e31bd3a5e144e6d81",
-    "operations": "84d39cc7a6faf858cde28cb4c52dc1b4e09d38e0"
+    "operations": "d2965d69817c66b8b48d5002eae019a99a63e263"
   },
   "runtime_pins": {
     "foundation_runtime": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
@@ -52,15 +52,11 @@
   },
   "latest_evidence": {
     "nightly_research": {
-      "run_id": 36030996071,
-      "state": "failed_at_public_worker_authorization",
+      "run_id": 36119847621,
+      "state": "in_progress_waiting_for_production_release",
       "provider_execution": false,
       "programs": 24,
-      "blocker": "public_worker_http_403",
-      "local_error": "upstream_worker_rejected",
-      "local_http_status": 502,
-      "foundation_revision": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
-      "operations_ref": "fda24660843cacfe28de661cf170789af542d28f"
+      "blocker": "public_domain_dns_or_production_zone_activation"
     },
     "nightly_migration_review": {
       "run_number": 893,
@@ -79,28 +75,31 @@
       "diagnosis_artifact_id": 10794105227
     },
     "nightly_preflight": {
-      "run_id": 36119501717,
+      "run_id": 36119831965,
       "status": "failed",
       "network_classification": "dns_or_network_unreachable",
       "http_status": 0,
-      "curl_exit": 6
+      "curl_exit": 6,
+      "worker_ai_path_verified": false,
+      "research_provider_configuration_present": true
     },
     "nightly_canary": {
-      "run_id": 36030977932,
-      "state": "failed",
-      "blocker": "same_upstream_public_worker_http_403",
-      "local_http_status": 502
+      "run_id": 36119883066,
+      "state": "skipped",
+      "blocker": "production_release_gate_not_satisfied"
     },
     "extractor_benchmark": {
       "run_number": 447,
       "run_id": 36119832050,
-      "status": "pass",
+      "status": "pass_structural_quality_gate",
       "artifact_id": 10857765019,
       "artifact_digest": "sha256:c110306bffb021b51ffd304562f25bd77d010aadd81fa538871cfad7ab772544",
       "receipts": 40,
       "ok": 4,
       "empty": 32,
       "blocked": 4,
+      "completion_rate": 0.1,
+      "error_rate": 0,
       "provenance_completeness": 1,
       "route_provenance_completeness": 1,
       "repeat_reliability": 1,
@@ -113,40 +112,22 @@
       "status": "success"
     },
     "polyglot_migration_review": {
-      "run_number": 117,
-      "run_id": 35964770331,
-      "status": "success",
-      "artifact_id": 10793627411
+      "run_number": 186,
+      "run_id": 36119832042,
+      "status": "success"
     },
     "deep_scan": {
-      "run_number": 365,
-      "run_id": 35964770241,
-      "status": "pass",
-      "lanes": 4,
-      "active_issue_count": 8,
-      "historical_issue_count": 1,
-      "cases_per_lane": 9,
-      "artifact_ids": [
-        10794045852,
-        10793791776,
-        10793349400,
-        10792759656,
-        10793054000
-      ],
-      "review_cases_by_lane": {
-        "L1": 1,
-        "L2": 2,
-        "L3": 2,
-        "L4": 0
-      }
+      "run_number": 730,
+      "run_id": 36119832183,
+      "status": "success"
     },
     "production_release": {
-      "run_id": 36119501519,
+      "run_id": 36119831998,
       "status": "failed",
       "failure": "heroic-ai.dev is not an active Cloudflare zone"
     },
     "public_worker_probe": {
-      "run_id": 36119501481,
+      "run_id": 36119831989,
       "status": "failed",
       "blocker": "public-domain-DNS"
     },
@@ -244,6 +225,12 @@
     "family_integrity": {
       "run_id": 36119501613,
       "status": "success"
+    },
+    "hybrid_language_pilots": {
+      "run_number": 187,
+      "run_id": 36119832079,
+      "status": "failure",
+      "known_issue": "Operations #713 covers Rust URL IPv6/IPv4-mapped policy parity; current run also exposes TS endpoint-discovery checkout/ref handling failure"
     }
   },
   "known_findings": [
@@ -373,8 +360,10 @@
     "foundation_main_at_sync": "ec143386e0258d9cb5aeaf13cde95f66814a7c0b",
     "graph_version": "1.1"
   },
-  "open_pr_count": 2,
-  "foundation_open_prs": [],
+  "open_pr_count": 3,
+  "foundation_open_prs": [
+    1203
+  ],
   "operations_open_prs": [
     914,
     915
