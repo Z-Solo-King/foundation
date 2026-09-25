@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PUBLIC_WORKER_URL: https://heroic.heroic-ai.workers.dev
+  PUBLIC_WORKER_URL: https://ai-cio.pages.dev
   OPERATIONS_REF: b82b142ffc3a5418f704f85c737953afb5783b99
 
 jobs:
