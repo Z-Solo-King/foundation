@@ -651,8 +651,9 @@ def test_current_public_runtime_identity_is_heroic_backend():
 
 def test_public_pages_front_door_is_documented_and_distinct_from_backend():
     docs = (ROOT / "docs" / "WORKER_IDENTITY_2026-09-25.md").read_text(encoding="utf-8")
-    assert "https://ai-cio.pages.dev/" in docs
-    assert "https://heroic.heroic-ai.workers.dev/" in docs
+    doc_lines = {line.strip().strip("`") for line in docs.splitlines()}
+    assert "https://ai-cio.pages.dev/" in doc_lines
+    assert "https://heroic.heroic-ai.workers.dev/" in doc_lines
     assert "https://ai.pages.dev/" not in docs
 
 
