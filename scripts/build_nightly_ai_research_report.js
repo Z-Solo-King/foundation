@@ -82,6 +82,74 @@ for (const job of jobs) {
   }
 }
 
+const CANDIDATE_RULES = [
+  {matches:["parallel","orchestration","graph"], type:"orchestration", probe:"FI-01"},
+  {matches:["token","context","memory","indexing"], type:"context_efficiency", probe:"FI-02"},
+  {matches:["typed","decision","benchmark","evaluation"], type:"decision_evaluation", probe:"FI-03"},
+  {matches:["research","evidence","search"], type:"evidence_provenance", probe:"FI-04"},
+  {matches:["resource","inference","runtime"], type:"resource_inference", probe:"FI-05"},
+  {matches:["security","supply","terminal"], type:"security_reliability", probe:"FI-06"},
+  {matches:["observability","ci","actions"], type:"observability_ci", probe:"FI-07"},
+  {matches:["recovery","browser","agent"], type:"recovery_agent", probe:"FI-08"},
+  {matches:["migration","rust","go","typescript","java","kotlin","net","c++","zig"], type:"migration_portability", probe:"FI-09"}
+];
+
+function classifyCandidate(job) {
+  const haystack = (job.topic + " " + job.research_focus).toLowerCase();
+  const rule = CANDIDATE_RULES.find(item => item.matches.some(token => haystack.includes(token)));
+  return rule || {type:"general_agent", probe:"FI-11"};
+}
+
+function buildSignalCandidates(jobList) {
+  const rows = [];
+  for (const job of jobList) {
+    const classification = classifyCandidate(job);
+    const supportingSources = [
+      ...(job.github_seed_repositories || []).map(repo => ({
+        source_type:"github_seed",
+        title:repo.full_name,
+        url:repo.html_url
+      })),
+      ...(job.github_repositories || []).map(repo => ({
+        source_type:"github_repository",
+        title:repo.full_name,
+        url:repo.html_url
+      })),
+      ...(job.github_issues || []).map(issue => ({
+        source_type: issue.pull_request ? "github_pull_request" : "github_issue",
+        title: issue.title,
+        url: issue.html_url
+      }))
+    ].slice(0, 8);
+
+    for (const issue of job.target_issues) {
+      rows.push({
+        candidate_id: job.job_id + "-" + issue,
+        issue,
+        job_id: job.job_id,
+        topic: job.topic,
+        candidate_type: classification.type,
+        benchmark_probe: classification.probe,
+        focus: job.research_focus,
+        source_status: job.source_status,
+        supporting_sources: supportingSources,
+        social_signal_present: Boolean(
+          job.source_status.reddit === 200 || job.source_status.x_twitter === 200
+        ),
+        derivation:
+          "Deterministic routing from the configured research topic/focus and collected source URLs; no model judgment is used to create the candidate.",
+        next_test:
+          "Create one bounded deterministic fixture for this candidate, reproduce independently, then decide whether it belongs in the benchmark, regression suite, migration review, or runtime evidence lane.",
+        evidence_class:"research-signal"
+      });
+    }
+  }
+  return rows;
+}
+
+const signalCandidates = buildSignalCandidates(jobs);
+const candidateTypes = [...new Set(signalCandidates.map(item => item.candidate_type))].sort();
+
 const report = {
   schema: "nightly-ai-research-report/v2",
   generated_at: new Date().toISOString(),
@@ -95,7 +163,10 @@ const report = {
   source_success_counts: sourceCounts,
   family_graph_digests: familyGraphDigests,
   family_graph_digest_count: familyGraphDigests.length,
-  missing_family_graph_jobs: missingFamilyGraphJobs
+  missing_family_graph_jobs: missingFamilyGraphJobs,
+  candidate_count: signalCandidates.length,
+  candidate_types: candidateTypes,
+  signal_candidates: signalCandidates
 };
 
 fs.mkdirSync(root, {recursive:true});
@@ -106,7 +177,10 @@ fs.writeFileSync(
     schema: "nightly-ai-research-improvement-candidates/v2",
     generated_at: report.generated_at,
     evidence_class: "research-signal",
-    by_issue: candidates
+    by_issue: candidates,
+    signal_candidates: signalCandidates,
+    candidate_count: signalCandidates.length,
+    candidate_types: candidateTypes
   }, null, 2) + "\n"
 );
 
@@ -121,6 +195,8 @@ const lines = [
   "Jobs missing family graph digest: " + (missingFamilyGraphJobs.length ? missingFamilyGraphJobs.join(", ") : "none"),
   "Benchmark targets: " + benchmarkTargets.join(", "),
   "Stale benchmark targets: " + (staleBenchmarkTargets.length ? staleBenchmarkTargets.join(", ") : "none"),
+  "Signal candidates: " + signalCandidates.length,
+  "Candidate types: " + candidateTypes.join(", "),
   "",
   "## Source coverage",
   "",
@@ -174,7 +250,12 @@ lines.push(
   "",
   "Research-signal evidence can propose benchmark fixtures, migration experiments, security tests, decision-fork cases, and evidence requests. Curated seed repositories are reference anchors, not endorsements or production authorities. It cannot certify runtime or production behavior.",
   "",
-  "Promotion loop: research-signal → candidate benchmark slice → independent reproduction → regression fixture / issue update → nightly benchmark → runtime evidence where required."
+  "Promotion loop: research-signal → candidate benchmark slice → independent reproduction → regression fixture / issue update → nightly benchmark → runtime evidence where required.",
+  "",
+  "## Signal candidates",
+  "",
+  ...signalCandidates.slice(0, 60).map(candidate => "- " + candidate.candidate_id + " → " + candidate.issue + " → " + candidate.candidate_type + " → " + candidate.benchmark_probe + " — " + candidate.topic)
+
 );
 
 fs.writeFileSync(path.join(root, "nightly_ai_research_report.md"), lines.join("\n") + "\n");
@@ -185,5 +266,6 @@ if (
   invalidJobs.length ||
   familyGraphDigests.length !== 1 ||
   missingFamilyGraphJobs.length ||
-  staleBenchmarkTargets.length
+  staleBenchmarkTargets.length ||
+  signalCandidates.length === 0
 ) process.exitCode = 1;
