@@ -302,7 +302,7 @@ jobs:
         if: github.ref == 'refs/heads/main' && matrix.live_probe && inputs.run_live_probes == true
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          BASE_URL: https://Heroic-Ai.dev
+          BASE_URL: https://heroic.ai.workers.dev
         working-directory: operations
         shell: bash
         run: |
