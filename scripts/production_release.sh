@@ -188,6 +188,8 @@ operations_merge_base="$(git -C "$RUNNER_TEMP/operations" merge-base main HEAD)"
 test -n "$operations_merge_base"
 echo "Operations architecture diff base: ${operations_merge_base}"
 git -C "$RUNNER_TEMP/operations" show "origin/main:docs/FAMILY_SYNC_STATE.json" > "$RUNNER_TEMP/operations/docs/FAMILY_SYNC_STATE.json"
+# The immutable runtime pin is preserved, while synchronized family navigation is overlaid from Operations main.
+git -C "$RUNNER_TEMP/operations" show "origin/main:docs/AI_ANALYSIS_MAP.md" > "$RUNNER_TEMP/operations/docs/AI_ANALYSIS_MAP.md"
 jq -e '
   if (.repositories? != null) then
     (.repositories.foundation.last_audited_main_sha | type == "string" and length == 40)
