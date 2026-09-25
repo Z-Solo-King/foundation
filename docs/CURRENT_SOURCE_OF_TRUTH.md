@@ -1,3 +1,53 @@
+# 2026-09-25 CURRENT LIVE SNAPSHOT
+
+This section is authoritative for this audit cycle. Fresh GitHub/Cloudflare reads and workflow/artifact receipts outrank historical sections below.
+
+## GitHub
+- Foundation main code baseline: dbab61bb15aae22ca19787ddc70283af2617620e
+- Operations main code baseline: b7a19d97eb9ed4e63c45bd4622923bf20b4d5981
+- Open issues: 11 total — Foundation #58/#157/#1157; Operations #145/#197/#340/#385/#597/#603/#699/#713.
+- Open PRs: Operations #914/#915. No Foundation implementation PR remains open; superseded docs PRs #1203/#1205 are closed.
+- #713 remains open pending a fresh hybrid differential receipt on the current cross-repo pins.
+
+## Cloudflare
+- Canonical Workers: foundation and operations. Legacy research-intelligence-engine workers remain present.
+- Current deployed provenance is intentionally separate from GitHub main:
+  - foundation: github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c
+  - operations: github:a3171f353539f1a31020c432f98cf0530cbf91ef
+- heroic-ai.dev zone status: pending; activation failure reason: unresolvable.
+- Public DNS resolution fails; production release and provider preflight stop at this boundary.
+- D1 research-intelligence id 19f51638-47a5-4218-a9dc-73dbfd6156fe is queryable; direct schema is populated despite stale control-plane num_tables metadata.
+
+## Nightly research
+- Current nightly run: 36141145555 (#375), gated by exact production release.
+- Production release #587: 36141127503 failed at heroic-ai.dev zone prerequisite.
+- Provider preflight #158: 36141127495 failed closed with HTTP 000 / curl 6 / dns_or_network_unreachable.
+- Public probe #158: 36141127548 failed at the same DNS boundary.
+- No provider-backed 24-program acceptance receipt is certified.
+- D1 live counts observed: 442 completed research runs, 202 planned, 398 observations, 0 publications, 0 stuck resource reservations, 422 resource-governance quota rows, 110 chat-idempotency rows.
+
+## Latest extractor benchmark
+- Benchmark #448: run 36141127492, completed successfully on Foundation dbab61bb.
+- Aggregate artifact 10867020802; SHA-256 sha256:073ad2ba3df5bad3f9536abe95281ec596e109d7293b4bc4d30499e11cb21e62.
+- 40 receipts: API 12 / browser 8 / feed 8 / HTML 12.
+- Structural contract: pass=true; 4 ok / 32 empty / 4 blocked; completion_rate 0.1; error_rate 0; invalid rows 0; missing key rows 0; provenance and route provenance 1.0; repeat reliability 1.0; unstable groups 0.
+- This is not 40 successful business-data acquisitions. The 4 ok receipts are synthetic listing-level placeholders without price/brand/spec/image/offer completeness; Fake Store API cases were blocked with 403.
+
+## Audit fixes already merged
+- Foundation #1204 -> dbab61bb: NAT64 URL safety and hybrid ref-output regression.
+- Operations #953 -> 4c6432a8: NAT64/private destination hardening + negative corpus.
+- Operations #954 -> b0c8503a: live issue inventory reconciliation.
+- Operations #955 -> 7f471efc: Foundation public-core pin update.
+- Operations #956 -> 300bb0cf: audit matrix reconciliation.
+- Operations #958 -> b7a19d9: canonical OPEN_ISSUE_SCAN_RULES registration for #713.
+
+## ChatGPT continuity
+- GitHub commits, workflow receipts/artifacts and Cloudflare runtime/control-plane reads are authoritative.
+- Keep branch heads, immutable production pins and deployed Worker provenance separate.
+- Do not close runtime/L4 issues from deterministic CI alone.
+- Do not claim DNS or production closure without active zone/public resolution.
+- Authenticated numeric GitHub rate-limit allowance is not exposed by the connected fetch surface.
+
 # 2026-09-25 POST-MERGE LIVE AUDIT OVERRIDE
 
 This is the current post-merge source-of-truth snapshot.
