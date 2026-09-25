@@ -2,8 +2,8 @@
   "schema": "family-issue-acceptance-matrix/v1",
   "audited_at": "2026-09-25",
   "repository_heads": {
-    "foundation": "ec143386e0258d9cb5aeaf13cde95f66814a7c0b",
-    "operations": "d4bc9af7ea831c4b768d760d375fe50b2a7f2659"
+    "foundation": "53cf7651309e05c2ed76470c0f4cf5e4b221dd71",
+    "operations": "2750f73bd0a53b767d9098c4dde80d213fdcfccf"
   },
   "open_issue_count": 10,
   "issues": [
@@ -261,7 +261,7 @@
   },
   "graph_reference": {
     "schema": "family-integration-graph/v1",
-    "sha": "6b86edcc2bb4ce72654837c76dd5835477c2d8d4",
+    "sha": "ca1f241d4e330a111ca50f8c00ef53f9f3d9279f",
     "materials": 20,
     "probes": 11
   }
