@@ -3,7 +3,7 @@
   "status": "CURRENT",
   "audited_at": "2026-09-25",
   "live_main": {
-    "foundation": "62394054afaf043876c7b569be1b84beaf2bf368",
+    "foundation": "c80cba8a320d45eedd0528797de97839af19f000",
     "operations": "fd974fe9ce1793fed2d308519051e92d30d6d855"
   },
   "runtime_pins": {
@@ -350,6 +350,7 @@
     "operations_consumer_merge": "06c763aba521b0d7060b22e10ea8f195008a63a3",
     "material_count": 20,
     "benchmark_probe_count": 11,
-    "operations_sync_state_merge": "fd974fe9ce1793fed2d308519051e92d30d6d855"
+    "operations_sync_state_merge": "fd974fe9ce1793fed2d308519051e92d30d6d855",
+    "foundation_main_at_sync": "c80cba8a320d45eedd0528797de97839af19f000"
   }
 }
