@@ -416,133 +416,6 @@ echo "POST /api/v1/chat rollover replay -> HTTP ${chat_rollover_after_status}"
 test "$chat_rollover_after_status" = "200"
 jq -e --arg expected_id "$(jq -r '.response.response_id' "$RUNNER_TEMP/chat-rollover-before.json")" '.ok == true and .response.response_id == $expected_id' "$RUNNER_TEMP/chat-rollover-after.json" >/dev/null
 echo "Live chat redeployment replay acceptance: PASS"
-npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
-  --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql" \
-  --config="$RUNNER_TEMP/operations/wrangler.toml"
-secret_file="$RUNNER_TEMP/operations-secrets.env"
-printf 'AUTH_TOKEN=%s\nCHAT_BACKEND_TOKEN=%s\n' "$AUTH_TOKEN" "$AUTH_TOKEN" > "$secret_file"
-(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}")
-# Fail closed unless the active Cloudflare Operations deployment points to the
-# version carrying the exact canonical GitHub provenance annotation.
-operations_deployments_status=$(curl -sS -o "$RUNNER_TEMP/operations-deployments.json" -w '%{http_code}' \
-  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-  -H 'Content-Type: application/json' \
-  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments" || true)
-echo "GET Operations deployments -> HTTP ${operations_deployments_status}"
-test "$operations_deployments_status" = '200' || {
-  jq -c '{message,errors}' "$RUNNER_TEMP/operations-deployments.json" 2>/dev/null || cat "$RUNNER_TEMP/operations-deployments.json"
-  exit 1
-}
-operations_version_id=$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id' "$RUNNER_TEMP/operations-deployments.json" | head -n1)
-test -n "$operations_version_id" || { echo 'No 100% active Operations Worker version found'; exit 1; }
-
-operations_version_status=$(curl -sS -o "$RUNNER_TEMP/operations-version.json" -w '%{http_code}' \
-  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-  -H 'Content-Type: application/json' \
-  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/versions/${operations_version_id}" || true)
-echo "GET Operations active version -> HTTP ${operations_version_status}"
-test "$operations_version_status" = '200' || {
-  jq -c '{message,errors}' "$RUNNER_TEMP/operations-version.json" 2>/dev/null || cat "$RUNNER_TEMP/operations-version.json"
-  exit 1
-}
-jq -e --arg expected "github:${OPERATIONS_REF}" '
-  ((.result.annotations["workers/message"] // "") == $expected)
-  or ((.result.annotations["workers/tag"] // "") == $expected)
-' "$RUNNER_TEMP/operations-version.json" >/dev/null || {
-  echo "Active Operations Worker provenance does not match canonical revision ${OPERATIONS_REF}"
-  jq -c '.result | {id,number,source,annotations}' "$RUNNER_TEMP/operations-version.json" 2>/dev/null || true
-  exit 1
-}
-
-# P0 chat acceptance: seed a terminal chat receipt before the private Operations redeployment.
-# The identical idempotency key is replayed after deployment to prove durable recovery across
-# the private-worker version boundary.
-chat_rollover_payload=$(jq -nc \
-  --arg chat_id "production-chat-rollover-${ACCEPTANCE_RUN_ID}" \
-  --arg request_id "production-chat-rollover-request-${ACCEPTANCE_RUN_ID}" \
-  '{chat_id:$chat_id,request_id:$request_id,message:"Return one concise sentence explaining why the public Worker uses an authenticated private service binding.",mode:"chat",strict_zero_cost_only:true}')
-chat_rollover_key="production-chat-rollover-${ACCEPTANCE_RUN_ID}"
-chat_rollover_status=$(curl -sS --max-time 90 \
-  -o "$RUNNER_TEMP/chat-rollover-before.json" -w '%{http_code}' \
-  -H "Authorization: Bearer ${AUTH_TOKEN}" \
-  -H 'Content-Type: application/json' \
-  -H "Idempotency-Key: ${chat_rollover_key}" \
-  -d "$chat_rollover_payload" \
-  "$BASE_URL/api/v1/chat")
-echo "POST /api/v1/chat rollover seed -> HTTP ${chat_rollover_status}"
-test "$chat_rollover_status" = '200'
-jq -e '.ok == true and (.response.result_state == "COMPLETE" or .response.result_state == "PARTIAL") and (.response.response_id | type == "string" and length > 0)' "$RUNNER_TEMP/chat-rollover-before.json" >/dev/null
-echo "Operations Cloudflare provenance: PASS (github:${OPERATIONS_REF})"
-chat_rollover_after_status=$(curl -sS --max-time 60 \
-  -o "$RUNNER_TEMP/chat-rollover-after.json" -w '%{http_code}' \
-  -H "Authorization: Bearer ${AUTH_TOKEN}" \
-  -H 'Content-Type: application/json' \
-  -H "Idempotency-Key: ${chat_rollover_key}" \
-  -d "$chat_rollover_payload" \
-  "$BASE_URL/api/v1/chat")
-echo "POST /api/v1/chat rollover replay -> HTTP ${chat_rollover_after_status}"
-test "$chat_rollover_after_status" = '200'
-jq -e --arg expected_id "$(jq -r '.response.response_id' "$RUNNER_TEMP/chat-rollover-before.json")" \
-  '.ok == true and .response.response_id == $expected_id' \
-  "$RUNNER_TEMP/chat-rollover-after.json" >/dev/null
-echo "Live chat redeployment replay acceptance: PASS"
-
-if [ "$persistence_bootstrap_deferred" = "true" ]; then
-  # The old Worker did not implement the persistence probe. Now that the approved immutable
-  # revision is live, seed the sentinel there and create a second version of the exact same
-  # revision. This creates a real code-version boundary without changing authority or code.
-  persistence_bootstrap_status=$(curl -sS --max-time 30 \
-    -o "$RUNNER_TEMP/persistence-bootstrap-seed.json" -w '%{http_code}' \
-    -H "Authorization: Bearer $AUTH_TOKEN" \
-    -H 'Content-Type: application/json' \
-    -d "$persistence_seed_payload" \
-    "$BASE_URL/api/v1/chatbot/diagnostic" || true)
-  echo "POST persistence_seed after bootstrap deployment -> HTTP $persistence_bootstrap_status"
-  jq -c '.' "$RUNNER_TEMP/persistence-bootstrap-seed.json" 2>/dev/null || cat "$RUNNER_TEMP/persistence-bootstrap-seed.json" 2>/dev/null || true
-  test "$persistence_bootstrap_status" = "200"
-  jq -e '.ok == true and (.sentinel_id | type == "string" and length > 0)' "$RUNNER_TEMP/persistence-bootstrap-seed.json" >/dev/null
-  sentinel_bootstrap_id=$(jq -r '.sentinel_id' "$RUNNER_TEMP/persistence-bootstrap-seed.json")
-  cp "$RUNNER_TEMP/persistence-bootstrap-seed.json" .runtime/persistence-rollover-seed.json
-
-  bootstrap_version_before="$operations_version_id"
-  (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:persistence-bootstrap-${ACCEPTANCE_RUN_ID}")
-
-  bootstrap_deployments_status=$(curl -sS -o "$RUNNER_TEMP/operations-bootstrap-deployments.json" -w '%{http_code}' \
-    -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-    -H 'Content-Type: application/json' \
-    "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments" || true)
-  test "$bootstrap_deployments_status" = '200'
-  bootstrap_version_id=$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id' "$RUNNER_TEMP/operations-bootstrap-deployments.json" | head -n1)
-  test -n "$bootstrap_version_id"
-  test "$bootstrap_version_id" != "$bootstrap_version_before" || { echo 'Persistence bootstrap did not create a new Worker version'; exit 1; }
-  echo "Persistence bootstrap version boundary: PASS (${bootstrap_version_before} -> ${bootstrap_version_id})"
-
-  bootstrap_version_status=$(curl -sS -o "$RUNNER_TEMP/operations-bootstrap-version.json" -w '%{http_code}' \
-    -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-    -H 'Content-Type: application/json' \
-    "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/versions/${bootstrap_version_id}" || true)
-  test "$bootstrap_version_status" = '200'
-  jq -e --arg expected "github:${OPERATIONS_REF}" '
-    ((.result.annotations["workers/message"] // "") == $expected)
-    or ((.result.annotations["workers/tag"] // "") == $expected)
-  ' "$RUNNER_TEMP/operations-bootstrap-version.json" >/dev/null
-
-  persistence_verify_payload=$(jq -nc --arg operation "persistence_verify" --arg sentinel_id "$sentinel_bootstrap_id" '{operation:$operation,sentinel_id:$sentinel_id}')
-  persistence_verify_status=$(curl -sS --max-time 30 \
-    -o "$RUNNER_TEMP/persistence-rollover-verify.json" -w '%{http_code}' \
-    -H "Authorization: Bearer $AUTH_TOKEN" \
-    -H 'Content-Type: application/json' \
-    -d "$persistence_verify_payload" \
-    "$BASE_URL/api/v1/chatbot/diagnostic" || true)
-  echo "POST persistence_verify after automatic bootstrap rollover -> HTTP $persistence_verify_status"
-  test "$persistence_verify_status" = "200"
-  jq -e '.ok == true and .memory_persisted_across_version == true and .replay_nonce_rejected_after_version_change == true and .cleanup_status == 200' \
-    "$RUNNER_TEMP/persistence-rollover-verify.json" >/dev/null
-  cp "$RUNNER_TEMP/persistence-rollover-verify.json" .runtime/persistence-rollover-verify.json
-  echo "Automatic persistence/replay bootstrap acceptance: PASS"
-
-  persistence_seed_ready=false
-else
   sentinel_id=$(jq -r '.sentinel_id' "$persistence_seed_file")
   persistence_verify_payload=$(jq -nc --arg operation "persistence_verify" --arg sentinel_id "$sentinel_id" '{operation:$operation,sentinel_id:$sentinel_id}')
 persistence_verify_status=$(curl -sS --max-time 30 \
@@ -556,9 +429,7 @@ test "$persistence_verify_status" = "200"
 jq -e '.ok == true and .memory_persisted_across_version == true and .replay_nonce_rejected_after_version_change == true and .cleanup_status == 200' \
   "$RUNNER_TEMP/persistence-rollover-verify.json" >/dev/null
 cp "$RUNNER_TEMP/persistence-rollover-verify.json" .runtime/persistence-rollover-verify.json
-echo "Live memory/replay deployment-boundary acceptance: PASS"
-fi
-# Record the live durable MODEL_CALLS quota state before the required model-generation
+echo "Live memory/replay deployment-boundary acceptance: PASS"# Record the live durable MODEL_CALLS quota state before the required model-generation
 # acceptance. This is a bounded non-secret diagnostic: no auth token or provider payload
 # is queried, only governance counters from the canonical D1 authority.
 npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \

@@ -131,9 +131,8 @@ def test_production_release_fails_closed_and_retains_chat_policy_receipts():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     workflow = (ROOT / ".github/workflows/heroic-ai-production-release.yml").read_text(encoding="utf-8")
     assert "ALLOW_PERSISTENCE_DEFERRED" not in deployment
-    assert "automatic bootstrap rollover" in deployment
-    assert "persistence-bootstrap-${ACCEPTANCE_RUN_ID}" in deployment
-    assert "did not create a new Worker version" in deployment
+    assert "persistence-boundary-${ACCEPTANCE_RUN_ID}" in deployment
+    assert "Operations version boundary: PASS" in deployment
     assert "concurrent-chat-1.json" in deployment
     assert "concurrent-chat-2.json" in deployment
     assert "policy-block.json" in deployment
@@ -519,7 +518,7 @@ def test_production_acceptance_keys_include_run_attempt():
     assert 'production-concurrent-${ACCEPTANCE_RUN_ID}' in deployment
     assert 'production-policy-${ACCEPTANCE_RUN_ID}' in deployment
     assert 'production-research-${ACCEPTANCE_RUN_ID}' in deployment
-    assert 'persistence-bootstrap-${ACCEPTANCE_RUN_ID}' in deployment
+    assert 'persistence-boundary-${ACCEPTANCE_RUN_ID}' in deployment
     assert 'env.ACCEPTANCE_RUN_ID' not in deployment
 def test_stream_probe_uses_explicit_response_identity_argument():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")

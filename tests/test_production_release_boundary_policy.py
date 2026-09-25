@@ -20,6 +20,14 @@ def test_production_release_shell_syntax_is_valid():
     assert result.returncode == 0, result.stderr
 
 
+def test_production_release_has_one_canonical_operations_schema_and_two_intentional_deployments():
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert text.count("RESOURCE_GOVERNANCE_D1_SCHEMA.sql") == 1
+    assert text.count('foundation-binding-${ACCEPTANCE_RUN_ID}') == 1
+    assert text.count('persistence-boundary-${ACCEPTANCE_RUN_ID}') == 1
+    assert 'persistence_bootstrap_deferred' not in text
+    assert text.count('echo "Production release completed for ${GITHUB_SHA} using Operations ${OPERATIONS_REF}"') == 1
+
 def test_production_boundary_scan_matches_public_worker_architecture():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
 
