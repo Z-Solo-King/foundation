@@ -85,3 +85,11 @@ def test_nightly_preflight_preserves_network_failure_receipt_without_parse_crash
     assert "worker_health_curl_error=\"\"" in text
     assert "probe_curl_exit=0" in text
     assert "int(os.environ.get(\"PREFLIGHT_WORKER_HEALTH_STATUS\") or \"0\")" in text
+
+
+def test_nightly_diagnosis_synthesizes_cancelled_research_lanes_without_masking_unexpected_missing_artifacts():
+    text = (ROOT / '.github' / 'workflows' / 'nightly-multi-agent-research-v3.yml').read_text(encoding='utf-8')
+    assert 'research_result = "${{ needs.research.result }}"' in text
+    assert "research_result in {'cancelled', 'skipped'}" in text
+    assert "'state': 'blocked_before_execution'" in text
+    assert 'raise FileNotFoundError(path)' in text
