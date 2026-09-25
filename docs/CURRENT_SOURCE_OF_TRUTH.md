@@ -1,3 +1,21 @@
+# 2026-09-25 FINAL LIVE AUDIT OVERRIDE
+
+This section is the current cross-surface continuation point. Live GitHub and Cloudflare evidence overrides older checkpoint values below.
+
+- Foundation main: 6eb531095148cb6657bccc72a64542691dbb6fa1
+- Operations main: 207d8a3f081f58702b56fe64c57fe2c3042ce75d
+- Open issues: 10 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
+- Open project PRs: Foundation #1195; Operations #914/#915. Older duplicate implementation/documentation PRs #1186/#1187/#951 are closed as superseded.
+- Production release 36117585242 is the current fresh run; the prior current-head run was blocked because heroic-ai.dev is not an active Cloudflare zone.
+- Provider preflight 36117585207 is the current fresh run; the immediately prior corrected preflight recorded HTTP 000 / curl exit 6 / DNS resolution failure without crashing.
+- Family integrity 36117585223 is the current fresh run after the dual-token fix; the previous failure was traced to using a private Operations-only token for the Foundation public issue inventory.
+- Latest completed extractor benchmark 36115560009 passed the strict integrity gate: 40 receipts; 4 ok / 32 empty / 4 blocked; provenance 1.0; route provenance 1.0; repeat reliability 1.0; 0 unstable groups. Artifact 10855326519; digest sha256:1890da70d49377f2f89ee11daa644882a90972666916c07e7aa4edc8066c449e.
+- Cloudflare account access: Super Administrator - All Privileges. Zone heroic-ai.dev is pending/unresolvable; custom domain is enabled on foundation; deployed Foundation provenance github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c; deployed Operations provenance github:a3171f353539f1a31020c432f98cf0530cbf91ef; D1 research-intelligence ID 19f51638-47a5-4218-a9dc-73dbfd6156fe.
+- ChatGPT/UI state is transport state only. GitHub workflow/artifact receipts and Cloudflare runtime receipts are authoritative.
+- No runtime/production closure is asserted without the required live receipt.
+
+---
+
 # 2026-09-25 CURRENT LIVE AUDIT OVERRIDE
 
 This section supersedes older dated checkpoint values for current-state interpretation. GitHub live refs and Cloudflare runtime receipts are authoritative.
