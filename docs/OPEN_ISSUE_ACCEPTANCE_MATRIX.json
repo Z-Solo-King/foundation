@@ -2,8 +2,8 @@
   "schema": "family-issue-acceptance-matrix/v1",
   "audited_at": "2026-09-25",
   "repository_heads": {
-    "foundation": "b84bca4f127ff89852d524cd3b39eec18f3329cd",
-    "operations": "4ab0741c00e2d1aaf4b0a6e5de4bd5a5c6c3abf0"
+    "foundation": "30e4ff5174d38944306210b20aecf054d3b36585",
+    "operations": "b82b142ffc3a5418f704f85c737953afb5783b99"
   },
   "open_issue_count": 11,
   "issues": [
@@ -279,5 +279,13 @@
     "sha": "ca1f241d4e330a111ca50f8c00ef53f9f3d9279f",
     "materials": 20,
     "probes": 11
+  },
+  "current_runtime": {
+    "public_front_door": "https://ai-cio.pages.dev",
+    "pages_project": "ai",
+    "backend_worker": "heroic",
+    "backend_origin": "https://heroic.heroic-ai.workers.dev",
+    "canonical_domain_status": "heroic-ai.dev pending/unresolvable",
+    "certification": "OPEN / NOT CERTIFIED"
   }
 }

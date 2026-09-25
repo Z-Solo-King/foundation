@@ -8,7 +8,7 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "a3171f353539f1a31020c432f98cf0530cbf91ef"
+CANONICAL_OPERATIONS_REF = "b82b142ffc3a5418f704f85c737953afb5783b99"
 BENCHMARK_OPERATIONS_REF = CANONICAL_OPERATIONS_REF
 BENCHMARK_TOOLS_REF = "d4ef2e6d28435a59c735b9dc4d0de31f44b9cf29"
 MIGRATION_TOOLS_REF = None
@@ -409,7 +409,7 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_REF="{CANONICAL_OPERATIONS_REF}"' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
-    assert "OPERATIONS_RESEARCH_REF: a3171f353539f1a31020c432f98cf0530cbf91ef" in nightly
+    assert "OPERATIONS_RESEARCH_REF: b82b142ffc3a5418f704f85c737953afb5783b99" in nightly
 
 
 
@@ -471,8 +471,8 @@ def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
 def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
-    expected_production = "a3171f353539f1a31020c432f98cf0530cbf91ef"
-    expected_nightly = "a3171f353539f1a31020c432f98cf0530cbf91ef"
+    expected_production = "b82b142ffc3a5418f704f85c737953afb5783b99"
+    expected_nightly = "b82b142ffc3a5418f704f85c737953afb5783b99"
     auxiliary = {
         "live-chatbot-production-smoke.yml": expected_production,
         "coverage-driven-runtime-matrix.yml": expected_production,
@@ -606,7 +606,7 @@ def test_production_sync_guard_accepts_current_operations_family_state_shape():
 
 def test_public_live_probe_fails_closed_on_dns_or_http_failure():
     workflow = _workflow_texts()["public-worker-live-probe.yml"]
-    assert 'URL: https://Heroic-Ai.dev' in workflow
+    assert 'URL:' in workflow and 'ai-cio.pages.dev' in workflow
     assert 'raise SystemExit(0 if out["ok"] else 1)' in workflow
     assert 'if status != 200:' in workflow
     assert 'item.get("ready") is not True' in workflow
@@ -614,7 +614,7 @@ def test_public_live_probe_fails_closed_on_dns_or_http_failure():
 
 def test_live_chatbot_smoke_requires_real_model_generation():
     workflow = _workflow_texts()["live-chatbot-production-smoke.yml"]
-    assert "PUBLIC_WORKER_URL: https://Heroic-Ai.dev" in workflow
+    assert 'PUBLIC_WORKER_URL:' in workflow and 'ai-cio.pages.dev' in workflow
     assert '"require_model_generation": True' in workflow
     assert 'chat_response.get("generation_status") != "model_generated"' in workflow
     assert 'chat_response.get("provider") != "cloudflare_workers_ai"' in workflow
@@ -639,14 +639,22 @@ def test_public_probe_records_dns_failure_without_parser_crash():
     assert '|| true)' in workflow
 
 
-def test_current_public_runtime_identity_is_heroic_ai():
+def test_current_public_runtime_identity_is_heroic_backend():
     wrangler = WRANGLER.read_text(encoding="utf-8")
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'name = "foundation"' in wrangler
-    assert 'custom_domain = true' in wrangler
-    assert 'pattern = "heroic-ai.dev"' in wrangler
-    assert 'BASE_URL="https://Heroic-Ai.dev"' in deployment
+    assert 'name = "heroic"' in wrangler
+    assert 'workers_dev = true' in wrangler
+    assert '[[routes]]' not in wrangler
+    assert 'custom_domain = true' not in wrangler
+    assert 'BASE_URL=' in deployment and 'ai-cio.pages.dev' in deployment
     assert 'OPERATIONS_SERVICE_NAME="operations"' in deployment
+
+def test_public_pages_front_door_is_documented_and_distinct_from_backend():
+    docs = (ROOT / "docs" / "WORKER_IDENTITY_2026-09-25.md").read_text(encoding="utf-8")
+    assert "ai-cio.pages.dev/" in docs
+    assert "heroic.heroic-ai.workers.dev/" in docs
+    assert "hostname was not assignable to this account" in docs
+
 
 
 def test_nightly_research_preflight_has_network_failure_classification():

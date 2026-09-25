@@ -27,12 +27,12 @@ concurrency:
 
 env:
   PYTHONUNBUFFERED: "1"
-  PUBLIC_WORKER_URL: "https://Heroic-Ai.dev"
+  PUBLIC_WORKER_URL: "https://ai-cio.pages.dev"
   RESEARCH_LLM_ENDPOINT: "http://127.0.0.1:8765"
   RESEARCH_LLM_API_KEY: "local-worker-proxy"
   RESEARCH_LLM_MODEL: "@cf/zai-org/glm-4.7-flash"
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_RESEARCH_REF: a3171f353539f1a31020c432f98cf0530cbf91ef
+  OPERATIONS_RESEARCH_REF: b82b142ffc3a5418f704f85c737953afb5783b99
   OPERATIONS_MIGRATION_TOOLS_REF: 41db817dee6aa7d369ea9a07dd072b58ece1695a
 
 jobs:

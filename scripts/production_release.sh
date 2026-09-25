@@ -2,9 +2,9 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="a3171f353539f1a31020c432f98cf0530cbf91ef"
+OPERATIONS_REF="b82b142ffc3a5418f704f85c737953afb5783b99"
 OPERATIONS_SERVICE_NAME="operations"
-BASE_URL="https://Heroic-Ai.dev"
+BASE_URL="https://ai-cio.pages.dev"
 ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"
 
 cleanup() {
@@ -23,7 +23,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = 'a3171f353539f1a31020c432f98cf0530cbf91ef'
+test "$OPERATIONS_REF" = 'b82b142ffc3a5418f704f85c737953afb5783b99'
 
 after_install_marker=''
 
@@ -157,31 +157,7 @@ jq -e --arg expected "$OPERATIONS_REF" '.sha == $expected' "$RUNNER_TEMP/operati
 
 echo "private Operations access: PASS (${OPERATIONS_REF})"
 
-# Fail early with an actionable diagnostic when the canonical custom-domain zone is
-# not present on the Cloudflare account. A Worker deploy cannot create a route for a
-# zone that is not delegated to this account, so do not spend deployment budget only
-# to fail at the custom-domain step.
-zone_status=$(curl -sS -o "$RUNNER_TEMP/cloudflare-zone.json" -w '%{http_code}' \
-  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-  -H 'Content-Type: application/json' \
-  "https://api.cloudflare.com/client/v4/zones?name=heroic-ai.dev&status=active&per_page=5" || true)
-if [ "$zone_status" != "200" ]; then
-  echo "Cloudflare zone lookup failed: HTTP \${zone_status}"
-  jq -c '{success,message,errors}' "$RUNNER_TEMP/cloudflare-zone.json" 2>/dev/null || true
-  exit 1
-fi
-zone_count=$(jq -r '.result | length' "$RUNNER_TEMP/cloudflare-zone.json")
-if [ "$zone_count" != "1" ]; then
-  echo 'Cloudflare zone prerequisite missing: heroic-ai.dev is not an active zone in the configured account.'
-  echo 'Add/delegate heroic-ai.dev to this Cloudflare account and enable proxied DNS before production release.'
-  jq -c '.result[]? | {id,name,status,name_servers}' "$RUNNER_TEMP/cloudflare-zone.json" 2>/dev/null || true
-  exit 1
-fi
-heroic_ai_zone_id=$(jq -r '.result[0].id' "$RUNNER_TEMP/cloudflare-zone.json")
-echo "Cloudflare canonical zone: PASS (${heroic_ai_zone_id})"
-
-
-askpass="$RUNNER_TEMP/git-askpass-operations.sh"
+# The canonical public origin is the free workers.dev endpoint; no custom-domain zone is required for this release.\n\n\naskpass="$RUNNER_TEMP/git-askpass-operations.sh"
 cat > "$askpass" <<'EOF'
 #!/bin/sh
 case "$1" in
@@ -254,11 +230,11 @@ test -f "$RUNNER_TEMP/operations/foundation_core/__init__.py"
 
 
 printf '%s\n' \
-  'name = "foundation"' \
+  'name = "heroic"' \
   'main = "worker.py"' \
   'compatibility_date = "2026-09-09"' \
   'compatibility_flags = ["python_workers", "enable_request_signal", "request_signal_passthrough"]' \
-  'workers_dev = false' \
+  'workers_dev = true' \
   'preview_urls = false' \
   '' \
   '[assets]' \
@@ -266,9 +242,6 @@ printf '%s\n' \
   'binding = "ASSETS"' \
   'not_found_handling = "single-page-application"' \
   '' \
-  '[[routes]]' \
-  'pattern = "heroic-ai.dev"' \
-  'custom_domain = true' \
   '[[d1_databases]]' \
   'binding = "DB"' \
   'database_name = "research-intelligence"' \
@@ -340,7 +313,7 @@ if removed != 1 or skip:
 path.write_text("".join(output), encoding="utf-8")
 PY
 ! grep -q '^\[\[services\]\]$' "$bootstrap_config"
-! grep -q '^service = "foundation"$' "$bootstrap_config"
+! grep -q '^service = "heroic"$' "$bootstrap_config"
 
 # Always bootstrap the Operations target without its reciprocal Foundation binding.
 # Cloudflare service-binding deployment fails closed when the target Worker is absent;

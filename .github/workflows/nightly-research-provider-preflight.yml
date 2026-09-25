@@ -17,7 +17,7 @@ jobs:
       - name: Verify authenticated Worker-backed Workers AI
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          PUBLIC_WORKER_URL: "https://Heroic-Ai.dev"
+          PUBLIC_WORKER_URL: "https://ai-cio.pages.dev"
           OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
           OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
         run: |
@@ -109,7 +109,7 @@ jobs:
               "research_endpoint_set": os.environ["PREFLIGHT_ENDPOINT"] == "true",
               "research_api_key_set": os.environ["PREFLIGHT_API_KEY"] == "true",
               "research_model_set": os.environ["PREFLIGHT_MODEL"] == "true",
-              "operations_ref": "a3171f353539f1a31020c432f98cf0530cbf91ef",
+              "operations_ref": "b82b142ffc3a5418f704f85c737953afb5783b99",
               "workers_ai_model": "@cf/zai-org/glm-4.7-flash",
               "network_classification": (
                   "dns_or_network_unreachable" if int(os.environ.get("PREFLIGHT_WORKER_HEALTH_STATUS") or "0") == 0 else

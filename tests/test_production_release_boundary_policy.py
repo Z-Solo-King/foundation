@@ -1,6 +1,13 @@
 from pathlib import Path
+import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
+PRODUCTION_SCRIPT = ROOT / "scripts" / "production_release.sh"
+
+
+def test_production_release_shell_syntax_is_valid():
+    result = subprocess.run(["bash", "-n", str(PRODUCTION_SCRIPT)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
 
 
 def test_production_boundary_scan_matches_public_worker_architecture():
@@ -30,7 +37,8 @@ def test_reciprocal_service_bindings_use_binding_free_bootstrap():
     assert "Operations binding-free bootstrap deployment: PASS" in text
     assert 'bootstrap_config="$RUNNER_TEMP/operations/wrangler.bootstrap.toml"' in text
     assert '[[services]]' in text
-    assert 'pywrangler deploy --config "$bootstrap_config"' in text
+    assert '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config"' in text
+    assert text.count('(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config"') == 1
     assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings' not in text
 
 
@@ -41,9 +49,10 @@ def test_operations_bootstrap_config_lives_with_entrypoint_checkout():
     assert '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config"' in text
 
 
-def test_production_preflights_heroic_ai_zone_before_public_deploy():
+def test_production_uses_free_workers_dev_origin_without_custom_zone_preflight():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
-    assert 'zones?name=heroic-ai.dev&status=active' in text
-    assert "zone_count=$(jq -r '.result | length' \"$RUNNER_TEMP/cloudflare-zone.json\")" in text
-    assert 'heroic-ai.dev is not an active zone in the configured account' in text
-    assert 'Add/delegate heroic-ai.dev to this Cloudflare account' in text
+    assert 'BASE_URL=' in text and 'ai-cio.pages.dev' in text
+    assert 'workers_dev = true' in text
+    assert 'name = "heroic"' in text
+    assert '! grep -q \'^service = "heroic"$\' "$bootstrap_config"' in text
+    assert 'zones?name=heroic-ai.dev&status=active' not in text
