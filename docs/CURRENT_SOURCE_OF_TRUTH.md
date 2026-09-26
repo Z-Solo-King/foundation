@@ -11,8 +11,8 @@ Fresh live evidence from 2026-09-26 supersedes older dated sections below.
 - Foundation main: `ee312632fce5be5da9536194e94f38fa2cdabb6b`
 - Operations main: `122a334d85708e2e42db59b74114d1396ca98f31`
 - Production Operations pin: `566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3`
-- Live open issues: Foundation 9 + Operations 12 = 21.
-- Live open PRs: Foundation 8 + Operations 4 = 12.
+- Live open issues: Foundation 6 + Operations 4 = 10.
+- Live open PRs: Foundation 2 + Operations 4 = 6.
 - Canonical runtime: Pages `ai-cio.pages.dev` -> Worker `heroic` v30 -> private Worker `operations` v90.
 - Latest nightly #375 / run `36141145555`: blocked before provider execution; 24 slots prepared; no provider-backed acceptance.
 - Latest extractor benchmark #448 / run `36141127492`: 40 receipts; 4 ok / 32 empty / 4 blocked; structural/integrity pass only.
@@ -739,3 +739,14 @@ The remaining issue queue is evidence-gated: Foundation #157/#452 and Operations
 ## Complete AI engineering continuity ledger
 
 For durable cross-chat continuity—including strategies, test taxonomy, migration rules, security invariants, failure lessons, lane/work-stealing rules, CI policy and issue-management methods—read `docs/AI_ENGINEERING_CONTINUITY_LEDGER_2026-09-21.md`.
+
+
+## Live reconciliation checkpoint — 2026-09-26 18:37 UTC
+- Foundation main: `6549f6752352d4c4c9f2162b61faa69ef263deaa`.
+- Operations main: `da5c13f94db74c359b3990474f84640940c67e42`.
+- Production Operations pin remains `566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3`; this is intentional and is not silently advanced by Operations-main changes.
+- Cloudflare `heroic` provenance: Foundation `6549f6752352d4c4c9f2162b61faa69ef263deaa`; service binding `OPERATIONS -> operations`.
+- Cloudflare `operations` provenance: production pin `566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3`; `FOUNDATION -> heroic`; D1 `research-intelligence`.
+- Live open issues: Foundation 6 + Operations 4 = 10.
+- Live open PRs: Foundation 2 + Operations 4 = 6.
+- Scheduled `operations` cron is `*/15 * * * *`; telemetry recorded zero scheduled events before the 2026-09-26 18:32 UTC trigger update, so no false runtime receipt is claimed yet.

@@ -69,29 +69,20 @@
     "durable_object_namespaces": 0
   },
   "current_queue": {
-    "open_issue_count": 19,
+    "open_issue_count": 10,
     "foundation": [
       58,
       157,
-      1157,
+      1265,
       1247,
       1249,
-      1265,
-      1283,
-      1284
+      1157
     ],
     "operations": [
-      145,
-      340,
-      385,
       597,
       603,
       699,
-      713,
-      994,
-      997,
-      998,
-      1005
+      145
     ]
   },
   "latest_evidence": {
@@ -463,5 +454,26 @@
     "verified_at": "2026-09-26",
     "verified_head": "425ef4c8ce4c23f90c49ab26d09462b88ffbc7c1",
     "verification_note": "freshness checker must materialize missing base revision before diff"
+  },
+  "github_heads": {
+    "foundation": "6549f6752352d4c4c9f2162b61faa69ef263deaa",
+    "operations": "da5c13f94db74c359b3990474f84640940c67e42"
+  },
+  "open_prs": {
+    "foundation": [
+      1291,
+      1248
+    ],
+    "operations": [
+      985,
+      984,
+      983,
+      981
+    ]
+  },
+  "cloudflare_production": {
+    "public_foundation_sha": "6549f6752352d4c4c9f2162b61faa69ef263deaa",
+    "private_operations_ref": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
+    "operations_cron": "*/15 * * * *"
   }
 }
