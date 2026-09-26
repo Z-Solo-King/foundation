@@ -33,7 +33,7 @@ jobs:
 
           const H={'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/136.0.0.0 Safari/537.36','accept':'application/json,text/html,application/xml,text/xml,*/*','accept-language':'en-IN,en;q=0.9','x-requested-with':'XMLHttpRequest'};
 
-          async function get(url, extra={}) {
+          async function get(url,extra={}) {
             try {
               const r=await fetch(url,{headers:{...H,...extra},redirect:'follow',signal:AbortSignal.timeout(15000)});
               const body=await r.text();
@@ -56,7 +56,7 @@ jobs:
               const j=JSON.parse(s);
               let arr=Array.isArray(j)?j:null;
               if(!arr&&j&&typeof j==='object'){
-                for(const k of ['products','items','data','results','ProductList','resultsList']) {
+                for(const k of ['products','items','data','results','ProductList','resultsList']){
                   if(Array.isArray(j[k])) {arr=j[k];break}
                 }
                 if(!arr&&j.Result&&typeof j.Result==='object'){
@@ -70,22 +70,31 @@ jobs:
 
           function mine(body) {
             const out=[];
-            for(const re of [
-              /https?:\/\/[^"'<>\\s]+/g,
-              /(?:\\/api\\/|\\/pdp\\/api\\/|\\/graphql|graphql\\?|Ajax\\/|\\/Monitor\\/|\\/Product\\/)[^"'<>\\s<)]*/gi
-            ]) {
-              let m; while((m=re.exec(body||''))) out.push(m[0]);
+            const s=body||'';
+            const terms=['/api/','/pdp/api/','/graphql','SearchResult','ProductSpec','typesense','/Monitor/','/Product/','storage-asset.msi.com','odinapi.asus.com'];
+            for(const term of terms){
+              let pos=0;
+              while((pos=s.indexOf(term,pos))>=0){
+                const start=Math.max(0,s.lastIndexOf('"',pos)+1);
+                const end1=s.indexOf('"',pos);
+                const end2=s.indexOf("'",pos);
+                let end=end1<0?end2:(end2<0?end1:Math.min(end1,end2));
+                if(end<0) end=Math.min(s.length,pos+300);
+                const x=s.slice(start,end);
+                if(x.length>3&&x.length<1200) out.push(x);
+                pos+=term.length;
+              }
             }
-            return [...new Set(out)].filter(x=>x.length<1200).slice(0,500);
+            return [...new Set(out)].slice(0,500);
           }
 
           function interesting(body) {
             const lo=(body||'').toLowerCase();
-            return {graphql:lo.includes('graphql'),api:/\\/api\\/|api\\./i.test(body||''),productApi:/(pdp\\/api|product\\/|productsspec|searchresult|typesense|graphql|products\\/)/i.test(body||''),specs:/(technical specifications|all specifications|panel type|refresh rate|brightness|resolution)/i.test(body||''),pdf:/\\.pdf/i.test(body||'')};
+            return {graphql:lo.includes('graphql'),api:lo.includes('/api/')||lo.includes('api.'),productApi:lo.includes('productspec')||lo.includes('/pdp/api/')||lo.includes('searchresult')||lo.includes('typesense')||lo.includes('graphql'),specs:lo.includes('technical specifications')||lo.includes('all specifications')||lo.includes('panel type')||lo.includes('refresh rate')||lo.includes('brightness')||lo.includes('resolution'),pdf:lo.includes('.pdf')};
           }
 
           async function probeAcer(endpoint) {
-            const queries = [
+            const queries=[
               'query { products(search:"monitor", pageSize:20, currentPage:1) { total_count items { sku name url_key stock_status } } }',
               'query { products(search:"monitor", pageSize:20, currentPage:1) { total_count items { sku name url_key stock_status description { html } short_description { html } } } }'
             ];
@@ -97,7 +106,7 @@ jobs:
             return out;
           }
 
-          async function main() {
+          async function main(){
             const out={generated_at:new Date().toISOString(),sites:{}};
             for(const [name,cfg] of Object.entries(sites)){
               const entry={roots:[],scripts:[],discovered:[],apiProbe:[]};
@@ -110,32 +119,23 @@ jobs:
                 for(const x of js) if(x.r.status===200) entry.discovered.push(...mine(x.r.body));
               }
               entry.scripts=[...new Set(entry.scripts)].slice(0,60);
-              entry.discovered=[...new Set(entry.discovered)].filter(x=>/api|graphql|product|monitor|typesense|spec|pdp/i.test(x)).slice(0,500);
-
+              entry.discovered=[...new Set(entry.discovered)].filter(x=>/api|graphql|product|monitor|typesense|spec|pdp|searchresult/i.test(x)).slice(0,500);
               if(cfg.graphql) entry.apiProbe.push(...await probeAcer(cfg.graphql));
-              if(cfg.api){
-                const r=await get(cfg.api);
-                entry.apiProbe.push({url:cfg.api,status:r.status,ctype:r.ctype,bytes:r.bytes,json:jsonInfo(r.body),sample:r.body.slice(0,12000)});
-              }
-
+              if(cfg.api){const r=await get(cfg.api);entry.apiProbe.push({url:cfg.api,status:r.status,ctype:r.ctype,bytes:r.bytes,json:jsonInfo(r.body),sample:r.body.slice(0,12000)});}
               if(name==='samsung'){
-                const urls=[
+                for(const u of [
                   'https://p1-smi-api-cdn.shop.samsung.com/tokocommercewebservices/v2/in/products/search?query=monitor%3Arelevance&pageSize=100&currentPage=0&fields=FULL',
                   'https://p1-smi-api-cdn.shop.samsung.com/tokocommercewebservices/v2/in/products/search?query=odyssey%3Arelevance&pageSize=100&currentPage=0&fields=FULL'
-                ];
-                for(const u of urls){const r=await get(u,{referer:'https://www.samsung.com/in/',origin:'https://www.samsung.com'});entry.apiProbe.push({url:u,status:r.status,ctype:r.ctype,bytes:r.bytes,json:jsonInfo(r.body),sample:r.body.slice(0,12000)});}
+                ]){const r=await get(u,{referer:'https://www.samsung.com/in/',origin:'https://www.samsung.com'});entry.apiProbe.push({url:u,status:r.status,ctype:r.ctype,bytes:r.bytes,json:jsonInfo(r.body),sample:r.body.slice(0,12000)});}
               }
-
               if(name==='asus'){
-                const urls=[
+                for(const u of [
                   'https://odinapi.asus.com/recent-data/apiv2/SearchResult?WebsiteCode=in&Keyword=monitor&PageSize=100&Page=1',
                   'https://odinapi.asus.com/recent-data/apiv2/SearchResult?WebsiteCode=in&Keyword=monitor&PageSize=100&PageIndex=1'
-                ];
-                for(const u of urls){const r=await get(u);entry.apiProbe.push({url:u,status:r.status,ctype:r.ctype,bytes:r.bytes,json:jsonInfo(r.body),sample:r.body.slice(0,9000)});}
+                ]){const r=await get(u);entry.apiProbe.push({url:u,status:r.status,ctype:r.ctype,bytes:r.bytes,json:jsonInfo(r.body),sample:r.body.slice(0,9000)});}
               }
-
               if(name==='dell'){
-                const candidates=entry.discovered.filter(x=>/typesense|rest\\/V1|catalogsearch|graphql/i.test(x));
+                const candidates=entry.discovered.filter(x=>/typesense|rest\/V1|catalogsearch|graphql/i.test(x));
                 for(const raw of candidates.slice(0,12)){
                   let u=raw.startsWith('http')?raw:new URL(raw,'https://www.dell.com').href;
                   if(/typesense/i.test(u)&&!u.includes('q=')) u += (u.includes('?')?'&':'?')+'q=monitor&query_by=name,sku&per_page=100';
@@ -143,7 +143,6 @@ jobs:
                   entry.apiProbe.push({url:u,status:r.status,ctype:r.ctype,bytes:r.bytes,json:jsonInfo(r.body),sample:r.body.slice(0,10000)});
                 }
               }
-
               out.sites[name]=entry;
             }
             fs.writeFileSync('out/monitor-oem-api-discovery.json',JSON.stringify(out,null,2));
