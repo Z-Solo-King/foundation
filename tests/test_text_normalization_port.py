@@ -26,6 +26,7 @@ def test_category_exact_accessory_alias_tag_and_fallback():
     assert normalize_category("Earphone Tips") == "other"
     assert normalize_category("Gaming Laptop Bag") == "laptop"
     assert normalize_category("Bluetooth Keyboard") == "keyboard"
+    assert normalize_category("keycap") == "keycap"
     assert normalize_category("Mystery Gadget") == "mystery gadget"
 
 def test_title_and_token_normalization():
@@ -37,6 +38,7 @@ def test_identifier_wrappers_and_limits():
     assert clean_identifier("N/A") == ""
     assert clean_identifier("ab c_d", max_len=4) == "ABC_"
     assert normalize_mpn(" Model ") == ""
+    assert normalize_mpn(None) == ""
     assert normalize_mpn(" ab_c 12 ") == "AB-C12"
     assert normalize_sku(" sku 42 ") == "SKU42"
     assert normalize_product_id(" id 42 ") == "ID42"
@@ -47,6 +49,7 @@ def test_identifier_wrappers_and_limits():
 
 def test_gtin_validation_and_lenient_mode(monkeypatch):
     assert normalize_gtin(None) == ""
+    assert _normalize_gtin_cached("") == ""
     assert normalize_gtin("") == ""
     assert normalize_gtin("ean13: 4006381333931") == "04006381333931"
     assert normalize_gtin("036000291452") == "00036000291452"
@@ -54,6 +57,7 @@ def test_gtin_validation_and_lenient_mode(monkeypatch):
     assert normalize_gtin("11111111") == ""
     assert normalize_gtin("not-a-gtin") == ""
     assert normalize_gtin("12345678") == ""
+    assert normalize_gtin("123456789") == ""
     assert normalize_gtin("12345678", strict=False) == "00000012345678"
     import foundation_core.text_normalization as module
     real_int = module._BUILTIN_INT
