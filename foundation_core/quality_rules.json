@@ -1,0 +1,30 @@
+{
+  "schema": "plausibility-rules/v1",
+  "rules": [
+    {
+      "code": "budget_oled_monitor",
+      "severity": "high",
+      "field": "panel",
+      "message": "Unusually low OLED monitor price; verify exact model and panel.",
+      "action": "cross_check",
+      "when": {
+        "category_contains": ["monitor", "display"],
+        "panel_contains": "oled",
+        "price_lt": 10000
+      }
+    },
+    {
+      "code": "extreme_refresh_price_combo",
+      "severity": "medium",
+      "field": "refresh_rate",
+      "message": "Unusual high-refresh/price combination; verify model identity.",
+      "action": "cross_check",
+      "when": {
+        "category_contains": ["monitor", "display"],
+        "refresh_gte": 500,
+        "size_gte": 27,
+        "price_lt": 25000
+      }
+    }
+  ]
+}
