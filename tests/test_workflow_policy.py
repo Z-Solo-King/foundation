@@ -712,3 +712,7 @@ def test_nightly_research_preflight_has_network_failure_classification():
     assert '"network_classification"' in preflight
     assert "dns_or_network_unreachable" in preflight
     assert "edge_http_403" in preflight
+def test_deep_scan_concurrency_is_pr_scoped():
+    text=(ROOT/".github/workflows/open-issue-polyglot-deep-scan.yml").read_text(encoding="utf-8")
+    assert "github.event.pull_request.number || github.ref" in text
+    assert "cancel-in-progress: true" in text
