@@ -1,0 +1,90 @@
+name: Monitor OEM Exact Route Trace
+on:
+  push:
+    branches: [probe/monitor-oem-api-20260926]
+  workflow_dispatch:
+jobs:
+  trace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Trace live JavaScript contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p trace
+          python3 - <<'PY'
+          import urllib.request, urllib.parse, re, os, json
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/136.0.0.0 Safari/537.36'
+          H={'User-Agent':UA,'Accept':'text/html,application/javascript,application/json,*/*','Accept-Language':'en-IN,en;q=0.9'}
+          targets={
+            'rog':['https://rog.asus.com/in/monitors-group/allmodels/'],
+            'asus':['https://www.asus.com/in/displays-desktops/monitors/all-series/'],
+            'acer':['https://store.acer.com/en-in/'],
+            'msi':['https://www.msi.com/Monitor/MAG-274UPF/Specification'],
+            'samsung':['https://www.samsung.com/in/monitors/'],
+            'aoc':['https://www.aoc.com/in/gaming/monitors/27g4'],
+            'dell':['https://www.dell.com/en-in/shop/monitors-and-monitor-accessories/sac/monitors'],
+            'benq':['https://www.benq.com/en-in/monitor/gaming/ex271/spec.html'],
+            'gigabyte':['https://www.gigabyte.com/Monitor/GS27Q/sp'],
+            'aorus':['https://www.aorus.com/Monitors'],
+            'lg':['https://www.lg.com/in/monitors/ultragear-gaming-oled-monitors/27gx790a-b/'],
+          }
+          def get(u):
+            try:
+              with urllib.request.urlopen(urllib.request.Request(u,headers=H),timeout=15) as r:
+                return r.status,r.headers.get('content-type',''),r.read().decode('utf-8','replace')
+            except Exception as e:return 0,'',str(e)
+          def contexts(text,terms):
+            out=[]
+            low=text.lower()
+            for term in terms:
+              p=0
+              while True:
+                i=low.find(term.lower(),p)
+                if i<0:break
+                out.append({'term':term,'context':text[max(0,i-500):i+1400]})
+                p=i+len(term)
+                if len(out)>80:break
+            return out
+          terms={
+            'rog':['ResultV1','Product/Spec','Product/Info','Product/Tabs','Product/Gallery','GetProductTabDataAsync','GetConsumerModelData','apiUseTabKey','productCategoryUrl','modelUrl','pid'],
+            'asus':['SearchResult','GetPrice','ProductId','SearchType','productId'],
+            'acer':['graphql','products(search','ProductInterface','technical'],
+            'msi':['api/','Product','Specification','monitor','ajax','graphql'],
+            'samsung':['scom/search','productCodes','fields=FULL','stockStatus','techSpecs','pdpURL'],
+            'aoc':['price-data','screen-size-variants','/api/asset/pi','productId','modelCode','sku'],
+            'dell':['typesense','rest/V1/products','custom_attributes','stockStatuses','graphql'],
+            'benq':['graphql','api/','spec','productData','g6-product-spec-page'],
+            'gigabyte':['GetOneDataSpecAsync','GetProductTabDataAsync','GetConsumerModelData','Consumer/','OneData/','ProductSpec','MatchUrlSettingAndFilter','apiUseTabKey'],
+            'aorus':['api/','Product','Spec','Monitor'],
+            'lg':['pdp_items','updateProductDetail','mdid','commerce/content','pdp/api','getComponentHTML'],
+          }
+          summary={}
+          os.makedirs('trace',exist_ok=True)
+          for name,roots in targets.items():
+            htmls=[]; scripts=[]
+            for root in roots:
+              st,ct,b=get(root); htmls.append({'url':root,'status':st,'ctype':ct,'bytes':len(b),'sample':b[:400]})
+              for m in re.finditer(r'<script[^>]+src=[\"\']([^\"\']+)[\"\']',b,re.I):
+                x=m.group(1)
+                try:u=urllib.parse.urljoin(root,x)
+                except:u=x
+                if u and u not in scripts:scripts.append(u)
+            js=[]
+            for u in scripts[:30]:
+              st,ct,b=get(u)
+              if st==200 and b: js.append({'url':u,'status':st,'bytes':len(b),'contexts':contexts(b,terms[name])})
+            combo='\n'.join(x.get('context','') for x in js for x in x['contexts'])
+            summary[name]={'roots':htmls,'scripts':scripts[:50],'contexts':contexts(combo,terms[name])[:160]}
+
+          open('trace/monitor-exact-routes.json','w').write(json.dumps(summary,indent=2))
+          for name,v in summary.items():
+            print('\n### '+name)
+            for c in v['contexts'][:40]:print('---',c['term'],'---\n'+c['context'][:1900])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: monitor-exact-route-trace-20260926
+          path: trace/monitor-exact-routes.json
+          retention-days: 14
