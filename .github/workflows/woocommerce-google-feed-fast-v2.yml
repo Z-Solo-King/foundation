@@ -1,0 +1,103 @@
+name: WooCommerce Google Feed Fast V2
+
+on:
+  push:
+    branches:
+      - "ai/woocommerce-google-feed-audit-20260926"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wc-google-feed-fast-v2
+  cancel-in-progress: false
+
+jobs:
+  lane-a:
+    name: Fast V2 A (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env: { TARGET_START: "0", TARGET_COUNT: "8" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - run: node tools/woocommerce_google_feed_fast_v2.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-fast-v2-a
+          path: out/fast2/
+          if-no-files-found: warn
+          retention-days: 14
+
+  lane-b:
+    name: Fast V2 B (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env: { TARGET_START: "8", TARGET_COUNT: "8" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - run: node tools/woocommerce_google_feed_fast_v2.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-fast-v2-b
+          path: out/fast2/
+          if-no-files-found: warn
+          retention-days: 14
+
+  lane-c:
+    name: Fast V2 C (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env: { TARGET_START: "16", TARGET_COUNT: "8" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - run: node tools/woocommerce_google_feed_fast_v2.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-fast-v2-c
+          path: out/fast2/
+          if-no-files-found: warn
+          retention-days: 14
+
+  lane-d:
+    name: Fast V2 D (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env: { TARGET_START: "24", TARGET_COUNT: "8" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - run: node tools/woocommerce_google_feed_fast_v2.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-fast-v2-d
+          path: out/fast2/
+          if-no-files-found: warn
+          retention-days: 14
