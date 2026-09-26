@@ -9,7 +9,7 @@ def test_public_surface_policy_exists_and_names_private_categories():
         "private orchestration",
         "private prompts",
         "retailer-specific extraction selectors",
-        "commit and PR messages are part of the public surface",
+        "Commit and PR messages are part of the public surface",
     ):
         assert marker in policy
 
