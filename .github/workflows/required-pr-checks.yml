@@ -77,3 +77,59 @@ jobs:
           test ! -e backend/learning/promotion.py
           ! grep -RniE 'operations|extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-private' foundation_core backend worker.py wrangler.toml migrations
           ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' backend foundation_core worker.py wrangler.toml migrations
+
+      - name: Full tracked-tree and git-history secret scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime/security
+          tree_matches_file=.runtime/security/current-tree-secret-matches.txt
+          history_matches_file=.runtime/security/history-secret-matches.txt
+          receipt_file=.runtime/security/full-secret-scan.json
+          : > "$tree_matches_file"
+          : > "$history_matches_file"
+          patterns=(
+            '-----BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----'
+            'AKIA[0-9A-Z]{16}'
+            'ASIA[0-9A-Z]{16}'
+            'ghp_[A-Za-z0-9]{36}'
+            'github_pat_[A-Za-z0-9_]{20,}'
+            'xox[baprs]-[0-9A-Za-z-]{20,}'
+          )
+          for pattern in "${patterns[@]}"; do
+            git grep --no-color -nI -E "$pattern" -- . >> "$tree_matches_file" || true
+            matches="$(git log --all --no-ext-diff --unified=0 -G "$pattern" --pretty=format:%H -- || true)"
+            if [ -n "$matches" ]; then printf '%s
+' "$matches" >> "$history_matches_file"; fi
+          done
+          git grep --no-color -nI -E '(^|[[:space:]])Bearer[[:space:]]+[A-Za-z0-9._~+/-]{32,}' -- . >> "$tree_matches_file" || true
+          git grep --no-color -nI -E 'api[_-]?key[[:space:]]*[:=][[:space:]]*["'"'"'][A-Za-z0-9._~+/-]{16,}' -- . >> "$tree_matches_file" || true
+          sort -u "$tree_matches_file" -o "$tree_matches_file"
+          sort -u "$history_matches_file" -o "$history_matches_file"
+          tree_count="$(grep -c . "$tree_matches_file" || true)"
+          history_count="$(grep -c . "$history_matches_file" || true)"
+          status="FAIL"
+          if [ "$tree_count" -eq 0 ] && [ "$history_count" -eq 0 ]; then status="PASS"; fi
+          cat > "$receipt_file" <<EOF
+{
+  "schema": "public-full-secret-scan/v1",
+  "status": "$status",
+  "current_tree_matches": $tree_count,
+  "history_matching_commits": $history_count,
+  "history_depth": "$(git rev-list --count --all)",
+  "head": "$(git rev-parse HEAD)"
+}
+EOF
+          cat "$receipt_file"
+          if [ "$tree_count" -ne 0 ] || [ "$history_count" -ne 0 ]; then
+            echo 'Potential credential material found in Foundation current tree or reachable git history.' >&2
+            cat "$tree_matches_file" >&2 || true
+            cat "$history_matches_file" >&2 || true
+            exit 1
+          fi
+      - name: Upload full secret scan receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: public-full-secret-scan
+          path: .runtime/security/full-secret-scan.json
+          if-no-files-found: error
