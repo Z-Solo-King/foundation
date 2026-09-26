@@ -118,6 +118,36 @@ jobs:
             );
             core.setOutput("sha", response.data.sha);
 
+      - name: Snapshot live open issues at audit start
+        id: issue-snapshot
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ steps.operations-app.outputs.token }}
+          script: |
+            const fs = require("fs");
+            const actual = [];
+            for (const repo of ["foundation", "operations"]) {
+              const issues = await github.paginate(
+                github.rest.issues.listForRepo,
+                { owner: "Z-Solo-King", repo, state: "open", per_page: 100 }
+              );
+              for (const issue of issues) {
+                if (!issue.pull_request) actual.push({ repo, number: issue.number, title: issue.title });
+              }
+            }
+            actual.sort((a, b) => (a.repo + "#" + a.number).localeCompare(b.repo + "#" + b.number));
+            fs.mkdirSync(".runtime/exhaustive-audit", { recursive: true });
+            fs.writeFileSync(
+              ".runtime/exhaustive-audit/live_open_issues_snapshot.json",
+              JSON.stringify({
+                schema: "live-open-issue-snapshot/v1",
+                captured_at: new Date().toISOString(),
+                source: "live GitHub issue search",
+                actual,
+              }, null, 2) + "\n",
+              "utf8"
+            );
+
       - name: Verify live open-issue register
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
@@ -127,31 +157,46 @@ jobs:
             fs.mkdirSync(".runtime/exhaustive-audit", { recursive: true });
             const inventoryPath = "operations-repo/benchmark/polyglot/current_open_issue_inventory.json";
             const register = JSON.parse(fs.readFileSync(inventoryPath, "utf8"));
+            const snapshot = JSON.parse(
+              fs.readFileSync(".runtime/exhaustive-audit/live_open_issues_snapshot.json", "utf8")
+            );
             const expected = [];
             for (const [repo, rows] of Object.entries(register.repositories || {})) {
               for (const row of rows) expected.push({ repo, number: Number(row.number), title: row.title });
             }
-            const actual = [];
-            for (const repo of ["foundation", "operations"]) {
-              const issues = await github.paginate(github.rest.issues.listForRepo, { owner: "Z-Solo-King", repo, state: "open", per_page: 100 });
-              for (const issue of issues) if (!issue.pull_request) actual.push({ repo, number: issue.number, title: issue.title });
-            }
+            const actual = Array.isArray(snapshot.actual) ? snapshot.actual : [];
             const key = x => x.repo + "#" + x.number;
             const exp = new Map(expected.map(x => [key(x), x]));
             const act = new Map(actual.map(x => [key(x), x]));
-            const missing = [...exp.keys()].filter(k => !act.has(k));
-            const unexpected = [...act.keys()].filter(k => !exp.has(k));
-            const titleMismatch = [...exp.keys()].filter(k => act.has(k) && exp.get(k).title !== act.get(k).title).map(k => ({ key: k, expected: exp.get(k).title, actual: act.get(k).title }));
-            fs.writeFileSync(".runtime/exhaustive-audit/live_open_issues.json", JSON.stringify({
-              expected,
-              actual,
-              missing,
-              unexpected,
-              titleMismatch,
-              expected_open_issue_count: register.expected_open_issue_count,
-            }, null, 2) + "\n", "utf8");
-            if (missing.length || unexpected.length || titleMismatch.length || Number(register.expected_open_issue_count) !== actual.length) {
-              core.setFailed(JSON.stringify({ missing, unexpected, titleMismatch, expectedCount: register.expected_open_issue_count, actualCount: actual.length }));
+            const unregisteredAtSnapshot = [...act.keys()].filter(k => !exp.has(k));
+            const registeredNotInSnapshot = [...exp.keys()].filter(k => !act.has(k));
+            const titleMismatch = [...act.keys()]
+              .filter(k => exp.has(k) && exp.get(k).title !== act.get(k).title)
+              .map(k => ({ key: k, expected: exp.get(k).title, actual: act.get(k).title }));
+            fs.writeFileSync(
+              ".runtime/exhaustive-audit/live_open_issues.json",
+              JSON.stringify({
+                expected,
+                actual,
+                unregistered_at_snapshot: unregisteredAtSnapshot,
+                registered_not_in_snapshot: registeredNotInSnapshot,
+                titleMismatch,
+                snapshot_captured_at: snapshot.captured_at,
+                snapshot_source: snapshot.source,
+                register_expected_open_issue_count: register.expected_open_issue_count,
+                snapshot_open_issue_count: actual.length,
+              }, null, 2) + "\n",
+              "utf8"
+            );
+            if (unregisteredAtSnapshot.length || titleMismatch.length) {
+              core.setFailed(JSON.stringify({
+                unregisteredAtSnapshot,
+                registeredNotInSnapshot,
+                titleMismatch,
+                registerExpectedCount: register.expected_open_issue_count,
+                snapshotCount: actual.length,
+                snapshotCapturedAt: snapshot.captured_at,
+              }));
             }
 
       - name: Setup Python

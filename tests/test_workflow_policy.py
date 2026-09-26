@@ -570,6 +570,15 @@ def test_live_probe_acceptance_does_not_depend_on_issue_comment_permissions():
     assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["live-chatbot-production-smoke.yml"]
 
 
+def test_exhaustive_audit_freezes_live_issue_snapshot_before_register_validation():
+    workflow = (WORKFLOW_ROOT / "exhaustive-six-lane-audit.yml").read_text(encoding="utf-8")
+    assert "Snapshot live open issues at audit start" in workflow
+    assert "live_open_issues_snapshot.json" in workflow
+    assert "unregistered_at_snapshot" in workflow
+    assert "registered_not_in_snapshot" in workflow
+    assert "snapshot_captured_at" in workflow
+
+
 def test_exhaustive_audit_does_not_infer_operations_branch_from_foundation_pr():
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "exhaustive-six-lane-audit.yml").read_text(encoding="utf-8")
     assert 'context.payload.pull_request?.head?.ref' not in workflow
