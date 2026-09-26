@@ -410,7 +410,8 @@ async function commonHistory(base) {
 
 async function scan([name,base]) {
   const out={name,base,feed:null,reconstructed_feed:null,store_api:null,probes:[],browser_hits:[],history_candidates:[],fingerprints:[]};
-  const [home,rest]=await Promise.all([get(base+"/").catch(e=>({error:e?.name||String(e)})),get(base+"/wp-json/").catch(e=>({error:e?.name||String(e)}))]);\n  await robotsAndSitemaps(base,out);
+  const [home,rest]=await Promise.all([get(base+"/").catch(e=>({error:e?.name||String(e)})),get(base+"/wp-json/").catch(e=>({error:e?.name||String(e)})) ]);
+  await robotsAndSitemaps(base,out);
   out.home=home.error?home:{status:home.status,ct:home.ct,bytes:home.bytes,challenge:challenge(home.status,home.text)};
   out.rest=rest.error?rest:{status:rest.status,ct:rest.ct,bytes:rest.bytes};
   const fingerprintText=(home.text||"")+"\\n"+(rest.text||"");
@@ -424,7 +425,8 @@ async function scan([name,base]) {
       if (sameOrigin(u,base) && /(google|merchant|shopping|feed|product|wppfm|woo-feed|codesolz|feedcraft|pgbf-pro)/i.test(u)) derived.push(u);
     }
   }
-  const primary=PRIMARY.map(p=>new URL(p,base+"/").href);\n  if(out.robotFeedCandidates?.length) for(const u of out.robotFeedCandidates) derived.push(u);
+  const primary=PRIMARY.map(p=>new URL(p,base+"/").href);
+  if(out.robotFeedCandidates?.length) for(const u of out.robotFeedCandidates) derived.push(u);
   const derivedUnique=[...new Set(derived)];
   await probeList([...new Set([...primary,...derivedUnique])],out,true);
   if(!out.feed) {
