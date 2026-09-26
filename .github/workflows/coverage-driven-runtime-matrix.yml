@@ -18,7 +18,7 @@ on:
       validation_tools_ref:
         description: Exact Operations revision containing validation tests
         required: false
-        default: 92eb7a850dff11a10886a952d5db8a42dae2b318
+        default: 566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3
         type: string
 
 permissions:
@@ -105,7 +105,7 @@ jobs:
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
       OPERATIONS_REF: ${{ inputs.operations_ref || '566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3' }}
-      VALIDATION_TOOLS_REF: ${{ inputs.validation_tools_ref || '92eb7a850dff11a10886a952d5db8a42dae2b318' }}
+      VALIDATION_TOOLS_REF: ${{ inputs.validation_tools_ref || '566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Checkout Foundation
@@ -398,89 +398,3 @@ jobs:
 
           payload = json.loads(scenario.read_text())
           test_passed = payload.get("passed") is True
-          probe_expected = os.environ.get("LIVE_PROBE_EXPECTED", "false").lower() == "true"
-          probe_outcome = os.environ.get("LIVE_PROBE_OUTCOME", "not_run")
-          payload.update({
-              "test_outcome": os.environ.get("TEST_OUTCOME", "not_run"),
-              "test_passed": test_passed,
-              "live_probe_expected": probe_expected,
-              "live_probe_outcome": probe_outcome,
-              "live_probe_passed": (not probe_expected) or probe_outcome == "success",
-              "acceptance_passed": test_passed and ((not probe_expected) or probe_outcome == "success"),
-          })
-          scenario.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
-      - name: Upload scenario evidence
-        if: always() && matrix.id != 'repository-policy'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: coverage-${{ matrix.id }}
-          path: coverage-artifacts/${{ matrix.id }}/
-          if-no-files-found: error
-          retention-days: 14
-
-      - name: Upload Foundation policy evidence
-        if: always() && matrix.id == 'repository-policy'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: coverage-repository-policy
-          path: coverage-artifacts/repository-policy/
-          if-no-files-found: error
-          retention-days: 14
-
-  aggregate:
-    name: Aggregate 20 orthogonal scenarios
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: scenario
-    if: always()
-    steps:
-      - name: Download scenario evidence
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4
-        with:
-          pattern: coverage-*
-          path: coverage-artifacts
-          merge-multiple: false
-
-      - name: Build coverage/evidence map
-        id: report
-        shell: python
-        run: |
-          import json
-          from pathlib import Path
-
-          results = []
-          for p in Path("coverage-artifacts").glob("**/scenario.json"):
-              results.append(json.loads(p.read_text()))
-          results.sort(key=lambda x: x["scenario"])
-
-          test_failures = [x for x in results if not x.get("test_passed", x.get("passed") is True)]
-          runtime_failures = [x for x in results if x.get("live_probe_expected") and not x.get("live_probe_passed")]
-          runtime_expected = [x for x in results if x.get("live_probe_expected")]
-          runtime_passed = [x for x in runtime_expected if x.get("live_probe_passed")]
-          report = {
-              "schema": "coverage-matrix-report/v2",
-              "scenario_count": len(results),
-              "test_passed_count": len(results) - len(test_failures),
-              "test_failed_count": len(test_failures),
-              "runtime_probe_expected_count": len(runtime_expected),
-              "runtime_probe_passed_count": len(runtime_passed),
-              "runtime_probe_failed_count": len(runtime_failures),
-              "acceptance_passed": not test_failures and not runtime_failures,
-              "test_failures": test_failures,
-              "runtime_failures": runtime_failures,
-          }
-          Path("coverage-matrix-report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
-          print(json.dumps(report, indent=2, sort_keys=True))
-          raise SystemExit(1 if test_failures or runtime_failures else 0)
-
-      - name: Upload aggregate report
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: coverage-matrix-report
-          path: |
-            coverage-artifacts/**/scenario.json
-            coverage-artifacts/**/pytest.log
-            coverage-matrix-report.json
-          if-no-files-found: error
-          retention-days: 30

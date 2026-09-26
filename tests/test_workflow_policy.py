@@ -12,7 +12,7 @@ CANONICAL_OPERATIONS_REF = "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3"
 BENCHMARK_OPERATIONS_REF = CANONICAL_OPERATIONS_REF
 BENCHMARK_TOOLS_REF = "d4ef2e6d28435a59c735b9dc4d0de31f44b9cf29"
 MIGRATION_TOOLS_REF = None
-VALIDATION_TOOLS_REF = "92eb7a850dff11a10886a952d5db8a42dae2b318"
+VALIDATION_TOOLS_REF = "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3"
 CANONICAL_OPERATIONS_SERVICE = "operations"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 PRODUCTION_WORKFLOW = "heroic-ai-production-release.yml"
@@ -703,3 +703,12 @@ def test_nightly_research_preflight_has_network_failure_classification():
     assert '"network_classification"' in preflight
     assert "dns_or_network_unreachable" in preflight
     assert "edge_http_403" in preflight
+
+def test_exhaustive_audit_freezes_live_issue_set_at_start():
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "exhaustive-six-lane-audit.yml").read_text(encoding="utf-8")
+    assert "Snapshot live open issues at audit start" in workflow
+    assert "live_open_issues_snapshot.json" in workflow
+    assert "unregistered_at_snapshot" in workflow
+    assert "registered_not_in_snapshot" in workflow
+    verify = workflow.split("      - name: Verify live open-issue register", 1)[1].split("      - name: Setup Python", 1)[0]
+    assert "github.paginate" not in verify
