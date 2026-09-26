@@ -77,3 +77,11 @@ def test_regex_identity_and_special_weight_alternate_branch():
     assert apply_domain_rules("paw3395 wired", ["mouse"])["tracking_method"] == "paw3395"
     assert apply_domain_rules("ipi haze 6369g standard", ["mouse"])["weight"] == "63g"
     assert apply_domain_rules("ipi haze 6369g haze x1 tmr", ["mouse"])["weight"] == "69g"
+
+
+def test_unknown_rule_kind_falls_through_without_mutating_output(monkeypatch):
+    import foundation_core.domain_packs as module
+    original = module.DOMAIN_PACKS["mouse"]["rules"]
+    monkeypatch.setitem(module.DOMAIN_PACKS["mouse"], "rules", original + (("unknown_rule_kind",),))
+    out = module.apply_domain_rules("ordinary wired mouse", ["mouse"])
+    assert out["connection_type"] == "Wired"
