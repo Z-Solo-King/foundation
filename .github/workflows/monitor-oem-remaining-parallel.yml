@@ -1,0 +1,95 @@
+name: Monitor OEM Remaining Parallel Validation
+on:
+  push:
+    branches: [probe/monitor-oem-api-20260926]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Parallel OEM contract probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          cat > /tmp/probe.py <<'PY'
+          import os,re,json,urllib.request,urllib.parse,urllib.error,concurrent.futures
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/136.0.0.0 Safari/537.36"
+          H={"User-Agent":UA,"Accept":"text/html,application/javascript,application/json,*/*","Accept-Language":"en-IN,en;q=0.9"}
+          targets={
+            "acer":"https://store.acer.com/en-in/",
+            "samsung":"https://www.samsung.com/in/monitors/",
+            "benq":"https://www.benq.com/en-in/monitor/gaming/ex271/spec.html",
+            "lg":"https://www.lg.com/in/monitors/ultragear-gaming-oled-monitors/27gx790a-b/",
+            "gigabyte":"https://www.gigabyte.com/Monitor/GS27Q/sp",
+            "aorus":"https://www.aorus.com/Monitors",
+            "aoc":"https://www.aoc.com/in/gaming/monitors/27g4",
+            "msi":"https://www.msi.com/Monitor/MAG-274UPF/Specification"}
+          terms={
+            "acer":["graphql","getSearchFilters","hyvaProductAttribute","xsearchProducts"],
+            "samsung":["productCodes","fields=FULL","techSpecs","pdpURL"],
+            "benq":["queryMixedProduct","queryMixedProductUrl","profileFetchUrl"],
+            "lg":["pdp_items","keyspec","commerce/content"],
+            "gigabyte":["GetOneDataSpecAsync","GetProductTabDataAsync","Consumer/","OneData/"],
+            "aorus":["GetOneDataSpecAsync","GetProductTabDataAsync","Consumer/","OneData/"],
+            "aoc":["screen-size-variants","price-data","productId","/api/asset/pi"],
+            "msi":["storage-asset.msi.com","datasheet","ProductSpec","ajax"]}
+          def get(u,data=None,headers=None):
+            hh=dict(H); hh.update(headers or {})
+            try:
+              req=urllib.request.Request(u,data=data,headers=hh,method="POST" if data else "GET")
+              with urllib.request.urlopen(req,timeout=25) as r:return r.status,r.headers.get("content-type",""),r.read().decode("utf-8","replace")
+            except urllib.error.HTTPError as e:
+              try:b=e.read().decode("utf-8","replace")
+              except:b=""
+              return e.code,e.headers.get("content-type",""),b
+            except Exception as e:return 0,"",str(e)
+          def one(brand):
+            page=targets[brand]; st,ct,html=get(page); scripts=[]
+            for x in re.findall(r'<script[^>]+src=["\']([^"\']+)["\']',html,re.I):
+              u=urllib.parse.urljoin(page,x)
+              if u not in scripts:scripts.append(u)
+            ctx=[]
+            for u in scripts[:35]:
+              s,c,b=get(u)
+              if s==200:
+                lo=b.lower()
+                for t in terms[brand]:
+                  i=lo.find(t.lower())
+                  if i>=0:ctx.append({"script":u,"term":t,"context":b[max(0,i-600):i+2800]})
+            tests=[{"name":"page","url":page,"status":st,"bytes":len(html),"content_type":ct}]
+            if brand=="samsung":
+              u="https://p1-smi-api-cdn.shop.samsung.com/tokocommercewebservices/v2/in/products/search?query=monitor%3Arelevance&pageSize=100&currentPage=0&fields=FULL"
+              s,c,b=get(u); tests.append({"name":"catalog","url":u,"status":s,"bytes":len(b),"sample":b[:5000]})
+            elif brand=="acer":
+              q=json.dumps({"query":"query($search:String){products(search:$search){items{sku name url_key}}}","variables":{"search":"monitor"}}).encode()
+              s,c,b=get("https://store.acer.com/en-in/graphql",q,{"Content-Type":"application/json"})
+              tests.append({"name":"graphql_search","url":"https://store.acer.com/en-in/graphql","status":s,"bytes":len(b),"sample":b[:8000]})
+            elif brand=="lg":
+              u="https://www.lg.com/in/api/commerce/content/pdp_items?"+urllib.parse.urlencode({"locale":"en-IN","sku":"27GX790A-B.ATR.EAIL.IN.C","product_name":"68.58cm (27 inch) OLED Gaming Monitor- 27GX790A-B | LG India","category":"monitors/ultragear-gaming-oled-monitors"})
+              s,c,b=get(u); tests.append({"name":"pdp_items","url":u,"status":s,"bytes":len(b),"sample":b[:8000]})
+            elif brand=="aoc":
+              u="https://www.aoc.com/api/products/screen-size-variants?"+urllib.parse.urlencode({"locale":"en-in","brand":"aoc","productId":"27G4","series":"G4"})
+              s,c,b=get(u); tests.append({"name":"variant","url":u,"status":s,"bytes":len(b),"sample":b[:4000]})
+            elif brand in ("gigabyte","aorus"):
+              for u in ["https://www.gigabyte.com/api/v1.0/OneData/in/GetOneDataSpecAsync?sn=GS27Q&model=GS27Q&sku=GS27Q","https://www.gigabyte.com/api/v1.0/Consumer/in/Consumer/Monitor/GS27Q?type=sp"]:
+                s,c,b=get(u);tests.append({"name":"api_candidate","url":u,"status":s,"bytes":len(b),"sample":b[:3000]})
+            elif brand=="benq":
+              for u in re.findall(r'https://www\.benq\.com/api/magento/[^"\']+',html)[:8]:
+                s,c,b=get(u);tests.append({"name":"embedded_api","url":u,"status":s,"bytes":len(b),"sample":b[:3000]})
+            return {"brand":brand,"page_status":st,"page_bytes":len(html),"scripts":scripts[:40],"contexts":ctx[:80],"tests":tests}
+          brands=list(targets)
+          with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+            rows=list(ex.map(one,brands))
+          for r in rows:open("out/"+r["brand"]+".json","w").write(json.dumps(r,indent=2))
+          print(json.dumps([{"brand":r["brand"],"page_status":r["page_status"],"scripts":len(r["scripts"]),"contexts":len(r["contexts"]),"tests":[(x["name"],x["status"],x["bytes"]) for x in r["tests"]]} for r in rows],indent=2))
+          PY
+          python3 /tmp/probe.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: monitor-oem-remaining-parallel-20260926
+          path: out/*.json
+          retention-days: 14
