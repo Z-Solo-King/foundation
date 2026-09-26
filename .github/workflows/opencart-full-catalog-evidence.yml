@@ -1,0 +1,61 @@
+name: OpenCart Full Catalog Evidence
+on:
+  push:
+    branches: [probe/opencart-feed-full-20260926]
+  workflow_dispatch:
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Capture paginated catalog pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf evidence && mkdir -p evidence
+          UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36'
+          fetch_page() {
+            local name="$1" url="$2" page="$3"
+            curl -L --silent --show-error --max-time 15 --retry 1 -A "$UA" -H 'Accept: text/html,application/xhtml+xml,application/xml,text/xml,*/*' \
+              "$url" -o "evidence/$name"_"$page".html || true
+          }
+          export -f fetch_page
+          seq 1 60 | xargs -P 12 -I{} bash -c 'fetch_page IT_DEPOT "https://www.theitdepot.com/index.php?route=product/search&search=%2525&limit=100&page={}" {}'
+          seq 1 60 | xargs -P 12 -I{} bash -c 'fetch_page NATIONAL_PC "https://nationalpc.in/index.php?route=product/search&search=&limit=100&page={}" {}'
+          seq 1 12 | xargs -P 12 -I{} bash -c 'fetch_page VEDANT "https://www.vedantcomputers.com/index.php?route=product/search&search=%2525&limit=100&page={}" {}'
+          cat > summarize.py <<'PY'
+          import glob,re,json,html,os
+          def parse(path):
+              b=open(path,errors='ignore').read()
+              m=re.search(r'Showing\s+(\d+)\s+to\s+(\d+)\s+of\s+(\d+)',b,re.I)
+              total=int(m.group(3)) if m else None
+              hrefs=[html.unescape(x) for x in re.findall(r"href=[\"']([^\"']+)[\"']",b,re.I)]
+              products=[x for x in hrefs if re.search(r'route=product/product|/product/',x,re.I)]
+              products=list(dict.fromkeys(products))
+              prices=len(re.findall(r'(?:₹|Rs\.?|INR)\s*[0-9][0-9,]*(?:\.\d{1,2})?',b,re.I))
+              stock=len(re.findall(r'in stock|out of stock|available|unavailable|quantity',b,re.I))
+              cf=bool(re.search(r'cloudflare|just a moment|one moment|attention required',b,re.I))
+              m2=re.search(r'_(\d+)\.html$',path)
+              return {'page':int(m2.group(1)),'bytes':len(b),'declared_total':total,'product_links':len(products),'price_hits':prices,'stock_hits':stock,'challenge':cf,'sample_links':products[:5]}
+          out={}
+          for name in ['IT_DEPOT','NATIONAL_PC','VEDANT']:
+              paths=glob.glob('evidence/' + name + '_*.html')
+              rows=[parse(p) for p in paths if os.path.getsize(p)>0]
+              rows.sort(key=lambda x:x['page'])
+              totals=sorted({r['declared_total'] for r in rows if r['declared_total']})
+              complete_total=totals[-1] if totals else None
+              page_count=(complete_total+99)//100 if complete_total else None
+              ok_pages=[r for r in rows if r['bytes'] and not r['challenge']]
+              last=[r for r in rows if page_count and r['page']==page_count]
+              out[name]={'pages_captured':len(rows),'non_challenge_pages':len(ok_pages),'declared_totals':totals,'expected_pages':page_count,'last_page':last[0] if last else None,'first_pages':rows[:3],'sample_last_pages':rows[-3:]}
+          open('full-catalog-evidence.json','w').write(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          PY
+          python3 summarize.py
+          test -s full-catalog-evidence.json
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencart-full-catalog-evidence-20260926
+          path: full-catalog-evidence.json
+          retention-days: 14
