@@ -1,0 +1,62 @@
+name: OpenCart Deep API Discovery
+on:
+  push:
+    branches: [probe/opencart-feed-full-20260926]
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Deep discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          cat > discover.mjs <<'NODE'
+          const https=require('https'); const fs=require('fs'); const {URL}=require('url');
+          const targets={
+            mdcomputers:'https://mdcomputers.in',
+            itdepot:'https://www.theitdepot.com',
+            nationalpc:'https://nationalpc.in',
+            vedant:'https://www.vedantcomputers.com'
+          };
+          const headers={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36','Accept':'text/html,application/xhtml+xml,application/xml,application/json,text/xml,*/*','Accept-Language':'en-IN,en;q=0.9','X-Requested-With':'XMLHttpRequest'};
+          function get(url,timeout=15000){return new Promise(resolve=>{const s=Date.now();let u;try{u=new URL(url)}catch(e){return resolve({url,status:0,error:'bad-url'})};const r=https.get(u,{headers,timeout},res=>{let b='';res.on('data',c=>{b+=c;if(b.length>2000000)res.destroy()});res.on('end',()=>resolve({url,status:res.statusCode||0,ctype:res.headers['content-type']||'',location:res.headers.location||'',body:b,ms:Date.now()-s}))});r.on('timeout',()=>{r.destroy();resolve({url,status:0,error:'timeout',ms:Date.now()-s})});r.on('error',e=>resolve({url,status:0,error:e.code||String(e),ms:Date.now()-s}) )})}
+          function uniq(a){return [...new Set(a)]}
+          function routes(html){
+            const out=[];
+            const pats=[
+              /(?:url|endpoint|route|apiUrl|api_url|searchUrl|search_url)\s*[:=]\s*['"]([^'"]+)['"]/gi,
+              /['"]([^'"]*route=journal3[^'"]*)['"]/gi,
+              /['"]([^'"]*route=extension\/[^'"]*(?:product|feed|search|catalog|module)[^'"]*)['"]/gi,
+              /['"]([^'"]*(?:\/api\/|wp-json|graphql|products\.json|feed[_-]?(?:products|google|merchant)|google[_-]?(?:base|merchant)|merchant)[^'"]*)['"]/gi,
+              /https?:\/\/[^\s"'<>]+/gi
+            ];
+            for(const re of pats){let m;while((m=re.exec(html)))out.push(m[1])}
+            return uniq(out).slice(0,300);
+          }
+          (async()=>{
+            const final={generated_at:new Date().toISOString(),targets:{}};
+            for(const [name,root] of Object.entries(targets)){
+              const pages=['/','/robots.txt','/sitemap.xml','/index.php?route=extension/feed/google_sitemap'];
+              const base={pages:{},scripts:[],discovered:[]};
+              for(const p of pages){const r=await get(root+p);base.pages[p]={status:r.status,ctype:r.ctype,bytes:r.body.length,sample:r.body.slice(0,500),routes:routes(r.body).slice(0,80)}} 
+              const html=(await get(root+'/')).body;
+              const scripts=uniq([...html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)].map(m=>new URL(m[1],root).href));
+              base.scripts=scripts.slice(0,50);
+              for(const s of scripts.slice(0,30)){const r=await get(s,12000);if(r.status===200&&r.body){const rs=routes(r.body);if(rs.length)base.discovered.push({script:s,bytes:r.body.length,routes:rs})}}
+              // product-search pagination behavior
+              const q=name==='mdcomputers'?'%25':''; const limit=100;
+              const sweep=[];
+              for(let page=1;page<=30;page++){let u=root+'/index.php?route=product/search&search='+encodeURIComponent(q)+'&limit='+limit+'&page='+page;const r=await get(u);let low=r.body.toLowerCase();let nums=[...r.body.matchAll(/showing\s+(\d+)\s+to\s+(\d+)\s+of\s+(\d+)/ig)].map(m=>[+m[1],+m[2],+m[3]]);let links=(r.body.match(/route=product\/product|\/product\//gi)||[]).length; if(r.status===200)sweep.push({page,status:r.status,bytes:r.body.length,nums,product_links:links,challenge:/cloudflare|just a moment|one moment/i.test(low)});}
+              base.searchSweep=sweep; final.targets[name]=base;
+            }
+            fs.writeFileSync('out/deep-discovery.json',JSON.stringify(final,null,2));
+          })();
+          NODE
+          node discover.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opencart-deep-discovery-20260926
+          path: out/deep-discovery.json
+          retention-days: 14
