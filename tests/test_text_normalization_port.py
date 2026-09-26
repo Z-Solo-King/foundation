@@ -27,6 +27,7 @@ def test_category_exact_accessory_alias_tag_and_fallback():
     assert normalize_category("Gaming Laptop Bag") == "laptop"
     assert normalize_category("Bluetooth Keyboard") == "keyboard"
     assert normalize_category("keycap") == "keycap"
+    assert normalize_category("clutch pedal") == "controller"
     assert normalize_category("Mystery Gadget") == "mystery gadget"
 
 def test_title_and_token_normalization():
