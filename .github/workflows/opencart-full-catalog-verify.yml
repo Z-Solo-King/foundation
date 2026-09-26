@@ -1,0 +1,56 @@
+name: OpenCart Full Catalog Verify
+on:
+  push:
+    branches: [probe/opencart-feed-full-20260926]
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Verify full catalog routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > verify.cjs <<'NODE'
+          const https=require('https'), fs=require('fs'), {URL}=require('url');
+          const targets=[
+            {name:'itdepot',root:'https://www.theitdepot.com',kind:'search',query:'%25',limit:100,maxPages:60},
+            {name:'nationalpc',root:'https://nationalpc.in',kind:'search',query:'',limit:100,maxPages:60},
+            {name:'vedant',root:'https://www.vedantcomputers.com',kind:'search',query:'%25',limit:100,maxPages:60},
+            {name:'md_in',root:'https://mdcomputers.in',kind:'uf',stock:'in',module:3188,limit:20,maxPages:150},
+            {name:'md_out',root:'https://mdcomputers.in',kind:'uf',stock:'out',module:3188,limit:20,maxPages:500}
+          ];
+          const H={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36','Accept':'text/html,application/xhtml+xml,application/xml,text/xml,*/*','Accept-Language':'en-IN,en;q=0.9'};
+          function get(url,timeout=20000){return new Promise(resolve=>{const t=Date.now();let u;try{u=new URL(url)}catch(e){return resolve({url,status:0,error:'bad-url'})};const req=https.get(u,{headers:H,timeout},res=>{let b='';res.on('data',c=>{b+=c;if(b.length>1500000)req.destroy()});res.on('end',()=>resolve({url,status:res.statusCode||0,ctype:res.headers['content-type']||'',body:b,ms:Date.now()-t}))});req.on('timeout',()=>{req.destroy();resolve({url,status:0,error:'timeout',ms:Date.now()-t})});req.on('error',e=>resolve({url,status:0,error:e.code||String(e),ms:Date.now()-t}))})}
+          function parse(body){const low=body.toLowerCase();const totalMatch=body.match(/showing\s+(\d+)\s+to\s+(\d+)\s+of\s+(\d+)/i);const total=totalMatch?+totalMatch[3]:null;const links=[...body.matchAll(/href=["']([^"']+)["']/gi)].map(m=>m[1]).filter(x=>/product\/product|\/product\//i.test(x)).map(x=>x.replace(/&amp;/g,'&'));const prices=(body.match(/(?:₹|Rs\.?|INR)[\s\d,]+(?:\.\d{1,2})?/gi)||[]);const stockHints=(body.match(/out[- ]of[- ]stock|in stock|available|unavailable|quantity/gi)||[]).length;return {total,product_links:[...new Set(links)],price_hits:prices.length,stock_hints:stockHints,challenge:/cloudflare|just a moment|one moment|attention required/i.test(low)}}
+          async function pool(items,n,fn){const out=new Array(items.length);let next=0;async function w(){while(true){const i=next++;if(i>=items.length)return;out[i]=await fn(items[i])}}await Promise.all(Array.from({length:n},w));return out}
+          async function verify(t){
+            let url;
+            if(t.kind==='search') url=t.root+'/index.php?route=product/search&search='+encodeURIComponent(t.query)+'&limit='+t.limit+'&page=1';
+            else url=t.root+'/?route=extension/ultimate_filters/module/filter&module_id='+t.module+'&sub_category=1&stock_status='+t.stock+'&page=1';
+            const first=await get(url); if(first.status!==200)return {target:t.name,first:{status:first.status,error:first.error},pages:[]};
+            const fp=parse(first.body); let total=fp.total; let pageCount=total?Math.ceil(total/t.limit):t.maxPages;
+            pageCount=Math.min(pageCount,t.maxPages);
+            const pages=Array.from({length:pageCount},(_,i)=>i+1);
+            const res=await pool(pages,10,async page=>{
+              let u;
+              if(t.kind==='search') u=t.root+'/index.php?route=product/search&search='+encodeURIComponent(t.query)+'&limit='+t.limit+'&page='+page;
+              else u=t.root+'/?route=extension/ultimate_filters/module/filter&module_id='+t.module+'&sub_category=1&stock_status='+t.stock+'&page='+page;
+              const r= page===1?first:await get(u);
+              return {page,status:r.status,bytes:r.body?.length||0,...parse(r.body||'')};
+            });
+            const urls=[...new Set(res.flatMap(x=>x.product_links||[]))];
+            const ok=res.filter(x=>x.status===200).length;
+            const nonempty=res.filter(x=>(x.product_links||[]).length>0).length;
+            return {target:t.name,declared_total:total,requested_pages:pageCount,successful_pages:ok,nonempty_pages:nonempty,unique_product_links:urls.length,last_pages:res.slice(-5),first_page:res[0],complete_candidate:!!total&&ok===pageCount&&nonempty>=Math.max(1,pageCount-1)};
+          }
+          (async()=>{const out=[];for(const t of targets)out.push(await verify(t));fs.writeFileSync('out-full-catalog.json',JSON.stringify({generated_at:new Date().toISOString(),results:out},null,2));console.log(JSON.stringify(out,null,2))})()
+          NODE
+          node verify.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: opencart-full-catalog-verify-20260926
+          path: out-full-catalog.json
+          retention-days: 14
