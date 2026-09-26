@@ -38,7 +38,7 @@ jobs:
           set -euo pipefail
           mkdir -p .runtime/family-integrity
           gh api --paginate "repos/Z-Solo-King/foundation/issues?state=open&per_page=100" > /tmp/foundation-open.json
-          gh api --paginate "repos/Z-Solo-King/operations/issues?state=open&per_page=100" > /tmp/operations-open.json
+          GH_TOKEN="${{ steps.operations-app.outputs.token }}" gh api --paginate "repos/Z-Solo-King/operations/issues?state=open&per_page=100" > /tmp/operations-open.json
           python - <<'PY'
           import json
           from pathlib import Path
