@@ -1,467 +1,52 @@
 {
-  "schema_version": "family-sync-state/v1",
+  "schema_version": "family-sync-state/v2",
   "status": "CURRENT",
   "audited_at": "2026-09-26",
+  "public_safe": true,
   "live_main": {
-    "foundation": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
-    "operations": "122a334d85708e2e42db59b74114d1396ca98f31"
+    "foundation": "4999c93dc8b17a5a3926faf3415e725fd4ae7b0e",
+    "operations": "protected"
   },
   "runtime_pins": {
-    "foundation_runtime": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
-    "production_operations": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
-    "nightly_research_operations": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
-    "foundation_deployed": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
-    "deployed_operations_pending": "7015d674036645c6c6a34150bd41874a876dcb35"
+    "foundation_runtime": "4999c93dc8b17a5a3926faf3415e725fd4ae7b0e",
+    "production_operations": "protected"
   },
   "cloudflare": {
-    "control_plane_snapshot": "live_verified_2026-09-26",
-    "fresh_deployment_receipt": true,
-    "workers": [
-      "foundation",
-      "heroic",
-      "operations",
-      "logtech-endpoint-lab",
-      "opencart-feed-probe-20260926",
-      "shopify-feed-probe-20260926"
-    ],
-    "public_worker_tag": "e84124529c014c0ea8c89b6e524e8264",
-    "private_worker_tag": "21801b08ec8c4f55aeddbcfae9ded48b",
-    "d1_database": "research-intelligence",
-    "d1_database_id": "19f51638-47a5-4218-a9dc-73dbfd6156fe",
-    "public_worker": "heroic",
-    "private_worker": "operations",
-    "canonical_public_url": "https://ai-cio.pages.dev",
-    "zone": "heroic-ai.dev",
-    "zone_status": "pending",
-    "activation_failure_reason": "unresolvable",
-    "custom_domain_enabled": true,
-    "deployed_foundation_provenance": "github:ee312632fce5be5da9536194e94f38fa2cdabb6b",
-    "deployed_operations_provenance": "github:566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
     "pages_project": "ai",
-    "pages_subdomain": "ai-cio.pages.dev",
-    "pages_production_deployment_id": "c25b130b-055a-470f-b8f8-bc29a8e62c7e",
-    "pages_backend_binding": "HEROIC_BACKEND -> heroic (production)",
-    "workers_dev_subdomain": "heroic-ai",
-    "backend_worker_url": "https://heroic.heroic-ai.workers.dev",
-    "custom_domain": "heroic-ai.dev",
-    "custom_domain_status": "pending/unresolvable",
-    "heroic_bootstrap": "compatibility proxy -> foundation production",
-    "last_sync": "2026-09-25 R7",
-    "public_front_door": "https://ai-cio.pages.dev",
-    "backend_worker": "heroic",
-    "backend_origin": "https://heroic.heroic-ai.workers.dev",
-    "approved_operations_provenance": "github:7015d674036645c6c6a34150bd41874a876dcb35",
-    "deployed_operations_status": "pending_promotion_to_3e0d",
-    "public_worker_version": 30,
-    "private_worker_version": 90,
-    "public_worker_provenance": "github:ee312632fce5be5da9536194e94f38fa2cdabb6b",
-    "private_worker_provenance": "github:566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
-    "r2_status": "not_enabled_or_unavailable",
-    "legacy_worker": "foundation",
-    "legacy_worker_provenance": "github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c",
-    "pages": [
-      "ai",
-      "heroic",
-      "heroic-ai"
-    ],
-    "kv_namespaces": 0,
-    "queues": 0,
-    "durable_object_namespaces": 0
+    "canonical_public_url": "https://ai-cio.pages.dev",
+    "public_worker": "heroic",
+    "private_worker": "protected",
+    "private_resource_identifiers": "redacted"
   },
   "current_queue": {
-    "open_issue_count": 19,
+    "open_issue_count": 11,
     "foundation": [
       58,
       157,
       1157,
       1247,
       1249,
-      1265,
-      1283,
-      1284
+      1305,
+      1306
     ],
-    "operations": [
-      145,
-      340,
-      385,
-      597,
-      603,
-      699,
-      713,
-      994,
-      997,
-      998,
-      1005
-    ]
+    "operations_count": 4
   },
-  "latest_evidence": {
-    "nightly_research": {
-      "run_id": 36141145555,
-      "state": "blocked_before_execution",
-      "provider_execution": false,
-      "programs": 24,
-      "blocker": "public_worker_http_403",
-      "local_error": "upstream_worker_rejected",
-      "local_http_status": 502,
-      "foundation_revision": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
-      "operations_ref": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3"
-    },
-    "nightly_migration_review": {
-      "run_number": 893,
-      "run_id": 35964787260,
-      "state": "completed",
-      "score_0_to_100": 60,
-      "matrix_cases": 40,
-      "capacity_cases": 24,
-      "language_review_rows": 40,
-      "repeats": 3,
-      "migration_candidates": 875,
-      "source_files": 1371,
-      "evidence_class": "deterministic-structural",
-      "runtime_performance_valid": false,
-      "artifact_id": 10794095266,
-      "diagnosis_artifact_id": 10868805522
-    },
-    "nightly_preflight": {
-      "run_id": 36119501717,
-      "status": "failed",
-      "network_classification": "dns_or_network_unreachable",
-      "http_status": 0,
-      "curl_exit": 6
-    },
-    "nightly_canary": {
-      "run_id": 36030977932,
-      "state": "failed",
-      "blocker": "same_upstream_public_worker_http_403",
-      "local_http_status": 502
-    },
+  "evidence": {
+    "nightly_research": "provider-backed 24-program closure not certified",
     "extractor_benchmark": {
-      "run_number": 448,
-      "run_id": 36141127492,
-      "status": "pass",
-      "artifact_id": 10867020802,
-      "artifact_digest": "sha256:073ad2ba3df5bad3f9536abe95281ec596e109d7293b4bc4d30499e11cb21e62",
       "receipts": 40,
       "ok": 4,
       "empty": 32,
       "blocked": 4,
-      "provenance_completeness": 1,
-      "route_provenance_completeness": 1,
-      "repeat_reliability": 1,
-      "unstable_repeated_groups": 0,
-      "recovery_rate": 1
+      "structural_pass": true,
+      "real_catalog_success_not_proven": true
     },
-    "coverage_matrix": {
-      "run_number": 333,
-      "run_id": 35964770117,
-      "status": "success"
-    },
-    "polyglot_migration_review": {
-      "run_number": 117,
-      "run_id": 35964770331,
-      "status": "success",
-      "artifact_id": 10793627411
-    },
-    "deep_scan": {
-      "run_number": 365,
-      "run_id": 35964770241,
-      "status": "pass",
-      "lanes": 4,
-      "active_issue_count": 8,
-      "historical_issue_count": 1,
-      "cases_per_lane": 9,
-      "artifact_ids": [
-        10794045852,
-        10793791776,
-        10793349400,
-        10792759656,
-        10793054000
-      ],
-      "review_cases_by_lane": {
-        "L1": 1,
-        "L2": 2,
-        "L3": 2,
-        "L4": 0
-      }
-    },
-    "production_release": {
-      "run_id": 36119501519,
-      "status": "failed",
-      "failure": "heroic-ai.dev is not an active Cloudflare zone"
-    },
-    "public_worker_probe": {
-      "run_id": 36119501481,
-      "status": "failed",
-      "blocker": "public-domain-DNS"
-    },
-    "chatbot_smoke": {
-      "run_number": 72,
-      "run_id": 35965101632,
-      "status": "failed",
-      "artifact_id": 10794265185,
-      "failing_check": "diagnostic_infrastructure",
-      "http_status": 400,
-      "other_checks_status": 200,
-      "contract_expected_operation": "infrastructure_verify_public_test",
-      "workflow_sent_operation": "infrastructure_verify"
-    },
-    "centralized_operations_validation": {
-      "run_number": 24,
-      "run_id": 35964996777,
-      "status": "failed",
-      "job_id": 107521507087,
-      "broad_test_contract_failures": true
-    },
-    "cross_repository_audit": {
-      "run_number": 501,
-      "run_id": 35964770238,
-      "status": "pass",
-      "artifact_id": 10793802150
-    },
-    "native_workers_ai_fix": {
-      "operations_ref": "7800e8c693f9f981fa0d78f4814641f9225a0908",
-      "merged": true,
-      "live_release_pending": true
-    },
-    "github_reconciliation": {
-      "checked_at": "2026-09-24",
-      "foundation_main": "2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706",
-      "operations_main": "1fd629cae593959249107ddb8c7af3f55292e9df",
-      "canonical_operations_pin": "fda24660843cacfe28de661cf170789af542d28f",
-      "open_pr_count": 1,
-      "foundation_open_prs": [
-        1137
-      ],
-      "operations_open_prs": [],
-      "runtime_production_foundation": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
-      "latest_code_fix_foundation": "07ef89f3ebbcd84fa3b04fc0cf2d8f4693678f91",
-      "latest_code_fix_operations": "b01bf6160408f41bac2cc2767eabb2539728f055"
-    },
-    "foundation_ci_repairs": {
-      "cycle": "2026-09-24-cycle2",
-      "pr_1129": {
-        "merged": true,
-        "merge_commit": "5ab5eb1c5fc4dc07c7e0a533bbfc402cb766d424",
-        "head": "819b59a5fcee4e0a04dcc9b5d3c6901f1d43b9a7",
-        "checks": [
-          36025685457,
-          36025685437,
-          36025685754
-        ]
-      },
-      "pr_1130": {
-        "merged": true,
-        "merge_commit": "e541ac4d000ed4a0678aa1ef6ebe9faf6c119c0a",
-        "head": "88cee196311905358e7eb47742fc4c6e18272e56",
-        "checks": [
-          36026034798,
-          36026034772,
-          36026034868
-        ]
-      }
-    },
-    "operations_head": {
-      "sha": "5f2c98fbf0bd8694c63b97a62e28b0bacf01923a",
-      "change": "Operations #887 Rust HTML availability contract alignment"
-    },
-    "chatgpt_session_cycle2": {
-      "observed": "bounded parallel diagnosis -> two focused CI repairs -> targeted verification -> checkpoint",
-      "responsive": true,
-      "cloudflare_connector_available": false,
-      "evidence_class": "L3 repository/control-plane",
-      "next_action": "refresh newly changed CI plus remaining evidence gates only"
-    },
-    "current_fixes": {
-      "live_probe_fail_closed": true,
-      "chatbot_requires_model_generation": true,
-      "operations_worker_preflight_endpoint": "/workers/scripts/{script}/settings",
-      "current_operations_main": "0bddf1b8b2741ac277a3751e531a3b9714484ad9"
-    },
-    "repository_audit": {
-      "checked_at": "2026-09-25",
-      "foundation_main": "ec143386e0258d9cb5aeaf13cde95f66814a7c0b",
-      "operations_main": "d4bc9af7ea831c4b768d760d375fe50b2a7f2659",
-      "open_issue_count": 10,
-      "open_pr_count": 0,
-      "notes": "Foundation #154 completed from fresh GitHub Actions evidence; Operations four-lane open-issue scan synchronized to 10 active cases; current Family graph FI-06 excludes the completed issue."
-    },
-    "family_integrity": {
-      "run_id": 36119501613,
-      "status": "success",
-      "last_live_check_run": 60,
-      "last_result": "failed_stale_matrix_after_operations_197_closure",
-      "live_issue_count": 20
-    }
+    "migration_review": "runtime performance evidence still required"
   },
-  "known_findings": [
-    "2026-09-25: Current live state — Foundation cc4b0df5cea2590b2ec73b00be8600bc58d9be61; Operations f12027ca1e0f6ee0484e53c960ffff9242204eba; 10 open issues; 2 Dependabot PRs; 0 implementation PRs.",
-    "2026-09-25: Fresh live-head audit: Foundation main 53cf7651309e05c2ed76470c0f4cf5e4b221dd71; Operations main 2750f73bd0a53b767d9098c4dde80d213fdcfccf; 10 open issues, 0 open PRs.",
-    "2026-09-25: FINAL repository sync after Foundation #1175 merge: Foundation main ec143386e0258d9cb5aeaf13cde95f66814a7c0b, Operations main d4bc9af7ea831c4b768d760d375fe50b2a7f2659; 10 open issues, 0 open PRs.",
-    "2026-09-25: Foundation #154 completed from fresh GitHub Actions six-lane audit evidence; the current open queue is 10 issues: Foundation #58/#1157/#157 and Operations #145/#197/#340/#385/#597/#603/#699.",
-    "2026-09-25: Operations open-issue inventory, surface map, 40-case matrix and scanner are synchronized to the same 10 active issues; cross-lens Foundation #157 is counted as active.",
-    "2026-09-25: Operations main advanced to fd974fe9ce1793fed2d308519051e92d30d6d855 with the synchronized family-state checkpoint; Foundation/Operations live heads are now explicitly re-recorded.",
-    "2026-09-25: Foundation family integration graph merged in #1165; Operations consumer merged in #936; nightly 20-job research packets are now bound to the family graph digest by #1166.",
-    "2026-09-25: Foundation main is 6183a18a8f4373099264b3c193bc91402045d091; Operations main is 06c763aba521b0d7060b22e10ea8f195008a63a3.",
-    "2026-09-25: #1160 was closed as superseded; its useful benchmark/context material is preserved in canonical graph and benchmark documentation.",
-    "2026-09-25: 20 research jobs cover AI agents, orchestration, MCP/tools, CLI agents, testing, memory/context, browser use, inference, benchmarks, Rust/Go/TypeScript/Java/.NET/C++/Zig migration, parallelism, GitHub Actions, research evidence, security and Heroic AI issue-driven research.",
-    "2026-09-24 cycle2: Operations main is now 5f2c98fbf0bd8694c63b97a62e28b0bacf01923a after Rust HTML availability contract alignment (#887).",
-    "Production Cloudflare provenance is aligned with the approved production boundary.",
-    "Nightly #893 is provider-gated before LLM execution because the three authorized research-provider configuration values are absent.",
-    "Capacity-sweep measurements are deterministic structural evidence only.",
-    "Extractor #362 passes the strict evidence-quality gate but only 4 of 40 receipts are substantive ok results.",
-    "Deep scan #365 passes with 8 active issues plus historical #197.",
-    "Smoke #72 remains contract-red because the workflow sends infrastructure_verify while the current contract expects infrastructure_verify_public_test.",
-    "Centralized Operations validation #24 is red with broad test-suite compatibility/contract failures.",
-    "This synchronization changes documentation only.",
-    "2026-09-24 cycle6: the ChatGPT conversation became unresponsive and reached its practical context/length limit; this is recorded as session transport/context evidence, not a backend execution receipt.",
-    "2026-09-24 cycle6: external research across OpenAI Help/Status, OpenAI Community, Reddit, GitHub/Codex, mainstream technical coverage, Zhihu, Baidu Tieba, Douban, PTT and Bilibili found strongest matching signals around long-chat/mobile message-stream or synchronization instability; Chinese-language evidence was sparse/generic.",
-    "2026-09-24 cycle6: closing the Android app is a user-observed correlation only; no universal claim is made about ordinary Chat-mode backend execution after force-close.",
-    "2026-09-24 cycle6: canonical production release 36030977718 passed; nightly research 36030996071 and live canary 36030977932 remain blocked by the upstream public Worker 403/502 boundary."
-  ],
-  "evidence_boundary": {
-    "L0": "hypothesis",
-    "L1": "source inspected",
-    "L2": "repository inspection including callers/tests/ownership",
-    "L3": "current GitHub Actions/control-plane execution",
-    "L4": "approved runtime/production execution"
-  },
-  "sync_rules": {
-    "live_main_refresh_before_mutation": true,
-    "documentation_commits_may_advance_main": true,
-    "production_revision_separate_from_main": true,
-    "cloudflare_runtime_requires_operational_receipt": true,
-    "github_actions_is_foundation_deployment_authority": true,
-    "operations_has_no_current_github_workflows": true,
-    "no_competing_cloudflare_build_or_deploy_authority": true
-  },
-  "nightly_research": {
-    "operations_ref": "44f53283aa308e8a294ae9fe716ab9200a44809b",
-    "last_run_id": 35994287754,
-    "last_run_conclusion": "failure",
-    "blocked_reason": "worker_ai_path_unavailable"
-  },
-  "nightly_preflight": {
-    "run_id": 35994265823,
-    "conclusion": "failure",
-    "worker_ai_path_verified": false
-  },
-  "nightly_canary": {
-    "run_id": 35994265831,
-    "conclusion": "failure",
-    "status": "blocked_before_execution"
-  },
-  "post_merge_validation": {
-    "production_smoke_run_id": 35994616511,
-    "production_smoke_conclusion": "success",
-    "foundation_main": "adb4bd994cd24b17d018e22dc22a5516da65b4c8"
-  },
-  "pending_promotion": {
-    "operations": "7800e8c693f9f981fa0d78f4814641f9225a0908",
-    "status": "pending_live_release",
-    "reason": "native_workers_ai_python_ffi_fix"
-  },
-  "native_workers_ai": {
-    "provider": "cloudflare_workers_ai",
-    "model": "@cf/zai-org/glm-4.7-flash",
-    "strict_zero_cost_only": true,
-    "workers_ai_neurons": 10000,
-    "source": "operations/wrangler.toml at fda24660843cacfe28de661cf170789af542d28f"
-  },
-  "github_sync": {
-    "checked_at": "2026-09-26",
-    "foundation_main": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
-    "operations_main": "122a334d85708e2e42db59b74114d1396ca98f31",
-    "canonical_operations_pin": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
-    "open_pr_count": 12,
-    "cloudflare_runtime_verification": "live_verified",
-    "foundation_open_prs": [
-      1282,
-      1280,
-      1279,
-      1278,
-      1276,
-      1275,
-      1253,
-      1248
-    ],
-    "operations_open_prs": [
-      985,
-      984,
-      983,
-      981
-    ],
-    "deployment_state": "Foundation pin update pending next production release"
-  },
-  "open_pr_reconciliation": {
-    "documentation_pr": 1115,
-    "state": "open_before_merge",
-    "post_merge_open_foundation_prs": [
-      1109
-    ],
-    "post_merge_open_operations_prs": []
-  },
-  "session_boundary": {
-    "cycle": "2026-09-24-cycle7-post-sync",
-    "authoritative_state": "GitHub commits/workflow runs plus Cloudflare control-plane receipts",
-    "next_action": "fresh-chat resume from this checkpoint"
-  },
-  "cloudflare_live_read": {
-    "verified": true,
-    "account_members_http": 200,
-    "workers_list_http": 200,
-    "d1_list_http": 200,
-    "account_role": "Super Administrator - All Privileges",
-    "public_worker": "legacy public Worker",
-    "public_worker_tag": "e84124529c014c0ea8c89b6e524e8264",
-    "private_worker": "legacy private Worker",
-    "private_worker_tag": "21801b08ec8c4f55aeddbcfae9ded48b",
-    "d1_database": "research-intelligence",
-    "d1_database_id": "19f51638-47a5-4218-a9dc-73dbfd6156fe",
-    "fresh_deployment_receipt": false
-  },
-  "current_integration": {
-    "canonical_graph": "docs/FAMILY_INTEGRATION_GRAPH.json",
-    "graph_schema": "family-integration-graph/v1",
-    "graph_blob_sha": "ca1f241d4e330a111ca50f8c00ef53f9f3d9279f",
-    "foundation_family_integration_merge": "bd7f36d550f47506268a1d78d2d69e1be3f54bcc",
-    "nightly_graph_provenance_merge": "6183a18a8f4373099264b3c193bc91402045d091",
-    "operations_consumer_merge": "06c763aba521b0d7060b22e10ea8f195008a63a3",
-    "material_count": 20,
-    "benchmark_probe_count": 11,
-    "operations_sync_state_merge": "fd974fe9ce1793fed2d308519051e92d30d6d855",
-    "foundation_main_at_sync": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
-    "graph_version": "1.1"
-  },
-  "open_pr_count": 12,
-  "foundation_open_prs": [
-    1282,
-    1280,
-    1279,
-    1278,
-    1276,
-    1275,
-    1253,
-    1248
-  ],
-  "operations_open_prs": [
-    985,
-    984,
-    983,
-    981
-  ],
-  "open_implementation_pr_count": 8,
-  "github_current_branch": "main",
   "continuity_enforcement": {
     "schema": "continuity-freshness/v1",
-    "last_canonical_change": "fix/continuity-freshness-gate-20260926",
-    "required_docs": [
-      "docs/CURRENT_SOURCE_OF_TRUTH.md",
-      "docs/FAMILY_SYNC_STATE.json"
-    ],
     "enforced_by": "tools/check_continuity_freshness.py",
-    "workflow": ".github/workflows/cross-repository-contract-drift.yml",
-    "verified_at": "2026-09-26",
-    "verified_head": "425ef4c8ce4c23f90c49ab26d09462b88ffbc7c1",
-    "verification_note": "freshness checker must materialize missing base revision before diff"
-  }
+    "workflow": ".github/workflows/cross-repository-contract-drift.yml"
+  },
+  "privacy_rule": "Do not publish protected worker origins, account/resource identifiers, private revisions, secret values, private issue details, or internal operational state."
 }

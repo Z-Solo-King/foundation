@@ -1,0 +1,32 @@
+{
+  "schema_version": "public-surface-policy/v1",
+  "fail_patterns": [
+    "legacy private Worker identities",
+    "non-canonical custom domain",
+    "private Worker origin",
+    "Cloudflare account identifier",
+    "D1 identifier",
+    "private revision provenance",
+    "private revision configuration"
+  ],
+  "warn_patterns": [
+    "private repository reference",
+    "credential identifier"
+  ],
+  "scanned_documents": [
+    "README.md",
+    "CHATGPT.md",
+    "REPOSITORY_MAP.json",
+    "docs/CURRENT_SOURCE_OF_TRUTH.md",
+    "docs/FAMILY_SYNC_STATE.json",
+    "docs/PROMPT_TO_CANONICAL_DOC_MAP.md",
+    "docs/PUBLIC_SURFACE_POLICY.md",
+    "docs/PUBLIC_SURFACE_POLICY.json"
+  ],
+  "metadata_surfaces": [
+    "pull_request.title",
+    "pull_request.body",
+    "commit.subjects"
+  ],
+  "authority": "Foundation public security boundary; private runtime authority remains in Operations."
+}

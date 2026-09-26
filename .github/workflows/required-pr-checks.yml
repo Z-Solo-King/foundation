@@ -70,6 +70,24 @@ jobs:
         run: python -m pytest -q tests/test_workflow_policy.py
       - name: Public trust-boundary security lint
         run: python scripts/public_security_lint.py --strict
+      - name: Public documentation surface scan
+        run: python tools/public_surface_scan.py --strict
+
+      - name: Public PR metadata security scan
+        if: "${{ github.event_name == 'pull_request' }}"
+        env:
+          PR_EVENT_PATH: "${{ github.event_path }}"
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, subprocess
+          event=json.load(open(os.environ['PR_EVENT_PATH'], encoding='utf-8'))
+          head=event.get('pull_request', {}).get('head', {}).get('sha')
+          commits=subprocess.check_output(['git','log','-n','50','--format=%s',head], text=True).splitlines() if head else []
+          payload={'title':event.get('pull_request',{}).get('title',''),'body':event.get('pull_request',{}).get('body',''),'commits':commits}
+          json.dump(payload, open(os.environ['RUNNER_TEMP'] + '/public-pr-metadata.json','w',encoding='utf-8'))
+          PY
+          python tools/public_surface_scan.py --strict --metadata-file "$RUNNER_TEMP/public-pr-metadata.json"
       - name: Public boundary scan
         shell: bash
         run: |
