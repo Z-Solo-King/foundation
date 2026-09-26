@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-TRACKING_TITLE = "Nightly benchmark findings - automated tracking"
+TRACKING_TITLE = "Nightly benchmark findings — automated tracking"
 TRACKING_LABEL = "benchmark-finding"
 MAX_FINDINGS = 40
 MAX_DETAIL_CHARS = 600

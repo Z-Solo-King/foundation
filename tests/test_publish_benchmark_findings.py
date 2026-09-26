@@ -21,4 +21,5 @@ def test_normal_benchmark_report_has_no_finding():
 
 def test_workflow_reference_exists():
     workflow = Path(".github/workflows/nightly-ai-research-20jobs.yml").read_text(encoding="utf-8")
-    assert "nightly-ai-research-20jobs.yml" in workflow
+    assert "issues: write" in workflow
+    assert "scripts/publish_benchmark_findings.py" in workflow
