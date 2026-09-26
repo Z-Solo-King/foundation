@@ -187,14 +187,19 @@ jobs:
           print(f"extractor import: PASS ({os.path.abspath(engine.__file__)})")
           PY
       - name: Materialize one-target case
+        env:
+          CASE_URL: ${{ matrix.case.url }}
+          CASE_LABEL: ${{ matrix.case.label }}
         run: |
           set -euo pipefail
           mkdir -p benchmark-input benchmark-output
-          cat > benchmark-input/target.json <<'EOF'
-          {
-            "targets": [{"url":"${{ matrix.case.url }}","label":"${{ matrix.case.label }}"}]
-          }
-          EOF
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("benchmark-input/target.json").write_text(json.dumps({
+              "targets": [{"url": os.environ["CASE_URL"], "label": os.environ["CASE_LABEL"]}]
+          }) + "\\n", encoding="utf-8")
+          PY
 
       - name: Determine case execution profile
         id: profile
@@ -251,12 +256,32 @@ jobs:
 
       - name: Emit case manifest
         if: always()
+        env:
+          CASE_NAME: ${{ matrix.case.name }}
+          CASE_LABEL: ${{ matrix.case.label }}
+          CASE_MODE: ${{ matrix.case.mode }}
+          CASE_URL: ${{ matrix.case.url }}
+          CASE_PASS: ${{ matrix.pass }}
+          CASE_WORKERS: ${{ steps.profile.outputs.workers || '1' }}
+          CASE_RETRIES: ${{ steps.profile.outputs.retries || '2' }}
+          OPERATIONS_REF_VALUE: ${{ inputs.operations_ref || '566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3' }}
         run: |
           set -euo pipefail
           mkdir -p benchmark-output
-          cat > benchmark-output/case.json <<EOF
-          {"case":"${{ matrix.case.name }}","label":"${{ matrix.case.label }}","mode":"${{ matrix.case.mode }}","url":"${{ matrix.case.url }}","pass":${{ matrix.pass }},"workers":"${{ steps.profile.outputs.workers || '1' }}","retries":"${{ steps.profile.outputs.retries || '2' }}","operations_ref":"${{ inputs.operations_ref || '566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3' }}"}
-          EOF
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("benchmark-output/case.json").write_text(json.dumps({
+              "case": os.environ["CASE_NAME"],
+              "label": os.environ["CASE_LABEL"],
+              "mode": os.environ["CASE_MODE"],
+              "url": os.environ["CASE_URL"],
+              "pass": int(os.environ["CASE_PASS"]),
+              "workers": os.environ["CASE_WORKERS"],
+              "retries": os.environ["CASE_RETRIES"],
+              "operations_ref": os.environ["OPERATIONS_REF_VALUE"],
+          }) + "\\n", encoding="utf-8")
+          PY
 
       - name: Upload case artifact
         if: always()
