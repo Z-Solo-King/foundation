@@ -86,7 +86,55 @@ async function scan([name,base]){
   }
   await Promise.all(Array.from({length:12},worker));
  }
- if(out.feeds.length===0){out.history=await history(base);let i=0;async function hw(){while(i<out.history.length&&out.feeds.length===0){const u=out.history[i++];try{const r=await get(u);if(r.status===200){const v=validate(r.text,r.ct);out.probes.push({url:u,status:r.status,classification:v.qualifies?"LIVE_VERIFIED":"HISTORICAL_NO_MATCH",...v});if(v.qualifies){const hash=createHash("sha256").update(r.buffer).digest("hex");const file=`out/fast/feeds/${name.toLowerCase().replace(/[^a-z0-9]+/g,"-")}-${hash.slice(0,12)}.xml`;await writeFile(file,r.buffer);out.feeds.push({url:u,finalUrl:r.finalUrl,source:"historical_url_current_live",file,sha256:hash,bytes:r.bytes,...v});}}}catch{}}}await Promise.all([hw(),hw(),hw(),hw(),hw(),hw()]);}
+ if (out.feeds.length === 0) {
+  out.history = await history(base);
+  let hi = 0;
+  async function historyWorker() {
+    while (hi < out.history.length && out.feeds.length === 0) {
+      const u = out.history[hi++];
+      try {
+        const r = await get(u);
+        if (r.status === 200) {
+          const v = validate(r.text, r.ct);
+          out.probes.push({
+            url: u,
+            status: r.status,
+            classification: v.qualifies ? "LIVE_VERIFIED" : "HISTORICAL_NO_MATCH",
+            ...v
+          });
+          if (v.qualifies) {
+            const hash = createHash("sha256").update(r.buffer).digest("hex");
+            const file = `out/fast/feeds/${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${hash.slice(0, 12)}.xml`;
+            await writeFile(file, r.buffer);
+            out.feeds.push({
+              url: u,
+              finalUrl: r.finalUrl,
+              source: "historical_url_current_live",
+              file,
+              sha256: hash,
+              bytes: r.bytes,
+              ...v
+            });
+          }
+        }
+      } catch (e) {
+        out.probes.push({
+          url: u,
+          classification: e?.name === "AbortError" ? "TIMEOUT" : "ERROR",
+          error: e?.name || String(e)
+        });
+      }
+    }
+  }
+  await Promise.all([
+    historyWorker(),
+    historyWorker(),
+    historyWorker(),
+    historyWorker(),
+    historyWorker(),
+    historyWorker()
+  ]);
+ }
  return out;
 }
 const results=[];for(const t of selected){const r=await scan(t);results.push(r);console.log(JSON.stringify({name:r.name,feeds:r.feeds.map(x=>x.url),history:r.history.length,browser:r.browser.observed?.length||0}));}
