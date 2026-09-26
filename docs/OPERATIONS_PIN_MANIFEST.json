@@ -1,19 +1,29 @@
 {
-  "schema_version": "operations-pin-manifest/v1",
-  "repository": "Z-Solo-King/operations",
-  "purpose_scoped_pins": {
+  "schema": "operations-pin-manifest/v1",
+  "generated_at": "2026-09-27",
+  "authority": "single public-safe immutable Operations revision manifest; runtime code remains authoritative",
+  "pins": {
     "production_runtime": {
-      "revision": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
-      "mutable_ref_forbidden": true
+      "sha": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
+      "purpose": "Cloudflare Operations production runtime and Foundation public production release",
+      "status": "production-certified reference"
     },
-    "nightly_research": {
-      "revision": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
-      "mutable_ref_forbidden": true
+    "research_runtime": {
+      "sha": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
+      "purpose": "nightly research executor source checkout",
+      "status": "immutable research reference"
     },
-    "utility_validation": {
-      "revision": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
-      "mutable_ref_forbidden": true
+    "secret_sync_utility": {
+      "sha": "425f7a0149511e20ab80f04ba6e1a66d9043667a",
+      "purpose": "private provider-secret synchronization utility",
+      "path": "tools/sync_provider_secrets.py",
+      "status": "current Operations main snapshot; separately certified before controlled use"
     }
   },
-  "policy": "Every public Foundation workflow/script that consumes an Operations immutable revision must match one of the purpose-scoped revisions above. This file is metadata authority only; it does not authorize deployment by itself."
+  "rules": {
+    "sha_format": "40 lowercase hexadecimal characters",
+    "mutable_refs_forbidden": true,
+    "branch_or_tag_refs_forbidden": true,
+    "purpose_scoped": true
+  }
 }

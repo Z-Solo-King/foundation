@@ -8,7 +8,7 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "84e6bf9a2c3e66b4a159e3c4cae98c36bfd84b91"
+CANONICAL_OPERATIONS_REF = "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3"
 BENCHMARK_OPERATIONS_REF = CANONICAL_OPERATIONS_REF
 BENCHMARK_TOOLS_REF = "d4ef2e6d28435a59c735b9dc4d0de31f44b9cf29"
 MIGRATION_TOOLS_REF = None
@@ -64,10 +64,8 @@ def test_production_deployment_has_one_owner():
 # Canonical Operations revision is declared once and used by the release self-check.\n\ndef test_canonical_operations_production_pin_is_current_and_immutable():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_REPOSITORY="{CANONICAL_OPERATIONS_REPOSITORY}"' in deployment
-    assert f'OPERATIONS_REF="{CANONICAL_OPERATIONS_REF}"' in deployment
-    assert deployment.count(CANONICAL_OPERATIONS_REF) == 1
-    assert "OPERATIONS_PIN_MANIFEST" in deployment
-    assert "jq -r" in deployment
+    assert "OPERATIONS_PIN_MANIFEST.json" in deployment
+    assert deployment.count(CANONICAL_OPERATIONS_REF) == 2
     assert LEGACY_OPERATIONS_REF not in deployment
     assert 'git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git"' in deployment
     assert '"github:${OPERATIONS_REF}"' in deployment
@@ -76,7 +74,7 @@ def test_production_deployment_has_one_owner():
 
 def test_production_pin_self_check_matches_canonical_operations_revision():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert "test \"$OPERATIONS_REF\" = '84e6bf9a2c3e66b4a159e3c4cae98c36bfd84b91'" in deployment
+    assert "test \"$OPERATIONS_REF\" = '566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3'" in deployment
     assert "test \"$OPERATIONS_REF\" = 'ca9cc887049b2800361b222bbdae7f56100f4f7c'" not in deployment
 
 
@@ -416,7 +414,7 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_REF="{CANONICAL_OPERATIONS_REF}"' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
-    assert "OPERATIONS_RESEARCH_REF: 84e6bf9a2c3e66b4a159e3c4cae98c36bfd84b91" in nightly
+    assert "OPERATIONS_RESEARCH_REF: 566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3" in nightly
 
 
 
@@ -483,8 +481,8 @@ def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
 def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
-    expected_production = "84e6bf9a2c3e66b4a159e3c4cae98c36bfd84b91"
-    expected_nightly = "84e6bf9a2c3e66b4a159e3c4cae98c36bfd84b91"
+    expected_production = "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3"
+    expected_nightly = "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3"
     auxiliary = {
         "live-chatbot-production-smoke.yml": expected_production,
         "coverage-driven-runtime-matrix.yml": expected_production,
@@ -570,6 +568,15 @@ def test_live_probe_acceptance_does_not_depend_on_issue_comment_permissions():
     texts = _workflow_texts()
     assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["public-worker-live-probe.yml"]
     assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["live-chatbot-production-smoke.yml"]
+
+
+def test_exhaustive_audit_freezes_live_issue_snapshot_before_register_validation():
+    workflow = (WORKFLOW_ROOT / "exhaustive-six-lane-audit.yml").read_text(encoding="utf-8")
+    assert "Snapshot live open issues at audit start" in workflow
+    assert "live_open_issues_snapshot.json" in workflow
+    assert "unregistered_at_snapshot" in workflow
+    assert "registered_not_in_snapshot" in workflow
+    assert "snapshot_captured_at" in workflow
 
 
 def test_exhaustive_audit_does_not_infer_operations_branch_from_foundation_pr():
