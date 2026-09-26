@@ -653,13 +653,18 @@ else
 fi
 
 
-# Retire the legacy Worker pair only after the renamed pair has passed all live acceptance checks.
-for legacy_worker in "$legacy_public_worker" "$legacy_private_worker"; do
+# Retire the legacy Worker pair only after all live acceptance checks pass.
+# The old public/private pair has reciprocal Service Bindings. Cloudflare refuses a
+# normal delete while another Worker still references the target, so both legacy
+# scripts must be retired with force=true. This is safe only here because the
+# canonical renamed pair has already passed every live acceptance gate and the loop
+# removes both legacy endpoints in one release.
+for legacy_worker in "$legacy_private_worker" "$legacy_public_worker"; do
   if [ "$legacy_worker" != "foundation" ] && [ "$legacy_worker" != "operations" ]; then
     delete_status=$(curl -sS -o "$RUNNER_TEMP/legacy-worker-delete.json" -w '%{http_code}' \
-      -X DELETE -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' \
-      "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/$legacy_worker" || true)
-    echo "DELETE legacy Worker $legacy_worker -> HTTP $delete_status"
+      -X DELETE -H "Authorization: ***" -H 'Content-Type: application/json' \
+      "https://api.cloudflare.com/client/v4/accounts/\${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/$legacy_worker?force=true" || true)
+    echo "DELETE legacy Worker $legacy_worker (force=true) -> HTTP $delete_status"
     if [ "$delete_status" != "200" ] && [ "$delete_status" != "404" ]; then
       jq -c '{success,message,errors}' "$RUNNER_TEMP/legacy-worker-delete.json" 2>/dev/null || true
       exit 1
