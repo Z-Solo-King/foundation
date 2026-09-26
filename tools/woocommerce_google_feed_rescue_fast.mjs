@@ -138,34 +138,40 @@ async function storeRace(base,out) {
 }
 async function reconstruct(base,out,winner) {
   const endpoint=new URL(winner.endpoint), products=[], seen=new Set();
-  let page=1, pageSize=100, stopped=false;
   const seed=Array.isArray(winner.data)?winner.data:[];
+  let page=1, pageSize=100, stopped=false;
+  const add=x=>{for(const p of (Array.isArray(x)?x:[])){const k=String(p?.id??p?.sku??"");if(k&&!seen.has(k)){seen.add(k);products.push(p);}}};
+
+  add(seed);
+  if(seed.length) page=2;
+
   while(!stopped && page<=250 && products.length<20000){
     let data=null, headers=null;
-    const u=new URL(endpoint.href); u.searchParams.set("page",String(page)); u.searchParams.set("per_page",String(pageSize));
+    const u=new URL(endpoint.href);
+    u.searchParams.set("page",String(page)); u.searchParams.set("per_page",String(pageSize));
     u.searchParams.set("orderby","id"); u.searchParams.set("order","asc");
     try{
       const r=await get(u.href,9000);
-      if(r.status===200){ try{data=JSON.parse(r.text);headers=r.headers;}catch{} }
+      if(r.status===200){try{data=JSON.parse(r.text);headers=r.headers;}catch{}}
     }catch{}
     if(!Array.isArray(data)||!data.length){
-      if(page===1 && seed.length){ data=seed; pageSize=3; }
-      else {
-        const fu=new URL(endpoint.href); fu.searchParams.set("page",String(page)); fu.searchParams.set("per_page","3");
-        fu.searchParams.set("orderby","id"); fu.searchParams.set("order","asc");
-        const z=await curlJson(fu.href,12000);
-        if(z){ data=z.data; pageSize=3; }
-      }
+      const fu=new URL(endpoint.href);
+      fu.searchParams.set("page",String(page)); fu.searchParams.set("per_page","3");
+      fu.searchParams.set("orderby","id"); fu.searchParams.set("order","asc");
+      const z=await curlJson(fu.href,12000);
+      if(z){data=z.data;pageSize=3;headers=null;}
     }
     if(!Array.isArray(data)||!data.length) break;
-    for(const p of data){ const k=String(p?.id??p?.sku??""); if(k&&!seen.has(k)){seen.add(k);products.push(p);} }
+    add(data);
     const totalPages=Number(headers?.get?.("x-wp-totalpages"))||0;
     const total=Number(headers?.get?.("x-wp-total"))||0;
     if((totalPages&&page>=totalPages)||(total&&page>=Math.ceil(total/pageSize))||(!totalPages&&!total&&data.length<pageSize)) stopped=true;
     page++;
   }
+
   out.store_api={endpoint:winner.request,pages_fetched:Math.max(0,page-1),total_products:products.length,page_size:pageSize,transport:winner.source||"fetch"};
   if(!products.length) return false;
+
   await writeFile(ROOT+"/raw/"+slug(out.name)+"-store-api.json",JSON.stringify(products));
   const items=products.map(p=>backupItem(p,base)).filter(Boolean);
   const xml=[
