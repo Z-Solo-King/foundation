@@ -106,6 +106,122 @@ async function probeList(urls, out, stopOnFeed=true) {
   };
   await Promise.all(Array.from({length:Math.min(8,urls.length)},worker));
 }
+function xmlEscape(v) {
+  return String(v ?? "")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&apos;");
+}
+
+function stripHtml(v) {
+  return String(v ?? "").replace(/<script[\\s\\S]*?<\\/script>/gi," ")
+    .replace(/<style[\\s\\S]*?<\\/style>/gi," ")
+    .replace(/<[^>]+>/g," ").replace(/\\s+/g," ").trim();
+}
+
+function formatMoney(price) {
+  const p = price || {};
+  const minor = Number.isFinite(Number(p.currency_minor_unit)) ? Number(p.currency_minor_unit) : 2;
+  const n = Number(p.price);
+  if (!Number.isFinite(n)) return "";
+  return `${(n / Math.pow(10, minor)).toFixed(minor)} ${String(p.currency_code || "").toUpperCase()}`.trim();
+}
+
+function storeProductToItem(product, base) {
+  const id = String(product?.sku || product?.id || "").trim();
+  const title = stripHtml(product?.name || "");
+  const link = String(product?.permalink || "");
+  const image = String(product?.images?.[0]?.src || "");
+  const price = formatMoney(product?.prices);
+  const desc = stripHtml(product?.short_description || product?.summary || product?.description || product?.name || "");
+  if (!id || !title || !link || !image || !price) return null;
+  const availability = product?.is_in_stock ? "in stock" : "out of stock";
+  const condition = "new";
+  const itemId = `${new URL(base).hostname}-${id}`.slice(0,50);
+  return [
+    "    <item>",
+    `      <g:id>${xmlEscape(itemId)}</g:id>`,
+    `      <title>${xmlEscape(title.slice(0,150))}</title>`,
+    `      <link>${xmlEscape(link)}</link>`,
+    `      <description>${xmlEscape(desc.slice(0,5000))}</description>`,
+    `      <g:image_link>${xmlEscape(image)}</g:image_link>`,
+    `      <g:price>${xmlEscape(price)}</g:price>`,
+    `      <g:availability>${xmlEscape(availability)}</g:availability>`,
+    `      <g:condition>${condition}</g:condition>`,
+    product?.sku ? `      <g:mpn>${xmlEscape(String(product.sku).slice(0,70))}</g:mpn>` : "",
+    "    </item>"
+  ].filter(Boolean).join("\n");
+}
+
+async function reconstructStoreApi(base, out) {
+  const endpoint = new URL("/wp-json/wc/store/v1/products", base + "/");
+  const products = [];
+  const seen = new Set();
+  let totalPages = null;
+  let page = 1;
+  let failed = null;
+  const MAX_PRODUCTS = 20000;
+  try {
+    while (page <= (totalPages || 1) && products.length < MAX_PRODUCTS) {
+      const url = new URL(endpoint.href);
+      url.searchParams.set("page", String(page));
+      url.searchParams.set("per_page", "100");
+      url.searchParams.set("orderby", "id");
+      url.searchParams.set("order", "asc");
+      const r = await get(url.href);
+      if (r.status !== 200) { failed = {status:r.status,classification:challenge(r.status,r.text)?"BLOCKED_OR_CHALLENGED":r.status===401?"AUTH_REQUIRED":r.status===403?"ACCESS_DENIED":`HTTP_${r.status}`}; break; }
+      let data; try { data = JSON.parse(r.text); } catch { failed = {status:r.status,classification:"INVALID_JSON"}; break; }
+      if (!Array.isArray(data) || !data.length) break;
+      for (const p of data) {
+        const key = String(p?.id ?? p?.sku ?? "");
+        if (key && !seen.has(key)) { seen.add(key); products.push(p); }
+      }
+      totalPages = Number(r.headers?.get?.("x-wp-totalpages")) || Number(totalPages) || Math.ceil((Number(r.headers?.get?.("x-wp-total")) || products.length) / 100);
+      page += 1;
+    }
+  } catch (e) { failed = {classification:e?.name==="AbortError"?"TIMEOUT":"ERROR",error:e?.name||String(e)}; }
+
+  out.store_api = {
+    endpoint: endpoint.href,
+    pages_fetched: Math.max(0,page-1),
+    total_products: products.length,
+    failed,
+    max_products: MAX_PRODUCTS
+  };
+  if (!products.length) return false;
+
+  const items = products.map(p=>storeProductToItem(p,base)).filter(Boolean);
+  const xml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">',
+    '  <channel>',
+    `    <title>${xmlEscape(new URL(base).hostname)} WooCommerce Public Store API Backup</title>`,
+    `    <link>${xmlEscape(base)}</link>`,
+    '    <description>Public WooCommerce Store API snapshot converted to Google Merchant RSS format.</description>',
+    ...items,
+    '  </channel>',
+    '</rss>',
+    ''
+  ].join("\n");
+  const v = validate(xml, "application/rss+xml");
+  out.store_api.valid_items = items.length;
+  out.store_api.skipped_products = products.length - items.length;
+  out.store_api.validation = v;
+  if (!v.qualifies) return false;
+
+  const hash = createHash("sha256").update(xml).digest("hex");
+  const file = `out/fast2/feeds/${slug(out.name)}-store-api-${hash.slice(0,12)}.xml`;
+  await writeFile(file, xml);
+  out.reconstructed_feed = {
+    url: endpoint.href,
+    source: "PUBLIC_WOOCOMMERCE_STORE_API_RECONSTRUCTION",
+    file,
+    sha256: hash,
+    bytes: Buffer.byteLength(xml),
+    ...v
+  };
+  return true;
+}
+
 async function browserDiscover(base,out) {
   let browser;
   try {
@@ -158,7 +274,7 @@ async function historyFallback(base,out) {
   } catch{}
 }
 async function scan([name,base]) {
-  const out={name,base,feed:null,probes:[],browser_hits:[],history_candidates:[],fingerprints:[]};
+  const out={name,base,feed:null,reconstructed_feed:null,store_api:null,probes:[],browser_hits:[],history_candidates:[],fingerprints:[]};
   const [home,rest]=await Promise.all([get(base+"/").catch(e=>({error:e?.name||String(e)})),get(base+"/wp-json/").catch(e=>({error:e?.name||String(e)}))]);
   out.home=home.error?home:{status:home.status,ct:home.ct,bytes:home.bytes,challenge:challenge(home.status,home.text)};
   out.rest=rest.error?rest:{status:rest.status,ct:rest.ct,bytes:rest.bytes};
@@ -179,17 +295,20 @@ async function scan([name,base]) {
   if(!out.feed) {
     await probeList(PLUGIN.map(p=>new URL(p,base+"/").href),out,true);
   }
-  if(!out.feed && home.status===200 && !challenge(home.status,home.text)) {
+  if(!out.feed) {
+    await reconstructStoreApi(base,out);
+  }
+  if(!out.feed && !out.reconstructed_feed && home.status===200 && !challenge(home.status,home.text)) {
     await browserDiscover(base,out);
   }
-  if(!out.feed && out.fingerprints.length) {
+  if(!out.feed && !out.reconstructed_feed && out.fingerprints.length) {
     await historyFallback(base,out);
   }
   return out;
 }
 
 const results = await Promise.all(SELECTED.map(t=>scan(t)));
-const feeds = results.flatMap(r=>r.feed?[{brand:r.name,base:r.base,...r.feed}]:[]);
+const feeds = results.flatMap(r=>r.feed?[{brand:r.name,base:r.base,...r.feed}]:[]);\nconst reconstructed = results.flatMap(r=>r.reconstructed_feed?[{brand:r.name,base:r.base,...r.reconstructed_feed}]:[]);
 await writeFile("out/fast2/summary.json",JSON.stringify({
   generated_at:new Date().toISOString(),targets:SELECTED.length,live_verified_feeds:feeds.length,
   live_verified_sites:new Set(feeds.map(x=>x.brand)).size,
