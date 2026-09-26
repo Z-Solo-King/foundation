@@ -1,0 +1,62 @@
+{
+  "schema": "live-workers-ai-baseline/v2",
+  "observed_at": "2026-09-26T19:03:05Z",
+  "scope": "Cloudflare Workers AI provider-backed model baseline",
+  "controls": {
+    "temperature": 0,
+    "max_tokens": 96,
+    "thinking": false,
+    "repeats": 2,
+    "fixed_seeds": true
+  },
+  "total_calls": 16,
+  "successful_http_200": 16,
+  "usable_text": 16,
+  "prompts": [
+    "ownership split",
+    "3 lanes x 8 programs",
+    "source tests vs production certification",
+    "fail-closed zero-cost policy"
+  ],
+  "models": [
+    {
+      "name": "@cf/zai-org/glm-4.7-flash",
+      "calls": 8,
+      "http_200": 8,
+      "usable_text": 8,
+      "mean_latency_ms": 1795.5,
+      "total_neurons": 12.9118
+    },
+    {
+      "name": "@cf/google/gemma-4-26b-a4b-it",
+      "calls": 8,
+      "http_200": 8,
+      "usable_text": 8,
+      "mean_latency_ms": 1742.5,
+      "total_neurons": 11.2182
+    }
+  ],
+  "thinking_off_control_probe": {
+    "glm": {
+      "status": 200,
+      "latency_ms": 375,
+      "completion_tokens": 2,
+      "neurons": 0.1388,
+      "usable_text": true
+    },
+    "gemma": {
+      "status": 200,
+      "latency_ms": 511,
+      "completion_tokens": 2,
+      "neurons": 0.2363636196,
+      "usable_text": true
+    }
+  },
+  "evidence_class": "live provider integration/model-generation",
+  "limitations": [
+    "Not a production-certification receipt.",
+    "No semantic grader was applied to free-form answers.",
+    "Executed directly against Cloudflare control-plane AI API, not through public Pages.",
+    "Model thinking was explicitly disabled after direct probe showed bounded output could be consumed by reasoning tokens."
+  ]
+}
