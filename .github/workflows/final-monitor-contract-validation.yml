@@ -1,0 +1,158 @@
+name: Monitor OEM Final Contract Validation
+on:
+  push:
+    branches:
+      - probe/monitor-oem-api-20260926
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Validate ROG Acer Dell LG AOC
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          cat > validate.py <<'PY'
+          import urllib.request, urllib.parse, json, re, os, time
+
+          H={
+            "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/136 Safari/537.36",
+            "Accept":"application/json,text/html,application/xml,text/xml,*/*",
+            "Accept-Language":"en-IN,en;q=0.9",
+            "X-Requested-With":"XMLHttpRequest",
+          }
+
+          def get(u,headers=None,timeout=18):
+            hh=dict(H); hh.update(headers or {})
+            try:
+              r=urllib.request.urlopen(urllib.request.Request(u,headers=hh),timeout=timeout)
+              b=r.read(12000000).decode("utf-8","replace")
+              return {"status":r.status,"ctype":r.headers.get("content-type",""),"bytes":len(b),"body":b}
+            except Exception as e:
+              return {"status":0,"ctype":"","bytes":0,"body":"","error":type(e).__name__+":"+str(e)}
+
+          def post_json(u,obj,headers=None,timeout=20):
+            hh=dict(H); hh.update({"Content-Type":"application/json"}); hh.update(headers or {})
+            try:
+              raw=json.dumps(obj).encode()
+              r=urllib.request.urlopen(urllib.request.Request(u,data=raw,headers=hh,method="POST"),timeout=timeout)
+              b=r.read(12000000).decode("utf-8","replace")
+              return {"status":r.status,"ctype":r.headers.get("content-type",""),"bytes":len(b),"body":b}
+            except Exception as e:
+              return {"status":0,"ctype":"","bytes":0,"body":"","error":type(e).__name__+":"+str(e)}
+
+          def jd(b):
+            try:return json.loads(b)
+            except:return None
+
+          out={}
+
+          # ROG: correct category=0 then detail/spec with returned m1Id/PartNo
+          ru="https://api-rog.asus.com/recent-data/search-api/v1/ResultV1/in/Product/100/1/0/1?SearchKey=monitor&systemCode=rog"
+          rr=get(ru); rj=jd(rr["body"]) or {}; ro=((rj.get("result") or {}).get("obj") or [])
+          rout={"search_status":rr["status"],"count":(rj.get("result") or {}).get("count"),"objects":len(ro),"first":ro[:3],"details":[]}
+          for p in ro[:3]:
+            m1=p.get("m1Id") or p.get("productId") or p.get("id") or ""
+            part=p.get("partNo") or ""
+            for typ,path,params in [
+              ("v5_spec","recent-data/api/v5/Product/Spec",{"m1Id":m1,"WebsiteCode":"in"}),
+              ("v5_model_spec","recent-data/api/v5/Product/ModelSpec",{"m1Id":m1,"WebsiteCode":"in"}),
+              ("v4_common_spec","recent-data/api/v4/Common/Spec",{"WebsiteCode":"in","PartNo":part}),
+              ("v4_info","recent-data/api/v4/Product/Info",{"m1Id":m1,"WebsiteCode":"in"}),
+              ("v4_tabs","recent-data/api/v4/Product/Tabs",{"m1Id":m1,"WebsiteCode":"in"}),
+            ]:
+              u="https://api-rog.asus.com/"+path+"?"+urllib.parse.urlencode(params)
+              x=get(u)
+              rout["details"].append({"type":typ,"params":params,"status":x["status"],"ctype":x["ctype"],"bytes":x["bytes"],"sample":x["body"][:10000]})
+          out["rog"]=rout
+
+          # Acer GraphQL schema + multiple product query shapes
+          ag="https://store.acer.com/en-in/graphql"
+          schema=post_json(ag,{"query":"{ __type(name:\"ProductAttributeFilterInput\") { inputFields { name type { kind name ofType { kind name } } } } __type(name:\"Products\") { fields { name } } }"})
+          aq=[
+            'query { products(pageSize:10,currentPage:1) { total_count items { sku name url_key stock_status } } }',
+            'query { products(search:"monitor",pageSize:10,currentPage:1) { total_count items { sku name url_key stock_status } } }',
+          ]
+          aout={"schema":{"status":schema["status"],"sample":schema["body"][:16000]},"queries":[]}
+          for q in aq:
+            x=post_json(ag,{"query":q})
+            aout["queries"].append({"query":q,"status":x["status"],"sample":x["body"][:16000]})
+          out["acer"]=aout
+
+          # Dell Magento REST: broad pages + monitor name client filter + direct SKU detail
+          db=[]
+          for page in [1,2,3]:
+            u="https://www.dellstore.com/rest/V1/products?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D="+str(page)
+            x=get(u)
+            j=jd(x["body"]) or {}; items=j.get("items") or []
+            mon=[p for p in items if "monitor" in str(p.get("name","")).lower()]
+            db.append({"page":page,"status":x["status"],"total_count":j.get("total_count"),"items":len(items),"monitor_items":len(mon),"sample":mon[:3]})
+          # direct stock status and product detail for one actual monitor-like SKU
+          dx=get("https://www.dellstore.com/rest/V1/products?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1")
+          dj=jd(dx["body"]) or {}; ditems=dj.get("items") or []
+          dmon=next((p for p in ditems if "monitor" in str(p.get("name","")).lower()),None)
+          dres={"pages":db,"detail":None}
+          if dmon:
+            sku=dmon.get("sku")
+            px=get("https://www.dellstore.com/rest/V1/products/"+urllib.parse.quote(str(sku),safe=""))
+            sx=get("https://www.dellstore.com/rest/V1/stockStatuses/"+urllib.parse.quote(str(sku),safe=""))
+            dres["detail"]={"sku":sku,"product":{"status":px["status"],"bytes":px["bytes"],"sample":px["body"][:12000]},"stock":{"status":sx["status"],"bytes":sx["bytes"],"sample":sx["body"][:4000]}}
+          out["dell"]=dres
+
+          # LG: actual SKU/name from JSON-LD, multiple category forms
+          lp="https://www.lg.com/in/monitors/ultragear-gaming-oled-monitors/27gx790a-b/"
+          lx=get(lp); lb=lx["body"]
+          lsku=""
+          names=[]
+          for m in re.finditer(r'"sku"\s*:\s*"([^"]+)"',lb,re.I): names.append(m.group(1))
+          if names: lsku=names[0]
+          pname=""
+          for m in re.finditer(r'"name"\s*:\s*"([^"]{10,200})"',lb,re.I):
+            if "LG" in m.group(1): pname=m.group(1); break
+          if not lsku: lsku="27GX790A-B"
+          if not pname: pname="LG 27GX790A-B"
+          lout={"page":{"status":lx["status"],"bytes":lx["bytes"]},"sku":lsku,"name":pname,"tests":[]}
+          cats=["monitors","monitor","monitors/ultragear","ultragear","monitors/ultragear-gaming-oled-monitors","monitors/ultragear-gaming-oled-monitors/"+lsku.lower()]
+          for cat in cats:
+            params={"locale":"in","sku":lsku,"product_name":pname,"category":cat}
+            u="https://www.lg.com/api/commerce/content/pdp_items?"+urllib.parse.urlencode(params)
+            x=get(u,{"Referer":lp,"Origin":"https://www.lg.com"})
+            lout["tests"].append({"category":cat,"url":u,"status":x["status"],"ctype":x["ctype"],"bytes":x["bytes"],"keyspec":"keyspec" in x["body"].lower(),"sample":x["body"][:9000]})
+          out["lg"]=lout
+
+          # AOC: derive embedded identifiers then test variants API exactly
+          ap="https://www.aoc.com/in/gaming/monitors/27g4"
+          ax=get(ap); ab=ax["body"]
+          ids={}
+          for key in ["productId","series","brand","locale"]:
+            vals=re.findall(r'"'+key+r'"\s*:\s*"([^"]+)"',ab,re.I)+re.findall(r"'"+key+r"'\s*:\s*'([^']+)'",ab,re.I)
+            ids[key]=list(dict.fromkeys(vals))[:15]
+          aco={"page":{"status":ax["status"],"bytes":ax["bytes"]},"ids":ids,"tests":[]}
+          locales=ids["locale"] or ["in","en-in","en"]
+          brands=ids["brand"] or ["AOC","aoc"]
+          products=ids["productId"] or ["27G4","27g4"]
+          series=ids["series"] or ["27G4","G4","Gaming"]
+          for lo in locales[:3]:
+            for br in brands[:2]:
+              for pid in products[:3]:
+                for ser in series[:3]:
+                  q=urllib.parse.urlencode({"locale":lo,"brand":br,"productId":pid,"series":ser})
+                  u="https://www.aoc.com/api/products/screen-size-variants?"+q
+                  x=get(u)
+                  if x["status"]!=404 or x["bytes"]>0:
+                    aco["tests"].append({"params":{"locale":lo,"brand":br,"productId":pid,"series":ser},"url":u,"status":x["status"],"ctype":x["ctype"],"bytes":x["bytes"],"sample":x["body"][:7000]})
+          out["aoc"]=aco
+
+          os.makedirs("out",exist_ok=True)
+          open("out/final-monitor-contract-validation.json","w").write(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2,default=str)[:120000])
+          PY
+          python3 validate.py
+          test -s out/final-monitor-contract-validation.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: final-monitor-contract-validation-20260926
+          path: out/final-monitor-contract-validation.json
+          retention-days: 14
