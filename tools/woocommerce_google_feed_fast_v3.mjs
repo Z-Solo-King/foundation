@@ -163,12 +163,14 @@ async function scan([name,base]) {
   out.home=home.error?home:{status:home.status,ct:home.ct,bytes:home.bytes,challenge:challenge(home.status,home.text)};
   out.rest=rest.error?rest:{status:rest.status,ct:rest.ct,bytes:rest.bytes};
   const fingerprintText=(home.text||"")+"\\n"+(rest.text||"");
-  for(const p of ["woocommerce google product feed","product feed pro","adtribes","feedcraft","codesolz","wppfm","merchant feed booster","google listings & ads"]) if(new RegExp(p,"i").test(fingerprintText)) out.fingerprints.push(p);
+  for(const p of ["woocommerce google product feed","product feed pro","product-feed-pro","woo-product-feed-pro","adtribes","feedcraft","codesolz","wppfm","merchant feed booster","google listings & ads"]) if(new RegExp(p,"i").test(fingerprintText)) out.fingerprints.push(p);
   const derived=[];
   for(const body of [home.text||"",rest.text||""]) {
     for(const m of String(body).matchAll(/(?:(?:https?:)?\/\/|\/)[^"'<>\\s]+/g)) {
-      const u=m[0].startsWith("/")?new URL(m[0],base+"/").href:m[0];
-      if(sameOrigin(u,base) && /(google|merchant|shopping|feed|product|wppfm|woo-feed|codesolz|feedcraft)/i.test(u)) derived.push(u);
+      if (m[0].length < 3) continue;
+      let u = "";
+      try { u = m[0].startsWith("/") ? new URL(m[0], base + "/").href : m[0]; } catch { continue; }
+      if (sameOrigin(u,base) && /(google|merchant|shopping|feed|product|wppfm|woo-feed|codesolz|feedcraft|pgbf-pro)/i.test(u)) derived.push(u);
     }
   }
   const primary=PRIMARY.map(p=>new URL(p,base+"/").href);
