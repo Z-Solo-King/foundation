@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from hashlib import sha256
 from typing import Literal
 
 from foundation_core.normalization import canonical_url
+from foundation_core.stage_receipt import fingerprint as canonical_fingerprint
 
 ResultKind = Literal["useful", "duplicate", "blocked", "irrelevant", "stale", "contradictory", "failed"]
 
@@ -42,8 +42,13 @@ class EvidenceRecord:
 
     @property
     def fingerprint(self) -> str:
-        payload = "|".join((self.entity, self.claim.strip().casefold(), self.source_url, self.revision or "", self.region or ""))
-        return sha256(payload.encode("utf-8")).hexdigest()
+        return canonical_fingerprint({
+            "entity": self.entity,
+            "claim": self.claim.strip().casefold(),
+            "source_url": self.source_url,
+            "revision": self.revision or "",
+            "region": self.region or "",
+        })
 
 
 class EvidenceKnowledgeStore:
