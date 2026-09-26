@@ -81,6 +81,7 @@ BRAND_ALIASES: Dict[str, str] = {
     "fiio": "fiio",
 }
 KNOWN_CANONICAL_BRANDS = frozenset(BRAND_ALIASES.values())
+_BUILTIN_INT = int
 
 CATEGORY_ALIASES: Dict[str, str] = {
     "graphics card": "gpu",
@@ -347,7 +348,7 @@ def _normalize_gtin_cached(raw: str, strict: bool = True) -> str:
     total = 0
     try:
         for idx, ch in enumerate(reversed(canonical)):
-            total += int(ch) * (3 if idx % 2 == 1 else 1)
+            total += _BUILTIN_INT(ch) * (3 if idx % 2 == 1 else 1)
     except ValueError:
         return ""
     if total % 10 == 0:
