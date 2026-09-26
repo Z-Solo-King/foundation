@@ -69,7 +69,7 @@
     "durable_object_namespaces": 0
   },
   "current_queue": {
-    "open_issue_count": 20,
+    "open_issue_count": 19,
     "foundation": [
       58,
       157,
@@ -77,7 +77,6 @@
       1247,
       1249,
       1265,
-      1281,
       1283,
       1284
     ],

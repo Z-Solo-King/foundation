@@ -21,8 +21,7 @@ def test_open_issue_acceptance_matrix_is_current_and_complete() -> None:
         ("foundation", 1247),
         ("foundation", 1249),
         ("foundation", 1265),
-        ("foundation", 1281),
-        ("foundation", 1283),
+                ("foundation", 1283),
         ("foundation", 1284),
         ("operations", 145),
                 ("operations", 340),
@@ -37,7 +36,7 @@ def test_open_issue_acceptance_matrix_is_current_and_complete() -> None:
         ("operations", 1005),
     }
     assert matrix["graph_reference"]["schema"] == "family-integration-graph/v1"
-    assert matrix["graph_reference"]["materials"] == 20
+    assert matrix["graph_reference"]["materials"] == 19
     assert matrix["graph_reference"]["probes"] == 11
 
 
