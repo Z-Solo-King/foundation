@@ -1,0 +1,115 @@
+name: WooCommerce Missing Feed Recovery V4
+
+on:
+  push:
+    branches:
+      - "ai/woocommerce-google-feed-audit-20260926"
+  workflow_dispatch:
+
+concurrency:
+  group: wc-google-feed-missing-v4
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lane-a:
+    name: Missing V4 A (4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env: { TARGET_START: "0", TARGET_COUNT: "4" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Syntax check
+        run: node --check tools/woocommerce_google_feed_missing_recovery_v4.mjs
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Recover missing feeds
+        run: node tools/woocommerce_google_feed_missing_recovery_v4.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-missing-v4-a
+          path: out/fast2/
+          if-no-files-found: warn
+          retention-days: 30
+
+  lane-b:
+    name: Missing V4 B (4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env: { TARGET_START: "4", TARGET_COUNT: "4" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Syntax check
+        run: node --check tools/woocommerce_google_feed_missing_recovery_v4.mjs
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Recover missing feeds
+        run: node tools/woocommerce_google_feed_missing_recovery_v4.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-missing-v4-b
+          path: out/fast2/
+          if-no-files-found: warn
+          retention-days: 30
+
+  lane-c:
+    name: Missing V4 C (3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env: { TARGET_START: "8", TARGET_COUNT: "3" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Syntax check
+        run: node --check tools/woocommerce_google_feed_missing_recovery_v4.mjs
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Recover missing feeds
+        run: node tools/woocommerce_google_feed_missing_recovery_v4.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-missing-v4-c
+          path: out/fast2/
+          if-no-files-found: warn
+          retention-days: 30
+
+  lane-d:
+    name: Missing V4 D (3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env: { TARGET_START: "11", TARGET_COUNT: "3" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Syntax check
+        run: node --check tools/woocommerce_google_feed_missing_recovery_v4.mjs
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Recover missing feeds
+        run: node tools/woocommerce_google_feed_missing_recovery_v4.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-missing-v4-d
+          path: out/fast2/
+          if-no-files-found: warn
+          retention-days: 30
