@@ -151,40 +151,69 @@ function storeProductToItem(product, base) {
 }
 
 async function reconstructStoreApi(base, out) {
-  const endpoint = new URL("/wp-json/wc/store/v1/products", base + "/");
+  const candidates = [
+    new URL("/wp-json/wc/store/v1/products", base + "/"),
+    new URL("/wp-json/wc/store/v1/products/", base + "/"),
+    new URL("/?rest_route=/wc/store/v1/products", base + "/"),
+    new URL("/index.php?rest_route=/wc/store/v1/products", base + "/")
+  ];
   const products = [];
   const seen = new Set();
-  let totalPages = null;
-  let page = 1;
-  let failed = null;
+  let chosen = null;
+  let failed = [];
   const MAX_PRODUCTS = 20000;
+  const PAGE_SIZE = 100;
+
+  async function fetchPage(endpoint, page) {
+    const url = new URL(endpoint.href);
+    url.searchParams.set("page", String(page));
+    url.searchParams.set("per_page", String(PAGE_SIZE));
+    url.searchParams.set("orderby", "id");
+    url.searchParams.set("order", "asc");
+    return get(url.href);
+  }
+
   try {
-    while (page <= (totalPages || 1) && products.length < MAX_PRODUCTS) {
-      const url = new URL(endpoint.href);
-      url.searchParams.set("page", String(page));
-      url.searchParams.set("per_page", "100");
-      url.searchParams.set("orderby", "id");
-      url.searchParams.set("order", "asc");
-      const r = await get(url.href);
-      if (r.status !== 200) { failed = {status:r.status,classification:challenge(r.status,r.text)?"BLOCKED_OR_CHALLENGED":r.status===401?"AUTH_REQUIRED":r.status===403?"ACCESS_DENIED":`HTTP_${r.status}`}; break; }
-      let data; try { data = JSON.parse(r.text); } catch { failed = {status:r.status,classification:"INVALID_JSON"}; break; }
-      if (!Array.isArray(data) || !data.length) break;
-      for (const p of data) {
-        const key = String(p?.id ?? p?.sku ?? "");
-        if (key && !seen.has(key)) { seen.add(key); products.push(p); }
+    for (const endpoint of candidates) {
+      let page = 1;
+      let endpointProducts = [];
+      let endpointFailed = null;
+      while (page <= 250 && endpointProducts.length < MAX_PRODUCTS) {
+        const r = await fetchPage(endpoint, page);
+        if (r.status !== 200) {
+          endpointFailed = {status:r.status,classification:challenge(r.status,r.text)?"BLOCKED_OR_CHALLENGED":r.status===401?"AUTH_REQUIRED":r.status===403?"ACCESS_DENIED":r.status===429?"RATE_LIMITED":`HTTP_${r.status}`};
+          break;
+        }
+        let data;
+        try { data = JSON.parse(r.text); }
+        catch { endpointFailed = {status:r.status,classification:"INVALID_JSON"}; break; }
+        if (!Array.isArray(data) || !data.length) break;
+        endpointProducts.push(...data);
+        const totalPages = Number(r.headers?.get?.("x-wp-totalpages")) || 0;
+        const total = Number(r.headers?.get?.("x-wp-total")) || 0;
+        if (totalPages && page >= totalPages) break;
+        if (!totalPages && total && page >= Math.ceil(total/PAGE_SIZE)) break;
+        if (!totalPages && !total && data.length < PAGE_SIZE) break;
+        page += 1;
       }
-      const headerPages = Number(r.headers?.get?.("x-wp-totalpages")) || 0;
-      const headerTotal = Number(r.headers?.get?.("x-wp-total")) || 0;
-      if (headerPages) totalPages = Math.max(totalPages || 0, headerPages);
-      else if (headerTotal) totalPages = Math.max(totalPages || 0, Math.ceil(headerTotal / 100));
-      if (data.length < 100 && !headerPages && !headerTotal) totalPages = page;
-      page += 1;
+      if (endpointProducts.length) {
+        chosen = endpoint.href;
+        for (const p of endpointProducts) {
+          const key = String(p?.id ?? p?.sku ?? "");
+          if (key && !seen.has(key)) { seen.add(key); products.push(p); }
+        }
+        break;
+      }
+      failed.push({endpoint:endpoint.href,error:endpointFailed||{classification:"EMPTY"}});
     }
-  } catch (e) { failed = {classification:e?.name==="AbortError"?"TIMEOUT":"ERROR",error:e?.name||String(e)}; }
+  } catch (e) {
+    failed.push({classification:e?.name==="AbortError"?"TIMEOUT":"ERROR",error:e?.name||String(e)});
+  }
 
   out.store_api = {
-    endpoint: endpoint.href,
-    pages_fetched: Math.max(0,page-1),
+    endpoint: chosen,
+    candidates: candidates.map(x=>x.href),
+    pages_fetched: chosen ? Math.ceil(products.length/PAGE_SIZE) : 0,
     total_products: products.length,
     failed,
     max_products: MAX_PRODUCTS
@@ -214,7 +243,7 @@ async function reconstructStoreApi(base, out) {
   const file = `out/fast2/feeds/${slug(out.name)}-store-api-${hash.slice(0,12)}.xml`;
   await writeFile(file, xml);
   out.reconstructed_feed = {
-    url: endpoint.href,
+    url: chosen,
     source: "PUBLIC_WOOCOMMERCE_STORE_API_RECONSTRUCTION",
     file,
     sha256: hash,
