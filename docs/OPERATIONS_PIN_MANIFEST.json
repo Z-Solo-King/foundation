@@ -14,10 +14,10 @@
       "status": "immutable research reference"
     },
     "secret_sync_utility": {
-      "sha": "425f7a0149511e20ab80f04ba6e1a66d9043667a",
+      "sha": "29bb556e9505a7e2c640f5c09e62574c917b65a3",
       "purpose": "private provider-secret synchronization utility",
       "path": "tools/sync_provider_secrets.py",
-      "status": "current Operations main snapshot; separately certified before controlled use"
+      "status": "immutable utility revision; separately certified before controlled use"
     }
   },
   "rules": {
