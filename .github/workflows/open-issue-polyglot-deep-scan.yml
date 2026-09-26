@@ -30,7 +30,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: foundation-open-issue-polyglot-deep-scan
+  group: foundation-open-issue-polyglot-deep-scan-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
