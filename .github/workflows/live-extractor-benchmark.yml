@@ -8,7 +8,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to benchmark
         required: false
-        default: 01db4ef843a0d07b5eab11d2776863abe79301e5
+        default: 37860fcee213c26fbb4025d7b4829a2b31ef712a
         type: string
       benchmark_tools_ref:
         description: Exact Operations revision containing benchmark producer/evaluator tooling
@@ -76,7 +76,7 @@ jobs:
             url: https://webscraper.io/test-sites/e-commerce/dynamic/computers/laptops
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || '01db4ef843a0d07b5eab11d2776863abe79301e5' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || '37860fcee213c26fbb4025d7b4829a2b31ef712a' }}
       BENCHMARK_TOOLS_REF: ${{ inputs.benchmark_tools_ref || 'd4ef2e6d28435a59c735b9dc4d0de31f44b9cf29' }}
       PYTHONUNBUFFERED: "1"
     steps:
@@ -255,7 +255,7 @@ jobs:
           set -euo pipefail
           mkdir -p benchmark-output
           cat > benchmark-output/case.json <<EOF
-          {"case":"${{ matrix.case.name }}","label":"${{ matrix.case.label }}","mode":"${{ matrix.case.mode }}","url":"${{ matrix.case.url }}","pass":${{ matrix.pass }},"workers":"${{ steps.profile.outputs.workers || '1' }}","retries":"${{ steps.profile.outputs.retries || '2' }}","operations_ref":"${{ inputs.operations_ref || '01db4ef843a0d07b5eab11d2776863abe79301e5' }}"}
+          {"case":"${{ matrix.case.name }}","label":"${{ matrix.case.label }}","mode":"${{ matrix.case.mode }}","url":"${{ matrix.case.url }}","pass":${{ matrix.pass }},"workers":"${{ steps.profile.outputs.workers || '1' }}","retries":"${{ steps.profile.outputs.retries || '2' }}","operations_ref":"${{ inputs.operations_ref || '37860fcee213c26fbb4025d7b4829a2b31ef712a' }}"}
           EOF
 
       - name: Upload case artifact
@@ -288,7 +288,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '01db4ef843a0d07b5eab11d2776863abe79301e5' }}
+          ref: ${{ inputs.operations_ref || '37860fcee213c26fbb4025d7b4829a2b31ef712a' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 

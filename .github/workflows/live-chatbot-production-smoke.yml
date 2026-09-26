@@ -16,7 +16,7 @@ concurrency:
 
 env:
   PUBLIC_WORKER_URL: https://ai-cio.pages.dev
-  OPERATIONS_REF: 01db4ef843a0d07b5eab11d2776863abe79301e5
+  OPERATIONS_REF: 37860fcee213c26fbb4025d7b4829a2b31ef712a
 
 jobs:
   smoke:

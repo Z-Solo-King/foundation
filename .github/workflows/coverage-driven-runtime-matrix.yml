@@ -13,7 +13,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to test
         required: false
-        default: 01db4ef843a0d07b5eab11d2776863abe79301e5
+        default: 37860fcee213c26fbb4025d7b4829a2b31ef712a
         type: string
       validation_tools_ref:
         description: Exact Operations revision containing validation tests
@@ -104,7 +104,7 @@ jobs:
             tests: "tests/test_workflow_policy.py tests/test_cross_module_contract_edges.py tests/test_family_audit.py tests/test_family_semantic_audit.py"
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || '01db4ef843a0d07b5eab11d2776863abe79301e5' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || '37860fcee213c26fbb4025d7b4829a2b31ef712a' }}
       VALIDATION_TOOLS_REF: ${{ inputs.validation_tools_ref || '92eb7a850dff11a10886a952d5db8a42dae2b318' }}
       PYTHONUNBUFFERED: "1"
     steps:
