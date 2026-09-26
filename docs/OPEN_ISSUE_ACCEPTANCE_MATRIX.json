@@ -1,11 +1,11 @@
 {
   "schema": "family-issue-acceptance-matrix/v1",
-  "audited_at": "2026-09-25",
+  "audited_at": "2026-09-26",
   "repository_heads": {
-    "foundation": "f248e83cf22e3359f57bbea190aaf150249ba2f6",
-    "operations": "d89e119722f3017cedf0cc175ba55871a65846ed"
+    "foundation": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
+    "operations": "122a334d85708e2e42db59b74114d1396ca98f31"
   },
-  "open_issue_count": 11,
+  "open_issue_count": 19,
   "issues": [
     {
       "repo": "foundation",
@@ -32,6 +32,56 @@
         "FI-10",
         "FI-11"
       ]
+    },
+    {
+      "repo": "foundation",
+      "number": 1247,
+      "title": "WooCommerce Google Feed Recovery — 9 unresolved retailers",
+      "status": "OPEN",
+      "class": "research+feed",
+      "remaining": [
+        "public discovery for unresolved retailers",
+        "strict payload validation"
+      ],
+      "probes": []
+    },
+    {
+      "repo": "foundation",
+      "number": 1249,
+      "title": "Custom/API Google Feed Recovery — chat handoff",
+      "status": "OPEN",
+      "class": "research+feed",
+      "remaining": [
+        "additional real Google Merchant XML discoveries",
+        "strict payload validation"
+      ],
+      "probes": []
+    },
+    {
+      "repo": "foundation",
+      "number": 1265,
+      "title": "Run a full-content secret scan across foundation",
+      "status": "OPEN",
+      "class": "security",
+      "remaining": [
+        "full checked-out tree and git-history scan",
+        "protected-boundary cross-reference",
+        "truthful pass/fail receipt"
+      ],
+      "probes": []
+    },
+    {
+      "repo": "foundation",
+      "number": 1281,
+      "title": "Foundation ChatGPT documentation parity",
+      "status": "OPEN",
+      "class": "docs+continuity",
+      "remaining": [
+        "CHATGPT.md parity",
+        "prompt-to-canonical-doc map",
+        "cross-repository documentation receipt"
+      ],
+      "probes": []
     },
     {
       "repo": "foundation",
@@ -85,21 +135,119 @@
     },
     {
       "repo": "operations",
-      "number": 699,
-      "title": "Deep-scan findings and roadmap",
+      "number": 1005,
+      "title": "Activity-aware maintenance scheduling",
       "status": "OPEN",
-      "class": "meta+evidence",
+      "class": "chatbot+maintenance",
+      "remaining": [
+        "existing maintenance authority integration",
+        "privacy-preserving activity profile",
+        "reserved capacity protection"
+      ],
+      "probes": []
+    },
+    {
+      "repo": "operations",
+      "number": 145,
+      "title": "Periodic maintenance tick",
+      "status": "OPEN",
+      "class": "runtime+observability",
       "fix_now": [
-        "canonical Foundation graph consumer",
-        "current 44-case lane map"
+        "existing scheduler/reconciliation authority",
+        "resource/observability graph coverage"
       ],
       "remaining": [
-        "all child/evidence gates represented by live receipts"
+        "approved live scheduler receipt with exact revision/time/result/provenance"
+      ],
+      "probes": [
+        "FI-05",
+        "FI-07"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 197,
+      "title": "Heroic AI conversational execution",
+      "status": "OPEN",
+      "class": "production runtime",
+      "fix_now": [
+        "canonical Heroic-Ai.dev path definition",
+        "family graph UI→edge→chatbot→research/resource chain"
+      ],
+      "remaining": [
+        "DNS/custom domain active",
+        "live model generation",
+        "replay/concurrency/policy denial/SSE/research/provenance/resource evidence"
+      ],
+      "probes": [
+        "FI-04",
+        "FI-05",
+        "FI-06",
+        "FI-07"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 340,
+      "title": "Provider streaming/token accounting",
+      "status": "OPEN",
+      "class": "runtime",
+      "fix_now": [
+        "reachable-path contract",
+        "typed decision/resource/observability probes"
+      ],
+      "remaining": [
+        "live interruption/cancellation",
+        "resource/token reconciliation",
+        "duplicate/restart/orphan-state receipt"
+      ],
+      "probes": [
+        "FI-03",
+        "FI-05",
+        "FI-07"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 385,
+      "title": "Terminalization/recovery",
+      "status": "OPEN",
+      "class": "reliability+runtime",
+      "fix_now": [
+        "canonical lifecycle remains authoritative",
+        "unit-level recovery/graph probes",
+        "resource/recovery integration map"
+      ],
+      "remaining": [
+        "cross-surface crash-after-side-effect",
+        "late output/restart receipts",
+        "L3/L4 runtime evidence"
       ],
       "probes": [
         "FI-01",
-        "FI-04",
-        "FI-08",
+        "FI-05",
+        "FI-08"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 597,
+      "title": "Mapper capability migration",
+      "status": "OPEN",
+      "class": "migration+runtime",
+      "fix_now": [
+        "six capability lanes",
+        "graph topology",
+        "reference corpus"
+      ],
+      "remaining": [
+        "frozen baseline",
+        "differential parity/error taxonomy",
+        "p50/p95/p99 + CPU/memory/conversion",
+        "shadow/canary/rollback"
+      ],
+      "probes": [
+        "FI-01",
         "FI-09"
       ]
     },
@@ -130,107 +278,22 @@
     },
     {
       "repo": "operations",
-      "number": 597,
-      "title": "Mapper capability migration",
+      "number": 699,
+      "title": "Deep-scan findings and roadmap",
       "status": "OPEN",
-      "class": "migration+runtime",
+      "class": "meta+evidence",
       "fix_now": [
-        "six capability lanes",
-        "graph topology",
-        "reference corpus"
+        "canonical Foundation graph consumer",
+        "current 44-case lane map"
       ],
       "remaining": [
-        "frozen baseline",
-        "differential parity/error taxonomy",
-        "p50/p95/p99 + CPU/memory/conversion",
-        "shadow/canary/rollback"
+        "all child/evidence gates represented by live receipts"
       ],
       "probes": [
         "FI-01",
-        "FI-09"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 385,
-      "title": "Terminalization/recovery",
-      "status": "OPEN",
-      "class": "reliability+runtime",
-      "fix_now": [
-        "canonical lifecycle remains authoritative",
-        "unit-level recovery/graph probes",
-        "resource/recovery integration map"
-      ],
-      "remaining": [
-        "cross-surface crash-after-side-effect",
-        "late output/restart receipts",
-        "L3/L4 runtime evidence"
-      ],
-      "probes": [
-        "FI-01",
-        "FI-05",
-        "FI-08"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 340,
-      "title": "Provider streaming/token accounting",
-      "status": "OPEN",
-      "class": "runtime",
-      "fix_now": [
-        "reachable-path contract",
-        "typed decision/resource/observability probes"
-      ],
-      "remaining": [
-        "live interruption/cancellation",
-        "resource/token reconciliation",
-        "duplicate/restart/orphan-state receipt"
-      ],
-      "probes": [
-        "FI-03",
-        "FI-05",
-        "FI-07"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 197,
-      "title": "Heroic AI conversational execution",
-      "status": "OPEN",
-      "class": "production runtime",
-      "fix_now": [
-        "canonical Heroic-Ai.dev path definition",
-        "family graph UI→edge→chatbot→research/resource chain"
-      ],
-      "remaining": [
-        "DNS/custom domain active",
-        "live model generation",
-        "replay/concurrency/policy denial/SSE/research/provenance/resource evidence"
-      ],
-      "probes": [
         "FI-04",
-        "FI-05",
-        "FI-06",
-        "FI-07"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 145,
-      "title": "Periodic maintenance tick",
-      "status": "OPEN",
-      "class": "runtime+observability",
-      "fix_now": [
-        "existing scheduler/reconciliation authority",
-        "resource/observability graph coverage"
-      ],
-      "remaining": [
-        "approved live scheduler receipt with exact revision/time/result/provenance"
-      ],
-      "probes": [
-        "FI-05",
-        "FI-07"
+        "FI-08",
+        "FI-09"
       ]
     },
     {
@@ -247,6 +310,44 @@
         "NAT64/private-reserved negative corpus",
         "four-lane governance coverage"
       ]
+    },
+    {
+      "repo": "operations",
+      "number": 994,
+      "title": "Two-tier capability map",
+      "status": "OPEN",
+      "class": "docs+integration",
+      "remaining": [
+        "code/GitHub/Cloudflare capability graph",
+        "100% coverage accounting",
+        "orphan-resource disposition"
+      ],
+      "probes": []
+    },
+    {
+      "repo": "operations",
+      "number": 997,
+      "title": "Six-lane audit integration and consolidation",
+      "status": "OPEN",
+      "class": "audit+cloudflare",
+      "remaining": [
+        "canonical audit docs",
+        "Cloudflare/B2 lane",
+        "aggregate score"
+      ],
+      "probes": []
+    },
+    {
+      "repo": "operations",
+      "number": 998,
+      "title": "Session-continuity enforcement",
+      "status": "OPEN",
+      "class": "docs+continuity",
+      "remaining": [
+        "canonical-state freshness enforcement",
+        "continuity receipt"
+      ],
+      "probes": []
     }
   ],
   "evidence_rules": {
@@ -287,7 +388,7 @@
     "backend_origin": "https://heroic.heroic-ai.workers.dev",
     "canonical_domain_status": "heroic-ai.dev pending/unresolvable",
     "certification": "OPEN / NOT CERTIFIED",
-    "deployed_foundation_sha": "2d8e2a6bdbb9279892eb4ad2095fbacc1adae9d4",
-    "deployed_operations_sha": "d89e119722f3017cedf0cc175ba55871a65846ed"
+    "deployed_foundation_sha": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
+    "deployed_operations_sha": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3"
   }
 }
