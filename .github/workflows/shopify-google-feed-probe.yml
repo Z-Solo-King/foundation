@@ -1,0 +1,170 @@
+name: Shopify Google Feed XML Probe
+
+on:
+  push:
+    branches: [probe/monitor-oem-api-20260926]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: Probe Shopify feed surfaces
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.14'
+      - name: Probe feeds
+        run: |
+          python - <<'PY'
+          import json, re, time
+          from concurrent.futures import ThreadPoolExecutor, as_completed
+          from urllib.parse import urljoin
+          import requests
+          from xml.etree import ElementTree as ET
+
+          stores = [
+    {"name": "Bitkart", "base": "https://bitkart.com"},
+    {"name": "Elitehubs", "base": "https://elitehubs.com"},
+    {"name": "Genesis PC", "base": "https://www.genesispc.in"},
+    {"name": "Get Right PC", "base": "https://getrightpc.com"},
+    {"name": "Hardware Nest", "base": "https://hardwarenest.in"},
+    {"name": "Mehta Brothers", "base": "https://mehtabrothers.in"},
+    {"name": "TLG Gaming", "base": "https://tlggaming.com"},
+    {"name": "TPS Tech", "base": "https://tpstech.in"},
+    {"name": "Vajawat Computers", "base": "https://vajawatcomputers.com"},
+    {"name": "Vishal Peripherals", "base": "https://vishalperipherals.com"},
+    {"name": "AceKBD", "base": "https://acekbd.com"},
+    {"name": "Amkette", "base": "https://www.amkette.com"},
+    {"name": "Ant Esports", "base": "https://antesports.com"},
+    {"name": "Concept Kart", "base": "https://conceptkart.com"},
+    {"name": "Credkeys", "base": "https://credkeys.com"},
+    {"name": "CtrlShiftstore", "base": "https://ctrlshiftstore.com"},
+    {"name": "Curiosity Caps", "base": "https://curiositycaps.in"},
+    {"name": "CyberArt", "base": "https://cybeart.in"},
+    {"name": "fictioo", "base": "https://fictioo.com"},
+    {"name": "Hardware Corpus", "base": "https://hardwarecorpus.in"},
+    {"name": "Keebsmod", "base": "https://keebsmod.com"},
+    {"name": "Keychron India", "base": "https://www.keychron.in"},
+    {"name": "Keyora", "base": "https://keyora.store"},
+    {"name": "Kreo", "base": "https://kreo-tech.com"},
+    {"name": "lethalblack", "base": "https://lethalblack.com"},
+    {"name": "Neomacro", "base": "https://neomacro.in"},
+    {"name": "NMPC", "base": "https://www.nmpc.in"},
+    {"name": "Portronics", "base": "https://www.portronics.com"},
+    {"name": "Redragon India", "base": "https://www.redragon.in"},
+    {"name": "Ryugear", "base": "https://ryugear.in"},
+    {"name": "Senpai Arts", "base": "https://senpaiarts.com"},
+    {"name": "thockshop", "base": "https://thethockshop.com"},
+    {"name": "TVS Electronics", "base": "https://store.tvselectronics.in"},
+    {"name": "URX", "base": "https://urx.co.in"},
+    {"name": "varmiloindia", "base": "https://varmiloindia.com"},
+    {"name": "vrkaa", "base": "https://vrkaa.com"},
+    {"name": "Waimers", "base": "https://waimers.in"},
+    {"name": "Zebronics", "base": "https://zebronics.com"},
+    {"name": "Zukabus", "base": "https://zukabus.com"},
+    {"name": "virtualracinghub", "base": "https://virtualracinghub.com"},
+    {"name": "AV Store", "base": "https://avstore.in"},
+    {"name": "Bajaao", "base": "https://www.bajaao.com"},
+    {"name": "boAt", "base": "https://www.boat-lifestyle.com"},
+    {"name": "Boult", "base": "https://goboult.co.in"},
+    {"name": "Headphone Zone", "base": "https://headphonezone.in"},
+    {"name": "Jamsticks", "base": "https://www.jamsticks.com"},
+    {"name": "Mivi", "base": "https://www.mivi.in"},
+    {"name": "Noise", "base": "https://www.gonoise.com"},
+    {"name": "pTron", "base": "https://ptron.in"},
+    {"name": "The Audio Store", "base": "https://www.theaudiostore.in"},
+    {"name": "Theaudio.co", "base": "https://theaudio.co"}
+          ]
+          UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/136 Safari/537.36'
+          HEADERS = {'User-Agent': UA, 'Accept': 'text/html,application/xml,application/json,*/*'}
+          CANDIDATES = [
+            '/feeds/products.xml','/feeds/google.xml','/feeds/google-shopping.xml',
+            '/google-shopping-feed.xml','/google-shopping.xml','/google-feed.xml',
+            '/feed/google.xml','/feed.xml','/products.xml','/api/feeds/google.xml',
+            '/apps/google-shopping-feed','/apps/google-feed','/apps/feed',
+            '/a/google-shopping-feed','/a/google-feed','/a/feed/google',
+            '/collections/all.atom'
+          ]
+          S = requests.Session(); S.headers.update(HEADERS)
+
+          def fetch(url, timeout=12):
+            try:
+              r=S.get(url, timeout=timeout, allow_redirects=True, stream=True)
+              head=next(r.iter_content(65536), b'')
+              ct=(r.headers.get('content-type') or '').lower()
+              return {'status':r.status_code,'url':r.url,'ct':ct,'bytes_hint':int(r.headers.get('content-length') or len(head)),'head':head[:65536]}
+            except Exception as e:
+              return {'status':0,'url':url,'ct':'','bytes_hint':0,'head':b'','error':type(e).__name__+':'+str(e)[:180]}
+
+          def textish(b):
+            return b.decode('utf-8','replace')
+
+          def classify(url, res):
+            t=textish(res.get('head',b'')); low=t.lower(); ct=res.get('ct','')
+            google = ('base.google.com/ns/1.0' in low or '<g:price' in low or '<g:availability' in low or '<g:id' in low)
+            rss = '<rss' in low or '<feed' in low and ('xml' in ct or '<?xml' in low)
+            atom = 'atom+xml' in ct or '<feed xmlns=' in low
+            shopify = '/sitemap_products_' in low
+            return {'google_feed_signature':google,'xml_like':('xml' in ct or low.lstrip().startswith('<?xml') or rss),'atom':atom,'shopify_product_sitemap':shopify,'title_or_hint':re.sub(r'\\s+',' ',t[:180]).strip()}
+
+          def probe(item):
+            base=item['base'].rstrip('/')
+            out={'name':item['name'],'base':base,'home':{},'robots':{},'sitemap':{},'product_sitemaps':[],'products_json':{},'candidate_feeds':[],'discovered_urls':[]}
+            home=fetch(base+'/',15); out['home']={k:v for k,v in home.items() if k!='head'}
+            ht=textish(home.get('head',b'')); hl=ht.lower()
+            out['home']['feed_hints']=sorted(set(re.findall(r'https?://[^\\"\\'<> ]+?\\.xml[^\\"\\'<> ]*|/[^\\"\\'<> ]*(?:feed|google|merchant)[^\\"\\'<> ]*\\.xml',ht,re.I)))[:100]
+            for m in re.findall(r'(?i)(?:src|href|content)=?["\\\']([^"\\\']+)',ht):
+              if any(x in m.lower() for x in ('feed','google','merchant','.xml')): out['discovered_urls'].append(urljoin(base+'/',m))
+            rb=fetch(base+'/robots.txt',10); out['robots']={k:v for k,v in rb.items() if k!='head'}
+            rt=textish(rb.get('head',b''));
+            out['robots']['sitemaps']=re.findall(r'(?im)^sitemap:\\s*(\\S+)',rt)
+            sm=fetch(base+'/sitemap.xml',15); out['sitemap']={k:v for k,v in sm.items() if k!='head'}
+            st=textish(sm.get('head',b''));
+            child=re.findall(r'<loc>\\s*(https?://[^<]+sitemap_products_[^<]+)\\s*</loc>',st,re.I)
+            out['sitemap']['child_product_sitemaps']=child[:50]
+            out['discovered_urls'] += child[:50]
+            p=fetch(base+'/products.json?limit=1&page=1',12); out['products_json']={k:v for k,v in p.items() if k!='head'}
+            urls=[]
+            urls += child[:8]
+            urls += out['discovered_urls'][:30]
+            urls += [urljoin(base+'/',x.lstrip('/')) for x in CANDIDATES]
+            seen=set(); urls=[u for u in urls if not (u in seen or seen.add(u))]
+            with ThreadPoolExecutor(max_workers=8) as ex:
+              futs={ex.submit(fetch,u,10):u for u in urls}
+              for f in as_completed(futs):
+                u=futs[f]; r=f.result(); c=classify(u,r)
+                if r.get('status')==200 and (c['google_feed_signature'] or c['xml_like'] or c['atom']):
+                  out['candidate_feeds'].append({k:v for k,v in {'url':u,'status':r.get('status'),'final_url':r.get('url'),'content_type':r.get('ct'),'bytes_hint':r.get('bytes_hint'),**c}.items() if k!='title_or_hint' or v})
+            out['candidate_feeds']=sorted({x['url']:x for x in out['candidate_feeds']}.values(), key=lambda x:(not x['google_feed_signature'], x['url']))
+            out['discovered_urls']=sorted(set(out['discovered_urls']))
+            return out
+
+          results=[]
+          with ThreadPoolExecutor(max_workers=8) as ex:
+            fs=[ex.submit(probe,s) for s in stores]
+            for i,f in enumerate(as_completed(fs),1):
+              results.append(f.result()); print(f'[shopify-feed] completed {i}/{len(stores)} {results[-1]["name"]}', flush=True)
+          results=sorted(results,key=lambda x:x['name'].lower())
+          summary=[]
+          for r in results:
+            google=[x for x in r['candidate_feeds'] if x.get('google_feed_signature')]
+            xml=[x for x in r['candidate_feeds'] if x.get('xml_like')]
+            summary.append({'name':r['name'],'base':r['base'],'google_feed_count':len(google),'google_feeds':[x['url'] for x in google], 'xml_candidates':[x['url'] for x in xml[:20]], 'sitemap':r['sitemap'].get('url'), 'products_json':r['products_json'].get('url')})
+          open('shopify-google-feed-results.json','w').write(json.dumps(results,indent=2))
+          open('shopify-google-feed-summary.json','w').write(json.dumps(summary,indent=2))
+          print(json.dumps(summary,indent=2))
+          PY
+      - name: Upload Shopify feed evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: shopify-google-feed-probe-20260926
+          path: shopify-google-feed-*.json
+          if-no-files-found: error
