@@ -50,6 +50,26 @@ async function wayback(base){
   try{const d=JSON.parse(r.text);const rows=Array.isArray(d)?d.slice(1):[];const urls=[];for(const row of rows){const original=row?.[0]||"";if(feedish(original)||/\.xml(?:[?#]|$)/i.test(original))urls.push(original);}return {status:r.status,urls:[...new Set(urls)].slice(0,100)};}catch{return {status:r.status,urls:[],error:"wayback_parse_error"};}
 }
 
+async function commonCrawl(base){
+  const host=new URL(base).hostname;
+  try{
+    const ci=await get("https://index.commoncrawl.org/collinfo.json");
+    if(ci.status!==200||!ci.text)return {status:ci.status,urls:[],error:"commoncrawl_unavailable"};
+    const info=JSON.parse(ci.text);
+    const collection=Array.isArray(info)?String(info[0]?.id||""):"";
+    if(!collection)return {status:200,urls:[],error:"no_commoncrawl_collection"};
+    const u=`https://index.commoncrawl.org/${encodeURIComponent(collection)}-index?url=${encodeURIComponent(host+"/*")}&output=json`;
+    const r=await get(u);
+    if(r.status!==200||!r.text)return {status:r.status,urls:[],error:"commoncrawl_index_unavailable"};
+    const urls=[];
+    for(const line of r.text.split(/\\r?\\n/)){
+      try{const obj=JSON.parse(line);const original=obj?.url||"";if(feedish(original)||/\\.xml(?:[?#]|$)/i.test(original))urls.push(original);}catch{}
+      if(urls.length>=100)break;
+    }
+    return {status:r.status,urls:[...new Set(urls)].slice(0,100)};
+  }catch(e){return {status:0,urls:[],error:e.name||String(e)};}
+}
+
 async function browserDiscover(base){
   const browser=await chromium.launch({headless:true});
   const page=await browser.newPage({userAgent:UA,locale:"en-IN"});
@@ -76,16 +96,17 @@ async function scan([name,base]){
   for(const p of ["/","/robots.txt","/wp-json/"]){try{const r=await get(base+p);evidence.push({path:p,status:r.status,contentType:r.contentType,bytes:r.bytes,finalUrl:r.finalUrl,challenge:challenge(r.status,r.text)});if(p==="/"&&r.status===200)for(const u of extractLinks(r.text,r.finalUrl||base))candidates.set(u,"html_link");if(p==="/wp-json/"&&r.status===200)for(const u of extractLinks(r.text,r.finalUrl||base))candidates.set(u,"wp_rest_link");}catch(e){evidence.push({path:p,error:e.name||String(e)});}}
   for(const p of PATHS)candidates.set(new URL(p,base+"/").href,"v175_public_candidate");
   let wb={status:0,urls:[]};try{wb=await wayback(base);for(const u of wb.urls)candidates.set(u,"wayback_historical");}catch{}
+  let cc={status:0,urls:[]};try{cc=await commonCrawl(base);for(const u of cc.urls)candidates.set(u,"commoncrawl_historical");}catch{}
   let br={status:0,urls:[]};try{br=await browserDiscover(base);for(const x of br.urls)candidates.set(x.url,"browser_xhr");}catch(e){br={status:0,urls:[],error:e.name||String(e)};}
   let i=0;const list=[...candidates.entries()];const probes=[];
   async function worker(){while(i<list.length){const [url,source]=list[i++];try{const r=await get(url);if(r.status===200&&r.text){const v=validate(r.text,r.contentType);if(v.qualifies){const hash=createHash("sha256").update(r.buffer||Buffer.from(r.text)).digest("hex");const file=`out/hybrid/feeds/${slug(name)}-${hash.slice(0,12)}.xml`;await writeFile(file,r.buffer||Buffer.from(r.text));feeds.push({url,finalUrl:r.finalUrl,source,file,sha256:hash,bytes:r.bytes,...v});probes.push({url,source,status:r.status,classification:"LIVE_VERIFIED",...v,sha256:hash});}else probes.push({url,source,status:r.status,classification:"NO_MATCH",...v});}else if(r.status===401)probes.push({url,source,status:r.status,classification:"AUTH_REQUIRED"});else if(challenge(r.status,r.text))probes.push({url,source,status:r.status,classification:"BLOCKED_OR_CHALLENGED"});else if(r.status===403)probes.push({url,source,status:r.status,classification:"ACCESS_DENIED"});else if(r.status===429)probes.push({url,source,status:r.status,classification:"RATE_LIMITED"});else probes.push({url,source,status:r.status,classification:`HTTP_${r.status}`});}catch(e){probes.push({url,source,classification:e.name==="AbortError"?"TIMEOUT":"ERROR",error:e.name||String(e)});}}}
   await Promise.all(Array.from({length:6},worker));
   const counts={};for(const p of [...evidence,...probes])counts[p.classification||"INFO"]=(counts[p.classification||"INFO"]||0)+1;
-  return {name,base,evidence,wayback:wb,browser:{status:br.status,title:br.title,observed:br.urls?.map(x=>({url:x.url,status:x.status,contentType:x.contentType,bytes:x.bytes,validation:x.validation}))||[],error:br.error},candidate_count:list.length,feeds,counts,probes};
+  return {name,base,evidence,wayback:wb,commoncrawl:cc,browser:{status:br.status,title:br.title,observed:br.urls?.map(x=>({url:x.url,status:x.status,contentType:x.contentType,bytes:x.bytes,validation:x.validation}))||[],error:br.error},candidate_count:list.length,feeds,counts,probes};
 }
 
 const results=[];
 for(const t of selected){const r=await scan(t);results.push(r);console.log(JSON.stringify({name:r.name,candidates:r.candidate_count,feeds:r.feeds.map(f=>f.url),wayback:r.wayback.urls.length,browser:r.browser.observed.length}));}
 const all=results.flatMap(r=>r.feeds.map(f=>({brand:r.name,base:r.base,...f})));
-await writeFile("out/hybrid/summary.json",JSON.stringify({generated_at:new Date().toISOString(),target_count:selected.length,live_verified_feeds:all.length,live_verified_sites:new Set(all.map(x=>x.brand)).size,sites:results.map(r=>({brand:r.name,candidate_count:r.candidate_count,feeds:r.feeds.map(f=>f.url),wayback_urls:r.wayback.urls.length,browser_hits:r.browser.observed.length,counts:r.counts}))},null,2)+"\n");
+await writeFile("out/hybrid/summary.json",JSON.stringify({generated_at:new Date().toISOString(),target_count:selected.length,live_verified_feeds:all.length,live_verified_sites:new Set(all.map(x=>x.brand)).size,sites:results.map(r=>({brand:r.name,candidate_count:r.candidate_count,feeds:r.feeds.map(f=>f.url),wayback_urls:r.wayback.urls.length,commoncrawl_urls:r.commoncrawl.urls.length,browser_hits:r.browser.observed.length,counts:r.counts}))},null,2)+"\n");
 await writeFile("out/hybrid/audit.json",JSON.stringify({generated_at:new Date().toISOString(),targets:selected.length,results,feeds:all},null,2)+"\n");
