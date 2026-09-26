@@ -113,9 +113,7 @@ function xmlEscape(v) {
 }
 
 function stripHtml(v) {
-  return String(v ?? "").replace(/<script[\\s\\S]*?<\\/script>/gi," ")
-    .replace(/<style[\\s\\S]*?<\\/style>/gi," ")
-    .replace(/<[^>]+>/g," ").replace(/\\s+/g," ").trim();
+  return String(v ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function formatMoney(price) {
