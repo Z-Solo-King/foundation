@@ -1,5 +1,4 @@
 from pathlib import Path
-import yaml
 
 def test_standalone_full_history_secret_scan_is_independent():
     workflow = Path(".github/workflows/full-history-secret-scan.yml").read_text(encoding="utf-8")
@@ -11,5 +10,6 @@ def test_standalone_full_history_secret_scan_is_independent():
 
 def test_scan_script_has_fail_closed_schema():
     script=Path("tools/full_history_secret_scan.sh").read_text(encoding="utf-8")
-    assert 'public-full-secret-scan/v1' in script
-    assert 'status=FAIL' in script or 'status=PASS' in script
+    assert "public-full-secret-scan/v1" in script
+    assert "status=PASS" in script
+    assert "status=FAIL" in script
