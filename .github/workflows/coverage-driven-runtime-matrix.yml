@@ -18,7 +18,7 @@ on:
       validation_tools_ref:
         description: Exact Operations revision containing validation tests
         required: false
-        default: 92eb7a850dff11a10886a952d5db8a42dae2b318
+        default: 566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3
         type: string
 
 permissions:
@@ -105,7 +105,7 @@ jobs:
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
       OPERATIONS_REF: ${{ inputs.operations_ref || '566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3' }}
-      VALIDATION_TOOLS_REF: ${{ inputs.validation_tools_ref || '92eb7a850dff11a10886a952d5db8a42dae2b318' }}
+      VALIDATION_TOOLS_REF: ${{ inputs.validation_tools_ref || '566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Checkout Foundation
