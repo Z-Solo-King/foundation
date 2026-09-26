@@ -48,6 +48,16 @@ jobs:
           set -euo pipefail
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
+      - name: Verify live reference contract version
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python - <<'PY'
+          from extractor_mapper.contracts import CONTRACT_VERSION
+          assert CONTRACT_VERSION == "1", CONTRACT_VERSION
+          print(f"reference contract version: {CONTRACT_VERSION}")
+          PY
+          
       - name: Verify differential harness
         working-directory: operations/polyglot/observation-contract-strict
         run: |
@@ -93,7 +103,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p ../shadow-receipt
-          printf '{"schema":"typescript-observation-shadow/v1","operations_sha":"%s","candidate":"typescript-observation-contract-strict","authority":"python-reference"}\n' "$OPERATIONS_SHA" > ../shadow-receipt/receipt.json
+          PYTHONPATH=. python - <<'PY' > ../shadow-receipt/receipt.json
+          import json, subprocess
+          from extractor_mapper.contracts import CONTRACT_VERSION
+          print(json.dumps({
+              "schema": "typescript-observation-shadow/v1",
+              "operations_sha": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+              "candidate": "typescript-observation-contract-strict",
+              "authority": "python-reference",
+              "contract_version": CONTRACT_VERSION,
+          }, sort_keys=True))
+          PY
 
       - name: Upload shadow receipt
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
