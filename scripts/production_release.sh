@@ -2,7 +2,9 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3"
+OPERATIONS_PIN_MANIFEST="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/docs/OPERATIONS_PIN_MANIFEST.json"
+test -s "$OPERATIONS_PIN_MANIFEST"
+OPERATIONS_REF="$(jq -r ".purpose_scoped_pins.production_runtime.revision" "$OPERATIONS_PIN_MANIFEST")"
 OPERATIONS_SERVICE_NAME="operations"
 BASE_URL="https://ai-cio.pages.dev"
 ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"
