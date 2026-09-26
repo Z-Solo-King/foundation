@@ -1,6 +1,9 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { chromium } from "playwright";\nimport { execFile } from "node:child_process";\nimport { promisify } from "node:util";\nconst execFileAsync = promisify(execFile);
+import { chromium } from "playwright";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+const execFileAsync = promisify(execFile);
 
 const TARGETS = [
   ["ithunt","https://ithunt.in"],["kccomputers","https://kccomputers.co.in"],["KRG KART","https://krgkart.com"],["PC Kumar Infotech","https://pckumar.in"],
