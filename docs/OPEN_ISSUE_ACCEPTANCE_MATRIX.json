@@ -5,7 +5,7 @@
     "foundation": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
     "operations": "122a334d85708e2e42db59b74114d1396ca98f31"
   },
-  "open_issue_count": 21,
+  "open_issue_count": 19,
   "issues": [
     {
       "repo": "foundation",
@@ -195,28 +195,6 @@
     },
     {
       "repo": "operations",
-      "number": 197,
-      "title": "Heroic AI conversational execution",
-      "status": "OPEN",
-      "class": "production runtime",
-      "fix_now": [
-        "canonical Pages runtime path definition (ai-cio.pages.dev)",
-        "family graph UI→edge→chatbot→research/resource chain"
-      ],
-      "remaining": [
-        "optional custom-domain DNS activation (separate track)",
-        "live model generation",
-        "replay/concurrency/policy denial/SSE/research/provenance/resource evidence"
-      ],
-      "probes": [
-        "FI-04",
-        "FI-05",
-        "FI-06",
-        "FI-07"
-      ]
-    },
-    {
-      "repo": "operations",
       "number": 145,
       "title": "Periodic maintenance tick",
       "status": "OPEN",
@@ -278,18 +256,6 @@
       "title": "Foundation #1265",
       "status": "OPEN",
       "class": "security",
-      "fix_now": [],
-      "remaining": [
-        "issue-specific acceptance evidence and current owner receipts"
-      ],
-      "probes": []
-    },
-    {
-      "repo": "foundation",
-      "number": 1281,
-      "title": "Foundation #1281",
-      "status": "OPEN",
-      "class": "docs+continuity",
       "fix_now": [],
       "remaining": [
         "issue-specific acceptance evidence and current owner receipts"
