@@ -10,6 +10,7 @@ import types
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 OPERATIONS = ROOT.parent / "operations"
 CORPUS = OPERATIONS / "benchmark/polyglot/rust_url_identity/corpus.jsonl"
 RUST_MANIFEST = OPERATIONS / "benchmark/polyglot/rust_url_identity/Cargo.toml"
