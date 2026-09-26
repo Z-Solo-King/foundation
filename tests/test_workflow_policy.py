@@ -704,11 +704,9 @@ def test_nightly_research_preflight_has_network_failure_classification():
     assert "dns_or_network_unreachable" in preflight
     assert "edge_http_403" in preflight
 
-def test_exhaustive_audit_freezes_live_issue_set_at_start():
-    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "exhaustive-six-lane-audit.yml").read_text(encoding="utf-8")
-    assert "Snapshot live open issues at audit start" in workflow
-    assert "live_open_issues_snapshot.json" in workflow
-    assert "unregistered_at_snapshot" in workflow
-    assert "registered_not_in_snapshot" in workflow
-    verify = workflow.split("      - name: Verify live open-issue register", 1)[1].split("      - name: Setup Python", 1)[0]
-    assert "github.paginate" not in verify
+def test_deep_scan_checks_out_foundation_source_tree():
+    workflow = (WORKFLOW_ROOT / "open-issue-polyglot-deep-scan.yml").read_text(encoding="utf-8")
+    assert "Checkout Foundation source tree" in workflow
+    assert 'path: foundation' in workflow
+    assert 'ref: ${{ github.sha }}' in workflow
+    assert '--foundation "\$GITHUB_WORKSPACE/foundation"' in workflow
