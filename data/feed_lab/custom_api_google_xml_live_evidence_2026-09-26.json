@@ -1,5 +1,5 @@
 {
-  "schema_version": "foundation-custom-api-google-xml-audit/v1",
+  "schema_version": "foundation-custom-api-google-xml-audit/v2",
   "generated_on": "2026-09-26",
   "repository": {
     "owner": "Z-Solo-King",
@@ -8,9 +8,11 @@
     "branch": "feat/foundation-google-feed-matrix-20260926"
   },
   "execution": {
-    "workflow_run_id": 36242499465,
-    "workflow_url": "https://github.com/Z-Solo-King/foundation/actions/runs/36242499465",
-    "matrix_jobs": 15,
+    "shallow_run_id": 36242499465,
+    "deep_run_id": 36242704888,
+    "deep_run_url": "https://github.com/Z-Solo-King/foundation/actions/runs/36242704888",
+    "matrix_sites": 15,
+    "deep_sites": 14,
     "fail_fast": false
   },
   "verified_google_xml": [
@@ -18,10 +20,11 @@
       "site": "Clarion Computers",
       "url": "https://shop.clarioncomputers.in/feeds/google.xml",
       "transport_status": 200,
-      "bytes": 6754788,
+      "payload_bytes": 6754788,
       "item_count": 2152,
       "google_namespace": "http://base.google.com/ns/1.0",
-      "required_fields": {
+      "sha256": "d96edd0748709b00825456e31ad8bd72d9b5348a2cc1d38d867d4a497053d6c8",
+      "core_fields": {
         "id": 2152,
         "title": 2152,
         "link": 2152,
@@ -32,69 +35,47 @@
         "gtin": 2152,
         "mpn": 2152
       }
-    }
-  ],
-  "other_sites": [
-    {
-      "site": "BuildMyPC",
-      "status_summary": "49/49 candidates returned 429"
-    },
-    {
-      "site": "Easy Shoppi",
-      "status_summary": "49/49 candidates returned 404"
-    },
-    {
-      "site": "Fingers",
-      "status_summary": "49/49 candidates returned 200; no Google XML"
-    },
-    {
-      "site": "ArcadeX",
-      "status_summary": "49/49 candidates returned 404"
-    },
-    {
-      "site": "altf4gear",
-      "status_summary": "35 returned 200 and 14 returned 404; no Google XML"
     },
     {
       "site": "Shivam IT Service",
-      "status_summary": "49/49 returned 200; no Google XML"
-    },
-    {
-      "site": "LebyoPC",
-      "status_summary": "49/49 candidates returned 403"
-    },
-    {
-      "site": "Logtech",
-      "status_summary": "49/49 candidates returned 404"
-    },
-    {
-      "site": "DigiBuggy",
-      "status_summary": "49/49 returned 200; no Google XML"
-    },
-    {
-      "site": "TheValueStore",
-      "status_summary": "49/49 candidates returned 404"
-    },
-    {
-      "site": "Furtados",
-      "status_summary": "9 returned 200 and 40 returned 404; no Google XML"
-    },
-    {
-      "site": "KeySync",
-      "status_summary": "49/49 candidates returned 404"
-    },
-    {
-      "site": "The Rhythm House",
-      "status_summary": "1 returned 200 and 48 returned 404; no Google XML"
-    },
-    {
-      "site": "CloudTechAsia",
-      "status_summary": "49/49 candidates returned 404"
+      "url": "https://api.shivamitservice.in/google-feed.xml",
+      "transport_status": 200,
+      "payload_bytes": 2449913,
+      "item_count": 1009,
+      "google_namespace": "http://base.google.com/ns/1.0",
+      "sha256": "f92ad78e0689fb74cb224970ad1d126709703706e501cf630da7a5f73317baae",
+      "core_fields": {
+        "id": 1009,
+        "title": 1009,
+        "link": 1009,
+        "price": 1009,
+        "availability": 1009,
+        "condition": 1009,
+        "brand": 1008,
+        "gtin": 632,
+        "mpn": 982
+      }
     }
   ],
+  "unresolved_or_negative_at_tested_paths": [
+    "BuildMyPC",
+    "Easy Shoppi",
+    "Fingers",
+    "LebyoPC",
+    "ArcadeX",
+    "altf4gear",
+    "Logtech",
+    "DigiBuggy",
+    "TheValueStore",
+    "Furtados",
+    "KeySync",
+    "The Rhythm House",
+    "CloudTechAsia"
+  ],
   "notes": [
-    "Only actual Google Merchant XML payloads were counted.",
-    "A site returning 403/429/transport errors is unverified, not proven to have no feed.",
-    "Temporary audit branch/workflow artifacts are kept only on the feature branch; no production merge."
+    "Only payloads matching RSS/Atom plus Google namespace/fields and populated product items were counted.",
+    "403/429 responses remain transport-unverified rather than proof of feed absence.",
+    "No WooCommerce, Shopify, OpenCart, or Wix sites were included.",
+    "Audit branch and draft PR are not merged into main."
   ]
 }
