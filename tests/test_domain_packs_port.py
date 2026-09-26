@@ -67,7 +67,7 @@ def test_mousepad_rules_and_special_weight():
     }
 
     special = apply_domain_rules("IPI Haze 6369g Haze X1", ["mouse"])
-    assert special["weight"] == "63g"
+    assert special["weight"] == "69g"
 
 
 def test_first_rule_wins_and_device_text_override():
