@@ -7,7 +7,8 @@ def test_instruction_finding_becomes_issue_candidate():
     findings = collect_findings(report, None)
     assert len(findings) == 1
     body = build_issue_body(findings, "123", "Z-Solo-King/foundation")
-    assert TRACKING_TITLE in body
+    assert "# Automated benchmark findings" in body
+    assert TRACKING_TITLE == "Nightly benchmark findings — automated tracking"
     assert TRACKING_LABEL == "benchmark-finding"
     assert "does not authorize policy" in body
 
