@@ -1,0 +1,7 @@
+# Keep the public repository boundary reviewable as collaborators are added.
+* @Z-Solo-King
+
+# Higher-risk control surfaces.
+.github/workflows/* @Z-Solo-King
+tools/* @Z-Solo-King
+docs/* @Z-Solo-King

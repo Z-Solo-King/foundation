@@ -58,8 +58,20 @@
   },
   "dependency": {
     "direction": "foundation_contract_to_operations_consumer",
-    "rule": "Foundation never depends on Operations source, private credentials, private runtime state, or protected implementation.",
-    "implementation_rule": "Operations may consume a pinned Foundation package/revision. Cross-repository reuse must use a versioned contract or the canonical Foundation package, never copy-paste source."
+    "rule": "Foundation public/runtime code never depends on Operations source, private credentials, private runtime state, or protected implementation. The only allowed Foundation -> Operations source relationship is a protected GitHub Actions maintenance/deployment bridge that executes a purpose-specific private utility from an immutable verified Operations revision.",
+    "implementation_rule": "Operations may consume a pinned Foundation package/revision. Cross-repository reuse must use a versioned contract or the canonical Foundation package, never copy-paste source.",
+    "workflow_bridge_rule": {
+      "owner": "foundation",
+      "purpose": "protected maintenance/deployment handoff only",
+      "requirements": [
+        "workflow must run only from protected main and an approved protected environment",
+        "private source must be addressed by an immutable Operations commit SHA",
+        "access must use the purpose-specific GitHub App with least-privilege repository scope",
+        "private source must not be copied into the public repository or artifacts",
+        "secret values must remain environment-bound and absent from logs/artifacts",
+        "bridge must not become a second application runtime or policy authority"
+      ]
+    }
   },
   "single_owner_rule": {
     "rule": "Each behavior, policy, data model, registry, algorithm, and authority has exactly one canonical owner.",
@@ -106,7 +118,8 @@
       "tests live with the owner and at cross-repository boundaries",
       "historical code is immutable or clearly archived",
       "comments explain why and constraints, not obvious syntax",
-      "every important subsystem has a compact machine-readable navigation entry"
+      "every important subsystem has a compact machine-readable navigation entry",
+      "Machine-readable schemas and authority maps are sources of truth; human-facing documentation should reference them rather than duplicate mutable values."
     ],
     "change_safety": [
       "measure before optimizing",
@@ -120,7 +133,7 @@
     "goal": "Make human and AI maintenance efficient, accurate, and low-token by resolving ownership before reading implementation detail.",
     "navigation_order": [
       "canonical family contract",
-      "repository AI_CODEMAP",
+      "repository REPOSITORY_MAP.json / AI_ANALYSIS_MAP.md",
       "relevant source-of-truth symbol/module",
       "immediate consumers and tests",
       "only then broader repository search when required"
@@ -138,7 +151,9 @@
       "distinguish source of truth from compatibility/export paths",
       "treat model knowledge as potentially stale for volatile facts",
       "do not claim tool, file, repository, or execution access without evidence",
-      "preserve provenance and uncertainty across transformations"
+      "preserve provenance and uncertainty across transformations",
+      "Never resurrect retired AI_CODEMAP.json as a runtime or navigation authority; use REPOSITORY_MAP.json plus the canonical family registry.",
+      "Treat exact public release pins and private utility pins as purpose-scoped immutable evidence, not mutable branch references."
     ]
   },
   "authority_matrix": {
@@ -166,7 +181,8 @@
     "Family-level promotion authority has one owner in Operations.",
     "Public readiness must work without the private control plane.",
     "Operations may add stricter local fail-closed guards, but local guards must not become competing family policy authorities.",
-    "The retired extractor-mapper repository is historical material only and cannot become a third active ownership boundary."
+    "The retired extractor-mapper repository is historical material only and cannot become a third active ownership boundary.",
+    "Privileged public workflows may execute approved private utilities only through an immutable Operations revision verified at runtime; the public tree must contain the bridge contract, not the private implementation."
   ],
   "change_method": [
     "search both active repositories",
@@ -215,6 +231,7 @@
     "no new code in immutable legacy snapshots",
     "no private GitHub-hosted Actions dependency",
     "no hidden third active repository or ownership boundary",
-    "architecture knowledge must reference canonical source rather than become a second architecture database"
+    "architecture knowledge must reference canonical source rather than become a second architecture database",
+    "protected workflow bridges may consume private Operations utilities only under the explicit immutable-handoff rule; public application/runtime code may not import private Operations source."
   ]
 }
