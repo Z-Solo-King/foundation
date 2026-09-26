@@ -37,8 +37,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
-  attestations: write
 
 jobs:
   resolve_operations_ref:
@@ -76,6 +74,10 @@ jobs:
             core.setOutput("ref", response.data.commit.sha);
 
   review:
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     needs: resolve_operations_ref
     name: Cross-language migration review
     runs-on: ubuntu-latest
