@@ -1,11 +1,11 @@
 {
   "schema": "family-issue-acceptance-matrix/v1",
-  "audited_at": "2026-09-25",
+  "audited_at": "2026-09-26",
   "repository_heads": {
-    "foundation": "f248e83cf22e3359f57bbea190aaf150249ba2f6",
-    "operations": "d89e119722f3017cedf0cc175ba55871a65846ed"
+    "foundation": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
+    "operations": "122a334d85708e2e42db59b74114d1396ca98f31"
   },
-  "open_issue_count": 11,
+  "open_issue_count": 21,
   "issues": [
     {
       "repo": "foundation",
@@ -247,6 +247,126 @@
         "NAT64/private-reserved negative corpus",
         "four-lane governance coverage"
       ]
+    },
+    {
+      "repo": "foundation",
+      "number": 1247,
+      "title": "Foundation #1247",
+      "status": "OPEN",
+      "class": "research+feed",
+      "fix_now": [],
+      "remaining": [
+        "issue-specific acceptance evidence and current owner receipts"
+      ],
+      "probes": []
+    },
+    {
+      "repo": "foundation",
+      "number": 1249,
+      "title": "Foundation #1249",
+      "status": "OPEN",
+      "class": "research+feed",
+      "fix_now": [],
+      "remaining": [
+        "issue-specific acceptance evidence and current owner receipts"
+      ],
+      "probes": []
+    },
+    {
+      "repo": "foundation",
+      "number": 1265,
+      "title": "Foundation #1265",
+      "status": "OPEN",
+      "class": "security",
+      "fix_now": [],
+      "remaining": [
+        "issue-specific acceptance evidence and current owner receipts"
+      ],
+      "probes": []
+    },
+    {
+      "repo": "foundation",
+      "number": 1281,
+      "title": "Foundation #1281",
+      "status": "OPEN",
+      "class": "docs+continuity",
+      "fix_now": [],
+      "remaining": [
+        "issue-specific acceptance evidence and current owner receipts"
+      ],
+      "probes": []
+    },
+    {
+      "repo": "foundation",
+      "number": 1283,
+      "title": "Foundation #1283",
+      "status": "OPEN",
+      "class": "ci+process",
+      "fix_now": [],
+      "remaining": [
+        "issue-specific acceptance evidence and current owner receipts"
+      ],
+      "probes": []
+    },
+    {
+      "repo": "foundation",
+      "number": 1284,
+      "title": "Foundation #1284",
+      "status": "OPEN",
+      "class": "process+ci",
+      "fix_now": [],
+      "remaining": [
+        "issue-specific acceptance evidence and current owner receipts"
+      ],
+      "probes": []
+    },
+    {
+      "repo": "operations",
+      "number": 994,
+      "title": "Operations #994",
+      "status": "OPEN",
+      "class": "docs+integration",
+      "fix_now": [],
+      "remaining": [
+        "issue-specific acceptance evidence and current owner receipts"
+      ],
+      "probes": []
+    },
+    {
+      "repo": "operations",
+      "number": 997,
+      "title": "Operations #997",
+      "status": "OPEN",
+      "class": "audit+cloudflare",
+      "fix_now": [],
+      "remaining": [
+        "issue-specific acceptance evidence and current owner receipts"
+      ],
+      "probes": []
+    },
+    {
+      "repo": "operations",
+      "number": 998,
+      "title": "Operations #998",
+      "status": "OPEN",
+      "class": "docs+continuity",
+      "fix_now": [],
+      "remaining": [
+        "issue-specific acceptance evidence and current owner receipts"
+      ],
+      "probes": []
+    },
+    {
+      "repo": "operations",
+      "number": 1005,
+      "title": "Operations #1005",
+      "status": "OPEN",
+      "class": "chatbot+maintenance",
+      "fix_now": [],
+      "remaining": [
+        "issue-specific acceptance evidence and current owner receipts"
+      ],
+      "probes": []
     }
   ],
   "evidence_rules": {
@@ -287,7 +407,7 @@
     "backend_origin": "https://heroic.heroic-ai.workers.dev",
     "canonical_domain_status": "heroic-ai.dev pending/unresolvable",
     "certification": "OPEN / NOT CERTIFIED",
-    "deployed_foundation_sha": "2d8e2a6bdbb9279892eb4ad2095fbacc1adae9d4",
-    "deployed_operations_sha": "d89e119722f3017cedf0cc175ba55871a65846ed"
+    "deployed_foundation_sha": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
+    "deployed_operations_sha": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3"
   }
 }

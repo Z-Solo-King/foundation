@@ -1,3 +1,20 @@
+# 2026-09-26 LIVE RECONCILIATION OVERRIDE
+
+Fresh live evidence from 2026-09-26 supersedes older dated sections below.
+
+- Foundation main: `ee312632fce5be5da9536194e94f38fa2cdabb6b`
+- Operations main: `122a334d85708e2e42db59b74114d1396ca98f31`
+- Production Operations pin: `566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3`
+- Live open issues: Foundation 9 + Operations 12 = 21.
+- Live open PRs: Foundation 8 + Operations 4 = 12.
+- Canonical runtime: Pages `ai-cio.pages.dev` -> Worker `heroic` v30 -> private Worker `operations` v90.
+- Latest nightly #375 / run `36141145555`: blocked before provider execution; 24 slots prepared; no provider-backed acceptance.
+- Latest extractor benchmark #448 / run `36141127492`: 40 receipts; 4 ok / 32 empty / 4 blocked; structural/integrity pass only.
+- Direct D1: 707 research runs (484 completed / 223 planned), 440 observations, 0 publications, 1,436 chat-idempotency rows.
+- The per-PR issue-churn check is diagnostic; scheduled family-integrity remains the strict completeness gate.
+
+---
+
 # 2026-09-25 CURRENT GITHUB ↔ CLOUDFLARE AUTHORITY OVERRIDE
 
 This section supersedes older checkpoint values below.
