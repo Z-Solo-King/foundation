@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import pytest
 
+from foundation_core.quality import _matches
+
 from foundation_core import (
     RoutedField,
     evaluate_price_spec_plausibility,
