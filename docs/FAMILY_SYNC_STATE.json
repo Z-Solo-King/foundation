@@ -450,5 +450,15 @@
     981
   ],
   "open_implementation_pr_count": 8,
-  "github_current_branch": "main"
+  "github_current_branch": "main",
+  "continuity_enforcement": {
+    "schema": "continuity-freshness/v1",
+    "last_canonical_change": "fix/continuity-freshness-gate-20260926",
+    "required_docs": [
+      "docs/CURRENT_SOURCE_OF_TRUTH.md",
+      "docs/FAMILY_SYNC_STATE.json"
+    ],
+    "enforced_by": "tools/check_continuity_freshness.py",
+    "workflow": ".github/workflows/cross-repository-contract-drift.yml"
+  }
 }
