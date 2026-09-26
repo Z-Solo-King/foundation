@@ -1,0 +1,105 @@
+name: Bitkart Google feed audit
+
+on:
+  push:
+    branches:
+      - audit/bitkart-google-feed-20260926
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Probe Bitkart public endpoints
+        shell: bash
+        run: |
+          set -u
+          mkdir -p artifacts/bitkart-google-feed
+          : > artifacts/bitkart-google-feed/probes.ndjson
+          probe() {
+            local url="$1"
+            local name="$2"
+            local body="artifacts/bitkart-google-feed/${name}.body"
+            local hdr="artifacts/bitkart-google-feed/${name}.headers"
+            local code
+            code=$(curl -L --compressed --retry 2 --retry-delay 1 --connect-timeout 12 --max-time 25               -A 'Mozilla/5.0 (compatible; BitkartGoogleFeedAudit/1.0)'               -H 'Accept: text/html,application/xml,text/xml,application/rss+xml,application/atom+xml,*/*'               -D "$hdr" -o "$body" -w '%{http_code}' "$url" 2>artifacts/bitkart-google-feed/curl.err || true)
+            local ctype
+            ctype=$(awk -F': ' 'tolower($1)=="content-type"{print $2}' "$hdr" | tail -1 | tr -d '\r')
+            local final
+            final=$(awk 'tolower($1)=="location:"{print $2}' "$hdr" | tail -1 | tr -d '\r')
+            local bytes
+            bytes=$(wc -c <"$body" | tr -d ' ')
+            jq -n --arg name "$name" --arg url "$url" --arg status "$code"               --arg ctype "$ctype" --arg final "$final" --argjson bytes "$bytes"               '{name:$name,url:$url,status:($status|tonumber),content_type:$ctype,final_url:$final,bytes:$bytes}'               >> artifacts/bitkart-google-feed/probes.ndjson
+          }
+          probe https://bitkart.com/ homepage
+          probe https://bitkart.com/robots.txt robots
+          probe https://bitkart.com/sitemap.xml sitemap
+          probe https://bitkart.com/products.json products_json
+          probe https://bitkart.com/collections/all collections_all
+          paths=(
+            /google-shopping.xml /google-shopping-feed.xml /google-feed.xml
+            /google-products.xml /google-product-feed.xml /google_product_feed.xml /google_products.xml
+            /merchant-feed.xml /merchant_feed.xml /product-feed.xml /products-feed.xml
+            /feeds/google.xml /feeds/google-shopping.xml /feeds/google-shopping-feed.xml /feeds/google-products.xml
+            /feed/google.xml /feed/google-shopping.xml /feed/google-shopping-feed.xml
+            /feed/products.xml /feed/product-feed.xml /feeds/products.xml
+            /google_merchant.xml /google-merchant.xml /catalog/feed.xml /shopping-feed.xml /shopping.xml
+            /a/feed/v2/superfeed-info.xml /a/feed/v2/superfeed.xml /a/feed/superfeed.xml
+          )
+          i=0
+          for p in "${paths[@]}"; do
+            probe "https://bitkart.com${p}" "candidate_$(printf '%02d' "$i")"
+            i=$((i+1))
+          done
+          python - <<'PY'
+          import glob, json, os, re
+          rows=[]
+          for path in sorted(glob.glob("artifacts/bitkart-google-feed/*.body")):
+              body=open(path,errors="ignore").read()
+              low=body.lower()
+              urls=re.findall(r'https?://[^"\'<>\s]+|/[^"\'<>\s]+',body)
+              rows.append({
+                "file":os.path.basename(path),"bytes":len(body),
+                "shopify_markers":bool(re.search(r'cdn\.shopify\.com|shopify-section|Shopify\.theme|\.myshopify\.com|/cdn/shop/',body,re.I)),
+                "feed_app_markers":sorted(set(re.findall(r'shopify://apps/[^/"\s]+|simprosys|adnabu|mulwi|datafeedwatch|flexify|feednexa|omega|feedforge|feed maker|uni-feed',body,re.I))),
+                "google_terms":sorted(x for x in ["google shopping","merchant center","merchant feed","product feed","google feed"] if x in low),
+                "google_namespace":bool(re.search(r'base\.google\.com/ns/1\.0|<g:(?:id|title|link|price)',body,re.I)),
+                "feed_links":sorted(set(u for u in urls if re.search(r'feed|google|merchant|shopping|superfeed|\.xml(?:$|[?#])',u,re.I)))[:100]
+              })
+          open("artifacts/bitkart-google-feed/evidence.json","w").write(json.dumps(rows,indent=2)+"\n")
+          PY
+
+      - name: Validate XML candidates
+        shell: bash
+        run: |
+          python - <<'PY'
+          import glob, json, os, re
+          rows=[]
+          for path in sorted(glob.glob("artifacts/bitkart-google-feed/candidate_*.body")):
+              body=open(path,errors="ignore").read()
+              low=body.lower()
+              xml=bool(re.search(r'<\?xml|<rss\b|<feed\b|<item\b',low))
+              items=re.findall(r'<item\b[^>]*>(.*?)</item>',low,re.S|re.I)
+              entries=re.findall(r'<entry\b[^>]*>(.*?)</entry>',low,re.S|re.I)
+              recs=items or entries
+              google=bool(re.search(r'base\.google\.com/ns/1\.0|<g:(?:id|title|link|price|availability)\b',body,re.I))
+              n=len(recs)
+              counts={k:sum(bool(re.search(r'<g:'+k+r'\b',x,re.I)) for x in recs) for k in ['id','title','link','price']}
+              cov=min(counts.values())/n if n else 0
+              rows.append({"file":os.path.basename(path),"xml":xml,"google_namespace_or_fields":google,"item_count":n,"coverage":round(cov,4),"qualifies":bool(xml and google and cov>=0.75),"required_counts":counts,"body_prefix":body[:1200]})
+          open("artifacts/bitkart-google-feed/validated.json","w").write(json.dumps(rows,indent=2)+"\n")
+          print(json.dumps({"candidates":len(rows),"qualifying":[r for r in rows if r["qualifies"]]},indent=2))
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: bitkart-google-feed-audit-2026-09-26
+          path: artifacts/bitkart-google-feed/
+          retention-days: 14
