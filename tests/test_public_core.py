@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import pytest
 
+from foundation_core.quality import _matches
+
 from foundation_core import (
     RoutedField,
     evaluate_price_spec_plausibility,
@@ -159,3 +161,33 @@ def test_map_product_preserves_multiple_observed_offers() -> None:
         {"seller_id": "seller-a", "price": "20", "currency": "INR", "availability": "In Stock"},
         {"seller_id": "seller-b", "price": "19", "currency": "INR", "availability": "Out of Stock"},
     )
+
+
+def test_plausibility_rule_predicates_cover_negative_paths() -> None:
+    assert _matches({}, category="monitor", panel="oled", price=1, refresh=60, size=24) is False
+    assert _matches({"when": {"category_contains": []}}, category="monitor", panel="oled", price=1, refresh=60, size=24) is True
+    assert _matches({"when": {"category_contains": ["monitor"]}}, category="laptop", panel="oled", price=1, refresh=60, size=24) is False
+    assert _matches({"when": {"panel_contains": "oled"}}, category="monitor", panel="lcd", price=1, refresh=60, size=24) is False
+    assert _matches({"when": {"price_lt": 100}}, category="monitor", panel="oled", price=100, refresh=60, size=24) is False
+    assert _matches({"when": {"refresh_gte": 120}}, category="monitor", panel="oled", price=1, refresh=None, size=24) is False
+    assert _matches({"when": {"refresh_gte": 120}}, category="monitor", panel="oled", price=1, refresh=60, size=24) is False
+    assert _matches({"when": {"size_gte": 27}}, category="monitor", panel="oled", price=1, refresh=60, size=None) is False
+    assert _matches({"when": {"size_gte": 27}}, category="monitor", panel="oled", price=1, refresh=60, size=24) is False
+
+
+def test_quality_rules_reject_invalid_payload(monkeypatch: pytest.MonkeyPatch) -> None:
+    import foundation_core.quality as quality
+
+    class FakeFile:
+        def read_text(self, *, encoding: str) -> str:
+            return "{}"
+
+    class FakeFiles:
+        def joinpath(self, _name: str) -> FakeFile:
+            return FakeFile()
+
+    quality._RULES_CACHE = None
+    monkeypatch.setattr(quality.resources, "files", lambda _package: FakeFiles())
+    with pytest.raises(ValueError, match="must contain a rules list"):
+        quality._rules()
+    quality._RULES_CACHE = None
