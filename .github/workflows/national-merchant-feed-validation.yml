@@ -1,0 +1,73 @@
+name: National PC Merchant Feed Validation
+on:
+  push:
+    branches: [probe/opencart-feed-full-20260926]
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Validate Google feeds
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import concurrent.futures, urllib.request, urllib.error, re, xml.etree.ElementTree as ET, json, time, os
+          root='https://nationalpc.in'
+          ids=[1,2,3,4,5,6,7,8,13,17,23,26,27,31,32,33,35,36,39,40]
+          H={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36','Accept':'application/xml,text/xml,application/rss+xml,*/*','Accept-Language':'en-IN,en;q=0.9'}
+          G='http://base.google.com/ns/1.0'
+          def get(fid):
+              url=root+'/index.php?route=extension/module/google_all_feed&feed_id='+str(fid)
+              t=time.time()
+              try:
+                  req=urllib.request.Request(url,headers=H)
+                  with urllib.request.urlopen(req,timeout=15) as r:
+                      body=r.read(10000000)
+                      status=r.status; ctype=r.headers.get('content-type','')
+                  text=body.decode('utf-8','replace')
+                  items=[]
+                  try:
+                      rt=ET.fromstring(body)
+                      items=list(rt.findall('.//item'))
+                  except Exception as e:
+                      return {'feed_id':fid,'url':url,'status':status,'ctype':ctype,'bytes':len(body),'parse_error':str(e),'ms':round((time.time()-t)*1000)}
+                  def tag(it,n):
+                      x=it.find(n)
+                      return (x.text or '').strip() if x is not None else ''
+                  good=0; fields={'id':0,'title':0,'link':0,'price':0,'availability':0,'image':0,'brand':0}
+                  samples=[]
+                  for it in items:
+                      vals={
+                        'id':tag(it,'{%s}id'%G) or tag(it,'id'),
+                        'title':tag(it,'title'),
+                        'link':tag(it,'{%s}link'%G) or tag(it,'link'),
+                        'price':tag(it,'{%s}price'%G) or tag(it,'price'),
+                        'availability':tag(it,'{%s}availability'%G) or tag(it,'availability'),
+                        'image':tag(it,'{%s}image_link'%G) or tag(it,'image_link'),
+                        'brand':tag(it,'{%s}brand'%G) or tag(it,'brand'),
+                      }
+                      for k,v in vals.items():
+                          if v: fields[k]+=1
+                      if all(vals[k] for k in ['id','title','link','price','availability']): good+=1
+                      if len(samples)<2: samples.append(vals)
+                  # Look for total/pagination hints anywhere
+                  lo=text.lower()
+                  return {'feed_id':fid,'url':url,'status':status,'ctype':ctype,'bytes':len(body),'rss':'<rss' in lo,'google_namespace':'http://base.google.com/ns/1.0' in text,'items':len(items),'required_complete_items':good,'field_counts':fields,'complete_ratio':good/len(items) if items else 0,'samples':samples,'ms':round((time.time()-t)*1000),'error_hint':'database_error' if 'could not make a database link' in lo else None}
+              except Exception as e:
+                  return {'feed_id':fid,'url':url,'status':0,'error':type(e).__name__+':'+str(e)[:160],'ms':round((time.time()-t)*1000)}
+          with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
+              results=list(ex.map(get,ids))
+          results.sort(key=lambda x:x['feed_id'])
+          good=[x for x in results if x.get('items',0)>0 and x.get('complete_ratio',0)>=0.98]
+          out={'generated_at':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'good_candidates':good,'results':results}
+          os.makedirs('out',exist_ok=True)
+          open('out/national-merchant-feed-validation.json','w').write(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: national-merchant-feed-validation-20260926
+          path: out/national-merchant-feed-validation.json
+          retention-days: 14
