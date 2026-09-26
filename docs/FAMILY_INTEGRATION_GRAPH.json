@@ -488,7 +488,7 @@
       "targets": [
         "foundation#58",
         "foundation#157",
-        "operations#197"
+        "operations#340"
       ]
     },
     {
@@ -512,7 +512,7 @@
       ],
       "targets": [
         "foundation#157",
-        "operations#197",
+        "operations#713",
         "operations#603"
       ]
     },

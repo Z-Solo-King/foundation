@@ -5,7 +5,7 @@
     "foundation": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
     "operations": "122a334d85708e2e42db59b74114d1396ca98f31"
   },
-  "open_issue_count": 21,
+  "open_issue_count": 20,
   "issues": [
     {
       "repo": "foundation",
@@ -190,28 +190,6 @@
       "probes": [
         "FI-03",
         "FI-05",
-        "FI-07"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 197,
-      "title": "Heroic AI conversational execution",
-      "status": "OPEN",
-      "class": "production runtime",
-      "fix_now": [
-        "canonical Pages runtime path definition (ai-cio.pages.dev)",
-        "family graph UI→edge→chatbot→research/resource chain"
-      ],
-      "remaining": [
-        "optional custom-domain DNS activation (separate track)",
-        "live model generation",
-        "replay/concurrency/policy denial/SSE/research/provenance/resource evidence"
-      ],
-      "probes": [
-        "FI-04",
-        "FI-05",
-        "FI-06",
         "FI-07"
       ]
     },

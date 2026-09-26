@@ -69,7 +69,7 @@
     "durable_object_namespaces": 0
   },
   "current_queue": {
-    "open_issue_count": 21,
+    "open_issue_count": 20,
     "foundation": [
       58,
       157,
@@ -83,7 +83,6 @@
     ],
     "operations": [
       145,
-      197,
       340,
       385,
       597,
@@ -289,7 +288,10 @@
     },
     "family_integrity": {
       "run_id": 36119501613,
-      "status": "success"
+      "status": "success",
+      "last_live_check_run": 60,
+      "last_result": "failed_stale_matrix_after_operations_197_closure",
+      "live_issue_count": 20
     }
   },
   "known_findings": [
