@@ -47,7 +47,7 @@ async function wayback(base){
   const u=`https://web.archive.org/cdx/search/cdx?url=${encodeURIComponent(host+"/*")}&output=json&fl=original,timestamp,statuscode,mimetype&filter=statuscode:200&collapse=urlkey&limit=1000`;
   const r=await get(u);
   if(r.status!==200||!r.text)return {status:r.status,urls:[],error:"wayback_unavailable"};
-  try{const d=JSON.parse(r.text);const rows=Array.isArray(d)?d.slice(1):[];const urls=[];for(const row of rows){const original=row?.[0]||"";if(feedish(original)||/\.xml(?:[?#]|$)/i.test(original))urls.push(original);}return {status:r.status,urls:[...new Set(urls)].slice(0,100)};}catch{return {status:r.status,urls:[],error:"wayback_parse_error"};}
+  try{const d=JSON.parse(r.text);const rows=Array.isArray(d)?d.slice(1):[];const urls=[];for(const row of rows){const original=row?.[0]||"";const low=original.toLowerCase();const feedCandidate=/\.xml(?:[?#]|$)/i.test(original)||/(?:google|merchant|shopping|product-feed|products-feed|merchant-feed|feedcraft|codesolz|woo-feed|woo-product-feed-pro|wppfm-feeds)/i.test(low)&&!/(?:\/product\/|\/product-category\/|\/compare\/|\/comments\/feed\/|\/wp-json\/wp\/v2\/|\?route=product%2fproduct)/i.test(low);if(feedCandidate)urls.push(original);}return {status:r.status,urls:[...new Set(urls)].slice(0,100)};}catch{return {status:r.status,urls:[],error:"wayback_parse_error"};}
 }
 
 async function commonCrawl(base){
