@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="7015d674036645c6c6a34150bd41874a876dcb35"
+OPERATIONS_REF="d8ece94ba6ed05852b703f2f2cce7d9da0db252d"
 OPERATIONS_SERVICE_NAME="operations"
 BASE_URL="https://ai-cio.pages.dev"
 ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"
