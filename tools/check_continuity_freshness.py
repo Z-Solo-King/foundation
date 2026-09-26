@@ -9,6 +9,14 @@ CANONICAL_PREFIXES = ("backend/","foundation_core/","frontend/","migrations/","p
 CANONICAL_FILES = {"CAPABILITIES.json","REPOSITORY_MAP.json","worker.py","wrangler.toml"}
 
 def changed_files(base_sha: str, head_sha: str) -> list[str]:
+    probe=subprocess.run(["git","cat-file","-e",f"{base_sha}^{{commit}}"],check=False,capture_output=True,text=True)
+    if probe.returncode != 0:
+        fetch=subprocess.run(["git","fetch","--no-tags","origin",base_sha],check=False,capture_output=True,text=True)
+        if fetch.returncode != 0:
+            raise SystemExit(
+                f"continuity-freshness: cannot materialize base revision {base_sha}: "
+                f"{fetch.stderr.strip() or fetch.stdout.strip()}"
+            )
     result=subprocess.run(["git","diff","--name-only","--diff-filter=ACMRT",f"{base_sha}..{head_sha}"],check=True,capture_output=True,text=True)
     return [x.strip() for x in result.stdout.splitlines() if x.strip()]
 

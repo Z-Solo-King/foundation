@@ -15,3 +15,26 @@ def test_canonical_path_classifier():
 def test_required_docs_are_exact_living_pair():
     assert [str(p) for p in REQUIRED_DOCS] == ["docs/CURRENT_SOURCE_OF_TRUTH.md","docs/FAMILY_SYNC_STATE.json"]
     assert all(p.exists() for p in REQUIRED_DOCS)
+
+
+def test_changed_files_fetches_missing_base_revision(monkeypatch):
+    import tools.check_continuity_freshness as module
+    calls = []
+    class Fake:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        if cmd[:3] == ["git", "cat-file", "-e"]:
+            class Missing:
+                returncode = 1
+                stdout = ""
+                stderr = ""
+            return Missing()
+        if cmd[:3] == ["git", "fetch", "--no-tags"]:
+            return Fake()
+        return Fake()
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+    module.changed_files("deadbeef", "head")
+    assert any(cmd[:3] == ["git", "fetch", "--no-tags"] for cmd in calls)
