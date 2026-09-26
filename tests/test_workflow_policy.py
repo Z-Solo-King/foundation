@@ -489,6 +489,23 @@ def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
         workflow = (WORKFLOW_ROOT / filename).read_text(encoding="utf-8")
         assert expected in workflow
         assert "50e642dfb05846963a82fe76f4f5fe085d4b9a8c" not in workflow
+def test_workflows_use_only_public_actions_and_private_source_checkout_is_explicit():
+    workflows = _workflow_texts()
+    private_action_markers = (
+        "uses: Z-Solo-King/operations/",
+        "uses: Z-Solo-King/operations@",
+        "uses: Z-Solo-King/foundation/",
+        "uses: Z-Solo-King/foundation@",
+    )
+    for name, text in workflows.items():
+        for marker in private_action_markers:
+            assert marker not in text, f"{name} contains a private/local repository action reference: {marker}"
+    # Private Operations source is allowed only through the public actions/checkout action
+    # with a scoped GitHub App installation token, never by executing a private action.
+    for name, text in workflows.items():
+        if "repository: Z-Solo-King/operations" in text:
+            assert "actions/checkout@" in text or "actions/github-script@" in text, name
+
 def test_github_app_token_inputs_use_client_id():
     for name, text in _workflow_texts().items():
         if "actions/create-github-app-token@" in text:
