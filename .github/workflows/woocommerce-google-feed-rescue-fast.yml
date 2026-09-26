@@ -1,0 +1,37 @@
+name: WooCommerce Google Feed Rescue Fast
+
+on:
+  push:
+    branches:
+      - "ai/woocommerce-google-feed-audit-20260926"
+  workflow_dispatch:
+
+concurrency:
+  group: wc-google-feed-rescue-fast
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  rescue:
+    name: Rescue public feeds + Store API
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Syntax check
+        run: node --check tools/woocommerce_google_feed_rescue_fast.mjs
+      - name: Run optimized rescue
+        run: node tools/woocommerce_google_feed_rescue_fast.mjs
+      - name: Upload rescue artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-rescue-fast
+          path: out/rescue-fast/
+          if-no-files-found: warn
+          retention-days: 30

@@ -1,9 +1,6 @@
 name: WooCommerce Google Feed Hybrid Audit
 
 on:
-  push:
-    branches:
-      - "ai/woocommerce-google-feed-audit-20260926"
   workflow_dispatch:
 
 permissions:
