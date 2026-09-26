@@ -1,6 +1,6 @@
 name: Public Worker live probe
 
-on:
+on: # zizmor: ignore[dangerous-triggers] bounded public HTTP probe; no source checkout
   workflow_run:
     workflows:
       - "Heroic AI production release"
@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 jobs:
   probe:
