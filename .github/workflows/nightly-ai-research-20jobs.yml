@@ -12,6 +12,7 @@ on:
         type: string
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: nightly-ai-research-20jobs
@@ -88,6 +89,12 @@ jobs:
         run: node scripts/build_nightly_ai_research_report.js
       - name: Audit agent instruction surfaces
         run: PYTHONPATH="$GITHUB_WORKSPACE" python3 scripts/instruction_audit.py --output .runtime/instruction-audit.json AGENTS.md CLAUDE.md
+      - name: Publish benchmark findings to tracking issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INSTRUCTION_REPORT: .runtime/instruction-audit.json
+          AGGREGATE_REPORT: .runtime/aggregate-ai-agent-benchmark.json
+        run: python3 scripts/publish_benchmark_findings.py --instruction-report "$INSTRUCTION_REPORT" --aggregate-report "$AGGREGATE_REPORT"
       - name: Require all 20 job packets
         run: |
           set -euo pipefail
