@@ -1,0 +1,75 @@
+name: WooCommerce Google Feed Transport Matrix
+
+on:
+  push:
+    branches:
+      - "ai/woocommerce-google-feed-audit-20260926"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lane-a:
+    name: Transport A (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env: { TARGET_START: "0", TARGET_COUNT: "8" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Run curl/wget feed matrix
+        run: node tools/woocommerce_google_feed_transport_matrix.mjs
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: woocommerce-google-feed-transport-a, path: out/transport/, if-no-files-found: warn, retention-days: 14 }
+
+  lane-b:
+    name: Transport B (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env: { TARGET_START: "8", TARGET_COUNT: "8" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Run curl/wget feed matrix
+        run: node tools/woocommerce_google_feed_transport_matrix.mjs
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: woocommerce-google-feed-transport-b, path: out/transport/, if-no-files-found: warn, retention-days: 14 }
+
+  lane-c:
+    name: Transport C (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env: { TARGET_START: "16", TARGET_COUNT: "8" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Run curl/wget feed matrix
+        run: node tools/woocommerce_google_feed_transport_matrix.mjs
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: woocommerce-google-feed-transport-c, path: out/transport/, if-no-files-found: warn, retention-days: 14 }
+
+  lane-d:
+    name: Transport D (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env: { TARGET_START: "24", TARGET_COUNT: "8" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Run curl/wget feed matrix
+        run: node tools/woocommerce_google_feed_transport_matrix.mjs
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: woocommerce-google-feed-transport-d, path: out/transport/, if-no-files-found: warn, retention-days: 14 }
