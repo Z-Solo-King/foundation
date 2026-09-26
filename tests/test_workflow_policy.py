@@ -712,3 +712,11 @@ def test_nightly_research_preflight_has_network_failure_classification():
     assert '"network_classification"' in preflight
     assert "dns_or_network_unreachable" in preflight
     assert "edge_http_403" in preflight
+
+def test_full_secret_scan_contract_is_fail_closed():
+    import re
+    workflow=(ROOT / ".github/workflows/required-pr-checks.yml").read_text(encoding="utf-8")
+    assert "Full tracked-tree and git-history secret scan" in workflow
+    assert "public-full-secret-scan" in workflow
+    assert "git rev-list --count --all" in workflow
+    assert re.search(r"PRIVATE KEY|AKIA\[0-9A-Z\]\{16\}", workflow)
