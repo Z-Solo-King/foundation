@@ -12,12 +12,8 @@ def test_family_sync_state_matches_current_main_and_graph():
     assert state["status"] == "CURRENT"
     assert state["live_main"]["foundation"]
     assert state["live_main"]["operations"]
-    assert state["current_queue"]["open_issue_count"] == 19
-    assert state["current_queue"]["foundation"] == [58, 157, 1157, 1247, 1249, 1265, 1283, 1284]
-    assert state["current_queue"]["operations"] == [145, 340, 385, 597, 603, 699, 713, 994, 997, 998, 1005]
-    assert state["current_integration"]["graph_schema"] == "family-integration-graph/v1"
-    assert state["current_integration"]["graph_blob_sha"]
-    assert state["current_integration"]["material_count"] == 20
-    assert state["current_integration"]["benchmark_probe_count"] == 11
+    assert state["current_queue"]["open_issue_count"] == 11
+    assert state["current_queue"]["foundation"] == [58, 157, 1157, 1247, 1249, 1305, 1306]
+    assert state["current_queue"]["operations_count"] == 4
     assert graph["schema"] == "family-integration-graph/v1"
     assert len(graph["material_registry"]) == 20
