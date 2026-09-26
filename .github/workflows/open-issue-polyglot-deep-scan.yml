@@ -1,7 +1,7 @@
 name: Open issue polyglot deep scan
 # Issue-count authority is the live Operations current_open_issue_inventory.json; never hard-code the queue size here.
 
-on:
+on: # zizmor: ignore[dangerous-triggers] main/manual protected audit; no untrusted PR target execution
   push:
     branches: [main]
     paths:
@@ -28,7 +28,6 @@ on:
 permissions:
   contents: read
   actions: read
-  issues: write
 
 concurrency:
   group: foundation-open-issue-polyglot-deep-scan
@@ -36,6 +35,10 @@ concurrency:
 
 jobs:
   lane:
+    permissions:
+      contents: read
+      actions: read
+      issues: write
     name: Deep scan ${{ matrix.lane }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
