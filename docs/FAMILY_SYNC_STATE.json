@@ -69,11 +69,10 @@
     "durable_object_namespaces": 0
   },
   "current_queue": {
-    "open_issue_count": 10,
+    "open_issue_count": 9,
     "foundation": [
       58,
       157,
-      1265,
       1247,
       1249,
       1157
@@ -456,18 +455,18 @@
     "verification_note": "freshness checker must materialize missing base revision before diff"
   },
   "github_heads": {
-    "foundation": "6549f6752352d4c4c9f2162b61faa69ef263deaa",
-    "operations": "da5c13f94db74c359b3990474f84640940c67e42"
+    "foundation": "35afd6ccefecfd80c0e70155378f97a3a7a4eca9",
+    "operations": "a3686fd166f98fbfc762f5776519799ac9ed496b"
   },
   "open_prs": {
     "foundation": [
-      1291,
+      1304,
+      1301,
       1248
     ],
     "operations": [
       985,
       984,
-      983,
       981
     ]
   },
