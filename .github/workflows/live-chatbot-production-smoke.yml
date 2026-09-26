@@ -1,6 +1,6 @@
 name: Live chatbot production smoke
 
-on:
+on: # zizmor: ignore[dangerous-triggers] trusted post-release smoke; no untrusted PR checkout
   workflow_run:
     workflows: ["Heroic AI production release"]
     types: [completed]
@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 concurrency:
   group: live-chatbot-production-smoke
