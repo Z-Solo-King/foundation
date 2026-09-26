@@ -159,3 +159,15 @@ def test_map_product_preserves_multiple_observed_offers() -> None:
         {"seller_id": "seller-a", "price": "20", "currency": "INR", "availability": "In Stock"},
         {"seller_id": "seller-b", "price": "19", "currency": "INR", "availability": "Out of Stock"},
     )
+
+
+def test_quality_rules_are_data_defined() -> None:
+    import json
+    from pathlib import Path
+
+    payload = json.loads((Path(__file__).parents[1] / "foundation_core" / "quality_rules.json").read_text(encoding="utf-8"))
+    assert payload["schema"] == "plausibility-rules/v1"
+    assert {rule["code"] for rule in payload["rules"]} == {
+        "budget_oled_monitor",
+        "extreme_refresh_price_combo",
+    }
