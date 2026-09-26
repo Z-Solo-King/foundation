@@ -19,5 +19,6 @@ dev = [
   "pytest",
   "pytest-asyncio",
   "coverage",
+  "jsonschema",
   "PyYAML",
 ]
