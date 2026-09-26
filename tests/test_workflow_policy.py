@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -63,8 +64,11 @@ def test_production_deployment_has_one_owner():
 
 # Canonical Operations revision is declared once and used by the release self-check.\n\ndef test_canonical_operations_production_pin_is_current_and_immutable():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    manifest = json.loads((ROOT / "docs" / "OPERATIONS_PIN_MANIFEST.json").read_text(encoding="utf-8"))
+    production_pin = manifest["purpose_scoped_pins"]["production_runtime"]["revision"]
     assert f'OPERATIONS_REPOSITORY="{CANONICAL_OPERATIONS_REPOSITORY}"' in deployment
-    assert f'OPERATIONS_REF="{CANONICAL_OPERATIONS_REF}"' in deployment
+    assert 'OPERATIONS_REF="$(jq -r ".purpose_scoped_pins.production_runtime.revision" "$OPERATIONS_PIN_MANIFEST")"' in deployment
+    assert production_pin == CANONICAL_OPERATIONS_REF
     assert deployment.count(CANONICAL_OPERATIONS_REF) == 2
     assert LEGACY_OPERATIONS_REF not in deployment
     assert 'git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git"' in deployment
@@ -410,11 +414,14 @@ def test_nightly_migration_review_uses_separate_immutable_tooling_pin():
     assert "Verify Operations migration-tools revision" in workflow
 
 
-def test_canonical_operations_pin_matches_latest_migration_head():
-    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert f'OPERATIONS_REF="{CANONICAL_OPERATIONS_REF}"' in deployment
-    nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
-    assert "OPERATIONS_RESEARCH_REF: 566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3" in nightly
+def test_canonical_operations_pin_matches_manifest_purpose_scopes():
+    manifest = json.loads((ROOT / "docs" / "OPERATIONS_PIN_MANIFEST.json").read_text(encoding="utf-8"))
+    production = manifest["purpose_scoped_pins"]["production_runtime"]["revision"]
+    nightly = manifest["purpose_scoped_pins"]["nightly_research"]["revision"]
+    utility = manifest["purpose_scoped_pins"]["utility_validation"]["revision"]
+    assert production == nightly == utility == CANONICAL_OPERATIONS_REF
+    text = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
+    assert f"OPERATIONS_RESEARCH_REF: {nightly}" in text
 
 
 
