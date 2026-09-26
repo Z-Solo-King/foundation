@@ -66,3 +66,9 @@ def test_unmatched_and_alternate_transform_paths():
     assert apply_domain_rules("sandwich wireless", ["keyboard"])["mount_style"] == "Sandwich"
     assert apply_domain_rules("switch wireless", ["keyboard"])["connection_type"] == "Wireless"
     assert apply_domain_rules("usb", ["keyboard"])["connection_type"] == "Wired"
+
+
+def test_regex_identity_and_special_weight_alternate_branch():
+    assert apply_domain_rules("paw3395 wired", ["mouse"])["tracking_method"] == "PAW3395"
+    assert apply_domain_rules("ipi haze 6369g standard", ["mouse"])["weight"] == "63g"
+    assert apply_domain_rules("ipi haze 6369g haze x1 tmr", ["mouse"])["weight"] == "69g"
