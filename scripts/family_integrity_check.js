@@ -53,9 +53,19 @@ const normalizeIssueKeys = (pairs) => {
 };
 
 const activeIssues = {};
-for (const repo of ["foundation", "operations"]) {
-  const rows = gh(repo, `repos/Z-Solo-King/${repo}/issues?state=open&per_page=100`);
-  activeIssues[repo] = normalizeIssueNumbers(rows.filter(x => !x.pull_request).map(x => x.number));
+const snapshotPath = process.env.LIVE_ISSUE_SNAPSHOT;
+if (snapshotPath) {
+  const snapshot = readJson(snapshotPath);
+  for (const repo of ["foundation", "operations"]) {
+    activeIssues[repo] = normalizeIssueNumbers(
+      (snapshot.actual || []).filter(x => x.repo === repo).map(x => x.number)
+    );
+  }
+} else {
+  for (const repo of ["foundation", "operations"]) {
+    const rows = gh(repo, `repos/Z-Solo-King/${repo}/issues?state=open&per_page=100`);
+    activeIssues[repo] = normalizeIssueNumbers(rows.filter(x => !x.pull_request).map(x => x.number));
+  }
 }
 
 const matrixIssues = normalizeIssueKeys(matrix.issues.map(x => [x.repo, x.number]));

@@ -1,27 +1,28 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-25",
+  "audited_at": "2026-09-26",
   "live_main": {
-    "foundation": "d30309117d65a52c20c09f88b9f03801b2710249",
-    "operations": "3334fa19e72ff0fb6f4e318da216b216cd05e903"
+    "foundation": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
+    "operations": "122a334d85708e2e42db59b74114d1396ca98f31"
   },
   "runtime_pins": {
-    "foundation_runtime": "d30309117d65a52c20c09f88b9f03801b2710249",
-    "production_operations": "7015d674036645c6c6a34150bd41874a876dcb35",
-    "nightly_research_operations": "7015d674036645c6c6a34150bd41874a876dcb35",
-    "foundation_deployed": "d30309117d65a52c20c09f88b9f03801b2710249",
+    "foundation_runtime": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
+    "production_operations": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
+    "nightly_research_operations": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
+    "foundation_deployed": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
     "deployed_operations_pending": "7015d674036645c6c6a34150bd41874a876dcb35"
   },
   "cloudflare": {
-    "control_plane_snapshot": "live_verified_2026-09-25_R7",
+    "control_plane_snapshot": "live_verified_2026-09-26",
     "fresh_deployment_receipt": true,
     "workers": [
       "foundation",
       "heroic",
       "operations",
-      "research-intelligence-engine-private",
-      "research-intelligence-engine-public"
+      "logtech-endpoint-lab",
+      "opencart-feed-probe-20260926",
+      "shopify-feed-probe-20260926"
     ],
     "public_worker_tag": "e84124529c014c0ea8c89b6e524e8264",
     "private_worker_tag": "21801b08ec8c4f55aeddbcfae9ded48b",
@@ -34,8 +35,8 @@
     "zone_status": "pending",
     "activation_failure_reason": "unresolvable",
     "custom_domain_enabled": true,
-    "deployed_foundation_provenance": "github:d30309117d65a52c20c09f88b9f03801b2710249",
-    "deployed_operations_provenance": "github:ca9cc887049b2800361b222bbdae7f56100f4f7c",
+    "deployed_foundation_provenance": "github:ee312632fce5be5da9536194e94f38fa2cdabb6b",
+    "deployed_operations_provenance": "github:566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
     "pages_project": "ai",
     "pages_subdomain": "ai-cio.pages.dev",
     "pages_production_deployment_id": "c25b130b-055a-470f-b8f8-bc29a8e62c7e",
@@ -50,14 +51,35 @@
     "backend_worker": "heroic",
     "backend_origin": "https://heroic.heroic-ai.workers.dev",
     "approved_operations_provenance": "github:7015d674036645c6c6a34150bd41874a876dcb35",
-    "deployed_operations_status": "pending_promotion_to_3e0d"
+    "deployed_operations_status": "pending_promotion_to_3e0d",
+    "public_worker_version": 30,
+    "private_worker_version": 90,
+    "public_worker_provenance": "github:ee312632fce5be5da9536194e94f38fa2cdabb6b",
+    "private_worker_provenance": "github:566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
+    "r2_status": "not_enabled_or_unavailable",
+    "legacy_worker": "foundation",
+    "legacy_worker_provenance": "github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c",
+    "pages": [
+      "ai",
+      "heroic",
+      "heroic-ai"
+    ],
+    "kv_namespaces": 0,
+    "queues": 0,
+    "durable_object_namespaces": 0
   },
   "current_queue": {
-    "open_issue_count": 11,
+    "open_issue_count": 21,
     "foundation": [
       58,
       157,
-      1157
+      1157,
+      1247,
+      1249,
+      1265,
+      1281,
+      1283,
+      1284
     ],
     "operations": [
       145,
@@ -67,26 +89,30 @@
       597,
       603,
       699,
-      713
+      713,
+      994,
+      997,
+      998,
+      1005
     ]
   },
   "latest_evidence": {
     "nightly_research": {
-      "run_id": 36030996071,
-      "state": "failed_at_public_worker_authorization",
+      "run_id": 36141145555,
+      "state": "blocked_before_execution",
       "provider_execution": false,
       "programs": 24,
       "blocker": "public_worker_http_403",
       "local_error": "upstream_worker_rejected",
       "local_http_status": 502,
-      "foundation_revision": "725e1b9cdaa637f07d4264673cddfc8ab806b3c6",
-      "operations_ref": "fda24660843cacfe28de661cf170789af542d28f"
+      "foundation_revision": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
+      "operations_ref": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3"
     },
     "nightly_migration_review": {
       "run_number": 893,
       "run_id": 35964787260,
       "state": "completed",
-      "score_0_to_100": 70,
+      "score_0_to_100": 60,
       "matrix_cases": 40,
       "capacity_cases": 24,
       "language_review_rows": 40,
@@ -96,7 +122,7 @@
       "evidence_class": "deterministic-structural",
       "runtime_performance_valid": false,
       "artifact_id": 10794095266,
-      "diagnosis_artifact_id": 10794105227
+      "diagnosis_artifact_id": 10868805522
     },
     "nightly_preflight": {
       "run_id": 36119501717,
@@ -112,11 +138,11 @@
       "local_http_status": 502
     },
     "extractor_benchmark": {
-      "run_number": 443,
-      "run_id": 36118106992,
+      "run_number": 448,
+      "run_id": 36141127492,
       "status": "pass",
-      "artifact_id": 10855896489,
-      "artifact_digest": "sha256:8b37d570f60d0cf44a6353e23955a945e69c45b54db59b25f9e402789d72f37d",
+      "artifact_id": 10867020802,
+      "artifact_digest": "sha256:073ad2ba3df5bad3f9536abe95281ec596e109d7293b4bc4d30499e11cb21e62",
       "receipts": 40,
       "ok": 4,
       "empty": 32,
@@ -124,7 +150,8 @@
       "provenance_completeness": 1,
       "route_provenance_completeness": 1,
       "repeat_reliability": 1,
-      "unstable_repeated_groups": 0
+      "unstable_repeated_groups": 0,
+      "recovery_rate": 1
     },
     "coverage_matrix": {
       "run_number": 333,
@@ -340,14 +367,28 @@
     "source": "operations/wrangler.toml at fda24660843cacfe28de661cf170789af542d28f"
   },
   "github_sync": {
-    "checked_at": "2026-09-25",
-    "foundation_main": "d30309117d65a52c20c09f88b9f03801b2710249",
-    "operations_main": "3334fa19e72ff0fb6f4e318da216b216cd05e903",
-    "canonical_operations_pin": "7015d674036645c6c6a34150bd41874a876dcb35",
-    "open_pr_count": 0,
+    "checked_at": "2026-09-26",
+    "foundation_main": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
+    "operations_main": "122a334d85708e2e42db59b74114d1396ca98f31",
+    "canonical_operations_pin": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
+    "open_pr_count": 12,
     "cloudflare_runtime_verification": "live_verified",
-    "foundation_open_prs": [],
-    "operations_open_prs": [],
+    "foundation_open_prs": [
+      1282,
+      1280,
+      1279,
+      1278,
+      1276,
+      1275,
+      1253,
+      1248
+    ],
+    "operations_open_prs": [
+      985,
+      984,
+      983,
+      981
+    ],
     "deployment_state": "Foundation pin update pending next production release"
   },
   "open_pr_reconciliation": {
@@ -387,16 +428,26 @@
     "material_count": 20,
     "benchmark_probe_count": 11,
     "operations_sync_state_merge": "fd974fe9ce1793fed2d308519051e92d30d6d855",
-    "foundation_main_at_sync": "ec143386e0258d9cb5aeaf13cde95f66814a7c0b",
+    "foundation_main_at_sync": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
     "graph_version": "1.1"
   },
-  "open_pr_count": 0,
-  "foundation_open_prs": [],
-  "operations_open_prs": [],
-  "open_implementation_pr_count": 0,
-  "github_current_branch": {
-    "foundation_main": "d30309117d65a52c20c09f88b9f03801b2710249",
-    "operations_main": "3334fa19e72ff0fb6f4e318da216b216cd05e903",
-    "production_operations_pin": "7015d674036645c6c6a34150bd41874a876dcb35"
-  }
+  "open_pr_count": 12,
+  "foundation_open_prs": [
+    1282,
+    1280,
+    1279,
+    1278,
+    1276,
+    1275,
+    1253,
+    1248
+  ],
+  "operations_open_prs": [
+    985,
+    984,
+    983,
+    981
+  ],
+  "open_implementation_pr_count": 8,
+  "github_current_branch": "main"
 }
