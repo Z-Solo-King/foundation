@@ -1,0 +1,54 @@
+{
+  "schema_version": "family-schema-registry/v1",
+  "owner": "Z-Solo-King/foundation",
+  "compatibility": {
+    "rule": "additive-compatible",
+    "breaking_changes": "require a new major version",
+    "deprecation": "retain prior schema files until all declared consumers migrate"
+  },
+  "schemas": [
+    {
+      "id": "heroic-ai-result",
+      "version": "v1",
+      "path": "schemas/heroic-ai-result/v1.schema.json",
+      "owner": "foundation",
+      "compatibility": "additive"
+    },
+    {
+      "id": "chatbot-run-record",
+      "version": "v1",
+      "path": "schemas/chatbot-run-record/v1.schema.json",
+      "owner": "foundation",
+      "compatibility": "additive"
+    },
+    {
+      "id": "family-sync-state",
+      "version": "v1",
+      "path": "schemas/family-sync-state/v1.schema.json",
+      "owner": "foundation",
+      "compatibility": "additive"
+    },
+    {
+      "id": "chat-feedback",
+      "version": "v1",
+      "path": "schemas/chat-feedback/v1.schema.json",
+      "owner": "foundation",
+      "compatibility": "additive"
+    },
+    {
+      "id": "production-release-receipt",
+      "version": "v1",
+      "path": "schemas/production-release-receipt/v1.schema.json",
+      "owner": "foundation",
+      "compatibility": "additive"
+    },
+    {
+      "id": "evidence-selection-receipt",
+      "version": "v1",
+      "path": "schemas/evidence-selection-receipt/v1.schema.json",
+      "owner": "foundation",
+      "compatibility": "additive"
+    }
+  ],
+  "policy": "The registry indexes public-safe contract schemas. It does not transfer runtime/promotion authority from Operations."
+}
