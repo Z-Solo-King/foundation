@@ -106,7 +106,8 @@
       "tests live with the owner and at cross-repository boundaries",
       "historical code is immutable or clearly archived",
       "comments explain why and constraints, not obvious syntax",
-      "every important subsystem has a compact machine-readable navigation entry"
+      "every important subsystem has a compact machine-readable navigation entry",
+      "Machine-readable schemas and authority maps are sources of truth; human-facing documentation should reference them rather than duplicate mutable values."
     ],
     "change_safety": [
       "measure before optimizing",
@@ -120,7 +121,7 @@
     "goal": "Make human and AI maintenance efficient, accurate, and low-token by resolving ownership before reading implementation detail.",
     "navigation_order": [
       "canonical family contract",
-      "repository AI_CODEMAP",
+      "repository REPOSITORY_MAP.json / AI_ANALYSIS_MAP.md",
       "relevant source-of-truth symbol/module",
       "immediate consumers and tests",
       "only then broader repository search when required"
@@ -138,7 +139,9 @@
       "distinguish source of truth from compatibility/export paths",
       "treat model knowledge as potentially stale for volatile facts",
       "do not claim tool, file, repository, or execution access without evidence",
-      "preserve provenance and uncertainty across transformations"
+      "preserve provenance and uncertainty across transformations",
+      "Never resurrect retired AI_CODEMAP.json as a runtime or navigation authority; use REPOSITORY_MAP.json plus the canonical family registry.",
+      "Treat exact public release pins and private utility pins as purpose-scoped immutable evidence, not mutable branch references."
     ]
   },
   "authority_matrix": {
@@ -166,7 +169,8 @@
     "Family-level promotion authority has one owner in Operations.",
     "Public readiness must work without the private control plane.",
     "Operations may add stricter local fail-closed guards, but local guards must not become competing family policy authorities.",
-    "The retired extractor-mapper repository is historical material only and cannot become a third active ownership boundary."
+    "The retired extractor-mapper repository is historical material only and cannot become a third active ownership boundary.",
+    "Privileged public workflows may execute approved private utilities only through an immutable Operations revision verified at runtime; the public tree must contain the bridge contract, not the private implementation."
   ],
   "change_method": [
     "search both active repositories",
