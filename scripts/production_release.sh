@@ -654,7 +654,7 @@ fi
 
 
 # Retire the legacy Worker pair only after the renamed pair has passed all live acceptance checks.
-for legacy_worker in "$legacy_public_worker" "$legacy_private_worker"; do
+for legacy_worker in "$legacy_private_worker" "$legacy_public_worker"; do
   if [ "$legacy_worker" != "foundation" ] && [ "$legacy_worker" != "operations" ]; then
     delete_status=$(curl -sS -o "$RUNNER_TEMP/legacy-worker-delete.json" -w '%{http_code}' \
       -X DELETE -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' \
