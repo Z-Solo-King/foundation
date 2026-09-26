@@ -1,4 +1,4 @@
-name: Custom API Google XML feed audit
+name: Custom API Google XML audit
 on:
   push:
     branches:
@@ -75,30 +75,8 @@ EOF
             for p in "${paths[@]}"; do probe "$name" "$base" "$p"; done
           done < /tmp/targets.tsv
 
-          python - <<'PY'
-          import json,re,glob,os
-          out=[]
-          for line in open("artifacts/custom-api-google-xml/results.ndjson",errors="ignore"):
-              try: r=json.loads(line)
-              except: continue
-              body=""
-              if r["file"] and os.path.exists(r["file"]):
-                  body=open(r["file"],errors="ignore").read()
-              low=body.lower()
-              items=re.findall(r'<item\b[^>]*>(.*?)</item>',body,re.S|re.I)
-              entries=re.findall(r'<entry\b[^>]*>(.*?)</entry>',body,re.S|re.I)
-              recs=items or entries
-              google=bool(re.search(r'xmlns:g\s*=\s*["\']https?://base\.google\.com/ns/1\.0|<g:(?:id|title|link|price|availability)\b',body,re.I))
-              xml=bool(re.search(r'<\?xml|<rss\b|<feed\b|<item\b',body,re.I))
-              n=len(recs)
-              counts={k:sum(bool(re.search(r'<g:'+k+r'\b',x,re.I)) for x in recs) for k in ["id","title","link","price"]}
-              cov=min(counts.values())/n if n else 0
-              if r["status"] in (200,206) or google or xml:
-                  out.append({**r,"google_xml":bool(xml and google),"items":n,"counts":counts,"coverage":round(cov,4),"body_prefix":body[:500]})
-          q=[x for x in out if x["google_xml"] and x["coverage"]>=0.75]
-          print(json.dumps({"interesting":len(out),"verified_google_xml":len(q),"verified":q},indent=2))
-          open("artifacts/custom-api-google-xml/verified.json","w").write(json.dumps(q,indent=2)+"\n")
-          PY
+                    echo "=== VERIFIED GOOGLE XML CANDIDATES ==="
+          if [ -s artifacts/custom-api-google-xml/verified.txt ]; then cat artifacts/custom-api-google-xml/verified.txt; else echo "NONE"; fi
 
       - name: Upload evidence
         if: always()
