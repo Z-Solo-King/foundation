@@ -10,112 +10,94 @@ permissions:
   contents: read
 
 jobs:
-  audit:
+  audit-a:
+    name: Feed audit A (8)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
+    env:
+      TARGET_START: "0"
+      TARGET_COUNT: "8"
     steps:
-      - name: Probe WooCommerce Google/Product XML feeds
-        shell: bash
-        run: |
-          set -uo pipefail
-          mkdir -p out
-          cat > out/sites.tsv <<'EOF'
-Aarna Computers	https://aarnacomputers.com
-Ads Store	https://adsstore.in
-avikaretails	https://avikaretails.com
-EZPZ Solutions	https://www.ezpzsolutions.in
-GamesNComps	https://gamesncomps.com
-Geekbees	https://geekbees.in
-hotshiftpc	https://hotshiftpc.com
-itgadgetsonline	https://itgadgetsonline.com
-ithunt	https://ithunt.in
-kccomputers	https://kccomputers.co.in
-KRG KART	https://krgkart.com
-Kryptronix Gaming	https://kryptronix.in
-NCL Computer	https://nclcomputer.com
-networkitstore	https://networkitstore.in
-nexusinfosys	https://www.mynexusinfosys.com
-Only SDD	https://onlyssd.com
-PC Kumar Infotech	https://pckumar.in
-PC Studio	https://www.pcstudio.in
-PCHubShop	https://www.pchubshop.com
-Prime ABGB	https://www.primeabgb.com
-quickincomputers	https://quickincomputers.com
-SCL Gaming	https://sclgaming.in
-solankienterprises	https://solankienterprises.com
-Variety Infotech	https://varietyinfotech.com
-Viper PC	https://viperpc.in
-AULA India	https://aulaindia.com
-Cosmic Byte	https://www.thecosmicbyte.com
-Meckeys	https://www.meckeys.com
-Moskeys	https://moskeys.com
-Ninja Dog	https://ninjadog.in
-StacksKB	https://stackskb.com
-Theproaudio	https://www.theproaudio.com
-EOF
-
-          cat > out/paths.txt <<'EOF'
-/?woocommerce_gpf=google
-/woocommerce_gpf/google
-/?woocommerce_gpf=google&gpf_start=0&gpf_limit=100
-/?feed=products
-/feed/products
-/google-feed.xml
-/google_products.xml
-/googlebase.xml
-/product-feed.xml
-/product_feed.xml
-/feed.xml
-/feeds/google.xml
-/google.xml
-/wp-content/uploads/woo-feed/google/xml/
-/wp-content/uploads/woo-feed/google/
-/wp-content/uploads/woo-feed/xml/
-/wp-content/uploads/woo-product-feed-pro/xml/
-/wp-content/uploads/wppfm-feeds/
-/wp-content/uploads/codesolz-feeds/google-products.xml
-/wp-json/feedcraft-product-feed/v1/xml
-/wp-json/feedcraft-product-feed/v1/json
-EOF
-
-          printf 'brand\tbase\turl\tstatus\tcontent_type\tclassification\tbytes\n' > out/results.tsv
-
-          is_feed() {
-            local f="$1"
-            grep -Eiq '<(rss|feed|urlset)([ >]|$)|<item([ >]|$)|<entry([ >]|$)|<g:(id|title|price|availability)([ >]|$)' "$f"
-          }
-
-          while IFS=$'\t' read -r brand base; do
-            while IFS= read -r path; do
-              url="${base}${path}"
-              hdr="out/hdr"
-              body="out/body"
-              : > "$hdr"; : > "$body"
-              status="$(curl -L --compressed --max-time 12 --connect-timeout 6 -A 'Mozilla/5.0 (compatible; WooCommerceFeedAudit/1.0)' -D "$hdr" -o "$body" -sS -w '%{http_code}' "$url" || true)"
-              ctype="$(awk -F': ' 'tolower($1)=="content-type"{gsub(/\r/,"",$2); print $2}' "$hdr" | tail -1)"
-              bytes="$(wc -c < "$body" | tr -d ' ')"
-              if is_feed "$body"; then
-                class=LIVE_VERIFIED
-              elif grep -Eiq 'just a moment|attention required|cf-chl|cloudflare|403 forbidden|access denied' "$body"; then
-                class=BLOCKED_OR_CHALLENGED
-              elif [[ "$path" == *uploads/* ]] && [[ "$status" == "403" ]]; then
-                class=PATH_EXISTS_OR_GUARDED
-              else
-                class=NO_MATCH
-              fi
-              printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$brand" "$base" "$url" "$status" "$ctype" "$class" "$bytes" >> out/results.tsv
-            done < out/paths.txt
-          done < out/sites.tsv
-
-          awk -F'\t' 'NR==1 || $6=="LIVE_VERIFIED" || $6=="BLOCKED_OR_CHALLENGED" || $6=="PATH_EXISTS_OR_GUARDED"' out/results.tsv > out/high_signal.tsv
-          echo "=== HIGH SIGNAL ==="
-          column -ts $'\t' out/high_signal.tsv | tee out/high_signal.txt || cat out/high_signal.tsv
-          echo "=== SUMMARY ==="
-          awk -F'\t' 'NR>1{c[$6]++} END{for(k in c)print k,c[k]}' out/results.tsv | sort
-
-      - name: Upload feed audit evidence
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Run public feed audit
+        run: node .github/workflows/woocommerce_google_feed_audit.mjs
+      - name: Upload evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: woocommerce-google-feed-audit
+          name: woocommerce-google-feed-audit-a
           path: out/
+          if-no-files-found: warn
+          retention-days: 14
+
+  audit-b:
+    name: Feed audit B (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TARGET_START: "8"
+      TARGET_COUNT: "8"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Run public feed audit
+        run: node .github/workflows/woocommerce_google_feed_audit.mjs
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-audit-b
+          path: out/
+          if-no-files-found: warn
+          retention-days: 14
+
+  audit-c:
+    name: Feed audit C (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TARGET_START: "16"
+      TARGET_COUNT: "8"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Run public feed audit
+        run: node .github/workflows/woocommerce_google_feed_audit.mjs
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-audit-c
+          path: out/
+          if-no-files-found: warn
+          retention-days: 14
+
+  audit-d:
+    name: Feed audit D (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TARGET_START: "24"
+      TARGET_COUNT: "8"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Run public feed audit
+        run: node .github/workflows/woocommerce_google_feed_audit.mjs
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-audit-d
+          path: out/
+          if-no-files-found: warn
           retention-days: 14
