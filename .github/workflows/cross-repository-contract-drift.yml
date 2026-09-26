@@ -9,6 +9,8 @@ name: cross-repository contract drift
       - 'tools/check_cross_repo_drift.py'
       - 'tools/validate_language_fit_inventory.py'
       - 'tests/test_cross_repo_drift_gate.py'
+      - 'tools/check_continuity_freshness.py'
+      - 'tests/test_continuity_freshness.py'
       - '.github/workflows/cross-repository-contract-drift.yml'
   push:
     branches: [main]
@@ -148,6 +150,18 @@ jobs:
         with:
           name: family-language-fit-inventory
           path: foundation/.runtime/language_fit_inventory.json
+
+      - name: Enforce continuity freshness for canonical changes
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'merge_group' }}
+        working-directory: foundation
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            base_sha="${{ github.event.pull_request.base.sha }}"
+          else
+            base_sha="$(git rev-parse HEAD^)"
+          fi
+          python tools/check_continuity_freshness.py --base-sha "$base_sha" --head-sha "$GITHUB_SHA"
 
       - name: Run drift contract regression
         working-directory: foundation
