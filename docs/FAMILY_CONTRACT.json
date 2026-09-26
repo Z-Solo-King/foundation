@@ -58,8 +58,20 @@
   },
   "dependency": {
     "direction": "foundation_contract_to_operations_consumer",
-    "rule": "Foundation never depends on Operations source, private credentials, private runtime state, or protected implementation.",
-    "implementation_rule": "Operations may consume a pinned Foundation package/revision. Cross-repository reuse must use a versioned contract or the canonical Foundation package, never copy-paste source."
+    "rule": "Foundation public/runtime code never depends on Operations source, private credentials, private runtime state, or protected implementation. The only allowed Foundation -> Operations source relationship is a protected GitHub Actions maintenance/deployment bridge that executes a purpose-specific private utility from an immutable verified Operations revision.",
+    "implementation_rule": "Operations may consume a pinned Foundation package/revision. Cross-repository reuse must use a versioned contract or the canonical Foundation package, never copy-paste source.",
+    "workflow_bridge_rule": {
+      "owner": "foundation",
+      "purpose": "protected maintenance/deployment handoff only",
+      "requirements": [
+        "workflow must run only from protected main and an approved protected environment",
+        "private source must be addressed by an immutable Operations commit SHA",
+        "access must use the purpose-specific GitHub App with least-privilege repository scope",
+        "private source must not be copied into the public repository or artifacts",
+        "secret values must remain environment-bound and absent from logs/artifacts",
+        "bridge must not become a second application runtime or policy authority"
+      ]
+    }
   },
   "single_owner_rule": {
     "rule": "Each behavior, policy, data model, registry, algorithm, and authority has exactly one canonical owner.",
@@ -219,6 +231,7 @@
     "no new code in immutable legacy snapshots",
     "no private GitHub-hosted Actions dependency",
     "no hidden third active repository or ownership boundary",
-    "architecture knowledge must reference canonical source rather than become a second architecture database"
+    "architecture knowledge must reference canonical source rather than become a second architecture database",
+    "protected workflow bridges may consume private Operations utilities only under the explicit immutable-handoff rule; public application/runtime code may not import private Operations source."
   ]
 }
