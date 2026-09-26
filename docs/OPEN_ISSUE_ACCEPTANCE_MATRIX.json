@@ -200,11 +200,11 @@
       "status": "OPEN",
       "class": "production runtime",
       "fix_now": [
-        "canonical Heroic-Ai.dev path definition",
+        "canonical Pages runtime path definition (ai-cio.pages.dev)",
         "family graph UI→edge→chatbot→research/resource chain"
       ],
       "remaining": [
-        "DNS/custom domain active",
+        "optional custom-domain DNS activation (separate track)",
         "live model generation",
         "replay/concurrency/policy denial/SSE/research/provenance/resource evidence"
       ],
