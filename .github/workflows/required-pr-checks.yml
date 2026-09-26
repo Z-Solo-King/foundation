@@ -77,3 +77,34 @@ jobs:
           test ! -e backend/learning/promotion.py
           ! grep -RniE 'operations|extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-private' foundation_core backend worker.py wrangler.toml migrations
           ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' backend foundation_core worker.py wrangler.toml migrations
+      - name: Full tracked-tree secret scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          pattern='-----BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----|AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[0-9A-Za-z-]{20,}'
+          if git grep --no-color -nI -E "$pattern" -- .; then
+            echo 'Potential credential material found in tracked current-tree content.' >&2
+            exit 1
+          fi
+          if git grep --no-color -nI -E '(^|[[:space:]])(Bearer[[:space:]]+[A-Za-z0-9._~+/-]{32,}|api[_-]?key[[:space:]]*[:=][[:space:]]*["'"'][A-Za-z0-9._~+/-]{16,})' -- .; then
+            echo 'Potential bearer/API credential material found in tracked current-tree content.' >&2
+            exit 1
+          fi
+
+      - name: Full git-history secret scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          pattern='-----BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----|AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[0-9A-Za-z-]{20,}'
+          if git log --all --no-ext-diff --unified=0 -G "$pattern" --pretty=format: --; then
+            echo 'Potential credential material found in git history.' >&2
+            exit 1
+          fi
+
+      - name: Public protected-boundary cross-check
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f docs/FAMILY_CONTRACT.json
+          test -f CAPABILITIES.json
+          ! grep -RniE 'private_secrets[[:space:]]*:[[:space:]]*true|protected[[:space:]_-]*operations[[:space:]_-]*information[[:space:]]*:[[:space:]]*true' docs/FAMILY_CONTRACT.json CAPABILITIES.json
