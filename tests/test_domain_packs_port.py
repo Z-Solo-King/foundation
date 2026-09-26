@@ -68,6 +68,11 @@ def test_unmatched_and_alternate_transform_paths():
     assert apply_domain_rules("usb", ["keyboard"])["connection_type"] == "Wired"
 
 
+def test_special_weight_negative_branches_are_noops():
+    assert apply_domain_rules("ipi haze 6368g standard", ["mouse"])["weight"] == "6368g"
+    assert apply_domain_rules("6369g standard mouse", ["mouse"])["weight"] == "6369g"
+
+
 def test_regex_identity_and_special_weight_alternate_branch():
     assert apply_domain_rules("paw3395 wired", ["mouse"])["tracking_method"] == "paw3395"
     assert apply_domain_rules("ipi haze 6369g standard", ["mouse"])["weight"] == "63g"
