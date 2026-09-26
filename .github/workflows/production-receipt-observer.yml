@@ -1,6 +1,6 @@
 name: Canonical evidence receipt observer
 
-on:
+on: # zizmor: ignore[dangerous-triggers] read-only trusted receipt observer; no source checkout
   workflow_run:
     workflows:
       - "Canonical Heroic AI production release"
@@ -15,10 +15,13 @@ on:
 permissions:
   actions: read
   contents: read
-  issues: write
 
 jobs:
   receipt:
+    permissions:
+      actions: read
+      contents: read
+      issues: write
     name: Publish canonical evidence receipt
     runs-on: ubuntu-latest
     timeout-minutes: 5
