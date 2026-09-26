@@ -1,0 +1,63 @@
+name: Foundation Google Feed Matrix
+
+on:
+  push:
+    branches:
+      - feat/foundation-google-feed-matrix-20260926
+
+permissions:
+  contents: read
+
+jobs:
+  sweep:
+    name: "${{ matrix.site }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 15
+      matrix:
+        include:
+          - {site: "BuildMyPC", root: "https://www.buildmypc.in"}
+          - {site: "Clarion Computers", root: "https://shop.clarioncomputers.in"}
+          - {site: "CloudTechAsia", root: "https://cloudtechasia.in"}
+          - {site: "DigiBuggy", root: "https://digibuggy.com"}
+          - {site: "Easy Shoppi", root: "https://www.easyshoppi.com"}
+          - {site: "LebyoPC", root: "https://lebyopc.com"}
+          - {site: "Logtech", root: "https://logtech.in"}
+          - {site: "Shivam IT Service", root: "https://www.shivamitservice.com"}
+          - {site: "The Rhythm House", root: "https://www.therhythmhouse.co.in"}
+          - {site: "TheValueStore", root: "https://thevaluestore.in"}
+          - {site: "altf4gear", root: "https://altf4gear.com"}
+          - {site: "ArcadeX", root: "https://www.arcadex.in"}
+          - {site: "Fingers", root: "https://www.fingers.co.in"}
+          - {site: "KeySync", root: "https://keysync.co"}
+          - {site: "Furtados", root: "https://www.furtadosonline.com"}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+      - name: Run Google XML feed sweep
+        env:
+          SITE_NAME: "${{ matrix.site }}"
+          ROOT: "${{ matrix.root }}"
+        run: node tools/google_feed_matrix_probe.mjs
+      - name: Upload site evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: google-feed-${{ strategy.job-index }}-${{ matrix.site }}
+          path: artifacts/google-feed/
+          retention-days: 14
+
+  final:
+    name: Matrix completion
+    if: always()
+    needs: sweep
+    runs-on: ubuntu-latest
+    steps:
+      - name: Completion
+        run: |
+          echo "Foundation matrix completed."
+          echo "All 15 custom/API sites were executed independently with fail-fast disabled."
