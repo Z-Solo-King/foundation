@@ -15,9 +15,6 @@ name: nightly multi-agent research
 permissions:
   actions: read
   contents: read
-  id-token: write
-  attestations: write
-  artifact-metadata: write
 
 concurrency:
   group: nightly-multi-agent-research
@@ -74,6 +71,12 @@ jobs:
           exit 1
 
   research:
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     needs: [production_gate]
     name: Nightly research lane ${{ matrix.lane }}
     runs-on: ubuntu-latest

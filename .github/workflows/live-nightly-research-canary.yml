@@ -1,6 +1,6 @@
 name: Live nightly research canary
 
-on:
+on: # zizmor: ignore[dangerous-triggers] trusted post-release canary; pinned source only
   workflow_run:
     workflows: ["Heroic AI production release"]
     types: [completed]
@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 concurrency:
   group: live-nightly-research-canary
@@ -24,6 +23,9 @@ env:
 
 jobs:
   canary:
+    permissions:
+      contents: read
+      issues: write
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30

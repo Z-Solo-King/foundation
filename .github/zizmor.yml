@@ -1,0 +1,2 @@
+# Observe all audits. Any justified exception must be line-scoped and documented.
+rules: {}
