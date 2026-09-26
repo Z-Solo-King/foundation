@@ -55,14 +55,16 @@ def test_gtin_validation_and_lenient_mode(monkeypatch):
     assert normalize_gtin("not-a-gtin") == ""
     assert normalize_gtin("12345678") == ""
     assert normalize_gtin("12345678", strict=False) == "00000012345678"
-    import builtins
-    real_int = builtins.int
+    import foundation_core.text_normalization as module
+    real_int = module._BUILTIN_INT
     def raising_int(value, *args, **kwargs):
         if value == "1":
             raise ValueError("forced test path")
         return real_int(value, *args, **kwargs)
-    monkeypatch.setattr(builtins, "int", raising_int)
-    assert _normalize_gtin_cached("12345670", True) == ""
+    monkeypatch.setattr(module, "_BUILTIN_INT", raising_int)
+    module._normalize_gtin_cached.cache_clear()
+    assert module._normalize_gtin_cached("12345670", True) == ""
+    module._normalize_gtin_cached.cache_clear()
 
 def test_identifier_kind_aliases():
     for kind in ("sku","variant_sku","product_id","variant_id"):
