@@ -653,6 +653,34 @@ else
 fi
 
 
+# Remove reciprocal Service Bindings from the legacy pair before deletion. Cloudflare refuses
+# deleting either side while the other Worker still references it. Keep every non-service binding
+# intact so this migration step only severs the obsolete cross-worker edges.
+for legacy_worker in "$legacy_private_worker" "$legacy_public_worker"; do
+  if [ "$legacy_worker" != "foundation" ] && [ "$legacy_worker" != "operations" ]; then
+    legacy_settings_file="$RUNNER_TEMP/${legacy_worker}-settings.json"
+    legacy_patch_file="$RUNNER_TEMP/${legacy_worker}-bindings.json"
+    legacy_boundary="----cf-legacy-${RANDOM}-${RANDOM}"
+    settings_status=$(curl -sS -o "$legacy_settings_file" -w '%{http_code}'       -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"       "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/$legacy_worker/settings" || true)
+    if [ "$settings_status" = '404' ]; then
+      echo "Legacy Worker $legacy_worker already absent; binding detach skipped"
+      continue
+    fi
+    test "$settings_status" = '200'
+    jq -e '.success == true and (.result.bindings | type == "array")' "$legacy_settings_file" >/dev/null
+    jq -c '.result.bindings | map(select(.type != "service"))' "$legacy_settings_file" > "$legacy_patch_file"
+    legacy_settings_json=$(jq -cn --slurpfile bindings "$legacy_patch_file" '{bindings: $bindings[0]}')
+    legacy_multipart=$(printf -- '--%s\r\nContent-Disposition: form-data; name="settings"\r\nContent-Type: application/json\r\n\r\n%s\r\n--%s--\r\n'       "$legacy_boundary" "$legacy_settings_json" "$legacy_boundary")
+    detach_status=$(curl -sS -o "$RUNNER_TEMP/${legacy_worker}-detach.json" -w '%{http_code}'       -X PATCH       -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"       -H "Content-Type: multipart/form-data; boundary=${legacy_boundary}"       --data-binary "$legacy_multipart"       "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/$legacy_worker/settings" || true)
+    echo "PATCH legacy Worker $legacy_worker service bindings -> HTTP $detach_status"
+    if [ "$detach_status" != "200" ]; then
+      jq -c '{success,message,errors}' "$RUNNER_TEMP/${legacy_worker}-detach.json" 2>/dev/null || true
+      exit 1
+    fi
+    jq -e '.success == true and ((.result.bindings // []) | all(.type != "service"))' "$RUNNER_TEMP/${legacy_worker}-detach.json" >/dev/null
+  fi
+done
+
 # Retire the legacy Worker pair only after the renamed pair has passed all live acceptance checks.
 for legacy_worker in "$legacy_private_worker" "$legacy_public_worker"; do
   if [ "$legacy_worker" != "foundation" ] && [ "$legacy_worker" != "operations" ]; then
