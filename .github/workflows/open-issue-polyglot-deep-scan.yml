@@ -84,6 +84,13 @@ jobs:
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
+      - name: Checkout Foundation source tree
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/foundation
+          ref: ${{ github.sha }}
+          path: foundation
+
       - name: Publish Operations token/checkout diagnostics
         if: always() && github.event_name == 'pull_request_target'
         shell: bash
@@ -127,7 +134,7 @@ jobs:
         working-directory: operations
         run: |
           mkdir -p .runtime/open-issue-deep-scan
-          python tools/open_issue_polyglot_scan.py             --foundation "$GITHUB_WORKSPACE"             --operations "$GITHUB_WORKSPACE/operations"             --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_52.json"             --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json"             --lane "${{ matrix.lane }}"             --output ".runtime/open-issue-deep-scan/${{ matrix.lane }}.json"
+          python tools/open_issue_polyglot_scan.py             --foundation "$GITHUB_WORKSPACE/foundation"             --operations "$GITHUB_WORKSPACE/operations"             --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_52.json"             --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json"             --lane "${{ matrix.lane }}"             --output ".runtime/open-issue-deep-scan/${{ matrix.lane }}.json"
 
       - name: Emit lane diagnostic
         if: always()
@@ -195,7 +202,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-  # Refresh workflow revision after synchronized 10-issue inventory.
+  # Aggregate the frozen four-lane receipts from this run; issue scope is validated before execution.
   aggregate:
     name: Aggregate dynamic issue×lane cases
     needs: [lane]
