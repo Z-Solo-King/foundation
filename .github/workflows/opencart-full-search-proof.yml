@@ -1,0 +1,66 @@
+name: OpenCart Full Search Proof
+on:
+  push:
+    branches: [probe/opencart-feed-full-20260926]
+  workflow_dispatch:
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Full catalog pagination proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > proof.js <<'JS'
+          const fs = require('fs');
+          const targets = [
+            ['IT_DEPOT','https://www.theitdepot.com','%25',100,60],
+            ['NATIONAL_PC','https://nationalpc.in','',100,60],
+            ['VEDANT','https://www.vedantcomputers.com','%25',100,60],
+            ['MD_IN','https://mdcomputers.in/?route=extension/ultimate_filters/module/filter&module_id=3188&sub_category=1&stock_status=in','',20,150],
+            ['MD_OUT','https://mdcomputers.in/?route=extension/ultimate_filters/module/filter&module_id=3188&sub_category=1&stock_status=out','',20,500]
+          ];
+          const H={'user-agent':'Mozilla/5.0 Chrome/120 Safari/537.36','accept':'text/html,application/xml,text/xml,application/json,*/*','accept-language':'en-IN,en;q=0.9'};
+          async function one(url){
+            const t=Date.now();
+            try{
+              const r=await fetch(url,{headers:H,redirect:'follow',signal:AbortSignal.timeout(15000)});
+              const b=await r.text();
+              const total=(b.match(/Showing\s+(\d+)\s+to\s+(\d+)\s+of\s+(\d+)/i)||[])[3];
+              const hrefs=[...b.matchAll(/href=["']([^"']+)["']/gi)].map(m=>m[1]).filter(x=>/product\/product|\/product\//i.test(x));
+              const prices=(b.match(/(?:₹|Rs\.?|INR)[\s\d,]+(?:\.\d{1,2})?/gi)||[]).length;
+              const stock=(b.match(/in stock|out of stock|available|unavailable|quantity/gi)||[]).length;
+              const challenge=/cloudflare|just a moment|one moment|attention required/i.test(b);
+              return {status:r.status,bytes:b.length,total:total?+total:null,links:[...new Set(hrefs)],link_count:new Set(hrefs).size,price_hits:prices,stock_hits:stock,challenge,ms:Date.now()-t,sample:b.slice(0,180).replace(/\s+/g,' ')};
+            }catch(e){return {status:0,error:String(e),ms:Date.now()-t}}
+          }
+          async function target([name,root,q,limit,max]){
+            const mk=p=>root.includes('ultimate_filters')?root+'&page='+p:root+'/index.php?route=product/search&search='+encodeURIComponent(q)+'&limit='+limit+'&page='+p;
+            const p1=await one(mk(1));
+            const declared=p1.total; const pages=Math.min(declared?Math.ceil(declared/limit):max,max);
+            const list=Array.from({length:pages},(_,i)=>i+1);
+            const rows=[]; let cursor=0;
+            async function worker(){while(true){const i=cursor++;if(i>=list.length)return;const p=list[i];rows[i]={page:p,...(p===1?p1:await one(mk(p)))}}}
+            await Promise.all(Array.from({length:8},worker));
+            const good=rows.filter(x=>x.status===200), nonempty=good.filter(x=>x.link_count>0);
+            const unique=[...new Set(good.flatMap(x=>x.links||[]))];
+            const totals=[...new Set(good.map(x=>x.total).filter(Boolean))];
+            return {name,declared_total:declared,requested_pages:pages,successful_pages:good.length,nonempty_pages:nonempty.length,unique_product_links:unique.length,totals,complete_candidate:!!declared&&good.length===pages&&nonempty.length>=Math.max(1,pages-1),pages_sample:rows.slice(0,2).concat(rows.slice(-3))};
+          }
+          (async()=>{
+            const results=[];
+            for(const t of targets) results.push(await target(t));
+            const out={generated_at:new Date().toISOString(),results};
+            fs.writeFileSync('out-full-search-proof.json',JSON.stringify(out,null,2));
+            console.log(JSON.stringify(out,null,2));
+          })().catch(e=>{console.error(e);process.exit(1)});
+          JS
+          node proof.js
+          test -s out-full-search-proof.json
+      - name: Upload proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencart-full-search-proof-20260926
+          path: out-full-search-proof.json
+          retention-days: 14
