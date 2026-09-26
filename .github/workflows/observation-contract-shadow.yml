@@ -63,6 +63,20 @@ jobs:
         working-directory: operations/polyglot/observation-contract-strict
         run: npm test
 
+      - name: Setup Python for reference differential
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+
+      - name: Run exact Python/TypeScript differential
+        working-directory: operations/polyglot/observation-contract-strict
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime
+          npm run differential
+          npm run differential:python
+          npm run differential:compare
+
       - name: Emit exact revision receipt
         working-directory: operations
         shell: bash
