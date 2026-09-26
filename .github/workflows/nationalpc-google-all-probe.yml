@@ -1,0 +1,57 @@
+name: National PC Google Module Probe
+on:
+  push:
+    branches: [probe/opencart-feed-full-20260926]
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Probe google_all
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf googleall && mkdir googleall
+          UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36'
+          ROOT='https://nationalpc.in'
+          n=0
+          for u in \
+            "$ROOT/index.php?route=extension/module/google_all/get_product_datas" \
+            "$ROOT/index.php?route=extension/module/google_all/get_product_datas&page=1" \
+            "$ROOT/index.php?route=extension/module/google_all/get_product_datas&page=2" \
+            "$ROOT/index.php?route=extension/module/google_all/get_product_datas&limit=100" \
+            "$ROOT/index.php?route=extension/module/google_all/get_product_datas&limit=1000" \
+            "$ROOT/index.php?route=extension/module/google_all/get_product_datas&page=1&limit=1000" \
+            "$ROOT/index.php?route=extension/module/google_all/get_product_datas&offset=0&limit=1000" \
+            "$ROOT/index.php?route=extension/module/google_all/get_product_datas&start=0&limit=1000" \
+            "$ROOT/index.php?route=extension/module/google_all/get_product_datas&product_id=1" \
+            "$ROOT/index.php?route=extension/module/google_all/get_product_datas&id=1"
+          do
+            n=$((n+1))
+            curl -L --silent --show-error --max-time 15 -A "$UA" -H 'X-Requested-With: XMLHttpRequest' "$u" -o "googleall/$n.txt" || true
+            printf '%s\t%s\n' "$n" "$u"
+          done > googleall/urls.tsv
+          python3 - <<'PY'
+          import json,glob,re,os
+          out=[]
+          for p in sorted(glob.glob('googleall/*.txt'),key=lambda x:int(re.search(r'/([0-9]+)\.txt$',x).group(1))):
+              b=open(p,errors='ignore').read(); lo=b[:12000].lower(); cls='unknown'; rows=0
+              if b.lstrip().startswith(('{','[')):
+                  try:
+                      j=json.loads(b); arr=j if isinstance(j,list) else next((j.get(k) for k in ['products','items','response','data','results'] if isinstance(j.get(k),list)),None)
+                      rows=len(arr) if isinstance(arr,list) else 0; cls='json-product-array' if rows else 'json-object'
+                  except: cls='json-like'
+              elif '<rss' in lo and '<item' in lo: cls='google-rss' if ('base.google.com' in lo or 'g:price' in lo) else 'rss'; rows=len(re.findall(r'<item\\b',b,re.I))
+              elif '<urlset' in lo: cls='sitemap'; rows=len(re.findall(r'<url\\b',b,re.I))
+              elif '<html' in lo: cls='html'
+              if re.search(r'price|quantity|stock|availability|product|href|name',lo): cls += '+fields'
+              out.append({'file':os.path.basename(p),'bytes':len(b),'class':cls,'rows':rows,'sample':re.sub(r'\\s+',' ',b[:500])})
+          print(json.dumps({'urls':open('googleall/urls.tsv').read().splitlines(),'results':out},indent=2))
+          open('googleall/summary.json','w').write(json.dumps({'urls':open('googleall/urls.tsv').read().splitlines(),'results':out},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nationalpc-google-all-probe-20260926
+          path: googleall/
+          retention-days: 14
