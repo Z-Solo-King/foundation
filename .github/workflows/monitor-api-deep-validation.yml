@@ -1,0 +1,92 @@
+name: Monitor API Deep Validation
+on:
+  push:
+    branches: [probe/monitor-oem-api-20260926]
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Validate structured monitor APIs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python3 - <<'PY'
+          import urllib.request, urllib.parse, json, re, os
+          H={'User-Agent':'Mozilla/5.0 Chrome/136 Safari/537.36','Accept':'application/json,text/html,application/xml,text/xml,*/*','Accept-Language':'en-IN,en;q=0.9','X-Requested-With':'XMLHttpRequest'}
+          def get(u):
+              try:
+                  r=urllib.request.urlopen(urllib.request.Request(u,headers=H),timeout=18)
+                  b=r.read(12000000).decode('utf-8','replace')
+                  return r.status,r.headers.get('content-type',''),b
+              except Exception as e:return 0,'',type(e).__name__+':'+str(e)
+          out={}
+          # Samsung search + per-product FULL
+          u='https://p1-smi-api-cdn.shop.samsung.com/tokocommercewebservices/v2/in/products/search?query=monitor%3Arelevance&pageSize=100&currentPage=0&fields=FULL'
+          st,ct,b=get(u); x={'status':st,'ctype':ct,'bytes':len(b)}
+          try:
+              j=json.loads(b); x['pagination']=j.get('pagination'); x['products']=len(j.get('products',[]));
+              if j.get('products'):
+                  code=j['products'][0].get('code'); x['first_code']=code
+                  bu='https://p1-smi-api-cdn.shop.samsung.com/tokocommercewebservices/v2/in/products?productCodes='+urllib.parse.quote(str(code))+'&fields=FULL'
+                  bst,bct,bb=get(bu); x['bulk']={'url':bu,'status':bst,'ctype':bct,'bytes':len(bb),'sample':bb[:16000]}
+          except Exception as e:x['error']=str(e);x['sample']=b[:3000]
+          out['samsung']=x
+          # ASUS/ROG search with frontend parameters
+          ru='https://api-rog.asus.com/recent-data/search-api/v1/ResultV1/in/Product/100/1/0/1?SearchKey=monitor&systemCode=rog'
+          rst,rct,rb=get(ru); rx={'url':ru,'status':rst,'ctype':rct,'bytes':len(rb),'sample':rb[:16000]}
+          try:
+              rj=json.loads(rb); rx['top']=rj.get('result',{}).keys(); rx['count']=rj.get('result',{}).get('count'); obj=(rj.get('result',{}).get('obj') or []); rx['objects']=len(obj)
+              if obj:
+                  pid=obj[0].get('productId') or obj[0].get('id'); rx['first']=obj[0]
+                  variants=[]
+                  for path in ['recent-data/api/v4/Product/Info','recent-data/api/v4/Product/Tabs','recent-data/api/v4/Product/Gallery','recent-data/api/v5/Product/Spec','recent-data/api/v5/Product/ModelSpec']:
+                      for params in [
+                        {'WebsiteCode':'in','systemCode':'rog','ProductId':pid},
+                        {'WebsiteCode':'in','systemCode':'rog','productId':pid},
+                        {'countryCode':'in','systemCode':'rog','productId':pid},
+                        {'countryCode':'in','productId':pid},
+                      ]:
+                          uu='https://api-rog.asus.com/'+path+'?'+urllib.parse.urlencode(params)
+                          ss,cc,bb=get(uu);
+                          if ss and ss!=404: variants.append({'url':uu,'status':ss,'ctype':cc,'bytes':len(bb),'sample':bb[:8000]})
+                  rx['detail_candidates']=variants
+          except Exception as e:rx['error']=str(e)
+          out['rog']=rx
+          # Gigabyte direct + Nuxt proxy variants
+          gu_list=[
+            'https://www.gigabyte.com/api/v1.0/Consumer/in/Consumer/Monitor/GS27Q?type=sp',
+            'https://www.gigabyte.com/api/v1.0/Consumer/in/Consumer/Monitor/GS27Q?type=Specifications',
+            'https://www.gigabyte.com/api/v1.0/Consumer/in/Consumer/Monitor/GS27Q',
+            'https://www.gigabyte.com/iisApplicationNuxt/api/proxy/api/v1.0/Consumer/in/Consumer/Monitor/GS27Q?type=sp',
+            'https://www.gigabyte.com/api/v1.0/Product/in/MatchUrlSettingAndFilter/Monitor/GS27Q',
+          ]
+          out['gigabyte']=[]
+          for u in gu_list:
+              ss,cc,b=get(u);out['gigabyte'].append({'url':u,'status':ss,'ctype':cc,'bytes':len(b),'sample':b[:12000]})
+          # LG: extract MD ids from current PDP and test commerce content + known pdp routes
+          lu='https://www.lg.com/in/monitors/ultragear-gaming-oled-monitors/27gx790a-b/'
+          ls,lct,lb=get(lu); lx={'page_status':ls,'page_bytes':len(lb),'mdids':sorted(set(re.findall(r'MD[0-9]{6,}',lb)))[:30],'tests':[]}
+          for md in lx['mdids'][:10]:
+              for q in ['mdid='+md,'mdid='+md+'&countryCode=IN','mdid='+md+'&lang=en']:
+                  u='https://www.lg.com/api/commerce/content/pdp_items?'+q
+                  ss,cc,b=get(u);lx['tests'].append({'url':u,'status':ss,'ctype':cc,'bytes':len(b),'sample':b[:6000]})
+              u='https://www.lg.com/us/pdp/api/products/updateProductDetail?mdid='+md
+              ss,cc,b=get(u);lx['tests'].append({'url':u,'status':ss,'ctype':cc,'bytes':len(b),'sample':b[:6000]})
+          out['lg']=lx
+          # AOC endpoint strings from current page source
+          au='https://www.aoc.com/in/gaming/monitors/27g4'
+          ast,act,ab=get(au); ax={'page_status':ast,'page_bytes':len(ab),'tests':[]}
+          for path in ['/api/products/price-data','/api/products/screen-size-variants']:
+              for q in ['?product=27g4','?slug=27g4','?model=27g4','?url=27g4']:
+                  u='https://www.aoc.com'+path+q;ss,cc,b=get(u);ax['tests'].append({'url':u,'status':ss,'ctype':cc,'bytes':len(b),'sample':b[:5000]})
+          out['aoc']=ax
+          os.makedirs('out',exist_ok=True);open('out/monitor-api-deep.json','w').write(json.dumps(out,indent=2,default=str));print(json.dumps(out,indent=2,default=str)[:80000])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: monitor-api-deep-validation-20260926
+          path: out/monitor-api-deep.json
+          retention-days: 14
