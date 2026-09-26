@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://heroic-ai.dev/schema/chat-feedback/v1",
+  "title": "chat-feedback v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "chat-feedback/v1"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "message_id": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    }
+  },
+  "required": [
+    "schema_version",
+    "created_at",
+    "run_id",
+    "message_id",
+    "rating"
+  ]
+}

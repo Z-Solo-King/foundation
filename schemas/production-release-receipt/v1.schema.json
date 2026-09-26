@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://heroic-ai.dev/schema/production-release-receipt/v1",
+  "title": "production-release-receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "production-release-receipt/v1"
+    },
+    "foundation_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "operations_ref": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "success",
+        "failure"
+      ]
+    },
+    "created_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "foundation_sha",
+    "operations_ref",
+    "outcome"
+  ]
+}
