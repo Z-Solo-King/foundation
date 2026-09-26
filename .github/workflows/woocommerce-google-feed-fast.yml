@@ -1,0 +1,119 @@
+name: WooCommerce Google Feed Fast Hybrid
+
+on:
+  push:
+    branches:
+      - "ai/woocommerce-google-feed-audit-20260926"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fast-a:
+    name: Fast A (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      TARGET_START: "0"
+      TARGET_COUNT: "8"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install browser
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Extract public Google XML feeds
+        run: node tools/woocommerce_google_feed_fast.mjs
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-fast-a
+          path: out/fast/
+          if-no-files-found: warn
+          retention-days: 14
+
+  fast-b:
+    name: Fast B (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      TARGET_START: "8"
+      TARGET_COUNT: "8"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install browser
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Extract public Google XML feeds
+        run: node tools/woocommerce_google_feed_fast.mjs
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-fast-b
+          path: out/fast/
+          if-no-files-found: warn
+          retention-days: 14
+
+  fast-c:
+    name: Fast C (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      TARGET_START: "16"
+      TARGET_COUNT: "8"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install browser
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Extract public Google XML feeds
+        run: node tools/woocommerce_google_feed_fast.mjs
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-fast-c
+          path: out/fast/
+          if-no-files-found: warn
+          retention-days: 14
+
+  fast-d:
+    name: Fast D (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      TARGET_START: "24"
+      TARGET_COUNT: "8"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install browser
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Extract public Google XML feeds
+        run: node tools/woocommerce_google_feed_fast.mjs
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-fast-d
+          path: out/fast/
+          if-no-files-found: warn
+          retention-days: 14
