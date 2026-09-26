@@ -12,7 +12,6 @@ on:
         type: string
 permissions:
   contents: read
-  issues: write
 
 concurrency:
   group: nightly-ai-research-20jobs
@@ -20,6 +19,9 @@ concurrency:
 
 jobs:
   research:
+    permissions:
+      contents: read
+      issues: write
     name: "Research ${{ matrix.id }} — ${{ matrix.topic }}"
     runs-on: ubuntu-latest
     timeout-minutes: 40
