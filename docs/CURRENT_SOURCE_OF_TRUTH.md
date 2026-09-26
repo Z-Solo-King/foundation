@@ -1,3 +1,4 @@
+<!-- continuity-freshness verified 2026-09-26 -->
 # 2026-09-26 CONTINUITY ENFORCEMENT CHECKPOINT
 
 Canonical behavior/workflow changes now require this living pair to be updated in the same change set: `docs/CURRENT_SOURCE_OF_TRUTH.md` and `docs/FAMILY_SYNC_STATE.json`. Enforcement: `tools/check_continuity_freshness.py` in the existing cross-repository contract-drift workflow.

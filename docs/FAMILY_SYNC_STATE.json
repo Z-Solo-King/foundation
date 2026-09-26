@@ -459,6 +459,9 @@
       "docs/FAMILY_SYNC_STATE.json"
     ],
     "enforced_by": "tools/check_continuity_freshness.py",
-    "workflow": ".github/workflows/cross-repository-contract-drift.yml"
+    "workflow": ".github/workflows/cross-repository-contract-drift.yml",
+    "verified_at": "2026-09-26",
+    "verified_head": "425ef4c8ce4c23f90c49ab26d09462b88ffbc7c1",
+    "verification_note": "freshness checker must materialize missing base revision before diff"
   }
 }
