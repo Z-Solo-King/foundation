@@ -658,7 +658,7 @@ for legacy_worker in "$legacy_private_worker" "$legacy_public_worker"; do
   if [ "$legacy_worker" != "foundation" ] && [ "$legacy_worker" != "operations" ]; then
     delete_status=$(curl -sS -o "$RUNNER_TEMP/legacy-worker-delete.json" -w '%{http_code}' \
       -X DELETE -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' \
-      "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/$legacy_worker" || true)
+      "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/$legacy_worker?force=true" || true)
     echo "DELETE legacy Worker $legacy_worker -> HTTP $delete_status"
     if [ "$delete_status" != "200" ] && [ "$delete_status" != "404" ]; then
       jq -c '{success,message,errors}' "$RUNNER_TEMP/legacy-worker-delete.json" 2>/dev/null || true

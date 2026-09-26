@@ -472,6 +472,11 @@ def test_live_acceptance_is_gated_by_runtime_provenance():
     assert "Live runtime provenance does not match the immutable revisions under test." in coverage
 
 
+def test_legacy_worker_retirement_uses_force_for_reciprocal_bindings():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'for legacy_worker in "$legacy_private_worker" "$legacy_public_worker"; do' in deployment
+    assert 'workers/scripts/$legacy_worker?force=true' in deployment
+
 def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
