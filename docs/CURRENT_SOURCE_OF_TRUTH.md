@@ -8,11 +8,11 @@ Canonical behavior/workflow changes now require this living pair to be updated i
 
 Fresh live evidence from 2026-09-26 supersedes older dated sections below.
 
-- Foundation main: `ee312632fce5be5da9536194e94f38fa2cdabb6b`
-- Operations main: `122a334d85708e2e42db59b74114d1396ca98f31`
+- Foundation main: `35afd6ccefecfd80c0e70155378f97a3a7a4eca9`
+- Operations main: `a3686fd166f98fbfc762f5776519799ac9ed496b`
 - Production Operations pin: `566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3`
-- Live open issues: Foundation 9 + Operations 12 = 21.
-- Live open PRs: Foundation 8 + Operations 4 = 12.
+- Live open issues: Foundation 5 + Operations 4 = 9.
+- Live open PRs: Foundation 3 + Operations 3 = 6.
 - Canonical runtime: Pages `ai-cio.pages.dev` -> Worker `heroic` v30 -> private Worker `operations` v90.
 - Latest nightly #375 / run `36141145555`: blocked before provider execution; 24 slots prepared; no provider-backed acceptance.
 - Latest extractor benchmark #448 / run `36141127492`: 40 receipts; 4 ok / 32 empty / 4 blocked; structural/integrity pass only.
@@ -242,8 +242,8 @@ This checkpoint records the latest verified family state after the Cycle 7 docum
 This checkpoint supersedes the older dated sections below.
 
 ## Current repository state
-- Foundation main: `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`
-- Operations main: `ebf1e82734cb2fab0a8f4eddc8b1f342803740d1`
+- Foundation main: `35afd6ccefecfd80c0e70155378f97a3a7a4eca9`
+- Operations main: `a3686fd166f98fbfc762f5776519799ac9ed496b`
 - Open issues: 8 total — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
 - Open implementation PRs: none in Operations; Foundation runtime pin synchronization is in progress on a release branch.
 - Foundation PRs #1132/#1134/#1135 and Operations #890/#891 are already merged.
@@ -280,8 +280,8 @@ Start the next chat from this checkpoint. Refresh current GitHub heads/open issu
 This checkpoint supersedes older dated sections below.
 
 ## Current repository state
-- Foundation main: `725e1b9cdaa637f07d4264673cddfc8ab806b3c6`
-- Operations main: `9f1d3498ea6be4864bfa6f3e3a5e2b77661ea196`
+- Foundation main: `35afd6ccefecfd80c0e70155378f97a3a7a4eca9`
+- Operations main: `a3686fd166f98fbfc762f5776519799ac9ed496b`
 - Open issues: 8 total — Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699.
 - Open implementation PRs: none in Operations; Foundation runtime pin synchronization is in progress on a release branch.
 - Foundation #1132/#1134/#1135 are merged; Operations #890/#891 are merged.
@@ -469,7 +469,7 @@ Evidence rule: implementation/test/CI evidence does not substitute for required 
 
 This section records the latest audited immutable revisions. It is intentionally a checkpoint, not a claim that the document's own future merge commit will equal the recorded Foundation branch head. The live Git refs remain authoritative for current branch heads.
 
-- Last audited Foundation main: `8d38e825887fedae078973d472ed05e959cd433a`.
+- Last audited Foundation main: `35afd6ccefecfd80c0e70155378f97a3a7a4eca9`.
 - Last audited Operations main must be queried from the `main` ref at chat startup..
 - Repository-side parallel migration wave: merged.
 - Current candidates remain shadow/benchmark-only until parity, security/policy/provenance, performance/boundary, shadow/canary and rollback evidence pass.
@@ -480,7 +480,7 @@ This section records the latest audited immutable revisions. It is intentionally
 
 This is the newest synchronization point. Older dated sections remain historical evidence and must not outrank these refs.
 
-- Foundation main: `06996042d0866d2895d71c4dca24343c07a45a20`.
+- Foundation main: `35afd6ccefecfd80c0e70155378f97a3a7a4eca9`.
 - Operations main must be queried from the `main` ref at chat startup..
 - Operations #637/#638/#642 fixed stale authority/test-contract clusters; #640/#641/#643 added Rust/TypeScript migration candidates; #644 formalized parallel merge-train synchronization.
 - Foundation #888/#890 refreshed stale-pin/async safeguards; #892 merged the 40-case adaptive polyglot matrix; #893 fixed the final retired-codemap maintenance instruction; #895 refreshed the coverage pin; #897 added the Rust robots/sitemap lane.
@@ -492,7 +492,7 @@ This is the newest synchronization point. Older dated sections remain historical
 
 This is the newest repository synchronization point. Older dated sections remain historical evidence.
 
-- Foundation main: `c9c27d32b5c5ded06068024c9953d16f8585a739`.
+- Foundation main: `35afd6ccefecfd80c0e70155378f97a3a7a4eca9`.
 - Operations main must be queried from the `main` ref at chat startup..
 - Operations #637/#638 fixed the retired codemap consumer and stale artifact-manifest test contract.
 - Operations #640/#641/#642 added/validated the Rust Link-header pilot, TypeScript acquisition-planner shadow, and remaining retired-codemap audit cleanup.
@@ -730,7 +730,7 @@ A candidate is not silently promoted merely because it compiles. Runtime authori
 
 For cross-chat continuity, read `docs/GITHUB_CHAT_HANDOFF_2026-09-21.md` before making repository changes.
 
-Current Foundation main: `b2752d6a63aaf646743cc8173fa83b4271b02160`. Current Operations main: `0fa576c10fee30221150110865b11c0132de4575`. Always refresh both from `main` at chat startup before mutation.
+Current Foundation main: `35afd6ccefecfd80c0e70155378f97a3a7a4eca9`. Current Operations main: `a3686fd166f98fbfc762f5776519799ac9ed496b`. Always refresh both from `main` at chat startup before mutation.
 
 Repository-side repair waves described by Foundation PRs #945 and #948-#956 and Operations PRs #745-#749 are merged. Foundation #954 records the runtime-evidence ownership matrix.
 
@@ -739,3 +739,22 @@ The remaining issue queue is evidence-gated: Foundation #157/#452 and Operations
 ## Complete AI engineering continuity ledger
 
 For durable cross-chat continuity—including strategies, test taxonomy, migration rules, security invariants, failure lessons, lane/work-stealing rules, CI policy and issue-management methods—read `docs/AI_ENGINEERING_CONTINUITY_LEDGER_2026-09-21.md`.
+
+
+## Live reconciliation checkpoint — 2026-09-26 18:37 UTC
+- Foundation main: `35afd6ccefecfd80c0e70155378f97a3a7a4eca9`.
+- Operations main: `a3686fd166f98fbfc762f5776519799ac9ed496b`.
+- Production Operations pin remains `566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3`; this is intentional and is not silently advanced by Operations-main changes.
+- Cloudflare `heroic` provenance: Foundation `6549f6752352d4c4c9f2162b61faa69ef263deaa`; service binding `OPERATIONS -> operations`.
+- Cloudflare `operations` provenance: production pin `566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3`; `FOUNDATION -> heroic`; D1 `research-intelligence`.
+- Live open issues: Foundation 5 + Operations 4 = 9.
+- Live open PRs: Foundation 3 + Operations 3 = 6.
+- Scheduled `operations` cron is `*/15 * * * *`; telemetry recorded zero scheduled events before the 2026-09-26 18:32 UTC trigger update, so no false runtime receipt is claimed yet.
+
+
+## Live reconciliation — 2026-09-26 18:47 UTC
+- Foundation main: `35afd6ccefecfd80c0e70155378f97a3a7a4eca9`.
+- Operations main: `a3686fd166f98fbfc762f5776519799ac9ed496b`.
+- Production Operations pin remains `566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3`; Cloudflare `heroic` remains deployed from Foundation `6549f6752352d4c4c9f2162b61faa69ef263deaa`.
+- Live open issue queue: Foundation 5 + Operations 4 = 9.
+- Current active PR queue at checkpoint: Foundation 3 + Operations 3 = 6.
