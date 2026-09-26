@@ -173,3 +173,21 @@ def test_plausibility_rule_predicates_cover_negative_paths() -> None:
     assert _matches({"when": {"refresh_gte": 120}}, category="monitor", panel="oled", price=1, refresh=60, size=24) is False
     assert _matches({"when": {"size_gte": 27}}, category="monitor", panel="oled", price=1, refresh=60, size=None) is False
     assert _matches({"when": {"size_gte": 27}}, category="monitor", panel="oled", price=1, refresh=60, size=24) is False
+
+
+def test_quality_rules_reject_invalid_payload(monkeypatch: pytest.MonkeyPatch) -> None:
+    import foundation_core.quality as quality
+
+    class FakeFile:
+        def read_text(self, *, encoding: str) -> str:
+            return "{}"
+
+    class FakeFiles:
+        def joinpath(self, _name: str) -> FakeFile:
+            return FakeFile()
+
+    quality._RULES_CACHE = None
+    monkeypatch.setattr(quality.resources, "files", lambda _package: FakeFiles())
+    with pytest.raises(ValueError, match="must contain a rules list"):
+        quality._rules()
+    quality._RULES_CACHE = None
