@@ -1,0 +1,72 @@
+name: OpenCart REST Full Product Probe
+on:
+  push:
+    branches: [probe/opencart-feed-full-20260926]
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Probe REST product APIs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import concurrent.futures,urllib.request,json,re,time,os
+          targets={
+            'md':'https://mdcomputers.in',
+            'it':'https://www.theitdepot.com',
+            'national':'https://nationalpc.in',
+            'vedant':'https://www.vedantcomputers.com'
+          }
+          paths=[
+            '/api/rest/products',
+            '/api/rest/products?limit=100&page=1',
+            '/api/rest/products?limit=1000&page=1',
+            '/api/rest/products/simple',
+            '/index.php?route=feed/rest_api/products',
+            '/index.php?route=feed/rest_api/products&limit=100&page=1',
+            '/index.php?route=feed/rest_api/products&limit=1000&page=1',
+            '/index.php?route=extension/feed/rest_api/products',
+            '/index.php?route=api/allproducts&json',
+            '/index.php?route=api/allproducts',
+            '/index.php?route=api/product',
+            '/index.php?route=feed/web_api/products',
+            '/api/products',
+            '/api/v1/products',
+            '/api/v2/products',
+            '/index.php?route=openapi/product/getproducts',
+          ]
+          H={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36','Accept':'application/json,text/javascript,application/xml,text/xml,*/*','Accept-Language':'en-IN,en;q=0.9','X-Requested-With':'XMLHttpRequest'}
+          def one(item):
+            name,root,p=item; url=root+p
+            try:
+              req=urllib.request.Request(url,headers=H)
+              with urllib.request.urlopen(req,timeout=10) as r: b=r.read(2000000).decode('utf-8','replace'); st=r.status
+              lo=b[:20000].lower(); cls='unknown'; rows=0
+              try:
+                if b.lstrip().startswith(('{','[')):
+                  j=json.loads(b)
+                  arr=j if isinstance(j,list) else next((j.get(k) for k in ['products','items','data','results','response'] if isinstance(j.get(k),list)),None)
+                  rows=len(arr) if isinstance(arr,list) else 0; cls='json-products' if rows else 'json-object'
+                  if isinstance(j,dict) and ('success' in j and j.get('success')==0): cls='api-error-json'
+              except: pass
+              if cls=='unknown' and '<rss' in lo: cls='rss'
+              if cls=='unknown' and '<html' in lo: cls='html'
+              if re.search(r'404|not found',lo): cls='http-error'
+              fields={k:len(re.findall(fr'["<](?:{k}|g:{k})["\\']?\\s*[:>]',b,re.I)) for k in ['id','name','title','price','quantity','stock','href','link']}
+              return {'site':name,'path':p,'status':st,'ctype':r.headers.get('content-type',''),'bytes':len(b),'class':cls,'rows':rows,'fields':fields,'sample':re.sub(r'\\s+',' ',b[:300])}
+            except Exception as e:return {'site':name,'path':p,'status':0,'error':type(e).__name__+':'+str(e)[:100]}
+          items=[(n,r,p) for n,r in targets.items() for p in paths]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=24) as ex: results=list(ex.map(one,items))
+          hits=[x for x in results if x.get('rows',0)>0 or x.get('class') not in ('html','http-error','unknown')]
+          os.makedirs('out',exist_ok=True)
+          open('out/opencart-rest-results.json','w').write(json.dumps({'generated_at':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'tested':len(results),'hits':hits,'all':results},indent=2))
+          print(json.dumps({'tested':len(results),'hits':hits},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opencart-rest-results-20260926
+          path: out/opencart-rest-results.json
+          retention-days: 14
