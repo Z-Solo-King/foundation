@@ -306,7 +306,8 @@ async function scan([name,base]) {
 }
 
 const results = await Promise.all(SELECTED.map(t=>scan(t)));
-const feeds = results.flatMap(r=>r.feed?[{brand:r.name,base:r.base,...r.feed}]:[]);\nconst reconstructed = results.flatMap(r=>r.reconstructed_feed?[{brand:r.name,base:r.base,...r.reconstructed_feed}]:[]);
+const feeds = results.flatMap(r=>r.feed?[{brand:r.name,base:r.base,...r.feed}]:[]);
+const reconstructed = results.flatMap(r=>r.reconstructed_feed?[{brand:r.name,base:r.base,...r.reconstructed_feed}]:[]);
 await writeFile("out/fast2/summary.json",JSON.stringify({
   generated_at:new Date().toISOString(),targets:SELECTED.length,live_verified_feeds:feeds.length,
   live_verified_sites:new Set(feeds.map(x=>x.brand)).size,
