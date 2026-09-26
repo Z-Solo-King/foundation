@@ -32,6 +32,8 @@ jobs:
           permission-contents: read
           permission-issues: read
       - name: Snapshot live issue universe at run start
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           mkdir -p .runtime/family-integrity
