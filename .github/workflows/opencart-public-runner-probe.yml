@@ -1,0 +1,102 @@
+name: OpenCart Public Runner Probe
+on:
+  push:
+    branches: [probe/opencart-feed-full-20260926]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Network probe
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: |
+          cat > probe.py <<'PY'
+          import json, time, re, urllib.request
+          from concurrent.futures import ThreadPoolExecutor, as_completed
+          targets={
+            "mdcomputers":"https://mdcomputers.in",
+            "itdepot":"https://www.theitdepot.com",
+            "nationalpc":"https://nationalpc.in",
+            "vedant":"https://www.vedantcomputers.com",
+          }
+          paths=[
+            "/feeds/google_base.xml","/feeds/google.xml","/google_feed.xml","/product-feed.xml","/products.xml",
+            "/merchant_feed/google.xml","/feeds/products.xml","/catalog/feed","/media/feed/google.xml","/google_base.xml",
+            "/feed/google","/index.php?route=extension/feed/google_base","/index.php?route=feed/google_base",
+            "/index.php?route=extension/feed/google_sitemap","/index.php?route=feed/google_sitemap",
+            "/index.php?route=extension/feed/google_merchant","/index.php?route=feed/google_merchant",
+            "/index.php?route=extension/feed/google_merchant_center","/index.php?route=feed/google_merchant_center",
+            "/index.php?route=extension/feed/facebook_product","/index.php?route=feed/facebook_product",
+            "/index.php?route=extension/feed/facebook","/index.php?route=feed/facebook",
+            "/index.php?route=product/feed","/index.php?route=extension/feed/google_base_pro",
+            "/index.php?route=feed/google_base_pro","/index.php?route=extension/module/feed_manager",
+            "/googlebase.xml","/feed/google_base.xml","/export/feed.xml","/google-product-feed.xml","/feed_products.xml",
+            "/sitemap_products.xml","/sitemap-products.xml","/google-feed.xml","/feed.xml","/rss.xml","/atom.xml",
+            "/index.xml","/products.rss","/merchant-feed.xml","/merchant_feed.xml","/google-merchant-feed.xml",
+            "/google-shopping.xml","/google-shopping-feed.xml","/google-products.xml","/google-product-feed.php",
+            "/google_feed.php","/googlebase.php","/merchant-feed.php","/product-feed.php",
+            "/storage/download/feeds/google_merchant_center_0_en_INR.xml",
+            "/feeds/google_merchant_center_0_en_INR.xml","/feeds/google_merchant_center.xml",
+            "/google_merchant_center.xml","/google_merchant.xml","/merchant-center.xml","/merchantcenter.xml",
+            "/shopping_feed.xml","/product_feed.xml","/products_feed.xml","/merchant_products.xml",
+            "/catalog_feed.xml","/googlefeed.xml","/gmc.xml","/gmc-feed.xml"
+          ]
+          queries=["laptop","rtx","ryzen","ssd","corsair"]
+          feed=[(n,root+p) for n,root in targets.items() for p in paths]
+          api=[]
+          for n,root in targets.items():
+            if n=="mdcomputers":
+              ps=["/index.php?route=extension/isearch/module/isearch.ajax&search=","/index.php?route=extension/module/isearch/ajaxsearch&search="]
+            else:
+              ps=["/index.php?route=journal3/search&search="]
+            for p in ps:
+              for q in queries:
+                for lim in [10,20,50,100,1000]:
+                  api.append((n,root+p+urllib.parse.quote(q)+f"&limit={lim}",q,lim))
+          import urllib.parse
+          items=[(n,u,"feed",None,None) for n,u in feed]+[(n,u,"api",q,l) for n,u,q,l in api]
+          headers={"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36","Accept":"application/json,application/xml,text/xml,text/html;q=0.9,*/*;q=0.8","X-Requested-With":"XMLHttpRequest","Accept-Language":"en-IN,en;q=0.9"}
+          def one(x):
+            n,u,t,q,l=x; started=time.time()
+            req=urllib.request.Request(u,headers=headers)
+            try:
+              with urllib.request.urlopen(req,timeout=15) as r:
+                body=r.read(1000000).decode("utf-8","replace")
+                lo=body[:8000].lower(); c="unknown"; rows=0
+                if re.search(r"<rss\b",body,re.I) and re.search(r"<item\b",body,re.I) and (re.search(r"g:price",body,re.I) or "base.google.com" in lo):
+                  c="google-merchant-rss"; rows=len(re.findall(r"<item\b",body,re.I))
+                elif re.search(r"<item\b",body,re.I): c="generic-rss-xml"; rows=len(re.findall(r"<item\b",body,re.I))
+                elif re.search(r"<urlset\b|<sitemapindex\b",body,re.I): c="sitemap-xml"; rows=len(re.findall(r"<(?:url|sitemap)\b",body,re.I))
+                elif body.lstrip().startswith(("{","[")):
+                  try:
+                    j=json.loads(body); a=j if isinstance(j,list) else next((j[k] for k in ["response","products","items","data","results"] if isinstance(j.get(k),list)),[])
+                    if isinstance(a,list): rows=len(a); c="json-product-api" if rows else "json"
+                  except: c="json-like"
+                elif re.search(r"cloudflare|just a moment|one moment|attention required",lo): c="challenge"
+                elif re.search(r"404|not found",lo): c="http-error-page"
+                elif "<html" in lo: c="html"
+                return {"name":n,"type":t,"query":q,"limit":l,"url":u,"status":r.status,"ctype":r.headers.get("content-type",""),"bytes":len(body),"classification":c,"rows":rows,"sample":re.sub(r"\s+"," ",body[:240]),"ms":round((time.time()-started)*1000)}
+            except Exception as e:
+              return {"name":n,"type":t,"query":q,"limit":l,"url":u,"status":0,"error":type(e).__name__+":"+str(e)[:100],"ms":round((time.time()-started)*1000)}
+          out=[]
+          with ThreadPoolExecutor(max_workers=8) as ex:
+            fs=[ex.submit(one,x) for x in items]
+            for f in as_completed(fs): out.append(f.result())
+          with open("probe-results.json","w") as f: json.dump({"generated_at":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"candidates":len(items),"results":out},f,indent=2)
+          print("CANDIDATES",len(items))
+          print("GOOGLE_MERCHANT",sum(x.get("classification")=="google-merchant-rss" for x in out))
+          print("JSON_API",sum(x.get("classification")=="json-product-api" for x in out))
+          print("SITEMAP",sum(x.get("classification")=="sitemap-xml" for x in out))
+          PY
+          python3 probe.py
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencart-public-runner-probe-20260926
+          path: probe-results.json
+          retention-days: 7
