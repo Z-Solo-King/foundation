@@ -31,10 +31,31 @@ jobs:
           repositories: operations
           permission-contents: read
           permission-issues: read
-      - name: Verify family contracts and live issue inventory
+      - name: Snapshot live issue universe at run start
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime/family-integrity
+          gh api --paginate "repos/Z-Solo-King/foundation/issues?state=open&per_page=100" > /tmp/foundation-open.json
+          gh api --paginate "repos/Z-Solo-King/operations/issues?state=open&per_page=100" > /tmp/operations-open.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows = []
+          for repo, path in (("foundation", "/tmp/foundation-open.json"), ("operations", "/tmp/operations-open.json")):
+              for item in json.loads(Path(path).read_text(encoding="utf-8")):
+                  if "pull_request" not in item:
+                      rows.append({"repo": repo, "number": item["number"], "title": item["title"]})
+          rows.sort(key=lambda x: (x["repo"], x["number"]))
+          Path(".runtime/family-integrity/live_open_issues_snapshot.json").write_text(
+              json.dumps({"schema": "live-open-issue-snapshot/v1", "actual": rows}, indent=2) + "\n",
+              encoding="utf-8"
+          )
+          PY
+      - name: Verify family contracts and frozen live issue inventory
         env:
           FOUNDATION_GH_TOKEN: ${{ github.token }}
           OPERATIONS_GH_TOKEN: ${{ steps.operations-app.outputs.token }}
+          LIVE_ISSUE_SNAPSHOT: .runtime/family-integrity/live_open_issues_snapshot.json
         run: node scripts/family_integrity_check.js
       - name: Upload integrity receipt
         if: ${{ always() }}
@@ -45,5 +66,6 @@ jobs:
             docs/FAMILY_INTEGRATION_GRAPH.json
             docs/OPEN_ISSUE_ACCEPTANCE_MATRIX.json
             docs/FAMILY_SYNC_STATE.json
+            .runtime/family-integrity/live_open_issues_snapshot.json
           retention-days: 30
           if-no-files-found: error
