@@ -1,0 +1,77 @@
+name: OpenCart Full Transport Discovery
+on:
+  push:
+    branches: [probe/opencart-feed-full-20260926]
+  workflow_dispatch:
+jobs:
+  discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Search pagination and JS route discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf transport && mkdir -p transport
+          UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36'
+          get() { curl -L --silent --show-error --max-time 18 --retry 1 -A "$UA" -H 'Accept: text/html,application/xhtml+xml,application/xml,application/json,text/xml,*/*' "$1"; }
+
+          for site in itdepot nationalpc vedant; do
+            case "$site" in
+              itdepot) root='https://www.theitdepot.com'; query='%25'; max=45;;
+              nationalpc) root='https://nationalpc.in'; query=''; max=45;;
+              vedant) root='https://www.vedantcomputers.com'; query='%25'; max=12;;
+            esac
+            for p in $(seq 1 "$max"); do
+              url="$root/index.php?route=product/search&search=$query&limit=100&page=$p"
+              get "$url" > "transport/$site"_"$p".html || true
+            done
+            get "$root/" > "transport/$site"_home.html || true
+            grep -oE '<script[^>]+src=["'\''][^"'\'']+["'\'']' "transport/$site"_home.html 2>/dev/null \
+              | sed -E 's/.*src=["'\'']([^"'\'']+)["'\''].*/\1/' | sort -u > "transport/$site"_scripts.txt || true
+            : > "transport/$site"_routes.txt
+            while IFS= read -r s; do
+              clean=$(printf '%s' "$s" | sed 's#^/##')
+              case "$s" in http*) full="$s";; *) full="$root/$clean";; esac
+              file="transport/js_"$(printf '%s' "$full" | sha256sum | cut -c1-16)".txt"
+              get "$full" > "$file" || true
+              grep -oE "(index\.php\?route=[A-Za-z0-9_./-]+|route=[A-Za-z0-9_./-]+|/[A-Za-z0-9_.-]+/(search|product|products|catalog|filter|ajax|feed)[A-Za-z0-9_./?=&%-]*)" "$file" 2>/dev/null >> "transport/$site"_routes.txt || true
+              grep -oE "https?://[^\"'<>[:space:]]+" "$file" 2>/dev/null >> "transport/$site"_routes.txt || true
+            done < "transport/$site"_scripts.txt
+            sort -u "transport/$site"_routes.txt -o "transport/$site"_routes.txt || true
+          done
+
+          cat > summarize.py <<'PY'
+          import glob,re,json,os,html
+          out={}
+          for site in ['itdepot','nationalpc','vedant']:
+              rows=[]
+              for path in glob.glob('transport/%s_[0-9]+.html'%site):
+                  b=open(path,errors='ignore').read()
+                  p=int(re.search(r'_(\d+)\.html$',path).group(1))
+                  m=re.search(r'Showing\s+(\d+)\s+to\s+(\d+)\s+of\s+(\d+)',b,re.I)
+                  total=int(m.group(3)) if m else None
+                  ids=list(dict.fromkeys(re.findall(r'product_id[=&]([0-9]+)',b,re.I)))
+                  hrefs=[html.unescape(x) for x in re.findall(r'href=["\']([^"\']+)["\']',b,re.I)]
+                  prod=[x for x in hrefs if 'product_id=' in x.lower() or '/product/' in x.lower() or 'route=product/product' in x.lower()]
+                  prices=re.findall(r'(?:₹|Rs\.?|INR)\s*[0-9][0-9,]*(?:\.[0-9]{1,2})?',b,re.I)
+                  stock=re.findall(r'in stock|out of stock|available|unavailable|quantity',b,re.I)
+                  rows.append(dict(page=p,bytes=len(b),total=total,product_id_hits=len(ids),product_href_hits=len(set(prod)),price_hits=len(prices),stock_hits=len(stock),challenge=bool(re.search(r'cloudflare|just a moment|one moment|attention required',b,re.I)),sample_ids=ids[:5],sample_hrefs=list(dict.fromkeys(prod))[:5]))
+              rows.sort(key=lambda x:x['page'])
+              totals=sorted(set(x['total'] for x in rows if x['total']))
+              expected=((totals[-1]+99)//100) if totals else None
+              route_path='transport/%s_routes.txt'%site
+              routes=open(route_path,errors='ignore').read().splitlines() if os.path.exists(route_path) else []
+              out[site]=dict(pages=len(rows),declared_totals=totals,expected_pages=expected,rows=rows[:3]+rows[-5:],routes=routes[:300])
+          open('transport-discovery.json','w').write(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          PY
+          python3 summarize.py
+          test -s transport-discovery.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opencart-transport-discovery-20260926
+          path: |
+            transport-discovery.json
+            transport/*_routes.txt
+          retention-days: 14
