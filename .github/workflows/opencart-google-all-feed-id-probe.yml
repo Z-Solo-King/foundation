@@ -1,0 +1,65 @@
+name: OpenCart Google All Feed ID Probe
+on:
+  push:
+    branches: [probe/opencart-feed-full-20260926]
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Probe Google Marketing Tools feed IDs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p feedprobe
+          UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36'
+          probe_site() {
+            name="$1"; root="$2"
+            mkdir -p "feedprobe/$name"
+            for id in $(seq 1 100); do
+              url="$root/index.php?route=extension/module/google_all_feed&feed_id=$id"
+              curl -L --silent --show-error --max-time 15 --retry 1 -A "$UA" -H 'Accept: application/xml,text/xml,application/rss+xml,application/json,*/*' "$url" -o "feedprobe/$name/$id.txt" || true
+            done
+          }
+          export -f probe_site
+          probe_site mdcomputers https://mdcomputers.in
+          probe_site itdepot https://www.theitdepot.com
+          probe_site nationalpc https://nationalpc.in
+          probe_site vedant https://www.vedantcomputers.com
+
+          python3 - <<'PY'
+          import glob,re,json,os
+          all_out={}
+          for site in ['mdcomputers','itdepot','nationalpc','vedant']:
+              hits=[]
+              for p in glob.glob('feedprobe/'+site+'/*.txt'):
+                  b=open(p,errors='ignore').read()
+                  if not b.strip(): continue
+                  fid=int(os.path.basename(p).split('.')[0]); lo=b[:30000].lower()
+                  cls='unknown'; rows=0
+                  if re.search(r'<rss\b',b,re.I) and re.search(r'<item\b',b,re.I):
+                      rows=len(re.findall(r'<item\b',b,re.I))
+                      cls='google-merchant-rss' if ('base.google.com' in lo or 'g:price' in lo or 'g:id' in lo) else 'rss-product'
+                  elif re.search(r'<item\b',b,re.I):
+                      cls='xml-item'; rows=len(re.findall(r'<item\b',b,re.I))
+                  elif '<urlset' in lo:
+                      cls='sitemap'; rows=len(re.findall(r'<url\b',b,re.I))
+                  elif b.lstrip().startswith(('{','[')):
+                      try:
+                          j=json.loads(b); cls='json'; rows=len(j) if isinstance(j,list) else 0
+                      except: cls='json-like'
+                  elif '<html' in lo: cls='html'
+                  product=bool(re.search(r'g:price|g:availability|g:link|g:id|price|quantity|stock',lo))
+                  if cls not in ('html','unknown') or product:
+                      hits.append({'feed_id':fid,'bytes':len(b),'class':cls,'rows':rows,'product_data':product,'sample':re.sub(r'\s+',' ',b[:450])})
+              hits.sort(key=lambda x:x['feed_id'])
+              all_out[site]=hits
+          open('google-all-feed-id-results.json','w').write(json.dumps(all_out,indent=2))
+          print(json.dumps(all_out,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opencart-google-all-feed-id-results-20260926
+          path: google-all-feed-id-results.json
+          retention-days: 14
