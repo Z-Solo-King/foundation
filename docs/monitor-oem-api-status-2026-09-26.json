@@ -1,0 +1,134 @@
+{
+  "generated_at": "2026-09-26",
+  "scope": [
+    "Acer",
+    "MSI",
+    "Samsung",
+    "AOC",
+    "Dell",
+    "ROG",
+    "ASUS",
+    "BenQ",
+    "Gigabyte",
+    "AORUS",
+    "LG"
+  ],
+  "rule": "Prefer manufacturer-owned machine-readable APIs; otherwise use manufacturer-owned structured PDP/spec/PDF. Never label a fallback as an API.",
+  "results": [
+    {
+      "brand": "ROG",
+      "api": true,
+      "status": "qualified",
+      "catalog": "api-rog.asus.com recent-data/search-api/v1/ResultV1",
+      "spec": [
+        "api-rog.asus.com recent-data/api/v4/Common/Spec",
+        "api-rog.asus.com recent-data/api/v5/Product/Spec",
+        "api-rog.asus.com recent-data/api/v5/Product/ModelSpec"
+      ]
+    },
+    {
+      "brand": "Dell",
+      "api": true,
+      "status": "qualified",
+      "catalog": "dellstore.com/rest/V1/products",
+      "spec": "Magento product custom_attributes"
+    },
+    {
+      "brand": "Samsung",
+      "api": true,
+      "status": "qualified",
+      "catalog": "p1-smi-api-cdn.shop.samsung.com/.../products/search",
+      "spec": [
+        "searchapi.samsung.com/v6/front/b2c/product/spec/detail",
+        "searchapi.samsung.com/v6/front/b2c/product/card/detail/global",
+        "searchapi.samsung.com/v6/front/b2c/product/finder/global"
+      ]
+    },
+    {
+      "brand": "ASUS",
+      "api": true,
+      "status": "qualified",
+      "catalog": "odinapi.asus.com/recent-data/apiv2/SearchResult",
+      "spec_api_status": "not isolated",
+      "official_spec": "asus.com/in/.../techspec/"
+    },
+    {
+      "brand": "Acer",
+      "api": true,
+      "status": "qualified-fallback",
+      "catalog": "store.acer.com/en-in/graphql",
+      "spec_api_status": "query shape unresolved",
+      "official_spec": "manufacturer PDP / unified V175 HTML normalizer"
+    },
+    {
+      "brand": "LG",
+      "api": true,
+      "status": "qualified-fallback",
+      "catalog": "/api/commerce/content/pdp_items",
+      "spec_field": "items.keyspec",
+      "official_spec": "LG India PDP",
+      "api_replay": "direct replay returned 404; frontend wrapper/header/base behavior still required"
+    },
+    {
+      "brand": "BenQ",
+      "api_family": true,
+      "status": "qualified-fallback",
+      "commerce_api": "/api/magento/g6/queryMixedProduct/BQP/in-buy",
+      "spec_api_status": "request contract unresolved",
+      "official_spec": "en-in monitor .../spec.html"
+    },
+    {
+      "brand": "Gigabyte",
+      "api_family": true,
+      "status": "api-found-access-blocked",
+      "backend": [
+        "/api/v1.0/Consumer/{countryCode}/Consumer/{productCategoryUrl}/{modelUrl}",
+        "/api/v1.0/Consumer/{countryCode}/GetProductTabDataAsync/{apiUseTabKey}/{pid}",
+        "/api/v1.0/OneData/{countryCode}/GetOneDataSpecAsync"
+      ],
+      "frontend_proxy": "/iisApplicationNuxt/api/proxy/api/v1.0/...",
+      "official_spec": "/Monitor/{model}/sp"
+    },
+    {
+      "brand": "AORUS",
+      "api_family": true,
+      "status": "api-found-access-blocked",
+      "adapter_family": "Gigabyte",
+      "official_spec": "AORUS/Gigabyte monitor PDP/spec"
+    },
+    {
+      "brand": "AOC",
+      "api": true,
+      "status": "qualified-fallback",
+      "apis": [
+        "/api/products/screen-size-variants",
+        "/api/products/price-data"
+      ],
+      "spec_api_status": "not found",
+      "official_spec": "AOC PDP + V175 monitor normalizer"
+    },
+    {
+      "brand": "MSI",
+      "api": false,
+      "status": "qualified-fallback",
+      "official_spec": "msi.com/Monitor/{model}/Specification",
+      "datasheet": "storage-asset.msi.com/datasheet/monitor/...pdf"
+    }
+  ],
+  "architecture": {
+    "acquisition_order": [
+      "structured_catalog_api",
+      "structured_product_spec_api",
+      "official_rendered_pdp",
+      "official_spec_pdf"
+    ],
+    "evidence_required": [
+      "source_url",
+      "transport",
+      "http_status_when_tested",
+      "model_or_sku",
+      "raw_source_reference"
+    ],
+    "block_policy": "Do not bypass vendor security controls; record 403/rate-limit/transport failures and fall back to official manufacturer content."
+  }
+}
