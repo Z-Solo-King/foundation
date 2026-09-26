@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feat/foundation-google-feed-matrix-20260926
+    paths:
+      - tools/google_feed_matrix_probe.mjs
+      - .github/workflows/foundation-google-feed-matrix.yml
 
 permissions:
   contents: read
