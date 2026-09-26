@@ -1,0 +1,81 @@
+{
+  "schema_version": "foundation-custom-api-google-xml-audit/v2",
+  "generated_on": "2026-09-26",
+  "repository": {
+    "owner": "Z-Solo-King",
+    "name": "foundation",
+    "public": true,
+    "branch": "feat/foundation-google-feed-matrix-20260926"
+  },
+  "execution": {
+    "shallow_run_id": 36242499465,
+    "deep_run_id": 36242704888,
+    "deep_run_url": "https://github.com/Z-Solo-King/foundation/actions/runs/36242704888",
+    "matrix_sites": 15,
+    "deep_sites": 14,
+    "fail_fast": false
+  },
+  "verified_google_xml": [
+    {
+      "site": "Clarion Computers",
+      "url": "https://shop.clarioncomputers.in/feeds/google.xml",
+      "transport_status": 200,
+      "payload_bytes": 6754788,
+      "item_count": 2152,
+      "google_namespace": "http://base.google.com/ns/1.0",
+      "sha256": "d96edd0748709b00825456e31ad8bd72d9b5348a2cc1d38d867d4a497053d6c8",
+      "core_fields": {
+        "id": 2152,
+        "title": 2152,
+        "link": 2152,
+        "price": 2152,
+        "availability": 2152,
+        "condition": 2152,
+        "brand": 2152,
+        "gtin": 2152,
+        "mpn": 2152
+      }
+    },
+    {
+      "site": "Shivam IT Service",
+      "url": "https://api.shivamitservice.in/google-feed.xml",
+      "transport_status": 200,
+      "payload_bytes": 2449913,
+      "item_count": 1009,
+      "google_namespace": "http://base.google.com/ns/1.0",
+      "sha256": "f92ad78e0689fb74cb224970ad1d126709703706e501cf630da7a5f73317baae",
+      "core_fields": {
+        "id": 1009,
+        "title": 1009,
+        "link": 1009,
+        "price": 1009,
+        "availability": 1009,
+        "condition": 1009,
+        "brand": 1008,
+        "gtin": 632,
+        "mpn": 982
+      }
+    }
+  ],
+  "unresolved_or_negative_at_tested_paths": [
+    "BuildMyPC",
+    "Easy Shoppi",
+    "Fingers",
+    "LebyoPC",
+    "ArcadeX",
+    "altf4gear",
+    "Logtech",
+    "DigiBuggy",
+    "TheValueStore",
+    "Furtados",
+    "KeySync",
+    "The Rhythm House",
+    "CloudTechAsia"
+  ],
+  "notes": [
+    "Only payloads matching RSS/Atom plus Google namespace/fields and populated product items were counted.",
+    "403/429 responses remain transport-unverified rather than proof of feed absence.",
+    "No WooCommerce, Shopify, OpenCart, or Wix sites were included.",
+    "Audit branch and draft PR are not merged into main."
+  ]
+}
