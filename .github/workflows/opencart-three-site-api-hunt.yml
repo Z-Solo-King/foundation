@@ -1,0 +1,260 @@
+name: OpenCart Three Site API Hunt
+on:
+  push:
+    branches:
+      - probe/opencart-three-api-20260926
+  workflow_dispatch:
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Discover public APIs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          cat > hunt.mjs <<'NODE'
+          import fs from 'fs';
+
+          const targets = {
+            md: 'https://mdcomputers.in',
+            itdepot: 'https://www.theitdepot.com',
+            vedant: 'https://www.vedantcomputers.com'
+          };
+
+          const headers = {
+            'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36',
+            'accept': 'application/json,text/javascript,application/xml,text/xml,text/html,*/*',
+            'accept-language': 'en-IN,en;q=0.9',
+            'x-requested-with': 'XMLHttpRequest'
+          };
+
+          const explicit = [
+            'index.php?route=product/search',
+            'index.php?route=journal3/search',
+            'index.php?route=journal3/product',
+            'index.php?route=journal3/search/ajax',
+            'index.php?route=journal3/search/autocomplete',
+            'index.php?route=extension/isearch/module/isearch.ajax',
+            'index.php?route=extension/module/isearch/module/isearch.ajax',
+            'index.php?route=extension/module/isearch/ajaxsearch',
+            'index.php?route=extension/module/isearch/ajax',
+            'index.php?route=extension/ultimate_filters/module/filter',
+            'index.php?route=extension/module/ultimate_filters/module/filter',
+            'index.php?route=extension/module/google_all_feed',
+            'index.php?route=extension/module/google_all/get_product_datas',
+            'index.php?route=extension/feed/google_base',
+            'index.php?route=feed/google_base',
+            'index.php?route=extension/feed/google_merchant',
+            'index.php?route=feed/google_merchant',
+            'index.php?route=extension/feed/google_merchant_center',
+            'index.php?route=feed/rest_api/products',
+            'index.php?route=extension/feed/rest_api/products',
+            'index.php?route=api/allproducts&json',
+            'index.php?route=api/allproducts',
+            'index.php?route=api/product',
+            'index.php?route=openapi/product/getproducts',
+            'index.php?route=feed/web_api/products',
+            'api/products',
+            'api/v1/products',
+            'api/v2/products',
+            'api/rest/products',
+            'api/catalog/products',
+            'api/catalog'
+          ];
+
+          const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+          async function get(url, method='GET', body='') {
+            try {
+              const r = await fetch(url, {
+                method,
+                headers: { ...headers, referer: url.split('/index.php')[0] + '/' },
+                body: body || undefined,
+                redirect: 'follow',
+                signal: AbortSignal.timeout(12000)
+              });
+              const b = await r.text();
+              return { status: r.status, ctype: r.headers.get('content-type') || '', bytes: b.length, body: b };
+            } catch (e) {
+              return { status: 0, ctype: '', bytes: 0, body: '', error: String(e) };
+            }
+          }
+
+          function abs(root, x) {
+            if (!x) return '';
+            try { return new URL(x, root + '/').href; } catch { return ''; }
+          }
+
+          function uniq(a) { return [...new Set(a.filter(Boolean))]; }
+
+          function jsonInfo(body) {
+            const s = (body || '').trim();
+            if (!s.startsWith('{') && !s.startsWith('[')) return null;
+            try {
+              const j = JSON.parse(s);
+              let arr = Array.isArray(j) ? j : null;
+              if (!arr && j && typeof j === 'object') {
+                for (const k of ['products','items','data','results','response','product_data','product_data_list']) {
+                  if (Array.isArray(j[k])) { arr = j[k]; break; }
+                }
+                if (!arr && j.response && typeof j.response === 'object') {
+                  for (const k of ['products','items','data','results']) {
+                    if (Array.isArray(j.response[k])) { arr = j.response[k]; break; }
+                  }
+                }
+              }
+              const obj = arr && arr[0] || j;
+              const keys = obj && typeof obj === 'object' ? Object.keys(obj).slice(0,50) : [];
+              const productish = !!(obj && typeof obj === 'object' &&
+                ('price' in obj || 'special' in obj || 'quantity' in obj || 'stock' in obj ||
+                 'name' in obj || 'title' in obj || 'product_id' in obj || 'href' in obj ||
+                 'url' in obj || 'sku' in obj || 'model' in obj));
+              return { array: !!arr, rows: arr ? arr.length : 0, productish, keys };
+            } catch { return null; }
+          }
+
+          function xmlInfo(body) {
+            const s = body || '';
+            const lo = s.slice(0,50000).toLowerCase();
+            const item = (s.match(/<item\b/gi) || []).length;
+            const url = (s.match(/<url\b/gi) || []).length;
+            const google = lo.includes('base.google.com/ns/1.0') || lo.includes('<g:price') || lo.includes('<g:id');
+            return { rss: /<rss\b/i.test(s), item, url, googleMerchant: google };
+          }
+
+          function mine(html) {
+            const out = [];
+            const rs = [
+              /(?:url|endpoint|searchUrl|search_url|apiUrl|api_url)\s*[:=]\s*["']([^"']+)["']/gi,
+              /["']([^"']*index\.php\?route=[^"']+)["']/gi,
+              /["']([^"']*(?:\/api\/|\/feed\/|google_all|journal3\/search|isearch|ultimate_filters)[^"']*)["']/gi
+            ];
+            for (const re of rs) {
+              let m;
+              while ((m = re.exec(html || ''))) out.push(m[1]);
+            }
+            return uniq(out);
+          }
+
+          async function fetchScripts(root, home) {
+            const scripts = uniq([...home.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)].map(m => abs(root, m[1]))).slice(0,18);
+            const got = await Promise.all(scripts.map(async u => ({u, ...(await get(u))})));
+            const discovered = [];
+            for (const x of got) {
+              if (x.status === 200 && x.body) discovered.push(...mine(x.body));
+            }
+            return { scripts, discovered: uniq(discovered) };
+          }
+
+          function candidateVariants(root, c) {
+            const base = abs(root, c);
+            const out = [];
+            const add = x => out.push(base + (base.includes('?') ? '&' : '?') + x);
+            const lc = c.toLowerCase();
+            if (lc.includes('google_all_feed')) {
+              for (let id=0; id<=40; id++) add('feed_id=' + id);
+            } else if (lc.includes('search') || lc.includes('isearch') || lc.includes('filter')) {
+              add('search=laptop');
+              add('search=%25');
+              add('search=%2525');
+              add('q=laptop');
+              add('query=laptop');
+              add('keyword=laptop');
+              add('search=laptop&page=1&limit=100');
+              add('search=laptop&page=2&limit=100');
+              add('search=%25&page=1&limit=100');
+              add('search=%25&page=2&limit=100');
+              add('search=laptop&start=0&limit=100');
+              add('search=laptop&offset=0&limit=100');
+            } else {
+              add('page=1&limit=100');
+              add('page=2&limit=100');
+              add('page=1&limit=1000');
+              add('offset=0&limit=100');
+              add('start=0&limit=100');
+            }
+            return uniq(out);
+          }
+
+          function score(x) {
+            let s = 0;
+            if (x.status === 200) s += 2;
+            if (x.json?.productish) s += 8;
+            if ((x.json?.rows || 0) > 0) s += 6 + Math.min(8, x.json.rows / 10);
+            if (x.xml?.googleMerchant && x.xml?.item > 0) s += 15;
+            else if (x.xml?.item > 0) s += 8;
+            if ((x.xml?.url || 0) > 0) s += 3;
+            if (/text\/html/i.test(x.ctype) && !x.json && !x.xml?.item) s -= 3;
+            return s;
+          }
+
+          const result = { generated_at: new Date().toISOString(), targets: {} };
+
+          for (const [site, root] of Object.entries(targets)) {
+            const home = await get(root + '/');
+            const fsx = await fetchScripts(root, home.body || '');
+            let candidates = uniq(explicit.concat(fsx.discovered))
+              .filter(x => /route=|\/api\/|google|feed|search|isearch|catalog|product|filter/i.test(x))
+              .slice(0,70);
+
+            const probes = [];
+            for (const c of candidates) {
+              for (const u of candidateVariants(root, c).slice(0,35)) probes.push({candidate:c,url:u});
+            }
+
+            const hits = [];
+            let cursor = 0;
+            async function worker() {
+              while (true) {
+                const i = cursor++;
+                if (i >= probes.length) return;
+                const p = probes[i];
+                const r = await get(p.url);
+                const ji = jsonInfo(r.body);
+                const xi = xmlInfo(r.body);
+                const hit = {
+                  candidate: p.candidate,
+                  url: p.url,
+                  status: r.status,
+                  ctype: r.ctype,
+                  bytes: r.bytes,
+                  json: ji,
+                  xml: xi,
+                  score: score({status:r.status,ctype:r.ctype,json:ji,xml:xi})
+                };
+                if (hit.score >= 8) hits.push(hit);
+                if (r.status === 429) await sleep(250);
+              }
+            }
+            await Promise.all(Array.from({length:18}, () => worker()));
+            hits.sort((a,b) => b.score-a.score || b.bytes-a.bytes);
+
+            result.targets[site] = {
+              home: {status:home.status, ctype:home.ctype, bytes:home.bytes, challenge:/cloudflare|just a moment|one moment|attention required/i.test(home.body || '')},
+              scripts: fsx.scripts,
+              discovered: fsx.discovered.slice(0,250),
+              candidate_count: candidates.length,
+              probe_count: probes.length,
+              hits
+            };
+          }
+
+          fs.writeFileSync('out/api-hunt.json', JSON.stringify(result, null, 2));
+          for (const [site,v] of Object.entries(result.targets)) {
+            console.log('\\n### ' + site);
+            console.log(JSON.stringify({
+              home:v.home,
+              discovered:v.discovered.slice(0,80),
+              hits:v.hits.slice(0,40)
+            }, null, 2));
+          }
+          NODE
+          node hunt.mjs
+          test -s out/api-hunt.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opencart-three-site-api-hunt-20260926
+          path: out/api-hunt.json
+          retention-days: 14
