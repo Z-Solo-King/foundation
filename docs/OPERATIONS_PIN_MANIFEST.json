@@ -1,0 +1,29 @@
+{
+  "schema": "operations-pin-manifest/v1",
+  "generated_at": "2026-09-27",
+  "authority": "single public-safe immutable Operations revision manifest; runtime code remains authoritative",
+  "pins": {
+    "production_runtime": {
+      "sha": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
+      "purpose": "Cloudflare Operations production runtime and Foundation public production release",
+      "status": "production-certified reference"
+    },
+    "research_runtime": {
+      "sha": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
+      "purpose": "nightly research executor source checkout",
+      "status": "immutable research reference"
+    },
+    "secret_sync_utility": {
+      "sha": "29bb556e9505a7e2c640f5c09e62574c917b65a3",
+      "purpose": "private provider-secret synchronization utility",
+      "path": "tools/sync_provider_secrets.py",
+      "status": "immutable utility revision; separately certified before controlled use"
+    }
+  },
+  "rules": {
+    "sha_format": "40 lowercase hexadecimal characters",
+    "mutable_refs_forbidden": true,
+    "branch_or_tag_refs_forbidden": true,
+    "purpose_scoped": true
+  }
+}
