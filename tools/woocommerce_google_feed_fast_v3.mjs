@@ -173,7 +173,11 @@ async function reconstructStoreApi(base, out) {
         const key = String(p?.id ?? p?.sku ?? "");
         if (key && !seen.has(key)) { seen.add(key); products.push(p); }
       }
-      totalPages = Number(r.headers?.get?.("x-wp-totalpages")) || Number(totalPages) || Math.ceil((Number(r.headers?.get?.("x-wp-total")) || products.length) / 100);
+      const headerPages = Number(r.headers?.get?.("x-wp-totalpages")) || 0;
+      const headerTotal = Number(r.headers?.get?.("x-wp-total")) || 0;
+      if (headerPages) totalPages = Math.max(totalPages || 0, headerPages);
+      else if (headerTotal) totalPages = Math.max(totalPages || 0, Math.ceil(headerTotal / 100));
+      if (data.length < 100 && !headerPages && !headerTotal) totalPages = page;
       page += 1;
     }
   } catch (e) { failed = {classification:e?.name==="AbortError"?"TIMEOUT":"ERROR",error:e?.name||String(e)}; }
