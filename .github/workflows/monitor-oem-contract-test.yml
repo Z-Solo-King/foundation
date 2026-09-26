@@ -1,0 +1,48 @@
+name: Monitor OEM Contract Test
+on:
+  push:
+    branches: [probe/monitor-oem-api-20260926]
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Probe contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/136 Safari/537.36'
+          get(){ curl -L -sS --max-time 15 -A "$UA" -H 'Accept: application/json,text/html,application/xml,text/xml,*/*' "$1" || true; }
+          echo '=== ROG ==='
+          get https://rog.asus.com/in/monitors-group/allmodels/ > out/rog.html
+          grep -oE 'https?://[^" ]*api-rog[^" ]*|/recent-data/api/v[0-9]+/[^" ]*' out/rog.html | head -100 > out/rog.routes || true
+          grep -oE 'serverPoint[^,;]{0,300}|ResultV1[^,;]{0,500}|Product/Spec[^,;]{0,500}|Product/Info[^,;]{0,500}|ModelSpec[^,;]{0,500}' out/rog.html | head -100 >> out/rog.routes || true
+          echo '=== GIGABYTE ==='
+          get https://www.gigabyte.com/Monitor > out/gigabyte.html
+          grep -oE '/api/v1.0/[^"'"' ]*' out/gigabyte.html | sort -u | head -200 > out/gigabyte.routes || true
+          grep -oE 'https?://[^"'"' ]*gigabyte[^"'"' ]*' out/gigabyte.html | sort -u | head -100 >> out/gigabyte.routes || true
+          echo '=== LG ==='
+          get https://www.lg.com/in/monitors/ultragear-gaming-oled-monitors/27gx790a-b/ > out/lg.html
+          grep -oE '/api/commerce/[^"'"' ]*|/api/[^"'"' ]*pdp[^"'"' ]*|/pdp/api/[^"'"' ]*|mdid[^"'"' ]*MD[0-9]+' out/lg.html | sort -u | head -200 > out/lg.routes || true
+          echo '=== AOC ==='
+          get https://www.aoc.com/in/gaming/monitors/27g4 > out/aoc.html
+          grep -oE '/api/products/[^"'"' ]*|/api/asset/pi[0-9]+' out/aoc.html | sort -u | head -200 > out/aoc.routes || true
+          echo '=== BENQ ==='
+          get https://www.benq.com/en-in/monitor/gaming/ex271/spec.html > out/benq.html
+          grep -oE 'https?://[^"'"' ]*(api|graphql)[^"'"' ]*|/[^"'"' ]*(api|graphql)[^"'"' ]*' out/benq.html | sort -u | head -200 > out/benq.routes || true
+          echo '=== TEST ROG SEARCH ==='
+          get 'https://api-rog.asus.com/recent-data/search-api/v1/ResultV1/in/Product/100/1/0/1?SearchKey=monitor&systemCode=rog' > out/rog-search.json
+          echo '=== TEST GIGABYTE SEARCH ==='
+          get 'https://www.gigabyte.com/api/v1.0/Search/in/GetSearchResultList?keyword=monitor&currentPage=1&perPage=100' > out/gigabyte-search.json
+          echo '=== TEST LG COMMERCE ==='
+          get 'https://www.lg.com/api/commerce/content/pdp_items?mdid=MD1000000000' > out/lg-commerce.json
+          echo '=== ROUTES ==='
+          for f in out/*.routes; do echo --- $f; head -120 "$f"; done
+          for f in out/*search.json out/lg-commerce.json; do echo --- $f; head -c 8000 "$f"; echo; done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: monitor-oem-contract-test-20260926
+          path: out/
+          retention-days: 14
