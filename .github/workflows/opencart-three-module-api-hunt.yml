@@ -1,0 +1,149 @@
+name: OpenCart Three API Deep Module Hunt
+on:
+  push:
+    branches:
+      - probe/opencart-three-api-20260926
+  workflow_dispatch:
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Module and builder API hunt
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          cat > deep.cjs <<'NODE'
+          const fs=require('fs');
+          const targets={
+            md:'https://mdcomputers.in',
+            it:'https://www.theitdepot.com',
+            vedant:'https://www.vedantcomputers.com'
+          };
+          const H={
+            'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36',
+            'Accept':'application/json,text/javascript,application/xml,text/xml,text/html,*/*',
+            'Accept-Language':'en-IN,en;q=0.9',
+            'X-Requested-With':'XMLHttpRequest'
+          };
+          async function req(url,method='GET',body=''){
+            try{
+              const r=await fetch(url,{method,headers:H,body:body||undefined,redirect:'follow',signal:AbortSignal.timeout(12000)});
+              const b=await r.text();
+              return {status:r.status,ctype:r.headers.get('content-type')||'',bytes:b.length,body:b};
+            }catch(e){return {status:0,ctype:'',bytes:0,body:'',error:String(e)}}
+          }
+          function info(r){
+            const b=r.body||'',lo=b.slice(0,50000).toLowerCase();
+            let j=null;
+            if(b.trim().startsWith('{')||b.trim().startsWith('[')){try{j=JSON.parse(b)}catch{}}
+            let arr=null;
+            if(Array.isArray(j))arr=j;
+            if(j&&typeof j==='object')for(const k of ['products','items','data','results','response'])if(Array.isArray(j[k])){arr=j[k];break}
+            return {
+              status:r.status,ctype:r.ctype,bytes:r.bytes,json:!!j,json_rows:arr?arr.length:0,
+              keys:arr&&arr[0]&&typeof arr[0]==='object'?Object.keys(arr[0]).slice(0,40):[],
+              xml_items:(b.match(/<item\b/gi)||[]).length,
+              google:lo.includes('base.google.com/ns/1.0')||lo.includes('<g:price'),
+              productish:!!(arr?.length || /product_id|price|quantity|stock|href|name|title/i.test(b)),
+              challenge:/cloudflare|just a moment|one moment|attention required/i.test(lo),
+              sample:b.replace(/\s+/g,' ').slice(0,450)
+            }
+          }
+          function variants(root,path){
+            const b=root+'/'+path;
+            const q=[
+              '', '?search=laptop','?search=%25','?filter_name=laptop','?filter_name=%25',
+              '?filter_category_id=0&limit=100&filter_name=laptop',
+              '?filter_category_id=0&limit=100&filter_name=%25',
+              '?category_id=0&limit=100&search=laptop',
+              '?search=laptop&category_id=0&sub_category=true',
+              '?search=%25&category_id=0&sub_category=true',
+              '?page=1&limit=100&search=laptop','?page=2&limit=100&search=laptop',
+              '?offset=0&limit=100&search=laptop','?start=0&limit=100&search=laptop',
+              '?popup=quickview&product_id=1',
+              '?popup=options&product_id=1'
+            ];
+            return [...new Set(q.map(x=>b+x))]
+          }
+          const paths={
+            md:[
+              'index.php?route=extension/module/so_searchpro/autocomplete',
+              'index.php?route=extension/module/so_searchpro/search',
+              'index.php?route=extension/module/so_searchpro',
+              'index.php?route=extension/isearch/module/isearch.ajax',
+              'index.php?route=extension/module/isearch/module/isearch.ajax',
+              'index.php?route=extension/module/isearch/ajaxsearch',
+              'index.php?route=extension/module/isearch/ajax',
+              'index.php?route=product/search'
+            ],
+            it:[
+              'index.php?route=journal3/search',
+              'index.php?route=journal3/product',
+              'index.php?route=journal3/popup',
+              'index.php?route=extension/module/so_searchpro/autocomplete',
+              'index.php?route=extension/isearch/module/isearch.ajax',
+              'index.php?route=product/search'
+            ],
+            vedant:[
+              'index.php?route=journal3/search',
+              'index.php?route=journal3/product',
+              'index.php?route=journal3/popup',
+              'index.php?route=extension/pc_builder/pc_builder',
+              'index.php?route=extension/pc_builder/pc_builder&page_id=1',
+              'index.php?route=extension/module/so_searchpro/autocomplete',
+              'index.php?route=extension/isearch/module/isearch.ajax',
+              'index.php?route=product/search'
+            ]
+          };
+          const out={};
+          for(const [site,root] of Object.entries(targets)){
+            const home=await req(root+'/');
+            out[site]={home:info(home),hits:[],scripts:[]};
+            const src=[...home.body.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)].map(m=>new URL(m[1],root+'/').href).slice(0,25);
+            out[site].scripts=src;
+            const js=await Promise.all(src.map(async u=>({u,r:await req(u)})));
+            const discovered=[];
+            for(const x of js)if(x.r.status===200)for(const re of [
+              /['"]([^'"]*(?:pc_builder|journal3\/search|so_searchpro|isearch)[^'"]*)['"]/gi,
+              /(?:url|endpoint)\s*[:=]\s*['"]([^'"]+)['"]/gi
+            ]){let m;while((m=re.exec(x.r.body||'')))discovered.push(m[1])}
+            out[site].discovered=[...new Set(discovered)];
+            const cs=[...new Set(paths[site].concat(out[site].discovered))].filter(Boolean).slice(0,50);
+            for(const c of cs){
+              if(/product\/search/i.test(c)){
+                for(const u of variants(root,'') .filter(x=>x.includes('route=product/search'))) { const r=await req(u); const i=info(r); if(i.json_rows||i.xml_items||i.productish)out[site].hits.push({candidate:c,url:u,method:'GET',...i}); }
+                continue;
+              }
+              for(const u of variants(root,c)){
+                const r=await req(u); const i=info(r);
+                if(i.json_rows||i.xml_items||i.google||i.productish)out[site].hits.push({candidate:c,url:u,method:'GET',...i});
+              }
+              if(/so_searchpro|isearch|journal3\/search|pc_builder/i.test(c)){
+                for(const body of [
+                  'search=laptop',
+                  'search=%25',
+                  'filter_name=laptop&filter_category_id=0&limit=100',
+                  'search=laptop&category_id=0&sub_category=true'
+                ]){
+                  const r=await req(root+'/'+c,'POST',body); const i=info(r);
+                  if(i.json_rows||i.xml_items||i.google||i.productish)out[site].hits.push({candidate:c,url:root+'/'+c,method:'POST',body,...i});
+                }
+              }
+            }
+          }
+          fs.writeFileSync('out/module-api-hunt.json',JSON.stringify(out,null,2));
+          for(const [site,v] of Object.entries(out)){
+            console.log('\\n### '+site);
+            console.log('DISCOVERED',v.discovered);
+            console.log('HITS',JSON.stringify(v.hits.slice(0,100),null,2));
+          }
+          NODE
+          node deep.cjs
+          test -s out/module-api-hunt.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opencart-three-module-api-hunt-20260926
+          path: out/module-api-hunt.json
+          retention-days: 14
