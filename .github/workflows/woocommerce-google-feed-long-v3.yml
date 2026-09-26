@@ -1,0 +1,115 @@
+name: WooCommerce Google Feed Long Run V3
+
+on:
+  push:
+    branches:
+      - "ai/woocommerce-google-feed-audit-20260926"
+  workflow_dispatch:
+
+concurrency:
+  group: wc-google-feed-long-v3
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  lane-a:
+    name: Long V3 A (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env: { TARGET_START: "0", TARGET_COUNT: "8" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Syntax check
+        run: node --check tools/woocommerce_google_feed_fast_v3.mjs
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Extract
+        run: node tools/woocommerce_google_feed_fast_v3.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-long-v3-a
+          path: out/fast2/
+          if-no-files-found: warn
+          retention-days: 30
+
+  lane-b:
+    name: Long V3 B (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env: { TARGET_START: "8", TARGET_COUNT: "8" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Syntax check
+        run: node --check tools/woocommerce_google_feed_fast_v3.mjs
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Extract
+        run: node tools/woocommerce_google_feed_fast_v3.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-long-v3-b
+          path: out/fast2/
+          if-no-files-found: warn
+          retention-days: 30
+
+  lane-c:
+    name: Long V3 C (8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env: { TARGET_START: "16", TARGET_COUNT: "8" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Syntax check
+        run: node --check tools/woocommerce_google_feed_fast_v3.mjs
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Extract
+        run: node tools/woocommerce_google_feed_fast_v3.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-long-v3-c
+          path: out/fast2/
+          if-no-files-found: warn
+          retention-days: 30
+
+  lane-d:
+    name: Long V3 D (7)
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env: { TARGET_START: "24", TARGET_COUNT: "7" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Syntax check
+        run: node --check tools/woocommerce_google_feed_fast_v3.mjs
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Extract
+        run: node tools/woocommerce_google_feed_fast_v3.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-long-v3-d
+          path: out/fast2/
+          if-no-files-found: warn
+          retention-days: 30
