@@ -1,0 +1,31 @@
+name: Monitor OEM Focused API Test
+on:
+  push:
+    branches: [probe/monitor-oem-api-20260926]
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Test ROG Gigabyte LG Samsung ASUS Acer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          UA='Mozilla/5.0 Chrome/136 Safari/537.36'
+          curl -L -sS --max-time 15 -A "$UA" 'https://api-rog.asus.com/recent-data/search-api/v1/ResultV1/in/Product/100/1/0/1?SearchKey=monitor&systemCode=rog' -o out/rog.json || true
+          curl -L -sS --max-time 15 -A "$UA" 'https://api-rog.asus.com/recent-data/api/v4/Product/Info?WebsiteCode=in&systemCode=rog&Url=GS27Q' -o out/rog-info.json || true
+          curl -L -sS --max-time 15 -A "$UA" 'https://api-rog.asus.com/recent-data/api/v5/Product/Spec?WebsiteCode=in&systemCode=rog&Url=GS27Q' -o out/rog-spec.json || true
+          curl -L -sS --max-time 15 -A "$UA" 'https://www.gigabyte.com/api/v1.0/Consumer/in/Consumer/Monitor/GS27Q?type=sp' -o out/gigabyte-model.json || true
+          curl -L -sS --max-time 15 -A "$UA" 'https://www.gigabyte.com/api/v1.0/Support/in/Download/Monitor/GS27Q' -o out/gigabyte-support.json || true
+          curl -L -sS --max-time 15 -A "$UA" 'https://www.lg.com/api/commerce/content/pdp_items?mdid=MD1000000000' -o out/lg-items.json || true
+          curl -L -sS --max-time 15 -A "$UA" 'https://p1-smi-api-cdn.shop.samsung.com/tokocommercewebservices/v2/in/products/search?query=odyssey%3Arelevance&pageSize=20&currentPage=0&fields=FULL' -o out/samsung.json || true
+          curl -L -sS --max-time 15 -A "$UA" 'https://odinapi.asus.com/recent-data/apiv2/SearchResult?SystemCode=ASUS&WebsiteCode=in&SearchKey=monitor&SearchType=products&SearchPDLine=&SearchPDLine2=&PDLineFilter=&TopicFilter=&CateFilter=&PageSize=20&Page=1' -o out/asus.json || true
+          curl -L -sS --max-time 15 -A "$UA" 'https://store.acer.com/en-in/graphql' -H 'Content-Type: application/json' --data '{"query":"query { __schema { queryType { fields { name } } } }"}' -o out/acer-schema.json || true
+          for f in out/*.json; do echo "===== $f ====="; wc -c "$f"; head -c 12000 "$f"; echo; done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: monitor-oem-focused-api-test-20260926
+          path: out/
+          retention-days: 14
