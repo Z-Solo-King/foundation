@@ -1,0 +1,19 @@
+{
+  "schema_version": "operations-pin-manifest/v1",
+  "repository": "Z-Solo-King/operations",
+  "purpose_scoped_pins": {
+    "production_runtime": {
+      "revision": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
+      "mutable_ref_forbidden": true
+    },
+    "nightly_research": {
+      "revision": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
+      "mutable_ref_forbidden": true
+    },
+    "utility_validation": {
+      "revision": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3",
+      "mutable_ref_forbidden": true
+    }
+  },
+  "policy": "Every public Foundation workflow/script that consumes an Operations immutable revision must match one of the purpose-scoped revisions above. This file is metadata authority only; it does not authorize deployment by itself."
+}

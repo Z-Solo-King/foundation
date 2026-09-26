@@ -121,3 +121,7 @@ The public path is validated first. The protected Operations handoff is then val
 - Do not claim Cloudflare production or application certification without current evidence.
 - Keep deployment and its public post-deployment verification in the canonical workflow chain.
 - Record material deployment, credential, backup, scope and evidence changes in the canonical policy/record documents.
+
+### Operations pin authority
+
+All purpose-scoped immutable Operations revisions are declared in `docs/OPERATIONS_PIN_MANIFEST.json`. Deployment and workflow validation must consume or validate that manifest; mutable branch/tag references are not accepted for protected Operations consumption.
