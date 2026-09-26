@@ -16,7 +16,7 @@ concurrency:
 
 env:
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_REF: 4692d398a25eff4b5cb73daa562a59d900852525
+  OPERATIONS_REF: 6969d80b28cf8ce3682ad28efea1d3b519518a90
   PUBLIC_WORKER_URL: "https://ai-cio.pages.dev"
   RESEARCH_LLM_ENDPOINT: "http://127.0.0.1:8765"
   RESEARCH_LLM_API_KEY: "local-worker-proxy"
@@ -115,7 +115,7 @@ jobs:
           rows=[json.loads(line) for line in Path('.runtime/live-nightly-canary/research.jsonl').read_text().splitlines() if line.strip()]
           expected={f'lane{lane}-slot{slot}' for lane in range(3) for slot in range(2)}
           completed={row.get('program_id') for row in rows if row.get('status') == 'completed'}
-          summary={'schema':'live-nightly-canary/v1','ok':completed == expected,'programs_expected':len(expected),'programs_completed':len(completed),'program_ids':sorted(completed),'operations_ref':'4692d398a25eff4b5cb73daa562a59d900852525'}
+          summary={'schema':'live-nightly-canary/v1','ok':completed == expected,'programs_expected':len(expected),'programs_completed':len(completed),'program_ids':sorted(completed),'operations_ref':'6969d80b28cf8ce3682ad28efea1d3b519518a90'}
           Path('.runtime/live-nightly-canary/summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
           print(json.dumps(summary,indent=2,sort_keys=True))
           raise SystemExit(0 if summary['ok'] else 1)
@@ -170,7 +170,7 @@ jobs:
               "probe_upstream_error": upstream_error,
               "probe_upstream_generation_status": upstream_generation_status,
               "probe_upstream_provider": upstream_provider,
-              "operations_ref": "4692d398a25eff4b5cb73daa562a59d900852525",
+              "operations_ref": "6969d80b28cf8ce3682ad28efea1d3b519518a90",
           }
           Path(out).write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
           print(json.dumps(data, indent=2, sort_keys=True))
