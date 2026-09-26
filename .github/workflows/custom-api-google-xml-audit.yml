@@ -1,0 +1,109 @@
+name: Custom API Google XML feed audit
+on:
+  push:
+    branches:
+      - audit/custom-api-google-xml-20260926
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Sweep custom/API sites
+        shell: bash
+        run: |
+          set -u
+          mkdir -p artifacts/custom-api-google-xml
+          cat > /tmp/targets.tsv <<'EOF'
+buildmypc	https://www.buildmypc.in
+clarion	https://shop.clarioncomputers.in
+cloudtechasia_api	https://api.hyperinvento.com
+digibuggy	https://digibuggy.com
+easyshoppi	https://www.easyshoppi.com
+lebyopc	https://lebyopc.com
+logtech	https://logtech.in
+shivamitservice_api	https://api.shivamitservice.in
+therhythmhouse	https://www.therhythmhouse.co.in
+thevaluestore	https://thevaluestore.in
+altf4gear	https://altf4gear.com
+arcadex	https://www.arcadex.in
+fingers	https://www.fingers.co.in
+keysync	https://api.keysync.co
+furtados	https://www.furtadosonline.com
+loadout	https://www.loadout.co.in
+xtro	https://www.xtro.gg
+EOF
+          : > artifacts/custom-api-google-xml/results.ndjson
+
+          paths=(
+            /google.xml /google.rss /google.rss.xml
+            /google-feed /google-feed.xml /google_feed.xml
+            /google-shopping /google-shopping.xml /google-shopping-feed /google-shopping-feed.xml
+            /google_product_feed.xml /google-products.xml /google-product.xml
+            /googlebase.xml /google_base.xml /google-base.xml
+            /googlemerchant.xml /google-merchant.xml
+            /merchant.xml /merchant-feed /merchant-feed.xml /merchant_feed.xml
+            /product-feed /product-feed.xml /product_feed.xml
+            /products-feed /products-feed.xml /products_feed.xml
+            /shopping.xml /shopping-feed.xml
+            /feed.xml /feed/google.xml /feed/google-shopping.xml /feed/google-shopping-feed.xml
+            /feeds/google.xml /feeds/google-shopping.xml /feeds/google-shopping-feed.xml
+            /feeds/products.xml /feed/products.xml /feed/product-feed.xml
+            /catalog/feed.xml /catalog/google.xml /media/feed/google.xml
+          )
+
+          probe() {
+            local name="$1" base="$2" path="$3"
+            local safe
+            safe=$(printf '%s_%s' "$name" "$path" | tr '/?:&=' '_' | tr -cd '[:alnum:]_.-')
+            local body="artifacts/custom-api-google-xml/${safe}.body"
+            local hdr="artifacts/custom-api-google-xml/${safe}.headers"
+            local code
+            code=$(curl -L --compressed --retry 1 --connect-timeout 8 --max-time 18               -A 'Mozilla/5.0 (compatible; GoogleXMLFeedAudit/1.0)'               -H 'Accept: application/xml,text/xml,application/rss+xml,application/atom+xml,*/*'               -D "$hdr" -o "$body" -w '%{http_code}' "$base$path" 2>/dev/null || true)
+            local ctype
+            ctype=$(awk -F': ' 'tolower($1)=="content-type"{print $2}' "$hdr" | tail -1 | tr -d '\r')
+            local bytes
+            bytes=$(wc -c <"$body" | tr -d ' ')
+            printf '{"site":"%s","url":"%s","status":%s,"content_type":"%s","bytes":%s,"file":"%s"}\n'               "$name" "$base$path" "${code:-0}" "$ctype" "$bytes" "$body" >> artifacts/custom-api-google-xml/results.ndjson
+          }
+
+          while IFS=$'\t' read -r name base; do
+            probe "$name" "$base" "/robots.txt"
+            probe "$name" "$base" "/sitemap.xml"
+            for p in "${paths[@]}"; do probe "$name" "$base" "$p"; done
+          done < /tmp/targets.tsv
+
+          python - <<'PY'
+          import json,re,glob,os
+          out=[]
+          for line in open("artifacts/custom-api-google-xml/results.ndjson",errors="ignore"):
+              try: r=json.loads(line)
+              except: continue
+              body=""
+              if r["file"] and os.path.exists(r["file"]):
+                  body=open(r["file"],errors="ignore").read()
+              low=body.lower()
+              items=re.findall(r'<item\b[^>]*>(.*?)</item>',body,re.S|re.I)
+              entries=re.findall(r'<entry\b[^>]*>(.*?)</entry>',body,re.S|re.I)
+              recs=items or entries
+              google=bool(re.search(r'xmlns:g\s*=\s*["\']https?://base\.google\.com/ns/1\.0|<g:(?:id|title|link|price|availability)\b',body,re.I))
+              xml=bool(re.search(r'<\?xml|<rss\b|<feed\b|<item\b',body,re.I))
+              n=len(recs)
+              counts={k:sum(bool(re.search(r'<g:'+k+r'\b',x,re.I)) for x in recs) for k in ["id","title","link","price"]}
+              cov=min(counts.values())/n if n else 0
+              if r["status"] in (200,206) or google or xml:
+                  out.append({**r,"google_xml":bool(xml and google),"items":n,"counts":counts,"coverage":round(cov,4),"body_prefix":body[:500]})
+          q=[x for x in out if x["google_xml"] and x["coverage"]>=0.75]
+          print(json.dumps({"interesting":len(out),"verified_google_xml":len(q),"verified":q},indent=2))
+          open("artifacts/custom-api-google-xml/verified.json","w").write(json.dumps(q,indent=2)+"\n")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custom-api-google-xml-2026-09-26
+          path: artifacts/custom-api-google-xml/
+          retention-days: 14
