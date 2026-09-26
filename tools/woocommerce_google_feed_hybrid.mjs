@@ -37,7 +37,45 @@ function challenge(status,text){const x=String(text||"").slice(0,20000).toLowerC
 function abs(raw,base){try{const u=new URL(String(raw||"").trim(),base);return /^https?:$/.test(u.protocol)?u.href:"";}catch{return "";}}
 function feedish(u){return /(?:google|merchant|shopping|feed|product|wppfm|woo-feed|codesolz|feedcraft)/i.test(u)&&/(?:xml|rss|atom|feed|product|merchant)/i.test(u);}
 function googleNs(xml){return /xmlns(?::[A-Za-z_][\w.-]*)?\s*=\s*["']http:\/\/base\.google\.com\/ns\/1\.0["']/i.test(xml);}
-function validate(xml,ct=""){const s=String(xml||"");const root=/^\s*(?:<\?xml[^>]*>\s*)?(?:<rss\b|<feed\b)/i.test(s);const items=[...s.matchAll(/<(?:item|entry)\b[^>]*>([\s\S]*?)<\/(?:item|entry)>/gi)].map(m=>m[1]);let n=0;for(const b of items){const f=k=>{const m=b.match(new RegExp(`(?:<g:|[A-Za-z_][\\w.-]*:)${k}\\b[^>]*>([\\s\\S]*?)<\\/\\w+:${k}>`,"i"));return m?.[1]?.replace(/<[^>]+>/g,"").trim()||""};const id=/<(?:[A-Za-z_][\\w.-]*:)?id\\b/i.test(b);const title=/<(?:[A-Za-z_][\\w.-]*:)?title\\b/i.test(b);const link=/<(?:[A-Za-z_][\\w.-]*:)?link\\b/i.test(b);const price=/<(?:[A-Za-z_][\\w.-]*:)?price\\b/i.test(b);n+=Number(id)+Number(title)+Number(link)+Number(price);}const cov=n/Math.max(1,items.length*4);return {qualifies:Boolean(root&&googleNs(s)&&items.length&&cov>=.75),item_count:items.length,required_field_coverage:Number(cov.toFixed(4)),content_type:ct};}
+function decodeHtml(text) {
+  return String(text || "")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+function extractXmlSource(body) {
+  const s = String(body || "");
+  const m = s.match(/id="webkit-xml-viewer-source-xml">([\s\S]*?)<\/div>/i);
+  return m ? decodeHtml(m[1]) : s;
+}
+
+function validate(xml, ct="") {
+  const source = extractXmlSource(xml);
+  const root = /^\s*(?:<\?xml[^>]*>\s*)?(?:<rss\b|<feed\b)/i.test(source);
+  const googleNamespace = /xmlns(?::[A-Za-z_][\w.-]*)?\s*=\s*["']https?:\/\/base\.google\.com\/ns\/1\.0["']/i.test(source);
+  const items = [...source.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)].map(m => m[1]);
+  const entries = [...source.matchAll(/<entry\b[^>]*>([\s\S]*?)<\/entry>/gi)].map(m => m[1]);
+  const records = items.length ? items : entries;
+  let complete = 0;
+  for (const block of records) {
+    const id = /<(?:[A-Za-z_][\w.-]*:)?id\b[^>]*>/i.test(block);
+    const title = /<title\b[^>]*>/i.test(block);
+    const link = /<link\b[^>]*>/i.test(block);
+    const price = /<(?:[A-Za-z_][\w.-]*:)?price\b[^>]*>/i.test(block);
+    complete += Number(id) + Number(title) + Number(link) + Number(price);
+  }
+  const coverage = complete / Math.max(1, records.length * 4);
+  return {
+    qualifies: Boolean(root && googleNamespace && records.length > 0 && coverage >= 0.75),
+    item_count: records.length,
+    required_field_coverage: Number(coverage.toFixed(4)),
+    content_type: ct,
+    google_namespace: googleNamespace
+  };
+}
 async function get(url){const c=new AbortController();const t=setTimeout(()=>c.abort(),TIMEOUT);try{const r=await fetch(url,{redirect:"follow",signal:c.signal,headers:{"User-Agent":UA,"Accept":"application/xml,application/rss+xml,text/xml,text/html;q=0.8,*/*;q=0.5"}});const b=Buffer.from(await r.arrayBuffer());return {status:r.status,finalUrl:r.url,contentType:r.headers.get("content-type")||"",bytes:b.length,text:b.length<60*1024*1024?b.toString("utf8"):"",buffer:b.length<60*1024*1024?b:null};}finally{clearTimeout(t);}}
 
 function extractLinks(html,base){const out=new Set();for(const m of String(html||"").matchAll(/<(?:link|a)\b[^>]*>/gi)){const tag=m[0];const h=(tag.match(/\bhref=["']([^"']+)["']/i)||[])[1];if(h){const u=abs(h,base);if(u&&new URL(u).origin===new URL(base).origin&&feedish(u))out.add(u);}}for(const m of String(html||"").matchAll(/(?:(?:https?:)?\/\/|\/)[:/?#A-Za-z0-9._%~+\-=&]+/g)){const u=abs(m[0],base);if(u&&new URL(u).origin===new URL(base).origin&&feedish(u))out.add(u);}return [...out];}
