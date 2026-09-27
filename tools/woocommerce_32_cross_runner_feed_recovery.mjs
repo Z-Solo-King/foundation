@@ -141,9 +141,9 @@ async function listingPdpProbe(base){
     for(const m of String(html||"").matchAll(/(?:href|data-href)=["']([^"']+)["']/gi)){
       try{
         const u=new URL(m[1],base).href;
-        const h=new URL(u).hostname.replace(/^www\\./,"");
-        const bh=new URL(base).hostname.replace(/^www\\./,"");
-        if(h===bh && /\\/product\\//i.test(new URL(u).pathname) && !seen.has(u)){
+        const h=new URL(u).hostname.replace(/^www\./,"");
+        const bh=new URL(base).hostname.replace(/^www\./,"");
+        if(h===bh && /\/product\//i.test(new URL(u).pathname) && !seen.has(u)){
           seen.add(u); productUrls.push(u);
         }
       }catch{}
@@ -156,20 +156,20 @@ async function listingPdpProbe(base){
     if(productUrls.length>=120) break;
   }
   if(!productUrls.length) return null;
-  function cleanText(s){return String(s||"").replace(/<script[\\s\\S]*?<\\/script>/gi," ").replace(/<style[\\s\\S]*?<\\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/\\s+/g," ").trim();}
+  function cleanText(s){return String(s||"").replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/\s+/g," ").trim();}
   function getAttr(h,p){const m=h.match(p);return m?m[1]:"";}
   const rows=[];
   for(const u of productUrls.slice(0,100)){
     const r=await fetchOne(u,UA,45000); if(r.status!==200||!r.body) continue;
     const h=r.body;
-    const title=getAttr(h,/<h1[^>]*class=["'][^"']*(?:product_title|product-title|entry-title)[^"']*["'][^>]*>([\\s\\S]*?)<\\/h1>/i) || getAttr(h,/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)/i) || (h.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i)||[])[1]||"";
+    const title=getAttr(h,/<h1[^>]*class=["'][^"']*(?:product_title|product-title|entry-title)[^"']*["'][^>]*>([\s\S]*?)<\/h1>/i) || getAttr(h,/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)/i) || (h.match(/<title[^>]*>([\s\S]*?)<\\/title>/i)||[])[1]||"";
     const image=getAttr(h,/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)/i) || getAttr(h,/<img[^>]+(?:data-large_image|data-src|src)=["']([^"']+)["']/i);
     const desc=getAttr(h,/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)/i);
     const pc=[
       getAttr(h,/<meta[^>]+(?:property|name)=["']product:price:amount["'][^>]+content=["']([^"']+)/i),
       getAttr(h,/<meta[^>]+itemprop=["']price["'][^>]+content=["']([^"']+)/i),
-      getAttr(h,/<span[^>]+class=["'][^"']*woocommerce-Price-amount[^"']*["'][^>]*>[\\s\\S]*?<bdi>[\\s\\S]*?([0-9][0-9,]*(?:\\.[0-9]{1,2})?)/i),
-      getAttr(h,/<(?:div|span|p)[^>]+class=["'][^"']*(?:price|amount)[^"']*["'][^>]*>[\\s\\S]*?([0-9][0-9,]*(?:\\.[0-9]{1,2})?)/i)
+      getAttr(h,/<span[^>]+class=["'][^"']*woocommerce-Price-amount[^"']*["'][^>]*>[\s\S]*?<bdi>[\s\S]*?([0-9][0-9,]*(?:\.[0-9]{1,2})?)/i),
+      getAttr(h,/<(?:div|span|p)[^>]+class=["'][^"']*(?:price|amount)[^"']*["'][^>]*>[\s\S]*?([0-9][0-9,]*(?:\.[0-9]{1,2})?)/i)
     ].filter(Boolean);
     const price=pc.length?Number(pc[0].replace(/,/g,"")):NaN;
     if(!title||!image||!Number.isFinite(price)) continue;
