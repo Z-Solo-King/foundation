@@ -1,0 +1,57 @@
+name: Focused Avika KRG Google Feed Lab
+
+on:
+  push:
+    branches:
+      - "focus/avika-krg-google-feed-lab-20260927"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focus-feed-lab:
+    name: Avika + KRG — 100-strategy feed lab
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GSC_ACCESS_TOKEN: ${{ secrets.GSC_ACCESS_TOKEN }}
+      GSC_PROPERTY: ${{ vars.GSC_PROPERTY }}
+      GROQ_MODEL: ${{ vars.GROQ_MODEL }}
+      GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v5
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6
+        with:
+          python-version: "3.14"
+
+      - name: Install lab dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input pytest playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Run focused regression tests
+        run: |
+          set -euo pipefail
+          pytest -q tests/test_woocommerce_focus_google_feed_lab.py
+
+      - name: Run 100-strategy public feed lab
+        run: |
+          set -euo pipefail
+          mkdir -p out/focused-google-feed-lab
+          python tools/woocommerce_focus_google_feed_lab.py             --output-dir out/focused-google-feed-lab
+
+      - name: Upload focused evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v6
+        with:
+          name: focused-avika-krg-google-feed-lab
+          path: out/focused-google-feed-lab/
+          if-no-files-found: error
+          retention-days: 14
