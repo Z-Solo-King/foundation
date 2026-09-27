@@ -1,0 +1,51 @@
+name: Native Google Feed Targeted Common Crawl v178
+on:
+  push:
+    branches: [hunt/native-google-feed-urls-20260927]
+    paths:
+      - "tools/native_google_feed_hunt_commoncrawl_targeted_v178.mjs"
+      - ".github/workflows/native-google-feed-commoncrawl-targeted.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1,2,3,4,5,6,7,8]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Select shard
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          node - <<'NODE' > /tmp/sites.json
+          const s=[
+          ["Aarna Computers","https://aarnacomputers.com"],["Ads Store","https://adsstore.in"],["avikaretails","https://avikaretails.com"],["EZPZ Solutions","https://www.ezpzsolutions.in"],
+          ["GamesNComps","https://gamesncomps.com"],["Geekbees","https://geekbees.in"],["hotshiftpc","https://hotshiftpc.com"],["itgadgetsonline","https://itgadgetsonline.com"],
+          ["ithunt","https://ithunt.in"],["KC Computers","https://kccomputers.co.in"],["KRG KART","https://krgkart.com"],["Kryptronix Gaming","https://kryptronix.in"],
+          ["NCL Computer","https://nclcomputer.com"],["networkitstore","https://networkitstore.in"],["nexusinfosys","https://www.mynexusinfosys.com"],["Only SDD","https://onlyssd.com"],
+          ["PC Kumar Infotech","https://pckumar.in"],["PC Studio","https://www.pcstudio.in"],["PCHubShop","https://www.pchubshop.com"],["Prime ABGB","https://www.primeabgb.com"],
+          ["quickincomputers","https://quickincomputers.com"],["SCL Gaming","https://sclgaming.in"],["solankienterprises","https://solankienterprises.com"],["Variety Infotech","https://varietyinfotech.com"],
+          ["Viper PC","https://viperpc.in"],["AULA India","https://aulaindia.com"],["Cosmic Byte","https://www.thecosmicbyte.com"],["Meckeys","https://www.meckeys.com"],
+          ["Moskeys","https://moskeys.com"],["Ninja Dog","https://ninjadog.in"],["StacksKB","https://stackskb.com"],["Theproaudio","https://www.theproaudio.com"]].map(([name,url])=>({name,url}));
+          const n=Number(process.env.SHARD);process.stdout.write(JSON.stringify(s.filter((_,i)=>i%8+1===n)));
+          NODE
+          echo "SITES_JSON=$(cat /tmp/sites.json)" >> "$GITHUB_ENV"
+      - name: Run targeted Common Crawl hunt
+        run: |
+          set -o pipefail
+          node tools/native_google_feed_hunt_commoncrawl_targeted_v178.mjs | tee "targeted-cc-shard-${{ matrix.shard }}.json"
+      - name: Upload URL-only results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-targeted-commoncrawl-google-feed-shard-${{ matrix.shard }}
+          path: targeted-cc-shard-${{ matrix.shard }}.json
+          retention-days: 14
