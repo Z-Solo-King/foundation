@@ -4,6 +4,7 @@ from .field_routing import FIELD_ALIASES, FIELD_FAMILIES, RoutedField, route_fie
 from .normalization import normalize_specs, normalize_stock
 from .outcome import RETRYABLE_OUTCOMES, TERMINAL_OUTCOMES, StageOutcome, is_retryable, is_terminal, validate_outcome
 from .product_identity import IdentityDecision, identity_matches
+from .url_identity import canonicalize_url, safe_host, safe_ip
 from .product_mapping import map_product
 from .quality import PlausibilitySignal, evaluate_price_spec_plausibility
 from .stage_receipt import StageReceipt, can_resume, fingerprint, validate_chain
@@ -29,6 +30,9 @@ __all__ = [
     "is_retryable",
     "is_terminal",
     "map_product",
+    "canonicalize_url",
+    "safe_host",
+    "safe_ip",
     "normalize_specs",
     "normalize_stock",
     "route_field",
