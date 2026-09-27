@@ -8,7 +8,6 @@ on:
     paths:
       - ".github/workflows/native-google-feed-hunt.yml"
       - "tools/woocommerce_native_feed_hunt_v176_fast.mjs"
-      - "tools/wc_browser_batch_worker.js"
 concurrency:
   group: native-google-feed-hunt-${{ github.ref }}
   cancel-in-progress: true
