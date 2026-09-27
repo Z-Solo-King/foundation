@@ -76,11 +76,11 @@ async function curlOne(url,ua,timeoutSec){
 
 async function storeApiProbe(base){
   const endpoints=[
-    \`\${base}/wp-json/wc/store/v1/products\`,
-    \`\${base}/wp-json/wc/store/v1/products/\`,
-    \`\${base}/?rest_route=/wc/store/v1/products\`,
-    \`\${base}/wp-json/wp/v2/product\`,
-    \`\${base}/wp-json/wp/v2/products\`
+    `${base}/wp-json/wc/store/v1/products`,
+    `${base}/wp-json/wc/store/v1/products/`,
+    `${base}/?rest_route=/wc/store/v1/products`,
+    `${base}/wp-json/wp/v2/product`,
+    `${base}/wp-json/wp/v2/products`
   ];
   function rows(data){
     const a=Array.isArray(data)?data:(data?.products||data?.items||data?.results||data?.data||[]);
@@ -133,12 +133,12 @@ async function storeApiProbe(base){
 }
 function xmlEscape(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");}
 function rowsToGoogleBackup(rows){
-  return \`<?xml version="1.0" encoding="UTF-8"?>
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0"><channel>
 <title>WooCommerce public Store API recovery snapshot</title>
 <link></link><description>Reconstructed public snapshot; not retailer-native.</description>
-\${rows.map(r=>\`<item><g:id>\${xmlEscape(r.id)}</g:id><g:title>\${xmlEscape(r.title)}</g:title><g:link>\${xmlEscape(r.link)}</g:link><g:price>\${xmlEscape(Number(r.price||0).toFixed(2))} \${xmlEscape(r.currency||"INR")}</g:price><g:availability>\${xmlEscape(r.availability)}</g:availability>\${r.image?\`<g:image_link>\${xmlEscape(r.image)}</g:image_link>\`:""}\${r.brand?\`<g:brand>\${xmlEscape(r.brand)}</g:brand>\`:""}\${r.sku?\`<g:mpn>\${xmlEscape(r.sku)}</g:mpn>\`:""}\${r.description?\`<description>\${xmlEscape(r.description.replace(/<[^>]+>/g," ").slice(0,5000))}</description>\`:""}</item>\`).join("\\n")}
-</channel></rss>\\n\`;
+${rows.map(r=>`<item><g:id>${xmlEscape(r.id)}</g:id><g:title>${xmlEscape(r.title)}</g:title><g:link>${xmlEscape(r.link)}</g:link><g:price>${xmlEscape(Number(r.price||0).toFixed(2))} ${xmlEscape(r.currency||"INR")}</g:price><g:availability>${xmlEscape(r.availability)}</g:availability>${r.image?`<g:image_link>${xmlEscape(r.image)}</g:image_link>`:""}${r.brand?`<g:brand>${xmlEscape(r.brand)}</g:brand>`:""}${r.sku?`<g:mpn>${xmlEscape(r.sku)}</g:mpn>`:""}${r.description?`<description>${xmlEscape(r.description.replace(/<[^>]+>/g," ").slice(0,5000))}</description>`:""}</item>`).join("\\n")}
+</channel></rss>\\n`;
 }
 
 async function probe(name,base){
