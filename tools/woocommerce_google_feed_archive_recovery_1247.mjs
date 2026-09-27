@@ -549,6 +549,8 @@ async function recover([name, base], collections) {
     observations: [],
   };
 
+  const live = await discoverLive(base);
+
   const archiveBases = [base];
   try {
     const u = new URL(base);
@@ -635,7 +637,7 @@ async function recover([name, base], collections) {
       [
         ...(wayback.candidates || []),
         ...(commonCrawl.candidates || []),
-      ].filter(x => x.archiveUrl),
+      ].filter(x => x.archiveUrl || x.warc),
       12
     );
     const archived = [];
@@ -716,7 +718,7 @@ async function main() {
     })),
   };
   await writeFile(`${OUT}/summary.json`, JSON.stringify(summary, null, 2) + "\n");
-  await writeFile(`${OUT}/audit.json`, JSON.stringify({ collection, results }, null, 2) + "\n");
+  await writeFile(`${OUT}/audit.json`, JSON.stringify({ collections, results }, null, 2) + "\n");
   console.log(JSON.stringify(summary, null, 2));
 }
 
