@@ -1299,14 +1299,21 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
     filename_sweep_meta: dict[str, object] = {"attempted": False, "candidate_count": 0}
     if verified is None:
         sweep_allowed, sentinel = filename_transport_sentinel(root, session_cookie_header, root)
-        filename_sweep_candidates = generated_upload_feed_candidates(root, site)
+        numeric_rex_candidates = rex_numeric_candidates(root, discovered)
+        filename_sweep_candidates = tuple(dict.fromkeys(
+            [*generated_upload_feed_candidates(root, site), *numeric_rex_candidates]
+        ))
         filename_sweep_meta = {
             "attempted": bool(sweep_allowed),
             "candidate_count": len(filename_sweep_candidates),
+            "rex_numeric_seed_count": len(numeric_rex_candidates),
             "sentinel": sentinel,
         }
         if sweep_allowed:
-            verified = batch_first_valid(list(filename_sweep_candidates), 3.0, 64, records, session_cookie_header, root, chunk_size=256)
+            verified = batch_first_valid(
+                list(filename_sweep_candidates), 3.0, 64, records,
+                session_cookie_header, root, chunk_size=256
+            )
 
     if verified is None and discovered:
         same_site, explicit_external = validation_candidate_groups(
