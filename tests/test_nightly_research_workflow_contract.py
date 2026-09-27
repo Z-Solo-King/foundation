@@ -29,7 +29,7 @@ def test_matrix_is_fail_fast_false_and_has_three_lanes():
 def test_private_operations_revision_and_app_auth_are_explicit():
     text = workflow_text()
     assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
-    assert "OPERATIONS_RESEARCH_REF: 566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3" in text
+    assert "OPERATIONS_RESEARCH_REF: 7058d617d576bc18d977c4b615bebba0be9af747" in text
     assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in text
     assert "OPERATIONS_APP_INSTALLATION_ID" not in text
     assert "resolve_operations_installation.py" in text
@@ -39,6 +39,13 @@ def test_private_operations_revision_and_app_auth_are_explicit():
     assert "private.multi_agent.runner" in text
     assert "private.multi_agent.project_research" in text
     assert "OPERATIONS_READ_TOKEN" not in text
+
+
+def test_nightly_research_avoids_github_env_for_private_tokens():
+    text = workflow_text()
+    assert "$GITHUB_ENV" not in text
+    assert "operations-research-token.txt" in text
+    assert "operations-summary-token.txt" in text
 
 
 def test_private_source_is_not_uploaded_as_an_artifact():
