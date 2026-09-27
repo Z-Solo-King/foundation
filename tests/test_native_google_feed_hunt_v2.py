@@ -3,6 +3,7 @@ import sys
 
 from tools.native_google_feed_hunt_v2 import _cookie_header_from_netscape
 from tools.native_google_feed_hunt_v2 import _public_json_lines
+from tools.native_google_feed_hunt_v2 import wp_media_feed_candidates
 from tools.native_google_feed_hunt_v2 import ctxfeed_urls, feed_priority, generated_upload_feed_candidates
 from tools.native_google_feed_hunt_v2 import extract_explicit_feed_urls, extract_urls, validate_xml
 from tools.native_google_feed_hunt_v2 import load_learned_feed_patterns, validation_candidate_groups
@@ -107,3 +108,8 @@ def test_generated_upload_filename_sweep_contains_known_variants():
     assert "https://example.test/wp-content/uploads/woo-product-feed-pro/xml/google-products.xml" in urls
     assert "https://example.test/wp-content/uploads/woo-feed/google/xml/google-shopping.xml.gz" in urls
     assert len(urls) >= 500
+
+def test_wordpress_media_feed_candidate_discovery():
+    body = '[{"source_url":"https://shop.example.test/wp-content/uploads/google-feed.xml","guid":{"rendered":"https://shop.example.test/wp-content/uploads/google-feed.xml"}}]'
+    found = wp_media_feed_candidates(body, "https://shop.example.test")
+    assert found == ("https://shop.example.test/wp-content/uploads/google-feed.xml",)
