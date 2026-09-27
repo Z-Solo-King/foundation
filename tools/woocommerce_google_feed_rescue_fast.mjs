@@ -123,14 +123,14 @@ async function curlRaw(url, timeout=12000) {
     const statusPos = text.lastIndexOf(statusMarker);
     if (statusPos < 0) return null;
     const statusStart = statusPos + statusMarker.length;
-    const statusEnd = text.indexOf("\\n", statusStart);
+    const statusEnd = text.indexOf("\n", statusStart);
     const urlPos = text.lastIndexOf(urlMarker);
     if (statusEnd < 0 || urlPos < 0 || urlPos <= statusEnd) return null;
     const status = Number(text.slice(statusStart,statusEnd).trim());
     const urlStart = urlPos + urlMarker.length;
-    const urlEnd = text.indexOf("\\n",urlStart);
+    const urlEnd = text.indexOf("\n",urlStart);
     if (!Number.isFinite(status) || urlEnd < 0) return null;
-    const body = text.slice(0,statusPos).replace(/\\n$/,"");
+    let body = text.slice(0,statusPos);\n    if (body.endsWith("\n")) body = body.slice(0,-1);
     return {status,url:text.slice(urlStart,urlEnd).trim(),text:body,buf:Buffer.from(body,"utf8"),bytes:Buffer.byteLength(body),via:"curl"};
   } catch { return null; }
 }
