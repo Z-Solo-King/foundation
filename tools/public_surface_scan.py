@@ -18,6 +18,7 @@ ROOT_PUBLIC_FILES = (
     "REPOSITORY_MAP.json",
 )
 DOC_SUFFIXES = {".md", ".json"}
+WORKFLOW_SUFFIXES = {".yml", ".yaml"}
 FORBIDDEN_TARGET_SURFACES = (
     "tools/woocommerce_google_feed_*.mjs",
     "tools/custom_api_google_feed_*.mjs",
@@ -46,6 +47,7 @@ HIGH_RISK = (
 WARN = (
     (r"Z-Solo-King/operations", "private repository reference"),
     (r"OPERATIONS_APP_PRIVATE_KEY", "credential identifier"),
+    (r"\b(?:GH_ADMIN_TOKEN|CF_API_TOKEN|CF_ACCOUNT_ID|PROVIDER_KEYS_JSON)\b", "credential identifier"),
 )
 
 @dataclass(frozen=True)
@@ -61,6 +63,11 @@ def public_paths() -> tuple[str, ...]:
     if docs_root.exists():
         for path in docs_root.rglob("*"):
             if path.is_file() and path.suffix.lower() in DOC_SUFFIXES:
+                paths.add(path.relative_to(ROOT).as_posix())
+    workflows_root = ROOT / ".github" / "workflows"
+    if workflows_root.exists():
+        for path in workflows_root.rglob("*"):
+            if path.is_file() and path.suffix.lower() in WORKFLOW_SUFFIXES:
                 paths.add(path.relative_to(ROOT).as_posix())
     return tuple(sorted(path for path in paths if (ROOT / path).exists()))
 
