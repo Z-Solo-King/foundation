@@ -927,14 +927,29 @@ def run_site(label: str, root: str, output_dir: Path) -> SiteState:
     warm_session(state)
 
     specs = strategy_specs()
-    # Core 100 tests, one-by-one so every strategy has an auditable result.
-    for test_id, name, layer, urls in specs:
-        for url in urls:
-            probe_url(state, test_id, name, layer, urllib.parse.urljoin(root.rstrip("/") + "/", url), 18.0)
-        # Promote feed-like URLs discovered from response bodies into candidate state.
-        if state.probes:
-            latest = state.probes[-1]
-            state.discovered_routes.update(latest.candidate_urls)
+    # Core 100 tests run concurrently per site. Each strategy remains a separately
+    # identified probe in the evidence manifest; concurrency only removes artificial
+    # serial latency.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as pool:
+        futures = []
+        for test_id, name, layer, urls in specs:
+            for url in urls:
+                futures.append(pool.submit(
+                    probe_url,
+                    state,
+                    test_id,
+                    name,
+                    layer,
+                    urllib.parse.urljoin(root.rstrip("/") + "/", url),
+                    10.0,
+                ))
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                future.result()
+            except Exception as exc:
+                state.probes.append(ProbeResult(
+                    "TERR", "Core strategy exception", "harness", error=type(exc).__name__
+                ))
 
     browser_discovery(state)
     run_gsc_optional(state)
@@ -948,6 +963,7 @@ def run_site(label: str, root: str, output_dir: Path) -> SiteState:
         "native_only": True,
         "no_reconstruction": True,
         "test_count": 100,
+        "test_strategy_ids": [x[0] for x in strategy_specs()],
         "verified_feed_urls": sorted(state.verified_urls),
         "counts": {
             "probes": len(state.probes),
