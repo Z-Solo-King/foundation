@@ -613,7 +613,7 @@ def extract_explicit_feed_urls(text: str, root: str) -> tuple[str, ...]:
     key_re = re.compile(
         r"(?:feed[_-]?(?:url|file|path)|xml[_-]?url|export[_-]?url|"
         r"product[_-]?feed|google[_-]?feed|merchant[_-]?feed|shopping[_-]?feed)"
-        r"\s*[:=]\s*[\"']([^\"']+)[\"']",
+        r"[\"']?\s*[:=]\s*[\"']([^\"']+)[\"']",
         re.I,
     )
     for m in key_re.finditer(decoded):
