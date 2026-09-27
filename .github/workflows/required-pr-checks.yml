@@ -95,3 +95,39 @@ jobs:
           test ! -e backend/learning/promotion.py
           ! grep -RniE 'operations|extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-private' foundation_core backend worker.py wrangler.toml migrations
           ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' backend foundation_core worker.py wrangler.toml migrations
+
+
+  feed_recovery_1247:
+    name: WooCommerce feed recovery #1247
+    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'fix/issue-1247-google-feed-recovery-current-head' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Syntax check recovery tools
+        run: |
+          node --check tools/woocommerce_google_feed_ai_agents_1247.mjs
+          node --check tools/woocommerce_google_feed_rescue_fast.mjs
+      - name: Run Groq/Gemini discovery agents
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_AGENT_MODEL: ${{ secrets.GROQ_AGENT_MODEL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+        run: node tools/woocommerce_google_feed_ai_agents_1247.mjs
+      - name: Run public-only recovery
+        run: node tools/woocommerce_google_feed_rescue_fast.mjs
+      - name: Upload #1247 evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: woocommerce-google-feed-recovery-1247
+          path: out/rescue-fast/**
+          if-no-files-found: warn
+          retention-days: 30
