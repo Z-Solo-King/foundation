@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - "test/woocommerce-feed-archive-recovery-1247-20260927"
-  pull_request:
-    branches:
-      - "main"
   workflow_dispatch:
 
 permissions:
@@ -17,10 +14,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  archive-recovery:
-    name: public-archive-recovery-9
+  verify:
+    name: ${{ matrix.slug }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - {slug: ithunt, name: "ithunt", url: "https://ithunt.in"}
+          - {slug: kccomputers, name: "kccomputers", url: "https://kccomputers.co.in"}
+          - {slug: krg-kart, name: "KRG KART", url: "https://krgkart.com"}
+          - {slug: pc-kumar-infotech, name: "PC Kumar Infotech", url: "https://pckumar.in"}
+          - {slug: pchubshop, name: "PCHubShop", url: "https://www.pchubshop.com"}
+          - {slug: scl-gaming, name: "SCL Gaming", url: "https://sclgaming.in"}
+          - {slug: variety-infotech, name: "Variety Infotech", url: "https://varietyinfotech.com"}
+          - {slug: moskeys, name: "Moskeys", url: "https://moskeys.com"}
+          - {slug: theproaudio, name: "Theproaudio", url: "https://www.theproaudio.com"}
+
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
@@ -28,15 +40,80 @@ jobs:
           node-version: "24"
       - name: Syntax check
         run: node --check tools/woocommerce_google_feed_archive_recovery_1247.mjs
-      - name: Run public archive/index recovery
-        env:
-          NODE_OPTIONS: "--max-old-space-size=4096"
-        run: node tools/woocommerce_google_feed_archive_recovery_1247.mjs
-      - name: Upload archive recovery evidence
+      - name: Prepare output
+        run: mkdir -p out/archive-recovery-1247
+      - name: Run single-site public recovery
+        run: |
+          node tools/woocommerce_google_feed_archive_recovery_1247.mjs \
+            --site-name "${{ matrix.name }}" \
+            --site-url "${{ matrix.url }}"
+      - name: Upload site evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: woocommerce-google-feed-archive-recovery-1247
+          name: v1247-archive-${{ matrix.slug }}
           path: out/archive-recovery-1247/
           if-no-files-found: warn
+          retention-days: 30
+
+  aggregate:
+    name: aggregate
+    if: always()
+    needs: verify
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download site evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: v1247-archive-*
+          path: out/all-sites
+          merge-multiple: false
+      - name: Aggregate
+        run: |
+          node <<'NODE'
+          const fs = require("fs");
+          const path = require("path");
+          const root = "out/all-sites";
+          const reports = [];
+          function walk(dir) {
+            if (!fs.existsSync(dir)) return;
+            for (const ent of fs.readdirSync(dir, {withFileTypes:true})) {
+              const p = path.join(dir, ent.name);
+              if (ent.isDirectory()) walk(p);
+              else if (ent.name === "report.json") {
+                try { reports.push(JSON.parse(fs.readFileSync(p, "utf8"))); }
+                catch (e) { reports.push({file:p,status:"REPORT_PARSE_ERROR",error:String(e)}); }
+              }
+            }
+          }
+          walk(root);
+          reports.sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+          const summary = {
+            schema_version: "woocommerce-google-feed-archive-recovery/parallel/v1",
+            generated_at: new Date().toISOString(),
+            targets: reports.length,
+            live_native_verified: reports.filter(x=>x.status==="VERIFIED_LIVE_NATIVE_FEED").length,
+            historical_native_verified: reports.filter(x=>x.status==="VERIFIED_HISTORICAL_NATIVE_FEED").length,
+            unresolved: reports.filter(x=>!/^VERIFIED_/.test(String(x.status||""))).length,
+            statuses: Object.groupBy(reports, x=>x.status),
+            feeds: reports.map(x=>({
+              name:x.name, base:x.base, status:x.status,
+              live:x.live_native_feed||null,
+              historical:x.historical_native_feed||null,
+              live_candidate_count:x.live_candidate_count||0,
+              archive_candidate_count:x.archive_candidate_count||0
+            }))
+          };
+          fs.mkdirSync("out/aggregate",{recursive:true});
+          fs.writeFileSync("out/aggregate/summary.json", JSON.stringify(summary,null,2)+"\n");
+          fs.writeFileSync("out/aggregate/reports.json", JSON.stringify(reports,null,2)+"\n");
+          console.log(JSON.stringify(summary,null,2));
+          NODE
+      - name: Upload aggregate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: v1247-archive-aggregate
+          path: out/aggregate/
+          if-no-files-found: error
           retention-days: 30
