@@ -5,7 +5,7 @@ from tools.native_google_feed_hunt_v2 import _cookie_header_from_netscape
 from tools.native_google_feed_hunt_v2 import _public_json_lines
 from tools.native_google_feed_hunt_v2 import ctxfeed_urls, feed_priority
 from tools.native_google_feed_hunt_v2 import extract_explicit_feed_urls, extract_urls, validate_xml
-from tools.native_google_feed_hunt_v2 import load_learned_feed_patterns
+from tools.native_google_feed_hunt_v2 import load_learned_feed_patterns, validation_candidate_groups
 
 GOOD = b'''<?xml version="1.0"?><rss xmlns:g="http://base.google.com/ns/1.0"><channel><item><g:id>SKU</g:id><g:title>Widget</g:title><g:link>https://example.test/p/1</g:link><g:price>1999 INR</g:price></item></channel></rss>'''
 
@@ -85,3 +85,16 @@ def test_learned_feed_patterns_preserve_verified_path_and_query(tmp_path: Path):
     found = load_learned_feed_patterns((tmp_path,))
     assert "/?woocommerce_gpf=google" in found
     assert "/legacy.xml" in found
+
+def test_explicit_external_candidates_reach_validation_group():
+    discovered = {
+        "https://shop.example.test/google.xml",
+        "https://feeds.example-cdn.test/store/google.xml",
+    }
+    same_site, external = validation_candidate_groups(
+        discovered,
+        {"https://feeds.example-cdn.test/store/google.xml"},
+        "https://shop.example.test",
+    )
+    assert same_site == ["https://shop.example.test/google.xml"]
+    assert external == ["https://feeds.example-cdn.test/store/google.xml"]
