@@ -149,6 +149,74 @@ PLUGIN_FINGERPRINT_PATHS = (
     ("wpmr", "/wp-content/plugins/wp-product-feed-manager/readme.txt"),
 )
 
+# Known public WooCommerce feed filename grammar.  Includes exact names observed in
+# published plugin documentation/examples plus common separator/semantic variants.
+UPLOAD_FEED_STEMS = (
+    "google", "google-feed", "google_feed", "googlefeed",
+    "google-xml", "google_xml", "google-base", "google_base", "googlebase",
+    "google-merchant", "google_merchant", "google-merchant-feed", "google_merchant_feed",
+    "google-product", "google_product", "google-products", "google_products",
+    "google-product-feed", "google_product_feed", "google-shopping", "google_shopping",
+    "google-shopping-feed", "google_shopping_feed",
+    "google-shopping-products", "google_shopping_products",
+    "merchant", "merchant-feed", "merchant_feed", "merchant-xml", "merchant_xml",
+    "merchant-google", "merchant_google", "merchant-google-feed", "merchant_google_feed",
+    "shopping", "shopping-feed", "shopping_feed", "shopping-xml", "shopping_xml",
+    "shopping-google", "shopping_google", "shopping-google-feed", "shopping_google_feed",
+    "product", "product-feed", "product_feed", "product-xml", "product_xml",
+    "products", "products-feed", "products_feed", "products-xml", "products_xml",
+    "feed", "feed-google", "feed_google", "feed-merchant", "feed_merchant",
+    "feed-xml", "feed_xml", "feed-products", "feed_products",
+    "google-shopping-xml", "google_shopping_xml",
+    "merchant-google-xml", "merchant_google_xml",
+    "gpf", "gpf-feed", "gpf_feed", "gpf-google", "gpf_google",
+)
+
+UPLOAD_FEED_DIRECTORIES = (
+    "/wp-content/uploads/",
+    "/wp-content/uploads/woo-feed/",
+    "/wp-content/uploads/woo-feed/google/",
+    "/wp-content/uploads/woo-feed/google/xml/",
+    "/wp-content/uploads/woo-feed/xml/",
+    "/wp-content/uploads/woo-product-feed-pro/xml/",
+    "/wp-content/uploads/wppfm-feeds/",
+    "/wp-content/uploads/codesolz-feeds/",
+    "/wp-content/uploads/google/",
+    "/wp-content/uploads/merchant/",
+    "/wp-content/uploads/feeds/",
+)
+
+def generated_upload_feed_candidates(root: str, site: str) -> tuple[str, ...]:
+    """Generate deterministic upload-feed filename candidates, including site-aware names."""
+    slug = re.sub(r"[^a-z0-9]+", "-", site.lower()).strip("-")
+    site_forms = list(dict.fromkeys(x for x in (
+        slug,
+        slug.replace("-", "_"),
+        slug.replace("-", ""),
+    ) if x))
+    site_stems: list[str] = []
+    for s in site_forms:
+        site_stems.extend((
+            f"{s}-google", f"{s}_google", f"google-{s}", f"google_{s}",
+            f"{s}-google-feed", f"{s}_google_feed", f"google-feed-{s}", f"google_feed_{s}",
+            f"{s}-google-shopping", f"{s}_google_shopping",
+            f"google-shopping-{s}", f"google_shopping_{s}",
+            f"{s}-merchant", f"{s}_merchant", f"merchant-{s}", f"merchant_{s}",
+            f"{s}-merchant-feed", f"{s}_merchant_feed",
+            f"merchant-feed-{s}", f"merchant_feed_{s}",
+            f"{s}-product-feed", f"{s}_product_feed",
+            f"product-feed-{s}", f"product_feed_{s}",
+        ))
+    stems = list(dict.fromkeys([*UPLOAD_FEED_STEMS, *site_stems]))
+    urls: set[str] = set()
+    for directory in UPLOAD_FEED_DIRECTORIES:
+        for stem in stems:
+            for extension in (".xml", ".xml.gz"):
+                path = directory.rstrip("/") + "/" + stem + extension
+                urls.add(urllib.parse.urljoin(root.rstrip("/") + "/", path.lstrip("/")))
+    return tuple(sorted(urls, key=lambda u: (feed_priority(u), len(u), u)))
+
+
 @dataclass(frozen=True)
 class Fetch:
     requested_url: str
@@ -940,8 +1008,15 @@ def load_learned_feed_patterns(paths: tuple[Path, ...]) -> tuple[str, ...]:
                 for record in records if isinstance(records, list) else []:
                     if isinstance(record, dict):
                         validation = record.get("validation", {})
-                        if isinstance(validation, dict) and validation.get("valid") and record.get("requested_url"):
-                            urls.append(str(record["requested_url"]))
+                        if isinstance(validation, dict) and record.get("requested_url"):
+                            # Learn both verified feeds and strong near-hit XML/feed paths
+                            # (product rows present, not HTML/challenge/sitemap). Every learned
+                            # path is re-fetched and re-validated on the next site.
+                            fmt = str(validation.get("format") or "")
+                            products = int(validation.get("product_items") or 0)
+                            is_near_hit = fmt in {"rss_or_atom", "xml"} and products > 0
+                            if validation.get("valid") or is_near_hit:
+                                urls.append(str(record["requested_url"]))
                 for raw in urls:
                     try:
                         p = urllib.parse.urlsplit(raw)
@@ -1053,6 +1128,13 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
         historical_meta = {"queried": True, "candidate_count": len(historical_candidates)}
         discovered.update(historical_candidates)
 
+    filename_sweep_candidates: tuple[str, ...] = ()
+    filename_sweep_meta: dict[str, object] = {"attempted": False, "candidate_count": 0}
+    if verified is None:
+        filename_sweep_candidates = generated_upload_feed_candidates(root, site)
+        filename_sweep_meta = {"attempted": True, "candidate_count": len(filename_sweep_candidates)}
+        verified = batch(list(filename_sweep_candidates), 12.0, 24, records, session_cookie_header, root)
+
     if verified is None and discovered:
         same_site, explicit_external = validation_candidate_groups(
             discovered, explicit_feed_candidates, root
@@ -1075,6 +1157,7 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
         "same_site_session_established": bool(session_cookie_header),
         "browser_discovery": browser_meta,
         "historical_discovery": historical_meta,
+        "filename_sweep": filename_sweep_meta,
         "records": records,
     }
     return SiteResult(site, root, status, verified, evidence, round(time.monotonic() - started, 3))
