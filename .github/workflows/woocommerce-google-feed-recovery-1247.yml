@@ -26,6 +26,7 @@ jobs:
       - name: Syntax check
         run: node --check tools/woocommerce_google_feed_rescue_fast.mjs
       - name: Run Groq/Gemini discovery agents
+        continue-on-error: true
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GROQ_AGENT_MODEL: ${{ secrets.GROQ_AGENT_MODEL }}
@@ -33,6 +34,7 @@ jobs:
           GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
         run: node tools/woocommerce_google_feed_ai_agents_1247.mjs
       - name: Run public-only recovery
+        if: always()
         run: node tools/woocommerce_google_feed_rescue_fast.mjs
       - name: Upload recovery evidence
         if: always()
