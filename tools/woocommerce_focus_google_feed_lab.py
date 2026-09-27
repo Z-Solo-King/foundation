@@ -380,8 +380,8 @@ def extract_adtribes_filename_candidates(text: str, root: str) -> set[str]:
     decoded = html.unescape(text or "")
     found: set[str] = set()
     for pattern in (
-        r'(?:file_name|filename|legacy_project_hash)\s*[:=]\s*["\']([A-Za-z0-9_-]{20,64})["\']',
-        r"(?:file_name|filename|legacy_project_hash)\s*[:=]\s*([A-Za-z0-9_-]{20,64})",
+        r'["\']?(?:file_name|filename|legacy_project_hash)["\']?\s*[:=]\s*["\']([A-Za-z0-9_-]{20,64})["\']',
+        r'["\']?(?:file_name|filename|legacy_project_hash)["\']?\s*[:=]\s*([A-Za-z0-9_-]{20,64})',
     ):
         for m in re.finditer(pattern, decoded, re.I):
             token = m.group(1)
