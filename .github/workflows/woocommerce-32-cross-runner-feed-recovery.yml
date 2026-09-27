@@ -14,17 +14,44 @@ concurrency:
 
 jobs:
   probe:
-    name: ${{ matrix.os }} / ${{ matrix.target }}
+    name: ${{ matrix.os }} / ${{ matrix.slug }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
       max-parallel: 6
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        target:
-          ["Ads Store","ithunt","kccomputers","KRG KART","PC Kumar Infotech",
-           "PCHubShop","SCL Gaming","Variety Infotech","Moskeys","Theproaudio"]
+        include:
+          - {os: "ubuntu-latest", site: "Ads Store", slug: "ads-store"}
+          - {os: "ubuntu-latest", site: "ithunt", slug: "ithunt"}
+          - {os: "ubuntu-latest", site: "kccomputers", slug: "kccomputers"}
+          - {os: "ubuntu-latest", site: "KRG KART", slug: "krg-kart"}
+          - {os: "ubuntu-latest", site: "PC Kumar Infotech", slug: "pc-kumar-infotech"}
+          - {os: "ubuntu-latest", site: "PCHubShop", slug: "pchubshop"}
+          - {os: "ubuntu-latest", site: "SCL Gaming", slug: "scl-gaming"}
+          - {os: "ubuntu-latest", site: "Variety Infotech", slug: "variety-infotech"}
+          - {os: "ubuntu-latest", site: "Moskeys", slug: "moskeys"}
+          - {os: "ubuntu-latest", site: "Theproaudio", slug: "theproaudio"}
+          - {os: "windows-latest", site: "Ads Store", slug: "ads-store"}
+          - {os: "windows-latest", site: "ithunt", slug: "ithunt"}
+          - {os: "windows-latest", site: "kccomputers", slug: "kccomputers"}
+          - {os: "windows-latest", site: "KRG KART", slug: "krg-kart"}
+          - {os: "windows-latest", site: "PC Kumar Infotech", slug: "pc-kumar-infotech"}
+          - {os: "windows-latest", site: "PCHubShop", slug: "pchubshop"}
+          - {os: "windows-latest", site: "SCL Gaming", slug: "scl-gaming"}
+          - {os: "windows-latest", site: "Variety Infotech", slug: "variety-infotech"}
+          - {os: "windows-latest", site: "Moskeys", slug: "moskeys"}
+          - {os: "windows-latest", site: "Theproaudio", slug: "theproaudio"}
+          - {os: "macos-latest", site: "Ads Store", slug: "ads-store"}
+          - {os: "macos-latest", site: "ithunt", slug: "ithunt"}
+          - {os: "macos-latest", site: "kccomputers", slug: "kccomputers"}
+          - {os: "macos-latest", site: "KRG KART", slug: "krg-kart"}
+          - {os: "macos-latest", site: "PC Kumar Infotech", slug: "pc-kumar-infotech"}
+          - {os: "macos-latest", site: "PCHubShop", slug: "pchubshop"}
+          - {os: "macos-latest", site: "SCL Gaming", slug: "scl-gaming"}
+          - {os: "macos-latest", site: "Variety Infotech", slug: "variety-infotech"}
+          - {os: "macos-latest", site: "Moskeys", slug: "moskeys"}
+          - {os: "macos-latest", site: "Theproaudio", slug: "theproaudio"}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
@@ -34,7 +61,7 @@ jobs:
         run: node --check tools/woocommerce_32_cross_runner_feed_recovery.mjs
       - name: Run cross-runner public feed recovery
         env:
-          TARGET_SITE: ${{ matrix.target }}
+          TARGET_SITE: ${{ matrix.site }}
         shell: bash
         run: |
           node tools/woocommerce_32_cross_runner_feed_recovery.mjs --site "$TARGET_SITE"
@@ -42,6 +69,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: wc32-feed-${{ matrix.target }}-${{ matrix.os }}
+          name: wc32-feed-${{ matrix.slug }}-${{ matrix.os }}
           path: out/woocommerce-32-cross-runner/
+          if-no-files-found: warn
           retention-days: 30
