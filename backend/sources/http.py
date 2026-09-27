@@ -11,6 +11,7 @@ DNS resolution and network connection. Resolution failures fail closed.
 """
 
 from dataclasses import dataclass
+from ipaddress import IPv4Address, IPv6Address
 import struct
 from urllib.parse import urljoin, urlparse, urlunparse
 
@@ -23,10 +24,6 @@ DNS_OVER_HTTPS_ENDPOINTS = (
     "https://cloudflare-dns.com/dns-query",
     "https://dns.google/dns-query",
 )
-_PROVIDER_DENYLIST = frozenset({"168.63.129.16"})
-_NAT64_PREFIX = ip_address("64:ff9b::").packed[:12]
-
-
 @dataclass(frozen=True)
 class FetchResult:
     url: str
