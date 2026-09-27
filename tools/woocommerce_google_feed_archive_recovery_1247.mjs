@@ -469,7 +469,7 @@ async function fetchArchivedSnapshot(entry) {
     });
     if (r.status === 200 && r.buf) {
       const body = r.buf.toString("utf8");
-      if (looksGoogleMerchantXml(body, r.contentType) || /<(?:rss|feed)\b/i.test(body)) {
+      if (looksGoogleMerchantXml(body, r.contentType)) {
         return {
           status: r.status,
           finalUrl: r.url,
@@ -511,7 +511,7 @@ async function fetchArchivedSnapshot(entry) {
       const bodyStart = text.indexOf("\r\n\r\n");
       const body = bodyStart >= 0 ? text.slice(bodyStart + 4) : text;
       const buf = Buffer.from(body, "utf8");
-      if (!looksGoogleMerchantXml(body, "application/xml") && !/<(?:rss|feed)\b/i.test(body)) return null;
+      if (!looksGoogleMerchantXml(body, "application/xml")) return null;
       return {
         status: 200,
         finalUrl: entry.url,
