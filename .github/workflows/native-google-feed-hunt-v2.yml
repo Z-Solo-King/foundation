@@ -1,0 +1,241 @@
+name: Native Google Feed URL Hunt V2
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/native-google-feed-hunt-v2.yml"
+  push:
+    branches:
+      - test/wc-feed-recovery-clean-20260927
+    paths:
+      - ".github/workflows/native-google-feed-hunt-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hunt:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 32
+      matrix:
+        include:
+          - {name: "Aarna Computers", root: "https://aarnacomputers.com"}
+          - {name: "Ads Store", root: "https://adsstore.in"}
+          - {name: "avikaretails", root: "https://avikaretails.com"}
+          - {name: "EZPZ Solutions", root: "https://www.ezpzsolutions.in"}
+          - {name: "GamesNComps", root: "https://gamesncomps.com"}
+          - {name: "Geekbees", root: "https://geekbees.in"}
+          - {name: "hotshiftpc", root: "https://hotshiftpc.com"}
+          - {name: "itgadgetsonline", root: "https://itgadgetsonline.com"}
+          - {name: "ithunt", root: "https://ithunt.in"}
+          - {name: "KC Computers", root: "https://kccomputers.co.in"}
+          - {name: "KRG KART", root: "https://krgkart.com"}
+          - {name: "Kryptronix Gaming", root: "https://kryptronix.in"}
+          - {name: "NCL Computer", root: "https://nclcomputer.com"}
+          - {name: "networkitstore", root: "https://networkitstore.in"}
+          - {name: "nexusinfosys", root: "https://www.mynexusinfosys.com"}
+          - {name: "Only SDD", root: "https://onlyssd.com"}
+          - {name: "PC Kumar Infotech", root: "https://pckumar.in"}
+          - {name: "PC Studio", root: "https://www.pcstudio.in"}
+          - {name: "PCHubShop", root: "https://www.pchubshop.com"}
+          - {name: "Prime ABGB", root: "https://www.primeabgb.com"}
+          - {name: "quickincomputers", root: "https://quickincomputers.com"}
+          - {name: "SCL Gaming", root: "https://sclgaming.in"}
+          - {name: "solankienterprises", root: "https://solankienterprises.com"}
+          - {name: "Variety Infotech", root: "https://varietyinfotech.com"}
+          - {name: "Viper PC", root: "https://viperpc.in"}
+          - {name: "AULA India", root: "https://aulaindia.com"}
+          - {name: "Cosmic Byte", root: "https://www.thecosmicbyte.com"}
+          - {name: "Meckeys", root: "https://www.meckeys.com"}
+          - {name: "Moskeys", root: "https://moskeys.com"}
+          - {name: "Ninja Dog", root: "https://ninjadog.in"}
+          - {name: "StacksKB", root: "https://stackskb.com"}
+          - {name: "Theproaudio", root: "https://www.theproaudio.com"}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+
+      - name: Public native feed discovery
+        env:
+          ROOT: ${{ matrix.root }}
+          SITE_NAME: ${{ matrix.name }}
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          cat > /tmp/hunt.mjs <<'NODE'
+          import fs from 'node:fs/promises';
+
+          const root = process.env.ROOT.replace(/\/$/, '');
+          const site = process.env.SITE_NAME;
+
+          const paths = [
+            '/?woocommerce_gpf=google',
+            '/woocommerce_gpf/google',
+            '/google.xml','/google_feed.xml','/google-feed.xml',
+            '/google-products.xml','/google-product-feed.xml',
+            '/google-shopping.xml','/google-shopping-feed.xml',
+            '/google-shopping-products.xml','/google-merchant.xml',
+            '/google-merchant-feed.xml','/googlebase.xml','/google_base.xml',
+            '/googlefeed.xml','/googlemerchant.xml','/merchant.xml',
+            '/merchant-feed.xml','/merchant_feed.xml','/shopping.xml',
+            '/shopping-feed.xml','/product-feed.xml','/products-feed.xml',
+            '/productfeed.xml','/feed.xml',
+            '/feeds/google.xml','/feeds/google-feed.xml',
+            '/feeds/google-shopping.xml','/feeds/google-product-feed.xml',
+            '/feeds/google-products.xml',
+            '/feed/google.xml','/feed/google-feed.xml',
+            '/feed/google-shopping.xml','/feed/google-products.xml',
+            '/wp-content/uploads/woo-feed/google/xml/google-shopping.xml',
+            '/wp-content/uploads/woo-feed/google/xml/google.xml',
+            '/wp-content/uploads/woo-feed/google/xml/google-shopping-products.xml',
+            '/wp-content/uploads/woo-feed/google/xml/google-shopping-feed.xml',
+            '/wp-content/uploads/woo-feed/google/xml/google-products.xml',
+            '/wp-content/uploads/woo-feed/google/xml/googlefeed.xml',
+            '/wp-content/uploads/woo-feed/google/xml/shopping.xml',
+            '/wp-content/uploads/woo-feed/google/xml/feed.xml',
+            '/wp-content/uploads/woo-product-feed-pro/xml/google.xml',
+            '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml',
+            '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping-feed.xml',
+            '/wp-content/uploads/woo-product-feed-pro/xml/google-products.xml',
+            '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping-products.xml',
+            '/wp-content/uploads/wppfm-feeds/google.xml'
+          ];
+
+          const dirs = [
+            '/wp-content/uploads/woo-feed/google/xml/',
+            '/wp-content/uploads/woo-feed/google/',
+            '/wp-content/uploads/woo-feed/',
+            '/wp-content/uploads/woo-product-feed-pro/xml/',
+            '/wp-content/uploads/woo-product-feed-pro/',
+            '/wp-content/uploads/wppfm-feeds/'
+          ];
+
+          function hostKey(host) {
+            return host.toLowerCase().replace(/^www\./,'');
+          }
+
+          function sameSite(url) {
+            try {
+              const a = new URL(url);
+              const b = new URL(root);
+              return hostKey(a.hostname) === hostKey(b.hostname) ||
+                     a.hostname.endsWith('.' + hostKey(b.hostname));
+            } catch { return false; }
+          }
+
+          function looksGoogleXml(body) {
+            const low = body.slice(0, 2000000).toLowerCase();
+            return (low.includes('<rss') || low.includes('<feed')) &&
+              (low.includes('http://base.google.com/ns/1.0') || low.includes('https://base.google.com/ns/1.0')) &&
+              low.includes('<item') &&
+              low.includes('<g:id') &&
+              low.includes('<g:title') &&
+              low.includes('<g:link') &&
+              low.includes('<g:price') &&
+              !low.includes('just a moment') &&
+              !low.includes('cf-chl-') &&
+              !low.includes('turnstile') &&
+              !low.includes('attention required');
+          }
+
+          async function get(url) {
+            try {
+              const r = await fetch(url, {
+                redirect: 'follow',
+                signal: AbortSignal.timeout(8000),
+                headers: {
+                  'User-Agent': 'Mozilla/5.0',
+                  'Accept': 'application/xml,text/xml,text/plain,text/html;q=0.8,*/*;q=0.5'
+                }
+              });
+              const body = await r.text();
+              return {ok:r.ok,status:r.status,url:r.url,body,ct:r.headers.get('content-type')||''};
+            } catch {
+              return null;
+            }
+          }
+
+          const seen = new Set();
+          const found = [];
+
+          async function test(url, source) {
+            if (seen.has(url)) return false;
+            seen.add(url);
+            const r = await get(url);
+            if (!r) return false;
+            if (r.ok && sameSite(r.url) && looksGoogleXml(r.body)) {
+              found.push({url:r.url,source,status:r.status,content_type:r.ct,bytes:r.body.length});
+              return true;
+            }
+            return false;
+          }
+
+          for (const p of paths) {
+            if (await test(root + p, 'candidate')) break;
+          }
+
+          // Discover relative or absolute .xml links from public upload/feed directories.
+          for (const dir of dirs) {
+            if (found.length) break;
+            const r = await get(root + dir);
+            if (!r || !r.ok || !sameSite(r.url)) continue;
+            const links = [];
+            for (const m of r.body.matchAll(/href=["']([^"']+)["']/gi)) links.push(m[1]);
+            for (const m of r.body.matchAll(/(?:https?:\/\/|\/)[^"'<> \t\r\n]+\.xml(?:\.gz)?/gi)) links.push(m[0]);
+            for (const raw of links.slice(0,200)) {
+              let u;
+              try { u = new URL(raw, r.url).toString(); } catch { continue; }
+              if (!sameSite(u) || !/\.xml(?:\.gz)?(?:[?#].*)?$/i.test(u)) continue;
+              if (await test(u, 'feed-directory')) break;
+            }
+          }
+
+          // Public source/robots/sitemap references.
+          const pages = ['/robots.txt','/','/sitemap_index.xml','/wp-sitemap.xml'];
+          for (const page of pages) {
+            if (found.length) break;
+            const r = await get(root + page);
+            if (!r || !r.ok || !sameSite(r.url)) continue;
+            const refs = [];
+            for (const m of r.body.matchAll(/(?:href|src)=["']([^"']+)["']/gi)) refs.push(m[1]);
+            for (const m of r.body.matchAll(/https?:[^"'<> \t\r\n]+/gi)) refs.push(m[0]);
+            for (const raw of refs.slice(0,250)) {
+              let u;
+              try { u = new URL(raw, r.url).toString(); } catch { continue; }
+              if (!sameSite(u) || !/xml/i.test(u)) continue;
+              if (!/google|merchant|shopping|feed|gpf|product/i.test(u)) continue;
+              if (await test(u, 'public-reference')) break;
+            }
+          }
+
+          const result = {
+            site,
+            root,
+            status: found.length ? 'VERIFIED_NATIVE_GOOGLE_XML' : 'NOT_FOUND',
+            verified_native_feed_url: found[0]?.url ?? null,
+            evidence: found[0] ?? null,
+            tested_urls: seen.size
+          };
+          await fs.writeFile('out/result.json', JSON.stringify(result,null,2));
+          if (found.length) await fs.writeFile('out/verified-native-feed-url.txt', found[0].url + '\n');
+          console.log(JSON.stringify(result));
+          NODE
+          node /tmp/hunt.mjs
+
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: native-v2-${{ matrix.name }}
+          path: out/
+          if-no-files-found: warn
+          retention-days: 14
