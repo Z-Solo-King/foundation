@@ -16,7 +16,7 @@ The production public Worker identity is `heroic`.
 
 The account Workers.dev subdomain is `heroic-ai`, so the backend Worker origin is:
 
-`https://heroic.heroic-ai.workers.dev/`
+`https://[REDACTED-WORKER-ORIGIN]/`
 
 The Pages front door uses the `HEROIC_BACKEND` Service Binding to the `heroic` Worker.
 
@@ -30,8 +30,8 @@ The Pages project is a public routing layer only; it is not a competing Worker d
 
 ## Custom domain
 
-`heroic-ai.dev` is intentionally not part of this release path because its Cloudflare zone is currently pending/unresolvable.
+`[REDACTED-CUSTOM-DOMAIN]` is intentionally not part of this release path because its Cloudflare zone is currently pending/unresolvable.
 
 ## Migration safety
 
-The historical `research-intelligence-engine-public` and `research-intelligence-engine-private` Worker names are legacy runtime identities. They are retained until the new `heroic` deployment and live acceptance gate complete; deletion must never target the canonical `heroic` or `operations` Workers.
+The historical `[REDACTED-LEGACY-PUBLIC-WORKER]` and `[REDACTED-LEGACY-PRIVATE-WORKER]` Worker names are legacy runtime identities. They are retained until the new `heroic` deployment and live acceptance gate complete; deletion must never target the canonical `heroic` or `operations` Workers.
