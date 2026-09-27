@@ -20,7 +20,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-UA = "Mozilla/5.0 (compatible; WooCommerceNativeGoogleFeedHunt/2026.09)"
+UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
 GOOGLE_NS = "http://base.google.com/ns/1.0"
 BLOCK_MARKERS = ("just a moment", "cf-chl-", "cf-turnstile", "captcha", "access denied", "attention required", "checking your browser")
 ITEM_TAGS = {"item", "entry"}
@@ -139,7 +139,7 @@ DIRECTORIES = (
     "/feeds/", "/feed/",
 )
 
-DISCOVERY_PATHS = ("/", "/robots.txt", "/sitemap.xml", "/sitemap_index.xml", "/wp-sitemap.xml", "/wp-json/")
+DISCOVERY_PATHS = ("/", "/robots.txt", "/sitemap.xml", "/sitemap.rss", "/sitemap_index.xml", "/wp-sitemap.xml", "/wp-json/", "/feed/")
 
 CTXFEED_PATHS = tuple(f"/wp-json/ctxfeed/{v}/feeds" for v in ("v8","v7","v6","v5","v4","v3","v2","v1"))
 
@@ -441,35 +441,48 @@ def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, t
                 except Exception:
                     pass
                 body = page.content()
-                # Visit a small number of public storefront/product pages. This
-                # remains ordinary browser navigation and lets us observe feed/API
-                # URLs that are injected only after page-level JavaScript runs.
-                page_links = []
-                try:
-                    page_links = page.locator("a[href]").evaluate_all("(els) => els.map(e => e.href).filter(Boolean)")
-                except Exception:
-                    page_links = []
-                for href in page_links[:60]:
-                    u = absolute(root, str(href))
-                    if not u or same_host(u, root) is False:
+                challenge_seen = any(marker in body[:20000].lower() for marker in BLOCK_MARKERS)
+
+                # Continue through other public discovery routes even when the
+                # homepage is challenged. Some WAFs challenge "/" but leave
+                # robots/sitemaps/feed routes directly readable.
+                for path in ("/robots.txt", "/sitemap.xml", "/sitemap.rss", "/sitemap_index.xml", "/wp-sitemap.xml", "/feed/"):
+                    try:
+                        page.goto(urllib.parse.urljoin(root.rstrip("/") + "/", path.lstrip("/")),
+                                  wait_until="domcontentloaded", timeout=7000)
+                    except Exception:
                         continue
-                    path_l = urllib.parse.urlsplit(u).path.lower()
-                    if any(token in path_l for token in ("/product/", "/products/", "/shop/", "/item/")):
-                        try:
-                            page.goto(u, wait_until="domcontentloaded", timeout=9000)
-                        except Exception:
+                    try:
+                        page.wait_for_load_state("networkidle", timeout=1800)
+                    except Exception:
+                        pass
+
+                body = page.content()
+                # Visit a small number of public storefront/product pages only
+                # when a normal storefront page was reachable. This remains
+                # ordinary browser navigation and observes public network calls.
+                if not challenge_seen:
+                    page_links = []
+                    try:
+                        page_links = page.locator("a[href]").evaluate_all("(els) => els.map(e => e.href).filter(Boolean)")
+                    except Exception:
+                        page_links = []
+                    for href in page_links[:60]:
+                        u = absolute(root, str(href))
+                        if not u or not same_host(u, root):
                             continue
-                        try:
-                            page.wait_for_load_state("networkidle", timeout=2500)
-                        except Exception:
-                            pass
+                        path_l = urllib.parse.urlsplit(u).path.lower()
+                        if any(token in path_l for token in ("/product/", "/products/", "/shop/", "/item/")):
+                            try:
+                                page.goto(u, wait_until="domcontentloaded", timeout=9000)
+                            except Exception:
+                                continue
+                            try:
+                                page.wait_for_load_state("networkidle", timeout=2500)
+                            except Exception:
+                                pass
                 lower = body[:20000].lower()
-                if any(marker in lower for marker in BLOCK_MARKERS):
-                    return "", (), {
-                        "available": True,
-                        "status": "challenge_page",
-                        "elapsed_ms": int((time.monotonic() - started) * 1000),
-                    }
+                challenge_seen = challenge_seen or any(marker in lower for marker in BLOCK_MARKERS)
 
                 body = page.content()
                 candidates = set(extract_urls(body, root))
@@ -490,7 +503,7 @@ def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, t
                 pairs = [f"{c['name']}={c['value']}" for c in cookies if c.get("name") and c.get("value")]
                 return "; ".join(dict.fromkeys(pairs)), tuple(sorted(candidates)), {
                     "available": True,
-                    "status": "ok",
+                    "status": "challenge_page" if challenge_seen and not candidates else "ok",
                     "elapsed_ms": int((time.monotonic() - started) * 1000),
                     "cookie_count": len(pairs),
                     "candidate_count": len(candidates),
