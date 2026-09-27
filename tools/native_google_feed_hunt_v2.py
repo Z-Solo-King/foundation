@@ -441,6 +441,28 @@ def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, t
                 except Exception:
                     pass
                 body = page.content()
+                # Visit a small number of public storefront/product pages. This
+                # remains ordinary browser navigation and lets us observe feed/API
+                # URLs that are injected only after page-level JavaScript runs.
+                page_links = []
+                try:
+                    page_links = page.locator("a[href]").evaluate_all("(els) => els.map(e => e.href).filter(Boolean)")
+                except Exception:
+                    page_links = []
+                for href in page_links[:60]:
+                    u = absolute(root, str(href))
+                    if not u or same_host(u, root) is False:
+                        continue
+                    path_l = urllib.parse.urlsplit(u).path.lower()
+                    if any(token in path_l for token in ("/product/", "/products/", "/shop/", "/item/")):
+                        try:
+                            page.goto(u, wait_until="domcontentloaded", timeout=9000)
+                        except Exception:
+                            continue
+                        try:
+                            page.wait_for_load_state("networkidle", timeout=2500)
+                        except Exception:
+                            pass
                 lower = body[:20000].lower()
                 if any(marker in lower for marker in BLOCK_MARKERS):
                     return "", (), {
@@ -449,6 +471,7 @@ def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, t
                         "elapsed_ms": int((time.monotonic() - started) * 1000),
                     }
 
+                body = page.content()
                 candidates = set(extract_urls(body, root))
                 candidates.update(extract_explicit_feed_urls(body, root))
                 candidates.update(observed_requests)
@@ -790,7 +813,44 @@ def batch(urls: list[str], timeout: float, workers: int, records: list[dict[str,
     return min(valid, key=feed_priority) if valid else None
 
 
-def probe_site(site: str, root: str) -> SiteResult:
+def load_learned_feed_patterns(paths: tuple[Path, ...]) -> tuple[str, ...]:
+    """Extract only patterns from previously verified native feed URLs.
+    Patterns are never trusted by themselves: probe_site re-fetches and
+    re-validates every learned candidate on the new retailer.
+    """
+    learned: set[str] = set()
+    for base in paths:
+        if not base.exists():
+            continue
+        for path in base.rglob("*.json"):
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if isinstance(data, dict):
+                urls = []
+                if data.get("native_feed_url"):
+                    urls.append(str(data["native_feed_url"]))
+                records = data.get("evidence", {}).get("records", []) if isinstance(data.get("evidence"), dict) else []
+                for record in records if isinstance(records, list) else []:
+                    if isinstance(record, dict):
+                        validation = record.get("validation", {})
+                        if isinstance(validation, dict) and validation.get("valid") and record.get("requested_url"):
+                            urls.append(str(record["requested_url"]))
+                for raw in urls:
+                    try:
+                        p = urllib.parse.urlsplit(raw)
+                    except ValueError:
+                        continue
+                    if p.scheme not in {"http", "https"} or not p.path:
+                        continue
+                    learned.add(p.path or "/")
+                    if p.query:
+                        learned.add(f"{p.path or '/'}?{p.query}")
+    return tuple(sorted(learned)[:120])
+
+
+def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> SiteResult:
     started = time.monotonic()
     records: list[dict[str, object]] = []
     discovered: set[str] = set()
@@ -817,6 +877,10 @@ def probe_site(site: str, root: str) -> SiteResult:
                 ctx_candidates.update(rest_feed_candidates(result.body.decode("utf-8", "replace"), root))
 
     fast_candidates = [urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in FAST_PATHS]
+    fast_candidates.extend(
+        urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/"))
+        for p in learned_paths
+    )
     fast_candidates.extend(sorted(ctx_candidates))
     verified = batch(list(dict.fromkeys(fast_candidates)), 20.0, 8, records, session_cookie_header, root)
     if verified is None:
@@ -871,14 +935,14 @@ def probe_site(site: str, root: str) -> SiteResult:
     return SiteResult(site, root, status, verified, evidence, round(time.monotonic() - started, 3))
 
 
-def run_shard(shard: int, shards: int, output_dir: Path, targets: tuple[tuple[str, str], ...] | None = None) -> list[SiteResult]:
+def run_shard(shard: int, shards: int, output_dir: Path, targets: tuple[tuple[str, str], ...] | None = None, learned_paths: tuple[str, ...] = ()) -> list[SiteResult]:
     started = time.monotonic()
     target_set = TARGETS if targets is None else targets
     selected = [target for idx, target in enumerate(target_set) if idx % shards == shard]
     output_dir.mkdir(parents=True, exist_ok=True)
     results: list[SiteResult] = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        future_map = {pool.submit(probe_site, site, root): (site, root) for site, root in selected}
+        future_map = {pool.submit(probe_site, site, root, learned_paths): (site, root) for site, root in selected}
         for future in concurrent.futures.as_completed(future_map):
             site_name, site_root_url = future_map[future]
             try:
@@ -945,6 +1009,7 @@ def main() -> int:
     parser.add_argument("--aggregate-dir")
     parser.add_argument("--output-file", default="out/native-google-feed-manifest.json")
     parser.add_argument("--only-sites", help="Comma-separated site names from TARGETS")
+    parser.add_argument("--learn-from", action="append", default=[], help="Prior evidence directory to learn verified feed path/query patterns from")
     args = parser.parse_args()
 
     if args.aggregate_dir:
@@ -956,6 +1021,7 @@ def main() -> int:
     if not 0 <= args.shard < args.shards:
         raise SystemExit("invalid shard")
     selected_targets = None
+    learned_paths = load_learned_feed_patterns(tuple(Path(p) for p in args.learn_from))
     if args.only_sites:
         requested = {x.strip().lower() for x in args.only_sites.split(",") if x.strip()}
         if not requested:
@@ -964,11 +1030,12 @@ def main() -> int:
         missing = requested - {site.lower() for site, _ in selected_targets}
         if missing:
             raise SystemExit("unknown --only-sites: " + ", ".join(sorted(missing)))
-    results = run_shard(args.shard, args.shards, Path(args.output_dir), selected_targets)
+    results = run_shard(args.shard, args.shards, Path(args.output_dir), selected_targets, learned_paths)
     print(json.dumps({
         "shard": args.shard,
         "sites": len(results),
         "target_scope": [r.site for r in results],
+        "learned_path_count": len(learned_paths),
         "verified_native_feed_count": sum(bool(r.native_feed_url) for r in results),
         "verified_native_feeds": [{"site": r.site, "url": r.native_feed_url} for r in results if r.native_feed_url],
         "statuses": {r.site: r.status for r in results},
