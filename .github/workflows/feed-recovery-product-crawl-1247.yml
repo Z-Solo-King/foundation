@@ -16,7 +16,7 @@ jobs:
   native-stage1:
     name: "Native Feed Stage 1 · ${{ matrix.site }}"
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       max-parallel: 2
@@ -51,6 +51,10 @@ jobs:
               done
             fi
             python tools/native_google_feed_hunt_v2.py "${args[@]}" | tee "$base/round-$round.log"
+            # Publish each learning round immediately so evidence is inspectable even
+            # if a later round reaches the job timeout.
+            cp "$out/${{ matrix.slug }}.json" "$base/${{ matrix.slug }}-round-${round}.json"
+            cp "$base/round-$round.log" "$base/${{ matrix.slug }}-round-${round}.log"
             if jq -e '.native_feed_url != null and .native_feed_url != ""' "$out/${{ matrix.slug }}.json" >/dev/null 2>&1; then
               break
             fi
