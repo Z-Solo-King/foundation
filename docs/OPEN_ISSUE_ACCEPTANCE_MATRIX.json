@@ -1,60 +1,12 @@
 {
   "schema": "family-issue-acceptance-matrix/v1",
-  "audited_at": "2026-09-26",
+  "audited_at": "2026-09-27",
   "repository_heads": {
-    "foundation": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
-    "operations": "[REDACTED-REVISION]"
+    "foundation": "efaf43e8bb55dc25d13dcb3f0be05df88f0c09dc",
+    "operations": "[PROTECTED_CURRENT_MAIN]"
   },
-  "open_issue_count": 19,
+  "open_issue_count": 11,
   "issues": [
-    {
-      "repo": "foundation",
-      "number": 1157,
-      "title": "Project-native AI/agent benchmark",
-      "status": "OPEN",
-      "class": "repo+benchmark+runtime",
-      "fix_now": [
-        "current benchmark matrix",
-        "decision-fork probes",
-        "20-job research feed",
-        "family graph provenance"
-      ],
-      "remaining": [
-        "real repeated provider/model/agent baseline",
-        "retained benchmark run artifacts",
-        "runtime evidence where required"
-      ],
-      "probes": [
-        "FI-01",
-        "FI-02",
-        "FI-03",
-        "FI-08",
-        "FI-10",
-        "FI-11"
-      ]
-    },
-    {
-      "repo": "foundation",
-      "number": 157,
-      "title": "24-program nightly research",
-      "status": "OPEN",
-      "class": "runtime+configuration",
-      "fix_now": [
-        "20-job research evidence feed",
-        "provenance binding",
-        "fail-closed source validation"
-      ],
-      "remaining": [
-        "authorized research provider configuration",
-        "real 24-program provider-backed run",
-        "complete lane artifacts"
-      ],
-      "probes": [
-        "FI-02",
-        "FI-04",
-        "FI-10"
-      ]
-    },
     {
       "repo": "foundation",
       "number": 58,
@@ -84,22 +36,114 @@
       ]
     },
     {
-      "repo": "operations",
-      "number": 699,
-      "title": "Deep-scan findings and roadmap",
+      "repo": "foundation",
+      "number": 157,
+      "title": "24-program nightly research",
       "status": "OPEN",
-      "class": "meta+evidence",
+      "class": "runtime+configuration",
       "fix_now": [
-        "canonical Foundation graph consumer",
-        "current 44-case lane map"
+        "20-job research evidence feed",
+        "provenance binding",
+        "fail-closed source validation"
       ],
       "remaining": [
-        "all child/evidence gates represented by live receipts"
+        "authorized research provider configuration",
+        "real 24-program provider-backed run",
+        "complete lane artifacts"
+      ],
+      "probes": [
+        "FI-02",
+        "FI-04",
+        "FI-10"
+      ]
+    },
+    {
+      "repo": "foundation",
+      "number": 1157,
+      "title": "Project-native AI/agent benchmark",
+      "status": "OPEN",
+      "class": "repo+benchmark+runtime",
+      "fix_now": [
+        "current benchmark matrix",
+        "decision-fork probes",
+        "20-job research feed",
+        "family graph provenance"
+      ],
+      "remaining": [
+        "real repeated provider/model/agent baseline",
+        "retained benchmark run artifacts",
+        "runtime evidence where required"
       ],
       "probes": [
         "FI-01",
-        "FI-04",
+        "FI-02",
+        "FI-03",
         "FI-08",
+        "FI-10",
+        "FI-11"
+      ]
+    },
+    {
+      "repo": "foundation",
+      "number": 1247,
+      "title": "Foundation #1247",
+      "status": "OPEN",
+      "class": "research+feed",
+      "fix_now": [],
+      "remaining": [
+        "issue-specific acceptance evidence and current owner receipts"
+      ],
+      "probes": []
+    },
+    {
+      "repo": "foundation",
+      "number": 1249,
+      "title": "Foundation #1249",
+      "status": "OPEN",
+      "class": "research+feed",
+      "fix_now": [],
+      "remaining": [
+        "issue-specific acceptance evidence and current owner receipts"
+      ],
+      "probes": []
+    },
+    {
+      "repo": "operations",
+      "number": 145,
+      "title": "Periodic maintenance tick",
+      "status": "OPEN",
+      "class": "runtime+observability",
+      "fix_now": [
+        "existing scheduler/reconciliation authority",
+        "resource/observability graph coverage"
+      ],
+      "remaining": [
+        "approved live scheduler receipt with exact revision/time/result/provenance"
+      ],
+      "probes": [
+        "FI-05",
+        "FI-07"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 597,
+      "title": "Mapper capability migration",
+      "status": "OPEN",
+      "class": "migration+runtime",
+      "fix_now": [
+        "six capability lanes",
+        "graph topology",
+        "reference corpus"
+      ],
+      "remaining": [
+        "frozen baseline",
+        "differential parity/error taxonomy",
+        "p50/p95/p99 + CPU/memory/conversion",
+        "shadow/canary/rollback"
+      ],
+      "probes": [
+        "FI-01",
         "FI-09"
       ]
     },
@@ -130,209 +174,62 @@
     },
     {
       "repo": "operations",
-      "number": 597,
-      "title": "Mapper capability migration",
+      "number": 1027,
+      "title": "security: move privileged provider-secret fan-out behind private boundary",
       "status": "OPEN",
-      "class": "migration+runtime",
+      "class": "security+architecture",
       "fix_now": [
-        "six capability lanes",
-        "graph topology",
-        "reference corpus"
+        "move privileged fan-out behind the private boundary",
+        "keep Foundation as thin GitHub Actions bridge"
       ],
       "remaining": [
-        "frozen baseline",
-        "differential parity/error taxonomy",
-        "p50/p95/p99 + CPU/memory/conversion",
-        "shadow/canary/rollback"
+        "private implementation migration",
+        "controlled live synchronization test",
+        "sanitized receipt"
       ],
       "probes": [
-        "FI-01",
-        "FI-09"
+        "FI-02",
+        "FI-06"
       ]
     },
     {
       "repo": "operations",
-      "number": 385,
-      "title": "Terminalization/recovery",
+      "number": 1066,
+      "title": "security: protect Operations main with required PR checks",
       "status": "OPEN",
-      "class": "reliability+runtime",
+      "class": "security+process",
       "fix_now": [
-        "canonical lifecycle remains authoritative",
-        "unit-level recovery/graph probes",
-        "resource/recovery integration map"
+        "protect Operations main",
+        "require canonical checks before merge"
       ],
       "remaining": [
-        "cross-surface crash-after-side-effect",
-        "late output/restart receipts",
-        "L3/L4 runtime evidence"
+        "GitHub admin/settings mutation",
+        "fresh settings/readback receipt"
       ],
       "probes": [
-        "FI-01",
-        "FI-05",
+        "FI-06",
+        "FI-10"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 1103,
+      "title": "security: public-repo surface audit — infra leaks and disclosure remediation",
+      "status": "OPEN",
+      "class": "security+public-surface",
+      "fix_now": [
+        "remove/genericize remaining public infrastructure disclosures",
+        "complete public-surface remediation"
+      ],
+      "remaining": [
+        "Cloudflare-side identifier transition where applicable",
+        "full documentation/tooling remediation"
+      ],
+      "probes": [
+        "FI-04",
+        "FI-07",
         "FI-08"
       ]
-    },
-    {
-      "repo": "operations",
-      "number": 340,
-      "title": "Provider streaming/token accounting",
-      "status": "OPEN",
-      "class": "runtime",
-      "fix_now": [
-        "reachable-path contract",
-        "typed decision/resource/observability probes"
-      ],
-      "remaining": [
-        "live interruption/cancellation",
-        "resource/token reconciliation",
-        "duplicate/restart/orphan-state receipt"
-      ],
-      "probes": [
-        "FI-03",
-        "FI-05",
-        "FI-07"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 145,
-      "title": "Periodic maintenance tick",
-      "status": "OPEN",
-      "class": "runtime+observability",
-      "fix_now": [
-        "existing scheduler/reconciliation authority",
-        "resource/observability graph coverage"
-      ],
-      "remaining": [
-        "approved live scheduler receipt with exact revision/time/result/provenance"
-      ],
-      "probes": [
-        "FI-05",
-        "FI-07"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 713,
-      "title": "Rust URL identity security/parity",
-      "status": "OPEN",
-      "class": "security+parity",
-      "remaining": [
-        "fresh post-fix hybrid receipt"
-      ],
-      "evidence": [
-        "71-case Python/Rust URL differential",
-        "NAT64/private-reserved negative corpus",
-        "four-lane governance coverage"
-      ]
-    },
-    {
-      "repo": "foundation",
-      "number": 1247,
-      "title": "Foundation #1247",
-      "status": "OPEN",
-      "class": "research+feed",
-      "fix_now": [],
-      "remaining": [
-        "issue-specific acceptance evidence and current owner receipts"
-      ],
-      "probes": []
-    },
-    {
-      "repo": "foundation",
-      "number": 1249,
-      "title": "Foundation #1249",
-      "status": "OPEN",
-      "class": "research+feed",
-      "fix_now": [],
-      "remaining": [
-        "issue-specific acceptance evidence and current owner receipts"
-      ],
-      "probes": []
-    },
-    {
-      "repo": "foundation",
-      "number": 1265,
-      "title": "Foundation #1265",
-      "status": "OPEN",
-      "class": "security",
-      "fix_now": [],
-      "remaining": [
-        "issue-specific acceptance evidence and current owner receipts"
-      ],
-      "probes": []
-    },
-    {
-      "repo": "foundation",
-      "number": 1283,
-      "title": "Foundation #1283",
-      "status": "OPEN",
-      "class": "ci+process",
-      "fix_now": [],
-      "remaining": [
-        "issue-specific acceptance evidence and current owner receipts"
-      ],
-      "probes": []
-    },
-    {
-      "repo": "foundation",
-      "number": 1284,
-      "title": "Foundation #1284",
-      "status": "OPEN",
-      "class": "process+ci",
-      "fix_now": [],
-      "remaining": [
-        "issue-specific acceptance evidence and current owner receipts"
-      ],
-      "probes": []
-    },
-    {
-      "repo": "operations",
-      "number": 994,
-      "title": "Operations #994",
-      "status": "OPEN",
-      "class": "docs+integration",
-      "fix_now": [],
-      "remaining": [
-        "issue-specific acceptance evidence and current owner receipts"
-      ],
-      "probes": []
-    },
-    {
-      "repo": "operations",
-      "number": 997,
-      "title": "Operations #997",
-      "status": "OPEN",
-      "class": "audit+cloudflare",
-      "fix_now": [],
-      "remaining": [
-        "issue-specific acceptance evidence and current owner receipts"
-      ],
-      "probes": []
-    },
-    {
-      "repo": "operations",
-      "number": 998,
-      "title": "Operations #998",
-      "status": "OPEN",
-      "class": "docs+continuity",
-      "fix_now": [],
-      "remaining": [
-        "issue-specific acceptance evidence and current owner receipts"
-      ],
-      "probes": []
-    },
-    {
-      "repo": "operations",
-      "number": 1005,
-      "title": "Operations #1005",
-      "status": "OPEN",
-      "class": "chatbot+maintenance",
-      "fix_now": [],
-      "remaining": [
-        "issue-specific acceptance evidence and current owner receipts"
-      ],
-      "probes": []
     }
   ],
   "evidence_rules": {
