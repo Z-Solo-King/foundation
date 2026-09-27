@@ -1053,8 +1053,9 @@ def replay_candidates(state: SiteState) -> None:
                 "Candidate live replay",
                 "candidate-replay",
                 url,
-                20.0,
-                False if same_host(url, state.root) else True,
+                timeout=20.0,
+                allow_external=not same_host(url, state.root),
+                method="GET",
             ): url
             for idx, url in enumerate(candidates, 1)
         }
