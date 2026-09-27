@@ -1,0 +1,46 @@
+name: Native Google Feed CTX Route Hunt v180
+on:
+  push:
+    branches: [hunt/native-google-feed-urls-20260927]
+    paths:
+      - "tools/native_google_feed_ctxfeed_v180.py"
+      - ".github/workflows/native-google-feed-ctxfeed-hunt.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1,2,3,4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install Playwright
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -q playwright
+          python -m playwright install chromium
+      - name: Select plugin-signal shard
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+          python -c 'import json,os; s=[["quickincomputers","https://quickincomputers.com"],["hotshiftpc","https://hotshiftpc.com"],["Ninja Dog","https://ninjadog.in"],["EZPZ Solutions","https://www.ezpzsolutions.in"],["nexusinfosys","https://www.mynexusinfosys.com"],["Kryptronix Gaming","https://kryptronix.in"],["AULA India","https://aulaindia.com"],["itgadgetsonline","https://itgadgetsonline.com"],["solankienterprises","https://solankienterprises.com"],["Geekbees","https://geekbees.in"],["Only SDD","https://onlyssd.com"],["avikaretails","https://avikaretails.com"]]; n=int(os.environ["SHARD"]); print(json.dumps([{"name":x[0],"url":x[1]} for i,x in enumerate(s) if i%4+1==n]))' > /tmp/sites.json
+          echo "SITES_JSON=$(cat /tmp/sites.json)" >> "$GITHUB_ENV"
+      - name: Run v180 CTX Feed route hunt
+        run: |
+          set -o pipefail
+          python tools/native_google_feed_ctxfeed_v180.py | tee "ctxfeed-shard-${{ matrix.shard }}.json"
+      - name: Upload URL-only results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-ctxfeed-google-feed-shard-${{ matrix.shard }}
+          path: ctxfeed-shard-${{ matrix.shard }}.json
+          retention-days: 14
