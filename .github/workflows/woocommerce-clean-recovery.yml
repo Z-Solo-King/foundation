@@ -49,6 +49,8 @@ jobs:
       - name: Probe public recovery worker
         if: always()
         shell: bash
+        env:
+          SITE: ${{ matrix.site }}
         run: |
           set -u
           mkdir -p out/worker
