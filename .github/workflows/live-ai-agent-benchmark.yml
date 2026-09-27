@@ -52,7 +52,7 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf .runtime/live-ai-agent-benchmark
-          python benchmark/multi_agent/live_agent_benchmark.py \
+          python -m benchmark.multi_agent.live_agent_benchmark \
             --output-dir .runtime/live-ai-agent-benchmark \
             --run-id "${GITHUB_RUN_ID}" \
             --repo-sha "${GITHUB_SHA}" \
