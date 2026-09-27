@@ -11,11 +11,6 @@ name: nightly multi-agent research
         required: false
         default: false
         type: boolean
-  workflow_run:
-    workflows:
-      - "Heroic AI production release"
-    types: [completed]
-
 permissions:
   actions: read
   contents: read
@@ -52,12 +47,7 @@ jobs:
             echo "Explicit dry-run: production release gate is not required."
             exit 0
           fi
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_run" ]]; then
-            test "${{ github.event.workflow_run.conclusion }}" = "success"
-            target_sha="${{ github.event.workflow_run.head_sha }}"
-          else
-            target_sha="${GITHUB_SHA}"
-          fi
+          target_sha="${GITHUB_SHA}"
           for attempt in $(seq 1 240); do
             runs_json="$(gh run list --workflow heroic-ai-production-release.yml --repo "$GITHUB_REPOSITORY" --limit 20 --json databaseId,headSha,status,conclusion)"
             matching="$(jq --arg sha "$target_sha" '[.[] | select(.headSha == $sha)]' <<<"$runs_json")"
@@ -175,10 +165,9 @@ jobs:
           )
           test -n "$github_app_token"
           echo "::add-mask::$github_app_token"
-          echo 'GITHUB_APP_TOKEN<<EOF' >> "$GITHUB_ENV"
-          printf '%s\n' "$github_app_token" >> "$GITHUB_ENV"
-          echo 'EOF' >> "$GITHUB_ENV"
-          repo_response=$(curl -fsS \
+          token_file="$RUNNER_TEMP/operations-research-token.txt"
+          printf '%s\n' "$github_app_token" > "$token_file"
+          chmod 600 "$token_file"
             -H 'Accept: application/vnd.github+json' \
             -H "Authorization: Bearer ${github_app_token}" \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
@@ -201,7 +190,7 @@ jobs:
           #!/bin/sh
           case "$1" in
             *Username*) printf '%s\n' x-access-token ;;
-            *Password*) printf '%s\n' "$GITHUB_APP_TOKEN" ;;
+            *Password*) cat "$RUNNER_TEMP/operations-research-token.txt" ;;
             *) printf '%s\n' '' ;;
           esac
           EOF
@@ -390,7 +379,7 @@ jobs:
       - name: Remove private research checkout and credentials
         if: ${{ always() }}
         shell: bash
-        run: rm -rf "$RUNNER_TEMP/operations-research" "$RUNNER_TEMP/operations-research-app.pem" "$RUNNER_TEMP/operations-research-jwt.txt" "$RUNNER_TEMP/operations-research-installation.json" "$RUNNER_TEMP/git-askpass-operations-research.sh"
+        run: rm -rf "$RUNNER_TEMP/operations-research" "$RUNNER_TEMP/operations-research-app.pem" "$RUNNER_TEMP/operations-research-jwt.txt" "$RUNNER_TEMP/operations-research-installation.json" "$RUNNER_TEMP/operations-research-token.txt" "$RUNNER_TEMP/git-askpass-operations-research.sh"
 
 
   migration_review:
@@ -553,10 +542,9 @@ jobs:
           )
           test -n "$github_app_token"
           echo "::add-mask::$github_app_token"
-          echo 'GITHUB_APP_TOKEN<<EOF' >> "$GITHUB_ENV"
-          printf '%s\n' "$github_app_token" >> "$GITHUB_ENV"
-          echo 'EOF' >> "$GITHUB_ENV"
-          repo_response=$(curl -fsS \
+          token_file="$RUNNER_TEMP/operations-summary-token.txt"
+          printf '%s\n' "$github_app_token" > "$token_file"
+          chmod 600 "$token_file"
             -H 'Accept: application/vnd.github+json' \
             -H "Authorization: Bearer ${github_app_token}" \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
@@ -579,7 +567,7 @@ jobs:
           #!/bin/sh
           case "$1" in
             *Username*) printf '%s\n' x-access-token ;;
-            *Password*) printf '%s\n' "$GITHUB_APP_TOKEN" ;;
+            *Password*) cat "$RUNNER_TEMP/operations-summary-token.txt" ;;
             *) printf '%s\n' '' ;;
           esac
           EOF
@@ -796,7 +784,7 @@ jobs:
       - name: Remove private project-research checkout and credentials
         if: ${{ always() }}
         shell: bash
-        run: rm -rf "$RUNNER_TEMP/operations-research" "$RUNNER_TEMP/operations-summary-app.pem" "$RUNNER_TEMP/operations-summary-jwt.txt" "$RUNNER_TEMP/operations-summary-installation.json" "$RUNNER_TEMP/git-askpass-operations-summary.sh"
+        run: rm -rf "$RUNNER_TEMP/operations-research" "$RUNNER_TEMP/operations-summary-app.pem" "$RUNNER_TEMP/operations-summary-jwt.txt" "$RUNNER_TEMP/operations-summary-installation.json" "$RUNNER_TEMP/operations-summary-token.txt" "$RUNNER_TEMP/git-askpass-operations-summary.sh"
 
   final-gate:
     name: Preserve truthful nightly result
