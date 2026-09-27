@@ -2,11 +2,12 @@
 import fs from "node:fs/promises";
 import { chromium } from "playwright";
 
-const NAV_TIMEOUT = 20000;
-const SETTLE_MS = 5000;
-const MAX_PAGES = 6;
-const MAX_LINKS_PER_PAGE = 30;
-const MAX_RESPONSES = 500;
+const NAV_TIMEOUT = 12000;
+const SETTLE_MS = 1800;
+const MAX_PAGES = 4;
+const MAX_LINKS_PER_PAGE = 20;
+const MAX_RESPONSES = 300;
+const SITE_TIMEOUT = 60000;
 const TARGETS = [
   ["ithunt","https://ithunt.in"],
   ["kccomputers","https://kccomputers.co.in"],
@@ -46,6 +47,7 @@ function xmlValid(status,ct,body){
   return count?{status,content_type:ct,bytes:Buffer.byteLength(body),item_count_observed:count,validation:"strict_google_merchant_xml"}:null;
 }
 async function probeSite(browser,[name,root]){
+  const deadline = Date.now() + SITE_TIMEOUT;
   const ctx=await browser.newContext({userAgent:"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"});
   const page=await ctx.newPage();
   const queue=[root], seen=new Set(), pages=[], network=[], verified=[], api=[];
@@ -59,11 +61,11 @@ async function probeSite(browser,[name,root]){
     if(status===200 && /json/i.test(ct)) api.push({url:u,status,content_type:ct,resource_type:response.request().resourceType()});
   };
   page.on("response",onResponse);
-  for(let n=0;n<MAX_PAGES && queue.length;n++){
+  for(let n=0;n<MAX_PAGES && queue.length && Date.now()<deadline;n++){
     const u=queue.shift(); if(seen.has(u)) continue; seen.add(u);
     try{
       const resp=await page.goto(u,{waitUntil:"domcontentloaded",timeout:NAV_TIMEOUT});
-      await sleep(SETTLE_MS);
+      await sleep(Math.min(SETTLE_MS, Math.max(0, deadline-Date.now())));
       const html=await page.content();
       const platform=/woocommerce|wc-ajax|\/wp-json\/wc/i.test(html)?"woocommerce":/__NEXT_DATA__|_next\/data/i.test(html)?"nextjs":/shopify/i.test(html)?"shopify":null;
       pages.push({requested_url:u,final_url:page.url(),status:resp?.status()??null,content_type:resp?.headers()?.["content-type"]||"",platform});
