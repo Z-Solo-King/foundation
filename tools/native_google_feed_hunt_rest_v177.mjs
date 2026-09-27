@@ -5,7 +5,7 @@ const CF_ACCOUNT=process.env.CLOUDFLARE_ACCOUNT_ID||"";
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const same=(a,b)=>{try{return new URL(a).hostname.replace(/^www\./,"")===new URL(b).hostname.replace(/^www\./,"")}catch{return false}};
 const abs=(root,x)=>{try{return new URL(x,root).href}catch{return null}};
-const nativeText=s=>{const t=String(s||"");return /^\s*(?:<\?xml[^>]*>\s*)?<rss\b/i.test(t)&&/https?:\/\/base\.google\.com\/ns\/1\.0/i.test(t)&&/<item\b/i.test(t)&&/<g:id\b/i.test(t)&&/<g:title\b/i.test(t)&&/<g:link\b/i.test(t)&&/<g:price\b/i.test(t)&&/<g:availability\b/i.test(t)&&!/just a moment|cf-chl-|turnstile|captcha|access denied|attention required|checking your browser|verify you are human/i.test(t)};
+const nativeText=s=>{const t=String(s||"");return /^\s*(?:<\?xml[^>]*>\s*)?(?:<rss\b|<feed\b)/i.test(t)&&/https?:\/\/base\.google\.com\/ns\/1\.0/i.test(t)&&/<item\b/i.test(t)&&/<g:id\b/i.test(t)&&/<g:title\b/i.test(t)&&/<g:link\b/i.test(t)&&/<g:price\b/i.test(t)&&/<g:availability\b/i.test(t)&&!/just a moment|cf-chl-|turnstile|captcha|access denied|attention required|checking your browser|verify you are human/i.test(t)};
 const challenge=s=>/just a moment|cf-chl-|cf-browser-verification|cf-mitigated|turnstile|captcha|access denied|attention required|checking your browser|verify you are human/i.test(String(s||""));
 async function http(url,ms=30000){const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),ms);try{const r=await fetch(url,{redirect:"follow",signal:ac.signal,headers:{"User-Agent":"Mozilla/5.0 (compatible; NativeGoogleFeedHunt/2026.09)","Accept":"application/xml,application/rss+xml,text/xml,application/json,text/html;q=.8,*/*;q=.2","Accept-Language":"en-IN,en;q=.9"}});return{status:r.status,url:r.url,ct:r.headers.get("content-type")||"",body:await r.text()}}catch(e){return{status:0,url,error:String(e?.name||e)}}finally{clearTimeout(tm)}}
 function discoverUrls(text,root,set){
@@ -49,7 +49,8 @@ async function probe(site){
   "/gpf.xml","/product-feed.xml","/products-feed.xml","/feed/google.xml","/feed/google-products.xml","/feed/google-product-feed.xml",
   "/feed/google-shopping.xml","/feed/google-shopping-feed.xml","/feed/merchant.xml","/feed/merchant-feed.xml",
   "/feeds/google.xml","/feeds/google-products.xml","/feeds/google-product-feed.xml","/feeds/google-shopping.xml","/feeds/google-shopping-feed.xml",
-  "/catalog/feed.xml","/catalog/google.xml","/wp-content/uploads/google.xml","/wp-content/uploads/google-feed.xml",
+  "/catalog/feed.xml","/catalog/google.xml","/merchant_feed.xml","/merchant-feed.xml","/merchant_feed.xml.gz","/merchant-feed.xml.gz",
+  "/google_merchant.xml","/google_merchant.xml.gz","/merchant_feed/google.xml","/?feed=products","/wp-content/uploads/google.xml","/wp-content/uploads/google-feed.xml",
   "/wp-content/uploads/woo-feed/google/xml/google.xml","/wp-content/uploads/woo-feed/google/xml/google-shopping.xml",
   "/wp-content/uploads/woo-product-feed-pro/xml/google.xml","/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml",
   "/wp-content/uploads/wppfm-feeds/google.xml","/wp-json/feedcraft-product-feed/v1/xml","/wp-json/google-product-feed/v1/xml","/wp-json/google-feed/v1/xml"
@@ -64,7 +65,18 @@ async function probe(site){
  for(const p of ["/wp-json/ctxfeed/v8/","/wp-json/ctxfeed/v7/","/wp-json/ctxfeed/v1/"]){
    const r=await http(root+p,12000);if(r.status===200)discovery.push({url:root+p,status:r.status,ct:r.ct,len:r.body?.length||0});
  }
- const all=[...cands].slice(0,220);
+ // Public directory indexes can expose generated/randomized XML filenames.
+ for(const dir of ["/wp-content/uploads/woo-feed/google/xml/","/wp-content/uploads/woo-product-feed-pro/xml/","/wp-content/uploads/wppfm-feeds/","/wp-content/uploads/woo-feed/google/","/feeds/","/feed/"]){
+   const r=await http(root+dir,12000);
+   if(r.status===200&&r.body){
+     discovery.push({url:root+dir,status:r.status,ct:r.ct,len:r.body.length});
+     for(const m of String(r.body).matchAll(/href=["']([^"']+\.xml(?:\.gz)?(?:[?#][^"']*)?)["']/gi)){
+       const a=abs(root,m[1]); if(a&&same(a,root)) cands.add(a);
+     }
+     discoverUrls(r.body,root,cands);
+   }
+ }
+ const all=[...cands].slice(0,400);
  const checked=[];
  for(let i=0;i<all.length;i+=12){
    const batch=all.slice(i,i+12),rows=await Promise.all(batch.map(async u=>({u,v:await validate(u)})));
