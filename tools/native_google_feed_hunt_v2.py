@@ -865,7 +865,7 @@ def load_learned_feed_patterns(paths: tuple[Path, ...]) -> tuple[str, ...]:
 
 def validation_candidate_groups(
     discovered: set[str],
-    explicit_external_candidates: set[str],
+    explicit_feed_candidates: set[str],
     root: str,
 ) -> tuple[list[str], list[str]]:
     """Split discovered feed candidates into same-site and explicitly-declared external URLs."""
