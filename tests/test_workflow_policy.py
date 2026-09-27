@@ -415,7 +415,7 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_REF="{CANONICAL_PRODUCTION_OPERATIONS_REF}"' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
-    assert "OPERATIONS_RESEARCH_REF: 566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3" in nightly
+    assert "OPERATIONS_RESEARCH_REF: 7058d617d576bc18d977c4b615bebba0be9af747" in nightly
 
 
 
@@ -482,8 +482,8 @@ def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
 def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
-    expected_production = "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3"
-    expected_nightly = "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3"
+    expected_production = "7058d617d576bc18d977c4b615bebba0be9af747"
+    expected_nightly = "7058d617d576bc18d977c4b615bebba0be9af747"
     auxiliary = {
         "live-chatbot-production-smoke.yml": expected_production,
         "coverage-driven-runtime-matrix.yml": expected_production,
