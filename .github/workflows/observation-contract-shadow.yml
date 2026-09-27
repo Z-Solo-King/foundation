@@ -1,4 +1,4 @@
-# Operations differential reference: import-light boundary; rerun against current canonical Operations revision 323c5e6.
+# Operations differential reference: import-light boundary; rerun against current canonical Operations revision b6773d6.
 name: TypeScript observation contract shadow
 
 on:
