@@ -105,6 +105,16 @@ async function probeRoot(root){
     "/sitemap_products.xml","/sitemap-pages.xml","/sitemap_categories.xml","/sitemap_collections.xml"
   ].map(x=>abs(x,root)).filter(Boolean))];
 
+  const sourceHits=[];
+  for(const [kind,text] of [["homepage",home.body||""],["robots",robots.body||""],...scriptResponses.map((x,i)=>["script_"+i,x.body||""])]){
+    for(const m of text.matchAll(/.{0,120}(?:google|merchant|shopping|feed|rss|atom|xml).{0,180}/ig)){
+      sourceHits.push({kind,snippet:m[0].replace(/\\s+/g," ").slice(0,350)});
+      if(sourceHits.length>=80) break;
+    }
+    if(sourceHits.length>=80) break;
+  }
+  result.source_hits=sourceHits;
+
   const discoveredFeedUrls=new Set();
   for(const source of [home.body||"",robots.body||"",...scriptResponses.filter(x=>x.status===200).map(x=>x.body||"")]){
     for(const u of urlsFrom(source,root)){
@@ -130,7 +140,10 @@ async function probeRoot(root){
     const r=await get(u,"application/xml,text/xml,application/rss+xml,application/atom+xml,*/*;q=0.1");
     const v=validate(r); if(v) result.verified_google_xml.push(v);
     if(r.status===200 && /json/i.test(r.content_type)) result.public_json_surfaces.push({url:r.final_url||u,status:r.status,content_type:r.content_type,bytes:r.bytes});
-    return {url:r.final_url||u,status:r.status,content_type:r.content_type,bytes:r.bytes,verified:!!v,error:r.error||null};
+    const bodySnippet = (r.status===200 && (/xml/i.test(r.content_type) || /^\\s*<\\?xml/i.test(r.body||"") || /^\\s*<(?:rss|feed|sitemap)/i.test(r.body||"")))
+      ? (r.body||"").slice(0,2500)
+      : null;
+    return {url:r.final_url||u,status:r.status,content_type:r.content_type,bytes:r.bytes,verified:!!v,error:r.error||null,body_snippet:bodySnippet};
   });
   result.candidate_count=responses.length;
   result.responses=responses;
