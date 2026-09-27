@@ -1,0 +1,27 @@
+name: Browser Helper Diagnostic
+on:
+  push:
+    branches: [hunt/native-google-feed-urls-20260927]
+    paths:
+      - ".github/workflows/wc-browser-debug.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BROWSER_WORKER_URL: https://wc-browser-single-20260927.heroic-ai.workers.dev/
+    steps:
+      - name: Probe Browser Run helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS --max-time 90 -X POST "$BROWSER_WORKER_URL"             -H 'content-type: application/json'             --data '{"root":"https://onlyssd.com","targets":["https://onlyssd.com/?woocommerce_gpf=google","https://onlyssd.com/?woocommerce_gpf=google&gpf_start=0&gpf_limit=250"],"debug":"1"}' | tee browser-helper-debug.json
+      - name: Upload debug result
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-helper-debug
+          path: browser-helper-debug.json
+          retention-days: 3
