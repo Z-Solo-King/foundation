@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: wc-google-feed-recovery-1247
-  cancel-in-progress: false
+  group: wc-google-feed-recovery-1247-latest
+  cancel-in-progress: true
 
 jobs:
   rescue:
@@ -34,24 +34,169 @@ jobs:
           GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
         run: node tools/woocommerce_google_feed_ai_agents_1247.mjs
       - name: Run public-only recovery
-        if: always()
         run: node tools/woocommerce_google_feed_rescue_fast.mjs
-      - name: Run public archive and index recovery
-        if: always()
-        run: node tools/woocommerce_google_feed_archive_recovery_1247.mjs
-      - name: Upload archive/index evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: woocommerce-google-feed-archive-recovery-1247
-          path: out/archive-recovery-1247/
-          if-no-files-found: warn
-          retention-days: 30
-      - name: Upload recovery evidence
+      - name: Upload rescue evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: woocommerce-google-feed-recovery-1247
           path: out/rescue-fast/
           if-no-files-found: warn
+          retention-days: 30
+
+  archive-recovery:
+    name: archive-${{ matrix.slug }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - {slug: ithunt, name: "ithunt", url: "https://ithunt.in"}
+          - {slug: kccomputers, name: "kccomputers", url: "https://kccomputers.co.in"}
+          - {slug: krg-kart, name: "KRG KART", url: "https://krgkart.com"}
+          - {slug: pc-kumar-infotech, name: "PC Kumar Infotech", url: "https://pckumar.in"}
+          - {slug: pchubshop, name: "PCHubShop", url: "https://www.pchubshop.com"}
+          - {slug: scl-gaming, name: "SCL Gaming", url: "https://sclgaming.in"}
+          - {slug: variety-infotech, name: "Variety Infotech", url: "https://varietyinfotech.com"}
+          - {slug: moskeys, name: "Moskeys", url: "https://moskeys.com"}
+          - {slug: theproaudio, name: "Theproaudio", url: "https://www.theproaudio.com"}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - name: Syntax check
+        run: node --check tools/woocommerce_google_feed_archive_recovery_1247.mjs
+      - name: Run public archive/index recovery
+        run: |
+          node tools/woocommerce_google_feed_archive_recovery_1247.mjs \
+            --site-name "${{ matrix.name }}" \
+            --site-url "${{ matrix.url }}"
+      - name: Upload archive evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: v1247-archive-${{ matrix.slug }}
+          path: out/archive-recovery-1247/
+          if-no-files-found: warn
+          retention-days: 30
+
+  browser-xhr:
+    name: browser-${{ matrix.slug }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - {slug: ithunt, name: "ithunt", url: "https://ithunt.in"}
+          - {slug: kccomputers, name: "kccomputers", url: "https://kccomputers.co.in"}
+          - {slug: krg-kart, name: "KRG KART", url: "https://krgkart.com"}
+          - {slug: pc-kumar-infotech, name: "PC Kumar Infotech", url: "https://pckumar.in"}
+          - {slug: pchubshop, name: "PCHubShop", url: "https://www.pchubshop.com"}
+          - {slug: scl-gaming, name: "SCL Gaming", url: "https://sclgaming.in"}
+          - {slug: variety-infotech, name: "Variety Infotech", url: "https://varietyinfotech.com"}
+          - {slug: moskeys, name: "Moskeys", url: "https://moskeys.com"}
+          - {slug: theproaudio, name: "Theproaudio", url: "https://www.theproaudio.com"}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - name: Install browser
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-package-lock --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Syntax check
+        run: node --check tools/woocommerce_google_feed_product_crawl_1247.mjs
+      - name: Run public browser/XHR recovery
+        run: |
+          node tools/woocommerce_google_feed_product_crawl_1247.mjs \
+            --site-name "${{ matrix.name }}" \
+            --site-url "${{ matrix.url }}"
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: v1247-browser-${{ matrix.slug }}
+          path: out/feed-crawl-1247/
+          if-no-files-found: warn
+          retention-days: 30
+
+  aggregate:
+    name: final-aggregate
+    if: always()
+    needs:
+      - rescue
+      - archive-recovery
+      - browser-xhr
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download rescue evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: woocommerce-google-feed-recovery-1247
+          path: out/rescue
+          merge-multiple: true
+      - name: Download archive evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: v1247-archive-*
+          path: out/archive
+          merge-multiple: false
+      - name: Download browser evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: v1247-browser-*
+          path: out/browser
+          merge-multiple: false
+      - name: Build final report
+        run: |
+          node <<'NODE'
+          const fs=require("fs"), path=require("path");
+          function collect(dir){
+            const out=[];
+            if(!fs.existsSync(dir)) return out;
+            function walk(p){
+              for(const e of fs.readdirSync(p,{withFileTypes:true})){
+                const q=path.join(p,e.name);
+                if(e.isDirectory()) walk(q);
+                else if(e.name==="report.json"){try{out.push(JSON.parse(fs.readFileSync(q,"utf8")))}catch(err){out.push({file:q,status:"REPORT_PARSE_ERROR",error:String(err)})}}
+              }
+            }
+            walk(dir);
+            return out;
+          }
+          const archive=collect("out/archive"), browser=collect("out/browser");
+          const nativeLive=[];
+          for(const x of archive) if(x.status==="VERIFIED_LIVE_NATIVE_FEED" && x.live_native_feed) nativeLive.push({site:x.name,source:"archive-live",feed:x.live_native_feed});
+          for(const x of browser) for(const v of (x.verified_google_xml||[])) nativeLive.push({site:x.name,source:"browser-xhr",feed:v});
+          const historical=archive.filter(x=>x.status==="VERIFIED_HISTORICAL_NATIVE_FEED" && x.historical_native_feed).map(x=>({site:x.name,feed:x.historical_native_feed}));
+          const report={
+            schema_version:"foundation-woocommerce-google-feed-final-recovery/v2",
+            generated_on:new Date().toISOString(),
+            targets:9,
+            archive_reports:archive.length,
+            browser_reports:browser.length,
+            native_live_count:nativeLive.length,
+            historical_native_count:historical.length,
+            native_live:nativeLive,
+            historical_native:historical,
+            unresolved_sites:[...new Set([...archive.filter(x=>!/^VERIFIED_/.test(String(x.status||""))).map(x=>x.name),...browser.filter(x=>(x.verified_google_xml||[]).length===0).map(x=>x.name)])].sort()
+          };
+          fs.mkdirSync("out/final",{recursive:true});
+          fs.writeFileSync("out/final/recovery-report.json",JSON.stringify(report,null,2)+"\n");
+          console.log(JSON.stringify({targets:report.targets,archive_reports:report.archive_reports,browser_reports:report.browser_reports,native_live_count:report.native_live_count,historical_native_count:report.historical_native_count,unresolved_sites:report.unresolved_sites},null,2));
+          NODE
+      - name: Upload final report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: woocommerce-google-feed-final-recovery-1247
+          path: out/final/
+          if-no-files-found: error
           retention-days: 30
