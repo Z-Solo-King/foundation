@@ -120,6 +120,7 @@ def test_oidc_and_attestation_permissions_are_job_scoped():
     top = text.split("jobs:", 1)[0]
     assert "id-token: write" not in top
     assert "attestations: write" not in top
-    research = text.split("  research:", 1)[1].split("\n  ", 1)[0]
-    assert "id-token: write" in research
-    assert "attestations: write" in research
+    research = text.split("  research:", 1)[1]
+    research_prefix = research.split("\n  migration_review:", 1)[0]
+    assert "id-token: write" in research_prefix
+    assert "attestations: write" in research_prefix
