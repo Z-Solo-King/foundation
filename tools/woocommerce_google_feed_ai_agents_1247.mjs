@@ -45,18 +45,16 @@ await mkdir("out/rescue-fast", { recursive: true });
 function extractPaths(text, base) {
   const out = new Set();
   const s = String(text || "");
-  const matches = [
-    ...s.matchAll(/https?:\\/\\/[^\\s<>"')\\]]+/g),
-    ...s.matchAll(/\\/[A-Za-z0-9._~:\\/?#\\[\\]@!$&'()*+,;=%-]+/g)
-  ];
-  for (const m of matches) {
-    let raw = String(m[0]).replace(/[),.;]+$/, "");
+  const matches = s.split(/\s+/)
+    .map(v => String(v || "").replace(/[),.;]+$/g, ""))
+    .filter(v => v.startsWith("http://") || v.startsWith("https://") || v.startsWith("/"));
+  for (const raw of matches) {
     try {
       const u = new URL(raw, base);
       const path = u.pathname + (u.search || "");
       if (u.origin === new URL(base).origin &&
           path.length <= 500 &&
-          (/xml|feed|merchant|google|shopping|product|woo|wppfm|codesolz|feedcraft/i.test(path))) {
+          /xml|feed|merchant|google|shopping|product|woo|wppfm|codesolz|feedcraft/i.test(path)) {
         out.add(path);
       }
     } catch {}
