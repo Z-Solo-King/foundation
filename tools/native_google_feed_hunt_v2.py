@@ -89,6 +89,9 @@ FAST_PATHS = (
     "/google.xml", "/google_feed.xml", "/google-feed.xml",
     "/google-products.xml", "/google-product-feed.xml",
     "/google-shopping.xml", "/google-shopping-feed.xml",
+    "/gmerchant.xml", "/gpf.xml", "/product-feed/google.xml", "/product-feed/google-shopping.xml",
+    "/products/google.xml", "/products/google-feed.xml", "/products/google-shopping.xml",
+    "/google-feed/index.xml", "/feeds/google/index.xml", "/feed.xml",
     "/wp-content/uploads/google-listings-and-ads/xml/product-feed.xml",
     "/google-merchant.xml", "/google-merchant-feed.xml",
     "/merchant.xml", "/merchant-feed.xml", "/product-feed.xml",
@@ -116,6 +119,7 @@ MEDIUM_PATHS = (
     "/wp-content/uploads/woo-product-feed-pro/xml/google-shopping-feed.xml",
     "/wp-content/uploads/wppfm-feeds/google-shopping.xml",
     "/google-shopping-products.xml", "/google-shopping-products-feed.xml",
+    "/feeds/products.rss", "/products/feed.xml", "/products_feed.xml",
     "/google_product_feed.xml", "/googlefeed.xml", "/google-products-feed.xml",
     "/merchant_feed.xml", "/products/feed.xml", "/products_feed.xml",
     "/product_feed.xml", "/productfeed.xml", "/feed-products.xml", "/feed_products.xml",
@@ -127,7 +131,7 @@ MEDIUM_PATHS = (
     "/wp-content/uploads/woo-product-feed-pro/xml/google-shopping-feed.xml",
     "/feeds/google-product-feed.xml", "/feeds/google-products.xml", "/feeds/google-shopping-feed.xml",
     "/feed/google-feed.xml", "/feed/google-products.xml", "/feed/google-product-feed.xml",
-    "/feed/google-shopping.xml", "/feed/google-shopping-feed.xml",
+    "/feed/google-shopping.xml", "/feed/google-shopping-feed.xml", "/feed.xml",
 )
 
 DIRECTORIES = (
