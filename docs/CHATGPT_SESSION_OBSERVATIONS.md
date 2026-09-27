@@ -3,7 +3,7 @@
 This is the current post-merge source-of-truth snapshot.
 
 - Foundation main: e6514890548278e26331269e4abb0818b119233a
-- Operations main: add667236a17f2b845a39ae539f3dfe137d806a2
+- Operations main: [REDACTED-OPERATIONS-SHA]
 - Open issues: 10 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
 - Open PRs: 2 — Operations #914/#915 (Dependabot development dependencies). Foundation has none. No project implementation PR remains open.
 - Repository fixes merged in this cycle: Foundation #1194, #1196, #1197, #1198, #1199, #1200, #1201, plus documentation #1195.
@@ -13,7 +13,7 @@ This is the current post-merge source-of-truth snapshot.
 - Latest public Worker live probe 36119501481: FAIL at the same public-domain DNS boundary.
 - Latest completed extractor benchmark remains run 36118106992, artifact 10855896489, digest sha256:8b37d570f60d0cf44a6353e23955a945e69c45b54db59b25f9e402789d72f37d; 40 receipts, 4 ok / 32 empty / 4 blocked, provenance 1.0, route provenance 1.0, repeat reliability 1.0, 0 unstable groups, 0 invalid resource rows, 0 missing key rows.
 - Active nightly run 36119514469 remains behind the exact production gate; no provider-backed 24-program acceptance receipt is certified.
-- Cloudflare account role: Super Administrator - All Privileges. Zone heroic-ai.dev remains pending/unresolvable; custom domain enabled on foundation; deployed Foundation provenance github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c; deployed Operations provenance github:a3171f353539f1a31020c432f98cf0530cbf91ef.
+- Cloudflare account role: [REDACTED-CF-ROLE]. Zone heroic-ai.dev remains pending/unresolvable; custom domain enabled on foundation; deployed Foundation provenance github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c; deployed Operations provenance [REDACTED-OPERATIONS-PROVENANCE-SHA].
 - ChatGPT/UI state is transport state only. GitHub workflow/artifact receipts and Cloudflare control-plane/runtime evidence are authoritative.
 
 ---
@@ -23,7 +23,7 @@ This is the current post-merge source-of-truth snapshot.
 Current verified cross-surface snapshot. Live workflow receipts and Cloudflare control-plane state outrank older dated sections.
 
 - Foundation main: f7f824fde15e66d6ec6b4c9065feed124a1ce78d
-- Operations main: 24ad53750ecf95084a468ebdb91dc6a3f34ab466
+- Operations main: [REDACTED-OPERATIONS-SHA]
 - Open issues: 10 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
 - Open PRs at audit snapshot: Foundation #1195 (this documentation reconciliation); Operations #914/#915 (Dependabot). No implementation PR remains open.
 - Merged repairs in this cycle: #1194 Cloudflare release authentication header; #1196 nightly preflight network diagnostics; #1197 dual GitHub-token family scan; #1198/#1199 family issue-key normalization; #1200 truthful cancelled-lane nightly fan-in; #1201 canonical nightly workflow structure.
@@ -32,7 +32,7 @@ Current verified cross-surface snapshot. Live workflow receipts and Cloudflare c
 - Provider preflight 36118999990 FAIL CLOSED: HTTP 000, curl exit 6, dns_or_network_unreachable, Could not resolve host: Heroic-Ai.dev.
 - Latest completed extractor benchmark: run 36118106992; artifact 10855896489; digest sha256:8b37d570f60d0cf44a6353e23955a945e69c45b54db59b25f9e402789d72f37d; 40 receipts; 4 ok / 32 empty / 4 blocked; provenance 1.0; route provenance 1.0; repeat reliability 1.0; 0 unstable groups; 0 invalid resource rows; 0 missing key rows.
 - Current nightly run 36119013418 remains behind its exact production gate; no provider-backed 24-program acceptance receipt is certified.
-- Cloudflare account: Super Administrator - All Privileges; heroic-ai.dev pending/unresolvable; custom domain enabled on foundation; deployed Foundation provenance github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c; deployed Operations provenance github:a3171f353539f1a31020c432f98cf0530cbf91ef; D1 research-intelligence ID 19f51638-47a5-4218-a9dc-73dbfd6156fe.
+- Cloudflare account: [REDACTED-CF-ROLE]; heroic-ai.dev pending/unresolvable; custom domain enabled on foundation; deployed Foundation provenance github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c; deployed Operations provenance [REDACTED-OPERATIONS-PROVENANCE-SHA]; D1 research-intelligence ID [REDACTED-D1-ID].
 - ChatGPT/UI state is transport state only. GitHub workflow/artifact receipts and Cloudflare runtime receipts are authoritative.
 - No runtime or production issue is considered closed without its required live receipt.
 
@@ -43,7 +43,7 @@ Current verified cross-surface snapshot. Live workflow receipts and Cloudflare c
 This section is the current cross-surface continuation point. Live GitHub/Cloudflare evidence outranks older checkpoint values below.
 
 - Foundation main: 6b43bafa0f1d298e9a1a2c84b6721bb1eea4d0ac
-- Operations main: b370dc959171dbfb35eae42c2acdee827917ee3f
+- Operations main: [REDACTED-OPERATIONS-SHA]
 - Open issues: 10 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
 - Open project PRs: Foundation #1195; Operations #914/#915. No implementation PR remains open.
 - Repository fixes merged this cycle: #1194 (Cloudflare release auth), #1196 (nightly preflight diagnostics), #1197 (dual family tokens), #1198/#1199 (family issue-key normalization), #1200 (truthful nightly fan-in for cancelled lanes).
@@ -52,7 +52,7 @@ This section is the current cross-surface continuation point. Live GitHub/Cloudf
 - Current family integrity 36118107049: PASS after the final family normalization repair.
 - Newest completed live extractor benchmark: run 36118106992 on Foundation 70093db3; artifact 10855896489; digest sha256:8b37d570f60d0cf44a6353e23955a945e69c45b54db59b25f9e402789d72f37d. Direct artifact inspection confirms pass=true, 40 receipts, 0 invalid resource rows, 0 missing key rows, provenance completeness 1.0, route provenance 1.0, repeat reliability 1.0, 0 unstable repeated groups, status 4 ok / 32 empty / 4 blocked, recovery rate 1.0.
 - Latest nightly multi-agent cycle is correctly gated before provider execution because production is not certified; there is no new provider-backed 24-program acceptance receipt from this environment.
-- Cloudflare account role: Super Administrator - All Privileges. Zone heroic-ai.dev remains pending/unresolvable; custom domain is enabled on foundation; deployed Foundation provenance remains github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c; deployed Operations provenance remains github:a3171f353539f1a31020c432f98cf0530cbf91ef; D1 research-intelligence ID 19f51638-47a5-4218-a9dc-73dbfd6156fe.
+- Cloudflare account role: [REDACTED-CF-ROLE]. Zone heroic-ai.dev remains pending/unresolvable; custom domain is enabled on foundation; deployed Foundation provenance remains github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c; deployed Operations provenance remains [REDACTED-OPERATIONS-PROVENANCE-SHA]; D1 research-intelligence ID [REDACTED-D1-ID].
 - Canonical Worker subdomains are disabled; do not create a competing public authority to bypass the requested heroic-ai.dev domain.
 - ChatGPT/UI state is transport state only; GitHub workflow/artifact receipts and Cloudflare control-plane/runtime evidence are authoritative.
 - No runtime or production issue is closed without the required live receipt.
@@ -64,7 +64,7 @@ This section is the current cross-surface continuation point. Live GitHub/Cloudf
 This section is the current cross-surface continuation point. Live GitHub and Cloudflare evidence outrank older checkpoint values below.
 
 - Foundation main: 70093db359570b3f87d135e26b525645135fa517
-- Operations main: b370dc959171dbfb35eae42c2acdee827917ee3f
+- Operations main: [REDACTED-OPERATIONS-SHA]
 - Open issues: 10 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
 - Open project PRs: 3 — Foundation #1195 (this documentation reconciliation); Operations #914/#915 (Dependabot development-dependency updates). No implementation PR remains open.
 - Foundation PRs #1194, #1196, #1197, #1198, #1199 fixed confirmed Cloudflare-release/family-integrity/preflight defects and are merged.
@@ -73,7 +73,7 @@ This section is the current cross-surface continuation point. Live GitHub and Cl
 - Current family integrity 36118107049: PASS.
 - Latest completed extractor benchmark 36115560009: PASS; artifact 10855326519; digest sha256:1890da70d49377f2f89ee11daa644882a90972666916c07e7aa4edc8066c449e; 40 receipts; 4 ok / 32 empty / 4 blocked; provenance 1.0; route provenance 1.0; repeat reliability 1.0; unstable repeated groups 0.
 - The newer current-main extractor benchmark (36118106992) has not yet produced a completed replacement artifact; retain 36115560009 as the latest completed benchmark.
-- Cloudflare account role: Super Administrator - All Privileges. Zone heroic-ai.dev remains pending/unresolvable; custom domain is enabled on foundation; deployed Foundation provenance is github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c; deployed Operations provenance is github:a3171f353539f1a31020c432f98cf0530cbf91ef; D1 research-intelligence ID is 19f51638-47a5-4218-a9dc-73dbfd6156fe.
+- Cloudflare account role: [REDACTED-CF-ROLE]. Zone heroic-ai.dev remains pending/unresolvable; custom domain is enabled on foundation; deployed Foundation provenance is github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c; deployed Operations provenance is [REDACTED-OPERATIONS-PROVENANCE-SHA]; D1 research-intelligence ID is [REDACTED-D1-ID].
 - Nightly multi-agent research is correctly blocked behind the exact production gate; no provider-backed 24-program receipt is certified.
 - ChatGPT/UI state is transport state only; GitHub workflow/artifact receipts and Cloudflare control-plane/runtime evidence are authoritative.
 - No runtime or production issue is closed without its required live receipt.
@@ -85,14 +85,14 @@ This section is the current cross-surface continuation point. Live GitHub and Cl
 This section is the current cross-surface continuation point. Live GitHub and Cloudflare evidence overrides older checkpoint values below.
 
 - Foundation main: 6eb531095148cb6657bccc72a64542691dbb6fa1
-- Operations main: 207d8a3f081f58702b56fe64c57fe2c3042ce75d
+- Operations main: [REDACTED-OPERATIONS-SHA]
 - Open issues: 10 — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
 - Open project PRs: Foundation #1195; Operations #914/#915. Older duplicate implementation/documentation PRs #1186/#1187/#951 are closed as superseded.
 - Production release 36117585242 is the current fresh run; the prior current-head run was blocked because heroic-ai.dev is not an active Cloudflare zone.
 - Provider preflight 36117585207 is the current fresh run; the immediately prior corrected preflight recorded HTTP 000 / curl exit 6 / DNS resolution failure without crashing.
 - Family integrity 36117585223 is the current fresh run after the dual-token fix; the previous failure was traced to using a private Operations-only token for the Foundation public issue inventory.
 - Latest completed extractor benchmark 36115560009 passed the strict integrity gate: 40 receipts; 4 ok / 32 empty / 4 blocked; provenance 1.0; route provenance 1.0; repeat reliability 1.0; 0 unstable groups. Artifact 10855326519; digest sha256:1890da70d49377f2f89ee11daa644882a90972666916c07e7aa4edc8066c449e.
-- Cloudflare account access: Super Administrator - All Privileges. Zone heroic-ai.dev is pending/unresolvable; custom domain is enabled on foundation; deployed Foundation provenance github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c; deployed Operations provenance github:a3171f353539f1a31020c432f98cf0530cbf91ef; D1 research-intelligence ID 19f51638-47a5-4218-a9dc-73dbfd6156fe.
+- Cloudflare account access: [REDACTED-CF-ROLE]. Zone heroic-ai.dev is pending/unresolvable; custom domain is enabled on foundation; deployed Foundation provenance github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c; deployed Operations provenance [REDACTED-OPERATIONS-PROVENANCE-SHA]; D1 research-intelligence ID [REDACTED-D1-ID].
 - ChatGPT/UI state is transport state only. GitHub workflow/artifact receipts and Cloudflare runtime receipts are authoritative.
 - No runtime/production closure is asserted without the required live receipt.
 
@@ -103,13 +103,13 @@ This section is the current cross-surface continuation point. Live GitHub and Cl
 This section supersedes older dated checkpoint values for current-state interpretation. GitHub live refs and Cloudflare runtime receipts are authoritative.
 
 - Foundation main at this audit snapshot: 01bfa0c6a74bf6f10082ac8034aa1b2d098d0e42.
-- Operations main at this audit snapshot: 207d8a3f081f58702b56fe64c57fe2c3042ce75d.
+- Operations main at this audit snapshot: [REDACTED-OPERATIONS-SHA].
 - Open issues: 10 total — Foundation #58/#1157/#157; Operations #145/#197/#340/#385/#597/#603/#699.
 - Open PRs after duplicate cleanup: Foundation #1194; Operations #914/#915. Foundation #1193 merged the family-state/acceptance-matrix reconciliation; Foundation #1186/#1187 and Operations #951 were superseded/closed.
 - Production release 36115559861 failed at Cloudflare API error 6111 (invalid Authorization header format during zone lookup). Current-head production is not certified.
 - Nightly preflight 36115559932 failed with public Worker HTTP 000; nightly 36115573281 was cancelled by the exact production gate. No new provider-backed 24-program receipt exists.
 - Live extractor benchmark 36115560009 passed: 40 receipts, provenance 1.0, route provenance 1.0, repeat reliability 1.0, 0 unstable groups, 4 ok / 32 empty / 4 blocked. Artifact 10855326519; digest sha256:1890da70d49377f2f89ee11daa644882a90972666916c07e7aa4edc8066c449e.
-- Cloudflare: account role Super Administrator - All Privileges; heroic-ai.dev pending with activation failure reason unresolvable; custom domain enabled on foundation; deployed Foundation provenance github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c; deployed Operations provenance github:a3171f353539f1a31020c432f98cf0530cbf91ef; D1 research-intelligence ID 19f51638-47a5-4218-a9dc-73dbfd6156fe.
+- Cloudflare: account role [REDACTED-CF-ROLE]; heroic-ai.dev pending with activation failure reason unresolvable; custom domain enabled on foundation; deployed Foundation provenance github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c; deployed Operations provenance [REDACTED-OPERATIONS-PROVENANCE-SHA]; D1 research-intelligence ID [REDACTED-D1-ID].
 - Current Foundation main family-integrity workflow already uses actions/create-github-app-token and current main no longer contains the closed operations#352 target.
 - ChatGPT/UI state is transport state only. Use this override as the cross-chat continuation point and refresh live refs before mutation.
 
@@ -119,7 +119,7 @@ This section supersedes older dated checkpoint values for current-state interpre
 
 - Cycle 7 documentation PRs #1137 and #896 are merged.
 - At the post-merge verification point there are 8 open issues and 0 open implementation PRs.
-- Production remains pinned to Foundation `725e1b9cdaa637f07d4264673cddfc8ab806b3c6` + Operations `fda24660843cacfe28de661cf170789af542d28f`; production release `36030977718` is PASS for that exact pair.
+- Production remains pinned to Foundation `725e1b9cdaa637f07d4264673cddfc8ab806b3c6` + Operations `[REDACTED-OPERATIONS-SHA]`; production release `36030977718` is PASS for that exact pair.
 - Nightly research `36030996071` and canary `36030977932` remain blocked by the upstream public Worker HTTP 403 / local HTTP 502 boundary.
 - Cloudflare basic control-plane access is verified; exact deployment-history/version freshness remains a separate receipt and is not inferred.
 - Current repository documentation should be treated as a compact checkpoint, while fresh `main` refs must be queried before mutation.
@@ -128,9 +128,9 @@ This section supersedes older dated checkpoint values for current-state interpre
 
 # Cycle 7 — 2026-09-24 — live cross-surface reconciliation
 
-- Current GitHub heads: Foundation `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`; Operations `1fd629cae593959249107ddb8c7af3f55292e9df`.
+- Current GitHub heads: Foundation `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`; Operations `[REDACTED-OPERATIONS-SHA]`.
 - Current queue: 8 open issues and 1 open documentation PR (#1137); no open implementation PRs.
-- Production release `36030977718` passed using Foundation `725e1b9cdaa637f07d4264673cddfc8ab806b3c6` and Operations production pin `fda24660843cacfe28de661cf170789af542d28f`.
+- Production release `36030977718` passed using Foundation `725e1b9cdaa637f07d4264673cddfc8ab806b3c6` and Operations production pin `[REDACTED-OPERATIONS-SHA]`.
 - Nightly research `36030996071` and canary `36030977932` remain blocked by the same upstream public Worker HTTP 403 / local 502 boundary.
 - Cloudflare account membership, Worker listing and D1 listing were successfully read during this audit. The connector is available; the remaining unverified item is a fresh deployment-history/version/provenance read, not basic access.
 - The project documentation must distinguish: current GitHub branch heads; immutable production pins; fresh Cloudflare runtime receipts; and historical continuity notes.
@@ -197,7 +197,7 @@ Target 4 lanes by default; expand to 6 only when lanes are genuinely independent
 - Session remained responsive under bounded parallel reads and focused writes; no continuous workflow polling was used.
 - Parallel diagnosis found two fresh confirmed Foundation CI defects beyond the prior checkpoint: PR #1129 fixed workflow-dispatch run identity tracking, and PR #1130 fixed the Hybrid URL corpus count plus an invalid Rust cache target. Both PRs had fresh required checks, exhaustive-audit checks, and nightly-contract checks passing before merge.
 - Both repairs were merged during this cycle: #1129 -> `5ab5eb1c5fc4dc07c7e0a533bbfc402cb766d424`; #1130 -> `e541ac4d000ed4a0678aa1ef6ebe9faf6c119c0a`.
-- Operations main advanced independently to `5f2c98fbf0bd8694c63b97a62e28b0bacf01923a` via the Rust HTML availability contract repair (#887); the stale cross-repository checkpoint was therefore no longer safe to reuse unchanged.
+- Operations main advanced independently to `[REDACTED-OPERATIONS-SHA]` via the Rust HTML availability contract repair (#887); the stale cross-repository checkpoint was therefore no longer safe to reuse unchanged.
 - The main execution bottleneck remains L4/runtime/provider evidence, especially the upstream Worker 403 blocking the 24-program research gate; repository-side CI defects are being reduced faster than runtime evidence can be refreshed.
 - Improvement for the next cycle: refresh live heads and open queues first, then inspect only newly changed commits/PRs and current blockers. Reconcile the checkpoint after every consolidated repair batch.
 
@@ -220,7 +220,7 @@ Target 4 lanes by default; expand to 6 only when lanes are genuinely independent
 - External September 2026 research reviewed during this cycle: OpenAI Help/Status, OpenAI Community, Reddit, GitHub/Codex, mainstream technical coverage, and searches of Zhihu, Baidu Tieba, Douban, PTT and Bilibili. The strongest matching signals concern long-chat/mobile message-stream or synchronization instability; Chinese-language results were comparatively sparse/generic and did not justify a stronger causal claim.
 - Reddit/community reports specifically include GPT-5.6 Sol/Thinking slow/stuck behavior, Android message-stream failures, and long-conversation freezing/stalling. These are community reports, not root-cause proof.
 - OpenAI's current troubleshooting guidance recommends starting a new chat for long or many-turn conversations when ChatGPT becomes slow/frozen/stuck. The project should therefore checkpoint before the conversation becomes large rather than trying to preserve one continuous chat.
-- Product terminology note: current OpenAI documentation describes GPT-5.6 Sol with reasoning levels such as Instant/Medium/High/Extra High; this project should not treat “Sol Light” as a formally documented product mode unless a current source explicitly establishes it.
+- Product terminology note: current OpenAI documentation describes GPT-5.6 Sol with reasoning levels such as Instant/Medium/High/Extra High; this project should not treat "Sol Light" as a formally documented product mode unless a current source explicitly establishes it.
 - New operating rule: if responsiveness degrades, the app is closed during a heavy cycle, or the session reaches context/length pressure, stop launching expensive work, write a compact GitHub checkpoint, and continue in a fresh chat. Do not infer completion or failure from the mobile UI alone.
-- This cycle's authoritative project state at checkpoint: Foundation main `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`, Operations main `ebf1e82734cb2fab0a8f4eddc8b1f342803740d1`, 8 open issues, 0 open PRs, canonical production Operations pin `fda24660843cacfe28de661cf170789af542d28f`, canonical production release run `36030977718` PASS, latest nightly research run `36030996071` blocked by upstream Worker HTTP 403 (local HTTP 502 `upstream_worker_rejected`), and live nightly canary `36030977932` failed on the same boundary.
+- This cycle's authoritative project state at checkpoint: Foundation main `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`, Operations main `[REDACTED-OPERATIONS-SHA]`, 8 open issues, 0 open PRs, canonical production Operations pin `[REDACTED-OPERATIONS-SHA]`, canonical production release run `36030977718` PASS, latest nightly research run `36030996071` blocked by upstream Worker HTTP 403 (local HTTP 502 `upstream_worker_rejected`), and live nightly canary `36030977932` failed on the same boundary.
 - Cloudflare control-plane state was not freshly verified in this chat because the dedicated Cloudflare action was not exposed. No new standalone Cloudflare deployment/version/binding/cron/secrets claim is made.

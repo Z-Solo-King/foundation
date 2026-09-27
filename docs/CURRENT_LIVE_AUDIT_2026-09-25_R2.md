@@ -12,14 +12,14 @@ This is the compact authoritative cross-surface checkpoint for the 2026-09-25 re
 - Last known clean family-integrity receipt: run `36119501613` PASS; current heads have advanced since that receipt.
 
 ## Cloudflare
-- Account membership/control-plane: **HTTP 200**, role **Super Administrator - All Privileges**.
+- Account membership/control-plane: **HTTP 200**, role **[REDACTED-CF-ROLE]**.
 - Worker listing: **HTTP 200**; canonical public `foundation`, canonical private `operations`.
-- Current deployed Foundation version: `93aa2e4e-cf67-41de-9933-95f8822de423`, provenance `github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c`.
-- Current deployed Operations version: `66e335b9-68da-429b-abcf-29f9c7e2f5ac`, provenance `github:a3171f353539f1a31020c432f98cf0530cbf91ef`.
+- Current deployed Foundation version: `[REDACTED-DEPLOYED-VERSION-ID]`, provenance `github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c`.
+- Current deployed Operations version: `[REDACTED-DEPLOYED-VERSION-ID]`, provenance `[REDACTED-OPERATIONS-PROVENANCE-SHA]`.
 - Current GitHub code heads are newer than those deployed production revisions; they are not yet production-certified/deployed.
 - `heroic-ai.dev`: **pending / unresolvable**. Production release, preflight and public Worker probes fail at this public-domain DNS/zone boundary.
 - Assigned nameservers: `abdullah.ns.cloudflare.com`, `tricia.ns.cloudflare.com`. Root Worker-managed proxied AAAA is `100::`; no manual Worker routes are present.
-- D1 `research-intelligence`: **HTTP 200**, ID `19f51638-47a5-4218-a9dc-73dbfd6156fe`. Direct `sqlite_master` inspection finds 21 tables.
+- D1 `research-intelligence`: **HTTP 200**, ID `[REDACTED-D1-ID — see operations tracker]`. Direct `sqlite_master` inspection finds 21 tables.
 - Live D1 row counts: research_runs 644; observations 398; research_publications 0; resource_governance_reservations 422; resource_governance_quota 110; chat_idempotency 1278; chat_memory_records 3; chat_learning_observations 0.
 - Operations Worker configuration observed: Workers AI `@cf/zai-org/glm-4.7-flash`, fallback `@cf/google/gemma-4-26b-a4b-it`, `STRICT_ZERO_COST_ONLY=true`, schedule `*/15 * * * *`. Secret values were not read or exposed.
 

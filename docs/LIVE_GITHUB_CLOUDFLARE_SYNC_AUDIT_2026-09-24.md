@@ -5,24 +5,24 @@
 | Surface | Current state |
 |---|---|
 | Foundation main | `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706` |
-| Operations main | `1fd629cae593959249107ddb8c7af3f55292e9df` |
+| Operations main | `[REDACTED-OPERATIONS-SHA]` |
 | Open issues | 8: Foundation #58/#157; Operations #145/#340/#385/#597/#603/#699 |
 | Open PRs | 1: Foundation #1137 (docs-only); Operations 0 |
 | Production Foundation revision | `725e1b9cdaa637f07d4264673cddfc8ab806b3c6` |
-| Production Operations pin | `fda24660843cacfe28de661cf170789af542d28f` |
+| Production Operations pin | `[REDACTED-OPERATIONS-SHA]` |
 | Production release | Run `36030977718`: PASS |
 | Nightly research | Run `36030996071`: FAIL, upstream Worker 403 / local 502 |
 | Nightly canary | Run `36030977932`: FAIL, same boundary |
-| Cloudflare membership read | HTTP 200; Super Administrator - All Privileges |
+| Cloudflare membership read | HTTP 200; [REDACTED-CF-ROLE] |
 | Cloudflare Worker listing | HTTP 200; public/private Workers present |
 | Cloudflare D1 listing | HTTP 200; `research-intelligence` present |
 
 ## Synchronization interpretation
 
-The repository heads are newer than the deployed production Foundation revision because the latest main commits are documentation/continuity commits. The immutable Operations production pin is also older than current Operations main by design; it is 25 commits behind current Operations main and 17 commits behind Operations `b01bf6160408f41bac2cc2767eabb2539728f055`, so later Operations changes are not production-certified merely by being on `main`.
+The repository heads are newer than the deployed production Foundation revision because the latest main commits are documentation/continuity commits. The immutable Operations production pin is also older than current Operations main by design; it is 25 commits behind current Operations main and 17 commits behind Operations `[REDACTED-OPERATIONS-SHA]`, so later Operations changes are not production-certified merely by being on `main`.
 
 The current production boundary is therefore explicitly:
-`Foundation 725e1b9cdaa637f07d4264673cddfc8ab806b3c6` + `Operations fda24660843cacfe28de661cf170789af542d28f`.
+`Foundation 725e1b9cdaa637f07d4264673cddfc8ab806b3c6` + `Operations [REDACTED-OPERATIONS-SHA]`.
 
 The latest nightly and canary share the public Worker authorization boundary (HTTP 403 upstream; local HTTP 502). No source or deterministic CI result should be promoted to L4 acceptance for that gate.
 
@@ -44,8 +44,8 @@ This checkpoint supersedes older dated sections below. It records what is curren
 
 ### GitHub repository state
 - Foundation implementation head at synchronization: `c519b56050632862fbac4f6d6841cbd725408cc8` (documentation-only sync may advance `main`)
-- Operations `main`: `fda24660843cacfe28de661cf170789af542d28f`
-- Canonical Operations production/nightly pin in Foundation: `fda24660843cacfe28de661cf170789af542d28f`
+- Operations `main`: `[REDACTED-OPERATIONS-SHA]`
+- Canonical Operations production/nightly pin in Foundation: `[REDACTED-OPERATIONS-SHA]`
 - Foundation open issues: #58, #157
 - Operations open issues: #145, #340, #385, #597, #603, #699
 - Foundation open PR after this reconciliation: #1109 (Dependabot `actions/upload-artifact` 7.0.1)
@@ -53,7 +53,7 @@ This checkpoint supersedes older dated sections below. It records what is curren
 - Foundation #1112 is closed as superseded by merged #1114; documentation reconciliation is PR #1115.
 
 ### Current repository runtime contract
-Operations `wrangler.toml` at `fda246...` declares:
+Operations `wrangler.toml` at `[REDACTED-OPERATIONS-SHA]` declares:
 - `CHAT_LLM_PROVIDERS=cloudflare_workers_ai`
 - `CHAT_CLOUDFLARE_WORKERS_AI_MODEL=@cf/zai-org/glm-4.7-flash`
 - `STRICT_ZERO_COST_ONLY=true`
@@ -90,5 +90,4 @@ Repository inspection, deterministic tests, structural benchmark artifacts and h
 
 ### Synchronization conclusion
 
-Production GitHub-to-Cloudflare provenance is aligned to the intended deployment boundary: Public Worker -> Foundation `825d301d...` + Production Operations `1a12b989...`; Private Worker -> Operations `1a12b989...`. The nightly research revision `41db817d...` is intentionally separate and is not expected on the production Workers.
-
+Production GitHub-to-Cloudflare provenance is aligned to the intended deployment boundary: Public Worker -> Foundation `825d301d...` + Production Operations `[REDACTED-OPERATIONS-SHA]`; Private Worker -> Operations `[REDACTED-OPERATIONS-SHA]`. The nightly research revision `[REDACTED-OPERATIONS-SHA]` is intentionally separate and is not expected on the production Workers.
