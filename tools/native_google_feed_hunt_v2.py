@@ -271,12 +271,26 @@ def generated_upload_feed_candidates(root: str, site: str) -> tuple[str, ...]:
     for directory in UPLOAD_FEED_DIRECTORIES:
         for stem in stems[:420]:
             for extension in (".xml", ".xml.gz"):
-                path = directory.rstrip("/") + "/" + stem + extension
-                urls.add(urllib.parse.urljoin(root.rstrip("/") + "/", path.lstrip("/")))
+                for filename in (
+                    stem + extension,
+                    "." + stem + extension,
+                    stem.lower() + extension,
+                    stem.upper() + extension,
+                ):
+                    path = directory.rstrip("/") + "/" + filename
+                    urls.add(urllib.parse.urljoin(root.rstrip("/") + "/", path.lstrip("/")))
     # CTXFeed exposes named feeds as /?feed=<feed-name>; these are first-class
     # native candidates, not reconstructed data.
     for stem in stems[:420]:
-        urls.add(urllib.parse.urljoin(root.rstrip("/") + "/", "?feed=" + urllib.parse.quote(stem)))
+        encoded = urllib.parse.quote(stem)
+        for query in (
+            f"?feed={encoded}",
+            f"?feed={encoded}&format=xml",
+            f"?feed={encoded}&output=xml",
+            f"?feed={encoded}&type=xml",
+            f"?woo_feed={encoded}&wt=xml",
+        ):
+            urls.add(urllib.parse.urljoin(root.rstrip("/") + "/", query))
     # Site-scoped common named-feed aliases.
     for s in site_forms:
         for stem in ("google", "google-shopping", "google-feed", "google-products", "merchant-feed"):
@@ -1268,11 +1282,28 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
     if verified is None:
         verified = batch([urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in MEDIUM_PATHS], 45.0, 8, records, session_cookie_header, root)
 
+    # Directory indexes are the highest-value discovery surface for generated
+    # Product Feed PRO / CTXFeed filenames. Validate discovered XML immediately
+    # before spending resources on generic wildcard guessing.
+    directory_meta: dict[str, object] = {"queried": True, "directory_count": len(DIRECTORIES), "candidate_count": 0}
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
-        directory_results = pool.map(lambda p: (p, fetch(urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")), 12.0, session_cookie_header, root)), DIRECTORIES)
+        directory_results = pool.map(
+            lambda p: (p, fetch(urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")), 12.0, session_cookie_header, root)),
+            DIRECTORIES
+        )
         for directory, result in directory_results:
             if result.status == 200 and result.body:
-                discovered.update(directory_urls(result.body.decode("utf-8", "replace"), root))
+                directory_candidates = directory_urls(result.body.decode("utf-8", "replace"), root)
+                directory_meta["candidate_count"] = int(directory_meta["candidate_count"]) + len(directory_candidates)
+                discovered.update(directory_candidates)
+
+    if verified is None and discovered:
+        same_site, explicit_external = validation_candidate_groups(
+            discovered, explicit_feed_candidates, root
+        )
+        verified = batch(same_site, 45.0, 12, records, session_cookie_header, root)
+        if verified is None and explicit_external:
+            verified = batch(explicit_external, 45.0, 12, records, session_cookie_header, root, True)
 
     browser_meta: dict[str, object] = {"available": False}
     browser_candidates: tuple[str, ...] = ()
@@ -1304,16 +1335,18 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
             [*generated_upload_feed_candidates(root, site), *numeric_rex_candidates]
         ))
         filename_sweep_meta = {
-            "attempted": bool(sweep_allowed),
+            "attempted": True,
+            "sentinel_would_allow": bool(sweep_allowed),
             "candidate_count": len(filename_sweep_candidates),
             "rex_numeric_seed_count": len(numeric_rex_candidates),
             "sentinel": sentinel,
         }
-        if sweep_allowed:
-            verified = batch_first_valid(
-                list(filename_sweep_candidates), 3.0, 64, records,
-                session_cookie_header, root, chunk_size=256
-            )
+        # The sentinel is diagnostic only. A non-200 representative filename
+        # does not prove that every generated filename is absent.
+        verified = batch_first_valid(
+            list(filename_sweep_candidates), 3.0, 64, records,
+            session_cookie_header, root, chunk_size=256
+        )
 
     if verified is None and discovered:
         same_site, explicit_external = validation_candidate_groups(
@@ -1337,6 +1370,7 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
         "same_site_session_established": bool(session_cookie_header),
         "browser_discovery": browser_meta,
         "historical_discovery": historical_meta,
+        "directory_discovery": directory_meta,
         "filename_sweep": filename_sweep_meta,
         "records": records,
     }
