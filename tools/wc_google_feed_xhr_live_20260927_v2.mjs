@@ -200,7 +200,11 @@ async function probeSite(browser, [name, root]){
 
   const origin = new URL(root).origin;
   const candidates = CANDIDATE_PATHS.map(path => origin + path);
-  const xhr = Date.now()-started < SITE_TIMEOUT_MS ? await runXhrSweep(page,candidates) : [];
+  const xhrPage = await ctx.newPage();
+  try { await xhrPage.goto(root,{waitUntil:"domcontentloaded",timeout:NAV_TIMEOUT_MS}); await sleep(1200); } catch {}
+  const xhr = Date.now()-started < SITE_TIMEOUT_MS
+    ? await runXhrSweep(xhrPage,candidates).catch(error => [{url:root,ok:false,error:"xhr_context:"+String(error)}])
+    : [];
 
   for(const result of xhr){
     const row = {
@@ -248,9 +252,14 @@ async function worker(browser, queue, results){
     const item=queue.shift();
     if(!item) return;
     console.log("[START]",item[0]);
-    const result=await probeSite(browser,item);
-    console.log("[DONE]",item[0],"verified",result.verified_google_xml.length,"elapsed_ms",result.elapsed_ms);
-    results.push(result);
+    try {
+      const result=await probeSite(browser,item);
+      console.log("[DONE]",item[0],"verified",result.verified_google_xml.length,"elapsed_ms",result.elapsed_ms);
+      results.push(result);
+    } catch (error) {
+      console.error("[SITE_ERROR]",item[0],String(error));
+      results.push({name:item[0],root:item[1],elapsed_ms:null,visited_pages:[],pages:[],verified_google_xml:[],xhr_results:[],network_requests:[],fatal_error:String(error)});
+    }
   }
 }
 
