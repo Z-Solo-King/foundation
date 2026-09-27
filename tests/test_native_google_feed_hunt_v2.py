@@ -3,7 +3,7 @@ import sys
 
 from tools.native_google_feed_hunt_v2 import _cookie_header_from_netscape
 from tools.native_google_feed_hunt_v2 import _public_json_lines
-from tools.native_google_feed_hunt_v2 import ctxfeed_urls, feed_priority
+from tools.native_google_feed_hunt_v2 import ctxfeed_urls, feed_priority, generated_upload_feed_candidates
 from tools.native_google_feed_hunt_v2 import extract_explicit_feed_urls, extract_urls, validate_xml
 from tools.native_google_feed_hunt_v2 import load_learned_feed_patterns, validation_candidate_groups
 
@@ -98,3 +98,12 @@ def test_explicit_external_candidates_reach_validation_group():
     )
     assert same_site == ["https://shop.example.test/google.xml"]
     assert external == ["https://feeds.example-cdn.test/store/google.xml"]
+
+def test_generated_upload_filename_sweep_contains_known_variants():
+    urls = generated_upload_feed_candidates("https://example.test", "KRG KART")
+    assert "https://example.test/wp-content/uploads/google.xml" in urls
+    assert "https://example.test/wp-content/uploads/google-feed.xml" in urls
+    assert "https://example.test/wp-content/uploads/woo-feed/google/xml/google-shopping.xml" in urls
+    assert "https://example.test/wp-content/uploads/woo-product-feed-pro/xml/google-products.xml" in urls
+    assert "https://example.test/wp-content/uploads/woo-feed/google/xml/google-shopping.xml.gz" in urls
+    assert len(urls) >= 500
