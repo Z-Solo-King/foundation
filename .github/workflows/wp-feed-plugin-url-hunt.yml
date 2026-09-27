@@ -194,3 +194,5 @@ jobs:
           name: wordpress-feed-plugin-url-results
           path: out/
           retention-days: 14
+
+# Re-run discovery lane after native-only v176 validation pass (2026-09-27T12:20Z)
