@@ -46,6 +46,27 @@ jobs:
         run: node tools/woocommerce_32_cross_runner_feed_recovery.mjs --site "$SITE"
         env:
           SITE: ${{ matrix.site }}
+      - name: Probe public recovery worker
+        if: always()
+        shell: bash
+        run: |
+          set -u
+          mkdir -p out/worker
+          slug="${SITE,,}"
+          slug="${slug// /-}"
+          worker="https://wc-google-feed-research-20260927.heroic-ai.workers.dev/${slug}.xml"
+          echo "Worker endpoint: $worker"
+          status="$(curl -L -sS --connect-timeout 15 --max-time 180 -o out/worker/feed.xml -w '%{http_code}' "$worker" || true)
+          echo "$status" > out/worker/status.txt
+          printf '%s\n' "$worker" > out/worker/url.txt
+          if [[ "$status" = "200" ]] && grep -Eqi 'base.google.com/ns/1.0' out/worker/feed.xml && grep -Eqi '<item[ >]' out/worker/feed.xml && grep -Eqi '<g:id>|<id>' out/worker/feed.xml && grep -Eqi '<g:price>|<price>' out/worker/feed.xml; then
+            items="$(grep -Eio '<item[ >]' out/worker/feed.xml | wc -l | tr -d ' ')"
+            echo "WORKER_GOOGLE_XML=1" > out/worker/probe.txt
+            echo "ITEMS=$items" >> out/worker/probe.txt
+          else
+            echo "WORKER_GOOGLE_XML=0" > out/worker/probe.txt
+            echo "ITEMS=0" >> out/worker/probe.txt
+          fi
       - name: Upload artifact
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
