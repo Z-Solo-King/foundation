@@ -6,22 +6,28 @@ on:
     paths:
       - ".github/workflows/native-google-feed-hunt.yml"
       - "tools/native_google_feed_hunt.py"
+      - "tools/native_google_feed_hunt_v2.py"
       - "tests/test_native_google_feed_hunt.py"
+      - "tests/test_native_google_feed_hunt_v2.py"
   push:
     branches:
       - hunt/native-google-feed-urls-20260927
     paths:
       - ".github/workflows/native-google-feed-hunt.yml"
-      - "tools/native_google_feed_hunt.py"
+      - "tools/native_google_feed_hunt_v2.py"
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: native-google-feed-hunt-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   hunt:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       max-parallel: 8
@@ -35,7 +41,7 @@ jobs:
       - name: Run native-only shard
         run: |
           set -euo pipefail
-          python tools/native_google_feed_hunt.py --shard "${{ matrix.shard }}" --shards 8 --output-dir "out/shard-${{ matrix.shard }}"
+          python tools/native_google_feed_hunt_v2.py --shard "${{ matrix.shard }}" --shards 8 --output-dir "out/shard-${{ matrix.shard }}"
       - name: Upload shard evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -59,8 +65,8 @@ jobs:
       - name: Aggregate native-only manifest
         run: |
           set -euo pipefail
-          python tools/native_google_feed_hunt.py --aggregate-dir out/shards --output-file out/native-google-feed-manifest.json
-          jq -e '.schema == "woocommerce-native-google-feed-manifest/v1" and .native_only == true and .no_reconstruction == true and .sites_present == 32' out/native-google-feed-manifest.json
+          python tools/native_google_feed_hunt_v2.py --aggregate-dir out/shards --output-file out/native-google-feed-manifest.json
+          jq -e '.schema == "woocommerce-native-google-feed-manifest/v2" and .native_only == true and .no_reconstruction == true and .sites_present == 32' out/native-google-feed-manifest.json
           echo '=== VERIFIED NATIVE FEED URLS ==='
           jq -r '.verified_native_feeds[] | "\(.site)\t\(.url)"' out/native-google-feed-manifest.json
       - name: Upload consolidated native-only manifest
