@@ -5,8 +5,10 @@ from tools.validate_operations_pin_manifest import load_manifest
 
 ROOT = Path(__file__).resolve().parents[1]
 
-    data=load_manifest()
-    assert set(data["pins"]) == {"production_runtime","research_runtime","secret_sync_utility"}
+
+def test_operations_pin_manifest():
+    data = load_manifest()
+    assert set(data["pins"]) == {"production_runtime", "research_runtime", "secret_sync_utility"}
 
 
 def test_secret_sync_manifest_matches_current_operations_utility():
