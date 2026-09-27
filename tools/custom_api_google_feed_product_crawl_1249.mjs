@@ -41,7 +41,7 @@ async function siteProbe(browser,site){
   const roots=[];
   for(const root of site.roots){
     const context=await browser.newContext({userAgent:"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"});
-    const page=await context.newPage(), queue=[root], seen=new Set(), visited=[], net=[], verified=[], json=[];
+    const page=await context.newPage(), queue=[root], seen=new Set(), visited=[], net=[], verified=[], json=[], interesting=[];
     const onResponse=async response=>{
       if(net.length>=MAX_RESPONSES)return;
       const u=response.url(), status=response.status(), ct=response.headers()["content-type"]||"", type=response.request().resourceType();
@@ -52,6 +52,9 @@ async function siteProbe(browser,site){
         }
       }catch{}
       if(status===200&&/json/i.test(ct))json.push({url:u,status,content_type:ct,resource_type:type});
+      if(/(?:feed|merchant|shopping|google|xml|rss|atom)/i.test(u+ct)){
+        interesting.push({url:u,status,content_type:ct,resource_type:type});
+      }
     };
     page.on("response",onResponse);
     for(let i=0;i<MAX_PAGES&&queue.length;i++){
