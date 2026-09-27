@@ -255,7 +255,7 @@ printf '%s\n' \
   '' \
   '[[d1_databases]]' \
   'binding = "DB"' \
-  'database_name = "${database_name}"' \
+  "database_name = \"${database_name}\"" \
   "database_id = \"${database_id}\"" \
   '' \
   '[[services]]' \
