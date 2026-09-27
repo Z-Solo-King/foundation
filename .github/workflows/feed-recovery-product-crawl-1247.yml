@@ -43,7 +43,7 @@ jobs:
           mkdir -p "$base"
           for round in 1 2 3 4; do
             out="$base/round-$round"
-            args=(--shard 0 --shards 1 --only-sites "${{ matrix.site }}" --output-dir "$out")
+            args=(--shard 0 --shards 1 --only-sites "${{ matrix.site }}" --hunt-round "$round" --output-dir "$out")
             if [ "$round" -gt 1 ]; then
               for d in "$base"/round-*; do
                 [ "$d" = "$out" ] && continue
