@@ -2,6 +2,7 @@ import pytest
 
 from tools.woocommerce_focus_google_feed_lab import (
     TARGETS,
+    extract_adtribes_filename_candidates,
     parse_wp_json_routes,
     safe_url,
     strategy_specs,
@@ -85,3 +86,10 @@ def test_candidate_replay_uses_get(monkeypatch):
     monkeypatch.setattr(lab, "probe_url", fake_probe_url)
     lab.replay_candidates(state)
     assert seen == [("GET", False)]
+
+
+def test_opaque_adtribes_filename_candidate_is_recoverable():
+    token = "aB12cD34eF56gH78iJ90kL12mN34oP56"
+    body = '{"file_name":"' + token + '","file_format":"xml"}'
+    found = extract_adtribes_filename_candidates(body, "https://avikaretails.com")
+    assert f"https://avikaretails.com/wp-content/uploads/woo-product-feed-pro/xml/{token}.xml" in found
