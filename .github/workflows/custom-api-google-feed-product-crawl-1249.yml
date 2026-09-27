@@ -1,0 +1,77 @@
+name: Custom API Google Feed Product Crawl 1249
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: custom-api-google-feed-product-crawl-1249
+  cancel-in-progress: false
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - name: Install browser
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-package-lock --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Syntax check
+        run: |
+          node --check tools/woocommerce_google_feed_product_crawl_1247.mjs
+          node --check tools/custom_api_google_feed_product_crawl_1249.mjs
+      - name: Product/page crawl #1247
+        run: node tools/woocommerce_google_feed_product_crawl_1247.mjs
+      - name: Product/page crawl #1249
+        run: node tools/custom_api_google_feed_product_crawl_1249.mjs
+      - name: Merge #1247/#1249 crawl receipts
+        run: |
+          node - <<'JS'
+          const fs = require('fs');
+          const paths = [
+            ['1247','out/feed-crawl-1247/report.json'],
+            ['1249','out/custom-feed-crawl-1249/report.json']
+          ];
+          const merged = {};
+          for (const [k,p] of paths) {
+            if (fs.existsSync(p)) merged[k] = JSON.parse(fs.readFileSync(p,'utf8'));
+          }
+          fs.writeFileSync('out/feed-product-crawl-combined.json', JSON.stringify({
+            schema_version:'foundation-feed-product-crawl-combined/v1',
+            generated_on:new Date().toISOString(),
+            issues:{1247:merged['1247']||null,1249:merged['1249']||null}
+          }, null, 2)+'\n');
+          JS
+      - name: Emit combined discovery summary
+        if: always()
+        run: |
+          node - <<'JS'
+          const fs=require('fs');
+          for(const p of ['out/feed-crawl-1247/report.json','out/custom-feed-crawl-1249/report.json']){
+            if(fs.existsSync(p)){
+              const x=JSON.parse(fs.readFileSync(p,'utf8'));
+              console.log(JSON.stringify({issue:x.issue,sites:x.sites,verified_google_xml:x.verified_google_xml},null,2));
+            }
+          }
+          JS
+      - name: Upload product crawl evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: feed-product-crawl-1247-1249
+          path: |
+            out/feed-crawl-1247/report.json
+            out/custom-feed-crawl-1249/report.json
+            out/feed-product-crawl-combined.json
+          if-no-files-found: error
+          retention-days: 30
