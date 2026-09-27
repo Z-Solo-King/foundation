@@ -76,7 +76,9 @@ Known patterns already tested; find additional variants, plugin-specific paths, 
         model: process.env.GROQ_AGENT_MODEL || "openai/gpt-oss-120b",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.1,
-        max_completion_tokens: 6000
+        max_completion_tokens: 6000,
+        tool_choice: "required",
+        tools: [{ type: "browser_search" }]
       })
     });
     const data = await r.json();
@@ -93,12 +95,12 @@ async function gemini() {
 ${TARGETS.map(([n,u]) => `- ${n}: ${u}`).join("\n")}
 
 Already-tested families include woocommerce_gpf, google.xml, product-feed.xml, feed/google.xml, feeds/google-products.xml, codesolz-feeds, woo-feed, woo-product-feed-pro, wppfm-feeds and FeedCraft.`;
-  const model = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+  const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
   try {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: "POST",
       headers: { "x-goog-api-key": process.env.GEMINI_API_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], tools: [{ googleSearch: {} }] })
     });
     const data = await r.json();
     return { provider: "gemini", available: r.ok, status: r.status, model, text: data?.candidates?.[0]?.content?.parts?.map(x => x.text || "").join("\n") || "", error: r.ok ? null : (data?.error?.message || "request_failed") };
