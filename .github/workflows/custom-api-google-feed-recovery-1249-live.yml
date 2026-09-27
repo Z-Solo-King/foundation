@@ -1,0 +1,75 @@
+name: Custom API Google Feed Recovery 1249 Live
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - fix/issue-1249-custom-api-feed-recovery-live-20260927
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: custom-api-google-feed-1249-live
+  cancel-in-progress: false
+
+jobs:
+  live:
+    name: Live custom/API feed recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v6.0.0
+        with:
+          node-version: "22"
+      - name: Validate probe syntax
+        run: node --check tools/custom_api_google_feed_recovery_1249.mjs
+      - name: Run live recovery
+        run: |
+          set -euo pipefail
+          node tools/custom_api_google_feed_recovery_1249.mjs \
+            data/feed_lab/custom_api_google_feed_registry_2026-09-27.json \
+            live-custom-api-google-feed-1249.json
+      - name: Install browser probe dependency
+        run: |
+          set -euo pipefail
+          npm init -y >/dev/null 2>&1
+          npm install --no-package-lock --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Run browser network discovery
+        run: |
+          set -euo pipefail
+          node tools/custom_api_google_feed_browser_probe_1249.mjs             data/feed_lab/custom_api_google_feed_registry_2026-09-27.json             live-custom-api-google-browser-1249.json
+      - name: Emit benchmark summary
+        if: always()
+        run: |
+          node - <<'JS'
+          const fs=require('fs');
+          const p=JSON.parse(fs.readFileSync('live-custom-api-google-feed-1249.json','utf8'));
+          const rows=p.results.map(x=>({
+            site:x.name,
+            verified:x.verified_google_xml.length,
+            json_surfaces:x.public_json_surfaces.length
+          }));
+          console.log(JSON.stringify({
+            generated_on:p.generated_on,
+            sites:p.sites,
+            verified_google_xml:p.verified_google_xml,
+            rows
+          },null,2));
+          JS
+      - name: Upload live evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: custom-api-google-feed-1249-live
+          path: |
+            live-custom-api-google-feed-1249.json
+            live-custom-api-google-browser-1249.json
+          if-no-files-found: error
+          retention-days: 30
