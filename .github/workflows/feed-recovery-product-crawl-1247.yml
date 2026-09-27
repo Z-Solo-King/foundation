@@ -13,6 +13,56 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  native-stage1:
+    name: "Native Feed Stage 1 · ${{ matrix.site }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - site: "KRG KART"
+            slug: krg-kart
+          - site: "avikaretails"
+            slug: avikaretails
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - name: Install browser session dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input playwright
+          python -m playwright install --with-deps chromium
+      - name: Run four-round targeted native hunt
+        run: |
+          set -euo pipefail
+          base="out/native-stage1-${{ matrix.slug }}"
+          mkdir -p "$base"
+          for round in 1 2 3 4; do
+            out="$base/round-$round"
+            args=(--shard 0 --shards 1 --only-sites "${{ matrix.site }}" --output-dir "$out")
+            if [ "$round" -gt 1 ]; then
+              for d in "$base"/round-*; do
+                [ "$d" = "$out" ] && continue
+                [ -d "$d" ] && args+=(--learn-from "$d")
+              done
+            fi
+            python tools/native_google_feed_hunt_v2.py "${args[@]}" | tee "$base/round-$round.log"
+            if jq -e '.native_feed_url != null and .native_feed_url != ""' "$out/${{ matrix.slug }}.json" >/dev/null 2>&1; then
+              break
+            fi
+          done
+      - name: Upload Stage 1 evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-stage1-${{ matrix.slug }}
+          path: out/native-stage1-${{ matrix.slug }}/
+          if-no-files-found: error
+          retention-days: 30
   crawl:
     runs-on: ubuntu-latest
     timeout-minutes: 20
