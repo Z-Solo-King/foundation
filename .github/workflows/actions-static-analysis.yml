@@ -102,16 +102,16 @@ jobs:
       fail-fast: false
       matrix:
         site:
-          - ads-store
+          - "Ads Store"
           - ithunt
           - kccomputers
-          - krg-kart
-          - pc-kumar-infotech
-          - pchubshop
-          - scl-gaming
-          - variety-infotech
-          - moskeys
-          - theproaudio
+          - "KRG KART"
+          - "PC Kumar Infotech"
+          - PCHubShop
+          - "SCL Gaming"
+          - "Variety Infotech"
+          - Moskeys
+          - Theproaudio
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
