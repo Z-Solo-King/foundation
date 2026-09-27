@@ -216,6 +216,71 @@ def warm_site_session(root: str, timeout: float = 20.0) -> str:
                     pass
 
 
+def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, tuple[str, ...], dict[str, object]]:
+    """Render the public site in a normal browser session and discover feed URLs.
+    Does not solve challenges; challenge pages are recorded and ignored.
+    """
+    try:
+        from playwright.sync_api import sync_playwright
+    except Exception:
+        return "", (), {"available": False}
+
+    started = time.monotonic()
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            try:
+                context = browser.new_context(
+                    locale="en-IN",
+                    user_agent=UA,
+                    viewport={"width": 1366, "height": 768},
+                )
+                page = context.new_page()
+                page.goto(root.rstrip("/") + "/", wait_until="domcontentloaded", timeout=int(timeout_s * 1000))
+                try:
+                    page.wait_for_load_state("networkidle", timeout=min(8000, int(timeout_s * 1000)))
+                except Exception:
+                    pass
+                body = page.content()
+                lower = body[:20000].lower()
+                if any(marker in lower for marker in BLOCK_MARKERS):
+                    return "", (), {
+                        "available": True,
+                        "status": "challenge_page",
+                        "elapsed_ms": int((time.monotonic() - started) * 1000),
+                    }
+
+                candidates = set(extract_urls(body, root))
+                for href in page.locator("a[href], link[href]").evaluate_all(
+                    "(els) => els.map(e => e.href).filter(Boolean)"
+                ):
+                    u = absolute(root, str(href))
+                    if u and (
+                        re.search(r"\.xml(?:\.gz)?(?:[?#].*)?$", u, re.I)
+                        or re.search(r"(feed|merchant|shopping|woocommerce_gpf|google)", u, re.I)
+                    ):
+                        candidates.add(u)
+
+                cookies = context.cookies()
+                pairs = [f"{c['name']}={c['value']}" for c in cookies if c.get("name") and c.get("value")]
+                return "; ".join(dict.fromkeys(pairs)), tuple(sorted(candidates)), {
+                    "available": True,
+                    "status": "ok",
+                    "elapsed_ms": int((time.monotonic() - started) * 1000),
+                    "cookie_count": len(pairs),
+                    "candidate_count": len(candidates),
+                }
+            finally:
+                browser.close()
+    except Exception as exc:
+        return "", (), {
+            "available": True,
+            "status": "browser_error",
+            "error": type(exc).__name__,
+            "elapsed_ms": int((time.monotonic() - started) * 1000),
+        }
+
+
 def fetch(url: str, timeout: float, cookie_header: str = "") -> Fetch:
     """Fetch with curl so DNS, connect, and total request time have hard bounds."""
     started = time.monotonic()
@@ -455,10 +520,18 @@ def probe_site(site: str, root: str) -> SiteResult:
             if result.status == 200 and result.body:
                 discovered.update(directory_urls(result.body.decode("utf-8", "replace"), root))
 
+    browser_meta: dict[str, object] = {"available": False}
+    browser_candidates: tuple[str, ...] = ()
+    if verified is None:
+        browser_cookie_header, browser_candidates, browser_meta = browser_session_discover(root)
+        if browser_cookie_header:
+            session_cookie_header = browser_cookie_header
+        discovered.update(browser_candidates)
+
     if verified is None and discovered:
         candidates = sorted(
             (u for u in discovered if urllib.parse.urlsplit(u).path.lower().endswith((".xml", ".xml.gz")) or re.search(r"(feed|merchant|shopping|woocommerce_gpf)", u, re.I)),
-        )[:120]
+        )[:160]
         verified = batch(candidates, 60.0, 8, records, session_cookie_header)
 
     status_codes = [int(r.get("status") or 0) for r in records]
@@ -469,6 +542,7 @@ def probe_site(site: str, root: str) -> SiteResult:
         "tested_candidate_count": len(records),
         "discovered_url_count": len(discovered),
         "same_site_session_established": bool(session_cookie_header),
+        "browser_discovery": browser_meta,
         "records": records,
     }
     return SiteResult(site, root, status, verified, evidence, round(time.monotonic() - started, 3))
