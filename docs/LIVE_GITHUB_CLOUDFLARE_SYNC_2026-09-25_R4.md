@@ -6,7 +6,7 @@
 - Cloudflare project name created: `ai`
 - Cloudflare-assigned hostname: `https://ai-cio.pages.dev/`
 - Reason: Cloudflare assigned the project the globally available `ai-cio.pages.dev` hostname; the exact `ai.pages.dev` hostname is not assigned to this account.
-- Current Pages production deployment: `6ffb759a-a33c-4dc1-b532-a6032ffb07c5`
+- Current Pages production deployment: `[REDACTED-DEPLOYMENT-ID]`
 - Pages deployment status: `success`
 - Pages Service Binding: `HEROIC_BACKEND -> heroic (production)`
 
@@ -14,7 +14,7 @@
 
 - Intended public Worker: `heroic`
 - Account Workers.dev subdomain: `heroic-ai`
-- Intended backend origin: `heroic.heroic-ai.workers.dev`
+- Intended backend origin: `[REDACTED-BACKEND-WORKER-ORIGIN]`
 - The `heroic` Worker currently exists in Cloudflare.
 - Current Cloudflare bootstrap implementation is a compatibility proxy to the existing `foundation` production Worker so the Pages binding has a valid target.
 - Final application implementation is delivered by Foundation PR #1210 and must replace this bootstrap before production certification.
@@ -23,7 +23,7 @@
 
 - Foundation PR: #1210
 - Foundation branch: `worker-identity-heroic-ai-2026-09-25`
-- Operations migration PR #965 is merged at `b82b142ffc3a5418f704f85c737953afb5783b99`.
+- Operations migration PR #965 is merged at `[REDACTED-OPERATIONS-SHA]`.
 - Operations `wrangler.toml` points `FOUNDATION` to service `heroic`.
 - Foundation release acceptance and live probes use the verified Pages hostname.
 
