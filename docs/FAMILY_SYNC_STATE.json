@@ -1,10 +1,10 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-26",
+  "audited_at": "2026-09-27",
   "public_safe": true,
   "live_main": {
-    "foundation": "4999c93dc8b17a5a3926faf3415e725fd4ae7b0e",
+    "foundation": "1be37629898a8d40ae4329ec70787b33d3934228",
     "operations": "protected"
   },
   "runtime_pins": {
@@ -25,11 +25,9 @@
       157,
       1157,
       1247,
-      1249,
-      1305,
-      1306
+      1249
     ],
-    "operations_count": 4
+    "operations_count": 6
   },
   "evidence": {
     "nightly_research": "provider-backed 24-program closure not certified",
