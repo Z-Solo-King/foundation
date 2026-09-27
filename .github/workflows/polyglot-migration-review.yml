@@ -229,6 +229,25 @@ jobs:
           python tools/validate_migration_evidence.py
           python tools/validate_polyglot_registry.py --repo-root "$GITHUB_WORKSPACE/operations"
 
+      - name: Run deterministic Operations migration readiness report
+        working-directory: operations
+        env:
+          PYTHONPATH: ${{ github.workspace }}/operations
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/.runtime/migration-readiness"
+          python tools/migration_readiness_report.py > "$GITHUB_WORKSPACE/.runtime/migration-readiness/report.json"
+          grep -q '"schema": "migration-readiness-report/v1"' "$GITHUB_WORKSPACE/.runtime/migration-readiness/report.json"
+          grep -q '"candidate_only_never_promotion_ready": true' "$GITHUB_WORKSPACE/.runtime/migration-readiness/report.json"
+
+      - name: Upload Operations migration readiness report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: operations-migration-readiness
+          path: .runtime/migration-readiness/report.json
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Run TypeScript observation contract benchmark
         working-directory: operations/polyglot/observation-contract-strict
         shell: bash
