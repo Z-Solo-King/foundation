@@ -30,3 +30,4 @@ HTTP_STATUS=%{http_code}
           name: browser-helper-debug
           path: browser-helper-debug.json
           retention-days: 3
+# Re-run after Cloudflare observability-enabled diagnostic deployment
