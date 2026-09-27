@@ -18,10 +18,10 @@ permissions:
 jobs:
   hunt:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - name: Hunt direct native Google Merchant XML URLs
+      - name: Hunt direct native Google Merchant XML URLs — long strict pass
         shell: bash
         run: |
           set -uo pipefail
@@ -100,9 +100,9 @@ jobs:
           for p in "${paths[@]}"; do
             u="${root}${p}"
             hdr=$(mktemp); body=$(mktemp)
-            curl -ksSL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0'               -D "$hdr" -o "$body" "$u" >/dev/null 2>&1 || { rm -f "$hdr" "$body"; continue; }
+            curl -ksSL -4 --connect-timeout 20 --max-time 120 -A 'Mozilla/5.0'               -D "$hdr" -o "$body" "$u" >/dev/null 2>&1 || { rm -f "$hdr" "$body"; continue; }
             code=$(awk 'tolower($1)=="http/2" || tolower($1)=="http/1.1" {c=$2} END{print c+0}' "$hdr")
-            final=$(curl -ksSIL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0' "$u" 2>/dev/null |               awk 'tolower($1)=="location:"{print $2}' | tail -1 | tr -d '\r')
+            final=$(curl -ksSIL -4 --connect-timeout 20 --max-time 120 -A 'Mozilla/5.0' "$u" 2>/dev/null |               awk 'tolower($1)=="location:"{print $2}' | tail -1 | tr -d '\r')
             [ -z "$final" ] && final="$u"
             if [ "$code" = "200" ] && [ "$(same_host "$final")" = "1" ] && valid "$body"; then
               printf '%s\t%s\n' "$site" "$final" >> "$output"
@@ -121,7 +121,7 @@ jobs:
             '/feeds/' \
             '/feed/'; do
             idx=$(mktemp)
-            curl -ksSL -4 --connect-timeout 4 --max-time 4 -A 'Mozilla/5.0' -o "$idx" "${root}${dir}" >/dev/null 2>&1 || true
+            curl -ksSL -4 --connect-timeout 20 --max-time 60 -A 'Mozilla/5.0' -o "$idx" "${root}${dir}" >/dev/null 2>&1 || true
             while IFS= read -r ref; do
               [ -z "$ref" ] && continue
               case "$ref" in
@@ -135,7 +135,7 @@ jobs:
                 *) continue ;;
               esac
               body=$(mktemp)
-              curl -ksSL -4 --connect-timeout 4 --max-time 4 -A 'Mozilla/5.0' -o "$body" "$u" >/dev/null 2>&1 || { rm -f "$body"; continue; }
+              curl -ksSL -4 --connect-timeout 20 --max-time 60 -A 'Mozilla/5.0' -o "$body" "$u" >/dev/null 2>&1 || { rm -f "$body"; continue; }
               if valid "$body"; then
                 printf '%s\t%s\n' "$site" "$u" >> "$output"
                 printf '%s\t%s\t200\n' "$site" "$u" > "out/${site// /_}.hit"
@@ -154,7 +154,7 @@ jobs:
           # Public HTML/XML references sometimes expose the feed URL directly.
           for page in '/' '/robots.txt' '/sitemap.xml' '/sitemap_index.xml' '/wp-sitemap.xml'; do
             html=$(mktemp)
-            curl -ksSL -4 --connect-timeout 4 --max-time 4 -A 'Mozilla/5.0' -o "$html" "${root}${page}" >/dev/null 2>&1 || true
+            curl -ksSL -4 --connect-timeout 20 --max-time 60 -A 'Mozilla/5.0' -o "$html" "${root}${page}" >/dev/null 2>&1 || true
             while IFS= read -r u; do
               [ -z "$u" ] && continue
               [ "$(same_host "$u")" = "1" ] || continue
@@ -163,7 +163,7 @@ jobs:
                 *) continue ;;
               esac
               body=$(mktemp)
-              curl -ksSL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0' -o "$body" "$u" >/dev/null 2>&1 || { rm -f "$body"; continue; }
+              curl -ksSL -4 --connect-timeout 20 --max-time 120 -A 'Mozilla/5.0' -o "$body" "$u" >/dev/null 2>&1 || { rm -f "$body"; continue; }
               if valid "$body"; then
                 printf '%s\t%s\n' "$site" "$u" >> "$output"
                 printf '%s\t%s\t200\n' "$site" "$u" > "out/${site// /_}.hit"
