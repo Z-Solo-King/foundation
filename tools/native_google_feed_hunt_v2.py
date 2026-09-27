@@ -184,37 +184,121 @@ UPLOAD_FEED_DIRECTORIES = (
     "/wp-content/uploads/google/",
     "/wp-content/uploads/merchant/",
     "/wp-content/uploads/feeds/",
+    "/wp-content/uploads/rex-feed/",
+    "/wp-content/uploads/product-feed/",
+    "/wp-content/uploads/google-feed/",
+    "/wp-content/uploads/merchant-feed/",
 )
 
+FILENAME_SEMANTIC_GROUPS = (
+    ("google", "merchant", "shopping", "gmc"),
+    ("feed", "feeds", "product", "products", "catalog"),
+    ("base", "xml", "data", "export", "listing"),
+)
+FILENAME_SEPARATORS = ("-", "_", "")
+FILENAME_SUFFIX_WORDS = (
+    "google-feed-xml", "google_feed_xml", "googlefeedxml",
+    "google-shopping-feed", "google_shopping_feed", "googleshoppingfeed",
+    "google-product-feed", "google_product_feed", "googleproductfeed",
+    "google-products-feed", "google_products_feed", "googleproductsfeed",
+    "google-merchant-feed", "google_merchant_feed", "googlemerchantfeed",
+    "google-shopping-products", "google_shopping_products", "googleshoppingproducts",
+    "merchant-google-feed", "merchant_google_feed", "merchantgooglefeed",
+    "shopping-google-feed", "shopping_google_feed", "shoppinggooglefeed",
+    "product-google-feed", "product_google_feed", "productgooglefeed",
+    "products-google-feed", "products_google_feed", "productsgooglefeed",
+    "feed-google-products", "feed_google_products", "feedgoogleproducts",
+    "feed-google-shopping", "feed_google_shopping", "feedgoogleshopping",
+    "feed-merchant-google", "feed_merchant_google", "feedmerchantgoogle",
+    "feed-product-google", "feed_product_google", "feedproductgoogle",
+    "merchant-center-feed", "merchant_center_feed", "merchantcenterfeed",
+    "merchant-centre-feed", "merchant_centre_feed", "merchantcentrefeed",
+    "google-merchant-center", "google_merchant_center", "googlemerchantcenter",
+    "google-merchant-centre", "google_merchant_centre", "googlemerchantcentre",
+    "product-data", "product_data", "productdata",
+    "products-data", "products_data", "productsdata",
+    "google-product-data", "google_product_data", "googleproductdata",
+    "merchant-product-data", "merchant_product_data", "merchantproductdata",
+)
+
+def _semantic_feed_stems() -> tuple[str, ...]:
+    stems: set[str] = set(FILENAME_SUFFIX_WORDS)
+    for g1 in FILENAME_SEMANTIC_GROUPS:
+        for g2 in FILENAME_SEMANTIC_GROUPS:
+            if g1 is g2:
+                continue
+            for a in g1:
+                for b in g2:
+                    for sep in FILENAME_SEPARATORS:
+                        stems.add(f"{a}{sep}{b}")
+    # Three-part combinations in every order of semantic roles.
+    import itertools
+    for perm in itertools.permutations(range(len(FILENAME_SEMANTIC_GROUPS))):
+        for a in FILENAME_SEMANTIC_GROUPS[perm[0]]:
+            for b in FILENAME_SEMANTIC_GROUPS[perm[1]]:
+                for d in FILENAME_SEMANTIC_GROUPS[perm[2]]:
+                    for sep in FILENAME_SEPARATORS[:2]:
+                        stems.add(f"{a}{sep}{b}{sep}{d}")
+    return tuple(sorted(stems, key=lambda x: (0 if "google" in x else 1, len(x), x)))
+
+SEMANTIC_FEED_STEMS = _semantic_feed_stems()
+
 def generated_upload_feed_candidates(root: str, site: str) -> tuple[str, ...]:
-    """Generate deterministic upload-feed filename candidates, including site-aware names."""
+    """Generate deterministic upload-feed and named-feed candidates."""
     slug = re.sub(r"[^a-z0-9]+", "-", site.lower()).strip("-")
     site_forms = list(dict.fromkeys(x for x in (
         slug,
         slug.replace("-", "_"),
         slug.replace("-", ""),
     ) if x))
+
     site_stems: list[str] = []
     for s in site_forms:
-        site_stems.extend((
-            f"{s}-google", f"{s}_google", f"google-{s}", f"google_{s}",
-            f"{s}-google-feed", f"{s}_google_feed", f"google-feed-{s}", f"google_feed_{s}",
-            f"{s}-google-shopping", f"{s}_google_shopping",
-            f"google-shopping-{s}", f"google_shopping_{s}",
-            f"{s}-merchant", f"{s}_merchant", f"merchant-{s}", f"merchant_{s}",
-            f"{s}-merchant-feed", f"{s}_merchant_feed",
-            f"merchant-feed-{s}", f"merchant_feed_{s}",
-            f"{s}-product-feed", f"{s}_product_feed",
-            f"product-feed-{s}", f"product_feed_{s}",
-        ))
-    stems = list(dict.fromkeys([*UPLOAD_FEED_STEMS, *site_stems]))
+        for stem in SEMANTIC_FEED_STEMS[:220]:
+            for sep in FILENAME_SEPARATORS:
+                site_stems.extend((
+                    f"{s}{sep}{stem}",
+                    f"{stem}{sep}{s}",
+                ))
+        # Explicit CTXFeed-style concatenated names observed in public examples.
+        for suffix in ("google", "googleshopping", "googlefeed", "googleproductfeed",
+                       "googleproducts", "googleshoppingfeed", "merchantfeed",
+                       "googlemerchantfeed", "productfeed"):
+            site_stems.extend((f"{s}{suffix}", f"{suffix}{s}"))
+
+    stems = list(dict.fromkeys([*UPLOAD_FEED_STEMS, *SEMANTIC_FEED_STEMS, *site_stems]))
     urls: set[str] = set()
     for directory in UPLOAD_FEED_DIRECTORIES:
-        for stem in stems:
+        for stem in stems[:420]:
             for extension in (".xml", ".xml.gz"):
                 path = directory.rstrip("/") + "/" + stem + extension
                 urls.add(urllib.parse.urljoin(root.rstrip("/") + "/", path.lstrip("/")))
+    # CTXFeed exposes named feeds as /?feed=<feed-name>; these are first-class
+    # native candidates, not reconstructed data.
+    for stem in stems[:420]:
+        urls.add(urllib.parse.urljoin(root.rstrip("/") + "/", "?feed=" + urllib.parse.quote(stem)))
+    # Site-scoped common named-feed aliases.
+    for s in site_forms:
+        for stem in ("google", "google-shopping", "google-feed", "google-products", "merchant-feed"):
+            for sep in FILENAME_SEPARATORS:
+                name = f"{s}{sep}{stem}"
+                urls.add(urllib.parse.urljoin(root.rstrip("/") + "/", "?feed=" + urllib.parse.quote(name)))
     return tuple(sorted(urls, key=lambda u: (feed_priority(u), len(u), u)))
+
+
+def rex_numeric_candidates(root: str, known_urls: set[str]) -> tuple[str, ...]:
+    """Probe bounded numeric RexFeed IDs only when an ID family was observed."""
+    ids: set[int] = set()
+    for u in known_urls:
+        m = re.search(r"/rex-feed/feed-(\d+)\.xml(?:\.gz)?$", u, re.I)
+        if m:
+            ids.add(int(m.group(1)))
+    candidates: set[str] = set()
+    for base_id in ids:
+        lo, hi = max(1, base_id - 25), base_id + 25
+        for i in range(lo, hi + 1):
+            candidates.add(urllib.parse.urljoin(root.rstrip("/") + "/", f"/wp-content/uploads/rex-feed/feed-{i}.xml"))
+    return tuple(sorted(candidates, key=lambda u: (feed_priority(u), u)))
 
 
 @dataclass(frozen=True)
