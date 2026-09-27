@@ -335,14 +335,14 @@ def generated_upload_feed_candidates(root: str, site: str) -> tuple[str, ...]:
     stems = list(dict.fromkeys([*priority_stems, *UPLOAD_FEED_STEMS, *SEMANTIC_FEED_STEMS, *site_stems]))
     urls: set[str] = set()
     for directory in UPLOAD_FEED_DIRECTORIES:
-        for stem in stems[:2400]:
+        for stem in stems[:1200]:
             for extension in (".xml", ".xml.gz"):
                 path = directory.rstrip("/") + "/" + stem + extension
                 urls.add(urllib.parse.urljoin(root.rstrip("/") + "/", path.lstrip("/")))
                 urls.add(urllib.parse.urljoin(root.rstrip("/") + "/", directory.rstrip("/") + "/." + stem + extension))
     # CTXFeed exposes named feeds as /?feed=<feed-name>; these are first-class
     # native candidates, not reconstructed data.
-    for stem in stems[:420]:
+    for stem in stems[:260]:
         urls.add(urllib.parse.urljoin(root.rstrip("/") + "/", "?feed=" + urllib.parse.quote(stem)))
     # Site-scoped common named-feed aliases.
     for s in site_forms:
@@ -1428,7 +1428,7 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = (), hunt_r
         all_filename_candidates = tuple(dict.fromkeys(
             [*generated_upload_feed_candidates(root, site), *numeric_rex_candidates]
         ))
-        sweep_budgets = {1: 2500, 2: 7000, 3: 16000, 4: 32000}
+        sweep_budgets = {1: 1200, 2: 3000, 3: 6000, 4: 12000}
         sweep_budget = sweep_budgets.get(max(1, min(4, hunt_round)), 2500)
         filename_sweep_candidates = all_filename_candidates[:sweep_budget]
         filename_sweep_meta = {
@@ -1459,14 +1459,14 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = (), hunt_r
             else:
                 verified = batch_first_valid(
                     list(filename_sweep_candidates), 3.0, 64, records,
-                    session_cookie_header, root, chunk_size=256
+                    session_cookie_header, root, chunk_size=512
                 )
 
     if verified is None and discovered:
         same_site, explicit_external = validation_candidate_groups(
             discovered, explicit_feed_candidates, root
         )
-        verified = batch(same_site, 60.0, 8, records, session_cookie_header, root)
+        verified = batch(same_site, 60.0, 12, records, session_cookie_header, root)
         if verified is None and explicit_external:
             verified = batch(explicit_external, 60.0, 8, records, session_cookie_header, root, True)
 
