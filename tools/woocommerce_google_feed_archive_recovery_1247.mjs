@@ -535,6 +535,8 @@ async function verifyMany(candidates, base, concurrency = 10) {
 }
 
 async function recover([name, base], collections) {
+  await mkdir(OUT + "/" + slug(name), { recursive: true });
+
   const result = {
     name,
     base,
