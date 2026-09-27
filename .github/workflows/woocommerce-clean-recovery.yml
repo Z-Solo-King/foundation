@@ -70,6 +70,61 @@ jobs:
             echo "WORKER_GOOGLE_XML=0" > out/worker/probe.txt
             echo "ITEMS=0" >> out/worker/probe.txt
           fi
+      - name: Probe public web archive for historical feed
+        if: always()
+        env:
+          SITE: ${{ matrix.site }}
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = await import('node:fs/promises');
+          const site = process.env.SITE;
+          const domains = {
+            'Ads Store':'adsstore.in','ithunt':'ithunt.in','kccomputers':'kccomputers.co.in','KRG KART':'krgkart.com',
+            'PC Kumar Infotech':'pckumar.in','PCHubShop':'www.pchubshop.com','SCL Gaming':'sclgaming.in',
+            'Variety Infotech':'varietyinfotech.com','Moskeys':'moskeys.com','Theproaudio':'www.theproaudio.com'
+          };
+          const domain = domains[site];
+          await fs.mkdir('out/archive',{recursive:true});
+          const slug = site.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+          const out = {site,domain,candidates:[],verified:null,status:'NO_ARCHIVE_FEED'};
+          try {
+            const q = new URL('https://web.archive.org/cdx/search/cdx');
+            q.searchParams.set('url',`${domain}/*`);
+            q.searchParams.set('output','json');
+            q.searchParams.set('fl','timestamp,original,statuscode,mimetype');
+            q.searchParams.append('filter','statuscode:200');
+            q.searchParams.append('collapse','urlkey');
+            q.searchParams.set('limit','200');
+            const cr = await fetch(q,{headers:{'User-Agent':'WooCommerceFeedRecovery/2026.09'}});
+            out.cdx_http_status=cr.status;
+            const txt=await cr.text();
+            await fs.writeFile(`out/archive/${slug}-cdx.txt`,txt);
+            if(cr.ok){
+              let rows=[]; try{rows=JSON.parse(txt);}catch{}
+              for(const row of rows.slice(1)){
+                const [timestamp,original,statuscode,mimetype]=row;
+                if(!timestamp||!original||statuscode!=='200') continue;
+                if(!/(google|merchant|shopping|product[-_]?feed|feeds?|gpf|products?\\.(?:xml|rss))/i.test(original)) continue;
+                out.candidates.push({timestamp,original,mimetype});
+              }
+              for(const c of out.candidates.slice(0,30)){
+                const au=`https://web.archive.org/web/${c.timestamp}id_/${c.original}`;
+                const ar=await fetch(au,{redirect:'follow',headers:{'User-Agent':'WooCommerceFeedRecovery/2026.09','Accept':'application/xml,text/xml,text/plain,*/*'}}).catch(()=>null);
+                if(!ar||ar.status!==200) continue;
+                const body=await ar.text();
+                if(/base\\.google\\.com\\/ns\\/1\\.0/i.test(body)&&/<item\\b/i.test(body)&&/<(?:g:)?price\\b/i.test(body)&&/<(?:g:)?(?:id|title|link)\\b/i.test(body)){
+                  await fs.writeFile(`out/archive/${slug}-historical-feed.xml`,body);
+                  out.verified={archive_url:au,original:c.original,timestamp:c.timestamp,bytes:Buffer.byteLength(body),items:(body.match(/<item\\b/gi)||[]).length};
+                  out.status='HISTORICAL_NATIVE_GOOGLE_XML';
+                  break;
+                }
+              }
+            }
+          } catch(e){ out.error=String(e); }
+          await fs.writeFile(`out/archive/${slug}-report.json`,JSON.stringify(out,null,2));
+          console.log(JSON.stringify(out));
+          NODE
       - name: Upload artifact
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -78,5 +133,6 @@ jobs:
           path: |
             out/woocommerce-32-cross-runner/
             out/worker/
+            out/archive/
           if-no-files-found: warn
           retention-days: 14
