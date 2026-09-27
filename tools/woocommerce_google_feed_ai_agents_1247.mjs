@@ -77,7 +77,7 @@ Known patterns already tested; find additional variants, plugin-specific paths, 
         messages: [{ role: "user", content: prompt }],
         temperature: 0.1,
         max_completion_tokens: 6000,
-        tool_choice: "required",
+        tool_choice: "auto",
         tools: [{ type: "browser_search" }]
       })
     });
