@@ -13,17 +13,17 @@ This is the latest compact cross-surface checkpoint. Fresh live GitHub/Cloudflar
 ## Cloudflare
 - Control-plane access: working; account membership HTTP 200; role **[REDACTED-CF-ROLE]**.
 - Canonical Workers: public `foundation`, private `operations`.
-- Deployed Foundation version `[REDACTED-DEPLOYED-VERSION-ID]`, provenance `github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c`.
+- Deployed Foundation version `[REDACTED-DEPLOYED-VERSION-ID]`, provenance `github:[REDACTED-PUBLIC-DEPLOYMENT-PROVENANCE]`.
 - Deployed Operations version `[REDACTED-DEPLOYED-VERSION-ID]`, provenance `[REDACTED-OPERATIONS-PROVENANCE-SHA]`.
 - Current GitHub code heads are newer than the deployed production pair; they are not production-certified/deployed.
-- Zone `heroic-ai.dev`: **pending / unresolvable**. Assigned nameservers: `abdullah.ns.cloudflare.com`, `tricia.ns.cloudflare.com`. Worker-managed root AAAA `100::` is present; manual Worker routes are absent.
+- Zone `[REDACTED-CUSTOM-DOMAIN]`: **pending / unresolvable**. Assigned nameservers: `[REDACTED-NS-1]`, `[REDACTED-NS-2]`. Worker-managed root AAAA `[REDACTED-WORKER-EDGE-ADDRESS]` is present; manual Worker routes are absent.
 - D1 `research-intelligence`: HTTP 200; ID `[REDACTED-D1-ID — see operations tracker]`; direct `sqlite_master` query exposes 21 tables.
-- Live D1 counts: research_runs 644; observations 398; research_publications 0; resource_governance_reservations 422; resource_governance_quota 110; chat_idempotency 1278; chat_memory_records 3; chat_learning_observations 0.
+- Live D1 row counts: [REDACTED-LIVE-COUNTS]
 - Operations runtime config: Workers AI `@cf/zai-org/glm-4.7-flash`, fallback `@cf/google/gemma-4-26b-a4b-it`, `STRICT_ZERO_COST_ONLY=true`, cron `*/15 * * * *`. Secret values were not exposed.
 
 ## Nightly research
 - Active run `36141145555` is now **blocked_before_execution**. The exact production-release gate failed, the three live research lanes were cancelled, and the diagnosis job completed.
-- Production run `36141127503`: **FAIL** after 1040 repository tests and Cloudflare account/D1 authorization passed; failure was the inactive/unresolvable `heroic-ai.dev` zone.
+- Production run `36141127503`: **FAIL** after 1040 repository tests and Cloudflare account/D1 authorization passed; failure was the inactive/unresolvable `[REDACTED-CUSTOM-DOMAIN]` zone.
 - Provider preflight `36141127495`: **FAIL CLOSED** — research endpoint/API key/model presence true, but public Worker health and Worker-backed Workers AI probes were HTTP 000, curl 6, `dns_or_network_unreachable`, host resolution failure.
 - Public Worker probe `36141127548`: **FAIL** at the same DNS boundary.
 - Nightly diagnosis artifact `10868805522`, digest `sha256:9ad02dc60b296e402c5450a6c06a70c25fb2441cb5c60bc8a299405d805ecd67`.
