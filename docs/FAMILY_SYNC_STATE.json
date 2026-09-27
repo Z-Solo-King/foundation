@@ -4,8 +4,8 @@
   "audited_at": "2026-09-27",
   "public_safe": true,
   "live_main": {
-    "foundation": "1be37629898a8d40ae4329ec70787b33d3934228",
-    "operations": "protected"
+    "foundation": "efaf43e8bb55dc25d13dcb3f0be05df88f0c09dc",
+    "operations": "[PROTECTED_CURRENT_MAIN]"
   },
   "runtime_pins": {
     "foundation_runtime": "4999c93dc8b17a5a3926faf3415e725fd4ae7b0e",
@@ -39,7 +39,8 @@
       "structural_pass": true,
       "real_catalog_success_not_proven": true
     },
-    "migration_review": "runtime performance evidence still required"
+    "migration_review": "TypeScript acquisition-planner evidence harness merged; exact 32-case CI receipt pending",
+    "feed_recovery": "PR #1344 and #1362 merged; issue-specific acceptance remains open"
   },
   "continuity_enforcement": {
     "schema": "continuity-freshness/v1",
