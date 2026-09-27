@@ -783,3 +783,9 @@ def test_typescript_public_endpoint_discovery_is_executed_in_polyglot_review():
     assert "npm run differential:compare" in workflow
     assert 'differential["case_count"] == 32' in workflow
     assert 'benchmark["repeats"] == 3' in workflow
+
+
+def test_observation_contract_creates_runtime_output_directory():
+    text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
+    assert "mkdir -p .runtime" in text
+    assert "npm run differential -- corpus.jsonl .runtime/ts.json" in text
