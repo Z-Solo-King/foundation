@@ -45,7 +45,11 @@ await mkdir("out/rescue-fast", { recursive: true });
 function extractPaths(text, base) {
   const out = new Set();
   const s = String(text || "");
-  for (const m of s.matchAll(/https?:\/\/[^\s<>"')\]]+|\/[A-Za-z0-9._~:\/?#\[\]@!  for (const m of s.matchAll(/https?:\/\/[^\\s<>"'\\)\\]]+|\/(?:[A-Za-z0-9._~:/?#\\[\\]@!$&'()*+,;=%-]+)/g)) {'()*+,;=%-]+/g)) {
+  const matches = [
+    ...s.matchAll(/https?:\\/\\/[^\\s<>"')\\]]+/g),
+    ...s.matchAll(/\\/[A-Za-z0-9._~:\\/?#\\[\\]@!$&'()*+,;=%-]+/g)
+  ];
+  for (const m of matches) {
     let raw = String(m[0]).replace(/[),.;]+$/, "");
     try {
       const u = new URL(raw, base);
