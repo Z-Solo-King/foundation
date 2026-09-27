@@ -182,6 +182,8 @@ jobs:
 
       - name: Run TypeScript observation contract differential
         working-directory: operations/polyglot/observation-contract-strict
+        env:
+          TMPDIR: ${{ runner.temp }}
         shell: bash
         run: |
           set -euo pipefail
