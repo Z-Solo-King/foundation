@@ -1,0 +1,29 @@
+name: Only SDD Feed Envelope Check v184
+on:
+  push:
+    branches: [hunt/native-google-feed-urls-20260927]
+    paths:
+      - "tools/onlyssd_feed_envelope_check_v184.mjs"
+      - ".github/workflows/onlyssd-feed-envelope-check.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Inspect current public XML envelope
+        run: |
+          set -euo pipefail
+          node tools/onlyssd_feed_envelope_check_v184.mjs | tee onlyssd-feed-envelope.json
+      - name: Upload metadata only
+        uses: actions/upload-artifact@v4
+        with:
+          name: onlyssd-feed-envelope-v184
+          path: onlyssd-feed-envelope.json
+          retention-days: 7
