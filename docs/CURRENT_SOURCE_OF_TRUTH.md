@@ -1,30 +1,48 @@
 # Current Source of Truth — Foundation (public-safe)
 
-This document is a public continuity aid, not a private runtime/control-plane authority.
+> **LIVE CHECKPOINT — 2026-09-27**
+> This page is the public-safe current-state record. Historical handoffs remain historical and must not override the live GitHub state.
 
-Checked: 2026-09-26.
-Foundation main: `4999c93dc8b17a5a3926faf3415e725fd4ae7b0e`.
-Active GitHub issue count across the family: 11.
-Public Foundation issues: #58, #157, #1157, #1247, #1249, #1305, #1306.
+## HEADS
+- Foundation main: `1be37629898a8d40ae4329ec70787b33d3934228`
+- Operations: protected/private; current development head is tracked in the private Operations source-of-truth record.
 
-## Public architecture
+## ISSUES
+- Family open issue count: **11**
+- Foundation: #58, #157, #1157, #1247, #1249
+- Operations: 6 current security/maintenance/migration acceptance issues; private details remain on Operations.
 
-`ai-cio.pages.dev` is the canonical public front door.
-Foundation owns public-safe contracts/core, the public edge/API, GitHub Actions, and deployment orchestration.
-The protected Operations side owns private runtime policy, provider control, resource governance, memory, recovery, and protected tooling.
-The retired extractor-mapper repository is historical material, not a runtime owner.
+## PRs
+- Foundation open PRs: **#1344**, **#1354**
+- Operations open PRs: **0**
+- Foundation #1359 and Operations #1109/#1110 are merged and are not active implementation work.
 
-## Runtime and evidence boundary
+## GROUPS
+| Group | Canonical issues | Owner |
+|---|---|---|
+| AI research / benchmark / portability | #157, #1157, Operations portability track | Foundation + Operations |
+| Feed recovery | #1247, #1249 | Foundation |
+| Mapper migration | Operations mapper migration track | Operations |
+| Security / control plane | Operations security tracks | Operations |
+| Maintenance | Operations maintenance track | Operations |
+| Master tracking | #58 | Foundation |
 
-Protected runtime revisions, resource identifiers, deployment internals, private issue state, and private provider configuration are intentionally omitted from this public checkpoint.
-Fresh production/runtime evidence must be obtained from the protected evidence path before making an L4 claim.
+## CONNECTIVITY
+- Cross-repository contract: `docs/FAMILY_CONTRACT.json`
+- Integration topology: `docs/FAMILY_INTEGRATION_GRAPH.json`
+- Sync state: `docs/FAMILY_SYNC_STATE.json`
+- Prompt routing: `docs/PROMPT_TO_CANONICAL_DOC_MAP.md`
+- Operations public/private boundary: `https://github.com/Z-Solo-King/operations`
+- Foundation feed recovery PRs: `https://github.com/Z-Solo-King/foundation/pull/1344`, `https://github.com/Z-Solo-King/foundation/pull/1354`
 
-Current evidence classes:
-- Nightly 24-program research: no provider-backed closure receipt is currently certified.
-- Extractor benchmark: latest structural benchmark is 40 receipts with 4 `ok`, 32 `empty`, and 4 `blocked`; integrity/provenance checks passed, but this is not proof of 40 successful real acquisitions.
-- Polyglot migration: deterministic/structural evidence exists; runtime performance evidence is still required before promotion.
+## EVIDENCE
+- Nightly 24-program research: no provider-backed closure receipt is certified.
+- Extractor benchmark: 40 receipts; 4 `ok`, 32 `empty`, 4 `blocked`; structural/provenance checks passed, but this does not equal 40 successful real acquisitions.
+- Polyglot migration: repository/deterministic evidence exists; runtime performance/resource/shadow/canary/rollback evidence remains the promotion boundary.
 
-## Continuity
+## OWNERSHIP
+Foundation owns public-safe contracts/core, public edge/API, frontend, GitHub Actions and deployment orchestration.
+Operations owns private provider control, quota/resource governance, private chatbot/runtime, recovery, protected tooling and migration runtime evidence.
 
-Use this file together with `docs/FAMILY_SYNC_STATE.json` and `docs/PROMPT_TO_CANONICAL_DOC_MAP.md`.
-Do not add another competing current-state document.
+## SYNC RULE
+Use this page + `FAMILY_SYNC_STATE.json` as the compact public checkpoint. Fresh GitHub/runtime evidence outranks dated documents. Do not create a competing current-state document.
