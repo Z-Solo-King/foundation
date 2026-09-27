@@ -15,7 +15,7 @@
 | Nightly canary | Run `36030977932`: FAIL, same boundary |
 | Cloudflare membership read | HTTP 200; [REDACTED-CF-ROLE] |
 | Cloudflare Worker listing | HTTP 200; public/private Workers present |
-| Cloudflare D1 listing | HTTP 200; `research-intelligence` present |
+| Cloudflare D1 listing | HTTP 200; `[REDACTED-PRIVATE-D1]` present |
 
 ## Synchronization interpretation
 

@@ -10,9 +10,9 @@ This is the ChatGPT continuity record for the same live audit. It does not overr
 
 ## Runtime state
 - Cloudflare membership, Workers, D1, Worker settings and versions were read successfully.
-- Account role: Super Administrator - All Privileges.
-- Canonical Workers: `foundation` and `operations`; deployed provenance remains `a1da7d115c69b9f9df21bd2c6d60dd2b717f232c` and `a3171f353539f1a31020c432f98cf0530cbf91ef`.
-- `heroic-ai.dev` remains pending/unresolvable; live public acceptance therefore cannot reach the canonical production Worker.
+- Account role: [REDACTED-CF-ROLE].
+- Canonical Workers: `foundation` and `operations`; deployed provenance remains `[REDACTED-PUBLIC-DEPLOYMENT-PROVENANCE]` and `[REDACTED-OPERATIONS-PROVENANCE]`.
+- `[REDACTED-CUSTOM-DOMAIN]` remains pending/unresolvable; live public acceptance therefore cannot reach the canonical production Worker.
 
 ## Nightly research
 - Active nightly run: `36141145555`, waiting for the exact production-release gate.

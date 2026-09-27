@@ -14,18 +14,18 @@ This is the compact authoritative cross-surface checkpoint for the 2026-09-25 re
 ## Cloudflare
 - Account membership/control-plane: **HTTP 200**, role **[REDACTED-CF-ROLE]**.
 - Worker listing: **HTTP 200**; canonical public `foundation`, canonical private `operations`.
-- Current deployed Foundation version: `[REDACTED-DEPLOYED-VERSION-ID]`, provenance `github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c`.
+- Current deployed Foundation version: `[REDACTED-DEPLOYED-VERSION-ID]`, provenance `github:[REDACTED-PUBLIC-DEPLOYMENT-PROVENANCE]`.
 - Current deployed Operations version: `[REDACTED-DEPLOYED-VERSION-ID]`, provenance `[REDACTED-OPERATIONS-PROVENANCE-SHA]`.
 - Current GitHub code heads are newer than those deployed production revisions; they are not yet production-certified/deployed.
-- `heroic-ai.dev`: **pending / unresolvable**. Production release, preflight and public Worker probes fail at this public-domain DNS/zone boundary.
-- Assigned nameservers: `abdullah.ns.cloudflare.com`, `tricia.ns.cloudflare.com`. Root Worker-managed proxied AAAA is `100::`; no manual Worker routes are present.
-- D1 `research-intelligence`: **HTTP 200**, ID `[REDACTED-D1-ID — see operations tracker]`. Direct `sqlite_master` inspection finds 21 tables.
-- Live D1 row counts: research_runs 644; observations 398; research_publications 0; resource_governance_reservations 422; resource_governance_quota 110; chat_idempotency 1278; chat_memory_records 3; chat_learning_observations 0.
+- `[REDACTED-CUSTOM-DOMAIN]`: **pending / unresolvable**. Production release, preflight and public Worker probes fail at this public-domain DNS/zone boundary.
+- Assigned nameservers: `[REDACTED-NS-1]`, `[REDACTED-NS-2]`. Root Worker-managed proxied AAAA is `[REDACTED-WORKER-EDGE-ADDRESS]`; no manual Worker routes are present.
+- D1 `[REDACTED-PRIVATE-D1]`: **HTTP 200**, ID `[REDACTED-D1-ID — see operations tracker]`. Direct `sqlite_master` inspection finds 21 tables.
+- Live D1 row counts: [REDACTED-LIVE-COUNTS]
 - Operations Worker configuration observed: Workers AI `@cf/zai-org/glm-4.7-flash`, fallback `@cf/google/gemma-4-26b-a4b-it`, `STRICT_ZERO_COST_ONLY=true`, schedule `*/15 * * * *`. Secret values were not read or exposed.
 
 ## Nightly research
 - Active run `36141145555`: waiting at the exact production-release gate; deterministic polyglot migration review completed, provider-backed lanes have not started.
-- Production gate `36141127503`: **FAIL** after 1040 repository tests and Cloudflare account/D1 authorization checks passed; failure is the inactive/unresolvable `heroic-ai.dev` zone.
+- Production gate `36141127503`: **FAIL** after 1040 repository tests and Cloudflare account/D1 authorization checks passed; failure is the inactive/unresolvable `[REDACTED-CUSTOM-DOMAIN]` zone.
 - Provider preflight `36141127495`: **FAIL CLOSED**. Research endpoint/model/API-key presence checks are true; public Worker health and Worker-backed Workers AI probes are HTTP 000, curl exit 6, `dns_or_network_unreachable`, `Could not resolve host: Heroic-Ai.dev`.
 - Public Worker probe `36141127548`: **FAIL** at the same public DNS boundary.
 - No provider-backed 24-program acceptance receipt is certified.
@@ -47,7 +47,7 @@ This is the compact authoritative cross-surface checkpoint for the 2026-09-25 re
 - ChatGPT/mobile UI is transport state only. GitHub commits, workflow/artifact receipts, and Cloudflare control-plane/runtime receipts are authoritative.
 - Preserve `issue -> owner -> audited revision -> evidence tier -> run/artifact -> blocker -> next action`.
 - Do not close runtime/production gates from source inspection or deterministic CI alone.
-- Do not add a competing Cloudflare deployment authority or alternate public hostname to bypass `heroic-ai.dev`.
+- Do not add a competing Cloudflare deployment authority or alternate public hostname to bypass `[REDACTED-CUSTOM-DOMAIN]`.
 
 ## Audit status
 **Repository access:** working. **Cloudflare control-plane access:** working. **Repository/production synchronization:** intentionally separated by immutable production pins, but current main is not deployed. **Production:** blocked by domain/zone activation. **Nightly provider execution:** blocked by the same public Worker/DNS boundary. **Benchmark:** completed strict-integrity pass, but not current-main validated. **Current code defect:** #713 remains open pending fresh differential parity evidence.

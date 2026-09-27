@@ -18,13 +18,13 @@ Worker: `legacy private Worker`
 
 - active version: `15`
 - traffic: 100%
-- version ID: `5ee4364d-b26a-4a6e-b2e8-22e9129e1fdc`
-- deployment ID: `61b1a4fe-be10-441a-9307-8301b5e3e94`
+- version ID: `[REDACTED-VERSION-ID]`
+- deployment ID: `[REDACTED-DEPLOYMENT-ID]`
 - deployment source: API / automatic deployment on configuration upload
 
 Configured runtime topology reported by the Cloudflare recovery check:
 
-- `OPERATIONS_DB` -> D1 `research-intelligence`
+- `OPERATIONS_DB` -> D1 `[REDACTED-PRIVATE-D1]`
 - `FOUNDATION` -> `legacy public Worker`
 - `ENVIRONMENT=production`
 - `STRICT_ZERO_COST_ONLY=true`

@@ -40,28 +40,22 @@
     "account_membership_http": 200,
     "workers_list_http": 200,
     "d1_list_http": 200,
-    "role": "Super Administrator - All Privileges",
+    "role": "[REDACTED-CF-ROLE]",
     "canonical_public_worker": "foundation",
     "canonical_private_worker": "operations",
-    "public_version": "93aa2e4e-cf67-41de-9933-95f8822de423",
-    "private_version": "66e335b9-68da-429b-abcf-29f9c7e2f5ac",
-    "public_provenance": "github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c",
-    "private_provenance": "github:a3171f353539f1a31020c432f98cf0530cbf91ef",
-    "zone": "heroic-ai.dev",
+    "public_version": "[REDACTED-DEPLOYED-VERSION-ID]",
+    "private_version": "[REDACTED-DEPLOYED-VERSION-ID]",
+    "public_provenance": "[REDACTED-PROVENANCE]",
+    "private_provenance": "[REDACTED-PROVENANCE]",
+    "zone": "[REDACTED-LIVE-IDENTIFIER]",
     "zone_status": "pending",
     "activation_failure_reason": "unresolvable",
-    "d1_database": "research-intelligence",
-    "d1_database_id": "19f51638-47a5-4218-a9dc-73dbfd6156fe"
+    "d1_database": "[REDACTED-PRIVATE-D1]",
+    "d1_database_id": "[REDACTED-D1-ID]"
   },
   "live_d1_counts": {
-    "research_runs": 644,
-    "observations": 398,
-    "research_publications": 0,
-    "resource_governance_reservations": 422,
-    "resource_governance_quota": 110,
-    "chat_idempotency": 1278,
-    "chat_memory_records": 3,
-    "chat_learning_observations": 0
+    "status": "redacted",
+    "reason": "live private operational state is excluded from public mirror"
   },
   "nightly": {
     "active_run_id": 36141145555,
@@ -105,5 +99,6 @@
     "cloudflare_runtime_requires_live_receipt": true,
     "no_competing_deployment_authority": true,
     "chatgpt_ui_is_transport_state": true
-  }
+  },
+  "public_surface_note": "Live Cloudflare identifiers, private D1 identifiers, deployed version/provenance values and operational counts are intentionally redacted from the public mirror."
 }

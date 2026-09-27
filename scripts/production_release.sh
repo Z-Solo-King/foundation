@@ -55,18 +55,6 @@ if [ "$token_verify_status" != '200' ] || ! jq -e '.success == true and .result.
   jq -c '{success,message,result:{status:(.result.status // null),id:(.result.id // null)}}' "$RUNNER_TEMP/cloudflare-token-verify.json" 2>/dev/null || true
 fi
 
-databases_status=$(curl -sS -o "$RUNNER_TEMP/cloudflare-d1-databases.json" -w '%{http_code}' \
-  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' \
-  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database" || true)
-test "$databases_status" = '200' || {
-  echo "Cloudflare D1 authorization check failed: HTTP $databases_status"
-  jq -c '{success,message,errors}' "$RUNNER_TEMP/cloudflare-d1-databases.json" 2>/dev/null || cat "$RUNNER_TEMP/cloudflare-d1-databases.json"
-  exit 1
-}
-databases=$(cat "$RUNNER_TEMP/cloudflare-d1-databases.json")
-database_id=$(jq -r '[.result[]? | select(.name == "research-intelligence") | .uuid] | if length == 1 then .[0] else empty end' <<<"$databases")
-test -n "$database_id" || { echo 'Expected exactly one research-intelligence D1 database'; exit 1; }
-echo "Cloudflare account/D1 authorization: PASS ($database_id)"
 
 # Preflight and stage the private Operations handoff before touching production.
 key_file="$RUNNER_TEMP/operations-app.pem"
@@ -176,6 +164,23 @@ git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git" "$RUNN
 git -C "$RUNNER_TEMP/operations" fetch --no-tags origin "$OPERATIONS_REF"
 git -C "$RUNNER_TEMP/operations" checkout --detach "$OPERATIONS_REF"
 test "$(git -C "$RUNNER_TEMP/operations" rev-parse HEAD)" = "$OPERATIONS_REF"
+# Resolve the private D1 binding name from the exact approved Operations revision.
+# The public Foundation tree never hardcodes the private database name.
+database_name="$(sed -n 's/^database_name = "\(.*\)"$/\1/p' "$RUNNER_TEMP/operations/wrangler.toml" | head -n1)"
+test -n "$database_name" || { echo 'Approved Operations revision did not declare a D1 database name'; exit 1; }
+
+databases_status=$(curl -sS -o "$RUNNER_TEMP/cloudflare-d1-databases.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' \
+  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database" || true)
+test "$databases_status" = '200' || {
+  echo "Cloudflare D1 authorization check failed: HTTP $databases_status"
+  jq -c '{success,message,errors}' "$RUNNER_TEMP/cloudflare-d1-databases.json" 2>/dev/null || cat "$RUNNER_TEMP/cloudflare-d1-databases.json"
+  exit 1
+}
+databases=$(cat "$RUNNER_TEMP/cloudflare-d1-databases.json")
+database_id=$(jq -r --arg expected_name "$database_name" '[.result[]? | select(.name == $expected_name) | .uuid] | if length == 1 then .[0] else empty end' <<<"$databases")
+test -n "$database_id" || { echo "Expected exactly one approved Operations D1 database: $database_name"; exit 1; }
+echo "Cloudflare account/D1 authorization: PASS (private binding name resolved from approved Operations revision)"
 
 # The production code remains pinned to the approved immutable revision, while the
 # family semantic audit must consume the latest synchronized family-state snapshot.
@@ -247,7 +252,7 @@ printf '%s\n' \
   '' \
   '[[d1_databases]]' \
   'binding = "DB"' \
-  'database_name = "research-intelligence"' \
+  'database_name = "${database_name}"' \
   "database_id = \"${database_id}\"" \
   '' \
   '[[services]]' \
@@ -266,7 +271,7 @@ printf '%s\n' \
   'B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"' \
   > wrangler.production.generated.toml
 
-grep -q '^database_name = "research-intelligence"$' wrangler.production.generated.toml
+grep -q "^database_name = \"${database_name}\"$" wrangler.production.generated.toml
 grep -q '^directory = "./frontend"$' wrangler.production.generated.toml
 grep -q '^binding = "ASSETS"$' wrangler.production.generated.toml
 grep -q "^service = \"${OPERATIONS_SERVICE_NAME}\"$" wrangler.production.generated.toml
@@ -284,8 +289,11 @@ persistence_seed_file="$RUNNER_TEMP/persistence-rollover-seed.json"
 persistence_seed_payload='{"operation":"persistence_seed"}'
 legacy_public_worker="${LEGACY_PUBLIC_WORKER:-}"
 legacy_private_worker="${LEGACY_PRIVATE_WORKER:-}"
-test -n "$legacy_public_worker" || { echo 'Missing LEGACY_PUBLIC_WORKER migration input'; exit 1; }
-test -n "$legacy_private_worker" || { echo 'Missing LEGACY_PRIVATE_WORKER migration input'; exit 1; }
+if [ -n "$legacy_public_worker" ] && [ -n "$legacy_private_worker" ]; then
+  echo "Legacy Worker retirement inputs: configured"
+else
+  echo "Legacy Worker retirement: deferred (private migration inputs not configured)"
+fi
 secret_file="$RUNNER_TEMP/operations-secrets.env"
 printf 'AUTH_TOKEN=%s\nCHAT_BACKEND_TOKEN=%s\n' "$AUTH_TOKEN" "$AUTH_TOKEN" > "$secret_file"
 chmod 600 "$secret_file"
@@ -326,7 +334,7 @@ echo "Operations binding-free bootstrap deployment: PASS"
 
 
 
-npx --yes wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
+npx --yes wrangler@4.131.1 d1 migrations apply "$database_name" --remote --config wrangler.production.generated.toml
 pywrangler deploy --config wrangler.production.generated.toml --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}"
 
 health_status=$(curl -sS -o health.json -w '%{http_code}' "$BASE_URL/health")
@@ -355,7 +363,7 @@ for asset in styles.css app.js composer.js lifecycle_controller.js; do
 done
 
 # Redeploy Operations against the new Foundation Worker, proving the final private binding.
-npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
+npx --yes wrangler@4.131.1 d1 execute "$database_name" --remote \
   --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql" \
   --config="$RUNNER_TEMP/operations/wrangler.toml"
 (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:foundation-binding-${ACCEPTANCE_RUN_ID}")
@@ -420,7 +428,7 @@ cp "$RUNNER_TEMP/persistence-rollover-verify.json" .runtime/persistence-rollover
 echo "Live memory/replay deployment-boundary acceptance: PASS"# Record the live durable MODEL_CALLS quota state before the required model-generation
 # acceptance. This is a bounded non-secret diagnostic: no auth token or provider payload
 # is queried, only governance counters from the canonical D1 authority.
-npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
+npx --yes wrangler@4.131.1 d1 execute "$database_name" --remote \
   --config="$RUNNER_TEMP/operations/wrangler.toml" \
   --command="SELECT scope, window_id, resource_kind, limit_units, reserved_units, consumed_units, updated_at FROM resource_governance_quota WHERE resource_kind = 'model_calls' ORDER BY updated_at DESC LIMIT 5;" \
   --json > "$RUNNER_TEMP/model-call-quota.json"
@@ -429,7 +437,7 @@ cat "$RUNNER_TEMP/model-call-quota.json"
 echo "--- end model-call-quota.snapshot ---"
 cp "$RUNNER_TEMP/model-call-quota.json" .runtime/model-call-quota.json
 
-npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
+npx --yes wrangler@4.131.1 d1 execute "$database_name" --remote \
   --config="$RUNNER_TEMP/operations/wrangler.toml" \
   --command="SELECT reservation_id, scope, window_id, resource_kind, amount, state, idempotency_key, lease_expires_at, updated_at FROM resource_governance_reservations WHERE resource_kind = 'model_calls' ORDER BY updated_at DESC LIMIT 10;" \
   --json > "$RUNNER_TEMP/model-call-reservations.json"

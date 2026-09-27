@@ -3,7 +3,7 @@
   "audited_at": "2026-09-26",
   "repository_heads": {
     "foundation": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
-    "operations": "122a334d85708e2e42db59b74114d1396ca98f31"
+    "operations": "[REDACTED-REVISION]"
   },
   "open_issue_count": 19,
   "issues": [
@@ -368,12 +368,13 @@
   },
   "current_runtime": {
     "public_front_door": "https://ai-cio.pages.dev",
-    "pages_project": "ai",
-    "backend_worker": "heroic",
-    "backend_origin": "https://heroic.heroic-ai.workers.dev",
-    "canonical_domain_status": "heroic-ai.dev pending/unresolvable",
+    "pages_project": "[REDACTED-LIVE-IDENTIFIER]",
+    "backend_worker": "[REDACTED-LIVE-IDENTIFIER]",
+    "backend_origin": "[REDACTED-LIVE-IDENTIFIER]",
+    "canonical_domain_status": "[REDACTED-LIVE-IDENTIFIER]",
     "certification": "OPEN / NOT CERTIFIED",
-    "deployed_foundation_sha": "ee312632fce5be5da9536194e94f38fa2cdabb6b",
-    "deployed_operations_sha": "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3"
-  }
+    "deployed_foundation_sha": "[REDACTED-LIVE-IDENTIFIER]",
+    "deployed_operations_sha": "[REDACTED-LIVE-IDENTIFIER]"
+  },
+  "public_surface_note": "Live runtime identifiers are redacted; acceptance criteria remain public."
 }

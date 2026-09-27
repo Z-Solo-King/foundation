@@ -4,7 +4,7 @@ Current family state: Foundation `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`; Ope
 
 Latest runtime evidence: production release `36030977718` PASS; nightly research `36030996071` FAIL at upstream public Worker HTTP 403 / local `upstream_worker_rejected` 502; nightly canary `36030977932` FAIL at the same boundary. The remaining queue is evidence/runtime-gated.
 
-Cloudflare control-plane reads were successfully verified during this audit: account membership 200 with Super Administrator - All Privileges; Workers listing 200; D1 listing 200. Public/private Worker identities and the D1 database are present. Exact deployment-history/version freshness was not re-queried after the latest GitHub documentation commits, so do not promote an older deployment identifier to a new L4 receipt.
+Cloudflare control-plane reads were successfully verified during this audit: account membership 200 with [REDACTED-CF-ROLE]; Workers listing 200; D1 listing 200. Public/private Worker identities and the D1 database are present. Exact deployment-history/version freshness was not re-queried after the latest GitHub documentation commits, so do not promote an older deployment identifier to a new L4 receipt.
 
 ChatGPT continuity: visible mobile/chat state is transport state, not execution authority. On unresponsiveness/context pressure, checkpoint to GitHub and resume in a fresh chat. App closure is an observed correlation only.
 
@@ -44,8 +44,8 @@ Foundation owns public-safe core, GitHub Actions and canonical production deploy
 Current family state:
 - Foundation main: `121ff5017c6b11ebc103dbbd26bdffe639fcc8cb`
 - Operations main: `b47aa056f50d27df9b5f552495a6cd862ae8a697`
-- Public Worker deployed provenance: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
-- Private Worker production provenance: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
+- Public Worker deployed provenance: `[REDACTED-PUBLIC-DEPLOYMENT-PROVENANCE]`
+- Private Worker production provenance: `[REDACTED-OPERATIONS-PROVENANCE]`
 - Nightly research Operations pin: `3a7e350ddd5648caf93f58651323425186544f66`
 - Current open issue queue: Foundation #58/#157; Operations #145/#197/#340/#352/#385/#597/#603/#699/#711
 - Open implementation PRs: 0
@@ -138,7 +138,7 @@ Start from Foundation `d4f8be98447d2b6c6d05d1b213941e029f8649a6` and Operations 
 
 Canonical production proof:
 - Foundation production run `35519167159` / run number `321` = SUCCESS.
-- Operations Cloudflare provenance = `github:dd30834aec8f1263d9b35142b1bd16b4ba95f1ca`.
+- Operations Cloudflare provenance = `github:[REDACTED-OPERATIONS-PROVENANCE]`.
 - Operations active version observed by the release = `0dae35f1-854b-49e4-b278-f3a17af3aa00`.
 - Runtime acceptance passed for chat, idempotency, SSE lifecycle, permitted-source research/readback, D1/B2, memory store/query/delete/owner boundary, replay guard, learning feedback, terminalization CAS, durable resource reservation/reconciliation, maintenance reconciliation and provider-stream contract.
 - Cross-version memory/replay remains deferred.
@@ -200,7 +200,7 @@ Run `35456292033` (#232), Foundation `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`,
 The release verified:
 
 - public Worker deployment/readiness;
-- private Operations Worker deployment and Cloudflare provenance `github:f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5`;
+- private Operations Worker deployment and Cloudflare provenance `github:[REDACTED-OPERATIONS-PROVENANCE]`;
 - authenticated chat and idempotent replay;
 - authenticated SSE lifecycle;
 - permitted-source research ingestion/readback;

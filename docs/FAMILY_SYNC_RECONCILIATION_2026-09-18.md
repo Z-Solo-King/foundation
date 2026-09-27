@@ -15,8 +15,8 @@ The standalone extractor/mapper repository is historical context and is not part
 
 - Foundation `main`: `562b0ce20cb71d0330b6274e6a5596ad719d5712`
 - Operations `main`: `5fe39602090951119821d573e8ef4f9c71496e78`
-- Approved Operations production revision: `3afbde926880b91e3e660ee2d35daa5334e542bf`
-- Nightly Operations revision: `3afbde926880b91e3e660ee2d35daa5334e542bf`
+- Approved Operations production revision: `[REDACTED-OPERATIONS-REVISION]`
+- Nightly Operations revision: `[REDACTED-OPERATIONS-REVISION]`
 
 These SHAs are audit observations, not aliases for future branch tips. Production revision remains separate from Operations `main`.
 
@@ -76,16 +76,16 @@ Foundation issue #487 remains open. The nightly research lane still uses the six
 
 ### Cloudflare runtime bootstrap — 2026-09-18
 
-The existing private Worker `legacy private Worker` now has a real configuration deployment reported as version `15` (version ID `5ee4364d-b26a-4a6e-b2e8-22e9129e1fdc`; deployment ID `61b1a4fe-be10-441a-9307-8301b5e3e94`). The reported configuration includes:
+The existing private Worker `legacy private Worker` now has a real configuration deployment reported as version `15` (version ID `[REDACTED-VERSION-ID]`; deployment ID `[REDACTED-DEPLOYMENT-ID]`). The reported configuration includes:
 
-- `OPERATIONS_DB` -> canonical D1 `research-intelligence`;
+- `OPERATIONS_DB` -> canonical D1 `[REDACTED-PRIVATE-D1]`;
 - `FOUNDATION` -> `legacy public Worker`;
 - `ENVIRONMENT=production`;
 - `STRICT_ZERO_COST_ONLY=true`;
 - cron `*/15 * * * *`;
 - protected governance scope/window/lease metadata.
 
-The configuration upload created the v15 deployment. It must **not** be interpreted as proof that the approved Operations application revision is running. Foundation's canonical production script currently pins Operations at `3afbde926880b91e3e660ee2d35daa5334e542bf`.
+The configuration upload created the v15 deployment. It must **not** be interpreted as proof that the approved Operations application revision is running. Foundation's canonical production script currently pins Operations at `[REDACTED-OPERATIONS-REVISION]`.
 
 The protected application inputs `RESOURCE_LIMITS_JSON`, `RESOURCE_RESERVATIONS_JSON` and private `AUTH_TOKEN` remain unestablished. The two resource-policy payloads have no authoritative recoverable values and must not be guessed. The existing public `AUTH_TOKEN` value is not readable from Cloudflare; one controlled rotation is required to synchronize the single canonical application token.
 

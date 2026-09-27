@@ -29,10 +29,10 @@
 
 ## Production safety
 
-- `heroic-ai.dev` remains pending/unresolvable and is not required for this release path.
-- Legacy Workers `research-intelligence-engine-public` and `research-intelligence-engine-private` remain retained until the renamed pair passes full live acceptance.
+- `[REDACTED-CUSTOM-DOMAIN]` remains pending/unresolvable and is not required for this release path.
+- Legacy Workers `[REDACTED-LEGACY-PUBLIC-WORKER]` and `[REDACTED-LEGACY-PRIVATE-WORKER]` remain retained until the renamed pair passes full live acceptance.
 - Cloudflare Worker listing currently contains `foundation`, `heroic`, `operations`, and the two legacy Worker identities.
-- D1 `research-intelligence` remains the canonical persistence database.
+- D1 `[REDACTED-PRIVATE-D1]` remains the canonical persistence database.
 
 ## Acceptance status
 

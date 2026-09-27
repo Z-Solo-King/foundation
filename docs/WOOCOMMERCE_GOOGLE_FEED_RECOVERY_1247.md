@@ -1,45 +1,21 @@
-# Issue #1247 — WooCommerce Google Feed Recovery
+# Public Feed Recovery Methodology — Issue #1247
 
 Date: 2026-09-27
 
-## Current-head continuation
+The public Foundation repository retains methodology only. Live retailer identities, target URLs, AI-discovered candidate paths, raw responses and recovery output are maintained on the private Operations surface.
 
-This implementation is rebased onto the current Foundation `main` head rather than merging the stale 2026-09-26 audit branch wholesale.
+## Method
 
-### Scope
+Recovery candidates may use public native Google Merchant feed paths, public WooCommerce Store API surfaces, adaptive pagination and bounded HTTP/curl fallback.
 
-Only the nine unresolved retailers from #1247 are targeted:
+A result is considered a native Google Merchant feed only when the response contains the Google Merchant namespace plus product item/entry nodes and required merchant fields.
 
-- ithunt
-- kccomputers
-- KRG KART
-- PC Kumar Infotech
-- PCHubShop
-- SCL Gaming
-- Variety Infotech
-- Moskeys
-- Theproaudio
+A Store API reconstruction is recorded separately and is never presented as the retailer's native Merchant feed.
 
-### Recovery surfaces
+## Safety
 
-The job uses only public/unauthenticated surfaces:
+Only public or unauthenticated surfaces are permitted. The tooling does not bypass CAPTCHA, Cloudflare challenges, authentication, proxy restrictions, clearance cookies or anti-bot controls.
 
-- native Google Merchant feed URL candidates
-- public WooCommerce Store API aliases
-- adaptive public pagination
-- normal HTTP transport
-- curl JSON fallback
+## Evidence boundary
 
-A Store API reconstruction is recorded separately from a native feed and is never mislabeled as the retailer's native Google Merchant feed.
-
-### Safety and classification
-
-HTTP 403/429/challenge responses remain transport-unverified. The implementation does not attempt CAPTCHA solving, Cloudflare challenge bypass, authentication bypass, proxy evasion, clearance-cookie replay, or stealth anti-bot behavior.
-
-### Fix included
-
-The inherited rescue tool referenced `execFileAsync` without defining it. The current-head version explicitly imports `execFile` and `promisify` and defines the fallback correctly.
-
-### Verification boundary
-
-This PR provides the current-head recovery machinery and evidence workflow. Actual feed recovery remains determined by the public execution result and uploaded artifact.
+The public repository does not contain the live target registry or target-specific recovery output. Actual recovery remains an evidence-gated private execution task.

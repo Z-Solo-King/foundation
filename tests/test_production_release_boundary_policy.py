@@ -51,6 +51,13 @@ def test_operations_binding_is_generated_but_private_service_name_stays_out_of_w
     assert "research-intelligence-engine-private" not in worker
 
 
+def test_production_release_does_not_hardcode_private_d1_name():
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert "research-intelligence" not in text
+    assert 'database_name="$(sed -n' in text
+    assert 'select(.name == $expected_name)' in text
+    assert 'database_name = "${database_name}"' in text
+
 def test_production_health_check_requires_production_environment():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
     assert '.ok == true and .environment == "production"' in text

@@ -1,13 +1,23 @@
 {
-  "schema_version": "public-surface-policy/v1",
+  "schema_version": "public-surface-policy/v2",
   "fail_patterns": [
     "legacy private Worker identities",
-    "non-canonical custom domain",
-    "private Worker origin",
+    "live custom-domain identifier",
+    "live Workers.dev origin",
+    "privileged Cloudflare account role",
     "Cloudflare account identifier",
     "D1 identifier",
-    "private revision provenance",
-    "private revision configuration"
+    "Cloudflare version/deployment identifier",
+    "private Operations deployment provenance",
+    "live D1 operational counts",
+    "Cloudflare nameserver disclosure",
+    "Worker edge-address disclosure",
+    "private key material",
+    "GitHub credential material",
+    "live feed target URL in public recovery record",
+    "forbidden-public-target-surface",
+    "deployed Operations provenance",
+    "private revision provenance literal"
   ],
   "warn_patterns": [
     "private repository reference",
@@ -16,12 +26,11 @@
   "scanned_documents": [
     "README.md",
     "CHATGPT.md",
+    "DEPLOYMENT.md",
+    "SECURITY.md",
     "REPOSITORY_MAP.json",
-    "docs/CURRENT_SOURCE_OF_TRUTH.md",
-    "docs/FAMILY_SYNC_STATE.json",
-    "docs/PROMPT_TO_CANONICAL_DOC_MAP.md",
-    "docs/PUBLIC_SURFACE_POLICY.md",
-    "docs/PUBLIC_SURFACE_POLICY.json"
+    "docs/**/*.md",
+    "docs/**/*.json"
   ],
   "metadata_surfaces": [
     "pull_request.title",
@@ -29,6 +38,33 @@
     "commit.subjects"
   ],
   "authority": "Foundation public security boundary; private runtime authority remains in Operations.",
-  "revalidated_at": "2026-09-26T19:15:00Z",
-  "deep_scan_contract": "Operations dd36ddb4ec2b26c1571847dd94b449996213b392"
+  "revalidated_at": "2026-09-27",
+  "deep_scan_contract": "Operations #1103 public-surface audit",
+  "forbidden_public_target_surfaces": [
+    "tools/woocommerce_google_feed_*.mjs",
+    "tools/custom_api_google_feed_*.mjs",
+    "data/feed_lab/custom_api_google_feed_registry_*.json",
+    ".github/workflows/woocommerce-google-feed-recovery-*.yml",
+    ".github/workflows/custom-api-google-feed-recovery-*.yml"
+  ],
+  "scan_contract": {
+    "implementation": "tools/public_surface_scan.py",
+    "recursion": true,
+    "public_doc_extensions": [
+      ".md",
+      ".json"
+    ],
+    "pr_metadata": [
+      "title",
+      "body",
+      "commits"
+    ],
+    "target_inventory_policy": "live retailer target registries and recovery tooling belong on private Operations",
+    "redaction_policy": "live infrastructure identifiers remain redacted even when previously observed"
+  },
+  "revision_policy": {
+    "immutable_workflow_pins": "allowed when required for reproducible public build/deployment handoff",
+    "historical_deployed_provenance": "redact",
+    "pull_request_metadata_provenance": "fail"
+  }
 }

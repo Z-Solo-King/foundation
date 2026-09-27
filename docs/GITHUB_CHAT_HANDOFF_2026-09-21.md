@@ -38,9 +38,9 @@ Read `docs/CURRENT_SOURCE_OF_TRUTH.md` and `docs/LIVE_GITHUB_CLOUDFLARE_SYNC_AUD
 **Live-head rule:** query the current GitHub `main` refs at chat startup. Documentation-only commits may advance `main` and must not be mistaken for a new runtime implementation revision.
 
 - Last verified Foundation implementation revision: `e5b26061861e570396b73993a3c8733496cb1956`
-- Last verified Operations implementation revision: `7cf73e6a15b1e1d090f023915f62e5a2bd066b8e`
+- Last verified Operations implementation revision: `[REDACTED-OPERATIONS-REVISION]`
 - Canonical nightly research workflow: `.github/workflows/nightly-multi-agent-research-v2.yml`
-- Nightly `OPERATIONS_RESEARCH_REF`: `7cf73e6a15b1e1d090f023915f62e5a2bd066b8e`
+- Nightly `OPERATIONS_RESEARCH_REF`: `[REDACTED-OPERATIONS-REVISION]`
 - Final implementation repair waves are merged through Foundation #960 and Operations #753.
 - Foundation #157 remains the canonical 24-program nightly acceptance gate.
 - Remaining open issues are runtime/provider/Cloudflare/migration evidence gates; do not infer closure from source inspection, unit tests, or dry-runs.
