@@ -20,3 +20,10 @@ def test_generic_rss_rejected():
 def test_html_discovery_is_same_host_only():
     found = extract_urls('<a href="/wp-content/uploads/woo-feed/google/xml/google-shopping.xml">x</a><a href="https://other.example.com/google.xml">bad</a>', "https://example.test")
     assert found == ("https://example.test/wp-content/uploads/woo-feed/google/xml/google-shopping.xml",)
+
+
+def test_rss_title_link_are_accepted_with_google_id_price():
+    body = b'''<?xml version="1.0"?><rss xmlns:g="http://base.google.com/ns/1.0"><channel><item><g:id>SKU</g:id><title>Widget</title><link>https://example.test/p/1</link><g:description>x</g:description><g:price>1999 INR</g:price><g:availability>in stock</g:availability></item></channel></rss>'''
+    result = validate_xml(body, "application/xml")
+    assert result.valid is True
+    assert result.product_items == 1
