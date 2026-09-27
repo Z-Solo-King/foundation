@@ -168,7 +168,55 @@ def absolute(root: str, raw: str) -> str | None:
         return None
 
 
-def fetch(url: str, timeout: float) -> Fetch:
+def _cookie_header_from_netscape(path: str) -> str:
+    parts: list[str] = []
+    try:
+        for line in Path(path).read_text(encoding="utf-8", errors="ignore").splitlines():
+            if not line or line.startswith("#") or "\t" not in line:
+                continue
+            cols = line.split("\t")
+            if len(cols) >= 7 and cols[6]:
+                parts.append(f"{cols[5]}={cols[6]}")
+    except OSError:
+        return ""
+    return "; ".join(dict.fromkeys(parts))
+
+
+def warm_site_session(root: str, timeout: float = 20.0) -> str:
+    """Establish a normal same-site HTTP session and return its cookies."""
+    meta_path = body_path = jar_path = None
+    try:
+        with tempfile.NamedTemporaryFile(prefix="session-meta-", delete=False) as meta_fp, tempfile.NamedTemporaryFile(prefix="session-body-", delete=False) as body_fp, tempfile.NamedTemporaryFile(prefix="session-cookie-", delete=False) as jar_fp:
+            meta_path, body_path, jar_path = meta_fp.name, body_fp.name, jar_fp.name
+        cmd = [
+            "curl", "--silent", "--show-error", "--location", "--compressed",
+            "--connect-timeout", "12", "--max-time", str(int(max(5.0, timeout))),
+            "-A", UA,
+            "-H", "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.1",
+            "-H", "Accept-Language: en-IN,en;q=0.9",
+            "-c", jar_path, "-o", body_path,
+            "-w", "%{http_code}\n",
+            root.rstrip("/") + "/",
+        ]
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=max(15.0, timeout + 8), check=False)
+        body = Path(body_path).read_text(encoding="utf-8", errors="replace")
+        lines = (proc.stdout or "").splitlines()
+        status = int(lines[0]) if lines and lines[0].isdigit() else 0
+        if status != 200 or any(marker in body[:16000].lower() for marker in BLOCK_MARKERS):
+            return ""
+        return _cookie_header_from_netscape(jar_path)
+    except (subprocess.TimeoutExpired, OSError, ValueError):
+        return ""
+    finally:
+        for path in (meta_path, body_path, jar_path):
+            if path:
+                try:
+                    Path(path).unlink(missing_ok=True)
+                except OSError:
+                    pass
+
+
+def fetch(url: str, timeout: float, cookie_header: str = "") -> Fetch:
     """Fetch with curl so DNS, connect, and total request time have hard bounds."""
     started = time.monotonic()
     timeout = max(1.0, float(timeout))
