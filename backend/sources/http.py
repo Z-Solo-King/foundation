@@ -11,11 +11,11 @@ DNS resolution and network connection. Resolution failures fail closed.
 """
 
 from dataclasses import dataclass
-from ipaddress import ip_address, IPv4Address, IPv6Address
 import struct
 from urllib.parse import urljoin, urlparse, urlunparse
 
 from backend.core.workers_runtime import workers_fetch
+from foundation_core.url_identity import canonicalize_url, safe_host as _safe_host, safe_ip as _safe_ip
 
 MAX_REDIRECTS = 3
 MAX_BYTES = 1_000_000
@@ -41,49 +41,6 @@ class FetchResult:
 def _workers_fetch():
     """Compatibility shim for tests and callers that patch this adapter."""
     return workers_fetch("network acquisition")
-
-
-def _safe_ip(value: str) -> bool:
-    ip = ip_address(value)
-    mapped = getattr(ip, "ipv4_mapped", None)
-    if mapped is not None:
-        ip = mapped
-    if isinstance(ip, IPv6Address) and ip.packed[:12] == _NAT64_PREFIX:
-        ip = IPv4Address(ip.packed[12:])
-    if str(ip) in _PROVIDER_DENYLIST:
-        return False
-    return bool(ip.is_global)
-
-
-def _safe_host(hostname: str) -> bool:
-    host = hostname.lower().rstrip(".")
-    if host in {"localhost", "localhost.localdomain", "ip6-localhost"}:
-        return False
-    try:
-        return _safe_ip(host)
-    except ValueError:
-        return True
-
-
-def canonicalize_url(url: str) -> str:
-    """Return the security-safe canonical URL identity used for acquisition."""
-    parsed = urlparse(url)
-    scheme = parsed.scheme.lower()
-    if scheme not in {"http", "https"}:
-        raise ValueError("only http and https URLs are allowed")
-    if parsed.username or parsed.password:
-        raise ValueError("userinfo in URL is not allowed")
-    if not parsed.hostname or not _safe_host(parsed.hostname):
-        raise ValueError("target host is not allowed")
-    if parsed.port is not None and parsed.port not in {80, 443}:
-        raise ValueError("non-standard ports are not allowed")
-    host = parsed.hostname.lower().rstrip(".")
-    if parsed.port is None or (scheme == "http" and parsed.port == 80) or (scheme == "https" and parsed.port == 443):
-        netloc = host
-    else:
-        netloc = f"{host}:{parsed.port}"
-    path = parsed.path or "/"
-    return urlunparse((scheme, netloc, path, parsed.params, parsed.query, ""))
 
 
 def validate_url(url: str) -> None:
