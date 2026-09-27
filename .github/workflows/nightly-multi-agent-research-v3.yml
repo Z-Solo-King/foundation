@@ -14,8 +14,6 @@ name: nightly multi-agent research
 permissions:
   actions: read
   contents: read
-  id-token: write
-  attestations: write
 
 concurrency:
   group: nightly-multi-agent-research
