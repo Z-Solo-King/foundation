@@ -1,0 +1,29 @@
+name: Only SDD Native Feed Canary v185
+on:
+  push:
+    branches: [hunt/native-google-feed-urls-20260927]
+    paths:
+      - "tools/onlyssd_native_feed_canary_v185.mjs"
+      - ".github/workflows/onlyssd-native-feed-canary.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate current canonical native feed
+        run: |
+          set -euo pipefail
+          node tools/onlyssd_native_feed_canary_v185.mjs | tee onlyssd-native-feed-canary.json
+      - name: Upload URL-only result
+        uses: actions/upload-artifact@v4
+        with:
+          name: onlyssd-native-feed-canary-v185
+          path: onlyssd-native-feed-canary.json
+          retention-days: 14
