@@ -1,3 +1,4 @@
+from tools.native_google_feed_hunt_v2 import feed_priority
 from tools.native_google_feed_hunt_v2 import extract_urls, validate_xml
 
 GOOD = b'''<?xml version="1.0"?><rss xmlns:g="http://base.google.com/ns/1.0"><channel><item><g:id>SKU</g:id><g:title>Widget</g:title><g:link>https://example.test/p/1</g:link><g:price>1999 INR</g:price></item></channel></rss>'''
@@ -27,3 +28,9 @@ def test_rss_title_link_are_accepted_with_google_id_price():
     result = validate_xml(body, "application/xml")
     assert result.valid is True
     assert result.product_items == 1
+
+
+def test_full_google_gpf_is_preferred_to_partial():
+    full = "https://onlyssd.com/?woocommerce_gpf=google"
+    partial = "https://onlyssd.com/?woocommerce_gpf=google&gpf_start=0&gpf_limit=100"
+    assert feed_priority(full) < feed_priority(partial)
