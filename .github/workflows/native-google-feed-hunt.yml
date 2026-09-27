@@ -1,6 +1,10 @@
 name: Native Google Feed URL Hunt
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/native-google-feed-hunt.yml"
   push:
     branches:
       - test/wc-feed-recovery-clean-20260927
@@ -13,7 +17,7 @@ permissions:
 
 jobs:
   hunt:
-    name: \${{ matrix.name }}
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     strategy:
@@ -59,34 +63,30 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Hunt native Google Merchant XML URL
+      - name: Probe public native feed URLs
         env:
-          SITE_NAME: \${{ matrix.name }}
-          ROOT: \${{ matrix.root }}
+          ROOT: ${{ matrix.root }}
+          SITE_NAME: ${{ matrix.name }}
         run: |
           set -euo pipefail
           mkdir -p out
-
           cat > /tmp/hunt.mjs <<'NODE'
           import fs from 'node:fs/promises';
-          import { gunzipSync } from 'node:zlib';
 
           const root = process.env.ROOT.replace(/\/$/, '');
           const site = process.env.SITE_NAME;
 
-          const paths = [
+          const candidates = [
             '/?woocommerce_gpf=google',
             '/woocommerce_gpf/google',
             '/google.xml',
-            '/google-feed.xml',
             '/google_feed.xml',
+            '/google-feed.xml',
+            '/googlebase.xml',
+            '/google_base.xml',
             '/google-shopping.xml',
             '/google-shopping-feed.xml',
             '/google-shopping-products.xml',
-            '/google_products.xml',
-            '/google_products_feed.xml',
-            '/googlebase.xml',
-            '/google_base.xml',
             '/google-product-feed.xml',
             '/product-feed.xml',
             '/products-feed.xml',
@@ -105,139 +105,117 @@ jobs:
             '/wp-content/uploads/woo-feed/google/xml/google.xml',
             '/wp-content/uploads/woo-feed/google/xml/google-shopping-products.xml',
             '/wp-content/uploads/woo-feed/google/xml/shopping.xml',
-            '/wp-content/uploads/woo-feed/google/xml/feed.xml',
             '/wp-content/uploads/woo-product-feed-pro/xml/google.xml',
             '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml',
             '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping-feed.xml',
-            '/wp-content/uploads/woo-product-feed-pro/xml/google-products.xml',
-            '/wp-content/uploads/codesolz-feeds/google-products.xml',
-            '/wp-content/uploads/woo-feed/google/xml/google-shopping-feed.xml'
+            '/wp-content/uploads/codesolz-feeds/google-products.xml'
           ];
 
-          const normalized = [];
-          const seen = new Set();
-
-          function sameDomain(u) {
-            try {
-              const a = new URL(u);
-              const b = new URL(root);
-              return a.protocol === 'http:' || a.protocol === 'https:'
-                ? a.hostname === b.hostname || a.hostname.endsWith('.' + b.hostname)
-                : false;
-            } catch { return false; }
+          function sameHost(url) {
+            try { return new URL(url).hostname === new URL(root).hostname; }
+            catch { return false; }
           }
 
-          function validateXml(text) {
-            const low = text.slice(0, 250000).toLowerCase();
-            const xmlRoot = /<rss\\b[^>]*>|<feed\\b[^>]*>/.test(low);
-            const gns = low.includes('http://base.google.com/ns/1.0');
-            const item = low.includes('<item');
-            const id = low.includes('<g:id');
-            const title = low.includes('<g:title');
-            const link = low.includes('<g:link');
-            const price = low.includes('<g:price');
-            const challenge = /(just a moment|attention required|cf-chl-|turnstile|captcha|access denied)/i.test(low);
-            return xmlRoot && gns && item && id && title && link && price && !challenge;
+          function looksGoogleXml(body) {
+            const low = body.slice(0, 300000).toLowerCase();
+            return (low.includes('<rss') || low.includes('<feed')) &&
+              low.includes('http://base.google.com/ns/1.0') &&
+              low.includes('<item') &&
+              low.includes('<g:id') &&
+              low.includes('<g:title') &&
+              low.includes('<g:link') &&
+              low.includes('<g:price') &&
+              !low.includes('just a moment') &&
+              !low.includes('cf-chl-') &&
+              !low.includes('turnstile');
           }
 
-          async function fetchText(url) {
+          async function probe(url) {
             try {
               const r = await fetch(url, {
                 redirect: 'follow',
-                signal: AbortSignal.timeout(9000),
+                signal: AbortSignal.timeout(7000),
                 headers: {
-                  'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-                  'Accept': 'application/xml,text/xml,text/plain,text/html;q=0.9,*/*;q=0.8'
+                  'User-Agent': 'Mozilla/5.0',
+                  'Accept': 'application/xml,text/xml,text/plain,text/html;q=0.8,*/*;q=0.5'
                 }
               });
-              const finalUrl = r.url;
-              const ct = r.headers.get('content-type') || '';
-              const ab = new Uint8Array(await r.arrayBuffer());
-              let text;
-              if (/gzip/i.test(ct) || url.endsWith('.gz')) {
-                try { text = gunzipSync(ab).toString('utf8'); } catch { text = new TextDecoder().decode(ab); }
-              } else {
-                text = new TextDecoder().decode(ab);
-              }
-              return {ok:r.ok,status:r.status,url:finalUrl,ct,body:text};
+              const body = await r.text();
+              return {ok:r.ok,status:r.status,url:r.url,body};
             } catch { return null; }
           }
 
-          async function tryUrl(u, evidence) {
-            if (seen.has(u)) return false;
-            seen.add(u);
-            const r = await fetchText(u);
-            if (!r) return false;
-            if (r.ok && sameDomain(r.url) && validateXml(r.body)) {
-              normalized.push({url:r.url, source:evidence, status:r.status, content_type:r.ct, bytes:r.body.length});
-              return true;
+          let found = null;
+          const seen = new Set();
+
+          for (const path of candidates) {
+            const url = root + path;
+            seen.add(url);
+            const r = await probe(url);
+            if (r && r.ok && sameHost(r.url) && looksGoogleXml(r.body)) {
+              found = {url:r.url,status:r.status,bytes:r.body.length,source:'candidate'};
+              break;
             }
-            return false;
           }
 
-          for (const p of paths) {
-            if (await tryUrl(root + p, 'candidate')) break;
-          }
-
-          const dirs = [
+          // Public directory listing discovery for custom feed filenames.
+          for (const dir of [
             '/wp-content/uploads/woo-feed/google/xml/',
             '/wp-content/uploads/woo-product-feed-pro/xml/'
-          ];
-          for (const d of dirs) {
-            const r = await fetchText(root + d);
-            if (!r || !r.ok || !sameDomain(r.url)) continue;
-            const matches = [...r.body.matchAll(/href=["']([^"']+\\.xml(?:\\.gz)?)["']/gi)].map(m => m[1]);
-            for (const href of matches) {
-              let u;
-              try { u = new URL(href, r.url).toString(); } catch { continue; }
-              if (!sameDomain(u)) continue;
-              if (await tryUrl(u, 'public-directory-index')) break;
+          ]) {
+            if (found) break;
+            const r = await probe(root + dir);
+            if (!r || !r.ok || !sameHost(r.url)) continue;
+            const links = r.body.match(/https?:[^"'<> \t\r\n]+\.xml(?:\.gz)?/gi) || [];
+            for (const url of links) {
+              if (seen.has(url)) continue;
+              seen.add(url);
+              const x = await probe(url);
+              if (x && x.ok && sameHost(x.url) && looksGoogleXml(x.body)) {
+                found = {url:x.url,status:x.status,bytes:x.body.length,source:'directory-index'};
+                break;
+              }
             }
-            if (normalized.length) break;
           }
 
-          const discoveryPages = ['/robots.txt','/','/sitemap_index.xml','/wp-sitemap.xml'];
-          for (const p of discoveryPages) {
-            const r = await fetchText(root + p);
-            if (!r || !r.ok || !sameDomain(r.url)) continue;
-            const candidates = new Set();
-            for (const m of r.body.matchAll(/https?:[^\s"'<>]+/gi)) {
-              const u = m[0].replace(/[),.;]+$/,'');
-              if (/\.xml(?:\.gz)?(?:[?#].*)?$/i.test(u) || /google|merchant|shopping|product.?feed|woo.?feed|gpf/i.test(u)) candidates.add(u);
+          // Public robots/homepage/sitemap references can expose custom feed URLs.
+          for (const page of ['/robots.txt','/','/sitemap_index.xml','/wp-sitemap.xml']) {
+            if (found) break;
+            const r = await probe(root + page);
+            if (!r || !r.ok || !sameHost(r.url)) continue;
+            const refs = r.body.match(/https?:[^"'<> \t\r\n]+/gi) || [];
+            for (const url of refs) {
+              if (!/xml/i.test(url) || seen.has(url)) continue;
+              if (!/google|merchant|shopping|feed|gpf|product/i.test(url)) continue;
+              seen.add(url);
+              const x = await probe(url);
+              if (x && x.ok && sameHost(x.url) && looksGoogleXml(x.body)) {
+                found = {url:x.url,status:x.status,bytes:x.body.length,source:'public-reference'};
+                break;
+              }
             }
-            for (const m of r.body.matchAll(/(?:href|src)=["']([^"']+)["']/gi)) {
-              let u;
-              try { u = new URL(m[1], r.url).toString(); } catch { continue; }
-              if (/\.xml(?:\.gz)?(?:[?#].*)?$/i.test(u) || /google|merchant|shopping|product.?feed|woo.?feed|gpf/i.test(u)) candidates.add(u);
-            }
-            for (const u of candidates) {
-              if (!sameDomain(u)) continue;
-              if (await tryUrl(u, 'public-page-reference')) break;
-            }
-            if (normalized.length) break;
           }
 
           const result = {
             site,
             root,
-            verified_native_feed_url: normalized[0]?.url ?? null,
-            evidence: normalized[0] ?? null,
-            status: normalized.length ? 'VERIFIED_NATIVE_GOOGLE_XML' : 'NOT_FOUND',
-            tested_candidate_count: seen.size
+            status: found ? 'VERIFIED_NATIVE_GOOGLE_XML' : 'NOT_FOUND',
+            verified_native_feed_url: found?.url ?? null,
+            evidence: found,
+            tested_candidates: seen.size
           };
 
           await fs.writeFile('out/result.json', JSON.stringify(result, null, 2));
-          if (normalized.length) await fs.writeFile('out/verified-native-feed-url.txt', normalized[0].url + '\n');
+          if (found) await fs.writeFile('out/verified-native-feed-url.txt', found.url + '\n');
           console.log(JSON.stringify(result));
           NODE
-
           node /tmp/hunt.mjs
 
       - name: Upload result
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: native-feed-\${{ matrix.name }}
+          name: native-feed-${{ matrix.name }}
           path: out/
           if-no-files-found: warn
           retention-days: 14
