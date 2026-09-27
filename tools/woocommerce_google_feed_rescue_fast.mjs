@@ -118,10 +118,20 @@ async function curlRaw(url, timeout=12000) {
     ];
     const { stdout } = await execFileAsync("curl",args,{timeout:timeout+2000,maxBuffer:32*1024*1024});
     const text = String(stdout || "");
-    const sm = text.match(/\\n__WC_STATUS__(\\d{3})\\n__WC_URL__(.+)\\n$/s);
-    if (!sm) return null;
-    const body = text.slice(0, sm.index);
-    return {status:Number(sm[1]),url:sm[2].trim(),text:body,buf:Buffer.from(body,"utf8"),bytes:Buffer.byteLength(body),via:"curl"};
+    const statusMarker = "__WC_STATUS__";
+    const urlMarker = "__WC_URL__";
+    const statusPos = text.lastIndexOf(statusMarker);
+    if (statusPos < 0) return null;
+    const statusStart = statusPos + statusMarker.length;
+    const statusEnd = text.indexOf("\\n", statusStart);
+    const urlPos = text.lastIndexOf(urlMarker);
+    if (statusEnd < 0 || urlPos < 0 || urlPos <= statusEnd) return null;
+    const status = Number(text.slice(statusStart,statusEnd).trim());
+    const urlStart = urlPos + urlMarker.length;
+    const urlEnd = text.indexOf("\\n",urlStart);
+    if (!Number.isFinite(status) || urlEnd < 0) return null;
+    const body = text.slice(0,statusPos).replace(/\\n$/,"");
+    return {status,url:text.slice(urlStart,urlEnd).trim(),text:body,buf:Buffer.from(body,"utf8"),bytes:Buffer.byteLength(body),via:"curl"};
   } catch { return null; }
 }
 async function discoverPublicCandidates(base,out) {
@@ -144,9 +154,11 @@ async function discoverPublicCandidates(base,out) {
         out.discovery_candidates.push({url:r.url,status:r.status,bytes:r.bytes,transport:"curl"});
       }
     }
-    for (const m of String(text).matchAll(/https?:\\/\\/[^\\s<>"]+/g)) {
+    for (const raw0 of String(text).split(/\s+/)) {
+      const raw=String(raw0||"").replace(/[),.;]+$/g,"");
+      if (!(raw.startsWith("http://") || raw.startsWith("https://"))) continue;
       try {
-        const u=new URL(String(m[0]).replace(/[),.;]+$/,""),base);
+        const u=new URL(raw,base);
         const p=u.pathname+(u.search||"");
         if (u.origin===new URL(base).origin && p.length<=500 &&
             /xml|feed|merchant|google|shopping|product|woo|wppfm|codesolz|feedcraft/i.test(p)) found.add(p);
