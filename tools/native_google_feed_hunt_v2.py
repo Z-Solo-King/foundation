@@ -9,6 +9,8 @@ import hashlib
 import html
 import json
 import re
+import subprocess
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -165,30 +167,45 @@ def absolute(root: str, raw: str) -> str | None:
 
 
 def fetch(url: str, timeout: float) -> Fetch:
+    """Fetch with curl so DNS, connect, and total request time have hard bounds."""
     started = time.monotonic()
-    req = urllib.request.Request(url, headers={
-        "User-Agent": UA,
-        "Accept": "application/xml, application/rss+xml, text/xml, text/plain;q=0.9, */*;q=0.1",
-        "Accept-Language": "en-IN,en;q=0.9",
-        "Accept-Encoding": "gzip",
-        "Cache-Control": "no-cache",
-    })
+    timeout = max(1.0, float(timeout))
+    meta_path = None
+    body_path = None
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as response:
-            data = response.read(128 * 1024 * 1024 + 1)
-            if len(data) > 128 * 1024 * 1024:
-                return Fetch(url, response.geturl(), int(response.status), response.headers.get("content-type", ""), b"", int((time.monotonic()-started)*1000), "body_too_large")
-            if response.headers.get("content-encoding", "").lower() == "gzip":
-                data = gzip.decompress(data)
-            return Fetch(url, response.geturl(), int(response.status), response.headers.get("content-type", ""), data, int((time.monotonic()-started)*1000))
-    except urllib.error.HTTPError as exc:
-        try:
-            body = exc.read(256 * 1024)
-        except OSError:
-            body = b""
-        return Fetch(url, str(getattr(exc, "url", url)), int(exc.code), exc.headers.get("content-type", ""), body, int((time.monotonic()-started)*1000), "http_error")
+        with tempfile.NamedTemporaryFile(prefix="feed-meta-", delete=False) as meta_fp, tempfile.NamedTemporaryFile(prefix="feed-body-", delete=False) as body_fp:
+            meta_path = meta_fp.name
+            body_path = body_fp.name
+        command = [
+            "curl", "--silent", "--show-error", "--location", "--compressed",
+            "--connect-timeout", "12", "--max-time", str(int(timeout)),
+            "-A", UA,
+            "-H", "Accept: application/xml, application/rss+xml, text/xml, text/plain;q=0.9, */*;q=0.1",
+            "-H", "Accept-Language: en-IN,en;q=0.9",
+            "-H", "Cache-Control: no-cache",
+            "-o", body_path,
+            "-w", "%{http_code}\\n%{content_type}\\n%{url_effective}\\n",
+            url,
+        ]
+        proc = subprocess.run(command, capture_output=True, text=True, timeout=timeout + 8, check=False)
+        meta = proc.stdout.splitlines()
+        status = int(meta[0]) if meta and meta[0].isdigit() else 0
+        content_type = meta[1] if len(meta) > 1 else ""
+        final_url = meta[2] if len(meta) > 2 else url
+        body = Path(body_path).read_bytes() if body_path else b""
+        error = None if proc.returncode == 0 else ("curl_timeout" if proc.returncode == 28 else f"curl_exit_{proc.returncode}")
+        return Fetch(url, final_url, status, content_type, body, int((time.monotonic()-started)*1000), error)
+    except subprocess.TimeoutExpired:
+        return Fetch(url, url, 0, "", b"", int((time.monotonic()-started)*1000), "curl_process_timeout")
     except Exception as exc:
         return Fetch(url, url, 0, "", b"", int((time.monotonic()-started)*1000), type(exc).__name__)
+    finally:
+        for path in (meta_path, body_path):
+            if path:
+                try:
+                    Path(path).unlink(missing_ok=True)
+                except OSError:
+                    pass
 
 
 def _local(tag: object) -> str:
