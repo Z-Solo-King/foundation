@@ -256,7 +256,8 @@ async function probe(name,base){
    }
   }
  }
- const api=await storeApiProbe(base);\n const pdp=!api?await sitemapPdpProbe(base):null;
+ const api=await storeApiProbe(base);
+ const pdp=!api?await sitemapPdpProbe(base):null;
  return {site:name,base,runner_os:process.env.RUNNER_OS||"unknown",verified_feed:verified,public_store_api:api?{endpoint:api.endpoint,count:api.count}:null,pdp_recovery:pdp?{count:pdp.count}:null,backup_google_xml:api?rowsToGoogleBackup(api.rows):(pdp?rowsToGoogleBackup(pdp.rows):null),elapsed_s:Number(((Date.now()-started)/1000).toFixed(2)),
    candidate_results:results};
 }
