@@ -1,0 +1,56 @@
+name: WooCommerce clean recovery execution
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tools/woocommerce_32_cross_runner_feed_recovery.mjs"
+      - ".github/workflows/woocommerce-clean-recovery.yml"
+  push:
+    branches: [main]
+    paths:
+      - "tools/woocommerce_32_cross_runner_feed_recovery.mjs"
+      - ".github/workflows/woocommerce-clean-recovery.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    name: Recover ${{ matrix.site }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        site:
+          - "Ads Store"
+          - ithunt
+          - kccomputers
+          - "KRG KART"
+          - "PC Kumar Infotech"
+          - PCHubShop
+          - "SCL Gaming"
+          - "Variety Infotech"
+          - Moskeys
+          - Theproaudio
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+      - name: Run recovery
+        run: node tools/woocommerce_32_cross_runner_feed_recovery.mjs --site "$SITE"
+        env:
+          SITE: ${{ matrix.site }}
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: wc-clean-recovery-${{ matrix.site }}
+          path: out/woocommerce-32-cross-runner/
+          if-no-files-found: warn
+          retention-days: 14
