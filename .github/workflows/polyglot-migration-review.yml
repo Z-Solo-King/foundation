@@ -133,6 +133,46 @@ jobs:
           python tools/validate_polyglot_registry.py --repo-root "$GITHUB_WORKSPACE/operations" > "$GITHUB_WORKSPACE/.runtime/polyglot-registry-integrity.json"
           cat "$GITHUB_WORKSPACE/.runtime/polyglot-registry-integrity.json"
 
+      - name: Validate governed migration lane matrix
+        working-directory: operations
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          from private.runtime_language_policy import RuntimeLanguage
+
+          matrix = json.loads(
+              Path("docs/POLYGLOT_MIGRATION_LANE_MATRIX_2026-09-27.json").read_text(encoding="utf-8")
+          )
+          lanes = matrix["lanes"]
+          by_language = {row["language"]: row for row in lanes}
+
+          assert set(by_language) == {language.value for language in RuntimeLanguage}
+          assert len(by_language) == len(lanes)
+          assert all(row.get("authority_transfer") is False for row in lanes)
+
+          expected_stages = {
+              "python": "keep_authority",
+              "typescript": "differential_and_shadow",
+              "rust_wasm": "benchmark_and_shadow",
+              "go": "benchmark_complete",
+              "java": "deferred",
+              "dotnet": "deferred",
+              "cpp_wasm": "deferred",
+              "zig_wasm": "research_only",
+          }
+          for language, stage in expected_stages.items():
+              assert by_language[language]["stage"] == stage
+
+          print(json.dumps({
+              "schema": matrix["schema"],
+              "language_count": len(lanes),
+              "language_set": sorted(by_language),
+              "authority_transfer_count": sum(
+                  bool(row.get("authority_transfer")) for row in lanes
+              ),
+          }, sort_keys=True))
+
       - name: Setup Node for TypeScript migration evidence
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
