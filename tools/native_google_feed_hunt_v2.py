@@ -818,11 +818,12 @@ def probe_site(site: str, root: str) -> SiteResult:
 
 
 def run_shard(shard: int, shards: int, output_dir: Path) -> list[SiteResult]:
+    started = time.monotonic()
     selected = [target for idx, target in enumerate(TARGETS) if idx % shards == shard]
     output_dir.mkdir(parents=True, exist_ok=True)
     results: list[SiteResult] = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        future_map = {pool.submit(probe_site, site, root): site for site, root in selected}
+        future_map = {pool.submit(probe_site, site, root): (site, root) for site, root in selected}
         for future in concurrent.futures.as_completed(future_map):
             site_name, site_root_url = future_map[future]
             try:
@@ -843,7 +844,7 @@ def run_shard(shard: int, shards: int, output_dir: Path) -> list[SiteResult]:
                         "error_type": type(exc).__name__,
                         "error": str(exc)[:500],
                     },
-                    round(time.monotonic() - started, 3) if 'started' in locals() else 0.0,
+                    round(time.monotonic() - started, 3),
                 )
             results.append(result)
             slug = re.sub(r"[^a-z0-9]+", "-", result.site.lower()).strip("-")
