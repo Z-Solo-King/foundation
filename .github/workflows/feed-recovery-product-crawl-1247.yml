@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: wc-feed-product-crawl-1247
+  group: wc-feed-product-crawl-1247-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
