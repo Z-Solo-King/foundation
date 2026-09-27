@@ -774,3 +774,12 @@ def test_polyglot_migration_review_runs_typescript_acquisition_planner_evidence(
     assert "BENCHMARK_ITERATIONS=200 npm run benchmark" in text
     assert 'differential["case_count"] == 32' in text
     assert 'benchmark["iterations"] == 200' in text
+
+
+def test_typescript_public_endpoint_discovery_is_executed_in_polyglot_review():
+    workflow = (WORKFLOW_ROOT / "polyglot-migration-review.yml").read_text(encoding="utf-8")
+    assert "Run TypeScript public endpoint discovery differential" in workflow
+    assert "npm run differential:python" in workflow
+    assert "npm run differential:compare" in workflow
+    assert 'differential["case_count"] == 32' in workflow
+    assert 'benchmark["repeats"] == 3' in workflow
