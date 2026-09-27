@@ -1,6 +1,8 @@
 name: Custom API Google Feed Recovery 1249 Live
 
 on:
+  pull_request:
+    branches: [main]
   push:
     branches:
       - fix/issue-1249-custom-api-feed-recovery-live-20260927
