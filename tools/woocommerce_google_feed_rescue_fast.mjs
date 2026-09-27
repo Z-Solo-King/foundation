@@ -130,7 +130,8 @@ async function curlRaw(url, timeout=12000) {
     const urlStart = urlPos + urlMarker.length;
     const urlEnd = text.indexOf("\n",urlStart);
     if (!Number.isFinite(status) || urlEnd < 0) return null;
-    let body = text.slice(0,statusPos);\n    if (body.endsWith("\n")) body = body.slice(0,-1);
+    let body = text.slice(0,statusPos);
+    if (body.endsWith("\n")) body = body.slice(0,-1);
     return {status,url:text.slice(urlStart,urlEnd).trim(),text:body,buf:Buffer.from(body,"utf8"),bytes:Buffer.byteLength(body),via:"curl"};
   } catch { return null; }
 }
