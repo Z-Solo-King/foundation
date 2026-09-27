@@ -1,37 +1,37 @@
 #!/usr/bin/env node
-const sites=JSON.parse(process.env.SITES_JSON||"[]"), BW=(process.env.BROWSER_WORKER_URL||"").replace(/\/$/,""), GROQ=process.env.GROQ_API_KEY||"";
+const sites=JSON.parse(process.env.SITES_JSON||"[]");
+const BW=(process.env.BROWSER_WORKER_URL||"").replace(/\/$/,"");
+const GROQ=process.env.GROQ_API_KEY||"";
 const H=[
-"/?woocommerce_gpf=google","/woocommerce_gpf/google","/?woocommerce_gpf=google&gpf_start=0&gpf_limit=100",
-"/?woocommerce_gpf=google&gpf_start=0&gpf_limit=1000","/woocommerce_gpf/google?gpf_start=0&gpf_limit=1000",
-"/google.xml","/google_feed.xml","/google-feed.xml","/google_base.xml","/google-products.xml","/google-product-feed.xml",
-"/google-shopping.xml","/google-shopping-feed.xml","/google-merchant.xml","/google-merchant-feed.xml","/merchant.xml",
-"/merchant-feed.xml","/gpf.xml","/product-feed.xml","/products-feed.xml","/feeds/google.xml","/feeds/google-products.xml",
-"/feeds/google-product-feed.xml","/feeds/google-shopping.xml","/feeds/google-shopping-feed.xml","/feed/google.xml",
-"/feed/google-products.xml","/feed/google-product-feed.xml","/feed/google-shopping.xml","/feed/google-shopping-feed.xml",
-"/feed/merchant.xml","/feed/merchant-feed.xml","/catalog/feed.xml","/catalog/google.xml","/media/feed/google.xml",
-"/wp-content/uploads/google.xml","/wp-content/uploads/google-feed.xml","/wp-content/uploads/google_product_feed.xml",
-"/wp-content/uploads/codesolz-feeds/google.xml","/wp-content/uploads/codesolz-feeds/google-products.xml",
-"/wp-content/uploads/woo-feed/google.xml","/wp-content/uploads/woo-feed/google/xml/google.xml",
-"/wp-content/uploads/woo-feed/google/xml/google-shopping.xml","/wp-content/uploads/woo-product-feed-pro/xml/google.xml",
-"/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml","/wp-content/uploads/woo-product-feed-pro/xml/google-products.xml",
-"/wp-content/uploads/wppfm-feeds/google.xml","/wp-json/feedcraft-product-feed/v1/xml","/wp-json/feedcraft-product-feed/v1/google.xml",
-"/wp-json/google-product-feed/v1/xml","/wp-json/google-feed/v1/xml","/wp-json/woo-feed/v1/google.xml"];
+"/?woocommerce_gpf=google","/?woocommerce_gpf=google&gpf_start=0&gpf_limit=250","/?woocommerce_gpf=google&gpf_start=0&gpf_limit=1000","/?woocommerce_gpf=google&gpf_start=0&gpf_limit=5000",
+"/woocommerce_gpf/google","/woocommerce_gpf/google?gpf_start=0&gpf_limit=250","/woocommerce_gpf/google?gpf_start=0&gpf_limit=1000",
+"/google.xml","/google_feed.xml","/google-feed.xml","/google_base.xml","/googlebase.xml","/google-products.xml","/google-product-feed.xml","/google_product_feed.xml","/google-products-feed.xml",
+"/google-shopping.xml","/google-shopping-feed.xml","/google-shopping-products.xml","/google-shopping-products-feed.xml","/google-merchant.xml","/google-merchant-feed.xml","/google_merchant_feed.xml",
+"/merchant.xml","/merchant-feed.xml","/merchant_feed.xml","/gmerchant.xml","/gpf.xml","/product-feed.xml","/products-feed.xml","/feed_products.xml","/products.rss","/feeds/products.rss",
+"/feed.xml","/feed/google.xml","/feed/google_feed.xml","/feed/googlebase.xml","/feed/google_base.xml","/feed/google-products.xml","/feed/google-product-feed.xml","/feed/google-shopping.xml","/feed/google-shopping-feed.xml","/feed/merchant.xml","/feed/merchant-feed.xml",
+"/feeds/google.xml","/feeds/google_feed.xml","/feeds/google_base.xml","/feeds/google-products.xml","/feeds/google-product-feed.xml","/feeds/google-shopping.xml","/feeds/google-shopping-feed.xml","/feeds/google-merchant.xml","/feeds/google-merchant-feed.xml","/feeds/merchant.xml","/feeds/merchant-feed.xml","/feeds/products.xml",
+"/catalog/feed","/catalog/feed.xml","/catalog/google.xml","/media/feed/google.xml","/products/google.xml","/products/google-feed.xml","/products/google-shopping.xml","/product-feed/google.xml","/product-feed/google-shopping.xml","/google-feed/index.xml","/feeds/google/index.xml",
+"/wp-content/uploads/google.xml","/wp-content/uploads/google-feed.xml","/wp-content/uploads/google_product_feed.xml","/wp-content/uploads/google-shopping.xml","/wp-content/uploads/codesolz-feeds/google.xml","/wp-content/uploads/codesolz-feeds/google-products.xml",
+"/wp-content/uploads/woo-feed/google.xml","/wp-content/uploads/woo-feed/google/xml/google.xml","/wp-content/uploads/woo-feed/google/xml/google-shopping.xml","/wp-content/uploads/woo-feed/google/xml/google-shopping-feed.xml","/wp-content/uploads/woo-feed/google/xml/feed.xml",
+"/wp-content/uploads/woo-product-feed-pro/xml/google.xml","/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml","/wp-content/uploads/woo-product-feed-pro/xml/google-shopping-feed.xml","/wp-content/uploads/woo-product-feed-pro/xml/feed.xml",
+"/wp-content/uploads/wppfm-feeds/google.xml","/wp-json/feedcraft-product-feed/v1/xml","/wp-json/feedcraft-product-feed/v1/google.xml","/wp-json/google-product-feed/v1/xml","/wp-json/google-feed/v1/xml","/wp-json/woo-feed/v1/google.xml"
+];
 const same=(a,b)=>{try{return new URL(a).hostname.replace(/^www\./,"")==new URL(b).hostname.replace(/^www\./,"")}catch{return false}};
 const abs=(r,p)=>{try{return new URL(p,r).href}catch{return null}};
-const valid=s=>/^\s*(?:<\?xml[^>]*>\s*)?<rss\b/i.test(s)&&/https?:\/\/base\.google\.com\/ns\/1\.0/i.test(s)&&/<item\b/i.test(s)&&/<g:id\b/i.test(s)&&/<g:title\b/i.test(s)&&/<g:link\b/i.test(s)&&/<g:price\b/i.test(s)&&/<g:availability\b/i.test(s)&&!/just a moment|cf-chl-|turnstile|captcha|access denied|attention required/i.test(s);
-async function get(u,ms=30000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(u,{redirect:"follow",signal:c.signal,headers:{"User-Agent":"Mozilla/5.0 (compatible; NativeGoogleFeedHunt/2026.09)","Accept":"application/xml,application/rss+xml,text/xml,text/html;q=.7,*/*;q=.2","Accept-Language":"en-IN,en;q=.9"}});return{status:r.status,url:r.url,ct:r.headers.get("content-type")||"",body:await r.text()}}catch(e){return{status:0,error:String(e?.name||e)}}finally{clearTimeout(t)}}
-async function browser(u){if(!BW)return null;const r=await get(BW+"?u="+encodeURIComponent(u),50000);if(r.status!==200)return null;try{const d=JSON.parse(r.body);return d?.success?String(d.result||""):null}catch{return null}}
-function xmls(s,r){const o=[];for(const m of String(s||"").matchAll(/https?:\/\/[^\s"'<>]+/gi)){const u=m[0].replace(/[),.;]+$/,"");if(same(u,r)&&/\.xml(?:\.gz)?(?:$|[?#])/i.test(u))o.push(u)}for(const m of String(s||"").matchAll(/(?:href|loc)=["']([^"']+)["']/gi)){const u=abs(r,m[1]);if(u&&same(u,r)&&/\.xml(?:\.gz)?(?:$|[?#])/i.test(u))o.push(u)}return o}
-async function ai(r,s){if(!GROQ||!s)return[];try{const q=`Domain ${r}. From this public content, return only explicitly present URLs for a native Google Merchant product XML feed on this same host. Never invent. Exclude sitemaps, RSS, Atom, JSON APIs, Store API and product pages. JSON: {"urls":["..."]}. CONTENT:\n${String(s).slice(0,16000)}`;const x=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Authorization":"Bearer "+GROQ,"Content-Type":"application/json"},body:JSON.stringify({model:"llama-3.3-70b-versatile",temperature:0,response_format:{type:"json_object"},messages:[{role:"system",content:"Return only JSON."},{role:"user",content:q}]})});if(!x.ok)return[];const j=JSON.parse((await x.json()).choices?.[0]?.message?.content||"{}");return Array.isArray(j.urls)?j.urls:[]}catch{return[]}}
+const esc=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+function valid(s){const t=String(s||"");if(!/^\s*(?:<\?xml[^>]*>\s*)?<rss\b/i.test(t)||!/https?:\/\/base\.google\.com\/ns\/1\.0/i.test(t)||!/<item\b/i.test(t))return false;if(/just a moment|cf-chl-|turnstile|captcha|access denied|attention required|checking your browser|verify you are human/i.test(t))return false;const p=[...t.matchAll(/\bxmlns:([A-Za-z_][\w.-]*)\s*=\s*["']https?:\/\/base\.google\.com\/ns\/1\.0["']/gi)].map(m=>m[1]);if(!p.length)p.push("g");return p.some(x=>["id","title","link","price","availability"].every(n=>new RegExp(`<${esc(x)}:${n}\\b`,`i`).test(t)))}
+async function get(url,timeout=30000){const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),timeout);try{const r=await fetch(url,{redirect:"follow",signal:ac.signal,headers:{"User-Agent":"Mozilla/5.0 (compatible; NativeGoogleFeedHunt/2026.09)","Accept":"application/xml,application/rss+xml,text/xml,text/html;q=.8,*/*;q=.2","Accept-Language":"en-IN,en;q=.9"}});return{status:r.status,url:r.url,ct:r.headers.get("content-type")||"",body:await r.text()}}catch(e){return{status:0,error:String(e?.name||e)}}finally{clearTimeout(tm)}}
+function discover(text,root){const out=[];for(const m of String(text||"").matchAll(/https?:\/\/[^\s"'<>]+/gi)){const u=m[0].replace(/[),.;]+$/,"");if(same(u,root)&&(/\.xml(?:\.gz)?(?:$|[?#])/i.test(u)||/google|merchant|shopping|product-feed|woocommerce_gpf|woo-feed|wppfm/i.test(u)))out.push(u)}for(const m of String(text||"").matchAll(/(?:href|loc)=['"]([^'"]+)['"]/gi)){const u=abs(root,m[1]);if(u&&same(u,root)&&(/\.xml(?:\.gz)?(?:$|[?#])/i.test(u)||/google|merchant|shopping|product-feed|woocommerce_gpf|woo-feed|wppfm/i.test(u)))out.push(u)}return out}
+async function ai(root,text){if(!GROQ||!text)return[];try{const q=`Domain ${root}. Find ONLY existing native Google Merchant product XML feed URLs explicitly present or clearly referenced in this public page. Never invent. Exclude sitemaps, normal RSS/Atom feeds, Store API, JSON APIs, product pages and reconstructed feeds. Return JSON {"urls":[...]}.\n${String(text).slice(0,18000)}`;const r=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Authorization":"Bearer "+GROQ,"Content-Type":"application/json"},body:JSON.stringify({model:"llama-3.3-70b-versatile",temperature:0,response_format:{type:"json_object"},messages:[{role:"system",content:"Return only JSON object with urls array."},{role:"user",content:q}]})});if(!r.ok)return[];const j=JSON.parse((await r.json()).choices?.[0]?.message?.content||"{}");return Array.isArray(j.urls)?j.urls:[]}catch{return[]}}
+async function browserBatch(root,targets){if(!BW)return null;try{const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),65000);const r=await fetch(BW,{method:"POST",signal:ac.signal,headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({root,targets})});clearTimeout(tm);if(r.status!==200)return{ok:false,status:r.status};const j=await r.json();return j?.success?j:{ok:false,status:200,error:"worker_failure"}}catch(e){return{ok:false,status:0,error:String(e?.name||e)}}}
 async function probe(site){
- const r=site.url.replace(/\/$/,""), c=new Set(H.map(x=>abs(r,x)).filter(Boolean)), discovery=[];
- for(const p of ["/","/robots.txt","/sitemap.xml","/sitemap_index.xml","/wp-sitemap.xml"]){
-  const u=r+p,d=await get(u,25000); if(d.status===200){for(const x of xmls(d.body,r))c.add(x);for(const x of await ai(r,d.body))if(same(abs(r,x)||"",r))c.add(abs(r,x))}
-  discovery.push({url:u,status:d.status});
- }
- const all=[...c];
- const check=async u=>{const d=await get(u,30000);if(d.status===200&&same(d.url,u)&&valid(d.body))return{url:d.url,method:"direct"};if(BW&&([0,403,429,500,502,503,504].includes(d.status)||(d.status===200&&!valid(d.body)))){const b=await browser(u);if(b&&valid(b))return{url:u,method:"cloudflare_browser"}}return null};
- for(let i=0;i<all.length;i+=8){const hits=(await Promise.all(all.slice(i,i+8).map(check))).filter(Boolean);if(hits.length)return{site:site.name,url:hits[0].url,method:hits[0].method,tested:all.length,discovery}}
- return{site:site.name,url:null,method:null,tested:all.length,discovery};
+ const root=site.url.replace(/\/$/,"");const candidates=new Set(H.map(p=>abs(root,p)).filter(Boolean));const discovery=[];
+ for(const p of ["/","/robots.txt","/sitemap.xml","/sitemap_index.xml","/wp-sitemap.xml"]){const u=root+p,d=await get(u,22000);if(d.status===200){for(const x of discover(d.body,root))candidates.add(x);for(const x of await ai(root,d.body)){const a=abs(root,x);if(a&&same(a,root))candidates.add(a)}}discovery.push({url:u,status:d.status,ct:d.ct||"",len:d.body?.length||0})}
+ let directHit=null;const all=[...candidates].slice(0,180);
+ for(let i=0;i<all.length;i+=10){const chunk=all.slice(i,i+10);const rs=await Promise.all(chunk.map(u=>get(u,18000)));for(const [idx,d] of rs.entries())if(d.status===200&&same(d.url,chunk[idx])&&valid(d.body)){directHit={url:d.url,method:"direct"};break}if(directHit)break}
+ if(directHit)return{site:site.name,url:directHit.url,method:directHit.method,tested:all.length,discovery,browser:null};
+ const browser=await browserBatch(root,all);
+ if(browser?.result?.hit?.url)return{site:site.name,url:browser.result.hit.url,method:"cloudflare_browser_session",tested:all.length,discovery,browser:{has_cf_clearance:!!browser.has_cf_clearance,cookie_names:browser.cookie_names||[],page:browser.page||{},status_count:browser.result?.statuses?.length||0}};
+ return{site:site.name,url:null,method:null,tested:all.length,discovery,browser:browser?{has_cf_clearance:!!browser.has_cf_clearance,cookie_names:browser.cookie_names||[],page:browser.page||{},status_count:browser.result?.statuses?.length||0,error:browser.error||null}:null};
 }
-const out=[];for(const s of sites)out.push(await probe(s));console.log(JSON.stringify({native_google_xml_only:true,results:out},null,2));
+const out=[];for(const s of sites)out.push(await probe(s));console.log(JSON.stringify({native_google_xml_only:true,session_browser:true,results:out},null,2));
