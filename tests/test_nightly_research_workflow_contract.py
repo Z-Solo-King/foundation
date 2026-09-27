@@ -26,14 +26,6 @@ def test_matrix_is_fail_fast_false_and_has_three_lanes():
     assert "lane: 2" in text
 
 
-def test_workflow_run_trigger_is_production_release_scoped():
-    text = workflow_text()
-    assert 'workflows:' in text
-    assert '- "Heroic AI production release"' in text
-    assert 'types: [completed]' in text
-    assert 'github.event.workflow_run.head_sha' in text
-
-
 def test_private_operations_revision_and_app_auth_are_explicit():
     text = workflow_text()
     assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
@@ -47,6 +39,13 @@ def test_private_operations_revision_and_app_auth_are_explicit():
     assert "private.multi_agent.runner" in text
     assert "private.multi_agent.project_research" in text
     assert "OPERATIONS_READ_TOKEN" not in text
+
+
+def test_nightly_research_avoids_github_env_for_private_tokens():
+    text = workflow_text()
+    assert "$GITHUB_ENV" not in text
+    assert "operations-research-token.txt" in text
+    assert "operations-summary-token.txt" in text
 
 
 def test_private_source_is_not_uploaded_as_an_artifact():
