@@ -1,0 +1,196 @@
+name: WordPress Feed Plugin URL Hunt
+
+on:
+  push:
+    branches:
+      - hunt/native-google-feed-urls-20260927
+    paths:
+      - ".github/workflows/wp-feed-plugin-url-hunt.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Discover public WordPress feed-plugin URLs
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p out
+          : > out/verified-native-feed-urls.tsv
+          : > out/plugin-hits.tsv
+
+          valid_feed() {
+            local f="$1"
+            grep -Eqi 'http://base.google.com/ns/1.0|https://base.google.com/ns/1.0' "$f" &&
+            grep -Eqi '<rss\b|<feed\b' "$f" &&
+            grep -Eqi '<item\b|<entry\b' "$f" &&
+            grep -Eqi '<g:id\b' "$f" &&
+            grep -Eqi '<g:title\b' "$f" &&
+            grep -Eqi '<g:link\b' "$f" &&
+            grep -Eqi '<g:price\b' "$f" &&
+            ! grep -Eqi 'just a moment|cf-chl-|turnstile|captcha|access denied|attention required|checking your browser' "$f"
+          }
+
+          same_host() {
+            local url="$1" root="$2"
+            local a b
+            a=$(printf '%s' "$root" | sed -E 's#^https?://##; s#/.*$##; s/^www\.//')
+            b=$(printf '%s' "$url" | sed -E 's#^https?://##; s#/.*$##; s/^www\.//')
+            [ "$a" = "$b" ]
+          }
+
+          test_url() {
+            local site="$1" root="$2" url="$3" source="$4"
+            [ -n "$url" ] || return 1
+            case "$url" in
+              http://*|https://*) ;;
+              /*) url="$root$url" ;;
+              *) return 1 ;;
+            esac
+            same_host "$url" "$root" || return 1
+            local body meta code final
+            body=$(mktemp); meta=$(mktemp)
+            curl -ksSL -4 --connect-timeout 3 --max-time 5 -A 'Mozilla/5.0' \
+              -H 'Accept: application/xml,text/xml,text/plain,*/*;q=0.2' \
+              -o "$body" -w '%{http_code}\t%{url_effective}' "$url" > "$meta" 2>/dev/null || {
+                rm -f "$body" "$meta"; return 1;
+              }
+            IFS=$'\t' read -r code final < "$meta"
+            if [ "$code" = "200" ] && same_host "$final" "$root" && valid_feed "$body"; then
+              printf '%s\t%s\t%s\n' "$site" "$final" "$source" >> out/verified-native-feed-urls.tsv
+              rm -f "$body" "$meta"
+              return 0
+            fi
+            rm -f "$body" "$meta"
+            return 1
+          }
+
+          hunt_site() {
+            local site="$1" root="$2" safe="$3"
+            local wpjson="out/$safe.wpjson"
+            curl -ksSL -4 --connect-timeout 5 --max-time 8 -A 'Mozilla/5.0' \
+              -H 'Accept: application/json' -o "$wpjson" "$root/wp-json/" 2>/dev/null || true
+
+            if [ -s "$wpjson" ]; then
+              if grep -Eqi 'ctxfeed|wppfm|product[-_ ]?feed|feedcraft|woo[-_ ]?product[-_ ]?feed|google.*feed' "$wpjson"; then
+                printf '%s\tPLUGIN_SIGNAL\n' "$site" >> out/plugin-hits.tsv
+              fi
+
+              for ep in \
+                '/wp-json/ctxfeed/v1/manage_feeds?per_page=100' \
+                '/wp-json/ctxfeed/v1/manage_feeds?status=active&per_page=100' \
+                '/wp-json/ctxfeed/v1/manage_feeds?status=1&per_page=100'; do
+                resp=$(mktemp)
+                curl -ksSL -4 --connect-timeout 3 --max-time 5 -A 'Mozilla/5.0' \
+                  -H 'Accept: application/json' -o "$resp" "$root$ep" 2>/dev/null || true
+                if [ -s "$resp" ]; then
+                  grep -Eo 'https?://[^" <>,]+\.xml(?:\?[^" <>,]*)?|/[^" <>,]+\.xml(?:\?[^" <>,]*)?' "$resp" 2>/dev/null |
+                    sed 's#\\/#/#g; s/[),;}]$//' | sort -u |
+                    while IFS= read -r u; do
+                      test_url "$site" "$root" "$u" "ctxfeed-manage-feeds" && break || true
+                    done
+                fi
+                rm -f "$resp"
+              done
+
+              jq -r 'keys[]? | select(test("feed|google|merchant|product";"i"))' "$wpjson" 2>/dev/null |
+                while IFS= read -r route; do
+                  case "$route" in
+                    /ctxfeed/*|/wppfm/*|/feedcraft*|*/feed*) ;;
+                    *) continue ;;
+                  esac
+                  path=$(printf '%s' "$route" | sed 's#^/##; s#^#/#')
+                  resp=$(mktemp)
+                  curl -ksSL -4 --connect-timeout 3 --max-time 5 -A 'Mozilla/5.0' \
+                    -H 'Accept: application/json' -o "$resp" "$root/wp-json$path" 2>/dev/null || true
+                  if [ -s "$resp" ]; then
+                    grep -Eo 'https?://[^" <>,]+\.xml(?:\?[^" <>,]*)?|/[^" <>,]+\.xml(?:\?[^" <>,]*)?' "$resp" 2>/dev/null |
+                      sed 's#\\/#/#g; s/[),;}]$//' | sort -u |
+                      while IFS= read -r u; do
+                        test_url "$site" "$root" "$u" "wp-json-route" && break || true
+                      done
+                  fi
+                  rm -f "$resp"
+                done
+            fi
+
+            for dir in \
+              '/wp-content/uploads/woo-feed/google/xml/' \
+              '/wp-content/uploads/woo-product-feed-pro/xml/' \
+              '/wp-content/uploads/wppfm-feeds/' \
+              '/wp-content/uploads/woo-feed/google/' \
+              '/wp-content/uploads/woo-feed/xml/' \
+              '/wp-content/uploads/feeds/' \
+              '/feeds/'; do
+              idx=$(mktemp)
+              curl -ksSL -4 --connect-timeout 3 --max-time 5 -A 'Mozilla/5.0' \
+                -o "$idx" "$root$dir" 2>/dev/null || true
+              if [ -s "$idx" ]; then
+                grep -Eo 'href=["''][^"'']+\.(xml|xml\.gz|XML|XML\.GZ)[^"'']*["'']' "$idx" 2>/dev/null |
+                  sed -E 's/^href=["'']//; s/["'']$//; s/[?#].*$//' | sort -u |
+                  while IFS= read -r href; do
+                    test_url "$site" "$root" "$root$dir$href" "public-feed-directory" && break || true
+                  done
+              fi
+              rm -f "$idx"
+            done
+
+            printf '%s\tNO_PLUGIN_FEED\n' "$site" > "out/$safe.report"
+          }
+
+          while IFS='|' read -r site root; do
+            safe=$(printf '%s' "$site" | tr ' /' '__')
+            hunt_site "$site" "$root" "$safe" &
+          done <<'SITES'
+          Aarna Computers|https://aarnacomputers.com
+          Ads Store|https://adsstore.in
+          avikaretails|https://avikaretails.com
+          EZPZ Solutions|https://www.ezpzsolutions.in
+          GamesNComps|https://gamesncomps.com
+          Geekbees|https://geekbees.in
+          hotshiftpc|https://hotshiftpc.com
+          itgadgetsonline|https://itgadgetsonline.com
+          ithunt|https://ithunt.in
+          KC Computers|https://kccomputers.co.in
+          KRG KART|https://krgkart.com
+          Kryptronix Gaming|https://kryptronix.in
+          NCL Computer|https://nclcomputer.com
+          networkitstore|https://networkitstore.in
+          nexusinfosys|https://www.mynexusinfosys.com
+          Only SDD|https://onlyssd.com
+          PC Kumar Infotech|https://pckumar.in
+          PC Studio|https://www.pcstudio.in
+          PCHubShop|https://www.pchubshop.com
+          Prime ABGB|https://www.primeabgb.com
+          quickincomputers|https://quickincomputers.com
+          SCL Gaming|https://sclgaming.in
+          solankienterprises|https://solankienterprises.com
+          Variety Infotech|https://varietyinfotech.com
+          Viper PC|https://viperpc.in
+          AULA India|https://aulaindia.com
+          Cosmic Byte|https://www.thecosmicbyte.com
+          Meckeys|https://www.meckeys.com
+          Moskeys|https://moskeys.com
+          Ninja Dog|https://ninjadog.in
+          StacksKB|https://stackskb.com
+          Theproaudio|https://www.theproaudio.com
+          SITES
+          wait
+          sort -u out/verified-native-feed-urls.tsv -o out/verified-native-feed-urls.tsv
+          echo '=== VERIFIED NATIVE FEEDS ==='
+          cat out/verified-native-feed-urls.tsv
+          echo '=== PLUGIN SIGNALS ==='
+          cat out/plugin-hits.tsv
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: wordpress-feed-plugin-url-results
+          path: out/
+          retention-days: 14
