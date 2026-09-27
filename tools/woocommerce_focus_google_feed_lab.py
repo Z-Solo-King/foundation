@@ -912,15 +912,33 @@ def replay_candidates(state: SiteState) -> None:
         | set(state.browser_response_feed_urls)
     )
     candidates = {u for u in candidates if looks_feed_url(u)}
-    for idx, url in enumerate(sorted(candidates)[:500], 1):
-        # Candidates are hypotheses. Native XML is the only acceptance test.
-        result = probe_url(
-            state, f"R{idx:03d}", "Candidate live replay",
-            "candidate-replay", url, 35.0,
-            allow_external=not same_host(url, state.root),
-        )
-        if result.validation.get("valid"):
-            state.verified_urls.add(result.final_url or url)
+    candidates = sorted(candidates)[:300]
+    if not candidates:
+        return
+    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as pool:
+        future_map = {
+            pool.submit(
+                probe_url,
+                state,
+                f"R{idx:03d}",
+                "Candidate live replay",
+                "candidate-replay",
+                url,
+                20.0,
+                False if same_host(url, state.root) else True,
+            ): url
+            for idx, url in enumerate(candidates, 1)
+        }
+        for future in concurrent.futures.as_completed(future_map):
+            try:
+                result = future.result()
+                if result.validation.get("valid"):
+                    state.verified_urls.add(result.final_url or future_map[future])
+            except Exception as exc:
+                state.probes.append(ProbeResult(
+                    "RERR", "Candidate replay exception", "harness",
+                    error=type(exc).__name__,
+                ))
 
 def run_site(label: str, root: str, output_dir: Path) -> SiteState:
     state = SiteState(label, root, time.monotonic())
