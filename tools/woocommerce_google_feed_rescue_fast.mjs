@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -39,6 +39,7 @@ const FEEDS = [
 const UA = "Mozilla/5.0 (compatible; WooCommerceGoogleRescueFast/2.0)";
 const ROOT = "out/rescue-fast";
 const PAGE_SIZE = 100;
+const AI_CANDIDATES = ROOT + "/ai_candidates.json";
 await mkdir(ROOT + "/feeds", {recursive:true});
 await mkdir(ROOT + "/raw", {recursive:true});
 
@@ -140,7 +141,7 @@ async function reconstruct(base,out,winner) {
   const add=x=>{for(const p of (Array.isArray(x)?x:[])){const k=String(p?.id??p?.sku??"");if(k&&!seen.has(k)){seen.add(k);products.push(p);}}};
 
   add(seed);
-  if(seed.length) page=2;
+  page=1;
 
   while(!stopped && page<=250 && products.length<20000){
     let data=null, headers=null;
@@ -186,10 +187,24 @@ async function reconstruct(base,out,winner) {
   out.reconstructed_feed={source:"PUBLIC_WOOCOMMERCE_STORE_API_RECONSTRUCTION",url:winner.request,file,sha256:hash,bytes:Buffer.byteLength(xml),valid_items:items.length,skipped_products:products.length-items.length,note:"Backup snapshot; not the retailer's native Merchant Center feed URL."};
   return true;
 }
+async function loadAiPaths(name) {
+  try {
+    const raw = JSON.parse(await readFile(AI_CANDIDATES, "utf8"));
+    const row = Array.isArray(raw?.retailers)
+      ? raw.retailers.find(x => String(x?.name).toLowerCase() === String(name).toLowerCase())
+      : null;
+    const paths = Array.isArray(row?.paths) ? row.paths : [];
+    return [...new Set(paths.map(v => String(v || "").trim())
+      .filter(v => /^\/(?!\/)/.test(v) && !/:\/\//.test(v) && v.length <= 500))];
+  } catch { return []; }
+}
 async function nativeRace(base,out) {
   let idx=0, won=false;
-  const worker=async()=>{ while(idx<FEEDS.length && !won) {
-    const path=FEEDS[idx++], url=new URL(path,base + "/").href;
+  const aiPaths = await loadAiPaths(out.name);
+  const candidatePaths = [...new Set([...FEEDS, ...aiPaths])];
+  out.ai_candidate_paths = aiPaths;
+  const worker=async()=>{ while(idx<candidatePaths.length && !won) {
+    const path=candidatePaths[idx++], url=new URL(path,base + "/").href;
     try {
       const r=await get(url);
       const hit={url,status:r.status,bytes:r.bytes};
