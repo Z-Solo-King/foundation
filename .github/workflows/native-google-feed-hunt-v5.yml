@@ -1,0 +1,141 @@
+name: Native Google Feed URL Hunt V5
+
+on:
+  push:
+    branches: [test/wc-feed-recovery-clean-20260927]
+    paths:
+      - ".github/workflows/native-google-feed-hunt-v5.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/native-google-feed-hunt-v5.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hunt:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 32
+      matrix:
+        include:
+          - {name: "Aarna Computers", root: "https://aarnacomputers.com"}
+          - {name: "Ads Store", root: "https://adsstore.in"}
+          - {name: "avikaretails", root: "https://avikaretails.com"}
+          - {name: "EZPZ Solutions", root: "https://www.ezpzsolutions.in"}
+          - {name: "GamesNComps", root: "https://gamesncomps.com"}
+          - {name: "Geekbees", root: "https://geekbees.in"}
+          - {name: "hotshiftpc", root: "https://hotshiftpc.com"}
+          - {name: "itgadgetsonline", root: "https://itgadgetsonline.com"}
+          - {name: "ithunt", root: "https://ithunt.in"}
+          - {name: "KC Computers", root: "https://kccomputers.co.in"}
+          - {name: "KRG KART", root: "https://krgkart.com"}
+          - {name: "Kryptronix Gaming", root: "https://kryptronix.in"}
+          - {name: "NCL Computer", root: "https://nclcomputer.com"}
+          - {name: "networkitstore", root: "https://networkitstore.in"}
+          - {name: "nexusinfosys", root: "https://www.mynexusinfosys.com"}
+          - {name: "Only SDD", root: "https://onlyssd.com"}
+          - {name: "PC Kumar Infotech", root: "https://pckumar.in"}
+          - {name: "PC Studio", root: "https://www.pcstudio.in"}
+          - {name: "PCHubShop", root: "https://www.pchubshop.com"}
+          - {name: "Prime ABGB", root: "https://www.primeabgb.com"}
+          - {name: "quickincomputers", root: "https://quickincomputers.com"}
+          - {name: "SCL Gaming", root: "https://sclgaming.in"}
+          - {name: "solankienterprises", root: "https://solankienterprises.com"}
+          - {name: "Variety Infotech", root: "https://varietyinfotech.com"}
+          - {name: "Viper PC", root: "https://viperpc.in"}
+          - {name: "AULA India", root: "https://aulaindia.com"}
+          - {name: "Cosmic Byte", root: "https://www.thecosmicbyte.com"}
+          - {name: "Meckeys", root: "https://www.meckeys.com"}
+          - {name: "Moskeys", root: "https://moskeys.com"}
+          - {name: "Ninja Dog", root: "https://ninjadog.in"}
+          - {name: "StacksKB", root: "https://stackskb.com"}
+          - {name: "Theproaudio", root: "https://www.theproaudio.com"}
+
+    steps:
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+
+      - name: Probe WooCommerce GPF pagination and feed variants
+        env:
+          ROOT: ${{ matrix.root }}
+          SITE_NAME: ${{ matrix.name }}
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          cat > /tmp/hunt.mjs <<'NODE'
+          import fs from 'node:fs/promises';
+
+          const root=process.env.ROOT.replace(/\/$/,'');
+          const site=process.env.SITE_NAME;
+          const u0=new URL(root);
+          const hosts=[u0.hostname,u0.hostname.startsWith('www.')?u0.hostname.slice(4):'www.'+u0.hostname].filter((v,i,a)=>a.indexOf(v)===i);
+          const schemes=['https:','http:'];
+          const paths=[
+            '/?woocommerce_gpf=google',
+            '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=25',
+            '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=100',
+            '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=250',
+            '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=500',
+            '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=1000',
+            '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=5000',
+            '/woocommerce_gpf/google',
+            '/woocommerce_gpf/google?gpf_start=0&gpf_limit=25',
+            '/woocommerce_gpf/google?gpf_start=0&gpf_limit=100',
+            '/woocommerce_gpf/google?gpf_start=0&gpf_limit=1000'
+          ];
+          const seen=new Set(); let found=null;
+
+          function sameSite(u){
+            try{
+              const h=new URL(u).hostname.replace(/^www\./,'').toLowerCase();
+              return hosts.some(x=>h===x.replace(/^www\./,'').toLowerCase());
+            }catch{return false}
+          }
+          function valid(b){
+            const x=b.slice(0,3000000).toLowerCase();
+            return (/<rss\\b|<feed\\b/.test(x)) &&
+              x.includes('base.google.com/ns/1.0') &&
+              /<item\\b|<entry\\b/.test(x) &&
+              /<g:id\\b|<id\\b/.test(x) &&
+              /<g:title\\b|<title\\b/.test(x) &&
+              /<g:link\\b|<link\\b/.test(x) &&
+              /<g:price\\b|<price\\b/.test(x) &&
+              !/(just a moment|attention required|turnstile|cf-chl-|captcha|access denied)/i.test(x)
+          }
+          async function test(u){
+            if(seen.has(u)||found)return; seen.add(u);
+            try{
+              const r=await fetch(u,{redirect:'follow',signal:AbortSignal.timeout(6500),headers:{
+                'User-Agent':'Mozilla/5.0',
+                'Accept':'application/xml,text/xml,text/plain,*/*;q=0.3'
+              }});
+              const b=await r.text();
+              if(r.ok&&sameSite(r.url)&&valid(b))found={url:r.url,status:r.status,bytes:b.length};
+            }catch{}
+          }
+
+          for(const s of schemes)for(const h of hosts)for(const p of paths)await test(s+'//'+h+p);
+
+          const result={site,root,status:found?'VERIFIED_NATIVE_GOOGLE_XML':'NOT_FOUND',
+            verified_native_feed_url:found?.url??null,evidence:found??null,tested_urls:seen.size};
+          await fs.writeFile('out/result.json',JSON.stringify(result,null,2));
+          if(found)await fs.writeFile('out/verified-native-feed-url.txt',found.url+'\\n');
+          console.log(JSON.stringify(result));
+          NODE
+          node /tmp/hunt.mjs
+
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: native-v5-${{ matrix.name }}
+          path: out/
+          if-no-files-found: warn
+          retention-days: 14
