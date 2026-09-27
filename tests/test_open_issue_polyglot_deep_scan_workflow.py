@@ -17,3 +17,21 @@ def test_deep_scan_lane_receipts_upload_even_when_scan_fails():
     text = WORKFLOW.read_text(encoding="utf-8")
     assert '      - name: Upload lane receipt\n        if: always()' in text
 
+
+def test_deep_scan_freezes_operations_revision_once_and_reuses_exact_sha():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert 'outputs:\n      operations_sha: ${{ steps.freeze.outputs.sha }}' in text
+    assert 'repository: Z-Solo-King/operations\n          ref: main\n' in text
+    assert 'repository: Z-Solo-King/operations\n          ref: ${{ needs.snapshot.outputs.operations_sha }}\n' in text
+    assert 'needs: [snapshot, lane]' in text
+
+
+def test_deep_scan_aggregate_uses_private_operations_access_and_exact_matrix_coverage():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert 'actions/create-github-app-token@' in text
+    assert 'steps.operations-app-aggregate.outputs.token' in text
+    assert 'open-issue-polyglot-deep-scan/v3' in text
+    assert 'active_pairs_expected' in text
+    assert 'historical_issues = {"foundation#1264", "foundation#1267", "foundation#1281", "operations#197"}' in text
+    assert 'observed_active == expected_lane_pairs' in text
+    assert 'observed_historical == {(issue, lane) for issue in historical_issues}' in text
