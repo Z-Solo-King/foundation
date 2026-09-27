@@ -1,9 +1,9 @@
-name: Live AI agent benchmark
+name: Live AI agent benchmark (issue 1157 acceptance)
 
 on:
-  push:
-    branches:
-      - fix/issue-1157-live-agent-baseline-20260927
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
   workflow_dispatch:
 
 permissions:
@@ -15,6 +15,12 @@ concurrency:
 
 jobs:
   benchmark:
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || (
+        github.head_ref == 'fix/issue-1157-live-agent-baseline-20260927'
+        && github.event.pull_request.head.repo.full_name == github.repository
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
