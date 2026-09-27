@@ -107,6 +107,54 @@ async function curlJson(url, timeout=12000) {
     return Array.isArray(data)&&data.length?{data,via:"curl"}:null;
   } catch { return null; }
 }
+async function curlRaw(url, timeout=12000) {
+  try {
+    const args = [
+      "-sS","-L","-4","--connect-timeout","5","--max-time",String(Math.ceil(timeout/1000)),
+      "-A",UA,
+      "-H","Accept: application/xml,application/rss+xml,text/xml,text/plain,text/html;q=0.8,*/*;q=0.2",
+      "-w","\\n__WC_STATUS__%{http_code}\\n__WC_URL__%{url_effective}\\n",
+      url
+    ];
+    const { stdout } = await execFileAsync("curl",args,{timeout:timeout+2000,maxBuffer:32*1024*1024});
+    const text = String(stdout || "");
+    const sm = text.match(/\\n__WC_STATUS__(\\d{3})\\n__WC_URL__(.+)\\n$/s);
+    if (!sm) return null;
+    const body = text.slice(0, sm.index);
+    return {status:Number(sm[1]),url:sm[2].trim(),text:body,buf:Buffer.from(body,"utf8"),bytes:Buffer.byteLength(body),via:"curl"};
+  } catch { return null; }
+}
+async function discoverPublicCandidates(base,out) {
+  const roots=["/robots.txt","/sitemap.xml","/wp-sitemap.xml","/sitemap_index.xml","/sitemap-index.xml"];
+  const found=new Set();
+  for (const path of roots) {
+    const url=new URL(path,base + "/").href;
+    let text="";
+    try {
+      const r=await get(url,8000);
+      if (r.status===200) text=r.text;
+      out.discovery_candidates.push({url,status:r.status,bytes:r.bytes,transport:"fetch"});
+    } catch (e) {
+      out.discovery_candidates.push({url,classification:e?.name==="AbortError"?"TIMEOUT":"ERROR",transport:"fetch"});
+    }
+    if (!text) {
+      const r=await curlRaw(url,12000);
+      if (r) {
+        text=r.text;
+        out.discovery_candidates.push({url:r.url,status:r.status,bytes:r.bytes,transport:"curl"});
+      }
+    }
+    for (const m of String(text).matchAll(/https?:\\/\\/[^\\s<>"]+/g)) {
+      try {
+        const u=new URL(String(m[0]).replace(/[),.;]+$/,""),base);
+        const p=u.pathname+(u.search||"");
+        if (u.origin===new URL(base).origin && p.length<=500 &&
+            /xml|feed|merchant|google|shopping|product|woo|wppfm|codesolz|feedcraft/i.test(p)) found.add(p);
+      } catch {}
+    }
+  }
+  return [...found].slice(0,80);
+}
 async function storeRace(base,out) {
   const cs=[
     new URL("/wp-json/wc/store/v1/products",base + "/"),
@@ -201,25 +249,42 @@ async function loadAiPaths(name) {
 async function nativeRace(base,out) {
   let idx=0, won=false;
   const aiPaths = await loadAiPaths(out.name);
-  const candidatePaths = [...new Set([...FEEDS, ...aiPaths])];
+  const discovered = await discoverPublicCandidates(base,out);
+  const candidatePaths = [...new Set([...FEEDS, ...aiPaths, ...discovered])];
   out.ai_candidate_paths = aiPaths;
+  out.discovered_candidate_paths = discovered;
   const worker=async()=>{ while(idx<candidatePaths.length && !won) {
     const path=candidatePaths[idx++], url=new URL(path,base + "/").href;
     try {
       const r=await get(url);
-      const hit={url,status:r.status,bytes:r.bytes};
+      const hit={url,status:r.status,bytes:r.bytes,transport:"fetch"};
       if(r.status===200 && nativeValid(r.text)) {
         won=true;
         const hash=createHash("sha256").update(r.buf).digest("hex");
         const file=ROOT + "/feeds/" + slug(out.name) + "-native-" + hash.slice(0,12) + ".xml";
         await writeFile(file,r.buf);
-        out.feed={url,finalUrl:r.url,source:"PUBLIC_NATIVE_FEED",file,sha256:hash,bytes:r.bytes};
+        out.feed={url,finalUrl:r.url,source:"PUBLIC_NATIVE_FEED",transport:"fetch",file,sha256:hash,bytes:r.bytes};
         out.native_candidate=hit;
         break;
       }
       hit.classification=r.status===200?"NO_MATCH":challenge(r.status,r.text)?"BLOCKED_OR_CHALLENGED":r.status===429?"RATE_LIMITED":r.status===403?"ACCESS_DENIED":"HTTP_"+r.status;
       out.native_candidates.push(hit);
-    } catch(err) { out.native_candidates.push({url,classification:err?.name==="AbortError"?"TIMEOUT":"ERROR",error:err?.name || String(err)}); }
+      const cr=await curlRaw(url,12000);
+      if (cr) {
+        const ch={url:cr.url,status:cr.status,bytes:cr.bytes,transport:"curl"};
+        if(cr.status===200 && nativeValid(cr.text)) {
+          won=true;
+          const hash=createHash("sha256").update(cr.buf).digest("hex");
+          const file=ROOT + "/feeds/" + slug(out.name) + "-native-" + hash.slice(0,12) + ".xml";
+          await writeFile(file,cr.buf);
+          out.feed={url,finalUrl:cr.url,source:"PUBLIC_NATIVE_FEED",transport:"curl",file,sha256:hash,bytes:cr.bytes};
+          out.native_candidate=ch;
+          break;
+        }
+        ch.classification=cr.status===200?"NO_MATCH":challenge(cr.status,cr.text)?"BLOCKED_OR_CHALLENGED":cr.status===429?"RATE_LIMITED":cr.status===403?"ACCESS_DENIED":"HTTP_"+cr.status;
+        out.native_candidates.push(ch);
+      }
+    } catch(err) { out.native_candidates.push({url,classification:err?.name==="AbortError"?"TIMEOUT":"ERROR",error:err?.name || String(err),transport:"fetch"}); }
   }};
   await Promise.all(Array.from({length:12},worker));
   return won;
