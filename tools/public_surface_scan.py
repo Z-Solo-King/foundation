@@ -76,6 +76,14 @@ def scan_text(path: str, text: str) -> tuple[list[Finding], list[str]]:
     findings: list[Finding] = []
     warnings: list[str] = []
     for pattern, message in HIGH_RISK:
+        # Immutable Operations pins are build inputs, not runtime provenance; only
+        # historical documentation/records are subject to the private-revision rule.
+        if message in {
+            "private Operations deployment provenance",
+            "private Operations revision disclosure",
+            "private revision provenance literal",
+        } and not path.startswith("docs/"):
+            continue
         if re.search(pattern, text):
             findings.append(Finding(path, "public-disclosure", message))
     for pattern, message in WARN:
