@@ -745,3 +745,8 @@ def test_observation_contract_benchmark_gate():
     assert "Run TypeScript observation contract benchmark" in text
     assert "BENCHMARK_ITERATIONS=200 npm run benchmark" in text
     assert "observation-contract-benchmark" in text
+
+
+def test_polyglot_migration_review_creates_runtime_output_dir():
+    text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
+    assert 'mkdir -p "$GITHUB_WORKSPACE/.runtime"' in text
