@@ -4,6 +4,7 @@ on:
     branches: [hunt/native-google-feed-urls-20260927]
     paths:
       - ".github/workflows/wc-browser-debug.yml"
+      - "tools/wc_browser_batch_worker.js"
   workflow_dispatch:
 permissions:
   contents: read
