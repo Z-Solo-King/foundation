@@ -238,8 +238,36 @@ def _public_json_lines(command: list[str], timeout_s: float = 25.0) -> list[dict
         )
     except (subprocess.TimeoutExpired, OSError):
         return []
+
+    text_out = (proc.stdout or "").strip()
+    if not text_out:
+        return []
+
+    # Support both JSON Lines (Common Crawl) and JSON-array CDX responses
+    # (Wayback).  CDX JSON arrays may have the first row as column headers.
+    try:
+        parsed = json.loads(text_out)
+    except json.JSONDecodeError:
+        parsed = None
+
+    if isinstance(parsed, dict):
+        return [parsed]
+    if isinstance(parsed, list):
+        if parsed and all(isinstance(item, dict) for item in parsed):
+            return [item for item in parsed if isinstance(item, dict)]
+        if parsed and isinstance(parsed[0], list):
+            header = [str(x) for x in parsed[0]]
+            records: list[dict[str, object]] = []
+            for row in parsed[1:]:
+                if isinstance(row, list):
+                    records.append({
+                        header[i]: row[i] if i < len(row) else ""
+                        for i in range(len(header))
+                    })
+            return records
+
     out: list[dict[str, object]] = []
-    for line in (proc.stdout or "").splitlines():
+    for line in text_out.splitlines():
         line = line.strip()
         if not line:
             continue
