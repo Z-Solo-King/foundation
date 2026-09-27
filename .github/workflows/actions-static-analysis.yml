@@ -92,3 +92,44 @@ jobs:
           payload=json.loads((Path(os.environ["RUNNER_TEMP"]) / "zizmor.json").read_text())
           assert payload, "fixture produced no findings"
           PY
+  woocommerce-feed-recovery:
+    name: WooCommerce 10-site public feed recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        site:
+          - ads-store
+          - ithunt
+          - kccomputers
+          - krg-kart
+          - pc-kumar-infotech
+          - pchubshop
+          - scl-gaming
+          - variety-infotech
+          - moskeys
+          - theproaudio
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+      - name: Run WooCommerce recovery
+        run: node tools/woocommerce_32_cross_runner_feed_recovery.mjs --site "$SITE"
+        env:
+          SITE: ${{ matrix.site }}
+      - name: Upload recovery artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: wc-feed-recovery-${{ matrix.site }}
+          path: out/woocommerce-32-cross-runner/
+          if-no-files-found: warn
+          retention-days: 14
