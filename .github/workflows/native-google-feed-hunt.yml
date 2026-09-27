@@ -54,7 +54,7 @@ jobs:
           set -euo pipefail
           base="out/native-google-feed-shard-stage1-${{ matrix.slug }}"
           mkdir -p "$base"
-          for round in 1 2; do
+          for round in 1 2 3 4; do
             out="$base/round-$round"
             args=(--shard 0 --shards 1 --only-sites "${{ matrix.site }}" --output-dir "$out")
             if [ "$round" -gt 1 ]; then
@@ -76,6 +76,42 @@ jobs:
           path: out/native-google-feed-shard-stage1-${{ matrix.slug }}/
           if-no-files-found: error
           retention-days: 14
+
+  stage1_gate:
+    name: "Gate · require both Stage 1 feeds"
+    needs: [stage1_gate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download Stage 1 evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4.3.0
+        with:
+          pattern: native-google-feed-shard-stage1-*
+          path: out/learning
+          merge-multiple: false
+      - name: Verify both Stage 1 retailers
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          wanted = {"KRG KART", "avikaretails"}
+          found = {}
+          for p in Path("out/learning").rglob("*.json"):
+              try:
+                  d = json.loads(p.read_text(encoding="utf-8"))
+              except Exception:
+                  continue
+              site = d.get("site")
+              url = d.get("native_feed_url")
+              if site in wanted and url:
+                  found[site] = url
+          missing = wanted - found.keys()
+          if missing:
+              raise SystemExit("Stage 1 gate blocked: " + ", ".join(sorted(missing)))
+          for site in sorted(found):
+              print(site + "\t" + found[site])
+          PY
 
   stage2:
     name: "Stage 2 · next 4 · ${{ matrix.slug }}"
@@ -127,6 +163,42 @@ jobs:
           path: out/native-google-feed-shard-stage2-${{ matrix.slug }}/
           if-no-files-found: error
           retention-days: 14
+
+  stage2_gate:
+    name: "Gate · require all 4 learned feeds"
+    needs: [stage2_gate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download Stage 2 evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4.3.0
+        with:
+          pattern: native-google-feed-shard-stage2-*
+          path: out/learning
+          merge-multiple: false
+      - name: Verify Stage 2 retailers
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          wanted = {"Aarna Computers", "PC Kumar Infotech", "Viper PC", "ithunt"}
+          found = {}
+          for p in Path("out/learning").rglob("*.json"):
+              try:
+                  d = json.loads(p.read_text(encoding="utf-8"))
+              except Exception:
+                  continue
+              site = d.get("site")
+              url = d.get("native_feed_url")
+              if site in wanted and url:
+                  found[site] = url
+          missing = wanted - found.keys()
+          if missing:
+              raise SystemExit("Stage 2 gate blocked: " + ", ".join(sorted(missing)))
+          for site in sorted(found):
+              print(site + "\t" + found[site])
+          PY
 
   stage3:
     name: "Stage 3 · next 6 · ${{ matrix.slug }}"
@@ -182,6 +254,42 @@ jobs:
           path: out/native-google-feed-shard-stage3-${{ matrix.slug }}/
           if-no-files-found: error
           retention-days: 14
+
+  stage3_gate:
+    name: "Gate · require all 6 learned feeds"
+    needs: [stage3_gate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download Stage 3 evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4.3.0
+        with:
+          pattern: native-google-feed-shard-stage3-*
+          path: out/learning
+          merge-multiple: false
+      - name: Verify Stage 3 retailers
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          wanted = {"Ads Store", "KC Computers", "GamesNComps", "Geekbees", "hotshiftpc", "itgadgetsonline"}
+          found = {}
+          for p in Path("out/learning").rglob("*.json"):
+              try:
+                  d = json.loads(p.read_text(encoding="utf-8"))
+              except Exception:
+                  continue
+              site = d.get("site")
+              url = d.get("native_feed_url")
+              if site in wanted and url:
+                  found[site] = url
+          missing = wanted - found.keys()
+          if missing:
+              raise SystemExit("Stage 3 gate blocked: " + ", ".join(sorted(missing)))
+          for site in sorted(found):
+              print(site + "\t" + found[site])
+          PY
 
   stage4:
     name: "Stage 4 · remaining 20 · shard ${{ matrix.shard }}"
