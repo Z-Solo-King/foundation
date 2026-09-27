@@ -34,11 +34,11 @@ jobs:
 
       - name: Verify protected inputs
         env:
-          OPERATIONS_APP_ID: \${{ secrets.OPERATIONS_APP_ID }}
-          OPERATIONS_APP_PRIVATE_KEY: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
-          CF_API_TOKEN: \${{ secrets.CF_API_TOKEN }}
-          CF_ACCOUNT_ID: \${{ secrets.CF_ACCOUNT_ID }}
-          PROVIDER_KEYS_JSON: \${{ secrets.PROVIDER_KEYS_JSON }}
+          OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
+          OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
         run: |
           set -euo pipefail
           test "$GITHUB_REPOSITORY" = "Z-Solo-King/foundation"
@@ -61,8 +61,8 @@ jobs:
 
       - name: Create GitHub App token
         env:
-          OPERATIONS_APP_ID: \${{ secrets.OPERATIONS_APP_ID }}
-          OPERATIONS_APP_PRIVATE_KEY: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
+          OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
         run: |
           set -euo pipefail
           umask 077
@@ -121,7 +121,7 @@ jobs:
 
       - name: Probe configured providers and build runtime state
         env:
-          PROVIDER_KEYS_JSON: \${{ secrets.PROVIDER_KEYS_JSON }}
+          PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
         run: |
           set -euo pipefail
           python "$RUNNER_TEMP/provider_fleet_probe.py" \
@@ -144,8 +144,8 @@ jobs:
 
       - name: Publish runtime state to private Operations Worker
         env:
-          CF_API_TOKEN: \${{ secrets.CF_API_TOKEN }}
-          CF_ACCOUNT_ID: \${{ secrets.CF_ACCOUNT_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
         run: |
           set -euo pipefail
           state="$(cat provider-runtime-state.json)"
@@ -163,7 +163,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: provider-fleet-runtime-\${{ github.run_id }}
+          name: provider-fleet-runtime-${{ github.run_id }}
           path: |
             provider-fleet-probe.json
             provider-runtime-state.json
