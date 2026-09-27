@@ -1,7 +1,9 @@
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
+import { createGunzip } from "node:zlib";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { Readable } from "node:stream";
 
 const execFileAsync = promisify(execFile);
 
@@ -250,25 +252,26 @@ async function waybackDomainIndex(base) {
   };
 }
 
-async function commonCrawlLatestIndex() {
+async function commonCrawlRecentIndexes(limit = 4) {
   const endpoint = "https://index.commoncrawl.org/collinfo.json";
   const r = await fetchBuffer(endpoint, ARCHIVE_TIMEOUT_MS, {
     "Accept": "application/json,text/plain;q=0.8,*/*;q=0.1",
   });
-  if (r.status !== 200 || !r.buf) return null;
+  if (r.status !== 200 || !r.buf) return [];
   try {
     const data = JSON.parse(r.buf.toString("utf8"));
-    if (!Array.isArray(data) || !data.length) return null;
-    const latest = data[0];
-    const raw = String(latest?.id || latest?.name || latest?.["cdx-api"] || "").trim();
-    if (!raw) return null;
-    if (/^https?:\/\//i.test(raw)) {
-      const last = raw.replace(/\/$/, "").split("/").pop() || "";
-      return last.replace(/-index$/, "");
-    }
-    return raw.replace(/-index$/, "");
+    if (!Array.isArray(data)) return [];
+    return data.slice(0, limit).map(item => {
+      const raw = String(item?.id || item?.name || item?.["cdx-api"] || "").trim();
+      if (!raw) return null;
+      if (/^https?:\/\//i.test(raw)) {
+        const last = raw.replace(/\/$/, "").split("/").pop() || "";
+        return last.replace(/-index$/, "");
+      }
+      return raw.replace(/-index$/, "");
+    }).filter(Boolean);
   } catch {
-    return null;
+    return [];
   }
 }
 
@@ -451,20 +454,68 @@ async function verifyCandidate(url, base) {
 }
 
 async function fetchArchivedSnapshot(entry) {
-  if (!entry.archiveUrl) return null;
-  const r = await fetchBuffer(entry.archiveUrl, ARCHIVE_TIMEOUT_MS, {
-    "Accept": "application/xml,application/rss+xml,text/xml,text/html;q=0.8,*/*;q=0.1",
-  });
-  if (r.status !== 200 || !r.buf) return null;
-  const body = r.buf.toString("utf8");
-  if (!looksGoogleMerchantXml(body, r.contentType) && !/<(?:rss|feed)\b/i.test(body)) return null;
-  return {
-    status: r.status,
-    finalUrl: r.url,
-    contentType: r.contentType,
-    bytes: r.bytes,
-    body: r.buf,
-  };
+  if (entry.archiveUrl) {
+    const r = await fetchBuffer(entry.archiveUrl, ARCHIVE_TIMEOUT_MS, {
+      "Accept": "application/xml,application/rss+xml,text/xml,text/html;q=0.8,*/*;q=0.1",
+    });
+    if (r.status === 200 && r.buf) {
+      const body = r.buf.toString("utf8");
+      if (looksGoogleMerchantXml(body, r.contentType) || /<(?:rss|feed)\b/i.test(body)) {
+        return {
+          status: r.status,
+          finalUrl: r.url,
+          contentType: r.contentType,
+          bytes: r.bytes,
+          body: r.buf,
+          transport: "wayback",
+        };
+      }
+    }
+  }
+
+  if (entry.warc && entry.offset !== "" && entry.length !== "") {
+    try {
+      const start = Number(entry.offset);
+      const length = Number(entry.length);
+      if (!Number.isFinite(start) || !Number.isFinite(length) || start < 0 || length <= 0 || length > MAX_BYTES) return null;
+      const end = start + length - 1;
+      const url = `https://data.commoncrawl.org/${entry.warc}`;
+      const r = await fetchBuffer(url, ARCHIVE_TIMEOUT_MS, {
+        "Range": `bytes=${start}-${end}`,
+        "Accept": "application/octet-stream,*/*;q=0.1",
+      });
+      if (r.status !== 206 && r.status !== 200) return null;
+      if (!r.buf) return null;
+      let raw = r.buf;
+      if (raw[0] === 0x1f && raw[1] === 0x8b) {
+        const chunks = [];
+        const gunzip = createGunzip();
+        await new Promise((resolve, reject) => {
+          gunzip.on("data", chunk => chunks.push(chunk));
+          gunzip.on("end", resolve);
+          gunzip.on("error", reject);
+          Readable.from(raw).pipe(gunzip);
+        });
+        raw = Buffer.concat(chunks);
+      }
+      const text = raw.toString("utf8");
+      const bodyStart = text.indexOf("\r\n\r\n");
+      const body = bodyStart >= 0 ? text.slice(bodyStart + 4) : text;
+      const buf = Buffer.from(body, "utf8");
+      if (!looksGoogleMerchantXml(body, "application/xml") && !/<(?:rss|feed)\b/i.test(body)) return null;
+      return {
+        status: 200,
+        finalUrl: entry.url,
+        contentType: "application/xml",
+        bytes: buf.length,
+        body: buf,
+        transport: "commoncrawl-warc",
+      };
+    } catch {
+      return null;
+    }
+  }
+  return null;
 }
 
 async function verifyMany(candidates, base, concurrency = 10) {
@@ -483,7 +534,7 @@ async function verifyMany(candidates, base, concurrency = 10) {
   return out;
 }
 
-async function recover([name, base], collection) {
+async function recover([name, base], collections) {
   const result = {
     name,
     base,
@@ -498,11 +549,36 @@ async function recover([name, base], collection) {
     observations: [],
   };
 
-  const [live, wayback, commonCrawl] = await Promise.all([
-    discoverLive(base),
-    waybackDomainIndex(base),
-    commonCrawlDomainIndex(base, collection),
-  ]);
+  const archiveBases = [base];
+  try {
+    const u = new URL(base);
+    const altHost = u.hostname.startsWith("www.") ? u.hostname.slice(4) : `www.${u.hostname}`;
+    const alt = new URL(u.href);
+    alt.hostname = altHost;
+    archiveBases.push(alt.origin);
+  } catch {}
+  const waybackResults = [];
+  for (const archiveBase of archiveBases) {
+    waybackResults.push(await waybackDomainIndex(archiveBase));
+    await sleep(SLEEP_MS);
+  }
+  const wayback = {
+    endpoint: waybackResults.map(x => x.endpoint).filter(Boolean).join("\n"),
+    status: waybackResults.every(x => x.status === 200) ? 200 : waybackResults.find(x => x.status)?.status || 0,
+    candidates: [...new Map(waybackResults.flatMap(x => x.candidates || []).map(x => [x.url, x])).values()],
+  };
+
+  const commonResults = [];
+  for (const collection of collections || []) {
+    commonResults.push(await commonCrawlDomainIndex(base, collection));
+    await sleep(SLEEP_MS);
+  }
+  const commonCrawl = {
+    collections: commonResults.map(x => x.collection).filter(Boolean),
+    status: commonResults.every(x => x.status === 200 || x.status === 0) ? 200 : commonResults.find(x => x.status)?.status || 0,
+    candidates: [...new Map(commonResults.flatMap(x => x.candidates || []).map(x => [x.url, x])).values()],
+    queriedCollections: (collections || []).length,
+  };
 
   result.live_discovery = live;
   result.wayback = wayback;
@@ -612,11 +688,11 @@ async function main() {
   await mkdir(`${OUT}/feeds`, { recursive: true });
   for (const [name] of TARGETS) await mkdir(`${OUT}/${slug(name)}`, { recursive: true });
 
-  const collection = await commonCrawlLatestIndex();
+  const collections = await commonCrawlRecentIndexes(4);
   const results = [];
   // Common Crawl explicitly asks clients to avoid parallel CDX requests and to sleep between calls.
   for (const target of TARGETS) {
-    const result = await recover(target, collection);
+    const result = await recover(target, collections);
     results.push(result);
     await sleep(SLEEP_MS);
   }
@@ -624,7 +700,7 @@ async function main() {
   const summary = {
     schema_version: "woocommerce-google-feed-archive-recovery/v1",
     generated_at: new Date().toISOString(),
-    commoncrawl_collection: collection,
+    commoncrawl_collections: collections,
     targets: results.length,
     live_native_verified: results.filter(x => x.status === "VERIFIED_LIVE_NATIVE_FEED").length,
     historical_native_verified: results.filter(x => x.status === "VERIFIED_HISTORICAL_NATIVE_FEED").length,
