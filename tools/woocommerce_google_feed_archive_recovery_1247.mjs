@@ -551,6 +551,8 @@ async function recover([name, base], collections) {
 
   const live = await discoverLive(base);
 
+  const live = await discoverLive(base);
+
   const archiveBases = [base];
   try {
     const u = new URL(base);
