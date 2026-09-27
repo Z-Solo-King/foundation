@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3"
+OPERATIONS_REF="7058d617d576bc18d977c4b615bebba0be9af747"
 OPERATIONS_SERVICE_NAME="operations"
 BASE_URL="https://ai-cio.pages.dev"
 ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"
@@ -23,7 +23,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = '566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3'
+test "$OPERATIONS_REF" = '7058d617d576bc18d977c4b615bebba0be9af747'
 
 after_install_marker=''
 
@@ -208,9 +208,12 @@ jq -e '
 ' "$RUNNER_TEMP/operations/docs/FAMILY_SYNC_STATE.json" >/dev/null
 echo "Family sync snapshot refresh: PASS (Operations main state overlaid; runtime remains ${OPERATIONS_REF})"
 
-# Fail closed if the promoted Operations pin does not contain the canonical
-# authenticated chatbot backend boundary and zero-cost Workers AI provider contract.
-grep -q '^CHAT_LLM_PROVIDERS = "cloudflare_workers_ai"$' "$RUNNER_TEMP/operations/wrangler.toml"
+# Fail closed if the promoted Operations pin contains the canonical authenticated
+# chatbot backend boundary and the exact approved zero-cost provider allowlist.
+actual_provider_list="$(sed -n 's/^CHAT_LLM_PROVIDERS = "\([^"]*\)"$/\1/p' "$RUNNER_TEMP/operations/wrangler.toml" | head -n1)"
+expected_provider_list="$(PYTHONPATH="$RUNNER_TEMP/operations" python -c 'from private.chatbot.approved_providers import approved_zero_cost_provider_values; print(",".join(approved_zero_cost_provider_values()))')"
+test -n "$actual_provider_list"
+test "$actual_provider_list" = "$expected_provider_list"
 grep -q '^CHAT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/zai-org/glm-4.7-flash"$' "$RUNNER_TEMP/operations/wrangler.toml"
 grep -q '"workers_ai_neurons":10000' "$RUNNER_TEMP/operations/wrangler.toml"
 grep -q 'CHAT_BACKEND_TOKEN' "$RUNNER_TEMP/operations/worker.py"

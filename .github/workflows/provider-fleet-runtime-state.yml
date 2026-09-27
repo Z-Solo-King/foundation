@@ -1,0 +1,180 @@
+name: Provider fleet runtime state
+
+on:
+  schedule:
+    - cron: "17 */4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provider-fleet-runtime-state-production
+  cancel-in-progress: true
+
+env:
+  OPERATIONS_REPOSITORY: Z-Solo-King/operations
+  OPERATIONS_PROVIDER_FLEET_REF: 7058d617d576bc18d977c4b615bebba0be9af747
+  OPERATIONS_PROVIDER_FLEET_PATH: tools/provider_fleet_probe.py
+  CLOUDFLARE_SCRIPT_NAME: operations
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    environment: production-secret-sync
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Verify protected inputs
+        env:
+          OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
+          OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "Z-Solo-King/foundation"
+          test "$GITHUB_REF" = "refs/heads/main" || test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
+          test -n "$OPERATIONS_APP_ID"
+          test -n "$OPERATIONS_APP_PRIVATE_KEY"
+          test -n "$CF_API_TOKEN"
+          test -n "$CF_ACCOUNT_ID"
+          test -n "$PROVIDER_KEYS_JSON"
+          python - <<'PY'
+          import json, os
+          payload = json.loads(os.environ["PROVIDER_KEYS_JSON"])
+          assert isinstance(payload, dict) and payload
+          allowed = {"groq","gemini","cerebras","openrouter_free","siliconflow","mistral_free"}
+          unknown = sorted(set(payload) - allowed)
+          assert not unknown, f"unsupported providers: {unknown}"
+          print(f"configured provider count: {len(payload)}")
+          print("zero-cost attestation present for:", sorted(name for name, value in payload.items() if isinstance(value, dict) and value.get("zero_cost") is True))
+          PY
+
+      - name: Create GitHub App token
+        env:
+          OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
+          OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s\n' "$OPERATIONS_APP_PRIVATE_KEY" > "$RUNNER_TEMP/operations-app.pem"
+          python - "$OPERATIONS_APP_ID" "$RUNNER_TEMP/operations-app.pem" > "$RUNNER_TEMP/github-app-jwt.txt" <<'PY'
+          import base64, json, subprocess, sys, time
+          app_id, key_file = sys.argv[1:]
+          def b64url(value):
+              return base64.urlsafe_b64encode(value).rstrip(b"=").decode("ascii")
+          now = int(time.time())
+          header = {"alg":"RS256","typ":"JWT"}
+          payload = {"iat":now-60,"exp":now+540,"iss":app_id}
+          unsigned = f"{b64url(json.dumps(header,separators=(',',':')).encode())}.{b64url(json.dumps(payload,separators=(',',':')).encode())}".encode()
+          signed = subprocess.run(["openssl","dgst","-sha256","-sign",key_file],input=unsigned,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=True).stdout
+          print(unsigned.decode()+"."+b64url(signed))
+          PY
+
+      - name: Resolve Operations installation and token
+        run: |
+          set -euo pipefail
+          app_jwt="$(cat "$RUNNER_TEMP/github-app-jwt.txt")"
+          installation_id="$(curl -sS \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $app_jwt" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            https://api.github.com/app/installations | \
+            jq -r '.[] | select(.account.login == "Z-Solo-King") | .id' | head -n1)"
+          test -n "$installation_id"
+          status="$(curl -sS -o "$RUNNER_TEMP/operations-token.json" -w '%{http_code}' \
+            -X POST \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $app_jwt" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            -H 'Content-Type: application/json' \
+            "https://api.github.com/app/installations/$installation_id/access_tokens" \
+            --data '{"repositories":["operations"]}')"
+          test "$status" = "201"
+          jq -r '.token' "$RUNNER_TEMP/operations-token.json" > "$RUNNER_TEMP/operations-token.txt"
+          test -s "$RUNNER_TEMP/operations-token.txt"
+          echo "::add-mask::$(cat "$RUNNER_TEMP/operations-token.txt")"
+
+      - name: Fetch immutable private provider probe
+        run: |
+          set -euo pipefail
+          token="$(cat "$RUNNER_TEMP/operations-token.txt")"
+          response_status="$(curl -sS -o "$RUNNER_TEMP/provider-probe-file.json" -w '%{http_code}' \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $token" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$OPERATIONS_REPOSITORY/contents/$OPERATIONS_PROVIDER_FLEET_PATH?ref=$OPERATIONS_PROVIDER_FLEET_REF")"
+          test "$response_status" = "200"
+          jq -e --arg path "$OPERATIONS_PROVIDER_FLEET_PATH" '.type == "file" and .path == $path and .size > 0' "$RUNNER_TEMP/provider-probe-file.json" >/dev/null
+          jq -r '.content' "$RUNNER_TEMP/provider-probe-file.json" | tr -d '\n\r' | base64 -d > "$RUNNER_TEMP/provider_fleet_probe.py"
+          python -m py_compile "$RUNNER_TEMP/provider_fleet_probe.py"
+          echo "Provider fleet probe verified at immutable Operations ref $OPERATIONS_PROVIDER_FLEET_REF"
+
+      - name: Probe configured providers and build runtime state
+        env:
+          PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+        run: |
+          set -euo pipefail
+          python "$RUNNER_TEMP/provider_fleet_probe.py" \
+            --output provider-runtime-state.json \
+            --receipt provider-fleet-probe.json
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          state=json.loads(Path("provider-runtime-state.json").read_text())
+          receipt=json.loads(Path("provider-fleet-probe.json").read_text())
+          assert state["schema"] == "provider-runtime-state/v1"
+          assert receipt["schema"] == "provider-fleet-probe/v1"
+          encoded=json.dumps(state, sort_keys=True)
+          assert "api_key" not in encoded
+          assert "secret" not in encoded.lower()
+          print(f"runtime state providers: {len(state['providers'])}")
+          print(f"successful probes: {receipt['success_count']}/{receipt['configured_count']}")
+          PY
+
+      - name: Publish runtime state to private Operations Worker
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          state="$(cat provider-runtime-state.json)"
+          response_status="$(curl -sS -o "$RUNNER_TEMP/provider-runtime-state-publish.json" -w '%{http_code}' \
+            -X PUT \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            -H 'Content-Type: application/json' \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts/$CLOUDFLARE_SCRIPT_NAME/secrets/CHAT_PROVIDER_RUNTIME_STATE" \
+            --data "$(jq -cn --arg text "$state" '{name:"CHAT_PROVIDER_RUNTIME_STATE",text:$text,type:"secret_text"}')")"
+          test "$response_status" = "200"
+          jq -e '.success == true' "$RUNNER_TEMP/provider-runtime-state-publish.json" >/dev/null
+          echo "Published sanitized provider runtime state to private Operations Worker."
+
+      - name: Upload provider evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: provider-fleet-runtime-${{ github.run_id }}
+          path: |
+            provider-fleet-probe.json
+            provider-runtime-state.json
+          retention-days: 14
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/operations-app.pem" \
+                "$RUNNER_TEMP/github-app-jwt.txt" \
+                "$RUNNER_TEMP/operations-token.json" \
+                "$RUNNER_TEMP/operations-token.txt" \
+                "$RUNNER_TEMP/provider-probe-file.json" \
+                "$RUNNER_TEMP/provider_fleet_probe.py"
