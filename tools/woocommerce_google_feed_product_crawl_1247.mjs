@@ -85,44 +85,40 @@ function xmlValid(status,ct,body){
   const count=(body.match(/<(?:item|entry)\b/g)||[]).length;
   return count?{status,content_type:ct,bytes:Buffer.byteLength(body),item_count_observed:count,validation:"strict_google_merchant_xml"}:null;
 }
-async function browserFetchFeedCandidates(page, root){
+async function browserFetchFeedCandidates(context, root){
   const urls = [...new Set(KNOWN_FEED_PATHS.map(path => new URL(path, root.endsWith("/") ? root : root + "/").href))].slice(0, 40);
-  const js = `
-    async ({urls}) => {
-      const out = [];
-      for (const url of urls) {
-        try {
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 18000);
-          const r = await fetch(url, {
-            method: "GET",
-            credentials: "include",
-            cache: "no-store",
-            headers: {
-              "Accept": "application/xml, application/rss+xml, text/xml, */*;q=0.2"
-            },
-            signal: controller.signal
-          });
-          clearTimeout(timer);
-          const ct = r.headers.get("content-type") || "";
-          const body = await r.text();
-          out.push({
-            url,
-            final_url: r.url || url,
-            status: r.status,
-            content_type: ct,
-            bytes: new TextEncoder().encode(body).length,
-            body
-          });
-        } catch (e) {
-          out.push({url, status: 0, content_type: "", bytes: 0, error: String(e?.name || e)});
+  const requestContext = context.request;
+  const out = [];
+  for (const url of urls) {
+    try {
+      const response = await requestContext.get(url, {
+        timeout: 18000,
+        failOnStatusCode: false,
+        headers: {
+          "Accept": "application/xml, application/rss+xml, text/xml, */*;q=0.2"
         }
-      }
-      return out;
+      });
+      const bodyBuffer = await response.body();
+      const body = bodyBuffer.toString("utf8");
+      out.push({
+        url,
+        final_url: response.url() || url,
+        status: response.status(),
+        content_type: response.headers()["content-type"] || "",
+        bytes: bodyBuffer.length,
+        body
+      });
+    } catch (e) {
+      out.push({
+        url,
+        status: 0,
+        content_type: "",
+        bytes: 0,
+        error: String(e?.name || e)
+      });
     }
-  `;
-  try { return await page.evaluate(js, {urls}); }
-  catch (e) { return [{status:0,error:String(e?.name || e)}]; }
+  }
+  return out;
 }
 
 async function probeSite(browser,[name,root]){
@@ -148,7 +144,7 @@ async function probeSite(browser,[name,root]){
       const html=await page.content();
 
       if (u === root && resp?.status() === 200) {
-        const manual = await browserFetchFeedCandidates(page, root);
+        const manual = await browserFetchFeedCandidates(ctx, root);
         for (const hit of manual) {
           network.push({
             url: hit.final_url || hit.url || "",
