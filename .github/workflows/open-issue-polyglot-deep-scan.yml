@@ -59,7 +59,11 @@ jobs:
       - name: Freeze Operations SHA
         id: freeze
         working-directory: operations-snapshot
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        run: |
+          set -euo pipefail
+          sha="$(git rev-parse HEAD)"
+          test "$sha" = "$(git -C . rev-parse HEAD)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
   lane:
     needs: [snapshot]
@@ -210,6 +214,7 @@ jobs:
           import json
           import os
           import subprocess
+          import re
           from pathlib import Path
 
           lane = "${{ matrix.lane }}"
@@ -221,6 +226,8 @@ jobs:
           payload["operations_revision"] = subprocess.check_output(
               ["git", "-C", str(operations_root), "rev-parse", "HEAD"], text=True
           ).strip()
+          if not re.fullmatch(r"[0-9a-f]{40}", payload["operations_revision"]):
+              raise SystemExit("Operations provenance is not an immutable SHA")
           path.write_text(json.dumps(payload, indent=2) + "\n")
           PY
 
@@ -236,13 +243,30 @@ jobs:
   # Aggregate the frozen four-lane receipts from this run; issue scope is validated before execution.
   aggregate:
     name: Aggregate dynamic issue×lane cases
-    needs: [lane]
+    needs: [snapshot, lane]
     runs-on: ubuntu-latest
     if: ${{ needs.lane.result == 'success' }}
     steps:
       - name: Checkout Foundation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Create Operations aggregate read token
+        id: operations-app-aggregate
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations at frozen revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.snapshot.outputs.operations_sha }}
+          token: ${{ steps.operations-app-aggregate.outputs.token }}
+          path: operations
       - name: Download lane receipts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4.3.0
         with:
@@ -252,37 +276,82 @@ jobs:
 
       - name: Validate complete four-lane coverage
         shell: python
+        env:
+          EXPECTED_OPERATIONS_SHA: ${{ needs.snapshot.outputs.operations_sha }}
         run: |
           import json
+          import os
+          import re
           from pathlib import Path
+
           root = Path(".runtime/open-issue-deep-scan")
           receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L?.json"))]
-          assert len(receipts) == 4, f"expected 4 lane receipts, got {len(receipts)}"
-          assert {receipt["lane"] for receipt in receipts} == {"L1", "L2", "L3", "L4"}
-          assert all(not receipt["missing_cases"] for receipt in receipts), "lane receipts contain missing cases"
-          assert all(int(receipt["failed_cases"]) == 0 for receipt in receipts), "lane receipts contain failed cases"
-          assert all(int(receipt["case_count"]) == int(receipt["expected_case_count"]) for receipt in receipts), "lane case counts do not satisfy each lane contract"
-          issue_counts = sorted({int(receipt["issue_count"]) for receipt in receipts})
-          case_counts = sorted({int(receipt["case_count"]) for receipt in receipts})
-          assert all(count > 0 for count in issue_counts)
-          assert all(count > 0 for count in case_counts)
-          cases = {(result["issue"], result["lane"]) for receipt in receipts for result in receipt["results"]}
-          assert len(cases) >= sum(case_counts)
-          assert all(result["status"] != "FAIL" for receipt in receipts for result in receipt["results"])
-          expected_issue_count = len({result["issue"] for receipt in receipts for result in receipt["results"]})
-          expected_case_count = len(cases)
-          assert all(result["status"] != "FAIL" for receipt in receipts for result in receipt["results"])
-          aggregate = {
-              "schema": "open-issue-polyglot-deep-scan/v1",
-              "lane_count": 4,
-              "issue_count": expected_issue_count,
-              "case_count": expected_case_count,
-              "status": "PASS",
-              "foundation_revisions": sorted({receipt["foundation_revision"] for receipt in receipts}),
-              "operations_revisions": sorted({receipt["operations_revision"] for receipt in receipts}),
-              "review_cases": sum(receipt["review_cases"] for receipt in receipts),
+          assert len(receipts) == 4
+          assert {r["lane"] for r in receipts} == {"L1", "L2", "L3", "L4"}
+
+          expected_ops = os.environ["EXPECTED_OPERATIONS_SHA"]
+          assert re.fullmatch(r"[0-9a-f]{40}", expected_ops)
+          assert {r["operations_revision"] for r in receipts} == {expected_ops}
+
+          matrix = json.loads(Path("operations/benchmark/polyglot/open_issue_matrix_52.json").read_text(encoding="utf-8"))
+          active_pairs_expected = {
+              (case["issue"], case["lane"])
+              for case in matrix["cases"]
+              if case.get("active", True)
           }
-          Path(".runtime/open-issue-deep-scan/aggregate.json").write_text(json.dumps(aggregate, indent=2) + "\n")
+          active_matrix_issues = {issue for issue, _ in active_pairs_expected}
+          historical_issues = {"foundation#1264", "foundation#1267", "foundation#1281", "operations#197"}
+
+          active_pairs_observed = set()
+          historical_pairs = set()
+          for receipt in receipts:
+              lane = receipt["lane"]
+              expected_lane_pairs = {pair for pair in active_pairs_expected if pair[1] == lane}
+              observed_active = {
+                  (result["issue"], result["lane"])
+                  for result in receipt["results"]
+                  if result["issue"] in active_matrix_issues
+              }
+              observed_historical = {
+                  (result["issue"], result["lane"])
+                  for result in receipt["results"]
+                  if result["issue"] in historical_issues
+              }
+              assert observed_active == expected_lane_pairs
+              assert observed_historical == {(issue, lane) for issue in historical_issues}
+              assert int(receipt["active_case_count"]) == len(expected_lane_pairs)
+              assert int(receipt["expected_active_case_count"]) == int(matrix["active_case_count"])
+              assert int(receipt["case_count"]) == len(expected_lane_pairs) + len(historical_issues)
+              assert int(receipt["expected_case_count"]) == int(receipt["case_count"])
+              assert int(receipt["historical_issue_count"]) == len(historical_issues)
+              assert receipt["missing_cases"] == []
+              assert int(receipt["failed_cases"]) == 0
+              assert all(result["status"] != "FAIL" for result in receipt["results"])
+              active_pairs_observed |= observed_active
+              historical_pairs |= observed_historical
+
+          assert active_pairs_observed == active_pairs_expected
+          assert historical_pairs == {(issue, lane) for issue in historical_issues for lane in ("L1", "L2", "L3", "L4")}
+          assert len(active_pairs_observed) == int(matrix["active_case_count"])
+          assert len(historical_pairs) == 16
+
+          aggregate = {
+              "schema": "open-issue-polyglot-deep-scan/v3",
+              "lane_count": 4,
+              "matrix_issue_count": int(matrix["issue_count"]),
+              "active_issue_count": int(matrix["active_issue_count"]),
+              "matrix_case_count": int(matrix["case_count"]),
+              "active_case_count": int(matrix["active_case_count"]),
+              "historical_regression_issue_count": len(historical_issues),
+              "executed_active_case_count": len(active_pairs_observed),
+              "executed_historical_case_count": len(historical_pairs),
+              "executed_case_count": len(active_pairs_observed) + len(historical_pairs),
+              "status": "PASS",
+              "foundation_revisions": sorted({r["foundation_revision"] for r in receipts}),
+              "operations_revisions": sorted({r["operations_revision"] for r in receipts}),
+              "review_cases": sum(r["review_cases"] for r in receipts),
+          }
+          Path(".runtime/open-issue-deep-scan/aggregate.json").write_text(json.dumps(aggregate, indent=2) + "\n", encoding="utf-8")
           print(json.dumps(aggregate, indent=2))
 
       - name: Upload aggregate receipt
