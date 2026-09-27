@@ -34,7 +34,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  snapshot:
+    name: Freeze Operations revision
+    runs-on: ubuntu-latest
+    outputs:
+      operations_sha: ${{ steps.freeze.outputs.sha }}
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations main once
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.snapshot.outputs.operations_sha }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations-snapshot
+      - name: Freeze Operations SHA
+        id: freeze
+        working-directory: operations-snapshot
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
   lane:
+    needs: [snapshot]
     permissions:
       contents: read
       actions: read
