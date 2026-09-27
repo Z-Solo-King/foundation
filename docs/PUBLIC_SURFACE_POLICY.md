@@ -51,3 +51,14 @@ External secret stores -> credentials and other secret material
 
 The split should reduce exposed intellectual property without creating a second runtime,
 deployment or policy authority.
+## 2026-09-27 public-surface audit hardening
+
+The public disclosure scan is recursive over the public documentation surface rather than a fixed hand-picked file list. It covers root public docs plus every Markdown/JSON file under `docs/`, and PR title/body/commit metadata.
+
+The scanner fail-closes on live Cloudflare identifiers, Worker origins, privileged account-role disclosures, private Operations deployment provenance, live D1 identifiers/counts, version/deployment IDs, credential material and live feed-target URLs.
+
+Live retailer target registries and feed-recovery tooling do not belong in Foundation. The #1103 remediation moves those assets to the private Operations repository and removes the public copies.
+
+Runtime state is documented only at the level required to explain the public contract. Historical live identifiers are redacted even when they were previously observed.
+
+GitHub's current security guidance supports this boundary: secret scanning detects hardcoded credentials across repository history, and push protection is designed to block supported secrets before they reach the repository. Real exposed credentials still require rotation/revocation and history remediation; redaction of non-secret infrastructure metadata is a separate information-disclosure control. 
