@@ -6,7 +6,6 @@ import json
 import subprocess
 import sys
 import tempfile
-import types
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,14 +14,7 @@ OPERATIONS = ROOT.parent / "operations"
 CORPUS = OPERATIONS / "benchmark/polyglot/rust_url_identity/corpus.jsonl"
 RUST_MANIFEST = OPERATIONS / "benchmark/polyglot/rust_url_identity/Cargo.toml"
 
-# backend.sources.http depends on Cloudflare's runtime-only workers_fetch module.
-# Stub that runtime boundary so the pure canonicalization helper can be tested
-# under normal CPython without executing network code.
-runtime_mod = types.ModuleType("backend.core.workers_runtime")
-runtime_mod.workers_fetch = lambda _reason: None
-sys.modules["backend.core.workers_runtime"] = runtime_mod
-
-from backend.sources.http import canonicalize_url  # noqa: E402
+from foundation_core.url_identity import canonicalize_url  # noqa: E402
 
 
 def sha256(path: Path) -> str:
