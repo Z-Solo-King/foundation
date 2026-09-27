@@ -384,6 +384,7 @@ def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, t
                 )
                 page = context.new_page()
                 observed_requests: set[str] = set()
+                observed_response_urls: set[str] = set()
                 def _observe_request(request):
                     u = str(getattr(request, "url", "") or "")
                     if u and absolute(root, u) and (
@@ -391,7 +392,28 @@ def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, t
                         or re.search(r"(feed|merchant|shopping|woocommerce_gpf|google)", u, re.I)
                     ):
                         observed_requests.add(u)
+
+                def _observe_response(response):
+                    u = str(getattr(response, "url", "") or "")
+                    if not u or not absolute(root, u):
+                        return
+                    try:
+                        headers = {str(k).lower(): str(v).lower() for k, v in response.all_headers().items()}
+                        ct = headers.get("content-type", "")
+                        looks_feed = (
+                            "xml" in ct or "rss" in ct or "atom" in ct
+                            or re.search(r"(feed|merchant|shopping|woocommerce_gpf|google)", u, re.I)
+                        )
+                        if not looks_feed:
+                            return
+                        body = response.body()
+                        if len(body) <= 25 * 1024 * 1024 and validate_xml(body, ct).valid:
+                            observed_response_urls.add(u)
+                    except Exception:
+                        return
+
                 page.on("request", _observe_request)
+                page.on("response", _observe_response)
                 page.goto(root.rstrip("/") + "/", wait_until="domcontentloaded", timeout=int(timeout_s * 1000))
                 try:
                     page.wait_for_load_state("networkidle", timeout=min(8000, int(timeout_s * 1000)))
@@ -408,6 +430,7 @@ def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, t
 
                 candidates = set(extract_urls(body, root))
                 candidates.update(observed_requests)
+                candidates.update(observed_response_urls)
                 for href in page.locator("a[href], link[href]").evaluate_all(
                     "(els) => els.map(e => e.href).filter(Boolean)"
                 ):
@@ -426,6 +449,7 @@ def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, t
                     "elapsed_ms": int((time.monotonic() - started) * 1000),
                     "cookie_count": len(pairs),
                     "candidate_count": len(candidates),
+                    "response_feed_count": len(observed_response_urls),
                 }
             finally:
                 browser.close()
@@ -438,7 +462,7 @@ def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, t
         }
 
 
-def fetch(url: str, timeout: float, cookie_header: str = "") -> Fetch:
+def fetch(url: str, timeout: float, cookie_header: str = "", referer: str = "") -> Fetch:
     """Fetch with curl so DNS, connect, and total request time have hard bounds."""
     started = time.monotonic()
     timeout = max(1.0, float(timeout))
@@ -456,6 +480,7 @@ def fetch(url: str, timeout: float, cookie_header: str = "") -> Fetch:
             "-H", "Accept-Language: en-IN,en;q=0.9",
             "-H", "Cache-Control: no-cache",
             *([ "-H", f"Cookie: {cookie_header}" ] if cookie_header else []),
+            *([ "-H", f"Referer: {referer}" ] if referer else []),
             "-o", body_path,
             "-w", "%{http_code}\\n%{content_type}\\n%{url_effective}\\n",
             url,
@@ -619,12 +644,12 @@ def feed_priority(url: str) -> tuple[int, int, str]:
     return (4, 0, url)
 
 
-def batch(urls: list[str], timeout: float, workers: int, records: list[dict[str, object]], cookie_header: str = "") -> str | None:
+def batch(urls: list[str], timeout: float, workers: int, records: list[dict[str, object]], cookie_header: str = "", referer: str = "") -> str | None:
     if not urls:
         return None
     valid: list[str] = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
-        future_map = {pool.submit(fetch, u, timeout, cookie_header): u for u in urls}
+        future_map = {pool.submit(fetch, u, timeout, cookie_header, referer): u for u in urls}
         for future in concurrent.futures.as_completed(future_map):
             result = future.result()
             validation = validate_xml(result.body, result.content_type) if result.status == 200 else Validation(False, "not_checked", 0, 0, ())
@@ -665,11 +690,11 @@ def probe_site(site: str, root: str) -> SiteResult:
 
     fast_candidates = [urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in FAST_PATHS]
     fast_candidates.extend(sorted(ctx_candidates))
-    verified = batch(list(dict.fromkeys(fast_candidates)), 20.0, 8, records, session_cookie_header)
+    verified = batch(list(dict.fromkeys(fast_candidates)), 20.0, 8, records, session_cookie_header, root)
     if verified is None:
-        verified = batch([urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in SLOW_GPF_PATHS], 105.0, 4, records, session_cookie_header)
+        verified = batch([urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in SLOW_GPF_PATHS], 105.0, 4, records, session_cookie_header, root)
     if verified is None:
-        verified = batch([urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in MEDIUM_PATHS], 45.0, 8, records, session_cookie_header)
+        verified = batch([urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in MEDIUM_PATHS], 45.0, 8, records, session_cookie_header, root)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
         directory_results = pool.map(lambda p: (p, fetch(urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")), 12.0)), DIRECTORIES)
@@ -696,7 +721,7 @@ def probe_site(site: str, root: str) -> SiteResult:
         candidates = sorted(
             (u for u in discovered if urllib.parse.urlsplit(u).path.lower().endswith((".xml", ".xml.gz")) or re.search(r"(feed|merchant|shopping|woocommerce_gpf|google|woo[-_]?feed|wppfm)", u, re.I)),
         )[:240]
-        verified = batch(candidates, 60.0, 8, records, session_cookie_header)
+        verified = batch(candidates, 60.0, 8, records, session_cookie_header, root)
 
     status_codes = [int(r.get("status") or 0) for r in records]
     status = "verified_native" if verified else ("transport_blocked" if any(x in {401,403,429} for x in status_codes) else "candidate_negative_or_unverified")
