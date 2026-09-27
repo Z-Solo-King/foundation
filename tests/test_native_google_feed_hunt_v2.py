@@ -107,3 +107,10 @@ def test_generated_upload_filename_sweep_contains_known_variants():
     assert "https://example.test/wp-content/uploads/woo-product-feed-pro/xml/google-products.xml" in urls
     assert "https://example.test/wp-content/uploads/woo-feed/google/xml/google-shopping.xml.gz" in urls
     assert len(urls) >= 500
+
+def test_generated_upload_sweep_covers_hidden_case_and_named_query_variants():
+    urls = generated_upload_feed_candidates("https://example.test", "KRG KART")
+    assert "https://example.test/wp-content/uploads/woo-feed/google/xml/.google.xml" in urls
+    assert "https://example.test/wp-content/uploads/woo-feed/google/xml/krgkartgoogleshopping.xml" in urls
+    assert "https://example.test/?feed=google-shopping&format=xml" in urls
+    assert "https://example.test/?woo_feed=google-shopping&wt=xml" in urls
