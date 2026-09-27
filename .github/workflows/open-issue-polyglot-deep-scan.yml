@@ -227,27 +227,57 @@ jobs:
         run: |
           import json
           from pathlib import Path
+
           root = Path(".runtime/open-issue-deep-scan")
           receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L?.json"))]
           assert len(receipts) == 4, f"expected 4 lane receipts, got {len(receipts)}"
           assert {receipt["lane"] for receipt in receipts} == {"L1", "L2", "L3", "L4"}
-          issue_counts = {int(receipt["issue_count"]) for receipt in receipts}
-          case_counts = {int(receipt["case_count"]) for receipt in receipts}
-          assert len(issue_counts) == 1, f"lane issue counts diverged: {sorted(issue_counts)}"
-          assert len(case_counts) == 1, f"lane case counts diverged: {sorted(case_counts)}"
-          expected_issue_count = next(iter(issue_counts))
-          expected_case_count = next(iter(case_counts))
-          assert expected_issue_count > 0
-          assert expected_case_count == expected_issue_count
-          assert all(not receipt["missing_cases"] for receipt in receipts)
-          cases = {(result["issue"], result["lane"]) for receipt in receipts for result in receipt["results"]}
-          assert len(cases) == expected_issue_count * 4
-          assert all(result["status"] != "FAIL" for receipt in receipts for result in receipt["results"])
+
+          matrix = json.loads((Path("benchmark/polyglot/open_issue_matrix_52.json")).read_text(encoding="utf-8"))
+          expected_active_issue_count = int(matrix["active_issue_count"])
+          expected_active_case_count = int(matrix["active_case_count"])
+          expected_lane_active_cases = {
+              lane: sum(
+                  1
+                  for case in matrix["cases"]
+                  if case["lane"] == lane and case.get("active", True)
+              )
+              for lane in ("L1", "L2", "L3", "L4")
+          }
+          historical_regression_count = 4
+          active_matrix_issues = {
+              case["issue"] for case in matrix["cases"] if case.get("active", True)
+          }
+
+          active_cases = set()
+          executed_cases = set()
+          for receipt in receipts:
+              lane = receipt["lane"]
+              assert int(receipt["active_issue_count"]) == expected_active_issue_count
+              assert int(receipt["active_case_count"]) == expected_lane_active_cases[lane]
+              assert int(receipt["expected_active_case_count"]) == expected_active_case_count
+              assert int(receipt["historical_issue_count"]) == historical_regression_count
+              assert int(receipt["case_count"]) == expected_lane_active_cases[lane] + historical_regression_count
+              assert int(receipt["issue_count"]) == expected_active_issue_count + historical_regression_count
+              assert not receipt["missing_cases"]
+              for result in receipt["results"]:
+                  assert result["status"] != "FAIL"
+                  executed_cases.add((result["issue"], result["lane"]))
+                  if result["issue"] in active_matrix_issues:
+                      active_cases.add((result["issue"], result["lane"]))
+
+          assert len(active_cases) == expected_active_case_count
+          assert len(executed_cases) == expected_active_case_count + (historical_regression_count * 4)
+
           aggregate = {
-              "schema": "open-issue-polyglot-deep-scan/v1",
+              "schema": "open-issue-polyglot-deep-scan/v2",
               "lane_count": 4,
-              "issue_count": expected_issue_count,
-              "case_count": expected_case_count,
+              "matrix_issue_count": int(matrix["issue_count"]),
+              "active_issue_count": expected_active_issue_count,
+              "matrix_case_count": int(matrix["case_count"]),
+              "active_case_count": expected_active_case_count,
+              "historical_regression_issue_count": historical_regression_count,
+              "executed_case_count": len(executed_cases),
               "status": "PASS",
               "foundation_revisions": sorted({receipt["foundation_revision"] for receipt in receipts}),
               "operations_revisions": sorted({receipt["operations_revision"] for receipt in receipts}),
