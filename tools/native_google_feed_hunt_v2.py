@@ -290,9 +290,29 @@ def directory_urls(text: str, root: str) -> tuple[str, ...]:
     return tuple(sorted(found))
 
 
+def feed_priority(url: str) -> tuple[int, int, str]:
+    """Lower values are preferred: canonical full GPF, canonical permalink, static XML, partial GPF."""
+    parsed = urllib.parse.urlsplit(url)
+    query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
+    path = parsed.path.rstrip("/")
+    is_gpf = "woocommerce_gpf" in query or "woocommerce_gpf" in parsed.query
+    has_slice = "gpf_start" in query or "gpf_limit" in query
+    if is_gpf and not has_slice and path in {"", "/"}:
+        return (0, 0, url)
+    if not has_slice and path == "/woocommerce_gpf/google":
+        return (1, 0, url)
+    if parsed.path.lower().endswith((".xml", ".xml.gz")):
+        return (2, 0, url)
+    if is_gpf:
+        limit = int((query.get("gpf_limit") or ["999999"])[0] or "999999")
+        return (3, -min(limit, 999999), url)
+    return (4, 0, url)
+
+
 def batch(urls: list[str], timeout: float, workers: int, records: list[dict[str, object]]) -> str | None:
     if not urls:
         return None
+    valid: list[str] = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
         future_map = {pool.submit(fetch, u, timeout): u for u in urls}
         for future in concurrent.futures.as_completed(future_map):
@@ -308,8 +328,8 @@ def batch(urls: list[str], timeout: float, workers: int, records: list[dict[str,
                 "validation": asdict(validation),
             })
             if result.status == 200 and validation.valid and same_host(result.final_url, result.requested_url):
-                return result.final_url
-    return None
+                valid.append(result.final_url)
+    return min(valid, key=feed_priority) if valid else None
 
 
 def probe_site(site: str, root: str) -> SiteResult:
