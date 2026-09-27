@@ -1,0 +1,52 @@
+name: WooCommerce 32 feed recovery - staged
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - site: ads-store
+            label: "Ads Store"
+          - site: ithunt
+            label: "ithunt"
+          - site: kccomputers
+            label: "kccomputers"
+          - site: krg-kart
+            label: "KRG KART"
+          - site: pc-kumar-infotech
+            label: "PC Kumar Infotech"
+          - site: pchubshop
+            label: "PCHubShop"
+          - site: scl-gaming
+            label: "SCL Gaming"
+          - site: variety-infotech
+            label: "Variety Infotech"
+          - site: moskeys
+            label: "Moskeys"
+          - site: theproaudio
+            label: "Theproaudio"
+    name: Recover ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Run V175 recovery
+        run: node tools/woocommerce_32_cross_runner_feed_recovery.mjs --site "${{ matrix.site }}"
+      - name: Upload recovery artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wc-feed-${{ matrix.site }}
+          path: out/woocommerce-32-cross-runner/
+          if-no-files-found: warn
+          retention-days: 14
