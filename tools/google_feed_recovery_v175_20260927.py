@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
 import re
 import time
 from io import BytesIO
@@ -213,7 +214,7 @@ async def curl_get(session, url: str, *, timeout: float, headers: dict, imperson
 
 
 async def browser_discover(root: str) -> dict:
-    result = {"ok": False, "html": "", "cookies": {}, "ua": "", "xhr": [], "pages": []}
+    result = {"ok": False, "html": "", "cookies": {}, "ua": "", "xhr": [], "requests": [], "response_bodies": [], "pages": []}
     if async_playwright is None:
         result["error"] = "playwright_unavailable"
         return result
@@ -224,20 +225,54 @@ async def browser_discover(root: str) -> dict:
             context = await browser.new_context(viewport={"width": 1366, "height": 768}, java_script_enabled=True)
             page = await context.new_page()
 
-            def on_response(response):
+            body_tasks = []
+
+            def on_request(request):
                 try:
-                    u = response.url or ""
-                    if u in seen or not same_origin(u, root):
+                    u = request.url or ""
+                    if not same_origin(u, root):
                         return
-                    ct = (response.headers or {}).get("content-type", "")
-                    if response.status != 200:
-                        return
-                    if FEED_HINT_RE.search(u) or XML_CT_RE.search(ct) or "json" in ct.lower() or "/api/" in u.lower() or "wp-json" in u.lower() or "graphql" in u.lower():
-                        seen.add(u)
-                        result["xhr"].append({"url": u, "status": response.status, "content_type": ct})
+                    kind = str(request.resource_type or "").lower()
+                    if kind in ("xhr", "fetch") or FEED_HINT_RE.search(u):
+                        result["requests"].append({"url": u, "method": request.method, "resource_type": kind})
                 except Exception:
                     return
 
+            def on_response(response):
+                try:
+                    u = response.url or ""
+                    if not same_origin(u, root):
+                        return
+                    ct = (response.headers or {}).get("content-type", "")
+                    kind = str(response.request.resource_type or "").lower()
+                    interesting = (
+                        kind in ("xhr", "fetch")
+                        or FEED_HINT_RE.search(u)
+                        or XML_CT_RE.search(ct)
+                        or "json" in ct.lower()
+                        or "/api/" in u.lower()
+                        or "wp-json" in u.lower()
+                        or "graphql" in u.lower()
+                    )
+                    if not interesting:
+                        return
+                    result["xhr"].append({"url": u, "status": response.status, "content_type": ct, "resource_type": kind})
+                    if response.status == 200 and (FEED_HINT_RE.search(u) or XML_CT_RE.search(ct)):
+                        async def capture():
+                            try:
+                                body = await response.text()
+                                if len(body.encode("utf-8", "ignore")) <= 8 * 1024 * 1024:
+                                    result["response_bodies"].append({
+                                        "url": u, "status": response.status,
+                                        "content_type": ct, "body": body
+                                    })
+                            except Exception:
+                                pass
+                        body_tasks.append(asyncio.create_task(capture()))
+                except Exception:
+                    return
+
+            page.on("request", on_request)
             page.on("response", on_response)
 
             page_paths = [
@@ -258,6 +293,8 @@ async def browser_discover(root: str) -> dict:
                 except Exception:
                     continue
 
+            if body_tasks:
+                await asyncio.gather(*body_tasks, return_exceptions=True)
             try:
                 result["ua"] = await page.evaluate("navigator.userAgent")
             except Exception:
@@ -268,7 +305,7 @@ async def browser_discover(root: str) -> dict:
                         result["cookies"][c["name"]] = c["value"]
             except Exception:
                 pass
-            result["ok"] = bool(result["html"] or result["xhr"])
+            result["ok"] = bool(result["html"] or result["xhr"] or result["requests"])
             await browser.close()
     except Exception as exc:
         result["error"] = str(exc)
@@ -327,13 +364,87 @@ async def browser_xhr_probe(root: str, candidates: list[str], *, timeout_ms: int
     return out
 
 
+def make_feed_candidates(origin: str) -> list[str]:
+    paths = list(V175_FEED_PATHS)
+    paths.extend([
+        "/woocommerce_gpf/google",
+        "/google-merchant.xml",
+        "/google-merchant-feed.xml",
+        "/merchant.xml",
+        "/gmerchant.xml",
+        "/gpf.xml",
+        "/google-products.xml",
+        "/google-product-feed.xml",
+        "/google_feed.php",
+        "/product-feed.php",
+        "/feed/google",
+    ])
+    for limit in (25, 50, 100, 250, 500):
+        for start in (0, limit, limit * 2):
+            paths.append(f"/?woocommerce_gpf=google&gpf_start={start}&gpf_limit={limit}")
+            paths.append(f"/woocommerce_gpf/google?gpf_start={start}&gpf_limit={limit}")
+    return list(dict.fromkeys(origin + p for p in paths))
+
+
+async def nodriver_warm(root: str) -> dict:
+    result = {"ok": False, "html": "", "cookies": {}, "ua": ""}
+    try:
+        import nodriver as uc
+    except Exception as exc:
+        result["error"] = f"nodriver_unavailable:{exc}"
+        return result
+    try:
+        exe = os.environ.get("NODRIVER_CHROME_PATH") or None
+        browser = await uc.start(
+            headless=True,
+            sandbox=False,
+            browser_executable_path=exe,
+            browser_args=[
+                "--disable-blink-features=AutomationControlled",
+                "--disable-dev-shm-usage",
+            ],
+        )
+        page = await browser.get(root)
+        await page.sleep(5)
+        try:
+            html = await page.get_content()
+        except Exception:
+            html = ""
+        try:
+            ua = await page.evaluate("navigator.userAgent") or ""
+        except Exception:
+            ua = ""
+        cookies = {}
+        try:
+            jar = await browser.cookies.get_all()
+            for cookie in jar or []:
+                name = getattr(cookie, "name", None) or (
+                    cookie.get("name") if isinstance(cookie, dict) else None
+                )
+                value = getattr(cookie, "value", None) or (
+                    cookie.get("value") if isinstance(cookie, dict) else None
+                )
+                if name:
+                    cookies[str(name)] = str(value or "")
+        except Exception:
+            pass
+        try:
+            await browser.stop()
+        except Exception:
+            pass
+        result.update({"ok": bool(html), "html": html or "", "cookies": cookies, "ua": ua})
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
 async def site_recover(name: str, root: str, outdir: Path) -> dict:
     deadline = time.monotonic() + SITE_TIMEOUT
     outdir.mkdir(parents=True, exist_ok=True)
     (outdir / "feeds").mkdir(parents=True, exist_ok=True)
 
     origin = root_of(root.rstrip("/"))
-    candidates = [origin + p for p in V175_FEED_PATHS]
+    candidates = make_feed_candidates(origin)
     browser = {"ok": False, "html": "", "cookies": {}, "ua": "", "xhr": [], "pages": []}
     records = []
     verified = {}
@@ -358,6 +469,15 @@ async def site_recover(name: str, root: str, outdir: Path) -> dict:
     # Lane A: browser warm + XHR/HTML discovery.
     browser = await browser_discover(root)
     candidates.extend(x["url"] for x in browser.get("xhr", []) if x.get("url"))
+    candidates.extend(x["url"] for x in browser.get("requests", []) if x.get("url"))
+    for captured in browser.get("response_bodies", []):
+        await record_verified(
+            captured.get("url") or root,
+            captured.get("body") or "",
+            captured.get("content_type") or "",
+            "browser-response-body",
+            0.0,
+        )
     html = browser.get("html") or ""
     for u in re.findall(r'https?://[^"\'<>\s]+', html):
         if same_origin(u, root) and FEED_HINT_RE.search(u):
@@ -367,6 +487,11 @@ async def site_recover(name: str, root: str, outdir: Path) -> dict:
         if same_origin(u, root) and (FEED_HINT_RE.search(u) or "alternate" in href.lower()):
             candidates.append(u)
 
+    for raw in re.findall(r'''(?:https?://[^"'<>\s]+|/[^"'<>\s]+)''', html):
+        clean = raw.replace("\\/", "/")
+        if "woocommerce_gpf" in clean.lower() or re.search(r'''/woocommerce_gpf/[^"'<>\s]+''', clean, re.I):
+            candidates.append(urljoin(root + "/", clean))
+
     candidates = list(dict.fromkeys(candidates))
     strong = [u for u in candidates if FEED_HINT_RE.search(u)]
     if not strong:
@@ -374,7 +499,7 @@ async def site_recover(name: str, root: str, outdir: Path) -> dict:
 
     # Lane B: explicit in-page XHR replay against strong candidates.
     if time.monotonic() < deadline and strong:
-        xhr_results = await browser_xhr_probe(root, strong[:18])
+        xhr_results = await browser_xhr_probe(root, strong[:36])
         for r in xhr_results:
             rec = {
                 "url": r.get("url"),
@@ -387,7 +512,28 @@ async def site_recover(name: str, root: str, outdir: Path) -> dict:
             }
             records.append(rec)
             if r.get("ok") and r.get("status") == 200:
-                await record_verified(r.get("url") or root, r.get("body") or "", r.get("content_type", ""), "browser-XHR", float(r.get("elapsed_ms", 0))/1000.0)
+                await record_verified(
+                    r.get("url") or root,
+                    r.get("body") or "",
+                    r.get("content_type", ""),
+                    "browser-XHR",
+                    float(r.get("elapsed_ms", 0))/1000.0,
+                )
+
+    # Lane C: V175 nodriver browser escalation.
+    if not verified and time.monotonic() < deadline:
+        nd = await nodriver_warm(root)
+        if nd.get("ok"):
+            if nd.get("ua"):
+                browser["ua"] = nd.get("ua")
+            if nd.get("cookies"):
+                browser["cookies"] = nd.get("cookies")
+            nd_html = nd.get("html") or ""
+            for raw in re.findall(r'''(?:https?://[^"'<>\s]+|/[^"'<>\s]+)''', nd_html):
+                clean = raw.replace("\\/", "/")
+                if FEED_HINT_RE.search(clean) or "woocommerce_gpf" in clean.lower():
+                    candidates.append(urljoin(root + "/", clean))
+            candidates = list(dict.fromkeys(candidates))
 
     # Lane C: curl_cffi impersonation ladder, with browser cookies/UA reuse after warm.
     if CurlAsyncSession is not None and time.monotonic() < deadline:
