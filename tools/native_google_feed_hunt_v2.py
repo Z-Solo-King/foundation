@@ -89,6 +89,7 @@ FAST_PATHS = (
     "/google.xml", "/google_feed.xml", "/google-feed.xml",
     "/google-products.xml", "/google-product-feed.xml",
     "/google-shopping.xml", "/google-shopping-feed.xml",
+    "/wp-content/uploads/google-listings-and-ads/xml/product-feed.xml",
     "/google-merchant.xml", "/google-merchant-feed.xml",
     "/merchant.xml", "/merchant-feed.xml", "/product-feed.xml",
     "/feed/google.xml", "/feeds/google.xml",
@@ -195,6 +196,7 @@ UPLOAD_FEED_DIRECTORIES = (
     "/wp-content/uploads/product-feed/",
     "/wp-content/uploads/google-feed/",
     "/wp-content/uploads/merchant-feed/",
+    "/wp-content/uploads/google-listings-and-ads/xml/",
 )
 
 FILENAME_SEMANTIC_GROUPS = (
@@ -1282,8 +1284,8 @@ def validation_candidate_groups(
     same_site = [u for u in candidates if same_host(u, root)]
     explicit_external = [
         u for u in sorted(explicit_feed_candidates)
-        if u in candidates and not same_host(u, root)
-    ]
+        if not same_host(u, root)
+    ][:240]
     return same_site, explicit_external
 
 
