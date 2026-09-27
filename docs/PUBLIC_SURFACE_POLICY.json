@@ -9,15 +9,15 @@
     "D1 identifier",
     "Cloudflare version/deployment identifier",
     "private Operations deployment provenance",
-    "private Operations revision disclosure",
-    "private revision configuration",
     "live D1 operational counts",
     "Cloudflare nameserver disclosure",
     "Worker edge-address disclosure",
     "private key material",
     "GitHub credential material",
     "live feed target URL in public recovery record",
-    "forbidden-public-target-surface"
+    "forbidden-public-target-surface",
+    "deployed Operations provenance",
+    "private revision provenance literal"
   ],
   "warn_patterns": [
     "private repository reference",
@@ -61,5 +61,10 @@
     ],
     "target_inventory_policy": "live retailer target registries and recovery tooling belong on private Operations",
     "redaction_policy": "live infrastructure identifiers remain redacted even when previously observed"
+  },
+  "revision_policy": {
+    "immutable_workflow_pins": "allowed when required for reproducible public build/deployment handoff",
+    "historical_deployed_provenance": "redact",
+    "pull_request_metadata_provenance": "fail"
   }
 }
