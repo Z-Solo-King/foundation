@@ -750,3 +750,16 @@ def test_observation_contract_benchmark_gate():
 def test_polyglot_migration_review_creates_runtime_output_dir():
     text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
     assert 'mkdir -p "$GITHUB_WORKSPACE/.runtime"' in text
+
+
+def test_live_ai_agent_benchmark_is_bounded_and_non_authoritative():
+    workflow = _workflow_texts()["live-ai-agent-benchmark.yml"]
+    assert "fix/issue-1157-live-agent-baseline-20260927" in workflow
+    assert "contents: read" in workflow
+    assert "CLOUDFLARE_API_TOKEN" in workflow
+    assert "CLOUDFLARE_ACCOUNT_ID" in workflow
+    assert "retained per-run observations" in workflow
+    assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in workflow
+    assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97" in workflow
+    assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in workflow
+    assert "expected_observations == 720" in workflow
