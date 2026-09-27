@@ -73,6 +73,74 @@ async function curlOne(url,ua,timeoutSec){
   return {status,url:url2,ct:"",bytes:Buffer.byteLength(body),body};
  }catch{return null;}
 }
+
+async function storeApiProbe(base){
+  const endpoints=[
+    \`\${base}/wp-json/wc/store/v1/products\`,
+    \`\${base}/wp-json/wc/store/v1/products/\`,
+    \`\${base}/?rest_route=/wc/store/v1/products\`,
+    \`\${base}/wp-json/wp/v2/product\`,
+    \`\${base}/wp-json/wp/v2/products\`
+  ];
+  function rows(data){
+    const a=Array.isArray(data)?data:(data?.products||data?.items||data?.results||data?.data||[]);
+    if(!Array.isArray(a)) return [];
+    return a.map(p=>{
+      const prices=p?.prices||{};
+      const minor=Number(prices.currency_minor_unit ?? 2);
+      const raw=prices.price ?? p.price ?? p.sale_price ?? p.regular_price ?? "";
+      let n=Number(String(raw).replace(/,/g,""));
+      if(Number.isFinite(n) && prices.price!==undefined) n/=Math.pow(10,minor);
+      const link=p.permalink||p.url||p.link||"";
+      const title=p.name||p.title||"";
+      return {
+        id:String(p.id??p.sku??p.slug??""),
+        title:String(title),
+        link:String(link),
+        price:Number.isFinite(n)?n:"",
+        currency:String(prices.currency_code||p.currency||"INR"),
+        availability:(p.is_in_stock===false||p.stock_status==="outofstock")?"out of stock":"in stock",
+        image:String(p?.images?.[0]?.src||p?.images?.[0]?.url||p.image||p.image_url||""),
+        description:String(p.short_description||p.description||""),
+        brand:String(p?.brand?.name||p?.brands?.[0]?.name||p.brand||""),
+        sku:String(p.sku||"")
+      };
+    }).filter(x=>x.title&&x.link);
+  }
+  for(const ep of endpoints){
+    let first=null;
+    for(const q of ["?per_page=100&page=1","?page=1&per_page=100",""]){
+      const r=await fetchOne(ep+q,UA,90000);
+      if(r.status!==200||!r.body) continue;
+      try{
+        const rs=rows(JSON.parse(r.body));
+        if(!rs.length) continue;
+        const all=[...rs];
+        for(let page=2;page<=100;page++){
+          const rr=await fetchOne(ep+"?per_page=100&page="+page,UA,90000);
+          if(rr.status!==200||!rr.body) break;
+          let more=[]; try{more=rows(JSON.parse(rr.body))}catch{break;}
+          if(!more.length) break;
+          all.push(...more);
+          if(more.length<100) break;
+        }
+        const seen=new Set(), uniqRows=all.filter(x=>{const k=x.id||x.link||x.title;if(seen.has(k))return false;seen.add(k);return true;});
+        if(uniqRows.length) return {endpoint:ep,count:uniqRows.length,rows:uniqRows};
+      }catch{}
+    }
+  }
+  return null;
+}
+function xmlEscape(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");}
+function rowsToGoogleBackup(rows){
+  return \`<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0"><channel>
+<title>WooCommerce public Store API recovery snapshot</title>
+<link></link><description>Reconstructed public snapshot; not retailer-native.</description>
+\${rows.map(r=>\`<item><g:id>\${xmlEscape(r.id)}</g:id><g:title>\${xmlEscape(r.title)}</g:title><g:link>\${xmlEscape(r.link)}</g:link><g:price>\${xmlEscape(Number(r.price||0).toFixed(2))} \${xmlEscape(r.currency||"INR")}</g:price><g:availability>\${xmlEscape(r.availability)}</g:availability>\${r.image?\`<g:image_link>\${xmlEscape(r.image)}</g:image_link>\`:""}\${r.brand?\`<g:brand>\${xmlEscape(r.brand)}</g:brand>\`:""}\${r.sku?\`<g:mpn>\${xmlEscape(r.sku)}</g:mpn>\`:""}\${r.description?\`<description>\${xmlEscape(r.description.replace(/<[^>]+>/g," ").slice(0,5000))}</description>\`:""}</item>\`).join("\\n")}
+</channel></rss>\\n\`;
+}
+
 async function probe(name,base){
  const started=Date.now(), results=[];
  const roots=["/robots.txt","/sitemap.xml","/wp-sitemap.xml","/sitemap_index.xml"];
@@ -118,11 +186,15 @@ async function probe(name,base){
    }
   }
  }
- return {site:name,base,runner_os:process.env.RUNNER_OS||"unknown",verified_feed:verified,elapsed_s:Number(((Date.now()-started)/1000).toFixed(2)),
+ const api=await storeApiProbe(base);
+ return {site:name,base,runner_os:process.env.RUNNER_OS||"unknown",verified_feed:verified,public_store_api:api?{endpoint:api.endpoint,count:api.count}:null,backup_google_xml:api?rowsToGoogleBackup(api.rows):null,elapsed_s:Number(((Date.now()-started)/1000).toFixed(2)),
    candidate_results:results};
 }
 const started=Date.now(); await mkdir("out/woocommerce-32-cross-runner",{recursive:true});
 const selected=process.argv.includes("--site") ? [TARGETS.find(x=>x[0].toLowerCase()===process.argv[process.argv.indexOf("--site")+1].toLowerCase())].filter(Boolean) : TARGETS;
-const out=[]; for(const t of selected) out.push(await probe(...t));
-await writeFile("out/woocommerce-32-cross-runner/report.json",JSON.stringify({schema_version:"woocommerce-32-cross-runner/v1",generated_on:new Date().toISOString(),results:out},null,2));
-console.log(JSON.stringify({runner_os:process.env.RUNNER_OS,targets:out.length,verified:out.filter(x=>x.verified_feed).map(x=>({site:x.site,feed:x.verified_feed.url}))},null,2));
+const out=[]; for(const t of selected){
+  const r=await probe(...t); out.push(r);
+  if(r.backup_google_xml){ const slug=r.site.toLowerCase().replace(/[^a-z0-9]+/g,"-"); await writeFile("out/woocommerce-32-cross-runner/"+slug+"-store-api-backup.xml",r.backup_google_xml); }
+}
+await writeFile("out/woocommerce-32-cross-runner/report.json",JSON.stringify({schema_version:"woocommerce-32-cross-runner/v2",generated_on:new Date().toISOString(),results:out.map(({backup_google_xml,...rest})=>({...rest,backup_google_xml_file:backup_google_xml?rest.site.toLowerCase().replace(/[^a-z0-9]+/g,"-")+"-store-api-backup.xml":null}))},null,2));
+console.log(JSON.stringify({runner_os:process.env.RUNNER_OS,targets:out.length,native_verified:out.filter(x=>x.verified_feed).map(x=>({site:x.site,feed:x.verified_feed.url,items:x.verified_feed.item_count})),store_api_backups:out.filter(x=>x.public_store_api).map(x=>({site:x.site,endpoint:x.public_store_api.endpoint,count:x.public_store_api.count})),unresolved:out.filter(x=>!x.verified_feed&&!x.public_store_api).map(x=>x.site)},null,2));
