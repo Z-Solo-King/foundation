@@ -36,6 +36,17 @@ jobs:
       - name: Run public-only recovery
         if: always()
         run: node tools/woocommerce_google_feed_rescue_fast.mjs
+      - name: Run public archive and index recovery
+        if: always()
+        run: node tools/woocommerce_google_feed_archive_recovery_1247.mjs
+      - name: Upload archive/index evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: woocommerce-google-feed-archive-recovery-1247
+          path: out/archive-recovery-1247/
+          if-no-files-found: warn
+          retention-days: 30
       - name: Upload recovery evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
