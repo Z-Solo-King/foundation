@@ -17,7 +17,7 @@ This is the latest compact cross-surface checkpoint. Fresh live GitHub/Cloudflar
 - Deployed Operations version `[REDACTED-DEPLOYED-VERSION-ID]`, provenance `[REDACTED-OPERATIONS-PROVENANCE-SHA]`.
 - Current GitHub code heads are newer than the deployed production pair; they are not production-certified/deployed.
 - Zone `[REDACTED-CUSTOM-DOMAIN]`: **pending / unresolvable**. Assigned nameservers: `[REDACTED-NS-1]`, `[REDACTED-NS-2]`. Worker-managed root AAAA `[REDACTED-WORKER-EDGE-ADDRESS]` is present; manual Worker routes are absent.
-- D1 `research-intelligence`: HTTP 200; ID `[REDACTED-D1-ID — see operations tracker]`; direct `sqlite_master` query exposes 21 tables.
+- D1 `[REDACTED-PRIVATE-D1]`: HTTP 200; ID `[REDACTED-D1-ID — see operations tracker]`; direct `sqlite_master` query exposes 21 tables.
 - Live D1 row counts: [REDACTED-LIVE-COUNTS]
 - Operations runtime config: Workers AI `@cf/zai-org/glm-4.7-flash`, fallback `@cf/google/gemma-4-26b-a4b-it`, `STRICT_ZERO_COST_ONLY=true`, cron `*/15 * * * *`. Secret values were not exposed.
 
