@@ -383,6 +383,28 @@ async function discoverLive(base) {
   };
 }
 
+function candidateScore(url) {
+  const u = String(url || "").toLowerCase();
+  let score = 0;
+  if (u.includes("woocommerce_gpf")) score += 100;
+  if (u.includes("/wp-content/uploads/woo-product-feed-pro/")) score += 95;
+  if (u.includes("/wp-content/uploads/woo-feed/")) score += 90;
+  if (u.includes("/wp-content/uploads/wppfm-feeds/")) score += 85;
+  if (u.includes("/feedcraft-product-feed/")) score += 80;
+  if (u.includes("google")) score += 35;
+  if (u.includes("merchant")) score += 30;
+  if (u.includes("shopping")) score += 25;
+  if (u.includes("feed")) score += 20;
+  if (/\.xml(?:$|\?)/i.test(u)) score += 15;
+  return score;
+}
+
+function takeCandidateWindow(values, max = 72) {
+  return [...new Map(values.map(x => [String(x.url || ""), x])).values()]
+    .sort((a, b) => candidateScore(b.url) - candidateScore(a.url))
+    .slice(0, max);
+}
+
 async function verifyCandidate(url, base) {
   const observed = [];
   const f = await fetchBuffer(url);
@@ -439,6 +461,22 @@ async function fetchArchivedSnapshot(entry) {
   };
 }
 
+async function verifyMany(candidates, base, concurrency = 10) {
+  const out = [];
+  let index = 0;
+  async function worker() {
+    while (true) {
+      const i = index++;
+      if (i >= candidates.length) return;
+      const candidate = candidates[i];
+      const result = await verifyCandidate(candidate.url, base);
+      out.push({ candidate, ...result });
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, candidates.length || 1) }, worker));
+  return out;
+}
+
 async function recover([name, base], collection) {
   const result = {
     name,
@@ -466,55 +504,67 @@ async function recover([name, base], collection) {
 
   const candidates = new Map();
   for (const path of KNOWN_PATHS) {
-    candidates.set(new URL(path, base + "/").href, { url: new URL(path, base + "/").href, source: "known-pattern" });
+    const url = new URL(path, base + "/").href;
+    candidates.set(url, { url, source: "known-pattern" });
   }
   for (const u of live.urls) candidates.set(u, { url: u, source: "live-discovery" });
   for (const x of wayback.candidates || []) candidates.set(x.url, x);
   for (const x of commonCrawl.candidates || []) candidates.set(x.url, x);
 
-  const feedCandidates = [...candidates.values()].filter(x =>
-    sameOrigin(x.url, base) &&
-    /google|merchant|shopping|feed|xml|woocommerce_gpf|woo-feed|wppfm|product-feed|feedcraft/i.test(x.url)
+  const feedCandidates = takeCandidateWindow(
+    [...candidates.values()].filter(x =>
+      sameOrigin(x.url, base) &&
+      /google|merchant|shopping|feed|xml|woocommerce_gpf|woo-feed|wppfm|product-feed|feedcraft/i.test(x.url)
+    ),
+    72
   );
 
   result.live_candidate_count = feedCandidates.length;
   result.archive_candidate_count = (wayback.candidates?.length || 0) + (commonCrawl.candidates?.length || 0);
 
-  // Live verification is deliberately sequential per host.
-  for (const candidate of feedCandidates.slice(0, 120)) {
-    const v = await verifyCandidate(candidate.url, base);
+  // Normal HTTP live verification: parallel candidates for this host, no proxy/evasion.
+  const liveChecks = await verifyMany(feedCandidates, base, 10);
+  for (const check of liveChecks) {
     result.observations.push({
-      candidate: candidate.url,
-      source: candidate.source || candidate.archiveSource || "candidate",
-      verified: v.verified,
-      observed: v.observed,
+      candidate: check.candidate.url,
+      source: check.candidate.source || check.candidate.archiveSource || "candidate",
+      verified: check.verified,
+      observed: check.observed,
     });
-    if (v.verified && !result.live_native_feed) {
-      const hash = createHash("sha256").update(v.body).digest("hex");
-      const file = `${OUT}/feeds/${slug(name)}-native-${hash.slice(0, 12)}.xml`;
-      await writeFile(file, v.body);
-      result.live_native_feed = {
-        url: candidate.url,
-        finalUrl: v.finalUrl,
-        source: v.source,
-        transport: v.transport,
-        file,
-        sha256: hash,
-        bytes: v.body.length,
-      };
-      break;
-    }
+  }
+  const winning = liveChecks.find(x => x.verified);
+  if (winning) {
+    const hash = createHash("sha256").update(winning.body).digest("hex");
+    const file = `${OUT}/feeds/${slug(name)}-native-${hash.slice(0, 12)}.xml`;
+    await writeFile(file, winning.body);
+    result.live_native_feed = {
+      url: winning.candidate.url,
+      finalUrl: winning.finalUrl,
+      source: winning.source,
+      transport: winning.transport,
+      file,
+      sha256: hash,
+      bytes: winning.body.length,
+    };
   }
 
   if (!result.live_native_feed) {
-    const historical = [
-      ...(wayback.candidates || []),
-      ...(commonCrawl.candidates || []),
-    ];
-    for (const entry of historical.slice(0, 60)) {
-      if (!entry.archiveUrl) continue;
+    const historical = takeCandidateWindow(
+      [
+        ...(wayback.candidates || []),
+        ...(commonCrawl.candidates || []),
+      ].filter(x => x.archiveUrl),
+      12
+    );
+    const archived = [];
+    for (const entry of historical) {
       const snap = await fetchArchivedSnapshot(entry);
       if (!snap) continue;
+      archived.push({ entry, snap });
+    }
+    const winningArchive = archived[0];
+    if (winningArchive) {
+      const { entry, snap } = winningArchive;
       const hash = createHash("sha256").update(snap.body).digest("hex");
       const file = `${OUT}/feeds/${slug(name)}-historical-${hash.slice(0, 12)}.xml`;
       await writeFile(file, snap.body);
@@ -528,7 +578,6 @@ async function recover([name, base], collection) {
         bytes: snap.bytes,
         note: "Historical public Merchant XML. This does not establish that the same feed is live today.",
       };
-      break;
     }
   }
 
