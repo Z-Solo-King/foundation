@@ -1,0 +1,40 @@
+name: WooCommerce Feed Product Crawl 1247
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wc-feed-product-crawl-xhr-1247-test
+  cancel-in-progress: false
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+      - name: Install browser
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-package-lock --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Syntax check
+        run: node --check tools/wc_google_feed_xhr_live_20260927.mjs
+      - name: Crawl public pages and explicit XHR feed candidates
+        run: node tools/wc_google_feed_xhr_live_20260927.mjs
+      - name: Upload crawl evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-feed-product-crawl-1247
+          path: out/wc-google-feed-xhr-20260927
+          if-no-files-found: error
+          retention-days: 30
