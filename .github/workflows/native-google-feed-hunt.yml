@@ -29,11 +29,12 @@ jobs:
           set -euo pipefail
           test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo 'Missing CLOUDFLARE_API_TOKEN'; exit 1; }
           test -n "${CLOUDFLARE_ACCOUNT_ID:-}" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID'; exit 1; }
-          curl -fsS -X PUT \
-            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/wc-browser-single-20260927?bindings_inherit=strict" \
+          metadata='{"main_module":"worker.js","compatibility_date":"2026-09-27","compatibility_flags":["nodejs_compat"],"keep_bindings":["browser"]}'
+          curl -sS -X PUT \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/wc-browser-single-20260927" \
             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-            -H "Content-Type: application/javascript" \
-            --data-binary @tools/wc_browser_batch_worker.js \
+            -F "metadata=${metadata};type=application/json" \
+            -F "worker.js=@tools/wc_browser_batch_worker.js;type=application/javascript+module" \
             | tee /tmp/deploy-response.json
           jq -e '.success == true' /tmp/deploy-response.json >/dev/null
           echo 'Browser helper deployment: PASS'
