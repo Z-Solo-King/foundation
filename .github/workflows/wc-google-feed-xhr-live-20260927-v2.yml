@@ -27,7 +27,7 @@ jobs:
       - name: Syntax check
         run: node --check tools/wc_google_feed_xhr_live_20260927_v2.mjs
       - name: Run live browser/XHR sweep
-        run: node tools/wc_google_feed_xhr_live_20260927.mjs
+        run: node tools/wc_google_feed_xhr_live_20260927_v2.mjs
       - name: Upload live evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
