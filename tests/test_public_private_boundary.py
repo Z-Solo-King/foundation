@@ -10,7 +10,7 @@ def test_private_secret_sync_implementation_is_not_public():
 def test_secret_sync_workflow_is_a_private_operations_bridge():
     text = (ROOT / ".github" / "workflows" / "sync-secrets.yml").read_text(encoding="utf-8")
     assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
-    assert "OPERATIONS_SECRET_SYNC_REF: 7234129f4ac40bafbc8b8fe8df03e3246804c4f8" in text
+    assert "OPERATIONS_SECRET_SYNC_REF: 3b92adace4e1165dd00cc0d68c1b29b41e7478ab" in text
     assert "OPERATIONS_SECRET_SYNC_PATH: tools/sync_provider_secrets.py" in text
     assert "github.ref == 'refs/heads/main'" in text
     assert "environment: production-secret-sync" in text
@@ -31,4 +31,4 @@ def test_secret_sync_workflow_never_executes_public_copy():
 def test_secret_sync_workflow_has_no_stale_operations_revision():
     text = (ROOT / ".github" / "workflows" / "sync-secrets.yml").read_text(encoding="utf-8")
     assert "a2f9614cac0e4ba7118de8b6b7d86c82ee2cd6f9" not in text
-    assert "7234129f4ac40bafbc8b8fe8df03e3246804c4f8" in text
+    assert "3b92adace4e1165dd00cc0d68c1b29b41e7478ab" in text
