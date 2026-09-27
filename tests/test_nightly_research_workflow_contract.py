@@ -115,3 +115,11 @@ def test_live_worker_proxy_probe_shell_expression_is_closed_and_non_aborting():
     assert "probe_payload=$(jq -nc '{model:\"@cf/zai-org/glm-4.7-flash\",messages:[{role:\"user\",content:\"Return exactly OK.\"}],max_tokens:1,temperature:0}')" in text
     assert 'name: Run complete research lane' in text
     assert 'cat "$RUNNER_TEMP/research-worker-proxy.log" 2>/dev/null || true\\n          exit 1' not in text
+def test_oidc_and_attestation_permissions_are_job_scoped():
+    text = workflow_text()
+    top = text.split("jobs:", 1)[0]
+    assert "id-token: write" not in top
+    assert "attestations: write" not in top
+    research = text.split("  research:", 1)[1].split("\n  ", 1)[0]
+    assert "id-token: write" in research
+    assert "attestations: write" in research
