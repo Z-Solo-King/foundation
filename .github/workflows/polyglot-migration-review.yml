@@ -188,6 +188,21 @@ jobs:
           python tools/validate_migration_evidence.py
           python tools/validate_polyglot_registry.py --repo-root "$GITHUB_WORKSPACE/operations"
 
+      - name: Run TypeScript observation contract benchmark
+        working-directory: operations/polyglot/observation-contract-strict
+        shell: bash
+        run: |
+          set -euo pipefail
+          BENCHMARK_ITERATIONS=200 npm run benchmark
+
+      - name: Upload TypeScript observation contract benchmark
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: observation-contract-benchmark
+          path: operations/polyglot/observation-contract-strict/.runtime/benchmark.json
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Run migration review
         env:
           PYTHONPATH: ${{ github.workspace }}/operations
