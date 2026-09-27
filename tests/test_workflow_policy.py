@@ -717,3 +717,9 @@ def test_deep_scan_concurrency_is_pr_scoped():
     text = (ROOT / ".github/workflows/open-issue-polyglot-deep-scan.yml").read_text(encoding="utf-8")
     assert "github.event.pull_request.number || github.ref" in text
     assert "cancel-in-progress: true" in text
+
+
+def test_polyglot_migration_review_validates_registry_integrity():
+    text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
+    assert "Validate Operations migration registry" in text
+    assert "tools/validate_polyglot_registry.py" in text
