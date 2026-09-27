@@ -26,6 +26,14 @@ def test_matrix_is_fail_fast_false_and_has_three_lanes():
     assert "lane: 2" in text
 
 
+def test_workflow_run_trigger_is_production_release_scoped():
+    text = workflow_text()
+    assert 'workflows:' in text
+    assert '- "Heroic AI production release"' in text
+    assert 'types: [completed]' in text
+    assert 'github.event.workflow_run.head_sha' in text
+
+
 def test_private_operations_revision_and_app_auth_are_explicit():
     text = workflow_text()
     assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
