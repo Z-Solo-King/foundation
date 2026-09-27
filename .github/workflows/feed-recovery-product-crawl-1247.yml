@@ -9,8 +9,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: wc-feed-product-crawl-1247-${{ github.sha }}
-  cancel-in-progress: false
+  group: wc-feed-stage1-1247
+  cancel-in-progress: true
 
 jobs:
   native-stage1:
@@ -64,6 +64,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
   crawl:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
