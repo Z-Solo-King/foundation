@@ -449,6 +449,7 @@ def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, t
                     }
 
                 candidates = set(extract_urls(body, root))
+                candidates.update(extract_explicit_feed_urls(body, root))
                 candidates.update(observed_requests)
                 candidates.update(observed_response_urls)
                 for href in page.locator("a[href], link[href]").evaluate_all(
@@ -577,6 +578,62 @@ def validate_xml(body: bytes, content_type: str) -> Validation:
     return Validation(bool(valid_items), "rss_or_atom" if root_name in {"rss","feed","channel"} else "xml", len(items), len(ns_fields), reasons, hashlib.sha256(raw).hexdigest() if valid_items else "")
 
 
+def _explicit_http_url(root: str, raw: str) -> str | None:
+    raw = html.unescape(str(raw or "")).strip().rstrip(".,);")
+    if not raw:
+        return None
+    try:
+        u = urllib.parse.urljoin(root.rstrip("/") + "/", raw)
+        p = urllib.parse.urlsplit(u)
+        host = (p.hostname or "").lower().rstrip(".")
+        if p.scheme not in {"http", "https"} or not host or p.username or p.password:
+            return None
+        if host in {"localhost", "localhost.localdomain"} or host.endswith((".local", ".internal", ".lan")):
+            return None
+        try:
+            ip = ipaddress.ip_address(host)
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+                return None
+        except ValueError:
+            pass
+        return u
+    except ValueError:
+        return None
+
+
+def extract_explicit_feed_urls(text: str, root: str) -> tuple[str, ...]:
+    """Recover feed URLs explicitly declared by the storefront/config.
+    Unlike generic link discovery, explicit feed fields may point to a
+    third-party feed host; those URLs are still live-validated as XML.
+    """
+    decoded = html.unescape(text or "")
+    found: set[str] = set()
+
+    key_re = re.compile(
+        r"(?:feed[_-]?(?:url|file|path)|xml[_-]?url|export[_-]?url|"
+        r"product[_-]?feed|google[_-]?feed|merchant[_-]?feed|shopping[_-]?feed)"
+        r"\s*[:=]\s*[\"']([^\"']+)[\"']",
+        re.I,
+    )
+    for m in key_re.finditer(decoded):
+        u = _explicit_http_url(root, m.group(1))
+        if u and re.search(r"(?:feed|merchant|shopping|google|xml|woocommerce)", u, re.I):
+            found.add(u)
+
+    for tag in re.findall(r"<link\b[^>]*>", decoded, re.I):
+        low = tag.lower()
+        if "alternate" not in low or not re.search(r"(?:rss|atom|xml)", low):
+            continue
+        m = re.search(r'href\s*=\s*["\']([^"\']+)["\']', tag, re.I)
+        if not m:
+            continue
+        u = _explicit_http_url(root, m.group(1))
+        if u:
+            found.add(u)
+
+    return tuple(sorted(found))
+
+
 def extract_urls(text: str, root: str) -> tuple[str, ...]:
     decoded = html.unescape(text or "")
     raw: set[str] = set()
@@ -700,6 +757,7 @@ def probe_site(site: str, root: str) -> SiteResult:
             if result.status == 200 and result.body:
                 text = result.body.decode("utf-8", "replace")
                 discovered.update(extract_urls(text, root))
+                discovered.update(extract_explicit_feed_urls(text, root))
 
     ctx_candidates: set[str] = set()
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
