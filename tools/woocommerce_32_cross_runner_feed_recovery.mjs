@@ -132,6 +132,75 @@ async function storeApiProbe(base){
   }
   return null;
 }
+
+async function sitemapPdpProbe(base){
+  const sitemapUrls=[
+    `${base}/wp-sitemap-posts-product-1.xml`,
+    `${base}/product-sitemap.xml`,
+    `${base}/product-sitemap1.xml`,
+    `${base}/sitemap-products.xml`,
+    `${base}/sitemap.xml`,
+    `${base}/sitemap_index.xml`,
+    `${base}/wp-sitemap.xml`
+  ];
+  const seenUrls=new Set(), productUrls=[];
+  for(const sm of [...new Set(sitemapUrls)]){
+    const r=await fetchOne(sm,UA,45000);
+    if(r.status!==200||!r.body) continue;
+    for(const m of r.body.matchAll(/<loc>\s*(https?:\/\/[^<]+)\s*<\/loc>/gi)){
+      const u=m[1].trim();
+      if(/\/product\/|product-|\/p\//i.test(u) && !seenUrls.has(u)){
+        seenUrls.add(u); productUrls.push(u);
+      }
+    }
+    if(productUrls.length>=200) break;
+  }
+  if(!productUrls.length) return null;
+  function cleanText(s){
+    return String(s||"").replace(/<script[\s\S]*?<\/script>/gi," ")
+      .replace(/<style[\s\S]*?<\/style>/gi," ")
+      .replace(/<[^>]+>/g," ")
+      .replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&")
+      .replace(/\s+/g," ").trim();
+  }
+  function getAttr(h,pattern){const m=h.match(pattern);return m?m[1]:"";}
+  const rows=[];
+  for(const u of productUrls.slice(0,120)){
+    const r=await fetchOne(u,UA,45000);
+    if(r.status!==200||!r.body) continue;
+    const h=r.body;
+    const title=getAttr(h,/<h1[^>]*class=["'][^"']*(?:product_title|product-title|entry-title)[^"']*["'][^>]*>([\s\S]*?)<\/h1>/i)
+      || getAttr(h,/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)/i)
+      || (h.match(/<title[^>]*>([\s\S]*?)<\/title>/i)||[])[1] || "";
+    const image=getAttr(h,/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)/i)
+      || getAttr(h,/<img[^>]+(?:data-large_image|data-src|src)=["']([^"']+)["']/i);
+    const desc=getAttr(h,/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)/i);
+    const priceCandidates=[
+      getAttr(h,/<meta[^>]+(?:property|name)=["']product:price:amount["'][^>]+content=["']([^"']+)/i),
+      getAttr(h,/<meta[^>]+itemprop=["']price["'][^>]+content=["']([^"']+)/i),
+      getAttr(h,/<span[^>]+class=["'][^"']*woocommerce-Price-amount[^"']*["'][^>]*>[\s\S]*?<bdi>[\s\S]*?([0-9][0-9,]*(?:\.[0-9]{1,2})?)/i),
+      getAttr(h,/<(?:div|span|p)[^>]+class=["'][^"']*(?:price|amount)[^"']*["'][^>]*>[\s\S]*?([0-9][0-9,]*(?:\.[0-9]{1,2})?)/i)
+    ].filter(Boolean);
+    const price=priceCandidates.length ? Number(priceCandidates[0].replace(/,/g,"")) : NaN;
+    if(!title||!image||!Number.isFinite(price)) continue;
+    const sku=getAttr(h,/data-product_sku=["']([^"']*)["']/i) || getAttr(h,/<meta[^>]+itemprop=["']sku["'][^>]+content=["']([^"']+)/i);
+    rows.push({
+      id:String(sku||u),
+      title:cleanText(title),
+      description:cleanText(desc||title).slice(0,5000),
+      link:u,
+      image,
+      price,
+      currency:"INR",
+      availability:/out[- ]of[- ]stock|outofstock/i.test(h) ? "out of stock" : "in stock",
+      brand:"",
+      sku
+    });
+    if(rows.length>=100) break;
+  }
+  return rows.length ? {count:rows.length,rows} : null;
+}
+
 function xmlEscape(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");}
 function rowsToGoogleBackup(rows){
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -187,8 +256,8 @@ async function probe(name,base){
    }
   }
  }
- const api=await storeApiProbe(base);
- return {site:name,base,runner_os:process.env.RUNNER_OS||"unknown",verified_feed:verified,public_store_api:api?{endpoint:api.endpoint,count:api.count}:null,backup_google_xml:api?rowsToGoogleBackup(api.rows):null,elapsed_s:Number(((Date.now()-started)/1000).toFixed(2)),
+ const api=await storeApiProbe(base);\n const pdp=!api?await sitemapPdpProbe(base):null;
+ return {site:name,base,runner_os:process.env.RUNNER_OS||"unknown",verified_feed:verified,public_store_api:api?{endpoint:api.endpoint,count:api.count}:null,pdp_recovery:pdp?{count:pdp.count}:null,backup_google_xml:api?rowsToGoogleBackup(api.rows):(pdp?rowsToGoogleBackup(pdp.rows):null),elapsed_s:Number(((Date.now()-started)/1000).toFixed(2)),
    candidate_results:results};
 }
 const started=Date.now(); await mkdir("out/woocommerce-32-cross-runner",{recursive:true});
