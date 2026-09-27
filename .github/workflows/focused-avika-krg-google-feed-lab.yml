@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - "focus/avika-krg-google-feed-lab-20260927"
+  pull_request:
+    paths:
+      - "tools/woocommerce_focus_google_feed_lab.py"
+      - "tests/test_woocommerce_focus_google_feed_lab.py"
+      - ".github/workflows/focused-avika-krg-google-feed-lab.yml"
   workflow_dispatch:
 
 permissions:
