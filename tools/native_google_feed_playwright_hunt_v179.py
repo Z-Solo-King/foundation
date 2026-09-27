@@ -45,12 +45,28 @@ def absu(root,x):
         return None
 
 def native_xml(text):
-    t=text or ""
-    if CHALLENGE.search(t): return False
-    if not re.match(r"^\s*(?:<\?xml[^>]*>\s*)?<rss\b",t,re.I): return False
-    if "http://base.google.com/ns/1.0" not in t and "https://base.google.com/ns/1.0" not in t: return False
-    if not re.search(r"<item\b",t,re.I): return False
-    return all(re.search(fr"<g:{x}\b",t,re.I) for x in ["id","title","link","price","availability"])
+    try:
+        import xml.etree.ElementTree as ET
+        root_el=ET.fromstring(text or "")
+        root_name=root_el.tag.rsplit("}",1)[-1].lower() if isinstance(root_el.tag,str) else ""
+        if root_name not in {"rss","feed"}:
+            return False
+        google_ns="http://base.google.com/ns/1.0"
+        for item in root_el.iter():
+            local=item.tag.rsplit("}",1)[-1].lower() if isinstance(item.tag,str) else ""
+            if local not in {"item","entry"}:
+                continue
+            fields={}
+            for child in list(item):
+                if not isinstance(child.tag,str):
+                    continue
+                if child.tag.startswith("{"+google_ns+"}"):
+                    fields[child.tag.rsplit("}",1)[-1].lower()]=("".join(child.itertext()) or "").strip()
+            if all(fields.get(k) for k in ("id","title","link","price")):
+                return True
+        return False
+    except Exception:
+        return False
 
 def extract_urls(text,root):
     out=set()
