@@ -1,0 +1,38 @@
+name: Live WC Google Feed XHR Sweep v2 2026-09-27
+
+on:
+  push:
+    branches:
+      - "test/wc-google-feed-xhr-20260927"
+  pull_request:
+    branches:
+      - "main"
+
+permissions:
+  contents: read
+
+jobs:
+  sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Install browser and dependencies
+        run: |
+          node --version
+          npm --version
+          npm init -y >/dev/null 2>&1
+          npm install --no-package-lock --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Syntax check
+        run: node --check tools/wc_google_feed_xhr_live_20260927.mjs
+      - name: Run live browser/XHR sweep
+        run: node tools/wc_google_feed_xhr_live_20260927.mjs
+      - name: Upload live evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wc-google-feed-xhr-live-20260927-v2
+          path: out/wc-google-feed-xhr-20260927
+          if-no-files-found: error
+          retention-days: 30
