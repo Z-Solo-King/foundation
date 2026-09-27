@@ -687,15 +687,45 @@ async function recover([name, base], collections) {
 }
 
 async function main() {
-  await mkdir(`${OUT}/feeds`, { recursive: true });
-  for (const [name] of TARGETS) await mkdir(`${OUT}/${slug(name)}`, { recursive: true });
+  await mkdir(OUT + "/feeds", { recursive: true });
+
+  const argv = process.argv.slice(2);
+  const args = {};
+  for (let i = 0; i < argv.length; i++) {
+    const token = argv[i];
+    if (!token.startsWith("--")) continue;
+    const key = token.slice(2);
+    const next = argv[i + 1];
+    args[key] = next && !next.startsWith("--") ? argv[++i] : true;
+  }
+
+  if (args["site-name"] && args["site-url"]) {
+    const collections = await commonCrawlRecentIndexes(4);
+    const result = await recover([String(args["site-name"]), String(args["site-url"])], collections);
+    const summary = {
+      schema_version: "woocommerce-google-feed-archive-recovery/v1-single-site",
+      generated_at: new Date().toISOString(),
+      commoncrawl_collections: collections,
+      targets: 1,
+      site: {
+        name: result.name,
+        base: result.base,
+        status: result.status,
+        live: result.live_native_feed,
+        historical: result.historical_native_feed,
+        archive_candidate_count: result.archive_candidate_count,
+        live_candidate_count: result.live_candidate_count,
+      },
+    };
+    await writeFile(OUT + "/summary.json", JSON.stringify(summary, null, 2) + "\n");
+    console.log(JSON.stringify(summary, null, 2));
+    return;
+  }
 
   const collections = await commonCrawlRecentIndexes(4);
   const results = [];
-  // Common Crawl explicitly asks clients to avoid parallel CDX requests and to sleep between calls.
   for (const target of TARGETS) {
-    const result = await recover(target, collections);
-    results.push(result);
+    results.push(await recover(target, collections));
     await sleep(SLEEP_MS);
   }
 
@@ -717,8 +747,8 @@ async function main() {
       live_candidate_count: x.live_candidate_count,
     })),
   };
-  await writeFile(`${OUT}/summary.json`, JSON.stringify(summary, null, 2) + "\n");
-  await writeFile(`${OUT}/audit.json`, JSON.stringify({ collections, results }, null, 2) + "\n");
+  await writeFile(OUT + "/summary.json", JSON.stringify(summary, null, 2) + "\n");
+  await writeFile(OUT + "/audit.json", JSON.stringify({ collections, results }, null, 2) + "\n");
   console.log(JSON.stringify(summary, null, 2));
 }
 
