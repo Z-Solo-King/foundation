@@ -1,6 +1,6 @@
 name: GitHub Actions static security analysis
 # WooCommerce recovery execution refresh 2026-09-27
-# Listing/PDP fallback execution refresh
+# Listing/PDP fallback execution refresh 2
 
 on:
   pull_request:
