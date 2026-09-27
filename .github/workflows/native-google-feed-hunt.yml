@@ -196,19 +196,19 @@ jobs:
           - shard: 0
             sites: "AULA India,Cosmic Byte,Meckeys"
           - shard: 1
-            sites: "Moskeys,Ninja Dog,StacksKB,Theproaudio"
+            sites: "Moskeys,Ninja Dog,StacksKB"
           - shard: 2
-            sites: "EZPZ Solutions,GamesNComps"
+            sites: "Theproaudio,EZPZ Solutions"
           - shard: 3
-            sites: "NCL Computer,networkitstore,nexusinfosys"
+            sites: "Kryptronix Gaming,NCL Computer,networkitstore"
           - shard: 4
-            sites: "Kryptronix Gaming,PC Studio,PCHubShop"
+            sites: "nexusinfosys,Only SDD,PC Studio"
           - shard: 5
-            sites: "Prime ABGB,quickincomputers,SCL Gaming"
+            sites: "PCHubShop,Prime ABGB"
           - shard: 6
-            sites: "solankienterprises,Variety Infotech,Only SDD"
+            sites: "quickincomputers,SCL Gaming,solankienterprises"
           - shard: 7
-            sites: "AULA India,Cosmic Byte,Meckeys"
+            sites: "Variety Infotech"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
