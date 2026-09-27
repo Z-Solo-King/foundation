@@ -441,7 +441,6 @@
       ],
       "targets": [
         "foundation#1157",
-        "operations#385",
         "operations#597"
       ]
     },
@@ -471,8 +470,8 @@
       ],
       "targets": [
         "foundation#1157",
-        "operations#603",
-        "operations#340"
+        "operations#1027",
+        "operations#603"
       ]
     },
     {
@@ -488,7 +487,7 @@
       "targets": [
         "foundation#58",
         "foundation#157",
-        "operations#340"
+        "operations#1103"
       ]
     },
     {
@@ -499,8 +498,8 @@
       ],
       "targets": [
         "operations#145",
-        "operations#340",
-        "operations#385"
+        "operations#597",
+        "operations#1027"
       ]
     },
     {
@@ -512,8 +511,9 @@
       ],
       "targets": [
         "foundation#157",
-        "operations#713",
-        "operations#603"
+        "operations#1027",
+        "operations#1066",
+        "operations#1103"
       ]
     },
     {
@@ -524,8 +524,8 @@
         "M17"
       ],
       "targets": [
-        "operations#340",
-        "operations#385"
+        "operations#145",
+        "operations#1103"
       ]
     },
     {
@@ -538,8 +538,8 @@
       ],
       "targets": [
         "foundation#1157",
-        "operations#385",
-        "operations#699"
+        "operations#1103",
+        "operations#603"
       ]
     },
     {
@@ -564,7 +564,8 @@
       ],
       "targets": [
         "foundation#1157",
-        "foundation#157"
+        "foundation#157",
+        "operations#1066"
       ]
     },
     {
