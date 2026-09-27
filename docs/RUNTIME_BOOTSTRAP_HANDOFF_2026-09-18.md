@@ -24,7 +24,7 @@ Worker: `legacy private Worker`
 
 Configured runtime topology reported by the Cloudflare recovery check:
 
-- `OPERATIONS_DB` -> D1 `research-intelligence`
+- `OPERATIONS_DB` -> D1 `[REDACTED-PRIVATE-D1]`
 - `FOUNDATION` -> `legacy public Worker`
 - `ENVIRONMENT=production`
 - `STRICT_ZERO_COST_ONLY=true`
