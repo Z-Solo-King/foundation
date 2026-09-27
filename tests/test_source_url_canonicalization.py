@@ -101,3 +101,8 @@ def test_safe_ip_rejects_nat64_embedded_private_ipv4():
     assert source_http._safe_ip("64:ff9b::127.0.0.1") is False
     assert source_http._safe_ip("64:ff9b::10.0.0.1") is False
     assert source_http._safe_ip("64:ff9b::169.254.1.1") is False
+
+
+def test_canonicalize_url_reexports_from_foundation_core():
+    from foundation_core.url_identity import canonicalize_url as core_canonicalize_url
+    assert source_http.canonicalize_url is core_canonicalize_url
