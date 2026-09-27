@@ -963,6 +963,50 @@ def feed_priority(url: str) -> tuple[int, int, str]:
     return (4, 0, url)
 
 
+def batch_first_valid(
+    urls: list[str],
+    timeout: float,
+    workers: int,
+    records: list[dict[str, object]],
+    cookie_header: str = "",
+    referer: str = "",
+    allow_external: bool = False,
+    chunk_size: int = 128,
+) -> str | None:
+    """Probe a large candidate set in bounded chunks and stop on the first valid native feed."""
+    if not urls:
+        return None
+    ordered = list(dict.fromkeys(urls))
+    for offset in range(0, len(ordered), max(1, chunk_size)):
+        chunk = ordered[offset:offset + max(1, chunk_size)]
+        pool = concurrent.futures.ThreadPoolExecutor(max_workers=workers)
+        futures = {pool.submit(fetch, u, timeout, cookie_header, referer): u for u in chunk}
+        try:
+            for future in concurrent.futures.as_completed(futures):
+                result = future.result()
+                validation = validate_xml(result.body, result.content_type) if result.status == 200 else Validation(False, "not_checked", 0, 0, ())
+                records.append({
+                    "requested_url": result.requested_url,
+                    "final_url": result.final_url,
+                    "status": result.status,
+                    "content_type": result.content_type,
+                    "elapsed_ms": result.elapsed_ms,
+                    "error": result.error,
+                    "validation": asdict(validation),
+                })
+                if result.status == 200 and validation.valid and (
+                    allow_external or same_host(result.final_url, result.requested_url)
+                ):
+                    for pending in futures:
+                        if not pending.done():
+                            pending.cancel()
+                    pool.shutdown(wait=False, cancel_futures=True)
+                    return result.final_url
+        finally:
+            pool.shutdown(wait=False, cancel_futures=True)
+    return None
+
+
 def batch(urls: list[str], timeout: float, workers: int, records: list[dict[str, object]], cookie_header: str = "", referer: str = "", allow_external: bool = False) -> str | None:
     if not urls:
         return None
@@ -1133,7 +1177,7 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
     if verified is None:
         filename_sweep_candidates = generated_upload_feed_candidates(root, site)
         filename_sweep_meta = {"attempted": True, "candidate_count": len(filename_sweep_candidates)}
-        verified = batch(list(filename_sweep_candidates), 12.0, 24, records, session_cookie_header, root)
+        verified = batch_first_valid(list(filename_sweep_candidates), 8.0, 32, records, session_cookie_header, root, chunk_size=128)
 
     if verified is None and discovered:
         same_site, explicit_external = validation_candidate_groups(
