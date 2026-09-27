@@ -1,4 +1,4 @@
-name: Native Google Feed URL Hunt v2
+name: Native Google Feed URL Hunt v177
 on:
   workflow_dispatch:
   pull_request:
@@ -7,45 +7,14 @@ on:
     branches: [hunt/native-google-feed-urls-20260927]
     paths:
       - ".github/workflows/native-google-feed-hunt.yml"
-      - "tools/woocommerce_native_feed_hunt_v176_fast.mjs"
+      - "tools/native_google_feed_hunt_rest_v177.mjs"
 concurrency:
   group: native-google-feed-hunt-${{ github.ref }}
   cancel-in-progress: true
 permissions:
   contents: read
 jobs:
-  deploy-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy stateful Browser Run helper
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo 'Missing CLOUDFLARE_API_TOKEN'; exit 1; }
-          test -n "${CLOUDFLARE_ACCOUNT_ID:-}" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID'; exit 1; }
-          metadata='{"main_module":"wc-browser-single-20260927.mjs","compatibility_date":"2026-09-27","compatibility_flags":["nodejs_compat"],"keep_bindings":["browser"]}'
-          curl -sS -X PUT             "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/wc-browser-single-20260927"             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"             -F "metadata=${metadata};type=application/json"             -F "wc-browser-single-20260927.mjs=@tools/wc_browser_batch_worker.js;filename=wc-browser-single-20260927.mjs;type=application/javascript+module"             | tee /tmp/deploy-response.json
-          jq -e '.success == true' /tmp/deploy-response.json >/dev/null
-          echo 'Browser helper deployment: PASS'
-      - name: Browser helper CDP self-test
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl -fsS --max-time 90 -X POST https://wc-browser-single-20260927.heroic-ai.workers.dev/             -H 'content-type: application/json'             --data '{"root":"https://onlyssd.com","targets":["https://onlyssd.com/?woocommerce_gpf=google"],"debug":"1"}' | tee browser-helper-self-test.json
-      - name: Upload helper self-test
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: browser-helper-self-test
-          path: browser-helper-self-test.json
-          retention-days: 3
   hunt:
-    needs: deploy-browser
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -53,8 +22,8 @@ jobs:
       matrix:
         shard: [1,2,3,4,5,6,7,8]
     env:
-      BROWSER_WORKER_URL: https://wc-browser-single-20260927.heroic-ai.workers.dev/
-      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -63,7 +32,6 @@ jobs:
       - name: Select shard
         env:
           SHARD: ${{ matrix.shard }}
-        shell: bash
         run: |
           node - <<'NODE' > /tmp/sites.json
           const s=[
@@ -78,12 +46,12 @@ jobs:
           const n=Number(process.env.SHARD);process.stdout.write(JSON.stringify(s.filter((_,i)=>i%8+1===n)));
           NODE
           echo "SITES_JSON=$(cat /tmp/sites.json)" >> "$GITHUB_ENV"
-      - name: Hunt native Google Merchant XML only
-        run: node tools/woocommerce_native_feed_hunt_v176_fast.mjs | tee "native-feed-shard-${{ matrix.shard }}.json"
-      - name: Upload URL-only result
+      - name: Run v177 native-only hunt
+        run: node tools/native_google_feed_hunt_rest_v177.mjs | tee "native-rest-shard-${{ matrix.shard }}.json"
+      - name: Upload URL-only results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: native-google-feed-shard-${{ matrix.shard }}
-          path: native-feed-shard-${{ matrix.shard }}.json
+          name: native-rest-google-feed-shard-${{ matrix.shard }}
+          path: native-rest-shard-${{ matrix.shard }}.json
           retention-days: 14
