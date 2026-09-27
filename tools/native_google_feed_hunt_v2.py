@@ -216,6 +216,125 @@ def warm_site_session(root: str, timeout: float = 20.0) -> str:
                     pass
 
 
+def _historical_url_filter(url: str, root: str) -> bool:
+    """Keep only same-site historical URLs that could plausibly be Merchant feeds."""
+    u = absolute(root, url)
+    if not u:
+        return False
+    return bool(
+        re.search(r"\.xml(?:\.gz)?(?:[?#].*)?$", u, re.I)
+        or re.search(r"(feed|merchant|shopping|woocommerce_gpf|google|woo[-_]?feed|wppfm)", u, re.I)
+    )
+
+
+def _public_json_lines(command: list[str], timeout_s: float = 25.0) -> list[dict[str, object]]:
+    try:
+        proc = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=max(10.0, timeout_s + 5.0),
+            check=False,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return []
+    out: list[dict[str, object]] = []
+    for line in (proc.stdout or "").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            item = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(item, dict):
+            out.append(item)
+    return out
+
+
+def historical_feed_discover(root: str, timeout_s: float = 25.0) -> tuple[str, ...]:
+    """Discover historical feed URLs from public Common Crawl and Wayback indexes.
+    Historical URLs are candidates only; every candidate still needs a current
+    live fetch and native Google Merchant XML validation.
+    """
+    host = urllib.parse.urlsplit(root).hostname or ""
+    host = host.lower().removeprefix("www.")
+    if not host:
+        return ()
+
+    found: set[str] = set()
+
+    # Common Crawl: choose the three newest published indexes so an endpoint
+    # that existed recently still has a chance of being recovered.
+    try:
+        cc_cmd = [
+            "curl", "--silent", "--show-error", "--location",
+            "--connect-timeout", "8", "--max-time", str(int(timeout_s)),
+            "-A", UA, "https://index.commoncrawl.org/collinfo.json",
+        ]
+        cc_info_proc = subprocess.run(
+            cc_cmd, capture_output=True, text=True,
+            timeout=max(12.0, timeout_s + 5.0), check=False
+        )
+        cc_info = json.loads(cc_info_proc.stdout or "[]")
+        indexes = [
+            str(x.get("id") or "")
+            for x in (cc_info if isinstance(cc_info, list) else [])
+            if isinstance(x, dict) and str(x.get("id") or "").startswith("CC-MAIN-")
+        ][:3]
+    except (subprocess.TimeoutExpired, OSError, ValueError, json.JSONDecodeError):
+        indexes = []
+
+    for idx in indexes:
+        params = urllib.parse.urlencode({
+            "url": f"{host}/*",
+            "output": "json",
+            "filter": "status:200",
+            "pageSize": "200",
+        })
+        api = f"https://index.commoncrawl.org/{idx}-index?{params}"
+        rows = _public_json_lines([
+            "curl", "--silent", "--show-error", "--location",
+            "--connect-timeout", "8", "--max-time", str(int(timeout_s)),
+            "-A", UA, api,
+        ], timeout_s)
+        for row in rows:
+            for key in ("url", "original"):
+                raw = str(row.get(key) or "")
+                if raw and _historical_url_filter(raw, root):
+                    u = absolute(root, raw)
+                    if u:
+                        found.add(u)
+            if len(found) >= 200:
+                break
+        if len(found) >= 200:
+            break
+
+    # Wayback CDX provides another public historical URL index and often
+    # contains generated feed paths missing from current HTML.
+    params = urllib.parse.urlencode({
+        "url": f"{host}/*",
+        "output": "json",
+        "fl": "timestamp,original,mimetype,statuscode",
+        "filter": "statuscode:200",
+        "collapse": "urlkey",
+        "limit": "300",
+    })
+    wayback_api = f"https://web.archive.org/cdx/search/cdx?{params}"
+    rows = _public_json_lines([
+        "curl", "--silent", "--show-error", "--location",
+        "--connect-timeout", "8", "--max-time", str(int(timeout_s)),
+        "-A", UA, wayback_api,
+    ], timeout_s)
+    for row in rows:
+        raw = str(row.get("original") or "")
+        if raw and _historical_url_filter(raw, root):
+            u = absolute(root, raw)
+            if u:
+                found.add(u)
+    return tuple(sorted(found)[:300])
+
+
 def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, tuple[str, ...], dict[str, object]]:
     """Render the public site in a normal browser session and discover feed URLs.
     Does not solve challenges; challenge pages are recorded and ignored.
@@ -538,10 +657,17 @@ def probe_site(site: str, root: str) -> SiteResult:
             session_cookie_header = browser_cookie_header
         discovered.update(browser_candidates)
 
+    historical_candidates: tuple[str, ...] = ()
+    historical_meta: dict[str, object] = {"queried": False, "candidate_count": 0}
+    if verified is None:
+        historical_candidates = historical_feed_discover(root)
+        historical_meta = {"queried": True, "candidate_count": len(historical_candidates)}
+        discovered.update(historical_candidates)
+
     if verified is None and discovered:
         candidates = sorted(
-            (u for u in discovered if urllib.parse.urlsplit(u).path.lower().endswith((".xml", ".xml.gz")) or re.search(r"(feed|merchant|shopping|woocommerce_gpf)", u, re.I)),
-        )[:160]
+            (u for u in discovered if urllib.parse.urlsplit(u).path.lower().endswith((".xml", ".xml.gz")) or re.search(r"(feed|merchant|shopping|woocommerce_gpf|google|woo[-_]?feed|wppfm)", u, re.I)),
+        )[:240]
         verified = batch(candidates, 60.0, 8, records, session_cookie_header)
 
     status_codes = [int(r.get("status") or 0) for r in records]
@@ -553,6 +679,7 @@ def probe_site(site: str, root: str) -> SiteResult:
         "discovered_url_count": len(discovered),
         "same_site_session_established": bool(session_cookie_header),
         "browser_discovery": browser_meta,
+        "historical_discovery": historical_meta,
         "records": records,
     }
     return SiteResult(site, root, status, verified, evidence, round(time.monotonic() - started, 3))
