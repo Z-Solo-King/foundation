@@ -143,6 +143,12 @@ DISCOVERY_PATHS = ("/", "/robots.txt", "/sitemap.xml", "/sitemap.rss", "/sitemap
 
 CTXFEED_PATHS = tuple(f"/wp-json/ctxfeed/{v}/feeds" for v in ("v8","v7","v6","v5","v4","v3","v2","v1"))
 
+PLUGIN_FINGERPRINT_PATHS = (
+    ("adtribes", "/wp-content/plugins/woo-product-feed-pro/readme.txt"),
+    ("ctxfeed", "/wp-content/plugins/webappick-product-feed-for-woocommerce/readme.txt"),
+    ("wpmr", "/wp-content/plugins/wp-product-feed-manager/readme.txt"),
+)
+
 @dataclass(frozen=True)
 class Fetch:
     requested_url: str
@@ -301,6 +307,22 @@ def _public_json_lines(command: list[str], timeout_s: float = 25.0) -> list[dict
     return out
 
 
+def plugin_fingerprint(root: str, cookie_header: str) -> tuple[str, ...]:
+    found: list[str] = []
+    for name, path in PLUGIN_FINGERPRINT_PATHS:
+        result = fetch(urllib.parse.urljoin(root.rstrip("/") + "/", path.lstrip("/")), 8.0, cookie_header, root)
+        if result.status != 200 or not result.body:
+            continue
+        sample = result.body[:12000].decode("utf-8", "replace").lower()
+        if name == "adtribes" and "product feed" in sample and "adtribes" in sample:
+            found.append("adtribes")
+        elif name == "ctxfeed" and "ctx feed" in sample:
+            found.append("ctxfeed")
+        elif name == "wpmr" and ("product feed" in sample or "wpmr" in sample):
+            found.append("wpmr")
+    return tuple(sorted(set(found)))
+
+
 def historical_feed_discover(root: str, timeout_s: float = 25.0) -> tuple[str, ...]:
     """Discover historical feed URLs from public Common Crawl and Wayback indexes.
     Historical URLs are candidates only; every candidate still needs a current
@@ -384,10 +406,8 @@ def historical_feed_discover(root: str, timeout_s: float = 25.0) -> tuple[str, .
     return tuple(sorted(found)[:300])
 
 
-def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, tuple[str, ...], dict[str, object]]:
-    """Render the public site in a normal browser session and discover feed URLs.
-    Does not solve challenges; challenge pages are recorded and ignored.
-    """
+def browser_session_discover(root: str, timeout_s: float = 50.0) -> tuple[str, tuple[str, ...], dict[str, object]]:
+    """Render public storefront pages and discover feed URLs from normal browser traffic."""
     try:
         from playwright.sync_api import sync_playwright
     except Exception:
@@ -406,24 +426,24 @@ def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, t
                 page = context.new_page()
                 observed_requests: set[str] = set()
                 observed_response_urls: set[str] = set()
-                def _observe_request(request):
+                visited_pages: set[str] = set()
+                homepage_links: list[str] = []
+
+                def observe_request(request):
                     u = str(getattr(request, "url", "") or "")
-                    if u and absolute(root, u) and (
-                        re.search(r"\\.xml(?:\\.gz)?(?:[?#].*)?$", u, re.I)
-                        or re.search(r"(feed|merchant|shopping|woocommerce_gpf|google)", u, re.I)
-                    ):
+                    if u and re.search(r"(?:\.xml(?:\.gz)?(?:[?#].*)?|feed|merchant|shopping|woocommerce_gpf|google)", u, re.I):
                         observed_requests.add(u)
 
-                def _observe_response(response):
+                def observe_response(response):
                     u = str(getattr(response, "url", "") or "")
-                    if not u or not absolute(root, u):
+                    if not u or not u.startswith(("http://", "https://")):
                         return
                     try:
                         headers = {str(k).lower(): str(v).lower() for k, v in response.all_headers().items()}
                         ct = headers.get("content-type", "")
                         looks_feed = (
                             "xml" in ct or "rss" in ct or "atom" in ct
-                            or re.search(r"(feed|merchant|shopping|woocommerce_gpf|google)", u, re.I)
+                            or re.search(r"(?:\.xml(?:\.gz)?(?:[?#].*)?|feed|merchant|shopping|woocommerce_gpf|google)", u, re.I)
                         )
                         if not looks_feed:
                             return
@@ -433,66 +453,95 @@ def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, t
                     except Exception:
                         return
 
-                page.on("request", _observe_request)
-                page.on("response", _observe_response)
+                page.on("request", observe_request)
+                page.on("response", observe_response)
+
                 page.goto(root.rstrip("/") + "/", wait_until="domcontentloaded", timeout=int(timeout_s * 1000))
                 try:
-                    page.wait_for_load_state("networkidle", timeout=min(8000, int(timeout_s * 1000)))
+                    page.wait_for_load_state("networkidle", timeout=8000)
                 except Exception:
                     pass
-                body = page.content()
-                challenge_seen = any(marker in body[:20000].lower() for marker in BLOCK_MARKERS)
 
-                # Continue through other public discovery routes even when the
-                # homepage is challenged. Some WAFs challenge "/" but leave
-                # robots/sitemaps/feed routes directly readable.
+                homepage_html = page.content()
+                challenge_seen = any(marker in homepage_html[:20000].lower() for marker in BLOCK_MARKERS)
+                try:
+                    homepage_links = page.locator("a[href]").evaluate_all(
+                        "(els) => els.map(e => e.href).filter(Boolean)"
+                    )
+                except Exception:
+                    homepage_links = []
+
+                # Probe the public discovery routes in the established browser context.
                 for path in ("/robots.txt", "/sitemap.xml", "/sitemap.rss", "/sitemap_index.xml", "/wp-sitemap.xml", "/feed/"):
                     try:
-                        page.goto(urllib.parse.urljoin(root.rstrip("/") + "/", path.lstrip("/")),
-                                  wait_until="domcontentloaded", timeout=7000)
+                        page.goto(
+                            urllib.parse.urljoin(root.rstrip("/") + "/", path.lstrip("/")),
+                            wait_until="domcontentloaded",
+                            timeout=7000,
+                        )
                     except Exception:
                         continue
                     try:
                         page.wait_for_load_state("networkidle", timeout=1800)
                     except Exception:
                         pass
-
-                body = page.content()
-                # Visit a small number of public storefront/product pages only
-                # when a normal storefront page was reachable. This remains
-                # ordinary browser navigation and observes public network calls.
-                if not challenge_seen:
-                    page_links = []
                     try:
-                        page_links = page.locator("a[href]").evaluate_all("(els) => els.map(e => e.href).filter(Boolean)")
+                        route_body = page.content()
+                        if len(route_body) <= 20 * 1024 * 1024:
+                            for u in extract_urls(route_body, root):
+                                observed_requests.add(u)
                     except Exception:
-                        page_links = []
-                    for href in page_links[:60]:
-                        u = absolute(root, str(href))
+                        pass
+
+                # Crawl a bounded sample of public product/store pages using the
+                # same browser context/session. This often exposes feed config or
+                # XHR endpoints that the homepage does not reference.
+                if not challenge_seen:
+                    page_candidates = []
+                    for href in homepage_links:
+                        u = _explicit_http_url(root, str(href))
                         if not u or not same_host(u, root):
                             continue
                         path_l = urllib.parse.urlsplit(u).path.lower()
-                        if any(token in path_l for token in ("/product/", "/products/", "/shop/", "/item/")):
-                            try:
-                                page.goto(u, wait_until="domcontentloaded", timeout=9000)
-                            except Exception:
-                                continue
-                            try:
-                                page.wait_for_load_state("networkidle", timeout=2500)
-                            except Exception:
-                                pass
-                lower = body[:20000].lower()
-                challenge_seen = challenge_seen or any(marker in lower for marker in BLOCK_MARKERS)
+                        if any(token in path_l for token in ("/product/", "/products/", "/shop/", "/item/", "/category/", "/product-category/")):
+                            page_candidates.append(u)
+                        if len(page_candidates) >= 12:
+                            break
+
+                    for u in page_candidates:
+                        if u in visited_pages:
+                            continue
+                        visited_pages.add(u)
+                        try:
+                            page.goto(u, wait_until="domcontentloaded", timeout=9000)
+                        except Exception:
+                            continue
+                        try:
+                            page.wait_for_load_state("networkidle", timeout=2500)
+                        except Exception:
+                            pass
+                        try:
+                            html_body = page.content()
+                            observed_requests.update(extract_urls(html_body, root))
+                            # Explicit config can legitimately point to a CDN/feed host.
+                            observed_response_urls.update(extract_explicit_feed_urls(html_body, root))
+                        except Exception:
+                            pass
 
                 body = page.content()
-                candidates = set(extract_urls(body, root))
+                candidates = set(extract_urls(homepage_html, root))
+                candidates.update(extract_explicit_feed_urls(homepage_html, root))
+                candidates.update(extract_urls(body, root))
                 candidates.update(extract_explicit_feed_urls(body, root))
                 candidates.update(observed_requests)
                 candidates.update(observed_response_urls)
+
+                # External candidates discovered directly from the browser page/config
+                # are retained; they still require live native-feed validation.
                 for href in page.locator("a[href], link[href]").evaluate_all(
                     "(els) => els.map(e => e.href).filter(Boolean)"
                 ):
-                    u = absolute(root, str(href))
+                    u = _explicit_http_url(root, str(href))
                     if u and (
                         re.search(r"\.xml(?:\.gz)?(?:[?#].*)?$", u, re.I)
                         or re.search(r"(feed|merchant|shopping|woocommerce_gpf|google)", u, re.I)
@@ -508,6 +557,7 @@ def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, t
                     "cookie_count": len(pairs),
                     "candidate_count": len(candidates),
                     "response_feed_count": len(observed_response_urls),
+                    "visited_public_pages": len(visited_pages),
                 }
             finally:
                 browser.close()
@@ -876,7 +926,7 @@ def validation_candidate_groups(
     )[:240]
     same_site = [u for u in candidates if same_host(u, root)]
     explicit_external = [
-        u for u in sorted(explicit_feed_candidates)
+        u for u in sorted(explicit_external_candidates)
         if u in candidates and not same_host(u, root)
     ]
     return same_site, explicit_external
@@ -888,6 +938,7 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
     discovered: set[str] = set()
     explicit_feed_candidates: set[str] = set()
     session_cookie_header = warm_site_session(root)
+    plugin_signals = plugin_fingerprint(root, session_cookie_header) if session_cookie_header else ()
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
         futures = [pool.submit(fetch, urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")), 15.0, session_cookie_header, root) for p in DISCOVERY_PATHS]
@@ -914,6 +965,19 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
         for p in learned_paths
     )
     fast_candidates.extend(sorted(ctx_candidates))
+    # Learn plugin-shaped paths from previous verified native feeds and current fingerprints.
+    if "adtribes" in plugin_signals:
+        fast_candidates.extend([
+            "/wp-content/uploads/woo-product-feed-pro/xml/google.xml",
+            "/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml",
+            "/wp-content/uploads/woo-product-feed-pro/xml/google-products.xml",
+        ])
+    if "ctxfeed" in plugin_signals:
+        fast_candidates.extend([
+            "/wp-content/uploads/woo-feed/google/xml/google-shopping.xml",
+            "/wp-content/uploads/woo-feed/google/xml/google.xml",
+            "/wp-content/uploads/woo-feed/google/google-shopping.xml",
+        ])
     verified = batch(list(dict.fromkeys(fast_candidates)), 20.0, 8, records, session_cookie_header, root)
     if verified is None:
         verified = batch([urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in SLOW_GPF_PATHS], 105.0, 4, records, session_cookie_header, root)
@@ -959,6 +1023,7 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
         "explicit_feed_candidate_count": len(explicit_feed_candidates),
         "validated_explicit_feed_candidate_count": len([r for r in records if r.get("requested_url") in explicit_feed_candidates]),
         "explicit_feed_candidates": sorted(explicit_feed_candidates)[:100],
+        "plugin_signals": list(plugin_signals),
         "same_site_session_established": bool(session_cookie_header),
         "browser_discovery": browser_meta,
         "historical_discovery": historical_meta,
