@@ -236,6 +236,15 @@ def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, t
                     viewport={"width": 1366, "height": 768},
                 )
                 page = context.new_page()
+                observed_requests: set[str] = set()
+                def _observe_request(request):
+                    u = str(getattr(request, "url", "") or "")
+                    if u and absolute(root, u) and (
+                        re.search(r"\\.xml(?:\\.gz)?(?:[?#].*)?$", u, re.I)
+                        or re.search(r"(feed|merchant|shopping|woocommerce_gpf|google)", u, re.I)
+                    ):
+                        observed_requests.add(u)
+                page.on("request", _observe_request)
                 page.goto(root.rstrip("/") + "/", wait_until="domcontentloaded", timeout=int(timeout_s * 1000))
                 try:
                     page.wait_for_load_state("networkidle", timeout=min(8000, int(timeout_s * 1000)))
@@ -251,6 +260,7 @@ def browser_session_discover(root: str, timeout_s: float = 35.0) -> tuple[str, t
                     }
 
                 candidates = set(extract_urls(body, root))
+                candidates.update(observed_requests)
                 for href in page.locator("a[href], link[href]").evaluate_all(
                     "(els) => els.map(e => e.href).filter(Boolean)"
                 ):
