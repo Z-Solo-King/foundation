@@ -3,6 +3,7 @@ name: WooCommerce 32 feed recovery - staged
 on:
   workflow_dispatch:
   pull_request:
+  push:
 
 permissions:
   contents: read
