@@ -1,0 +1,39 @@
+name: WooCommerce Google Feed Archive Recovery #1247
+
+on:
+  pull_request:
+    branches:
+      - "main"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wc-google-feed-archive-recovery-1247
+  cancel-in-progress: false
+
+jobs:
+  archive-recovery:
+    name: public-archive-recovery-9
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+      - name: Syntax check
+        run: node --check tools/woocommerce_google_feed_archive_recovery_1247.mjs
+      - name: Run public archive/index recovery
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+        run: node tools/woocommerce_google_feed_archive_recovery_1247.mjs
+      - name: Upload archive recovery evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-google-feed-archive-recovery-1247
+          path: out/archive-recovery-1247/
+          if-no-files-found: warn
+          retention-days: 30
