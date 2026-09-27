@@ -56,7 +56,7 @@ def test_production_release_does_not_hardcode_private_d1_name():
     assert "research-intelligence" not in text
     assert 'database_name="$(sed -n' in text
     assert 'select(.name == $expected_name)' in text
-    assert 'database_name = "${database_name}"' in text
+    assert '  "database_name = \\"${database_name}\\"" \\' in text
 
 def test_production_health_check_requires_production_environment():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
