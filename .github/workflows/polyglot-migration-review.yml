@@ -126,6 +126,54 @@ jobs:
         working-directory: operations
         run: python -m pip install --disable-pip-version-check -e . --no-deps
 
+      - name: Setup Node for TypeScript migration evidence
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+          package-manager-cache: false
+
+      - name: Run TypeScript observation contract differential
+        working-directory: operations/polyglot/observation-contract-strict
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund --ignore-scripts
+          npm run typecheck
+          npm test
+          mkdir -p "$GITHUB_WORKSPACE/.runtime/observation-contract"
+          npm run differential
+          npm run differential:python
+          npm run differential:compare
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          ts = [json.loads(line) for line in Path(".runtime/ts.json").read_text(encoding="utf-8").splitlines() if line]
+          py = [json.loads(line) for line in Path(".runtime/python.json").read_text(encoding="utf-8").splitlines() if line]
+          assert len(ts) == 32 and len(py) == 32
+          assert {row["id"] for row in ts} == {row["id"] for row in py}
+          receipt = {
+              "schema": "observation-contract-differential/v1",
+              "candidate": "typescript-observation-contract-strict",
+              "case_count": len(ts),
+              "typecheck": True,
+              "tests": True,
+              "differential": True,
+              "exact_compare": True,
+          }
+          Path("$GITHUB_WORKSPACE/.runtime/observation-contract/receipt.json").write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+          )
+          PY
+
+      - name: Upload TypeScript observation contract evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: observation-contract-differential
+          path: .runtime/observation-contract/receipt.json
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Run migration review
         env:
           PYTHONPATH: ${{ github.workspace }}/operations
