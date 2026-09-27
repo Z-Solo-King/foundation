@@ -406,8 +406,12 @@ def historical_feed_discover(root: str, timeout_s: float = 25.0) -> tuple[str, .
     return tuple(sorted(found)[:300])
 
 
-def browser_session_discover(root: str, timeout_s: float = 50.0) -> tuple[str, tuple[str, ...], dict[str, object]]:
-    """Render public storefront pages and discover feed URLs from normal browser traffic."""
+def browser_session_discover(
+    root: str,
+    timeout_s: float = 50.0,
+    candidate_urls: tuple[str, ...] = (),
+) -> tuple[str, tuple[str, ...], dict[str, object]]:
+    """Use one normal browser context to discover and probe public feed endpoints."""
     try:
         from playwright.sync_api import sync_playwright
     except Exception:
@@ -426,6 +430,7 @@ def browser_session_discover(root: str, timeout_s: float = 50.0) -> tuple[str, t
                 page = context.new_page()
                 observed_requests: set[str] = set()
                 observed_response_urls: set[str] = set()
+                browser_validated_urls: set[str] = set()
                 visited_pages: set[str] = set()
                 homepage_links: list[str] = []
 
@@ -471,7 +476,7 @@ def browser_session_discover(root: str, timeout_s: float = 50.0) -> tuple[str, t
                 except Exception:
                     homepage_links = []
 
-                # Probe the public discovery routes in the established browser context.
+                # Probe public discovery routes in this browser context.
                 for path in ("/robots.txt", "/sitemap.xml", "/sitemap.rss", "/sitemap_index.xml", "/wp-sitemap.xml", "/feed/"):
                     try:
                         page.goto(
@@ -488,14 +493,51 @@ def browser_session_discover(root: str, timeout_s: float = 50.0) -> tuple[str, t
                     try:
                         route_body = page.content()
                         if len(route_body) <= 20 * 1024 * 1024:
-                            for u in extract_urls(route_body, root):
-                                observed_requests.add(u)
+                            observed_requests.update(extract_urls(route_body, root))
+                            observed_response_urls.update(extract_explicit_feed_urls(route_body, root))
                     except Exception:
                         pass
 
-                # Crawl a bounded sample of public product/store pages using the
-                # same browser context/session. This often exposes feed config or
-                # XHR endpoints that the homepage does not reference.
+                # IMPORTANT: use the browser's own API context to request the
+                # candidate feed URLs. BrowserContext.request shares cookies with
+                # the browser context, so sites that treat curl and a real browser
+                # differently get a proper session-aware probe.
+                request_candidates = []
+                for raw in candidate_urls:
+                    u = _explicit_http_url(root, raw)
+                    if not u:
+                        continue
+                    if same_host(u, root) or u in extract_explicit_feed_urls(homepage_html, root):
+                        request_candidates.append(u)
+                request_candidates = list(dict.fromkeys(request_candidates))[:80]
+
+                api_request = context.request
+                for u in request_candidates:
+                    try:
+                        resp = api_request.get(
+                            u,
+                            timeout=12000,
+                            headers={
+                                "Referer": root.rstrip("/") + "/",
+                                "Accept": "application/xml, application/rss+xml, text/xml, */*",
+                                "Accept-Language": "en-IN,en;q=0.9",
+                            },
+                            fail_on_status_code=False,
+                        )
+                        body = resp.body()
+                        ct = str(resp.headers.get("content-type", ""))
+                        validation = validate_xml(body, ct) if resp.status == 200 else Validation(False, "not_checked", 0, 0, ())
+                        if validation.valid:
+                            browser_validated_urls.add(u)
+                        elif resp.status == 200:
+                            # A response that is XML-looking/feed-like is still useful
+                            # as discovery evidence, but not as a verified URL.
+                            observed_requests.add(u)
+                    except Exception:
+                        continue
+
+                # Crawl a bounded sample of public product/store pages, using the same
+                # browser context, to expose feed configuration and XHR endpoints.
                 if not challenge_seen:
                     page_candidates = []
                     for href in homepage_links:
@@ -523,8 +565,8 @@ def browser_session_discover(root: str, timeout_s: float = 50.0) -> tuple[str, t
                         try:
                             html_body = page.content()
                             observed_requests.update(extract_urls(html_body, root))
-                            # Explicit config can legitimately point to a CDN/feed host.
-                            observed_response_urls.update(extract_explicit_feed_urls(html_body, root))
+                            explicit = extract_explicit_feed_urls(html_body, root)
+                            observed_requests.update(explicit)
                         except Exception:
                             pass
 
@@ -535,9 +577,8 @@ def browser_session_discover(root: str, timeout_s: float = 50.0) -> tuple[str, t
                 candidates.update(extract_explicit_feed_urls(body, root))
                 candidates.update(observed_requests)
                 candidates.update(observed_response_urls)
+                candidates.update(browser_validated_urls)
 
-                # External candidates discovered directly from the browser page/config
-                # are retained; they still require live native-feed validation.
                 for href in page.locator("a[href], link[href]").evaluate_all(
                     "(els) => els.map(e => e.href).filter(Boolean)"
                 ):
@@ -552,12 +593,14 @@ def browser_session_discover(root: str, timeout_s: float = 50.0) -> tuple[str, t
                 pairs = [f"{c['name']}={c['value']}" for c in cookies if c.get("name") and c.get("value")]
                 return "; ".join(dict.fromkeys(pairs)), tuple(sorted(candidates)), {
                     "available": True,
-                    "status": "challenge_page" if challenge_seen and not candidates else "ok",
+                    "status": "ok",
                     "elapsed_ms": int((time.monotonic() - started) * 1000),
                     "cookie_count": len(pairs),
                     "candidate_count": len(candidates),
+                    "browser_validated_feed_count": len(browser_validated_urls),
                     "response_feed_count": len(observed_response_urls),
                     "visited_public_pages": len(visited_pages),
+                    "challenge_seen": challenge_seen,
                 }
             finally:
                 browser.close()
@@ -568,7 +611,6 @@ def browser_session_discover(root: str, timeout_s: float = 50.0) -> tuple[str, t
             "error": type(exc).__name__,
             "elapsed_ms": int((time.monotonic() - started) * 1000),
         }
-
 
 def fetch(url: str, timeout: float, cookie_header: str = "", referer: str = "") -> Fetch:
     """Fetch with curl so DNS, connect, and total request time have hard bounds."""
@@ -993,7 +1035,13 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
     browser_meta: dict[str, object] = {"available": False}
     browser_candidates: tuple[str, ...] = ()
     if verified is None:
-        browser_cookie_header, browser_candidates, browser_meta = browser_session_discover(root)
+        browser_probe_candidates = tuple(
+            urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/"))
+            for p in list(FAST_PATHS) + list(MEDIUM_PATHS) + list(SLOW_GPF_PATHS)
+        )
+        browser_cookie_header, browser_candidates, browser_meta = browser_session_discover(
+            root, candidate_urls=tuple(dict.fromkeys(browser_probe_candidates))
+        )
         if browser_cookie_header:
             session_cookie_header = browser_cookie_header
         discovered.update(browser_candidates)
