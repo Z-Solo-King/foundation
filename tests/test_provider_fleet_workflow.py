@@ -14,7 +14,7 @@ def test_provider_fleet_workflow_is_structured_and_protected() -> None:
     job = payload["jobs"]["refresh"]
     assert job["environment"] == "production-secret-sync"
     assert job["timeout-minutes"] == 10
-    assert job["concurrency"] if "concurrency" in job else True
+    assert payload["concurrency"]["cancel-in-progress"] is True
 
 
 def test_provider_fleet_workflow_uses_immutable_private_probe() -> None:
