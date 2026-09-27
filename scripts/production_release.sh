@@ -55,18 +55,6 @@ if [ "$token_verify_status" != '200' ] || ! jq -e '.success == true and .result.
   jq -c '{success,message,result:{status:(.result.status // null),id:(.result.id // null)}}' "$RUNNER_TEMP/cloudflare-token-verify.json" 2>/dev/null || true
 fi
 
-databases_status=$(curl -sS -o "$RUNNER_TEMP/cloudflare-d1-databases.json" -w '%{http_code}' \
-  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' \
-  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database" || true)
-test "$databases_status" = '200' || {
-  echo "Cloudflare D1 authorization check failed: HTTP $databases_status"
-  jq -c '{success,message,errors}' "$RUNNER_TEMP/cloudflare-d1-databases.json" 2>/dev/null || cat "$RUNNER_TEMP/cloudflare-d1-databases.json"
-  exit 1
-}
-databases=$(cat "$RUNNER_TEMP/cloudflare-d1-databases.json")
-database_id=$(jq -r '[.result[]? | select(.name == "research-intelligence") | .uuid] | if length == 1 then .[0] else empty end' <<<"$databases")
-test -n "$database_id" || { echo 'Expected exactly one research-intelligence D1 database'; exit 1; }
-echo "Cloudflare account/D1 authorization: PASS ($database_id)"
 
 # Preflight and stage the private Operations handoff before touching production.
 key_file="$RUNNER_TEMP/operations-app.pem"
@@ -176,6 +164,23 @@ git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git" "$RUNN
 git -C "$RUNNER_TEMP/operations" fetch --no-tags origin "$OPERATIONS_REF"
 git -C "$RUNNER_TEMP/operations" checkout --detach "$OPERATIONS_REF"
 test "$(git -C "$RUNNER_TEMP/operations" rev-parse HEAD)" = "$OPERATIONS_REF"
+# Resolve the private D1 binding name from the exact approved Operations revision.
+# The public Foundation tree never hardcodes the private database name.
+database_name="$(sed -n 's/^database_name = "\(.*\)"$/\1/p' "$RUNNER_TEMP/operations/wrangler.toml" | head -n1)"
+test -n "$database_name" || { echo 'Approved Operations revision did not declare a D1 database name'; exit 1; }
+
+databases_status=$(curl -sS -o "$RUNNER_TEMP/cloudflare-d1-databases.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' \
+  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database" || true)
+test "$databases_status" = '200' || {
+  echo "Cloudflare D1 authorization check failed: HTTP $databases_status"
+  jq -c '{success,message,errors}' "$RUNNER_TEMP/cloudflare-d1-databases.json" 2>/dev/null || cat "$RUNNER_TEMP/cloudflare-d1-databases.json"
+  exit 1
+}
+databases=$(cat "$RUNNER_TEMP/cloudflare-d1-databases.json")
+database_id=$(jq -r --arg expected_name "$database_name" '[.result[]? | select(.name == $expected_name) | .uuid] | if length == 1 then .[0] else empty end' <<<"$databases")
+test -n "$database_id" || { echo "Expected exactly one approved Operations D1 database: $database_name"; exit 1; }
+echo "Cloudflare account/D1 authorization: PASS (private binding name resolved from approved Operations revision)"
 
 # The production code remains pinned to the approved immutable revision, while the
 # family semantic audit must consume the latest synchronized family-state snapshot.
@@ -247,7 +252,7 @@ printf '%s\n' \
   '' \
   '[[d1_databases]]' \
   'binding = "DB"' \
-  'database_name = "research-intelligence"' \
+  'database_name = "${database_name}"' \
   "database_id = \"${database_id}\"" \
   '' \
   '[[services]]' \
@@ -266,7 +271,7 @@ printf '%s\n' \
   'B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"' \
   > wrangler.production.generated.toml
 
-grep -q '^database_name = "research-intelligence"$' wrangler.production.generated.toml
+grep -q "^database_name = \"${database_name}\"$" wrangler.production.generated.toml
 grep -q '^directory = "./frontend"$' wrangler.production.generated.toml
 grep -q '^binding = "ASSETS"$' wrangler.production.generated.toml
 grep -q "^service = \"${OPERATIONS_SERVICE_NAME}\"$" wrangler.production.generated.toml
