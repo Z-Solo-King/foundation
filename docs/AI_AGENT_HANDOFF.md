@@ -138,7 +138,7 @@ Start from Foundation `d4f8be98447d2b6c6d05d1b213941e029f8649a6` and Operations 
 
 Canonical production proof:
 - Foundation production run `35519167159` / run number `321` = SUCCESS.
-- Operations Cloudflare provenance = `github:dd30834aec8f1263d9b35142b1bd16b4ba95f1ca`.
+- Operations Cloudflare provenance = `github:[REDACTED-OPERATIONS-PROVENANCE]`.
 - Operations active version observed by the release = `0dae35f1-854b-49e4-b278-f3a17af3aa00`.
 - Runtime acceptance passed for chat, idempotency, SSE lifecycle, permitted-source research/readback, D1/B2, memory store/query/delete/owner boundary, replay guard, learning feedback, terminalization CAS, durable resource reservation/reconciliation, maintenance reconciliation and provider-stream contract.
 - Cross-version memory/replay remains deferred.
@@ -200,7 +200,7 @@ Run `35456292033` (#232), Foundation `6a91fbd17143083882e9ac7ebfa52f0b06a344b2`,
 The release verified:
 
 - public Worker deployment/readiness;
-- private Operations Worker deployment and Cloudflare provenance `github:f6600c068de6e17af1e0e99c1f3ba4b0f06f31b5`;
+- private Operations Worker deployment and Cloudflare provenance `github:[REDACTED-OPERATIONS-PROVENANCE]`;
 - authenticated chat and idempotent replay;
 - authenticated SSE lifecycle;
 - permitted-source research ingestion/readback;
