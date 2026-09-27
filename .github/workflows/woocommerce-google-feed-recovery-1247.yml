@@ -1,9 +1,9 @@
 name: WooCommerce Google Feed Recovery #1247
 
 on:
-  push:
+  pull_request:
     branches:
-      - "fix/issue-1247-google-feed-recovery-current-head"
+      - "main"
   workflow_dispatch:
 
 permissions:
