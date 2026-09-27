@@ -260,7 +260,13 @@ async function commonCrawlLatestIndex() {
     const data = JSON.parse(r.buf.toString("utf8"));
     if (!Array.isArray(data) || !data.length) return null;
     const latest = data[0];
-    return String(latest?.cdx-api || latest?.id || latest?.name || "").replace(/-index$/, "");
+    const raw = String(latest?.id || latest?.name || latest?.["cdx-api"] || "").trim();
+    if (!raw) return null;
+    if (/^https?:\/\//i.test(raw)) {
+      const last = raw.replace(/\/$/, "").split("/").pop() || "";
+      return last.replace(/-index$/, "");
+    }
+    return raw.replace(/-index$/, "");
   } catch {
     return null;
   }
