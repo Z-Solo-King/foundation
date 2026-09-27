@@ -334,7 +334,7 @@ echo "Operations binding-free bootstrap deployment: PASS"
 
 
 
-npx --yes wrangler@4.131.1 d1 migrations apply research-intelligence --remote --config wrangler.production.generated.toml
+npx --yes wrangler@4.131.1 d1 migrations apply "$database_name" --remote --config wrangler.production.generated.toml
 pywrangler deploy --config wrangler.production.generated.toml --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}"
 
 health_status=$(curl -sS -o health.json -w '%{http_code}' "$BASE_URL/health")
@@ -363,7 +363,7 @@ for asset in styles.css app.js composer.js lifecycle_controller.js; do
 done
 
 # Redeploy Operations against the new Foundation Worker, proving the final private binding.
-npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
+npx --yes wrangler@4.131.1 d1 execute "$database_name" --remote \
   --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql" \
   --config="$RUNNER_TEMP/operations/wrangler.toml"
 (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:foundation-binding-${ACCEPTANCE_RUN_ID}")
@@ -428,7 +428,7 @@ cp "$RUNNER_TEMP/persistence-rollover-verify.json" .runtime/persistence-rollover
 echo "Live memory/replay deployment-boundary acceptance: PASS"# Record the live durable MODEL_CALLS quota state before the required model-generation
 # acceptance. This is a bounded non-secret diagnostic: no auth token or provider payload
 # is queried, only governance counters from the canonical D1 authority.
-npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
+npx --yes wrangler@4.131.1 d1 execute "$database_name" --remote \
   --config="$RUNNER_TEMP/operations/wrangler.toml" \
   --command="SELECT scope, window_id, resource_kind, limit_units, reserved_units, consumed_units, updated_at FROM resource_governance_quota WHERE resource_kind = 'model_calls' ORDER BY updated_at DESC LIMIT 5;" \
   --json > "$RUNNER_TEMP/model-call-quota.json"
@@ -437,7 +437,7 @@ cat "$RUNNER_TEMP/model-call-quota.json"
 echo "--- end model-call-quota.snapshot ---"
 cp "$RUNNER_TEMP/model-call-quota.json" .runtime/model-call-quota.json
 
-npx --yes wrangler@4.131.1 d1 execute research-intelligence --remote \
+npx --yes wrangler@4.131.1 d1 execute "$database_name" --remote \
   --config="$RUNNER_TEMP/operations/wrangler.toml" \
   --command="SELECT reservation_id, scope, window_id, resource_kind, amount, state, idempotency_key, lease_expires_at, updated_at FROM resource_governance_reservations WHERE resource_kind = 'model_calls' ORDER BY updated_at DESC LIMIT 10;" \
   --json > "$RUNNER_TEMP/model-call-reservations.json"
