@@ -120,6 +120,8 @@ DIRECTORIES = (
 
 DISCOVERY_PATHS = ("/", "/robots.txt", "/sitemap.xml", "/sitemap_index.xml", "/wp-sitemap.xml", "/wp-json/")
 
+CTXFEED_PATHS = tuple(f"/wp-json/ctxfeed/{v}/feeds" for v in ("v8","v7","v6","v5","v4","v3","v2","v1"))
+
 @dataclass(frozen=True)
 class Fetch:
     requested_url: str
@@ -276,6 +278,43 @@ def extract_urls(text: str, root: str) -> tuple[str, ...]:
     }))
 
 
+def ctxfeed_urls(text: str, root: str) -> tuple[str, ...]:
+    """Extract feed URLs/names exposed by public CTXFeed metadata endpoints."""
+    try:
+        data = json.loads(html.unescape(text or ""))
+    except (TypeError, json.JSONDecodeError):
+        return ()
+    found: set[str] = set()
+
+    def walk(obj: object) -> None:
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                key_l = str(key).lower()
+                if isinstance(value, str):
+                    raw = value.strip()
+                    if key_l in {"feed_url","feed_file","file_url","feed_path","xml_url","export_url","url"} and raw:
+                        u = absolute(root, raw)
+                        if u and re.search(r"(feed|merchant|shopping|google|woocommerce_gpf|\.xml)", u, re.I):
+                            found.add(u)
+                    if key_l in {"feed_name","filename","file","name"} and re.fullmatch(r"[A-Za-z0-9._-]{3,150}", raw):
+                        for pattern in (
+                            f"/?woo_feed={urllib.parse.quote(raw)}&wt=xml",
+                            f"/?feed={urllib.parse.quote(raw)}",
+                            f"/wp-content/uploads/woo-feed/google/xml/{urllib.parse.quote(raw)}.xml",
+                            f"/wp-content/uploads/woo-feed/xml/{urllib.parse.quote(raw)}.xml",
+                        ):
+                            u = absolute(root, pattern)
+                            if u:
+                                found.add(u)
+                walk(value)
+        elif isinstance(obj, list):
+            for value in obj:
+                walk(value)
+
+    walk(data)
+    return tuple(sorted(found))
+
+
 def directory_urls(text: str, root: str) -> tuple[str, ...]:
     decoded = html.unescape(text or "")
     found: set[str] = set()
@@ -345,7 +384,16 @@ def probe_site(site: str, root: str) -> SiteResult:
                 text = result.body.decode("utf-8", "replace")
                 discovered.update(extract_urls(text, root))
 
-    verified = batch([urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in FAST_PATHS], 20.0, 8, records)
+    ctx_candidates: set[str] = set()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+        ctx_results = pool.map(lambda p: fetch(urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")), 12.0), CTXFEED_PATHS)
+        for result in ctx_results:
+            if result.status == 200 and result.body:
+                ctx_candidates.update(ctxfeed_urls(result.body.decode("utf-8", "replace"), root))
+
+    fast_candidates = [urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in FAST_PATHS]
+    fast_candidates.extend(sorted(ctx_candidates))
+    verified = batch(list(dict.fromkeys(fast_candidates)), 20.0, 8, records)
     if verified is None:
         verified = batch([urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in SLOW_GPF_PATHS], 105.0, 4, records)
     if verified is None:
