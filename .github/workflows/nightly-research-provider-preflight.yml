@@ -114,7 +114,7 @@ jobs:
               "research_endpoint_set": os.environ["PREFLIGHT_ENDPOINT"] == "true",
               "research_api_key_set": os.environ["PREFLIGHT_API_KEY"] == "true",
               "research_model_set": os.environ["PREFLIGHT_MODEL"] == "true",
-              "operations_ref": "f993467d022f6c64afe66769ecaef94cc5015f7a",
+              "operations_ref": "ec6ff5435abf5633a48e62af973d6f6cfca782c0",
               "workers_ai_model": "@cf/zai-org/glm-4.7-flash",
               "network_classification": (
                   "dns_or_network_unreachable" if int(os.environ.get("PREFLIGHT_WORKER_HEALTH_STATUS") or "0") == 0 else
