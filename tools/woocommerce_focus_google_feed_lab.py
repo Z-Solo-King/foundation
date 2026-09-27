@@ -299,6 +299,8 @@ def probe_url(state: SiteState, test_id: str, strategy: str, layer: str, url: st
         asdict(validation), [], "", err,
     )
     if body and method != "HEAD":
+        if "json" in ct.lower() or candidate.rstrip("/").endswith(("/wp-json", "/wp-json/")):
+            state.discovered_routes.update(parse_wp_json_routes(body, state.root))
         txt = body.decode("utf-8", "replace")
         for u in explicit_feed_urls(txt, state.root):
             state.explicit_external_feed_urls.add(u)
@@ -696,21 +698,30 @@ def browser_discovery(state: SiteState, max_products: int = 3) -> None:
         def on_request(req) -> None:
             url = str(req.url)
             state.browser_requests.add(url)
-            if safe_url(url, state.root, allow_external=False) and looks_feed_url(url):
-                state.discovered_routes.add(url)
+            if safe_url(url, state.root, allow_external=True) and looks_feed_url(url):
+                if same_host(url, state.root):
+                    state.discovered_routes.add(url)
+                else:
+                    state.explicit_external_feed_urls.add(url)
 
         def on_response(resp) -> None:
             url = str(resp.url)
-            if not same_host(url, state.root):
+            if not safe_url(url, state.root, allow_external=True):
                 return
             try:
                 ct = str(resp.headers.get("content-type", "")).lower()
-                if "xml" in ct or "rss" in ct or "atom" in ct or looks_feed_url(url):
-                    body = resp.body()
-                    val = validate_native_xml(body, ct)
-                    if val.valid:
-                        state.browser_response_feed_urls.add(url)
-                        state.verified_urls.add(url)
+                interesting = "xml" in ct or "rss" in ct or "atom" in ct or looks_feed_url(url)
+                if not interesting:
+                    return
+                body = resp.body()
+                val = validate_native_xml(body, ct)
+                if val.valid:
+                    state.browser_response_feed_urls.add(url)
+                    state.verified_urls.add(url)
+                    if not same_host(url, state.root):
+                        state.explicit_external_feed_urls.add(url)
+                elif same_host(url, state.root) and len(body) <= 2_000_000:
+                    state.discovered_routes.update(extract_candidate_urls(body.decode("utf-8", "replace"), state.root, allow_external=False))
             except Exception:
                 pass
 
@@ -727,6 +738,22 @@ def browser_discovery(state: SiteState, max_products: int = 3) -> None:
             state.homepage_html = page.content()
             state.explicit_external_feed_urls.update(explicit_feed_urls(state.homepage_html, state.root))
             state.discovered_routes.update(extract_candidate_urls(state.homepage_html, state.root, allow_external=False))
+            script_srcs = page.locator("script[src]").evaluate_all("(els)=>els.map(e=>e.src).filter(Boolean)")
+            script_srcs = list(dict.fromkeys(str(x) for x in script_srcs))[:40]
+            for script_url in script_srcs:
+                try:
+                    response = context.request.get(script_url, timeout=15000)
+                    if response.ok:
+                        script_body = response.body().decode("utf-8", "replace")
+                        state.discovered_routes.update(extract_candidate_urls(script_body, state.root, allow_external=False))
+                        state.explicit_external_feed_urls.update(explicit_feed_urls(script_body, state.root))
+                except Exception:
+                    pass
+            state.probes.append(ProbeResult(
+                "T106","Homepage JavaScript asset mining","browser",
+                state.root,"GET",200,"text/html",page.url,0,{"valid":False},
+                sorted(state.discovered_routes)[:150],f"scripts_checked={len(script_srcs)}",
+            ))
 
             hrefs = page.locator("a[href]").evaluate_all("(els)=>els.map(e=>e.href).filter(Boolean)")
             for href in hrefs:
@@ -837,7 +864,7 @@ def run_search_archive_ai(state: SiteState) -> None:
         found: set[str] = set()
         for engine in engines:
             found.update(google_search(query, engine))
-        found = {u for u in found if host_key(u) == host_key(state.root) or explicit_feed_urls(u, state.root)}
+        found = {u for u in found if host_key(u) == host_key(state.root) or looks_feed_url(u)}
         state.search_candidate_urls.update(found)
         state.probes.append(ProbeResult(
             f"T{107+qi:03d}",f"Public search index query {qi}","search",
