@@ -62,8 +62,11 @@ jobs:
       - name: Install V175 feed recovery dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install httpx curl_cffi playwright defusedxml
+          pip install httpx curl_cffi playwright defusedxml nodriver
           python -m playwright install --with-deps chromium
+          CHROME_PATH=$(find "$HOME/.cache/ms-playwright" -type f -path "*/chrome-linux/chrome" | head -1)
+          test -x "$CHROME_PATH"
+          echo "NODRIVER_CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
       - name: Syntax check
         run: python -m py_compile tools/google_feed_recovery_v175_20260927.py
       - name: Run V175-derived public recovery
