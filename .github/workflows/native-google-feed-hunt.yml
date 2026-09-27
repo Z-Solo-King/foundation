@@ -48,10 +48,25 @@ jobs:
           set -euo pipefail
           python -m pip install --disable-pip-version-check --no-input playwright
           python -m playwright install --with-deps chromium
-      - name: Run targeted native hunt
+      - name: Run targeted native hunt with learning rounds
         run: |
           set -euo pipefail
-          python tools/native_google_feed_hunt_v2.py             --shard 0 --shards 1             --only-sites "${{ matrix.site }}"             --output-dir "out/native-google-feed-shard-stage1-${{ matrix.slug }}"
+          base="out/native-google-feed-shard-stage1-\${{ matrix.slug }}"
+          mkdir -p "$base"
+          for round in 1 2 3; do
+            out="$base/round-$round"
+            args=(--shard 0 --shards 1 --only-sites "\${{ matrix.site }}" --output-dir "$out")
+            if [ "$round" -gt 1 ]; then
+              for d in "$base"/round-*; do
+                [ "$d" = "$out" ] && continue
+                [ -d "$d" ] && args+=(--learn-from "$d")
+              done
+            fi
+            python tools/native_google_feed_hunt_v2.py "\${args[@]}" | tee "$base/round-$round.log"
+            if jq -e '.verified_native_feed_count == 1' "$out/\${{ matrix.slug }}.json" >/dev/null 2>&1; then
+              break
+            fi
+          done
       - name: Upload Stage 1 evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
