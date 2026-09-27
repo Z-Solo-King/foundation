@@ -126,6 +126,13 @@ jobs:
         working-directory: operations
         run: python -m pip install --disable-pip-version-check -e . --no-deps
 
+      - name: Validate Operations migration registry
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          python tools/validate_polyglot_registry.py --repo-root "$GITHUB_WORKSPACE/operations" > "$GITHUB_WORKSPACE/.runtime/polyglot-registry-integrity.json"
+          cat "$GITHUB_WORKSPACE/.runtime/polyglot-registry-integrity.json"
+
       - name: Run migration review
         env:
           PYTHONPATH: ${{ github.workspace }}/operations
