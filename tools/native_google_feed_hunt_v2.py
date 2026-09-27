@@ -6,6 +6,7 @@ import argparse
 import concurrent.futures
 import gzip
 import hashlib
+import ipaddress
 import html
 import json
 import re
@@ -823,7 +824,27 @@ def run_shard(shard: int, shards: int, output_dir: Path) -> list[SiteResult]:
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
         future_map = {pool.submit(probe_site, site, root): site for site, root in selected}
         for future in concurrent.futures.as_completed(future_map):
-            result = future.result()
+            site_name, site_root_url = future_map[future]
+            try:
+                result = future.result()
+            except Exception as exc:
+                # Preserve complete 32-site coverage even when one site's discovery
+                # code has a defect; the aggregate manifest remains truthful.
+                result = SiteResult(
+                    site_name,
+                    site_root_url,
+                    "execution_error",
+                    None,
+                    {
+                        "native_only": True,
+                        "verified": False,
+                        "tested_candidate_count": 0,
+                        "discovered_url_count": 0,
+                        "error_type": type(exc).__name__,
+                        "error": str(exc)[:500],
+                    },
+                    round(time.monotonic() - started, 3) if 'started' in locals() else 0.0,
+                )
             results.append(result)
             slug = re.sub(r"[^a-z0-9]+", "-", result.site.lower()).strip("-")
             (output_dir / f"{slug}.json").write_text(json.dumps(asdict(result), indent=2, sort_keys=True), encoding="utf-8")
