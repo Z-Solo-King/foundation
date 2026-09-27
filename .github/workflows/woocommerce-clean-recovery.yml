@@ -86,7 +86,7 @@ jobs:
           };
           const domain = domains[site];
           await fs.mkdir('out/archive',{recursive:true});
-          const slug = site.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+          const slug = site.toLowerCase().split('').map(ch => /[a-z0-9]/i.test(ch) ? ch : '-').join('').replace(/-+/g,'-');
           const out = {site,domain,candidates:[],verified:null,status:'NO_ARCHIVE_FEED'};
           try {
             const q = new URL('https://web.archive.org/cdx/search/cdx');
@@ -105,7 +105,8 @@ jobs:
               for(const row of rows.slice(1)){
                 const [timestamp,original,statuscode,mimetype]=row;
                 if(!timestamp||!original||statuscode!=='200') continue;
-                if(!/(google|merchant|shopping|product[-_]?feed|feeds?|gpf|products?\\.(?:xml|rss))/i.test(original)) continue;
+                const low=original.toLowerCase();
+                if(!(low.includes('google')||low.includes('merchant')||low.includes('shopping')||low.includes('feed')||low.includes('gpf')||low.includes('.xml')||low.includes('.rss'))) continue;
                 out.candidates.push({timestamp,original,mimetype});
               }
               for(const c of out.candidates.slice(0,30)){
@@ -113,9 +114,10 @@ jobs:
                 const ar=await fetch(au,{redirect:'follow',headers:{'User-Agent':'WooCommerceFeedRecovery/2026.09','Accept':'application/xml,text/xml,text/plain,*/*'}}).catch(()=>null);
                 if(!ar||ar.status!==200) continue;
                 const body=await ar.text();
-                if(/base\\.google\\.com\\/ns\\/1\\.0/i.test(body)&&/<item\\b/i.test(body)&&/<(?:g:)?price\\b/i.test(body)&&/<(?:g:)?(?:id|title|link)\\b/i.test(body)){
+                const low=body.toLowerCase();
+                if(low.includes('base.google.com/ns/1.0')&&low.includes('<item')&&(low.includes('<g:price')||low.includes('<price'))&&(low.includes('<g:id')||low.includes('<id'))&&(low.includes('<g:title')||low.includes('<title'))&&(low.includes('<g:link')||low.includes('<link'))){
                   await fs.writeFile(`out/archive/${slug}-historical-feed.xml`,body);
-                  out.verified={archive_url:au,original:c.original,timestamp:c.timestamp,bytes:Buffer.byteLength(body),items:(body.match(/<item\\b/gi)||[]).length};
+                  out.verified={archive_url:au,original:c.original,timestamp:c.timestamp,bytes:Buffer.byteLength(body),items:(body.match(/<item/gi)||[]).length};
                   out.status='HISTORICAL_NATIVE_GOOGLE_XML';
                   break;
                 }
