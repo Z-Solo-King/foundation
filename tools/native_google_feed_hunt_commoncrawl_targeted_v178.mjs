@@ -7,7 +7,7 @@ async function get(url,ms=25000){const ac=new AbortController(),tm=setTimeout(()
 async function cc(q){const r=await get(q,40000);if(r.status!==200)return{ok:false,status:r.status,error:r.body?.slice(0,240)};const rows=[];for(const line of r.body.split(/\r?\n/)){if(!line.trim())continue;try{rows.push(JSON.parse(line))}catch{}}return{ok:true,status:200,rows}}
 async function live(u){const d=await get(u,20000);return d.status===200&&same(d.url,u)&&nativeText(d.body)?{ok:true,status:d.status,final:d.url,ct:d.ct,len:d.body.length}:{ok:false,status:d.status,final:d.url,ct:d.ct,len:d.body?.length||0}}
 async function indices(){const r=await get("https://index.commoncrawl.org/collinfo.json",25000);if(r.status!==200)throw new Error("collinfo "+r.status);const a=JSON.parse(r.body);return a.slice(0,3).map(x=>x.id)}
-async function probe(s,idxs){const root=s.url.replace(//$/,"");const pats=[
+async function probe(s,idxs){const root=s.url.replace(/\/$/,"");const pats=[
  root+"/wp-content/uploads/woo-feed/*",
  root+"/wp-content/uploads/woo-feed/google/*",
  root+"/wp-content/uploads/wppfm-feeds/*",
