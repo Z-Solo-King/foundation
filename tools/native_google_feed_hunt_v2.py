@@ -926,7 +926,7 @@ def validation_candidate_groups(
     )[:240]
     same_site = [u for u in candidates if same_host(u, root)]
     explicit_external = [
-        u for u in sorted(explicit_external_candidates)
+        u for u in sorted(explicit_feed_candidates)
         if u in candidates and not same_host(u, root)
     ]
     return same_site, explicit_external
@@ -1075,14 +1075,26 @@ def run_shard(shard: int, shards: int, output_dir: Path, targets: tuple[tuple[st
 
 def aggregate(root: Path, output_file: Path) -> dict[str, object]:
     rows: list[dict[str, object]] = []
-    for path in sorted(root.glob("native-google-feed-shard-*/*.json")):
+    for path in sorted(root.rglob("*.json")):
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
         if isinstance(data, dict) and "site" in data and "root" in data:
             rows.append(data)
-    rows.sort(key=lambda x: str(x["site"]).lower())
+    rows.sort(key=lambda x: (str(x["site"]).lower(), bool(x.get("native_feed_url"))))
+    deduped: dict[str, dict[str, object]] = {}
+    for row in rows:
+        site_key = str(row.get("site") or "").strip().lower()
+        if not site_key:
+            continue
+        prior = deduped.get(site_key)
+        if prior is None or (bool(row.get("native_feed_url")) and not bool(prior.get("native_feed_url"))):
+            deduped[site_key] = row
+        elif prior is not None and bool(row.get("native_feed_url")) == bool(prior.get("native_feed_url")):
+            # Prefer the later staged round/file path by deterministic traversal order.
+            deduped[site_key] = row
+    rows = sorted(deduped.values(), key=lambda x: str(x["site"]).lower())
     manifest = {
         "schema": "woocommerce-native-google-feed-manifest/v2",
         "native_only": True,
