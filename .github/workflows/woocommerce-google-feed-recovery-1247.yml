@@ -1,0 +1,34 @@
+name: WooCommerce Google Feed Recovery #1247
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wc-google-feed-recovery-1247
+  cancel-in-progress: false
+
+jobs:
+  rescue:
+    name: Recover 9 unresolved retailers
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Syntax check
+        run: node --check tools/woocommerce_google_feed_rescue_fast.mjs
+      - name: Run public-only recovery
+        run: node tools/woocommerce_google_feed_rescue_fast.mjs
+      - name: Upload recovery evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-google-feed-recovery-1247
+          path: out/rescue-fast/
+          if-no-files-found: warn
+          retention-days: 30
