@@ -4,7 +4,7 @@ Current family state: Foundation `2710b7559c9c7a0dcd2c84fe6ed77b8dbc684706`; Ope
 
 Latest runtime evidence: production release `36030977718` PASS; nightly research `36030996071` FAIL at upstream public Worker HTTP 403 / local `upstream_worker_rejected` 502; nightly canary `36030977932` FAIL at the same boundary. The remaining queue is evidence/runtime-gated.
 
-Cloudflare control-plane reads were successfully verified during this audit: account membership 200 with Super Administrator - All Privileges; Workers listing 200; D1 listing 200. Public/private Worker identities and the D1 database are present. Exact deployment-history/version freshness was not re-queried after the latest GitHub documentation commits, so do not promote an older deployment identifier to a new L4 receipt.
+Cloudflare control-plane reads were successfully verified during this audit: account membership 200 with [REDACTED-CF-ROLE]; Workers listing 200; D1 listing 200. Public/private Worker identities and the D1 database are present. Exact deployment-history/version freshness was not re-queried after the latest GitHub documentation commits, so do not promote an older deployment identifier to a new L4 receipt.
 
 ChatGPT continuity: visible mobile/chat state is transport state, not execution authority. On unresponsiveness/context pressure, checkpoint to GitHub and resume in a fresh chat. App closure is an observed correlation only.
 
