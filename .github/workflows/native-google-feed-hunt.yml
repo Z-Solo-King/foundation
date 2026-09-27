@@ -110,7 +110,7 @@ jobs:
               rm -f "$hdr" "$body"
               exit 0
             fi
-            rm -f "$hdr" "$body" "$meta"
+            rm -f "$hdr" "$body"
           done
           # Discover random/custom feed filenames from public directory indexes.
           for dir in \
@@ -144,9 +144,14 @@ jobs:
               fi
               rm -f "$body"
             done < <(
-              grep -Eo 'href=["'"][^"'"]+\.(xml|xml\.gz|XML|XML\.GZ)[^"'"]*["'"]' "$idx" 2>/dev/null |
-                sed -E 's/^href=["'"]//; s/["'"]$//; s/[?#].*$//' | sort -u
-              grep -Eo 'https?://[^"'<>[:space:]]+\.(xml|xml\.gz|XML|XML\.GZ)' "$idx" 2>/dev/null | sort -u
+              python3 - "$idx" <<'PY'
+          import re,sys
+          s=open(sys.argv[1],encoding="utf-8",errors="ignore").read()
+          for x in re.findall(r'href=["\\\']([^"\\\']+\\.(?:xml|xml\\.gz))[^"\\\']*["\\\']',s,re.I):
+            print(x.split("?")[0])
+          for x in re.findall(r'https?://[^\\s<>"\\\']+\\.(?:xml|xml\\.gz)',s,re.I):
+            print(x)
+          PY
             )
             rm -f "$idx"
           done
@@ -172,12 +177,18 @@ jobs:
               fi
               rm -f "$body"
             done < <(
-              grep -Eo 'https?://[^"'<>[:space:]]+' "$html" 2>/dev/null |
-                sed 's/[),.;]$//' | grep -Ei '\.xml(\.gz)?($|[?#])' | sort -u
-              grep -Eo 'href=["'"][^"'"]+["'"]' "$html" 2>/dev/null |
-                sed -E 's/^href=["'"]//; s/["'"]$//' |
-                awk -v r="$root" 'BEGIN{OFS=""} /^\//{print r,$0}' |
-                grep -Ei '\.xml(\.gz)?($|[?#])' | sort -u
+              python3 - "$html" "$root" <<'PY'
+          import re,sys
+          s=open(sys.argv[1],encoding="utf-8",errors="ignore").read()
+          root=sys.argv[2].rstrip("/")
+          for x in re.findall(r'https?://[^\\s<>"\\\']+',s,re.I):
+            if re.search(r'\\.xml(?:\\.gz)?(?:$|[?#])',x,re.I):
+              print(x.rstrip("),.;"))
+          for x in re.findall(r'href=["\\\']([^"\\\']+)["\\\']',s,re.I):
+            if re.search(r'\\.xml(?:\\.gz)?(?:$|[?#])',x,re.I):
+              if x.startswith("/"): print(root+x)
+              elif x.startswith("http://") or x.startswith("https://"): print(x)
+          PY
             )
             rm -f "$html"
           done
