@@ -310,7 +310,18 @@ async function scan([name,base]) {
   }else{
     await nativeRace(base,out);
   }
-  out.status=out.feed?"NATIVE_FEED_VERIFIED":out.reconstructed_feed?"PUBLIC_STORE_API_BACKUP":"NO_PUBLIC_FEED_OR_STORE_API";
+  const allStoreBlocked = out.store_api_candidates.length > 0 &&
+    out.store_api_candidates.every(x => Number(x.status) === 403 || x.challenge === true);
+  const allNativeBlocked = out.native_candidates.length > 0 &&
+    out.native_candidates.every(x => String(x.classification || "").startsWith("BLOCKED_OR_CHALLENGED") || String(x.classification || "") === "ACCESS_DENIED" || Number(x.status) === 403);
+  out.transport_status = out.feed
+    ? "VERIFIED_NATIVE_FEED"
+    : out.reconstructed_feed
+      ? "VERIFIED_PUBLIC_STORE_API_BACKUP"
+      : (allStoreBlocked || allNativeBlocked)
+        ? "PUBLIC_ACCESS_BLOCKED_OR_UNVERIFIED"
+        : "NO_SUCCESSFUL_PUBLIC_SURFACE";
+  out.status = out.transport_status;
   return out;
 }
 const started=Date.now();
