@@ -143,6 +143,7 @@ DIRECTORIES = (
 DISCOVERY_PATHS = ("/", "/robots.txt", "/sitemap.xml", "/sitemap.rss", "/sitemap_index.xml", "/wp-sitemap.xml", "/wp-json/", "/feed/")
 
 CTXFEED_PATHS = tuple(f"/wp-json/ctxfeed/{v}/feeds" for v in ("v8","v7","v6","v5","v4","v3","v2","v1"))
+MEDIA_SEARCH_QUERIES = ("google", "merchant", "shopping", "product feed", "products", "feed", "gmc", "xml")
 
 PLUGIN_FINGERPRINT_PATHS = (
     ("adtribes", "/wp-content/plugins/woo-product-feed-pro/readme.txt"),
@@ -955,6 +956,30 @@ def _explicit_http_url(root: str, raw: str) -> str | None:
         return None
 
 
+
+
+def wp_media_feed_candidates(text: str, root: str) -> tuple[str, ...]:
+    """Extract XML/feed-looking media source URLs from the public WP media API."""
+    try:
+        data = json.loads(html.unescape(text or ""))
+    except (TypeError, json.JSONDecodeError):
+        return ()
+    if not isinstance(data, list):
+        return ()
+    found: set[str] = set()
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        for raw in (
+            item.get("source_url"),
+            item.get("guid", {}).get("rendered") if isinstance(item.get("guid"), dict) else None,
+        ):
+            u = _explicit_http_url(root, str(raw or ""))
+            if u and re.search(r"(?:\.xml(?:\.gz)?|feed|merchant|shopping|google|gmc)", u, re.I):
+                found.add(u)
+    return tuple(sorted(found))
+
+
 def extract_explicit_feed_urls(text: str, root: str) -> tuple[str, ...]:
     """Recover feed URLs explicitly declared by the storefront/config.
     Unlike generic link discovery, explicit feed fields may point to a
@@ -1305,8 +1330,24 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = (), hunt_r
                 text = result.body.decode("utf-8", "replace")
                 discovered.update(extract_urls(text, root))
                 explicit_feed_candidates.update(extract_explicit_feed_urls(text, root))
-                discovered.update(extract_explicit_feed_urls(text, root))
+                discovered.update(explicit_feed_candidates)
                 discovered.update(rest_feed_candidates(text, root))
+
+    # WordPress Media REST: generated XML feeds may exist as public attachments.
+    media_paths = [
+        f"/wp-json/wp/v2/media?search={urllib.parse.quote(q)}&per_page=100"
+        for q in MEDIA_SEARCH_QUERIES
+    ]
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+        media_results = pool.map(
+            lambda p: fetch(urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")), 12.0, session_cookie_header, root),
+            media_paths,
+        )
+        for result in media_results:
+            if result.status == 200 and result.body:
+                discovered.update(
+                    wp_media_feed_candidates(result.body.decode("utf-8", "replace"), root)
+                )
 
     ctx_candidates: set[str] = set()
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
