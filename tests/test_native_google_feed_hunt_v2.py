@@ -5,6 +5,7 @@ from tools.native_google_feed_hunt_v2 import _cookie_header_from_netscape
 from tools.native_google_feed_hunt_v2 import _public_json_lines
 from tools.native_google_feed_hunt_v2 import ctxfeed_urls, feed_priority
 from tools.native_google_feed_hunt_v2 import extract_explicit_feed_urls, extract_urls, validate_xml
+from tools.native_google_feed_hunt_v2 import load_learned_feed_patterns
 
 GOOD = b'''<?xml version="1.0"?><rss xmlns:g="http://base.google.com/ns/1.0"><channel><item><g:id>SKU</g:id><g:title>Widget</g:title><g:link>https://example.test/p/1</g:link><g:price>1999 INR</g:price></item></channel></rss>'''
 
@@ -73,3 +74,14 @@ def test_explicit_external_feed_url_is_discovered():
 def test_external_non_feed_link_is_not_discovered():
     body = '<a href="https://other.example.test/products.xml">external</a>'
     assert extract_explicit_feed_urls(body, "https://shop.example.test") == ()
+
+def test_learned_feed_patterns_preserve_verified_path_and_query(tmp_path: Path):
+    shard = tmp_path / "prior"
+    shard.mkdir()
+    (shard / "site.json").write_text(
+        '{"site":"Only SDD","root":"https://onlyssd.com","native_feed_url":"https://onlyssd.com/?woocommerce_gpf=google","evidence":{"records":[{"requested_url":"https://onlyssd.com/legacy.xml","validation":{"valid":true}}]}}',
+        encoding="utf-8",
+    )
+    found = load_learned_feed_patterns((tmp_path,))
+    assert "/?woocommerce_gpf=google" in found
+    assert "/legacy.xml" in found
