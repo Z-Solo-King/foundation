@@ -6,4 +6,4 @@ The Operations scanner implementation and its authoritative surface/rule contrac
 
 The scan is an evidence-coverage gate only. REVIEW or missing runtime receipts remain acceptance blockers; a successful structural scan must not be interpreted as production/runtime certification.
 
-- 2026-09-27: Operations matrix proxy corrected to preserve canonical validation metadata and expand unique active issues once per L1-L4 lane.
+- 2026-09-27: active surface-map lane declarations normalized with the matrix so every active issue is independently audited on L1-L4.
