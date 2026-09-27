@@ -1,5 +1,6 @@
 # Restart Stage 1 from consolidated browser-session extractor state.
 # Staged learning pipeline: 2 -> 4 -> 6 -> remaining 20.
+# Feed filename grammar pass enabled.
 name: Native Google Feed URL Hunt
 
 on:
