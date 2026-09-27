@@ -93,6 +93,8 @@ class SiteState:
     search_candidate_urls: set[str] = field(default_factory=set)
     archive_candidate_urls: set[str] = field(default_factory=set)
     ai_candidate_urls: set[str] = field(default_factory=set)
+    adtribes_candidate_urls: set[str] = field(default_factory=set)
+    wordpress_feed_metadata: list[dict[str, Any]] = field(default_factory=list)
     probes: list[ProbeResult] = field(default_factory=list)
     verified_urls: set[str] = field(default_factory=set)
 
@@ -372,6 +374,133 @@ def parse_wp_json_routes(payload: bytes, root: str) -> set[str]:
         if u:
             found.add(u)
     return found
+
+def extract_feed_metadata_from_json(payload: bytes, root: str) -> tuple[set[str], list[dict[str, Any]]]:
+    try:
+        obj = json.loads(payload.decode("utf-8", "replace"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return set(), []
+
+    text = json.dumps(obj, ensure_ascii=False)
+    urls: set[str] = set()
+    metadata: list[dict[str, Any]] = []
+
+    # AdTribes/PFP stores generated feed filenames/URLs in feed objects when
+    # those objects are exposed through a public route.
+    for key, value in re.findall(r'"([^"]+)"\s*:\s*"([^"]*)"', text):
+        kl = key.lower()
+        vl = html.unescape(value).strip()
+        if any(token in kl for token in ("file_url", "feed_url", "xml_url", "export_url")) and vl:
+            u = safe_url(vl, root, allow_external=True)
+            if u:
+                urls.add(u)
+                metadata.append({"key": key, "value": u})
+        elif kl in {"file_name", "filename", "legacy_project_hash", "feed_name"} and vl:
+            metadata.append({"key": key, "value": vl})
+
+    # Preserve feed URLs that appear as JSON-string values, including opaque
+    # generated filenames whose URL contains no "feed" word.
+    for raw in re.findall(r'"https?://[^"]+"', text):
+        raw = raw[1:-1]
+        if ".xml" in raw.lower() or "woo-product-feed-pro" in raw.lower():
+            u = safe_url(raw, root, allow_external=True)
+            if u:
+                urls.add(u)
+
+    return urls, metadata
+
+
+def adtribes_targeted_discovery(state: SiteState) -> None:
+    paths = [
+        "/wp-json/wp/v2/types/adt_product_feed",
+        "/wp-json/wp/v2/adt_product_feed?per_page=100",
+        "/wp-json/wp/v2/adt_product_feed?status=publish&per_page=100",
+        "/wp-json/wp/v2/adt_product_feed?_fields=id,slug,link,title,meta",
+        "/wp-json/wp/v2/search?search=google&per_page=100",
+        "/wp-json/wp/v2/search?search=feed&per_page=100",
+        "/wp-json/wp/v2/media?search=google&per_page=100",
+        "/wp-json/wp/v2/media?search=feed&per_page=100",
+        "/wp-json/adtribes/v1/",
+        "/wp-json/adtribes/v1/feeds",
+        "/wp-json/adtribes/v1/feed",
+        "/wp-json/adtribes/v1/product-feeds",
+        "/wp-json/adtribes/v1/filters-rules/1",
+        "/wp-json/adtribes/v1/filters-rules/0",
+        "/?rest_route=/adtribes/v1/",
+        "/?rest_route=/adtribes/v1/feeds",
+        "/?rest_route=/wp/v2/adt_product_feed",
+        "/?rest_route=/wp/v2/search&search=feed&per_page=100",
+        "/wp-json/wc/gla/mc/product-feed",
+        "/wp-json/wc/gla/mc/product-statistics",
+        "/wp-json/wc/gla/mc/issues",
+    ]
+
+    def one(idx_path: tuple[int, str]) -> ProbeResult:
+        idx, path = idx_path
+        result = probe_url(
+            state,
+            f"A{idx:03d}",
+            "AdTribes/WP feed metadata discovery",
+            "adtribes-rest",
+            urllib.parse.urljoin(state.root.rstrip("/") + "/", path.lstrip("/")),
+            12.0,
+        )
+        return result
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:
+        futures = [pool.submit(one, (idx, path)) for idx, path in enumerate(paths, 1)]
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                result = future.result()
+                if result.requested_url:
+                    # Probe bodies are parsed inside probe_url for JSON, but
+                    # explicitly rescan feed metadata from any JSON response
+                    # so opaque PFP filenames are not lost.
+                    pass
+            except Exception:
+                pass
+
+    # Re-fetch the high-value JSON endpoints with a small, deterministic set
+    # and parse their full response for file_url/file_name/legacy hash clues.
+    high_value = [
+        "/wp-json/wp/v2/adt_product_feed?per_page=100",
+        "/wp-json/adtribes/v1/feeds",
+        "/wp-json/adtribes/v1/product-feeds",
+        "/wp-json/",
+    ]
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+        futures = [
+            pool.submit(curl_fetch, urllib.parse.urljoin(state.root.rstrip("/") + "/", p.lstrip("/")), 15.0, state.cookies, "GET", state.root)
+            for p in high_value
+        ]
+        for fut in concurrent.futures.as_completed(futures):
+            try:
+                status, ct, final_url, body, elapsed, err = fut.result()
+                if status != 200 or not body:
+                    continue
+                urls, metadata = extract_feed_metadata_from_json(body, state.root)
+                state.adtribes_candidate_urls.update(urls)
+                state.wordpress_feed_metadata.extend(metadata[:200])
+                state.discovered_routes.update(urls)
+                state.probes.append(ProbeResult(
+                    "AJSON",
+                    "Deep feed metadata JSON parse",
+                    "adtribes-rest",
+                    final_url,
+                    "GET",
+                    status,
+                    ct,
+                    final_url,
+                    elapsed,
+                    {"valid": False},
+                    sorted(urls),
+                    f"metadata={len(metadata)}",
+                    err,
+                ))
+            except Exception as exc:
+                state.probes.append(ProbeResult(
+                    "AERR","Deep feed metadata JSON parse","adtribes-rest",error=type(exc).__name__
+                ))
 
 def google_search(query: str, engine_url: str) -> set[str]:
     q = urllib.parse.quote_plus(query)
@@ -970,6 +1099,7 @@ def run_site(label: str, root: str, output_dir: Path) -> SiteState:
                 ))
 
     browser_discovery(state)
+    adtribes_targeted_discovery(state)
     run_gsc_optional(state)
     run_search_archive_ai(state)
     replay_candidates(state)
@@ -991,6 +1121,8 @@ def run_site(label: str, root: str, output_dir: Path) -> SiteState:
             "search_candidates": len(state.search_candidate_urls),
             "archive_candidates": len(state.archive_candidate_urls),
             "ai_candidates": len(state.ai_candidate_urls),
+            "adtribes_candidates": len(state.adtribes_candidate_urls),
+            "wordpress_feed_metadata": len(state.wordpress_feed_metadata),
         },
         "probes": [asdict(p) for p in state.probes],
     }
@@ -1035,6 +1167,8 @@ def main() -> int:
                 "search_candidate_count": len(s.search_candidate_urls),
                 "archive_candidate_count": len(s.archive_candidate_urls),
                 "ai_candidate_count": len(s.ai_candidate_urls),
+                "adtribes_candidate_count": len(s.adtribes_candidate_urls),
+                "wordpress_feed_metadata_count": len(s.wordpress_feed_metadata),
             }
             for s in sorted(states, key=lambda x: x.site)
         ],
