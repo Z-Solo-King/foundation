@@ -863,8 +863,8 @@ def validation_candidate_groups(
     )[:240]
     same_site = [u for u in candidates if same_host(u, root)]
     explicit_external = [
-        u for u in sorted(explicit_external_candidates)
-        if u in candidates
+        u for u in sorted(explicit_feed_candidates)
+        if u in candidates and not same_host(u, root)
     ]
     return same_site, explicit_external
 
@@ -873,7 +873,7 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
     started = time.monotonic()
     records: list[dict[str, object]] = []
     discovered: set[str] = set()
-    explicit_external_candidates: set[str] = set()
+    explicit_feed_candidates: set[str] = set()
     session_cookie_header = warm_site_session(root)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
@@ -883,7 +883,7 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
             if result.status == 200 and result.body:
                 text = result.body.decode("utf-8", "replace")
                 discovered.update(extract_urls(text, root))
-                explicit_external_candidates.update(extract_explicit_feed_urls(text, root))
+                explicit_feed_candidates.update(extract_explicit_feed_urls(text, root))
                 discovered.update(extract_explicit_feed_urls(text, root))
                 discovered.update(rest_feed_candidates(text, root))
 
@@ -930,7 +930,7 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
 
     if verified is None and discovered:
         same_site, explicit_external = validation_candidate_groups(
-            discovered, explicit_external_candidates, root
+            discovered, explicit_feed_candidates, root
         )
         verified = batch(same_site, 60.0, 8, records, session_cookie_header, root)
         if verified is None and explicit_external:
@@ -943,8 +943,9 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
         "verified": bool(verified),
         "tested_candidate_count": len(records),
         "discovered_url_count": len(discovered),
-        "explicit_external_candidate_count": len(explicit_external_candidates),
-        "validated_external_candidate_count": len([r for r in records if r.get("requested_url") in explicit_external_candidates]),
+        "explicit_feed_candidate_count": len(explicit_feed_candidates),
+        "validated_explicit_feed_candidate_count": len([r for r in records if r.get("requested_url") in explicit_feed_candidates]),
+        "explicit_feed_candidates": sorted(explicit_feed_candidates)[:100],
         "same_site_session_established": bool(session_cookie_header),
         "browser_discovery": browser_meta,
         "historical_discovery": historical_meta,
