@@ -186,8 +186,7 @@ def test_quality_rules_reject_invalid_payload(monkeypatch: pytest.MonkeyPatch) -
         def joinpath(self, _name: str) -> FakeFile:
             return FakeFile()
 
-    quality._RULES_CACHE = None
+    monkeypatch.setattr(quality, "_RULES_CACHE", None)
     monkeypatch.setattr(quality.resources, "files", lambda _package: FakeFiles())
     with pytest.raises(ValueError, match="must contain a rules list"):
         quality._rules()
-    quality._RULES_CACHE = None
