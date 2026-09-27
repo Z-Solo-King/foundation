@@ -1,6 +1,9 @@
 name: WooCommerce Google Feed Archive Recovery #1247
 
 on:
+  push:
+    branches:
+      - "test/woocommerce-feed-archive-recovery-1247-20260927"
   pull_request:
     branches:
       - "main"
@@ -10,8 +13,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: wc-google-feed-archive-recovery-1247
-  cancel-in-progress: false
+  group: wc-google-feed-archive-recovery-1247-latest
+  cancel-in-progress: true
 
 jobs:
   archive-recovery:
