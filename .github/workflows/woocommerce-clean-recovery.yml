@@ -1,4 +1,5 @@
 name: WooCommerce clean recovery execution
+# Final archive validation refresh 2026-09-27
 
 on:
   pull_request:
