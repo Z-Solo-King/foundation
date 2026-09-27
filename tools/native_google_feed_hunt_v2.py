@@ -147,6 +147,13 @@ PLUGIN_FINGERPRINT_PATHS = (
     ("adtribes", "/wp-content/plugins/woo-product-feed-pro/readme.txt"),
     ("ctxfeed", "/wp-content/plugins/webappick-product-feed-for-woocommerce/readme.txt"),
     ("wpmr", "/wp-content/plugins/wp-product-feed-manager/readme.txt"),
+    ("webtoffee", "/wp-content/plugins/webtoffee-product-feed/readme.txt"),
+    ("conversios", "/wp-content/plugins/product-feed-manager-for-woocommerce/readme.txt"),
+    ("elex", "/wp-content/plugins/elex-woocommerce-google-product-feed-plugin-basic/readme.txt"),
+    ("gg-woo-feed", "/wp-content/plugins/gg-woo-feed/readme.txt"),
+    ("google-listings", "/wp-content/plugins/google-listings-and-ads/readme.txt"),
+    ("pixelyoursite", "/wp-content/plugins/product-catalog-feed/readme.txt"),
+    ("xml-feed-manager", "/wp-content/plugins/product-xml-feeds-for-woocommerce/readme.txt"),
 )
 
 # Known public WooCommerce feed filename grammar.  Includes exact names observed in
@@ -521,10 +528,12 @@ def plugin_fingerprint(root: str, cookie_header: str) -> tuple[str, ...]:
         sample = result.body[:12000].decode("utf-8", "replace").lower()
         if name == "adtribes" and "product feed" in sample and "adtribes" in sample:
             found.append("adtribes")
-        elif name == "ctxfeed" and "ctx feed" in sample:
+        elif name == "ctxfeed" and ("ctx feed" in sample or "webappick" in sample):
             found.append("ctxfeed")
         elif name == "wpmr" and ("product feed" in sample or "wpmr" in sample):
             found.append("wpmr")
+        elif name in {"webtoffee", "conversios", "elex", "gg-woo-feed", "google-listings", "pixelyoursite", "xml-feed-manager"} and ("feed" in sample or "google" in sample or "merchant" in sample):
+            found.append(name)
     return tuple(sorted(set(found)))
 
 
