@@ -84,9 +84,15 @@ async function probe(name,base){
   ]){
    const r=await fetchOne(u,ua,30000); results.push({url:u,kind:"discovery",ua,status:r.status,ct:r.ct,bytes:r.bytes,error:r.error||null});
    if(r.status===200&&r.body){
-    const found=[...r.body.matchAll(/(?:https?:\\/\\/[^\\s<>"]+|\\/[^\\s<>"]*(?:google|merchant|feed|shopping|xml)[^\\s<>"]*)/gi)]
-      .map(m=>String(m[0]).replace(/[),.;]+$/g,""));
-    for(const v of found){try{const abs=new URL(v,base).href;if(new URL(abs).hostname.replace(/^www\\./,"")===new URL(base).hostname.replace(/^www\\./,""))FEED_PATHS.push(new URL(abs).pathname+(new URL(abs).search||""));}catch{}}
+    const found = String(r.body).split(/\\s+/).map(v=>v.replace(/[),.;]+$/g,"")).filter(v=>/^https?:\\/\\//i.test(v)||/(google|merchant|feed|shopping|xml)/i.test(v));
+    for(const v of found){
+      try{
+        const abs=new URL(v,base).href;
+        const ah=new URL(abs).hostname.replace(/^www\\./,"");
+        const bh=new URL(base).hostname.replace(/^www\\./,"");
+        if(ah===bh) FEED_PATHS.push(new URL(abs).pathname+(new URL(abs).search||""));
+      }catch{}
+    }
    }
   }
  }
