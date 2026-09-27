@@ -25,8 +25,10 @@ jobs:
       BROWSER_WORKER_URL: https://wc-browser-single-20260927.heroic-ai.workers.dev/
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
       - name: Select shard
@@ -51,7 +53,7 @@ jobs:
         run: node tools/woocommerce_native_feed_hunt_v176_fast.mjs | tee "native-feed-shard-${{ matrix.shard }}.json"
       - name: Upload URL-only result
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: native-google-feed-shard-${{ matrix.shard }}
           path: native-feed-shard-${{ matrix.shard }}.json
