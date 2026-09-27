@@ -304,6 +304,7 @@ def probe_url(state: SiteState, test_id: str, strategy: str, layer: str, url: st
         if "json" in ct.lower() or candidate.rstrip("/").endswith(("/wp-json", "/wp-json/")):
             state.discovered_routes.update(parse_wp_json_routes(body, state.root))
         txt = body.decode("utf-8", "replace")
+        state.adtribes_candidate_urls.update(extract_adtribes_filename_candidates(txt, state.root))
         for u in explicit_feed_urls(txt, state.root):
             state.explicit_external_feed_urls.add(u)
         for raw in re.findall(r'https?://[^\s<>"\'\]\[)]+', txt):
@@ -374,6 +375,30 @@ def parse_wp_json_routes(payload: bytes, root: str) -> set[str]:
         if u:
             found.add(u)
     return found
+
+def extract_adtribes_filename_candidates(text: str, root: str) -> set[str]:
+    decoded = html.unescape(text or "")
+    found: set[str] = set()
+    for pattern in (
+        r"(?:file_name|filename|legacy_project_hash)\s*[:=]\s*["']([A-Za-z0-9_-]{20,64})["']",
+        r"(?:file_name|filename|legacy_project_hash)\s*[:=]\s*([A-Za-z0-9_-]{20,64})",
+    ):
+        for m in re.finditer(pattern, decoded, re.I):
+            token = m.group(1)
+            found.add(urllib.parse.urljoin(
+                root.rstrip("/") + "/",
+                f"wp-content/uploads/woo-product-feed-pro/xml/{urllib.parse.quote(token)}.xml",
+            ))
+    for raw in re.findall(
+        r"https?://[^\s<>\"']+/wp-content/uploads/woo-product-feed-pro/xml/[A-Za-z0-9._-]+\.xml",
+        decoded,
+        re.I,
+    ):
+        u = safe_url(raw, root, allow_external=True)
+        if u:
+            found.add(u)
+    return found
+
 
 def extract_feed_metadata_from_json(payload: bytes, root: str) -> tuple[set[str], list[dict[str, Any]]]:
     try:
@@ -466,6 +491,7 @@ def adtribes_targeted_discovery(state: SiteState) -> None:
         "/wp-json/wp/v2/adt_product_feed?per_page=100",
         "/wp-json/adtribes/v1/feeds",
         "/wp-json/adtribes/v1/product-feeds",
+        "/wp-json/adtribes/v1/",
         "/wp-json/",
     ]
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
@@ -875,6 +901,7 @@ def browser_discovery(state: SiteState, max_products: int = 3) -> None:
                     if response.ok:
                         script_body = response.body().decode("utf-8", "replace")
                         state.discovered_routes.update(extract_candidate_urls(script_body, state.root, allow_external=False))
+                        state.adtribes_candidate_urls.update(extract_adtribes_filename_candidates(script_body, state.root))
                         state.explicit_external_feed_urls.update(explicit_feed_urls(script_body, state.root))
                 except Exception:
                     pass
@@ -1040,7 +1067,10 @@ def replay_candidates(state: SiteState) -> None:
         | set(state.ai_candidate_urls)
         | set(state.browser_response_feed_urls)
     )
-    candidates = {u for u in candidates if looks_feed_url(u)}
+    candidates = {
+        u for u in candidates
+        if looks_feed_url(u) or "/wp-content/uploads/woo-product-feed-pro/xml/" in urllib.parse.urlsplit(u).path.lower()
+    }
     candidates = sorted(candidates)[:300]
     if not candidates:
         return
