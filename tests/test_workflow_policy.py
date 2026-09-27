@@ -764,3 +764,13 @@ def test_live_ai_agent_benchmark_is_bounded_and_non_authoritative():
     assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97" in workflow
     assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in workflow
     assert "expected_observations == 720" in workflow
+
+
+def test_polyglot_migration_review_runs_typescript_acquisition_planner_evidence():
+    text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
+    assert "Run TypeScript acquisition planner differential" in text
+    assert "npm run differential:python" in text
+    assert "npm run differential:compare" in text
+    assert "BENCHMARK_ITERATIONS=200 npm run benchmark" in text
+    assert 'differential["case_count"] == 32' in text
+    assert 'benchmark["iterations"] == 200' in text
