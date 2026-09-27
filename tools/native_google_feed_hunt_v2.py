@@ -266,13 +266,61 @@ def generated_upload_feed_candidates(root: str, site: str) -> tuple[str, ...]:
                        "googlemerchantfeed", "productfeed"):
             site_stems.extend((f"{s}{suffix}", f"{suffix}{s}"))
 
-    stems = list(dict.fromkeys([*UPLOAD_FEED_STEMS, *SEMANTIC_FEED_STEMS, *site_stems]))
+    # Keep host-specific names ahead of the global semantic list. A fixed
+    # prefix cap can otherwise starve site-specific filenames from the sweep.
+    observed_short_stems = (
+        "gshop", "g-shop", "gmc", "gmcfeed", "gmc-feed",
+        "googlemerchant", "googlemerchantfeed", "google-shopping-feed",
+        "google-feed", "googlefeed", "googlexml", "google-xml",
+        "merchantfeed", "merchant-feed", "merchantxml", "merchant-xml",
+        "ecproductfeed", "ec-product-feed", "feedseason", "googlebase",
+        "google-shopping", "googleproducts", "googleproductfeed",
+    )
+    domain_host = urllib.parse.urlsplit(root).hostname or ""
+    domain_stem = re.sub(r"[^a-z0-9]+", "", domain_host.lower().removeprefix("www."))
+    host_tokens = [x for x in re.split(r"[-_\.]+", site.lower()) if x]
+    host_tokens.extend(x for x in re.split(r"[-_\.]+", domain_host.lower()) if x)
+    host_forms = list(dict.fromkeys(x for x in (
+        *site_forms,
+        domain_stem,
+        *host_tokens,
+    ) if x and len(x) >= 2))
+
+    priority_stems: list[str] = []
+    suffixes = (
+        "google", "googlefeed", "google-feed", "google_feed",
+        "googleshopping", "google-shopping", "google_shopping",
+        "googlemerchant", "google-merchant", "google_merchant",
+        "googlemerchantfeed", "google-merchant-feed", "google_merchant_feed",
+        "googleproductfeed", "google-product-feed", "google_product_feed",
+        "googleproducts", "google-products", "google_products",
+        "gmc", "gmcfeed", "gmc-feed", "gmc_feed",
+        "merchant", "merchantfeed", "merchant-feed", "merchant_feed",
+        "shopping", "shoppingfeed", "shopping-feed", "shopping_feed",
+        "productfeed", "product-feed", "product_feed",
+        "products", "productsfeed", "products-feed", "products_feed",
+        "feed", "feedgoogle", "feed-google", "feed_google",
+        "feedmerchant", "feed-merchant", "feed_merchant",
+        "gshop", "g-shop", "googlexml", "google-xml",
+        "google-base", "google_base", "googlebase",
+    )
+    for host_form in host_forms:
+        for suffix in suffixes:
+            for sep in FILENAME_SEPARATORS:
+                priority_stems.extend((
+                    f"{host_form}{sep}{suffix}",
+                    f"{suffix}{sep}{host_form}",
+                ))
+    priority_stems.extend(observed_short_stems)
+    priority_stems.extend(stems_for_hidden if False else ())
+    stems = list(dict.fromkeys([*priority_stems, *UPLOAD_FEED_STEMS, *SEMANTIC_FEED_STEMS, *site_stems]))
     urls: set[str] = set()
     for directory in UPLOAD_FEED_DIRECTORIES:
-        for stem in stems[:420]:
+        for stem in stems[:2400]:
             for extension in (".xml", ".xml.gz"):
                 path = directory.rstrip("/") + "/" + stem + extension
                 urls.add(urllib.parse.urljoin(root.rstrip("/") + "/", path.lstrip("/")))
+                urls.add(urllib.parse.urljoin(root.rstrip("/") + "/", directory.rstrip("/") + "/." + stem + extension))
     # CTXFeed exposes named feeds as /?feed=<feed-name>; these are first-class
     # native candidates, not reconstructed data.
     for stem in stems[:420]:
