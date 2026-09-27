@@ -40,7 +40,7 @@ async function pluginDiscovery(root,wp){
  return{cands:[...cands],signals};
 }
 async function probe(site){
- const root=site.url.replace(/\/$/,"");const cands=new Set();const discovery=[];const source=new Map();
+ const root=site.url.replace(/\/$/,"");const cands=new Set();const browserDiscovered=new Set();const discovery=[];const source=new Map();
  const hist=[
   "/?woocommerce_gpf=google","/woocommerce_gpf/google","/?woocommerce_gpf=google&gpf_start=0&gpf_limit=100",
   "/?woocommerce_gpf=google&gpf_start=0&gpf_limit=1000","/woocommerce_gpf/google?gpf_start=0&gpf_limit=1000",
@@ -73,19 +73,20 @@ async function probe(site){
  let browser=null;
  if(CF_TOKEN&&CF_ACCOUNT){
    const snap=await cf("/browser-rendering/snapshot",{url:root,formats:["content"],gotoOptions:{waitUntil:"domcontentloaded",timeout:60000},waitForTimeout:5000,viewport:{width:1440,height:900}});
-   browser={snapshot:{ok:snap.ok,status:snap.status,error:snap.error||null},links:null};
+   browser={snapshot:{ok:snap.ok,status:snap.status,error:snap.error||null}};
    const content=String(snap.data?.result?.content||snap.data?.content||"");
-   if(content){discoverUrls(content,root,cands)}
+   if(content){const tmp=new Set();discoverUrls(content,root,tmp);for(const u of tmp){cands.add(u);browserDiscovered.add(u);source.set(u,"browser-rendered-html")}}
    const links=await cf("/browser-rendering/links",{url:root,visibleLinksOnly:false,gotoOptions:{waitUntil:"domcontentloaded",timeout:60000},waitForTimeout:3000,viewport:{width:1440,height:900}});
    browser.links={ok:links.ok,status:links.status,error:links.error||null};
    const ldata=links.data?.result?.links||links.data?.links||[];for(const x of Array.isArray(ldata)?ldata:[]){const a=typeof x==="string"?x:(x?.url||x?.href);if(a&&same(a,root)&&(/\.xml(?:\.gz)?(?:$|[?#])/i.test(a)||/woocommerce_gpf|woo_feed|ctxfeed|wppfm|google|merchant|shopping|product[-_]feed/i.test(a)))cands.add(a)}
-   const browserCands=[...cands].filter(u=>!checked.some(x=>x.url===u)).slice(0,140);
+   const browserCands=[...browserDiscovered].filter(u=>!checked.some(x=>x.url===u)).slice(0,20);
    for(const u of browserCands){
-     const s=await cf("/browser-rendering/snapshot",{url:u,formats:["content"],gotoOptions:{waitUntil:"domcontentloaded",timeout:60000},waitForTimeout:2000,viewport:{width:1440,height:900}});
+     const s=await cf("/browser-rendering/snapshot",{url:u,formats:["content"],gotoOptions:{waitUntil:"domcontentloaded",timeout:60000},waitForTimeout:1500,viewport:{width:1440,height:900}});
      const body=String(s.data?.result?.content||s.data?.content||"");
      const ok=s.ok&&nativeText(body);
-     checked.push({url:u,method:ok?"cloudflare_snapshot":null,ok,source:"browser",snapshot_status:s.status,content_type:"rendered",len:body.length,challenge:challenge(body)});
+     checked.push({url:u,method:ok?"cloudflare_snapshot":null,ok,source:"browser-explicit-candidate",snapshot_status:s.status,content_type:"rendered",len:body.length,challenge:challenge(body)});
      if(ok)return{site:site.name,url:u,method:"cloudflare_snapshot",tested:checked.length,candidates:cands.size,discovery,plugin_signals:pd.signals,browser,evidence:checked.slice(-20)}
+   }
    }
  }
  return{site:site.name,url:null,method:null,tested:checked.length,candidates:cands.size,discovery,plugin_signals:pd.signals,browser,evidence:checked.slice(-30)};
