@@ -20,6 +20,13 @@ def test_secret_sync_workflow_is_a_private_operations_bridge():
     assert 'python "$RUNNER_TEMP/sync_provider_secrets.py"' in text
 
 
+def test_secret_sync_workflow_pins_and_checks_private_dependency():
+    text = (ROOT / ".github" / "workflows" / "sync-secrets.yml").read_text(encoding="utf-8")
+    assert 'PyNaCl==1.5.0' in text
+    assert 'from nacl import encoding, public' in text
+    assert "PyNaCl import: PASS" in text
+
+
 def test_secret_sync_workflow_never_executes_public_copy():
     text = (ROOT / ".github" / "workflows" / "sync-secrets.yml").read_text(encoding="utf-8")
     assert "python tools/sync_provider_secrets.py" not in text
