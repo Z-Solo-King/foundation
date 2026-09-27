@@ -6,4 +6,4 @@ The Operations scanner implementation and its authoritative surface/rule contrac
 
 The scan is an evidence-coverage gate only. REVIEW or missing runtime receipts remain acceptance blockers; a successful structural scan must not be interpreted as production/runtime certification.
 
-- 2026-09-27 Operations lane-unification: live four-lane scanner now expands active matrix cases across L1-L4 during direct scan execution; normal test/runtime imports remain unchanged.
+- 2026-09-27: Operations scanner now applies deterministic all-lane active-case expansion through the scanner-only JSON compatibility hook.
