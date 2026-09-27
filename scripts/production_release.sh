@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="7058d617d576bc18d977c4b615bebba0be9af747"
+OPERATIONS_REF="1536c1e46270589c572d768d91a50229d9e397a3"
 OPERATIONS_SERVICE_NAME="operations"
 BASE_URL="https://ai-cio.pages.dev"
 ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"
@@ -23,13 +23,13 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = '7058d617d576bc18d977c4b615bebba0be9af747'
+test "$OPERATIONS_REF" = '1536c1e46270589c572d768d91a50229d9e397a3'
 
 after_install_marker=''
 
 python -m pip install --upgrade pip
 python -m pip install -e .
-python -m pip install pytest pytest-asyncio coverage workers-py workers-runtime-sdk uv
+python -m pip install pytest pytest-asyncio coverage workers-py workers-runtime-sdk uv PyYAML jsonschema
 uv --version
 python -m compileall -q backend foundation_core worker.py
 python -c "import foundation_core; print(foundation_core.__all__)"
