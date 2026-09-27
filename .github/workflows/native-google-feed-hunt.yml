@@ -54,7 +54,7 @@ jobs:
           set -euo pipefail
           base="out/native-google-feed-shard-stage1-${{ matrix.slug }}"
           mkdir -p "$base"
-          for round in 1 2 3; do
+          for round in 1 2; do
             out="$base/round-$round"
             args=(--shard 0 --shards 1 --only-sites "${{ matrix.site }}" --output-dir "$out")
             if [ "$round" -gt 1 ]; then
