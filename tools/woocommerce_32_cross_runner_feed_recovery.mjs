@@ -84,7 +84,7 @@ async function probe(name,base){
   ]){
    const r=await fetchOne(u,ua,30000); results.push({url:u,kind:"discovery",ua,status:r.status,ct:r.ct,bytes:r.bytes,error:r.error||null});
    if(r.status===200&&r.body){
-    const found = String(r.body).split(/\\s+/).map(v=>v.replace(/[),.;]+$/g,"")).filter(v=>/^https?:\\/\\//i.test(v)||/(google|merchant|feed|shopping|xml)/i.test(v));
+    const found = String(r.body).split(/\s+/).map(v=>v.replace(/[),.;]+$/g,"")).filter(v=>/^https?:\/\//i.test(v)||/(google|merchant|feed|shopping|xml)/i.test(v));
     for(const v of found){
       try{
         const abs=new URL(v,base).href;
