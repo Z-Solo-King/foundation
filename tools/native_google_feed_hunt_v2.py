@@ -206,7 +206,7 @@ def validate_xml(body: bytes, content_type: str) -> Validation:
             return Validation(False, "gzip_invalid", 0, 0, ("gzip_parse_error",))
     text = raw.decode("utf-8", "replace")
     prefix = text.lstrip("\ufeff \r\n\t")
-    if not prefix.startswith(("<?xml", "<rss", "<feed", "<channel")):
+    if not prefix.startswith(("<?xml", "<rss", "<feed", "<channel", "<urlset", "<sitemapindex")):
         return Validation(False, "non_xml", 0, 0, ("not_xml_looking",))
     lower = prefix[:16000].lower()
     if any(marker in lower for marker in BLOCK_MARKERS):
@@ -301,14 +301,11 @@ def probe_site(site: str, root: str) -> SiteResult:
     if verified is None:
         verified = batch([urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in MEDIUM_PATHS], 45.0, 8, records)
 
-    directory_urls_found: set[str] = set()
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
         directory_results = pool.map(lambda p: (p, fetch(urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")), 12.0)), DIRECTORIES)
         for directory, result in directory_results:
             if result.status == 200 and result.body:
-                urls = directory_urls(result.body.decode("utf-8", "replace"), root)
-                directory_urls_found.update(urls)
-    discovered.update(directory_urls_found)
+                discovered.update(directory_urls(result.body.decode("utf-8", "replace"), root))
 
     if verified is None and discovered:
         candidates = sorted(
