@@ -281,14 +281,23 @@ async function commonCrawlDomainIndex(base, collection) {
   const endpoint = new URL(`https://index.commoncrawl.org/${collection}-index`);
   endpoint.searchParams.set("url", wildcard);
   endpoint.searchParams.set("output", "json");
-  endpoint.searchParams.set("fl", "url,timestamp,mime,status");
+  endpoint.searchParams.set("fl", "url,timestamp,mime,mime-detected,status,filename,offset,length");
   endpoint.searchParams.set("filter", "status:200");
   endpoint.searchParams.set("collapse", "urlkey");
-  endpoint.searchParams.set("limit", "2000");
+  endpoint.searchParams.set("limit", "2500");
 
-  const r = await fetchBuffer(endpoint.href, ARCHIVE_TIMEOUT_MS, {
+  let r = await fetchBuffer(endpoint.href, ARCHIVE_TIMEOUT_MS, {
     "Accept": "application/json,text/plain;q=0.8,*/*;q=0.1",
   });
+
+  // Some Common Crawl index deployments are stricter about scheme-qualified wildcards.
+  if (r.status !== 200 || !r.buf) {
+    endpoint.searchParams.set("url", new URL(base).host + "/*");
+    endpoint.searchParams.set("matchType", "domain");
+    r = await fetchBuffer(endpoint.href, ARCHIVE_TIMEOUT_MS, {
+      "Accept": "application/json,text/plain;q=0.8,*/*;q=0.1",
+    });
+  }
   if (r.status !== 200 || !r.buf) {
     return { endpoint: endpoint.href, status: r.status, candidates: [], error: r.error || null };
   }
