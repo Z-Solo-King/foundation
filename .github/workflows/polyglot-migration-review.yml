@@ -181,6 +181,13 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Validate Operations migration evidence claims
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          python tools/validate_migration_evidence.py
+          python tools/validate_polyglot_registry.py --repo-root "$GITHUB_WORKSPACE/operations"
+
       - name: Run migration review
         env:
           PYTHONPATH: ${{ github.workspace }}/operations
