@@ -44,8 +44,8 @@ Foundation owns public-safe core, GitHub Actions and canonical production deploy
 Current family state:
 - Foundation main: `121ff5017c6b11ebc103dbbd26bdffe639fcc8cb`
 - Operations main: `b47aa056f50d27df9b5f552495a6cd862ae8a697`
-- Public Worker deployed provenance: `c465ed8cff860cf0f1a1d6de6655aaf9594f02d2`
-- Private Worker production provenance: `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
+- Public Worker deployed provenance: `[REDACTED-PUBLIC-DEPLOYMENT-PROVENANCE]`
+- Private Worker production provenance: `[REDACTED-OPERATIONS-PROVENANCE]`
 - Nightly research Operations pin: `3a7e350ddd5648caf93f58651323425186544f66`
 - Current open issue queue: Foundation #58/#157; Operations #145/#197/#340/#352/#385/#597/#603/#699/#711
 - Open implementation PRs: 0
