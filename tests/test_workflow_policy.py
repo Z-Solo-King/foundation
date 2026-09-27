@@ -9,6 +9,7 @@ SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
 CANONICAL_OPERATIONS_REF = "566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3"
+CANONICAL_PRODUCTION_OPERATIONS_REF = "7058d617d576bc18d977c4b615bebba0be9af747"
 BENCHMARK_OPERATIONS_REF = CANONICAL_OPERATIONS_REF
 BENCHMARK_TOOLS_REF = "d4ef2e6d28435a59c735b9dc4d0de31f44b9cf29"
 MIGRATION_TOOLS_REF = None
@@ -64,8 +65,8 @@ def test_production_deployment_has_one_owner():
 # Canonical Operations revision is declared once and used by the release self-check.\n\ndef test_canonical_operations_production_pin_is_current_and_immutable():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_REPOSITORY="{CANONICAL_OPERATIONS_REPOSITORY}"' in deployment
-    assert f'OPERATIONS_REF="{CANONICAL_OPERATIONS_REF}"' in deployment
-    assert deployment.count(CANONICAL_OPERATIONS_REF) == 2
+    assert f'OPERATIONS_REF="{CANONICAL_PRODUCTION_OPERATIONS_REF}"' in deployment
+    assert deployment.count(CANONICAL_PRODUCTION_OPERATIONS_REF) == 2
     assert LEGACY_OPERATIONS_REF not in deployment
     assert 'git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git"' in deployment
     assert '"github:${OPERATIONS_REF}"' in deployment
@@ -74,7 +75,7 @@ def test_production_deployment_has_one_owner():
 
 def test_production_pin_self_check_matches_canonical_operations_revision():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert "test \"$OPERATIONS_REF\" = '566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3'" in deployment
+    assert f'test "$OPERATIONS_REF" = \'{CANONICAL_PRODUCTION_OPERATIONS_REF}\'' in deployment
     assert "test \"$OPERATIONS_REF\" = 'ca9cc887049b2800361b222bbdae7f56100f4f7c'" not in deployment
 
 
@@ -285,7 +286,7 @@ def test_credential_policy_documents_the_separation():
     assert "B2 credentials are secrets and never belong in Git" in deployment
     assert "`OPERATIONS_APP_ID`" in policy
     assert "purpose-specific GitHub App credential family" in backup
-    assert CANONICAL_OPERATIONS_REF in deployment
+    assert CANONICAL_PRODUCTION_OPERATIONS_REF in deployment
 
 
 def test_backup_manifests_cannot_claim_remote_restore_without_test():
@@ -396,7 +397,7 @@ def test_live_extractor_benchmark_uses_versioned_runtime_and_tool_pins():
     assert tools_expected in workflow
     assert extractor_ref in workflow
     assert BENCHMARK_TOOLS_REF in workflow
-    assert CANONICAL_OPERATIONS_REF in production
+    assert CANONICAL_PRODUCTION_OPERATIONS_REF in production
 
 
 def test_nightly_migration_review_uses_separate_immutable_tooling_pin():
@@ -412,7 +413,7 @@ def test_nightly_migration_review_uses_separate_immutable_tooling_pin():
 
 def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert f'OPERATIONS_REF="{CANONICAL_OPERATIONS_REF}"' in deployment
+    assert f'OPERATIONS_REF="{CANONICAL_PRODUCTION_OPERATIONS_REF}"' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
     assert "OPERATIONS_RESEARCH_REF: 566fe7b90c15a8e0ad8210bd98a7b514de6f5fc3" in nightly
 
