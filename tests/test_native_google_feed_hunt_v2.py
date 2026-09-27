@@ -1,6 +1,8 @@
 from pathlib import Path
+import sys
 
 from tools.native_google_feed_hunt_v2 import _cookie_header_from_netscape
+from tools.native_google_feed_hunt_v2 import _public_json_lines
 from tools.native_google_feed_hunt_v2 import ctxfeed_urls, feed_priority
 from tools.native_google_feed_hunt_v2 import extract_urls, validate_xml
 
@@ -51,3 +53,14 @@ def test_ctxfeed_generated_filename_candidates():
     found = ctxfeed_urls(body, "https://example.test")
     assert "https://example.test/?woo_feed=aB12-google&wt=xml" in found
     assert "https://example.test/wp-content/uploads/woo-feed/google/xml/aB12-google.xml" in found
+
+def test_public_json_parser_accepts_cdx_array():
+    result = _public_json_lines(
+        [sys.executable, "-c", 'import json; print(json.dumps([["timestamp","original","statuscode"],["20260927","https://example.test/feed.xml","200"]]))'],
+        timeout_s=5.0,
+    )
+    assert result == [{
+        "timestamp": "20260927",
+        "original": "https://example.test/feed.xml",
+        "statuscode": "200",
+    }]
