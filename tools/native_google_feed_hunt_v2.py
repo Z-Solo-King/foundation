@@ -850,6 +850,25 @@ def load_learned_feed_patterns(paths: tuple[Path, ...]) -> tuple[str, ...]:
     return tuple(sorted(learned)[:120])
 
 
+def validation_candidate_groups(
+    discovered: set[str],
+    explicit_external_candidates: set[str],
+    root: str,
+) -> tuple[list[str], list[str]]:
+    """Split discovered feed candidates into same-site and explicitly-declared external URLs."""
+    candidates = sorted(
+        u for u in discovered
+        if urllib.parse.urlsplit(u).path.lower().endswith((".xml", ".xml.gz"))
+        or re.search(r"(feed|merchant|shopping|woocommerce_gpf|google|woo[-_]?feed|wppfm)", u, re.I)
+    )[:240]
+    same_site = [u for u in candidates if same_host(u, root)]
+    explicit_external = [
+        u for u in sorted(explicit_external_candidates)
+        if u in candidates
+    ]
+    return same_site, explicit_external
+
+
 def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> SiteResult:
     started = time.monotonic()
     records: list[dict[str, object]] = []
@@ -910,11 +929,9 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
         discovered.update(historical_candidates)
 
     if verified is None and discovered:
-        candidates = sorted(
-            (u for u in discovered if urllib.parse.urlsplit(u).path.lower().endswith((".xml", ".xml.gz")) or re.search(r"(feed|merchant|shopping|woocommerce_gpf|google|woo[-_]?feed|wppfm)", u, re.I)),
-        )[:240]
-        same_site = [u for u in candidates if same_host(u, root)]
-        explicit_external = [u for u in candidates if not same_host(u, root) and u in set(extract_explicit_feed_urls("\n".join(map(str, discovered)), root))]
+        same_site, explicit_external = validation_candidate_groups(
+            discovered, explicit_external_candidates, root
+        )
         verified = batch(same_site, 60.0, 8, records, session_cookie_header, root)
         if verified is None and explicit_external:
             verified = batch(explicit_external, 60.0, 8, records, session_cookie_header, root, True)
@@ -927,6 +944,7 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
         "tested_candidate_count": len(records),
         "discovered_url_count": len(discovered),
         "explicit_external_candidate_count": len(explicit_external_candidates),
+        "validated_external_candidate_count": len([r for r in records if r.get("requested_url") in explicit_external_candidates]),
         "same_site_session_established": bool(session_cookie_header),
         "browser_discovery": browser_meta,
         "historical_discovery": historical_meta,
