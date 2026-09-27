@@ -1,4 +1,5 @@
 name: Native Google Feed URL Hunt
+# Expanded native-feed candidate set 2026-09-27
 
 on:
   pull_request:
@@ -109,6 +110,47 @@ jobs:
             '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml',
             '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping-feed.xml',
             '/wp-content/uploads/codesolz-feeds/google-products.xml'
+            '/google-merchant-feed.xml',
+            '/google_merchant_feed.xml',
+            '/google-product-feed.xml',
+            '/google_product_feed.xml',
+            '/google-products-feed.xml',
+            '/google-shopping-products.xml',
+            '/google.xml.gz',
+            '/google-shopping.xml.gz',
+            '/product-feed.xml.gz',
+            '/products-feed.xml.gz',
+            '/merchant-feed.xml.gz',
+            '/feeds/google-shopping-feed.xml',
+            '/feeds/google-merchant.xml',
+            '/feeds/google-merchant-feed.xml',
+            '/feeds/merchant.xml',
+            '/feeds/merchant-feed.xml',
+            '/feeds/products.xml.gz',
+            '/feed/googlebase.xml',
+            '/feed/google-shopping-feed.xml',
+            '/feed/merchant.xml',
+            '/feed/merchant-feed.xml',
+            '/google-feed/index.xml',
+            '/feeds/google/index.xml',
+            '/products/google.xml',
+            '/products/google-feed.xml',
+            '/products/google-shopping.xml',
+            '/product-feed/google.xml',
+            '/product-feed/google-shopping.xml',
+            '/?feed=google',
+            '/?feed=google-shopping',
+            '/?feed=merchant',
+            '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=1000',
+            '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=5000',
+            '/?woocommerce_gpf=google&gpf_start=1&gpf_limit=1000',
+            '/?woocommerce_gpf=google&gpf_start=100&gpf_limit=1000',
+            '/?woocommerce_gpf=google&gpf_start=1000&gpf_limit=1000',
+            '/wp-content/uploads/woo-feed/google/xml/google-shopping-feed.xml',
+            '/wp-content/uploads/woo-feed/google/xml/feed.xml',
+            '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping-feed.xml',
+            '/wp-content/uploads/woo-product-feed-pro/xml/feed.xml',
+            '/wp-content/uploads/codesolz-feeds/google.xml',
           ];
 
           function sameHost(url) {
