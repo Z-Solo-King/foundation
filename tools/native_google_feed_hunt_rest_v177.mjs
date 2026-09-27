@@ -87,7 +87,6 @@ async function probe(site){
      checked.push({url:u,method:ok?"cloudflare_snapshot":null,ok,source:"browser-explicit-candidate",snapshot_status:s.status,content_type:"rendered",len:body.length,challenge:challenge(body)});
      if(ok)return{site:site.name,url:u,method:"cloudflare_snapshot",tested:checked.length,candidates:cands.size,discovery,plugin_signals:pd.signals,browser,evidence:checked.slice(-20)}
    }
-   }
  }
  return{site:site.name,url:null,method:null,tested:checked.length,candidates:cands.size,discovery,plugin_signals:pd.signals,browser,evidence:checked.slice(-30)};
 }
