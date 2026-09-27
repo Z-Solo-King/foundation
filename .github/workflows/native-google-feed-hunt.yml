@@ -110,7 +110,7 @@ jobs:
               rm -f "$hdr" "$body"
               exit 0
             fi
-            rm -f "$hdr" "$body"
+            rm -f "$hdr" "$body" "$meta"
           done
           # Discover random/custom feed filenames from public directory indexes.
           for dir in \
@@ -121,7 +121,7 @@ jobs:
             '/feeds/' \
             '/feed/'; do
             idx=$(mktemp)
-            curl -ksSL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0' -o "$idx" "${root}${dir}" >/dev/null 2>&1 || true
+            curl -ksSL -4 --connect-timeout 4 --max-time 4 -A 'Mozilla/5.0' -o "$idx" "${root}${dir}" >/dev/null 2>&1 || true
             while IFS= read -r ref; do
               [ -z "$ref" ] && continue
               case "$ref" in
@@ -135,7 +135,7 @@ jobs:
                 *) continue ;;
               esac
               body=$(mktemp)
-              curl -ksSL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0' -o "$body" "$u" >/dev/null 2>&1 || { rm -f "$body"; continue; }
+              curl -ksSL -4 --connect-timeout 4 --max-time 4 -A 'Mozilla/5.0' -o "$body" "$u" >/dev/null 2>&1 || { rm -f "$body"; continue; }
               if valid "$body"; then
                 printf '%s\t%s\n' "$site" "$u" >> "$output"
                 printf '%s\t%s\t200\n' "$site" "$u" > "out/${site// /_}.hit"
@@ -154,7 +154,7 @@ jobs:
           # Public HTML/XML references sometimes expose the feed URL directly.
           for page in '/' '/robots.txt' '/sitemap.xml' '/sitemap_index.xml' '/wp-sitemap.xml'; do
             html=$(mktemp)
-            curl -ksSL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0' -o "$html" "${root}${page}" >/dev/null 2>&1 || true
+            curl -ksSL -4 --connect-timeout 4 --max-time 4 -A 'Mozilla/5.0' -o "$html" "${root}${page}" >/dev/null 2>&1 || true
             while IFS= read -r u; do
               [ -z "$u" ] && continue
               [ "$(same_host "$u")" = "1" ] || continue
