@@ -6,7 +6,7 @@ WORKFLOW = Path(__file__).parents[1] / ".github" / "workflows" / "nightly-multi-
 def test_nightly_workflow_uses_pinned_private_operations_matrix():
     text = WORKFLOW.read_text(encoding="utf-8")
     assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
-    assert "OPERATIONS_RESEARCH_REF: 7058d617d576bc18d977c4b615bebba0be9af747" in text
+    assert "OPERATIONS_RESEARCH_REF: 5860a0e5941aad1ad0062925db0af6d0ba145e04" in text
     assert "private.multi_agent.runner" in text
     assert "private.multi_agent.project_research" in text
     assert "nightly-lane-${{ matrix.lane }}" in text
