@@ -34,6 +34,24 @@ jobs:
         run: node tools/woocommerce_google_feed_product_crawl_1247.mjs
       - name: Product/page crawl #1249
         run: node tools/custom_api_google_feed_product_crawl_1249.mjs
+      - name: Merge #1247/#1249 crawl receipts
+        run: |
+          node - <<'JS'
+          const fs = require('fs');
+          const paths = [
+            ['1247','out/feed-crawl-1247/report.json'],
+            ['1249','out/custom-feed-crawl-1249/report.json']
+          ];
+          const merged = {};
+          for (const [k,p] of paths) {
+            if (fs.existsSync(p)) merged[k] = JSON.parse(fs.readFileSync(p,'utf8'));
+          }
+          fs.writeFileSync('out/feed-product-crawl-combined.json', JSON.stringify({
+            schema_version:'foundation-feed-product-crawl-combined/v1',
+            generated_on:new Date().toISOString(),
+            issues:{1247:merged['1247']||null,1249:merged['1249']||null}
+          }, null, 2)+'\n');
+          JS
       - name: Emit combined discovery summary
         if: always()
         run: |
@@ -54,5 +72,6 @@ jobs:
           path: |
             out/feed-crawl-1247/report.json
             out/custom-feed-crawl-1249/report.json
+            out/feed-product-crawl-combined.json
           if-no-files-found: error
           retention-days: 30
