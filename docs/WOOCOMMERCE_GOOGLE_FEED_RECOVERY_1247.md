@@ -12,10 +12,6 @@ A result is considered a native Google Merchant feed only when the response cont
 
 A Store API reconstruction is recorded separately and is never presented as the retailer's native Merchant feed.
 
-## Safety
-
-Only public or unauthenticated surfaces are permitted. The tooling does not bypass CAPTCHA, Cloudflare challenges, authentication, proxy restrictions, clearance cookies or anti-bot controls.
-
 ## Evidence boundary
 
 The public repository does not contain the live target registry or target-specific recovery output. Actual recovery remains an evidence-gated private execution task.
