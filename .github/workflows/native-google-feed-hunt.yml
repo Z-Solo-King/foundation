@@ -203,7 +203,7 @@ jobs:
           python tools/native_google_feed_hunt_v2.py             --aggregate-dir out/shards             --output-file out/native-google-feed-manifest.json
           jq -e '.schema == "woocommerce-native-google-feed-manifest/v2" and .native_only == true and .no_reconstruction == true and .sites_present == 32' out/native-google-feed-manifest.json
           echo '=== VERIFIED NATIVE FEED URLS ==='
-          jq -r '.verified_native_feeds[] | "(.site)	(.url)"' out/native-google-feed-manifest.json
+          jq -r '.verified_native_feeds[] | "\(.site)\t\(.url)"' out/native-google-feed-manifest.json
       - name: Upload consolidated native-only manifest
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
