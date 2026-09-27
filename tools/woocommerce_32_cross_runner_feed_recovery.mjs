@@ -133,6 +133,53 @@ async function storeApiProbe(base){
   return null;
 }
 
+
+async function listingPdpProbe(base){
+  const listingPaths=["/","/shop/","/products/","/store/","/?post_type=product","/product-category/"];
+  const seen=new Set(), productUrls=[];
+  const addLinks=(html)=>{
+    for(const m of String(html||"").matchAll(/(?:href|data-href)=["']([^"']+)["']/gi)){
+      try{
+        const u=new URL(m[1],base).href;
+        const h=new URL(u).hostname.replace(/^www\\./,"");
+        const bh=new URL(base).hostname.replace(/^www\\./,"");
+        if(h===bh && /\\/product\\//i.test(new URL(u).pathname) && !seen.has(u)){
+          seen.add(u); productUrls.push(u);
+        }
+      }catch{}
+    }
+  };
+  for(const p of listingPaths){
+    const r=await fetchOne(new URL(p,base+"/").href,UA,45000);
+    if(r.status!==200||!r.body) continue;
+    addLinks(r.body);
+    if(productUrls.length>=120) break;
+  }
+  if(!productUrls.length) return null;
+  function cleanText(s){return String(s||"").replace(/<script[\\s\\S]*?<\\/script>/gi," ").replace(/<style[\\s\\S]*?<\\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/\\s+/g," ").trim();}
+  function getAttr(h,p){const m=h.match(p);return m?m[1]:"";}
+  const rows=[];
+  for(const u of productUrls.slice(0,100)){
+    const r=await fetchOne(u,UA,45000); if(r.status!==200||!r.body) continue;
+    const h=r.body;
+    const title=getAttr(h,/<h1[^>]*class=["'][^"']*(?:product_title|product-title|entry-title)[^"']*["'][^>]*>([\\s\\S]*?)<\\/h1>/i) || getAttr(h,/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)/i) || (h.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i)||[])[1]||"";
+    const image=getAttr(h,/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)/i) || getAttr(h,/<img[^>]+(?:data-large_image|data-src|src)=["']([^"']+)["']/i);
+    const desc=getAttr(h,/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)/i);
+    const pc=[
+      getAttr(h,/<meta[^>]+(?:property|name)=["']product:price:amount["'][^>]+content=["']([^"']+)/i),
+      getAttr(h,/<meta[^>]+itemprop=["']price["'][^>]+content=["']([^"']+)/i),
+      getAttr(h,/<span[^>]+class=["'][^"']*woocommerce-Price-amount[^"']*["'][^>]*>[\\s\\S]*?<bdi>[\\s\\S]*?([0-9][0-9,]*(?:\\.[0-9]{1,2})?)/i),
+      getAttr(h,/<(?:div|span|p)[^>]+class=["'][^"']*(?:price|amount)[^"']*["'][^>]*>[\\s\\S]*?([0-9][0-9,]*(?:\\.[0-9]{1,2})?)/i)
+    ].filter(Boolean);
+    const price=pc.length?Number(pc[0].replace(/,/g,"")):NaN;
+    if(!title||!image||!Number.isFinite(price)) continue;
+    const sku=getAttr(h,/data-product_sku=["']([^"']*)["']/i)||getAttr(h,/<meta[^>]+itemprop=["']sku["'][^>]+content=["']([^"']+)/i);
+    rows.push({id:String(sku||u),title:cleanText(title),description:cleanText(desc||title).slice(0,5000),link:u,image,price,currency:"INR",availability:/out[- ]of[- ]stock|outofstock/i.test(h)?"out of stock":"in stock",brand:"",sku});
+    if(rows.length>=100) break;
+  }
+  return rows.length?{count:rows.length,rows}:null;
+}
+
 async function sitemapPdpProbe(base){
   const sitemapUrls=[
     `${base}/wp-sitemap-posts-product-1.xml`,
@@ -247,18 +294,19 @@ async function probe(name,base){
   for(const ua of uas){
    const r=await fetchOne(url,ua,90000);
    results.push({url,kind:"native",ua,status:r.status,ct:r.ct,bytes:r.bytes,error:r.error||null});
-   if(r.status===200&&valid(r.body,r.ct)){verified={url:r.url||url,status:r.status,bytes:r.bytes,sha256:createHash("sha256").update(r.body).digest("hex")};break;}
+   if(r.status===200&&valid(r.body,r.ct)){verified={url:r.url||url,status:r.status,bytes:r.bytes,item_count:(r.body.match(/<item\\b/gi)||[]).length,sha256:createHash("sha256").update(r.body).digest("hex")};break;}
    if(r.status===0||r.status>=400){
     const c=await curlOne(url,ua,120);
     if(c){results.push({url:c.url||url,kind:"native-curl",ua,status:c.status,ct:c.ct||"",bytes:c.bytes,error:null});
-      if(c.status===200&&valid(c.body,c.ct)){verified={url:c.url||url,status:c.status,bytes:c.bytes,sha256:createHash("sha256").update(c.body).digest("hex")};break;}
+      if(c.status===200&&valid(c.body,c.ct)){verified={url:c.url||url,status:c.status,bytes:c.bytes,item_count:(c.body.match(/<item\\b/gi)||[]).length,sha256:createHash("sha256").update(c.body).digest("hex")};break;}
     }
    }
   }
  }
  const api=await storeApiProbe(base);
  const pdp=!api?await sitemapPdpProbe(base):null;
- return {site:name,base,runner_os:process.env.RUNNER_OS||"unknown",verified_feed:verified,public_store_api:api?{endpoint:api.endpoint,count:api.count}:null,pdp_recovery:pdp?{count:pdp.count}:null,backup_google_xml:api?rowsToGoogleBackup(api.rows):(pdp?rowsToGoogleBackup(pdp.rows):null),elapsed_s:Number(((Date.now()-started)/1000).toFixed(2)),
+ const listing=!api&&!pdp?await listingPdpProbe(base):null;
+ return {site:name,base,runner_os:process.env.RUNNER_OS||"unknown",verified_feed:verified,public_store_api:api?{endpoint:api.endpoint,count:api.count}:null,pdp_recovery:pdp?{count:pdp.count}:null,listing_recovery:listing?{count:listing.count}:null,recovery_method:api?'store_api':pdp?'sitemap_pdp':listing?'listing_pdp':null,backup_google_xml:api?rowsToGoogleBackup(api.rows):(pdp?rowsToGoogleBackup(pdp.rows):(listing?rowsToGoogleBackup(listing.rows):null)),elapsed_s:Number(((Date.now()-started)/1000).toFixed(2)),
    candidate_results:results};
 }
 const started=Date.now(); await mkdir("out/woocommerce-32-cross-runner",{recursive:true});
