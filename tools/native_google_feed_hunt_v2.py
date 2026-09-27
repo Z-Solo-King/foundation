@@ -798,7 +798,7 @@ def probe_site(site: str, root: str) -> SiteResult:
     session_cookie_header = warm_site_session(root)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
-        futures = [pool.submit(fetch, urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")), 15.0) for p in DISCOVERY_PATHS]
+        futures = [pool.submit(fetch, urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")), 15.0, session_cookie_header, root) for p in DISCOVERY_PATHS]
         for future in concurrent.futures.as_completed(futures):
             result = future.result()
             if result.status == 200 and result.body:
@@ -807,7 +807,6 @@ def probe_site(site: str, root: str) -> SiteResult:
                 explicit_external_candidates.update(extract_explicit_feed_urls(text, root))
                 discovered.update(extract_explicit_feed_urls(text, root))
                 discovered.update(rest_feed_candidates(text, root))
-                discovered.update(extract_explicit_feed_urls(text, root))
 
     ctx_candidates: set[str] = set()
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
@@ -872,9 +871,10 @@ def probe_site(site: str, root: str) -> SiteResult:
     return SiteResult(site, root, status, verified, evidence, round(time.monotonic() - started, 3))
 
 
-def run_shard(shard: int, shards: int, output_dir: Path) -> list[SiteResult]:
+def run_shard(shard: int, shards: int, output_dir: Path, targets: tuple[tuple[str, str], ...] | None = None) -> list[SiteResult]:
     started = time.monotonic()
-    selected = [target for idx, target in enumerate(TARGETS) if idx % shards == shard]
+    target_set = TARGETS if targets is None else targets
+    selected = [target for idx, target in enumerate(target_set) if idx % shards == shard]
     output_dir.mkdir(parents=True, exist_ok=True)
     results: list[SiteResult] = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
@@ -955,6 +955,7 @@ def main() -> int:
         raise SystemExit("--shard is required unless --aggregate-dir is used")
     if not 0 <= args.shard < args.shards:
         raise SystemExit("invalid shard")
+    selected_targets = None
     if args.only_sites:
         requested = {x.strip().lower() for x in args.only_sites.split(",") if x.strip()}
         if not requested:
@@ -963,17 +964,11 @@ def main() -> int:
         missing = requested - {site.lower() for site, _ in selected_targets}
         if missing:
             raise SystemExit("unknown --only-sites: " + ", ".join(sorted(missing)))
-        original_targets = TARGETS
-        TARGETS = selected_targets  # type: ignore[misc]
-        try:
-            results = run_shard(args.shard, args.shards, Path(args.output_dir))
-        finally:
-            TARGETS = original_targets  # type: ignore[misc]
-    else:
-        results = run_shard(args.shard, args.shards, Path(args.output_dir))
+    results = run_shard(args.shard, args.shards, Path(args.output_dir), selected_targets)
     print(json.dumps({
         "shard": args.shard,
         "sites": len(results),
+        "target_scope": [r.site for r in results],
         "verified_native_feed_count": sum(bool(r.native_feed_url) for r in results),
         "verified_native_feeds": [{"site": r.site, "url": r.native_feed_url} for r in results if r.native_feed_url],
         "statuses": {r.site: r.status for r in results},
