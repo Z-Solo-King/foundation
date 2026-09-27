@@ -7,7 +7,7 @@ async function get(u,ms=25000){const ac=new AbortController(),tm=setTimeout(()=>
 function candidate(u){return /\.(?:xml|xml\.gz)(?:$|[?#])/i.test(u)&&/(woocommerce_gpf|woo[-_ ]?feed|ctxfeed|wppfm|google|merchant|shopping|product[-_ ]?feed)/i.test(u)}
 async function cdx(pattern){
  const url="https://web.archive.org/cdx/search/cdx?url="+encodeURIComponent(pattern)+"&output=json&fl=original,statuscode,mimetype,timestamp&filter=statuscode:200&collapse=urlkey&from=2018&to=2026&limit=1000";
- const r=await get(url,45000); if(r.status!==200)return{ok:false,status:r.status,error:r.body.slice(0,240)};
+ const r=await get(url,45000); if(r.status!==200)return{ok:false,status:r.status,error:String(r.body||"").slice(0,240)};
  try{const j=JSON.parse(r.body);const rows=Array.isArray(j)?j.slice(1).map(x=>({original:x[0],status:x[1],mimetype:x[2],timestamp:x[3]})):[];return{ok:true,status:r.status,rows}}catch{return{ok:false,status:r.status,error:"bad_json"}}
 }
 async function live(u,root){const r=await get(u,20000);return{url:u,status:r.status,final:r.url,ct:r.ct,len:r.body?.length||0,native:r.status===200&&same(r.url,root)&&native(r.body)}}
