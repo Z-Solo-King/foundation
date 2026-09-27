@@ -8,7 +8,7 @@ const SETTLE_MS = 5000;
 const XHR_TIMEOUT_MS = 60000;
 const MAX_PAGES = 2;
 const MAX_LINKS_PER_PAGE = 12;
-const CONCURRENCY = 3;
+const CONCURRENCY = 8;
 
 const TARGETS = [
  ["Aarna Computers","https://aarnacomputers.com"],
