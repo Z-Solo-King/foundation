@@ -39,7 +39,7 @@
       "structural_pass": true,
       "real_catalog_success_not_proven": true
     },
-    "migration_review": "TypeScript acquisition-planner evidence harness merged; exact 32-case CI receipt pending",
+    "migration_review": "TypeScript acquisition-planner and public-endpoint-discovery evidence lanes merged; fresh post-repair CI receipt pending",
     "feed_recovery": "PR #1344 and #1362 merged; issue-specific acceptance remains open"
   },
   "continuity_enforcement": {
