@@ -1,3 +1,4 @@
+# Operations differential reference: import-light boundary; retrigger after canonical Operations fix.
 name: TypeScript observation contract shadow
 
 on:
