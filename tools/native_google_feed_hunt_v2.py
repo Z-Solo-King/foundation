@@ -239,8 +239,21 @@ def validate_xml(body: bytes, content_type: str) -> Validation:
     ns_fields = {_local(n.tag) for n in root.iter() if isinstance(n.tag, str) and n.tag.startswith("{"+GOOGLE_NS+"}")}
     valid_items = 0
     for item in items:
-        fields = {_local(n.tag) for n in item.iter() if isinstance(n.tag, str) and n.tag.startswith("{"+GOOGLE_NS+"}")}
-        if {"id", "title", "link", "price"}.issubset(fields):
+        google_fields = {
+            _local(n.tag)
+            for n in item.iter()
+            if isinstance(n.tag, str) and n.tag.startswith("{"+GOOGLE_NS+"}")
+        }
+        rss_fields = {
+            _local(n.tag)
+            for n in item
+            if isinstance(n.tag, str) and not n.tag.startswith("{")
+        }
+        # Google Merchant RSS 2.0 permits predefined RSS title/link alongside
+        # Google namespace attributes. ID and price remain Google attributes.
+        title_ok = "title" in google_fields or "title" in rss_fields
+        link_ok = "link" in google_fields or "link" in rss_fields
+        if {"id", "price"}.issubset(google_fields) and title_ok and link_ok:
             valid_items += 1
     reasons = (f"root={root_name}", f"items={len(items)}", f"valid_items={valid_items}", f"google_fields={len(ns_fields)}")
     return Validation(bool(valid_items), "rss_or_atom" if root_name in {"rss","feed","channel"} else "xml", len(items), len(ns_fields), reasons, hashlib.sha256(raw).hexdigest() if valid_items else "")
