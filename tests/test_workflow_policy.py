@@ -732,3 +732,9 @@ def test_observation_contract_differential_gate():
     assert "npm run differential:compare" in text
     assert '"case_count": len(ts)' in text
 
+
+
+def test_polyglot_migration_review_runs_both_operations_validators():
+    text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
+    assert "tools/validate_migration_evidence.py" in text
+    assert "tools/validate_polyglot_registry.py" in text
