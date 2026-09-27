@@ -112,6 +112,76 @@ jobs:
             fi
             rm -f "$hdr" "$body"
           done
+          # Discover random/custom feed filenames from public directory indexes.
+          for dir in \
+            '/wp-content/uploads/woo-feed/google/xml/' \
+            '/wp-content/uploads/woo-product-feed-pro/xml/' \
+            '/wp-content/uploads/wppfm-feeds/' \
+            '/wp-content/uploads/woo-feed/google/' \
+            '/feeds/' \
+            '/feed/'; do
+            idx=$(mktemp)
+            curl -ksSL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0' -o "$idx" "${root}${dir}" >/dev/null 2>&1 || true
+            while IFS= read -r ref; do
+              [ -z "$ref" ] && continue
+              case "$ref" in
+                http://*|https://*) u="$ref" ;;
+                /*) u="${root}${ref}" ;;
+                *) u="${root}${dir}${ref}" ;;
+              esac
+              [ "$(same_host "$u")" = "1" ] || continue
+              case "$u" in
+                *.xml|*.xml.gz|*.XML|*.XML.GZ) ;;
+                *) continue ;;
+              esac
+              body=$(mktemp)
+              curl -ksSL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0' -o "$body" "$u" >/dev/null 2>&1 || { rm -f "$body"; continue; }
+              if valid "$body"; then
+                printf '%s\t%s\n' "$site" "$u" >> "$output"
+                printf '%s\t%s\t200\n' "$site" "$u" > "out/${site// /_}.hit"
+                rm -f "$body" "$idx"
+                exit 0
+              fi
+              rm -f "$body"
+            done < <(
+              grep -Eo 'href=["'"][^"'"]+\.(xml|xml\.gz|XML|XML\.GZ)[^"'"]*["'"]' "$idx" 2>/dev/null |
+                sed -E 's/^href=["'"]//; s/["'"]$//; s/[?#].*$//' | sort -u
+              grep -Eo 'https?://[^"'<>[:space:]]+\.(xml|xml\.gz|XML|XML\.GZ)' "$idx" 2>/dev/null | sort -u
+            )
+            rm -f "$idx"
+          done
+
+          # Public HTML/XML references sometimes expose the feed URL directly.
+          for page in '/' '/robots.txt' '/sitemap.xml' '/sitemap_index.xml' '/wp-sitemap.xml'; do
+            html=$(mktemp)
+            curl -ksSL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0' -o "$html" "${root}${page}" >/dev/null 2>&1 || true
+            while IFS= read -r u; do
+              [ -z "$u" ] && continue
+              [ "$(same_host "$u")" = "1" ] || continue
+              case "$u" in
+                *.xml|*.xml.gz|*.XML|*.XML.GZ) ;;
+                *) continue ;;
+              esac
+              body=$(mktemp)
+              curl -ksSL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0' -o "$body" "$u" >/dev/null 2>&1 || { rm -f "$body"; continue; }
+              if valid "$body"; then
+                printf '%s\t%s\n' "$site" "$u" >> "$output"
+                printf '%s\t%s\t200\n' "$site" "$u" > "out/${site// /_}.hit"
+                rm -f "$body" "$html"
+                exit 0
+              fi
+              rm -f "$body"
+            done < <(
+              grep -Eo 'https?://[^"'<>[:space:]]+' "$html" 2>/dev/null |
+                sed 's/[),.;]$//' | grep -Ei '\.xml(\.gz)?($|[?#])' | sort -u
+              grep -Eo 'href=["'"][^"'"]+["'"]' "$html" 2>/dev/null |
+                sed -E 's/^href=["'"]//; s/["'"]$//' |
+                awk -v r="$root" 'BEGIN{OFS=""} /^\//{print r,$0}' |
+                grep -Ei '\.xml(\.gz)?($|[?#])' | sort -u
+            )
+            rm -f "$html"
+          done
+
           printf '%s\tNOT_FOUND\n' "$site" > "out/${site// /_}.miss"
           SH
           chmod +x /tmp/hunt_site.sh
