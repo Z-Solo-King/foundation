@@ -67,7 +67,7 @@ async function siteProbe(browser,site){
       }catch(e){visited.push({requested_url:u,status:null,error:e?.name||String(e)});}
     }
     await context.close();
-    roots.push({root,visited,network_requests:net,verified_google_xml:[...new Map(verified.map(x=>[x.url,x])).values()],public_json_requests:[...new Map(json.map(x=>[x.url,x])).values()],visited_pages:[...seen]});
+    roots.push({root,visited,network_requests:net,interesting_responses:[...new Map(interesting.map(x=>[x.url,x])).values()].slice(0,200),verified_google_xml:[...new Map(verified.map(x=>[x.url,x])).values()],public_json_requests:[...new Map(json.map(x=>[x.url,x])).values()],visited_pages:[...seen]});
   }
   return {name:site.name,roots:roots,verified_google_xml:roots.flatMap(x=>x.verified_google_xml),visited_pages:roots.flatMap(x=>x.visited_pages)};
 }
