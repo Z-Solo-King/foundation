@@ -1,6 +1,8 @@
 name: WC 32 Cross Runner Feed Recovery
 
 on:
+  push:
+    branches: ["test/woocommerce-32-cross-runner-feed-recovery-20260927"]
   pull_request:
     branches: ["main"]
   workflow_dispatch:
@@ -16,7 +18,7 @@ jobs:
   probe:
     name: ${{ matrix.os }} / ${{ matrix.slug }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       max-parallel: 6
