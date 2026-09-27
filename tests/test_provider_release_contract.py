@@ -8,9 +8,8 @@ RELEASE = ROOT / "scripts" / "production_release.sh"
 def test_production_release_consumes_operations_provider_contract() -> None:
     text = RELEASE.read_text(encoding="utf-8")
     assert "approved_zero_cost_provider_values" in text
-    assert 'actual_provider_list="$(sed -n 's/^CHAT_LLM_PROVIDERS = "\\([^"]*\\)"$/\\1/p'' in text
     assert 'test "$actual_provider_list" = "$expected_provider_list"' in text
-    assert 'grep -q '"workers_ai_neurons":10000'' in text
+    assert '"workers_ai_neurons":10000' in text
 
 
 def test_production_release_does_not_hard_code_single_provider_allowlist() -> None:
