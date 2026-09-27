@@ -1,3 +1,17 @@
+## 2026-09-27 Live reconciliation
+
+Current GitHub heads:
+- Foundation: `5bb4ee2325760c5e8382dcfcb084664a63d8d368`
+- Operations: `9ae506cb8a328844d239b3823b95ba65f638f9fe`
+
+Current migration infrastructure:
+- Operations registry-integrity validator is merged and consumed by Foundation migration review.
+- Operations migration-evidence claim validator is merged and consumed by Foundation migration review.
+- TypeScript observation-contract strict differential is executable over the frozen 32-case corpus; runtime authority remains Python.
+- Zig image-observation, Nim platform-public and AssemblyScript merchant-feed remain research-only candidates.
+
+This section is a live reconciliation marker. Older dated sections remain historical provenance and do not override current GitHub heads.
+
 # Language Migration Runbook — 2026-09-20
 
 Revision: reconciliation pass after reviewing `foundation` and `operations` (docs, code, open PRs) on 2026-09-20.
