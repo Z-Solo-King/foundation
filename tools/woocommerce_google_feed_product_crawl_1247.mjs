@@ -8,6 +8,45 @@ const MAX_PAGES = 4;
 const MAX_LINKS_PER_PAGE = 20;
 const MAX_RESPONSES = 300;
 const SITE_TIMEOUT = 60000;
+const KNOWN_FEED_PATHS = [
+  "/?woocommerce_gpf=google",
+  "/woocommerce_gpf/google",
+  "/?woocommerce_gpf=google&gpf_start=0&gpf_limit=100",
+  "/?woocommerce_gpf=google&gpf_start=0&gpf_limit=250",
+  "/?woocommerce_gpf=google&gpf_start=0&gpf_limit=1000",
+  "/woocommerce_gpf/google?gpf_start=0&gpf_limit=100",
+  "/woocommerce_gpf/google?gpf_start=0&gpf_limit=250",
+  "/woocommerce_gpf/google?gpf_start=0&gpf_limit=1000",
+  "/google.xml",
+  "/google-products.xml",
+  "/google-product-feed.xml",
+  "/google-shopping.xml",
+  "/google-shopping-feed.xml",
+  "/google-merchant.xml",
+  "/google-merchant-feed.xml",
+  "/product-feed.xml",
+  "/products-feed.xml",
+  "/merchant-feed.xml",
+  "/google_feed.xml",
+  "/google_base.xml",
+  "/feed/google.xml",
+  "/feed/google-products.xml",
+  "/feeds/google.xml",
+  "/feeds/google-products.xml",
+  "/feeds/google-product-feed.xml",
+  "/feeds/google-shopping.xml",
+  "/feed.xml",
+  "/rss.xml",
+  "/products.rss",
+  "/wp-content/uploads/codesolz-feeds/google-products.xml",
+  "/wp-content/uploads/woo-feed/google/xml/google.xml",
+  "/wp-content/uploads/woo-feed/google/xml/google-shopping.xml",
+  "/wp-content/uploads/woo-product-feed-pro/xml/google.xml",
+  "/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml",
+  "/wp-content/uploads/wppfm-feeds/google.xml",
+  "/wp-json/feedcraft-product-feed/v1/xml"
+];
+
 const TARGETS = [
   ["ithunt","https://ithunt.in"],
   ["kccomputers","https://kccomputers.co.in"],
@@ -46,6 +85,46 @@ function xmlValid(status,ct,body){
   const count=(body.match(/<(?:item|entry)\b/g)||[]).length;
   return count?{status,content_type:ct,bytes:Buffer.byteLength(body),item_count_observed:count,validation:"strict_google_merchant_xml"}:null;
 }
+async function browserFetchFeedCandidates(page, root){
+  const urls = [...new Set(KNOWN_FEED_PATHS.map(path => new URL(path, root.endsWith("/") ? root : root + "/").href))].slice(0, 40);
+  const js = `
+    async ({urls}) => {
+      const out = [];
+      for (const url of urls) {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 18000);
+          const r = await fetch(url, {
+            method: "GET",
+            credentials: "include",
+            cache: "no-store",
+            headers: {
+              "Accept": "application/xml, application/rss+xml, text/xml, */*;q=0.2"
+            },
+            signal: controller.signal
+          });
+          clearTimeout(timer);
+          const ct = r.headers.get("content-type") || "";
+          const body = await r.text();
+          out.push({
+            url,
+            final_url: r.url || url,
+            status: r.status,
+            content_type: ct,
+            bytes: new TextEncoder().encode(body).length,
+            body
+          });
+        } catch (e) {
+          out.push({url, status: 0, content_type: "", bytes: 0, error: String(e?.name || e)});
+        }
+      }
+      return out;
+    }
+  `;
+  try { return await page.evaluate(js, {urls}); }
+  catch (e) { return [{status:0,error:String(e?.name || e)}]; }
+}
+
 async function probeSite(browser,[name,root]){
   const deadline = Date.now() + SITE_TIMEOUT;
   const ctx=await browser.newContext({userAgent:"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"});
@@ -67,6 +146,33 @@ async function probeSite(browser,[name,root]){
       const resp=await page.goto(u,{waitUntil:"domcontentloaded",timeout:NAV_TIMEOUT});
       await sleep(Math.min(SETTLE_MS, Math.max(0, deadline-Date.now())));
       const html=await page.content();
+
+      if (u === root && resp?.status() === 200) {
+        const manual = await browserFetchFeedCandidates(page, root);
+        for (const hit of manual) {
+          network.push({
+            url: hit.final_url || hit.url || "",
+            status: hit.status,
+            content_type: hit.content_type || "",
+            resource_type: "manual-browser-fetch"
+          });
+          if (hit.status === 200 && hit.body) {
+            const v = xmlValid(hit.status, hit.content_type || "", hit.body);
+            if (v) verified.push({url: hit.final_url || hit.url, ...v, transport: "manual-browser-fetch"});
+          }
+        }
+      }
+
+      const inlineCandidates = [];
+      for (const raw of html.matchAll(/(?:https?:\/\/[^"'<>\s]+|\/[^"'<>\s]+(?:woocommerce_gpf|feed|merchant|google|shopping|xml)[^"'<>\s]*)/gi)) {
+        const value = String(raw[0] || "").replace(/\\\//g, "/").replace(/[),.;]+$/g, "");
+        const abs = isPublicLink(value, root) ? new URL(value, root).href : null;
+        if (abs) inlineCandidates.push(abs);
+      }
+      for (const abs of inlineCandidates) {
+        if (!seen.has(abs)) queue.push(abs);
+      }
+
       const platform=/woocommerce|wc-ajax|\/wp-json\/wc/i.test(html)?"woocommerce":/__NEXT_DATA__|_next\/data/i.test(html)?"nextjs":/shopify/i.test(html)?"shopify":null;
       pages.push({requested_url:u,final_url:page.url(),status:resp?.status()??null,content_type:resp?.headers()?.["content-type"]||"",platform});
       const links=await page.locator("a[href]").evaluateAll(as=>as.map(a=>a.href).filter(Boolean));
