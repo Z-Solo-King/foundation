@@ -738,3 +738,10 @@ def test_polyglot_migration_review_runs_both_operations_validators():
     text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
     assert "tools/validate_migration_evidence.py" in text
     assert "tools/validate_polyglot_registry.py" in text
+
+
+def test_observation_contract_benchmark_gate():
+    text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
+    assert "Run TypeScript observation contract benchmark" in text
+    assert "BENCHMARK_ITERATIONS=200 npm run benchmark" in text
+    assert "observation-contract-benchmark" in text
