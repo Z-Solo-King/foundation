@@ -717,3 +717,11 @@ def test_deep_scan_concurrency_is_pr_scoped():
     text = (ROOT / ".github/workflows/open-issue-polyglot-deep-scan.yml").read_text(encoding="utf-8")
     assert "github.event.pull_request.number || github.ref" in text
     assert "cancel-in-progress: true" in text
+
+
+def test_observation_contract_differential_gate():
+    text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
+    assert "TypeScript observation contract differential" in text
+    assert "npm run typecheck" in text
+    assert "npm run differential:compare" in text
+    assert '"case_count": len(ts)' in text
