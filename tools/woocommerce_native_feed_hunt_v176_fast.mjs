@@ -30,7 +30,7 @@ async function probe(site){
   discovery.push({url:u,status:d.status});
  }
  const all=[...c];
- const check=async u=>{const d=await get(u,30000);if(d.status===200&&same(d.url,u)&&valid(d.body))return{url:d.url,method:"direct"};if(BW&&[0,403,429,500,502,503,504].includes(d.status)){const b=await browser(u);if(b&&valid(b))return{url:u,method:"cloudflare_browser"}}return null};
+ const check=async u=>{const d=await get(u,30000);if(d.status===200&&same(d.url,u)&&valid(d.body))return{url:d.url,method:"direct"};if(BW&&([0,403,429,500,502,503,504].includes(d.status)||(d.status===200&&!valid(d.body)))){const b=await browser(u);if(b&&valid(b))return{url:u,method:"cloudflare_browser"}}return null};
  for(let i=0;i<all.length;i+=8){const hits=(await Promise.all(all.slice(i,i+8).map(check))).filter(Boolean);if(hits.length)return{site:site.name,url:hits[0].url,method:hits[0].method,tested:all.length,discovery}}
  return{site:site.name,url:null,method:null,tested:all.length,discovery};
 }
