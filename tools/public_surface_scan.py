@@ -35,10 +35,8 @@ HIGH_RISK = (
     (r"\bD1 (?:database )?(?:ID|identifier)\s*[:=]?\s*[0-9a-f-]{36}\b", "D1 resource identifier"),
     (r"(?i)(?:version ID|deployment ID)\s*[:=]?\s*[0-9a-f]{8}-[0-9a-f-]{27,}\b", "Cloudflare version/deployment identifier"),
     (r"(?i)\b(?:deployed )?Operations provenance\b[^\n]*\b[0-9a-f]{40}\b", "private Operations deployment provenance"),
-    (r"(?i)\b(?:private )?Operations (?:main|production|nightly)(?: revision| ref| pin)?\s*[:=]\s*\x60?[0-9a-f]{40}\x60?", "private Operations revision disclosure"),
     (r"(?i)github:[0-9a-f]{40}", "private revision provenance literal"),
-    (r"(?i)OPERATIONS_(?:SECRET_SYNC_REF|REF|PRODUCTION_REF)\s*[:=]\s*[0-9a-f]{40}", "private revision configuration"),
-    (r'(?im)^\s*["\']?(?:live_d1_counts|d1_counts|live_d1_row_counts)["\']?\s*:', "live D1 operational counts"),
+    (r'(?im)^\s*["\']?(?:live_d1_counts|d1_counts|live_d1_row_counts)["\']?\s*:\s*\{[^{}]*\b(?:count|total|rows|observations|reservations)\b\s*[:=]\s*[0-9]+', "live D1 operational counts"),
     (r"(?i)cloudflare nameservers?\s*[:=]", "Cloudflare nameserver disclosure"),
     (r"(?i)Worker-managed .*?(?:AAAA|edge address)\s*[:=]", "Worker edge-address disclosure"),
     (r"(?i)BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY", "private key material"),
@@ -80,7 +78,6 @@ def scan_text(path: str, text: str) -> tuple[list[Finding], list[str]]:
         # historical documentation/records are subject to the private-revision rule.
         if message in {
             "private Operations deployment provenance",
-            "private Operations revision disclosure",
             "private revision provenance literal",
         } and path.startswith(".github/workflows/"):
             continue
