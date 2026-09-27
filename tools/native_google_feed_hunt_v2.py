@@ -1177,7 +1177,7 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
     if verified is None:
         filename_sweep_candidates = generated_upload_feed_candidates(root, site)
         filename_sweep_meta = {"attempted": True, "candidate_count": len(filename_sweep_candidates)}
-        verified = batch_first_valid(list(filename_sweep_candidates), 5.0, 32, records, session_cookie_header, root, chunk_size=128)
+        verified = batch_first_valid(list(filename_sweep_candidates), 3.0, 64, records, session_cookie_header, root, chunk_size=256)
 
     if verified is None and discovered:
         same_site, explicit_external = validation_candidate_groups(
