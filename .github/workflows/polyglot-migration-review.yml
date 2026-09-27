@@ -244,6 +244,49 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Run TypeScript acquisition planner differential
+        working-directory: operations/polyglot/acquisition-planner
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund --ignore-scripts
+          npm run typecheck
+          npm test
+          npm run differential
+          npm run differential:python
+          npm run differential:compare
+          BENCHMARK_ITERATIONS=200 npm run benchmark
+          mkdir -p "$GITHUB_WORKSPACE/.runtime/typescript-acquisition-planner"
+          cp .runtime/differential-receipt.json "$GITHUB_WORKSPACE/.runtime/typescript-acquisition-planner/differential-receipt.json"
+          cp .runtime/benchmark.json "$GITHUB_WORKSPACE/.runtime/typescript-acquisition-planner/benchmark.json"
+
+      - name: Validate TypeScript acquisition planner evidence
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+
+          root = Path(".runtime/typescript-acquisition-planner")
+          differential = json.loads((root / "differential-receipt.json").read_text(encoding="utf-8"))
+          benchmark = json.loads((root / "benchmark.json").read_text(encoding="utf-8"))
+
+          assert differential["schema"] == "typescript-acquisition-planner-differential/v1"
+          assert differential["candidate"] == "typescript-acquisition-planner"
+          assert differential["authority"] == "python-reference"
+          assert differential["case_count"] == 32
+          assert differential["exact_match"] is True
+          assert benchmark["schema"] == "typescript-acquisition-planner-benchmark/v1"
+          assert benchmark["case_count"] == 32
+          assert benchmark["iterations"] == 200
+
+      - name: Upload TypeScript acquisition planner evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: typescript-acquisition-planner-evidence
+          path: .runtime/typescript-acquisition-planner/
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Run migration review
         env:
           PYTHONPATH: ${{ github.workspace }}/operations
