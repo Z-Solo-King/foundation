@@ -216,7 +216,7 @@ actual_provider_list="$(sed -n 's/^CHAT_LLM_PROVIDERS = "\([^"]*\)"$/\1/p' "$RUN
 expected_provider_list="$(PYTHONPATH="$RUNNER_TEMP/operations" python -c 'from private.chatbot.approved_providers import approved_zero_cost_provider_values; print(",".join(approved_zero_cost_provider_values()))')"
 test -n "$actual_provider_list"
 test "$actual_provider_list" = "$expected_provider_list"
-grep -q '^CHAT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/zai-org/glm-4.7-flash"
+grep -q '^CHAT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/zai-org/glm-4.7-flash"$' "$RUNNER_TEMP/operations/wrangler.toml"
 grep -q '"workers_ai_neurons":10000' "$RUNNER_TEMP/operations/wrangler.toml"
 grep -q 'CHAT_BACKEND_TOKEN' "$RUNNER_TEMP/operations/worker.py"
 
