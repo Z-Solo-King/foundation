@@ -19,7 +19,7 @@ This is the compact authoritative cross-surface checkpoint for the 2026-09-25 re
 - Current GitHub code heads are newer than those deployed production revisions; they are not yet production-certified/deployed.
 - `[REDACTED-CUSTOM-DOMAIN]`: **pending / unresolvable**. Production release, preflight and public Worker probes fail at this public-domain DNS/zone boundary.
 - Assigned nameservers: `[REDACTED-NS-1]`, `[REDACTED-NS-2]`. Root Worker-managed proxied AAAA is `[REDACTED-WORKER-EDGE-ADDRESS]`; no manual Worker routes are present.
-- D1 `research-intelligence`: **HTTP 200**, ID `[REDACTED-D1-ID — see operations tracker]`. Direct `sqlite_master` inspection finds 21 tables.
+- D1 `[REDACTED-PRIVATE-D1]`: **HTTP 200**, ID `[REDACTED-D1-ID — see operations tracker]`. Direct `sqlite_master` inspection finds 21 tables.
 - Live D1 row counts: [REDACTED-LIVE-COUNTS]
 - Operations Worker configuration observed: Workers AI `@cf/zai-org/glm-4.7-flash`, fallback `@cf/google/gemma-4-26b-a4b-it`, `STRICT_ZERO_COST_ONLY=true`, schedule `*/15 * * * *`. Secret values were not read or exposed.
 
