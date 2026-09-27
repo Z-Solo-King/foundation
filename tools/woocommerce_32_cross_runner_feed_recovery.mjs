@@ -162,7 +162,7 @@ async function listingPdpProbe(base){
   for(const u of productUrls.slice(0,100)){
     const r=await fetchOne(u,UA,45000); if(r.status!==200||!r.body) continue;
     const h=r.body;
-    const title=getAttr(h,/<h1[^>]*class=["'][^"']*(?:product_title|product-title|entry-title)[^"']*["'][^>]*>([\s\S]*?)<\/h1>/i) || getAttr(h,/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)/i) || (h.match(/<title[^>]*>([\s\S]*?)<\\/title>/i)||[])[1]||"";
+    const title=getAttr(h,/<h1[^>]*class=["'][^"']*(?:product_title|product-title|entry-title)[^"']*["'][^>]*>([\s\S]*?)<\/h1>/i) || getAttr(h,/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)/i) || (h.match(/<title[^>]*>([\s\S]*?)<\/title>/i)||[])[1]||"";
     const image=getAttr(h,/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)/i) || getAttr(h,/<img[^>]+(?:data-large_image|data-src|src)=["']([^"']+)["']/i);
     const desc=getAttr(h,/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)/i);
     const pc=[
