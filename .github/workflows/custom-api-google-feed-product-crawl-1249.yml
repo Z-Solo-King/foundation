@@ -26,6 +26,33 @@ jobs:
           npm init -y >/dev/null 2>&1
           npm install --no-package-lock --no-save playwright
           npx playwright install --with-deps chromium
+      - name: Authenticate private Operations registry
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout private 1249 registry
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: 08c99efb4df32dead4064f9491aaf614aa855176
+          token: ${{ steps.operations-app.outputs.token }}
+          persist-credentials: false
+          path: operations-private
+      - name: Materialize private 1249 registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -D -m 0600 \
+            operations-private/private/feed_recovery/custom_api_google_feed_registry_2026-09-27.json \
+            data/feed_lab/custom_api_google_feed_registry_2026-09-27.json
+          jq -e '.schema_version == "foundation-custom-api-google-feed-registry/v1" and .issue == 1249 and (.sites | type == "array") and (.sites | length > 0)' \
+            data/feed_lab/custom_api_google_feed_registry_2026-09-27.json >/dev/null
+          echo "private 1249 registry: verified"
       - name: Syntax check
         run: |
           node --check tools/woocommerce_google_feed_product_crawl_1247.mjs
