@@ -168,6 +168,7 @@ jobs:
           token_file="$RUNNER_TEMP/operations-research-token.txt"
           printf '%s\n' "$github_app_token" > "$token_file"
           chmod 600 "$token_file"
+          repo_response=$(curl -fsS \
             -H 'Accept: application/vnd.github+json' \
             -H "Authorization: Bearer ${github_app_token}" \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
@@ -545,6 +546,7 @@ jobs:
           token_file="$RUNNER_TEMP/operations-summary-token.txt"
           printf '%s\n' "$github_app_token" > "$token_file"
           chmod 600 "$token_file"
+          repo_response=$(curl -fsS \
             -H 'Accept: application/vnd.github+json' \
             -H "Authorization: Bearer ${github_app_token}" \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
