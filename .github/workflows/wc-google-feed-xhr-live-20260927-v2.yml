@@ -25,7 +25,7 @@ jobs:
           npm install --no-package-lock --no-save playwright
           npx playwright install --with-deps chromium
       - name: Syntax check
-        run: node --check tools/wc_google_feed_xhr_live_20260927.mjs
+        run: node --check tools/wc_google_feed_xhr_live_20260927_v2.mjs
       - name: Run live browser/XHR sweep
         run: node tools/wc_google_feed_xhr_live_20260927.mjs
       - name: Upload live evidence
@@ -33,6 +33,6 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: wc-google-feed-xhr-live-20260927-v2
-          path: out/wc-google-feed-xhr-20260927
+          path: out/wc-google-feed-xhr-20260927-v2
           if-no-files-found: error
           retention-days: 30
