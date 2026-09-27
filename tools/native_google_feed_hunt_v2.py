@@ -963,6 +963,45 @@ def feed_priority(url: str) -> tuple[int, int, str]:
     return (4, 0, url)
 
 
+def filename_transport_sentinel(
+    root: str,
+    cookie_header: str,
+    referer: str,
+) -> tuple[bool, dict[str, object]]:
+    """Return whether a host appears reachable enough to justify a large filename sweep."""
+    sentinel_paths = (
+        "/wp-content/uploads/google.xml",
+        "/wp-content/uploads/google-feed.xml",
+        "/wp-content/uploads/woo-feed/google/xml/google-shopping.xml",
+        "/wp-content/uploads/woo-feed/google/xml/google.xml",
+        "/wp-content/uploads/woo-product-feed-pro/xml/google.xml",
+        "/wp-content/uploads/wppfm-feeds/google.xml",
+        "/google.xml",
+        "/feed.xml",
+    )
+    records: list[dict[str, object]] = []
+    for path in sentinel_paths:
+        result = fetch(
+            urllib.parse.urljoin(root.rstrip("/") + "/", path.lstrip("/")),
+            4.0,
+            cookie_header,
+            referer,
+        )
+        records.append({"path": path, "status": result.status, "content_type": result.content_type})
+        if result.status == 200:
+            validation = validate_xml(result.body, result.content_type)
+            if validation.valid:
+                return True, {"mode": "validated", "records": records}
+            # A reachable 200 response means the upload surface is probeable,
+            # even when this particular name is not the feed.
+            return True, {"mode": "reachable", "records": records}
+    blocked = sum(1 for r in records if r["status"] in {401,403,429})
+    # Treat a complete sentinel block as host-level transport blocking.
+    if blocked == len(records):
+        return False, {"mode": "blocked", "records": records}
+    return True, {"mode": "mixed", "records": records}
+
+
 def batch_first_valid(
     urls: list[str],
     timeout: float,
@@ -1175,9 +1214,15 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
     filename_sweep_candidates: tuple[str, ...] = ()
     filename_sweep_meta: dict[str, object] = {"attempted": False, "candidate_count": 0}
     if verified is None:
+        sweep_allowed, sentinel = filename_transport_sentinel(root, session_cookie_header, root)
         filename_sweep_candidates = generated_upload_feed_candidates(root, site)
-        filename_sweep_meta = {"attempted": True, "candidate_count": len(filename_sweep_candidates)}
-        verified = batch_first_valid(list(filename_sweep_candidates), 3.0, 64, records, session_cookie_header, root, chunk_size=256)
+        filename_sweep_meta = {
+            "attempted": bool(sweep_allowed),
+            "candidate_count": len(filename_sweep_candidates),
+            "sentinel": sentinel,
+        }
+        if sweep_allowed:
+            verified = batch_first_valid(list(filename_sweep_candidates), 3.0, 64, records, session_cookie_header, root, chunk_size=256)
 
     if verified is None and discovered:
         same_site, explicit_external = validation_candidate_groups(
