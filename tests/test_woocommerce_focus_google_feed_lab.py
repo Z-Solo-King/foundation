@@ -59,3 +59,29 @@ def test_wp_json_route_discovery():
 @pytest.mark.parametrize("root", ["https://www.avikaretails.com", "https://krgkart.com"])
 def test_target_roots_are_https(root):
     assert root.startswith("https://")
+
+
+def test_candidate_replay_uses_get(monkeypatch):
+    import tools.woocommerce_focus_google_feed_lab as lab
+    state = lab.SiteState("x", "https://example.test", 0.0)
+    state.discovered_routes.add("https://example.test/google.xml")
+    seen = []
+
+    def fake_probe_url(*args, **kwargs):
+        seen.append((kwargs.get("method"), kwargs.get("allow_external")))
+        return lab.ProbeResult(
+            kwargs.get("test_id", args[1] if len(args) > 1 else "R001"),
+            "Candidate live replay",
+            "candidate-replay",
+            "https://example.test/google.xml",
+            "GET",
+            200,
+            "application/xml",
+            "https://example.test/google.xml",
+            1,
+            {"valid": False},
+        )
+
+    monkeypatch.setattr(lab, "probe_url", fake_probe_url)
+    lab.replay_candidates(state)
+    assert seen == [("GET", False)]
