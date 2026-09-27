@@ -689,6 +689,51 @@ def ctxfeed_urls(text: str, root: str) -> tuple[str, ...]:
     return tuple(sorted(found))
 
 
+def rest_feed_candidates(text: str, root: str) -> tuple[str, ...]:
+    """Inspect the public WordPress REST index for feed-related routes.
+    Route discovery is public metadata only; every route remains a candidate
+    until the live native Google XML validator accepts its response.
+    """
+    try:
+        data = json.loads(html.unescape(text or ""))
+    except (TypeError, json.JSONDecodeError):
+        return ()
+    found: set[str] = set()
+    route_keys = (
+        "route", "namespace", "feed", "feed_url", "feed_file", "feed_path",
+        "xml", "xml_url", "export", "export_url", "google", "merchant",
+        "shopping", "product-feed", "product_feed", "ctxfeed", "gpf",
+    )
+    def maybe_add(raw: str) -> None:
+        raw = str(raw or "").strip()
+        if not raw.startswith("/"):
+            return
+        low = raw.lower()
+        if not any(k in low for k in route_keys):
+            return
+        u = absolute(root, raw)
+        if u:
+            found.add(u)
+
+    def walk(obj: object) -> None:
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                k = str(key).lower()
+                if k == "routes" and isinstance(value, dict):
+                    for route in value:
+                        maybe_add(str(route))
+                elif isinstance(value, str):
+                    if k in {"route", "namespace"} or any(tok in k for tok in ("feed", "google", "merchant", "shopping", "xml", "export")):
+                        maybe_add(value)
+                walk(value)
+        elif isinstance(obj, list):
+            for value in obj:
+                walk(value)
+
+    walk(data)
+    return tuple(sorted(found)[:200])
+
+
 def directory_urls(text: str, root: str) -> tuple[str, ...]:
     decoded = html.unescape(text or "")
     found: set[str] = set()
@@ -722,7 +767,7 @@ def feed_priority(url: str) -> tuple[int, int, str]:
     return (4, 0, url)
 
 
-def batch(urls: list[str], timeout: float, workers: int, records: list[dict[str, object]], cookie_header: str = "", referer: str = "") -> str | None:
+def batch(urls: list[str], timeout: float, workers: int, records: list[dict[str, object]], cookie_header: str = "", referer: str = "", allow_external: bool = False) -> str | None:
     if not urls:
         return None
     valid: list[str] = []
@@ -740,7 +785,7 @@ def batch(urls: list[str], timeout: float, workers: int, records: list[dict[str,
                 "error": result.error,
                 "validation": asdict(validation),
             })
-            if result.status == 200 and validation.valid and same_host(result.final_url, result.requested_url):
+            if result.status == 200 and validation.valid and (allow_external or same_host(result.final_url, result.requested_url)):
                 valid.append(result.final_url)
     return min(valid, key=feed_priority) if valid else None
 
@@ -749,6 +794,7 @@ def probe_site(site: str, root: str) -> SiteResult:
     started = time.monotonic()
     records: list[dict[str, object]] = []
     discovered: set[str] = set()
+    explicit_external_candidates: set[str] = set()
     session_cookie_header = warm_site_session(root)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
@@ -758,14 +804,18 @@ def probe_site(site: str, root: str) -> SiteResult:
             if result.status == 200 and result.body:
                 text = result.body.decode("utf-8", "replace")
                 discovered.update(extract_urls(text, root))
+                explicit_external_candidates.update(extract_explicit_feed_urls(text, root))
+                discovered.update(extract_explicit_feed_urls(text, root))
+                discovered.update(rest_feed_candidates(text, root))
                 discovered.update(extract_explicit_feed_urls(text, root))
 
     ctx_candidates: set[str] = set()
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
-        ctx_results = pool.map(lambda p: fetch(urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")), 12.0), CTXFEED_PATHS)
+        ctx_results = pool.map(lambda p: fetch(urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")), 12.0, session_cookie_header, root), CTXFEED_PATHS)
         for result in ctx_results:
             if result.status == 200 and result.body:
                 ctx_candidates.update(ctxfeed_urls(result.body.decode("utf-8", "replace"), root))
+                ctx_candidates.update(rest_feed_candidates(result.body.decode("utf-8", "replace"), root))
 
     fast_candidates = [urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in FAST_PATHS]
     fast_candidates.extend(sorted(ctx_candidates))
@@ -776,7 +826,7 @@ def probe_site(site: str, root: str) -> SiteResult:
         verified = batch([urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in MEDIUM_PATHS], 45.0, 8, records, session_cookie_header, root)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
-        directory_results = pool.map(lambda p: (p, fetch(urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")), 12.0)), DIRECTORIES)
+        directory_results = pool.map(lambda p: (p, fetch(urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")), 12.0, session_cookie_header, root)), DIRECTORIES)
         for directory, result in directory_results:
             if result.status == 200 and result.body:
                 discovered.update(directory_urls(result.body.decode("utf-8", "replace"), root))
@@ -800,7 +850,11 @@ def probe_site(site: str, root: str) -> SiteResult:
         candidates = sorted(
             (u for u in discovered if urllib.parse.urlsplit(u).path.lower().endswith((".xml", ".xml.gz")) or re.search(r"(feed|merchant|shopping|woocommerce_gpf|google|woo[-_]?feed|wppfm)", u, re.I)),
         )[:240]
-        verified = batch(candidates, 60.0, 8, records, session_cookie_header, root)
+        same_site = [u for u in candidates if same_host(u, root)]
+        explicit_external = [u for u in candidates if not same_host(u, root) and u in set(extract_explicit_feed_urls("\n".join(map(str, discovered)), root))]
+        verified = batch(same_site, 60.0, 8, records, session_cookie_header, root)
+        if verified is None and explicit_external:
+            verified = batch(explicit_external, 60.0, 8, records, session_cookie_header, root, True)
 
     status_codes = [int(r.get("status") or 0) for r in records]
     status = "verified_native" if verified else ("transport_blocked" if any(x in {401,403,429} for x in status_codes) else "candidate_negative_or_unverified")
@@ -809,6 +863,7 @@ def probe_site(site: str, root: str) -> SiteResult:
         "verified": bool(verified),
         "tested_candidate_count": len(records),
         "discovered_url_count": len(discovered),
+        "explicit_external_candidate_count": len(explicit_external_candidates),
         "same_site_session_established": bool(session_cookie_header),
         "browser_discovery": browser_meta,
         "historical_discovery": historical_meta,
@@ -889,6 +944,7 @@ def main() -> int:
     parser.add_argument("--output-dir", default="out/native-google-feed-hunt")
     parser.add_argument("--aggregate-dir")
     parser.add_argument("--output-file", default="out/native-google-feed-manifest.json")
+    parser.add_argument("--only-sites", help="Comma-separated site names from TARGETS")
     args = parser.parse_args()
 
     if args.aggregate_dir:
@@ -899,7 +955,22 @@ def main() -> int:
         raise SystemExit("--shard is required unless --aggregate-dir is used")
     if not 0 <= args.shard < args.shards:
         raise SystemExit("invalid shard")
-    results = run_shard(args.shard, args.shards, Path(args.output_dir))
+    if args.only_sites:
+        requested = {x.strip().lower() for x in args.only_sites.split(",") if x.strip()}
+        if not requested:
+            raise SystemExit("--only-sites must contain at least one site name")
+        selected_targets = tuple((site, url) for site, url in TARGETS if site.lower() in requested)
+        missing = requested - {site.lower() for site, _ in selected_targets}
+        if missing:
+            raise SystemExit("unknown --only-sites: " + ", ".join(sorted(missing)))
+        original_targets = TARGETS
+        TARGETS = selected_targets  # type: ignore[misc]
+        try:
+            results = run_shard(args.shard, args.shards, Path(args.output_dir))
+        finally:
+            TARGETS = original_targets  # type: ignore[misc]
+    else:
+        results = run_shard(args.shard, args.shards, Path(args.output_dir))
     print(json.dumps({
         "shard": args.shard,
         "sites": len(results),
