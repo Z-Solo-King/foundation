@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+// LIVE XHR SWEEP: synchronized for PR execution\n#!/usr/bin/env node
 import fs from "node:fs/promises";
 import { chromium } from "playwright";
 
