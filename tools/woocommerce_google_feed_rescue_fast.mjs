@@ -303,7 +303,7 @@ async function nativeRace(base,out) {
   return won;
 }
 async function scan([name,base]) {
-  const out={name,base,feed:null,reconstructed_feed:null,store_api:null,store_api_candidates:[],native_candidates:[]};
+  const out={name,base,feed:null,reconstructed_feed:null,store_api:null,store_api_candidates:[],native_candidates:[],discovery_candidates:[],ai_candidate_paths:[],discovered_candidate_paths:[]};
   const winner=await storeRace(base,out);
   if(winner){
     await Promise.all([reconstruct(base,out,winner),nativeRace(base,out)]);
