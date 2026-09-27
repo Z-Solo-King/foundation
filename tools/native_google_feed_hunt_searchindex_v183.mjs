@@ -1,0 +1,18 @@
+#!/usr/bin/env node
+const sites=JSON.parse(process.env.SITES_JSON||"[]");
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const same=(a,b)=>{try{return new URL(a).hostname.replace(/^www\./,"")===new URL(b).hostname.replace(/^www\./,"")}catch{return false}};
+const native=s=>{const t=String(s||"");return /^\s*(?:<\?xml[^>]*>\s*)?<rss\b/i.test(t)&&/https?:\/\/base\.google\.com\/ns\/1\.0/i.test(t)&&/<item\b/i.test(t)&&/<(?:[A-Za-z_][\\w.-]*:)?(?:id|title|link|price)\b/i.test(t)&&!/just a moment|cf-chl-|turnstile|captcha|access denied|attention required/i.test(t)};
+async function get(u,ms=25000){const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),ms);try{const r=await fetch(u,{redirect:"follow",signal:ac.signal,headers:{"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140.0.0.0 Safari/537.36","Accept":"text/html,application/xml,text/xml,text/plain,*/*;q=.2","Accept-Language":"en-IN,en;q=.9"}});return{status:r.status,url:r.url,ct:r.headers.get("content-type")||"",body:await r.text()}}catch(e){return{status:0,url:u,error:String(e?.name||e)}}finally{clearTimeout(tm)}}
+function links(html,root){const out=new Set();for(const m of String(html||"").matchAll(/https?:\\/\\/[^\\s"'<>]+/gi)){const u=m[0].replace(/[),.;]+$/,"");if(same(u,root)&&( /\\.xml(?:\\.gz)?(?:$|[?#])/i.test(u)||/woocommerce_gpf|woo[-_ ]?feed|ctxfeed|wppfm|google|merchant|shopping|product[-_ ]?feed/i.test(u)))out.add(u)}for(const m of String(html||"").matchAll(/href=["']([^"']+)["']/gi)){try{const u=new URL(m[1],root).href;if(same(u,root)&&( /\\.xml(?:\\.gz)?(?:$|[?#])/i.test(u)||/woocommerce_gpf|woo[-_ ]?feed|ctxfeed|wppfm|google|merchant|shopping|product[-_ ]?feed/i.test(u)))out.add(u)}catch{}}return out}
+async function search(engine,q){const url=engine+"?q="+encodeURIComponent(q);const r=await get(url,25000);if(r.status!==200)return{ok:false,status:r.status,rows:[]};return{ok:true,status:r.status,rows:[...links(r.body,"https://"+new URL(engine).hostname)]}}
+async function live(u,root){const r=await get(u,20000);return{url:u,status:r.status,final:r.url,ct:r.ct,len:r.body?.length||0,native:r.status===200&&same(r.url,root)&&native(r.body)}}
+async function probe(s){const root=s.url.replace(/\\/$/,"");const urls=new Set(),queries=[
+"site:"+new URL(root).hostname+" \\"woocommerce_gpf=google\\"",
+"site:"+new URL(root).hostname+" \\"google product feed\\"",
+"site:"+new URL(root).hostname+" \\"product feed\\" XML",
+"site:"+new URL(root).hostname+" \\"base.google.com/ns/1.0\\"",
+"site:"+new URL(root).hostname+" filetype:xml google merchant",
+"site:"+new URL(root).hostname+" \\"google-shopping\\" XML"
+];const engines=["https://www.google.com/search","https://www.bing.com/search"];const searchlog=[];for(const q of queries){for(const e of engines){const r=await search(e,q);searchlog.push({engine:e,status:r.status,ok:r.ok,results:r.rows.length});for(const u of r.rows)if(same(u,root))urls.add(u);await sleep(300)}}const evidence=[];for(const u of urls){const v=await live(u,root);evidence.push(v);if(v.native)return{site:s.name,url:v.final,method:"search_index_live_validation",queries,searchlog,candidates:urls.size,evidence:evidence.slice(-20)}}return{site:s.name,url:null,method:null,queries,searchlog,candidates:urls.size,evidence:evidence.slice(-40)}}
+(async()=>{const out=[];for(const s of sites)out.push(await probe(s));console.log(JSON.stringify({native_google_xml_only:true,source:"public_search_index+live_validation",results:out},null,2))})().catch(e=>{console.error(e.stack||e);process.exitCode=1})
