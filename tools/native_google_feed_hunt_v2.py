@@ -233,6 +233,7 @@ def fetch(url: str, timeout: float, cookie_header: str = "") -> Fetch:
             "-H", "Accept: application/xml, application/rss+xml, text/xml, text/plain;q=0.9, */*;q=0.1",
             "-H", "Accept-Language: en-IN,en;q=0.9",
             "-H", "Cache-Control: no-cache",
+            *([ "-H", f"Cookie: {cookie_header}" ] if cookie_header else []),
             "-o", body_path,
             "-w", "%{http_code}\\n%{content_type}\\n%{url_effective}\\n",
             url,
@@ -396,12 +397,12 @@ def feed_priority(url: str) -> tuple[int, int, str]:
     return (4, 0, url)
 
 
-def batch(urls: list[str], timeout: float, workers: int, records: list[dict[str, object]]) -> str | None:
+def batch(urls: list[str], timeout: float, workers: int, records: list[dict[str, object]], cookie_header: str = "") -> str | None:
     if not urls:
         return None
     valid: list[str] = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
-        future_map = {pool.submit(fetch, u, timeout): u for u in urls}
+        future_map = {pool.submit(fetch, u, timeout, cookie_header): u for u in urls}
         for future in concurrent.futures.as_completed(future_map):
             result = future.result()
             validation = validate_xml(result.body, result.content_type) if result.status == 200 else Validation(False, "not_checked", 0, 0, ())
@@ -423,6 +424,7 @@ def probe_site(site: str, root: str) -> SiteResult:
     started = time.monotonic()
     records: list[dict[str, object]] = []
     discovered: set[str] = set()
+    session_cookie_header = warm_site_session(root)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
         futures = [pool.submit(fetch, urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")), 15.0) for p in DISCOVERY_PATHS]
@@ -441,11 +443,11 @@ def probe_site(site: str, root: str) -> SiteResult:
 
     fast_candidates = [urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in FAST_PATHS]
     fast_candidates.extend(sorted(ctx_candidates))
-    verified = batch(list(dict.fromkeys(fast_candidates)), 20.0, 8, records)
+    verified = batch(list(dict.fromkeys(fast_candidates)), 20.0, 8, records, session_cookie_header)
     if verified is None:
-        verified = batch([urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in SLOW_GPF_PATHS], 105.0, 4, records)
+        verified = batch([urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in SLOW_GPF_PATHS], 105.0, 4, records, session_cookie_header)
     if verified is None:
-        verified = batch([urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in MEDIUM_PATHS], 45.0, 8, records)
+        verified = batch([urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")) for p in MEDIUM_PATHS], 45.0, 8, records, session_cookie_header)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
         directory_results = pool.map(lambda p: (p, fetch(urllib.parse.urljoin(root.rstrip("/") + "/", p.lstrip("/")), 12.0)), DIRECTORIES)
@@ -457,7 +459,7 @@ def probe_site(site: str, root: str) -> SiteResult:
         candidates = sorted(
             (u for u in discovered if urllib.parse.urlsplit(u).path.lower().endswith((".xml", ".xml.gz")) or re.search(r"(feed|merchant|shopping|woocommerce_gpf)", u, re.I)),
         )[:120]
-        verified = batch(candidates, 60.0, 8, records)
+        verified = batch(candidates, 60.0, 8, records, session_cookie_header)
 
     status_codes = [int(r.get("status") or 0) for r in records]
     status = "verified_native" if verified else ("transport_blocked" if any(x in {401,403,429} for x in status_codes) else "candidate_negative_or_unverified")
@@ -466,6 +468,7 @@ def probe_site(site: str, root: str) -> SiteResult:
         "verified": bool(verified),
         "tested_candidate_count": len(records),
         "discovered_url_count": len(discovered),
+        "same_site_session_established": bool(session_cookie_header),
         "records": records,
     }
     return SiteResult(site, root, status, verified, evidence, round(time.monotonic() - started, 3))
