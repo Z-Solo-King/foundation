@@ -61,6 +61,7 @@ jobs:
           status="$(curl -L -sS --connect-timeout 15 --max-time 180 -o out/worker/feed.xml -w '%{http_code}' "$worker" || true)"
           echo "$status" > out/worker/status.txt
           printf '%s\n' "$worker" > out/worker/url.txt
+          echo "WORKER_HTTP_STATUS=$status"
           if [[ "$status" = "200" ]] && grep -Eqi 'base.google.com/ns/1.0' out/worker/feed.xml && grep -Eqi '<item[ >]' out/worker/feed.xml && grep -Eqi '<g:id>|<id>' out/worker/feed.xml && grep -Eqi '<g:price>|<price>' out/worker/feed.xml; then
             items="$(grep -Eio '<item[ >]' out/worker/feed.xml | wc -l | tr -d ' ')"
             echo "WORKER_GOOGLE_XML=1" > out/worker/probe.txt
@@ -74,6 +75,8 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: wc-clean-recovery-${{ matrix.site }}
-          path: out/woocommerce-32-cross-runner/
+          path: |
+            out/woocommerce-32-cross-runner/
+            out/worker/
           if-no-files-found: warn
           retention-days: 14
