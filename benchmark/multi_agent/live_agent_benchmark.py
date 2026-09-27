@@ -227,6 +227,7 @@ def build_observation(run_id: str, repo_sha: str, task: dict[str, Any], model: s
             "output_chars": result["output_chars"],
             "response_sha256": result["response_sha256"],
             "retry_count": result["retry_count"],
+            "error_class": result.get("error_class", ""),
             "repeat_index": repeat_index,
             "seed": seed,
             "prompt_sha256": sha256_bytes(prompt.encode("utf-8")),

@@ -57,7 +57,7 @@ jobs:
             --run-id "${GITHUB_RUN_ID}" \
             --repo-sha "${GITHUB_SHA}" \
             --repeats 3 \
-            --max-workers 6
+            --max-workers 2
 
       - name: Upload retained per-run observations
         if: always()
