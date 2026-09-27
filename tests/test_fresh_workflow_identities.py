@@ -9,7 +9,7 @@ def test_fresh_nightly_identity_is_dispatchable_and_uses_current_operations():
     assert "workflow_dispatch:" in text
     assert "schedule:" in text
     assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
-    assert "OPERATIONS_RESEARCH_REF: d39df20d9754a4d91551c5aa96e4cae999547288" in text
+    assert "OPERATIONS_RESEARCH_REF: 126b81f8d6969e2aa37fab104afa3f193e4a4897" in text
     assert "private.multi_agent.runner" in text
     assert "private.multi_agent.project_research" in text
 
