@@ -76,7 +76,7 @@ jobs:
           SITE: ${{ matrix.site }}
         run: |
           set -euo pipefail
-          node <<'NODE'
+          node --input-type=module <<'NODE'
           const fs = await import('node:fs/promises');
           const site = process.env.SITE;
           const domains = {
