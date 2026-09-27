@@ -130,6 +130,7 @@ jobs:
         working-directory: operations
         run: |
           set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/.runtime"
           python tools/validate_polyglot_registry.py --repo-root "$GITHUB_WORKSPACE/operations" > "$GITHUB_WORKSPACE/.runtime/polyglot-registry-integrity.json"
           cat "$GITHUB_WORKSPACE/.runtime/polyglot-registry-integrity.json"
 
