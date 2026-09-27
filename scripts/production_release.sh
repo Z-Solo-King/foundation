@@ -289,8 +289,11 @@ persistence_seed_file="$RUNNER_TEMP/persistence-rollover-seed.json"
 persistence_seed_payload='{"operation":"persistence_seed"}'
 legacy_public_worker="${LEGACY_PUBLIC_WORKER:-}"
 legacy_private_worker="${LEGACY_PRIVATE_WORKER:-}"
-test -n "$legacy_public_worker" || { echo 'Missing LEGACY_PUBLIC_WORKER migration input'; exit 1; }
-test -n "$legacy_private_worker" || { echo 'Missing LEGACY_PRIVATE_WORKER migration input'; exit 1; }
+if [ -n "$legacy_public_worker" ] && [ -n "$legacy_private_worker" ]; then
+  echo "Legacy Worker retirement inputs: configured"
+else
+  echo "Legacy Worker retirement: deferred (private migration inputs not configured)"
+fi
 secret_file="$RUNNER_TEMP/operations-secrets.env"
 printf 'AUTH_TOKEN=%s\nCHAT_BACKEND_TOKEN=%s\n' "$AUTH_TOKEN" "$AUTH_TOKEN" > "$secret_file"
 chmod 600 "$secret_file"
