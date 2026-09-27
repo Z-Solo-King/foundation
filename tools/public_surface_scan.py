@@ -82,7 +82,7 @@ def scan_text(path: str, text: str) -> tuple[list[Finding], list[str]]:
             "private Operations deployment provenance",
             "private Operations revision disclosure",
             "private revision provenance literal",
-        } and not path.startswith("docs/"):
+        } and path.startswith(".github/workflows/"):
             continue
         if re.search(pattern, text):
             findings.append(Finding(path, "public-disclosure", message))
