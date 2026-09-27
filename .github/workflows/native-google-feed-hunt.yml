@@ -50,7 +50,7 @@ jobs:
         run: node tools/woocommerce_native_feed_hunt_v176.mjs | tee "native-feed-shard-${{ matrix.shard }}.json"
       - name: Upload URL-only result
         if: always()
-        uses: actions/upload-artifact@043fb46d1a7c77c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@v4
         with:
           name: native-google-feed-shard-${{ matrix.shard }}
           path: native-feed-shard-${{ matrix.shard }}.json
