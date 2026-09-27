@@ -1278,7 +1278,7 @@ def validation_candidate_groups(
     return same_site, explicit_external
 
 
-def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> SiteResult:
+def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = (), hunt_round: int = 1) -> SiteResult:
     started = time.monotonic()
     records: list[dict[str, object]] = []
     discovered: set[str] = set()
@@ -1352,7 +1352,7 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
 
     historical_candidates: tuple[str, ...] = ()
     historical_meta: dict[str, object] = {"queried": False, "candidate_count": 0}
-    if verified is None:
+    if verified is None and hunt_round >= 3:
         historical_candidates = historical_feed_discover(root)
         historical_meta = {"queried": True, "candidate_count": len(historical_candidates)}
         discovered.update(historical_candidates)
@@ -1369,12 +1369,18 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
                 "browser_session_override": True,
             }
         numeric_rex_candidates = rex_numeric_candidates(root, discovered)
-        filename_sweep_candidates = tuple(dict.fromkeys(
+        all_filename_candidates = tuple(dict.fromkeys(
             [*generated_upload_feed_candidates(root, site), *numeric_rex_candidates]
         ))
+        sweep_budgets = {1: 2500, 2: 7000, 3: 16000, 4: 32000}
+        sweep_budget = sweep_budgets.get(max(1, min(4, hunt_round)), 2500)
+        filename_sweep_candidates = all_filename_candidates[:sweep_budget]
         filename_sweep_meta = {
             "attempted": bool(sweep_allowed),
             "candidate_count": len(filename_sweep_candidates),
+            "candidate_pool_count": len(all_filename_candidates),
+            "hunt_round": hunt_round,
+            "sweep_budget": sweep_budget,
             "rex_numeric_seed_count": len(numeric_rex_candidates),
             "sentinel": sentinel,
         }
@@ -1428,14 +1434,14 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
     return SiteResult(site, root, status, verified, evidence, round(time.monotonic() - started, 3))
 
 
-def run_shard(shard: int, shards: int, output_dir: Path, targets: tuple[tuple[str, str], ...] | None = None, learned_paths: tuple[str, ...] = ()) -> list[SiteResult]:
+def run_shard(shard: int, shards: int, output_dir: Path, targets: tuple[tuple[str, str], ...] | None = None, learned_paths: tuple[str, ...] = (), hunt_round: int = 1) -> list[SiteResult]:
     started = time.monotonic()
     target_set = TARGETS if targets is None else targets
     selected = [target for idx, target in enumerate(target_set) if idx % shards == shard]
     output_dir.mkdir(parents=True, exist_ok=True)
     results: list[SiteResult] = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        future_map = {pool.submit(probe_site, site, root, learned_paths): (site, root) for site, root in selected}
+        future_map = {pool.submit(probe_site, site, root, learned_paths, hunt_round): (site, root) for site, root in selected}
         for future in concurrent.futures.as_completed(future_map):
             site_name, site_root_url = future_map[future]
             try:
@@ -1515,6 +1521,7 @@ def main() -> int:
     parser.add_argument("--output-file", default="out/native-google-feed-manifest.json")
     parser.add_argument("--only-sites", help="Comma-separated site names from TARGETS")
     parser.add_argument("--learn-from", action="append", default=[], help="Prior evidence directory to learn verified feed path/query patterns from")
+    parser.add_argument("--hunt-round", type=int, choices=(1, 2, 3, 4), default=1, help="Adaptive discovery round; later rounds unlock larger filename sweeps and archive discovery")
     args = parser.parse_args()
 
     if args.aggregate_dir:
@@ -1535,12 +1542,13 @@ def main() -> int:
         missing = requested - {site.lower() for site, _ in selected_targets}
         if missing:
             raise SystemExit("unknown --only-sites: " + ", ".join(sorted(missing)))
-    results = run_shard(args.shard, args.shards, Path(args.output_dir), selected_targets, learned_paths)
+    results = run_shard(args.shard, args.shards, Path(args.output_dir), selected_targets, learned_paths, args.hunt_round)
     print(json.dumps({
         "shard": args.shard,
         "sites": len(results),
         "target_scope": [r.site for r in results],
         "learned_path_count": len(learned_paths),
+        "hunt_round": args.hunt_round,
         "verified_native_feed_count": sum(bool(r.native_feed_url) for r in results),
         "verified_native_feeds": [{"site": r.site, "url": r.native_feed_url} for r in results if r.native_feed_url],
         "statuses": {r.site: r.status for r in results},
