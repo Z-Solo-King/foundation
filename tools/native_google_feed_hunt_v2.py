@@ -254,6 +254,17 @@ def generated_upload_feed_candidates(root: str, site: str) -> tuple[str, ...]:
 
     site_stems: list[str] = []
     for s in site_forms:
+        # Known CTXFeed-style custom feed names may be concatenated without
+        # separators (e.g. <store>googleshopping.xml).
+        for suffix in (
+            "google", "googleshopping", "googlefeed", "googleproductfeed",
+            "googleproducts", "googleshoppingfeed", "merchantfeed",
+            "googlemerchantfeed", "productfeed", "productsfeed",
+        ):
+            site_stems.extend((
+                f"{s}{suffix}",
+                f"{suffix}{s}",
+            ))
         for stem in SEMANTIC_FEED_STEMS[:220]:
             for sep in FILENAME_SEPARATORS:
                 site_stems.extend((
