@@ -4,6 +4,7 @@ on:
     branches: [hunt/native-google-feed-urls-20260927]
     paths:
       - "tools/native_google_feed_hunt_commoncrawl_v177.mjs"
+      - "tools/native_google_feed_hunt_commoncrawl_targeted_v178.mjs"
       - ".github/workflows/native-google-feed-commoncrawl.yml"
   workflow_dispatch:
 permissions:
@@ -39,11 +40,11 @@ jobs:
           NODE
           echo "SITES_JSON=$(cat /tmp/sites.json)" >> "$GITHUB_ENV"
       - name: Run Common Crawl native-only hunt
-        run: node tools/native_google_feed_hunt_commoncrawl_v177.mjs | tee "commoncrawl-shard-${{ matrix.shard }}.json"
+        run: node tools/native_google_feed_hunt_commoncrawl_targeted_v178.mjs | tee "targeted-commoncrawl-shard-${{ matrix.shard }}.json"
       - name: Upload URL-only results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: native-commoncrawl-google-feed-shard-${{ matrix.shard }}
+          name: native-targeted-commoncrawl-google-feed-shard-${{ matrix.shard }}
           path: commoncrawl-shard-${{ matrix.shard }}.json
           retention-days: 14
