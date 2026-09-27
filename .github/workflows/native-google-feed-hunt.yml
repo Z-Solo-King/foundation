@@ -7,7 +7,10 @@ on:
     branches: [hunt/native-google-feed-urls-20260927]
     paths:
       - ".github/workflows/native-google-feed-hunt.yml"
-      - "tools/woocommerce_native_feed_hunt_v176.mjs"
+      - "tools/woocommerce_native_feed_hunt_v176_fast.mjs"
+concurrency:
+  group: native-google-feed-hunt-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -22,7 +25,7 @@ jobs:
       BROWSER_WORKER_URL: https://wc-browser-single-20260927.heroic-ai.workers.dev/
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -32,22 +35,20 @@ jobs:
         shell: bash
         run: |
           node - <<'NODE' > /tmp/sites.json
-          const sites=[
-            ["Aarna Computers","https://aarnacomputers.com"],["Ads Store","https://adsstore.in"],["avikaretails","https://avikaretails.com"],["EZPZ Solutions","https://www.ezpzsolutions.in"],
-            ["GamesNComps","https://gamesncomps.com"],["Geekbees","https://geekbees.in"],["hotshiftpc","https://hotshiftpc.com"],["itgadgetsonline","https://itgadgetsonline.com"],
-            ["ithunt","https://ithunt.in"],["KC Computers","https://kccomputers.co.in"],["KRG KART","https://krgkart.com"],["Kryptronix Gaming","https://kryptronix.in"],
-            ["NCL Computer","https://nclcomputer.com"],["networkitstore","https://networkitstore.in"],["nexusinfosys","https://www.mynexusinfosys.com"],["Only SDD","https://onlyssd.com"],
-            ["PC Kumar Infotech","https://pckumar.in"],["PC Studio","https://www.pcstudio.in"],["PCHubShop","https://www.pchubshop.com"],["Prime ABGB","https://www.primeabgb.com"],
-            ["quickincomputers","https://quickincomputers.com"],["SCL Gaming","https://sclgaming.in"],["solankienterprises","https://solankienterprises.com"],["Variety Infotech","https://varietyinfotech.com"],
-            ["Viper PC","https://viperpc.in"],["AULA India","https://aulaindia.com"],["Cosmic Byte","https://www.thecosmicbyte.com"],["Meckeys","https://www.meckeys.com"],
-            ["Moskeys","https://moskeys.com"],["Ninja Dog","https://ninjadog.in"],["StacksKB","https://stackskb.com"],["Theproaudio","https://www.theproaudio.com"]
-          ].map(([name,url])=>({name,url}));
-          const shard=Number(process.env.SHARD);
-          process.stdout.write(JSON.stringify(sites.filter((_,i)=>i%8+1===shard)));
+          const s=[
+          ["Aarna Computers","https://aarnacomputers.com"],["Ads Store","https://adsstore.in"],["avikaretails","https://avikaretails.com"],["EZPZ Solutions","https://www.ezpzsolutions.in"],
+          ["GamesNComps","https://gamesncomps.com"],["Geekbees","https://geekbees.in"],["hotshiftpc","https://hotshiftpc.com"],["itgadgetsonline","https://itgadgetsonline.com"],
+          ["ithunt","https://ithunt.in"],["KC Computers","https://kccomputers.co.in"],["KRG KART","https://krgkart.com"],["Kryptronix Gaming","https://kryptronix.in"],
+          ["NCL Computer","https://nclcomputer.com"],["networkitstore","https://networkitstore.in"],["nexusinfosys","https://www.mynexusinfosys.com"],["Only SDD","https://onlyssd.com"],
+          ["PC Kumar Infotech","https://pckumar.in"],["PC Studio","https://www.pcstudio.in"],["PCHubShop","https://www.pchubshop.com"],["Prime ABGB","https://www.primeabgb.com"],
+          ["quickincomputers","https://quickincomputers.com"],["SCL Gaming","https://sclgaming.in"],["solankienterprises","https://solankienterprises.com"],["Variety Infotech","https://varietyinfotech.com"],
+          ["Viper PC","https://viperpc.in"],["AULA India","https://aulaindia.com"],["Cosmic Byte","https://www.thecosmicbyte.com"],["Meckeys","https://www.meckeys.com"],
+          ["Moskeys","https://moskeys.com"],["Ninja Dog","https://ninjadog.in"],["StacksKB","https://stackskb.com"],["Theproaudio","https://www.theproaudio.com"]].map(([name,url])=>({name,url}));
+          const n=Number(process.env.SHARD);process.stdout.write(JSON.stringify(s.filter((_,i)=>i%8+1===n)));
           NODE
           echo "SITES_JSON=$(cat /tmp/sites.json)" >> "$GITHUB_ENV"
       - name: Hunt native Google Merchant XML only
-        run: node tools/woocommerce_native_feed_hunt_v176.mjs | tee "native-feed-shard-${{ matrix.shard }}.json"
+        run: node tools/woocommerce_native_feed_hunt_v176_fast.mjs | tee "native-feed-shard-${{ matrix.shard }}.json"
       - name: Upload URL-only result
         if: always()
         uses: actions/upload-artifact@v4
