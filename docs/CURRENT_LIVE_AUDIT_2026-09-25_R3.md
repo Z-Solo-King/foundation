@@ -11,13 +11,13 @@ This is the latest compact cross-surface checkpoint. Fresh live GitHub/Cloudflar
 - #713 remains OPEN because its original live differential run `36119832079` reproduced a Python/Rust NAT64 URL-parity mismatch; current NAT64/corpus/test repairs are merged, but a fresh post-fix differential receipt is still required.
 
 ## Cloudflare
-- Control-plane access: working; account membership HTTP 200; role **Super Administrator - All Privileges**.
+- Control-plane access: working; account membership HTTP 200; role **[REDACTED-CF-ROLE]**.
 - Canonical Workers: public `foundation`, private `operations`.
-- Deployed Foundation version `93aa2e4e-cf67-41de-9933-95f8822de423`, provenance `github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c`.
-- Deployed Operations version `66e335b9-68da-429b-abcf-29f9c7e2f5ac`, provenance `github:a3171f353539f1a31020c432f98cf0530cbf91ef`.
+- Deployed Foundation version `[REDACTED-DEPLOYED-VERSION-ID]`, provenance `github:a1da7d115c69b9f9df21bd2c6d60dd2b717f232c`.
+- Deployed Operations version `[REDACTED-DEPLOYED-VERSION-ID]`, provenance `[REDACTED-OPERATIONS-PROVENANCE-SHA]`.
 - Current GitHub code heads are newer than the deployed production pair; they are not production-certified/deployed.
 - Zone `heroic-ai.dev`: **pending / unresolvable**. Assigned nameservers: `abdullah.ns.cloudflare.com`, `tricia.ns.cloudflare.com`. Worker-managed root AAAA `100::` is present; manual Worker routes are absent.
-- D1 `research-intelligence`: HTTP 200; ID `19f51638-47a5-4218-a9dc-73dbfd6156fe`; direct `sqlite_master` query exposes 21 tables.
+- D1 `research-intelligence`: HTTP 200; ID `[REDACTED-D1-ID — see operations tracker]`; direct `sqlite_master` query exposes 21 tables.
 - Live D1 counts: research_runs 644; observations 398; research_publications 0; resource_governance_reservations 422; resource_governance_quota 110; chat_idempotency 1278; chat_memory_records 3; chat_learning_observations 0.
 - Operations runtime config: Workers AI `@cf/zai-org/glm-4.7-flash`, fallback `@cf/google/gemma-4-26b-a4b-it`, `STRICT_ZERO_COST_ONLY=true`, cron `*/15 * * * *`. Secret values were not exposed.
 
@@ -30,7 +30,7 @@ This is the latest compact cross-surface checkpoint. Fresh live GitHub/Cloudflar
 - No provider-backed 24-program acceptance receipt exists. No real-research findings are authorized from this blocked run.
 
 ## Latest completed extractor benchmark
-- Latest completed benchmark: **#448 / run `36141127492`**, executed on Foundation `dbab61bb15aae22ca19787ddc70283af2617620e` with Operations ref `a3171f353539f1a31020c432f98cf0530cbf91ef`.
+- Latest completed benchmark: **#448 / run `36141127492`**, executed on Foundation `dbab61bb15aae22ca19787ddc70283af2617620e` with Operations ref `[REDACTED-OPERATIONS-PROVENANCE-SHA]`.
 - Aggregate artifact `10867020802`, `live-extractor-benchmark-40way`, digest `sha256:073ad2ba3df5bad3f9536abe95281ec596e109d7293b4bc4d30499e11cb21e62`.
 - Direct artifact inspection: 40 receipts; API 12 / browser 8 / feed 8 / HTML 12; 4 ok / 32 empty / 4 blocked; completion rate 0.10; error rate 0; invalid resource rows 0; missing key rows 0; provenance completeness 1.0; route provenance 1.0; repeat reliability 1.0; unstable groups 0; recovery rate 1.0; all 30 benchmark jobs succeeded.
 - This is a **structural integrity pass**, not 40 successful business-data acquisitions. The 32 empty results remain observations, and the 4 ok results do not establish field-level correctness.
