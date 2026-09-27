@@ -4,6 +4,7 @@ import { promisify } from "node:util";
 import { mkdir, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 const execFileAsync=promisify(execFile);
+const UA = "Mozilla/5.0 (compatible; WooCommerceV175Recovery/2026.09)";
 
 const TARGETS=[
   ["Ads Store","https://adsstore.in"],
