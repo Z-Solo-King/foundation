@@ -4,7 +4,7 @@ import sys
 from tools.native_google_feed_hunt_v2 import _cookie_header_from_netscape
 from tools.native_google_feed_hunt_v2 import _public_json_lines
 from tools.native_google_feed_hunt_v2 import ctxfeed_urls, feed_priority
-from tools.native_google_feed_hunt_v2 import extract_urls, validate_xml
+from tools.native_google_feed_hunt_v2 import extract_explicit_feed_urls, extract_urls, validate_xml
 
 GOOD = b'''<?xml version="1.0"?><rss xmlns:g="http://base.google.com/ns/1.0"><channel><item><g:id>SKU</g:id><g:title>Widget</g:title><g:link>https://example.test/p/1</g:link><g:price>1999 INR</g:price></item></channel></rss>'''
 
@@ -64,3 +64,12 @@ def test_public_json_parser_accepts_cdx_array():
         "original": "https://example.test/feed.xml",
         "statuscode": "200",
     }]
+
+def test_explicit_external_feed_url_is_discovered():
+    body = '<script>window.feedConfig = {"feed_url":"https://feeds.example-cdn.test/store/google.xml"};</script>'
+    found = extract_explicit_feed_urls(body, "https://shop.example.test")
+    assert found == ("https://feeds.example-cdn.test/store/google.xml",)
+
+def test_external_non_feed_link_is_not_discovered():
+    body = '<a href="https://other.example.test/products.xml">external</a>'
+    assert extract_explicit_feed_urls(body, "https://shop.example.test") == ()
