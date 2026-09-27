@@ -186,7 +186,7 @@ jobs:
             historical_native_count:historical.length,
             native_live:nativeLive,
             historical_native:historical,
-            unresolved_sites:[...new Set([...archive.filter(x=>!/^VERIFIED_/.test(String(x.status||""))).map(x=>x.name),...browser.filter(x=>(x.verified_google_xml||[]).length===0).map(x=>x.name)])].sort()
+            unresolved_sites:[...new Set([...archive.filter(x=>!/^VERIFIED_/.test(String(x.status||""))).map(x=>x.name),...browser.filter(x=>(x.verified_google_xml||[]).length===0).map(x=>x.name)].filter(Boolean))].sort()
           };
           fs.mkdirSync("out/final",{recursive:true});
           fs.writeFileSync("out/final/recovery-report.json",JSON.stringify(report,null,2)+"\n");
