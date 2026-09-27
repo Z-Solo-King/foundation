@@ -312,7 +312,12 @@ def generated_upload_feed_candidates(root: str, site: str) -> tuple[str, ...]:
                     f"{suffix}{sep}{host_form}",
                 ))
     priority_stems.extend(observed_short_stems)
-    priority_stems.extend(stems_for_hidden if False else ())
+    # Common generated feed filename suffixes seen across WooCommerce stores.
+    for stem in observed_short_stems:
+        for n in range(1, 21):
+            for sep in FILENAME_SEPARATORS[:2]:
+                priority_stems.append(f"{stem}{sep}{n:02d}")
+                priority_stems.append(f"{stem}{sep}{n}")
     stems = list(dict.fromkeys([*priority_stems, *UPLOAD_FEED_STEMS, *SEMANTIC_FEED_STEMS, *site_stems]))
     urls: set[str] = set()
     for directory in UPLOAD_FEED_DIRECTORIES:
@@ -677,7 +682,10 @@ def browser_session_discover(
                     homepage_links = []
 
                 # Probe public discovery routes in this browser context.
-                for path in ("/robots.txt", "/sitemap.xml", "/sitemap.rss", "/sitemap_index.xml", "/wp-sitemap.xml", "/feed/"):
+                for path in (
+                    "/robots.txt", "/sitemap.xml", "/sitemap.rss", "/sitemap_index.xml", "/wp-sitemap.xml", "/feed/",
+                    *DIRECTORIES, *UPLOAD_FEED_DIRECTORIES,
+                ):
                     try:
                         page.goto(
                             urllib.parse.urljoin(root.rstrip("/") + "/", path.lstrip("/")),
@@ -695,6 +703,11 @@ def browser_session_discover(
                         if len(route_body) <= 20 * 1024 * 1024:
                             observed_requests.update(extract_urls(route_body, root))
                             observed_response_urls.update(extract_explicit_feed_urls(route_body, root))
+                            if path.startswith("/wp-content/uploads/") or path in {"/feed/", "/feeds/"}:
+                                try:
+                                    observed_requests.update(directory_urls(route_body, root))
+                                except Exception:
+                                    pass
                     except Exception:
                         pass
 
@@ -798,6 +811,7 @@ def browser_session_discover(
                     "cookie_count": len(pairs),
                     "candidate_count": len(candidates),
                     "browser_validated_feed_count": len(browser_validated_urls),
+                    "browser_validated_urls": sorted(browser_validated_urls)[:50],
                     "response_feed_count": len(observed_response_urls),
                     "visited_public_pages": len(visited_pages),
                     "challenge_seen": challenge_seen,
@@ -1347,6 +1361,13 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
     filename_sweep_meta: dict[str, object] = {"attempted": False, "candidate_count": 0}
     if verified is None:
         sweep_allowed, sentinel = filename_transport_sentinel(root, session_cookie_header, root)
+        if not sweep_allowed and session_cookie_header:
+            sweep_allowed = True
+            sentinel = {
+                **sentinel,
+                "mode": "browser_session_reachable",
+                "browser_session_override": True,
+            }
         numeric_rex_candidates = rex_numeric_candidates(root, discovered)
         filename_sweep_candidates = tuple(dict.fromkeys(
             [*generated_upload_feed_candidates(root, site), *numeric_rex_candidates]
@@ -1358,10 +1379,26 @@ def probe_site(site: str, root: str, learned_paths: tuple[str, ...] = ()) -> Sit
             "sentinel": sentinel,
         }
         if sweep_allowed:
-            verified = batch_first_valid(
-                list(filename_sweep_candidates), 3.0, 64, records,
-                session_cookie_header, root, chunk_size=256
+            # First try a bounded browser-session sample. This matters for stores
+            # whose public feed endpoint behaves differently for a real storefront
+            # session than for curl.
+            browser_cookie_header, browser_filename_candidates, browser_filename_meta = browser_session_discover(
+                root, candidate_urls=filename_sweep_candidates[:120]
             )
+            if browser_cookie_header:
+                session_cookie_header = browser_cookie_header
+            discovered.update(browser_filename_candidates)
+            browser_validated = tuple(
+                str(u) for u in browser_filename_meta.get("browser_validated_urls", [])
+                if str(u)
+            )
+            if browser_validated:
+                verified = min(browser_validated, key=feed_priority)
+            else:
+                verified = batch_first_valid(
+                    list(filename_sweep_candidates), 3.0, 64, records,
+                    session_cookie_header, root, chunk_size=256
+                )
 
     if verified is None and discovered:
         same_site, explicit_external = validation_candidate_groups(
