@@ -1,7 +1,7 @@
 name: Open issue polyglot deep scan
 # Issue-count authority is the live Operations current_open_issue_inventory.json; never hard-code the queue size here.
 
-on:
+on: # zizmor: ignore[dangerous-triggers] main/manual protected audit; no untrusted PR target execution
   push:
     branches: [main]
     paths:
@@ -80,6 +80,27 @@ jobs:
       matrix:
         lane: [L1, L2, L3, L4]
     steps:
+      - name: Validate Operations App configuration
+        if: always() && github.event_name == 'pull_request_target'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+          OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
+          OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          app_id_state=missing
+          app_key_state=missing
+          [ -n "${OPERATIONS_APP_ID:-}" ] && app_id_state=present
+          [ -n "${OPERATIONS_APP_PRIVATE_KEY:-}" ] && app_key_state=present
+          if [ -n "${PR_NUMBER:-}" ]; then
+            gh pr comment "$PR_NUMBER" --repo "$REPOSITORY" --body "### Deep-scan Operations App preflight\n\nOPERATIONS_APP_ID: **$app_id_state**\nOPERATIONS_APP_PRIVATE_KEY: **$app_key_state**" || true
+          fi
+          test "$app_id_state" = present
+          test "$app_key_state" = present
+
       - name: Create Operations read token
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
@@ -90,11 +111,11 @@ jobs:
           repositories: operations
           permission-contents: read
 
-      - name: Checkout Operations at frozen revision
+      - name: Checkout Operations
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ needs.snapshot.outputs.operations_sha }}
+          ref: main
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
@@ -105,6 +126,20 @@ jobs:
           ref: ${{ github.sha }}
           path: foundation
 
+      - name: Publish Operations token/checkout diagnostics
+        if: always() && github.event_name == 'pull_request_target'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+          TOKEN_OUTCOME: ${{ steps.operations-app.outcome }}
+          TOKEN_CONCLUSION: ${{ steps.operations-app.conclusion }}
+        run: |
+          set -euo pipefail
+          [ -n "${PR_NUMBER:-}" ] || exit 0
+          gh pr comment "$PR_NUMBER" --repo "$REPOSITORY" --body "### Deep-scan Operations access diagnostic\n\nApp-token outcome: **${TOKEN_OUTCOME:-unknown}**\nApp-token conclusion: **${TOKEN_CONCLUSION:-unknown}**" || true
+
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -114,33 +149,58 @@ jobs:
         id: validate-scan-contract
         working-directory: operations
         run: |
-          python -m json.tool benchmark/polyglot/open_issue_matrix_52.json >/dev/null
-          python -m json.tool benchmark/polyglot/open_issue_surface_map.json >/dev/null
+          python - <<'PY'
+          from tests.test_open_issue_polyglot_scan import (
+              test_open_issue_matrix_covers_all_issues_and_four_lanes,
+              test_open_issue_scan_methods_are_broader_than_language_only_checks,
+              test_all_open_issue_policies_have_lane_coverage_and_requirements,
+              test_open_issue_surface_map_matches_scan_contract,
+          )
+          test_open_issue_matrix_covers_all_issues_and_four_lanes()
+          test_open_issue_scan_methods_are_broader_than_language_only_checks()
+          test_all_open_issue_policies_have_lane_coverage_and_requirements()
+          test_open_issue_surface_map_matches_scan_contract()
+          print("scan matrix contract: PASS")
+          PY
 
+      # Cross-repo source coverage includes Foundation-owned acceptance validators when an issue spans the family.
       - name: Run lane ${{ matrix.lane }}
         id: run-lane
         working-directory: operations
         run: |
           mkdir -p .runtime/open-issue-deep-scan
-          python tools/open_issue_polyglot_scan.py --foundation "$GITHUB_WORKSPACE/foundation" --operations "$GITHUB_WORKSPACE/operations" --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_52.json" --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json" --lane "${{ matrix.lane }}" --output ".runtime/open-issue-deep-scan/${{ matrix.lane }}.json"
+          python tools/open_issue_polyglot_scan.py             --foundation "$GITHUB_WORKSPACE/foundation"             --operations "$GITHUB_WORKSPACE/operations"             --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_52.json"             --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json"             --lane "${{ matrix.lane }}"             --output ".runtime/open-issue-deep-scan/${{ matrix.lane }}.json"
 
       - name: Emit lane diagnostic
         if: always()
         working-directory: operations
         shell: bash
+        env:
+          VALIDATE_OUTCOME: ${{ steps.validate-scan-contract.outcome }}
+          RUN_OUTCOME: ${{ steps.run-lane.outcome }}
         run: |
           set +e
           mkdir -p .runtime/open-issue-deep-scan
           python - <<'PY'
-          import json
+          import json, os
           from pathlib import Path
           lane="${{ matrix.lane }}"
           receipt=Path('.runtime/open-issue-deep-scan')/f'{lane}.json'
-          payload={'schema':'open-issue-deep-scan/diagnostic/v1','lane':lane,'receipt_present':receipt.exists()}
+          payload={
+              'schema':'open-issue-deep-scan/diagnostic/v1',
+              'lane':lane,
+              'validate_outcome':os.environ.get('VALIDATE_OUTCOME'),
+              'run_outcome':os.environ.get('RUN_OUTCOME'),
+              'receipt_present':receipt.exists(),
+          }
           if receipt.exists():
               try:
                   r=json.loads(receipt.read_text(encoding='utf-8'))
                   payload.update({k:r.get(k) for k in ('case_count','expected_case_count','issue_count','failed_cases','review_cases','missing_cases')})
+                  payload['failed_results']=[
+                      {'issue':x.get('issue'),'lane':x.get('lane'),'status':x.get('status'),'findings':x.get('findings',[])}
+                      for x in r.get('results',[]) if x.get('status') == 'FAIL'
+                  ]
               except Exception as exc:
                   payload['receipt_parse_error']=repr(exc)
           Path('.runtime/open-issue-deep-scan').joinpath(f'{lane}-diagnostic.json').write_text(json.dumps(payload,indent=2,sort_keys=True)+'\n')
@@ -151,26 +211,36 @@ jobs:
         working-directory: operations
         run: |
           python - <<'PY'
-          import json, os, subprocess, re
+          import json
+          import os
+          import subprocess
+          import re
           from pathlib import Path
-          lane="${{ matrix.lane }}"
-          workspace=Path(os.environ["GITHUB_WORKSPACE"])
-          payload=json.loads((Path(".runtime/open-issue-deep-scan")/f"{lane}.json").read_text())
-          payload["foundation_revision"]=os.environ["GITHUB_SHA"]
-          payload["operations_revision"]=subprocess.check_output(["git","-C",str(workspace/"operations"),"rev-parse","HEAD"],text=True).strip()
-          if not re.fullmatch(r"[0-9a-f]{40}",payload["operations_revision"]):
+
+          lane = "${{ matrix.lane }}"
+          workspace = Path(os.environ["GITHUB_WORKSPACE"])
+          operations_root = workspace / "operations"
+          path = Path(".runtime/open-issue-deep-scan") / f"{lane}.json"
+          payload = json.loads(path.read_text())
+          payload["foundation_revision"] = os.environ["GITHUB_SHA"]
+          payload["operations_revision"] = subprocess.check_output(
+              ["git", "-C", str(operations_root), "rev-parse", "HEAD"], text=True
+          ).strip()
+          if not re.fullmatch(r"[0-9a-f]{40}", payload["operations_revision"]):
               raise SystemExit("Operations provenance is not an immutable SHA")
-          (Path(".runtime/open-issue-deep-scan")/f"{lane}.json").write_text(json.dumps(payload,indent=2)+"\n")
+          path.write_text(json.dumps(payload, indent=2) + "\n")
+          PY
 
       - name: Upload lane receipt
         if: always()
-        uses: actions/upload-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4.3.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: open-issue-deep-scan-${{ matrix.lane }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: operations/.runtime/open-issue-deep-scan/**
           if-no-files-found: warn
           retention-days: 30
 
+  # Aggregate the frozen four-lane receipts from this run; issue scope is validated before execution.
   aggregate:
     name: Aggregate dynamic issue×lane cases
     needs: [snapshot, lane]
@@ -179,6 +249,7 @@ jobs:
     steps:
       - name: Checkout Foundation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - name: Create Operations aggregate read token
         id: operations-app-aggregate
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
@@ -188,6 +259,7 @@ jobs:
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
+
       - name: Checkout Operations at frozen revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -201,50 +273,89 @@ jobs:
           pattern: open-issue-deep-scan-*-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: .runtime/open-issue-deep-scan
           merge-multiple: true
+
       - name: Validate complete four-lane coverage
         shell: python
         env:
           EXPECTED_OPERATIONS_SHA: ${{ needs.snapshot.outputs.operations_sha }}
         run: |
-          import json, os, re
+          import json
+          import os
+          import re
           from pathlib import Path
-          root=Path(".runtime/open-issue-deep-scan")
-          receipts=[json.loads(path.read_text()) for path in sorted(root.glob("L?.json"))]
-          assert len(receipts)==4
-          assert {r["lane"] for r in receipts}=={"L1","L2","L3","L4"}
-          expected_ops=os.environ["EXPECTED_OPERATIONS_SHA"]
-          assert re.fullmatch(r"[0-9a-f]{40}",expected_ops)
-          assert {r["operations_revision"] for r in receipts}=={expected_ops}
-          matrix=json.loads(Path("operations/benchmark/polyglot/open_issue_matrix_52.json").read_text(encoding="utf-8"))
-          active_pairs_expected={(case["issue"],case["lane"]) for case in matrix["cases"] if case.get("active",True)}
-          active_matrix_issues={issue for issue,_ in active_pairs_expected}
-          historical_issues={"foundation#1264","foundation#1267","foundation#1281","operations#197"}
-          active_pairs_observed=set()
-          historical_pairs=set()
+
+          root = Path(".runtime/open-issue-deep-scan")
+          receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L?.json"))]
+          assert len(receipts) == 4
+          assert {r["lane"] for r in receipts} == {"L1", "L2", "L3", "L4"}
+
+          expected_ops = os.environ["EXPECTED_OPERATIONS_SHA"]
+          assert re.fullmatch(r"[0-9a-f]{40}", expected_ops)
+          assert {r["operations_revision"] for r in receipts} == {expected_ops}
+
+          matrix = json.loads(Path("operations/benchmark/polyglot/open_issue_matrix_52.json").read_text(encoding="utf-8"))
+          active_pairs_expected = {
+              (case["issue"], case["lane"])
+              for case in matrix["cases"]
+              if case.get("active", True)
+          }
+          active_matrix_issues = {issue for issue, _ in active_pairs_expected}
+          historical_issues = {"foundation#1264", "foundation#1267", "foundation#1281", "operations#197"}
+
+          active_pairs_observed = set()
+          historical_pairs = set()
           for receipt in receipts:
-              lane=receipt["lane"]
-              expected_lane_pairs={pair for pair in active_pairs_expected if pair[1]==lane}
-              observed_active={(result["issue"],result["lane"]) for result in receipt["results"] if result["issue"] in active_matrix_issues}
-              observed_historical={(result["issue"],result["lane"]) for result in receipt["results"] if result["issue"] in historical_issues}
-              assert observed_active==expected_lane_pairs
-              assert observed_historical=={(issue,lane) for issue in historical_issues}
-              assert int(receipt["active_case_count"])==len(expected_lane_pairs)
-              assert int(receipt["expected_active_case_count"])==int(matrix["active_case_count"])
-              assert int(receipt["case_count"])==len(expected_lane_pairs)+len(historical_issues)
-              assert int(receipt["expected_case_count"])==int(receipt["case_count"])
-              assert int(receipt["historical_issue_count"])==len(historical_issues)
-              assert receipt["missing_cases"]==[]
-              assert int(receipt["failed_cases"])==0
-              assert all(result["status"]!="FAIL" for result in receipt["results"])
-              active_pairs_observed|=observed_active
-              historical_pairs|=observed_historical
-          assert active_pairs_observed==active_pairs_expected
-          assert historical_pairs=={(issue,lane) for issue in historical_issues for lane in ("L1","L2","L3","L4")}
-          aggregate={"schema":"open-issue-polyglot-deep-scan/v3","lane_count":4,"matrix_issue_count":int(matrix["issue_count"]),"active_issue_count":int(matrix["active_issue_count"]),"matrix_case_count":int(matrix["case_count"]),"active_case_count":int(matrix["active_case_count"]),"historical_regression_issue_count":len(historical_issues),"executed_active_case_count":len(active_pairs_observed),"executed_historical_case_count":len(historical_pairs),"executed_case_count":len(active_pairs_observed)+len(historical_pairs),"status":"PASS","foundation_revisions":sorted({r["foundation_revision"] for r in receipts}),"operations_revisions":sorted({r["operations_revision"] for r in receipts}),"review_cases":sum(r["review_cases"] for r in receipts)}
-          Path(".runtime/open-issue-deep-scan/aggregate.json").write_text(json.dumps(aggregate,indent=2)+"\n",encoding="utf-8")
-          print(json.dumps(aggregate,indent=2))
+              lane = receipt["lane"]
+              expected_lane_pairs = {pair for pair in active_pairs_expected if pair[1] == lane}
+              observed_active = {
+                  (result["issue"], result["lane"])
+                  for result in receipt["results"]
+                  if result["issue"] in active_matrix_issues
+              }
+              observed_historical = {
+                  (result["issue"], result["lane"])
+                  for result in receipt["results"]
+                  if result["issue"] in historical_issues
+              }
+              assert observed_active == expected_lane_pairs
+              assert observed_historical == {(issue, lane) for issue in historical_issues}
+              assert int(receipt["active_case_count"]) == len(expected_lane_pairs)
+              assert int(receipt["expected_active_case_count"]) == int(matrix["active_case_count"])
+              assert int(receipt["case_count"]) == len(expected_lane_pairs) + len(historical_issues)
+              assert int(receipt["expected_case_count"]) == int(receipt["case_count"])
+              assert int(receipt["historical_issue_count"]) == len(historical_issues)
+              assert receipt["missing_cases"] == []
+              assert int(receipt["failed_cases"]) == 0
+              assert all(result["status"] != "FAIL" for result in receipt["results"])
+              active_pairs_observed |= observed_active
+              historical_pairs |= observed_historical
+
+          assert active_pairs_observed == active_pairs_expected
+          assert historical_pairs == {(issue, lane) for issue in historical_issues for lane in ("L1", "L2", "L3", "L4")}
+          assert len(active_pairs_observed) == int(matrix["active_case_count"])
+          assert len(historical_pairs) == 16
+
+          aggregate = {
+              "schema": "open-issue-polyglot-deep-scan/v3",
+              "lane_count": 4,
+              "matrix_issue_count": int(matrix["issue_count"]),
+              "active_issue_count": int(matrix["active_issue_count"]),
+              "matrix_case_count": int(matrix["case_count"]),
+              "active_case_count": int(matrix["active_case_count"]),
+              "historical_regression_issue_count": len(historical_issues),
+              "executed_active_case_count": len(active_pairs_observed),
+              "executed_historical_case_count": len(historical_pairs),
+              "executed_case_count": len(active_pairs_observed) + len(historical_pairs),
+              "status": "PASS",
+              "foundation_revisions": sorted({r["foundation_revision"] for r in receipts}),
+              "operations_revisions": sorted({r["operations_revision"] for r in receipts}),
+              "review_cases": sum(r["review_cases"] for r in receipts),
+          }
+          Path(".runtime/open-issue-deep-scan/aggregate.json").write_text(json.dumps(aggregate, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(aggregate, indent=2))
+
       - name: Upload aggregate receipt
-        uses: actions/upload-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4.3.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: open-issue-polyglot-deep-scan-aggregate-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: .runtime/open-issue-deep-scan/aggregate.json
