@@ -8,6 +8,7 @@
 3. `docs/AI_PROJECT_MAP.json`
 4. `docs/AI_PROJECT_MAP.md`
 5. `docs/AI_AUDIT_SYSTEM.md`
+6. `docs/AI_COMPUTE_INSPIRED_PATTERNS.md`
 6. `docs/DOCUMENTATION_INDEX.md`
 7. `docs/DOCUMENTATION_HYGIENE.md`
 8. `docs/FAMILY_CONTRACT.json`
