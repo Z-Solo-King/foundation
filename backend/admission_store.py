@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from hashlib import sha256
+import re
 from time import time
 from typing import Any
 
@@ -13,6 +15,10 @@ from backend.admission import (
     AdmissionSnapshot,
     decide_admission,
 )
+
+
+MAX_EVENT_ID_CHARS = 256
+_EVENT_ID_PATTERN = re.compile(r"^[A-Za-z0-9._:-]+$")
 
 
 ROUTE_COST_UNITS = {
@@ -31,6 +37,10 @@ class AdmissionLease:
     window_start: int
     expires_at: int
     cost_units: int
+
+
+def _storage_event_id(subject_fingerprint: str, route: AdmissionRoute, event_id: str) -> str:
+    return sha256(f"{subject_fingerprint}\0{route.value}\0{event_id}".encode("utf-8")).hexdigest()
 
 
 async def _existing_event(db: Any, event_id: str) -> dict[str, Any] | None:
@@ -59,6 +69,7 @@ async def _handle_existing_event(
     cost_units: int,
     decision: AdmissionDecision,
     policy: AdmissionPolicy,
+    storage_event_id: str,
 ) -> tuple[AdmissionDecision, AdmissionLease | None] | None:
     if (
         str(existing.get("subject_fingerprint", "")) != subject_fingerprint
@@ -123,6 +134,7 @@ async def _insert_new_admission(
     decision: AdmissionDecision,
     *,
     event_id: str,
+    storage_event_id: str,
     window_start: int,
     subject_fingerprint: str,
     route: AdmissionRoute,
@@ -132,7 +144,7 @@ async def _insert_new_admission(
     policy: AdmissionPolicy,
 ) -> tuple[AdmissionDecision, AdmissionLease | None]:
     inserted = await store._insert_if_admissible(
-        event_id=event_id,
+        event_id=storage_event_id,
         window_start=window_start,
         subject_fingerprint=subject_fingerprint,
         route=route,
@@ -152,13 +164,14 @@ async def _insert_new_admission(
                 existing,
                 subject_fingerprint=subject_fingerprint,
                 route=route,
-                event_id=event_id,
+                event_id=storage_event_id,
                 window_start=window_start,
                 expires_at=expires_at,
                 now=now,
                 cost_units=cost_units,
                 decision=decision,
                 policy=policy,
+                storage_event_id=storage_event_id,
             )
         return AdmissionDecision(
             AdmissionOutcome.CONCURRENCY_LIMITED,
@@ -184,9 +197,9 @@ class D1AdmissionStore:
     async def _snapshot(self, *, window_start: int, subject_fingerprint: str, now: int) -> AdmissionSnapshot:
         row = await self.db.prepare(
             """SELECT
-                 (SELECT COUNT(*) FROM public_admission_events
+                 (SELECT COALESCE(SUM(cost_units), 0) FROM public_admission_events
                     WHERE window_start = ? AND subject_fingerprint = ?) AS subject_requests,
-                 (SELECT COUNT(*) FROM public_admission_events
+                 (SELECT COALESCE(SUM(cost_units), 0) FROM public_admission_events
                     WHERE window_start = ?) AS global_requests,
                  (SELECT COUNT(*) FROM public_admission_events
                     WHERE subject_fingerprint = ?
@@ -231,9 +244,9 @@ class D1AdmissionStore:
                   cost_units, lease_expires_at, released_at)
                SELECT ?, ?, ?, ?, ?, ?, NULL
                WHERE
-                 (SELECT COUNT(*) FROM public_admission_events
+                 (SELECT COALESCE(SUM(cost_units), 0) FROM public_admission_events
                     WHERE window_start = ? AND subject_fingerprint = ?) < ?
-                 AND (SELECT COUNT(*) FROM public_admission_events
+                 AND (SELECT COALESCE(SUM(cost_units), 0) FROM public_admission_events
                     WHERE window_start = ?) < ?
                  AND (SELECT COUNT(*) FROM public_admission_events
                     WHERE subject_fingerprint = ?
@@ -271,6 +284,7 @@ class D1AdmissionStore:
         window_start = now - (now % policy.window_seconds)
         expires_at = now + policy.window_seconds
         cost_units = ROUTE_COST_UNITS[route]
+        storage_event_id = _storage_event_id(subject_fingerprint, route, event_id)
 
         await self.db.prepare(
             "DELETE FROM public_admission_events WHERE window_start < ?"
@@ -304,12 +318,14 @@ class D1AdmissionStore:
                 cost_units=cost_units,
                 decision=decision,
                 policy=policy,
+                storage_event_id=storage_event_id,
             )
 
         return await _insert_new_admission(
             self,
             decision,
             event_id=event_id,
+            storage_event_id=storage_event_id,
             window_start=window_start,
             subject_fingerprint=subject_fingerprint,
             route=route,
@@ -317,6 +333,7 @@ class D1AdmissionStore:
             expires_at=expires_at,
             now=now,
             policy=policy,
+            storage_event_id=storage_event_id,
         )
 
     @staticmethod
@@ -325,10 +342,15 @@ class D1AdmissionStore:
             raise ValueError("subject_fingerprint is required")
         if not event_id.strip():
             raise ValueError("event_id is required")
+        if len(event_id) > MAX_EVENT_ID_CHARS:
+            raise ValueError("event_id exceeds supported size")
+        if not _EVENT_ID_PATTERN.fullmatch(event_id):
+            raise ValueError("event_id contains unsupported characters")
 
     async def release(self, lease: AdmissionLease | None) -> None:
         if lease is None:
             return
+        storage_event_id = _storage_event_id(lease.subject_fingerprint, lease.route, lease.event_id)
         await self.db.prepare(
             "UPDATE public_admission_events SET released_at = ? WHERE event_id = ? AND released_at IS NULL"
-        ).bind(int(time()), lease.event_id).run()
+        ).bind(int(time()), storage_event_id).run()
