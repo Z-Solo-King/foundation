@@ -11,6 +11,13 @@
 - `docs/FAMILY_CONTRACT.json` and `docs/FAMILY_ARCHITECTURE.md` define the family boundary.
 - Live repository state and fresh execution evidence override dated handoffs, old pull requests and chat notes.
 
+## Naming and folders
+
+- Active canonical documents use stable descriptive names without date/revision suffixes.
+- Dated snapshots are historical and should live under `docs/history/<topic>/` when relocation is practical.
+- New collection folders use lowercase descriptive names; avoid `latest`, `new`, `temp`, `draft` and similar vague names for canonical documents.
+- Machine-readable contracts use stable purpose-based names; date suffixes are reserved for historical snapshots.
+
 ## Dated documents
 
 Dated documents are retained for provenance, incident history or design history. They must state whether they are historical or current. Historical documents must not imply current production certification.
