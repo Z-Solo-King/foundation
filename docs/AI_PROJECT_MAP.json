@@ -1,0 +1,313 @@
+{
+  "schema_version": "ai-project-map/v1",
+  "repository": "Z-Solo-King/foundation",
+  "visibility": "public-safe",
+  "generated_at": "2026-09-28",
+  "structural_inventory": {
+    "tree_entries": 656,
+    "documentation_files": 106,
+    "workflow_files": 43,
+    "test_files": 179,
+    "extensions": {
+      "py": 332,
+      "js": 20,
+      "mjs": 10,
+      "ts": 18,
+      "sql": 10,
+      "json": 40,
+      "yml": 46
+    }
+  },
+  "function_metrics": {
+    "canonical_surface_declarations": 96,
+    "whole_repo_exact": false,
+    "refresh": "language-aware full-tree scanner",
+    "count_reconciliation": "sum(feature.functions) equals this value; declaration counts come from fetched current-main files and are lexical/structural baselines, not AST-certified whole-repo totals."
+  },
+  "policy_catalog": {
+    "P001": "one owner",
+    "P002": "public/private boundary",
+    "P003": "fail closed",
+    "P004": "evidence ladder",
+    "P005": "deterministic normalization/mapping",
+    "P006": "bounded resource/time/network",
+    "P007": "provenance/lineage",
+    "P008": "idempotent side effects",
+    "P009": "GitHub Actions deployment authority",
+    "P010": "AI not evidence authority",
+    "P011": "separate GitHub/Cloudflare chats",
+    "P012": "cross-fire",
+    "P013": "benchmark is not production proof",
+    "P014": "historical docs are provenance",
+    "P015": "no access-control bypass"
+  },
+  "feature_domains": [
+    {
+      "id": "FND.public_worker",
+      "surfaces": [
+        "worker.py"
+      ],
+      "functions": 28,
+      "key": [
+        "fetch",
+        "_authorized",
+        "_public_admit",
+        "_operations_chat",
+        "_operations_chat_stream",
+        "_publish_evidence"
+      ],
+      "usage": "public HTTP/SSE boundary and protected bridge",
+      "policies": [
+        "P001",
+        "P002",
+        "P003",
+        "P006",
+        "P007",
+        "P008",
+        "P009",
+        "P015"
+      ],
+      "function_files": [
+        {
+          "path": "worker.py",
+          "declarations": 28
+        }
+      ],
+      "policy_logic": "P002 auth boundary; P003 fail-closed; P006 bounded work; P008 idempotency; P009 deployment authority; P015 no bypass"
+    },
+    {
+      "id": "FND.request_contract",
+      "surfaces": [
+        "backend/api/models.py",
+        "backend/api/main.py"
+      ],
+      "functions": 6,
+      "key": [
+        "validate",
+        "submit_research",
+        "readiness_endpoint",
+        "health_endpoint"
+      ],
+      "usage": "public request and readiness contract",
+      "policies": [
+        "P001",
+        "P003",
+        "P006",
+        "P007"
+      ],
+      "function_files": [
+        {
+          "path": "backend/api/main.py",
+          "declarations": 4
+        },
+        {
+          "path": "backend/api/models.py",
+          "declarations": 2
+        }
+      ],
+      "policy_logic": "P003 invalid requests fail closed; P006 bounded input; P007 preserve request/run provenance"
+    },
+    {
+      "id": "FND.research_execution",
+      "surfaces": [
+        "backend/execution/engine.py",
+        "backend/execution/pipeline.py"
+      ],
+      "functions": 13,
+      "key": [
+        "plan_stages",
+        "create_run",
+        "start_research",
+        "_terminalize",
+        "add_observation",
+        "verify_and_add_claim",
+        "complete_research"
+      ],
+      "usage": "ResearchRun lifecycle and terminalization",
+      "policies": [
+        "P001",
+        "P003",
+        "P004",
+        "P007",
+        "P008"
+      ],
+      "function_files": [
+        {
+          "path": "backend/execution/engine.py",
+          "declarations": 11
+        },
+        {
+          "path": "backend/execution/pipeline.py",
+          "declarations": 2
+        }
+      ],
+      "policy_logic": "P004 evidence tier controls lifecycle claims; P007 lineage; P008 terminal/replay safety"
+    },
+    {
+      "id": "FND.execution_boundary",
+      "surfaces": [
+        "backend/execution/worker_boundary.py"
+      ],
+      "functions": 8,
+      "key": [
+        "create_task",
+        "validate_task",
+        "validate_result",
+        "_bounded_json_digest"
+      ],
+      "usage": "bounded task/result envelopes and digests",
+      "policies": [
+        "P003",
+        "P006",
+        "P007",
+        "P008",
+        "P015"
+      ],
+      "function_files": [
+        {
+          "path": "backend/execution/worker_boundary.py",
+          "declarations": 8
+        }
+      ],
+      "policy_logic": "P003 reject invalid envelopes; P006 bounded materialization; P007 deterministic digest; P015 reject unsafe trust state"
+    },
+    {
+      "id": "FND.evidence_publication",
+      "surfaces": [
+        "backend/evidence_certificate.py",
+        "backend/evidence_selection.py",
+        "backend/intelligence/claims.py"
+      ],
+      "functions": 8,
+      "key": [
+        "create_certificate",
+        "verify_certificate",
+        "select_evidence"
+      ],
+      "usage": "certificate, evidence selection, claim record",
+      "policies": [
+        "P004",
+        "P005",
+        "P007",
+        "P010"
+      ],
+      "function_files": [
+        {
+          "path": "backend/evidence_certificate.py",
+          "declarations": 3
+        },
+        {
+          "path": "backend/evidence_selection.py",
+          "declarations": 4
+        },
+        {
+          "path": "backend/intelligence/claims.py",
+          "declarations": 1
+        }
+      ],
+      "policy_logic": "P004 evidence gate; P005 deterministic selection/dedupe; P007 lineage-bound certificate; P010 AI is not evidence authority"
+    },
+    {
+      "id": "FND.identity_mapping",
+      "surfaces": [
+        "foundation_core/product_identity.py",
+        "foundation_core/product_mapping.py",
+        "foundation_core/normalization.py",
+        "foundation_core/field_routing.py"
+      ],
+      "functions": 21,
+      "key": [
+        "identity_matches",
+        "map_product",
+        "normalize_specs",
+        "canonical_url",
+        "route_fields"
+      ],
+      "usage": "deterministic identity/mapping/normalization/routing",
+      "policies": [
+        "P001",
+        "P005",
+        "P006",
+        "P007"
+      ],
+      "function_files": [
+        {
+          "path": "foundation_core/product_identity.py",
+          "declarations": 5
+        },
+        {
+          "path": "foundation_core/product_mapping.py",
+          "declarations": 10
+        },
+        {
+          "path": "foundation_core/normalization.py",
+          "declarations": 4
+        },
+        {
+          "path": "foundation_core/field_routing.py",
+          "declarations": 2
+        }
+      ],
+      "policy_logic": "P001 one identity owner; P005 normalize before mapping; P006 bounded inputs; P007 preserve provenance"
+    },
+    {
+      "id": "FND.frontend_lifecycle",
+      "surfaces": [
+        "frontend/app.js",
+        "frontend/lifecycle_controller.js"
+      ],
+      "functions": 12,
+      "key": [
+        "cancelActiveChat",
+        "answerOrFallback",
+        "enqueue",
+        "recover"
+      ],
+      "usage": "client lifecycle, cancellation and recovery",
+      "policies": [
+        "P002",
+        "P003",
+        "P006",
+        "P008",
+        "P011"
+      ],
+      "function_files": [
+        {
+          "path": "frontend/app.js",
+          "declarations": 9
+        },
+        {
+          "path": "frontend/lifecycle_controller.js",
+          "declarations": 3
+        }
+      ],
+      "policy_logic": "P003 explicit failure/recovery; P006 bounded client work; P008 cancellation/recovery avoids duplicate terminal effects; P011 cross-chat state is not evidence"
+    },
+    {
+      "id": "FND.ci_benchmark_release",
+      "surfaces": [
+        ".github/workflows/",
+        "benchmark/",
+        "DEPLOYMENT.md"
+      ],
+      "functions": null,
+      "key": [],
+      "usage": "CI, audit, benchmark, nightly research and production release",
+      "policies": [
+        "P004",
+        "P009",
+        "P011",
+        "P012",
+        "P013"
+      ]
+    }
+  ],
+  "flows": [
+    "chat -> admission -> Operations -> grounded response",
+    "research -> run -> observation/evidence -> verification -> publication/answer",
+    "observation -> normalization -> identity/mapping -> evidence",
+    "PR -> required CI -> release -> runtime receipt"
+  ],
+  "audit_system": "docs/AI_AUDIT_SYSTEM.md",
+  "source_head_at_generation": "09c2c218d35d851e463a31c5d0e6536289b34393"
+}

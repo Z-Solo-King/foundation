@@ -105,6 +105,13 @@ Do not create a language-specific authority merely to improve throughput.
 
 When context/tool volume becomes large or responsiveness degrades, persist a compact checkpoint in the canonical repository records and continue from fresh state. Do not infer execution success/failure from the UI alone.
 
-## 13. Completion rule
+## 13. Audit operating system
+- docs/AI_AUDIT_SYSTEM.md defines reusable audit modes, issue-first triage, cross-fire, boundary-reversal lanes, hybrid profiles, the AI Brain coordinator and continuous evolution.
+- docs/AI_PROJECT_MAP.json is the generic navigation graph for structure, features, functions, consumers, policies, evidence and audit routing.
+- Start large audits with non-mechanical issue/PR/comment inventory before code mutation.
+- Cross-fire requires independent lenses; mirrored implementation is not independent evidence.
+- Lane boundaries may be reversed or expanded to 4, 6 or more only when starting and ending surfaces remain non-overlapping.
+- New reproducible findings update an existing canonical issue/rule/test/map before any new work item is created.
 
+## 14. Completion rule
 The queue is complete only when remaining items are explicit runtime/external/admin gates, duplicates/superseded items or deferred roadmap work, with canonical owner and missing evidence recorded.
