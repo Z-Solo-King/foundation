@@ -10,7 +10,9 @@
     "docs/FAMILY_CONTRACT.json",
     "docs/FAMILY_ARCHITECTURE.md",
     "docs/FAMILY_INTEGRATION_GRAPH.json",
-    "Z-Solo-King/operations:docs/CURRENT_SOURCE_OF_TRUTH.md"
+    "Z-Solo-King/operations:docs/CURRENT_SOURCE_OF_TRUTH.md",
+    "docs/AI_PROJECT_MAP.json",
+    "docs/AI_AUDIT_SYSTEM.md"
   ],
   "canonical": {
     "chat_product_ui": "frontend/index.html",
@@ -75,5 +77,11 @@
     "publish citations/uncertainty",
     "persist only through the owning boundary"
   ],
-  "operations_use": "Operations is the private control plane for Heroic AI. It consumes Foundation contracts and public-safe results; it does not copy Foundation implementation authority. Operations contains no GitHub Actions workflows; all family automation is owned by Foundation."
+  "operations_use": "Operations is the private control plane for Heroic AI. It consumes Foundation contracts and public-safe results; it does not copy Foundation implementation authority. Operations contains no GitHub Actions workflows; all family automation is owned by Foundation.",
+  "ai_navigation": {
+    "map": "docs/AI_PROJECT_MAP.json",
+    "audit_system": "docs/AI_AUDIT_SYSTEM.md",
+    "authority": "REPOSITORY_MAP.json + FAMILY_CONTRACT.json",
+    "rule": "navigation metadata never becomes policy or implementation authority"
+  }
 }
