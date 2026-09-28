@@ -2,7 +2,16 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="ebbcde494b3d07aaef6a3a5a59a7135cb309114b"
+PIN_MANIFEST="docs/OPERATIONS_PIN_MANIFEST.json"
+OPERATIONS_REF="$(python - "$PIN_MANIFEST" <<'PY'
+import json, re, sys
+manifest = json.load(open(sys.argv[1], encoding="utf-8"))
+value = manifest["pins"]["production_runtime"]["sha"]
+if not re.fullmatch(r"[0-9a-f]{40}", value):
+    raise SystemExit("production Operations pin is not a 40-hex SHA")
+print(value)
+PY
+)"
 OPERATIONS_SERVICE_NAME="operations"
 OPERATIONS_EDGE_SERVICE_NAME="operations-edge"
 BASE_URL="https://ai-cio.pages.dev"
@@ -24,8 +33,8 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = 'ebbcde494b3d07aaef6a3a5a59a7135cb309114b'
-
+test -n "${B2_BUCKET:-}" || { echo 'Missing B2_BUCKET release input'; exit 1; }
+test -n "${B2_ENDPOINT:-}" || { echo 'Missing B2_ENDPOINT release input'; exit 1; }
 after_install_marker=''
 
 python -m pip install --upgrade pip
@@ -96,7 +105,7 @@ if [ "$installation_status" -ne 0 ]; then
 fi
 installation_id="$(tr -d "\r\n" < "$installation_output")"
 test -n "$installation_id" || { echo "GitHub App installation discovery returned an empty installation id"; exit 1; }
-echo "Resolved Operations GitHub App installation: PASS ($installation_id)"
+echo "Resolved Operations GitHub App installation: PASS"
 
 # Verify that the resolved installation belongs to the supplied App, and mint a short-lived token.
 installation_meta_status=$(curl -sS -o "$RUNNER_TEMP/github-app-installation-meta.json" -w '%{http_code}' \
@@ -144,7 +153,7 @@ echo "GET Operations approved commit -> HTTP ${ref_status}"
 test "$ref_status" = '200' || { jq -c '{message,errors,documentation_url}' "$RUNNER_TEMP/operations-ref-response.json" || cat "$RUNNER_TEMP/operations-ref-response.json"; exit 1; }
 jq -e --arg expected "$OPERATIONS_REF" '.sha == $expected' "$RUNNER_TEMP/operations-ref-response.json" >/dev/null
 
-echo "private Operations access: PASS (${OPERATIONS_REF})"
+echo "private Operations access: PASS"
 
 # The canonical public origin is the Pages front door; no custom-domain zone is required for this release.
 askpass="$RUNNER_TEMP/git-askpass-operations.sh"
@@ -730,4 +739,4 @@ for legacy_worker in "$legacy_private_worker" "$legacy_public_worker"; do
     fi
   fi
 done
-echo "Production release completed for ${GITHUB_SHA} using Operations ${OPERATIONS_REF}"
+echo "Production release completed successfully"
