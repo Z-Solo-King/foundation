@@ -14,7 +14,7 @@ def test_active_files_includes_operational_public_types():
 def test_private_references_are_exempt_only_on_intentional_nonruntime_surfaces(tmp_path):
     doc = tmp_path / 'docs' / 'example.md'
     doc.parent.mkdir(parents=True, exist_ok=True)
-    doc.write_text('operations/private/control_plane_runtime.py\n', encoding='utf-8')
+    doc.write_text('Operations handles private control-plane details.\n', encoding='utf-8')
     assert not any(f.rule == 'private-reference' for f in lint_file(doc, tmp_path))
     workflow = tmp_path / '.github' / 'workflows' / 'workflow.yml'
     workflow.parent.mkdir(parents=True, exist_ok=True)
