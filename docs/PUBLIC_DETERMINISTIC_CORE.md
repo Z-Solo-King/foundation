@@ -12,7 +12,7 @@ The current package is `foundation_core/`. Its responsibilities are deliberately
 - deterministic plausibility signals
 - stable mapping of an already-observed product record
 
-The package performs no network access, credential handling, provider selection, challenge solving, proxy rotation, or private policy enforcement.
+The package performs no network access, credential handling, provider selection, acquisition, browser automation, or private policy enforcement.
 
 ## Source of truth
 
@@ -62,7 +62,7 @@ Keep private:
 - network acquisition and source recovery
 - provider/platform adapters
 - credentials and endpoints that are not public contracts
-- access-control handling and challenge bypass logic
+- network acquisition and source-recovery logic
 - resource ledgers and quota authority
 - trust-boundary policy
 - private evaluation and holdouts
