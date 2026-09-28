@@ -153,6 +153,9 @@ class Handler(BaseHTTPRequestHandler):
                 "Authorization": "Bearer " + self.server.auth_token,
                 "Content-Type": "application/json",
                 "Idempotency-Key": request_id,
+                # Explicit API-client identity; do not rely on urllib's default
+                # Python-urllib User-Agent, which may be classified as automated web traffic.
+                "User-Agent": "HeroicAI-NightlyResearch/1.0",
             },
             method="POST",
         )
