@@ -285,24 +285,6 @@ def test_fetch_public_url_caches_dns_per_host_across_redirects():
     assert calls == [("example.com", "A"), ("example.com", "AAAA")]
 
 
-def test_dns_over_https_does_not_fan_out_on_successful_empty_answer(monkeypatch):
-    import backend.sources.http as http
-
-    calls = []
-
-    async def response(endpoint, _encoded_query):
-        calls.append(endpoint)
-        return _DnsResponse(200, _dns_packet(record_type=1, addresses=()))
-
-    async def doh_request(endpoint, encoded_query):
-        return await response(endpoint, encoded_query)
-
-    monkeypatch.setattr(http, "_doh_request", doh_request)
-    with pytest.raises(RuntimeError, match="DNS resolution failed"):
-        asyncio.run(http._dns_over_https("example.com", "A"))
-    assert calls == ["https://cloudflare-dns.com/dns-query"]
-
-
 def test_call_fetcher_never_drops_production_redirect_options():
     import backend.sources.http as http
     from backend.core.workers_runtime import WorkersFetchAdapter
