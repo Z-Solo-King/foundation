@@ -241,7 +241,7 @@ async def test_worker_http_public_diagnostics_and_research_fail_closed_paths(mon
     async def broken_storage(*args, **kwargs): raise RuntimeError("storage diagnostic exploded")
     monkeypatch.setattr(worker, "_storage_diagnostic", broken_storage)
     failed_storage = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {"run_id": "run-1"}, auth_headers))
-    assert "storage diagnostic failure" in str(failed_storage)
+    assert "storage_diagnostic_unavailable" in str(failed_storage)
     missing = await entry.fetch(Request("GET", "https://x/api/v1/research/missing", None, {"Authorization": "Bearer secret"}))
     assert "run not found" in str(missing)
     persistence_error = worker.Default(); persistence_error.env = SimpleNamespace(DB=BrokenDB(), ENVIRONMENT="production", AUTH_TOKEN="secret")
@@ -252,7 +252,7 @@ async def test_worker_http_public_diagnostics_and_research_fail_closed_paths(mon
     bad_shape = await entry.fetch(Request("POST", "https://x/api/v1/research", {"question": "x", "unexpected": True}, auth_headers))
     assert "unexpected" in str(bad_shape)
     rejected = await entry.fetch(Request("POST", "https://x/api/v1/research", {"question": "x", "strict_zero_cost_only": False}, auth_headers))
-    assert "strict $0 cost mode" in str(rejected)
+    assert "research_rejected" in str(rejected)
 
 
 @pytest.mark.asyncio
@@ -261,12 +261,12 @@ async def test_research_persistence_failures_and_idempotency(monkeypatch):
     entry = worker.Default(); entry.env = SimpleNamespace(DB=DB(), ENVIRONMENT="production", AUTH_TOKEN="secret")
     request = Request("POST", "https://x/api/v1/research", {"question": "x", "source_urls": [], "strict_zero_cost_only": True}, {"Authorization": "Bearer secret", "Content-Type": "application/json"})
     failed = await entry.fetch(request)
-    assert "execution/persistence failure" in str(failed)
+    assert "execution_unavailable" in str(failed)
     assert '"phase": "create_run"' in str(failed)
-    assert '"error_class": "RuntimeError"' in str(failed)
+    assert "RuntimeError" not in str(failed)
     request.headers["Idempotency-Key"] = "key-1"
     failed_idempotent = await entry.fetch(request)
-    assert "execution/persistence failure" in str(failed_idempotent)
+    assert "execution_unavailable" in str(failed_idempotent)
     assert '"phase": "create_run"' in str(failed_idempotent)
 
 
@@ -347,3 +347,102 @@ async def test_public_persistence_diagnostic_operations_are_forwarded(monkeypatc
     assert "persistence_seed" in str(seed)
     assert "persistence_verify" in str(verify)
     assert forwarded_payload.get("sentinel_id") == "covered"
+
+
+
+def test_public_worker_helper_contracts():
+    import worker
+    from types import SimpleNamespace
+
+    assert worker._subject_or_local(
+        SimpleNamespace(headers={"Authorization": "Bearer token"}),
+        SimpleNamespace(ENVIRONMENT="production"),
+    )
+    assert worker._subject_or_local(
+        SimpleNamespace(headers={}),
+        SimpleNamespace(ENVIRONMENT="development", LOCAL_DEVELOPMENT_AUTH_BYPASS="true"),
+    ) == "development-local"
+    assert worker._subject_or_local(
+        SimpleNamespace(headers={}),
+        SimpleNamespace(ENVIRONMENT="production", LOCAL_DEVELOPMENT_AUTH_BYPASS="true"),
+    ) is None
+    assert worker._idempotency_key(SimpleNamespace(headers={"Idempotency-Key": "abc-123"})) == "abc-123"
+    assert worker._idempotency_key(SimpleNamespace(headers={}), "fallback") == "fallback"
+    assert worker._idempotency_key(SimpleNamespace(headers={"Idempotency-Key": "bad key"})) is None
+    assert worker._idempotency_key(SimpleNamespace(headers={"Idempotency-Key": "x" * 257})) is None
+    worker._stable_exception_log("test", RuntimeError("secret"))
+
+
+@pytest.mark.asyncio
+async def test_public_worker_exact_api_paths_do_not_fall_through_to_spa():
+    import worker
+    from types import SimpleNamespace
+
+    class Assets:
+        async def fetch(self, request):
+            return SimpleNamespace(status=200, headers={}, body=b"spa")
+
+    env = SimpleNamespace(AUTH_TOKEN="secret", ENVIRONMENT="production", ASSETS=Assets())
+    entry = worker.Default()
+    entry.env = env
+    headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
+
+    wrong_route = await entry.fetch(SimpleNamespace(method="GET", url="https://x/api/v1/chat/typo", headers=headers))
+    assert wrong_route.status == 404
+    suffix_health = await entry.fetch(SimpleNamespace(method="GET", url="https://x/foo/health", headers={}))
+    assert suffix_health.status == 200
+    wrong_method = await entry.fetch(SimpleNamespace(method="GET", url="https://x/api/v1/chat", headers=headers))
+    assert wrong_method.status == 404
+
+
+@pytest.mark.asyncio
+async def test_chatbot_diagnostic_exception_is_stable(monkeypatch):
+    import worker
+
+    class BrokenBinding:
+        async def fetch(self, request):
+            raise RuntimeError("private binding detail")
+
+    env = SimpleNamespace(OPERATIONS=BrokenBinding(), ENVIRONMENT="production", AUTH_TOKEN="secret")
+    body, status = await worker._operations_chatbot_diagnostic(
+        env,
+        Request("POST", "https://x/api/v1/chatbot/diagnostic", {}, {"Authorization": "Bearer secret"}),
+    )
+    assert status == 503
+    assert body["error"] == "chatbot_diagnostic_unavailable"
+    assert "private binding detail" not in str(body)
+
+
+@pytest.mark.asyncio
+async def test_chat_rejects_invalid_idempotency_key_before_admission(monkeypatch):
+    import worker
+
+    called = False
+
+    async def admit(*args, **kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("invalid key must be rejected before admission")
+
+    monkeypatch.setattr(worker, "_public_admit", admit)
+    env = SimpleNamespace(
+        DB=DB(rows=[]),
+        ENVIRONMENT="production",
+        AUTH_TOKEN="secret",
+    )
+    entry = worker.Default()
+    entry.env = env
+    response = await entry.fetch(
+        Request(
+            "POST",
+            "https://x/api/v1/chat",
+            {"chat_id": "c", "request_id": "r", "message": "hello", "mode": "chat", "strict_zero_cost_only": True},
+            {
+                "Authorization": "Bearer secret",
+                "Content-Type": "application/json",
+                "Idempotency-Key": "bad key",
+            },
+        )
+    )
+    assert response.status == 400
+    assert called is False
