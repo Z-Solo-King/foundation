@@ -511,8 +511,13 @@ class Default(WorkerEntrypoint):
                 req.validate()
             except (TypeError, ValueError) as exc:
                 return _authenticated_json({"ok": False, "error": str(exc)}, status=400)
-            subject = authenticated_subject_fingerprint(request) or "development-local"
-            event_id = request.headers.get("Idempotency-Key") or req.request_id or uuid.uuid4().hex
+            subject = _subject_or_local(request, self.env)
+            if subject is None:
+                return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
+            raw_key = request.headers.get("Idempotency-Key")
+            event_id = _idempotency_key(request, req.request_id or uuid.uuid4().hex)
+            if raw_key is not None and event_id is None:
+                return _authenticated_json({"ok": False, "error": "invalid_idempotency_key"}, status=400)
             decision, lease = await _public_admit(self.env, AdmissionRoute.CHAT, subject, event_id)
             denied = _admission_response(decision)
             if denied is not None:
