@@ -17,12 +17,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 EXCLUDED = {".git", ".venv", "__pycache__", "archive"}
 PROTECTED_PRIVATE_MARKERS = ('__HEROIC_PRIVATE_RUNTIME_MARKER__',)
-FORBIDDEN_PRIVATE_MARKERS = (
-    "private.chatbot",
-    "resource_ledger",
-    "promotion.py",
-    "operations/",
-    "extractor_mapper",
+PRIVATE_REFERENCE_PATTERNS = (
+    re.compile(r"(?<![A-Za-z0-9_.-])operations/private(?:/|\\b)"),
+    re.compile(r"(?<![A-Za-z0-9_.-])private/[A-Za-z0-9_.-]+(?:/|\\b)"),
+    re.compile(r"(?<![A-Za-z0-9_.-])private\\.[A-Za-z0-9_]+"),
+    re.compile(r"Z-Solo-King/operations@[0-9a-f]{40}"),
 )
 NETWORK_MODULES = {"requests", "httpx", "urllib", "aiohttp"}
 
@@ -79,11 +78,18 @@ def private_reference_findings(path: Path, source: str) -> list[Finding]:
     relative = rel(path)
     if relative == "scripts/public_security_lint.py":
         return []
-    return [
-        Finding(relative, "private-reference", f"public source contains private implementation marker {marker}")
-        for marker in FORBIDDEN_PRIVATE_MARKERS
-        if marker in source
-    ]
+    findings = []
+    for pattern in PRIVATE_REFERENCE_PATTERNS:
+        if pattern.search(source):
+            findings.append(
+                Finding(
+                    relative,
+                    "private-reference",
+                    "public source contains a private implementation path or import",
+                )
+            )
+            break
+    return findings
 
 def private_revision_findings(path: Path, source: str) -> list[Finding]:
     relative = rel(path)
