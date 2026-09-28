@@ -223,6 +223,43 @@ def _admission_response(decision):
     return response
 
 
+
+_PUBLIC_CHAT_TOP_LEVEL_FIELDS = frozenset({"ok", "chat_id", "request_id", "error"})
+_PUBLIC_CHAT_RESPONSE_FIELDS = frozenset({
+    "response_id", "status", "result_state", "text", "sources", "generation_status",
+})
+
+
+def _public_chat_body(body):
+    """Project the private chat result onto the documented public response schema."""
+    if not isinstance(body, dict):
+        return {"ok": False, "error": "invalid_private_chat_response"}
+    public = {key: body[key] for key in _PUBLIC_CHAT_TOP_LEVEL_FIELDS if key in body}
+    response = body.get("response")
+    if isinstance(response, dict):
+        public["response"] = {
+            key: response[key]
+            for key in _PUBLIC_CHAT_RESPONSE_FIELDS
+            if key in response
+        }
+        sources = public["response"].get("sources")
+        if isinstance(sources, list):
+            safe_sources = []
+            for item in sources[:32]:
+                if isinstance(item, str):
+                    safe_sources.append(item[:4000])
+                elif isinstance(item, dict):
+                    safe_sources.append({
+                        key: item[key]
+                        for key in ("title", "url", "source_family", "acquisition_method", "evidence_status")
+                        if key in item and isinstance(item[key], str)
+                    })
+            public["response"]["sources"] = safe_sources
+        elif sources is not None:
+            public["response"]["sources"] = []
+    return public
+
+
 async def _operations_chat(env, payload, request):
     """Proxy synchronous Heroic AI chat only through the configured private service binding."""
     operations = getattr(env, "OPERATIONS", None)
@@ -242,14 +279,9 @@ async def _operations_chat(env, payload, request):
         body = await upstream.json()
         if not isinstance(body, dict):
             return {"ok": False, "error": "invalid_private_chat_response"}, 503
-        return body, upstream.status
+        return _public_chat_body(body), upstream.status
     except Exception as exc:
-        return {
-            "ok": False,
-            "error": "chat_backend_unavailable",
-            "error_class": type(exc).__name__,
-            "error_detail": str(exc)[:240],
-        }, 503
+        return {"ok": False, "error": "chat_backend_unavailable"}, 503
 
 
 def _public_sse_response(upstream):
@@ -541,8 +573,8 @@ class Default(WorkerEntrypoint):
                 )
             except PublicReadCursorError as exc:
                 return _authenticated_json({"ok": False, "error": str(exc)}, status=400)
-            except Exception as exc:
-                return _authenticated_json({"ok": False, "error": f"persistence failure: {exc}"}, status=503)
+            except Exception:
+                return _authenticated_json({"ok": False, "error": "persistence_unavailable"}, status=503)
             if payload is None:
                 return _authenticated_json({"ok": False, "error": "run not found"}, status=404)
             return _authenticated_json({"ok": True, **payload})

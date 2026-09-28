@@ -62,8 +62,8 @@ async def ingest_sources(env, run_id, req, *, fetcher, persistence_cls):
                 )
             )
             results.append({"url": fetched.final_url, "status": fetched.status, "source_id": source_id, "observation_id": observation_id, "version_id": version_id, "content_hash": content_hash, "bytes": len(content), "access_state": access_state, "retrieval_method": "http_fetch", "source_family_id": family})
-        except Exception as exc:
-            results.append({"url": url, "status": "error", "error": str(exc)})
+        except Exception:
+            results.append({"url": url, "status": "error", "error": "source_fetch_failed"})
     if write_statements:
         await env.DB.batch(write_statements)
     return results

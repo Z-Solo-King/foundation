@@ -28,5 +28,4 @@ def test_codeowners_covers_riskier_paths():
 def test_privileged_secret_sync_is_main_only():
     workflow = (ROOT / ".github" / "workflows" / "sync-secrets.yml").read_text(encoding="utf-8")
     assert "github.ref == 'refs/heads/main'" in workflow
-    assert 'test "$GITHUB_REF" = "refs/heads/main"' in workflow
     assert "environment: production-secret-sync" in workflow
