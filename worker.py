@@ -573,8 +573,8 @@ class Default(WorkerEntrypoint):
                 )
             except PublicReadCursorError as exc:
                 return _authenticated_json({"ok": False, "error": str(exc)}, status=400)
-            except Exception as exc:
-                return _authenticated_json({"ok": False, "error": f"persistence failure: {exc}"}, status=503)
+            except Exception:
+                return _authenticated_json({"ok": False, "error": "persistence_unavailable"}, status=503)
             if payload is None:
                 return _authenticated_json({"ok": False, "error": "run not found"}, status=404)
             return _authenticated_json({"ok": True, **payload})

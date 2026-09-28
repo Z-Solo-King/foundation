@@ -246,7 +246,7 @@ async def test_worker_http_public_diagnostics_and_research_fail_closed_paths(mon
     assert "run not found" in str(missing)
     persistence_error = worker.Default(); persistence_error.env = SimpleNamespace(DB=BrokenDB(), ENVIRONMENT="production", AUTH_TOKEN="secret")
     failed_get = await persistence_error.fetch(Request("GET", "https://x/api/v1/research/run-1", None, {"Authorization": "Bearer secret"}))
-    assert "persistence failure" in str(failed_get)
+    assert "persistence_unavailable" in str(failed_get)
     invalid_research = await entry.fetch(Request("POST", "https://x/api/v1/research", [], auth_headers))
     assert "invalid JSON object" in str(invalid_research)
     bad_shape = await entry.fetch(Request("POST", "https://x/api/v1/research", {"question": "x", "unexpected": True}, auth_headers))
