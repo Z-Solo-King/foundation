@@ -318,7 +318,7 @@ def test_credential_policy_documents_the_separation():
     assert "B2 credentials are secrets and never belong in Git" in deployment
     assert "`OPERATIONS_APP_ID`" in policy
     assert "purpose-specific GitHub App credential family" in backup
-    assert CANONICAL_PRODUCTION_OPERATIONS_REF in deployment
+    assert "OPERATIONS_PIN_MANIFEST.json" in deployment
 
 
 def test_backup_manifests_cannot_claim_remote_restore_without_test():
@@ -429,7 +429,8 @@ def test_live_extractor_benchmark_uses_versioned_runtime_and_tool_pins():
     assert tools_expected in workflow
     assert extractor_ref in workflow
     assert BENCHMARK_TOOLS_REF in workflow
-    assert CANONICAL_PRODUCTION_OPERATIONS_REF in production
+    assert "PIN_MANIFEST" in production
+    assert "production_runtime" in production
 
 
 def test_polyglot_review_installs_declared_operations_dependencies():
@@ -451,7 +452,8 @@ def test_nightly_migration_review_uses_separate_immutable_tooling_pin():
 
 def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert f'OPERATIONS_REF="{CANONICAL_PRODUCTION_OPERATIONS_REF}"' in deployment
+    assert 'PIN_MANIFEST="docs/OPERATIONS_PIN_MANIFEST.json"' in deployment
+    assert 'manifest["pins"]["production_runtime"]["sha"]' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
     assert "OPERATIONS_RESEARCH_REF: ebbcde494b3d07aaef6a3a5a59a7135cb309114b" in nightly
 
