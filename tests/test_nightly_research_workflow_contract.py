@@ -18,6 +18,8 @@ def test_production_gate_is_event_driven_and_exact_sha_bound():
     assert "workflowName" in text
     assert "headSha" in text
     assert "conclusion" in text
+    assert '.jobs[]? | select(.name == "Canonical Heroic AI production release")' in text
+    assert 'select(.name == "Run canonical production release")' in text
     assert "timeout-minutes: 5" in text
     assert "short reconciliation" in text
     assert "seq 1 12" in text
