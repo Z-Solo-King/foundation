@@ -10,7 +10,7 @@
 - Foundation owns public-safe contracts, deterministic public core, public API/frontend, GitHub Actions and deployment orchestration.
 - Operations owns protected runtime policy, resource governance, acquisition/execution, provider state, chatbot orchestration, evaluation, promotion/rollback and private runtime evidence.
 - Never copy private policy/runtime authority into Foundation or create a second owner for the same behavior.
-- GitHub and Cloudflare may both be consulted during diagnosis when the connectors are available, but operational mutations remain bounded by the owning control-plane boundary. A GitHub-side document does not certify Cloudflare runtime state.
+- Operational work uses separate GitHub and Cloudflare chats because the connector surfaces are intentionally isolated for this project. GitHub chat handles repository/CI/issues/PRs/docs; Cloudflare chat handles Worker/D1/configuration/deployment/runtime verification. Never infer one surface from the other.
 
 ## 2. Work cycle
 
@@ -78,7 +78,7 @@ For connector-separated operational work:
 - Cloudflare chat handles Worker/D1/configuration/deployment/runtime verification.
 - Shared state is carried through canonical source-of-truth files and exact receipts, not conversational assumptions.
 
-When both connectors are available for diagnosis, reconcile both before making a cross-system claim.
+Cross-surface conclusions are reconciled through compact repository handoffs and exact runtime receipts exchanged between the two chats.
 
 ## 9. PR / issue discipline
 

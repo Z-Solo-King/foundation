@@ -29,7 +29,7 @@ Current evidence classes:
 
 GitHub-side repository/CI work and Cloudflare-side runtime/configuration work are handled in separate chats.
 This repository does not treat conversational expectations from a different chat as runtime evidence.
-The current Foundation public-safe continuation policy is docs/AI_AGENT_EXECUTION_POLICY_2026-09-28.md.
+The current Foundation public-safe continuation policy is docs/AI_AGENT_EXECUTION_POLICY.md.
 The current public-safe handoff is docs/CHAT_CONTINUATION_HANDOFF_2026-09-28.md.
 
 ## Queue integrity
