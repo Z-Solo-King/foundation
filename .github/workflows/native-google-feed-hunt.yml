@@ -80,7 +80,7 @@ jobs:
 
   stage1_gate:
     name: "Gate · require both Stage 1 feeds"
-    needs: [stage1_gate]
+    needs: [stage1]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -116,7 +116,7 @@ jobs:
 
   stage2:
     name: "Stage 2 · next 4 · ${{ matrix.slug }}"
-    needs: [stage1]
+    needs: [stage1_gate]
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
@@ -167,7 +167,7 @@ jobs:
 
   stage2_gate:
     name: "Gate · require all 4 learned feeds"
-    needs: [stage2_gate]
+    needs: [stage2]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -203,7 +203,7 @@ jobs:
 
   stage3:
     name: "Stage 3 · next 6 · ${{ matrix.slug }}"
-    needs: [stage2]
+    needs: [stage2_gate]
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
@@ -258,7 +258,7 @@ jobs:
 
   stage3_gate:
     name: "Gate · require all 6 learned feeds"
-    needs: [stage3_gate]
+    needs: [stage3]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -294,7 +294,7 @@ jobs:
 
   stage4:
     name: "Stage 4 · remaining 20 · shard ${{ matrix.shard }}"
-    needs: [stage3]
+    needs: [stage3_gate]
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
