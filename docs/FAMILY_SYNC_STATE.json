@@ -1,11 +1,11 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-27",
+  "audited_at": "2026-09-28",
   "public_safe": true,
   "live_main": {
-    "foundation": "efaf43e8bb55dc25d13dcb3f0be05df88f0c09dc",
-    "operations": "[PROTECTED_CURRENT_MAIN]"
+    "foundation": "8d63fbda0e377dfa5c982f85d403f6ae1efbc86a",
+    "operations": "d4724b80779585c71bb48d0604a42dc295a4d272"
   },
   "runtime_pins": {
     "foundation_runtime": "4999c93dc8b17a5a3926faf3415e725fd4ae7b0e",
@@ -19,7 +19,7 @@
     "private_resource_identifiers": "redacted"
   },
   "current_queue": {
-    "open_issue_count": 11,
+    "open_issue_count": 13,
     "foundation": [
       58,
       157,
@@ -27,7 +27,7 @@
       1247,
       1249
     ],
-    "operations_count": 6
+    "operations_count": 8
   },
   "evidence": {
     "nightly_research": "provider-backed 24-program closure not certified",
@@ -39,8 +39,9 @@
       "structural_pass": true,
       "real_catalog_success_not_proven": true
     },
-    "migration_review": "TypeScript acquisition-planner and public-endpoint-discovery evidence lanes merged; fresh post-repair CI receipt pending",
-    "feed_recovery": "PR #1344 and #1362 merged; issue-specific acceptance remains open"
+    "migration_review": "Four-lane public/private TypeScript+Rust execution merged; production retry now targets the syntax-fixed Operations revision.",
+    "feed_recovery": "PR #1344 and #1362 merged; issue-specific acceptance remains open",
+    "family_integrity": "Fresh issue snapshot includes Operations #1135 and #1137."
   },
   "continuity_enforcement": {
     "schema": "continuity-freshness/v1",
