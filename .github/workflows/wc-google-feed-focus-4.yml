@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   recover:
-    name: Extract \${{ matrix.site }}
+    name: Extract ${{ matrix.site }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -42,60 +42,7 @@ jobs:
       - name: Run current WooCommerce recovery
         run: node tools/woocommerce_32_cross_runner_feed_recovery.mjs --site "$SITE"
         env:
-          SITE: \${{ matrix.site }}
-
-      - name: Persist complete validated native XML
-        if: always()
-        env:
-          SITE: \${{ matrix.site }}
-        run: |
-          node --input-type=module <<'NODE'
-          const fs = await import('node:fs/promises');
-          const { createHash } = await import('node:crypto');
-          const site = process.env.SITE;
-          const dir = 'out/woocommerce-32-cross-runner';
-          const report = JSON.parse(await fs.readFile(dir + '/report.json', 'utf8'));
-          const row = report?.results?.[0];
-          const url = row?.verified_feed?.url;
-          const out = {site, verified_url: url || null, native_xml: null};
-
-          if (url) {
-            const r = await fetch(url, {
-              redirect: 'follow',
-              headers: {
-                'User-Agent': 'Mozilla/5.0 (compatible; WooCommerceGoogleFeedFocus/2026.09)',
-                'Accept': 'application/xml,application/rss+xml,text/xml,*/*'
-              }
-            });
-            const buf = Buffer.from(await r.arrayBuffer());
-            const body = buf.toString('utf8');
-            const valid =
-              r.status === 200 &&
-              /base\.google\.com\/ns\/1\.0/i.test(body) &&
-              /<item\b/i.test(body) &&
-              /<(?:[A-Za-z0-9_.-]+:)?(?:id|title|link|price)\b/i.test(body) &&
-              /<rss\b|<feed\b/i.test(body);
-
-            out.native_xml = {
-              status: r.status,
-              final_url: r.url,
-              content_type: r.headers.get('content-type') || '',
-              bytes: buf.length,
-              item_count: (body.match(/<item\b/gi) || []).length,
-              sha256: createHash('sha256').update(buf).digest('hex'),
-              valid_native_google_xml: valid
-            };
-
-            if (valid) {
-              const safe = site.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-              await fs.writeFile(dir + '/' + safe + '-native-feed.xml', buf);
-              await fs.writeFile(dir + '/' + safe + '-native-feed.json', JSON.stringify(out.native_xml, null, 2) + '\n');
-            }
-          }
-
-          await fs.writeFile(dir + '/focus-' + site.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-receipt.json', JSON.stringify(out, null, 2) + '\n');
-          console.log(JSON.stringify(out, null, 2));
-          NODE
+          SITE: ${{ matrix.site }}
 
       - name: Upload focused extraction
         if: always()
