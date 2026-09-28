@@ -76,3 +76,51 @@ def test_canonicalize_url_rejects_ipv6_multicast_and_nat64_multicast():
     for source in ("http://[ff02::1]/", "http://[64:ff9b::224.0.0.1]/"):
         with pytest.raises(ValueError):
             canonicalize_url(source)
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "http://127.1/",
+        "http://0177.0.0.1/",
+        "http://0x7f.0x0.0x0.0x1/",
+        "http://0x7f.1/",
+        "http://2130706433/",
+        "http://intranet/",
+        "http://service.internal/",
+        "http://printer.local/",
+        "http://host.home.arpa/",
+        "http://[2002:7f00:0001::1]/",
+        "http://[2001:0000:7f00:0001::1]/",
+        "http://[64:ff9b:1::1]/",
+    ],
+)
+def test_canonicalize_url_rejects_browser_numeric_private_and_reserved_forms(source):
+    with pytest.raises(ValueError):
+        canonicalize_url(source)
+
+
+def test_canonicalize_url_preserves_brackets_for_public_ipv6():
+    assert canonicalize_url("https://[2001:4860:4860::8888]/x") == "https://[2001:4860:4860::8888]/x"
+
+
+def test_safe_host_rejects_single_label_and_reserved_suffixes():
+    assert safe_host("intranet") is False
+    assert safe_host("example.local") is False
+    assert safe_host("example.internal") is False
+    assert safe_host("example.localhost") is False
+    assert safe_host("example.home.arpa") is False
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("127.1", False),
+        ("0177.0.0.1", False),
+        ("0x7f.1", False),
+        ("1.1.1.1", True),
+        ("8.8.8.8", True),
+    ],
+)
+def test_safe_host_classifies_numeric_ipv4_forms_before_dns(source, expected):
+    assert safe_host(source) is expected
