@@ -50,7 +50,7 @@ jobs:
             s.includes("<g:price") &&
             s.includes("<g:image_link");
           if(!ok){console.error("strict native validation failed");process.exit(1)}
-          const items=(s.match(/<item\\b/gi)||[]).length;
+          const items=(s.match(/<item\b/gi)||[]).length;
           console.log(JSON.stringify({site,items,bytes:Buffer.byteLength(s),sha256:require("crypto").createHash("sha256").update(s).digest("hex")},null,2));
           NODE
       - uses: actions/upload-artifact@v4
