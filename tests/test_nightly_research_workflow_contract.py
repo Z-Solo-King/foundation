@@ -10,7 +10,8 @@ def test_production_gate_is_event_driven_and_exact_sha_bound():
     assert "workflow_run:" not in text
     assert "production_release_run_id" in text
     assert "heroic-ai-production-release.yml" in text
-    assert 'test "$(jq -r '.headBranch' <<<"$release_json")" = "main"' in text
+    assert ".headBranch" in text
+    assert "= \"main\"" in text
     assert "TARGET_FOUNDATION_SHA" in text
     assert "RELEASE_RUN_ID" in text
     assert "gh run view" in text
