@@ -20,46 +20,6 @@ _RESERVED_SUFFIXES = (".local", ".internal", ".localhost", ".home.arpa")
 _NUMERIC_LABEL = re.compile(r"^(?:0[xX][0-9a-fA-F]+|0[oO][0-7]+|[0-9]+)$")
 
 
-def _parse_numeric_part(value: str) -> int:
-    if value[:2].casefold() == "0x":
-        return int(value[2:], 16)
-    if value[:2].casefold() == "0o":
-        return int(value[2:], 8)
-    if len(value) > 1 and value.startswith("0"):
-        return int(value, 8)
-    return int(value, 10)
-
-
-def _parse_obfuscated_ipv4(host: str) -> IPv4Address | None:
-    """Interpret browser-style one-to-four-part numeric IPv4 host forms."""
-    labels = host.split(".")
-    if not 1 <= len(labels) <= 4 or not all(_NUMERIC_LABEL.fullmatch(label) for label in labels):
-        return None
-    try:
-        parts = [_parse_numeric_part(label) for label in labels]
-    except (TypeError, ValueError):
-        return None
-
-    limits = {
-        1: (0xFFFFFFFF,),
-        2: (0xFF, 0xFFFFFF),
-        3: (0xFF, 0xFF, 0xFFFF),
-        4: (0xFF, 0xFF, 0xFF, 0xFF),
-    }[len(parts)]
-    if any(part > limit for part, limit in zip(parts, limits)):
-        return None
-
-    if len(parts) == 1:
-        value = parts[0]
-    elif len(parts) == 2:
-        value = (parts[0] << 24) | parts[1]
-    elif len(parts) == 3:
-        value = (parts[0] << 24) | (parts[1] << 16) | parts[2]
-    else:
-        value = (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]
-    return IPv4Address(value)
-
-
 def safe_ip(value: str) -> bool:
     ip = ip_address(value)
     mapped = getattr(ip, "ipv4_mapped", None)
