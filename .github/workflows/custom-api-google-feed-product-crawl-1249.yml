@@ -1,8 +1,6 @@
 name: Custom API Google Feed Product Crawl 1249
 
 on:
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -10,7 +8,7 @@ permissions:
 
 concurrency:
   group: custom-api-google-feed-product-crawl-1249
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   crawl:

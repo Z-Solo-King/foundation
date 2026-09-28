@@ -2,8 +2,9 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="3a269bf336e3c57b3ffc91769535798161a86b62"
+OPERATIONS_REF="9e5002e9a079c914bcd30497a85f7cf8570fa59b"
 OPERATIONS_SERVICE_NAME="operations"
+OPERATIONS_EDGE_SERVICE_NAME="operations-edge"
 BASE_URL="https://ai-cio.pages.dev"
 ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"
 
@@ -23,7 +24,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = '3a269bf336e3c57b3ffc91769535798161a86b62'
+test "$OPERATIONS_REF" = '9e5002e9a079c914bcd30497a85f7cf8570fa59b'
 
 after_install_marker=''
 
@@ -260,7 +261,7 @@ printf '%s\n' \
   '' \
   '[[services]]' \
   'binding = "OPERATIONS"' \
-  "service = \"${OPERATIONS_SERVICE_NAME}\"" \
+  "service = \"${OPERATIONS_EDGE_SERVICE_NAME}\"" \
   '' \
   '[secrets]' \
   'required = ["AUTH_TOKEN", "B2_KEY_ID", "B2_APPLICATION_KEY"]' \
@@ -277,7 +278,7 @@ printf '%s\n' \
 grep -q "^database_name = \"${database_name}\"$" wrangler.production.generated.toml
 grep -q '^directory = "./frontend"$' wrangler.production.generated.toml
 grep -q '^binding = "ASSETS"$' wrangler.production.generated.toml
-grep -q "^service = \"${OPERATIONS_SERVICE_NAME}\"$" wrangler.production.generated.toml
+grep -q "^service = \"${OPERATIONS_EDGE_SERVICE_NAME}\"$" wrangler.production.generated.toml
 
 public_secret_file="$RUNNER_TEMP/public-secrets.env"
 printf 'AUTH_TOKEN=%s\nB2_KEY_ID=%s\nB2_APPLICATION_KEY=%s\n' "$AUTH_TOKEN" "$B2_KEY_ID" "$B2_APPLICATION_KEY" > "$public_secret_file"
@@ -335,6 +336,20 @@ PY
 (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config" --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:bootstrap-${ACCEPTANCE_RUN_ID}")
 echo "Operations binding-free bootstrap deployment: PASS"
 
+# Deploy the migrated TypeScript edge Worker before Foundation so the public OPERATIONS binding
+# targets the new edge transport boundary. The edge Worker calls the Python core privately.
+(cd "$RUNNER_TEMP/operations/polyglot/edge-worker" && npx --yes wrangler@4.131.1 deploy --config wrangler.toml --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:edge-${ACCEPTANCE_RUN_ID}")
+edge_deployments_status=$(curl -sS -o "$RUNNER_TEMP/edge-worker-deployments.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_EDGE_SERVICE_NAME}/deployments" || true)
+echo "GET Operations edge deployments -> HTTP ${edge_deployments_status}"
+test "$edge_deployments_status" = "200" || { cat "$RUNNER_TEMP/edge-worker-deployments.json"; exit 1; }
+edge_version_id=$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id' "$RUNNER_TEMP/edge-worker-deployments.json" | head -n1)
+test -n "$edge_version_id" || { echo 'No 100% active Operations edge Worker version found'; exit 1; }
+echo "Operations edge Worker deployment: PASS (${OPERATIONS_EDGE_SERVICE_NAME})"
+
+
 
 
 npx --yes wrangler@4.131.1 d1 migrations apply "$database_name" --remote --config wrangler.production.generated.toml
@@ -391,6 +406,16 @@ echo "GET Operations active version -> HTTP ${operations_version_status}"
 test "$operations_version_status" = "200"
 jq -e --arg expected "github:${OPERATIONS_REF}" '((.result.annotations["workers/message"] // "") == $expected) or ((.result.annotations["workers/tag"] // "") == $expected)' "$RUNNER_TEMP/operations-version.json" >/dev/null
 echo "Operations Cloudflare provenance: PASS (github:${OPERATIONS_REF})"
+
+edge_active_status=$(curl -sS -o "$RUNNER_TEMP/edge-worker-active.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_EDGE_SERVICE_NAME}/deployments" || true)
+echo "GET active Operations edge Worker -> HTTP ${edge_active_status}"
+test "$edge_active_status" = "200"
+edge_active_version_id=$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id' "$RUNNER_TEMP/edge-worker-active.json" | head -n1)
+test -n "$edge_active_version_id"
+echo "Operations edge Worker active deployment verification: PASS"
 
 # P0 deployment-boundary persistence/replay acceptance on the renamed Worker pair.
 persistence_seed_status=$(curl -sS --max-time 30 -o "$persistence_seed_file" -w '%{http_code}' \
