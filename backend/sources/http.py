@@ -207,11 +207,8 @@ async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
                 continue
             if values:
                 return values
-            # A successful empty answer is a terminal DNS failure; do not
-            # fan out to the secondary resolver.
-            raise RuntimeError(
-                f"DNS resolution failed for {hostname}: no {record_type} answers"
-            )
+            failures.append(f"{endpoint}: no {record_type} answers")
+            break
         except Exception as exc:
             detail = str(exc).strip()
             if len(detail) > 240:
@@ -219,6 +216,8 @@ async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
             suffix = f": {detail}" if detail else ""
             failures.append(f"{endpoint}: {type(exc).__name__}{suffix}")
     detail = "; ".join(failures[:2])
+    if any("no A answers" in failure or "no AAAA answers" in failure for failure in failures):
+        raise RuntimeError(f"DNS resolution failed for {hostname}" + (f" ({detail})" if detail else ""))
     if invalid_response and all("invalid DNS response" in failure for failure in failures):
         raise RuntimeError(f"invalid DNS response for {hostname}" + (f" ({detail})" if detail else ""))
     raise RuntimeError(f"DNS resolution failed for {hostname}" + (f" ({detail})" if detail else ""))
