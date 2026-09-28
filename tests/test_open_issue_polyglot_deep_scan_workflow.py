@@ -13,9 +13,9 @@ def test_deep_scan_workflow_uses_real_matrix_expressions_and_expanded_provenance
     assert '["git", "-C", "$GITHUB_WORKSPACE", "rev-parse", "HEAD"]' not in text
 
 
-def test_deep_scan_lane_receipts_upload_even_when_scan_fails():
+def test_deep_scan_lane_summary_uploads_even_when_scan_fails():
     text = WORKFLOW.read_text(encoding="utf-8")
-    assert '      - name: Upload lane receipt\n        if: always()' in text
+    assert '      - name: Upload sanitized lane summary\n        if: always()' in text
 
 
 def test_deep_scan_freezes_operations_revision_once_and_reuses_exact_sha():
