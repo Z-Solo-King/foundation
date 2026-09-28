@@ -43,6 +43,8 @@ jobs:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
           B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
           B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+          B2_BUCKET: ${{ vars.B2_BUCKET }}
+          B2_ENDPOINT: ${{ vars.B2_ENDPOINT }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
@@ -102,7 +104,7 @@ jobs:
         run: |
           set -euo pipefail
           outcome="${{ steps.production_release.outcome }}"
-          operations_ref="$(sed -n 's/^OPERATIONS_REF="\([0-9a-f]\{40\}\)"$/\1/p' scripts/production_release.sh | head -n1)"
+          operations_ref="$(jq -r '.pins.production_runtime.sha // empty' docs/OPERATIONS_PIN_MANIFEST.json)"
           mkdir -p .runtime
           {
             echo "# Canonical production release receipt"
