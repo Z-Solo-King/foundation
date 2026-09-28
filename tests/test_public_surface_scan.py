@@ -31,7 +31,7 @@ def test_pr_metadata_rejects_private_revision_and_domain():
 
 def test_recursive_public_inventory_includes_deep_docs():
     paths = public_paths()
-    assert "docs/AI_AGENT_HANDOFF.md" in paths
+    assert "docs/history/AI_CONTINUITY_ARCHIVE_2026-09-28.md" in paths
     assert "docs/FAMILY_SYNC_STATE_2026-09-25_R3.json" in paths
     assert len(paths) >= 100
 
