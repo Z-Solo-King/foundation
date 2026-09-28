@@ -15,10 +15,10 @@
 10. `docs/FAMILY_SYNC_STANDARD.md`
 11. `docs/FAMILY_SYNC_STATE.json`
 12. `docs/CROSS_REPO_CLOUDFLARE_SYNC.md`
-12. `docs/REQUIREMENT_COVERAGE_RECONCILIATION_2026-09-17.md`
-13. `docs/PUBLIC_DETERMINISTIC_CORE.md`
-14. `docs/RUN_RECORD_PUBLIC_BOUNDARY.md`
-13. `DEPLOYMENT.md`
+13. `docs/REQUIREMENT_COVERAGE_RECONCILIATION_2026-09-17.md`
+14. `docs/PUBLIC_DETERMINISTIC_CORE.md`
+15. `docs/RUN_RECORD_PUBLIC_BOUNDARY.md`
+16. `DEPLOYMENT.md`
 
 ## Authority
 The live `main` tree, current PR/workflow state and fresh execution evidence outrank dated plans, handoffs and chat notes. `FAMILY_SYNC_STATE.json` is an audit snapshot, not a live queue or production certificate.
