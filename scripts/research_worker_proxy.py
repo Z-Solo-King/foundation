@@ -224,28 +224,33 @@ class Handler(BaseHTTPRequestHandler):
                     body = json.loads(response.read().decode("utf-8"))
                     status = int(response.status)
             except HTTPError as exc:
-            if exc.code != 403:
-                details = _safe_upstream_error_details(exc)
-                details.update(_safe_header_details(exc.headers))
-                self._json({"error": {"message": "upstream_worker_rejected", "type": "upstream_http_error", **details}, "request_id": request_digest}, 502)
-                return
-            curl_status, curl_body, curl_error = _curl_post(url, json.dumps(upstream_payload, ensure_ascii=False).encode("utf-8"), self.server.auth_token, request_id)
-            if curl_status == 200:
-                try:
-                    body = json.loads(curl_body.decode("utf-8"))
-                    status = 200
-                except (UnicodeDecodeError, json.JSONDecodeError):
-                    self._json({"error": {"message": "upstream_worker_invalid_curl_response", "type": "protocol_error"}, "request_id": request_digest}, 502)
+                if exc.code != 403:
+                    details = _safe_upstream_error_details(exc)
+                    details.update(_safe_header_details(exc.headers))
+                    self._json({"error": {"message": "upstream_worker_rejected", "type": "upstream_http_error", **details}, "request_id": request_digest}, 502)
                     return
-            else:
-                details = _safe_upstream_error_details(exc)
-                details.update(_safe_header_details(exc.headers))
-                details["fallback_transport"] = "curl"
-                details["fallback_http_status"] = curl_status
-                if curl_error:
-                    details["fallback_transport_error"] = curl_error
-                self._json({"error": {"message": "upstream_worker_rejected", "type": "upstream_http_error", **details}, "request_id": request_digest}, 502)
-                return
+                curl_status, curl_body, curl_error = _curl_post(
+                    url,
+                    json.dumps(upstream_payload, ensure_ascii=False).encode("utf-8"),
+                    self.server.auth_token,
+                    request_id,
+                )
+                if curl_status == 200:
+                    try:
+                        body = json.loads(curl_body.decode("utf-8"))
+                        status = 200
+                    except (UnicodeDecodeError, json.JSONDecodeError):
+                        self._json({"error": {"message": "upstream_worker_invalid_curl_response", "type": "protocol_error"}, "request_id": request_digest}, 502)
+                        return
+                else:
+                    details = _safe_upstream_error_details(exc)
+                    details.update(_safe_header_details(exc.headers))
+                    details["fallback_transport"] = "curl"
+                    details["fallback_http_status"] = curl_status
+                    if curl_error:
+                        details["fallback_transport_error"] = curl_error
+                    self._json({"error": {"message": "upstream_worker_rejected", "type": "upstream_http_error", **details}, "request_id": request_digest}, 502)
+                    return
             except Exception as exc:
                 self._json(
                     {"error": {"message": "upstream_worker_failure", "type": type(exc).__name__}, "request_id": request_digest},
