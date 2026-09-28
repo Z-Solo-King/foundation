@@ -134,7 +134,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-audit --no-fund --ignore-scripts
+          npm ci --no-audit --no-fund --ignore-scripts
           npm run typecheck
           npm test
       - name: Emit lane receipt
@@ -218,7 +218,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-audit --no-fund --ignore-scripts
+          npm ci --no-audit --no-fund --ignore-scripts
           npm run typecheck
           npm test
       - name: Execute public frontend-state lane
@@ -226,7 +226,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-audit --no-fund --ignore-scripts
+          npm ci --no-audit --no-fund --ignore-scripts
           npm run typecheck
           npm test
       - name: Emit lane receipt
@@ -462,7 +462,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-audit --no-fund --ignore-scripts
+          npm ci --no-audit --no-fund --ignore-scripts
           npm run typecheck
           npm test
       - name: Run TypeScript observation contract differential
@@ -470,7 +470,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-audit --no-fund --ignore-scripts
+          npm ci --no-audit --no-fund --ignore-scripts
           npm run typecheck
           npm test
           mkdir -p .runtime
@@ -536,7 +536,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-audit --no-fund --ignore-scripts
+          npm ci --no-audit --no-fund --ignore-scripts
           npm run typecheck
           npm test
           npm run differential
@@ -579,7 +579,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-audit --no-fund --ignore-scripts
+          npm ci --no-audit --no-fund --ignore-scripts
           npm run typecheck
           npm test
           npm run differential
