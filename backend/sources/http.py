@@ -11,6 +11,7 @@ DNS resolution and network connection. Resolution failures fail closed.
 """
 
 from dataclasses import dataclass
+import asyncio
 from ipaddress import IPv4Address, IPv6Address
 import struct
 from urllib.parse import urljoin, urlparse, urlunparse
@@ -20,6 +21,7 @@ from foundation_core.url_identity import canonicalize_url, safe_host as _safe_ho
 
 MAX_REDIRECTS = 3
 MAX_BYTES = 1_000_000
+FETCH_TIMEOUT_SECONDS = 15
 DNS_OVER_HTTPS_ENDPOINTS = (
     "https://cloudflare-dns.com/dns-query",
     "https://dns.google/dns-query",
@@ -261,7 +263,13 @@ async def fetch_public_url(url: str, *, fetcher=None, dns_resolver=None) -> Fetc
             current = canonicalize_url(current)
         if original_scheme == "https" and urlparse(current).scheme != "https":
             raise ValueError("https to http redirect downgrade is not allowed")
-        response = await _call_fetcher(fetcher, current, {"redirect": "manual"})
+        try:
+            response = await asyncio.wait_for(
+                _call_fetcher(fetcher, current, {"redirect": "manual"}),
+                timeout=FETCH_TIMEOUT_SECONDS,
+            )
+        except asyncio.TimeoutError as exc:
+            raise RuntimeError("HTTP fetch timed out") from exc
         status = int(response.status)
         if status in {301, 302, 303, 307, 308}:
             location = response.headers.get("location")
@@ -270,7 +278,19 @@ async def fetch_public_url(url: str, *, fetcher=None, dns_resolver=None) -> Fetc
             current = canonicalize_url(urljoin(current, location))
             redirect_chain.append(current)
             continue
-        content = _response_bytes(await response.arrayBuffer())
+        content_length = response.headers.get("content-length")
+        if content_length is not None:
+            try:
+                if int(content_length) > MAX_BYTES:
+                    raise RuntimeError("response exceeds acquisition size budget")
+            except ValueError:
+                pass
+        try:
+            content = _response_bytes(
+                await asyncio.wait_for(response.arrayBuffer(), timeout=FETCH_TIMEOUT_SECONDS)
+            )
+        except asyncio.TimeoutError as exc:
+            raise RuntimeError("HTTP response read timed out") from exc
         if len(content) > MAX_BYTES:
             raise RuntimeError("response exceeds acquisition size budget")
         return FetchResult(
