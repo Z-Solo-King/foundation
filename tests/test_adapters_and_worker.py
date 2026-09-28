@@ -163,7 +163,8 @@ async def test_worker_helpers_and_source_ingestion(monkeypatch):
     class BadRequest:
         headers = {"Content-Type": "application/json"}
         async def json(self): raise RuntimeError("bad json")
-    assert await worker._json(BadRequest()) is None
+    with pytest.raises(RuntimeError, match="bad json"):
+        await worker._json(BadRequest())
     db = FakeDB(); artifacts = FakeArtifacts(); env = SimpleNamespace(DB=db, ARTIFACTS=artifacts, ENVIRONMENT="development", AUTH_TOKEN=None, LOCAL_DEVELOPMENT_AUTH_BYPASS="true")
     async def fake_public(url): return source_http.FetchResult(url,url,200,"text/plain",b"abc","e")
     monkeypatch.setattr(worker,"fetch_public_url",fake_public)
