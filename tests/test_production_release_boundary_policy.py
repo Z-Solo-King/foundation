@@ -26,7 +26,7 @@ def test_production_release_has_one_canonical_operations_schema_and_two_intentio
     assert text.count('foundation-binding-${ACCEPTANCE_RUN_ID}') == 1
     assert text.count('persistence-boundary-${ACCEPTANCE_RUN_ID}') == 1
     assert 'persistence_bootstrap_deferred' not in text
-    assert text.count('echo "Production release completed for ${GITHUB_SHA} using Operations ${OPERATIONS_REF}"') == 1
+    assert text.count('echo "Production release completed for ${GITHUB_SHA}"') == 1
 
 def test_persistence_rollover_verification_is_single_use_in_release_script():
     text = PRODUCTION_SCRIPT.read_text(encoding='utf-8')
