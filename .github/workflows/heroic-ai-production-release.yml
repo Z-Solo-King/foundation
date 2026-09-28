@@ -12,6 +12,7 @@ env:
 permissions:
   contents: read
   issues: write
+  actions: write
 
 concurrency:
   group: heroic-ai-production-release
@@ -21,6 +22,10 @@ jobs:
   release:
     name: Canonical Heroic AI production release
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      actions: write
     timeout-minutes: 45
     steps:
       - name: Checkout
@@ -51,6 +56,13 @@ jobs:
           test "$GITHUB_EVENT_NAME" != "pull_request_target" || { echo 'Privileged production release cannot run from pull_request_target'; exit 1; }
           bash scripts/production_release.sh
 
+      - name: Dispatch nightly research for certified release
+        if: ${{ steps.production_release.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run nightly-multi-agent-research-v3.yml --repo "$GITHUB_REPOSITORY" --ref main --field target_sha="$GITHUB_SHA" --field production_release_run_id="$GITHUB_RUN_ID"
       - name: Upload cross-repository audit receipt
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
