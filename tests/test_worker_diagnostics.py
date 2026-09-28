@@ -393,3 +393,56 @@ async def test_public_worker_exact_api_paths_do_not_fall_through_to_spa():
     assert suffix_health.status == 200
     wrong_method = await entry.fetch(SimpleNamespace(method="GET", url="https://x/api/v1/chat", headers=headers))
     assert wrong_method.status == 404
+
+
+@pytest.mark.asyncio
+async def test_chatbot_diagnostic_exception_is_stable(monkeypatch):
+    import worker
+
+    class BrokenBinding:
+        async def fetch(self, request):
+            raise RuntimeError("private binding detail")
+
+    env = SimpleNamespace(OPERATIONS=BrokenBinding(), ENVIRONMENT="production", AUTH_TOKEN="secret")
+    body, status = await worker._operations_chatbot_diagnostic(
+        env,
+        Request("POST", "https://x/api/v1/chatbot/diagnostic", {}, {"Authorization": "Bearer secret"}),
+    )
+    assert status == 503
+    assert body["error"] == "chatbot_diagnostic_unavailable"
+    assert "private binding detail" not in str(body)
+
+
+@pytest.mark.asyncio
+async def test_chat_rejects_invalid_idempotency_key_before_admission(monkeypatch):
+    import worker
+
+    called = False
+
+    async def admit(*args, **kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("invalid key must be rejected before admission")
+
+    monkeypatch.setattr(worker, "_public_admit", admit)
+    env = SimpleNamespace(
+        DB=DB(rows=[]),
+        ENVIRONMENT="production",
+        AUTH_TOKEN="secret",
+    )
+    entry = worker.Default()
+    entry.env = env
+    response = await entry.fetch(
+        Request(
+            "POST",
+            "https://x/api/v1/chat",
+            {"chat_id": "c", "request_id": "r", "message": "hello", "mode": "chat", "strict_zero_cost_only": True},
+            {
+                "Authorization": "Bearer secret",
+                "Content-Type": "application/json",
+                "Idempotency-Key": "bad key",
+            },
+        )
+    )
+    assert response.status == 400
+    assert called is False
