@@ -2,7 +2,16 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="ebbcde494b3d07aaef6a3a5a59a7135cb309114b"
+PIN_MANIFEST="docs/OPERATIONS_PIN_MANIFEST.json"
+OPERATIONS_REF="$(python - "$PIN_MANIFEST" <<'PY'
+import json, re, sys
+manifest = json.load(open(sys.argv[1], encoding="utf-8"))
+value = manifest["pins"]["production_runtime"]["sha"]
+if not re.fullmatch(r"[0-9a-f]{40}", value):
+    raise SystemExit("production Operations pin is not a 40-hex SHA")
+print(value)
+PY
+)"
 OPERATIONS_SERVICE_NAME="operations"
 OPERATIONS_EDGE_SERVICE_NAME="operations-edge"
 BASE_URL="https://ai-cio.pages.dev"
@@ -22,9 +31,10 @@ test -n "${CLOUDFLARE_ACCOUNT_ID:-}" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID Gi
 test -n "${OPERATIONS_APP_ID:-}" || { echo 'Missing OPERATIONS_APP_ID GitHub Actions secret'; exit 1; }
 test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIVATE_KEY GitHub Actions secret'; exit 1; }
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
+test -n "${B2_BUCKET:-}" || { echo 'Missing B2_BUCKET release variable'; exit 1; }
+test -n "${B2_ENDPOINT:-}" || { echo 'Missing B2_ENDPOINT release variable'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = 'ebbcde494b3d07aaef6a3a5a59a7135cb309114b'
 
 after_install_marker=''
 
@@ -96,7 +106,7 @@ if [ "$installation_status" -ne 0 ]; then
 fi
 installation_id="$(tr -d "\r\n" < "$installation_output")"
 test -n "$installation_id" || { echo "GitHub App installation discovery returned an empty installation id"; exit 1; }
-echo "Resolved Operations GitHub App installation: PASS ($installation_id)"
+echo "Resolved Operations GitHub App installation: PASS"
 
 # Verify that the resolved installation belongs to the supplied App, and mint a short-lived token.
 installation_meta_status=$(curl -sS -o "$RUNNER_TEMP/github-app-installation-meta.json" -w '%{http_code}' \
@@ -144,7 +154,7 @@ echo "GET Operations approved commit -> HTTP ${ref_status}"
 test "$ref_status" = '200' || { jq -c '{message,errors,documentation_url}' "$RUNNER_TEMP/operations-ref-response.json" || cat "$RUNNER_TEMP/operations-ref-response.json"; exit 1; }
 jq -e --arg expected "$OPERATIONS_REF" '.sha == $expected' "$RUNNER_TEMP/operations-ref-response.json" >/dev/null
 
-echo "private Operations access: PASS (${OPERATIONS_REF})"
+echo "private Operations access: PASS"
 
 # The canonical public origin is the Pages front door; no custom-domain zone is required for this release.
 askpass="$RUNNER_TEMP/git-askpass-operations.sh"
@@ -271,8 +281,8 @@ printf '%s\n' \
   'STRICT_ZERO_COST_ONLY = "true"' \
   "RELEASE_FOUNDATION_SHA = \"${GITHUB_SHA}\"" \
   "RELEASE_OPERATIONS_REF = \"${OPERATIONS_REF}\"" \
-  'B2_BUCKET = "SoloKing"' \
-  'B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"' \
+  "B2_BUCKET = \"${B2_BUCKET}\"" \
+  "B2_ENDPOINT = \"${B2_ENDPOINT}\"" \
   > wrangler.production.generated.toml
 
 grep -q "^database_name = \"${database_name}\"$" wrangler.production.generated.toml
@@ -453,25 +463,23 @@ test "$chat_rollover_after_status" = "200"
 jq -e --arg expected_id "$(jq -r '.response.response_id' "$RUNNER_TEMP/chat-rollover-before.json")" '.ok == true and .response.response_id == $expected_id' "$RUNNER_TEMP/chat-rollover-after.json" >/dev/null
 echo "Live chat redeployment replay acceptance: PASS"
 cp "$RUNNER_TEMP/persistence-rollover-verify.json" .runtime/persistence-rollover-verify.json
-echo "Live memory/replay deployment-boundary acceptance: PASS"# Record the live durable MODEL_CALLS quota state before the required model-generation
+echo "Live memory/replay deployment-boundary acceptance: PASS"
+
+# Record the live durable MODEL_CALLS quota state before the required model-generation
 # acceptance. This is a bounded non-secret diagnostic: no auth token or provider payload
 # is queried, only governance counters from the canonical D1 authority.
 npx --yes wrangler@4.131.1 d1 execute "$database_name" --remote \
   --config="$RUNNER_TEMP/operations/wrangler.toml" \
   --command="SELECT scope, window_id, resource_kind, limit_units, reserved_units, consumed_units, updated_at FROM resource_governance_quota WHERE resource_kind = 'model_calls' ORDER BY updated_at DESC LIMIT 5;" \
   --json > "$RUNNER_TEMP/model-call-quota.json"
-echo "--- model-call-quota.snapshot ---"
-cat "$RUNNER_TEMP/model-call-quota.json"
-echo "--- end model-call-quota.snapshot ---"
+echo "model-call quota snapshot: collected"
 cp "$RUNNER_TEMP/model-call-quota.json" .runtime/model-call-quota.json
 
 npx --yes wrangler@4.131.1 d1 execute "$database_name" --remote \
   --config="$RUNNER_TEMP/operations/wrangler.toml" \
   --command="SELECT reservation_id, scope, window_id, resource_kind, amount, state, idempotency_key, lease_expires_at, updated_at FROM resource_governance_reservations WHERE resource_kind = 'model_calls' ORDER BY updated_at DESC LIMIT 10;" \
   --json > "$RUNNER_TEMP/model-call-reservations.json"
-echo "--- model-call-reservations.snapshot ---"
-cat "$RUNNER_TEMP/model-call-reservations.json"
-echo "--- end model-call-reservations.snapshot ---"
+echo "model-call reservations snapshot: collected"
 cp "$RUNNER_TEMP/model-call-reservations.json" .runtime/model-call-reservations.json
 
 # Exercise the real public-to-private conversational and research paths only after
@@ -668,7 +676,6 @@ if [ -n "${AUTH_TOKEN:-}" ]; then
     -d '{"operation":"infrastructure_verify_public_test"}' \
     "$BASE_URL/api/v1/chatbot/diagnostic")
   echo "POST /api/v1/chatbot/diagnostic -> HTTP ${diagnostic_status}"
-  cat diagnostic.json
   test "$diagnostic_status" = '200'
   jq -e '.ok == true and .status == "ok"
   and any(.checks[]?; .name == "public_chatbot" and .ok == true and .runtime_status == "ok")
@@ -730,4 +737,4 @@ for legacy_worker in "$legacy_private_worker" "$legacy_public_worker"; do
     fi
   fi
 done
-echo "Production release completed for ${GITHUB_SHA} using Operations ${OPERATIONS_REF}"
+echo "Production release completed for ${GITHUB_SHA}"
