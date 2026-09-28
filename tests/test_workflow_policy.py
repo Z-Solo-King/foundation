@@ -812,3 +812,11 @@ def test_live_chatbot_smoke_is_release_dispatched():
     assert 'production_release_run_id:' in text
     assert 'github.event.workflow_run' not in text
     assert 'TARGET_FOUNDATION_SHA: ${{ inputs.target_sha || github.sha }}' in text
+
+
+def test_live_chatbot_smoke_keeps_infrastructure_diagnostic_non_blocking():
+    workflow = (ROOT / ".github/workflows/live-chatbot-production-smoke.yml").read_text(encoding="utf-8")
+    assert "def record(name, status, body=None, *, critical=True):" in workflow
+    assert '"critical": critical' in workflow
+    assert 'record("diagnostic_infrastructure", diagnostic.status_code, diagnostic_body, critical=False)' in workflow
+    assert "if critical and (status != 200 or item.get(\"ok\") is False):" in workflow
