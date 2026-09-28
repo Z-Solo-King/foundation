@@ -40,7 +40,7 @@ def active_files(root: Path = ROOT) -> list[Path]:
         relative = path.relative_to(root)
         if not path.is_file() or any(part in EXCLUDED for part in relative.parts):
             continue
-        if path.suffix.lower() in {".py", ".js", ".mjs", ".html", ".yml", ".yaml", ".toml"}:
+        if path.suffix.lower() in {".py", ".js", ".mjs", ".html", ".yml", ".yaml", ".toml", ".sh", ".json", ".md", ".txt", ".cfg", ".ini"}:
             result.append(path)
     return sorted(result)
 
@@ -63,7 +63,7 @@ def _is_policy_configuration(relative: str) -> bool:
 
 def secret_findings(path: Path, source: str) -> list[Finding]:
     relative = rel(path)
-    if _is_test(relative) or _is_policy_configuration(relative) or relative == "scripts/public_security_lint.py":
+    if relative == "scripts/public_security_lint.py":
         return []
     findings = []
     for marker in PROTECTED_PRIVATE_MARKERS:
@@ -77,7 +77,7 @@ def secret_findings(path: Path, source: str) -> list[Finding]:
 
 def private_reference_findings(path: Path, source: str) -> list[Finding]:
     relative = rel(path)
-    if _is_test(relative) or relative.startswith("docs/") or relative == "scripts/public_security_lint.py" or _is_policy_configuration(relative):
+    if relative == "scripts/public_security_lint.py":
         return []
     return [
         Finding(relative, "private-reference", f"public source contains private implementation marker {marker}")
@@ -128,7 +128,7 @@ def main() -> int:
     findings = [f for path in files for f in lint_file(path)]
     payload = {"schema_version": "public-security-lint/v1", "files_checked": len(files), "findings": [f.text() for f in findings], "total_findings": len(findings), "passed": not findings, "strict": args.strict}
     print(json.dumps(payload, indent=2, sort_keys=True))
-    return 1 if args.strict and findings else 0
+    return 1 if findings else 0
 
 if __name__ == "__main__":
     raise SystemExit(main())
