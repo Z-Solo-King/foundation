@@ -1,5 +1,8 @@
 name: WC Native Feed Direct Matrix
 on:
+  push:
+    branches:
+      - feat/wc-google-feed-egress-bridge-20260929
   pull_request:
     branches:
       - main
@@ -22,10 +25,7 @@ jobs:
         run: |
           mkdir -p artifacts/native
           curl -sS --max-time 420 -D artifacts/${SITE}.headers "${WORKER}/${SITE}" -o artifacts/${SITE}.body
-          echo "=== ${SITE} headers ==="
           cat artifacts/${SITE}.headers
-          echo
-          echo "=== ${SITE} size ==="
           wc -c artifacts/${SITE}.body
           if grep -qi '^x-native-feed-url:' artifacts/${SITE}.headers; then
             cp artifacts/${SITE}.body artifacts/native/${SITE}.xml
@@ -38,19 +38,17 @@ jobs:
         if: env.NATIVE_FEED_FOUND == '1'
         run: |
           node <<'NODE'
-          const fs=require("fs");
-          const site=process.env.SITE;
-          const s=fs.readFileSync("artifacts/native/"+site+".xml","utf8");
+          const fs=require("fs"), crypto=require("crypto");
+          const site=process.env.SITE, s=fs.readFileSync("artifacts/native/"+site+".xml","utf8");
           const ok=s.includes("<rss") && s.includes("http://base.google.com/ns/1.0") &&
             s.includes("<item") && s.includes("<g:id") && s.includes("<g:title") &&
             s.includes("<g:link") && s.includes("<g:price") && s.includes("<g:image_link");
           if(!ok) process.exit(1);
-          const items=(s.match(/<item\b/gi)||[]).length;
-          console.log(JSON.stringify({site,items,bytes:Buffer.byteLength(s),
-            sha256:require("crypto").createHash("sha256").update(s).digest("hex")}));
+          console.log(JSON.stringify({site,items:(s.match(/<item\\b/gi)||[]).length,bytes:Buffer.byteLength(s),
+            sha256:crypto.createHash("sha256").update(s).digest("hex")}));
           NODE
       - uses: actions/upload-artifact@v4
         with:
-          name: wc-native-feed-direct-${{ matrix.site }}-v2
+          name: wc-native-feed-direct-${{ matrix.site }}-v3
           path: artifacts/
           if-no-files-found: error
