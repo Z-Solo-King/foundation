@@ -52,7 +52,7 @@ jobs:
           const nativeValid = (body) => {
             const x = String(body || '');
             return /<(?:rss|feed)\b/i.test(x) &&
-              /xmlns(?::[\w.-]+)?\s*=\s*[\"']https?:\\/\\/base\.google\.com\\/ns\\/1\.0[\"']/i.test(x) &&
+              x.toLowerCase().includes('base.google.com/ns/1.0') &&
               /<item\b[\s\S]*?<title\b/i.test(x) &&
               /<(?:[\w.-]+:)?price\b/i.test(x);
           };
