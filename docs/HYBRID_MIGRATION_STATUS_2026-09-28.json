@@ -1,0 +1,143 @@
+{
+  "schema": "hybrid-migration-status/v1",
+  "audited_at": "2026-09-28",
+  "status": "MIGRATION_COMPLETE",
+  "repositories": {
+    "foundation": {
+      "main_sha": "28fab57c677941f693c4a5559966f0ff86dcedb3",
+      "visibility": "public"
+    },
+    "operations": {
+      "main_sha": "4fb9f3be96c9947bc3d07756762efbb563158a04",
+      "visibility": "private"
+    }
+  },
+  "migration": {
+    "strategy": "component-specific hybrid diversity",
+    "pull_requests": [
+      {
+        "repository": "foundation",
+        "number": 1395,
+        "state": "MERGED"
+      },
+      {
+        "repository": "foundation",
+        "number": 1397,
+        "state": "MERGED"
+      },
+      {
+        "repository": "operations",
+        "number": 1164,
+        "state": "MERGED"
+      },
+      {
+        "repository": "operations",
+        "number": 1165,
+        "state": "MERGED"
+      }
+    ],
+    "lanes": [
+      {
+        "id": "P1",
+        "scope": "private entry",
+        "language": "TypeScript",
+        "status": "PASS"
+      },
+      {
+        "id": "P2",
+        "scope": "private leaves",
+        "language": "Rust/Wasm",
+        "status": "PASS"
+      },
+      {
+        "id": "P3",
+        "scope": "public entry",
+        "language": "TypeScript",
+        "status": "PASS"
+      },
+      {
+        "id": "P4",
+        "scope": "public deterministic leaf",
+        "language": "Rust/Wasm",
+        "status": "PASS"
+      },
+      {
+        "id": "P5",
+        "scope": "bounded concurrency/tooling",
+        "language": "Go",
+        "status": "PASS"
+      }
+    ],
+    "production_cutover": "DEPLOYED",
+    "rollback_authority": "Python control-plane core",
+    "candidate_freeze": "ACTIVE under operations#603"
+  },
+  "runtime_topology": {
+    "public_front_door": "https://ai-cio.pages.dev",
+    "public_worker": "heroic",
+    "private_edge_worker": "operations-edge",
+    "private_core_worker": "operations",
+    "chain": "heroic -> operations-edge (TypeScript) -> operations (Python)"
+  },
+  "cloudflare": {
+    "pages_project": "ai",
+    "public_worker": "heroic",
+    "private_edge_worker": "operations-edge",
+    "private_core_worker": "operations",
+    "all_workers": "100% active"
+  },
+  "open_followups": {
+    "foundation": [
+      1370,
+      1249,
+      1247,
+      1157,
+      157,
+      58
+    ],
+    "operations": [
+      145,
+      597,
+      603,
+      1027,
+      1066,
+      1103
+    ],
+    "total": 12
+  },
+  "non_migration_blockers": [
+    {
+      "id": "foundation#157",
+      "state": "OPEN",
+      "reason": "nightly research provider/proxy path returns upstream 403->502; not a migration implementation failure"
+    },
+    {
+      "id": "foundation#58",
+      "state": "OPEN",
+      "reason": "exhaustive coverage tracker remains open"
+    },
+    {
+      "id": "foundation#1370",
+      "state": "OPEN",
+      "reason": "secret-sync contract-test maintenance"
+    }
+  ],
+  "language_policy": {
+    "TypeScript": "edge HTTP/SSE/provider/search/browser boundaries",
+    "Rust_Wasm": "deterministic parsing, normalization, canonicalization and CPU-heavy leaves",
+    "Go": "bounded high-concurrency tooling or a separately justified gateway",
+    "Python": "control plane, research orchestration, auth/policy, D1, replay/idempotency, provenance, promotion and rollback",
+    "SQL": "D1/SQLite query/index/query-plan optimization lens",
+    "PHP": "WordPress/WooCommerce ecosystem adapter",
+    "deferred": [
+      "Java",
+      ".NET",
+      "C++/Wasm",
+      "Zig",
+      "Nim",
+      "AssemblyScript",
+      "Kotlin",
+      "Swift"
+    ]
+  }
+}

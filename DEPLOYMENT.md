@@ -125,3 +125,9 @@ The public path is validated first. The protected Operations handoff is then val
 ### Operations pin authority
 
 All purpose-scoped immutable Operations revisions are declared in `docs/OPERATIONS_PIN_MANIFEST.json`. Deployment and workflow validation must consume or validate that manifest; mutable branch/tag references are not accepted for protected Operations consumption.
+
+## Hybrid polyglot migration — current state
+
+As of 2026-09-28, the production migration is complete. The public path is heroic -> operations-edge -> operations, with TypeScript owning the edge transport boundary and Python retaining control-plane authority. The five-lane migration review (P1 private TypeScript, P2 private Rust, P3 public TypeScript, P4 public Rust, P5 Go tooling) passed before production promotion.
+
+The current immutable Operations revision is 4fb9f3be96c9947bc3d07756762efbb563158a04. The remaining open issues are follow-up work outside the completed migration cutover, notably nightly research/provider execution and feed/benchmark evidence.
