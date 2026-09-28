@@ -402,6 +402,12 @@ def test_live_extractor_benchmark_uses_versioned_runtime_and_tool_pins():
     assert CANONICAL_PRODUCTION_OPERATIONS_REF in production
 
 
+def test_polyglot_review_installs_declared_operations_dependencies():
+    workflow = _workflow_texts()["polyglot-migration-review.yml"]
+    assert "python -m pip install --disable-pip-version-check -e ." in workflow
+    assert " --no-deps" not in workflow
+
+
 def test_nightly_migration_review_uses_separate_immutable_tooling_pin():
     workflow = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
     match = re.search(r"^  OPERATIONS_MIGRATION_TOOLS_REF: ([0-9a-f]{40})$", workflow, re.MULTILINE)

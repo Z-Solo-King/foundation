@@ -413,7 +413,7 @@ jobs:
 
       - name: Install Operations package
         working-directory: operations
-        run: python -m pip install --disable-pip-version-check -e . --no-deps
+        run: python -m pip install --disable-pip-version-check -e .
 
       - name: Validate Operations migration registry
         working-directory: operations
