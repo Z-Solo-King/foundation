@@ -1,46 +1,45 @@
-# Execution checkpoint: re-run staged native hunt after latest feed-discovery review (2026-09-28).
-# Restart Stage 1 from consolidated browser-session extractor state.
-# Staged learning pipeline: 2 -> 4 -> 6 -> remaining 20.
-# Feed filename grammar pass enabled.
-name: Native Google Feed URL Hunt
+# Parallel native-only Google Merchant feed hunt.
+name: Native Google Feed URL Hunt (Parallel)
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - ".github/workflows/native-google-feed-hunt.yml"
-      - "tools/native_google_feed_hunt_v2.py"
-      - "tests/test_native_google_feed_hunt_v2.py"
   push:
     branches:
-      - fix/woocommerce-native-google-feed-hunt-20260927
-      - experiment/native-feed-directory-first-20260928
-    paths:
-      - ".github/workflows/native-google-feed-hunt.yml"
-      - "tools/native_google_feed_hunt_v2.py"
+      - experiment/native-feed-parallel-20260928
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: staged-native-google-feed-hunt-${{ github.ref }}
+  group: native-google-feed-parallel-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  stage1:
-    name: "Stage 1 · first 2 · ${{ matrix.slug }}"
+  hunt:
+    name: "Parallel shard ${{ matrix.shard }}"
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 35
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 8
       matrix:
         include:
-          - slug: krg-kart
-            site: "KRG KART"
-          - slug: avikaretails
-            site: "avikaretails"
+          - shard: 0
+            sites: "Aarna Computers,Ads Store,avikaretails,EZPZ Solutions"
+          - shard: 1
+            sites: "GamesNComps,Geekbees,hotshiftpc,itgadgetsonline"
+          - shard: 2
+            sites: "ithunt,KC Computers,KRG KART,Kryptronix Gaming"
+          - shard: 3
+            sites: "NCL Computer,networkitstore,nexusinfosys,Only SDD"
+          - shard: 4
+            sites: "PC Kumar Infotech,PC Studio,PCHubShop,Prime ABGB"
+          - shard: 5
+            sites: "quickincomputers,SCL Gaming,solankienterprises,Variety Infotech"
+          - shard: 6
+            sites: "Viper PC,AULA India,Cosmic Byte,Meckeys"
+          - shard: 7
+            sites: "Moskeys,Ninja Dog,StacksKB,Theproaudio"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -51,14 +50,13 @@ jobs:
           set -euo pipefail
           python -m pip install --disable-pip-version-check --no-input playwright
           python -m playwright install --with-deps chromium
-      - name: Run targeted native hunt with iterative learning
+      - name: Run parallel native hunt with local iterative learning
         run: |
           set -euo pipefail
-          base="out/native-google-feed-shard-stage1-${{ matrix.slug }}"
-          mkdir -p "$base"
+          base="out/native-google-feed-shard-${{ matrix.shard }}"
           for round in 1 2; do
             out="$base/round-$round"
-            args=(--shard 0 --shards 1 --only-sites "${{ matrix.site }}" --output-dir "$out")
+            args=(--shard 0 --shards 1 --only-sites "${{ matrix.sites }}" --output-dir "$out")
             if [ "$round" -gt 1 ]; then
               for d in "$base"/round-*; do
                 [ "$d" = "$out" ] && continue
@@ -66,193 +64,28 @@ jobs:
               done
             fi
             python tools/native_google_feed_hunt_v2.py "${args[@]}" | tee "$base/round-$round.log"
-            if jq -e '.status == "verified_native"' "$out/${{ matrix.slug }}.json" >/dev/null 2>&1; then
+            if grep -R '"status": "verified_native"' "$out" >/dev/null 2>&1; then
               break
             fi
           done
-      - name: Upload Stage 1 evidence
+      - name: Upload shard evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: native-google-feed-shard-stage1-${{ matrix.slug }}
-          path: out/native-google-feed-shard-stage1-${{ matrix.slug }}/
-          if-no-files-found: error
-          retention-days: 14
-
-  stage2:
-    name: "Stage 2 · next 4 · ${{ matrix.slug }}"
-    needs: [stage1]
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
-    strategy:
-      fail-fast: false
-      max-parallel: 4
-      matrix:
-        include:
-          - slug: aarna-computers
-            site: "Aarna Computers"
-          - slug: pc-kumar-infotech
-            site: "PC Kumar Infotech"
-          - slug: viper-pc
-            site: "Viper PC"
-          - slug: ithunt
-            site: "ithunt"
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.14"
-      - name: Download Stage 1 learning evidence
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4.3.0
-        with:
-          pattern: native-google-feed-shard-stage1-*
-          path: out/learning
-          merge-multiple: false
-      - name: Install browser session dependencies
-        run: |
-          set -euo pipefail
-          python -m pip install --disable-pip-version-check --no-input playwright
-          python -m playwright install --with-deps chromium
-      - name: Run learned targeted native hunt
-        run: |
-          set -euo pipefail
-          args=(--shard 0 --shards 1 --only-sites "${{ matrix.site }}" --output-dir "out/native-google-feed-shard-stage2-${{ matrix.slug }}")
-          for d in out/learning/*; do
-            [ -d "$d" ] && args+=(--learn-from "$d")
-          done
-          python tools/native_google_feed_hunt_v2.py "${args[@]}"
-      - name: Upload Stage 2 evidence
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: native-google-feed-shard-stage2-${{ matrix.slug }}
-          path: out/native-google-feed-shard-stage2-${{ matrix.slug }}/
-          if-no-files-found: error
-          retention-days: 14
-
-  stage3:
-    name: "Stage 3 · next 6 · ${{ matrix.slug }}"
-    needs: [stage2]
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
-    strategy:
-      fail-fast: false
-      max-parallel: 6
-      matrix:
-        include:
-          - slug: ads-store
-            site: "Ads Store"
-          - slug: kc-computers
-            site: "KC Computers"
-          - slug: gamesncomps
-            site: "GamesNComps"
-          - slug: geekbees
-            site: "Geekbees"
-          - slug: hotshiftpc
-            site: "hotshiftpc"
-          - slug: itgadgetsonline
-            site: "itgadgetsonline"
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.14"
-      - name: Download prior-stage learning evidence
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4.3.0
-        with:
-          pattern: native-google-feed-shard-stage*
-          path: out/learning
-          merge-multiple: false
-      - name: Install browser session dependencies
-        run: |
-          set -euo pipefail
-          python -m pip install --disable-pip-version-check --no-input playwright
-          python -m playwright install --with-deps chromium
-      - name: Run learned native hunt
-        run: |
-          set -euo pipefail
-          args=(--shard 0 --shards 1 --only-sites "${{ matrix.site }}" --output-dir "out/native-google-feed-shard-stage3-${{ matrix.slug }}")
-          for d in out/learning/*; do
-            [ -d "$d" ] && args+=(--learn-from "$d")
-          done
-          python tools/native_google_feed_hunt_v2.py "${args[@]}"
-      - name: Upload Stage 3 evidence
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: native-google-feed-shard-stage3-${{ matrix.slug }}
-          path: out/native-google-feed-shard-stage3-${{ matrix.slug }}/
-          if-no-files-found: error
-          retention-days: 14
-
-  stage4:
-    name: "Stage 4 · remaining 20 · shard ${{ matrix.shard }}"
-    needs: [stage3]
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
-    strategy:
-      fail-fast: false
-      max-parallel: 8
-      matrix:
-        include:
-          - shard: 0
-            sites: "AULA India,Cosmic Byte,Meckeys"
-          - shard: 1
-            sites: "Moskeys,Ninja Dog,StacksKB"
-          - shard: 2
-            sites: "Theproaudio,EZPZ Solutions"
-          - shard: 3
-            sites: "Kryptronix Gaming,NCL Computer,networkitstore"
-          - shard: 4
-            sites: "nexusinfosys,Only SDD,PC Studio"
-          - shard: 5
-            sites: "PCHubShop,Prime ABGB"
-          - shard: 6
-            sites: "quickincomputers,SCL Gaming,solankienterprises"
-          - shard: 7
-            sites: "Variety Infotech"
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.14"
-      - name: Download all prior-stage learning evidence
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4.3.0
-        with:
-          pattern: native-google-feed-shard-stage*
-          path: out/learning
-          merge-multiple: false
-      - name: Install browser session dependencies
-        run: |
-          set -euo pipefail
-          python -m pip install --disable-pip-version-check --no-input playwright
-          python -m playwright install --with-deps chromium
-      - name: Run learned native hunt
-        run: |
-          set -euo pipefail
-          args=(--shard 0 --shards 1 --only-sites "${{ matrix.sites }}" --output-dir "out/native-google-feed-shard-stage4-${{ matrix.shard }}")
-          for d in out/learning/*; do
-            [ -d "$d" ] && args+=(--learn-from "$d")
-          done
-          python tools/native_google_feed_hunt_v2.py "${args[@]}"
-      - name: Upload Stage 4 evidence
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: native-google-feed-shard-stage4-${{ matrix.shard }}
-          path: out/native-google-feed-shard-stage4-${{ matrix.shard }}/
+          name: native-google-feed-parallel-shard-${{ matrix.shard }}
+          path: out/native-google-feed-shard-${{ matrix.shard }}/
           if-no-files-found: error
           retention-days: 14
 
   aggregate:
-    needs: [stage4]
+    needs: [hunt]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4.3.0
         with:
-          pattern: native-google-feed-shard-stage*
+          pattern: native-google-feed-parallel-shard-*
           path: out/shards
           merge-multiple: false
       - name: Aggregate native-only manifest
@@ -261,12 +94,12 @@ jobs:
           python tools/native_google_feed_hunt_v2.py --aggregate-dir out/shards --output-file out/native-google-feed-manifest.json
           jq -e '.schema == "woocommerce-native-google-feed-manifest/v2" and .native_only == true and .no_reconstruction == true and .sites_present == 32' out/native-google-feed-manifest.json
           echo '=== VERIFIED NATIVE FEED URLS ==='
-          jq -r '.verified_native_feeds[] | "(.site)	(.url)"' out/native-google-feed-manifest.json
+          jq -r '.verified_native_feeds[] | "\(.site)\t\(.url)"' out/native-google-feed-manifest.json
       - name: Upload consolidated native-only manifest
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: native-google-feed-manifest
+          name: native-google-feed-parallel-manifest
           path: out/native-google-feed-manifest.json
           if-no-files-found: error
           retention-days: 30
