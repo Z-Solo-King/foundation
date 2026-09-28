@@ -140,9 +140,11 @@ async def _insert_new_admission(
     expires_at: int,
     now: int,
     policy: AdmissionPolicy,
+    storage_event_id: str | None = None,
 ) -> tuple[AdmissionDecision, AdmissionLease | None]:
+    storage_event_id = storage_event_id or _storage_event_id(subject_fingerprint, event_id)
     inserted = await store._insert_if_admissible(
-        event_id=event_id,
+        event_id=storage_event_id,
         window_start=window_start,
         subject_fingerprint=subject_fingerprint,
         route=route,
@@ -163,6 +165,7 @@ async def _insert_new_admission(
                 subject_fingerprint=subject_fingerprint,
                 route=route,
                 event_id=event_id,
+                storage_event_id=storage_event_id,
                 window_start=window_start,
                 expires_at=expires_at,
                 now=now,
