@@ -15,6 +15,8 @@ import hashlib
 import json
 import os
 import subprocess
+import threading
+import time
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import HTTPError
@@ -24,6 +26,8 @@ from urllib.request import Request, urlopen
 MAX_BODY_BYTES = 131_072
 MAX_MESSAGE_CHARS = 11_800
 UPSTREAM_USER_AGENT = "HeroicAI-NightlyResearch/1.1"
+DEFAULT_MAX_UPSTREAM_CONCURRENCY = 6
+MAX_QUEUE_WAIT_SECONDS = 180
 
 
 def _compact_messages(messages: object) -> str:
@@ -120,6 +124,9 @@ def _curl_post(url: str, payload: bytes, auth_token: str, request_id: str) -> tu
     if completed.returncode != 0 and not error_text:
         error_text = f"curl_exit_{completed.returncode}"
     return status, body, error_text
+UPSTREAM_CONCURRENCY = threading.BoundedSemaphore(DEFAULT_MAX_UPSTREAM_CONCURRENCY)
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "ResearchWorkerProxy/1.0"
 
@@ -203,39 +210,55 @@ class Handler(BaseHTTPRequestHandler):
             method="POST",
         )
 
-        try:
-            with urlopen(request, timeout=90) as response:
-                body = json.loads(response.read().decode("utf-8"))
-                status = int(response.status)
-        except HTTPError as exc:
-            if exc.code != 403:
-                details = _safe_upstream_error_details(exc)
-                details.update(_safe_header_details(exc.headers))
-                self._json({"error": {"message": "upstream_worker_rejected", "type": "upstream_http_error", **details}, "request_id": request_digest}, 502)
-                return
-            curl_status, curl_body, curl_error = _curl_post(url, json.dumps(upstream_payload, ensure_ascii=False).encode("utf-8"), self.server.auth_token, request_id)
-            if curl_status == 200:
-                try:
-                    body = json.loads(curl_body.decode("utf-8"))
-                    status = 200
-                except (UnicodeDecodeError, json.JSONDecodeError):
-                    self._json({"error": {"message": "upstream_worker_invalid_curl_response", "type": "protocol_error"}, "request_id": request_digest}, 502)
-                    return
-            else:
-                details = _safe_upstream_error_details(exc)
-                details.update(_safe_header_details(exc.headers))
-                details["fallback_transport"] = "curl"
-                details["fallback_http_status"] = curl_status
-                if curl_error:
-                    details["fallback_transport_error"] = curl_error
-                self._json({"error": {"message": "upstream_worker_rejected", "type": "upstream_http_error", **details}, "request_id": request_digest}, 502)
-                return
-        except Exception as exc:
+        acquired_at = time.monotonic()
+        if not UPSTREAM_CONCURRENCY.acquire(timeout=MAX_QUEUE_WAIT_SECONDS):
             self._json(
-                {"error": {"message": "upstream_worker_failure", "type": type(exc).__name__}, "request_id": request_digest},
-                502,
+                {"error": {"message": "research_proxy_capacity_queue_timeout", "type": "backpressure_timeout"}, "request_id": request_digest},
+                429,
             )
             return
+        queue_wait_ms = round((time.monotonic() - acquired_at) * 1000, 3)
+        try:
+            try:
+                with urlopen(request, timeout=90) as response:
+                    body = json.loads(response.read().decode("utf-8"))
+                    status = int(response.status)
+            except HTTPError as exc:
+                if exc.code != 403:
+                    details = _safe_upstream_error_details(exc)
+                    details.update(_safe_header_details(exc.headers))
+                    self._json({"error": {"message": "upstream_worker_rejected", "type": "upstream_http_error", **details}, "request_id": request_digest}, 502)
+                    return
+                curl_status, curl_body, curl_error = _curl_post(
+                    url,
+                    json.dumps(upstream_payload, ensure_ascii=False).encode("utf-8"),
+                    self.server.auth_token,
+                    request_id,
+                )
+                if curl_status == 200:
+                    try:
+                        body = json.loads(curl_body.decode("utf-8"))
+                        status = 200
+                    except (UnicodeDecodeError, json.JSONDecodeError):
+                        self._json({"error": {"message": "upstream_worker_invalid_curl_response", "type": "protocol_error"}, "request_id": request_digest}, 502)
+                        return
+                else:
+                    details = _safe_upstream_error_details(exc)
+                    details.update(_safe_header_details(exc.headers))
+                    details["fallback_transport"] = "curl"
+                    details["fallback_http_status"] = curl_status
+                    if curl_error:
+                        details["fallback_transport_error"] = curl_error
+                    self._json({"error": {"message": "upstream_worker_rejected", "type": "upstream_http_error", **details}, "request_id": request_digest}, 502)
+                    return
+            except Exception as exc:
+                self._json(
+                    {"error": {"message": "upstream_worker_failure", "type": type(exc).__name__}, "request_id": request_digest},
+                    502,
+                )
+                return
+        finally:
+            UPSTREAM_CONCURRENCY.release()
 
         if status < 200 or status >= 300 or not isinstance(body, dict):
             self._json(
@@ -297,11 +320,16 @@ def main() -> int:
     parser.add_argument("--auth-token", default="")
     parser.add_argument("--bind", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--max-upstream-concurrency", type=int, default=int(os.environ.get("RESEARCH_PROXY_MAX_CONCURRENCY", str(DEFAULT_MAX_UPSTREAM_CONCURRENCY))))
     args = parser.parse_args()
 
     auth_token = args.auth_token or os.environ.get("RESEARCH_PROXY_AUTH_TOKEN", "")
     if not auth_token:
         parser.error("research proxy auth token is required")
+    if not 1 <= args.max_upstream_concurrency <= 20:
+        parser.error("max upstream concurrency must be between 1 and 20")
+    global UPSTREAM_CONCURRENCY
+    UPSTREAM_CONCURRENCY = threading.BoundedSemaphore(args.max_upstream_concurrency)
     server = ThreadingHTTPServer((args.bind, args.port), Handler)
     server.public_worker_url = args.public_worker_url
     server.auth_token = auth_token
