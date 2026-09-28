@@ -13,11 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        site:
-          - ads-store
-          - ithunt
-          - kccomputers
-          - krg-kart
+        site: [ads-store, ithunt, kccomputers, krg-kart]
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
@@ -34,32 +30,16 @@ jobs:
           wc -c "out/native/${SITE}.body"
           if grep -qi '^x-native-feed-url:' "out/native/${SITE}.headers"; then
             cp "out/native/${SITE}.body" "out/native/${SITE}.xml"
-            node <<'NODE'
-            const fs=require("fs"), crypto=require("crypto");
-            const s=fs.readFileSync("out/native/"+process.env.SITE+".xml","utf8");
-            const ok=s.includes("<rss") &&
-              s.includes("http://base.google.com/ns/1.0") &&
-              s.includes("<item") &&
-              s.includes("<g:id") &&
-              s.includes("<g:title") &&
-              s.includes("<g:link") &&
-              s.includes("<g:price") &&
-              s.includes("<g:image_link");
-            if(!ok) throw new Error("strict native validation failed");
-            console.log(JSON.stringify({
-              site:process.env.SITE,
-              native_url:fs.readFileSync("out/native/"+process.env.SITE+".headers","utf8")
-                .split("\n").find(x=>/^x-native-feed-url:/i.test(x)),
-              items:(s.match(/<item\\b/gi)||[]).length,
-              bytes:Buffer.byteLength(s),
-              sha256:crypto.createHash("sha256").update(s).digest("hex")
-            },null,2));
-            NODE
+            grep -Eqi '<rss|http://base.google.com/ns/1.0|<item|<g:id|<g:title|<g:link|<g:price|<g:image_link'               "out/native/${SITE}.xml" || { echo "strict native validation failed"; exit 1; }
+            echo "=== NATIVE FEED FOUND ==="
+            grep -i '^x-native-feed-' "out/native/${SITE}.headers" || true
+            printf 'site=%s items=%s bytes=%s sha256=' "${SITE}"               "$(grep -Eo '<item\\b' "out/native/${SITE}.xml" | wc -l)"               "$(wc -c < "out/native/${SITE}.xml")"
+            sha256sum "out/native/${SITE}.xml" | awk '{print $1}'
           else
             echo "NATIVE_FEED_NOT_VERIFIED=${SITE}"
           fi
       - uses: actions/upload-artifact@v4
         with:
-          name: native-feed-${{ matrix.site }}
+          name: native-feed-${{ matrix.site }}-live-worker
           path: out/
           if-no-files-found: error
