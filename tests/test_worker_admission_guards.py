@@ -89,3 +89,22 @@ async def test_research_rejects_invalid_idempotency_key_before_admission(monkeyp
         )
     )
     assert response.status == 400
+
+
+@pytest.mark.asyncio
+async def test_research_rejects_missing_authenticated_subject_in_production(monkeypatch):
+    import worker
+
+    monkeypatch.setattr(worker, "_authorized", lambda request, env: True)
+    monkeypatch.setattr(worker, "_subject_or_local", lambda request, env: None)
+
+    entry = worker.Default()
+    entry.env = type("Env", (), {"ENVIRONMENT": "production"})()
+    response = await entry.fetch(
+        Request(
+            "https://x/api/v1/research",
+            {"question": "q", "strict_zero_cost_only": True},
+            {"Content-Type": "application/json"},
+        )
+    )
+    assert response.status == 401
