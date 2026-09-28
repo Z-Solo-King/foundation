@@ -446,3 +446,37 @@ async def test_chat_rejects_invalid_idempotency_key_before_admission(monkeypatch
     )
     assert response.status == 400
     assert called is False
+
+
+@pytest.mark.asyncio
+async def test_research_rejects_missing_production_subject_before_admission(monkeypatch):
+    import worker
+
+    called = False
+
+    async def admit(*args, **kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("subject guard must run before admission")
+
+    monkeypatch.setattr(worker, "_authorized", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr(worker, "_subject_or_local", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(worker, "_public_admit", admit)
+
+    env = SimpleNamespace(
+        DB=DB(rows=[]),
+        ENVIRONMENT="production",
+        AUTH_TOKEN="secret",
+    )
+    entry = worker.Default()
+    entry.env = env
+    response = await entry.fetch(
+        Request(
+            "POST",
+            "https://x/api/v1/research",
+            {"question": "test", "source_urls": []},
+            {"Authorization": "Bearer secret", "Content-Type": "application/json"},
+        )
+    )
+    assert response.status == 401
+    assert called is False
