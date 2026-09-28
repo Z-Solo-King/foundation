@@ -180,6 +180,14 @@ jobs:
           node-version: "22"
           package-manager-cache: false
 
+      - name: Validate TypeScript edge HTTP and SSE runtime
+        working-directory: operations/polyglot/edge-worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund --ignore-scripts
+          npm run typecheck
+          npm test
       - name: Run TypeScript observation contract differential
         working-directory: operations/polyglot/observation-contract-strict
         shell: bash
