@@ -298,9 +298,53 @@ jobs:
           path: .runtime/four-lane/public-leaf-rust-${{ matrix.candidate }}.json
           retention-days: 30
 
+  go_tooling:
+    needs: resolve_operations_ref
+    name: P5 Go fan-out tooling
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout pinned Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version: "1.25"
+      - name: Execute bounded Go fan-out suite
+        working-directory: operations/experiments/go_http_fanout
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test -count=3 ./...
+          go test -race ./...
+          go vet ./...
+      - name: Emit lane receipt
+        run: |
+          mkdir -p .runtime/four-lane
+          printf '%s\n' '{"schema":"polyglot-lane-receipt/v1","lane":"P5_GO_TOOLING","language":"go","direction":"fanout_tooling","status":"pass","operations_ref":"${{ needs.resolve_operations_ref.outputs.ref }}"}' > .runtime/four-lane/go-tooling.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: four-lane-go-tooling
+          path: .runtime/four-lane/go-tooling.json
+          retention-days: 30
+
   four_lane_gate:
-    name: Four-lane convergence gate
-    needs: [private_entry_ts, private_leaf_rust, public_entry_ts, public_leaf_rust]
+    name: Five-lane convergence gate
+    needs: [private_entry_ts, private_leaf_rust, public_entry_ts, public_leaf_rust, go_tooling]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
