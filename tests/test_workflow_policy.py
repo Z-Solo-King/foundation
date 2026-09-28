@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -8,8 +9,10 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "ebbcde494b3d07aaef6a3a5a59a7135cb309114b"
-CANONICAL_PRODUCTION_OPERATIONS_REF = "ebbcde494b3d07aaef6a3a5a59a7135cb309114b"
+PIN_MANIFEST = ROOT / "docs" / "OPERATIONS_PIN_MANIFEST.json"
+_PIN_DATA = json.loads(PIN_MANIFEST.read_text(encoding="utf-8"))
+CANONICAL_OPERATIONS_REF = _PIN_DATA["pins"]["production_runtime"]["sha"]
+CANONICAL_PRODUCTION_OPERATIONS_REF = _PIN_DATA["pins"]["production_runtime"]["sha"]
 BENCHMARK_OPERATIONS_REF = "bf4af8db50d7b39c79acd09a9e90237856962abb"
 BENCHMARK_TOOLS_REF = "d4ef2e6d28435a59c735b9dc4d0de31f44b9cf29"
 MIGRATION_TOOLS_REF = None
@@ -71,18 +74,32 @@ def test_production_deployment_has_one_owner():
 # Canonical Operations revision is declared once and used by the release self-check.\n\ndef test_canonical_operations_production_pin_is_current_and_immutable():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_REPOSITORY="{CANONICAL_OPERATIONS_REPOSITORY}"' in deployment
-    assert f'OPERATIONS_REF="{CANONICAL_PRODUCTION_OPERATIONS_REF}"' in deployment
-    assert deployment.count(CANONICAL_PRODUCTION_OPERATIONS_REF) == 2
+    assert 'PIN_MANIFEST="docs/OPERATIONS_PIN_MANIFEST.json"' in deployment
+    assert 'manifest["pins"]["production_runtime"]["sha"]' in deployment
+    assert CANONICAL_PRODUCTION_OPERATIONS_REF not in deployment
     assert LEGACY_OPERATIONS_REF not in deployment
     assert 'git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git"' in deployment
     assert '"github:${OPERATIONS_REF}"' in deployment
     assert '.private == true' in deployment
 
 
+def test_production_release_does_not_publish_private_state_or_b2_literals():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'PASS ($installation_id)' not in deployment
+    assert 'cat "$RUNNER_TEMP/model-call-quota.json"' not in deployment
+    assert 'cat "$RUNNER_TEMP/model-call-reservations.json"' not in deployment
+    assert '  cat diagnostic.json' not in deployment
+    assert 'B2_BUCKET = "SoloKing"' not in deployment
+    assert 'B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"' not in deployment
+    assert 'test -n "${B2_BUCKET:-}"' in deployment
+    assert 'test -n "${B2_ENDPOINT:-}"' in deployment
+
+
 def test_production_pin_self_check_matches_canonical_operations_revision():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert f'test "$OPERATIONS_REF" = \'{CANONICAL_PRODUCTION_OPERATIONS_REF}\'' in deployment
-    assert "test \"$OPERATIONS_REF\" = 'ca9cc887049b2800361b222bbdae7f56100f4f7c'" not in deployment
+    assert 'PIN_MANIFEST="docs/OPERATIONS_PIN_MANIFEST.json"' in deployment
+    assert 'production_runtime' in deployment
+    assert 'test "$OPERATIONS_REF" =' not in deployment
 
 
 def test_production_generates_private_operations_service_binding():
@@ -183,6 +200,8 @@ def test_public_production_deploy_injects_required_b2_secrets():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert "B2_KEY_ID: ${{ secrets.B2_KEY_ID }}" in workflow
     assert "B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}" in workflow
+    assert "B2_BUCKET: ${{ secrets.B2_BUCKET }}" in workflow
+    assert "B2_ENDPOINT: ${{ vars.B2_ENDPOINT }}" in workflow
     assert "--secrets-file \"$public_secret_file\"" in deployment
     assert 'printf \'AUTH_TOKEN=%s\\nCHAT_BACKEND_TOKEN=%s\\n\' "$AUTH_TOKEN" "$AUTH_TOKEN" > "$secret_file"' in deployment
     assert 'printf \'AUTH_TOKEN=%s\\nB2_KEY_ID=%s\\nB2_APPLICATION_KEY=%s\\n\'' in deployment
