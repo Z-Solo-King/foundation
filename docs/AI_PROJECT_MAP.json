@@ -385,7 +385,7 @@
       "to": "Cloudflare service: operations-edge -> operations",
       "via": "service binding `OPERATIONS`",
       "purpose": "private chatbot/research execution",
-      "auth": "Worker-to-worker authenticated request; private runtime secret boundary stays in Operations",
+      "auth": "Foundation _chat_headers forwards the inbound Bearer credential; Operations _chat_authorized accepts CHAT_BACKEND_TOKEN first, then its AUTH_TOKEN via authorized_request. No Foundation secret is implicitly substituted.",
       "owner": "operations",
       "policies": [
         "P002",
@@ -670,5 +670,78 @@
     "call_graph_audit": "forward and reverse traversal; detect service-binding cycles at request-path level, not merely graph topology",
     "token_efficiency": "retrieve map first; then only the feature, functions, policy and evidence needed to answer the current uncertainty",
     "stale_data": "runtime snapshots are dated evidence; refresh before mutation or production claims"
+  },
+  "credential_observations": [
+    {
+      "id": "OBS-FND-EVIDENCE-SIGNING",
+      "surface": "Foundation/Cloudflare Worker source vs live binding inventory",
+      "status": "VERIFY_RUNTIME",
+      "finding": "worker.py references EVIDENCE_PACKAGE_SIGNING_SECRET for evidence publication, but the 2026-09-28 live binding inventory did not show that secret.",
+      "action": "Dedicated Cloudflare runtime verification required before treating evidence publication as production-ready; do not infer missing secret value or alter credentials from this map.",
+      "policies": [
+        "P003",
+        "P004",
+        "P007",
+        "P015"
+      ]
+    },
+    {
+      "id": "OBS-NAME-NOT-IDENTITY",
+      "surface": "all repos/workers",
+      "status": "RULE",
+      "finding": "Identical variable names such as AUTH_TOKEN may exist in different secret stores.",
+      "action": "Never deduplicate credentials by name. Scope identity by surface + repository/Worker + environment + purpose.",
+      "policies": [
+        "P002",
+        "P015"
+      ]
+    }
+  ],
+  "ai_scan_contract": {
+    "connection_record_required": [
+      "from",
+      "to",
+      "via",
+      "purpose",
+      "owner",
+      "auth",
+      "policies",
+      "evidence"
+    ],
+    "credential_record_required": [
+      "surface",
+      "name",
+      "class",
+      "purpose",
+      "value_in_repo",
+      "scope_rule"
+    ],
+    "language_record_required": [
+      "language",
+      "files",
+      "where",
+      "why",
+      "how",
+      "policies"
+    ],
+    "feature_record_required": [
+      "id",
+      "surfaces",
+      "functions",
+      "function_files",
+      "key",
+      "usage",
+      "policies",
+      "policy_logic"
+    ],
+    "runtime_record_required": [
+      "observed_at",
+      "source",
+      "resource",
+      "bindings",
+      "status"
+    ],
+    "privacy_rule": "values are never stored in the AI map; only names/classes/purpose/scopes may be recorded when safe",
+    "freshness_rule": "runtime rows are snapshots and must be refreshed before mutation or production claims"
   }
 }
