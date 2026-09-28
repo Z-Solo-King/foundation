@@ -15,6 +15,8 @@ def test_nightly_private_checkout_boundary_is_explicit():
     assert 'test "$(git -C "$RUNNER_TEMP/operations-research" rev-parse HEAD)" = "$OPERATIONS_RESEARCH_REF"' in text
     assert 'rm -rf "$RUNNER_TEMP/operations-research"' in text
     assert "--crossfire" in text
+    assert "production_release_run_id" in text
+    assert "gh run view" in text
 
 def test_nightly_artifacts_never_target_private_checkout():
     text=WORKFLOW.read_text(encoding="utf-8")
