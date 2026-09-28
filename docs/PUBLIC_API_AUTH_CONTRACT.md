@@ -1,11 +1,11 @@
 # Public API Authentication Contract
 
-The Foundation public Worker currently exposes a single-operator API credential. The bearer token authenticates the caller to the public service; it is not a multi-user identity system.
+The Foundation public HTTP API currently uses one operator credential supplied as a bearer token. The derived subject fingerprint is a credential-scope identifier, not a user-account identity.
 
-Admission, idempotency, cursor and research ownership data may derive a non-secret fingerprint from the authenticated credential so records cannot contain the bearer itself. That fingerprint is not a per-user identity.
+Admission limits, idempotency and cursor scopes are bounded to that operator credential until a scoped multi-principal authentication system is introduced and validated end-to-end. Public documentation must not describe these limits as per-user quotas.
 
-The contract remains explicit until a scoped credential system (for example per-client tokens or signed short-lived credentials) is introduced and validated end-to-end.
+Bearer scheme parsing is case-insensitive and surrounding token whitespace is ignored. Missing or malformed credentials fail closed.
 
-Bearer parsing is case-insensitive for the authentication scheme and surrounding whitespace is trimmed. Missing or malformed credentials fail closed.
+Unexpected request-body/runtime exceptions must not be reclassified as malformed input merely because JSON parsing occurs. Only input, decoding and schema errors belong to the malformed-input class.
 
-Unexpected request-body/runtime exceptions are not converted into invalid-JSON responses by json_object; only input, decoding and schema errors are classified as malformed input.
+The authentication model is intentionally simple and single-operator. Any future move to per-client/per-user credentials must update this contract, its acceptance tests, and the public/private boundary documentation together.
