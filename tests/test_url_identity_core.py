@@ -1,6 +1,8 @@
 import pytest
 
-from foundation_core.url_identity import canonicalize_url, safe_host, safe_ip
+from ipaddress import ip_address
+
+from foundation_core.url_identity import canonicalize_url, safe_host, safe_ip, _parse_obfuscated_ipv4
 
 
 @pytest.mark.parametrize(
@@ -76,3 +78,76 @@ def test_canonicalize_url_rejects_ipv6_multicast_and_nat64_multicast():
     for source in ("http://[ff02::1]/", "http://[64:ff9b::224.0.0.1]/"):
         with pytest.raises(ValueError):
             canonicalize_url(source)
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "http://127.1/",
+        "http://0177.0.0.1/",
+        "http://0x7f.0x0.0x0.0x1/",
+        "http://0x7f.1/",
+        "http://2130706433/",
+        "http://intranet/",
+        "http://service.internal/",
+        "http://printer.local/",
+        "http://host.home.arpa/",
+        "http://[2002:7f00:0001::1]/",
+        "http://[2001:0000:7f00:0001::1]/",
+        "http://[64:ff9b:1::1]/",
+    ],
+)
+def test_canonicalize_url_rejects_browser_numeric_private_and_reserved_forms(source):
+    with pytest.raises(ValueError):
+        canonicalize_url(source)
+
+
+def test_canonicalize_url_preserves_brackets_for_public_ipv6():
+    assert canonicalize_url("https://[2001:4860:4860::8888]/x") == "https://[2001:4860:4860::8888]/x"
+
+
+def test_safe_host_rejects_single_label_and_reserved_suffixes():
+    assert safe_host("intranet") is False
+    assert safe_host("example.local") is False
+    assert safe_host("example.internal") is False
+    assert safe_host("example.localhost") is False
+    assert safe_host("example.home.arpa") is False
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("127.1", False),
+        ("0177.0.0.1", False),
+        ("0x7f.1", False),
+        ("1.1.1.1", True),
+        ("8.8.8.8", True),
+    ],
+)
+def test_safe_host_classifies_numeric_ipv4_forms_before_dns(source, expected):
+    assert safe_host(source) is expected
+
+
+def test_safe_host_rejects_empty_hostname():
+    assert safe_host("") is False
+
+
+def test_obfuscated_ipv4_supports_explicit_hex_and_octal_parts():
+    assert safe_host("0x8.0o8.0o0.0o1") is True
+
+
+def test_obfuscated_ipv4_rejects_invalid_octal_parts():
+    assert safe_host("09.0.0.1") is False
+
+
+def test_obfuscated_ipv4_rejects_out_of_range_parts():
+    assert safe_host("256.1.1.1") is False
+
+
+def test_obfuscated_ipv4_forms_are_parsed_but_rejected_by_safe_host():
+    assert _parse_obfuscated_ipv4("134744072") == ip_address("8.8.8.8")
+    assert _parse_obfuscated_ipv4("8.1") == ip_address("8.0.0.1")
+    assert _parse_obfuscated_ipv4("8.8.1") == ip_address("8.8.0.1")
+    assert safe_host("134744072") is False
+    assert safe_host("8.1") is False
+    assert safe_host("8.8.1") is False
