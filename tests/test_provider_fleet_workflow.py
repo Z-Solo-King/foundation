@@ -20,7 +20,7 @@ def test_provider_fleet_workflow_is_structured_and_protected() -> None:
 def test_provider_fleet_workflow_uses_immutable_private_probe() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
 
-    assert "OPERATIONS_PROVIDER_FLEET_REF: 7505cd998de505eac0827be03f397a47c0b6ff1c" in text
+    assert "OPERATIONS_PROVIDER_FLEET_REF: 1891f864195d8054d29267c9fa625323c788ac4b" in text
     assert "OPERATIONS_PROVIDER_FLEET_PATH: tools/provider_fleet_probe.py" in text
     assert "Provider fleet probe verified at immutable Operations ref" in text
     assert "CHAT_PROVIDER_RUNTIME_STATE" in text
