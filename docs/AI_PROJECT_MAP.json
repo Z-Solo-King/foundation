@@ -745,5 +745,212 @@
     ],
     "privacy_rule": "values are never stored in the AI map; only names/classes/purpose/scopes may be recorded when safe",
     "freshness_rule": "runtime rows are snapshots and must be refreshed before mutation or production claims"
-  }
+  },
+  "inspired_patterns": [
+    {
+      "id": "P01",
+      "name": "AI Work Director",
+      "analogy": "Intel Thread Director",
+      "use": "telemetry-driven lane/task placement",
+      "fields": [
+        "task_id",
+        "owner",
+        "feature",
+        "mutation_surface",
+        "dependencies",
+        "expected_cost",
+        "deadline",
+        "evidence_tier",
+        "lane_role",
+        "retrieval_budget",
+        "current_state",
+        "priority"
+      ],
+      "guard": "do not override canonical ownership or acceptance dependencies"
+    },
+    {
+      "id": "P02",
+      "name": "Cross-Fire Mesh",
+      "analogy": "AMD CrossFire",
+      "use": "independent validation lanes with different boundaries",
+      "default_lanes": 4,
+      "expandable_lanes": "6+",
+      "guard": "shared writes serialized; duplicate searches do not count as independent evidence"
+    },
+    {
+      "id": "P03",
+      "name": "Sparse Context Access",
+      "analogy": "Resizable BAR / Smart Access Memory",
+      "use": "map-first retrieval of only required context",
+      "metrics": [
+        "retrieved_bytes",
+        "duplicate_context",
+        "tool_calls",
+        "time_to_first_definitive_finding"
+      ],
+      "guard": "current map is index; canonical files remain authority"
+    },
+    {
+      "id": "P04",
+      "name": "Capability Negotiation",
+      "analogy": "FSR/XeSS portability + OptiScaler",
+      "use": "provider/tool/language adapter selection by capability instead of vendor",
+      "capabilities": [
+        "structured_output",
+        "streaming",
+        "context_limit",
+        "max_output",
+        "cost_status",
+        "privacy_class",
+        "deadline_support",
+        "retryability",
+        "artifact_support"
+      ],
+      "guard": "policy decides eligibility before capability ranking"
+    },
+    {
+      "id": "P05",
+      "name": "Latency Guard",
+      "analogy": "NVIDIA Reflex",
+      "use": "phase-level queue/execution latency measurement",
+      "phases": [
+        "queue_wait",
+        "retrieval",
+        "planning",
+        "provider_wait",
+        "execution",
+        "persistence",
+        "publication",
+        "response"
+      ],
+      "guard": "optimize tail phases, not only total duration"
+    },
+    {
+      "id": "P06",
+      "name": "Shared Evidence Fabric",
+      "analogy": "NVLink shared-memory concept",
+      "use": "explicit artifact/receipt references across repos without sharing implementation authority",
+      "fields": [
+        "artifact_id",
+        "producer",
+        "revision",
+        "owner",
+        "consumers",
+        "evidence_tier",
+        "retention"
+      ],
+      "guard": "shared evidence is not shared policy authority"
+    },
+    {
+      "id": "P07",
+      "name": "Compatibility Profiles",
+      "analogy": "driver/application profiles",
+      "use": "bounded versioned quirks for providers/sites/workflows",
+      "fields": [
+        "target",
+        "version_range",
+        "trigger",
+        "workaround",
+        "expected_effect",
+        "regression_test",
+        "expiry",
+        "owner"
+      ],
+      "guard": "profiles cannot silently override policy"
+    },
+    {
+      "id": "P08",
+      "name": "Blind Differential",
+      "analogy": "blind comparative testing",
+      "use": "compare normalized outputs/resource/latency while hiding implementation identity where practical",
+      "guard": "reveal identity only after primary comparison"
+    },
+    {
+      "id": "P09",
+      "name": "Fallback Ladder",
+      "analogy": "DLSS/FSR/XeSS backend fallback",
+      "use": "capability-ranked preferred→alternate→degraded→blocked routing",
+      "guard": "fallback cannot bypass auth/cost/privacy/evidence"
+    },
+    {
+      "id": "P10",
+      "name": "Shim / Sidecar",
+      "analogy": "compatibility/interception layer",
+      "use": "thin non-authoritative edge around canonical authority",
+      "guard": "bounded, observable, no second control plane"
+    }
+  ],
+  "ai_brain_scheduling": {
+    "strategy": "information_gain_per_time_and_retrieved_byte",
+    "task_states": [
+      "ready",
+      "running",
+      "blocked",
+      "work_steal",
+      "verified",
+      "closed"
+    ],
+    "lane_selection": "owner + mutation_surface + dependency readiness + evidence tier + expected cost + deadline",
+    "rebalancing": "blocked lanes work-steal; finished lanes pull next independent task",
+    "measurement": "latency and retrieval-cost telemetry become scheduler feedback",
+    "fairness": "no starvation of older acceptance-critical work; deadlines and evidence gates outrank raw throughput"
+  },
+  "audit_selection_matrix": [
+    {
+      "uncertainty": "Where is behavior owned?",
+      "patterns": [
+        "P03",
+        "P06"
+      ]
+    },
+    {
+      "uncertainty": "Which lane should perform work?",
+      "patterns": [
+        "P01",
+        "P02"
+      ]
+    },
+    {
+      "uncertainty": "Are implementations semantically equivalent?",
+      "patterns": [
+        "P04",
+        "P08"
+      ]
+    },
+    {
+      "uncertainty": "Why is audit/chatbot slow?",
+      "patterns": [
+        "P03",
+        "P05",
+        "P01"
+      ]
+    },
+    {
+      "uncertainty": "How should fallback behave?",
+      "patterns": [
+        "P04",
+        "P09",
+        "P07"
+      ]
+    },
+    {
+      "uncertainty": "How can repos share evidence safely?",
+      "patterns": [
+        "P06"
+      ]
+    },
+    {
+      "uncertainty": "Is a service wrapper creating authority duplication?",
+      "patterns": [
+        "P10",
+        "P06"
+      ]
+    },
+    {
+      "uncertainty": "Is behavior dependent on known external quirks?",
+      "patterns": [
+        "P07"
+      ]
+    }
+  ]
 }
