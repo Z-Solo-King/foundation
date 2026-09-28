@@ -58,6 +58,6 @@ async def test_ingest_sources_keeps_successful_sources_when_one_fetch_fails():
 
     assert calls == ["https://example.test/good", "https://example.test/bad"]
     assert results[0]["status"] == 200
-    assert results[1] == {"url": "https://example.test/bad", "status": "error", "error": "blocked host"}
+    assert results[1] == {"url": "https://example.test/bad", "status": "error", "error": "source_fetch_failed"}
     assert len(env.DB.batches) == 1
     assert len(env.DB.batches[0]) == 3

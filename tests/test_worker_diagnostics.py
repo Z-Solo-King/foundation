@@ -241,7 +241,7 @@ async def test_worker_http_public_diagnostics_and_research_fail_closed_paths(mon
     async def broken_storage(*args, **kwargs): raise RuntimeError("storage diagnostic exploded")
     monkeypatch.setattr(worker, "_storage_diagnostic", broken_storage)
     failed_storage = await entry.fetch(Request("POST", "https://x/api/v1/storage/diagnostic", {"run_id": "run-1"}, auth_headers))
-    assert "storage diagnostic failure" in str(failed_storage)
+    assert "persistence_unavailable" in str(failed_storage)
     missing = await entry.fetch(Request("GET", "https://x/api/v1/research/missing", None, {"Authorization": "Bearer secret"}))
     assert "run not found" in str(missing)
     persistence_error = worker.Default(); persistence_error.env = SimpleNamespace(DB=BrokenDB(), ENVIRONMENT="production", AUTH_TOKEN="secret")
