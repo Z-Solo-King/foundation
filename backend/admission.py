@@ -28,8 +28,10 @@ class AdmissionPolicy:
     window_seconds: int = 60
     max_requests_per_subject: int = 30
     max_requests_global: int = 300
-    max_concurrent_per_subject: int = 2
-    max_concurrent_global: int = 20
+    # CrossFire uses up to 20 model agents; two small post-release validators may run
+    # concurrently, so the authenticated automation subject has a bounded 22-slot cap.
+    max_concurrent_per_subject: int = 22
+    max_concurrent_global: int = 22
     retry_after_seconds: int = 5
     protected_routes: tuple[AdmissionRoute, ...] = (AdmissionRoute.CHAT, AdmissionRoute.RESEARCH, AdmissionRoute.STREAM)
 
