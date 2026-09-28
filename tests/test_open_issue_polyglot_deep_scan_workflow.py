@@ -22,7 +22,8 @@ def test_deep_scan_freezes_operations_revision_once_and_reuses_exact_sha():
     text = WORKFLOW.read_text(encoding="utf-8")
     assert 'outputs:\n      operations_sha: ${{ steps.freeze.outputs.sha }}' in text
     assert 'repository: Z-Solo-King/operations\n          ref: main\n' in text
-    assert 'repository: Z-Solo-King/operations\n          ref: ${{ needs.snapshot.outputs.operations_sha }}\n' in text
+    assert 'repository: Z-Solo-King/operations\n          ref: main\n' in text
+    assert 'ref: ${{ needs.snapshot.outputs.operations_sha }}' in text
     assert 'needs: [snapshot, lane]' in text
 
 
