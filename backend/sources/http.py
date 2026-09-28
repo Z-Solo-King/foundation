@@ -221,6 +221,20 @@ async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
     raise RuntimeError(f"DNS resolution failed for {hostname}" + (f" ({detail})" if detail else ""))
 
 
+
+
+async def _validate_public_destination(url: str, *, resolver=None) -> None:
+    canonical = canonicalize_url(url)
+    hostname = urlparse(canonical).hostname
+    if not hostname:
+        raise ValueError("target host is missing")
+    await _resolve_public_host(
+        hostname,
+        resolver or _dns_over_https,
+        {},
+        FETCH_DEADLINE_SECONDS,
+    )
+
 async def _call_fetcher(fetcher, url: str, options: dict):
     """Call the transport while preserving redirect policy in production."""
     try:
