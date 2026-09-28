@@ -10,6 +10,7 @@ This is defense-in-depth: the final Workers fetch still performs the actual
 DNS resolution and network connection. Resolution failures fail closed.
 """
 
+import asyncio
 from dataclasses import dataclass
 from ipaddress import IPv4Address, IPv6Address
 import struct
@@ -20,6 +21,7 @@ from foundation_core.url_identity import canonicalize_url, safe_host as _safe_ho
 
 MAX_REDIRECTS = 3
 MAX_BYTES = 1_000_000
+FETCH_DEADLINE_SECONDS = 15.0
 DNS_OVER_HTTPS_ENDPOINTS = (
     "https://cloudflare-dns.com/dns-query",
     "https://dns.google/dns-query",
@@ -203,29 +205,74 @@ async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
                 invalid_response = True
                 failures.append(f"{endpoint}: invalid DNS response")
                 continue
-            if values:
-                return values
-            failures.append(f"{endpoint}: no {record_type} answers")
         except Exception as exc:
             detail = str(exc).strip()
             if len(detail) > 240:
                 detail = detail[:240]
             suffix = f": {detail}" if detail else ""
             failures.append(f"{endpoint}: {type(exc).__name__}{suffix}")
+            continue
+        if values:
+            return values
+        failures.append(f"{endpoint}: no {record_type} answers")
     detail = "; ".join(failures[:2])
     if invalid_response and all("invalid DNS response" in failure for failure in failures):
         raise RuntimeError(f"invalid DNS response for {hostname}" + (f" ({detail})" if detail else ""))
     raise RuntimeError(f"DNS resolution failed for {hostname}" + (f" ({detail})" if detail else ""))
 
 
+
+
 async def _validate_public_destination(url: str, *, resolver=None) -> None:
     canonical = canonicalize_url(url)
     hostname = urlparse(canonical).hostname
-    assert hostname is not None
-    resolve = resolver or _dns_over_https
-    addresses = []
+    if not hostname:
+        raise ValueError("target host is missing")
+    await _resolve_public_host(
+        hostname,
+        resolver or _dns_over_https,
+        {},
+        FETCH_DEADLINE_SECONDS,
+    )
+
+async def _call_fetcher(fetcher, url: str, options: dict):
+    """Call the transport while preserving redirect policy in production."""
+    try:
+        return await fetcher(url, options)
+    except TypeError as exc:
+        from backend.core.workers_runtime import WorkersFetchAdapter
+        if isinstance(fetcher, WorkersFetchAdapter):
+            raise RuntimeError("worker fetch adapter rejected request options") from exc
+        message = str(exc)
+        if "positional argument" not in message and "positional arguments" not in message:
+            raise
+        return await fetcher(url)
+
+
+def _remaining_deadline(started: float) -> float:
+    remaining = FETCH_DEADLINE_SECONDS - (asyncio.get_running_loop().time() - started)
+    if remaining <= 0:
+        raise RuntimeError("source acquisition deadline exceeded")
+    return remaining
+
+
+def _declared_content_length(headers) -> int | None:
+    value = headers.get("content-length")
+    if value is None:
+        return None
+    try:
+        declared = int(str(value).strip())
+    except (TypeError, ValueError):
+        return None
+    return declared
+
+
+async def _resolve_public_host(hostname: str, resolver, cache: dict[str, tuple[str, ...]], timeout: float) -> None:
+    if hostname in cache:
+        return
+    addresses: list[str] = []
     for record_type in ("A", "AAAA"):
-        addresses.extend(await resolve(hostname, record_type))
+        addresses.extend(await asyncio.wait_for(resolver(hostname, record_type), timeout=timeout))
     if not addresses:
         raise ValueError("target host did not resolve to a public address")
     try:
@@ -234,17 +281,21 @@ async def _validate_public_destination(url: str, *, resolver=None) -> None:
         raise ValueError("target host returned an invalid address") from exc
     if unsafe:
         raise ValueError("target host resolves to a non-public address")
+    cache[hostname] = tuple(addresses)
 
 
-async def _call_fetcher(fetcher, url: str, options: dict):
-    """Call Workers Fetch with the runtime's supported signature, preserving test doubles."""
+async def _fetch_response_with_deadline(fetcher, url: str, options: dict, timeout: float):
     try:
-        return await fetcher(url, options)
-    except TypeError as exc:
-        message = str(exc)
-        if "positional argument" not in message and "positional arguments" not in message:
-            raise
-        return await fetcher(url)
+        return await asyncio.wait_for(_call_fetcher(fetcher, url, options), timeout=timeout)
+    except asyncio.TimeoutError as exc:
+        raise RuntimeError("source fetch timed out") from exc
+
+
+async def _read_body_with_deadline(response, timeout: float) -> bytes:
+    try:
+        return _response_bytes(await asyncio.wait_for(response.arrayBuffer(), timeout=timeout))
+    except asyncio.TimeoutError as exc:
+        raise RuntimeError("source body read timed out") from exc
 
 
 async def fetch_public_url(url: str, *, fetcher=None, dns_resolver=None) -> FetchResult:
@@ -254,14 +305,29 @@ async def fetch_public_url(url: str, *, fetcher=None, dns_resolver=None) -> Fetc
     current = original
     original_scheme = urlparse(original).scheme
     redirect_chain: list[str] = [original]
+    started = asyncio.get_running_loop().time()
+    dns_cache: dict[str, tuple[str, ...]] = {}
+
     for _ in range(MAX_REDIRECTS + 1):
+        remaining = _remaining_deadline(started)
         if not custom_transport or dns_resolver is not None:
-            await _validate_public_destination(current, resolver=dns_resolver)
+            hostname = urlparse(current).hostname
+            if not hostname:
+                raise ValueError("target host is missing")
+            await _resolve_public_host(
+                hostname,
+                dns_resolver or _dns_over_https,
+                dns_cache,
+                remaining,
+            )
         else:
             current = canonicalize_url(current)
         if original_scheme == "https" and urlparse(current).scheme != "https":
             raise ValueError("https to http redirect downgrade is not allowed")
-        response = await _call_fetcher(fetcher, current, {"redirect": "manual"})
+
+        response = await _fetch_response_with_deadline(
+            fetcher, current, {"redirect": "manual"}, _remaining_deadline(started)
+        )
         status = int(response.status)
         if status in {301, 302, 303, 307, 308}:
             location = response.headers.get("location")
@@ -270,7 +336,11 @@ async def fetch_public_url(url: str, *, fetcher=None, dns_resolver=None) -> Fetc
             current = canonicalize_url(urljoin(current, location))
             redirect_chain.append(current)
             continue
-        content = _response_bytes(await response.arrayBuffer())
+
+        declared_length = _declared_content_length(response.headers)
+        if declared_length is not None and (declared_length < 0 or declared_length > MAX_BYTES):
+            raise RuntimeError("response exceeds acquisition size budget")
+        content = await _read_body_with_deadline(response, _remaining_deadline(started))
         if len(content) > MAX_BYTES:
             raise RuntimeError("response exceeds acquisition size budget")
         return FetchResult(
