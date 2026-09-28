@@ -820,7 +820,7 @@ def test_d1_store_reclaims_expired_admission_lease():
     )
     assert first_decision.allowed is True
     assert first_lease is not None
-    db.events["expired-key"]["lease_expires_at"] = 0
+    db.events[_storage_event_id("subject-1", "expired-key")]["lease_expires_at"] = 0
 
     decision, lease = asyncio.run(
         store.acquire(
@@ -1002,7 +1002,7 @@ def test_d1_store_delegates_chat_after_failed_lease_reclaim_race():
     )
     assert first_decision.allowed is True
     assert first_lease is not None
-    db.events["reclaim-race-key"]["lease_expires_at"] = 0
+    db.events[_storage_event_id("subject-1", "reclaim-race-key")]["lease_expires_at"] = 0
     db.reclaim_changes = 0
 
     decision, lease = asyncio.run(
