@@ -201,7 +201,8 @@ git -C "$RUNNER_TEMP/operations" branch --force main origin/main
 test "$(git -C "$RUNNER_TEMP/operations" rev-parse main)" = "$(git -C "$RUNNER_TEMP/operations" rev-parse origin/main)"
 operations_merge_base="$(git -C "$RUNNER_TEMP/operations" merge-base main HEAD)"
 test -n "$operations_merge_base"
-echo "Operations architecture diff base: ${operations_merge_base}"
+test -n "$operations_merge_base"
+echo "Operations architecture diff base: available"
 git -C "$RUNNER_TEMP/operations" show "origin/main:docs/FAMILY_SYNC_STATE.json" > "$RUNNER_TEMP/operations/docs/FAMILY_SYNC_STATE.json"
 # The immutable runtime pin is preserved, while synchronized family navigation is overlaid from Operations main.
 git -C "$RUNNER_TEMP/operations" show "origin/main:docs/AI_ANALYSIS_MAP.md" > "$RUNNER_TEMP/operations/docs/AI_ANALYSIS_MAP.md"
@@ -356,7 +357,7 @@ echo "GET Operations edge deployments -> HTTP ${edge_deployments_status}"
 test "$edge_deployments_status" = "200" || { cat "$RUNNER_TEMP/edge-worker-deployments.json"; exit 1; }
 edge_version_id=$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id' "$RUNNER_TEMP/edge-worker-deployments.json" | head -n1)
 test -n "$edge_version_id" || { echo 'No 100% active Operations edge Worker version found'; exit 1; }
-echo "Operations edge Worker deployment: PASS (${OPERATIONS_EDGE_SERVICE_NAME})"
+echo "Operations edge Worker deployment: PASS"
 
 
 
@@ -414,7 +415,7 @@ operations_version_status=$(curl -sS -o "$RUNNER_TEMP/operations-version.json" -
 echo "GET Operations active version -> HTTP ${operations_version_status}"
 test "$operations_version_status" = "200"
 jq -e --arg expected "github:${OPERATIONS_REF}" '((.result.annotations["workers/message"] // "") == $expected) or ((.result.annotations["workers/tag"] // "") == $expected)' "$RUNNER_TEMP/operations-version.json" >/dev/null
-echo "Operations Cloudflare provenance: PASS (github:${OPERATIONS_REF})"
+echo "Operations Cloudflare provenance: PASS"
 
 edge_active_status=$(curl -sS -o "$RUNNER_TEMP/edge-worker-active.json" -w '%{http_code}' \
   -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
@@ -469,19 +470,15 @@ npx --yes wrangler@4.131.1 d1 execute "$database_name" --remote \
   --config="$RUNNER_TEMP/operations/wrangler.toml" \
   --command="SELECT scope, window_id, resource_kind, limit_units, reserved_units, consumed_units, updated_at FROM resource_governance_quota WHERE resource_kind = 'model_calls' ORDER BY updated_at DESC LIMIT 5;" \
   --json > "$RUNNER_TEMP/model-call-quota.json"
-echo "--- model-call-quota.snapshot ---"
-cat "$RUNNER_TEMP/model-call-quota.json"
-echo "--- end model-call-quota.snapshot ---"
-cp "$RUNNER_TEMP/model-call-quota.json" .runtime/model-call-quota.json
+test -s "$RUNNER_TEMP/model-call-quota.json"
+echo "model-call quota snapshot: collected"
 
 npx --yes wrangler@4.131.1 d1 execute "$database_name" --remote \
   --config="$RUNNER_TEMP/operations/wrangler.toml" \
   --command="SELECT reservation_id, scope, window_id, resource_kind, amount, state, idempotency_key, lease_expires_at, updated_at FROM resource_governance_reservations WHERE resource_kind = 'model_calls' ORDER BY updated_at DESC LIMIT 10;" \
   --json > "$RUNNER_TEMP/model-call-reservations.json"
-echo "--- model-call-reservations.snapshot ---"
-cat "$RUNNER_TEMP/model-call-reservations.json"
-echo "--- end model-call-reservations.snapshot ---"
-cp "$RUNNER_TEMP/model-call-reservations.json" .runtime/model-call-reservations.json
+test -s "$RUNNER_TEMP/model-call-reservations.json"
+echo "model-call reservations snapshot: collected"
 
 # Exercise the real public-to-private conversational and research paths only after
 # both Workers are deployed and the private provenance gate has passed.
