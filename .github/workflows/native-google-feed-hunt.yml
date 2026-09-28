@@ -1,3 +1,4 @@
+# Execution checkpoint: re-run staged native hunt after latest feed-discovery review (2026-09-28).
 # Restart Stage 1 from consolidated browser-session extractor state.
 # Staged learning pipeline: 2 -> 4 -> 6 -> remaining 20.
 # Feed filename grammar pass enabled.
