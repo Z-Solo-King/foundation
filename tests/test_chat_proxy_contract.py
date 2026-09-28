@@ -347,3 +347,65 @@ def test_service_request_uses_structural_fallback_without_js_runtime(monkeypatch
     assert request.headers == {"Content-Type": "application/json"}
     assert request.body == '{"message":"hello"}'
 
+
+
+def test_chat_proxy_strips_private_route_metadata(monkeypatch):
+    import worker
+
+    class Response:
+        status = 200
+
+        async def json(self):
+            return {
+                "ok": True,
+                "chat_id": "c1",
+                "request_id": "r1",
+                "owner_repo": "Z-Solo-King/operations",
+                "response": {
+                    "response_id": "resp-1",
+                    "status": "completed",
+                    "result_state": "COMPLETE",
+                    "text": "hello",
+                    "owner_repo": "Z-Solo-King/operations",
+                    "canonical_entrypoint": "private.chatbot.chat_endpoint.handle_chat",
+                    "configuration_diagnostics": ["internal"],
+                    "sources": [{"title": "Example", "url": "https://example.com", "internal": "secret"}],
+                },
+            }
+
+    class Binding:
+        async def fetch(self, request):
+            return Response()
+
+    class Request:
+        headers = {}
+
+    body, status = asyncio.run(
+        worker._operations_chat(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request())
+    )
+
+    assert status == 200
+    assert body["ok"] is True
+    assert body["response"]["text"] == "hello"
+    assert "owner_repo" not in body
+    assert "canonical_entrypoint" not in body["response"]
+    assert "configuration_diagnostics" not in body["response"]
+    assert body["response"]["sources"] == [{"title": "Example", "url": "https://example.com"}]
+
+
+def test_chat_proxy_error_does_not_expose_exception_detail():
+    import worker
+
+    class Binding:
+        async def fetch(self, request):
+            raise RuntimeError("private stack details")
+
+    class Request:
+        headers = {}
+
+    body, status = asyncio.run(
+        worker._operations_chat(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request())
+    )
+
+    assert status == 503
+    assert body == {"ok": False, "error": "chat_backend_unavailable"}
