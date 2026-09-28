@@ -352,7 +352,7 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
-      - name: Require all four lanes to pass
+      - name: Require all five lanes to pass
         shell: bash
         run: |
           set -euo pipefail
@@ -360,6 +360,7 @@ jobs:
           test "${{ needs.private_leaf_rust.result }}" = success
           test "${{ needs.public_entry_ts.result }}" = success
           test "${{ needs.public_leaf_rust.result }}" = success
+          test "${{ needs.go_tooling.result }}" = success
 
   review:
     needs: [resolve_operations_ref, four_lane_gate]
