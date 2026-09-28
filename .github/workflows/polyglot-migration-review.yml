@@ -440,7 +440,7 @@ jobs:
               "P2_PRIVATE_LEAF": ("rust", "leaf_to_core"),
               "P3_PUBLIC_ENTRY": ("typescript", "entry_to_core"),
               "P4_PUBLIC_LEAF": ("rust", "leaf_to_core"),
-              "P5_GO_TOOLING": ("go", "fanout_tooling"),
+              "P5_TOOLING_FANOUT": ("go", "tooling_fanout"),
           }
           assert set(lanes) == set(expected)
           assert grid["orchestration"]["active_lanes"] == 5
