@@ -89,6 +89,8 @@ class AdmissionDecision:
 
 def _admission_limit_decision(policy: AdmissionPolicy, snapshot: AdmissionSnapshot, route: AdmissionRoute) -> AdmissionDecision | None:
     checks = (
+        (snapshot.global_requests >= policy.max_requests_global, AdmissionOutcome.RATE_LIMITED, "global admission request ceiling reached"),
+        (snapshot.subject_requests >= policy.max_requests_per_subject, AdmissionOutcome.RATE_LIMITED, "subject admission request ceiling reached"),
         (snapshot.global_cost_units >= policy.max_requests_global, AdmissionOutcome.RATE_LIMITED, "global admission cost ceiling reached"),
         (snapshot.subject_cost_units >= policy.max_requests_per_subject, AdmissionOutcome.RATE_LIMITED, "subject admission cost ceiling reached"),
         (snapshot.global_concurrent >= policy.max_concurrent_global, AdmissionOutcome.CONCURRENCY_LIMITED, "global admission concurrency ceiling reached"),
