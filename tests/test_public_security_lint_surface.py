@@ -17,7 +17,7 @@ def test_private_references_are_not_exempt_in_docs_or_workflows(tmp_path):
     assert any(f.rule == 'private-reference' for f in lint_file(doc, tmp_path))
     workflow = tmp_path / 'workflow.yml'
     workflow.write_text('Z-Solo-King/operations@0123456789abcdef0123456789abcdef01234567\n', encoding='utf-8')
-    assert any(f.rule == 'private-reference' for f in lint_file(workflow, tmp_path))
+    assert any(f.rule == 'private-revision' for f in lint_file(workflow, tmp_path))
 
 def test_strict_findings_fail_without_special_flag():
     text = Path(ROOT / 'scripts/public_security_lint.py').read_text(encoding='utf-8')
