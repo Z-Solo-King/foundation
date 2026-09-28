@@ -35,11 +35,11 @@ def safe_host(hostname: str) -> bool:
     host = hostname.lower().rstrip(".")
     if host in {"localhost", "localhost.localdomain", "ip6-localhost"}:
         return False
-    # Reject textual IPv4-obfuscation forms that are commonly reinterpreted
-    # differently by URL parsers (hex/octal/integer/dotted-numeric forms).
-    if host and all(ch.isdigit() or ch == "." for ch in host):
-        return False
+    # Reject hexadecimal-prefixed IPv4 obfuscation and bare integer/octal forms.
+    # Standard dotted-decimal IPv4 remains a valid safe_ip input.
     if host.startswith("0x") and host[2:] and all(ch in "0123456789abcdef." for ch in host[2:]):
+        return False
+    if host and host.isdigit():
         return False
     try:
         return safe_ip(host)
