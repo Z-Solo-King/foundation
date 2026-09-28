@@ -1,7 +1,7 @@
 import pytest
 
 from backend.admission import AdmissionPolicy, AdmissionRoute
-from backend.admission_store import D1AdmissionStore, ROUTE_COST_UNITS, _insert_new_admission
+from backend.admission_store import D1AdmissionStore, ROUTE_COST_UNITS, _insert_new_admission, _storage_event_id
 
 
 class FakeStatement:
@@ -77,7 +77,7 @@ async def test_concurrent_insert_loss_replays_existing_protected_event():
 
     db = IdempotentAdmissionDB()
     existing = {
-        "event_id": "protected-race",
+        "event_id": _storage_event_id("subject-1", AdmissionRoute.CHAT, "protected-race"),
         "window_start": 120,
         "subject_fingerprint": "subject-1",
         "route": "chat",
@@ -85,7 +85,7 @@ async def test_concurrent_insert_loss_replays_existing_protected_event():
         "lease_expires_at": 180,
         "released_at": None,
     }
-    db.events["protected-race"] = existing
+    db.events[_storage_event_id("subject-1", AdmissionRoute.CHAT, "protected-race")] = existing
     store = D1AdmissionStore(db)
 
     async def lost_insert(**_kwargs):
@@ -781,8 +781,8 @@ def test_d1_store_rejects_replay_across_admission_scopes():
     import asyncio
 
     db = IdempotentAdmissionDB()
-    db.events["scope-key"] = {
-        "event_id": "scope-key",
+    db.events[_storage_event_id("other-subject", AdmissionRoute.CHAT, "scope-key")] = {
+        "event_id": _storage_event_id("other-subject", AdmissionRoute.CHAT, "scope-key"),
         "window_start": 120,
         "subject_fingerprint": "other-subject",
         "route": "chat",
@@ -799,9 +799,9 @@ def test_d1_store_rejects_replay_across_admission_scopes():
             now=121,
         )
     )
-    assert decision.outcome.value == "duplicate"
-    assert decision.allowed is False
-    assert lease is None
+    assert decision.outcome.value == "accepted"
+    assert decision.allowed is True
+    assert lease is not None
 
 
 def test_d1_store_reclaims_expired_admission_lease():
@@ -820,7 +820,7 @@ def test_d1_store_reclaims_expired_admission_lease():
     )
     assert first_decision.allowed is True
     assert first_lease is not None
-    db.events["expired-key"]["lease_expires_at"] = 0
+    db.events[_storage_event_id("subject-1", AdmissionRoute.CHAT, "expired-key")]["lease_expires_at"] = 0
 
     decision, lease = asyncio.run(
         store.acquire(
@@ -840,8 +840,8 @@ def test_d1_store_keeps_released_non_idempotent_duplicate_on_admission_decision(
     import asyncio
 
     db = IdempotentAdmissionDB()
-    db.events["cheap-key"] = {
-        "event_id": "cheap-key",
+    db.events[_storage_event_id("subject-1", AdmissionRoute.CHEAP_READ, "cheap-key")] = {
+        "event_id": _storage_event_id("subject-1", AdmissionRoute.CHEAP_READ, "cheap-key"),
         "window_start": 120,
         "subject_fingerprint": "subject-1",
         "route": "cheap_read",
@@ -1002,7 +1002,7 @@ def test_d1_store_delegates_chat_after_failed_lease_reclaim_race():
     )
     assert first_decision.allowed is True
     assert first_lease is not None
-    db.events["reclaim-race-key"]["lease_expires_at"] = 0
+    db.events[_storage_event_id("subject-1", AdmissionRoute.CHAT, "reclaim-race-key")]["lease_expires_at"] = 0
     db.reclaim_changes = 0
 
     decision, lease = asyncio.run(
@@ -1017,3 +1017,21 @@ def test_d1_store_delegates_chat_after_failed_lease_reclaim_race():
     assert decision.outcome.value == "accepted"
     assert decision.allowed is True
     assert lease is None
+
+
+def test_scoped_event_ids_separate_subjects_and_routes():
+    assert _storage_event_id("subject-1", AdmissionRoute.CHAT, "same-key") != _storage_event_id("subject-2", AdmissionRoute.CHAT, "same-key")
+    assert _storage_event_id("subject-1", AdmissionRoute.CHAT, "same-key") != _storage_event_id("subject-1", AdmissionRoute.RESEARCH, "same-key")
+
+
+def test_admission_identity_rejects_oversized_and_unsafe_event_ids():
+    store = D1AdmissionStore(FakeDB())
+    with pytest.raises(ValueError, match="exceeds supported size"):
+        store._validate_identity("subject-1", "x" * 257)
+    with pytest.raises(ValueError, match="unsupported characters"):
+        store._validate_identity("subject-1", "key with spaces")
+
+
+def test_admission_store_uses_weighted_request_costs():
+    source = open("backend/admission_store.py", encoding="utf-8").read()
+    assert source.count("COALESCE(SUM(cost_units), 0)") >= 4
