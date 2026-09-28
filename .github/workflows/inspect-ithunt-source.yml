@@ -1,49 +1,36 @@
-name: Inspect ithunt Feed Source
+name: Inspect Public Feed Directives
 on:
   push:
     branches:
       - feat/wc-google-feed-egress-bridge-20260929
 jobs:
   inspect:
+    strategy:
+      fail-fast: false
+      matrix:
+        site: [ads-store, ithunt, kccomputers, krg-kart]
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch source through Cloudflare egress
+      - name: Fetch public robots and sitemap through Cloudflare egress
+        env:
+          SITE: ${{ matrix.site }}
+          WORKER: https://feed-origin-probe-20260927.heroic-ai.workers.dev
         run: |
           set -euo pipefail
-          curl -sS --max-time 120             'https://feed-origin-probe-20260927.heroic-ai.workers.dev/?u=https%3A%2F%2Fithunt.in%2F'             -o ithunt-root.json
-          node <<'NODE'
-          const fs=require("fs");
-          const j=JSON.parse(fs.readFileSync("ithunt-root.json","utf8"));
-          const b=String(j.body||"");
-          const terms=[
-            "woocommerce_gpf","ctx feed","ctxfeed","webappick","woo-product-feed-pro",
-            "wpfm","product feed manager","google merchant","merchant feed","shopping feed",
-            "codesolz","woo-feed","google-products","google-shopping","feed-manager"
-          ];
-          const hits=[];
-          for(const t of terms){
-            const i=b.toLowerCase().indexOf(t);
-            if(i>=0) hits.push({term:t,snippet:b.slice(Math.max(0,i-500),i+1400)});
-          }
-          const urls=new Set();
-          for(const m of b.matchAll(/https?:\/\/[^"'\s<>]+/gi)) urls.add(m[0].replace(/[),.;]+$/,""));
-          for(const m of b.matchAll(/(?:href|src)=["']([^"']+)["']/gi)) {
-            try { urls.add(new URL(m[1],"https://ithunt.in/").href); } catch {}
-          }
-          const feedLike=[...urls].filter(u=>/(feed|google|merchant|xml|gpf|wpfm|woo-feed)/i.test(u));
-          const out={
-            status:j.status,ct:j.ct,bytes:j.bytes,body_length:b.length,
-            fingerprints:hits,
-            feed_like_urls:feedLike.slice(0,300),
-            generator:(b.match(/<meta[^>]+name=["']generator["'][^>]+content=["']([^"']+)/i)||[])[1]||null
-          };
-          fs.writeFileSync("ithunt-source.json",JSON.stringify(out,null,2));
-          console.log(JSON.stringify(out,null,2));
-          NODE
+          mkdir -p out
+          for p in robots.txt sitemap.xml sitemap.rss sitemap_index.xml wp-sitemap.xml; do
+            target="https://${SITE}.in/${p}"
+            if [ "${SITE}" = "krg-kart" ]; then target="https://krgkart.com/${p}"; fi
+            curl -sS --max-time 90               "${WORKER}/?u=$(python3 -c 'import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=""))' "${target}")"               > "out/${SITE}-${p//\//_}.json" || true
+          done
+          echo "site=${SITE}"
+          for f in out/*; do
+            echo "===== $f ====="
+            grep -Eo '"(status|url|ct|bytes)"[^,}]*' "$f" | head -30 || true
+            grep -Eio 'sitemap[^"< ]*|feed[^"< ]*|google[^"< ]*|merchant[^"< ]*' "$f" | sort -u | head -50 || true
+          done
       - uses: actions/upload-artifact@v4
         with:
-          name: ithunt-source-inspection
-          path:
-            ithunt-source.json
-            ithunt-root.json
+          name: public-feed-directives-${{ matrix.site }}
+          path: out/
           if-no-files-found: error
