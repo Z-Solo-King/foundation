@@ -1,11 +1,11 @@
 {
   "schema": "family-issue-acceptance-matrix/v1",
-  "audited_at": "2026-09-28",
+  "audited_at": "2026-09-27",
   "repository_heads": {
-    "foundation": "8d63fbda0e377dfa5c982f85d403f6ae1efbc86a",
-    "operations": "4d6f2167a791417b6afbc6e69165129c48966167"
+    "foundation": "efaf43e8bb55dc25d13dcb3f0be05df88f0c09dc",
+    "operations": "[PROTECTED_CURRENT_MAIN]"
   },
-  "open_issue_count": 13,
+  "open_issue_count": 11,
   "issues": [
     {
       "repo": "foundation",
@@ -229,50 +229,6 @@
         "FI-04",
         "FI-07",
         "FI-08"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 1135,
-      "title": "migration: investigate Worker 403/502 boundary and evaluate bounded TypeScript edge/SSE migration",
-      "status": "OPEN",
-      "class": "migration+runtime",
-      "fix_now": [
-        "private TypeScript edge/SSE boundary",
-        "runtime root-cause receipt",
-        "contract/security/policy/provenance parity"
-      ],
-      "remaining": [
-        "shadow/canary/rollback evidence",
-        "production runtime promotion"
-      ],
-      "probes": [
-        "FI-02",
-        "FI-03",
-        "FI-06",
-        "FI-09"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 1137,
-      "title": "migration: consolidated plan and execution order (tracking: #597, #603, #1134, #1135)",
-      "status": "OPEN",
-      "class": "migration+process",
-      "fix_now": [
-        "four-lane migration execution",
-        "risk-tiered qualification",
-        "promotion tracking"
-      ],
-      "remaining": [
-        "first existing candidate promotion evidence",
-        "closure after linked gates discharge"
-      ],
-      "probes": [
-        "FI-01",
-        "FI-02",
-        "FI-06",
-        "FI-09"
       ]
     }
   ],
