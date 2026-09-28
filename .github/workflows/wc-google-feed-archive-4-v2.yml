@@ -1,0 +1,84 @@
+name: WooCommerce Google Feed Archive Discovery 4 v2
+
+on:
+  push:
+    branches:
+      - fix/wc-google-feed-focus-4-20260929
+    paths:
+      - ".github/workflows/wc-google-feed-archive-4-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  archive:
+    name: Archive URL discovery ${{ matrix.site }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {site: "Ads Store", host: "adsstore.in"}
+          - {site: "ithunt", host: "ithunt.in"}
+          - {site: "KC Computers", host: "kccomputers.co.in"}
+          - {site: "KRG KART", host: "krgkart.com"}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+
+      - name: Discover historical feed-like URLs
+        env:
+          SITE: ${{ matrix.site }}
+          HOST: ${{ matrix.host }}
+        run: |
+          mkdir -p out/wc-google-feed-archive
+          node --input-type=module <<'NODE'
+          import { writeFile } from 'node:fs/promises';
+          const host = process.env.HOST, site = process.env.SITE;
+          const ua = 'Mozilla/5.0 (compatible; WCFeedArchiveDiscovery/2026.09)';
+          const all = new Map();
+          const feedLike = /(woocommerce_gpf|feedcraft|wppfm|codesolz|google[-_]?product|google[-_]?shopping|merchant[-_]?feed|product[-_]?feed|\.xml(?:$|\?))/i;
+          const collRes = await fetch('https://index.commoncrawl.org/collinfo.json', {headers:{'User-Agent':ua}, signal:AbortSignal.timeout(30000)});
+          if (!collRes.ok) throw new Error('collinfo ' + collRes.status);
+          const collections = (await collRes.json()).map(x=>x.id).filter(x=>/^CC-MAIN-2026-/.test(x)).slice(0,4);
+          for (const id of collections) {
+            try {
+              const u = new URL('https://index.commoncrawl.org/' + id + '-index');
+              u.searchParams.set('url', host + '/*');
+              u.searchParams.set('output', 'json');
+              u.searchParams.set('filter', 'status:200');
+              u.searchParams.set('collapse', 'urlkey');
+              u.searchParams.set('matchType', 'prefix');
+              const r = await fetch(u, {headers:{'User-Agent':ua}, signal:AbortSignal.timeout(30000)});
+              if (!r.ok) continue;
+              for (const line of (await r.text()).split('\n')) {
+                if (!line.trim()) continue;
+                try {
+                  const x = JSON.parse(line);
+                  if (!feedLike.test(x.url || '')) continue;
+                  if (!all.has(x.url)) all.set(x.url,{collection:id,status:x.status,mime:x.mime,filename:x.filename,offset:x.offset,length:x.length,timestamp:x.timestamp});
+                } catch {}
+              }
+            } catch {}
+          }
+          const candidates = [...all.values()].slice(0,120);
+          const report = {site,host,collections,candidate_count:candidates.length,candidates};
+          await writeFile('out/wc-google-feed-archive/' + host + '.json', JSON.stringify(report,null,2) + '\n');
+          console.log(JSON.stringify(report,null,2));
+          NODE
+
+      - name: Upload archive URL candidates
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: wc-google-feed-archive-v2-${{ matrix.site }}
+          path: out/wc-google-feed-archive/
+          if-no-files-found: warn
+          retention-days: 14
