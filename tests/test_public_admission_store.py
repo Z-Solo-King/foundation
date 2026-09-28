@@ -1036,3 +1036,46 @@ def test_admission_identity_rejects_oversized_and_unsafe_event_ids():
 def test_admission_store_uses_weighted_request_costs():
     source = open("backend/admission_store.py", encoding="utf-8").read()
     assert source.count("COALESCE(SUM(cost_units), 0)") >= 4
+
+
+@pytest.mark.asyncio
+async def test_insert_rejects_existing_event_from_different_admission_scope():
+    db = IdempotentAdmissionDB()
+    storage_id = _storage_event_id("other-subject", AdmissionRoute.CHAT, "scope-race")
+    db.events[storage_id] = {
+        "event_id": storage_id,
+        "window_start": 120,
+        "subject_fingerprint": "other-subject",
+        "route": "chat",
+        "cost_units": 2,
+        "lease_expires_at": 180,
+        "released_at": None,
+    }
+    store = D1AdmissionStore(db)
+
+    async def lost_insert(**_kwargs):
+        return False
+
+    store._insert_if_admissible = lost_insert
+    decision = AdmissionDecision(
+        AdmissionOutcome.ACCEPTED,
+        AdmissionRoute.CHAT,
+        True,
+        "admission accepted",
+    )
+    result, lease = await _insert_new_admission(
+        store,
+        decision,
+        event_id="scope-race",
+        storage_event_id=_storage_event_id("subject-1", AdmissionRoute.CHAT, "scope-race"),
+        window_start=120,
+        subject_fingerprint="subject-1",
+        route=AdmissionRoute.CHAT,
+        cost_units=2,
+        expires_at=181,
+        now=121,
+        policy=AdmissionPolicy(),
+    )
+    assert result.outcome is AdmissionOutcome.DUPLICATE
+    assert result.allowed is False
+    assert lease is None
