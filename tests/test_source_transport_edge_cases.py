@@ -400,3 +400,20 @@ def test_resolve_public_host_rejects_private_address_set():
                 1.0,
             )
         )
+
+
+def test_validate_public_destination_rejects_non_public_resolved_address():
+    import backend.sources.http as http
+
+    async def resolver(_hostname, record_type):
+        if record_type == "A":
+            return ["127.0.0.1"]
+        return []
+
+    with pytest.raises(ValueError, match="non-public"):
+        asyncio.run(
+            http._validate_public_destination(
+                "https://example.com",
+                resolver=resolver,
+            )
+        )
