@@ -25,12 +25,12 @@ Current evidence classes:
 - Extractor/feed evidence: native retailer-hosted feed evidence remains required for #1247/#1249.
 - Polyglot migration: deterministic/structural evidence exists; runtime performance/evidence remains required before promotion.
 
-## Cross-chat continuity
+## Connector / session continuity
 
-GitHub-side repository/CI work and Cloudflare-side runtime/configuration work are handled in separate chats.
-This repository does not treat conversational expectations from a different chat as runtime evidence.
-The current Foundation public-safe continuation policy is docs/AI_AGENT_EXECUTION_POLICY.md.
-The current public-safe handoff is docs/CHAT_CONTINUATION_HANDOFF_2026-09-28.md.
+GitHub and Cloudflare are separate evidence surfaces, not separate product architectures.
+A session may use both when both connectors are active. When connector availability is isolated or unreliable, use the corresponding separate chat/lane.
+Conversational expectations are never runtime evidence.
+The current Foundation execution policy is docs/AI_AGENT_EXECUTION_POLICY.md.
 
 ## Queue integrity
 
