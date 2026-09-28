@@ -20,8 +20,8 @@ def test_public_deployment_is_standalone_and_uses_safe_placeholders():
     text = (ROOT / "wrangler.toml").read_text(encoding="utf-8")
     assert "REPLACE_WITH_D1_DATABASE_ID" in text
     assert "REPLACE_WITH_PUBLIC_DATABASE_NAME" in text
-    assert "B2_BUCKET = \"SoloKing\"" in text
-    assert "B2_ENDPOINT = \"https://s3.eu-central-003.backblazeb2.com\"" in text
+    assert "B2_BUCKET = \"REPLACE_WITH_B2_BUCKET\"" in text
+    assert "B2_ENDPOINT = \"REPLACE_WITH_B2_ENDPOINT\"" in text
     assert "[[services]]" not in text
     assert "CONTROL_PLANE" not in text
     assert "REPLACE_WITH_PRIVATE_CONTROL_PLANE_SERVICE" not in text
