@@ -8,8 +8,8 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "9e5002e9a079c914bcd30497a85f7cf8570fa59b"
-CANONICAL_PRODUCTION_OPERATIONS_REF = "9e5002e9a079c914bcd30497a85f7cf8570fa59b"
+CANONICAL_OPERATIONS_REF = "586a3dd6d8f62e30229ae7179b6c92f2a62307c6"
+CANONICAL_PRODUCTION_OPERATIONS_REF = "586a3dd6d8f62e30229ae7179b6c92f2a62307c6"
 BENCHMARK_OPERATIONS_REF = CANONICAL_OPERATIONS_REF
 BENCHMARK_TOOLS_REF = "d4ef2e6d28435a59c735b9dc4d0de31f44b9cf29"
 MIGRATION_TOOLS_REF = None
@@ -402,6 +402,12 @@ def test_live_extractor_benchmark_uses_versioned_runtime_and_tool_pins():
     assert CANONICAL_PRODUCTION_OPERATIONS_REF in production
 
 
+def test_polyglot_review_installs_declared_operations_dependencies():
+    workflow = _workflow_texts()["polyglot-migration-review.yml"]
+    assert "python -m pip install --disable-pip-version-check -e ." in workflow
+    assert " --no-deps" not in workflow
+
+
 def test_nightly_migration_review_uses_separate_immutable_tooling_pin():
     workflow = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
     match = re.search(r"^  OPERATIONS_MIGRATION_TOOLS_REF: ([0-9a-f]{40})$", workflow, re.MULTILINE)
@@ -417,7 +423,7 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_REF="{CANONICAL_PRODUCTION_OPERATIONS_REF}"' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
-    assert "OPERATIONS_RESEARCH_REF: 9e5002e9a079c914bcd30497a85f7cf8570fa59b" in nightly
+    assert "OPERATIONS_RESEARCH_REF: 586a3dd6d8f62e30229ae7179b6c92f2a62307c6" in nightly
 
 
 
@@ -452,7 +458,7 @@ def test_polyglot_migration_review_uses_declared_operations_python_runtime():
     assert 'actions/setup-python@' in workflow
     assert 'python-version: "3.14"' in workflow
     setup_index = workflow.index('python-version: "3.14"')
-    install_index = workflow.index("python -m pip install --disable-pip-version-check -e . --no-deps")
+    install_index = workflow.index("python -m pip install --disable-pip-version-check -e .")
     assert setup_index < install_index
 
 
@@ -484,8 +490,8 @@ def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
 def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
-    expected_production = "9e5002e9a079c914bcd30497a85f7cf8570fa59b"
-    expected_nightly = "9e5002e9a079c914bcd30497a85f7cf8570fa59b"
+    expected_production = "586a3dd6d8f62e30229ae7179b6c92f2a62307c6"
+    expected_nightly = "586a3dd6d8f62e30229ae7179b6c92f2a62307c6"
     auxiliary = {
         "live-chatbot-production-smoke.yml": expected_production,
         "coverage-driven-runtime-matrix.yml": expected_production,

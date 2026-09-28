@@ -18,8 +18,14 @@ def safe_ip(value: str) -> bool:
     mapped = getattr(ip, "ipv4_mapped", None)
     if mapped is not None:
         ip = mapped
-    if isinstance(ip, IPv6Address) and ip.packed[:12] == _NAT64_PREFIX:
-        ip = IPv4Address(ip.packed[12:])
+    if isinstance(ip, IPv6Address):
+        if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_unspecified or ip.is_private:
+            return False
+        if ip.packed[:12] == _NAT64_PREFIX:
+            ip = IPv4Address(ip.packed[12:])
+    if isinstance(ip, IPv4Address):
+        if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_unspecified or ip.is_private:
+            return False
     if str(ip) in _PROVIDER_DENYLIST:
         return False
     return bool(ip.is_global)
@@ -28,6 +34,12 @@ def safe_ip(value: str) -> bool:
 def safe_host(hostname: str) -> bool:
     host = hostname.lower().rstrip(".")
     if host in {"localhost", "localhost.localdomain", "ip6-localhost"}:
+        return False
+    # Reject hexadecimal-prefixed IPv4 obfuscation and bare integer/octal forms.
+    # Standard dotted-decimal IPv4 remains a valid safe_ip input.
+    if host.startswith("0x") and host[2:] and all(ch in "0123456789abcdef." for ch in host[2:]):
+        return False
+    if host and host.isdigit():
         return False
     try:
         return safe_ip(host)
@@ -39,6 +51,13 @@ def canonicalize_url(url: str) -> str:
     """Return the security-safe canonical URL identity used for acquisition."""
     parsed = urlparse(url)
     scheme = parsed.scheme.lower()
+    # urllib.parse accepts unbracketed multi-colon authorities as a hostname
+    # plus an invalid port; reject these ambiguous authorities explicitly.
+    if "://" in url:
+        authority = url.split("://", 1)[1].split("/", 1)[0].split("?", 1)[0].split("#", 1)[0]
+        host_part = authority.rsplit("@", 1)[-1]
+        if host_part.count(":") > 1 and not host_part.startswith("["):
+            raise ValueError("target host is not allowed")
     if scheme not in {"http", "https"}:
         raise ValueError("only http and https URLs are allowed")
     if parsed.username or parsed.password:

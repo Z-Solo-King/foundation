@@ -61,6 +61,10 @@ on:
         default: ""
         type: string
 
+concurrency:
+  group: polyglot-migration-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -125,13 +129,12 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 22
-          cache: false
       - name: Execute private entry TypeScript lane
         working-directory: operations/polyglot/edge-worker
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-audit --no-fund --ignore-scripts
+          npm install --prefer-offline --no-audit --no-fund --ignore-scripts
           npm run typecheck
           npm test
       - name: Emit lane receipt
@@ -210,13 +213,12 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 22
-          cache: false
       - name: Execute public TypeScript edge lane
         working-directory: polyglot/edge-worker
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-audit --no-fund --ignore-scripts
+          npm install --prefer-offline --no-audit --no-fund --ignore-scripts
           npm run typecheck
           npm test
       - name: Execute public frontend-state lane
@@ -224,7 +226,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-audit --no-fund --ignore-scripts
+          npm install --prefer-offline --no-audit --no-fund --ignore-scripts
           npm run typecheck
           npm test
       - name: Emit lane receipt
@@ -300,13 +302,57 @@ jobs:
           path: .runtime/four-lane/public-leaf-rust-${{ matrix.candidate }}.json
           retention-days: 30
 
+  go_tooling:
+    needs: resolve_operations_ref
+    name: P5 Go fan-out tooling
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout pinned Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version: "1.25"
+      - name: Execute bounded Go fan-out suite
+        working-directory: operations/experiments/go_http_fanout
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test -count=1 ./...
+          go test -race ./...
+          go vet ./...
+      - name: Emit lane receipt
+        run: |
+          mkdir -p .runtime/four-lane
+          printf '%s\n' '{"schema":"polyglot-lane-receipt/v1","lane":"P5_GO_TOOLING","language":"go","direction":"fanout_tooling","status":"pass","operations_ref":"${{ needs.resolve_operations_ref.outputs.ref }}"}' > .runtime/four-lane/go-tooling.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: four-lane-go-tooling
+          path: .runtime/four-lane/go-tooling.json
+          retention-days: 30
+
   four_lane_gate:
-    name: Four-lane convergence gate
-    needs: [private_entry_ts, private_leaf_rust, public_entry_ts, public_leaf_rust]
+    name: Five-lane convergence gate
+    needs: [private_entry_ts, private_leaf_rust, public_entry_ts, public_leaf_rust, go_tooling]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
-      - name: Require all four lanes to pass
+      - name: Require all five lanes to pass
         shell: bash
         run: |
           set -euo pipefail
@@ -314,6 +360,7 @@ jobs:
           test "${{ needs.private_leaf_rust.result }}" = success
           test "${{ needs.public_entry_ts.result }}" = success
           test "${{ needs.public_leaf_rust.result }}" = success
+          test "${{ needs.go_tooling.result }}" = success
 
   review:
     needs: [resolve_operations_ref, four_lane_gate]
@@ -321,7 +368,6 @@ jobs:
       contents: read
       id-token: write
       attestations: write
-    needs: resolve_operations_ref
     name: Cross-language migration review
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -367,7 +413,7 @@ jobs:
 
       - name: Install Operations package
         working-directory: operations
-        run: python -m pip install --disable-pip-version-check -e . --no-deps
+        run: python -m pip install --disable-pip-version-check -e .
 
       - name: Validate Operations migration registry
         working-directory: operations
@@ -377,45 +423,33 @@ jobs:
           python tools/validate_polyglot_registry.py --repo-root "$GITHUB_WORKSPACE/operations" > "$GITHUB_WORKSPACE/.runtime/polyglot-registry-integrity.json"
           cat "$GITHUB_WORKSPACE/.runtime/polyglot-registry-integrity.json"
 
-      - name: Validate governed migration lane matrix
+      - name: Validate current five-lane migration grid
         working-directory: operations
         shell: python
         run: |
           import json
           from pathlib import Path
-          from private.runtime_language_policy import RuntimeLanguage
 
-          matrix = json.loads(
-              Path("docs/POLYGLOT_MIGRATION_LANE_MATRIX_2026-09-27.json").read_text(encoding="utf-8")
+          grid = json.loads(
+              Path("docs/POLYGLOT_MIGRATION_EXECUTION_GRID_2026-09-28.json").read_text(encoding="utf-8")
           )
-          lanes = matrix["lanes"]
-          by_language = {row["language"]: row for row in lanes}
-
-          assert set(by_language) == {language.value for language in RuntimeLanguage}
-          assert len(by_language) == len(lanes)
-          assert all(row.get("authority_transfer") is False for row in lanes)
-
-          expected_stages = {
-              "python": "keep_authority",
-              "typescript": "differential_and_shadow",
-              "rust_wasm": "benchmark_and_shadow",
-              "go": "benchmark_complete",
-              "java": "deferred",
-              "dotnet": "deferred",
-              "cpp_wasm": "deferred",
-              "zig_wasm": "research_only",
+          assert grid["schema"] == "polyglot-migration-execution-grid/v1"
+          lanes = {row["id"]: row for row in grid["lanes"]}
+          expected = {
+              "P1_PRIVATE_ENTRY": ("typescript", "entry_to_core"),
+              "P2_PRIVATE_LEAF": ("rust", "leaf_to_core"),
+              "P3_PUBLIC_ENTRY": ("typescript", "entry_to_core"),
+              "P4_PUBLIC_LEAF": ("rust", "leaf_to_core"),
+              "P5_TOOLING_FANOUT": ("go", "tooling_fanout"),
           }
-          for language, stage in expected_stages.items():
-              assert by_language[language]["stage"] == stage
-
-          print(json.dumps({
-              "schema": matrix["schema"],
-              "language_count": len(lanes),
-              "language_set": sorted(by_language),
-              "authority_transfer_count": sum(
-                  bool(row.get("authority_transfer")) for row in lanes
-              ),
-          }, sort_keys=True))
+          assert set(lanes) == set(expected)
+          assert grid["orchestration"]["active_lanes"] == 5
+          for lane_id, (language, direction) in expected.items():
+              assert lanes[lane_id]["primary_language"] == language
+              assert lanes[lane_id]["direction"] == direction
+          assert grid["authority_rules"]["new_candidate_freeze"] is True
+          assert grid["authority_rules"]["promotion_authority"] == "single_existing_authority"
+          print(json.dumps({"schema":grid["schema"],"active_lanes":sorted(lanes)}, sort_keys=True))
 
       - name: Setup Node for TypeScript migration evidence
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
@@ -428,7 +462,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-audit --no-fund --ignore-scripts
+          npm install --prefer-offline --no-audit --no-fund --ignore-scripts
           npm run typecheck
           npm test
       - name: Run TypeScript observation contract differential
@@ -436,10 +470,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-audit --no-fund --ignore-scripts
+          npm install --prefer-offline --no-audit --no-fund --ignore-scripts
           npm run typecheck
           npm test
-          mkdir -p "$GITHUB_WORKSPACE/.runtime/observation-contract"
+          mkdir -p .runtime
           npm run differential
           npm run differential:python
           npm run differential:compare
@@ -460,7 +494,9 @@ jobs:
               "differential": True,
               "exact_compare": True,
           }
-          Path("$GITHUB_WORKSPACE/.runtime/observation-contract/receipt.json").write_text(
+          output = Path(__import__("os").environ["GITHUB_WORKSPACE"]) / ".runtime" / "observation-contract" / "receipt.json"
+          output.parent.mkdir(parents=True, exist_ok=True)
+          output.write_text(
               json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8"
           )
           PY
@@ -500,7 +536,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-audit --no-fund --ignore-scripts
+          npm install --prefer-offline --no-audit --no-fund --ignore-scripts
           npm run typecheck
           npm test
           npm run differential
@@ -543,7 +579,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-audit --no-fund --ignore-scripts
+          npm install --prefer-offline --no-audit --no-fund --ignore-scripts
           npm run typecheck
           npm test
           npm run differential
