@@ -85,6 +85,25 @@ def private_reference_findings(path: Path, source: str) -> list[Finding]:
         if marker in source
     ]
 
+def private_revision_findings(path: Path, source: str) -> list[Finding]:
+    relative = rel(path)
+    if relative == "scripts/public_security_lint.py":
+        return []
+    # A full-length revision pointing at the private Operations repository is
+    # itself a public topology disclosure and must never be treated as a safe
+    # documentation/workflow literal.
+    findings = []
+    if relative.startswith(".github/workflows/") or relative.startswith("docs/"):
+        if re.search(r"Z-Solo-King/operations@[0-9a-f]{40}", source):
+            findings.append(
+                Finding(
+                    relative,
+                    "private-revision",
+                    "public source contains an immutable revision of the private Operations repository",
+                )
+            )
+    return findings
+
 def python_findings(path: Path, source: str) -> list[Finding]:
     relative = rel(path)
     try:
@@ -116,6 +135,7 @@ def lint_file(path: Path, root: Path = ROOT) -> list[Finding]:
     source = path.read_text(encoding="utf-8")
     findings = secret_findings(path, source)
     findings.extend(private_reference_findings(path, source))
+    findings.extend(private_revision_findings(path, source))
     if path.suffix.lower() == ".py":
         findings.extend(python_findings(path, source))
     return findings
