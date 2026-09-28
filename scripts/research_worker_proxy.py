@@ -14,6 +14,7 @@ import argparse
 import hashlib
 import json
 import os
+import subprocess
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import HTTPError
@@ -22,6 +23,7 @@ from urllib.request import Request, urlopen
 
 MAX_BODY_BYTES = 131_072
 MAX_MESSAGE_CHARS = 11_800
+UPSTREAM_USER_AGENT = "HeroicAI-NightlyResearch/1.1"
 
 
 def _compact_messages(messages: object) -> str:
@@ -80,6 +82,44 @@ def _safe_upstream_error_details(error: HTTPError) -> dict[str, object]:
     return details
 
 
+def _safe_header_details(headers: object) -> dict[str, object]:
+    """Expose only safe Cloudflare/HTTP headers useful for transport diagnosis."""
+    details: dict[str, object] = {}
+    if headers is None:
+        return details
+    for source, target, limit in (("server", "upstream_server", 80), ("cf-ray", "cf_ray", 120), ("cf-mitigated", "cf_mitigated", 80), ("retry-after", "retry_after", 40)):
+        try:
+            value = headers.get(source)
+        except AttributeError:
+            value = None
+        if isinstance(value, str) and value.strip():
+            details[target] = value.strip()[:limit]
+    return details
+
+def _curl_post(url: str, payload: bytes, auth_token: str, request_id: str) -> tuple[int, bytes, str]:
+    """Mirror the known-working CI curl transport for an edge-403 recovery attempt."""
+    completed = subprocess.run([
+        "curl", "-sS", "--max-time", "90", "-X", "POST",
+        "-H", "Authorization: Bearer " + auth_token,
+        "-H", "Accept: application/json",
+        "-H", "Content-Type: application/json",
+        "-H", "Idempotency-Key: " + request_id,
+        "-H", "User-Agent: " + UPSTREAM_USER_AGENT,
+        "--data-binary", "@-", "--write-out", "\n%{http_code}", url,
+    ], input=payload, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+    stdout = completed.stdout or b""
+    body = b""
+    status = 0
+    if b"\n" in stdout:
+        body, status_raw = stdout.rsplit(b"\n", 1)
+        try:
+            status = int(status_raw.strip() or b"0")
+        except ValueError:
+            status = 0
+    error_text = (completed.stderr or b"").decode("utf-8", "replace").strip()[:240]
+    if completed.returncode != 0 and not error_text:
+        error_text = f"curl_exit_{completed.returncode}"
+    return status, body, error_text
 class Handler(BaseHTTPRequestHandler):
     server_version = "ResearchWorkerProxy/1.0"
 
@@ -155,7 +195,10 @@ class Handler(BaseHTTPRequestHandler):
                 "Idempotency-Key": request_id,
                 # Explicit API-client identity; do not rely on urllib's default
                 # Python-urllib User-Agent, which may be classified as automated web traffic.
-                "User-Agent": "HeroicAI-NightlyResearch/1.0",
+                "User-Agent": UPSTREAM_USER_AGENT,
+                "Accept": "application/json",
+                "Accept-Encoding": "identity",
+                "Connection": "close",
             },
             method="POST",
         )
@@ -165,12 +208,28 @@ class Handler(BaseHTTPRequestHandler):
                 body = json.loads(response.read().decode("utf-8"))
                 status = int(response.status)
         except HTTPError as exc:
-            details = _safe_upstream_error_details(exc)
-            self._json(
-                {"error": {"message": "upstream_worker_rejected", "type": "upstream_http_error", **details}, "request_id": request_digest},
-                502,
-            )
-            return
+            if exc.code != 403:
+                details = _safe_upstream_error_details(exc)
+                details.update(_safe_header_details(exc.headers))
+                self._json({"error": {"message": "upstream_worker_rejected", "type": "upstream_http_error", **details}, "request_id": request_digest}, 502)
+                return
+            curl_status, curl_body, curl_error = _curl_post(url, json.dumps(upstream_payload, ensure_ascii=False).encode("utf-8"), self.server.auth_token, request_id)
+            if curl_status == 200:
+                try:
+                    body = json.loads(curl_body.decode("utf-8"))
+                    status = 200
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    self._json({"error": {"message": "upstream_worker_invalid_curl_response", "type": "protocol_error"}, "request_id": request_digest}, 502)
+                    return
+            else:
+                details = _safe_upstream_error_details(exc)
+                details.update(_safe_header_details(exc.headers))
+                details["fallback_transport"] = "curl"
+                details["fallback_http_status"] = curl_status
+                if curl_error:
+                    details["fallback_transport_error"] = curl_error
+                self._json({"error": {"message": "upstream_worker_rejected", "type": "upstream_http_error", **details}, "request_id": request_digest}, 502)
+                return
         except Exception as exc:
             self._json(
                 {"error": {"message": "upstream_worker_failure", "type": type(exc).__name__}, "request_id": request_digest},
