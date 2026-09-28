@@ -409,3 +409,24 @@ def test_chat_proxy_error_does_not_expose_exception_detail():
 
     assert status == 503
     assert body == {"ok": False, "error": "chat_backend_unavailable"}
+
+
+
+def test_public_chat_body_handles_non_dict_response():
+    import worker
+    assert worker._public_chat_body(None) == {"ok": False, "error": "invalid_private_chat_response"}
+    assert worker._public_chat_body({"ok": True}) == {"ok": True}
+
+
+def test_public_chat_body_covers_string_sources_and_malformed_sources():
+    import worker
+    body = worker._public_chat_body({
+        "ok": True,
+        "response": {
+            "text": "hello",
+            "sources": ["https://example.com/source", {"title": "Example", "url": "https://example.com", "private": "secret"}],
+        },
+    })
+    assert body["response"]["sources"] == ["https://example.com/source", {"title": "Example", "url": "https://example.com"}]
+    malformed = worker._public_chat_body({"response": {"text": "hello", "sources": {"private": "secret"}}})
+    assert malformed["response"]["sources"] == []
