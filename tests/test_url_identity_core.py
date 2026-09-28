@@ -46,6 +46,8 @@ def test_canonicalize_url_rejects_unsafe_forms(source):
         ("100.64.0.1", False),
         ("168.63.129.16", False),
         ("64:ff9b::127.0.0.1", False),
+        ("64:ff9b::224.0.0.1", False),
+        ("ff02::1", False),
     ],
 )
 def test_safe_ip_keeps_shared_and_provider_ranges_blocked(value, expected):

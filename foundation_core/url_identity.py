@@ -18,8 +18,14 @@ def safe_ip(value: str) -> bool:
     mapped = getattr(ip, "ipv4_mapped", None)
     if mapped is not None:
         ip = mapped
-    if isinstance(ip, IPv6Address) and ip.packed[:12] == _NAT64_PREFIX:
-        ip = IPv4Address(ip.packed[12:])
+    if isinstance(ip, IPv6Address):
+        if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_unspecified or ip.is_private:
+            return False
+        if ip.packed[:12] == _NAT64_PREFIX:
+            ip = IPv4Address(ip.packed[12:])
+    if isinstance(ip, IPv4Address):
+        if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_unspecified or ip.is_private:
+            return False
     if str(ip) in _PROVIDER_DENYLIST:
         return False
     return bool(ip.is_global)
