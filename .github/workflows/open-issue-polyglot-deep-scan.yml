@@ -43,7 +43,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ needs.snapshot.outputs.operations_sha }}
+          ref: main
           token: ${{ steps.operations-app.outputs.token }}
           path: operations-snapshot
       - name: Freeze Operations SHA
@@ -84,7 +84,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: main
+          ref: ${{ needs.snapshot.outputs.operations_sha }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
@@ -191,7 +191,7 @@ jobs:
           lane = "${{ matrix.lane }}"
           workspace = Path(os.environ["GITHUB_WORKSPACE"])
           operations_root = workspace / "operations"
-          path = Path(".runtime/open-issue-deep-scan") / f"{lane}.json"
+          path = Path(".runtime/open-issue-deep-scan") / f"{lane}-public.json"
           payload = json.loads(path.read_text())
           payload["foundation_revision"] = os.environ["GITHUB_SHA"]
           payload["operations_revision"] = subprocess.check_output(
@@ -207,7 +207,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: open-issue-deep-scan-${{ matrix.lane }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
-          path: operations/.runtime/open-issue-deep-scan/**
+          path: operations/.runtime/open-issue-deep-scan/*-public.json
           if-no-files-found: warn
           retention-days: 30
 
