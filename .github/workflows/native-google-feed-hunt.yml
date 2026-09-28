@@ -9,6 +9,18 @@ permissions:
   contents: read
 
 jobs:
+  browser-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Browser Run binding diagnostic
+        run: |
+          curl -sS --max-time 120 https://feed-origin-probe-20260927.heroic-ai.workers.dev/debug-browser | tee browser-debug.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: browser-binding-debug-pr
+          path: browser-debug.json
+          if-no-files-found: error
+
   native:
     strategy:
       fail-fast: false
@@ -24,7 +36,7 @@ jobs:
           WORKER: https://feed-origin-probe-20260927.heroic-ai.workers.dev
         run: |
           set -euo pipefail
-          echo "probe-revision=3"
+          echo "probe-revision=browser-diagnostic"
           mkdir -p out/native
           curl -sS --max-time 300 -D "out/native/${SITE}.headers"             "${WORKER}/native/${SITE}"             -o "out/native/${SITE}.body"
           cat "out/native/${SITE}.headers"
@@ -41,6 +53,6 @@ jobs:
           fi
       - uses: actions/upload-artifact@v4
         with:
-          name: native-feed-${{ matrix.site }}-live-worker-v3
+          name: native-feed-${{ matrix.site }}-live-worker-debug
           path: out/
           if-no-files-found: error
