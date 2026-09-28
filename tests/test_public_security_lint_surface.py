@@ -50,3 +50,10 @@ def test_private_boundary_findings_are_classified_by_surface():
     assert lint.private_reference_findings(Path("runtime.py"), "from private.foo import bar")
     assert lint.private_revision_findings(Path("docs/example.md"), "Z-Solo-King/operations@0123456789abcdef0123456789abcdef01234567") == []
     assert lint.private_revision_findings(Path("runtime.py"), "Z-Solo-King/operations@0123456789abcdef0123456789abcdef01234567")
+
+
+def test_approved_boundary_declarations_do_not_trigger_private_reference_rules():
+    import scripts.public_security_lint as lint
+    assert lint.private_reference_findings(Path("scripts/production_release.sh"), "Z-Solo-King/operations") == []
+    assert lint.private_reference_findings(Path("benchmark/public_runner_boundary.py"), "private/local host") == []
+    assert lint.private_revision_findings(Path("benchmark/matrix.json"), "Z-Solo-King/operations@0123456789abcdef0123456789abcdef01234567") == []
