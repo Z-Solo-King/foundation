@@ -9,10 +9,9 @@ jobs:
     steps:
       - name: Call browser binding diagnostic
         run: |
-          set -e
-          curl -sS --max-time 120 https://feed-origin-probe-20260927.heroic-ai.workers.dev/debug-browser | tee browser-debug.json
+          curl -sS --max-time 120 https://feed-origin-probe-20260927.heroic-ai.workers.dev/ | tee browser-debug.json
       - uses: actions/upload-artifact@v4
         with:
-          name: browser-binding-debug
+          name: browser-binding-debug-latest
           path: browser-debug.json
           if-no-files-found: error
