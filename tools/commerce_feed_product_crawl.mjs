@@ -8,17 +8,7 @@ const MAX_PAGES = 4;
 const MAX_LINKS_PER_PAGE = 20;
 const MAX_RESPONSES = 300;
 const SITE_TIMEOUT = 60000;
-const TARGETS = [
-  ["ithunt","https://ithunt.in"],
-  ["kccomputers","https://kccomputers.co.in"],
-  ["KRG KART","https://krgkart.com"],
-  ["PC Kumar Infotech","https://pckumar.in"],
-  ["PCHubShop","https://www.pchubshop.com"],
-  ["SCL Gaming","https://sclgaming.in"],
-  ["Variety Infotech","https://varietyinfotech.com"],
-  ["Moskeys","https://moskeys.com"],
-  ["Theproaudio","https://www.theproaudio.com"]
-];
+const REGISTRY = "data/feed_lab/commerce_feed_targets.json";
 
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 function isPublicLink(u,root){
@@ -78,14 +68,24 @@ async function probeSite(browser,[name,root]){
   return {name,root,pages,verified_google_xml:[...new Map(verified.map(x=>[x.url,x])).values()],public_json_requests:[...new Map(api.map(x=>[x.url,x])).values()],network_requests:network,visited_pages:[...seen]};
 }
 async function main(){
-  await fs.mkdir("out/feed-crawl-1247",{recursive:true});
+  const registry=JSON.parse(await fs.readFile(REGISTRY,"utf8"));
+  const targets=Array.isArray(registry.targets)?registry.targets:[];
+  if(!targets.length) throw new Error("private feed target registry is empty");
+  await fs.mkdir("out/commerce-feed-crawl",{recursive:true});
   const browser=await chromium.launch({headless:true});
   try{
-    const results=[]; for(const t of TARGETS) results.push(await probeSite(browser,t));
-    const verified=results.flatMap(x=>x.verified_google_xml.map(v=>({...v,site:x.name})));
-    const report={schema_version:"foundation-woocommerce-google-feed-product-crawl/v1",issue:1247,generated_on:new Date().toISOString(),sites:results.length,verified_google_xml:verified,results};
-    await fs.writeFile("out/feed-crawl-1247/report.json",JSON.stringify(report,null,2));
-    console.log(JSON.stringify({issue:1247,sites:results.length,verified_feed_count:verified.length,visited:results.map(x=>({site:x.name,pages:x.visited_pages.length,json:x.public_json_requests.length}))},null,2));
+    const results=[]; for(const t of targets) results.push(await probeSite(browser,t));
+    const verified=results.flatMap(x=>x.verified_google_xml);
+    const report={
+      schema_version:"foundation-commerce-feed-product-crawl/v1",
+      generated_on:new Date().toISOString(),
+      target_count:results.length,
+      verified_feed_count:verified.length,
+      visited_page_count:results.reduce((n,x)=>n+x.visited_pages.length,0),
+      successful_target_count:results.filter(x=>x.pages.some(p=>p.status===200)).length
+    };
+    await fs.writeFile("out/commerce-feed-crawl/report.json",JSON.stringify(report,null,2)+"\n");
+    console.log(JSON.stringify(report,null,2));
   }finally{await browser.close();}
 }
 main().catch(e=>{console.error(e);process.exit(1)});

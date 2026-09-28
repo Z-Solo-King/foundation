@@ -1,0 +1,121 @@
+name: Commerce feed product crawl
+
+on:
+  workflow_dispatch:
+    inputs:
+      registry_repository:
+        description: "Private registry repository in owner/name form"
+        required: true
+        type: string
+      registry_ref:
+        description: "Immutable private registry revision"
+        required: true
+        type: string
+      registry_path:
+        description: "Private registry file path"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: commerce-feed-product-crawl
+  cancel-in-progress: true
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
+      - name: Install browser
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-package-lock --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: Authenticate private registry
+        id: registry-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ inputs.registry_repository }}
+          permission-contents: read
+
+      - name: Checkout private registry
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ inputs.registry_repository }}
+          ref: ${{ inputs.registry_ref }}
+          token: ${{ steps.registry-app.outputs.token }}
+          persist-credentials: false
+          path: registry-source
+
+      - name: Materialize private registry
+        shell: bash
+        env:
+          REGISTRY_PATH: ${{ inputs.registry_path }}
+        run: |
+          set -euo pipefail
+          test -f "registry-source/$REGISTRY_PATH"
+          install -D -m 0600             "registry-source/$REGISTRY_PATH"             data/feed_lab/commerce_feed_targets.json
+          jq -e '
+            .schema_version == "operations-feed-target-registry/v1"
+            and .registry == "commerce_feed_targets"
+            and (.targets | type == "array")
+            and (.targets | length > 0)
+            and all(.targets[]; type == "array" and length == 2 and (.[0] | type == "string") and (.[1] | type == "string"))
+          ' data/feed_lab/commerce_feed_targets.json >/dev/null
+
+      - name: Syntax check
+        run: |
+          node --check tools/commerce_feed_product_crawl.mjs
+          node --check tools/custom_feed_product_crawl.mjs
+
+      - name: Crawl commerce feed targets
+        run: node tools/commerce_feed_product_crawl.mjs
+
+      - name: Crawl custom feed targets
+        run: node tools/custom_feed_product_crawl.mjs
+
+      - name: Merge aggregate receipts
+        if: always()
+        run: |
+          node - <<'JS'
+          const fs = require("fs");
+          const read = (path) => fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, "utf8")) : null;
+          const commerce = read("out/commerce-feed-crawl/report.json");
+          const custom = read("out/custom-feed-crawl/report.json");
+          const aggregate = {
+            schema_version: "foundation-feed-product-crawl/v2",
+            generated_on: new Date().toISOString(),
+            commerce,
+            custom,
+            target_count: (commerce?.target_count || 0) || (custom?.target_count || 0),
+            verified_feed_count: (commerce?.verified_feed_count || 0) + (custom?.verified_feed_count || 0),
+            visited_page_count: (commerce?.visited_page_count || 0) + (custom?.visited_page_count || 0),
+          };
+          fs.mkdirSync("out", {recursive:true});
+          fs.writeFileSync("out/feed-product-crawl-summary.json", JSON.stringify(aggregate, null, 2) + "\n");
+          console.log(JSON.stringify(aggregate, null, 2));
+          JS
+
+      - name: Upload aggregate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: commerce-feed-product-crawl
+          path: |
+            out/feed-product-crawl-summary.json
+            out/commerce-feed-crawl/report.json
+            out/custom-feed-crawl/report.json
+          if-no-files-found: warn
+          retention-days: 30

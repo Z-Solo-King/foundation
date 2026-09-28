@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import { chromium } from "playwright";
 
 const NAV_TIMEOUT = 20000, SETTLE_MS = 5000, MAX_PAGES = 5, MAX_LINKS = 25, MAX_RESPONSES = 450;
-const REGISTRY = "data/feed_lab/custom_api_google_feed_registry_2026-09-27.json";
+const REGISTRY = "data/feed_lab/commerce_feed_targets.json";
 
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 function publicLink(h,root){
@@ -76,14 +76,25 @@ async function siteProbe(browser,site){
 }
 async function main(){
   const input=JSON.parse(await fs.readFile(REGISTRY,"utf8"));
-  await fs.mkdir("out/custom-feed-crawl-1249",{recursive:true});
+  const sites=Array.isArray(input.targets)
+    ? input.targets.map(([name,root])=>({name,roots:[root]}))
+    : [];
+  if(!sites.length) throw new Error("private feed target registry is empty");
+  await fs.mkdir("out/custom-feed-crawl",{recursive:true});
   const browser=await chromium.launch({headless:true});
   try{
-    const results=[]; for(const s of input.sites)results.push(await siteProbe(browser,s));
-    const verified=results.flatMap(x=>x.verified_google_xml.map(v=>({...v,site:x.name})));
-    const report={schema_version:"foundation-custom-api-google-feed-product-crawl/v1",issue:1249,generated_on:new Date().toISOString(),sites:results.length,verified_google_xml:verified,results};
-    await fs.writeFile("out/custom-feed-crawl-1249/report.json",JSON.stringify(report,null,2));
-    console.log(JSON.stringify({issue:1249,sites:results.length,verified_feed_count:verified.length,visited:results.map(x=>({site:x.name,pages:x.visited_pages.length}))},null,2));
+    const results=[]; for(const s of sites) results.push(await siteProbe(browser,s));
+    const verified=results.flatMap(x=>x.verified_google_xml);
+    const report={
+      schema_version:"foundation-custom-feed-product-crawl/v1",
+      generated_on:new Date().toISOString(),
+      target_count:results.length,
+      verified_feed_count:verified.length,
+      visited_page_count:results.reduce((n,x)=>n+x.visited_pages.length,0),
+      successful_target_count:results.filter(x=>x.visited_pages.some(v=>v.status===200)).length
+    };
+    await fs.writeFile("out/custom-feed-crawl/report.json",JSON.stringify(report,null,2)+"\n");
+    console.log(JSON.stringify(report,null,2));
   }finally{await browser.close();}
 }
 main().catch(e=>{console.error(e);process.exit(1)});
