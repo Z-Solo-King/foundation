@@ -92,7 +92,7 @@ def _is_public_safe_reference(relative: str) -> bool:
 
 def secret_findings(path: Path, source: str, root: Path = ROOT) -> list[Finding]:
     relative = rel(path, root)
-    if relative == "scripts/public_security_lint.py":
+    if relative in {"scripts/public_security_lint.py", "tests/test_public_security_lint.py"}:
         return []
     findings = []
     for marker in PROTECTED_PRIVATE_MARKERS:
