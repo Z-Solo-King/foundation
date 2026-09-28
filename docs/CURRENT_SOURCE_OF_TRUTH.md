@@ -25,6 +25,10 @@ Current evidence classes:
 - Extractor/feed evidence: native retailer-hosted feed evidence remains required for #1247/#1249.
 - Polyglot migration: deterministic/structural evidence exists; runtime performance/evidence remains required before promotion.
 
+## Acquisition source selection
+
+Acquisition is adaptive: browser retrieval, direct HTTP/HTML, public APIs, feeds, structured page data and search discovery are valid source modes when available. A failed transport is not automatically a failed data target; change acquisition mode when another configured route can expose the requested data. Preserve source provenance and acquisition mode.
+
 ## Connector / session continuity
 
 GitHub and Cloudflare are separate evidence surfaces, not separate product architectures.
