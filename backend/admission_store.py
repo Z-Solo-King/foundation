@@ -97,7 +97,7 @@ async def _handle_existing_event(
             "UPDATE public_admission_events SET window_start = ?, lease_expires_at = ?, released_at = NULL "
             "WHERE event_id = ? AND subject_fingerprint = ? AND route = ? "
             "AND released_at IS NULL AND lease_expires_at <= ?"
-        ).bind(window_start, expires_at, event_id, subject_fingerprint, route.value, now).run()
+        ).bind(window_start, expires_at, storage_event_id, subject_fingerprint, route.value, now).run()
         meta = result.get("meta", {}) if isinstance(result, dict) else getattr(result, "meta", {})
         if int(meta.get("changes", 0) or 0) == 1:
             return decision, AdmissionLease(
@@ -157,14 +157,14 @@ async def _insert_new_admission(
         # Two identical concurrent requests may both observe no existing event
         # before racing on the unique event_id. Re-read the canonical event and
         # delegate protected routes to the downstream idempotency authority.
-        existing = await _existing_event(store.db, event_id)
+        existing = await _existing_event(store.db, storage_event_id)
         if existing is not None:
             return await _handle_existing_event(
                 store.db,
                 existing,
                 subject_fingerprint=subject_fingerprint,
                 route=route,
-                event_id=storage_event_id,
+                event_id=event_id,
                 window_start=window_start,
                 expires_at=expires_at,
                 now=now,
@@ -333,7 +333,6 @@ class D1AdmissionStore:
             expires_at=expires_at,
             now=now,
             policy=policy,
-            storage_event_id=storage_event_id,
         )
 
     @staticmethod
