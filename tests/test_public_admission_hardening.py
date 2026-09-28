@@ -103,7 +103,8 @@ def test_json_admission_accepts_json_charset_and_handles_shapes_and_parse_errors
     headers = {"Content-Type": "application/json; charset=utf-8", "Content-Length": "10"}
     assert asyncio.run(json_object(Request({"ok": True}, headers))) == {"ok": True}
     assert asyncio.run(json_object(Request([1], headers))) is None
-    assert asyncio.run(json_object(Request(None, headers, error=RuntimeError("bad json")))) is None
+    with pytest.raises(RuntimeError, match="bad json"):
+        asyncio.run(json_object(Request(None, headers, error=RuntimeError("bad json"))))
 
 
 def test_authenticated_response_size_guard_constant_is_explicit():

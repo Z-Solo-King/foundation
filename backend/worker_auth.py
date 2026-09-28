@@ -29,9 +29,12 @@ def extract_source_urls(question: str, explicit=()):
 def bearer_token(request: Any):
     headers = getattr(request, "headers", {})
     value = headers.get("Authorization")
-    if not value or not value.startswith("Bearer "):
+    if not value:
         return None
-    return value[7:].strip()
+    scheme, separator, supplied = str(value).strip().partition(" ")
+    if not separator or scheme.casefold() != "bearer" or not supplied.strip():
+        return None
+    return supplied.strip()
 
 
 def authenticated_subject_fingerprint(request: Any):
@@ -95,6 +98,4 @@ async def json_object(request: Any):
         validate_json_shape(value)
         return value
     except (TypeError, ValueError, UnicodeError, json.JSONDecodeError):
-        return None
-    except Exception:
         return None
