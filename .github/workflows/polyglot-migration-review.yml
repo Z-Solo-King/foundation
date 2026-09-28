@@ -473,7 +473,7 @@ jobs:
           npm install --no-audit --no-fund --ignore-scripts
           npm run typecheck
           npm test
-          mkdir -p "$GITHUB_WORKSPACE/.runtime/observation-contract"
+          mkdir -p .runtime
           npm run differential
           npm run differential:python
           npm run differential:compare
