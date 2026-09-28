@@ -222,6 +222,30 @@ def _admission_response(decision):
         response.headers["Retry-After"] = decision.retry_after_header
     return response
 
+_PUBLIC_CHAT_RESPONSE_KEYS = frozenset({
+    "response_id", "status", "result_state", "text", "sources", "generation_status",
+})
+
+def _public_chat_body(body):
+    if not isinstance(body, dict):
+        return {"ok": False, "error": "invalid_private_chat_response"}
+    public = {key: body[key] for key in ("ok", "chat_id", "request_id", "error") if key in body}
+    response = body.get("response")
+    if isinstance(response, dict):
+        projected = {key: response[key] for key in _PUBLIC_CHAT_RESPONSE_KEYS if key in response}
+        if isinstance(projected.get("sources"), list):
+            safe_sources = []
+            for item in projected["sources"][:32]:
+                if isinstance(item, str):
+                    safe_sources.append(item[:4000])
+                elif isinstance(item, dict):
+                    safe_sources.append({key: item[key] for key in ("title", "url", "source_family_id", "acquisition_method", "evidence_status") if key in item and isinstance(item[key], str)})
+            projected["sources"] = safe_sources
+        elif "sources" in projected:
+            projected["sources"] = []
+        public["response"] = projected
+    return public
+
 
 async def _operations_chat(env, payload, request):
     """Proxy synchronous Heroic AI chat only through the configured private service binding."""
@@ -242,14 +266,10 @@ async def _operations_chat(env, payload, request):
         body = await upstream.json()
         if not isinstance(body, dict):
             return {"ok": False, "error": "invalid_private_chat_response"}, 503
-        return body, upstream.status
-    except Exception as exc:
-        return {
-            "ok": False,
-            "error": "chat_backend_unavailable",
-            "error_class": type(exc).__name__,
-            "error_detail": str(exc)[:240],
-        }, 503
+        return _public_chat_body(body), upstream.status
+    except Exception:
+        _LOGGER.exception("chat backend binding failure")
+        return {"ok": False, "error": "chat_backend_unavailable"}, 503
 
 
 def _public_sse_response(upstream):
@@ -389,19 +409,19 @@ async def _operations_dashboard(env, request):
 
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
-        path = request.url.split("?", 1)[0]
+        path = urlparse(request.url).path
 
-        if request.method == "GET" and path.endswith("/health"):
+        if request.method == "GET" and path == "/health":
             return Response.json(await _health_payload(self.env))
-        if request.method == "GET" and path.endswith("/readiness"):
+        if request.method == "GET" and path == "/readiness":
             payload, status = await _readiness_payload(self.env)
             return Response.json(payload, status=status)
-        if request.method == "GET" and path.endswith("/api/v1/dashboard"):
+        if request.method == "GET" and path == "/api/v1/dashboard":
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             body, status = await _operations_dashboard(self.env, request)
             return _authenticated_json(body, status=status)
-        if request.method == "POST" and path.endswith("/api/v1/chat/stream"):
+        if request.method == "POST" and path == "/api/v1/chat/stream":
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             payload = await _json(request)
@@ -438,7 +458,7 @@ class Default(WorkerEntrypoint):
             finally:
                 if lease is not None:
                     await D1AdmissionStore(self.env.DB).release(lease)
-        if request.method == "POST" and path.endswith("/api/v1/chat"):
+        if request.method == "POST" and path == "/api/v1/chat":
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             payload = await _json(request)
@@ -461,7 +481,7 @@ class Default(WorkerEntrypoint):
             finally:
                 if lease is not None:
                     await D1AdmissionStore(self.env.DB).release(lease)
-        if request.method == "POST" and path.endswith("/api/v1/chatbot/diagnostic"):
+        if request.method == "POST" and path == "/api/v1/chatbot/diagnostic":
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             payload = await _json(request)
@@ -490,7 +510,7 @@ class Default(WorkerEntrypoint):
                 )
                 return _authenticated_json(private_body, status=private_status)
             return _authenticated_json({"ok": False, "error": "unsupported public diagnostic operation"}, status=400)
-        if request.method == "POST" and path.endswith("/api/v1/storage/diagnostic"):
+        if request.method == "POST" and path == "/api/v1/storage/diagnostic":
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             payload = await _json(request)
@@ -501,7 +521,7 @@ class Default(WorkerEntrypoint):
                 return _authenticated_json(body, status=status)
             except Exception as exc:
                 return _authenticated_json({"ok": False, "error": f"storage diagnostic failure: {exc}"}, status=503)
-        if request.method == "POST" and path.endswith("/api/v1/research/publish"):
+        if request.method == "POST" and path == "/api/v1/research/publish":
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             payload = await _json(request)
@@ -546,7 +566,7 @@ class Default(WorkerEntrypoint):
             if payload is None:
                 return _authenticated_json({"ok": False, "error": "run not found"}, status=404)
             return _authenticated_json({"ok": True, **payload})
-        if request.method == "POST" and path.endswith("/api/v1/research"):
+        if request.method == "POST" and path == "/api/v1/research":
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             payload = await _json(request)
