@@ -185,7 +185,7 @@
         "frontend/app.js",
         "frontend/lifecycle_controller.js"
       ],
-      "functions": 13,
+      "functions": 12,
       "key": [
         "cancelActiveChat",
         "answerOrFallback",
