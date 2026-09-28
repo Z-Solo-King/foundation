@@ -11,7 +11,7 @@
       "active_owner": false,
       "runtime_dependency": false,
       "ci_dependency": false,
-      "migration_material": "operations/archive/extractor-mapper/"
+      "migration_material": "none (archive removed)"
     }
   },
   "ownership": {
@@ -23,7 +23,8 @@
         "reusable deterministic observed-data primitives",
         "public request/run contract boundary",
         "public Worker boundary and public readiness",
-        "public CI and public-safe regression coverage"
+        "public CI and public-safe regression coverage",
+        "public Worker deployment and release workflows"
       ],
       "must_not_own": [
         "protected policy authority",
@@ -161,6 +162,7 @@
     "deterministic_observed_data": "foundation",
     "public_worker_boundary": "foundation",
     "public_ci": "foundation",
+    "public_worker_deployment": "foundation",
     "private_policy": "operations",
     "resource_governance": "operations",
     "acquisition": "operations",
@@ -171,13 +173,13 @@
     "verification": "operations",
     "evaluation": "operations",
     "promotion_and_rollback": "operations",
-    "deployment_and_recovery": "operations",
+    "private_deployment_and_recovery": "operations",
     "private_run_records": "operations"
   },
   "boundary_rules": [
     "Public source code must not reveal private credentials, private topology, private holdouts, or protected implementation details.",
     "Mapping remains network-free; acquisition/network work belongs to Operations acquisition/execution paths.",
-    "Family-level resource accounting has one authority in operations/private/resource_ledger.py.",
+    "Family-level resource accounting has one authority in Operations, named in the family canonical authority registry (operations.resource_governance).",
     "Family-level promotion authority has one owner in Operations.",
     "Public readiness must work without the private control plane.",
     "Operations may add stricter local fail-closed guards, but local guards must not become competing family policy authorities.",
