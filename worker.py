@@ -633,19 +633,22 @@ class Default(WorkerEntrypoint):
             denied = _admission_response(decision)
             if denied is not None:
                 return denied
-            result = submit_research(req)
-            if not result.ok:
-                if lease is not None:
-                    await D1AdmissionStore(self.env.DB).release(lease)
-                return _authenticated_json({"ok": False, "error": result.error}, status=400)
-            persistence = CloudflarePersistence(self.env)
-            subject_fingerprint = authenticated_subject_fingerprint(request) or "development-local"
-            idempotency_key = request.headers.get("Idempotency-Key")
             run_id = None
-            phase = "create_run"
+            phase = "submit_research"
+            persistence = None
             try:
+                result = submit_research(req)
+                if not result.ok:
+                    return _authenticated_json({"ok": False, "error": "research_rejected"}, status=400)
+                persistence = CloudflarePersistence(self.env)
+                idempotency_key = event_id if request.headers.get("Idempotency-Key") else None
+                phase = "create_run"
                 if idempotency_key:
-                    run_id = await persistence.create_run_idempotent(req, idempotency_key, subject_fingerprint=subject_fingerprint)
+                    run_id = await persistence.create_run_idempotent(
+                        req,
+                        idempotency_key,
+                        subject_fingerprint=subject_fingerprint,
+                    )
                 else:
                     run_id = result.run_id
                     create_scoped = getattr(persistence, "create_run_scoped", None)
@@ -654,7 +657,43 @@ class Default(WorkerEntrypoint):
                     else:
                         await persistence.create_run(run_id, req)
                 if not req.source_urls:
-                    return _authenticated_json({"ok": True, "run_id": run_id, "metadata": {**result.metadata, "execution_mode": "awaiting_source_urls", "source_url_ingestion": True, "general_web_discovery": False, "evidence_synthesis": False, "next_action": "provide one or more permitted public HTTP(S) source URLs"}, "sources": []})
+                    return _authenticated_json(
+                        {
+                            "ok": True,
+                            "run_id": run_id,
+                            "metadata": {
+                                **result.metadata,
+                                "execution_mode": "awaiting_source_urls",
+                                "source_url_ingestion": True,
+                                "general_web_discovery": False,
+                                "evidence_synthesis": False,
+                                "next_action": "provide one or more permitted public HTTP(S) source URLs",
+                            },
+                            "sources": [],
+                        }
+                    )
+                phase = "set_running"
+                await persistence.set_run_status(run_id, "running")
+                phase = "ingest"
+                sources = await _ingest_sources(self.env, run_id, req)
+                phase = "set_completed"
+                await persistence.set_run_status(run_id, "completed")
+            except Exception as exc:
+                _stable_exception_log("research execution failure phase=%s" % phase, exc)
+                if run_id is not None and persistence is not None:
+                    try:
+                        await persistence.set_run_status(run_id, "failed")
+                    except Exception as status_exc:
+                        _stable_exception_log("failed to record terminal failed status", status_exc)
+                return _authenticated_json(
+                    {"ok": False, "error": "execution_unavailable", "phase": phase},
+                    status=503,
+                )
+            finally:
+                if lease is not None:
+                    await D1AdmissionStore(self.env.DB).release(lease)
+
+            return _authenticated_json({"ok": True, "run_id": run_id, "metadata": {**result.metadata, "execution_mode": "awaiting_source_urls", "source_url_ingestion": True, "general_web_discovery": False, "evidence_synthesis": False, "next_action": "provide one or more permitted public HTTP(S) source URLs"}, "sources": []})
                 phase = "set_running"
                 await persistence.set_run_status(run_id, "running")
                 phase = "ingest"
