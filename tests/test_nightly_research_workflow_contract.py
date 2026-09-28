@@ -16,7 +16,8 @@ def test_production_gate_is_event_driven_and_exact_sha_bound():
     assert "EVENT_RELEASE_CONCLUSION" in text
     assert "timeout-minutes: 5" in text
     assert "short reconciliation" in text
-    assert "50-minute polling bottleneck" in text
+    assert "seq 1 12" in text
+    assert "seq 1 240" not in text
 
 def test_crossfire_is_single_global_execution_pool():
     text=workflow_text()
