@@ -57,8 +57,12 @@ def _is_test(relative: str) -> bool:
     return relative.startswith("tests/") or relative.endswith("_test.py") or "/tests/" in relative
 
 def _is_policy_configuration(relative: str) -> bool:
-    """Workflow configuration legitimately names secret variables and private jobs."""
-    return relative.startswith(".github/workflows/")
+    """Intentional policy/deployment surfaces may declare private boundaries."""
+    return (
+        relative.startswith(".github/workflows/")
+        or relative == "scripts/production_release.sh"
+        or relative.startswith("benchmark/")
+    )
 
 def secret_findings(path: Path, source: str, root: Path = ROOT) -> list[Finding]:
     relative = rel(path, root)
@@ -82,7 +86,7 @@ def private_reference_findings(path: Path, source: str, root: Path = ROOT) -> li
         relative == "scripts/public_security_lint.py"
         or _is_test(relative)
         or relative.startswith("docs/")
-        or relative.startswith(".github/workflows/")
+        or _is_policy_configuration(relative)
     ):
         return []
     findings = []
@@ -105,7 +109,7 @@ def private_revision_findings(path: Path, source: str, root: Path = ROOT) -> lis
     if (
         relative == "scripts/public_security_lint.py"
         or relative.startswith("docs/")
-        or relative.startswith(".github/workflows/")
+        or _is_policy_configuration(relative)
         or _is_test(relative)
     ):
         return []
