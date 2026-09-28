@@ -1,11 +1,11 @@
 {
-  "schema_version": "ai-project-map/v1",
+  "schema_version": "ai-project-map/v2",
   "repository": "Z-Solo-King/foundation",
   "visibility": "public-safe",
   "generated_at": "2026-09-28",
   "structural_inventory": {
-    "tree_entries": 656,
-    "documentation_files": 106,
+    "tree_entries": 657,
+    "documentation_files": 109,
     "workflow_files": 43,
     "test_files": 179,
     "extensions": {
@@ -15,7 +15,8 @@
       "ts": 18,
       "sql": 10,
       "json": 40,
-      "yml": 46
+      "yml": 46,
+      "md": 119
     }
   },
   "function_metrics": {
@@ -309,5 +310,440 @@
     "PR -> required CI -> release -> runtime receipt"
   ],
   "audit_system": "docs/AI_AUDIT_SYSTEM.md",
-  "source_head_at_generation": "09c2c218d35d851e463a31c5d0e6536289b34393"
+  "source_head_at_generation": "b07827ff9fc295c48af2cf27e3dbcbff80e6472f",
+  "map_intent": {
+    "primary_goal": "Make the repository fast and token-efficient for both humans and AI by resolving architecture, ownership, connections, credentials, languages, functions, policies and evidence before deep source retrieval.",
+    "navigation_order": [
+      "AI_PROJECT_MAP.json",
+      "AI_PROJECT_MAP.md",
+      "REPOSITORY_MAP.json",
+      "family authority registry",
+      "canonical feature/symbol",
+      "consumers/tests/workflows",
+      "live runtime receipt"
+    ],
+    "current_facts_rule": "Mutable GitHub and Cloudflare state is refreshed at audit time. This map is a navigation snapshot, not a runtime certificate.",
+    "map_version_note": "v2 connection-complete: adds system topology, credential scopes, language topology, runtime observations and uniform audit record contracts."
+  },
+  "connection_model": {
+    "node_types": [
+      "repository",
+      "application",
+      "frontend",
+      "worker",
+      "service_binding",
+      "D1",
+      "object_storage",
+      "GitHub_Action",
+      "GitHub_secret",
+      "GitHub_token",
+      "Cloudflare_secret",
+      "language",
+      "feature",
+      "function",
+      "policy",
+      "test",
+      "artifact",
+      "runtime_receipt"
+    ],
+    "edge_types": [
+      "contains",
+      "calls",
+      "binds",
+      "authenticates",
+      "stores",
+      "deploys",
+      "validates",
+      "tests",
+      "governs",
+      "produces",
+      "consumes",
+      "depends_on",
+      "delegates_to",
+      "returns_to"
+    ],
+    "rule": "Every connection records purpose, owner, authentication class, policy guards and evidence tier where known."
+  },
+  "connections": [
+    {
+      "id": "CONN-FND-APP-WORKER",
+      "from": "frontend/index.html + frontend/app.js",
+      "to": "Cloudflare Worker: heroic",
+      "via": "public HTTPS",
+      "purpose": "user-facing Heroic AI application ingress and streaming",
+      "auth": "Foundation public request auth/session semantics; no private secret exposed to browser",
+      "owner": "foundation",
+      "policies": [
+        "P002",
+        "P003",
+        "P006",
+        "P015"
+      ],
+      "evidence": "R2; live endpoint claims R3/R4"
+    },
+    {
+      "id": "CONN-FND-WORKER-OPS",
+      "from": "Cloudflare Worker: heroic",
+      "to": "Cloudflare service: operations-edge -> operations",
+      "via": "service binding `OPERATIONS`",
+      "purpose": "private chatbot/research execution",
+      "auth": "Foundation _chat_headers forwards the inbound Bearer credential; Operations _chat_authorized accepts CHAT_BACKEND_TOKEN first, then its AUTH_TOKEN via authorized_request. No Foundation secret is implicitly substituted.",
+      "owner": "operations",
+      "policies": [
+        "P002",
+        "P003",
+        "P008",
+        "P015"
+      ],
+      "evidence": "R1/R2 in repo; R3/R4 only with Cloudflare receipt"
+    },
+    {
+      "id": "CONN-FND-WORKER-D1",
+      "from": "Cloudflare Worker: heroic",
+      "to": "D1: research-intelligence",
+      "via": "binding `DB`",
+      "purpose": "public-safe research runs, admissions, evidence/publication persistence",
+      "auth": "native Cloudflare binding",
+      "owner": "foundation/shared family data contract",
+      "policies": [
+        "P003",
+        "P004",
+        "P007",
+        "P008"
+      ],
+      "evidence": "R3 runtime binding receipt"
+    },
+    {
+      "id": "CONN-FND-WORKER-B2",
+      "from": "Cloudflare Worker: heroic",
+      "to": "Backblaze B2 object storage",
+      "via": "S3-compatible/object-storage configuration",
+      "purpose": "artifact/storage dependency and release persistence path",
+      "auth": "B2_KEY_ID + B2_APPLICATION_KEY; endpoint/bucket are configuration",
+      "owner": "foundation",
+      "policies": [
+        "P002",
+        "P006",
+        "P007",
+        "P015"
+      ],
+      "evidence": "source config + release validation; object-level claims require B2 receipt"
+    },
+    {
+      "id": "CONN-FND-GITHUB-ACTIONS-RELEASE",
+      "from": "GitHub Foundation workflows",
+      "to": "Cloudflare + Backblaze + GitHub",
+      "via": "GitHub Actions",
+      "purpose": "canonical public deployment/release and acceptance orchestration",
+      "auth": "automatic `github.token` plus repository/environment secrets and Foundation GitHub App credentials where required",
+      "owner": "foundation",
+      "policies": [
+        "P009",
+        "P012",
+        "P015"
+      ],
+      "evidence": "CI/release receipt"
+    },
+    {
+      "id": "CONN-FND-GITHUB-OPS-APP",
+      "from": "Foundation GitHub Actions",
+      "to": "private repository: operations",
+      "via": "GitHub App installation token minted from Operations App credentials",
+      "purpose": "read/validate pinned private research/runtime revision",
+      "auth": "OPERATIONS_APP_ID + OPERATIONS_APP_PRIVATE_KEY -> short-lived installation token",
+      "owner": "foundation workflow bridge; operations private boundary",
+      "policies": [
+        "P002",
+        "P009",
+        "P015"
+      ],
+      "evidence": "workflow receipt; GitHub App token is short-lived"
+    },
+    {
+      "id": "CONN-FND-OPS-RETURN",
+      "from": "private Operations control plane",
+      "to": "Cloudflare Worker: heroic",
+      "via": "service binding `FOUNDATION` on Operations",
+      "purpose": "consume public-safe Foundation contract/core",
+      "auth": "Operations `AUTH_TOKEN` carried in protected service request",
+      "owner": "operations",
+      "policies": [
+        "P001",
+        "P002",
+        "P003",
+        "P015"
+      ],
+      "evidence": "R1/R2; runtime path R3/R4"
+    }
+  ],
+  "credential_scopes": [
+    {
+      "id": "CRED-FND-ACTIONS-GITHUB",
+      "surface": "GitHub Actions/Foundation",
+      "name": "github.token",
+      "class": "automatic job token",
+      "purpose": "Actions API/workflow operations",
+      "value_in_repo": false,
+      "scope_rule": "per workflow/job; never confused with repo secrets"
+    },
+    {
+      "id": "CRED-FND-OPS-APP",
+      "surface": "GitHub Actions/Foundation",
+      "name": "OPERATIONS_APP_PRIVATE_KEY + OPERATIONS_APP_ID",
+      "class": "GitHub App credentials",
+      "purpose": "mint short-lived installation token for private Operations access",
+      "value_in_repo": false,
+      "policies": [
+        "P002",
+        "P009",
+        "P015"
+      ]
+    },
+    {
+      "id": "CRED-FND-WORKER-AUTH",
+      "surface": "Cloudflare Worker/heroic",
+      "name": "AUTH_TOKEN",
+      "class": "Cloudflare secret binding",
+      "purpose": "public Worker authentication where required",
+      "value_in_repo": false,
+      "important_rule": "not the same value as Operations AUTH_TOKEN"
+    },
+    {
+      "id": "CRED-FND-B2",
+      "surface": "Cloudflare Worker/heroic + Foundation release",
+      "name": "B2_KEY_ID + B2_APPLICATION_KEY",
+      "class": "Backblaze application credentials",
+      "purpose": "B2 storage access",
+      "value_in_repo": false,
+      "policies": [
+        "P002",
+        "P015"
+      ]
+    },
+    {
+      "id": "CRED-FND-CF",
+      "surface": "GitHub Actions/Foundation",
+      "name": "CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID",
+      "class": "deployment credentials",
+      "purpose": "canonical Cloudflare release/verification",
+      "value_in_repo": false,
+      "policies": [
+        "P009",
+        "P015"
+      ]
+    },
+    {
+      "id": "CRED-FND-NIGHTLY",
+      "surface": "GitHub Actions/Foundation",
+      "name": "OPERATIONS_APP_*",
+      "class": "private-repo access credential",
+      "purpose": "nightly multi-agent research access to pinned Operations revision",
+      "value_in_repo": false,
+      "policies": [
+        "P002",
+        "P015"
+      ]
+    }
+  ],
+  "language_domains": [
+    {
+      "language": "Python",
+      "files": 332,
+      "where": "backend/, foundation_core/, worker.py, tests, benchmarks",
+      "why": "canonical public semantic/deterministic reference; rich domain implementation and existing test authority",
+      "how": "normal source implementation and reference behavior",
+      "policies": [
+        "P001",
+        "P005",
+        "P007",
+        "P010"
+      ]
+    },
+    {
+      "language": "TypeScript",
+      "files": 18,
+      "where": "public typed/observation and migration surfaces",
+      "why": "static typing for JavaScript-facing boundary and safer contract evolution",
+      "how": "contract/shadow/candidate implementation only unless explicitly promoted",
+      "policies": [
+        "P001",
+        "P005",
+        "P013"
+      ]
+    },
+    {
+      "language": "JavaScript/MJS",
+      "files": 30,
+      "where": "frontend and JS tooling",
+      "why": "browser/runtime-native surface",
+      "how": "frontend behavior, client lifecycle and tooling",
+      "policies": [
+        "P002",
+        "P003",
+        "P006",
+        "P008"
+      ]
+    },
+    {
+      "language": "SQL",
+      "files": 10,
+      "where": "migrations/",
+      "why": "D1 schema/data lifecycle is a first-class data contract",
+      "how": "versioned migrations and bounded queries",
+      "policies": [
+        "P003",
+        "P004",
+        "P007",
+        "P008"
+      ]
+    },
+    {
+      "language": "YAML",
+      "files": 46,
+      "where": ".github/workflows/",
+      "why": "declarative automation/control-plane configuration",
+      "how": "workflow triggers, permissions, jobs, artifacts and release orchestration",
+      "policies": [
+        "P009",
+        "P012",
+        "P015"
+      ]
+    },
+    {
+      "language": "Shell",
+      "files": 4,
+      "where": "release/maintenance tooling",
+      "why": "small deterministic CI/deployment glue",
+      "how": "bounded orchestration around canonical scripts; no independent authority",
+      "policies": [
+        "P006",
+        "P009",
+        "P015"
+      ]
+    },
+    {
+      "language": "JSON/TOML/HTML/CSS",
+      "files": "40/2/1/3",
+      "where": "schemas, maps, Wrangler config, product UI",
+      "why": "machine-readable contracts/configuration and browser presentation",
+      "how": "configuration/navigation/data contract; never hidden business authority",
+      "policies": [
+        "P001",
+        "P014"
+      ]
+    }
+  ],
+  "cloudflare_runtime_snapshot": {
+    "observed_at": "2026-09-28",
+    "source": "Cloudflare live API",
+    "canonical_worker": {
+      "name": "heroic",
+      "role": "source-controlled Foundation user-facing Worker"
+    },
+    "bindings": {
+      "ASSETS": "assets",
+      "AUTH_TOKEN": "secret",
+      "B2_APPLICATION_KEY": "secret",
+      "B2_BUCKET": "plain config",
+      "B2_ENDPOINT": "plain config",
+      "B2_KEY_ID": "secret",
+      "DB": "D1 research-intelligence",
+      "OPERATIONS": "service -> operations-edge",
+      "ENVIRONMENT": "plain config",
+      "RELEASE_FOUNDATION_SHA": "plain config",
+      "RELEASE_OPERATIONS_REF": "plain config",
+      "STRICT_ZERO_COST_ONLY": "plain config"
+    },
+    "related_workers": {
+      "operations_edge": "service CORE -> operations",
+      "operations": "private control plane; FOUNDATION service -> heroic"
+    },
+    "secondary_live_worker": {
+      "name": "foundation",
+      "status": "observed in account; current ownership/purpose is not established by this map; never delete automatically"
+    },
+    "auxiliary_workers": "probe/research workers exist separately and require reference/usage checks before cleanup",
+    "rule": "Live bindings are runtime truth; source Wrangler placeholders are not runtime credentials or runtime state."
+  },
+  "audit_hooks": {
+    "connection_audit": "verify every `connection_model` edge against source code, workflow configuration and live runtime receipt before marking connected/current",
+    "credential_audit": "key identity by surface+repo_or_worker+environment+purpose; same name != same secret",
+    "language_audit": "scan each language as an independent semantic/paradigm lens against canonical contracts",
+    "call_graph_audit": "forward and reverse traversal; detect service-binding cycles at request-path level, not merely graph topology",
+    "token_efficiency": "retrieve map first; then only the feature, functions, policy and evidence needed to answer the current uncertainty",
+    "stale_data": "runtime snapshots are dated evidence; refresh before mutation or production claims"
+  },
+  "credential_observations": [
+    {
+      "id": "OBS-FND-EVIDENCE-SIGNING",
+      "surface": "Foundation/Cloudflare Worker source vs live binding inventory",
+      "status": "VERIFY_RUNTIME",
+      "finding": "worker.py references EVIDENCE_PACKAGE_SIGNING_SECRET for evidence publication, but the 2026-09-28 live binding inventory did not show that secret.",
+      "action": "Dedicated Cloudflare runtime verification required before treating evidence publication as production-ready; do not infer missing secret value or alter credentials from this map.",
+      "policies": [
+        "P003",
+        "P004",
+        "P007",
+        "P015"
+      ]
+    },
+    {
+      "id": "OBS-NAME-NOT-IDENTITY",
+      "surface": "all repos/workers",
+      "status": "RULE",
+      "finding": "Identical variable names such as AUTH_TOKEN may exist in different secret stores.",
+      "action": "Never deduplicate credentials by name. Scope identity by surface + repository/Worker + environment + purpose.",
+      "policies": [
+        "P002",
+        "P015"
+      ]
+    }
+  ],
+  "ai_scan_contract": {
+    "connection_record_required": [
+      "from",
+      "to",
+      "via",
+      "purpose",
+      "owner",
+      "auth",
+      "policies",
+      "evidence"
+    ],
+    "credential_record_required": [
+      "surface",
+      "name",
+      "class",
+      "purpose",
+      "value_in_repo",
+      "scope_rule"
+    ],
+    "language_record_required": [
+      "language",
+      "files",
+      "where",
+      "why",
+      "how",
+      "policies"
+    ],
+    "feature_record_required": [
+      "id",
+      "surfaces",
+      "functions",
+      "function_files",
+      "key",
+      "usage",
+      "policies",
+      "policy_logic"
+    ],
+    "runtime_record_required": [
+      "observed_at",
+      "source",
+      "resource",
+      "bindings",
+      "status"
+    ],
+    "privacy_rule": "values are never stored in the AI map; only names/classes/purpose/scopes may be recorded when safe",
+    "freshness_rule": "runtime rows are snapshots and must be refreshed before mutation or production claims"
+  }
 }
