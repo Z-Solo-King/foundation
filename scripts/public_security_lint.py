@@ -19,8 +19,8 @@ EXCLUDED = {".git", ".venv", "__pycache__", "archive"}
 PROTECTED_PRIVATE_MARKERS = ('__HEROIC_PRIVATE_RUNTIME_MARKER__',)
 PRIVATE_REFERENCE_PATTERNS = (
     re.compile(r"(?<![A-Za-z0-9_.-])operations/private(?:/|\b)"),
-    re.compile(r"(?<![A-Za-z0-9_.-])private/[A-Za-z0-9_.-]+(?:/|\b)"),
-    re.compile(r"(?<![A-Za-z0-9_.-])private\.[A-Za-z0-9_]+"),
+    re.compile(r"(?<![A-Za-z0-9_.-])private/(?!v1(?:/|\b))[A-Za-z0-9_.-]+(?:/|\b)"),
+    re.compile(r"(?<![A-Za-z0-9_.-])from\s+private\.[A-Za-z0-9_.]+|(?<![A-Za-z0-9_.-])import\s+private\.[A-Za-z0-9_.]+"),
     re.compile(r"Z-Solo-King/operations@[0-9a-f]{40}"),
 )
 NETWORK_MODULES = {"requests", "httpx", "urllib", "aiohttp"}
