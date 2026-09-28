@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 from time import time
 from typing import Any
 
@@ -33,12 +34,16 @@ class AdmissionLease:
     cost_units: int
 
 
-async def _existing_event(db: Any, event_id: str) -> dict[str, Any] | None:
+def _storage_event_id(subject_fingerprint: str, event_id: str) -> str:
+    return hashlib.sha256(f"{subject_fingerprint}:{event_id}".encode("utf-8")).hexdigest()
+
+
+async def _existing_event(db: Any, event_id: str, subject_fingerprint: str) -> dict[str, Any] | None:
     result = await db.prepare(
-        """SELECT event_id, window_start, subject_fingerprint, route, lease_expires_at, released_at
+        """SELECT event_id, window_start, subject_fingerprint, route, lease_expires_at, released_at, cost_units
            FROM public_admission_events
-           WHERE event_id = ?"""
-    ).bind(event_id).first()
+           WHERE event_id = ? AND subject_fingerprint = ?"""
+    ).bind(event_id, subject_fingerprint).first()
     if result is None:
         return None
     if not isinstance(result, dict):
@@ -53,6 +58,7 @@ async def _handle_existing_event(
     subject_fingerprint: str,
     route: AdmissionRoute,
     event_id: str,
+    storage_event_id: str | None,
     window_start: int,
     expires_at: int,
     now: int,
@@ -60,6 +66,7 @@ async def _handle_existing_event(
     decision: AdmissionDecision,
     policy: AdmissionPolicy,
 ) -> tuple[AdmissionDecision, AdmissionLease | None] | None:
+    storage_event_id = storage_event_id or _storage_event_id(subject_fingerprint, event_id)
     if (
         str(existing.get("subject_fingerprint", "")) != subject_fingerprint
         or str(existing.get("route", "")) != route.value
@@ -72,12 +79,15 @@ async def _handle_existing_event(
         ), None
 
     if existing.get("released_at") is not None:
+        await db.prepare(
+            "UPDATE public_admission_events SET cost_units = cost_units + ? WHERE event_id = ? AND subject_fingerprint = ?"
+        ).bind(cost_units, storage_event_id, subject_fingerprint).run()
         if route in {AdmissionRoute.CHAT, AdmissionRoute.STREAM, AdmissionRoute.RESEARCH}:
             return AdmissionDecision(
                 AdmissionOutcome.ACCEPTED,
                 route,
                 True,
-                "duplicate request is delegated to the canonical idempotency authority",
+                "duplicate request counted against admission cost and delegated to idempotency authority",
             ), None
         return decision, None
 
@@ -86,7 +96,7 @@ async def _handle_existing_event(
             "UPDATE public_admission_events SET window_start = ?, lease_expires_at = ?, released_at = NULL "
             "WHERE event_id = ? AND subject_fingerprint = ? AND route = ? "
             "AND released_at IS NULL AND lease_expires_at <= ?"
-        ).bind(window_start, expires_at, event_id, subject_fingerprint, route.value, now).run()
+        ).bind(window_start, expires_at, storage_event_id, subject_fingerprint, route.value, now).run()
         meta = result.get("meta", {}) if isinstance(result, dict) else getattr(result, "meta", {})
         if int(meta.get("changes", 0) or 0) == 1:
             return decision, AdmissionLease(
@@ -145,7 +155,7 @@ async def _insert_new_admission(
         # Two identical concurrent requests may both observe no existing event
         # before racing on the unique event_id. Re-read the canonical event and
         # delegate protected routes to the downstream idempotency authority.
-        existing = await _existing_event(store.db, event_id)
+        existing = await _existing_event(store.db, storage_event_id, subject_fingerprint)
         if existing is not None:
             return await _handle_existing_event(
                 store.db,
@@ -188,6 +198,10 @@ class D1AdmissionStore:
                     WHERE window_start = ? AND subject_fingerprint = ?) AS subject_requests,
                  (SELECT COUNT(*) FROM public_admission_events
                     WHERE window_start = ?) AS global_requests,
+                 (SELECT COALESCE(SUM(cost_units), 0) FROM public_admission_events
+                    WHERE window_start = ? AND subject_fingerprint = ?) AS subject_cost_units,
+                 (SELECT COALESCE(SUM(cost_units), 0) FROM public_admission_events
+                    WHERE window_start = ?) AS global_cost_units,
                  (SELECT COUNT(*) FROM public_admission_events
                     WHERE subject_fingerprint = ?
                       AND released_at IS NULL
@@ -196,6 +210,8 @@ class D1AdmissionStore:
                     WHERE released_at IS NULL
                       AND lease_expires_at > ?) AS global_concurrent"""
         ).bind(
+            window_start, subject_fingerprint,
+            window_start,
             window_start, subject_fingerprint,
             window_start,
             subject_fingerprint, now,
@@ -209,6 +225,8 @@ class D1AdmissionStore:
             authority_available=True,
             subject_requests=field("subject_requests"),
             global_requests=field("global_requests"),
+            subject_cost_units=field("subject_cost_units"),
+            global_cost_units=field("global_cost_units"),
             subject_concurrent=field("subject_concurrent"),
             global_concurrent=field("global_concurrent"),
         )
@@ -271,10 +289,11 @@ class D1AdmissionStore:
         window_start = now - (now % policy.window_seconds)
         expires_at = now + policy.window_seconds
         cost_units = ROUTE_COST_UNITS[route]
-
-        await self.db.prepare(
-            "DELETE FROM public_admission_events WHERE window_start < ?"
-        ).bind(window_start - policy.window_seconds).run()
+        storage_event_id = _storage_event_id(subject_fingerprint, event_id)
+        if int(storage_event_id[:2], 16) == 0:
+            await self.db.prepare(
+                "DELETE FROM public_admission_events WHERE window_start < ?"
+            ).bind(window_start - policy.window_seconds).run()
 
         snapshot = await self._snapshot(
             window_start=window_start,
@@ -290,7 +309,7 @@ class D1AdmissionStore:
         if not decision.allowed:
             return decision, None
 
-        existing = await _existing_event(self.db, event_id)
+        existing = await _existing_event(self.db, storage_event_id, subject_fingerprint)
         if existing is not None:
             return await _handle_existing_event(
                 self.db,
@@ -310,6 +329,7 @@ class D1AdmissionStore:
             self,
             decision,
             event_id=event_id,
+            storage_event_id=storage_event_id,
             window_start=window_start,
             subject_fingerprint=subject_fingerprint,
             route=route,
@@ -331,4 +351,4 @@ class D1AdmissionStore:
             return
         await self.db.prepare(
             "UPDATE public_admission_events SET released_at = ? WHERE event_id = ? AND released_at IS NULL"
-        ).bind(int(time()), lease.event_id).run()
+        ).bind(int(time()), _storage_event_id(lease.subject_fingerprint, lease.event_id), lease.subject_fingerprint).run()
