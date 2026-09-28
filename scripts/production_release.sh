@@ -737,4 +737,4 @@ for legacy_worker in "$legacy_private_worker" "$legacy_public_worker"; do
     fi
   fi
 done
-echo "Production release completed for ${GITHUB_SHA} using Operations ${OPERATIONS_REF}"
+echo "Production release completed for ${GITHUB_SHA}"
