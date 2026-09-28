@@ -321,7 +321,6 @@ jobs:
       contents: read
       id-token: write
       attestations: write
-    needs: resolve_operations_ref
     name: Cross-language migration review
     runs-on: ubuntu-latest
     timeout-minutes: 30
