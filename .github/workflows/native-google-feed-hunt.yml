@@ -24,6 +24,7 @@ jobs:
           WORKER: https://feed-origin-probe-20260927.heroic-ai.workers.dev
         run: |
           set -euo pipefail
+          echo "probe-revision=3"
           mkdir -p out/native
           curl -sS --max-time 300 -D "out/native/${SITE}.headers"             "${WORKER}/native/${SITE}"             -o "out/native/${SITE}.body"
           cat "out/native/${SITE}.headers"
@@ -40,6 +41,6 @@ jobs:
           fi
       - uses: actions/upload-artifact@v4
         with:
-          name: native-feed-${{ matrix.site }}-live-worker
+          name: native-feed-${{ matrix.site }}-live-worker-v3
           path: out/
           if-no-files-found: error
