@@ -4,8 +4,8 @@
   "visibility": "public-safe",
   "generated_at": "2026-09-28",
   "structural_inventory": {
-    "tree_entries": 656,
-    "documentation_files": 106,
+    "tree_entries": 657,
+    "documentation_files": 109,
     "workflow_files": 43,
     "test_files": 179,
     "extensions": {
@@ -15,7 +15,8 @@
       "ts": 18,
       "sql": 10,
       "json": 40,
-      "yml": 46
+      "yml": 46,
+      "md": 119
     }
   },
   "function_metrics": {
@@ -309,7 +310,7 @@
     "PR -> required CI -> release -> runtime receipt"
   ],
   "audit_system": "docs/AI_AUDIT_SYSTEM.md",
-  "source_head_at_generation": "09c2c218d35d851e463a31c5d0e6536289b34393",
+  "source_head_at_generation": "b07827ff9fc295c48af2cf27e3dbcbff80e6472f",
   "map_intent": {
     "primary_goal": "Make the repository fast and token-efficient for both humans and AI by resolving architecture, ownership, connections, credentials, languages, functions, policies and evidence before deep source retrieval.",
     "navigation_order": [
@@ -321,7 +322,8 @@
       "consumers/tests/workflows",
       "live runtime receipt"
     ],
-    "current_facts_rule": "Mutable GitHub and Cloudflare state is refreshed at audit time. This map is a navigation snapshot, not a runtime certificate."
+    "current_facts_rule": "Mutable GitHub and Cloudflare state is refreshed at audit time. This map is a navigation snapshot, not a runtime certificate.",
+    "map_version_note": "v2 connection-complete: adds system topology, credential scopes, language topology, runtime observations and uniform audit record contracts."
   },
   "connection_model": {
     "node_types": [
