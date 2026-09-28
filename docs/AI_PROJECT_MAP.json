@@ -20,7 +20,7 @@
     }
   },
   "function_metrics": {
-    "canonical_surface_declarations": 100,
+    "canonical_surface_declarations": 99,
     "whole_repo_exact": false,
     "refresh": "language-aware full-tree scanner"
   },
