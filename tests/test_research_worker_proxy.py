@@ -49,3 +49,18 @@ def test_safe_upstream_error_details_bounds_large_fields():
 
     assert details["upstream_status"] == 502
     assert len(details["upstream_error"]) == 200
+
+def test_proxy_upstream_request_uses_explicit_edge_compatible_headers():
+    from scripts.research_worker_proxy import UPSTREAM_USER_AGENT
+    assert UPSTREAM_USER_AGENT.startswith("HeroicAI-NightlyResearch/")
+    assert "Python-urllib" not in UPSTREAM_USER_AGENT
+
+def test_safe_header_details_keeps_only_safe_transport_fields():
+    from scripts.research_worker_proxy import _safe_header_details
+
+    class Headers:
+        def get(self, key):
+            return {"server":"cloudflare","cf-ray":"abc123","cf-mitigated":"challenge","retry-after":"30","authorization":"secret"}.get(key)
+
+    details = _safe_header_details(Headers())
+    assert details == {"upstream_server":"cloudflare","cf_ray":"abc123","cf_mitigated":"challenge","retry_after":"30"}
