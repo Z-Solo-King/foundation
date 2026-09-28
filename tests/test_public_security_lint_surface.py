@@ -39,3 +39,12 @@ def test_private_import_and_path_patterns_are_detected(tmp_path):
         path = tmp_path / f"sample{index}.py"
         path.write_text(sample + "\n", encoding="utf-8")
         assert any(f.rule == "private-reference" for f in lint_file(path, tmp_path))
+
+
+def test_private_boundary_findings_are_classified_by_surface():
+    import scripts.public_security_lint as lint
+    assert lint.private_reference_findings(Path("docs/example.md"), "private/foo.py") == []
+    assert lint.private_reference_findings(Path(".github/workflows/example.yml"), "operations/private/foo.py") == []
+    assert lint.private_reference_findings(Path("runtime.py"), "from private.foo import bar")
+    assert lint.private_revision_findings(Path("docs/example.md"), "Z-Solo-King/operations@0123456789abcdef0123456789abcdef01234567") == []
+    assert lint.private_revision_findings(Path("runtime.py"), "Z-Solo-King/operations@0123456789abcdef0123456789abcdef01234567")
