@@ -58,3 +58,20 @@ def test_safe_host_handles_domains_and_localhost():
     assert safe_host("LOCALHOST") is False
     assert safe_host("localhost.localdomain") is False
     assert safe_host("example.com") is True
+
+
+def test_safe_ip_covers_public_ipv6_and_nat64_public_ipv4():
+    assert safe_ip("2001:4860:4860::8888") is True
+    assert safe_ip("64:ff9b::8.8.8.8") is True
+
+
+def test_safe_host_rejects_numeric_obfuscation_but_allows_ipv4_domains():
+    assert safe_host("1.1.1.1") is True
+    assert safe_host("2130706433") is False
+    assert safe_host("0x7f.1") is False
+
+
+def test_canonicalize_url_rejects_ipv6_multicast_and_nat64_multicast():
+    for source in ("http://[ff02::1]/", "http://[64:ff9b::224.0.0.1]/"):
+        with pytest.raises(ValueError):
+            canonicalize_url(source)
