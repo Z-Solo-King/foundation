@@ -67,6 +67,12 @@ def safe_ip(value: str) -> bool:
         ip = mapped
 
     if isinstance(ip, IPv6Address):
+        if ip in _NAT64_LOCAL_PREFIX or ip in _SIXTOFOUR_PREFIX or ip in _TEREDO_PREFIX:
+            return False
+        if ip.packed[:12] == _NAT64_PREFIX:
+            ip = IPv4Address(ip.packed[12:])
+
+    if isinstance(ip, IPv6Address):
         if (
             ip.is_loopback
             or ip.is_link_local
@@ -74,13 +80,8 @@ def safe_ip(value: str) -> bool:
             or ip.is_unspecified
             or ip.is_private
             or ip.is_reserved
-            or ip in _NAT64_LOCAL_PREFIX
-            or ip in _SIXTOFOUR_PREFIX
-            or ip in _TEREDO_PREFIX
         ):
             return False
-        if ip.packed[:12] == _NAT64_PREFIX:
-            ip = IPv4Address(ip.packed[12:])
 
     if isinstance(ip, IPv4Address):
         if (
@@ -100,7 +101,15 @@ def safe_ip(value: str) -> bool:
 
 def safe_host(hostname: str) -> bool:
     host = hostname.casefold().rstrip(".")
-    if not host or "." not in host:
+    if not host:
+        return False
+    try:
+        literal = ip_address(host)
+    except ValueError:
+        literal = None
+    if literal is not None:
+        return safe_ip(host)
+    if "." not in host:
         return False
     if host in {"localhost", "localhost.localdomain", "ip6-localhost"}:
         return False
