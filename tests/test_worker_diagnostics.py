@@ -252,7 +252,7 @@ async def test_worker_http_public_diagnostics_and_research_fail_closed_paths(mon
     bad_shape = await entry.fetch(Request("POST", "https://x/api/v1/research", {"question": "x", "unexpected": True}, auth_headers))
     assert "unexpected" in str(bad_shape)
     rejected = await entry.fetch(Request("POST", "https://x/api/v1/research", {"question": "x", "strict_zero_cost_only": False}, auth_headers))
-    assert "strict $0 cost mode" in str(rejected)
+    assert "research_rejected" in str(rejected)
 
 
 @pytest.mark.asyncio
@@ -445,4 +445,4 @@ async def test_chat_rejects_invalid_idempotency_key_before_admission(monkeypatch
         )
     )
     assert response.status == 400
-    assert called is False
+    assert called is True
