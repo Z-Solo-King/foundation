@@ -10,6 +10,7 @@ from foundation_core.url_identity import canonicalize_url, safe_host, safe_ip
         ("http://EXAMPLE.COM:80", "http://example.com/"),
         ("https://example.com", "https://example.com/"),
         ("https://example.com/a//b?x=1", "https://example.com/a//b?x=1"),
+        ("https://[2001:4860:4860::8888]/path", "https://[2001:4860:4860::8888]/path"),
     ],
 )
 def test_canonicalize_url_preserves_security_safe_identity(source, expected):
@@ -30,8 +31,15 @@ def test_canonicalize_url_preserves_security_safe_identity(source, expected):
         "http://0x7f.1/",
         "http://017700000001/",
         "http://2130706433/",
+        "http://1.2/",
+        "http://017.000.000.001/",
+        "http://0x7f.0x0.0x0.0x1/",
+        "http://intranet/",
+        "http://service.internal/",
         "http://64:ff9b::224.0.0.1/",
         "http://ff02::1/",
+        "http://[2002:c000:0204::1]/",
+        "http://[2001:0000:4136:e378:8000:63bf:3fff:fdd2]/",
     ],
 )
 def test_canonicalize_url_rejects_unsafe_forms(source):
@@ -49,6 +57,8 @@ def test_canonicalize_url_rejects_unsafe_forms(source):
         ("64:ff9b::127.0.0.1", False),
         ("64:ff9b::224.0.0.1", False),
         ("ff02::1", False),
+        ("2002:c000:0204::1", False),
+        ("2001:0000:4136:e378:8000:63bf:3fff:fdd2", False),
     ],
 )
 def test_safe_ip_keeps_shared_and_provider_ranges_blocked(value, expected):
@@ -59,6 +69,8 @@ def test_safe_host_handles_domains_and_localhost():
     assert safe_host("LOCALHOST") is False
     assert safe_host("localhost.localdomain") is False
     assert safe_host("example.com") is True
+    assert safe_host("intranet") is False
+    assert safe_host("service.internal") is False
 
 
 def test_safe_ip_covers_public_ipv6_and_nat64_public_ipv4():
@@ -70,6 +82,7 @@ def test_safe_host_rejects_numeric_obfuscation_but_allows_ipv4_domains():
     assert safe_host("1.1.1.1") is True
     assert safe_host("2130706433") is False
     assert safe_host("0x7f.1") is False
+    assert safe_host("123.example.com") is True
 
 
 def test_canonicalize_url_rejects_ipv6_multicast_and_nat64_multicast():
