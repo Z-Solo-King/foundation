@@ -45,7 +45,7 @@ Do not assume the other chat made a change. Require the runtime result to be ref
 
 ## Next chat start sequence
 
-1. Read docs/AI_AGENT_EXECUTION_POLICY_2026-09-28.md.
+1. Read docs/AI_AGENT_EXECUTION_POLICY.md.
 2. Read docs/CURRENT_SOURCE_OF_TRUTH.md.
 3. Read docs/CHAT_CONTINUATION_HANDOFF_2026-09-28.md.
 4. Refresh Foundation main, open issues and open PRs.
