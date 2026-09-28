@@ -308,49 +308,6 @@ jobs:
               status={'schema':'nightly-research-lane-status/v1','run_id':'${{ github.run_id }}','lane':lane,'mode':mode,'state':state,'preflight':preflight,'runner':runner,'validation':validation,'program_count':len(lane_rows),'programs':[r.get('program_id') for r in lane_rows],'operations_revision':'${{ env.OPERATIONS_RESEARCH_REF }}','execution_strategy':'crossfire','global_capacity':20}
               (root/f'nightly-lane-{lane}-status.json').write_text(json.dumps(status,indent=2,sort_keys=True)+'\n',encoding='utf-8')
           if mode=='live' and errors: raise SystemExit('Live CrossFire research did not satisfy the 24-program evidence contract')
-        if: ${{ always() }}
-        shell: bash
-        run: |
-          rm -rf "$RUNNER_TEMP/operations-research" "$RUNNER_TEMP/operations-research-app.pem" "$RUNNER_TEMP/operations-research-jwt.txt" "$RUNNER_TEMP/operations-research-installation.json" "$RUNNER_TEMP/operations-research-token.txt" "$RUNNER_TEMP/git-askpass-operations-research.sh"
-      - name: Run complete crossfire research
-        id: run_crossfire
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p .runtime
-          args=(--crossfire --global-capacity 20 --output .runtime/nightly-crossfire.jsonl)
-          if [[ "${{ steps.mode.outputs.mode }}" == "dry-run" ]]; then args+=(--dry-run); fi
-          PYTHONPATH="$RUNNER_TEMP/operations-research" python -m private.multi_agent.runner "${args[@]}"
-      - name: Materialize and validate lane artifacts
-        id: materialize
-        if: ${{ always() }}
-        shell: python
-        env:
-          MODE: ${{ steps.mode.outputs.mode || 'unknown' }}
-          PREFLIGHT: ${{ steps.preflight.outcome || 'skipped' }}
-          RUN_CROSSFIRE: ${{ steps.run_crossfire.outcome || 'skipped' }}
-        run: |
-          import json, os
-          from pathlib import Path
-          root=Path('.runtime'); root.mkdir(parents=True, exist_ok=True)
-          combined=root/'nightly-crossfire.jsonl'
-          rows=[json.loads(x) for x in combined.read_text(encoding='utf-8').splitlines() if x.strip()] if combined.exists() else []
-          mode=os.environ['MODE']; preflight=os.environ['PREFLIGHT']; runner=os.environ['RUN_CROSSFIRE']
-          allowed={'acquisition','mapper','chatbot','search','models','agents','architecture','infrastructure','performance','alternatives','evaluation'}
-          errors=[]
-          for lane in range(3):
-              lane_rows=[r for r in rows if int(r.get('lane',-1))==lane]
-              lane_rows.sort(key=lambda r:(int(r.get('slot',-1)),str(r.get('program_id',''))))
-              (root/f'nightly-lane-{lane}.jsonl').write_text(''.join(json.dumps(r,sort_keys=True,ensure_ascii=False)+'\n' for r in lane_rows),encoding='utf-8')
-              expected={f'lane{lane}-slot{slot}' for slot in range(8)}
-              completed={r.get('program_id') for r in lane_rows if r.get('status')=='completed'}
-              valid=(completed==expected and len(lane_rows)==8 and all(isinstance(r.get('research_type'),str) and r.get('research_type') in allowed and isinstance(r.get('topic'),str) and r.get('topic','').strip() for r in lane_rows))
-              validation='success' if valid else 'failed'
-              state='blocked_before_execution' if mode=='live' and preflight!='success' else ('lane_failure' if runner!='success' else ('dry_run' if mode=='dry-run' else ('live_research_executed' if valid else 'lane_failure')))
-              if mode=='live' and (preflight!='success' or runner!='success' or not valid): errors.append(f'lane{lane}')
-              status={'schema':'nightly-research-lane-status/v1','run_id':'${{ github.run_id }}','lane':lane,'mode':mode,'state':state,'preflight':preflight,'runner':runner,'validation':validation,'program_count':len(lane_rows),'programs':[r.get('program_id') for r in lane_rows],'operations_revision':'${{ env.OPERATIONS_RESEARCH_REF }}','execution_strategy':'crossfire','global_capacity':20}
-              (root/f'nightly-lane-{lane}-status.json').write_text(json.dumps(status,indent=2,sort_keys=True)+'\n',encoding='utf-8')
-          if mode=='live' and errors: raise SystemExit('Live CrossFire research did not satisfy the 24-program evidence contract')
       - name: Upload nightly research lane 0
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -408,8 +365,6 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ env.TARGET_FOUNDATION_SHA }}
         with:
           ref: ${{ env.TARGET_FOUNDATION_SHA }}
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -493,8 +448,6 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ env.TARGET_FOUNDATION_SHA }}
         with:
           ref: ${{ env.TARGET_FOUNDATION_SHA }}
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
