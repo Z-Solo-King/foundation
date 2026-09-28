@@ -1,8 +1,8 @@
 name: Live nightly research canary
 
-on: # zizmor: ignore[dangerous-triggers] trusted post-release canary; pinned source only
+on: # zizmor: ignore[dangerous-triggers] trusted post-nightly canary; pinned source only
   workflow_run:
-    workflows: ["Heroic AI production release"]
+    workflows: ["nightly multi-agent research"]
     types: [completed]
   workflow_dispatch:
 

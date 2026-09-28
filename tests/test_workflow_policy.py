@@ -805,6 +805,14 @@ def test_typescript_public_endpoint_discovery_is_executed_in_polyglot_review():
     assert 'benchmark["repeats"] == 3' in workflow
 
 
+
+
+def test_live_nightly_canary_runs_after_nightly_crossfire_not_release():
+    canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
+    assert 'workflows: ["nightly multi-agent research"]' in canary
+    assert 'workflows: ["Heroic AI production release"]' not in canary
+    assert "--global-capacity 8" in canary
+
 def test_live_chatbot_smoke_is_release_dispatched():
     text = (ROOT / '.github/workflows/live-chatbot-production-smoke.yml').read_text(encoding='utf-8')
     assert 'workflow_dispatch:' in text
