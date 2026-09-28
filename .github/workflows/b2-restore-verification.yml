@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  B2_ENDPOINT: https://s3.eu-central-003.backblazeb2.com
+  B2_ENDPOINT: ${{ vars.B2_ENDPOINT }}
   AWS_DEFAULT_REGION: us-east-1
   AWS_EC2_METADATA_DISABLED: 'true'
 
