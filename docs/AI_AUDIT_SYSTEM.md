@@ -51,6 +51,20 @@ Every language entry uses: language, files, where, why, how and policies.
 Credential identity is surface + repository/Worker + environment + purpose. Identical variable names do not imply identical credentials.
 Runtime rows require observed_at and evidence source; snapshots must be refreshed before mutation or production claims.
 
+## Compute-inspired engineering patterns
+
+Use `docs/AI_COMPUTE_INSPIRED_PATTERNS.md` as the pattern library. Select patterns by uncertainty rather than by topic:
+- scheduler/lane pressure -> P01/P02
+- token/retrieval pressure -> P03
+- portability/provider/language choice -> P04/P09
+- latency pressure -> P05
+- cross-repo evidence -> P06
+- recurring external quirks -> P07
+- comparison bias -> P08
+- wrapper/edge authority questions -> P10
+
+The patterns are abstractions only. Canonical contracts, policy and evidence rules remain authoritative.
+
 ## AI Brain
 Node types: file, symbol, feature, policy, issue, PR, workflow, test, artifact, receipt, external source.
 Edges: owns, calls, consumes, protects, validates, documents, tests, deploys, produces, depends_on, duplicates, supersedes.
