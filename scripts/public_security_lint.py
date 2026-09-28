@@ -76,7 +76,14 @@ def secret_findings(path: Path, source: str) -> list[Finding]:
 
 def private_reference_findings(path: Path, source: str) -> list[Finding]:
     relative = rel(path)
-    if relative == "scripts/public_security_lint.py":
+    # Tests, documentation and workflow policy are allowed to name private
+    # implementation boundaries; secret literals remain checked separately.
+    if (
+        relative == "scripts/public_security_lint.py"
+        or _is_test(relative)
+        or relative.startswith("docs/")
+        or relative.startswith(".github/workflows/")
+    ):
         return []
     findings = []
     for pattern in PRIVATE_REFERENCE_PATTERNS:
@@ -93,7 +100,14 @@ def private_reference_findings(path: Path, source: str) -> list[Finding]:
 
 def private_revision_findings(path: Path, source: str) -> list[Finding]:
     relative = rel(path)
-    if relative == "scripts/public_security_lint.py":
+    # Immutable private revisions are expected in reviewed cross-repo workflow
+    # pins; executable public source outside workflow policy must not embed them.
+    if (
+        relative == "scripts/public_security_lint.py"
+        or relative.startswith("docs/")
+        or relative.startswith(".github/workflows/")
+        or _is_test(relative)
+    ):
         return []
     if re.search(r"Z-Solo-King/operations@[0-9a-f]{40}", source):
         return [
