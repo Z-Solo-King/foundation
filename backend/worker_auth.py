@@ -50,7 +50,11 @@ def authorized(request: Any, env: Any) -> bool:
     if environment == "development" and bypass:
         return True
     provided = bearer_token(request)
-    return bool(expected and provided and hmac.compare_digest(provided, expected))
+    if not (expected and provided):
+        return False
+    # Compare bytes: hmac.compare_digest raises TypeError for non-ASCII str,
+    # which would turn a crafted header into an unhandled error instead of a 401.
+    return hmac.compare_digest(provided.encode("utf-8"), str(expected).encode("utf-8"))
 
 
 async def json_object(request: Any):
