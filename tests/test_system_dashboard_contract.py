@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 def test_dashboard_route_is_read_only_and_proxied():
     source = Path("worker.py").read_text(encoding="utf-8")
-    assert 'path.endswith("/api/v1/dashboard")' in source
+    assert 'path == "/api/v1/dashboard"' in source
     assert 'await _operations_dashboard(self.env, request)' in source
     assert 'request.method == "GET"' in source
 
