@@ -149,5 +149,5 @@ def test_obfuscated_ipv4_forms_are_parsed_but_rejected_by_safe_host():
     assert _parse_obfuscated_ipv4("8.1") == ip_address("8.0.0.1")
     assert _parse_obfuscated_ipv4("8.8.1") == ip_address("8.8.0.1")
     assert safe_host("134744072") is False
-    assert safe_host("8.1") is True
+    assert safe_host("8.1") is False
     assert safe_host("8.8.1") is False
