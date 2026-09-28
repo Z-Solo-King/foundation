@@ -859,7 +859,8 @@ def test_d1_store_keeps_released_non_idempotent_duplicate_on_admission_decision(
             now=121,
         )
     )
-    assert decision.allowed is True
+    assert decision.outcome is AdmissionOutcome.RATE_LIMITED
+    assert decision.allowed is False
     assert lease is None
 
 
