@@ -27,6 +27,32 @@ on:
       - "benchmark/polyglot/**"
       - "docs/**"
       - ".github/workflows/polyglot-migration-review.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "**/*.py"
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.js"
+      - "**/*.jsx"
+      - "**/*.rs"
+      - "**/*.go"
+      - "**/*.php"
+      - "**/*.java"
+      - "**/*.kt"
+      - "**/*.kts"
+      - "**/*.cs"
+      - "**/*.c"
+      - "**/*.cc"
+      - "**/*.cpp"
+      - "**/*.cxx"
+      - "**/*.h"
+      - "**/*.hh"
+      - "**/*.hpp"
+      - "**/*.zig"
+      - "benchmark/polyglot/**"
+      - "docs/**"
+      - ".github/workflows/polyglot-migration-review.yml"
   workflow_dispatch:
     inputs:
       operations_ref:
@@ -221,7 +247,6 @@ jobs:
       matrix:
         candidate:
           - rust_url_identity
-          - rust_html_kernel
     steps:
       - name: Create Operations read token
         id: operations-app
