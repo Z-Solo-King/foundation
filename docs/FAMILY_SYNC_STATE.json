@@ -4,33 +4,44 @@
   "audited_at": "2026-09-28",
   "public_safe": true,
   "live_main": {
-    "foundation": "efaf43e8bb55dc25d13dcb3f0be05df88f0c09dc",
+    "foundation": "28fab57c677941f693c4a5559966f0ff86dcedb3",
     "operations": "[PROTECTED_CURRENT_MAIN]"
   },
   "runtime_pins": {
-    "foundation_runtime": "4999c93dc8b17a5a3926faf3415e725fd4ae7b0e",
-    "production_operations": "protected"
+    "foundation_runtime": "28fab57c677941f693c4a5559966f0ff86dcedb3",
+    "production_operations": "protected-current"
   },
   "cloudflare": {
     "pages_project": "ai",
     "canonical_public_url": "https://ai-cio.pages.dev",
     "public_worker": "heroic",
-    "private_worker": "protected",
+    "private_edge_worker": "operations-edge",
+    "private_core_worker": "operations",
+    "all_workers": "100% active",
     "private_resource_identifiers": "redacted"
   },
   "current_queue": {
-    "open_issue_count": 13,
+    "open_issue_count": 12,
     "foundation": [
-      58,
-      157,
-      1157,
+      1370,
+      1249,
       1247,
-      1249
+      1157,
+      157,
+      58
     ],
-    "operations_count": 8
+    "operations_count": 6,
+    "operations": [
+      145,
+      597,
+      603,
+      1027,
+      1066,
+      1103
+    ]
   },
   "evidence": {
-    "nightly_research": "provider-backed 24-program closure not certified",
+    "nightly_research": "OPEN FOLLOW-UP: provider-backed nightly research currently hits upstream Worker 403->502; tracked by Foundation #157/#58.",
     "extractor_benchmark": {
       "receipts": 40,
       "ok": 4,
@@ -39,13 +50,20 @@
       "structural_pass": true,
       "real_catalog_success_not_proven": true
     },
-    "migration_review": "Five-lane TypeScript/Rust/Go migration and production release are green; heavy evidence jobs are decoupled from mainline pushes.",
-    "feed_recovery": "PR #1344 and #1362 merged; issue-specific acceptance remains open"
+    "migration_review": "MIGRATION_COMPLETE: P1-P5 passed; PRs 1395/1397/1164/1165 merged; production topology heroic -> operations-edge -> operations deployed.",
+    "feed_recovery": "OPEN FOLLOW-UP: Foundation #1247/#1249."
   },
   "continuity_enforcement": {
     "schema": "continuity-freshness/v1",
     "enforced_by": "tools/check_continuity_freshness.py",
     "workflow": ".github/workflows/cross-repository-contract-drift.yml"
   },
-  "privacy_rule": "Do not publish protected worker origins, account/resource identifiers, private revisions, secret values, private issue details, or internal operational state."
+  "privacy_rule": "Do not publish protected worker origins, account/resource identifiers, private revisions, secret values, private issue details, or internal operational state.",
+  "migration_topology": {
+    "public_front_door": "https://ai-cio.pages.dev",
+    "public_worker": "heroic",
+    "private_edge_worker": "operations-edge",
+    "private_core_worker": "operations",
+    "chain": "heroic -> operations-edge (TypeScript) -> operations (Python)"
+  }
 }

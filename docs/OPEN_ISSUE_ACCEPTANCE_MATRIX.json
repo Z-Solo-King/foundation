@@ -2,10 +2,10 @@
   "schema": "family-issue-acceptance-matrix/v1",
   "audited_at": "2026-09-28",
   "repository_heads": {
-    "foundation": "efaf43e8bb55dc25d13dcb3f0be05df88f0c09dc",
+    "foundation": "28fab57c677941f693c4a5559966f0ff86dcedb3",
     "operations": "[PROTECTED_CURRENT_MAIN]"
   },
-  "open_issue_count": 13,
+  "open_issue_count": 12,
   "issues": [
     {
       "repo": "foundation",
@@ -232,41 +232,17 @@
       ]
     },
     {
-      "repo": "operations",
-      "number": 1135,
-      "title": "migration: investigate Worker 403/502 boundary and evaluate bounded TypeScript edge/SSE migration",
+      "repo": "foundation",
+      "number": 1370,
+      "title": "fix: update secret-sync pin contract tests",
       "status": "OPEN",
-      "class": "migration+runtime",
-      "fix_now": [
-        "migration execution and evidence"
-      ],
+      "class": "ci+maintenance",
       "remaining": [
-        "promotion/canary/closure"
+        "fresh contract test pass and merge"
       ],
       "probes": [
-        "FI-02",
-        "FI-03",
         "FI-06",
-        "FI-09"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 1137,
-      "title": "migration: consolidated plan and execution order (tracking: #597, #603, #1134, #1135)",
-      "status": "OPEN",
-      "class": "migration+process",
-      "fix_now": [
-        "migration execution and evidence"
-      ],
-      "remaining": [
-        "promotion/canary/closure"
-      ],
-      "probes": [
-        "FI-01",
-        "FI-02",
-        "FI-06",
-        "FI-09"
+        "FI-10"
       ]
     }
   ],
@@ -303,13 +279,70 @@
   },
   "current_runtime": {
     "public_front_door": "https://ai-cio.pages.dev",
-    "pages_project": "[REDACTED-LIVE-IDENTIFIER]",
-    "backend_worker": "[REDACTED-LIVE-IDENTIFIER]",
-    "backend_origin": "[REDACTED-LIVE-IDENTIFIER]",
-    "canonical_domain_status": "[REDACTED-LIVE-IDENTIFIER]",
-    "certification": "OPEN / NOT CERTIFIED",
-    "deployed_foundation_sha": "[REDACTED-LIVE-IDENTIFIER]",
-    "deployed_operations_sha": "[REDACTED-LIVE-IDENTIFIER]"
+    "public_worker": "heroic",
+    "private_edge_worker": "operations-edge",
+    "private_core_worker": "operations",
+    "chain": "heroic -> operations-edge (TypeScript) -> operations (Python)"
   },
-  "public_surface_note": "Live runtime identifiers are redacted; acceptance criteria remain public."
+  "public_surface_note": "Live runtime identifiers are redacted; acceptance criteria remain public.",
+  "migration_status": {
+    "strategy": "component-specific hybrid diversity",
+    "pull_requests": [
+      {
+        "repository": "foundation",
+        "number": 1395,
+        "state": "MERGED"
+      },
+      {
+        "repository": "foundation",
+        "number": 1397,
+        "state": "MERGED"
+      },
+      {
+        "repository": "operations",
+        "number": 1164,
+        "state": "MERGED"
+      },
+      {
+        "repository": "operations",
+        "number": 1165,
+        "state": "MERGED"
+      }
+    ],
+    "lanes": [
+      {
+        "id": "P1",
+        "scope": "private entry",
+        "language": "TypeScript",
+        "status": "PASS"
+      },
+      {
+        "id": "P2",
+        "scope": "private leaves",
+        "language": "Rust/Wasm",
+        "status": "PASS"
+      },
+      {
+        "id": "P3",
+        "scope": "public entry",
+        "language": "TypeScript",
+        "status": "PASS"
+      },
+      {
+        "id": "P4",
+        "scope": "public deterministic leaf",
+        "language": "Rust/Wasm",
+        "status": "PASS"
+      },
+      {
+        "id": "P5",
+        "scope": "bounded concurrency/tooling",
+        "language": "Go",
+        "status": "PASS"
+      }
+    ],
+    "production_cutover": "DEPLOYED",
+    "rollback_authority": "Python control-plane core",
+    "candidate_freeze": "ACTIVE under operations#603"
+  }
 }

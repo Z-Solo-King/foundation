@@ -4,54 +4,22 @@ on:
   push:
     branches: [main]
     paths:
-      - "**/*.py"
-      - "**/*.ts"
-      - "**/*.tsx"
-      - "**/*.js"
-      - "**/*.jsx"
-      - "**/*.rs"
-      - "**/*.go"
-      - "**/*.php"
-      - "**/*.java"
-      - "**/*.kt"
-      - "**/*.kts"
-      - "**/*.cs"
-      - "**/*.c"
-      - "**/*.cc"
-      - "**/*.cpp"
-      - "**/*.cxx"
-      - "**/*.h"
-      - "**/*.hh"
-      - "**/*.hpp"
-      - "**/*.zig"
+      - "polyglot/**"
       - "benchmark/polyglot/**"
-      - "docs/**"
+      - "experiments/rust_*"
+      - "experiments/go_http_fanout/**"
+      - "worker.py"
+      - "scripts/research_worker_proxy.py"
       - ".github/workflows/polyglot-migration-review.yml"
   pull_request:
     branches: [main]
     paths:
-      - "**/*.py"
-      - "**/*.ts"
-      - "**/*.tsx"
-      - "**/*.js"
-      - "**/*.jsx"
-      - "**/*.rs"
-      - "**/*.go"
-      - "**/*.php"
-      - "**/*.java"
-      - "**/*.kt"
-      - "**/*.kts"
-      - "**/*.cs"
-      - "**/*.c"
-      - "**/*.cc"
-      - "**/*.cpp"
-      - "**/*.cxx"
-      - "**/*.h"
-      - "**/*.hh"
-      - "**/*.hpp"
-      - "**/*.zig"
+      - "polyglot/**"
       - "benchmark/polyglot/**"
-      - "docs/**"
+      - "experiments/rust_*"
+      - "experiments/go_http_fanout/**"
+      - "worker.py"
+      - "scripts/research_worker_proxy.py"
       - ".github/workflows/polyglot-migration-review.yml"
   workflow_dispatch:
     inputs:
@@ -60,10 +28,6 @@ on:
         required: false
         default: ""
         type: string
-
-concurrency:
-  group: polyglot-migration-${{ github.ref }}
-  cancel-in-progress: true
 
 permissions:
   contents: read
