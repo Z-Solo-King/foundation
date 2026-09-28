@@ -6,6 +6,7 @@ import hmac
 import json
 import logging
 import os
+import re
 import uuid
 from datetime import datetime, timezone
 from urllib.parse import parse_qs, urlparse
@@ -155,6 +156,29 @@ def _authenticated_json(payload, *, status=200):
             "Cache-Control": "private, no-store, max-age=0, must-revalidate",
         },
     )
+
+
+IDEMPOTENCY_KEY_RE = re.compile(r"^[A-Za-z0-9._:-]{1,256}$")
+
+def _subject_or_local(request, env):
+    subject = authenticated_subject_fingerprint(request)
+    if subject:
+        return subject
+    environment = str(getattr(env, "ENVIRONMENT", "production") or "production").strip().lower()
+    bypass = str(getattr(env, "LOCAL_DEVELOPMENT_AUTH_BYPASS", "") or "").strip().lower() == "true"
+    return "development-local" if environment == "development" and bypass else None
+
+
+def _idempotency_key(request, default=None):
+    value = request.headers.get("Idempotency-Key")
+    if value is None:
+        return default
+    value = str(value).strip()
+    return value if IDEMPOTENCY_KEY_RE.fullmatch(value) else None
+
+
+def _stable_exception_log(message, exc):
+    _LOGGER.exception("%s: %s", message, type(exc).__name__)
 
 
 def _chat_headers(request):
@@ -397,7 +421,8 @@ async def _operations_chatbot_diagnostic(env, request=None, operation="infrastru
             "error": None if healthy else (body.get("error") if isinstance(body, dict) else "invalid_private_chatbot_diagnostic"),
         }, 200 if healthy else 503
     except Exception as exc:
-        return {"ok": False, "status": "degraded", "error": f"chatbot diagnostic binding failure: {exc}"}, 503
+        _stable_exception_log("chatbot diagnostic binding failure", exc)
+        return {"ok": False, "status": "degraded", "error": "chatbot_diagnostic_unavailable"}, 503
 
 
 async def _operations_dashboard(env, request):
@@ -421,19 +446,19 @@ async def _operations_dashboard(env, request):
 
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
-        path = request.url.split("?", 1)[0]
+        path = urlparse(request.url).path or "/"
 
-        if request.method == "GET" and path.endswith("/health"):
+        if request.method == "GET" and path == "/health":
             return Response.json(await _health_payload(self.env))
-        if request.method == "GET" and path.endswith("/readiness"):
+        if request.method == "GET" and path == "/readiness":
             payload, status = await _readiness_payload(self.env)
             return Response.json(payload, status=status)
-        if request.method == "GET" and path.endswith("/api/v1/dashboard"):
+        if request.method == "GET" and path == "/api/v1/dashboard":
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             body, status = await _operations_dashboard(self.env, request)
             return _authenticated_json(body, status=status)
-        if request.method == "POST" and path.endswith("/api/v1/chat/stream"):
+        if request.method == "POST" and path == "/api/v1/chat/stream":
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             payload = await _json(request)
@@ -470,7 +495,7 @@ class Default(WorkerEntrypoint):
             finally:
                 if lease is not None:
                     await D1AdmissionStore(self.env.DB).release(lease)
-        if request.method == "POST" and path.endswith("/api/v1/chat"):
+        if request.method == "POST" and path == "/api/v1/chat":
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             payload = await _json(request)
@@ -493,7 +518,7 @@ class Default(WorkerEntrypoint):
             finally:
                 if lease is not None:
                     await D1AdmissionStore(self.env.DB).release(lease)
-        if request.method == "POST" and path.endswith("/api/v1/chatbot/diagnostic"):
+        if request.method == "POST" and path == "/api/v1/chatbot/diagnostic":
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             payload = await _json(request)
@@ -522,7 +547,7 @@ class Default(WorkerEntrypoint):
                 )
                 return _authenticated_json(private_body, status=private_status)
             return _authenticated_json({"ok": False, "error": "unsupported public diagnostic operation"}, status=400)
-        if request.method == "POST" and path.endswith("/api/v1/storage/diagnostic"):
+        if request.method == "POST" and path == "/api/v1/storage/diagnostic":
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             payload = await _json(request)
@@ -532,8 +557,9 @@ class Default(WorkerEntrypoint):
                 body, status = await _storage_diagnostic(self.env, str(payload["run_id"]))
                 return _authenticated_json(body, status=status)
             except Exception as exc:
-                return _authenticated_json({"ok": False, "error": f"storage diagnostic failure: {exc}"}, status=503)
-        if request.method == "POST" and path.endswith("/api/v1/research/publish"):
+                _stable_exception_log("storage diagnostic failure", exc)
+                return _authenticated_json({"ok": False, "error": "storage_diagnostic_unavailable"}, status=503)
+        if request.method == "POST" and path == "/api/v1/research/publish":
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             payload = await _json(request)
@@ -542,7 +568,7 @@ class Default(WorkerEntrypoint):
             package = payload.get("package")
             body, status = await _publish_evidence(self.env, str(payload["run_id"]), package)
             return _authenticated_json(body, status=status)
-        if request.method == "GET" and "/api/v1/research/" in path:
+        if request.method == "GET" and path.startswith("/api/v1/research/"):
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             run_id = path.rsplit("/", 1)[-1]
@@ -641,6 +667,8 @@ class Default(WorkerEntrypoint):
                 if lease is not None:
                     await D1AdmissionStore(self.env.DB).release(lease)
             return _authenticated_json({"ok": True, "run_id": run_id, "metadata": {**result.metadata, "execution_mode": "source_url_ingestion"}, "sources": sources})
+        if path.startswith("/api/"):
+            return _authenticated_json({"ok": False, "error": "not_found"}, status=404)
         assets = getattr(self.env, "ASSETS", None)
         if assets is not None:
             response = await assets.fetch(request)
