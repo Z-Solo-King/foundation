@@ -369,10 +369,14 @@ async def _operations_chatbot_diagnostic(env, request=None, operation="infrastru
         body_dict = body if isinstance(body, dict) else {}
         if operation in {"persistence_seed", "persistence_verify"}:
             return body_dict, upstream.status
-        runtime_checks = body_dict.get("runtime_checks") if isinstance(body_dict.get("runtime_checks"), list) else []
+        raw_checks = body_dict.get("runtime_checks") if isinstance(body_dict.get("runtime_checks"), list) else []
+        runtime_checks = [
+            {"name": str(check.get("name", ""))[:120], "ok": bool(check.get("ok"))}
+            for check in raw_checks[:32]
+            if isinstance(check, dict) and str(check.get("name", "")).strip()
+        ]
         runtime_ok = bool(body_dict.get("runtime_status") == "ok") and bool(runtime_checks) and all(
-            isinstance(check, dict) and bool(check.get("ok"))
-            for check in runtime_checks
+            bool(check["ok"]) for check in runtime_checks
         )
         chatbot = body_dict.get("chatbot")
         chatbot_allowed = isinstance(chatbot, dict) and bool(chatbot.get("allowed"))
@@ -387,9 +391,8 @@ async def _operations_chatbot_diagnostic(env, request=None, operation="infrastru
             "ok": healthy,
             "status": "ok" if healthy else "degraded",
             "response_status": upstream.status,
-            "chatbot": body.get("chatbot") if isinstance(body, dict) else None,
-            "provider_policy": body.get("provider_policy") if isinstance(body, dict) else None,
-            "runtime_status": body.get("runtime_status") if isinstance(body, dict) else None,
+            "chatbot": {"allowed": chatbot_allowed},
+            "runtime_status": body_dict.get("runtime_status") if isinstance(body, dict) else None,
             "runtime_checks": runtime_checks,
             "error": None if healthy else (body.get("error") if isinstance(body, dict) else "invalid_private_chatbot_diagnostic"),
         }, 200 if healthy else 503

@@ -138,10 +138,12 @@ async def test_private_chatbot_diagnostic_paths():
     body, status = await worker._operations_chatbot_diagnostic(SimpleNamespace())
     assert status == 503 and body["error"] == "chat_backend_unavailable"
 
-    healthy = {"ok": True, "chatbot": {"allowed": True}, "runtime_status": "ok", "runtime_checks": [{"name": "d1_memory_store", "ok": True}], "provider_policy": {"strict_zero_cost_only": True}}
+    healthy = {"ok": True, "chatbot": {"allowed": True, "owner_repo": "private", "canonical_entrypoint": "private.x"}, "runtime_status": "ok", "runtime_checks": [{"name": "d1_memory_store", "ok": True, "private_detail": "secret"}], "provider_policy": {"strict_zero_cost_only": True, "provider_key": "secret"}}
     body, status = await worker._operations_chatbot_diagnostic(SimpleNamespace(OPERATIONS=Binding(Response(200, healthy))))
     assert status == 200 and body["ok"] is True
-    assert body["chatbot"]["allowed"] is True
+    assert body["chatbot"] == {"allowed": True}
+    assert "provider_policy" not in body
+    assert body["runtime_checks"] == [{"name": "d1_memory_store", "ok": True}]
 
     malformed = await worker._operations_chatbot_diagnostic(SimpleNamespace(OPERATIONS=Binding(Response(200, []))))
     assert malformed[1] == 503
