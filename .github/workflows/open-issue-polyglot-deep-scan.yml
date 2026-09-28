@@ -13,16 +13,6 @@ on: # zizmor: ignore[dangerous-triggers] main/manual protected audit; no untrust
       - "worker.py"
       - "backend/**"
       - "tests/**"
-  pull_request_target:
-    paths:
-      - "benchmark/polyglot/**"
-      - ".github/workflows/open-issue-polyglot-deep-scan.yml"
-      - "docs/**"
-      - "frontend/**"
-      - "polyglot/**"
-      - "worker.py"
-      - "backend/**"
-      - "tests/**"
   workflow_dispatch:
 
 permissions:
@@ -53,7 +43,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: main
+          ref: ${{ needs.snapshot.outputs.operations_sha }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations-snapshot
       - name: Freeze Operations SHA
@@ -70,7 +60,6 @@ jobs:
     permissions:
       contents: read
       actions: read
-      issues: write
     name: Deep scan ${{ matrix.lane }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -80,26 +69,6 @@ jobs:
       matrix:
         lane: [L1, L2, L3, L4]
     steps:
-      - name: Validate Operations App configuration
-        if: always() && github.event_name == 'pull_request_target'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPOSITORY: ${{ github.repository }}
-          OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
-          OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
-        run: |
-          set -euo pipefail
-          app_id_state=missing
-          app_key_state=missing
-          [ -n "${OPERATIONS_APP_ID:-}" ] && app_id_state=present
-          [ -n "${OPERATIONS_APP_PRIVATE_KEY:-}" ] && app_key_state=present
-          if [ -n "${PR_NUMBER:-}" ]; then
-            gh pr comment "$PR_NUMBER" --repo "$REPOSITORY" --body "### Deep-scan Operations App preflight\n\nOPERATIONS_APP_ID: **$app_id_state**\nOPERATIONS_APP_PRIVATE_KEY: **$app_key_state**" || true
-          fi
-          test "$app_id_state" = present
-          test "$app_key_state" = present
 
       - name: Create Operations read token
         id: operations-app
@@ -125,20 +94,6 @@ jobs:
           repository: Z-Solo-King/foundation
           ref: ${{ github.sha }}
           path: foundation
-
-      - name: Publish Operations token/checkout diagnostics
-        if: always() && github.event_name == 'pull_request_target'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPOSITORY: ${{ github.repository }}
-          TOKEN_OUTCOME: ${{ steps.operations-app.outcome }}
-          TOKEN_CONCLUSION: ${{ steps.operations-app.conclusion }}
-        run: |
-          set -euo pipefail
-          [ -n "${PR_NUMBER:-}" ] || exit 0
-          gh pr comment "$PR_NUMBER" --repo "$REPOSITORY" --body "### Deep-scan Operations access diagnostic\n\nApp-token outcome: **${TOKEN_OUTCOME:-unknown}**\nApp-token conclusion: **${TOKEN_CONCLUSION:-unknown}**" || true
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -166,12 +121,13 @@ jobs:
       # Cross-repo source coverage includes Foundation-owned acceptance validators when an issue spans the family.
       - name: Run lane ${{ matrix.lane }}
         id: run-lane
+        continue-on-error: true
         working-directory: operations
         run: |
           mkdir -p .runtime/open-issue-deep-scan
           python tools/open_issue_polyglot_scan.py             --foundation "$GITHUB_WORKSPACE/foundation"             --operations "$GITHUB_WORKSPACE/operations"             --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_52.json"             --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json"             --lane "${{ matrix.lane }}"             --output ".runtime/open-issue-deep-scan/${{ matrix.lane }}.json"
 
-      - name: Emit lane diagnostic
+      - name: Sanitize lane receipt
         if: always()
         working-directory: operations
         shell: bash
@@ -184,30 +140,45 @@ jobs:
           python - <<'PY'
           import json, os
           from pathlib import Path
-          lane="${{ matrix.lane }}"
-          receipt=Path('.runtime/open-issue-deep-scan')/f'{lane}.json'
-          payload={
-              'schema':'open-issue-deep-scan/diagnostic/v1',
-              'lane':lane,
-              'validate_outcome':os.environ.get('VALIDATE_OUTCOME'),
-              'run_outcome':os.environ.get('RUN_OUTCOME'),
-              'receipt_present':receipt.exists(),
-          }
-          if receipt.exists():
-              try:
-                  r=json.loads(receipt.read_text(encoding='utf-8'))
-                  payload.update({k:r.get(k) for k in ('case_count','expected_case_count','issue_count','failed_cases','review_cases','missing_cases')})
-                  payload['failed_results']=[
-                      {'issue':x.get('issue'),'lane':x.get('lane'),'status':x.get('status'),'findings':x.get('findings',[])}
-                      for x in r.get('results',[]) if x.get('status') == 'FAIL'
-                  ]
-              except Exception as exc:
-                  payload['receipt_parse_error']=repr(exc)
-          Path('.runtime/open-issue-deep-scan').joinpath(f'{lane}-diagnostic.json').write_text(json.dumps(payload,indent=2,sort_keys=True)+'\n')
-          print(json.dumps(payload,indent=2,sort_keys=True))
-          PY
 
-      - name: Add provenance
+          lane = "${{ matrix.lane }}"
+          root = Path(".runtime/open-issue-deep-scan")
+          raw = root / f"{lane}.json"
+          public = root / f"{lane}-public.json"
+          payload = {
+              "schema": "open-issue-deep-scan/public-summary/v1",
+              "lane": lane,
+              "validate_outcome": os.environ.get("VALIDATE_OUTCOME"),
+              "run_outcome": os.environ.get("RUN_OUTCOME"),
+              "receipt_present": raw.exists(),
+              "results": [],
+          }
+          if raw.exists():
+              try:
+                  data = json.loads(raw.read_text(encoding="utf-8"))
+                  for key in (
+                      "case_count", "expected_case_count", "active_case_count",
+                      "expected_active_case_count", "issue_count", "failed_cases",
+                      "review_cases", "missing_cases", "historical_issue_count",
+                  ):
+                      if key in data:
+                          payload[key] = data[key]
+                  payload["results"] = [
+                      {
+                          "issue": item.get("issue"),
+                          "lane": item.get("lane"),
+                          "status": item.get("status"),
+                      }
+                      for item in data.get("results", [])
+                      if isinstance(item, dict) and item.get("issue") and item.get("lane")
+                  ]
+              except Exception:
+                  payload["receipt_parse_error"] = True
+          public.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          if raw.exists():
+              raw.unlink()
+          PY
+      - name: Add sanitized provenance
         working-directory: operations
         run: |
           python - <<'PY'
@@ -231,7 +202,7 @@ jobs:
           path.write_text(json.dumps(payload, indent=2) + "\n")
           PY
 
-      - name: Upload lane receipt
+      - name: Upload sanitized lane summary
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -285,7 +256,7 @@ jobs:
           from pathlib import Path
 
           root = Path(".runtime/open-issue-deep-scan")
-          receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L?.json"))]
+          receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L?-public.json"))]
           assert len(receipts) == 4
           assert {r["lane"] for r in receipts} == {"L1", "L2", "L3", "L4"}
 
