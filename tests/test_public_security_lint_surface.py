@@ -22,3 +22,20 @@ def test_private_references_are_not_exempt_in_docs_or_workflows(tmp_path):
 def test_strict_findings_fail_without_special_flag():
     text = Path(ROOT / 'scripts/public_security_lint.py').read_text(encoding='utf-8')
     assert 'return 1 if findings else 0' in text
+
+def test_generic_public_architecture_words_are_not_private_paths(tmp_path):
+    doc = tmp_path / "architecture.md"
+    doc.write_text("Operations handles resource ledger and promotion stages.\n", encoding="utf-8")
+    assert not any(f.rule == "private-reference" for f in lint_file(doc, tmp_path))
+
+
+def test_private_import_and_path_patterns_are_detected(tmp_path):
+    samples = [
+        "from private.chatbot.router import Router",
+        "private/resource_ledger.py",
+        "operations/private/control_plane_runtime.py",
+    ]
+    for index, sample in enumerate(samples):
+        path = tmp_path / f"sample{index}.py"
+        path.write_text(sample + "\n", encoding="utf-8")
+        assert any(f.rule == "private-reference" for f in lint_file(path, tmp_path))
