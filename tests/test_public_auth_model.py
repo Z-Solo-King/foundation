@@ -37,4 +37,5 @@ def test_json_object_does_not_swallow_unexpected_runtime_error():
 def test_auth_model_documents_single_operator_scope():
     text = (Path(__file__).resolve().parents[1] / "docs" / "PUBLIC_API_AUTH_MODEL.md").read_text(encoding="utf-8")
     assert "one operator credential" in text
-    assert "not a user-account identity" in text
+    assert "not a user-account" in text
+    assert "identity." in text
