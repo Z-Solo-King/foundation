@@ -8,8 +8,8 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "4fb9f3be96c9947bc3d07756762efbb563158a04"
-CANONICAL_PRODUCTION_OPERATIONS_REF = "4fb9f3be96c9947bc3d07756762efbb563158a04"
+CANONICAL_OPERATIONS_REF = "bf4af8db50d7b39c79acd09a9e90237856962abb"
+CANONICAL_PRODUCTION_OPERATIONS_REF = "bf4af8db50d7b39c79acd09a9e90237856962abb"
 BENCHMARK_OPERATIONS_REF = CANONICAL_OPERATIONS_REF
 BENCHMARK_TOOLS_REF = "d4ef2e6d28435a59c735b9dc4d0de31f44b9cf29"
 MIGRATION_TOOLS_REF = None
@@ -135,8 +135,11 @@ def test_production_release_has_one_minimal_main_push_job():
     assert "        if: always()" in frontend
     assert "Publish sanitized production receipt" in frontend
     assert "needs:" not in frontend
-    assert "gh workflow run" not in frontend
-    assert "actions: write" not in frontend
+    assert 'Dispatch nightly research for certified release' in frontend
+    assert 'gh workflow run nightly-multi-agent-research-v3.yml' in frontend
+    assert '--field target_sha="$GITHUB_SHA"' in frontend
+    assert '--field production_release_run_id="$GITHUB_RUN_ID"' in frontend
+    assert "actions: write" in frontend
 
 
 
@@ -428,7 +431,7 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_REF="{CANONICAL_PRODUCTION_OPERATIONS_REF}"' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
-    assert "OPERATIONS_RESEARCH_REF: 4fb9f3be96c9947bc3d07756762efbb563158a04" in nightly
+    assert "OPERATIONS_RESEARCH_REF: bf4af8db50d7b39c79acd09a9e90237856962abb" in nightly
 
 
 
@@ -495,8 +498,8 @@ def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
 def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
-    expected_production = "4fb9f3be96c9947bc3d07756762efbb563158a04"
-    expected_nightly = "4fb9f3be96c9947bc3d07756762efbb563158a04"
+    expected_production = "bf4af8db50d7b39c79acd09a9e90237856962abb"
+    expected_nightly = "bf4af8db50d7b39c79acd09a9e90237856962abb"
     auxiliary = {
         "live-chatbot-production-smoke.yml": expected_production,
         "coverage-driven-runtime-matrix.yml": expected_production,
