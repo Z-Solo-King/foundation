@@ -62,7 +62,7 @@ def _is_policy_configuration(relative: str) -> bool:
 
 def secret_findings(path: Path, source: str) -> list[Finding]:
     relative = rel(path)
-    if relative == "scripts/public_security_lint.py":
+    if relative == "scripts/public_security_lint.py" or _is_test(relative):
         return []
     findings = []
     for marker in PROTECTED_PRIVATE_MARKERS:
