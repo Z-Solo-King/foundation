@@ -12,7 +12,6 @@ env:
 permissions:
   contents: read
   issues: write
-  actions: write
 
 concurrency:
   group: heroic-ai-production-release
