@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 
 from backend.admission import AdmissionPolicy, AdmissionRoute
