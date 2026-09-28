@@ -19,9 +19,10 @@
     }
   },
   "function_metrics": {
-    "canonical_surface_declarations": 99,
+    "canonical_surface_declarations": 96,
     "whole_repo_exact": false,
-    "refresh": "language-aware full-tree scanner"
+    "refresh": "language-aware full-tree scanner",
+    "count_reconciliation": "sum(feature.functions) equals this value; declaration counts come from fetched current-main files and are lexical/structural baselines, not AST-certified whole-repo totals."
   },
   "policy_catalog": {
     "P001": "one owner",
@@ -46,7 +47,7 @@
       "surfaces": [
         "worker.py"
       ],
-      "functions": 29,
+      "functions": 28,
       "key": [
         "fetch",
         "_authorized",
@@ -65,7 +66,14 @@
         "P008",
         "P009",
         "P015"
-      ]
+      ],
+      "function_files": [
+        {
+          "path": "worker.py",
+          "declarations": 28
+        }
+      ],
+      "policy_logic": "P002 auth boundary; P003 fail-closed; P006 bounded work; P008 idempotency; P009 deployment authority; P015 no bypass"
     },
     {
       "id": "FND.request_contract",
@@ -86,7 +94,18 @@
         "P003",
         "P006",
         "P007"
-      ]
+      ],
+      "function_files": [
+        {
+          "path": "backend/api/main.py",
+          "declarations": 4
+        },
+        {
+          "path": "backend/api/models.py",
+          "declarations": 2
+        }
+      ],
+      "policy_logic": "P003 invalid requests fail closed; P006 bounded input; P007 preserve request/run provenance"
     },
     {
       "id": "FND.research_execution",
@@ -111,14 +130,25 @@
         "P004",
         "P007",
         "P008"
-      ]
+      ],
+      "function_files": [
+        {
+          "path": "backend/execution/engine.py",
+          "declarations": 11
+        },
+        {
+          "path": "backend/execution/pipeline.py",
+          "declarations": 2
+        }
+      ],
+      "policy_logic": "P004 evidence tier controls lifecycle claims; P007 lineage; P008 terminal/replay safety"
     },
     {
       "id": "FND.execution_boundary",
       "surfaces": [
         "backend/execution/worker_boundary.py"
       ],
-      "functions": 10,
+      "functions": 8,
       "key": [
         "create_task",
         "validate_task",
@@ -132,7 +162,14 @@
         "P007",
         "P008",
         "P015"
-      ]
+      ],
+      "function_files": [
+        {
+          "path": "backend/execution/worker_boundary.py",
+          "declarations": 8
+        }
+      ],
+      "policy_logic": "P003 reject invalid envelopes; P006 bounded materialization; P007 deterministic digest; P015 reject unsafe trust state"
     },
     {
       "id": "FND.evidence_publication",
@@ -153,7 +190,22 @@
         "P005",
         "P007",
         "P010"
-      ]
+      ],
+      "function_files": [
+        {
+          "path": "backend/evidence_certificate.py",
+          "declarations": 3
+        },
+        {
+          "path": "backend/evidence_selection.py",
+          "declarations": 4
+        },
+        {
+          "path": "backend/intelligence/claims.py",
+          "declarations": 1
+        }
+      ],
+      "policy_logic": "P004 evidence gate; P005 deterministic selection/dedupe; P007 lineage-bound certificate; P010 AI is not evidence authority"
     },
     {
       "id": "FND.identity_mapping",
@@ -177,7 +229,26 @@
         "P005",
         "P006",
         "P007"
-      ]
+      ],
+      "function_files": [
+        {
+          "path": "foundation_core/product_identity.py",
+          "declarations": 5
+        },
+        {
+          "path": "foundation_core/product_mapping.py",
+          "declarations": 10
+        },
+        {
+          "path": "foundation_core/normalization.py",
+          "declarations": 4
+        },
+        {
+          "path": "foundation_core/field_routing.py",
+          "declarations": 2
+        }
+      ],
+      "policy_logic": "P001 one identity owner; P005 normalize before mapping; P006 bounded inputs; P007 preserve provenance"
     },
     {
       "id": "FND.frontend_lifecycle",
@@ -199,7 +270,18 @@
         "P006",
         "P008",
         "P011"
-      ]
+      ],
+      "function_files": [
+        {
+          "path": "frontend/app.js",
+          "declarations": 9
+        },
+        {
+          "path": "frontend/lifecycle_controller.js",
+          "declarations": 3
+        }
+      ],
+      "policy_logic": "P003 explicit failure/recovery; P006 bounded client work; P008 cancellation/recovery avoids duplicate terminal effects; P011 cross-chat state is not evidence"
     },
     {
       "id": "FND.ci_benchmark_release",
