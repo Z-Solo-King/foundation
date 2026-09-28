@@ -62,14 +62,27 @@ jobs:
             exit 0
           fi
           if [[ -n "$RELEASE_RUN_ID" ]]; then
-            release_json="$(gh run view "$RELEASE_RUN_ID" --repo "$GITHUB_REPOSITORY" --json databaseId,workflowName,headSha,headBranch,status,conclusion)"
-            test "$(jq -r '.workflowName' <<<"$release_json")" = "Heroic AI production release"
-            test "$(jq -r '.headBranch' <<<"$release_json")" = "main"
-            test "$(jq -r '.headSha' <<<"$release_json")" = "$TARGET_SHA"
-            test "$(jq -r '.status' <<<"$release_json")" = "completed"
-            test "$(jq -r '.conclusion' <<<"$release_json")" = "success"
-            echo "Exact production release gate: PASS (run $RELEASE_RUN_ID, Foundation $TARGET_SHA)"
-            exit 0
+            for attempt in $(seq 1 30); do
+              release_json="$(gh run view "$RELEASE_RUN_ID" --repo "$GITHUB_REPOSITORY" --json databaseId,workflowName,headSha,headBranch,status,conclusion,jobs)"
+              test "$(jq -r '.workflowName' <<<"$release_json")" = "Heroic AI production release"
+              test "$(jq -r '.headBranch' <<<"$release_json")" = "main"
+              test "$(jq -r '.headSha' <<<"$release_json")" = "$TARGET_SHA"
+              release_step="$(jq -r '[.jobs[]? | select(.name == "Canonical Heroic AI production release") | .steps[]? | select(.name == "Run canonical production release") | .conclusion] | .[0] // ""' <<<"$release_json")"
+              case "$release_step" in
+                success)
+                  echo "Exact production release gate: PASS (run $RELEASE_RUN_ID, Foundation $TARGET_SHA; release step success)"
+                  exit 0
+                  ;;
+                failure|cancelled|skipped)
+                  echo "Exact production release gate: FAIL (run $RELEASE_RUN_ID, release step $release_step)"
+                  exit 1
+                  ;;
+              esac
+              echo "Exact production release run $RELEASE_RUN_ID exists but release step is not final yet; reconciliation attempt $attempt/30."
+              sleep 10
+            done
+            echo "Exact production release step did not reach success within the reconciliation window."
+            exit 1
           fi
           for attempt in $(seq 1 12); do
             runs_json="$(gh run list --workflow heroic-ai-production-release.yml --repo "$GITHUB_REPOSITORY" --limit 20 --json databaseId,headSha,headBranch,status,conclusion)"
