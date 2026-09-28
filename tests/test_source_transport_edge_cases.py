@@ -290,12 +290,16 @@ def test_dns_over_https_does_not_fan_out_on_successful_empty_answer(monkeypatch)
 
     calls = []
 
-    async def response_factory(endpoint, _encoded_query):
+    async def response(endpoint, _encoded_query):
         calls.append(endpoint)
         return _DnsResponse(200, _dns_packet(record_type=1, addresses=()))
 
-    http, _ = _patch_doh(monkeypatch, response_factory)
-    assert asyncio.run(http._dns_over_https("example.com", "A")) == []
+    async def doh_request(endpoint, encoded_query):
+        return await response(endpoint, encoded_query)
+
+    monkeypatch.setattr(http, "_doh_request", doh_request)
+    with pytest.raises(RuntimeError, match="DNS resolution failed"):
+        asyncio.run(http._dns_over_https("example.com", "A"))
     assert calls == ["https://cloudflare-dns.com/dns-query"]
 
 
@@ -317,3 +321,66 @@ def test_public_destination_rejects_missing_hostname(monkeypatch):
     monkeypatch.setattr(http, "canonicalize_url", lambda _url: "http:///missing-host")
     with pytest.raises(ValueError, match="target host is missing"):
         asyncio.run(http._validate_public_destination("https://example.com", resolver=lambda *_args: []))
+
+
+def test_fetch_public_url_deadline_expires_before_transport(monkeypatch):
+    import backend.sources.http as http
+
+    monkeypatch.setattr(http, "FETCH_DEADLINE_SECONDS", -1)
+
+    async def fetcher(_url, _opts):
+        raise AssertionError("transport must not start after the deadline")
+
+    with pytest.raises(RuntimeError, match="deadline exceeded"):
+        asyncio.run(http.fetch_public_url("https://example.com", fetcher=fetcher))
+
+
+def test_fetch_public_url_body_read_timeout(monkeypatch):
+    import backend.sources.http as http
+
+    monkeypatch.setattr(http, "FETCH_DEADLINE_SECONDS", 0.05)
+
+    class Response:
+        status = 200
+        headers = {}
+
+        async def arrayBuffer(self):
+            await asyncio.sleep(0.2)
+            return b"late"
+
+    async def fast_fetcher(_url, _opts):
+        return Response()
+
+    with pytest.raises(RuntimeError, match="body read timed out"):
+        asyncio.run(http.fetch_public_url("https://example.com", fetcher=fast_fetcher))
+
+
+def test_fetch_public_url_rejects_invalid_resolved_address_before_transport():
+    import backend.sources.http as http
+
+    async def resolver(_hostname, _record_type):
+        return ["not-an-ip"]
+
+    async def fetcher(_url, _opts):
+        raise AssertionError("invalid DNS address must be rejected")
+
+    with pytest.raises(ValueError, match="invalid address"):
+        asyncio.run(
+            http.fetch_public_url(
+                "https://example.com",
+                fetcher=fetcher,
+                dns_resolver=resolver,
+            )
+        )
+
+
+def test_fetch_public_url_rejects_missing_hostname_before_transport(monkeypatch):
+    import backend.sources.http as http
+
+    monkeypatch.setattr(http, "canonicalize_url", lambda _url: "http:///missing-host")
+
+    async def fetcher(_url, _opts):
+        raise AssertionError("missing hostname must be rejected")
+
+    with pytest.raises(ValueError, match="target host is missing"):
+        asyncio.run(http.fetch_public_url("https://example.com", fetcher=fetcher, dns_resolver=lambda *_args: []))
