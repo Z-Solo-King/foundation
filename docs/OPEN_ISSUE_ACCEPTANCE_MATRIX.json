@@ -2,10 +2,10 @@
   "schema": "family-issue-acceptance-matrix/v1",
   "audited_at": "2026-09-28",
   "repository_heads": {
-    "foundation": "28fab57c677941f693c4a5559966f0ff86dcedb3",
+    "foundation": "22e44f083b9326c4068fcb970b800413741eebbb",
     "operations": "[PROTECTED_CURRENT_MAIN]"
   },
-  "open_issue_count": 12,
+  "open_issue_count": 11,
   "issues": [
     {
       "repo": "foundation",
@@ -230,20 +230,6 @@
         "FI-07",
         "FI-08"
       ]
-    },
-    {
-      "repo": "foundation",
-      "number": 1370,
-      "title": "fix: update secret-sync pin contract tests",
-      "status": "OPEN",
-      "class": "ci+maintenance",
-      "remaining": [
-        "fresh contract test pass and merge"
-      ],
-      "probes": [
-        "FI-06",
-        "FI-10"
-      ]
     }
   ],
   "evidence_rules": {
@@ -344,5 +330,19 @@
     "production_cutover": "DEPLOYED",
     "rollback_authority": "Python control-plane core",
     "candidate_freeze": "ACTIVE under operations#603"
-  }
+  },
+  "repository_inventory": {
+    "foundation": {
+      "true_open_issues": 5,
+      "open_pull_requests": [
+        1370
+      ]
+    },
+    "operations": {
+      "true_open_issues": 6,
+      "open_pull_requests": []
+    },
+    "true_open_issues_total": 11
+  },
+  "note": "Acceptance issue queue excludes pull-request-backed work items; PR #1370 is tracked separately."
 }

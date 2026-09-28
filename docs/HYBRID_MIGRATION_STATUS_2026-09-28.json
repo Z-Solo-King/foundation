@@ -4,11 +4,11 @@
   "status": "MIGRATION_COMPLETE",
   "repositories": {
     "foundation": {
-      "main_sha": "28fab57c677941f693c4a5559966f0ff86dcedb3",
+      "main_sha": "22e44f083b9326c4068fcb970b800413741eebbb",
       "visibility": "public"
     },
     "operations": {
-      "main_sha": "4fb9f3be96c9947bc3d07756762efbb563158a04",
+      "main_sha": "44db1dc707087cbe1cc90da80076e22f6f68a311",
       "visibility": "private"
     }
   },
@@ -88,12 +88,11 @@
   },
   "open_followups": {
     "foundation": [
-      1370,
-      1249,
-      1247,
-      1157,
+      58,
       157,
-      58
+      1157,
+      1247,
+      1249
     ],
     "operations": [
       145,
@@ -103,23 +102,29 @@
       1066,
       1103
     ],
-    "total": 12
+    "true_open_issues_total": 11,
+    "open_pull_requests": {
+      "foundation": [
+        1370
+      ],
+      "operations": []
+    }
   },
   "non_migration_blockers": [
     {
       "id": "foundation#157",
       "state": "OPEN",
-      "reason": "nightly research provider/proxy path returns upstream 403->502; not a migration implementation failure"
+      "reason": "nightly research provider/proxy upstream 403->502"
     },
     {
       "id": "foundation#58",
       "state": "OPEN",
-      "reason": "exhaustive coverage tracker remains open"
+      "reason": "exhaustive coverage tracker"
     },
     {
       "id": "foundation#1370",
-      "state": "OPEN",
-      "reason": "secret-sync contract-test maintenance"
+      "state": "OPEN_PR",
+      "reason": "secret-sync pin contract tests"
     }
   ],
   "language_policy": {
@@ -139,5 +144,10 @@
       "Kotlin",
       "Swift"
     ]
+  },
+  "runtime_deployments": {
+    "foundation_worker_sha": "22e44f083b9326c4068fcb970b800413741eebbb",
+    "operations_worker_sha": "4fb9f3be96c9947bc3d07756762efbb563158a04",
+    "operations_edge_worker_sha": "4fb9f3be96c9947bc3d07756762efbb563158a04"
   }
 }

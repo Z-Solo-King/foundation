@@ -4,11 +4,11 @@
   "audited_at": "2026-09-28",
   "public_safe": true,
   "live_main": {
-    "foundation": "28fab57c677941f693c4a5559966f0ff86dcedb3",
+    "foundation": "22e44f083b9326c4068fcb970b800413741eebbb",
     "operations": "[PROTECTED_CURRENT_MAIN]"
   },
   "runtime_pins": {
-    "foundation_runtime": "28fab57c677941f693c4a5559966f0ff86dcedb3",
+    "foundation_runtime": "22e44f083b9326c4068fcb970b800413741eebbb",
     "production_operations": "protected-current"
   },
   "cloudflare": {
@@ -21,14 +21,13 @@
     "private_resource_identifiers": "redacted"
   },
   "current_queue": {
-    "open_issue_count": 12,
+    "open_issue_count": 11,
     "foundation": [
-      1370,
-      1249,
-      1247,
-      1157,
+      58,
       157,
-      58
+      1157,
+      1247,
+      1249
     ],
     "operations_count": 6,
     "operations": [
@@ -41,7 +40,7 @@
     ]
   },
   "evidence": {
-    "nightly_research": "OPEN FOLLOW-UP: provider-backed nightly research currently hits upstream Worker 403->502; tracked by Foundation #157/#58.",
+    "nightly_research": "OPEN FOLLOW-UP: provider-backed nightly research still has an upstream 403->502 probe failure; separate from migration.",
     "extractor_benchmark": {
       "receipts": 40,
       "ok": 4,
@@ -50,8 +49,9 @@
       "structural_pass": true,
       "real_catalog_success_not_proven": true
     },
-    "migration_review": "MIGRATION_COMPLETE: P1-P5 passed; PRs 1395/1397/1164/1165 merged; production topology heroic -> operations-edge -> operations deployed.",
-    "feed_recovery": "OPEN FOLLOW-UP: Foundation #1247/#1249."
+    "migration_review": "MIGRATION_COMPLETE: P1-P5 passed; migration PRs merged; production topology deployed and verified.",
+    "feed_recovery": "OPEN FOLLOW-UP: Foundation #1247/#1249.",
+    "family_integrity": "Acceptance queue uses true open issues and excludes PR-backed work; current open PR is Foundation #1370."
   },
   "continuity_enforcement": {
     "schema": "continuity-freshness/v1",
@@ -65,5 +65,18 @@
     "private_edge_worker": "operations-edge",
     "private_core_worker": "operations",
     "chain": "heroic -> operations-edge (TypeScript) -> operations (Python)"
+  },
+  "repository_inventory": {
+    "foundation": {
+      "true_open_issues": 5,
+      "open_pull_requests": [
+        1370
+      ]
+    },
+    "operations": {
+      "true_open_issues": 6,
+      "open_pull_requests": []
+    },
+    "true_open_issues_total": 11
   }
 }
