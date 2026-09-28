@@ -112,6 +112,14 @@ async def _handle_released_event(
     decision: AdmissionDecision,
     policy: AdmissionPolicy,
 ) -> tuple[AdmissionDecision, AdmissionLease | None]:
+    if not _protected_duplicate(route):
+        return AdmissionDecision(
+            AdmissionOutcome.RATE_LIMITED,
+            route,
+            False,
+            "released duplicate is not replayable for this route",
+            policy.retry_after_seconds,
+        ), None
     charged = await _charge_duplicate_spend(
         db,
         event_id=event_id,
@@ -128,7 +136,7 @@ async def _handle_released_event(
             "duplicate admission cost ceiling reached",
             policy.retry_after_seconds,
         ), None
-    return (_duplicate_decision(route, policy) if _protected_duplicate(route) else decision), None
+    return _duplicate_decision(route, policy), None
 
 
 async def _reclaim_expired_event(
@@ -202,6 +210,7 @@ async def _handle_existing_event(
     cost_units: int,
     decision: AdmissionDecision,
     policy: AdmissionPolicy,
+    race_recheck: bool = False,
 ) -> tuple[AdmissionDecision, AdmissionLease | None] | None:
     if (
         str(existing.get("subject_fingerprint", "")) != subject_fingerprint
@@ -215,6 +224,17 @@ async def _handle_existing_event(
         ), None
 
     stored_event_id = str(existing.get("event_id") or event_id)
+    if race_recheck:
+        if _protected_duplicate(route):
+            return _duplicate_decision(route, policy), None
+        if existing.get("released_at") is not None:
+            return AdmissionDecision(
+                AdmissionOutcome.RATE_LIMITED,
+                route,
+                False,
+                "released duplicate is not replayable for this route",
+                policy.retry_after_seconds,
+            ), None
     if existing.get("released_at") is not None:
         return await _handle_released_event(
             db,
@@ -306,6 +326,7 @@ async def _insert_new_admission(
                 cost_units=cost_units,
                 decision=decision,
                 policy=policy,
+                race_recheck=True,
             )
         return AdmissionDecision(
             AdmissionOutcome.CONCURRENCY_LIMITED,
