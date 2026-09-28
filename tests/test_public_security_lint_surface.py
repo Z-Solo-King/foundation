@@ -57,3 +57,4 @@ def test_approved_boundary_declarations_do_not_trigger_private_reference_rules()
     assert lint.private_reference_findings(Path("scripts/production_release.sh"), "Z-Solo-King/operations") == []
     assert lint.private_reference_findings(Path("benchmark/public_runner_boundary.py"), "private/local host") == []
     assert lint.private_revision_findings(Path("benchmark/matrix.json"), "Z-Solo-King/operations@0123456789abcdef0123456789abcdef01234567") == []
+
