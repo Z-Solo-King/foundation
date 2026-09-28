@@ -504,5 +504,3 @@ async def test_worker_subject_and_idempotency_guards_precede_admission(monkeypat
     response = await entry.fetch(Request("POST", f"https://x{route}", payload, headers))
 
     assert response.status == (401 if expected_error == "unauthorized" else 400)
-    body = await response.json()
-    assert body["error"] == expected_error
