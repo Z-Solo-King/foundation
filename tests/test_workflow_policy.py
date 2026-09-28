@@ -46,6 +46,11 @@ def test_all_third_party_actions_are_sha_pinned():
     assert not violations, "Unpinned third-party GitHub Actions:\n" + "\n".join(violations)
 
 
+def test_legacy_worker_retirement_skips_empty_worker_names():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    guard = 'if [ -n "$legacy_worker" ] && [ "$legacy_worker" != "foundation" ] && [ "$legacy_worker" != "operations" ]; then'
+    assert deployment.count(guard) == 2
+
 def test_production_deployment_has_one_owner():
     texts = _workflow_texts()
     assert "bash scripts/production_release.sh" in texts[PRODUCTION_WORKFLOW]

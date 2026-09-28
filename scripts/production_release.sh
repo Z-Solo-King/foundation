@@ -693,7 +693,7 @@ fi
 # deleting either side while the other Worker still references it. Keep every non-service binding
 # intact so this migration step only severs the obsolete cross-worker edges.
 for legacy_worker in "$legacy_private_worker" "$legacy_public_worker"; do
-  if [ "$legacy_worker" != "foundation" ] && [ "$legacy_worker" != "operations" ]; then
+  if [ -n "$legacy_worker" ] && [ "$legacy_worker" != "foundation" ] && [ "$legacy_worker" != "operations" ]; then
     legacy_settings_file="$RUNNER_TEMP/${legacy_worker}-settings.json"
     legacy_patch_file="$RUNNER_TEMP/${legacy_worker}-bindings.json"
     legacy_boundary="----cf-legacy-${RANDOM}-${RANDOM}"
@@ -719,7 +719,7 @@ done
 
 # Retire the legacy Worker pair only after the renamed pair has passed all live acceptance checks.
 for legacy_worker in "$legacy_private_worker" "$legacy_public_worker"; do
-  if [ "$legacy_worker" != "foundation" ] && [ "$legacy_worker" != "operations" ]; then
+  if [ -n "$legacy_worker" ] && [ "$legacy_worker" != "foundation" ] && [ "$legacy_worker" != "operations" ]; then
     delete_status=$(curl -sS -o "$RUNNER_TEMP/legacy-worker-delete.json" -w '%{http_code}' \
       -X DELETE -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' \
       "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/$legacy_worker?force=true" || true)
