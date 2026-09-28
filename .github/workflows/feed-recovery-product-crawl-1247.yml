@@ -1,8 +1,6 @@
 name: WooCommerce Feed Product Crawl 1247
 
 on:
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -10,7 +8,7 @@ permissions:
 
 concurrency:
   group: wc-feed-product-crawl-1247
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   crawl:

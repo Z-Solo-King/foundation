@@ -8,13 +8,14 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
 
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
-CANONICAL_OPERATIONS_REF = "3a269bf336e3c57b3ffc91769535798161a86b62"
-CANONICAL_PRODUCTION_OPERATIONS_REF = "3a269bf336e3c57b3ffc91769535798161a86b62"
+CANONICAL_OPERATIONS_REF = "9e5002e9a079c914bcd30497a85f7cf8570fa59b"
+CANONICAL_PRODUCTION_OPERATIONS_REF = "9e5002e9a079c914bcd30497a85f7cf8570fa59b"
 BENCHMARK_OPERATIONS_REF = CANONICAL_OPERATIONS_REF
 BENCHMARK_TOOLS_REF = "d4ef2e6d28435a59c735b9dc4d0de31f44b9cf29"
 MIGRATION_TOOLS_REF = None
 VALIDATION_TOOLS_REF = "92eb7a850dff11a10886a952d5db8a42dae2b318"
 CANONICAL_OPERATIONS_SERVICE = "operations"
+CANONICAL_OPERATIONS_EDGE_SERVICE = "operations-edge"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 PRODUCTION_WORKFLOW = "heroic-ai-production-release.yml"
 PRODUCTION_SCRIPT = ROOT / "scripts" / "production_release.sh"
@@ -82,10 +83,11 @@ def test_production_pin_self_check_matches_canonical_operations_revision():
 def test_production_generates_private_operations_service_binding():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_SERVICE_NAME="{CANONICAL_OPERATIONS_SERVICE}"' in deployment
+    assert f'OPERATIONS_EDGE_SERVICE_NAME="{CANONICAL_OPERATIONS_EDGE_SERVICE}"' in deployment
     assert "'[[services]]'" in deployment
     assert "'binding = \"OPERATIONS\"'" in deployment
-    assert '"service = \\\"${OPERATIONS_SERVICE_NAME}\\\""' in deployment
-    assert 'grep -q "^service = \\\"${OPERATIONS_SERVICE_NAME}\\\"$" wrangler.production.generated.toml' in deployment
+    assert '"service = \\\"${OPERATIONS_EDGE_SERVICE_NAME}\\\""' in deployment
+    assert 'grep -q "^service = \\\"${OPERATIONS_EDGE_SERVICE_NAME}\\\"$" wrangler.production.generated.toml' in deployment
 
 
 def test_operations_installation_is_discovered_from_app_jwt():
@@ -415,7 +417,7 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_REF="{CANONICAL_PRODUCTION_OPERATIONS_REF}"' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
-    assert "OPERATIONS_RESEARCH_REF: 3a269bf336e3c57b3ffc91769535798161a86b62" in nightly
+    assert "OPERATIONS_RESEARCH_REF: 9e5002e9a079c914bcd30497a85f7cf8570fa59b" in nightly
 
 
 
@@ -482,8 +484,8 @@ def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
 def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
-    expected_production = "3a269bf336e3c57b3ffc91769535798161a86b62"
-    expected_nightly = "3a269bf336e3c57b3ffc91769535798161a86b62"
+    expected_production = "9e5002e9a079c914bcd30497a85f7cf8570fa59b"
+    expected_nightly = "9e5002e9a079c914bcd30497a85f7cf8570fa59b"
     auxiliary = {
         "live-chatbot-production-smoke.yml": expected_production,
         "coverage-driven-runtime-matrix.yml": expected_production,
@@ -694,6 +696,7 @@ def test_current_public_runtime_identity_is_heroic_backend():
     assert 'custom_domain = true' not in wrangler
     assert 'BASE_URL=' in deployment and 'ai-cio.pages.dev' in deployment
     assert 'OPERATIONS_SERVICE_NAME="operations"' in deployment
+    assert 'OPERATIONS_EDGE_SERVICE_NAME="operations-edge"' in deployment
 
 def test_public_pages_front_door_is_documented_without_exposing_backend_origin():
     docs = (ROOT / "docs" / "WORKER_IDENTITY_2026-09-25.md").read_text(encoding="utf-8")
