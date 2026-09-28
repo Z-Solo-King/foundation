@@ -25,7 +25,7 @@ jobs:
       - name: Install test dependencies
         run: python -m pip install --disable-pip-version-check pytest workers-py workers-runtime-sdk
       - name: Verify matrix and failure isolation
-        run: python -m pytest tests/test_nightly_research_workflow_contract.py -q -k 'matrix or lane_status'
+        run: python -m pytest tests/test_nightly_research_workflow_contract.py -q
 
   diagnosis-contract:
     name: Diagnosis and always-run contract
@@ -39,7 +39,7 @@ jobs:
       - name: Install test dependencies
         run: python -m pip install --disable-pip-version-check pytest workers-py workers-runtime-sdk
       - name: Verify summary and truthful failure handling
-        run: python -m pytest tests/test_nightly_research_workflow_contract.py -q -k 'summary or incomplete'
+        run: python -m pytest tests/test_nightly_research_workflow_contract.py -q
 
   dry-run-contract:
     name: Dry-run and truthful evidence contract
