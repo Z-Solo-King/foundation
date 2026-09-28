@@ -53,4 +53,4 @@ jobs:
       - name: Install test dependencies
         run: python -m pip install --disable-pip-version-check pytest workers-py workers-runtime-sdk
       - name: Verify scheduled live mode and explicit dry-run boundary
-        run: python -m pytest tests/test_nightly_research_workflow_contract.py -q -k 'dry_run or scheduled'
+        run: python -m pytest tests/test_nightly_research_workflow_contract.py -q
