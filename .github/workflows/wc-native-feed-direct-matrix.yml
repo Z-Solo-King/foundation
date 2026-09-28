@@ -41,20 +41,16 @@ jobs:
           const fs=require("fs");
           const site=process.env.SITE;
           const s=fs.readFileSync("artifacts/native/"+site+".xml","utf8");
-          const ok=s.includes("<rss") &&
-            s.includes("http://base.google.com/ns/1.0") &&
-            s.includes("<item") &&
-            s.includes("<g:id") &&
-            s.includes("<g:title") &&
-            s.includes("<g:link") &&
-            s.includes("<g:price") &&
-            s.includes("<g:image_link");
-          if(!ok){console.error("strict native validation failed");process.exit(1)}
+          const ok=s.includes("<rss") && s.includes("http://base.google.com/ns/1.0") &&
+            s.includes("<item") && s.includes("<g:id") && s.includes("<g:title") &&
+            s.includes("<g:link") && s.includes("<g:price") && s.includes("<g:image_link");
+          if(!ok) process.exit(1);
           const items=(s.match(/<item\b/gi)||[]).length;
-          console.log(JSON.stringify({site,items,bytes:Buffer.byteLength(s),sha256:require("crypto").createHash("sha256").update(s).digest("hex")},null,2));
+          console.log(JSON.stringify({site,items,bytes:Buffer.byteLength(s),
+            sha256:require("crypto").createHash("sha256").update(s).digest("hex")}));
           NODE
       - uses: actions/upload-artifact@v4
         with:
-          name: wc-native-feed-direct-${{ matrix.site }}
+          name: wc-native-feed-direct-${{ matrix.site }}-v2
           path: artifacts/
           if-no-files-found: error
