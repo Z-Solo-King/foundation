@@ -116,9 +116,10 @@ def safe_host(hostname: str) -> bool:
     if any(host == suffix[1:] or host.endswith(suffix) for suffix in _RESERVED_SUFFIXES):
         return False
 
-    numeric_ipv4 = _parse_obfuscated_ipv4(host)
-    if numeric_ipv4 is not None:
-        return safe_ip(str(numeric_ipv4))
+    labels = host.split(".")
+    if all(_NUMERIC_LABEL.fullmatch(label) for label in labels):
+        numeric_ipv4 = _parse_obfuscated_ipv4(host)
+        return safe_ip(str(numeric_ipv4)) if numeric_ipv4 is not None else False
 
     try:
         return safe_ip(host)
