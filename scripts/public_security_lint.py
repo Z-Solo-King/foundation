@@ -40,7 +40,7 @@ def active_files(root: Path = ROOT) -> list[Path]:
         relative = path.relative_to(root)
         if not path.is_file() or any(part in EXCLUDED for part in relative.parts):
             continue
-        if path.suffix.lower() in {".py", ".js", ".mjs", ".html", ".yml", ".yaml", ".toml"}:
+        if path.suffix.lower() in {".py", ".js", ".mjs", ".html", ".yml", ".yaml", ".toml", ".sh", ".json", ".md", ".txt", ".cfg", ".ini"}:
             result.append(path)
     return sorted(result)
 
@@ -63,7 +63,7 @@ def _is_policy_configuration(relative: str) -> bool:
 
 def secret_findings(path: Path, source: str) -> list[Finding]:
     relative = rel(path)
-    if _is_test(relative) or _is_policy_configuration(relative) or relative == "scripts/public_security_lint.py":
+    if relative == "scripts/public_security_lint.py":
         return []
     findings = []
     for marker in PROTECTED_PRIVATE_MARKERS:
@@ -73,11 +73,22 @@ def secret_findings(path: Path, source: str) -> list[Finding]:
         findings.append(Finding(relative, "credential-literal", "public source contains a hard-coded bearer credential"))
     if re.search(r"(?i)(?:api[_-]?key|access[_-]?key|secret|password|token)\s*[:=]\s*[\"'][A-Za-z0-9_./+=:-]{24,}[\"']", source):
         findings.append(Finding(relative, "credential-literal", "public source contains a hard-coded credential-like literal"))
+    scan_infra = relative.startswith(".github/workflows/") or relative.startswith("scripts/") or relative.endswith(".json")
+    if scan_infra:
+        patterns = (
+            ("private-pin", r"(?<![0-9a-f])[0-9a-f]{40}(?![0-9a-f])"),
+            ("d1-uuid", r"\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b"),
+            ("object-store-literal", r"https://s3\.[a-z0-9-]+\.backblazeb2\.com"),
+            ("private-path", r"(?:/private/|\\\\private\\\\|tools/sync_provider_secrets\.py)"),
+        )
+        for rule, pattern in patterns:
+            if re.search(pattern, source, re.IGNORECASE):
+                findings.append(Finding(relative, rule, f"public source matches infrastructure safety pattern {rule}"))
     return findings
 
 def private_reference_findings(path: Path, source: str) -> list[Finding]:
     relative = rel(path)
-    if _is_test(relative) or relative.startswith("docs/") or relative == "scripts/public_security_lint.py" or _is_policy_configuration(relative):
+    if relative == "scripts/public_security_lint.py":
         return []
     return [
         Finding(relative, "private-reference", f"public source contains private implementation marker {marker}")
@@ -122,13 +133,13 @@ def lint_file(path: Path, root: Path = ROOT) -> list[Finding]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--strict", action="store_true")
+    parser.add_argument("--strict", action="store_true", default=True)
     args = parser.parse_args()
     files = active_files()
     findings = [f for path in files for f in lint_file(path)]
-    payload = {"schema_version": "public-security-lint/v1", "files_checked": len(files), "findings": [f.text() for f in findings], "total_findings": len(findings), "passed": not findings, "strict": args.strict}
+    payload = {"schema_version": "public-security-lint/v2", "files_checked": len(files), "findings": [f.text() for f in findings], "total_findings": len(findings), "passed": not findings, "strict": True}
     print(json.dumps(payload, indent=2, sort_keys=True))
-    return 1 if args.strict and findings else 0
+    return 1 if findings else 0
 
 if __name__ == "__main__":
     raise SystemExit(main())
