@@ -338,7 +338,7 @@ echo "Operations binding-free bootstrap deployment: PASS"
 
 # Deploy the migrated TypeScript edge Worker before Foundation so the public OPERATIONS binding
 # targets the new edge transport boundary. The edge Worker calls the Python core privately.
-(cd "$RUNNER_TEMP/operations" && npx --yes wrangler@4.131.1 deploy --config wrangler.edge.toml --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:edge-${ACCEPTANCE_RUN_ID}")
+(cd "$RUNNER_TEMP/operations/polyglot/edge-worker" && npx --yes wrangler@4.131.1 deploy --config wrangler.toml --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:edge-${ACCEPTANCE_RUN_ID}")
 edge_deployments_status=$(curl -sS -o "$RUNNER_TEMP/edge-worker-deployments.json" -w '%{http_code}' \
   -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
   -H 'Content-Type: application/json' \
