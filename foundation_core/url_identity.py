@@ -1,78 +1,86 @@
-import pytest
+"""Pure URL identity and SSRF-safe host classification.
 
-from foundation_core.url_identity import canonicalize_url, safe_host, safe_ip
+This module contains only deterministic standard-library logic. Transport,
+DNS resolution and network acquisition remain outside Foundation Core.
+"""
+from __future__ import annotations
 
-
-@pytest.mark.parametrize(
-    ("source", "expected"),
-    [
-        ("HTTPS://EXAMPLE.COM.:443/path#fragment", "https://example.com/path"),
-        ("http://EXAMPLE.COM:80", "http://example.com/"),
-        ("https://example.com", "https://example.com/"),
-        ("https://example.com/a//b?x=1", "https://example.com/a//b?x=1"),
-    ],
-)
-def test_canonicalize_url_preserves_security_safe_identity(source, expected):
-    assert canonicalize_url(source) == expected
+from ipaddress import IPv4Address, IPv6Address, ip_address
+from urllib.parse import urlparse, urlunparse
 
 
-@pytest.mark.parametrize(
-    "source",
-    [
-        "ftp://example.com",
-        "https://user:pass@example.com",
-        "https://127.0.0.1",
-        "https://100.64.0.1",
-        "https://[64:ff9b::127.0.0.1]",
-        "https://example.com:8443",
-        "https://",
-        "not-a-url",
-        "http://0x7f.1/",
-        "http://017700000001/",
-        "http://2130706433/",
-        "http://64:ff9b::224.0.0.1/",
-        "http://ff02::1/",
-    ],
-)
-def test_canonicalize_url_rejects_unsafe_forms(source):
-    with pytest.raises(ValueError):
-        canonicalize_url(source)
+_PROVIDER_DENYLIST = frozenset({"168.63.129.16"})
+_NAT64_PREFIX = ip_address("64:ff9b::").packed[:12]
 
 
-@pytest.mark.parametrize(
-    ("value", "expected"),
-    [
-        ("8.8.8.8", True),
-        ("::ffff:8.8.8.8", True),
-        ("100.64.0.1", False),
-        ("168.63.129.16", False),
-        ("64:ff9b::127.0.0.1", False),
-        ("64:ff9b::224.0.0.1", False),
-        ("ff02::1", False),
-    ],
-)
-def test_safe_ip_keeps_shared_and_provider_ranges_blocked(value, expected):
-    assert safe_ip(value) is expected
+def safe_ip(value: str) -> bool:
+    ip = ip_address(value)
+    mapped = getattr(ip, "ipv4_mapped", None)
+    if mapped is not None:
+        ip = mapped
+    if isinstance(ip, IPv6Address):
+        if (
+            ip.is_loopback
+            or ip.is_link_local
+            or ip.is_multicast
+            or ip.is_unspecified
+            or ip.is_private
+        ):
+            return False
+        if ip.packed[:2] == bytes.fromhex("2002") or ip.packed[:4] == bytes.fromhex("20010000"):
+            return False
+        if ip.packed[:12] == _NAT64_PREFIX:
+            ip = IPv4Address(ip.packed[12:])
+    if isinstance(ip, IPv4Address):
+        if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_unspecified or ip.is_private:
+            return False
+    if str(ip) in _PROVIDER_DENYLIST:
+        return False
+    return bool(ip.is_global)
 
 
-def test_safe_host_handles_domains_and_localhost():
-    assert safe_host("LOCALHOST") is False
-    assert safe_host("localhost.localdomain") is False
-    assert safe_host("example.com") is True
+def safe_host(hostname: str) -> bool:
+    host = hostname.lower().rstrip(".")
+    if host in {"localhost", "localhost.localdomain", "ip6-localhost"}:
+        return False
+    # Reject hexadecimal-prefixed IPv4 obfuscation and bare integer/octal forms.
+    # Standard dotted-decimal IPv4 remains a valid safe_ip input.
+    if host.startswith("0x") and host[2:] and all(ch in "0123456789abcdef." for ch in host[2:]):
+        return False
+    if host and host.isdigit():
+        return False
+    try:
+        return safe_ip(host)
+    except ValueError:
+        return "." in host
 
 
-def test_safe_ip_covers_public_ipv6_and_nat64_public_ipv4():
-    assert safe_ip("2001:4860:4860::8888") is True
-    assert safe_ip("64:ff9b::8.8.8.8") is True
-
-
-def test_safe_host_rejects_numeric_obfuscation_but_allows_ipv4_domains():
-    assert safe_host("1.1.1.1") is True
-    assert safe_host("2130706433") is False
-    assert safe_host("0x7f.1") is False
-
-
-def test_canonicalize_url_rejects_ipv6_multicast_and_nat64_multicast():
-    for source in ("http://[ff02::1]/", "http://[64:ff9b::224.0.0.1]/"):
-        with pytest.raises(ValueError):
-            canonicalize_url(source)
+def canonicalize_url(url: str) -> str:
+    """Return the security-safe canonical URL identity used for acquisition."""
+    parsed = urlparse(url)
+    scheme = parsed.scheme.lower()
+    if "://" in url:
+        authority = url.split("://", 1)[1].split("/", 1)[0].split("?", 1)[0].split("#", 1)[0]
+        host_part = authority.rsplit("@", 1)[-1]
+        if host_part.count(":") > 1 and not host_part.startswith("["):
+            raise ValueError("target host is not allowed")
+    if scheme not in {"http", "https"}:
+        raise ValueError("only http and https URLs are allowed")
+    if parsed.username or parsed.password:
+        raise ValueError("userinfo in URL is not allowed")
+    if not parsed.hostname or not safe_host(parsed.hostname):
+        raise ValueError("target host is not allowed")
+    if parsed.port is not None and parsed.port not in {80, 443}:
+        raise ValueError("non-standard ports are not allowed")
+    host = parsed.hostname.lower().rstrip(".")
+    host_for_netloc = f"[{host}]" if ":" in host else host
+    if (
+        parsed.port is None
+        or (scheme == "http" and parsed.port == 80)
+        or (scheme == "https" and parsed.port == 443)
+    ):
+        netloc = host_for_netloc
+    else:
+        netloc = f"{host_for_netloc}:{parsed.port}"
+    path = parsed.path or "/"
+    return urlunparse((scheme, netloc, path, parsed.params, parsed.query, ""))
