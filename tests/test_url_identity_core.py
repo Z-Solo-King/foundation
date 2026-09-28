@@ -26,6 +26,7 @@ def test_canonicalize_url_preserves_security_safe_identity(source, expected):
         "https://[64:ff9b::127.0.0.1]",
         "https://example.com:8443",
         "https://",
+        "not-a-url",
         "http://0x7f.1/",
         "http://017700000001/",
         "http://2130706433/",
