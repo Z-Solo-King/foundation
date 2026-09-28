@@ -29,6 +29,12 @@ def safe_host(hostname: str) -> bool:
     host = hostname.lower().rstrip(".")
     if host in {"localhost", "localhost.localdomain", "ip6-localhost"}:
         return False
+    # Reject textual IPv4-obfuscation forms that are commonly reinterpreted
+    # differently by URL parsers (hex/octal/integer/dotted-numeric forms).
+    if host and all(ch.isdigit() or ch == "." for ch in host):
+        return False
+    if host.startswith("0x") and host[2:] and all(ch in "0123456789abcdef." for ch in host[2:]):
+        return False
     try:
         return safe_ip(host)
     except ValueError:
@@ -39,6 +45,13 @@ def canonicalize_url(url: str) -> str:
     """Return the security-safe canonical URL identity used for acquisition."""
     parsed = urlparse(url)
     scheme = parsed.scheme.lower()
+    # urllib.parse accepts unbracketed multi-colon authorities as a hostname
+    # plus an invalid port; reject these ambiguous authorities explicitly.
+    if "://" in url:
+        authority = url.split("://", 1)[1].split("/", 1)[0].split("?", 1)[0].split("#", 1)[0]
+        host_part = authority.rsplit("@", 1)[-1]
+        if host_part.count(":") > 1 and not host_part.startswith("["):
+            raise ValueError("target host is not allowed")
     if scheme not in {"http", "https"}:
         raise ValueError("only http and https URLs are allowed")
     if parsed.username or parsed.password:

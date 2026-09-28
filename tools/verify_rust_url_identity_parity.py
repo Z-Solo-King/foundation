@@ -52,6 +52,9 @@ def main() -> int:
             if not line.strip():
                 continue
             row = json.loads(line)
+            expected_ok = row.get("expected_ok")
+            if not isinstance(expected_ok, bool):
+                raise SystemExit(f"corpus row missing boolean expected_ok: {row.get('id')}")
             try:
                 output = canonicalize_url(row["input"])
                 python_rows[str(row["id"])] = {"ok": True, "output": output}
@@ -72,6 +75,14 @@ def main() -> int:
             rs = rust_rows[case_id]
             if not py["ok"]:
                 rejected += 1
+            expected_ok = next(
+                row["expected_ok"]
+                for row in map(json.loads, CORPUS.read_text(encoding="utf-8").splitlines())
+                if str(row.get("id")) == case_id
+            )
+            if bool(py["ok"]) != expected_ok:
+                mismatches.append((case_id, {"expected_ok": expected_ok, **py}, rs))
+                continue
             if bool(py["ok"]) != bool(rs.get("ok")):
                 mismatches.append((case_id, py, rs))
                 continue
