@@ -14,10 +14,9 @@ import argparse
 import hashlib
 import json
 import os
+import subprocess
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.error import HTTPError
-from urllib.request import Request, urlopen
 
 
 MAX_BODY_BYTES = 131_072
@@ -54,30 +53,6 @@ def _compact_messages(messages: object) -> str:
     if len(message) > MAX_MESSAGE_CHARS:
         message = message[:MAX_MESSAGE_CHARS]
     return message
-
-
-def _safe_upstream_error_details(error: HTTPError) -> dict[str, object]:
-    """Expose only bounded, non-secret fields from an upstream HTTP error."""
-    details: dict[str, object] = {"upstream_status": int(error.code)}
-    try:
-        raw = error.read(MAX_BODY_BYTES)
-        body = json.loads(raw.decode("utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-        return details
-    if not isinstance(body, dict):
-        return details
-    upstream_error = body.get("error")
-    if isinstance(upstream_error, str) and upstream_error.strip():
-        details["upstream_error"] = upstream_error.strip()[:200]
-    response = body.get("response")
-    if isinstance(response, dict):
-        generation_status = response.get("generation_status")
-        provider = response.get("provider")
-        if isinstance(generation_status, str) and generation_status.strip():
-            details["upstream_generation_status"] = generation_status.strip()[:80]
-        if isinstance(provider, str) and provider.strip():
-            details["upstream_provider"] = provider.strip()[:120]
-    return details
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -146,36 +121,68 @@ class Handler(BaseHTTPRequestHandler):
         }
 
         url = self.server.public_worker_url.rstrip("/") + "/api/v1/chat"
-        request = Request(
+        payload_json = json.dumps(upstream_payload, ensure_ascii=False)
+        # Use curl for the outbound edge call. The live preflight uses curl and succeeds;
+        # this keeps transport behavior aligned without weakening any Cloudflare policy.
+        command = [
+            "curl",
+            "-sS",
+            "--max-time",
+            "90",
+            "-o",
+            "-",
+            "-w",
+            "\\n%{http_code}",
+            "-H",
+            "Authorization: Bearer " + self.server.auth_token,
+            "-H",
+            "Content-Type: application/json",
+            "-H",
+            "Idempotency-Key: " + request_id,
+            "-H",
+            "User-Agent: HeroicAI-NightlyResearch/1.0",
+            "--data-binary",
+            payload_json,
             url,
-            data=json.dumps(upstream_payload, ensure_ascii=False).encode("utf-8"),
-            headers={
-                "Authorization": "Bearer " + self.server.auth_token,
-                "Content-Type": "application/json",
-                "Idempotency-Key": request_id,
-                # Explicit API-client identity; do not rely on urllib's default
-                # Python-urllib User-Agent, which may be classified as automated web traffic.
-                "User-Agent": "HeroicAI-NightlyResearch/1.0",
-            },
-            method="POST",
-        )
-
+        ]
         try:
-            with urlopen(request, timeout=90) as response:
-                body = json.loads(response.read().decode("utf-8"))
-                status = int(response.status)
-        except HTTPError as exc:
-            details = _safe_upstream_error_details(exc)
-            self._json(
-                {"error": {"message": "upstream_worker_rejected", "type": "upstream_http_error", **details}, "request_id": request_digest},
-                502,
-            )
+            completed = subprocess.run(command, check=False, capture_output=True, text=True, timeout=95)
+        except subprocess.TimeoutExpired:
+            self._json({"error": {"message": "upstream_worker_failure", "type": "timeout"}, "request_id": request_digest}, 502)
             return
-        except Exception as exc:
-            self._json(
-                {"error": {"message": "upstream_worker_failure", "type": type(exc).__name__}, "request_id": request_digest},
-                502,
-            )
+        except OSError:
+            self._json({"error": {"message": "upstream_worker_failure", "type": "curl_unavailable"}, "request_id": request_digest}, 502)
+            return
+
+        output_lines = completed.stdout.splitlines()
+        try:
+            status = int(output_lines[-1]) if output_lines else 0
+        except ValueError:
+            status = 0
+        response_text = "\\n".join(output_lines[:-1]) if output_lines else ""
+        try:
+            body = json.loads(response_text) if response_text else {}
+        except json.JSONDecodeError:
+            body = {}
+
+        if completed.returncode != 0:
+            self._json({"error": {"message": "upstream_worker_failure", "type": "curl_transport", "status": status}, "request_id": request_digest}, 502)
+            return
+
+        if status < 200 or status >= 300:
+            details = {"upstream_status": status}
+            if isinstance(body, dict):
+                error = body.get("error")
+                if isinstance(error, dict):
+                    message = error.get("message")
+                    if isinstance(message, str) and message.strip():
+                        details["upstream_error"] = message.strip()[:200]
+                    upstream_status = error.get("upstream_status")
+                    if isinstance(upstream_status, int):
+                        details["upstream_status"] = upstream_status
+                elif isinstance(error, str) and error.strip():
+                    details["upstream_error"] = error.strip()[:200]
+            self._json({"error": {"message": "upstream_worker_rejected", "type": "upstream_http_error", **details}, "request_id": request_digest}, 502)
             return
 
         if status < 200 or status >= 300 or not isinstance(body, dict):
