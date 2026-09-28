@@ -226,6 +226,7 @@ class D1AdmissionStore:
             window_start, subject_fingerprint,
             window_start,
             window_start, subject_fingerprint,
+            window_start,
             subject_fingerprint, now,
             now,
         ).first()
@@ -322,7 +323,9 @@ class D1AdmissionStore:
         if not decision.allowed:
             return decision, None
 
-        existing = await _existing_event(self.db, event_id)
+        existing = await _existing_event(self.db, storage_event_id, subject_fingerprint)
+        if existing is None:
+            existing = await _existing_event(self.db, event_id, subject_fingerprint)
         if existing is not None:
             return await _handle_existing_event(
                 self.db,
