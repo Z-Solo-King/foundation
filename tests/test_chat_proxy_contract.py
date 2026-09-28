@@ -424,7 +424,7 @@ def test_public_chat_body_covers_string_sources_and_malformed_sources():
         "ok": True,
         "response": {
             "text": "hello",
-            "sources": ["https://example.com/source", {"title": "Example", "url": "https://example.com", "private": "secret"}],
+            "sources": ["https://example.com/source", {"title": "Example", "url": "https://example.com", "private": "secret"}, 123],
         },
     })
     assert body["response"]["sources"] == ["https://example.com/source", {"title": "Example", "url": "https://example.com"}]
