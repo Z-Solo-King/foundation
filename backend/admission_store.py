@@ -61,6 +61,46 @@ async def _existing_event(
     return result if "event_id" in result else None
 
 
+async def _charge_duplicate_spend(
+    db: Any,
+    *,
+    event_id: str,
+    subject_fingerprint: str,
+    window_start: int,
+    cost_units: int,
+    max_cost_units: int,
+) -> bool:
+    row = await db.prepare(
+        "SELECT COALESCE(SUM(cost_units), 0) AS total_cost FROM public_admission_events "
+        "WHERE window_start = ? AND subject_fingerprint = ?"
+    ).bind(window_start, subject_fingerprint).first()
+    total = int(row.get("total_cost", 0) or 0) if isinstance(row, dict) else 0
+    if total + cost_units > max_cost_units:
+        return False
+    result = await db.prepare(
+        "UPDATE public_admission_events SET cost_units = cost_units + ? "
+        "WHERE event_id = ? AND subject_fingerprint = ?"
+    ).bind(cost_units, event_id, subject_fingerprint).run()
+    meta = result.get("meta", {}) if isinstance(result, dict) else getattr(result, "meta", {})
+    return int(meta.get("changes", 0) or 0) == 1
+
+
+def _protected_duplicate(route: AdmissionRoute) -> bool:
+    return route in {AdmissionRoute.CHAT, AdmissionRoute.STREAM, AdmissionRoute.RESEARCH}
+
+
+def _duplicate_decision(
+    route: AdmissionRoute,
+    policy: AdmissionPolicy,
+) -> AdmissionDecision:
+    return AdmissionDecision(
+        AdmissionOutcome.ACCEPTED,
+        route,
+        True,
+        "duplicate request is delegated to the canonical idempotency authority",
+    )
+
+
 async def _handle_existing_event(
     db: Any,
     existing: dict[str, Any],
@@ -75,10 +115,11 @@ async def _handle_existing_event(
     decision: AdmissionDecision,
     policy: AdmissionPolicy,
 ) -> tuple[AdmissionDecision, AdmissionLease | None] | None:
-    if (
-        str(existing.get("subject_fingerprint", "")) != subject_fingerprint
-        or str(existing.get("route", "")) != route.value
-    ):
+    scoped_match = (
+        str(existing.get("subject_fingerprint", "")) == subject_fingerprint
+        and str(existing.get("route", "")) == route.value
+    )
+    if not scoped_match:
         return AdmissionDecision(
             AdmissionOutcome.DUPLICATE,
             route,
@@ -87,17 +128,23 @@ async def _handle_existing_event(
         ), None
 
     if existing.get("released_at") is not None:
-        await db.prepare(
-            "UPDATE public_admission_events SET cost_units = cost_units + ? WHERE event_id = ? AND subject_fingerprint = ?"
-        ).bind(cost_units, event_id, subject_fingerprint).run()
-        if route in {AdmissionRoute.CHAT, AdmissionRoute.STREAM, AdmissionRoute.RESEARCH}:
+        charged = await _charge_duplicate_spend(
+            db,
+            event_id=event_id,
+            subject_fingerprint=subject_fingerprint,
+            window_start=window_start,
+            cost_units=cost_units,
+            max_cost_units=policy.max_requests_per_subject,
+        )
+        if not charged:
             return AdmissionDecision(
-                AdmissionOutcome.ACCEPTED,
+                AdmissionOutcome.RATE_LIMITED,
                 route,
-                True,
-                "duplicate request is delegated to the canonical idempotency authority",
+                False,
+                "duplicate admission cost ceiling reached",
+                policy.retry_after_seconds,
             ), None
-        return decision, None
+        return (_duplicate_decision(route, policy) if _protected_duplicate(route) else decision), None
 
     if int(existing.get("lease_expires_at") or 0) <= now:
         result = await db.prepare(
@@ -116,19 +163,24 @@ async def _handle_existing_event(
                 cost_units=cost_units,
             )
 
-    if route in {AdmissionRoute.CHAT, AdmissionRoute.STREAM, AdmissionRoute.RESEARCH}:
-        await db.prepare(
-            "UPDATE public_admission_events SET cost_units = cost_units + ? WHERE event_id = ? AND subject_fingerprint = ?"
-        ).bind(cost_units, event_id, subject_fingerprint).run()
-        # Idempotency is owned downstream for these routes. A duplicate must
-        # reach that authority instead of being rejected by the public admission
-        # layer as a second concurrent spend.
-        return AdmissionDecision(
-            AdmissionOutcome.ACCEPTED,
-            route,
-            True,
-            "duplicate request is delegated to the canonical idempotency authority",
-        ), None
+    if _protected_duplicate(route):
+        charged = await _charge_duplicate_spend(
+            db,
+            event_id=event_id,
+            subject_fingerprint=subject_fingerprint,
+            window_start=window_start,
+            cost_units=cost_units,
+            max_cost_units=policy.max_requests_per_subject,
+        )
+        if not charged:
+            return AdmissionDecision(
+                AdmissionOutcome.RATE_LIMITED,
+                route,
+                False,
+                "duplicate admission cost ceiling reached",
+                policy.retry_after_seconds,
+            ), None
+        return _duplicate_decision(route, policy), None
 
     return AdmissionDecision(
         AdmissionOutcome.CONCURRENCY_LIMITED,
