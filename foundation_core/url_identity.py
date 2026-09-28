@@ -118,8 +118,10 @@ def safe_host(hostname: str) -> bool:
 
     labels = host.split(".")
     if all(_NUMERIC_LABEL.fullmatch(label) for label in labels):
-        numeric_ipv4 = _parse_obfuscated_ipv4(host)
-        return safe_ip(str(numeric_ipv4)) if numeric_ipv4 is not None else False
+        # Only canonical dotted-decimal IPv4 literals are accepted above via
+        # ip_address(). Browser-style one/two/three-part, octal or hex forms
+        # are rejected to keep DNS and URL identity unambiguous.
+        return False
 
     try:
         return safe_ip(host)
