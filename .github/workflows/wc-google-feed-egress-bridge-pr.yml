@@ -61,21 +61,34 @@ jobs:
               s.includes("<g:image_link");
           }
 
-          function links(body, base) {
+          function extract(body, base) {
             const out = new Set();
             const s = String(body || "");
-            for (const re of [
-              /<loc>\\s*([^<]+?)\\s*<\\/loc>/gi,
-              /(?:href|src)=[\"']([^\"']+)[\"']/gi
-            ]) {
-              for (const m of s.matchAll(re)) {
-                try {
-                  const u = new URL(m[1], base).href;
-                  if (new URL(u).hostname === new URL(base).hostname) out.add(u);
-                } catch {}
+            let p = 0;
+            while ((p = s.indexOf("<loc>", p)) >= 0) {
+              const e = s.indexOf("</loc>", p + 5);
+              if (e < 0) break;
+              try { out.add(new URL(s.slice(p + 5, e).trim(), base).href); } catch {}
+              p = e + 6;
+            }
+            for (const key of ["href=", "src="]) {
+              let q = 0;
+              while ((q = s.indexOf(key, q)) >= 0) {
+                const quote = s[q + key.length];
+                if (quote !== '"' && quote !== "'") { q += key.length; continue; }
+                const e = s.indexOf(quote, q + key.length + 1);
+                if (e < 0) break;
+                try { out.add(new URL(s.slice(q + key.length + 1, e), base).href); } catch {}
+                q = e + 1;
               }
             }
             return [...out];
+          }
+
+          function looksFeed(url) {
+            const s = String(url || "").toLowerCase();
+            return s.includes("feed") || s.includes("google") || s.includes("merchant") ||
+              s.includes("gpf") || s.includes("wpfm") || s.includes("woo-feed") || s.includes("xml");
           }
 
           async function many(items, limit, fn) {
@@ -100,13 +113,15 @@ jobs:
               const candidateSet=new Set(seedUrls);
               const evidence={};
               let hit=null;
+
               for(const x of first){
                 evidence["seed:"+x.target]={status:x.status,ct:x.ct,bytes:x.bytes};
                 if(valid(x.body) && !hit) hit=x;
-                for(const u of links(x.body,base)){
-                  if(/feed|google|merchant|gpf|wpfm|woo-feed|\\.xml/i.test(u)) candidateSet.add(u);
+                for(const u of extract(x.body,base)){
+                  if(looksFeed(u) && new URL(u).hostname===new URL(base).hostname) candidateSet.add(u);
                 }
               }
+
               if(!hit){
                 const candidates=[...candidateSet].slice(0,220);
                 const second=await many(candidates,16,probe);
@@ -115,6 +130,7 @@ jobs:
                   if(valid(x.body)){hit=x;break;}
                 }
               }
+
               if(hit){
                 fs.writeFileSync("artifacts/native/"+site+".xml",hit.body);
                 summary[site]={native:true,url:hit.target,bytes:String(hit.body).length};
@@ -123,9 +139,9 @@ jobs:
                   native:false,
                   candidate_count:Object.keys(evidence).length,
                   statuses:Object.values(evidence).reduce((a,x)=>{
-                    const k=String(x.status??"error");a[k]=(a[k]||0)+1;return a;
+                    const k=String(x.status ?? "error");a[k]=(a[k]||0)+1;return a;
                   },{}),
-                  interesting:Object.entries(evidence).filter(([u])=>/feed|google|merchant|gpf|wpfm|woo-feed|\\.xml/i.test(u)).slice(0,160)
+                  interesting:Object.entries(evidence).filter(([u])=>looksFeed(u)).slice(0,160)
                 };
                 fs.writeFileSync("artifacts/"+site+".json",JSON.stringify(summary[site],null,2));
               }
