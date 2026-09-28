@@ -215,10 +215,7 @@ async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
         if values:
             return values
         failures.append(f"{endpoint}: no {record_type} answers")
-        break
     detail = "; ".join(failures[:2])
-    if any("no A answers" in failure or "no AAAA answers" in failure for failure in failures):
-        raise RuntimeError(f"DNS resolution failed for {hostname}" + (f" ({detail})" if detail else ""))
     if invalid_response and all("invalid DNS response" in failure for failure in failures):
         raise RuntimeError(f"invalid DNS response for {hostname}" + (f" ({detail})" if detail else ""))
     raise RuntimeError(f"DNS resolution failed for {hostname}" + (f" ({detail})" if detail else ""))
