@@ -22,6 +22,7 @@ from urllib.request import Request, urlopen
 
 MAX_BODY_BYTES = 131_072
 MAX_MESSAGE_CHARS = 11_800
+UPSTREAM_USER_AGENT = "HeroicAI-ResearchProxy/1.2"
 
 
 def _compact_messages(messages: object) -> str:
@@ -66,9 +67,17 @@ def _safe_upstream_error_details(error: HTTPError) -> dict[str, object]:
         return details
     if not isinstance(body, dict):
         return details
+    # Preserve only bounded classification fields; never echo free-form internal details.
     upstream_error = body.get("error")
     if isinstance(upstream_error, str) and upstream_error.strip():
         details["upstream_error"] = upstream_error.strip()[:200]
+    elif isinstance(upstream_error, dict):
+        code = upstream_error.get("code")
+        message = upstream_error.get("message")
+        if isinstance(code, (str, int)):
+            details["upstream_error_code"] = str(code)[:80]
+        if isinstance(message, str) and message.strip():
+            details["upstream_error_message"] = message.strip()[:200]
     response = body.get("response")
     if isinstance(response, dict):
         generation_status = response.get("generation_status")
@@ -151,8 +160,12 @@ class Handler(BaseHTTPRequestHandler):
             data=json.dumps(upstream_payload, ensure_ascii=False).encode("utf-8"),
             headers={
                 "Authorization": "Bearer " + self.server.auth_token,
+                "Accept": "application/json",
                 "Content-Type": "application/json",
                 "Idempotency-Key": request_id,
+                "User-Agent": UPSTREAM_USER_AGENT,
+                "Accept-Encoding": "identity",
+                "Connection": "close",
             },
             method="POST",
         )
