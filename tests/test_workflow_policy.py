@@ -458,7 +458,7 @@ def test_polyglot_migration_review_uses_declared_operations_python_runtime():
     assert 'actions/setup-python@' in workflow
     assert 'python-version: "3.14"' in workflow
     setup_index = workflow.index('python-version: "3.14"')
-    install_index = workflow.index("python -m pip install --disable-pip-version-check -e . --no-deps")
+    install_index = workflow.index("python -m pip install --disable-pip-version-check -e .")
     assert setup_index < install_index
 
 
