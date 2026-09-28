@@ -11,6 +11,7 @@ def test_nightly_workflow_uses_pinned_private_operations_crossfire_runner():
     assert "--crossfire" in research
     assert "--global-capacity 20" in research
     assert "matrix:" not in research
+    assert "production_release_run_id" in text
 
 def test_crossfire_preserves_three_lane_8_program_contract():
     text=WORKFLOW.read_text(encoding="utf-8")
