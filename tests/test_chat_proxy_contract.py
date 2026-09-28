@@ -347,3 +347,32 @@ def test_service_request_uses_structural_fallback_without_js_runtime(monkeypatch
     assert request.headers == {"Content-Type": "application/json"}
     assert request.body == '{"message":"hello"}'
 
+
+def test_public_chat_body_projection_covers_shape_and_source_branches():
+    import worker
+
+    assert worker._public_chat_body("not-a-dict") == {
+        "ok": False,
+        "error": "invalid_private_chat_response",
+    }
+    assert worker._public_chat_body({"ok": True}) == {"ok": True}
+    projected = worker._public_chat_body({
+        "ok": True,
+        "response": {
+            "response_id": "r",
+            "status": "completed",
+            "result_state": "COMPLETE",
+            "text": "hello",
+            "sources": ["https://example.com", {"title": "Example", "url": "https://example.com", "internal": "secret"}],
+        },
+    })
+    assert projected["response"]["sources"] == [
+        "https://example.com",
+        {"title": "Example", "url": "https://example.com"},
+    ]
+    assert worker._public_chat_body({
+        "response": {"sources": {"not": "a-list"}}
+    })["response"]["sources"] == []
+    assert worker._public_chat_body({
+        "response": {"sources": [123, None]}
+    })["response"]["sources"] == []
