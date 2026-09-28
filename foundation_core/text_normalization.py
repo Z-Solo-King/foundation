@@ -1,7 +1,7 @@
 """Deterministic text/identifier normalization for product records.
 
 Ported from the legacy V18 mapper's general-cleaning layer. Pure text
-processing only: no network I/O, no anti-bot/acquisition logic. Brand and
+processing only: no network I/O or acquisition logic. Brand and
 category alias tables are declarative domain knowledge (India PC-component
 and electronics retail categories).
 """

@@ -3,7 +3,7 @@
 Ported from the legacy V175 extractor's DOMAIN_PACKS layer. This module
 does pure regex matching against text you already have (title/description/
 spec strings) — it performs no network I/O, no page fetching, and has no
-dependency on the acquisition/anti-bot layer. Domain packs are declarative
+dependency on the acquisition layer. Domain packs are declarative
 category rules for keyboard, mouse, mousepad, display, and other India
 PC-component/electronics categories.
 

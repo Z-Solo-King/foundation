@@ -12,9 +12,9 @@ A result is considered a native Google Merchant feed only when the response cont
 
 A Store API reconstruction is recorded separately and is never presented as the retailer's native Merchant feed.
 
-## Safety
+## Acquisition modes
 
-Only public or unauthenticated surfaces are permitted. The tooling does not bypass CAPTCHA, Cloudflare challenges, authentication, proxy restrictions, clearance cookies or anti-bot controls.
+The recovery system may select direct HTTP, browser retrieval, public API/feed endpoints, structured page data, or another configured acquisition route for the target. A transport failure is not a feed-negative result; the selected route and resulting evidence must be recorded.
 
 ## Evidence boundary
 
