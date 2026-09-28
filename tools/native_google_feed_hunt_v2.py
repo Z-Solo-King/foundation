@@ -376,6 +376,29 @@ def generated_upload_feed_candidates(root: str, site: str) -> tuple[str, ...]:
     ]))
     urls: set[str] = set()
 
+    # Always retain canonical plugin-directory patterns ahead of the enormous
+    # generic filename grammar so a broad sweep can never starve known paths.
+    known_plugin_stems = (
+        "google.xml", "google-shopping.xml", "google-shopping-feed.xml",
+        "google-products.xml", "google-product-feed.xml", "google-feed.xml",
+        "product-feed.xml", "products-feed.xml", "merchant.xml", "merchant-feed.xml",
+    )
+    known_plugin_dirs = (
+        "/wp-content/uploads/woo-feed/google/xml/",
+        "/wp-content/uploads/woo-feed/google/",
+        "/wp-content/uploads/woo-product-feed-pro/xml/",
+        "/wp-content/uploads/wppfm-feeds/",
+        "/wp-content/uploads/codesolz-feeds/",
+    )
+    known_priority: set[str] = set()
+    for directory in known_plugin_dirs:
+        for filename in known_plugin_stems:
+            for extension in ("", ".gz"):
+                known_priority.add(urllib.parse.urljoin(
+                    root.rstrip("/") + "/",
+                    directory.rstrip("/") + "/" + filename + extension,
+                ))
+
     # The exact /wp-content/uploads/_*.xml family is deliberately tried first.
     # Include .xml.gz because multiple WooCommerce feed generators publish gzip.
     for stem in sorted(upload_root_forms, key=lambda x: (len(x), x)):
@@ -401,7 +424,15 @@ def generated_upload_feed_candidates(root: str, site: str) -> tuple[str, ...]:
             for sep in FILENAME_SEPARATORS:
                 name = f"{s}{sep}{stem}"
                 urls.add(urllib.parse.urljoin(root.rstrip("/") + "/", "?feed=" + urllib.parse.quote(name)))
-    return tuple(sorted(urls, key=lambda u: (feed_priority(u), len(u), u)))
+    return tuple(sorted(
+        urls,
+        key=lambda u: (
+            0 if u in known_priority else 1,
+            feed_priority(u),
+            len(u),
+            u,
+        ),
+    ))
 
 
 def rex_numeric_candidates(root: str, known_urls: set[str]) -> tuple[str, ...]:
