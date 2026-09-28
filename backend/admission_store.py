@@ -222,56 +222,48 @@ async def _handle_existing_event(
             False,
             "event id was already used for a different admission scope",
         ), None
-
     stored_event_id = str(existing.get("event_id") or event_id)
     if race_recheck:
-        if _protected_duplicate(route):
-            return _duplicate_decision(route, policy), None
-        if existing.get("released_at") is not None:
-            return AdmissionDecision(
-                AdmissionOutcome.RATE_LIMITED,
-                route,
-                False,
-                "released duplicate is not replayable for this route",
-                policy.retry_after_seconds,
-            ), None
+        return _handle_race_recheck(existing, route, policy)
     if existing.get("released_at") is not None:
         return await _handle_released_event(
-            db,
-            event_id=stored_event_id,
-            subject_fingerprint=subject_fingerprint,
-            window_start=window_start,
-            cost_units=cost_units,
-            route=route,
-            decision=decision,
-            policy=policy,
+            db, event_id=stored_event_id, subject_fingerprint=subject_fingerprint,
+            window_start=window_start, cost_units=cost_units, route=route,
+            decision=decision, policy=policy,
         )
-
     if int(existing.get("lease_expires_at") or 0) <= now:
         lease = await _reclaim_expired_event(
-            db,
-            event_id=stored_event_id,
-            subject_fingerprint=subject_fingerprint,
-            route=route,
-            window_start=window_start,
-            expires_at=expires_at,
-            now=now,
-            cost_units=cost_units,
+            db, event_id=stored_event_id, subject_fingerprint=subject_fingerprint,
+            route=route, window_start=window_start, expires_at=expires_at,
+            now=now, cost_units=cost_units,
         )
         if lease is not None:
             return decision, lease
-
     if _protected_duplicate(route):
         return await _handle_active_protected_duplicate(
-            db,
-            event_id=stored_event_id,
-            subject_fingerprint=subject_fingerprint,
-            window_start=window_start,
-            cost_units=cost_units,
-            route=route,
-            policy=policy,
+            db, event_id=stored_event_id, subject_fingerprint=subject_fingerprint,
+            window_start=window_start, cost_units=cost_units, route=route, policy=policy,
         )
+    return AdmissionDecision(
+        AdmissionOutcome.CONCURRENCY_LIMITED, route, False,
+        "duplicate request is still executing under the same admission lease",
+        policy.retry_after_seconds,
+    ), None
 
+
+def _handle_race_recheck(
+    existing: dict[str, Any], route: AdmissionRoute, policy: AdmissionPolicy
+) -> tuple[AdmissionDecision, AdmissionLease | None]:
+    if _protected_duplicate(route):
+        return _duplicate_decision(route, policy), None
+    if existing.get("released_at") is not None:
+        return AdmissionDecision(
+            AdmissionOutcome.RATE_LIMITED,
+            route,
+            False,
+            "released duplicate is not replayable for this route",
+            policy.retry_after_seconds,
+        ), None
     return AdmissionDecision(
         AdmissionOutcome.CONCURRENCY_LIMITED,
         route,
