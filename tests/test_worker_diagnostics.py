@@ -445,4 +445,4 @@ async def test_chat_rejects_invalid_idempotency_key_before_admission(monkeypatch
         )
     )
     assert response.status == 400
-    assert called is True
+    assert called is False
