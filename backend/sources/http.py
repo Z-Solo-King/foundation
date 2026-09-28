@@ -255,6 +255,55 @@ async def _call_fetcher(fetcher, url: str, options: dict):
         return await fetcher(url)
 
 
+def _remaining_deadline(started: float) -> float:
+    remaining = FETCH_DEADLINE_SECONDS - (asyncio.get_running_loop().time() - started)
+    if remaining <= 0:
+        raise RuntimeError("source acquisition deadline exceeded")
+    return remaining
+
+
+def _declared_content_length(headers) -> int | None:
+    value = headers.get("content-length")
+    if value is None:
+        return None
+    try:
+        declared = int(str(value).strip())
+    except (TypeError, ValueError):
+        return None
+    return declared
+
+
+async def _resolve_public_host(hostname: str, resolver, cache: dict[str, tuple[str, ...]], timeout: float) -> None:
+    if hostname in cache:
+        return
+    addresses: list[str] = []
+    for record_type in ("A", "AAAA"):
+        addresses.extend(await asyncio.wait_for(resolver(hostname, record_type), timeout=timeout))
+    if not addresses:
+        raise ValueError("target host did not resolve to a public address")
+    try:
+        unsafe = [address for address in addresses if not _safe_ip(address)]
+    except ValueError as exc:
+        raise ValueError("target host returned an invalid address") from exc
+    if unsafe:
+        raise ValueError("target host resolves to a non-public address")
+    cache[hostname] = tuple(addresses)
+
+
+async def _fetch_response_with_deadline(fetcher, url: str, options: dict, timeout: float):
+    try:
+        return await asyncio.wait_for(_call_fetcher(fetcher, url, options), timeout=timeout)
+    except asyncio.TimeoutError as exc:
+        raise RuntimeError("source fetch timed out") from exc
+
+
+async def _read_body_with_deadline(response, timeout: float) -> bytes:
+    try:
+        return _response_bytes(await asyncio.wait_for(response.arrayBuffer(), timeout=timeout))
+    except asyncio.TimeoutError as exc:
+        raise RuntimeError("source body read timed out") from exc
+
+
 async def fetch_public_url(url: str, *, fetcher=None, dns_resolver=None) -> FetchResult:
     custom_transport = fetcher is not None
     fetcher = fetcher or _workers_fetch()
@@ -264,43 +313,27 @@ async def fetch_public_url(url: str, *, fetcher=None, dns_resolver=None) -> Fetc
     redirect_chain: list[str] = [original]
     started = asyncio.get_running_loop().time()
     dns_cache: dict[str, tuple[str, ...]] = {}
+
     for _ in range(MAX_REDIRECTS + 1):
-        remaining = FETCH_DEADLINE_SECONDS - (asyncio.get_running_loop().time() - started)
-        if remaining <= 0:
-            raise RuntimeError("source acquisition deadline exceeded")
+        remaining = _remaining_deadline(started)
         if not custom_transport or dns_resolver is not None:
             hostname = urlparse(current).hostname
             if not hostname:
                 raise ValueError("target host is missing")
-            if hostname not in dns_cache:
-                resolve = dns_resolver or _dns_over_https
-                addresses: list[str] = []
-                for record_type in ("A", "AAAA"):
-                    values = await asyncio.wait_for(resolve(hostname, record_type), timeout=remaining)
-                    addresses.extend(values)
-                if not addresses:
-                    raise ValueError("target host did not resolve to a public address")
-                try:
-                    unsafe = [address for address in addresses if not _safe_ip(address)]
-                except ValueError as exc:
-                    raise ValueError("target host returned an invalid address") from exc
-                if unsafe:
-                    raise ValueError("target host resolves to a non-public address")
-                dns_cache[hostname] = tuple(addresses)
+            await _resolve_public_host(
+                hostname,
+                dns_resolver or _dns_over_https,
+                dns_cache,
+                remaining,
+            )
         else:
             current = canonicalize_url(current)
         if original_scheme == "https" and urlparse(current).scheme != "https":
             raise ValueError("https to http redirect downgrade is not allowed")
-        remaining = FETCH_DEADLINE_SECONDS - (asyncio.get_running_loop().time() - started)
-        if remaining <= 0:
-            raise RuntimeError("source acquisition deadline exceeded")
-        try:
-            response = await asyncio.wait_for(
-                _call_fetcher(fetcher, current, {"redirect": "manual"}),
-                timeout=remaining,
-            )
-        except asyncio.TimeoutError as exc:
-            raise RuntimeError("source fetch timed out") from exc
+
+        response = await _fetch_response_with_deadline(
+            fetcher, current, {"redirect": "manual"}, _remaining_deadline(started)
+        )
         status = int(response.status)
         if status in {301, 302, 303, 307, 308}:
             location = response.headers.get("location")
@@ -309,23 +342,11 @@ async def fetch_public_url(url: str, *, fetcher=None, dns_resolver=None) -> Fetc
             current = canonicalize_url(urljoin(current, location))
             redirect_chain.append(current)
             continue
-        content_length = response.headers.get("content-length")
-        if content_length is not None:
-            try:
-                declared_length = int(str(content_length).strip())
-            except (TypeError, ValueError):
-                declared_length = None
-            if declared_length is not None and (declared_length < 0 or declared_length > MAX_BYTES):
-                raise RuntimeError("response exceeds acquisition size budget")
-        remaining = FETCH_DEADLINE_SECONDS - (asyncio.get_running_loop().time() - started)
-        if remaining <= 0:
-            raise RuntimeError("source acquisition deadline exceeded")
-        try:
-            content = _response_bytes(
-                await asyncio.wait_for(response.arrayBuffer(), timeout=remaining)
-            )
-        except asyncio.TimeoutError as exc:
-            raise RuntimeError("source body read timed out") from exc
+
+        declared_length = _declared_content_length(response.headers)
+        if declared_length is not None and (declared_length < 0 or declared_length > MAX_BYTES):
+            raise RuntimeError("response exceeds acquisition size budget")
+        content = await _read_body_with_deadline(response, _remaining_deadline(started))
         if len(content) > MAX_BYTES:
             raise RuntimeError("response exceeds acquisition size budget")
         return FetchResult(
