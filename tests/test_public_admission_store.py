@@ -1,7 +1,7 @@
 import asyncio
 import pytest
 
-from backend.admission import AdmissionPolicy, AdmissionRoute
+from backend.admission import AdmissionDecision, AdmissionOutcome, AdmissionPolicy, AdmissionRoute
 from backend.admission_store import D1AdmissionStore, ROUTE_COST_UNITS, _insert_new_admission, _storage_event_id
 
 
