@@ -67,6 +67,8 @@ def canonicalize_url(url: str) -> str:
     if parsed.port is not None and parsed.port not in {80, 443}:
         raise ValueError("non-standard ports are not allowed")
     host = parsed.hostname.lower().rstrip(".")
+    if ":" in host:
+        host = f"[{host}]"
     if parsed.port is None or (scheme == "http" and parsed.port == 80) or (scheme == "https" and parsed.port == 443):
         netloc = host
     else:

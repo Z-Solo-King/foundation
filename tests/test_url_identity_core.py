@@ -10,6 +10,8 @@ from foundation_core.url_identity import canonicalize_url, safe_host, safe_ip
         ("http://EXAMPLE.COM:80", "http://example.com/"),
         ("https://example.com", "https://example.com/"),
         ("https://example.com/a//b?x=1", "https://example.com/a//b?x=1"),
+        ("https://[2001:4860:4860::8888]/x", "https://[2001:4860:4860::8888]/x"),
+        ("http://[2001:4860:4860::8888]:80", "http://[2001:4860:4860::8888]/"),
     ],
 )
 def test_canonicalize_url_preserves_security_safe_identity(source, expected):
