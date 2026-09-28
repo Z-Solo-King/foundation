@@ -1194,7 +1194,8 @@ async def test_insert_race_rechecks_canonical_scoped_event_id():
         storage_event_id="scoped-id",
     )
     assert db.lookups[:2] == ["scoped-id", "scoped-id"]
-    assert decision.allowed is True
+    assert decision.outcome is AdmissionOutcome.RATE_LIMITED
+    assert decision.allowed is False
     assert lease is None
 
 
