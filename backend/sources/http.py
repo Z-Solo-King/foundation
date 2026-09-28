@@ -221,25 +221,6 @@ async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
     raise RuntimeError(f"DNS resolution failed for {hostname}" + (f" ({detail})" if detail else ""))
 
 
-async def _validate_public_destination(url: str, *, resolver=None) -> None:
-    canonical = canonicalize_url(url)
-    hostname = urlparse(canonical).hostname
-    if not hostname:
-        raise ValueError("target host is missing")
-    resolve = resolver or _dns_over_https
-    addresses = []
-    for record_type in ("A", "AAAA"):
-        addresses.extend(await resolve(hostname, record_type))
-    if not addresses:
-        raise ValueError("target host did not resolve to a public address")
-    try:
-        unsafe = [address for address in addresses if not _safe_ip(address)]
-    except ValueError as exc:
-        raise ValueError("target host returned an invalid address") from exc
-    if unsafe:
-        raise ValueError("target host resolves to a non-public address")
-
-
 async def _call_fetcher(fetcher, url: str, options: dict):
     """Call the transport while preserving redirect policy in production."""
     try:
