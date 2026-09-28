@@ -1118,7 +1118,6 @@ async def test_released_duplicate_cost_ceiling_returns_rate_limit():
         route=AdmissionRoute.CHAT,
         decision=AdmissionDecision(AdmissionOutcome.ACCEPTED, AdmissionRoute.CHAT, True, "ok"),
         policy=AdmissionPolicy(),
-        storage_event_id="e",
     )
     assert decision.outcome is AdmissionOutcome.RATE_LIMITED
     assert lease is None
@@ -1153,7 +1152,7 @@ def test_admission_identity_rejects_oversized_event_id():
 
 
 @pytest.mark.asyncio
-async def test_insert_race_uses_raw_event_id_fallback_lookup():
+async def test_insert_race_rechecks_canonical_scoped_event_id():
     from backend.admission_store import _insert_new_admission
     class DB:
         def __init__(self):
@@ -1193,7 +1192,7 @@ async def test_insert_race_uses_raw_event_id_fallback_lookup():
         policy=AdmissionPolicy(),
         storage_event_id="scoped-id",
     )
-    assert db.lookups[:2] == ["scoped-id", "raw-id"]
+    assert db.lookups[:2] == ["scoped-id", "scoped-id"]
     assert decision.allowed is True
     assert lease is None
 
