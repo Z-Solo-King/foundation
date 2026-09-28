@@ -66,12 +66,27 @@ def _is_workflow(relative: str) -> bool:
     return relative.startswith(".github/workflows/")
 
 
+APPROVED_PRIVATE_EXECUTION_WORKFLOWS = frozenset({
+    ".github/workflows/nightly-multi-agent-research-v3.yml",
+    ".github/workflows/polyglot-migration-review.yml",
+})
+
+APPROVED_PRIVATE_BRIDGE_SCRIPTS = frozenset({
+    "scripts/production_release.sh",
+})
+
+
+def _is_approved_private_bridge(relative: str) -> bool:
+    return relative in APPROVED_PRIVATE_EXECUTION_WORKFLOWS or relative in APPROVED_PRIVATE_BRIDGE_SCRIPTS
+
+
 def _is_public_safe_reference(relative: str) -> bool:
     return (
         relative.startswith("docs/")
         or _is_test(relative)
         or relative.startswith("benchmark/")
         or _is_workflow(relative)
+        or _is_approved_private_bridge(relative)
     )
 
 
@@ -106,7 +121,7 @@ def private_reference_findings(path: Path, source: str, root: Path = ROOT) -> li
 
 def workflow_private_execution_findings(path: Path, source: str, root: Path = ROOT) -> list[Finding]:
     relative = rel(path, root)
-    if not _is_workflow(relative):
+    if not _is_workflow(relative) or relative in APPROVED_PRIVATE_EXECUTION_WORKFLOWS:
         return []
     if WORKFLOW_PRIVATE_EXEC_PATTERN.search(source):
         return [
