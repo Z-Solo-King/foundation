@@ -187,3 +187,200 @@ def test_wikipedia_search_supports_workers_single_argument_fetch():
 
     assert asyncio.run(wikipedia._implementation("q", 2, fetcher=fetcher)) == []
     assert calls and "w/api.php" in calls[0]
+
+
+@pytest.mark.parametrize("declared_length", [1_000_001, -1])
+def test_fetch_public_url_rejects_invalid_or_oversized_declared_length(monkeypatch, declared_length):
+    import backend.sources.http as http
+
+    class Response:
+        status = 200
+        headers = {"content-length": str(declared_length)}
+
+        async def arrayBuffer(self):
+            raise AssertionError("oversized or negative declarations must be rejected before reading")
+
+    async def fetcher(_url, _opts):
+        return Response()
+
+    with pytest.raises(RuntimeError, match="size budget"):
+        asyncio.run(http.fetch_public_url("https://example.com", fetcher=fetcher))
+
+
+def test_fetch_public_url_ignores_malformed_content_length_and_reads_body():
+    import backend.sources.http as http
+
+    class Response:
+        status = 200
+        headers = {"content-length": "not-a-number", "content-type": "text/plain"}
+
+        async def arrayBuffer(self):
+            return b"ok"
+
+    async def fetcher(_url, _opts):
+        return Response()
+
+    result = asyncio.run(http.fetch_public_url("https://example.com", fetcher=fetcher))
+    assert result.content == b"ok"
+
+
+def test_fetch_public_url_uses_total_deadline_for_fetch_and_body(monkeypatch):
+    import backend.sources.http as http
+
+    monkeypatch.setattr(http, "FETCH_DEADLINE_SECONDS", 0.01)
+
+    class Response:
+        status = 200
+        headers = {}
+
+        async def arrayBuffer(self):
+            await asyncio.sleep(0.05)
+            return b"late"
+
+    async def slow_fetcher(_url, _opts):
+        await asyncio.sleep(0.05)
+        return Response()
+
+    with pytest.raises(RuntimeError, match="timed out"):
+        asyncio.run(http.fetch_public_url("https://example.com", fetcher=slow_fetcher))
+
+
+def test_fetch_public_url_caches_dns_per_host_across_redirects():
+    import backend.sources.http as http
+
+    responses = iter([
+        type("Response", (), {
+            "status": 302,
+            "headers": {"location": "/next"},
+            "arrayBuffer": lambda self: None,
+        })(),
+        type("Response", (), {
+            "status": 200,
+            "headers": {"content-type": "text/plain"},
+            "arrayBuffer": lambda self: None,
+        })(),
+    ])
+
+    async def fetcher(_url, _opts):
+        response = next(responses)
+        async def array_buffer():
+            return b"ok"
+        response.arrayBuffer = array_buffer
+        return response
+
+    calls = []
+
+    async def resolver(hostname, record_type):
+        calls.append((hostname, record_type))
+        return ["93.184.216.34"] if record_type == "A" else []
+
+    result = asyncio.run(
+        http.fetch_public_url(
+            "https://example.com",
+            fetcher=fetcher,
+            dns_resolver=resolver,
+        )
+    )
+    assert result.status == 200
+    assert calls == [("example.com", "A"), ("example.com", "AAAA")]
+
+
+def test_dns_over_https_does_not_fan_out_on_successful_empty_answer(monkeypatch):
+    import backend.sources.http as http
+
+    calls = []
+
+    async def response(endpoint, _encoded_query):
+        calls.append(endpoint)
+        return _DnsResponse(200, _dns_packet(record_type=1, addresses=()))
+
+    async def doh_request(endpoint, encoded_query):
+        return await response(endpoint, encoded_query)
+
+    monkeypatch.setattr(http, "_doh_request", doh_request)
+    with pytest.raises(RuntimeError, match="DNS resolution failed"):
+        asyncio.run(http._dns_over_https("example.com", "A"))
+    assert calls == ["https://cloudflare-dns.com/dns-query"]
+
+
+def test_call_fetcher_never_drops_production_redirect_options():
+    import backend.sources.http as http
+    from backend.core.workers_runtime import WorkersFetchAdapter
+
+    async def legacy_fetch(url):
+        return object()
+
+    adapter = WorkersFetchAdapter("test", legacy_fetch)
+    with pytest.raises(RuntimeError, match="request options"):
+        asyncio.run(http._call_fetcher(adapter, "https://example.com/", {"redirect": "manual"}))
+
+
+def test_public_destination_rejects_missing_hostname(monkeypatch):
+    import backend.sources.http as http
+
+    monkeypatch.setattr(http, "canonicalize_url", lambda _url: "http:///missing-host")
+    with pytest.raises(ValueError, match="target host is missing"):
+        asyncio.run(http._validate_public_destination("https://example.com", resolver=lambda *_args: []))
+
+
+def test_fetch_public_url_deadline_expires_before_transport(monkeypatch):
+    import backend.sources.http as http
+
+    monkeypatch.setattr(http, "FETCH_DEADLINE_SECONDS", -1)
+
+    async def fetcher(_url, _opts):
+        raise AssertionError("transport must not start after the deadline")
+
+    with pytest.raises(RuntimeError, match="deadline exceeded"):
+        asyncio.run(http.fetch_public_url("https://example.com", fetcher=fetcher))
+
+
+def test_fetch_public_url_body_read_timeout(monkeypatch):
+    import backend.sources.http as http
+
+    monkeypatch.setattr(http, "FETCH_DEADLINE_SECONDS", 0.05)
+
+    class Response:
+        status = 200
+        headers = {}
+
+        async def arrayBuffer(self):
+            await asyncio.sleep(0.2)
+            return b"late"
+
+    async def fast_fetcher(_url, _opts):
+        return Response()
+
+    with pytest.raises(RuntimeError, match="body read timed out"):
+        asyncio.run(http.fetch_public_url("https://example.com", fetcher=fast_fetcher))
+
+
+def test_fetch_public_url_rejects_invalid_resolved_address_before_transport():
+    import backend.sources.http as http
+
+    async def resolver(_hostname, _record_type):
+        return ["not-an-ip"]
+
+    async def fetcher(_url, _opts):
+        raise AssertionError("invalid DNS address must be rejected")
+
+    with pytest.raises(ValueError, match="invalid address"):
+        asyncio.run(
+            http.fetch_public_url(
+                "https://example.com",
+                fetcher=fetcher,
+                dns_resolver=resolver,
+            )
+        )
+
+
+def test_fetch_public_url_rejects_missing_hostname_before_transport(monkeypatch):
+    import backend.sources.http as http
+
+    monkeypatch.setattr(http, "canonicalize_url", lambda _url: "http:///missing-host")
+
+    async def fetcher(_url, _opts):
+        raise AssertionError("missing hostname must be rejected")
+
+    with pytest.raises(ValueError, match="target host is missing"):
+        asyncio.run(http.fetch_public_url("https://example.com", fetcher=fetcher, dns_resolver=lambda *_args: []))
