@@ -1,30 +1,44 @@
 # Current Source of Truth — Foundation (public-safe)
 
-This document is a public continuity aid, not a private runtime/control-plane authority.
+This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
-Checked: 2026-09-26.
-Foundation main: `4999c93dc8b17a5a3926faf3415e725fd4ae7b0e`.
-Active GitHub issue count across the family: 11.
-Public Foundation issues: #58, #157, #1157, #1247, #1249, #1305, #1306.
+Checked: 2026-09-28.
+Foundation main code checkpoint: 75a79a37775cc9f410916c47ac2b5ac8c50bf775.
+Active family issue count at checkpoint: 10.
+Public Foundation issues at checkpoint: #1249, #1247, #157, #58.
+Open Foundation PRs at checkpoint: #1439, #1427.
 
 ## Public architecture
 
-`ai-cio.pages.dev` is the canonical public front door.
-Foundation owns public-safe contracts/core, the public edge/API, GitHub Actions, and deployment orchestration.
-The protected Operations side owns private runtime policy, provider control, resource governance, memory, recovery, and protected tooling.
+ai-cio.pages.dev is the canonical public front door.
+Foundation owns public-safe contracts/core, the public edge/API, GitHub Actions, frontend and deployment orchestration.
+The protected Operations side owns private runtime policy, provider control, resource governance, memory, recovery and protected tooling.
 The retired extractor-mapper repository is historical material, not a runtime owner.
 
 ## Runtime and evidence boundary
 
-Protected runtime revisions, resource identifiers, deployment internals, private issue state, and private provider configuration are intentionally omitted from this public checkpoint.
+Protected runtime revisions, resource identifiers, deployment internals, private issue state and private provider configuration are intentionally omitted from this public checkpoint.
 Fresh production/runtime evidence must be obtained from the protected evidence path before making an L4 claim.
 
 Current evidence classes:
 - Nightly 24-program research: no provider-backed closure receipt is currently certified.
-- Extractor benchmark: latest structural benchmark is 40 receipts with 4 `ok`, 32 `empty`, and 4 `blocked`; integrity/provenance checks passed, but this is not proof of 40 successful real acquisitions.
-- Polyglot migration: deterministic/structural evidence exists; runtime performance evidence is still required before promotion.
+- Extractor/feed evidence: native retailer-hosted feed evidence remains required for #1247/#1249.
+- Polyglot migration: deterministic/structural evidence exists; runtime performance/evidence remains required before promotion.
+
+## Cross-chat continuity
+
+GitHub-side repository/CI work and Cloudflare-side runtime/configuration work are handled in separate chats.
+This repository does not treat conversational expectations from a different chat as runtime evidence.
+The current Foundation public-safe continuation policy is docs/AI_AGENT_EXECUTION_POLICY_2026-09-28.md.
+The current public-safe handoff is docs/CHAT_CONTINUATION_HANDOFF_2026-09-28.md.
+
+## Queue integrity
+
+Use GitHub live state, not this document, for current issue/PR counts after the checkpoint.
+Use canonical-authority clustering and cross-fire validation for implementation work.
+Do not create duplicate authorities for admission, URL/SSRF safety, evidence, routing, research execution, or deployment.
 
 ## Continuity
 
-Use this file together with `docs/FAMILY_SYNC_STATE.json` and `docs/PROMPT_TO_CANONICAL_DOC_MAP.md`.
+Use this file together with docs/FAMILY_SYNC_STATE.json and docs/PROMPT_TO_CANONICAL_DOC_MAP.md.
 Do not add another competing current-state document.
