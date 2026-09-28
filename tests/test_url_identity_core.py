@@ -2,7 +2,7 @@ import pytest
 
 from ipaddress import ip_address
 
-from foundation_core.url_identity import canonicalize_url, safe_host, safe_ip, _parse_obfuscated_ipv4
+from foundation_core.url_identity import canonicalize_url, safe_host, safe_ip
 
 
 @pytest.mark.parametrize(
