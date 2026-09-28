@@ -124,3 +124,25 @@ def test_safe_host_rejects_single_label_and_reserved_suffixes():
 )
 def test_safe_host_classifies_numeric_ipv4_forms_before_dns(source, expected):
     assert safe_host(source) is expected
+
+
+def test_safe_host_rejects_empty_hostname():
+    assert safe_host("") is False
+
+
+def test_obfuscated_ipv4_supports_explicit_hex_and_octal_parts():
+    assert safe_host("0x8.0o8.0o0.0o1") is True
+
+
+def test_obfuscated_ipv4_rejects_invalid_octal_parts():
+    assert safe_host("09.0.0.1") is False
+
+
+def test_obfuscated_ipv4_rejects_out_of_range_parts():
+    assert safe_host("256.1.1.1") is False
+
+
+def test_obfuscated_ipv4_handles_one_two_and_three_part_forms():
+    assert safe_host("134744072") is True
+    assert safe_host("8.1") is True
+    assert safe_host("8.8.1") is True
