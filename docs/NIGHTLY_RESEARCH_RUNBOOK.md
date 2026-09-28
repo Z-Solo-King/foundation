@@ -4,7 +4,7 @@ The public Foundation repository owns the nightly research evidence workflow. He
 
 ## Window
 
-The scheduled kickoff is **01:00 IST** (**19:30 UTC** on the previous day). The workflow also starts from successful completion of the production-release workflow for the exact certified Foundation SHA, avoiding a long polling wait. Scheduled/manual invocations use only a short reconciliation window; a later successful production release causes a new `workflow_run` execution. The complete run remains bounded for the **09:00 IST** maintenance-window boundary.
+The scheduled kickoff is **01:00 IST** (**19:30 UTC** on the previous day). The production-release workflow dispatches the nightly workflow after a successful canonical release, passing the exact Foundation SHA and release-run ID. The nightly gate verifies that exact completed release run. Scheduled/manual invocations use only a short reconciliation window. The complete run remains bounded for the **09:00 IST** maintenance-window boundary.
 
 ## Coverage
 
