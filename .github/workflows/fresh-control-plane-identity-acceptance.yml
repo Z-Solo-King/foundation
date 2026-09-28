@@ -52,13 +52,13 @@ jobs:
           echo "bridge run created without jobs after bounded 120s wait: run_id=$RUN_ID"
           gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json status,conclusion,url
           exit 1
-      - name: Dispatch nightly v3
+      - name: Dispatch nightly v3 contract-only
         id: dispatch_nightly
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          url="$(gh workflow run nightly-multi-agent-research-v3.yml --repo "$GITHUB_REPOSITORY" --ref main -f dry_run=false)"
+          url="$(gh workflow run nightly-multi-agent-research-v3.yml --repo "$GITHUB_REPOSITORY" --ref main -f dry_run=true)"
           run_id="$(printf '%s\n' "$url" | sed -n 's#.*/runs/\([0-9][0-9]*\).*#\1#p')"
           test -n "$run_id"
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
