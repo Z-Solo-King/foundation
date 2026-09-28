@@ -188,3 +188,34 @@ References:
 - https://www.typescriptlang.org/docs/
 - https://doc.rust-lang.org/book/
 - https://go.dev/doc/
+## Compute-inspired AI patterns
+
+The map uses ten reusable patterns. These are engineering abstractions inspired by CPU/GPU scheduling, portability and low-latency systems; they are not hardware implementation requirements.
+
+| Pattern | Project use | Audit trigger |
+|---|---|---|
+| P01 Work Director | choose the next lane/task from telemetry, dependencies, evidence tier and cost | too much static ticket ordering or idle/blocked lanes |
+| P02 Cross-Fire Mesh | independently validate the same contract from different boundaries | high-risk deterministic finding |
+| P03 Sparse Context Access | retrieve graph-indexed slices instead of whole repositories/logs | token/time pressure or repeated rediscovery |
+| P04 Capability Negotiation | choose provider/tool/language by capability + policy | portability/migration/provider fallback |
+| P05 Latency Guard | measure queue/retrieval/planning/provider/persistence phases | chatbot/audit slowdown |
+| P06 Shared Evidence Fabric | share artifact/receipt references without sharing private authority | cross-repo synchronization |
+| P07 Compatibility Profiles | contain version/site/provider quirks in bounded profiles | recurring external incompatibility |
+| P08 Blind Differential | compare normalized outputs before revealing implementation identity | benchmark or migration comparison |
+| P09 Fallback Ladder | preferred -> alternate -> degraded -> blocked | provider/extraction recovery |
+| P10 Shim/Sidecar | add observability/compatibility without creating a second authority | edge wrappers/adapters |
+
+The detailed specification is in `docs/AI_COMPUTE_INSPIRED_PATTERNS.md`.
+
+## AI Work Director
+Represent work as `task_id + owner + feature + mutation_surface + dependencies + expected_cost + deadline + evidence_tier + lane_role + retrieval_budget + state + priority`.
+Schedule by readiness and information gain, not ticket age alone. Blocked lanes work-steal. Shared mutation surfaces stay serialized.
+
+## Credential identity
+For any secret/token connection, identity is `surface + repository/Worker + environment + purpose`. Identical names such as `AUTH_TOKEN` do not imply identical credentials.
+
+## Language audit rule
+Each language is an independent analytical lens. Candidate implementations inherit canonical contracts and must pass differential, adversarial, performance/resource and promotion gates before authority changes.
+
+## Token-efficiency rule
+Map-first retrieval is mandatory for large audits: map -> owner -> feature -> functions -> policies -> tests/evidence -> issue/PR -> runtime receipt. Measure retrieved bytes and duplicated context.
