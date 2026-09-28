@@ -3,7 +3,6 @@
   "repository": "Z-Solo-King/foundation",
   "visibility": "public-safe",
   "generated_at": "2026-09-28",
-  "source_head": "09c2c218d35d851e463a31c5d0e6536289b34393",
   "structural_inventory": {
     "tree_entries": 656,
     "documentation_files": 106,
@@ -227,5 +226,6 @@
     "observation -> normalization -> identity/mapping -> evidence",
     "PR -> required CI -> release -> runtime receipt"
   ],
-  "audit_system": "docs/AI_AUDIT_SYSTEM.md"
+  "audit_system": "docs/AI_AUDIT_SYSTEM.md",
+  "source_head_at_generation": "09c2c218d35d851e463a31c5d0e6536289b34393"
 }
