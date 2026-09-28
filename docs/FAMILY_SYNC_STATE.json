@@ -1,7 +1,7 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-27",
+  "audited_at": "2026-09-28",
   "public_safe": true,
   "live_main": {
     "foundation": "efaf43e8bb55dc25d13dcb3f0be05df88f0c09dc",
@@ -19,7 +19,7 @@
     "private_resource_identifiers": "redacted"
   },
   "current_queue": {
-    "open_issue_count": 11,
+    "open_issue_count": 13,
     "foundation": [
       58,
       157,
@@ -27,7 +27,7 @@
       1247,
       1249
     ],
-    "operations_count": 6
+    "operations_count": 8
   },
   "evidence": {
     "nightly_research": "provider-backed 24-program closure not certified",
@@ -39,7 +39,7 @@
       "structural_pass": true,
       "real_catalog_success_not_proven": true
     },
-    "migration_review": "TypeScript acquisition-planner and public-endpoint-discovery evidence lanes merged; fresh post-repair CI receipt pending",
+    "migration_review": "Five-lane TypeScript/Rust/Go migration and production release are green; heavy evidence jobs are decoupled from mainline pushes.",
     "feed_recovery": "PR #1344 and #1362 merged; issue-specific acceptance remains open"
   },
   "continuity_enforcement": {

@@ -1,11 +1,11 @@
 {
   "schema": "family-issue-acceptance-matrix/v1",
-  "audited_at": "2026-09-27",
+  "audited_at": "2026-09-28",
   "repository_heads": {
     "foundation": "efaf43e8bb55dc25d13dcb3f0be05df88f0c09dc",
     "operations": "[PROTECTED_CURRENT_MAIN]"
   },
-  "open_issue_count": 11,
+  "open_issue_count": 13,
   "issues": [
     {
       "repo": "foundation",
@@ -229,6 +229,44 @@
         "FI-04",
         "FI-07",
         "FI-08"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 1135,
+      "title": "migration: investigate Worker 403/502 boundary and evaluate bounded TypeScript edge/SSE migration",
+      "status": "OPEN",
+      "class": "migration+runtime",
+      "fix_now": [
+        "migration execution and evidence"
+      ],
+      "remaining": [
+        "promotion/canary/closure"
+      ],
+      "probes": [
+        "FI-02",
+        "FI-03",
+        "FI-06",
+        "FI-09"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 1137,
+      "title": "migration: consolidated plan and execution order (tracking: #597, #603, #1134, #1135)",
+      "status": "OPEN",
+      "class": "migration+process",
+      "fix_now": [
+        "migration execution and evidence"
+      ],
+      "remaining": [
+        "promotion/canary/closure"
+      ],
+      "probes": [
+        "FI-01",
+        "FI-02",
+        "FI-06",
+        "FI-09"
       ]
     }
   ],
