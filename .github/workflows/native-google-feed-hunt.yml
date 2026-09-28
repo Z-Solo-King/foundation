@@ -18,7 +18,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: native-google-feed-hunt-${{ github.ref }}
+  group: staged-native-google-feed-hunt-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
