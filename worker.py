@@ -201,11 +201,12 @@ def _admission_response(decision):
     if decision.allowed:
         return None
     status = (
-        429
+        409
+        if decision.outcome is AdmissionOutcome.DUPLICATE
+        else 429
         if decision.outcome in {
             AdmissionOutcome.RATE_LIMITED,
             AdmissionOutcome.CONCURRENCY_LIMITED,
-            AdmissionOutcome.DUPLICATE,
         }
         else 503
     )
