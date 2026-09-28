@@ -60,8 +60,8 @@ def _is_policy_configuration(relative: str) -> bool:
     """Workflow configuration legitimately names secret variables and private jobs."""
     return relative.startswith(".github/workflows/")
 
-def secret_findings(path: Path, source: str) -> list[Finding]:
-    relative = rel(path)
+def secret_findings(path: Path, source: str, root: Path = ROOT) -> list[Finding]:
+    relative = rel(path, root)
     if relative == "scripts/public_security_lint.py" or _is_test(relative):
         return []
     findings = []
@@ -74,8 +74,8 @@ def secret_findings(path: Path, source: str) -> list[Finding]:
         findings.append(Finding(relative, "credential-literal", "public source contains a hard-coded credential-like literal"))
     return findings
 
-def private_reference_findings(path: Path, source: str) -> list[Finding]:
-    relative = rel(path)
+def private_reference_findings(path: Path, source: str, root: Path = ROOT) -> list[Finding]:
+    relative = rel(path, root)
     # Tests, documentation and workflow policy are allowed to name private
     # implementation boundaries; secret literals remain checked separately.
     if (
@@ -98,8 +98,8 @@ def private_reference_findings(path: Path, source: str) -> list[Finding]:
             break
     return findings
 
-def private_revision_findings(path: Path, source: str) -> list[Finding]:
-    relative = rel(path)
+def private_revision_findings(path: Path, source: str, root: Path = ROOT) -> list[Finding]:
+    relative = rel(path, root)
     # Immutable private revisions are expected in reviewed cross-repo workflow
     # pins; executable public source outside workflow policy must not embed them.
     if (
@@ -119,8 +119,8 @@ def private_revision_findings(path: Path, source: str) -> list[Finding]:
         ]
     return []
 
-def python_findings(path: Path, source: str) -> list[Finding]:
-    relative = rel(path)
+def python_findings(path: Path, source: str, root: Path = ROOT) -> list[Finding]:
+    relative = rel(path, root)
     try:
         tree = ast.parse(source, filename=relative)
     except SyntaxError as exc:
@@ -148,11 +148,11 @@ def python_findings(path: Path, source: str) -> list[Finding]:
 
 def lint_file(path: Path, root: Path = ROOT) -> list[Finding]:
     source = path.read_text(encoding="utf-8")
-    findings = secret_findings(path, source)
-    findings.extend(private_reference_findings(path, source))
-    findings.extend(private_revision_findings(path, source))
+    findings = secret_findings(path, source, root)
+    findings.extend(private_reference_findings(path, source, root))
+    findings.extend(private_revision_findings(path, source, root))
     if path.suffix.lower() == ".py":
-        findings.extend(python_findings(path, source))
+        findings.extend(python_findings(path, source, root))
     return findings
 
 def main() -> int:
