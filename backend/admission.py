@@ -33,6 +33,8 @@ class AdmissionPolicy:
     max_concurrent_per_subject: int = 22
     max_concurrent_global: int = 22
     retry_after_seconds: int = 5
+    max_cost_units_per_subject: int = 60
+    max_cost_units_global: int = 600
     protected_routes: tuple[AdmissionRoute, ...] = (AdmissionRoute.CHAT, AdmissionRoute.RESEARCH, AdmissionRoute.STREAM)
 
     def validate(self) -> None:
@@ -45,6 +47,8 @@ class AdmissionPolicy:
             self.max_concurrent_per_subject,
             self.max_concurrent_global,
             self.retry_after_seconds,
+            self.max_cost_units_per_subject,
+            self.max_cost_units_global,
         )
         if any(value < 1 for value in values):
             raise ValueError("admission limits must be positive")
@@ -57,6 +61,8 @@ class AdmissionSnapshot:
     global_requests: int = 0
     subject_concurrent: int = 0
     global_concurrent: int = 0
+    subject_cost_units: int = 0
+    global_cost_units: int = 0
 
     def validate(self) -> None:
         values = (
@@ -64,6 +70,8 @@ class AdmissionSnapshot:
             self.global_requests,
             self.subject_concurrent,
             self.global_concurrent,
+            self.subject_cost_units,
+            self.global_cost_units,
         )
         if any(value < 0 for value in values):
             raise ValueError("admission counters must be non-negative")
@@ -85,6 +93,8 @@ class AdmissionDecision:
 
 def _admission_limit_decision(policy: AdmissionPolicy, snapshot: AdmissionSnapshot, route: AdmissionRoute) -> AdmissionDecision | None:
     checks = (
+        (snapshot.global_cost_units >= policy.max_cost_units_global, AdmissionOutcome.RATE_LIMITED, "global admission cost ceiling reached"),
+        (snapshot.subject_cost_units >= policy.max_cost_units_per_subject, AdmissionOutcome.RATE_LIMITED, "subject admission cost ceiling reached"),
         (snapshot.global_requests >= policy.max_requests_global, AdmissionOutcome.RATE_LIMITED, "global admission request ceiling reached"),
         (snapshot.subject_requests >= policy.max_requests_per_subject, AdmissionOutcome.RATE_LIMITED, "subject admission request ceiling reached"),
         (snapshot.global_concurrent >= policy.max_concurrent_global, AdmissionOutcome.CONCURRENCY_LIMITED, "global admission concurrency ceiling reached"),
