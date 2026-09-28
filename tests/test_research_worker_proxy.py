@@ -49,3 +49,22 @@ def test_safe_upstream_error_details_bounds_large_fields():
 
     assert details["upstream_status"] == 502
     assert len(details["upstream_error"]) == 200
+
+
+def test_proxy_upstream_request_uses_explicit_service_headers():
+    from scripts.research_worker_proxy import UPSTREAM_USER_AGENT
+    assert UPSTREAM_USER_AGENT.startswith("HeroicAI-ResearchProxy/")
+    assert UPSTREAM_USER_AGENT != "Python-urllib/3.14"
+
+def test_safe_upstream_error_details_preserves_bounded_error_object_fields():
+    body = b'{"error":{"code":"cf-403","message":"forbidden"},"response":{"provider":null}}'
+    error = HTTPError(
+        "https://example.invalid/api/v1/chat",
+        403,
+        "Forbidden",
+        {},
+        BytesIO(body),
+    )
+    details = _safe_upstream_error_details(error)
+    assert details["upstream_error_code"] == "cf-403"
+    assert details["upstream_error_message"] == "forbidden"
