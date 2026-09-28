@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OPERATIONS_REPOSITORY="Z-Solo-King/operations"
-OPERATIONS_REF="4d6f2167a791417b6afbc6e69165129c48966167"
+OPERATIONS_REF="fa2ce0dd2ae1400cc04af68176d9a428f0f2f31c"
 OPERATIONS_SERVICE_NAME="operations"
 OPERATIONS_EDGE_SERVICE_NAME="operations-edge"
 BASE_URL="https://ai-cio.pages.dev"
@@ -24,7 +24,7 @@ test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIV
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
-test "$OPERATIONS_REF" = '4d6f2167a791417b6afbc6e69165129c48966167'
+test "$OPERATIONS_REF" = 'fa2ce0dd2ae1400cc04af68176d9a428f0f2f31c'
 
 after_install_marker=''
 
