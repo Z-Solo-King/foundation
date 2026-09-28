@@ -42,6 +42,15 @@ Benchmark: corpus -> reference/candidate -> exact output -> repeats -> cost -> l
 Research: contract -> planner -> router -> acquisition -> observation -> evidence -> verification -> gaps -> budget stop -> publication.
 Migration: owner -> baseline -> candidate -> differential -> adversarial -> benchmark -> shadow -> canary -> rollback.
 
+## 6. Uniform map record format
+
+Every mapped feature uses: id, surfaces, functions, function_files, key, usage, policies, policy_logic, consumers, tests, workflow links and evidence.
+Every connection uses: from, to, via, purpose, owner, auth, policies and evidence.
+Every credential uses: surface, name, class, purpose, value_in_repo and scope_rule. Secret values are never map data.
+Every language entry uses: language, files, where, why, how and policies.
+Credential identity is surface + repository/Worker + environment + purpose. Identical variable names do not imply identical credentials.
+Runtime rows require observed_at and evidence source; snapshots must be refreshed before mutation or production claims.
+
 ## AI Brain
 Node types: file, symbol, feature, policy, issue, PR, workflow, test, artifact, receipt, external source.
 Edges: owns, calls, consumes, protects, validates, documents, tests, deploys, produces, depends_on, duplicates, supersedes.
