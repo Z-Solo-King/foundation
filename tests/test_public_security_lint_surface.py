@@ -11,13 +11,13 @@ def test_active_files_includes_operational_public_types():
     assert any(p.startswith('docs/') and p.endswith('.md') for p in files)
     assert any(p.startswith('.github/workflows/') for p in files)
 
-def test_private_references_are_not_exempt_in_docs_or_workflows(tmp_path):
+def test_private_references_are_exempt_only_on_intentional_nonruntime_surfaces(tmp_path):
     doc = tmp_path / 'example.md'
     doc.write_text('operations/private/control_plane_runtime.py\n', encoding='utf-8')
-    assert any(f.rule == 'private-reference' for f in lint_file(doc, tmp_path))
+    assert not any(f.rule == 'private-reference' for f in lint_file(doc, tmp_path))
     workflow = tmp_path / 'workflow.yml'
     workflow.write_text('Z-Solo-King/operations@0123456789abcdef0123456789abcdef01234567\n', encoding='utf-8')
-    assert any(f.rule == 'private-revision' for f in lint_file(workflow, tmp_path))
+    assert not any(f.rule == 'private-revision' for f in lint_file(workflow, tmp_path))
 
 def test_strict_findings_fail_without_special_flag():
     text = Path(ROOT / 'scripts/public_security_lint.py').read_text(encoding='utf-8')
