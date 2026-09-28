@@ -1,11 +1,18 @@
 name: Nightly research provider preflight
 
-on: # zizmor: ignore[dangerous-triggers] protected post-release preflight; pinned source only
-  workflow_run:
-    workflows:
-      - "Heroic AI production release"
-    types: [completed]
+on:
   workflow_dispatch:
+    inputs:
+      target_sha:
+        description: "Exact Foundation SHA released and being preflighted"
+        required: false
+        default: ""
+        type: string
+      production_release_run_id:
+        description: "Exact successful production-release run supplying the target SHA"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -15,7 +22,6 @@ jobs:
     permissions:
       contents: read
       issues: write
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -114,7 +120,7 @@ jobs:
               "research_endpoint_set": os.environ["PREFLIGHT_ENDPOINT"] == "true",
               "research_api_key_set": os.environ["PREFLIGHT_API_KEY"] == "true",
               "research_model_set": os.environ["PREFLIGHT_MODEL"] == "true",
-              "operations_ref": "4fb9f3be96c9947bc3d07756762efbb563158a04",
+              "operations_ref": "bf4af8db50d7b39c79acd09a9e90237856962abb",
               "workers_ai_model": "@cf/zai-org/glm-4.7-flash",
               "network_classification": (
                   "dns_or_network_unreachable" if int(os.environ.get("PREFLIGHT_WORKER_HEALTH_STATUS") or "0") == 0 else

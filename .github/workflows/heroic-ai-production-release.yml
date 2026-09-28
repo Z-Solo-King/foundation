@@ -21,6 +21,10 @@ jobs:
   release:
     name: Canonical Heroic AI production release
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      actions: write
     timeout-minutes: 45
     steps:
       - name: Checkout
@@ -50,6 +54,82 @@ jobs:
           test "$GITHUB_EVENT_NAME" != "pull_request" || { echo 'Privileged production release cannot run from pull_request'; exit 1; }
           test "$GITHUB_EVENT_NAME" != "pull_request_target" || { echo 'Privileged production release cannot run from pull_request_target'; exit 1; }
           bash scripts/production_release.sh
+
+      - name: Dispatch nightly research for certified release
+        if: ${{ steps.production_release.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run nightly-multi-agent-research-v3.yml --repo "$GITHUB_REPOSITORY" --ref main --field target_sha="$GITHUB_SHA" --field production_release_run_id="$GITHUB_RUN_ID"
+      - name: Upload cross-repository audit receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cross-repository-audit-receipt
+          path: .runtime/cross-repository-audit-receipt.json
+          if-no-files-found: warn
+
+      - name: Upload runtime acceptance receipts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: production-runtime-acceptance-receipts
+          path: .runtime/*.json
+          if-no-files-found: error
+          include-hidden-files: true
+      - name: Publish sanitized production receipt
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          outcome="${{ steps.production_release.outcome }}"
+          operations_ref="$(sed -n 's/^OPERATIONS_REF="\([0-9a-f]\{40\}\)"$/\1/p' scripts/production_release.sh | head -n1)"
+          mkdir -p .runtime
+          {
+            echo "# Canonical production release receipt"
+            echo
+            echo "- Workflow run: ${GITHUB_RUN_ID}"
+            echo "- Foundation revision: ${GITHUB_SHA}"
+            echo "- Operations revision: ${operations_ref:-unknown}"
+            echo "- Release step outcome: ${outcome}"
+            echo "- Repository: ${GITHUB_REPOSITORY}"
+            echo "- Trigger: ${GITHUB_EVENT_NAME}"
+            echo
+            echo "## Runtime receipt files"
+            if compgen -G '.runtime/*.json' > /dev/null; then
+              find .runtime -maxdepth 1 -type f -name '*.json' -printf '%f\n' | sort | sed 's/^/- /'
+            else
+              echo '- none produced'
+            fi
+            echo
+            echo "This receipt is a sanitized index only; secret values and provider responses are not included."
+          } > .runtime/production-release-tracker-receipt.md
+          gh issue comment 58 --repo "$GITHUB_REPOSITORY" --body-file .runtime/production-release-tracker-receipt.md      - name: Dispatch certified post-release validation in parallel
+        if: ${{ steps.production_release.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          workflows=(
+            "nightly-multi-agent-research-v3.yml"
+            "live-chatbot-production-smoke.yml"
+            "nightly-research-provider-preflight.yml"
+          )
+          pids=()
+          for workflow in "${workflows[@]}"; do
+            gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref main \
+              --field target_sha="$GITHUB_SHA" \
+              --field production_release_run_id="$GITHUB_RUN_ID" &
+            pids+=("$!")
+          done
+          status=0
+          for pid in "${pids[@]}"; do
+            wait "$pid" || status=1
+          done
+          exit "$status"
 
       - name: Upload cross-repository audit receipt
         if: always()

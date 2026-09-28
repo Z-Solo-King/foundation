@@ -11,6 +11,16 @@ name: nightly multi-agent research
         required: false
         default: false
         type: boolean
+      target_sha:
+        description: "Exact Foundation SHA to research; production release dispatch supplies this"
+        required: false
+        default: ""
+        type: string
+      production_release_run_id:
+        description: "Exact successful production-release run ID supplied by the release workflow"
+        required: false
+        default: ""
+        type: string
 permissions:
   actions: read
   contents: read
@@ -22,51 +32,58 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  TARGET_FOUNDATION_SHA: ${{ inputs.target_sha || github.sha }}
   PYTHONUNBUFFERED: "1"
   PUBLIC_WORKER_URL: "https://ai-cio.pages.dev"
   RESEARCH_LLM_ENDPOINT: "http://127.0.0.1:8765"
   RESEARCH_LLM_API_KEY: "local-worker-proxy"
   RESEARCH_LLM_MODEL: "@cf/zai-org/glm-4.7-flash"
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_RESEARCH_REF: 4fb9f3be96c9947bc3d07756762efbb563158a04
+  OPERATIONS_RESEARCH_REF: bf4af8db50d7b39c79acd09a9e90237856962abb
   OPERATIONS_MIGRATION_TOOLS_REF: 41db817dee6aa7d369ea9a07dd072b58ece1695a
 
 jobs:
   production_gate:
-    name: Wait for exact production release
+    name: Verify exact production release
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 5
     steps:
-      - name: Require matching successful production release
+      - name: Verify exact successful release run
         env:
           GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ env.TARGET_FOUNDATION_SHA }}
+          RELEASE_RUN_ID: ${{ inputs.production_release_run_id || '' }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${{ inputs.dry_run || false }}" == "true" ]]; then
+          if [[ "$DRY_RUN" == "true" ]]; then
             echo "Explicit dry-run: production release gate is not required."
             exit 0
           fi
-          target_sha="${GITHUB_SHA}"
-          for attempt in $(seq 1 240); do
-            runs_json="$(gh run list --workflow heroic-ai-production-release.yml --repo "$GITHUB_REPOSITORY" --limit 20 --json databaseId,headSha,status,conclusion)"
-            matching="$(jq --arg sha "$target_sha" '[.[] | select(.headSha == $sha)]' <<<"$runs_json")"
+          if [[ -n "$RELEASE_RUN_ID" ]]; then
+            release_json="$(gh run view "$RELEASE_RUN_ID" --repo "$GITHUB_REPOSITORY" --json databaseId,workflowName,headSha,headBranch,status,conclusion)"
+            test "$(jq -r '.workflowName' <<<"$release_json")" = "Heroic AI production release"
+            test "$(jq -r '.headBranch' <<<"$release_json")" = "main"
+            test "$(jq -r '.headSha' <<<"$release_json")" = "$TARGET_SHA"
+            test "$(jq -r '.status' <<<"$release_json")" = "completed"
+            test "$(jq -r '.conclusion' <<<"$release_json")" = "success"
+            echo "Exact production release gate: PASS (run $RELEASE_RUN_ID, Foundation $TARGET_SHA)"
+            exit 0
+          fi
+          for attempt in $(seq 1 12); do
+            runs_json="$(gh run list --workflow heroic-ai-production-release.yml --repo "$GITHUB_REPOSITORY" --limit 20 --json databaseId,headSha,headBranch,status,conclusion)"
+            matching="$(jq --arg sha "$TARGET_SHA" '[.[] | select(.headSha == $sha and .headBranch == "main")]' <<<"$runs_json")"
             success_count="$(jq '[.[] | select(.status == "completed" and .conclusion == "success")] | length' <<<"$matching")"
             if [ "$success_count" -gt 0 ]; then
               release_id="$(jq -r '[.[] | select(.status == "completed" and .conclusion == "success") | .databaseId] | max' <<<"$matching")"
-              echo "Exact production release gate: PASS (run ${release_id}, Foundation ${target_sha})"
+              echo "Exact production release gate: PASS (run $release_id, Foundation $TARGET_SHA)"
               exit 0
             fi
-            active_count="$(jq '[.[] | select(.status != "completed")] | length' <<<"$matching")"
-            if [ "$active_count" -gt 0 ]; then
-              echo "Production release for ${target_sha} is still active/queued; continuing bounded wait."
-            else
-              echo "No completed successful production release for ${target_sha} yet; continuing bounded wait."
-            fi
+            echo "No matching successful production release for $TARGET_SHA yet; short reconciliation attempt $attempt/12."
             sleep 10
           done
-          echo "Timed out waiting for successful heroic-ai-production-release.yml for ${target_sha}"
-          gh run list --workflow heroic-ai-production-release.yml --repo "$GITHUB_REPOSITORY" --limit 20
+          echo "No successful production release for $TARGET_SHA in the short reconciliation window."
           exit 1
 
   research:
@@ -77,21 +94,13 @@ jobs:
       attestations: write
       artifact-metadata: write
     needs: [production_gate]
-    name: Nightly research lane ${{ matrix.lane }}
+    name: Nightly research CrossFire (24-program global scheduler)
     runs-on: ubuntu-latest
     timeout-minutes: 350
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - lane: 0
-            capacity: 6
-          - lane: 1
-            capacity: 6
-          - lane: 2
-            capacity: 8
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TARGET_FOUNDATION_SHA }}
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
@@ -260,128 +269,138 @@ jobs:
             jq -c '.' "$probe_response_file" 2>/dev/null || true
             exit 1
           fi
-      - name: Run complete research lane
-        id: run_lane
+      - name: Run complete crossfire research
+        id: run_crossfire
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p .runtime
-          args=(
-            --lane "${{ matrix.lane }}"
-            --global-capacity "${{ matrix.capacity }}"
-            --output ".runtime/nightly-lane-${{ matrix.lane }}.jsonl"
-          )
-          if [[ "${{ steps.mode.outputs.mode }}" == "dry-run" ]]; then
-            args+=(--dry-run)
-          fi
+          args=(--crossfire --global-capacity 20 --output .runtime/nightly-crossfire.jsonl)
+          if [[ "${{ steps.mode.outputs.mode }}" == "dry-run" ]]; then args+=(--dry-run); fi
           PYTHONPATH="$RUNNER_TEMP/operations-research" python -m private.multi_agent.runner "${args[@]}"
-      - name: Validate live lane coverage
-        id: validate
-        if: ${{ steps.mode.outputs.mode == 'live' }}
-        shell: python
-        env:
-          LANE: ${{ matrix.lane }}
-        run: |
-          import json
-          import os
-          from pathlib import Path
-
-          lane = int(os.environ['LANE'])
-          path = Path(f'.runtime/nightly-lane-{lane}.jsonl')
-          rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
-          completed = {row['program_id'] for row in rows if row.get('status') == 'completed' and 'program_id' in row}
-          expected = {f'lane{lane}-slot{slot}' for slot in range(8)}
-          assert completed == expected, f'lane {lane} coverage mismatch: expected {expected}, got {completed}'
-          allowed_types = {
-              'acquisition', 'mapper', 'chatbot', 'search', 'models',
-              'agents', 'architecture', 'infrastructure', 'performance',
-              'alternatives', 'evaluation',
-          }
-          for row in rows:
-              research_type = row.get('research_type')
-              topic = row.get('topic')
-              assert isinstance(research_type, str) and research_type.strip()
-              assert research_type in allowed_types
-              assert isinstance(topic, str) and topic.strip()
-          print(f'lane {lane}: 8/8 programs completed with explicit topic/type')
-      - name: Materialize truthful lane status
+      - name: Materialize and validate lane artifacts
+        id: materialize
         if: ${{ always() }}
         shell: python
         env:
-          LANE: ${{ matrix.lane }}
           MODE: ${{ steps.mode.outputs.mode || 'unknown' }}
           PREFLIGHT: ${{ steps.preflight.outcome || 'skipped' }}
-          RUN_LANE: ${{ steps.run_lane.outcome || 'skipped' }}
-          VALIDATE: ${{ steps.validate.outcome || 'skipped' }}
+          RUN_CROSSFIRE: ${{ steps.run_crossfire.outcome || 'skipped' }}
         run: |
-          import json
-          import os
+          import json, os
           from pathlib import Path
-
-          lane = int(os.environ['LANE'])
-          Path('.runtime').mkdir(parents=True, exist_ok=True)
-          mode = os.environ['MODE']
-          preflight = os.environ['PREFLIGHT']
-          run_lane = os.environ['RUN_LANE']
-          validate = os.environ['VALIDATE']
-          output = Path(f'.runtime/nightly-lane-{lane}.jsonl')
-          rows = [json.loads(line) for line in output.read_text().splitlines() if line.strip()] if output.exists() else []
-          expected = [f'lane{lane}-slot{slot}' for slot in range(8)]
-
-          if mode == 'live' and preflight != 'success':
-              lane_state = 'blocked_before_execution'
-              rows = rows or [{'program_id': program_id, 'status': 'blocked_before_execution', 'mode': 'live'} for program_id in expected]
-          elif mode == 'dry-run' and run_lane == 'success':
-              lane_state = 'dry_run'
-          elif run_lane == 'success' and validate == 'success':
-              lane_state = 'live_research_executed'
-          elif run_lane == 'skipped':
-              lane_state = 'blocked_before_execution'
-          else:
-              lane_state = 'lane_failure'
-
-          status = {
-              'schema': 'nightly-research-lane-status/v1',
-              'run_id': os.environ['GITHUB_RUN_ID'],
-              'lane': lane,
-              'mode': mode,
-              'state': lane_state,
-              'preflight': preflight,
-              'runner': run_lane,
-              'validation': validate,
-              'program_count': len(rows),
-              'programs': [row.get('program_id') for row in rows if row.get('program_id')],
-              'operations_revision': os.environ['OPERATIONS_RESEARCH_REF'],
-          }
-          Path(f'.runtime/nightly-lane-{lane}-status.json').write_text(json.dumps(status, indent=2) + '\n')
-          if not output.exists():
-              output.write_text(''.join(json.dumps(row) + '\n' for row in rows))
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        if: ${{ always() }}
-        with:
-          name: nightly-research-lane-${{ matrix.lane }}
-          path: |
-            .runtime/nightly-lane-${{ matrix.lane }}.jsonl
-            .runtime/nightly-lane-${{ matrix.lane }}-status.json
-          retention-days: 30
-      - name: Attest lane artifact
-        if: ${{ steps.run_lane.outcome == 'success' && steps.validate.outcome == 'success' }}
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
-        with:
-          subject-path: .runtime/nightly-lane-${{ matrix.lane }}.jsonl
-      - name: Remove authenticated Workers AI research proxy
+          root=Path('.runtime'); root.mkdir(parents=True, exist_ok=True)
+          combined=root/'nightly-crossfire.jsonl'
+          rows=[json.loads(x) for x in combined.read_text(encoding='utf-8').splitlines() if x.strip()] if combined.exists() else []
+          mode=os.environ['MODE']; preflight=os.environ['PREFLIGHT']; runner=os.environ['RUN_CROSSFIRE']
+          allowed={'acquisition','mapper','chatbot','search','models','agents','architecture','infrastructure','performance','alternatives','evaluation'}
+          errors=[]
+          for lane in range(3):
+              lane_rows=[r for r in rows if int(r.get('lane',-1))==lane]
+              lane_rows.sort(key=lambda r:(int(r.get('slot',-1)),str(r.get('program_id',''))))
+              (root/f'nightly-lane-{lane}.jsonl').write_text(''.join(json.dumps(r,sort_keys=True,ensure_ascii=False)+'\n' for r in lane_rows),encoding='utf-8')
+              expected={f'lane{lane}-slot{slot}' for slot in range(8)}
+              completed={r.get('program_id') for r in lane_rows if r.get('status')=='completed'}
+              valid=(completed==expected and len(lane_rows)==8 and all(isinstance(r.get('research_type'),str) and r.get('research_type') in allowed and isinstance(r.get('topic'),str) and r.get('topic','').strip() for r in lane_rows))
+              validation='success' if valid else 'failed'
+              state='blocked_before_execution' if mode=='live' and preflight!='success' else ('lane_failure' if runner!='success' else ('dry_run' if mode=='dry-run' else ('live_research_executed' if valid else 'lane_failure')))
+              if mode=='live' and (preflight!='success' or runner!='success' or not valid): errors.append(f'lane{lane}')
+              status={'schema':'nightly-research-lane-status/v1','run_id':'${{ github.run_id }}','lane':lane,'mode':mode,'state':state,'preflight':preflight,'runner':runner,'validation':validation,'program_count':len(lane_rows),'programs':[r.get('program_id') for r in lane_rows],'operations_revision':'${{ env.OPERATIONS_RESEARCH_REF }}','execution_strategy':'crossfire','global_capacity':20}
+              (root/f'nightly-lane-{lane}-status.json').write_text(json.dumps(status,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+          if mode=='live' and errors: raise SystemExit('Live CrossFire research did not satisfy the 24-program evidence contract')
         if: ${{ always() }}
         shell: bash
         run: |
-          if [ -f "$RUNNER_TEMP/research-worker-proxy.pid" ]; then
-            kill "$(cat "$RUNNER_TEMP/research-worker-proxy.pid")" 2>/dev/null || true
-          fi
-          rm -f "$RUNNER_TEMP/research-worker-proxy.pid" "$RUNNER_TEMP/research-worker-proxy.log"
+          rm -rf "$RUNNER_TEMP/operations-research" "$RUNNER_TEMP/operations-research-app.pem" "$RUNNER_TEMP/operations-research-jwt.txt" "$RUNNER_TEMP/operations-research-installation.json" "$RUNNER_TEMP/operations-research-token.txt" "$RUNNER_TEMP/git-askpass-operations-research.sh"
+      - name: Run complete crossfire research
+        id: run_crossfire
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime
+          args=(--crossfire --global-capacity 20 --output .runtime/nightly-crossfire.jsonl)
+          if [[ "${{ steps.mode.outputs.mode }}" == "dry-run" ]]; then args+=(--dry-run); fi
+          PYTHONPATH="$RUNNER_TEMP/operations-research" python -m private.multi_agent.runner "${args[@]}"
+      - name: Materialize and validate lane artifacts
+        id: materialize
+        if: ${{ always() }}
+        shell: python
+        env:
+          MODE: ${{ steps.mode.outputs.mode || 'unknown' }}
+          PREFLIGHT: ${{ steps.preflight.outcome || 'skipped' }}
+          RUN_CROSSFIRE: ${{ steps.run_crossfire.outcome || 'skipped' }}
+        run: |
+          import json, os
+          from pathlib import Path
+          root=Path('.runtime'); root.mkdir(parents=True, exist_ok=True)
+          combined=root/'nightly-crossfire.jsonl'
+          rows=[json.loads(x) for x in combined.read_text(encoding='utf-8').splitlines() if x.strip()] if combined.exists() else []
+          mode=os.environ['MODE']; preflight=os.environ['PREFLIGHT']; runner=os.environ['RUN_CROSSFIRE']
+          allowed={'acquisition','mapper','chatbot','search','models','agents','architecture','infrastructure','performance','alternatives','evaluation'}
+          errors=[]
+          for lane in range(3):
+              lane_rows=[r for r in rows if int(r.get('lane',-1))==lane]
+              lane_rows.sort(key=lambda r:(int(r.get('slot',-1)),str(r.get('program_id',''))))
+              (root/f'nightly-lane-{lane}.jsonl').write_text(''.join(json.dumps(r,sort_keys=True,ensure_ascii=False)+'\n' for r in lane_rows),encoding='utf-8')
+              expected={f'lane{lane}-slot{slot}' for slot in range(8)}
+              completed={r.get('program_id') for r in lane_rows if r.get('status')=='completed'}
+              valid=(completed==expected and len(lane_rows)==8 and all(isinstance(r.get('research_type'),str) and r.get('research_type') in allowed and isinstance(r.get('topic'),str) and r.get('topic','').strip() for r in lane_rows))
+              validation='success' if valid else 'failed'
+              state='blocked_before_execution' if mode=='live' and preflight!='success' else ('lane_failure' if runner!='success' else ('dry_run' if mode=='dry-run' else ('live_research_executed' if valid else 'lane_failure')))
+              if mode=='live' and (preflight!='success' or runner!='success' or not valid): errors.append(f'lane{lane}')
+              status={'schema':'nightly-research-lane-status/v1','run_id':'${{ github.run_id }}','lane':lane,'mode':mode,'state':state,'preflight':preflight,'runner':runner,'validation':validation,'program_count':len(lane_rows),'programs':[r.get('program_id') for r in lane_rows],'operations_revision':'${{ env.OPERATIONS_RESEARCH_REF }}','execution_strategy':'crossfire','global_capacity':20}
+              (root/f'nightly-lane-{lane}-status.json').write_text(json.dumps(status,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+          if mode=='live' and errors: raise SystemExit('Live CrossFire research did not satisfy the 24-program evidence contract')
+      - name: Upload nightly research lane 0
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-research-lane-0
+          path: |
+            .runtime/nightly-lane-0.jsonl
+            .runtime/nightly-lane-0-status.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload nightly research lane 1
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-research-lane-1
+          path: |
+            .runtime/nightly-lane-1.jsonl
+            .runtime/nightly-lane-1-status.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload nightly research lane 2
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-research-lane-2
+          path: |
+            .runtime/nightly-lane-2.jsonl
+            .runtime/nightly-lane-2-status.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Attest lane 0
+        if: ${{ steps.materialize.outcome == 'success' }}
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: .runtime/nightly-lane-0.jsonl
+      - name: Attest lane 1
+        if: ${{ steps.materialize.outcome == 'success' }}
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: .runtime/nightly-lane-1.jsonl
+      - name: Attest lane 2
+        if: ${{ steps.materialize.outcome == 'success' }}
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: .runtime/nightly-lane-2.jsonl
       - name: Remove private research checkout and credentials
         if: ${{ always() }}
         shell: bash
-        run: rm -rf "$RUNNER_TEMP/operations-research" "$RUNNER_TEMP/operations-research-app.pem" "$RUNNER_TEMP/operations-research-jwt.txt" "$RUNNER_TEMP/operations-research-installation.json" "$RUNNER_TEMP/operations-research-token.txt" "$RUNNER_TEMP/git-askpass-operations-research.sh"
-
+        run: |
+          rm -rf "$RUNNER_TEMP/operations-research" "$RUNNER_TEMP/operations-research-app.pem" "$RUNNER_TEMP/operations-research-jwt.txt" "$RUNNER_TEMP/operations-research-installation.json" "$RUNNER_TEMP/operations-research-token.txt" "$RUNNER_TEMP/git-askpass-operations-research.sh"
 
   migration_review:
     name: Nightly polyglot migration review
@@ -389,6 +408,10 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TARGET_FOUNDATION_SHA }}
+        with:
+          ref: ${{ env.TARGET_FOUNDATION_SHA }}
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
@@ -470,6 +493,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TARGET_FOUNDATION_SHA }}
+        with:
+          ref: ${{ env.TARGET_FOUNDATION_SHA }}
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"

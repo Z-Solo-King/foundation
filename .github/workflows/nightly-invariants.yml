@@ -49,10 +49,9 @@ jobs:
         run: |
           set -euo pipefail
           grep -Fq 'cron: "30 19 * * *"' .github/workflows/nightly-multi-agent-research-v3.yml
-          grep -Fq 'matrix:' .github/workflows/nightly-multi-agent-research-v3.yml
-          grep -Fq 'lane: 0' .github/workflows/nightly-multi-agent-research-v3.yml
-          grep -Fq 'lane: 1' .github/workflows/nightly-multi-agent-research-v3.yml
-          grep -Fq 'lane: 2' .github/workflows/nightly-multi-agent-research-v3.yml
+          ! grep -Fq 'matrix:' .github/workflows/nightly-multi-agent-research-v3.yml
+          grep -Fq -- '--crossfire' .github/workflows/nightly-multi-agent-research-v3.yml
+          grep -Fq -- '--global-capacity 20' .github/workflows/nightly-multi-agent-research-v3.yml
           grep -Fq 'assert completed == expected' .github/workflows/nightly-multi-agent-research-v3.yml
           grep -Fq "assert summary['program_count'] == 24" .github/workflows/nightly-multi-agent-research-v3.yml
           grep -Fq 'name: Nightly polyglot migration review' .github/workflows/nightly-multi-agent-research-v3.yml
