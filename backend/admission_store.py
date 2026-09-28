@@ -169,6 +169,8 @@ async def _insert_new_admission(
         # before racing on the unique event_id. Re-read the canonical event and
         # delegate protected routes to the downstream idempotency authority.
         existing = await _existing_event(store.db, storage_event_id, subject_fingerprint)
+        if existing is None:
+            existing = await _existing_event(store.db, event_id, subject_fingerprint)
         if existing is not None:
             return await _handle_existing_event(
                 store.db,
