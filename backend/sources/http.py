@@ -207,9 +207,11 @@ async def _dns_over_https(hostname: str, record_type: str) -> list[str]:
                 continue
             if values:
                 return values
-            # A successful DNS response with no requested addresses is a
-            # negative result; avoid unnecessary secondary resolver fan-out.
-            return []
+            # A successful empty answer is a terminal DNS failure; do not
+            # fan out to the secondary resolver.
+            raise RuntimeError(
+                f"DNS resolution failed for {hostname}: no {record_type} answers"
+            )
         except Exception as exc:
             detail = str(exc).strip()
             if len(detail) > 240:
