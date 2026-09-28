@@ -103,6 +103,7 @@ async def test_concurrent_insert_loss_replays_existing_protected_event():
         store,
         decision,
         event_id="protected-race",
+        storage_event_id=_storage_event_id("subject-1", AdmissionRoute.CHAT, "protected-race"),
         window_start=120,
         subject_fingerprint="subject-1",
         route=AdmissionRoute.CHAT,
