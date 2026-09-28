@@ -73,7 +73,225 @@ jobs:
             });
             core.setOutput("ref", response.data.commit.sha);
 
+  private_entry_ts:
+    needs: resolve_operations_ref
+    name: P1 private entry — TypeScript edge
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout pinned Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: false
+      - name: Execute private entry TypeScript lane
+        working-directory: operations/polyglot/edge-worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund --ignore-scripts
+          npm run typecheck
+          npm test
+      - name: Emit lane receipt
+        run: |
+          mkdir -p .runtime/four-lane
+          printf '%s\n' '{"schema":"polyglot-lane-receipt/v1","lane":"P1_PRIVATE_ENTRY","language":"typescript","direction":"entry_to_core","status":"pass","operations_ref":"${{ needs.resolve_operations_ref.outputs.ref }}"}' > .runtime/four-lane/private-entry-ts.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: four-lane-private-entry-ts
+          path: .runtime/four-lane/private-entry-ts.json
+          retention-days: 30
+
+  private_leaf_rust:
+    needs: resolve_operations_ref
+    name: P2 private leaf — Rust candidates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        candidate:
+          - rust_text_normalization
+          - rust_html_kernel
+          - rust_jsonld_product
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout pinned Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Execute private Rust leaf candidate
+        working-directory: operations
+        shell: bash
+        env:
+          CANDIDATE: ${{ matrix.candidate }}
+        run: |
+          set -euo pipefail
+          case "$CANDIDATE" in
+            rust_text_normalization) cargo test --manifest-path experiments/rust_text_normalization/Cargo.toml ;;
+            rust_html_kernel) cargo test --manifest-path experiments/rust_html_kernel/Cargo.toml ;;
+            rust_jsonld_product) cargo test --manifest-path benchmark/polyglot/rust_jsonld_product/Cargo.toml ;;
+            *) echo "unknown candidate: $CANDIDATE"; exit 2 ;;
+          esac
+      - name: Emit lane receipt
+        run: |
+          mkdir -p .runtime/four-lane
+          printf '%s\n' '{"schema":"polyglot-lane-receipt/v1","lane":"P2_PRIVATE_LEAF","language":"rust","direction":"leaf_to_core","candidate":"${{ matrix.candidate }}","status":"pass","operations_ref":"${{ needs.resolve_operations_ref.outputs.ref }}"}' > .runtime/four-lane/private-leaf-rust-${{ matrix.candidate }}.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: four-lane-private-leaf-rust-${{ matrix.candidate }}
+          path: .runtime/four-lane/private-leaf-rust-${{ matrix.candidate }}.json
+          retention-days: 30
+
+  public_entry_ts:
+    name: P3 public entry — TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: false
+      - name: Execute public TypeScript edge lane
+        working-directory: polyglot/edge-worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund --ignore-scripts
+          npm run typecheck
+          npm test
+      - name: Execute public frontend-state lane
+        working-directory: polyglot/frontend-state
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund --ignore-scripts
+          npm run typecheck
+          npm test
+      - name: Emit lane receipt
+        run: |
+          mkdir -p .runtime/four-lane
+          printf '%s\n' '{"schema":"polyglot-lane-receipt/v1","lane":"P3_PUBLIC_ENTRY","language":"typescript","direction":"entry_to_core","status":"pass","foundation_ref":"$GITHUB_SHA"}' > .runtime/four-lane/public-entry-ts.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: four-lane-public-entry-ts
+          path: .runtime/four-lane/public-entry-ts.json
+          retention-days: 30
+
+  public_leaf_rust:
+    needs: resolve_operations_ref
+    name: P4 public leaf — Rust candidates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        candidate:
+          - rust_url_identity
+          - rust_html_kernel
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout pinned Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Checkout Foundation at current lane revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: foundation
+          ref: ${{ github.sha }}
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Execute public Rust leaf candidate
+        working-directory: foundation
+        shell: bash
+        env:
+          CANDIDATE: ${{ matrix.candidate }}
+          PYTHONPATH: ${{ github.workspace }}/foundation:${{ github.workspace }}/operations
+        run: |
+          set -euo pipefail
+          case "$CANDIDATE" in
+            rust_url_identity) python tools/verify_rust_url_identity_parity.py && cargo test --manifest-path ../operations/benchmark/polyglot/rust_url_identity/Cargo.toml ;;
+            rust_html_kernel) cargo test --manifest-path ../operations/experiments/rust_html_kernel/Cargo.toml ;;
+            *) echo "unknown candidate: $CANDIDATE"; exit 2 ;;
+          esac
+      - name: Emit lane receipt
+        run: |
+          mkdir -p .runtime/four-lane
+          printf '%s\n' '{"schema":"polyglot-lane-receipt/v1","lane":"P4_PUBLIC_LEAF","language":"rust","direction":"leaf_to_core","candidate":"${{ matrix.candidate }}","status":"pass","foundation_ref":"$GITHUB_SHA","operations_ref":"${{ needs.resolve_operations_ref.outputs.ref }}"}' > .runtime/four-lane/public-leaf-rust-${{ matrix.candidate }}.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: four-lane-public-leaf-rust-${{ matrix.candidate }}
+          path: .runtime/four-lane/public-leaf-rust-${{ matrix.candidate }}.json
+          retention-days: 30
+
+  four_lane_gate:
+    name: Four-lane convergence gate
+    needs: [private_entry_ts, private_leaf_rust, public_entry_ts, public_leaf_rust]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all four lanes to pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ needs.private_entry_ts.result }}" = success
+          test "${{ needs.private_leaf_rust.result }}" = success
+          test "${{ needs.public_entry_ts.result }}" = success
+          test "${{ needs.public_leaf_rust.result }}" = success
+
   review:
+    needs: [resolve_operations_ref, four_lane_gate]
     permissions:
       contents: read
       id-token: write
