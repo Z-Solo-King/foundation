@@ -366,3 +366,37 @@ def test_fetch_public_url_rejects_missing_hostname_before_transport(monkeypatch)
 
     with pytest.raises(ValueError, match="target host is missing"):
         asyncio.run(http.fetch_public_url("https://example.com", fetcher=fetcher, dns_resolver=lambda *_args: []))
+
+
+def test_resolve_public_host_rejects_empty_address_set():
+    import backend.sources.http as http
+
+    async def resolver(_hostname, _record_type):
+        return []
+
+    with pytest.raises(ValueError, match="did not resolve"):
+        asyncio.run(
+            http._resolve_public_host(
+                "example.com",
+                resolver,
+                {},
+                1.0,
+            )
+        )
+
+
+def test_resolve_public_host_rejects_private_address_set():
+    import backend.sources.http as http
+
+    async def resolver(_hostname, _record_type):
+        return ["10.0.0.1"] if _record_type == "A" else []
+
+    with pytest.raises(ValueError, match="non-public"):
+        asyncio.run(
+            http._resolve_public_host(
+                "example.com",
+                resolver,
+                {},
+                1.0,
+            )
+        )
