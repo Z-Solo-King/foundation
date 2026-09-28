@@ -43,6 +43,8 @@ jobs:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
           B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
           B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+          B2_BUCKET: ${{ secrets.B2_BUCKET }}
+          B2_ENDPOINT: ${{ vars.B2_ENDPOINT }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
