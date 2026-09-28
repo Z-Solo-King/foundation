@@ -18,9 +18,7 @@ The same workflow performs the public post-deployment smoke checks. There is no 
 
 The workflow dynamically resolves the live D1 database ID and writes a runner-only Wrangler configuration. Generated configuration is removed during cleanup. Credentials are never committed.
 
-The workflow also owns the protected Operations handoff. Production is pinned to the explicitly approved immutable Operations revision:
-
-`4fb9f3be96c9947bc3d07756762efbb563158a04`
+The workflow also owns the protected Operations handoff. Production is pinned to the explicitly approved immutable Operations revision declared in `docs/OPERATIONS_PIN_MANIFEST.json`.
 
 The private Operations checkout uses the purpose-specific GitHub App installation credential set:
 
@@ -64,7 +62,7 @@ Do not infer credential purpose from the fact that multiple secrets are consumed
 
 Before the private Operations checkout, the workflow must fail closed unless the GitHub App credentials are present, the App JWT is valid, the installation-token exchange succeeds, and the resulting installation token can read `Z-Solo-King/operations`.
 
-The checkout must then fetch and verify the exact approved revision `4fb9f3be96c9947bc3d07756762efbb563158a04`. Before Worker packaging, the deployment materializes the pinned public `foundation_core` package through `operations/scripts/sync_public_core.py`; the generated directory is ignored and never committed. The workflow must not silently track `operations/main`, substitute an older pin, or deploy a mutable branch reference.
+The checkout must then fetch and verify the exact approved revision from `docs/OPERATIONS_PIN_MANIFEST.json`. Before Worker packaging, the deployment materializes the pinned public `foundation_core` package through `operations/scripts/sync_public_core.py`; the generated directory is ignored and never committed. The workflow must not silently track `operations/main`, substitute an older pin, or deploy a mutable branch reference.
 
 A successful public Worker deployment does not prove that Operations was deployed. Operations deployment, D1 governance application, protected configuration and private runtime verification remain separately evidenced.
 
@@ -72,10 +70,7 @@ A successful public Worker deployment does not prove that Operations was deploye
 
 Backblaze B2 is the authoritative artifact/backup storage provider under the strict zero-cost target.
 
-Current target:
-
-- bucket: `SoloKing`;
-- endpoint: `https://s3.eu-central-003.backblazeb2.com`.
+The bucket and endpoint are supplied by the deployment environment (`B2_BUCKET`, `B2_ENDPOINT`). They are deliberately not recorded in this repository.
 
 B2 credentials are secrets and never belong in Git, documentation, backup manifests, or logs. B2 stores artifact/backup material; it is not an authority for identity, authorization, routing, policy, resource governance, evidence, deployment approval, or application result state.
 
@@ -126,8 +121,6 @@ The public path is validated first. The protected Operations handoff is then val
 
 All purpose-scoped immutable Operations revisions are declared in `docs/OPERATIONS_PIN_MANIFEST.json`. Deployment and workflow validation must consume or validate that manifest; mutable branch/tag references are not accepted for protected Operations consumption.
 
-## Hybrid polyglot migration — current state
+## Migration status
 
-As of 2026-09-28, the production migration is complete. The public path is heroic -> operations-edge -> operations, with TypeScript owning the edge transport boundary and Python retaining control-plane authority. The five-lane migration review (P1 private TypeScript, P2 private Rust, P3 public TypeScript, P4 public Rust, P5 Go tooling) passed before production promotion.
-
-The current immutable Operations revision is 4fb9f3be96c9947bc3d07756762efbb563158a04. The remaining open issues are follow-up work outside the completed migration cutover, notably nightly research/provider execution and feed/benchmark evidence.
+Migration status is tracked in the private repository. This document makes no claim that the hybrid migration is complete; a status document cannot certify runtime state.
