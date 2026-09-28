@@ -39,7 +39,7 @@ def test_crossfire_is_single_global_execution_pool():
 
 def test_private_operations_pin_and_app_auth_remain_explicit():
     text=workflow_text()
-    assert "OPERATIONS_RESEARCH_REF: ebbcde494b3d07aaef6a3a5a59a7135cb309114b" in text
+    assert "OPERATIONS_RESEARCH_REF: 9a942b0f8cc601f8d460ed71ccba908fa02e6c75" in text
     assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in text
     assert "OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}" in text
     assert "private.multi_agent.runner" in text
