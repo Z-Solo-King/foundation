@@ -1,0 +1,60 @@
+name: WC Native Feed Direct Matrix
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  native-feed:
+    strategy:
+      fail-fast: false
+      matrix:
+        site: [ads-store, ithunt, kccomputers, krg-kart]
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe fixed-site Cloudflare native-feed worker
+        env:
+          SITE: ${{ matrix.site }}
+          WORKER: https://wc-native-feed-only-20260929.heroic-ai.workers.dev
+        run: |
+          mkdir -p artifacts/native
+          curl -sS --max-time 420 -D artifacts/${SITE}.headers "${WORKER}/${SITE}" -o artifacts/${SITE}.body
+          echo "=== ${SITE} headers ==="
+          cat artifacts/${SITE}.headers
+          echo
+          echo "=== ${SITE} size ==="
+          wc -c artifacts/${SITE}.body
+          if grep -qi '^x-native-feed-url:' artifacts/${SITE}.headers; then
+            cp artifacts/${SITE}.body artifacts/native/${SITE}.xml
+            echo "NATIVE_FEED_FOUND=1" >> "$GITHUB_ENV"
+            grep -i '^x-native-feed-' artifacts/${SITE}.headers || true
+          else
+            echo "NATIVE_FEED_FOUND=0" >> "$GITHUB_ENV"
+          fi
+      - name: Validate native XML
+        if: env.NATIVE_FEED_FOUND == '1'
+        run: |
+          node <<'NODE'
+          const fs=require("fs");
+          const site=process.env.SITE;
+          const s=fs.readFileSync("artifacts/native/"+site+".xml","utf8");
+          const ok=s.includes("<rss") &&
+            s.includes("http://base.google.com/ns/1.0") &&
+            s.includes("<item") &&
+            s.includes("<g:id") &&
+            s.includes("<g:title") &&
+            s.includes("<g:link") &&
+            s.includes("<g:price") &&
+            s.includes("<g:image_link");
+          if(!ok){console.error("strict native validation failed");process.exit(1)}
+          const items=(s.match(/<item\\b/gi)||[]).length;
+          console.log(JSON.stringify({site,items,bytes:Buffer.byteLength(s),sha256:require("crypto").createHash("sha256").update(s).digest("hex")},null,2));
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wc-native-feed-direct-${{ matrix.site }}
+          path: artifacts/
+          if-no-files-found: error
