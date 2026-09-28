@@ -7,13 +7,16 @@ def workflow_text() -> str:
 
 def test_production_gate_is_event_driven_and_exact_sha_bound():
     text=workflow_text()
-    assert "workflow_run:" in text
-    assert 'workflows: ["Heroic AI production release"]' in text
+    assert "workflow_run:" not in text
+    assert "production_release_run_id" in text
+    assert "heroic-ai-production-release.yml" in text
     assert "branches: [main]" in text
     assert "TARGET_FOUNDATION_SHA" in text
-    assert "EVENT_RELEASE_HEAD_SHA" in text
-    assert "EVENT_RELEASE_HEAD_BRANCH" in text
-    assert "EVENT_RELEASE_CONCLUSION" in text
+    assert "RELEASE_RUN_ID" in text
+    assert "gh run view" in text
+    assert "workflowName" in text
+    assert "headSha" in text
+    assert "conclusion" in text
     assert "timeout-minutes: 5" in text
     assert "short reconciliation" in text
     assert "seq 1 12" in text
