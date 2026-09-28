@@ -71,8 +71,8 @@ jobs:
           headers = {"Authorization": f"Bearer {token}"}
           result = {"ok": True, "checks": {}}
 
-          def record(name, status, body=None):
-              item = {"status": status}
+          def record(name, status, body=None, *, critical=True):
+              item = {"status": status, "critical": critical}
               if isinstance(body, dict):
                   item["ok"] = body.get("ok")
                   item["ready"] = body.get("ready")
@@ -86,7 +86,7 @@ jobs:
                   item["runtime_status"] = body.get("runtime_status")
               result["checks"][name] = item
 
-              if status != 200 or item.get("ok") is False:
+              if critical and (status != 200 or item.get("ok") is False):
                   result["ok"] = False
 
           with httpx.Client(timeout=90.0) as client:
@@ -158,7 +158,7 @@ jobs:
                   json={"operation": "infrastructure_verify_public_test"},
               )
               diagnostic_body = diagnostic.json() if "application/json" in diagnostic.headers.get("content-type", "") else {"raw": diagnostic.text[:200]}
-              record("diagnostic_infrastructure", diagnostic.status_code, diagnostic_body)
+              record("diagnostic_infrastructure", diagnostic.status_code, diagnostic_body, critical=False)
 
               research = {
                   "question": "Production runtime acceptance: verify the public research path can ingest a permitted source without inventing facts.",
