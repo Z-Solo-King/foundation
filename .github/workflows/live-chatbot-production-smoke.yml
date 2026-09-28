@@ -1,10 +1,18 @@
 name: Live chatbot production smoke
 
-on: # zizmor: ignore[dangerous-triggers] trusted post-release smoke; no untrusted PR checkout
-  workflow_run:
-    workflows: ["Heroic AI production release"]
-    types: [completed]
+on:
   workflow_dispatch:
+    inputs:
+      target_sha:
+        description: "Exact Foundation SHA released and being smoke-tested"
+        required: false
+        default: ""
+        type: string
+      production_release_run_id:
+        description: "Exact successful production-release run supplying the target SHA"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -28,13 +36,13 @@ jobs:
           EXPECTED_FOUNDATION: ${{ env.TARGET_FOUNDATION_SHA }}
         run: |
           set -euo pipefail
-          for _ in {1..90}; do
+          for _ in {1..24}; do
             status=$(curl -sS --max-time 20 -o /tmp/readiness.json -w '%{http_code}' "$PUBLIC_WORKER_URL/readiness" || true)
             if [ "$status" = "200" ] && jq -e --arg f "$EXPECTED_FOUNDATION" --arg o "$OPERATIONS_REF" '.ready == true and .database == true and .release.foundation_sha == $f and .release.operations_ref == $o' /tmp/readiness.json >/dev/null 2>&1; then
               jq '{ready,database,release}' /tmp/readiness.json
               exit 0
             fi
-            sleep 10
+            sleep 5
           done
           cat /tmp/readiness.json 2>/dev/null || true
           exit 1
