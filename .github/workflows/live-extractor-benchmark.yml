@@ -8,7 +8,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to benchmark
         required: false
-        default: f5189ca9ba7c22795d3ed7ce27eff4f5caa8cf09
+        default: d58fb5e61ec820298ce9e0b7af781cac08b6b2ec
         type: string
       benchmark_tools_ref:
         description: Exact Operations revision containing benchmark producer/evaluator tooling
@@ -76,7 +76,7 @@ jobs:
             url: https://webscraper.io/test-sites/e-commerce/dynamic/computers/laptops
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || 'f5189ca9ba7c22795d3ed7ce27eff4f5caa8cf09' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || 'd58fb5e61ec820298ce9e0b7af781cac08b6b2ec' }}
       BENCHMARK_TOOLS_REF: ${{ inputs.benchmark_tools_ref || 'd4ef2e6d28435a59c735b9dc4d0de31f44b9cf29' }}
       PYTHONUNBUFFERED: "1"
     steps:
@@ -264,7 +264,7 @@ jobs:
           CASE_PASS: ${{ matrix.pass }}
           CASE_WORKERS: ${{ steps.profile.outputs.workers || '1' }}
           CASE_RETRIES: ${{ steps.profile.outputs.retries || '2' }}
-          OPERATIONS_REF_VALUE: ${{ inputs.operations_ref || 'f5189ca9ba7c22795d3ed7ce27eff4f5caa8cf09' }}
+          OPERATIONS_REF_VALUE: ${{ inputs.operations_ref || 'd58fb5e61ec820298ce9e0b7af781cac08b6b2ec' }}
         run: |
           set -euo pipefail
           mkdir -p benchmark-output
@@ -313,7 +313,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'f5189ca9ba7c22795d3ed7ce27eff4f5caa8cf09' }}
+          ref: ${{ inputs.operations_ref || 'd58fb5e61ec820298ce9e0b7af781cac08b6b2ec' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
