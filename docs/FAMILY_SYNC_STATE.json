@@ -5,7 +5,7 @@
   "public_safe": true,
   "live_main": {
     "foundation": "8d63fbda0e377dfa5c982f85d403f6ae1efbc86a",
-    "operations": "d4724b80779585c71bb48d0604a42dc295a4d272"
+    "operations": "4d6f2167a791417b6afbc6e69165129c48966167"
   },
   "runtime_pins": {
     "foundation_runtime": "4999c93dc8b17a5a3926faf3415e725fd4ae7b0e",
