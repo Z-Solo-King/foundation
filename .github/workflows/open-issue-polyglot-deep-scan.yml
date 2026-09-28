@@ -1,19 +1,9 @@
 name: Open issue polyglot deep scan
 # Issue-count authority is the live Operations current_open_issue_inventory.json; never hard-code the queue size here.
 
-on: # zizmor: ignore[dangerous-triggers] main/manual protected audit; no untrusted PR target execution
+on:
   push:
     branches: [main]
-    paths:
-      - "benchmark/polyglot/**"
-      - ".github/workflows/open-issue-polyglot-deep-scan.yml"
-      - "docs/**"
-      - "frontend/**"
-      - "polyglot/**"
-      - "worker.py"
-      - "backend/**"
-      - "tests/**"
-  pull_request_target:
     paths:
       - "benchmark/polyglot/**"
       - ".github/workflows/open-issue-polyglot-deep-scan.yml"
@@ -70,7 +60,6 @@ jobs:
     permissions:
       contents: read
       actions: read
-      issues: write
     name: Deep scan ${{ matrix.lane }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -80,27 +69,6 @@ jobs:
       matrix:
         lane: [L1, L2, L3, L4]
     steps:
-      - name: Validate Operations App configuration
-        if: always() && github.event_name == 'pull_request_target'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPOSITORY: ${{ github.repository }}
-          OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
-          OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
-        run: |
-          set -euo pipefail
-          app_id_state=missing
-          app_key_state=missing
-          [ -n "${OPERATIONS_APP_ID:-}" ] && app_id_state=present
-          [ -n "${OPERATIONS_APP_PRIVATE_KEY:-}" ] && app_key_state=present
-          if [ -n "${PR_NUMBER:-}" ]; then
-            gh pr comment "$PR_NUMBER" --repo "$REPOSITORY" --body "### Deep-scan Operations App preflight\n\nOPERATIONS_APP_ID: **$app_id_state**\nOPERATIONS_APP_PRIVATE_KEY: **$app_key_state**" || true
-          fi
-          test "$app_id_state" = present
-          test "$app_key_state" = present
-
       - name: Create Operations read token
         id: operations-app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
@@ -115,7 +83,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: main
+          ref: ${{ needs.snapshot.outputs.operations_sha }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
@@ -125,20 +93,6 @@ jobs:
           repository: Z-Solo-King/foundation
           ref: ${{ github.sha }}
           path: foundation
-
-      - name: Publish Operations token/checkout diagnostics
-        if: always() && github.event_name == 'pull_request_target'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPOSITORY: ${{ github.repository }}
-          TOKEN_OUTCOME: ${{ steps.operations-app.outcome }}
-          TOKEN_CONCLUSION: ${{ steps.operations-app.conclusion }}
-        run: |
-          set -euo pipefail
-          [ -n "${PR_NUMBER:-}" ] || exit 0
-          gh pr comment "$PR_NUMBER" --repo "$REPOSITORY" --body "### Deep-scan Operations access diagnostic\n\nApp-token outcome: **${TOKEN_OUTCOME:-unknown}**\nApp-token conclusion: **${TOKEN_CONCLUSION:-unknown}**" || true
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -171,7 +125,7 @@ jobs:
           mkdir -p .runtime/open-issue-deep-scan
           python tools/open_issue_polyglot_scan.py             --foundation "$GITHUB_WORKSPACE/foundation"             --operations "$GITHUB_WORKSPACE/operations"             --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_52.json"             --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json"             --lane "${{ matrix.lane }}"             --output ".runtime/open-issue-deep-scan/${{ matrix.lane }}.json"
 
-      - name: Emit lane diagnostic
+      - name: Emit sanitized lane summary
         if: always()
         working-directory: operations
         shell: bash
@@ -180,33 +134,28 @@ jobs:
           RUN_OUTCOME: ${{ steps.run-lane.outcome }}
         run: |
           set +e
-          mkdir -p .runtime/open-issue-deep-scan
           python - <<'PY'
           import json, os
           from pathlib import Path
-          lane="${{ matrix.lane }}"
-          receipt=Path('.runtime/open-issue-deep-scan')/f'{lane}.json'
-          payload={
-              'schema':'open-issue-deep-scan/diagnostic/v1',
-              'lane':lane,
-              'validate_outcome':os.environ.get('VALIDATE_OUTCOME'),
-              'run_outcome':os.environ.get('RUN_OUTCOME'),
-              'receipt_present':receipt.exists(),
+          lane = "${{ matrix.lane }}"
+          receipt = Path('.runtime/open-issue-deep-scan') / f'{lane}.json'
+          payload = {
+              'schema': 'open-issue-deep-scan/summary/v1',
+              'lane': lane,
+              'validate_outcome': os.environ.get('VALIDATE_OUTCOME'),
+              'run_outcome': os.environ.get('RUN_OUTCOME'),
+              'receipt_present': receipt.exists(),
           }
           if receipt.exists():
               try:
-                  r=json.loads(receipt.read_text(encoding='utf-8'))
-                  payload.update({k:r.get(k) for k in ('case_count','expected_case_count','issue_count','failed_cases','review_cases','missing_cases')})
-                  payload['failed_results']=[
-                      {'issue':x.get('issue'),'lane':x.get('lane'),'status':x.get('status'),'findings':x.get('findings',[])}
-                      for x in r.get('results',[]) if x.get('status') == 'FAIL'
-                  ]
-              except Exception as exc:
-                  payload['receipt_parse_error']=repr(exc)
-          Path('.runtime/open-issue-deep-scan').joinpath(f'{lane}-diagnostic.json').write_text(json.dumps(payload,indent=2,sort_keys=True)+'\n')
-          print(json.dumps(payload,indent=2,sort_keys=True))
+                  r = json.loads(receipt.read_text(encoding='utf-8'))
+                  for key in ('case_count','expected_case_count','issue_count','failed_cases','review_cases','missing_cases','operations_revision'):
+                      payload[key] = r.get(key)
+              except Exception:
+                  payload['receipt_parse_error'] = True
+          Path('.runtime/open-issue-deep-scan').joinpath(f'{lane}-summary.json').write_text(json.dumps(payload, indent=2, sort_keys=True)+'\n', encoding='utf-8')
+          print(json.dumps(payload, sort_keys=True))
           PY
-
       - name: Add provenance
         working-directory: operations
         run: |
@@ -231,15 +180,14 @@ jobs:
           path.write_text(json.dumps(payload, indent=2) + "\n")
           PY
 
-      - name: Upload lane receipt
+      - name: Upload sanitized lane summary
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: open-issue-deep-scan-${{ matrix.lane }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
-          path: operations/.runtime/open-issue-deep-scan/**
+          name: open-issue-deep-scan-${{ matrix.lane }}-summary-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: operations/.runtime/open-issue-deep-scan/*-summary.json
           if-no-files-found: warn
-          retention-days: 30
-
+          retention-days: 7
   # Aggregate the frozen four-lane receipts from this run; issue scope is validated before execution.
   aggregate:
     name: Aggregate dynamic issue×lane cases
@@ -285,7 +233,7 @@ jobs:
           from pathlib import Path
 
           root = Path(".runtime/open-issue-deep-scan")
-          receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L?.json"))]
+          receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L?-summary.json"))]
           assert len(receipts) == 4
           assert {r["lane"] for r in receipts} == {"L1", "L2", "L3", "L4"}
 
@@ -360,4 +308,4 @@ jobs:
           name: open-issue-polyglot-deep-scan-aggregate-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: .runtime/open-issue-deep-scan/aggregate.json
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 7
