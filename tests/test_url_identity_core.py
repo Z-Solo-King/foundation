@@ -1,6 +1,8 @@
 import pytest
 
-from foundation_core.url_identity import canonicalize_url, safe_host, safe_ip
+from ipaddress import ip_address
+
+from foundation_core.url_identity import canonicalize_url, safe_host, safe_ip, _parse_obfuscated_ipv4
 
 
 @pytest.mark.parametrize(
@@ -142,7 +144,10 @@ def test_obfuscated_ipv4_rejects_out_of_range_parts():
     assert safe_host("256.1.1.1") is False
 
 
-def test_obfuscated_ipv4_handles_one_two_and_three_part_forms():
-    assert safe_host("134744072") is True
-    assert safe_host("8.1") is True
-    assert safe_host("8.8.1") is True
+def test_obfuscated_ipv4_forms_are_parsed_but_rejected_by_safe_host():
+    assert _parse_obfuscated_ipv4("134744072") == ip_address("8.8.8.8")
+    assert _parse_obfuscated_ipv4("8.1") == ip_address("8.0.0.1")
+    assert _parse_obfuscated_ipv4("8.8.1") == ip_address("8.8.0.1")
+    assert safe_host("134744072") is False
+    assert safe_host("8.1") is False
+    assert safe_host("8.8.1") is False
