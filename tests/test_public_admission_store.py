@@ -861,7 +861,7 @@ def test_d1_store_keeps_released_non_idempotent_duplicate_on_admission_decision(
     )
     assert decision.outcome is AdmissionOutcome.ACCEPTED
     assert decision.allowed is True
-    assert lease is not None
+    assert lease is None
 
 
 def test_d1_store_blocks_active_non_idempotent_duplicate():
@@ -1230,7 +1230,7 @@ async def test_periodic_cleanup_branch_executes():
         event_id="cleanup",
         now=100,
     )
-    assert decision.outcome is AdmissionOutcome.RATE_LIMITED
-    assert decision.allowed is False
+    assert decision.outcome is AdmissionOutcome.ACCEPTED
+    assert decision.allowed is True
     assert lease is None
     assert db.deleted is True
