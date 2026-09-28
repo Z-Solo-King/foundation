@@ -693,28 +693,6 @@ class Default(WorkerEntrypoint):
                 if lease is not None:
                     await D1AdmissionStore(self.env.DB).release(lease)
 
-            return _authenticated_json({"ok": True, "run_id": run_id, "metadata": {**result.metadata, "execution_mode": "awaiting_source_urls", "source_url_ingestion": True, "general_web_discovery": False, "evidence_synthesis": False, "next_action": "provide one or more permitted public HTTP(S) source URLs"}, "sources": []})
-                phase = "set_running"
-                await persistence.set_run_status(run_id, "running")
-                phase = "ingest"
-                sources = await _ingest_sources(self.env, run_id, req)
-                phase = "set_completed"
-                await persistence.set_run_status(run_id, "completed")
-            except Exception as exc:
-                if run_id is not None:
-                    try:
-                        await persistence.set_run_status(run_id, "failed")
-                    except Exception:
-                        _LOGGER.exception("failed to record terminal failed status for run_id=%s", run_id)
-                return _authenticated_json({
-                    "ok": False,
-                    "error": "execution/persistence failure",
-                    "phase": phase,
-                    "error_class": type(exc).__name__,
-                }, status=503)
-            finally:
-                if lease is not None:
-                    await D1AdmissionStore(self.env.DB).release(lease)
             return _authenticated_json({"ok": True, "run_id": run_id, "metadata": {**result.metadata, "execution_mode": "source_url_ingestion"}, "sources": sources})
         if path.startswith("/api/"):
             return _authenticated_json({"ok": False, "error": "not_found"}, status=404)
