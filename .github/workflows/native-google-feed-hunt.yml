@@ -14,6 +14,7 @@ on:
   push:
     branches:
       - fix/woocommerce-native-google-feed-hunt-20260927
+      - experiment/native-feed-directory-first-20260928
     paths:
       - ".github/workflows/native-google-feed-hunt.yml"
       - "tools/native_google_feed_hunt_v2.py"
