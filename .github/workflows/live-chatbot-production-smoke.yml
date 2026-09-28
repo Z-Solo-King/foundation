@@ -23,7 +23,7 @@ concurrency:
 
 env:
   PUBLIC_WORKER_URL: https://ai-cio.pages.dev
-  OPERATIONS_REF: ebbcde494b3d07aaef6a3a5a59a7135cb309114b
+  OPERATIONS_REF: 9a942b0f8cc601f8d460ed71ccba908fa02e6c75
   TARGET_FOUNDATION_SHA: ${{ inputs.target_sha || github.sha }}
 
 jobs:
