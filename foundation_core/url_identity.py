@@ -21,6 +21,8 @@ def safe_ip(value: str) -> bool:
     if isinstance(ip, IPv6Address):
         if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_unspecified or ip.is_private:
             return False
+        if ip.packed[:2] == bytes.fromhex("2002") or ip.packed[:4] == bytes.fromhex("20010000"):
+            return False
         if ip.packed[:12] == _NAT64_PREFIX:
             ip = IPv4Address(ip.packed[12:])
     if isinstance(ip, IPv4Address):
@@ -44,7 +46,13 @@ def safe_host(hostname: str) -> bool:
     try:
         return safe_ip(host)
     except ValueError:
-        return True
+        if all(ch.isdigit() or ch == "." for ch in host):
+            parts = host.split(".")
+            if len(parts) != 4:
+                return False
+            if any(not part or (len(part) > 1 and part.startswith("0")) or int(part) > 255 for part in parts):
+                return False
+        return "." in host and all(label and len(label) <= 63 for label in host.split("."))
 
 
 def canonicalize_url(url: str) -> str:
@@ -67,9 +75,10 @@ def canonicalize_url(url: str) -> str:
     if parsed.port is not None and parsed.port not in {80, 443}:
         raise ValueError("non-standard ports are not allowed")
     host = parsed.hostname.lower().rstrip(".")
+    host_for_netloc = f"[{host}]" if ":" in host else host
     if parsed.port is None or (scheme == "http" and parsed.port == 80) or (scheme == "https" and parsed.port == 443):
-        netloc = host
+        netloc = host_for_netloc
     else:
-        netloc = f"{host}:{parsed.port}"
+        netloc = f"{host_for_netloc}:{parsed.port}"
     path = parsed.path or "/"
     return urlunparse((scheme, netloc, path, parsed.params, parsed.query, ""))
