@@ -1,7 +1,7 @@
 import pytest
 
 from backend.admission import AdmissionPolicy, AdmissionRoute
-from backend.admission_store import D1AdmissionStore, ROUTE_COST_UNITS, _insert_new_admission
+from backend.admission_store import D1AdmissionStore, ROUTE_COST_UNITS, _insert_new_admission, _storage_event_id
 
 
 class FakeStatement:
@@ -1017,3 +1017,54 @@ def test_d1_store_delegates_chat_after_failed_lease_reclaim_race():
     assert decision.outcome.value == "accepted"
     assert decision.allowed is True
     assert lease is None
+
+
+def test_admission_decision_uses_weighted_cost_fields():
+    from backend.admission import AdmissionSnapshot, decide_admission
+
+    policy = AdmissionPolicy()
+    accepted = decide_admission(
+        policy=policy,
+        snapshot=AdmissionSnapshot(authority_available=True, subject_cost_units=29),
+        subject_fingerprint="subject-1",
+        route=AdmissionRoute.CHAT,
+    )
+    denied = decide_admission(
+        policy=policy,
+        snapshot=AdmissionSnapshot(authority_available=True, subject_cost_units=30),
+        subject_fingerprint="subject-1",
+        route=AdmissionRoute.CHAT,
+    )
+    assert accepted.allowed is True
+    assert denied.allowed is False
+    assert denied.outcome.value == "rate_limited"
+
+
+def test_admission_storage_identity_is_subject_scoped():
+    assert _storage_event_id("subject-a", "same") != _storage_event_id("subject-b", "same")
+
+
+def test_admission_store_samples_cleanup_instead_of_deleting_every_request():
+    source = open("backend/admission_store.py", encoding="utf-8").read()
+    assert "if now % (policy.window_seconds * 10) == 0:" in source
+
+
+def test_admission_store_uses_weighted_atomic_insert_guard():
+    source = open("backend/admission_store.py", encoding="utf-8").read()
+    assert "COALESCE(SUM(cost_units), 0)" in source
+    assert " + ? <= ?" in source
+
+
+def test_duplicate_admission_is_http_conflict():
+    import worker
+    from backend.admission import AdmissionDecision, AdmissionOutcome
+
+    response = worker._admission_response(
+        AdmissionDecision(
+            AdmissionOutcome.DUPLICATE,
+            AdmissionRoute.CHAT,
+            False,
+            "duplicate",
+        )
+    )
+    assert response.status == 409
