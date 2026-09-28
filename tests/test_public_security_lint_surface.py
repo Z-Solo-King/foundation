@@ -25,8 +25,7 @@ def test_runtime_private_imports_and_paths_are_detected(tmp_path):
         "operations/private/control_plane_runtime.py",
     ]):
         path = tmp_path / f"sample{index}.py"
-        path.write_text(sample + "
-", encoding="utf-8")
+        path.write_text(sample + "\n", encoding="utf-8")
         findings = lint_file(path, tmp_path)
         assert any(f.rule == "private-reference" for f in findings)
 
@@ -34,16 +33,14 @@ def test_runtime_private_imports_and_paths_are_detected(tmp_path):
 def test_workflow_direct_private_execution_is_detected(tmp_path):
     path = tmp_path / ".github" / "workflows" / "bad.yml"
     path.parent.mkdir(parents=True)
-    path.write_text("python operations/private/multi_agent/migration_review.py
-", encoding="utf-8")
+    path.write_text("python operations/private/multi_agent/migration_review.py\n", encoding="utf-8")
     findings = lint_file(path, tmp_path)
     assert any(f.rule == "workflow-private-execution" for f in findings)
 
 
 def test_private_revision_is_detected_in_runtime_source(tmp_path):
     path = tmp_path / "runtime.py"
-    path.write_text("OPS_SHA = 'Z-Solo-King/operations@0123456789abcdef0123456789abcdef01234567'
-", encoding="utf-8")
+    path.write_text("OPS_SHA = 'Z-Solo-King/operations@0123456789abcdef0123456789abcdef01234567'\n", encoding="utf-8")
     findings = lint_file(path, tmp_path)
     assert any(f.rule == "private-revision" for f in findings)
 
