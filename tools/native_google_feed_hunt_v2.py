@@ -332,14 +332,65 @@ def generated_upload_feed_candidates(root: str, site: str) -> tuple[str, ...]:
             for sep in FILENAME_SEPARATORS[:2]:
                 priority_stems.append(f"{stem}{sep}{n:02d}")
                 priority_stems.append(f"{stem}{sep}{n}")
-    stems = list(dict.fromkeys([*priority_stems, *UPLOAD_FEED_STEMS, *SEMANTIC_FEED_STEMS, *site_stems]))
+    # Highest-priority generic upload-root grammar.  Some WooCommerce stores
+    # expose the feed directly under /wp-content/uploads/ with semantic names,
+    # underscore prefixes/suffixes, or hidden dot-prefixed variants.
+    upload_root_semantic = list(dict.fromkeys([
+        *UPLOAD_FEED_STEMS,
+        *SEMANTIC_FEED_STEMS,
+        *FILENAME_SUFFIX_WORDS,
+        "gmc", "gmcfeed", "gmc-feed", "gmc_feed",
+        "googlemerchant", "googlemerchantfeed", "googlexml", "google-xml",
+        "googlefeed", "google-feed", "google_feed",
+        "merchantxml", "merchant-xml", "merchant_xml",
+        "shoppingxml", "shopping-xml", "shopping_xml",
+        "productxml", "product-xml", "product_xml",
+    ]))
+    upload_root_forms: set[str] = set(upload_root_semantic)
+    for stem in list(upload_root_semantic):
+        upload_root_forms.update({
+            f"_{stem}", f"{stem}_", f"_{stem}_",
+            f"-{stem}", f"{stem}-",
+            f"_{stem}-", f"-{stem}_",
+        })
+    upload_root_sites = [
+        re.sub(r"[^a-z0-9]+", "-", site.lower()).strip("-")
+        for site in (site,)
+    ]
+    domain_host = urllib.parse.urlsplit(root).hostname or ""
+    upload_root_sites.extend([
+        re.sub(r"[^a-z0-9]+", "", domain_host.lower().removeprefix("www.")),
+        *[x for x in re.split(r"[-_\.]+", domain_host.lower()) if x],
+    ])
+    for s in list(dict.fromkeys(x for x in upload_root_sites if x)):
+        for stem in upload_root_semantic[:180]:
+            upload_root_forms.update({
+                f"{s}_{stem}", f"{s}-{stem}", f"{stem}_{s}", f"{stem}-{s}",
+                f"_{s}_{stem}", f"_{s}-{stem}", f"_{stem}_{s}", f"_{stem}-{s}",
+                f"{s}_{stem}_", f"{stem}_{s}_",
+            })
+
+    stems = list(dict.fromkeys([
+        *sorted(upload_root_forms, key=lambda x: (len(x), x)),
+        *priority_stems, *UPLOAD_FEED_STEMS, *SEMANTIC_FEED_STEMS, *site_stems
+    ]))
     urls: set[str] = set()
+
+    # The exact /wp-content/uploads/_*.xml family is deliberately tried first.
+    # Include .xml.gz because multiple WooCommerce feed generators publish gzip.
+    for stem in sorted(upload_root_forms, key=lambda x: (len(x), x)):
+        for extension in (".xml", ".xml.gz"):
+            urls.add(urllib.parse.urljoin(
+                root.rstrip("/") + "/", "/wp-content/uploads/" + stem + extension
+            ))
+
     for directory in UPLOAD_FEED_DIRECTORIES:
-        for stem in stems[:1200]:
+        for stem in stems[:1800]:
             for extension in (".xml", ".xml.gz"):
                 path = directory.rstrip("/") + "/" + stem + extension
                 urls.add(urllib.parse.urljoin(root.rstrip("/") + "/", path.lstrip("/")))
                 urls.add(urllib.parse.urljoin(root.rstrip("/") + "/", directory.rstrip("/") + "/." + stem + extension))
+                urls.add(urllib.parse.urljoin(root.rstrip("/") + "/", directory.rstrip("/") + "/_" + stem + extension))
     # CTXFeed exposes named feeds as /?feed=<feed-name>; these are first-class
     # native candidates, not reconstructed data.
     for stem in stems[:260]:
