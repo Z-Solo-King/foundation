@@ -557,10 +557,10 @@ def test_stream_probe_uses_explicit_response_identity_argument():
 
 def test_live_probe_waits_for_successful_production_release_r2():
     text = (ROOT / '.github/workflows/public-worker-live-probe.yml').read_text(encoding='utf-8')
-    assert 'workflows:' in text and '"Heroic AI production release"' in text
-    assert 'types: [completed]' in text
-    assert "github.event.workflow_run.conclusion == 'success'" in text
-    assert "github.event.workflow_run.head_branch == 'main'" in text
+    assert 'workflow_dispatch:' in text
+    assert 'target_sha:' in text
+    assert 'production_release_run_id:' in text
+    assert 'github.event.workflow_run' not in text
 
 def test_nightly_research_preflight_waits_for_successful_production_release_r2():
     text = (ROOT / '.github/workflows/nightly-research-provider-preflight.yml').read_text(encoding='utf-8')
@@ -800,3 +800,12 @@ def test_typescript_public_endpoint_discovery_is_executed_in_polyglot_review():
     assert "npm run differential:compare" in workflow
     assert 'differential["case_count"] == 32' in workflow
     assert 'benchmark["repeats"] == 3' in workflow
+
+
+def test_live_chatbot_smoke_is_release_dispatched():
+    text = (ROOT / '.github/workflows/live-chatbot-production-smoke.yml').read_text(encoding='utf-8')
+    assert 'workflow_dispatch:' in text
+    assert 'target_sha:' in text
+    assert 'production_release_run_id:' in text
+    assert 'github.event.workflow_run' not in text
+    assert 'TARGET_FOUNDATION_SHA' in text

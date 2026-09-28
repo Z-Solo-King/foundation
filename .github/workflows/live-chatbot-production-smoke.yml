@@ -16,6 +16,7 @@ concurrency:
 env:
   PUBLIC_WORKER_URL: https://ai-cio.pages.dev
   OPERATIONS_REF: bf4af8db50d7b39c79acd09a9e90237856962abb
+  TARGET_FOUNDATION_SHA: ${{ inputs.target_sha || github.sha }}
 
 jobs:
   smoke:
@@ -25,7 +26,7 @@ jobs:
     steps:
       - name: Wait for deployed revision
         env:
-          EXPECTED_FOUNDATION: ${{ github.event.workflow_run.head_sha || github.sha }}
+          EXPECTED_FOUNDATION: ${{ env.TARGET_FOUNDATION_SHA }}
         run: |
           set -euo pipefail
           for _ in {1..90}; do
