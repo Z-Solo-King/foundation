@@ -83,6 +83,7 @@ def test_production_pin_self_check_matches_canonical_operations_revision():
 def test_production_generates_private_operations_service_binding():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_SERVICE_NAME="{CANONICAL_OPERATIONS_SERVICE}"' in deployment
+    assert f'OPERATIONS_EDGE_SERVICE_NAME="{CANONICAL_OPERATIONS_EDGE_SERVICE}"' in deployment
     assert "'[[services]]'" in deployment
     assert "'binding = \"OPERATIONS\"'" in deployment
     assert '"service = \\\"${OPERATIONS_EDGE_SERVICE_NAME}\\\""' in deployment
