@@ -410,7 +410,7 @@ async def _operations_dashboard(env, request):
 
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
-        path = request.url.split("?", 1)[0]
+        path = urlparse(request.url).path
 
         if request.method == "GET" and path == "/health":
             return Response.json(await _health_payload(self.env))
