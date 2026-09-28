@@ -1,5 +1,0 @@
-{
-  "schema": "hybrid-migration-status/v1",
-  "status": "STUB",
-  "note": "Detailed migration status is kept in the private repository. Migration state is not certified by this file; see docs/CURRENT_SOURCE_OF_TRUTH.md."
-}
