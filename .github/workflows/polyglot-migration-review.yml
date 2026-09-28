@@ -494,7 +494,9 @@ jobs:
               "differential": True,
               "exact_compare": True,
           }
-          Path("$GITHUB_WORKSPACE/.runtime/observation-contract/receipt.json").write_text(
+          output = Path(__import__("os").environ["GITHUB_WORKSPACE"]) / ".runtime" / "observation-contract" / "receipt.json"
+          output.parent.mkdir(parents=True, exist_ok=True)
+          output.write_text(
               json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8"
           )
           PY
