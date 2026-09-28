@@ -135,11 +135,11 @@ def test_production_release_has_one_minimal_main_push_job():
     assert "        if: always()" in frontend
     assert "Publish sanitized production receipt" in frontend
     assert "needs:" not in frontend
-    assert text.count('Dispatch certified post-release validation in parallel') == 1
+    assert frontend.count('Dispatch certified post-release validation in parallel') == 1
     assert 'gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref main' in frontend
-    assert text.count('Upload cross-repository audit receipt') == 1
-    assert text.count('Upload runtime acceptance receipts') == 1
-    assert text.count('Publish sanitized production receipt') == 1
+    assert frontend.count('Upload cross-repository audit receipt') == 1
+    assert frontend.count('Upload runtime acceptance receipts') == 1
+    assert frontend.count('Publish sanitized production receipt') == 1
     assert '--field target_sha="$GITHUB_SHA"' in frontend
     assert '--field production_release_run_id="$GITHUB_RUN_ID"' in frontend
     assert "actions: write" in frontend
