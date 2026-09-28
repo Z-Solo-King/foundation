@@ -620,12 +620,11 @@ class Default(WorkerEntrypoint):
                         await persistence.set_run_status(run_id, "failed")
                     except Exception:
                         _LOGGER.exception("failed to record terminal failed status for run_id=%s", run_id)
-                return _authenticated_json({
-                    "ok": False,
-                    "error": "execution/persistence failure",
-                    "phase": phase,
-                    "error_class": type(exc).__name__,
-                }, status=503)
+                _LOGGER.exception("research execution/persistence failure")
+                return _authenticated_json(
+                    {"ok": False, "error": "persistence_unavailable"},
+                    status=503,
+                )
             finally:
                 if lease is not None:
                     await D1AdmissionStore(self.env.DB).release(lease)
