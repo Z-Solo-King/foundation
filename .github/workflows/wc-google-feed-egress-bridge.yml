@@ -1,0 +1,153 @@
+name: WC Google Feed Egress Bridge
+on:
+  push:
+    branches:
+      - feat/wc-google-feed-egress-bridge-20260929
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Cloudflare egress feed discovery
+        env:
+          PROBE: https://feed-origin-probe-20260927.heroic-ai.workers.dev/
+        run: |
+          mkdir -p artifacts/native
+          node <<'NODE'
+          const fs = require('fs');
+
+          const sites = {
+            "ads-store":"https://adsstore.in",
+            "ithunt":"https://ithunt.in",
+            "kccomputers":"https://kccomputers.co.in",
+            "krg-kart":"https://krgkart.com"
+          };
+
+          const seeds = [
+            "/robots.txt","/sitemap.xml","/sitemap_index.xml","/wp-sitemap.xml","/wp-json/","/?rest_route=/",
+            "/?woocommerce_gpf=google","/woocommerce_gpf/google",
+            "/google.xml","/google_feed.xml","/google-feed.xml","/google-products.xml",
+            "/google-products-feed.xml","/google-product-feed.xml","/google-shopping.xml",
+            "/google-shopping-feed.xml","/product-feed.xml","/products-feed.xml","/merchant-feed.xml",
+            "/feeds/google.xml","/feeds/google-products.xml","/feed/google.xml","/feed/google-products.xml",
+            "/wp-content/uploads/codesolz-feeds/google.xml",
+            "/wp-content/uploads/codesolz-feeds/google-products.xml",
+            "/wp-content/uploads/woo-feed/google/xml/google.xml",
+            "/wp-content/uploads/woo-feed/google/xml/google-shopping.xml",
+            "/wp-content/uploads/woo-product-feed-pro/xml/google.xml",
+            "/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml",
+            "/wp-content/uploads/wppfm-feeds/google.xml"
+          ];
+
+          const probe = process.env.PROBE;
+
+          async function call(url) {
+            const r = await fetch(probe + "?u=" + encodeURIComponent(url));
+            const j = await r.json();
+            return { target:url, ...j };
+          }
+
+          function nativeValid(body) {
+            const s = String(body || "").trim();
+            return s.includes("<rss") &&
+              s.includes("http://base.google.com/ns/1.0") &&
+              s.includes("<item") &&
+              s.includes("<g:id") &&
+              s.includes("<g:title") &&
+              s.includes("<g:link") &&
+              s.includes("<g:price") &&
+              s.includes("<g:image_link");
+          }
+
+          function absoluteLinks(body, base) {
+            const out = new Set();
+            const text = String(body || "");
+            const locRe = /<loc>\\s*([^<]+?)\\s*<\\/loc>/gi;
+            for (const m of text.matchAll(locRe)) {
+              try { out.add(new URL(m[1].trim(), base).href); } catch {}
+            }
+            const attrRe = /(?:href|src)=[\"']([^\"']+)[\"']/gi;
+            for (const m of text.matchAll(attrRe)) {
+              try { out.add(new URL(m[1], base).href); } catch {}
+            }
+            return [...out];
+          }
+
+          function relevant(url, host) {
+            try {
+              const u = new URL(url);
+              return u.hostname === host && /(feed|google|merchant|gpf|wpfm|woo-feed|\\.xml(?:$|\\?))/i.test(u.href);
+            } catch { return false; }
+          }
+
+          async function mapConcurrent(items, limit, fn) {
+            const out = [];
+            let idx = 0;
+            async function worker() {
+              while (true) {
+                const i = idx++;
+                if (i >= items.length) return;
+                try { out[i] = await fn(items[i]); }
+                catch (e) { out[i] = {error:String(e?.message || e), target:items[i]}; }
+              }
+            }
+            await Promise.all(Array.from({length:limit}, worker));
+            return out;
+          }
+
+          (async()=>{
+            const summary = {};
+            for (const [site,base] of Object.entries(sites)) {
+              const roots = seeds.map(p => new URL(p, base + "/").href);
+              const engineQueries = [
+                "https://www.bing.com/search?q="+encodeURIComponent("site:"+new URL(base).hostname+" \"base.google.com/ns/1.0\""),
+                "https://www.bing.com/search?q="+encodeURIComponent("site:"+new URL(base).hostname+" \"google shopping\" feed"),
+                "https://html.duckduckgo.com/html/?q="+encodeURIComponent("site:"+new URL(base).hostname+" \"google shopping\" feed")
+              ];
+              const first = await mapConcurrent([...roots,...engineQueries], 10, call);
+              let candidates = new Set();
+              for (const x of first) {
+                if (x?.body) for (const u of absoluteLinks(x.body, base)) if (relevant(u, new URL(base).hostname)) candidates.add(u);
+                if (x?.target && relevant(x.target, new URL(base).hostname)) candidates.add(x.target);
+                if (nativeValid(x?.body)) {
+                  fs.writeFileSync("artifacts/native/"+site+".xml", x.body);
+                  summary[site] = {native:true,url:x.target,source:"cloudflare-egress",bytes:String(x.body).length,stage:"seed"};
+                  break;
+                }
+              }
+              if (summary[site]) continue;
+              for (const p of seeds) candidates.add(new URL(p, base + "/").href);
+              const list=[...candidates].slice(0,180);
+              const second=await mapConcurrent(list, 12, call);
+              let hit=null;
+              for (const x of second) {
+                if (nativeValid(x?.body)) { hit=x; break; }
+              }
+              if (hit) {
+                fs.writeFileSync("artifacts/native/"+site+".xml", hit.body);
+                summary[site] = {native:true,url:hit.target,source:"cloudflare-egress",bytes:String(hit.body).length,stage:"candidate",candidate_count:list.length};
+              } else {
+                const compact = {
+                  native:false,
+                  candidate_count:list.length,
+                  statuses: second.reduce((a,x)=>{ const k=String(x?.status ?? "error"); a[k]=(a[k]||0)+1; return a; },{}),
+                  interesting: second.filter(x=>x?.target && /(feed|google|merchant|xml|gpf|wpfm|woo-feed)/i.test(x.target)).slice(0,200).map(x=>({target:x.target,status:x.status,ct:x.ct,bytes:x.bytes,body:String(x.body||"").slice(0,600)})),
+                  root_evidence: first.filter(x=>/robots|sitemap|wp-json|rest_route|adsstore|ithunt|kccomputers|krgkart/.test(String(x.target))).slice(0,30).map(x=>({target:x.target,status:x.status,ct:x.ct,bytes:x.bytes,body:String(x.body||"").slice(0,1800)}))
+                };
+                fs.writeFileSync("artifacts/"+site+".json", JSON.stringify(compact,null,2));
+                summary[site] = compact;
+              }
+            }
+            fs.writeFileSync("artifacts/summary.json", JSON.stringify(summary,null,2));
+            console.log(JSON.stringify(summary,null,2));
+          })().catch(e=>{ console.error(e); process.exit(1); });
+          NODE
+      - name: Upload feed evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: wc-google-feed-egress-evidence
+          path: artifacts/
+          if-no-files-found: error
