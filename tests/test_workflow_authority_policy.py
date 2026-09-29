@@ -19,3 +19,4 @@ def test_privileged_policy_forbids_pr_triggers():
     text=(ROOT/"docs"/"WORKFLOW_AUTHORITY_REGISTRY.json").read_text(encoding="utf-8")
     assert "pull_request_target" in text
     assert "privileged_push_branch" in text
+    assert "merge_group" in text
