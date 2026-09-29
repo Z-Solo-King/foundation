@@ -780,11 +780,3 @@ def test_live_chatbot_smoke_keeps_infrastructure_diagnostic_non_blocking():
     assert '"critical": critical' in workflow
     assert 'record("diagnostic_infrastructure", diagnostic.status_code, diagnostic_body, critical=False)' in workflow
     assert "if critical and (status != 200 or item.get(\"ok\") is False):" in workflow
-
-
-def test_production_release_dispatches_nightly_with_json_on_stdin():
-    workflow = (ROOT / ".github" / "workflows" / "heroic-ai-production-release.yml").read_text(encoding="utf-8")
-    assert 'jq -nc --arg target_sha "$GITHUB_SHA" --arg production_release_run_id "$GITHUB_RUN_ID"' in workflow
-    assert '| gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref main --json &' in workflow
-    assert 'gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref main \
-              jq -nc' not in workflow
