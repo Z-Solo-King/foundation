@@ -44,7 +44,7 @@ def test_production_boundary_scan_matches_public_worker_architecture():
 
     assert "! grep -RniE 'operations|extractor_mapper" not in text
     assert "! grep -RniE 'extractor_mapper|private\\.chatbot|resource_ledger|promotion\\.py|trust_boundary|CONTROL_PLANE' foundation_core backend wrangler.toml migrations" in text
-    assert "! grep -nE 'extractor_mapper|private\\.chatbot|resource_ledger|promotion\\.py|trust_boundary|CONTROL_PLANE' worker.py" in text
+    assert "! grep -nE 'extractor_mapper|private\\.chatbot|resource_ledger|promotion\\.py|trust_boundary|CONTROL_PLANE' worker.py edge.js" in text
 
 
 def test_operations_binding_is_generated_but_private_service_name_stays_out_of_worker():
@@ -91,9 +91,9 @@ def test_production_uses_pages_front_door_with_private_backend_boundary():
     assert 'workers_dev = false' in text
     assert 'name = "heroic"' in text
     assert '! grep -q \'^service = "heroic"$\' "$bootstrap_config"' in text
-    assert 'workers/scripts/heroic/settings' in text
+    assert 'workers/scripts/${PYTHON_CORE_WORKER_NAME}/settings' in text
     assert 'B2_BUCKET' in text and 'B2_ENDPOINT' in text
-    assert 'Resolving B2 release configuration from canonical heroic Worker' in text
+    assert 'Resolving B2 release configuration from canonical ${PYTHON_CORE_WORKER_NAME} Worker' in text
     assert 'workers/scripts/heroic/subdomain' in text
     assert 'pages/projects/ai' not in text
     assert 'Canonical Pages front door check failed' in text
