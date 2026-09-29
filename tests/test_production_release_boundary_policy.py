@@ -86,6 +86,14 @@ def test_d1_migration_config_pins_repository_migrations_dir():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'migrations_dir = "migrations"' in text
 
+
+def test_release_d1_commands_do_not_repeat_global_config_flag():
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    for line in text.splitlines():
+        if 'd1 execute "$database_name" --remote' in line:
+            continue
+    assert '  --config="$d1_migrations_config"' not in text
+
 def test_reciprocal_service_bindings_use_binding_free_bootstrap():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
     assert "Operations binding-free bootstrap deployment: PASS" in text
