@@ -135,6 +135,10 @@ def test_live_chat_provider_provenance_reconciliation_is_json_structural():
     assert 'contains("cloudflare_workers_ai")' in text
     assert 'grep -q \'"state":"consumed"\'' not in text
     assert "sleep 2" in text
+    assert "reservation_id LIKE 'chat-model:production-chat-${ACCEPTANCE_RUN_ID}:%'" in text
+    assert "instr(reservation_id, ':cloudflare_workers_ai:') > 0" in text
+    assert "reservation_id LIKE '%production-chat-${ACCEPTANCE_RUN_ID}%:cloudflare_workers_ai:%'" not in text
+
 
 def test_live_chat_provider_provenance_is_verified_privately():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
