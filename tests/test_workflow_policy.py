@@ -597,7 +597,9 @@ def test_nightly_research_uses_authenticated_worker_ai_adapter():
     assert "scripts/research_worker_proxy.py" in workflow
     assert 'PUBLIC_WORKER_URL' in workflow
     assert 'AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in preflight
-    assert "/api/v1/chat" in preflight
+    assert "/api/v1/chatbot/diagnostic" in preflight
+    assert "provider_runtime_verify" in preflight
+    assert "provider_runtime_workers_ai" in preflight
     assert 'worker_ai_path_verified' in preflight
     assert 'transport": "authenticated_foundation_worker"' in preflight
     assert 'RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in canary
