@@ -188,6 +188,8 @@ class Handler(BaseHTTPRequestHandler):
             "mode": "chat",
             "operation": "knowledge",
             "strict_zero_cost_only": True,
+            # Authenticated CI-only path: retain provider provenance in the public-boundary response.
+            "research_runtime_proof": True,
             # Nightly research is evidence-gated: deterministic fallback cannot count as provider execution.
             "require_model_generation": True,
         }
