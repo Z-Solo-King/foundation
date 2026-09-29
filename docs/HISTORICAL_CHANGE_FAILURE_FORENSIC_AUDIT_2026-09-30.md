@@ -123,7 +123,7 @@ This prevents the exact recurrence where public feed work drifts into a private 
 
 ### 3. Privileged trigger boundary
 
-Privileged workflows must not run on pull_request or pull_request_target.
+Privileged workflows must not run on pull_request, pull_request_target, or merge_group. Privileged workflow_run chains must use an explicitly registered trusted upstream workflow.
 
 Privileged push execution must be restricted to main.
 
