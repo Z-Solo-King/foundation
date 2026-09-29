@@ -31,10 +31,19 @@
     "control_plane_snapshot": "live_verified_2026-09-29"
   },
   "current_queue": {
-    "open_issue_count": "use live GitHub API",
-    "foundation": [],
-    "operations_count": "use live GitHub API",
-    "operations": []
+    "schema": "live-issue-snapshot/v1",
+    "observed_at": "2026-09-29",
+    "open_issue_count": 13,
+    "foundation": [
+      58,
+      157,
+      1157,
+      1247,
+      1249
+    ],
+    "operations_count": 8,
+    "operations_issue_numbers_omitted": true,
+    "authority": "GitHub live issue API; descriptive snapshot only; never a production certificate"
   },
   "evidence": {
     "nightly_research": "requires provider-backed execution evidence",
