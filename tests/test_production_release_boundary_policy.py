@@ -19,6 +19,12 @@ def test_production_release_overlays_current_operations_navigation():
     assert 'git -C "$RUNNER_TEMP/operations" show "origin/main:docs/FAMILY_SYNC_STATE.json" > "$RUNNER_TEMP/operations/docs/FAMILY_SYNC_STATE.json"' in text
     assert 'git -C "$RUNNER_TEMP/operations" show "origin/main:docs/AI_ANALYSIS_MAP.md" > "$RUNNER_TEMP/operations/docs/AI_ANALYSIS_MAP.md"' in text
 
+def test_d1_migration_config_uses_resolved_database_values():
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert '"database_name = \\"${database_name}\\""' in text
+    assert '"database_id = \\"${database_id}\\""' in text
+    assert '"database_name = \\"\\${database_name}\\""' not in text
+    assert '"database_id = \\"\\${database_id}\\""' not in text
 def test_production_release_shell_syntax_is_valid():
     result = subprocess.run(["bash", "-n", str(PRODUCTION_SCRIPT)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
