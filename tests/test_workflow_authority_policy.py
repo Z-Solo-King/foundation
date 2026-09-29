@@ -20,3 +20,10 @@ def test_privileged_policy_forbids_pr_triggers():
     assert "pull_request_target" in text
     assert "privileged_push_branch" in text
     assert "merge_group" in text
+
+
+def test_trusted_workflow_run_source_is_registered():
+    text=(ROOT/"docs"/"WORKFLOW_AUTHORITY_REGISTRY.json").read_text(encoding="utf-8")
+    assert "trusted_workflow_run_sources" in text
+    assert "live-nightly-research-canary.yml" in text
+    assert "nightly multi-agent research" in text
