@@ -1,11 +1,11 @@
 {
   "schema": "family-issue-acceptance-matrix/v1",
-  "audited_at": "2026-09-29T20:55:00+05:30",
+  "audited_at": "2026-09-29",
   "repository_heads": {
-    "foundation": "ed833710199696717c2326bc73e0b2de4a9a1568",
-    "operations": "de82440330bc4279c38eb46d3fdc2282e79b001e"
+    "foundation": "dd4ae6b5965bbc50111d3ff9d76a0e3140249122",
+    "operations": "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676"
   },
-  "open_issue_count": 8,
+  "open_issue_count": 7,
   "issues": [
     {
       "repo": "foundation",
@@ -49,15 +49,6 @@
       "required_evidence": [
         "private implementation boundary",
         "controlled live secret-sync proof"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 1137,
-      "title": "migration: consolidated plan and execution order (tracking: #597, #603, #1134, #1135)",
-      "required_evidence": [
-        "current migration dependency plan",
-        "production/runtime certification receipts"
       ]
     },
     {
