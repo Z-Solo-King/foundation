@@ -86,6 +86,9 @@ def test_production_uses_pages_front_door_with_private_backend_boundary():
     assert 'workers_dev = false' in text
     assert 'name = "heroic"' in text
     assert '! grep -q \'^service = "heroic"$\' "$bootstrap_config"' in text
+    assert 'workers/scripts/heroic/settings' in text
+    assert 'B2_BUCKET' in text and 'B2_ENDPOINT' in text
+    assert 'Resolving B2 release configuration from canonical heroic Worker' in text
     assert 'workers/scripts/heroic/subdomain' in text
     assert 'pages/projects/ai' in text
     assert 'workers/scripts/foundation' in text

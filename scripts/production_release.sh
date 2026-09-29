@@ -31,8 +31,6 @@ test -n "${CLOUDFLARE_ACCOUNT_ID:-}" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID Gi
 test -n "${OPERATIONS_APP_ID:-}" || { echo 'Missing OPERATIONS_APP_ID GitHub Actions secret'; exit 1; }
 test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIVATE_KEY GitHub Actions secret'; exit 1; }
 test -n "${AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN GitHub Actions secret'; exit 1; }
-test -n "${B2_BUCKET:-}" || { echo 'Missing B2_BUCKET release variable'; exit 1; }
-test -n "${B2_ENDPOINT:-}" || { echo 'Missing B2_ENDPOINT release variable'; exit 1; }
 test -n "${B2_KEY_ID:-}" || { echo 'Missing B2_KEY_ID GitHub Actions secret'; exit 1; }
 test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub Actions secret'; exit 1; }
 
@@ -155,6 +153,32 @@ test "$ref_status" = '200' || { jq -c '{message,errors,documentation_url}' "$RUN
 jq -e --arg expected "$OPERATIONS_REF" '.sha == $expected' "$RUNNER_TEMP/operations-ref-response.json" >/dev/null
 
 echo "private Operations access: PASS"
+
+# Resolve runtime B2 configuration from the canonical heroic Worker when the GitHub
+# environment does not provide the non-secret bucket/endpoint values.
+if [ -z "${B2_BUCKET:-}" ] || [ -z "${B2_ENDPOINT:-}" ]; then
+  echo "Resolving B2 release configuration from canonical heroic Worker"
+  heroic_settings_status=$(curl -sS -o "$RUNNER_TEMP/heroic-settings.json" -w '%{http_code}' \
+    -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
+    "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/heroic/settings" || true)
+  test "$heroic_settings_status" = '200' || {
+    echo "Canonical heroic Worker settings lookup failed: HTTP $heroic_settings_status"
+    cat "$RUNNER_TEMP/heroic-settings.json" 2>/dev/null || true
+    exit 1
+  }
+  resolved_b2_bucket=$(jq -r '.result.bindings[]? | select(.name == "B2_BUCKET" and .type == "plain_text") | .text' "$RUNNER_TEMP/heroic-settings.json" | head -n1)
+  resolved_b2_endpoint=$(jq -r '.result.bindings[]? | select(.name == "B2_ENDPOINT" and .type == "plain_text") | .text' "$RUNNER_TEMP/heroic-settings.json" | head -n1)
+  test -n "$resolved_b2_bucket" || { echo 'Canonical heroic Worker has no B2_BUCKET'; exit 1; }
+  test -n "$resolved_b2_endpoint" || { echo 'Canonical heroic Worker has no B2_ENDPOINT'; exit 1; }
+  case "$resolved_b2_endpoint" in
+    https://*) ;;
+    *) echo 'Canonical heroic Worker B2_ENDPOINT is not HTTPS'; exit 1 ;;
+  esac
+  B2_BUCKET="$resolved_b2_bucket"
+  B2_ENDPOINT="$resolved_b2_endpoint"
+  export B2_BUCKET B2_ENDPOINT
+  echo "B2 release configuration: PASS"
+fi
 
 # Canonical runtime boundary checks. The public application is Pages -> heroic -> operations;
 # no legacy foundation Worker, custom Worker domain, or workers.dev public backend should exist.
