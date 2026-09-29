@@ -170,3 +170,10 @@ def test_production_release_acceptance_namespace_uses_authoritative_run_attempt(
     assert 'RELEASE_RUN_ATTEMPT="${RELEASE_RUN_ATTEMPT:-${GITHUB_RUN_ATTEMPT:-1}}"' in text
     assert 'ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${RELEASE_RUN_ATTEMPT}"' in text
     assert "RELEASE_RUN_ATTEMPT: ${{ github.run_attempt }}" in workflow
+
+
+def test_policy_block_acceptance_matches_public_response_contract():
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert '.response.status == "blocked"' in text
+    assert '.response.result_state == "BLOCKED"' in text
+    assert '.response.operation == "map"' not in text
