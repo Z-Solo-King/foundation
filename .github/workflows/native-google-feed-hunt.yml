@@ -130,7 +130,7 @@ jobs:
           fs.writeFileSync('out/plugin-groups.md',lines.join('\n')+'\n');
           NODE
           test "$(find out/fingerprints -name '*.json' | wc -l)" -eq 31
-          test "$(node -e "console.log(require('./out/groups-matrix.json').reduce((n,g)=>n+g.sites.length,0))")" -eq 31
+          test "$(node -e "const g=require('./out/groups-matrix.json'); console.log(Object.values(require('./out/plugin-groups.json').groups).flat().length)")" -eq 31
           cat out/plugin-groups.md
       - id: set_matrix
         name: Expose grouped plugin matrix
@@ -168,10 +168,10 @@ jobs:
           node-version: 20
       - name: Guess plugin-family XML feeds
         run: |
-          node tools/feed-lab/woocommerce_31_group_xml_guess.mjs --group "${{ matrix.group }}" --input out/plugin-data/plugin-groups.json --out "out/group-guess/${{ matrix.group.group }}"
+          node tools/feed-lab/woocommerce_31_group_xml_guess.mjs --group "${{ matrix.group }}" --input out/plugin-data/plugin-groups.json --out "out/group-guess/${{ matrix.group }}"
       - name: Upload group XML evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: xml-guess-${{ matrix.group.group }}
+          name: xml-guess-${{ matrix.group }}
           path: out/group-guess/
           retention-days: 14
