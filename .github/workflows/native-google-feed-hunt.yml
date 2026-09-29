@@ -116,7 +116,7 @@ jobs:
             groups,
             sites:feedLike
           };
-          fs.writeFileSync('out/plugin-groups.json',JSON.stringify(out,null,2)+'\\n');
+          fs.writeFileSync('out/plugin-groups.json',JSON.stringify(out,null,2)+'\n');
           const matrix=Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0])).map(([group,sites])=>({group,sites}));
           fs.writeFileSync('out/groups-matrix.json',JSON.stringify(matrix)+'\n');
           const lines=['# WooCommerce 31 Plugin Extraction','',`Sites: ${rows.length}`,'','## Groups',''];
@@ -125,7 +125,7 @@ jobs:
           for(const r of rows.sort((a,b)=>a.site.localeCompare(b.site))){
             lines.push(`| ${r.site} | ${r.primary_group} | ${r.status} | ${r.feed_like_plugin_assets.join(', ')||'none'} | ${r.plugin_assets.length} |`);
           }
-          fs.writeFileSync('out/plugin-groups.md',lines.join('\\n')+'\\n');
+          fs.writeFileSync('out/plugin-groups.md',lines.join('\n')+'\n');
           NODE
           test "$(find out/fingerprints -name '*.json' | wc -l)" -eq 31
           test "$(node -e "console.log(require('./out/groups-matrix.json').reduce((n,g)=>n+g.sites.length,0))")" -eq 31
