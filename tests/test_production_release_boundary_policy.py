@@ -69,6 +69,12 @@ def test_production_health_check_requires_production_environment():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
     assert '.ok == true and .environment == "production"' in text
 
+def test_release_d1_config_is_passed_as_wrangler_global_option():
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'wrangler@4.131.1 --config "$d1_migrations_config" d1 migrations apply "$database_name" --remote' in text
+    assert text.count('wrangler@4.131.1 --config "$d1_migrations_config" d1 execute "$database_name" --remote') >= 3
+    assert 'wrangler@4.131.1 d1 migrations apply "$database_name" --remote --config "$d1_migrations_config"' not in text
+
 def test_release_d1_commands_use_dedicated_d1_config():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_migrations_config="$RUNNER_TEMP/wrangler.d1.generated.toml"' in text
