@@ -406,11 +406,16 @@ async def _operations_chatbot_diagnostic(env, request=None, operation="infrastru
         if operation in {"persistence_seed", "persistence_verify"}:
             return body_dict, upstream.status
         raw_checks = body_dict.get("runtime_checks") if isinstance(body_dict.get("runtime_checks"), list) else []
-        runtime_checks = [
-            {"name": str(check.get("name", ""))[:120], "ok": bool(check.get("ok"))}
-            for check in raw_checks[:32]
-            if isinstance(check, dict) and str(check.get("name", "")).strip()
-        ]
+        runtime_checks = []
+        for check in raw_checks[:32]:
+            if not isinstance(check, dict) or not str(check.get("name", "")).strip():
+                continue
+            item = {"name": str(check.get("name", ""))[:120], "ok": bool(check.get("ok"))}
+            if operation == "provider_runtime_verify":
+                generation_status = check.get("generation_status")
+                if isinstance(generation_status, str) and generation_status.strip():
+                    item["generation_status"] = generation_status.strip()[:80]
+            runtime_checks.append(item)
         runtime_ok = bool(body_dict.get("runtime_status") == "ok") and bool(runtime_checks) and all(
             bool(check["ok"]) for check in runtime_checks
         )
@@ -563,6 +568,11 @@ class Default(WorkerEntrypoint):
                 body["ok"] = all(bool(check.get("ok")) for check in body["checks"])
                 body["status"] = "ok" if body["ok"] else "degraded"
                 return _authenticated_json(body, status=200 if body["ok"] else 503)
+            if operation == "provider_runtime_verify":
+                private_body, private_status = await _operations_chatbot_diagnostic(
+                    self.env, request, operation=operation, payload=payload
+                )
+                return _authenticated_json(private_body, status=private_status)
             if operation in {"persistence_seed", "persistence_verify"}:
                 private_body, private_status = await _operations_chatbot_diagnostic(
                     self.env, request, operation=operation, payload=payload
