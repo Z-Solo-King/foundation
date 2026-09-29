@@ -133,8 +133,11 @@ def test_infrastructure_diagnostic_failure_reports_only_failed_check_names():
     assert 'Authenticated infrastructure diagnostic acceptance: FAIL' in text
     assert 'failed_checks="$(jq -r' in text
     assert 'select(.ok != true) | .name' in text
-    assert '.checks[]?.runtime_checks[]?' in text
+    assert 'def named_checks:' in text
+    assert '[.. | objects | select((.name? | type) == "string" and (.ok? | type) == "boolean")]' in text
     assert 'cat diagnostic.json' not in text
+    assert '.. | objects' in text
+    assert 'select((.name? | type) == "string" and (.ok? | type) == "boolean" and .ok != true)' in text
 
 def test_live_chat_provider_provenance_reconciliation_is_json_structural():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
