@@ -91,8 +91,9 @@ def test_production_release_does_not_publish_private_state_or_b2_literals():
     assert '  cat diagnostic.json' not in deployment
     assert 'B2_BUCKET = "SoloKing"' not in deployment
     assert 'B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"' not in deployment
-    assert 'test -n "${B2_BUCKET:-}"' in deployment
-    assert 'test -n "${B2_ENDPOINT:-}"' in deployment
+    assert 'workers/scripts/heroic/settings' in deployment
+    assert 'B2_BUCKET' in deployment and 'B2_ENDPOINT' in deployment
+    assert 'Resolving B2 release configuration from canonical heroic Worker' in deployment
 
 
 def test_production_pin_self_check_matches_canonical_operations_revision():
