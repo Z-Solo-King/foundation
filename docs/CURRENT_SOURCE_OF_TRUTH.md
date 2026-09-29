@@ -3,7 +3,7 @@
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
 Checked: 2026-09-29.
-Foundation main code checkpoint: 9b078e90fe2371031984bef25a95ff86667cd986.
+Foundation main code checkpoint: ceefc21bffaed0f2ec471948f7a37ccff7f5a503.
 Operations main checkpoint: af3dc60349ca9de7c3747625949269234d34021f.
 Production Operations pin: 2d1667beeba912d9d5592322a664623e1ef07674.
 Research Operations pin: 8bee0ca4c41e02d2b7005589a73f53dc0512aa9d.

@@ -130,19 +130,15 @@ def test_production_uses_pages_front_door_with_private_backend_boundary():
 
 def test_live_chat_provider_provenance_is_verified_privately():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'and (.response.provider == null)' in text
+    assert 'for attempt in $(seq 1 10); do' in text
+    assert 'sleep 2' in text
     assert 'resource_governance_reservations' in text
     assert 'cloudflare_workers_ai' in text
     assert 'live-chat-provider-provenance.json' in text
     assert 'response.provider == \"cloudflare_workers_ai\"' not in text
+    assert 'jq -e \"[.. | objects' not in text
 
 
-def test_live_chat_provider_provenance_accepts_wrangler_json_envelopes():
-    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert "jq -e '[.. | objects" in text
-    assert 'select((.state? // "") == "consumed")' in text
-    assert 'contains("cloudflare_workers_ai")' in text
-    assert 'if type == "array" then .[0].results' not in text
 def test_chat_auth_boundary_checks_canonical_module():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'grep -q \'CHAT_BACKEND_TOKEN\' "$RUNNER_TEMP/operations/private/chat_auth.py"' in text
