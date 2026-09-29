@@ -4,11 +4,11 @@ This repository contains the public contract/Worker boundary. Production control
 
 ## Current verified production state
 
-Historical production verification is retained as historical evidence only. The 2026-09-13 manual verification is not current certification.
+The canonical public front door is Cloudflare Pages project `ai` at `https://ai-cio.pages.dev/`. The public backend Worker is `heroic`; its workers.dev endpoint is disabled and the retired legacy `foundation` Worker is not part of production. Private control-plane execution is split between `operations-edge` and `operations` over Cloudflare Service Bindings.
 
-Current acceptance requires fresh authenticated evidence from the approved GitHub deployment path and, where applicable, separate Cloudflare production verification.
+The live D1 database is `research-intelligence`. Direct D1 inspection on 2026-09-29 found the `d1_migrations` table with migrations `0001_initial.sql` through `0010_public_admission.sql` applied, plus the expected operational tables and indexes.
 
-The public Worker is deployed with Python Worker tooling (`pywrangler`), not plain `wrangler deploy`.
+Production certification requires a fresh successful run of `.github/workflows/heroic-ai-production-release.yml` against the immutable Operations pin. A prior failed release is not certification.
 
 ## Canonical production workflow
 
@@ -20,7 +20,7 @@ The workflow dynamically resolves the live D1 database ID and writes a runner-on
 
 The workflow also owns the protected Operations handoff. Production is pinned to the explicitly approved immutable Operations revision:
 
-`bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
+`068c3cff76f194dd0188f704fda191388e6694cb`
 
 The private Operations checkout uses the purpose-specific GitHub App installation credential set:
 
@@ -64,7 +64,7 @@ Do not infer credential purpose from the fact that multiple secrets are consumed
 
 Before the private Operations checkout, the workflow must fail closed unless the GitHub App credentials are present, the App JWT is valid, the installation-token exchange succeeds, and the resulting installation token can read `Z-Solo-King/operations`.
 
-The checkout must then fetch and verify the exact approved revision `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`. Before Worker packaging, the deployment materializes the pinned public `foundation_core` package through `operations/scripts/sync_public_core.py`; the generated directory is ignored and never committed. The workflow must not silently track `operations/main`, substitute an older pin, or deploy a mutable branch reference.
+The checkout must then fetch and verify the exact approved revision `068c3cff76f194dd0188f704fda191388e6694cb`. Before Worker packaging, the deployment materializes the pinned public `foundation_core` package through `operations/scripts/sync_public_core.py`; the generated directory is ignored and never committed. The workflow must not silently track `operations/main`, substitute an older pin, or deploy a mutable branch reference.
 
 A successful public Worker deployment does not prove that Operations was deployed. Operations deployment, D1 governance application, protected configuration and private runtime verification remain separately evidenced.
 
