@@ -52,4 +52,5 @@ The canonical public path is Pages `ai` -> `heroic` -> private `operations-edge`
 ## Continuity
 
 Use this file together with docs/FAMILY_SYNC_STATE.json and docs/PROMPT_TO_CANONICAL_DOC_MAP.md.
+Production diagnostic acceptance passes the explicit `release_acceptance` mode through the public-to-private diagnostic boundary; this path is validated by the canonical production release. 
 Do not add another competing current-state document.

@@ -378,6 +378,8 @@ async def _operations_chatbot_diagnostic(env, request=None, operation="infrastru
             "operation": operation,
             "question": "Infrastructure diagnostic only; do not execute a model provider.",
         }
+        if operation == "infrastructure_verify" and isinstance(payload, dict) and payload.get("release_acceptance") is True:
+            diagnostic_payload["release_acceptance"] = True
         if operation in {"persistence_seed", "persistence_verify"} and isinstance(payload, dict):
             sentinel_id = str(payload.get("sentinel_id", "")).strip()
             if sentinel_id:
@@ -539,7 +541,7 @@ class Default(WorkerEntrypoint):
             if operation == "infrastructure_verify_public_test":
                 body, status = await _public_infrastructure_verify(self.env)
                 private_body, private_status = await _operations_chatbot_diagnostic(
-                    self.env, request, operation="infrastructure_verify"
+                    self.env, request, operation="infrastructure_verify", payload=payload
                 )
                 body["checks"].append({
                     "name": "public_chatbot",

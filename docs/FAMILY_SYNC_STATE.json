@@ -58,6 +58,7 @@
     "production_signing_root": "provisioned_live_2026-09-29",
     "production_runtime": "requires fresh canonical release certification after the merged JavaScript public-edge cutover"
   },
+  "production_diagnostic_acceptance": "release_acceptance=true is forwarded into the private infrastructure diagnostic path",
   "continuity_enforcement": {
     "schema": "continuity-freshness/v1",
     "enforced_by": "tools/check_continuity_freshness.py",

@@ -25,6 +25,41 @@ class Binding:
         return Response()
 
 
+
+def test_infrastructure_release_acceptance_flag_is_forwarded():
+    binding = Binding()
+    env = SimpleNamespace(OPERATIONS=binding)
+    result, status = asyncio.run(
+        _operations_chatbot_diagnostic(
+            env,
+            Request("Bearer secret"),
+            operation="infrastructure_verify",
+            payload={"operation": "infrastructure_verify", "release_acceptance": True},
+        )
+    )
+    assert status == 200
+    assert result["ok"] is True
+    forwarded = __import__("json").loads(binding.requests[0].body)
+    assert forwarded["operation"] == "infrastructure_verify"
+    assert forwarded["release_acceptance"] is True
+
+
+def test_infrastructure_release_acceptance_flag_is_not_forwarded_for_false_value():
+    binding = Binding()
+    env = SimpleNamespace(OPERATIONS=binding)
+    result, status = asyncio.run(
+        _operations_chatbot_diagnostic(
+            env,
+            Request("Bearer secret"),
+            operation="infrastructure_verify",
+            payload={"operation": "infrastructure_verify", "release_acceptance": False},
+        )
+    )
+    assert status == 200
+    assert result["ok"] is True
+    forwarded = __import__("json").loads(binding.requests[0].body)
+    assert "release_acceptance" not in forwarded
+
 def test_private_chatbot_diagnostic_forwards_bearer_auth():
     binding = Binding()
     env = SimpleNamespace(OPERATIONS=binding)
