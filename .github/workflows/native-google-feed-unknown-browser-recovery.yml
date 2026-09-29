@@ -19,11 +19,42 @@ permissions:
 
 jobs:
   recovery:
+    name: "plugin browser recovery — ${{ matrix.id }}"
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        include:
+          - {id: aula-india, site: AULA India, root: https://aulaindia.com}
+          - {id: aarna-computers, site: Aarna Computers, root: https://aarnacomputers.com}
+          - {id: ads-store, site: Ads Store, root: https://adsstore.in}
+          - {id: cosmic-byte, site: Cosmic Byte, root: https://www.thecosmicbyte.com}
+          - {id: ezpz-solutions, site: EZPZ Solutions, root: https://www.ezpzsolutions.in}
+          - {id: kc-computers, site: KC Computers, root: https://kccomputers.co.in}
+          - {id: krg-kart, site: KRG KART, root: https://krgkart.com}
+          - {id: kryptronix-gaming, site: Kryptronix Gaming, root: https://kryptronix.in}
+          - {id: meckeys, site: Meckeys, root: https://www.meckeys.com}
+          - {id: moskeys, site: Moskeys, root: https://moskeys.com}
+          - {id: ncl-computer, site: NCL Computer, root: https://nclcomputer.com}
+          - {id: pc-kumar-infotech, site: PC Kumar Infotech, root: https://pckumar.in}
+          - {id: pchubshop, site: PCHubShop, root: https://www.pchubshop.com}
+          - {id: prime-abgb, site: Prime ABGB, root: https://www.primeabgb.com}
+          - {id: scl-gaming, site: SCL Gaming, root: https://sclgaming.in}
+          - {id: stackskb, site: StacksKB, root: https://stackskb.com}
+          - {id: theproaudio, site: Theproaudio, root: https://www.theproaudio.com}
+          - {id: variety-infotech, site: Variety Infotech, root: https://varietyinfotech.com}
+          - {id: viper-pc, site: Viper PC, root: https://viperpc.in}
+          - {id: hotshiftpc, site: hotshiftpc, root: https://hotshiftpc.com}
+          - {id: itgadgetsonline, site: itgadgetsonline, root: https://itgadgetsonline.com}
+          - {id: ithunt, site: ithunt, root: https://ithunt.in}
     env:
-      OUT_DIR: out/plugin-browser-recovery
-      BROWSER_CONCURRENCY: "4"
+      SITE_NAME: ${{ matrix.site }}
+      SITE_ROOT: ${{ matrix.root }}
+      OUT_DIR: out/${{ matrix.id }}
+      SITE_TIMEOUT: "180"
+      BROWSER_CONCURRENCY: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v6
@@ -35,10 +66,52 @@ jobs:
           python -m playwright install chromium
       - name: Run V175-derived public plugin recovery
         run: python tools/feed-lab/woocommerce_22_plugin_browser_recovery.py
-      - name: Upload recovery evidence
+      - name: Upload per-site recovery evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: woocommerce22-plugin-browser-recovery
-          path: out/plugin-browser-recovery/
+          name: plugin-browser-recovery-${{ matrix.id }}
+          path: out/${{ matrix.id }}/
+          retention-days: 14
+
+  aggregate:
+    name: Aggregate 22-site browser evidence
+    needs: recovery
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: plugin-browser-recovery-*
+          path: out/recovery
+          merge-multiple: true
+      - name: Aggregate and validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib
+          root=pathlib.Path("out/recovery")
+          rows=[]
+          for p in sorted(root.glob("*/recovery.json")):
+              rows.extend(json.loads(p.read_text()).get("results", []))
+          for p in sorted(root.glob("recovery.json")):
+              rows.extend(json.loads(p.read_text()).get("results", []))
+          rows=sorted({r.get("site",""):r for r in rows}.values(), key=lambda x:x.get("site","").lower())
+          out={"schema_version":"woocommerce-22-plugin-browser-recovery-aggregate/v1","source_extractor_version":"V175",
+               "site_count":len(rows),"results":rows}
+          pathlib.Path("out/recovery-aggregate.json").write_text(json.dumps(out,indent=2)+"\n")
+          lines=["# 22-site plugin browser recovery","","| Site | Status | Feed family signals | Feed-like assets | Plugin assets |","|---|---|---|---|---:|"]
+          for r in rows:
+              lines.append(f'| {r.get("site","")} | {r.get("status","")} | {", ".join(x.get("family","") for x in r.get("feed_family_signals",[])) or "none"} | {", ".join(r.get("feed_like_plugin_assets",[])) or "none"} | {len(r.get("plugin_assets",[]))} |')
+          pathlib.Path("out/recovery-aggregate.md").write_text("\n".join(lines)+"\n")
+          assert len(rows)==22, f"expected 22 site rows, got {len(rows)}"
+          PY
+      - name: Upload aggregate evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce22-plugin-browser-recovery-aggregate
+          path: out/
           retention-days: 14
