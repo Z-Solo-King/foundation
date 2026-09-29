@@ -1,17 +1,18 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-29T18:32:09+05:30",
+  "audited_at": "2026-09-30T01:09:00+05:30",
   "public_safe": true,
   "live_main": {
-    "foundation": "c4069bb7b1af12268a63ef5e2b384dcaa95f941a",
+    "foundation": "30e0f132cea88cf3a945238575d7e4cb6e162045",
     "operations": "1a91efa53b9202f1624ddde892b0e86bd6b360f0"
   },
   "runtime_pins": {
     "foundation_runtime": null,
     "production_operations": "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676",
     "research_operations": "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d",
-    "foundation_runtime_status": "no independent immutable Foundation runtime pin; deployed Foundation provenance is release-receipt owned"
+    "foundation_runtime_status": "no independent immutable Foundation runtime pin; deployed Foundation provenance is release-receipt owned",
+    "migration_tools": "f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791"
   },
   "cloudflare": {
     "pages_project": "ai",
@@ -51,13 +52,13 @@
     ]
   },
   "evidence": {
-    "nightly_research": "requires provider-backed execution evidence",
+    "nightly_research": "24-program live acceptance is hardened; fresh acceptance must use the post-hardening Foundation revision and explicit structured-provider preflight",
     "extractor_benchmark": {
       "receipts": 40,
       "structural_pass": true,
       "real_catalog_success_not_proven": true
     },
-    "migration_review": "COMPLETE: merged migration lanes remain candidate/promotional evidence, not a second production authority.",
+    "migration_review": "deterministic structural evidence exists; nightly now publishes explicit #597/#603 runtime receipt requirements while preserving the external-runtime acceptance boundary",
     "feed_recovery": "QUALIFICATION COMPLETE: verified feeds retained; blocked/unverified targets are not misclassified.",
     "d1_schema": "verified_live_2026-09-29",
     "production_signing_root": "provisioned_live_2026-09-29",
@@ -71,7 +72,7 @@
     "schema": "continuity-freshness/v1",
     "enforced_by": "tools/check_continuity_freshness.py",
     "workflow": ".github/workflows/cross-repository-contract-drift.yml",
-    "last_refresh_reason": "true-live nightly dispatch encoded as JSON boolean",
+    "last_refresh_reason": "nightly research evidence contract hardening and repaired Operations polyglot-audit pin",
     "checkout_history": "full-depth required for merge-commit-safe HEAD^ resolution"
   },
   "privacy_rule": "Do not publish protected worker origins, account/resource identifiers, private revisions, secret values, private issue details, or internal operational state.",
@@ -83,12 +84,12 @@
     "chain": "heroic (JavaScript) -> heroic-core (Python) -> operations-edge (JavaScript) -> operations (Python)"
   },
   "last_runtime_repair": {
-    "date": "2026-09-29",
-    "foundation_pr": 1549,
-    "component": "authenticated provider runtime diagnostic status",
-    "status": "merged_validation_in_progress",
+    "date": "2026-09-30",
+    "foundation_pr": 1565,
+    "component": "nightly research evidence and recovery contract",
+    "status": "CI_validation_in_progress",
     "feed_scope": "excluded",
-    "pull_request": 1562,
-    "head_sha": "ea969d586965b9d3c4a11dcaa8bbe2403c82ce83"
+    "operations_migration_tools_pin": "f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791",
+    "related_operations_pr": 1109
   }
 }
