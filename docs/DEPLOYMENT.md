@@ -4,9 +4,9 @@ This repository contains the public contract/Worker boundary. Production control
 
 ## Current verified production state
 
-Historical production verification is retained as historical evidence only. The 2026-09-13 manual verification is not current certification.
+Historical production verification is retained as historical evidence only. It is not current certification.
 
-Current acceptance requires fresh authenticated evidence from the approved GitHub deployment path and, where applicable, separate Cloudflare production verification.
+Current production authority is the immutable Operations pin in `docs/OPERATIONS_PIN_MANIFEST.json`. The research runtime pin is deliberately independent. Fresh acceptance requires successful evidence from the canonical GitHub deployment path and live Cloudflare runtime checks.
 
 The public Worker is deployed with Python Worker tooling (`pywrangler`), not plain `wrangler deploy`.
 
@@ -20,7 +20,7 @@ The workflow dynamically resolves the live D1 database ID and writes a runner-on
 
 The workflow also owns the protected Operations handoff. Production is pinned to the explicitly approved immutable Operations revision:
 
-`bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`
+`068c3cff76f194dd0188f704fda191388e6694cb`
 
 The private Operations checkout uses the purpose-specific GitHub App installation credential set:
 
@@ -57,6 +57,7 @@ The runtime Foundation -> Operations path is a Cloudflare service binding plus t
 | `CLOUDFLARE_API_TOKEN` | Cloudflare deployment/API access | Cloudflare deployment boundary | GitHub tokens, B2 secrets |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account identifier | Cloudflare deployment boundary | GitHub tokens, B2 secrets |
 | `AUTH_TOKEN` | Application/runtime authentication where required | Application/runtime boundary | GitHub tokens, B2 secrets |
+| `TASK_SIGNING_ROOT` | Production task-envelope signing/verification root | Private Operations runtime | `AUTH_TOKEN`, GitHub tokens, B2 secrets |
 
 Do not infer credential purpose from the fact that multiple secrets are consumed by one workflow. Each secret has an independent authority and scope.
 
@@ -64,7 +65,7 @@ Do not infer credential purpose from the fact that multiple secrets are consumed
 
 Before the private Operations checkout, the workflow must fail closed unless the GitHub App credentials are present, the App JWT is valid, the installation-token exchange succeeds, and the resulting installation token can read `Z-Solo-King/operations`.
 
-The checkout must then fetch and verify the exact approved revision `bfcfaf5941824559cc253ecb2fd7d517cb1f1d7f`. Before Worker packaging, the deployment materializes the pinned public `foundation_core` package through `operations/scripts/sync_public_core.py`; the generated directory is ignored and never committed. The workflow must not silently track `operations/main`, substitute an older pin, or deploy a mutable branch reference.
+The checkout must then fetch and verify the exact approved revision `068c3cff76f194dd0188f704fda191388e6694cb`. Before Worker packaging, the deployment materializes the pinned public `foundation_core` package through `operations/scripts/sync_public_core.py`; the generated directory is ignored and never committed. The workflow must not silently track `operations/main`, substitute an older pin, or deploy a mutable branch reference.
 
 A successful public Worker deployment does not prove that Operations was deployed. Operations deployment, D1 governance application, protected configuration and private runtime verification remain separately evidenced.
 
