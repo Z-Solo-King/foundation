@@ -86,7 +86,7 @@ jobs:
         with:
           pattern: plugin-browser-recovery-*
           path: out/recovery
-          merge-multiple: true
+          merge-multiple: false
       - name: Aggregate and validate
         shell: bash
         run: |
