@@ -78,6 +78,15 @@ def test_operations_bootstrap_config_lives_with_entrypoint_checkout():
     assert 'cp "$RUNNER_TEMP/operations/wrangler.toml" "$bootstrap_config"' in text
     assert '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config"' in text
 
+def test_python_core_deploy_uses_isolated_workspace_config():
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'rm -rf "$RUNNER_TEMP/heroic-core"' in text
+    assert 'rsync -a --delete --exclude=".git/" --exclude=".runtime/" --exclude="node_modules/" --exclude="python_modules/" "$GITHUB_WORKSPACE/" "$RUNNER_TEMP/heroic-core/"' in text
+    assert 'cp wrangler.python-core.generated.toml "$RUNNER_TEMP/heroic-core/wrangler.toml"' in text
+    assert 'compatibility_flags = ["python_workers", "enable_request_signal", "request_signal_passthrough"]' in text
+    assert '(cd "$RUNNER_TEMP/heroic-core" && pywrangler deploy --secrets-file "$public_secret_file"' in text
+    assert 'pywrangler deploy --config wrangler.python-core.generated.toml' not in text
+
 def test_production_uses_pages_front_door_with_private_backend_boundary():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
     assert 'BASE_URL=' in text and 'ai-cio.pages.dev' in text
