@@ -349,7 +349,7 @@ printf '%s\n' \
   "RELEASE_FOUNDATION_SHA = \"${GITHUB_SHA}\"" \
   "RELEASE_OPERATIONS_REF = \"${OPERATIONS_REF}\"" \
   "B2_BUCKET = \"${B2_BUCKET}\"" \
-  "B2_ENDPOINT = \"${B2_ENDPOINT}\""
+  "B2_ENDPOINT = \"${B2_ENDPOINT}\"" \
   > wrangler.python-core.generated.toml
 
 grep -q '^name = "heroic-core"$' wrangler.python-core.generated.toml
@@ -367,7 +367,7 @@ printf '%s\n' \
   '' \
   '[[services]]' \
   'binding = "CORE"' \
-  "service = \"${PYTHON_CORE_WORKER_NAME}\""
+  "service = \"${PYTHON_CORE_WORKER_NAME}\"" \
   > wrangler.production.generated.toml
 
 grep -q '^name = "heroic"$' wrangler.production.generated.toml

@@ -541,7 +541,12 @@ def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
     }
     for filename, expected in auxiliary.items():
         workflow = (WORKFLOW_ROOT / filename).read_text(encoding="utf-8")
-        assert expected in workflow
+        if filename == "polyglot-governance-audit.yml":
+            assert "docs/OPERATIONS_PIN_MANIFEST.json" in workflow
+            assert "production_runtime" in workflow
+            assert 'default: ""' in workflow
+        else:
+            assert expected in workflow
         assert "50e642dfb05846963a82fe76f4f5fe085d4b9a8c" not in workflow
 def test_github_app_token_inputs_use_client_id():
     for name, text in _workflow_texts().items():

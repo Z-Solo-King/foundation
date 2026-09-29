@@ -103,12 +103,12 @@ jobs:
           test -n "${B2_APPLICATION_KEY:-}" || { echo 'Missing B2_APPLICATION_KEY GitHub secret'; exit 1; }
           test -n "${B2_BUCKET:-}" || { echo 'Missing B2_BUCKET GitHub secret'; exit 1; }
           python - <<'PY'
-import os, urllib.parse
-endpoint=os.environ.get('B2_ENDPOINT','').strip()
-parsed=urllib.parse.urlparse(endpoint)
-if parsed.scheme != 'https' or not parsed.hostname or not parsed.hostname.endswith('backblazeb2.com') or parsed.username or parsed.password or parsed.port:
-    raise SystemExit('B2_ENDPOINT must be an HTTPS Backblaze S3 endpoint')
-print('B2 endpoint configuration: PASS')
+          import os, urllib.parse
+          endpoint=os.environ.get('B2_ENDPOINT','').strip()
+          parsed=urllib.parse.urlparse(endpoint)
+          if parsed.scheme != 'https' or not parsed.hostname or not parsed.hostname.endswith('backblazeb2.com') or parsed.username or parsed.password or parsed.port:
+              raise SystemExit('B2_ENDPOINT must be an HTTPS Backblaze S3 endpoint')
+          print('B2 endpoint configuration: PASS')
 PY
           aws s3api head-bucket --bucket "$B2_BUCKET" --endpoint-url "$B2_ENDPOINT" >/dev/null
           echo 'B2 credential/bucket check: PASS'

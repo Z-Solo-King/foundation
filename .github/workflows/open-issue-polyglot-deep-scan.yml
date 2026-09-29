@@ -125,6 +125,30 @@ jobs:
           mkdir -p .runtime/open-issue-deep-scan
           python tools/open_issue_polyglot_scan.py             --foundation "$GITHUB_WORKSPACE/foundation"             --operations "$GITHUB_WORKSPACE/operations"             --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_52.json"             --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json"             --lane "${{ matrix.lane }}"             --output ".runtime/open-issue-deep-scan/${{ matrix.lane }}.json"
 
+      - name: Add provenance
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+          import re
+          from pathlib import Path
+
+          lane = "${{ matrix.lane }}"
+          workspace = Path(os.environ["GITHUB_WORKSPACE"])
+          operations_root = workspace / "operations"
+          path = Path(".runtime/open-issue-deep-scan") / f"{lane}.json"
+          payload = json.loads(path.read_text())
+          payload["foundation_revision"] = os.environ["GITHUB_SHA"]
+          payload["operations_revision"] = subprocess.check_output(
+              ["git", "-C", str(operations_root), "rev-parse", "HEAD"], text=True
+          ).strip()
+          if not re.fullmatch(r"[0-9a-f]{40}", payload["operations_revision"]):
+              raise SystemExit("Operations provenance is not an immutable SHA")
+          path.write_text(json.dumps(payload, indent=2) + "\n")
+          PY
+
       - name: Emit sanitized lane summary
         if: always()
         working-directory: operations
@@ -156,30 +180,6 @@ jobs:
           Path('.runtime/open-issue-deep-scan').joinpath(f'{lane}-summary.json').write_text(json.dumps(payload, indent=2, sort_keys=True)+'\n', encoding='utf-8')
           print(json.dumps(payload, sort_keys=True))
           PY
-      - name: Add provenance
-        working-directory: operations
-        run: |
-          python - <<'PY'
-          import json
-          import os
-          import subprocess
-          import re
-          from pathlib import Path
-
-          lane = "${{ matrix.lane }}"
-          workspace = Path(os.environ["GITHUB_WORKSPACE"])
-          operations_root = workspace / "operations"
-          path = Path(".runtime/open-issue-deep-scan") / f"{lane}.json"
-          payload = json.loads(path.read_text())
-          payload["foundation_revision"] = os.environ["GITHUB_SHA"]
-          payload["operations_revision"] = subprocess.check_output(
-              ["git", "-C", str(operations_root), "rev-parse", "HEAD"], text=True
-          ).strip()
-          if not re.fullmatch(r"[0-9a-f]{40}", payload["operations_revision"]):
-              raise SystemExit("Operations provenance is not an immutable SHA")
-          path.write_text(json.dumps(payload, indent=2) + "\n")
-          PY
-
       - name: Upload sanitized lane summary
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
