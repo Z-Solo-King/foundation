@@ -21,8 +21,6 @@ push:
       - 'docs/CURRENT_SOURCE_OF_TRUTH.md'
       - 'docs/FAMILY_SYNC_STATE.json'
       - '.github/workflows/**'
-  merge_group:
-    types: [checks_requested]
   schedule:
     - cron: "17 2 * * *"
   workflow_dispatch:
