@@ -58,3 +58,7 @@ Do not add another competing current-state document.
 
 ### 2026-09-29 runtime repair note
 The canonical production release runtime now passes the authenticated infrastructure diagnostic on the current production pair. The remaining release failure was in the post-release nightly workflow-dispatch command: GitHub CLI requires JSON workflow inputs on stdin when using --json. Foundation PR #1549 corrects that dispatcher contract and adds regression coverage; runtime authority and feed extraction scope are unchanged.
+
+
+## 2026-09-29 dispatch contract refresh
+The canonical production release dispatches live nightly research with typed string workflow inputs (`dry_run=false`, exact Foundation SHA, exact production release run ID). Production smoke tracks the production Operations pin; research preflight and research execution retain their separate immutable research pin.
