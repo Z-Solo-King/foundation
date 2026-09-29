@@ -1,16 +1,16 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-29",
+  "audited_at": "2026-09-29T07:15:00Z",
   "public_safe": true,
   "live_main": {
-    "foundation": "34fcae8638fc2fb591131d5e53a6cf47ebdbe0dd",
-    "operations": "068c3cff76f194dd0188f704fda191388e6694cb"
+    "foundation": "ec7e4f1647865c05eb0bef6861b55684381a23ab",
+    "operations": "60280928875e052af8a6d0c4a81d119ba8861d5a"
   },
   "runtime_pins": {
-    "foundation_runtime": "34fcae8638fc2fb591131d5e53a6cf47ebdbe0dd",
-    "production_operations": "068c3cff76f194dd0188f704fda191388e6694cb",
-    "research_operations": "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d"
+    "production": "60280928875e052af8a6d0c4a81d119ba8861d5a",
+    "research": "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d",
+    "secret_sync_utility": "29bb556e9505a7e2c640f5c09e62574c917b65a3"
   },
   "cloudflare": {
     "pages_project": "ai",

@@ -1,6 +1,15 @@
 name: Centralized Operations validation
 
 'on':
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/operations-centralized-validation.yml"
+      - "docs/OPERATIONS_PIN_MANIFEST.json"
+      - "docs/OPEN_ISSUE_ACCEPTANCE_MATRIX.json"
+      - "docs/FAMILY_SYNC_STATE.json"
+      - ".github/workflows/heroic-ai-production-release.yml"
+      - "scripts/production_release.sh"
   push:
     branches: [main]
     paths:

@@ -1,11 +1,11 @@
 {
   "schema": "family-issue-acceptance-matrix/v1",
-  "audited_at": "2026-09-29",
+  "audited_at": "2026-09-29T07:15:00Z",
   "repository_heads": {
-    "foundation": "f66d32cedd39ef076c06fce7bd69175c14a6b0bc",
-    "operations": "4e2c5860f306a5c481a4a0a6540aaac72cc3644a"
+    "foundation": "ec7e4f1647865c05eb0bef6861b55684381a23ab",
+    "operations": "60280928875e052af8a6d0c4a81d119ba8861d5a"
   },
-  "open_issue_count": 0,
+  "open_issue_count": 13,
   "issues": [],
   "evidence_rules": {
     "research_signal": "discovery/candidate evidence only",
