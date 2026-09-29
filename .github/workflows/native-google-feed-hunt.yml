@@ -5,11 +5,11 @@ on:
     branches:
       - hunt/native-google-feed-urls-20260927
     paths:
-      - ".github/workflows/woocommerce-32-plugin-xml-fast-hunt.yml"
+      - ".github/workflows/native-google-feed-hunt.yml"
   pull_request:
     branches: [main]
     paths:
-      - ".github/workflows/woocommerce-32-plugin-xml-fast-hunt.yml"
+      - ".github/workflows/native-google-feed-hunt.yml"
   workflow_dispatch:
 
 permissions:
