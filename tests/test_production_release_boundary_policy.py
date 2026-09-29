@@ -90,6 +90,8 @@ def test_production_uses_pages_front_door_with_private_backend_boundary():
     assert 'B2_BUCKET' in text and 'B2_ENDPOINT' in text
     assert 'Resolving B2 release configuration from canonical heroic Worker' in text
     assert 'workers/scripts/heroic/subdomain' in text
-    assert 'pages/projects/ai' in text
+    assert 'pages/projects/ai' not in text
+    assert 'Canonical Pages front door check failed' in text
+    assert 'BASE_URL/health' in text
     assert 'workers/scripts/foundation' in text
     assert 'ai-cio.pages.dev' in text
