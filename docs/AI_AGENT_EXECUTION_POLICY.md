@@ -12,3 +12,14 @@ Language changes are evidence-driven. Python remains protected semantic/policy/p
 
 ## 12. Completion
 Remaining work must be explicit \`RUNTIME\`, \`EXTERNAL/ADMIN\`, \`DUPLICATE/SUPERSEDED\` or \`ROADMAP\`, with canonical owner and missing evidence recorded.
+
+
+## 13. Workflow authority routing
+
+Before editing code or selecting an Action, identify the workflow authority class for the task.
+
+Public feed discovery routes through Foundation public-safe workflows. Do not redirect public feed discovery to private Operations Actions.
+
+Privileged workflows that access secrets or private Operations are main/schedule/manual execution surfaces only. They must not execute on pull_request, pull_request_target, or merge_group.
+
+The workflow authority registry is the machine-checkable source for this boundary. If validation fails, stop at routing/acceptance before implementation.
