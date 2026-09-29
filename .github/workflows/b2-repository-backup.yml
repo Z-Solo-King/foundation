@@ -109,7 +109,7 @@ jobs:
           if parsed.scheme != 'https' or not parsed.hostname or not parsed.hostname.endswith('backblazeb2.com') or parsed.username or parsed.password or parsed.port:
               raise SystemExit('B2_ENDPOINT must be an HTTPS Backblaze S3 endpoint')
           print('B2 endpoint configuration: PASS')
-PY
+          PY
           aws s3api head-bucket --bucket "$B2_BUCKET" --endpoint-url "$B2_ENDPOINT" >/dev/null
           echo 'B2 credential/bucket check: PASS'
 
