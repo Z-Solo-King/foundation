@@ -5,7 +5,7 @@ This document is the public continuity authority for Foundation. Dated status/au
 Checked: 2026-09-29.
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: aec73f457adc87dedd207486ad1153f0d784ff7c.
+Foundation main code checkpoint: 510b03b2ee2461c97b1c774349d08e3220985cce.
 Operations main checkpoint: af3dc60349ca9de7c3747625949269234d34021f.
 Production Operations pin: 2d1667beeba912d9d5592322a664623e1ef07674.
 Research Operations pin: 8bee0ca4c41e02d2b7005589a73f53dc0512aa9d.
