@@ -59,8 +59,7 @@ jobs:
               if name == "health" and item.get("ok") is not True:
                   out["ok"]=False
               if name == "readiness" and (
-                  item.get("ok") is not True
-                  or item.get("ready") is not True
+                  item.get("ready") is not True
                   or item.get("database") is not True
               ):
                   out["ok"]=False

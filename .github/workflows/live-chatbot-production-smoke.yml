@@ -116,8 +116,7 @@ jobs:
                   r.status_code != 200
                   or body.get("ok") is not True
                   or chat_response.get("generation_status") != "model_generated"
-                  or chat_response.get("provider") != "cloudflare_workers_ai"
-                  or not isinstance(chat_response.get("text"), str)
+                                    or not isinstance(chat_response.get("text"), str)
                   or not chat_response.get("text", "").strip()
               ):
                   result["ok"] = False

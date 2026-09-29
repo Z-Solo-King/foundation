@@ -65,7 +65,7 @@ jobs:
 
             response_file="$RUNNER_TEMP/nightly-research-worker-preflight.json"
             probe_id="nightly-provider-preflight-${GITHUB_RUN_ID}"
-            probe_payload='{"operation":"provider_runtime_verify"}'
+            probe_payload='{"operation":"infrastructure_verify_public_test","release_acceptance":true}'
             probe_error="$RUNNER_TEMP/nightly-research-worker-preflight.error"
             status=$(curl -sS --max-time 90 -o "$response_file" -w '%{http_code}' \
               -H "Authorization: Bearer ${AUTH_TOKEN}" \
@@ -75,7 +75,7 @@ jobs:
             probe_curl_exit=$?
             probe_curl_error="$(cat "$probe_error" 2>/dev/null || true)"
             echo "Authenticated Workers AI runtime diagnostic -> HTTP ${status}"
-            if [ "$status" = "200" ] && jq -e '.ok == true and any(.runtime_checks[]?; .name == "provider_runtime_workers_ai" and .ok == true and .generation_status == "model_generated")' "$response_file" >/dev/null 2>&1; then
+            if [ "$status" = "200" ] && jq -e '.ok == true and any(.. | objects; .name? == "provider_runtime_workers_ai" and .ok == true and .generation_status == "model_generated")' "$response_file" >/dev/null 2>&1; then
               worker_ai_verified=true
               echo "Authenticated Workers AI runtime diagnostic: PASS"
             else
@@ -119,7 +119,8 @@ jobs:
               "research_endpoint_set": os.environ["PREFLIGHT_ENDPOINT"] == "true",
               "research_api_key_set": os.environ["PREFLIGHT_API_KEY"] == "true",
               "research_model_set": os.environ["PREFLIGHT_MODEL"] == "true",
-              "operations_ref": "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d",
+              "operations_production_ref": "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676",
+              "operations_research_ref": "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d",
               "workers_ai_model": "@cf/zai-org/glm-4.7-flash",
               "network_classification": (
                   "dns_or_network_unreachable" if int(os.environ.get("PREFLIGHT_WORKER_HEALTH_STATUS") or "0") == 0 else

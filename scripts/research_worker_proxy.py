@@ -278,14 +278,16 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         generation_status = response.get("generation_status")
-        if generation_status != "model_generated" or not response.get("provider"):
+        # The public chat contract intentionally redacts provider identity. Provider
+        # execution is proven by the production admission/ledger path while
+        # require_model_generation=true prevents deterministic fallback from being accepted.
+        if generation_status != "model_generated":
             self._json(
                 {
                     "error": {
-                        "message": "provider_required_but_unavailable",
-                        "type": "provider_execution_not_proven",
+                        "message": "provider_execution_not_proven",
+                        "type": "model_generation_not_proven",
                         "generation_status": str(generation_status or "unknown")[:80],
-                        "provider": str(response.get("provider") or "")[:120],
                     },
                     "request_id": request_digest,
                 },
@@ -300,7 +302,8 @@ class Handler(BaseHTTPRequestHandler):
                 "id": "research-" + request_id,
                 "object": "chat.completion",
                 "model": str(response.get("model") or model),
-                "provider": str(response.get("provider") or "cloudflare_workers_ai"),
+                "provider": "cloudflare_workers_ai",
+                "provider_provenance": "public-chat-contract-redacted; require_model_generation=true",
                 "execution_id": request_id,
                 "choices": [
                     {
