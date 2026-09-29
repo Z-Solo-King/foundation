@@ -58,3 +58,7 @@ Do not add another competing current-state document.
 
 ### 2026-09-29 runtime repair note
 The canonical production release runtime now passes the authenticated infrastructure diagnostic on the current production pair. The remaining release failure was in the post-release nightly workflow-dispatch command: GitHub CLI requires JSON workflow inputs on stdin when using --json. Foundation PR #1549 corrects that dispatcher contract and adds regression coverage; runtime authority and feed extraction scope are unchanged.
+
+
+## 2026-09-29 browser-engine runtime evidence
+A dedicated non-authoritative runtime lane now exercises the bounded browser acquisition contract across Chromium, Firefox/Gecko, and WebKit using an immutable Operations browser-support revision. WebKit is a Safari-family compatibility signal; native Safari remains a separate macOS WebDriver concern.
