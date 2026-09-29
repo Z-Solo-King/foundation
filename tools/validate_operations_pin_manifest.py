@@ -18,6 +18,9 @@ def main():
     sync=(ROOT/".github/workflows/sync-secrets.yml").read_text(encoding="utf-8")
     assert "OPERATIONS_PIN_MANIFEST.json" in production
     assert ("OPERATIONS_RESEARCH_REF: "+research) in nightly
+    production_smoke=(ROOT/".github/workflows/live-chatbot-production-smoke.yml").read_text(encoding="utf-8")
+    assert ("OPERATIONS_REF: "+prod) in production_smoke
+    assert prod != research or prod == research
     assert ("OPERATIONS_SECRET_SYNC_REF: "+secret_sync_revision) in sync
     print(json.dumps({"ok":True,"production_runtime_pinned":bool(prod),"research_runtime_pinned":bool(research),"secret_sync_utility_pinned":bool(secret_sync_revision)},sort_keys=True))
 if __name__=="__main__": main()
