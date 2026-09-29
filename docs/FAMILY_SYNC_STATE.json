@@ -62,7 +62,7 @@
     "schema": "continuity-freshness/v1",
     "enforced_by": "tools/check_continuity_freshness.py",
     "workflow": ".github/workflows/cross-repository-contract-drift.yml",
-    "last_refresh_reason": "deep-scan full-receipt aggregation authority",
+    "last_refresh_reason": "nightly boolean dispatch + deep-scan receipt aggregation",
     "checkout_history": "full-depth required for merge-commit-safe HEAD^ resolution"
   },
   "privacy_rule": "Do not publish protected worker origins, account/resource identifiers, private revisions, secret values, private issue details, or internal operational state.",
