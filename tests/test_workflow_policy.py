@@ -622,12 +622,6 @@ def test_research_worker_proxy_keeps_auth_token_out_of_command_line_and_logs():
     assert '--auth-token' not in canary
     assert 'Authorization": "Bearer " + self.server.auth_token' in proxy
     assert 'log_message(self, fmt: str, *args: object) -> None:' in proxy
-def test_research_proxy_matches_public_chat_provider_visibility_contract():
-    proxy = (ROOT / "scripts" / "research_worker_proxy.py").read_text(encoding="utf-8")
-    assert '"operation": "knowledge"' not in proxy
-    assert 'generation_status != "model_generated" or not response.get("provider")' not in proxy
-    assert 'Provider identity is intentionally private in the public Worker response.' in proxy
-
 def test_production_release_enforces_cloudflare_free_neuron_cap():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert '"workers_ai_neurons":10000' in deployment

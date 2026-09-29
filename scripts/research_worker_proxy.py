@@ -277,10 +277,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         generation_status = response.get("generation_status")
-        # Provider identity is intentionally private in the public Worker response.
-        # The production gate proves provider provenance separately from the durable ledger.
-        # The proxy therefore accepts only a real model-generated response here and never
-        # requires a private provider field to be echoed through the public API contract.
+        # Provider identity is private; production proves it from the durable ledger.
         if generation_status != "model_generated":
             self._json(
                 {
