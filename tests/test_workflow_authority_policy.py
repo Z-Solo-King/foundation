@@ -27,3 +27,14 @@ def test_trusted_workflow_run_source_is_registered():
     assert "trusted_workflow_run_sources" in text
     assert "live-nightly-research-canary.yml" in text
     assert "nightly multi-agent research" in text
+
+def test_all_workflows_have_a_valid_trigger_mapping():
+    import yaml
+    workflow_dir = ROOT / ".github" / "workflows"
+    for path in sorted(workflow_dir.glob("*.yml")) + sorted(workflow_dir.glob("*.yaml")):
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        trigger = document.get("on") if isinstance(document, dict) else None
+        if trigger is None and isinstance(document, dict):
+            trigger = document.get(True)  # PyYAML YAML 1.1 interpretation of on.
+        assert isinstance(trigger, (dict, list, str)) or trigger is None, f"{path}: invalid workflow trigger mapping"
+        assert trigger is not None, f"{path}: missing/invalid top-level on trigger"
