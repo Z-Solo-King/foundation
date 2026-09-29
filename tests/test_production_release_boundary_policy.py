@@ -95,3 +95,10 @@ def test_production_uses_pages_front_door_with_private_backend_boundary():
     assert 'BASE_URL/health' in text
     assert 'workers/scripts/foundation' in text
     assert 'ai-cio.pages.dev' in text
+
+
+def test_chat_auth_boundary_checks_canonical_module():
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'grep -q \'CHAT_BACKEND_TOKEN\' "$RUNNER_TEMP/operations/private/chat_auth.py"' in text
+    assert 'grep -q \'from private.chat_auth import authorized_chat_request\' "$RUNNER_TEMP/operations/worker.py"' in text
+    assert 'CHAT_BACKEND_TOKEN\' "$RUNNER_TEMP/operations/worker.py"' not in text
