@@ -1,4 +1,4 @@
-# Heroic AI public endpoint and Worker identity — 2026-09-25
+# Heroic AI public endpoint and Worker identity
 
 ## Public front door
 
@@ -8,30 +8,24 @@ Cloudflare-assigned public Pages hostname:
 
 `https://ai-cio.pages.dev/`
 
-The requested `https://ai.pages.dev/` hostname was not assignable to this account; Cloudflare assigned the project the globally available `ai-cio.pages.dev` hostname.
-
 ## Backend Worker
 
 The production public Worker identity is `heroic`.
 
-The account Workers.dev subdomain is `heroic-ai`, so the backend Worker origin is:
+`heroic` is now the native JavaScript edge gateway. It forwards the public request through the `CORE` Service Binding to the private `heroic-core` Python Worker.
 
-`https://[REDACTED-WORKER-ORIGIN]/`
-
-The Pages front door uses the `HEROIC_BACKEND` Service Binding to the `heroic` Worker.
+The Python core owns the existing application logic, D1, artifact storage bindings and the private Operations Service Binding.
 
 ## Deployment ownership
 
 Production Worker deployment remains owned by `.github/workflows/heroic-ai-production-release.yml` and `scripts/production_release.sh`.
 
-The release path deploys the public `heroic` Worker, then the private `operations` Worker with its `FOUNDATION` service binding targeting `heroic`, followed by live acceptance checks.
+The release path deploys Operations, Operations edge, `heroic-core`, and finally the public `heroic` JavaScript edge before running the existing live acceptance checks.
 
-The Pages project is a public routing layer only; it is not a competing Worker deployment authority.
-
-## Custom domain
-
-`[REDACTED-CUSTOM-DOMAIN]` is intentionally not part of this release path because its Cloudflare zone is currently pending/unresolvable.
+The Pages front door remains a public routing layer only.
 
 ## Migration safety
 
-The historical `[REDACTED-LEGACY-PUBLIC-WORKER]` and `[REDACTED-LEGACY-PRIVATE-WORKER]` Worker names are legacy runtime identities. They are retained until the new `heroic` deployment and live acceptance gate complete; deletion must never target the canonical `heroic` or `operations` Workers.
+The public `heroic` Worker contains no Python compatibility requirement, application D1 binding, or provider-secret binding. Those capabilities remain behind `heroic-core`.
+
+Rollback must restore a previously accepted version of the canonical Worker pair through the canonical production release/rollback process; do not delete `heroic` or `heroic-core` during migration.
