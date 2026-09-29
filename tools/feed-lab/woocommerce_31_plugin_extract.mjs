@@ -76,6 +76,11 @@ const ENDPOINTS = [
   {name:"rest-route-root", path:"/?rest_route=/"},
   {name:"wp-v2", path:"/wp-json/wp/v2/"},
   {name:"rest-route-wp-v2", path:"/?rest_route=/wp/v2/"},
+  {name:"robots", path:"/robots.txt"},
+  {name:"sitemap-index", path:"/sitemap_index.xml"},
+  {name:"wp-sitemap", path:"/wp-sitemap.xml"},
+  {name:"readme", path:"/readme.html"},
+  {name:"license", path:"/license.txt"},
 ];
 
 const CHALLENGE_MARKERS = [
@@ -178,9 +183,10 @@ function feedSignals(source) {
 }
 
 function feedLikeAssets(assets) {
+  const allow = /(?:^|[-_])(?:feed|product-feed|google-product-feed|merchant-feed|shopping-feed)(?:$|[-_])|^(?:woo-feed|woo-product-feed-pro|best-woocommerce-feed|webappick-product-feed-for-woocommerce|merchant-feed-booster-lite-for-woocommerce|thebasics-product-feed|product-feed-manager|product-feed-for-woocommerce|rex-product-feed|conversios)$/i;
   return assets.map(x=>x.slug).filter(slug =>
-    /(feed|merchant|shopping|adtribes|webappick|webtoffee|wppfm|codesolz|feedcraft)/i.test(slug) &&
-    !/^(?:product-feed-manager|product-feed-for-woocommerce-lite)$/i.test(slug)
+    allow.test(slug) &&
+    !/^(?:instagram-feed|advanced-ads|feedzy-rss-feeds|facebook-for-woocommerce)$/i.test(slug)
   ).slice(0,50);
 }
 
