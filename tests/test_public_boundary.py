@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 FORBIDDEN_PUBLIC_FILES = {
@@ -10,11 +9,9 @@ FORBIDDEN_PUBLIC_FILES = {
     "PHASE_0_CONSOLIDATION_AUDIT.md",
 }
 
-
 def test_private_bundle_files_are_absent():
     for name in FORBIDDEN_PUBLIC_FILES:
         assert not (ROOT / name).exists(), f"private/internal file leaked: {name}"
-
 
 def test_public_deployment_is_standalone_and_uses_safe_placeholders():
     text = (ROOT / "wrangler.toml").read_text(encoding="utf-8")
@@ -32,12 +29,10 @@ def test_public_deployment_is_standalone_and_uses_safe_placeholders():
     assert "ARTIFACTS" not in text
     assert "research-intelligence-engine-private" not in text
 
-
 def test_public_docs_do_not_name_private_service():
     for path in (ROOT / "README.md", ROOT / "DEPLOYMENT.md"):
         text = path.read_text(encoding="utf-8")
         assert "research-intelligence-engine-private" not in text
-
 
 def test_live_feed_recovery_assets_are_not_public():
     forbidden = (
@@ -51,7 +46,6 @@ def test_live_feed_recovery_assets_are_not_public():
     )
     for path in forbidden:
         assert not (ROOT / path).exists(), f"live target asset leaked: {path}"
-
 
 def test_public_operational_docs_use_redacted_runtime_markers():
     for path in (
