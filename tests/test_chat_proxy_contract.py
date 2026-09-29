@@ -430,3 +430,25 @@ def test_public_chat_body_covers_string_sources_and_malformed_sources():
     assert body["response"]["sources"] == ["https://example.com/source", {"title": "Example", "url": "https://example.com"}]
     malformed = worker._public_chat_body({"response": {"text": "hello", "sources": {"private": "secret"}}})
     assert malformed["response"]["sources"] == []
+
+
+def test_public_chat_body_hides_provider_by_default_and_exposes_it_for_proof_path():
+    import worker
+
+    body = {
+        "ok": True,
+        "response": {
+            "response_id": "r1",
+            "status": "completed",
+            "result_state": "COMPLETE",
+            "text": "hello",
+            "generation_status": "model_generated",
+            "provider": "cloudflare_workers_ai",
+        },
+    }
+
+    public = worker._public_chat_body(body)
+    assert "provider" not in public["response"]
+
+    proof = worker._public_chat_body(body, include_provider=True)
+    assert proof["response"]["provider"] == "cloudflare_workers_ai"
