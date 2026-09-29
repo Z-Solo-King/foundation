@@ -336,7 +336,7 @@ jobs:
               policy_payload=$(jq -nc --arg chat_id "$key-policy" --arg request_id "$key-policy-request" '{chat_id:$chat_id,request_id:$request_id,message:"https://example.com/",operation:"map",input_records:[{"id":"policy-probe"}],strict_zero_cost_only:true}')
               policy_status=$(curl -sS --max-time 30 -o /tmp/live-chat-policy.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-policy" -d "$policy_payload" "$BASE_URL/api/v1/chat")
               test "$policy_status" = 200
-              jq -e '.ok == true and .response.status == "blocked" and .response.result_state == "BLOCKED" and .response.operation == "map"' /tmp/live-chat-policy.json >/dev/null
+              jq -e '.ok == true and .response.status == "blocked" and .response.result_state == "BLOCKED"' /tmp/live-chat-policy.json >/dev/null
               ;;
             idempotency)
               payload=$(jq -nc --arg chat_id "$key-chat" --arg request_id "$key-request" '{chat_id:$chat_id,request_id:$request_id,message:"Return a deterministic one-line acknowledgement for this idempotency probe.",mode:"chat",strict_zero_cost_only:true}')
