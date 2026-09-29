@@ -542,7 +542,7 @@ def test_default_provider_runtime_diagnostic_route_is_authenticated_and_supporte
     class Request:
         method = "POST"
         url = "https://example/api/v1/chatbot/diagnostic"
-        headers = {"Authorization": "Bearer secret"}
+        headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
 
         async def json(self):
             return {"operation": "provider_runtime_verify"}
