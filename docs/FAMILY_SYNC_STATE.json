@@ -5,11 +5,11 @@
   "public_safe": true,
   "live_main": {
     "foundation": "ed833710199696717c2326bc73e0b2de4a9a1568",
-    "operations": "421953970187e6ee3e2dda8ced5aa784dae912e9"
+    "operations": "fb8d4e3cffe0119b400bfea20aa72e19c901935b"
   },
   "runtime_pins": {
     "foundation_runtime": null,
-    "production_operations": "421953970187e6ee3e2dda8ced5aa784dae912e9",
+    "production_operations": "fb8d4e3cffe0119b400bfea20aa72e19c901935b",
     "research_operations": "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d",
     "foundation_runtime_status": "no independent immutable Foundation runtime pin; deployed Foundation provenance is release-receipt owned"
   },

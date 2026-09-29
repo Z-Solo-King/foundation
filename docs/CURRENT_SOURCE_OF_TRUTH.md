@@ -7,7 +7,7 @@ Continuity CI uses a full-depth Foundation checkout so merge-commit parent resol
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
 Foundation main code checkpoint: 510b03b2ee2461c97b1c774349d08e3220985cce.
 Operations main checkpoint: af3dc60349ca9de7c3747625949269234d34021f.
-Production Operations pin: 421953970187e6ee3e2dda8ced5aa784dae912e9.
+Production Operations pin: fb8d4e3cffe0119b400bfea20aa72e19c901935b.
 Research Operations pin: 8bee0ca4c41e02d2b7005589a73f53dc0512aa9d.
 Live issue and PR counts must be read from GitHub; this file never serves as a mutable queue.
 
