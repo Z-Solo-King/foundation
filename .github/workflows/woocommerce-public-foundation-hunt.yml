@@ -106,6 +106,7 @@ jobs:
               "varietyinfotech.com","viperpc.in","aulaindia.com","thecosmicbyte.com",
               "meckeys.com","moskeys.com","ninjadog.in","stackskb.com","theproaudio.com",
           ]
+
           shard = int(os.environ["SHARD"])
           selected = sites[shard::8]
           out = Path("evidence/final-v3")
@@ -168,7 +169,8 @@ jobs:
               "meckeys.com","moskeys.com","ninjadog.in","stackskb.com","theproaudio.com",
           }
 
-          files = sorted(Path("evidence/final-v3").glob("*.json"))
+          # merge-multiple=true flattens each artifact's files directly under evidence/
+          files = sorted(Path("evidence").glob("*.json"))
           by_site = {}
           for path in files:
               row = json.loads(path.read_text(encoding="utf-8"))
@@ -183,11 +185,15 @@ jobs:
           unresolved = [r for r in by_site.values() if r.get("feed_status") == "unresolved"]
 
           summary = {
-              "schema": "foundation-woocommerce-v3.1-32-site-hunt/v1",
+              "schema": "foundation-woocommerce-v3.1-32-site-hunt/v2",
               "expected_sites": len(expected),
               "observed_site_files": len(files),
               "observed_sites": len(by_site),
-              "coverage_complete": not missing and not duplicates and len(by_site) == len(expected),
+              "coverage_complete": (
+                  not missing
+                  and not duplicates
+                  and len(by_site) == len(expected)
+              ),
               "missing_sites": missing,
               "duplicate_site_files": duplicates,
               "verified_feed_count": len(verified),
