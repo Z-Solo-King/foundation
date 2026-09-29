@@ -4,14 +4,14 @@
   "authority": "single public-safe immutable Operations revision manifest; runtime code remains authoritative",
   "pins": {
     "production_runtime": {
-      "sha": "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d",
+      "sha": "068c3cff76f194dd0188f704fda191388e6694cb",
       "purpose": "Cloudflare Operations production runtime and Foundation public production release",
-      "status": "approved immutable current Operations main; maintenance-receipt, authority-registry, compile-integrity, and CI-contract repairs included; promote only through canonical production release and fresh runtime evidence"
+      "status": "approved immutable production runtime; dedicated task-signing root provisioned; promote only through canonical production release and fresh runtime evidence"
     },
     "research_runtime": {
       "sha": "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d",
       "purpose": "nightly research executor source checkout",
-      "status": "approved immutable current Operations main for nightly research; exact revision resolved by the manifest"
+      "status": "immutable research runtime reference; independently promoted from production"
     },
     "secret_sync_utility": {
       "sha": "29bb556e9505a7e2c640f5c09e62574c917b65a3",
