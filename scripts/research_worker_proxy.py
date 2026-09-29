@@ -186,7 +186,6 @@ class Handler(BaseHTTPRequestHandler):
             "request_id": request_id,
             "message": message,
             "mode": "chat",
-            "operation": "knowledge",
             "strict_zero_cost_only": True,
             # Nightly research is evidence-gated: deterministic fallback cannot count as provider execution.
             "require_model_generation": True,
@@ -278,14 +277,17 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         generation_status = response.get("generation_status")
-        if generation_status != "model_generated" or not response.get("provider"):
+        # Provider identity is intentionally private in the public Worker response.
+        # The production gate proves provider provenance separately from the durable ledger.
+        # The proxy therefore accepts only a real model-generated response here and never
+        # requires a private provider field to be echoed through the public API contract.
+        if generation_status != "model_generated":
             self._json(
                 {
                     "error": {
                         "message": "provider_required_but_unavailable",
                         "type": "provider_execution_not_proven",
                         "generation_status": str(generation_status or "unknown")[:80],
-                        "provider": str(response.get("provider") or "")[:120],
                     },
                     "request_id": request_digest,
                 },
