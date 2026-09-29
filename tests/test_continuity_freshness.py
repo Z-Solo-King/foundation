@@ -40,6 +40,11 @@ def test_changed_files_fetches_missing_base_revision(monkeypatch):
     assert any(cmd[:3] == ["git", "fetch", "--no-tags"] for cmd in calls)
 
 
+def test_continuity_workflow_uses_full_history_for_merge_commits():
+    workflow = (Path(__file__).parents[1] / ".github" / "workflows" / "cross-repository-contract-drift.yml").read_text(encoding="utf-8")
+    assert "fetch-depth: 0" in workflow
+
+
 def test_continuity_workflow_watches_canonical_surfaces():
     workflow = (Path(__file__).parents[1] / ".github" / "workflows" / "cross-repository-contract-drift.yml").read_text(encoding="utf-8")
     for path in (
