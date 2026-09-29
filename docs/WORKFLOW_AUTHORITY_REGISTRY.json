@@ -115,6 +115,11 @@
       "merge_group"
     ],
     "privileged_push_branch": "main",
-    "principle": "workflow authority is a machine-enforced boundary; documentation alone is insufficient"
+    "principle": "workflow authority is a machine-enforced boundary; documentation alone is insufficient",
+    "trusted_workflow_run_sources": {
+      ".github/workflows/live-nightly-research-canary.yml": [
+        "nightly multi-agent research"
+      ]
+    }
   }
 }
