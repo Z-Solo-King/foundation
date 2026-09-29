@@ -813,7 +813,22 @@ if [ -n "${AUTH_TOKEN:-}" ]; then
     -d '{"operation":"infrastructure_verify_public_test","release_acceptance":true}' \
     "$BASE_URL/api/v1/chatbot/diagnostic")
   echo "POST /api/v1/chatbot/diagnostic -> HTTP ${diagnostic_status}"
-  test "$diagnostic_status" = '200'
+  failed_checks="$(jq -r '[
+    .. | objects
+    | select((.name? | type) == "string" and (.ok? | type) == "boolean" and .ok != true)
+    | .name
+  ] | unique | if length == 0 then ["none"] else . end | join(", ")' diagnostic.json)"
+  diagnostic_status_detail="$(jq -r '.status // "unknown"' diagnostic.json 2>/dev/null || echo unknown)"
+  diagnostic_error="$(jq -r '.error // empty' diagnostic.json 2>/dev/null || true)"
+  echo "Diagnostic runtime status: ${diagnostic_status_detail}"
+  echo "Failed checks: ${failed_checks}"
+  if [ -n "$diagnostic_error" ]; then
+    echo "Diagnostic error: ${diagnostic_error}"
+  fi
+  if [ "$diagnostic_status" != '200' ]; then
+    echo "Authenticated infrastructure diagnostic acceptance: FAIL (HTTP ${diagnostic_status})"
+    exit 1
+  fi
   if ! jq -e '
     def named_checks:
       [.. | objects | select((.name? | type) == "string" and (.ok? | type) == "boolean")];
@@ -832,12 +847,6 @@ if [ -n "${AUTH_TOKEN:-}" ]; then
     and any(named_checks[]; .name == "backblaze_b2_lifecycle" and .ok == true)
     ' diagnostic.json >/dev/null; then
     echo "Authenticated infrastructure diagnostic acceptance: FAIL"
-    failed_checks="$(jq -r '[
-      .. | objects
-      | select((.name? | type) == "string" and (.ok? | type) == "boolean" and .ok != true)
-      | .name
-    ] | unique | if length == 0 then ["unknown"] else . end | join(", ")' diagnostic.json)"
-    echo "Failed checks: ${failed_checks}"
     exit 1
   fi
   echo "Authenticated infrastructure diagnostic acceptance: PASS"
