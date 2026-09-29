@@ -33,7 +33,7 @@ Acquisition is adaptive: browser retrieval, direct HTTP/HTML, public APIs, feeds
 ## Connector / session continuity
 
 GitHub and Cloudflare are separate evidence surfaces, not separate product architectures.
-A session may use both when both connectors are active. When connector availability is isolated or unreliable, use the corresponding separate chat/lane.
+A session may use both when both connectors are active. When connector availability is isolated or unreliable, use the corresponding separate chat/lane; workflow dispatch input semantics must still be verified explicitly.
 Conversational expectations are never runtime evidence.
 The current Foundation execution policy is docs/AI_AGENT_EXECUTION_POLICY.md.
 
