@@ -143,3 +143,31 @@ jobs:
           name: woocommerce31-plugin-extraction
           path: out/
           retention-days: 14
+  guess:
+    name: "XML guess — ${{ matrix.group }}"
+    needs: aggregate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        group: ${{ fromJSON(needs.aggregate.outputs.groups_matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: woocommerce31-plugin-extraction
+          path: out/plugin-data
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 20
+      - name: Guess plugin-family XML feeds
+        run: |
+          node tools/feed-lab/woocommerce_31_group_xml_guess.mjs --group "${{ matrix.group.group }}" --input out/plugin-data/plugin-groups.json --out "out/group-guess/${{ matrix.group.group }}"
+      - name: Upload group XML evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: xml-guess-${{ matrix.group.group }}
+          path: out/group-guess/
+          retention-days: 14
