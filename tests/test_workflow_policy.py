@@ -528,8 +528,8 @@ def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
     expected_nightly = CANONICAL_RESEARCH_OPERATIONS_REF
     auxiliary = {
         "live-chatbot-production-smoke.yml": expected_production,
-        "coverage-driven-runtime-matrix.yml": expected_production,
-        "polyglot-governance-audit.yml": expected_production,
+        "coverage-driven-runtime-matrix.yml": expected_nightly,
+        "polyglot-governance-audit.yml": expected_nightly,
         "live-nightly-research-canary.yml": expected_nightly,
         "nightly-research-provider-preflight.yml": expected_nightly,
     }
