@@ -339,7 +339,6 @@ printf '%s\n' \
   'binding = "DB"' \
   "database_name = \"${database_name}\"" \
   "database_id = \"${database_id}\"" \
-  "migrations_dir = \"${GITHUB_WORKSPACE}/migrations\"" \
   '' \
   '[[services]]' \
   'binding = "OPERATIONS"' \
