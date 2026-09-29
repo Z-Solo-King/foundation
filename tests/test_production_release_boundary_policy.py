@@ -152,3 +152,10 @@ def test_chat_auth_boundary_checks_canonical_module():
     assert 'grep -q \'CHAT_BACKEND_TOKEN\' "$RUNNER_TEMP/operations/private/chat_auth.py"' in text
     assert 'grep -q \'from private.chat_auth import authorized_chat_request\' "$RUNNER_TEMP/operations/worker.py"' in text
     assert 'CHAT_BACKEND_TOKEN\' "$RUNNER_TEMP/operations/worker.py"' not in text
+
+def test_production_release_acceptance_namespace_uses_authoritative_run_attempt():
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    workflow = (Path(__file__).parents[1] / ".github" / "workflows" / "heroic-ai-production-release.yml").read_text(encoding="utf-8")
+    assert 'RELEASE_RUN_ATTEMPT="${RELEASE_RUN_ATTEMPT:-${GITHUB_RUN_ATTEMPT:-1}}"' in text
+    assert 'ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${RELEASE_RUN_ATTEMPT}"' in text
+    assert "RELEASE_RUN_ATTEMPT: ${{ github.run_attempt }}" in workflow
