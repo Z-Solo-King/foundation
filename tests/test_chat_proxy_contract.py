@@ -452,3 +452,12 @@ def test_public_chat_body_hides_provider_by_default_and_exposes_it_for_proof_pat
 
     proof = worker._public_chat_body(body, include_provider=True)
     assert proof["response"]["provider"] == "cloudflare_workers_ai"
+
+
+def test_provider_runtime_diagnostic_shape_preserves_generation_status():
+    import worker
+    source = worker._operations_chatbot_diagnostic.__code__
+    assert source is not None
+    text = __import__("inspect").getsource(worker._operations_chatbot_diagnostic)
+    assert 'operation == "provider_runtime_verify"' in text
+    assert 'generation_status' in text
