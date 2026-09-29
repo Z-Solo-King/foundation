@@ -452,6 +452,8 @@ def test_public_chat_body_hides_provider_by_default_and_exposes_it_for_proof_pat
 
     proof = worker._public_chat_body(body, include_provider=True)
     assert proof["response"]["provider"] == "cloudflare_workers_ai"
+    no_provider = worker._public_chat_body({"response": {"text": "hello", "provider": None}}, include_provider=True)
+    assert "provider" not in no_provider["response"]
 
 
 def test_provider_runtime_diagnostic_shape_preserves_generation_status():
@@ -519,6 +521,26 @@ def test_provider_runtime_diagnostic_preserves_generation_status():
     assert body["runtime_checks"] == [
         {"name": "provider_runtime_workers_ai", "ok": True, "generation_status": "model_generated"}
     ]
+    class ResponseNoGeneration:
+        status = 200
+        async def json(self):
+            return {
+                "ok": True,
+                "runtime_status": "ok",
+                "chatbot": {"allowed": True},
+                "runtime_checks": [{"name": "provider_runtime_workers_ai", "ok": True, "generation_status": None}],
+            }
+    class BindingNoGeneration:
+        async def fetch(self, request):
+            return ResponseNoGeneration()
+    body2, status2 = asyncio.run(
+        worker._operations_chatbot_diagnostic(
+            SimpleNamespace(OPERATIONS=BindingNoGeneration()),
+            Request(), operation="provider_runtime_verify", payload={}
+        )
+    )
+    assert status2 == 200
+    assert body2["runtime_checks"] == [{"name": "provider_runtime_workers_ai", "ok": True}]
 
 
 def test_default_provider_runtime_diagnostic_route_is_authenticated_and_supported(monkeypatch):
