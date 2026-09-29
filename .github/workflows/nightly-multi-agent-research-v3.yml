@@ -229,7 +229,7 @@ jobs:
         id: mode
         shell: bash
         run: |
-          if [[ "${{ inputs.dry_run || false }}" == "true" ]]; then
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
             echo "mode=dry-run" >> "$GITHUB_OUTPUT"
             echo "Manual explicit dry-run requested; no live findings are being produced."
           else
