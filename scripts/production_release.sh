@@ -339,6 +339,7 @@ printf '%s\n' \
   'binding = "DB"' \
   "database_name = \"${database_name}\"" \
   "database_id = \"${database_id}\"" \
+  "migrations_dir = \"${GITHUB_WORKSPACE}/migrations\"" \
   '' \
   '[[services]]' \
   'binding = "OPERATIONS"' \
@@ -503,8 +504,7 @@ done
 
 # Redeploy Operations against the new Foundation Worker, proving the final private binding.
 npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 execute "$database_name" --remote \
-  --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql" \
-  --config="$d1_migrations_config"
+  --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql"
 (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:foundation-binding-${ACCEPTANCE_RUN_ID}")
 
 operations_deployments_status=$(curl -sS -o "$RUNNER_TEMP/operations-deployments.json" -w '%{http_code}' \
