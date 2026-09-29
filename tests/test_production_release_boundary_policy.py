@@ -10,6 +10,11 @@ def test_production_release_defines_git_askpass_path():
     assert 'askpass="$RUNNER_TEMP/git-askpass-operations.sh"' in text
     assert '\\n\\n\\naskpass=' not in text
 
+def test_production_release_compiles_pinned_operations_before_deploy():
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'python -m compileall -q "$RUNNER_TEMP/operations"' in text
+    assert 'echo "Pinned Operations compile: PASS"' in text
+
 def test_production_release_overlays_current_operations_navigation():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'git -C "$RUNNER_TEMP/operations" show "origin/main:docs/FAMILY_SYNC_STATE.json" > "$RUNNER_TEMP/operations/docs/FAMILY_SYNC_STATE.json"' in text
