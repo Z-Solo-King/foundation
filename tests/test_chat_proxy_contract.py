@@ -558,7 +558,7 @@ def test_provider_runtime_diagnostic_accepts_dedicated_ok_without_chatbot_projec
         async def fetch(self, request): return Response()
 
     class Request:
-        headers = {"Authorization": "Bearer secret"}
+        headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
 
     body, status = asyncio.run(worker._operations_chatbot_diagnostic(SimpleNamespace(OPERATIONS=Binding()), Request(), operation="provider_runtime_verify", payload={}))
     assert status == 200
