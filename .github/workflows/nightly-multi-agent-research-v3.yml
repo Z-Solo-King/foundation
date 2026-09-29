@@ -53,7 +53,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TARGET_SHA: ${{ env.TARGET_FOUNDATION_SHA }}
           RELEASE_RUN_ID: ${{ inputs.production_release_run_id || '' }}
-          DRY_RUN: ${{ inputs.dry_run || false }}
+          DRY_RUN: ${{ inputs.dry_run == true }}
         shell: bash
         run: |
           set -euo pipefail
@@ -229,7 +229,7 @@ jobs:
         id: mode
         shell: bash
         run: |
-          if [[ "${{ inputs.dry_run || false }}" == "true" ]]; then
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
             echo "mode=dry-run" >> "$GITHUB_OUTPUT"
             echo "Manual explicit dry-run requested; no live findings are being produced."
           else
@@ -677,7 +677,7 @@ jobs:
               'blockers': blockers,
               'lanes': statuses,
               'operations_revision': '${{ env.OPERATIONS_RESEARCH_REF }}',
-              'real_research_findings_allowed': aggregate == 'live_research_executed' and '${{ inputs.dry_run || false }}' != 'true',
+              'real_research_findings_allowed': aggregate == 'live_research_executed' and '${{ inputs.dry_run == true }}' != 'true',
               'historical_dry_run_findings_are_real_research': False,
               'evidence_rule': 'LLM output is candidate-only until deterministic acquisition/evidence receipt qualification.',
           }

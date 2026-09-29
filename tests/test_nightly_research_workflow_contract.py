@@ -37,6 +37,11 @@ def test_crossfire_is_single_global_execution_pool():
     assert "Upload nightly research lane 1" in research
     assert "Upload nightly research lane 2" in research
 
+def test_dispatch_false_does_not_coerce_to_dry_run():
+    text=workflow_text()
+    assert 'if [[ "${{ inputs.dry_run }}" == "true" ]]; then' in text
+
+
 def test_private_operations_pin_and_app_auth_remain_explicit():
     text=workflow_text()
     assert "OPERATIONS_RESEARCH_REF: 8bee0ca4c41e02d2b7005589a73f53dc0512aa9d" in text
