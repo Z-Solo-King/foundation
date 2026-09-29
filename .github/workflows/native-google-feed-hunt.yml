@@ -119,33 +119,35 @@ jobs:
           )
 
           # Stage 2: plugin-specific XML guesses only. No feed URLs are read from HTML or directory indexes.
+          plugin_paths=()
           case "$primary" in
             woocommerce_google_product_feed)
-              paths+=( '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=100' '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=250' '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=1000' '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=2500' '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=5000' ) ;;
+              plugin_paths+=( '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=100' '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=250' '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=1000' '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=2500' '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=5000' ) ;;
             ctx_feed_webappick)
-              paths+=( '/wp-content/uploads/woo-feed/google/xml/google.xml' '/wp-content/uploads/woo-feed/google/xml/google-shopping.xml' '/wp-content/uploads/woo-feed/google/xml/google-shopping-feed.xml' '/wp-content/uploads/woo-feed/google/xml/feed.xml' '/wp-content/uploads/woo-feed/google.xml' '/?woo_feed=google&wt=xml' '/?woo_feed=google-shopping&wt=xml' '/?woo_feed=google_shopping&wt=xml' '/?woo_feed=google-products&wt=xml' '/?woo_feed=google_product_feed&wt=xml' '/?woo_feed=google-feed&wt=xml' '/?woo_feed=google_feed&wt=xml' '/?woo_feed=google-merchant&wt=xml' '/?woo_feed=google_merchant&wt=xml' '/?woo_feed=gmc&wt=xml' '/?woo_feed=googlebase&wt=xml' ) ;;
+              plugin_paths+=( '/wp-content/uploads/woo-feed/google/xml/google.xml' '/wp-content/uploads/woo-feed/google/xml/google-shopping.xml' '/wp-content/uploads/woo-feed/google/xml/google-shopping-feed.xml' '/wp-content/uploads/woo-feed/google/xml/feed.xml' '/wp-content/uploads/woo-feed/google.xml' '/?woo_feed=google&wt=xml' '/?woo_feed=google-shopping&wt=xml' '/?woo_feed=google_shopping&wt=xml' '/?woo_feed=google-products&wt=xml' '/?woo_feed=google_product_feed&wt=xml' '/?woo_feed=google-feed&wt=xml' '/?woo_feed=google_feed&wt=xml' '/?woo_feed=google-merchant&wt=xml' '/?woo_feed=google_merchant&wt=xml' '/?woo_feed=gmc&wt=xml' '/?woo_feed=googlebase&wt=xml' ) ;;
             adtribes_product_feed_pro)
-              paths+=( '/wp-content/uploads/woo-product-feed-pro/xml/google.xml' '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml' '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping-feed.xml' '/wp-content/uploads/woo-product-feed-pro/xml/feed.xml' '/wp-content/uploads/woo-product-feed-pro/xml/google.xml.gz' '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml.gz' ) ;;
+              plugin_paths+=( '/wp-content/uploads/woo-product-feed-pro/xml/google.xml' '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml' '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping-feed.xml' '/wp-content/uploads/woo-product-feed-pro/xml/feed.xml' '/wp-content/uploads/woo-product-feed-pro/xml/google.xml.gz' '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml.gz' ) ;;
             webtoffee_product_feed)
-              paths+=( '/wp-content/uploads/webtoffee_product_feed/wt_google_Feed.xml' '/wp-content/uploads/webtoffee_product_feed/wt_google_Feed.xml.gz' '/wp-content/uploads/webtoffee_product_feed/wt_gs_Feed.xml' '/wp-content/uploads/webtoffee_product_feed/wt_google_shopping_Feed.xml' '/wp-content/uploads/webtoffee_product_feed/wt_google_shopping_Feed.xml.gz' '/wp-content/uploads/webtoffee_product_feed/google.xml' '/wp-content/uploads/webtoffee_product_feed/google-shopping.xml' '/wp-content/uploads/webtoffee_product_feed/google-product-feed.xml' ) ;;
+              plugin_paths+=( '/wp-content/uploads/webtoffee_product_feed/wt_google_Feed.xml' '/wp-content/uploads/webtoffee_product_feed/wt_google_Feed.xml.gz' '/wp-content/uploads/webtoffee_product_feed/wt_gs_Feed.xml' '/wp-content/uploads/webtoffee_product_feed/wt_google_shopping_Feed.xml' '/wp-content/uploads/webtoffee_product_feed/wt_google_shopping_Feed.xml.gz' '/wp-content/uploads/webtoffee_product_feed/google.xml' '/wp-content/uploads/webtoffee_product_feed/google-shopping.xml' '/wp-content/uploads/webtoffee_product_feed/google-product-feed.xml' ) ;;
             wpfm_product_feed_manager)
-              paths+=( '/wp-content/uploads/wppfm-feeds/google.xml' '/wp-content/uploads/wppfm-feeds/google-shopping.xml' '/wp-content/uploads/wppfm-feeds/product-feed.xml' ) ;;
+              plugin_paths+=( '/wp-content/uploads/wppfm-feeds/google.xml' '/wp-content/uploads/wppfm-feeds/google-shopping.xml' '/wp-content/uploads/wppfm-feeds/product-feed.xml' ) ;;
             codesolz_feed)
-              paths+=( '/wp-content/uploads/codesolz-feeds/google.xml' '/wp-content/uploads/codesolz-feeds/google-products.xml' '/wp-content/uploads/codesolz-feeds/google-shopping.xml' ) ;;
+              plugin_paths+=( '/wp-content/uploads/codesolz-feeds/google.xml' '/wp-content/uploads/codesolz-feeds/google-products.xml' '/wp-content/uploads/codesolz-feeds/google-shopping.xml' ) ;;
             feedcraft)
-              paths+=( '/wp-json/feedcraft-product-feed/v1/xml' '/wp-json/feedcraft-product-feed/v1/google.xml' '/wp-json/feedcraft-product-feed/v1/google' '/wp-json/feedcraft-product-feed/v1/feed.xml' ) ;;
+              plugin_paths+=( '/wp-json/feedcraft-product-feed/v1/xml' '/wp-json/feedcraft-product-feed/v1/google.xml' '/wp-json/feedcraft-product-feed/v1/google' '/wp-json/feedcraft-product-feed/v1/feed.xml' ) ;;
           esac
           if [ "$primary" = "unknown_woocommerce" ]; then
-            paths+=( '/?woo_feed=google&wt=xml' '/?woo_feed=google-shopping&wt=xml' '/wp-content/uploads/woo-feed/google/xml/google.xml' '/wp-content/uploads/woo-product-feed-pro/xml/google.xml' '/wp-content/uploads/webtoffee_product_feed/wt_google_Feed.xml' '/wp-content/uploads/wppfm-feeds/google.xml' '/wp-content/uploads/codesolz-feeds/google-products.xml' '/wp-json/feedcraft-product-feed/v1/xml' )
+            plugin_paths+=( '/?woo_feed=google&wt=xml' '/?woo_feed=google-shopping&wt=xml' '/wp-content/uploads/woo-feed/google/xml/google.xml' '/wp-content/uploads/woo-product-feed-pro/xml/google.xml' '/wp-content/uploads/webtoffee_product_feed/wt_google_Feed.xml' '/wp-content/uploads/wppfm-feeds/google.xml' '/wp-content/uploads/codesolz-feeds/google-products.xml' '/wp-json/feedcraft-product-feed/v1/xml' )
           fi
           token=$(printf '%s' "$root" | sed -E 's#https?://##; s#www\.##; s#/.*##; s/\..*$//; s/[^A-Za-z0-9]//g' | tr '[:upper:]' '[:lower:]')
           if [ -n "$token" ]; then
             for dir in '/wp-content/uploads/woo-feed/google/xml/' '/wp-content/uploads/woo-product-feed-pro/xml/' '/wp-content/uploads/webtoffee_product_feed/'; do
               for seed in googlemerchantcenter googlemerchant googleshopping google-feed googlefeed product-feed productfeed google-shopping-feed; do
-                paths+=( "$dir$token$seed.xml" "$dir$seed$token.xml" "$dir$token-$seed.xml" "$dir$seed-$token.xml" )
+                plugin_paths+=( "$dir$token$seed.xml" "$dir$seed$token.xml" "$dir$token-$seed.xml" "$dir$seed-$token.xml" )
               done
             done
           fi
+          paths=("${plugin_paths[@]}" "${paths[@]}")
           valid() {
             local f="$1"
             grep -Eqi 'http://base.google.com/ns/1.0|https://base.google.com/ns/1.0' "$f" &&
@@ -178,7 +180,7 @@ jobs:
               rm -f "$hdr" "$body"
               exit 0
             fi
-            rm -f "$hdr" "$body" "$meta"
+            rm -f "$hdr" "$body"
           done
           printf '%s\tNOT_FOUND\n' "$site" > "out/${site// /_}.miss"
           SH
