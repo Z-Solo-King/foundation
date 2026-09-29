@@ -117,6 +117,8 @@ jobs:
             sites:feedLike
           };
           fs.writeFileSync('out/plugin-groups.json',JSON.stringify(out,null,2)+'\\n');
+          const matrix=Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0])).map(([group,sites])=>({group,sites}));
+          fs.writeFileSync('out/groups-matrix.json',JSON.stringify(matrix)+'\n');
           const lines=['# WooCommerce 31 Plugin Extraction','',`Sites: ${rows.length}`,'','## Groups',''];
           for(const [g,sites] of Object.entries(groups).sort()) lines.push(`### ${g}`,'',...sites.map(s=>'- '+s),'');
           lines.push('## Site evidence','','| Site | Group | Status | Feed-like plugin assets | Plugin asset count |','|---|---|---|---|---:|');
