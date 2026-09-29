@@ -461,7 +461,10 @@ printf '%s\n' \
   "database_name = \"${database_name}\"" \
   "database_id = \"${database_id}\"" \
   > "$d1_migrations_config"
-npx --yes wrangler@4.131.1 d1 migrations apply "$database_name" --remote --config "$d1_migrations_config"
+npx --yes wrangler@4.131.1 d1 execute "$database_name" --remote \
+  --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql" \
+  --config="$d1_migrations_config"
+echo "D1 canonical schema bootstrap: PASS"
 
 # Pywrangler performs Python-project validation against the project's default Wrangler config.
 # Temporarily make the generated Python-core config the project-default config, then restore
@@ -502,9 +505,6 @@ for asset in styles.css app.js composer.js lifecycle_controller.js; do
 done
 
 # Redeploy Operations against the new Foundation Worker, proving the final private binding.
-npx --yes wrangler@4.131.1 d1 execute "$database_name" --remote \
-  --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql" \
-  --config="$d1_migrations_config"
 (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:foundation-binding-${ACCEPTANCE_RUN_ID}")
 
 operations_deployments_status=$(curl -sS -o "$RUNNER_TEMP/operations-deployments.json" -w '%{http_code}' \
