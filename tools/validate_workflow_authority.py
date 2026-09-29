@@ -20,10 +20,14 @@ def _push_branches(text:str)->list[str]:
     m=re.search(r"(?ms)^\s{2}push:\s*\n(.*?)(?=^\s{2}[A-Za-z0-9_.-]+:|^jobs:)",head)
     if not m:
         return []
-    bm=re.search(r"(?ms)^\s{4}branches:\s*\n(.*?)(?=^\s{4}[A-Za-z0-9_.-]+:|\Z)",m.group(1))
+    block=m.group(1)
+    inline=re.search(r"(?m)^\s{4}branches:\s*\[([^\]]+)\]",block)
+    if inline:
+        return [v.strip().strip("'\\\"") for v in inline.group(1).split(",") if v.strip()]
+    bm=re.search(r"(?ms)^\s{4}branches:\s*\n(.*?)(?=^\s{4}[A-Za-z0-9_.-]+:|\Z)",block)
     if not bm:
         return []
-    return re.findall(r"(?m)^\s{6}-\s*['\"]?([^'\"\s]+)",bm.group(1))
+    return re.findall(r"(?m)^\s{6}-\s*['\\\"]?([^'\\\"\s]+)",bm.group(1))
 
 def workflow_paths():
     return sorted(WORKFLOWS.glob("*.yml"))+sorted(WORKFLOWS.glob("*.yaml"))
