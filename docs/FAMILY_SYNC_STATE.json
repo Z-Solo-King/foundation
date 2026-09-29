@@ -4,12 +4,12 @@
   "audited_at": "2026-09-29",
   "public_safe": true,
   "live_main": {
-    "foundation": "f66d32cedd39ef076c06fce7bd69175c14a6b0bc",
-    "operations": "4e2c5860f306a5c481a4a0a6540aaac72cc3644a"
+    "foundation": "0b2055fd05654bcbea20822fdc90f58859a8b856",
+    "operations": "068c3cff76f194dd0188f704fda191388e6694cb"
   },
   "runtime_pins": {
-    "foundation_runtime": "current-main",
-    "production_operations": "protected-current"
+    "foundation_runtime": "0b2055fd05654bcbea20822fdc90f58859a8b856",
+    "production_operations": "068c3cff76f194dd0188f704fda191388e6694cb"
   },
   "cloudflare": {
     "pages_project": "ai",
@@ -18,7 +18,20 @@
     "private_edge_worker": "operations-edge",
     "private_core_worker": "operations",
     "all_workers": "active",
-    "private_resource_identifiers": "redacted"
+    "private_resource_identifiers": "redacted",
+    "control_plane_snapshot": "live_verified_2026-09-29",
+    "workers": [
+      "heroic",
+      "operations-edge",
+      "operations"
+    ],
+    "private_worker": "operations",
+    "pages_subdomain": "ai-cio.pages.dev",
+    "workers_dev_subdomain": false,
+    "custom_domain_enabled": false,
+    "legacy_worker": null,
+    "queues": 0,
+    "durable_object_namespaces": 0
   },
   "current_queue": {
     "open_issue_count": 0,
