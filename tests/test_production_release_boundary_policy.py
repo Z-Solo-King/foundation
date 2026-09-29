@@ -133,7 +133,7 @@ def test_infrastructure_diagnostic_failure_reports_only_failed_check_names():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'Authenticated infrastructure diagnostic acceptance: FAIL' in text
     assert 'failed_checks="$(jq -r' in text
-    assert 'select(.ok != true) | .name' in text
+    assert 'select((.name? | type) == "string" and (.ok? | type) == "boolean" and .ok != true)' in text
     assert 'def named_checks:' in text
     assert '[.. | objects | select((.name? | type) == "string" and (.ok? | type) == "boolean")]' in text
     assert 'cat diagnostic.json' not in text
