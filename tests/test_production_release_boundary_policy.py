@@ -135,6 +135,13 @@ def test_live_chat_provider_provenance_is_verified_privately():
     assert 'cloudflare_workers_ai' in text
     assert 'live-chat-provider-provenance.json' in text
     assert 'response.provider == \"cloudflare_workers_ai\"' not in text
+
+
+def test_live_chat_provider_provenance_accepts_wrangler_json_envelopes():
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'if type == "array" then .[0].results' in text
+    assert '.result[0].results // .result.results' in text
+    assert 'contains("cloudflare_workers_ai")' in text
 def test_chat_auth_boundary_checks_canonical_module():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'grep -q \'CHAT_BACKEND_TOKEN\' "$RUNNER_TEMP/operations/private/chat_auth.py"' in text

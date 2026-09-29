@@ -631,7 +631,7 @@ echo "Live chat public-contract acceptance: PASS (result_state=${live_chat_state
 npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 execute "$database_name" --remote \
   --command="SELECT reservation_id, state FROM resource_governance_reservations WHERE resource_kind = 'model_calls' AND state = 'consumed' AND reservation_id LIKE '%production-chat-${ACCEPTANCE_RUN_ID}%:cloudflare_workers_ai:%' ORDER BY updated_at DESC LIMIT 5;" \
   --json > "$RUNNER_TEMP/live-chat-provider-provenance.json"
-jq -e 'any(.[0].results[]?; .state == "consumed" and (.reservation_id | contains("cloudflare_workers_ai")))' \
+jq -e 'any(((if type == "array" then .[0].results else (.result[0].results // .result.results) end) // [])[]; .state == "consumed" and (.reservation_id | contains("cloudflare_workers_ai")))' \
   "$RUNNER_TEMP/live-chat-provider-provenance.json" >/dev/null
 echo "Live chat provider provenance: PASS (cloudflare_workers_ai; durable reservation ledger)"
 
