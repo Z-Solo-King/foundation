@@ -66,3 +66,7 @@ The canonical production release dispatches live nightly research with typed str
 
 ## 2026-09-29 authenticated provider-proof repair
 The live post-release test exposed a contract distinction: ordinary public chat intentionally redacts provider identity, while the authenticated nightly evidence path must preserve provider provenance. Foundation PR #1559 adds the explicit research-proof header path, supports the existing private `provider_runtime_verify` diagnostic operation at the authenticated boundary, and corrects false-positive preflight classification. Ordinary public responses remain provider-redacted.
+
+
+## 2026-09-29 provider diagnostic status repair
+Foundation PR #1562 aligns the public authenticated diagnostic wrapper with the dedicated `provider_runtime_verify` response contract. A valid provider runtime receipt no longer requires the unrelated generic `chatbot.allowed` field; ordinary infrastructure diagnostics retain that requirement.
