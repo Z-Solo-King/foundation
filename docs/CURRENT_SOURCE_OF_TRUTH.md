@@ -46,3 +46,7 @@ Do not create duplicate authorities for admission, URL/SSRF safety, evidence, ro
 
 Use this file together with docs/FAMILY_SYNC_STATE.json and docs/PROMPT_TO_CANONICAL_DOC_MAP.md.
 Do not add another competing current-state document.
+
+
+## 2026-09-29 authority reconciliation
+The canonical production topology is Pages `ai` -> Worker `heroic` -> private Workers `operations-edge` / `operations`. The legacy `foundation` Worker, stale Pages aliases and dated probe Workers were retired. D1 migrations 0001–0010 are applied. The production Operations authority is the immutable `068c3cff76f194dd0188f704fda191388e6694cb` pin; current Operations main advances independently after certification changes. 
