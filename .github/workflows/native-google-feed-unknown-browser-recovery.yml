@@ -1,0 +1,38 @@
+name: WooCommerce 22 Unknown Plugin Browser Recovery
+
+on:
+  push:
+    branches: [hunt/native-google-feed-urls-20260927]
+    paths:
+      - "tools/feed-lab/woocommerce_22_plugin_browser_recovery.py"
+      - ".github/workflows/native-google-feed-unknown-browser-recovery.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      OUT_DIR: out/plugin-browser-recovery
+      BROWSER_CONCURRENCY: "4"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install Playwright
+        run: |
+          python -m pip install --disable-pip-version-check -q playwright
+          python -m playwright install chromium
+      - name: Run V175-derived public plugin recovery
+        run: python tools/feed-lab/woocommerce_22_plugin_browser_recovery.py
+      - name: Upload recovery evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce22-plugin-browser-recovery
+          path: out/plugin-browser-recovery/
+          retention-days: 14
