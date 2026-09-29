@@ -628,7 +628,7 @@ echo "Live chat public-contract acceptance: PASS (result_state=${live_chat_state
 
 # Provider identity is intentionally private and is proven from the durable model-call
 # reservation ledger rather than exposed in the public response.
-npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 execute "$database_name" --remote --command="SELECT reservation_id, state FROM resource_governance_reservations WHERE resource_kind = 'model_calls' AND state = 'consumed' AND reservation_id LIKE '%production-chat-${ACCEPTANCE_RUN_ID}%:cloudflare_workers_ai:%' ORDER BY updated_at DESC LIMIT 5;" --json > "$RUNNER_TEMP/live-chat-provider-provenance.json"
+npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 execute "$database_name" --remote --command="SELECT reservation_id, state FROM resource_governance_reservations WHERE resource_kind = 'model_calls' AND state = 'consumed' AND reservation_id LIKE 'chat-model:production-chat-${ACCEPTANCE_RUN_ID}:%' AND instr(reservation_id, ':cloudflare_workers_ai:') > 0 ORDER BY updated_at DESC LIMIT 5;" --json > "$RUNNER_TEMP/live-chat-provider-provenance.json"
 for attempt in $(seq 1 10); do
   if jq -e '[.. | objects
     | select((.state? // "") == "consumed")
