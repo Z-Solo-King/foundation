@@ -87,7 +87,7 @@ jobs:
       - name: Group plugin signals
         shell: bash
         run: |
-          node > out/plugin-groups.json <<'NODE'
+          node <<'NODE'
           const fs = require('node:fs');
           const path = require('node:path');
           const dir='out/fingerprints';
