@@ -128,6 +128,7 @@ def test_production_uses_pages_front_door_with_private_backend_boundary():
 
 
 
+# The diagnostic payload may flatten runtime checks or nest them; the release contract accepts both shapes.
 def test_infrastructure_diagnostic_failure_reports_only_failed_check_names():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'Authenticated infrastructure diagnostic acceptance: FAIL' in text
