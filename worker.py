@@ -251,7 +251,7 @@ def _admission_response(decision):
 
 _PUBLIC_CHAT_TOP_LEVEL_FIELDS = frozenset({"ok", "chat_id", "request_id", "error"})
 _PUBLIC_CHAT_RESPONSE_FIELDS = frozenset({
-    "response_id", "status", "result_state", "text", "sources", "generation_status", "provider",
+    "response_id", "status", "result_state", "text", "sources", "generation_status",
 })
 
 
