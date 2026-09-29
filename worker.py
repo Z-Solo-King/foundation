@@ -189,6 +189,8 @@ def _chat_headers(request):
     idempotency_key = request.headers.get("Idempotency-Key")
     if idempotency_key:
         headers["Idempotency-Key"] = idempotency_key
+    if request.headers.get("X-Heroic-Research-Proof") == "1":
+        headers["X-Heroic-Research-Proof"] = "1"
     return headers
 
 
@@ -310,7 +312,7 @@ async def _operations_chat(env, payload, request):
         body = await upstream.json()
         if not isinstance(body, dict):
             return {"ok": False, "error": "invalid_private_chat_response"}, 503
-        include_provider = bool(payload.get("research_runtime_proof")) and _authorized(request, env)
+        include_provider = request.headers.get("X-Heroic-Research-Proof") == "1" and _authorized(request, env)
         return _public_chat_body(body, include_provider=include_provider), upstream.status
     except Exception as exc:
         return {"ok": False, "error": "chat_backend_unavailable"}, 503
