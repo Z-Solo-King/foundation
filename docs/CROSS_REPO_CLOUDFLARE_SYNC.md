@@ -1,52 +1,41 @@
 # Cross-repo + Cloudflare synchronization record
 
-Snapshot: 2026-09-28 (Asia/Kolkata)
-Purpose: compact bridge between the public Foundation repository, private Operations repository, GitHub Issues/PRs, and live Cloudflare state.
+Snapshot: 2026-09-29 (Asia/Kolkata)
 
 ## Authority model
-- GitHub main trees are the repository source of truth.
-- Fresh GitHub Issues/PRs and current CI are live queue/evidence.
-- Cloudflare live API state is the source of truth for deployed Workers, D1, schedules, bindings and production configuration.
-- Dated audit/handoff documents are historical evidence unless explicitly marked current.
-- This file is a synchronization index, not a replacement for security, deployment or runtime contracts.
+- GitHub `main` trees are repository source truth.
+- Cloudflare live API state is deployed-runtime truth.
+- Fresh GitHub workflow evidence is the release certificate.
+- Dated audits/handoffs are historical evidence.
+- Production and research Operations pins are intentionally independent.
 
-## Live GitHub state observed
-- Foundation main: c79db910b0808eee59a3c1f0e23dfe06db33241b
-- Operations main: 44bbbd3567ac9f41c1ff63e3f5f295d4491c0a00
-- Foundation open issues: #1249, #1247, #157, #58.
-- Foundation open PRs: #1439, #1427.
-- Operations open issues observed: #1103, #1066, #1027, #603, #597, #145.
-- Operations had no open PRs in the inventory pass.
+## Current repository state
+- Foundation main: `34fcae8638fc2fb591131d5e53a6cf47ebdbe0dd`
+- Operations main: `068c3cff76f194dd0188f704fda191388e6694cb`
+- Production Operations pin: `068c3cff76f194dd0188f704fda191388e6694cb`
+- Research Operations pin: `8bee0ca4c41e02d2b7005589a73f53dc0512aa9d`
+- Operations contains no `.github/workflows`; Foundation owns automation.
 
-## Cross-fire validation
-Two independent lenses must agree before a state is treated as current:
-1. Repository lens: code/config/docs, issue/PR state, current branch SHA.
-2. Runtime lens: Cloudflare Worker/D1/API state and deployment provenance.
+## Current Cloudflare topology
+- Pages project: `ai` -> `ai-cio.pages.dev`
+- Public Worker: `heroic`, workers.dev disabled
+- Private edge Worker: `operations-edge`
+- Private core Worker: `operations`
+- D1: `research-intelligence`
+- Legacy `foundation` Worker: retired
+- Retired Pages aliases: `heroic`, `heroic-ai`
+- Dated probe Workers and their temporary Queue consumer: retired
 
-A GitHub document never certifies a Cloudflare deployment by itself. A Cloudflare deployment never replaces the repository contract.
+## D1 verification — 2026-09-29
+- `d1_migrations` exists and migrations 1–10 are applied.
+- Direct `sqlite_master` inspection returned the operational tables and indexes.
+- No DDL was changed by this audit.
 
-## Public-safe Cloudflare mapping
-The public repository may document only the public-safe Worker/deployment relationship. The live account inventory currently includes the public-facing foundation and heroic Workers; their exact runtime configuration remains a Cloudflare/runtime concern.
+## Security/runtime authority
+- Production moderation policy is `block`.
+- Strict zero-cost policy is enabled; paid/unknown-pricing fallback remains disabled.
+- Production task-envelope verification uses a dedicated `TASK_SIGNING_ROOT`; its value is never stored in Git or documentation.
+- Fresh production certification must verify the exact immutable Operations pin and post-deployment runtime behavior.
 
-The private Operations synchronization record contains the complete live Worker inventory and D1 identity. Do not copy private bindings, credentials, secret names/values, or private runtime policy into this public repository.
-
-## Documentation compression rules
-Retain:
-- canonical current-state/ownership/security/deployment contracts;
-- active issue acceptance criteria;
-- runtime evidence required to reproduce or audit a decision;
-- substantive historical findings that explain current architecture;
-- machine-readable schemas and manifests consumed by automation.
-
-Compress or retire:
-- one-line dated status stubs whose only purpose is pointing to a canonical document;
-- superseded snapshots that contain no unique evidence;
-- duplicate policy documents when one canonical owner exists;
-- repeated chat/session notes after their durable decisions have been transferred.
-
-Never delete substantive historical evidence merely because it is old; classify it as historical and link it from the relevant index.
-
-## Current cleanup decisions
-- The public HYBRID_MIGRATION_STATUS_2026-09-28.json is a pointer-only stub and is removed from active documentation; the authoritative migration state remains in Operations.
-- The substantive multi-language scan remains retained as historical evidence.
-- No Cloudflare production resource is deleted by this documentation cleanup.
+## Documentation hygiene
+Do not copy secret values, Cloudflare account IDs, private Worker origins, mutable deployment IDs, or mutable issue counts into current public-state documents. Historical documents remain useful only as provenance.
