@@ -827,7 +827,29 @@ if [ -n "${AUTH_TOKEN:-}" ]; then
   and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "maintenance_scheduler_reconciliation" and .ok == true)
   and any(.checks[]?; .name == "cloudflare_d1" and .ok == true)
   and any(.checks[]?; .name == "backblaze_b2_lifecycle" and .ok == true)
-' diagnostic.json >/dev/null
+if ! jq -e '.ok == true and .status == "ok"
+  and any(.checks[]?; .name == "public_chatbot" and .ok == true and .runtime_status == "ok")
+  and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "d1_memory_store" and .ok == true)
+  and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "d1_memory_query" and .ok == true)
+  and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "memory_owner_boundary" and .ok == true)
+  and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "task_envelope_d1_replay_guard" and .ok == true)
+  and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "d1_candidate_learning_round_trip" and .ok == true)
+  and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "durable_resource_reserve_consume" and .ok == true)
+  and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "d1_reservation_reject_changes_semantics" and .ok == true)
+  and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "d1_concurrent_overlimit_changes_semantics" and .ok == true)
+  and any(((.checks // [])[] | (.runtime_checks // [])[]); .name == "maintenance_scheduler_reconciliation" and .ok == true)
+  and any(.checks[]?; .name == "cloudflare_d1" and .ok == true)
+  and any(.checks[]?; .name == "backblaze_b2_lifecycle" and .ok == true)
+' diagnostic.json >/dev/null; then
+    echo "Authenticated infrastructure diagnostic acceptance: FAIL"
+    failed_checks="$(jq -r '[
+      .checks[]? | select(.ok != true) | .name,
+      .checks[]?.runtime_checks[]? | select(.ok != true) | .name
+    ] | map(select(type == "string" and length > 0)) | unique | if length == 0 then ["unknown"] else . end | join(", ")' diagnostic.json)"
+    echo "Failed checks: ${failed_checks}"
+    exit 1
+  fi
+  echo "Authenticated infrastructure diagnostic acceptance: PASS"
 else
   echo 'AUTH_TOKEN GitHub secret not configured; authenticated infrastructure diagnostic skipped.'
 fi
