@@ -1,11 +1,11 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-29",
+  "audited_at": "2026-09-29T20:55:00+05:30",
   "public_safe": true,
   "live_main": {
-    "foundation": "510b03b2ee2461c97b1c774349d08e3220985cce",
-    "operations": "af3dc60349ca9de7c3747625949269234d34021f"
+    "foundation": "ed833710199696717c2326bc73e0b2de4a9a1568",
+    "operations": "de82440330bc4279c38eb46d3fdc2282e79b001e"
   },
   "runtime_pins": {
     "foundation_runtime": null,
@@ -33,17 +33,23 @@
   },
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
-    "observed_at": "2026-09-29",
-    "open_issue_count": 12,
+    "observed_at": "2026-09-29T20:55:00+05:30",
+    "open_issue_count": 8,
     "foundation": [
       58,
       157,
       1247,
       1249
     ],
-    "operations_count": 8,
-    "operations_issue_numbers_omitted": true,
-    "authority": "GitHub live issue API; descriptive snapshot only; never a production certificate"
+    "operations_count": 4,
+    "operations_issue_numbers_omitted": false,
+    "authority": "GitHub live issue API; descriptive snapshot only; never a production certificate",
+    "operations": [
+      1027,
+      1137,
+      597,
+      603
+    ]
   },
   "evidence": {
     "nightly_research": "requires provider-backed execution evidence",
@@ -56,7 +62,7 @@
     "feed_recovery": "QUALIFICATION COMPLETE: verified feeds retained; blocked/unverified targets are not misclassified.",
     "d1_schema": "verified_live_2026-09-29",
     "production_signing_root": "provisioned_live_2026-09-29",
-    "production_runtime": "requires fresh canonical release certification after the merged JavaScript public-edge cutover"
+    "production_runtime": "fresh release certification in progress after merged diagnostic signer/query/replay fixes"
   },
   "production_diagnostic_acceptance": "release_acceptance=true is forwarded into the private infrastructure diagnostic path",
   "continuity_enforcement": {

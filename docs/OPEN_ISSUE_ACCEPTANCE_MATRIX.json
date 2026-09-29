@@ -1,19 +1,19 @@
 {
   "schema": "family-issue-acceptance-matrix/v1",
-  "audited_at": "2026-09-29",
+  "audited_at": "2026-09-29T20:55:00+05:30",
   "repository_heads": {
-    "foundation": "69483338f32fd37fb6ca496e7aebfcf8087fa539",
-    "operations": "af3dc60349ca9de7c3747625949269234d34021f"
+    "foundation": "ed833710199696717c2326bc73e0b2de4a9a1568",
+    "operations": "de82440330bc4279c38eb46d3fdc2282e79b001e"
   },
-  "open_issue_count": 12,
+  "open_issue_count": 8,
   "issues": [
     {
       "repo": "foundation",
       "number": 58,
       "title": "META: exhaustive Research Intelligence Engine coverage tracker",
       "required_evidence": [
-        "child issue receipts",
-        "four-lane aggregate"
+        "live child-issue reconciliation",
+        "current family-integrity receipt"
       ]
     },
     {
@@ -27,7 +27,7 @@
     {
       "repo": "foundation",
       "number": 1247,
-      "title": "feed: WooCommerce Google Feed Recovery — 9 unresolved retailers",
+      "title": "feed: WooCommerce Google Feed Recovery — 10 unresolved retailers",
       "required_evidence": [
         "public discovery for unresolved retailers",
         "strict payload validation"
@@ -44,10 +44,20 @@
     },
     {
       "repo": "operations",
-      "number": 145,
-      "title": "maintenance: activate approved periodic maintenance tick",
+      "number": 1027,
+      "title": "security: move privileged provider-secret fan-out behind private boundary",
       "required_evidence": [
-        "approved scheduled runtime receipt with exact revision/time/result/provenance"
+        "private implementation boundary",
+        "controlled live secret-sync proof"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 1137,
+      "title": "migration: consolidated plan and execution order (tracking: #597, #603, #1134, #1135)",
+      "required_evidence": [
+        "current migration dependency plan",
+        "production/runtime certification receipts"
       ]
     },
     {
@@ -56,11 +66,10 @@
       "title": "migration: mapper capability decomposition and evidence lanes",
       "required_evidence": [
         "capability decomposition",
-        "capability inventory",
         "differential",
         "parity",
-        "bottleneck decisions",
-        "rollback dispositions"
+        "runtime/resource",
+        "shadow/canary/rollback evidence"
       ]
     },
     {
@@ -69,58 +78,9 @@
       "title": "migration: AI-model/tooling portability across migration components",
       "required_evidence": [
         "language governance",
-        "polyglot registry",
+        "toolchain portability",
+        "AI maintainability",
         "rollback"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 1027,
-      "title": "security: move privileged provider-secret fan-out behind private boundary",
-      "required_evidence": [
-        "provider secrets",
-        "private boundary",
-        "credential isolation"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 1066,
-      "title": "security: protect Operations main with required PR checks",
-      "required_evidence": [
-        "branch protection enabled",
-        "required status checks",
-        "settings readback receipt"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 1103,
-      "title": "security: public-repo surface audit — infra leaks and disclosure remediation",
-      "required_evidence": [
-        "public surface remediation",
-        "private-boundary disclosure cleanup",
-        "current scan receipt"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 1135,
-      "title": "migration: investigate Worker 403/502 boundary and evaluate bounded TypeScript edge/SSE migration",
-      "required_evidence": [
-        "current Cloudflare runtime-status verification",
-        "host-runtime root-cause evidence",
-        "TS migration only if runtime evidence justifies it"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 1137,
-      "title": "migration: consolidated plan and execution order (tracking: #597, #603, #1134, #1135)",
-      "required_evidence": [
-        "single sequenced migration plan",
-        "phase gate receipts",
-        "dependency/blocker map"
       ]
     }
   ],
