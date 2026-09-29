@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import EdgeWorker from "../edge.js";
+import { readFile } from "node:fs/promises";
+
+const edgeSource = await readFile(new URL("../edge.js", import.meta.url), "utf8");
+const EdgeWorker = (await import(
+  "data:text/javascript;charset=utf-8," + encodeURIComponent(edgeSource)
+)).default;
 
 test("public edge fails closed when its core binding is absent", async () => {
   const response = await EdgeWorker.fetch(new Request("https://edge/health"), {});
