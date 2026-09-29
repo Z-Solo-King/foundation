@@ -19,6 +19,14 @@ def test_production_release_overlays_current_operations_navigation():
     assert 'git -C "$RUNNER_TEMP/operations" show "origin/main:docs/FAMILY_SYNC_STATE.json" > "$RUNNER_TEMP/operations/docs/FAMILY_SYNC_STATE.json"' in text
     assert 'git -C "$RUNNER_TEMP/operations" show "origin/main:docs/AI_ANALYSIS_MAP.md" > "$RUNNER_TEMP/operations/docs/AI_ANALYSIS_MAP.md"' in text
 
+def test_d1_schema_bootstrap_precedes_python_core_deploy_and_has_no_empty_migrations_apply():
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    schema = \'d1 execute "$database_name" --remote\'
+    python_core = \'pywrangler deploy --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}:python-core"\'
+    assert schema in text
+    assert "d1 migrations apply" not in text
+    assert text.index(schema) < text.index(python_core)
+    assert text.count("RESOURCE_GOVERNANCE_D1_SCHEMA.sql") == 1
 def test_d1_migration_config_uses_resolved_database_values():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert '"database_name = \\"${database_name}\\""' in text
