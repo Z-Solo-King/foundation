@@ -588,14 +588,12 @@ echo "Live memory/replay deployment-boundary acceptance: PASS"
 # acceptance. This is a bounded non-secret diagnostic: no auth token or provider payload
 # is queried, only governance counters from the canonical D1 authority.
 npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 execute "$database_name" --remote \
-  --config="$d1_migrations_config" \
   --command="SELECT scope, window_id, resource_kind, limit_units, reserved_units, consumed_units, updated_at FROM resource_governance_quota WHERE resource_kind = 'model_calls' ORDER BY updated_at DESC LIMIT 5;" \
   --json > "$RUNNER_TEMP/model-call-quota.json"
 echo "model-call quota snapshot: collected"
 cp "$RUNNER_TEMP/model-call-quota.json" .runtime/model-call-quota.json
 
 npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 execute "$database_name" --remote \
-  --config="$d1_migrations_config" \
   --command="SELECT reservation_id, scope, window_id, resource_kind, amount, state, idempotency_key, lease_expires_at, updated_at FROM resource_governance_reservations WHERE resource_kind = 'model_calls' ORDER BY updated_at DESC LIMIT 10;" \
   --json > "$RUNNER_TEMP/model-call-reservations.json"
 echo "model-call reservations snapshot: collected"
