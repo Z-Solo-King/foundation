@@ -57,7 +57,7 @@ jobs:
           - {id: theproaudio, site: Theproaudio, root: https://www.theproaudio.com}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-node@1e60f620b9541dca7f5b0f7a6e1b3f4f2c37ad5
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 20
       - name: Extract public plugin evidence
