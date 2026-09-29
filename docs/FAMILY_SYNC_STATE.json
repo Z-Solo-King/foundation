@@ -63,7 +63,8 @@
     "d1_schema": "verified_live_2026-09-29",
     "production_signing_root": "provisioned_live_2026-09-29",
     "production_runtime": "fresh release certification in progress after merged diagnostic signer/query/replay fixes",
-    "post_release_dispatch": "live nightly research uses typed GitHub workflow inputs; production smoke and research preflight preserve purpose-scoped Operations pins"
+    "post_release_dispatch": "live nightly research uses typed GitHub workflow inputs; production smoke and research preflight preserve purpose-scoped Operations pins",
+    "post_release_provider_proof": "Foundation PR #1559 adds authenticated provider provenance and provider-runtime diagnostic contract fixes; pending fresh production certification."
   },
   "production_diagnostic_acceptance": "release_acceptance=true is forwarded into the private infrastructure diagnostic path",
   "continuity_enforcement": {
@@ -85,7 +86,9 @@
     "date": "2026-09-29",
     "foundation_pr": 1549,
     "component": "production workflow nightly dispatch",
-    "status": "repair_in_progress",
-    "feed_scope": "excluded"
+    "status": "validation_pending",
+    "feed_scope": "excluded",
+    "pull_request": 1559,
+    "head_sha": "3371f96c2cf8a8dcbe9c94f4d3307838d8263783"
   }
 }
