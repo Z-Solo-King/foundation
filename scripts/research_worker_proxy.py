@@ -108,6 +108,7 @@ def _curl_post(url: str, payload: bytes, auth_token: str, request_id: str) -> tu
         "-H", "Accept: application/json",
         "-H", "Content-Type: application/json",
         "-H", "Idempotency-Key: " + request_id,
+        "-H", "X-Heroic-Research-Proof: 1",
         "-H", "User-Agent: " + UPSTREAM_USER_AGENT,
         "--data-binary", "@-", "--write-out", "\n%{http_code}", url,
     ], input=payload, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
@@ -200,6 +201,7 @@ class Handler(BaseHTTPRequestHandler):
                 "Authorization": "Bearer " + self.server.auth_token,
                 "Content-Type": "application/json",
                 "Idempotency-Key": request_id,
+                "X-Heroic-Research-Proof": "1",
                 # Explicit API-client identity; do not rely on urllib's default
                 # Python-urllib User-Agent, which may be classified as automated web traffic.
                 "User-Agent": UPSTREAM_USER_AGENT,

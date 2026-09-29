@@ -189,6 +189,8 @@ def _chat_headers(request):
     idempotency_key = request.headers.get("Idempotency-Key")
     if idempotency_key:
         headers["Idempotency-Key"] = idempotency_key
+    if request.headers.get("X-Heroic-Research-Proof") == "1":
+        headers["X-Heroic-Research-Proof"] = "1"
     return headers
 
 
@@ -255,7 +257,7 @@ _PUBLIC_CHAT_RESPONSE_FIELDS = frozenset({
 })
 
 
-def _public_chat_body(body):
+def _public_chat_body(body, *, include_provider=False):
     """Project the private chat result onto the documented public response schema."""
     if not isinstance(body, dict):
         return {"ok": False, "error": "invalid_private_chat_response"}
@@ -267,6 +269,12 @@ def _public_chat_body(body):
             for key in _PUBLIC_CHAT_RESPONSE_FIELDS
             if key in response
         }
+        # Provider identity remains omitted from the normal public contract.
+        # The authenticated nightly proof path explicitly opts in to provenance.
+        if include_provider:
+            provider = response.get("provider")
+            if isinstance(provider, str) and provider.strip():
+                public["response"]["provider"] = provider.strip()
         sources = public["response"].get("sources")
         if isinstance(sources, list):
             safe_sources = []
@@ -304,7 +312,8 @@ async def _operations_chat(env, payload, request):
         body = await upstream.json()
         if not isinstance(body, dict):
             return {"ok": False, "error": "invalid_private_chat_response"}, 503
-        return _public_chat_body(body), upstream.status
+        include_provider = request.headers.get("X-Heroic-Research-Proof") == "1" and _authorized(request, env)
+        return _public_chat_body(body, include_provider=include_provider), upstream.status
     except Exception as exc:
         return {"ok": False, "error": "chat_backend_unavailable"}, 503
 
@@ -397,11 +406,16 @@ async def _operations_chatbot_diagnostic(env, request=None, operation="infrastru
         if operation in {"persistence_seed", "persistence_verify"}:
             return body_dict, upstream.status
         raw_checks = body_dict.get("runtime_checks") if isinstance(body_dict.get("runtime_checks"), list) else []
-        runtime_checks = [
-            {"name": str(check.get("name", ""))[:120], "ok": bool(check.get("ok"))}
-            for check in raw_checks[:32]
-            if isinstance(check, dict) and str(check.get("name", "")).strip()
-        ]
+        runtime_checks = []
+        for check in raw_checks[:32]:
+            if not isinstance(check, dict) or not str(check.get("name", "")).strip():
+                continue
+            item = {"name": str(check.get("name", ""))[:120], "ok": bool(check.get("ok"))}
+            if operation == "provider_runtime_verify":
+                generation_status = check.get("generation_status")
+                if isinstance(generation_status, str) and generation_status.strip():
+                    item["generation_status"] = generation_status.strip()[:80]
+            runtime_checks.append(item)
         runtime_ok = bool(body_dict.get("runtime_status") == "ok") and bool(runtime_checks) and all(
             bool(check["ok"]) for check in runtime_checks
         )
@@ -554,6 +568,11 @@ class Default(WorkerEntrypoint):
                 body["ok"] = all(bool(check.get("ok")) for check in body["checks"])
                 body["status"] = "ok" if body["ok"] else "degraded"
                 return _authenticated_json(body, status=200 if body["ok"] else 503)
+            if operation == "provider_runtime_verify":
+                private_body, private_status = await _operations_chatbot_diagnostic(
+                    self.env, request, operation=operation, payload=payload
+                )
+                return _authenticated_json(private_body, status=private_status)
             if operation in {"persistence_seed", "persistence_verify"}:
                 private_body, private_status = await _operations_chatbot_diagnostic(
                     self.env, request, operation=operation, payload=payload

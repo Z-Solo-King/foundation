@@ -430,3 +430,146 @@ def test_public_chat_body_covers_string_sources_and_malformed_sources():
     assert body["response"]["sources"] == ["https://example.com/source", {"title": "Example", "url": "https://example.com"}]
     malformed = worker._public_chat_body({"response": {"text": "hello", "sources": {"private": "secret"}}})
     assert malformed["response"]["sources"] == []
+
+
+def test_public_chat_body_hides_provider_by_default_and_exposes_it_for_proof_path():
+    import worker
+
+    body = {
+        "ok": True,
+        "response": {
+            "response_id": "r1",
+            "status": "completed",
+            "result_state": "COMPLETE",
+            "text": "hello",
+            "generation_status": "model_generated",
+            "provider": "cloudflare_workers_ai",
+        },
+    }
+
+    public = worker._public_chat_body(body)
+    assert "provider" not in public["response"]
+
+    proof = worker._public_chat_body(body, include_provider=True)
+    assert proof["response"]["provider"] == "cloudflare_workers_ai"
+    no_provider = worker._public_chat_body({"response": {"text": "hello", "provider": None}}, include_provider=True)
+    assert "provider" not in no_provider["response"]
+
+
+def test_provider_runtime_diagnostic_shape_preserves_generation_status():
+    import worker
+    source = worker._operations_chatbot_diagnostic.__code__
+    assert source is not None
+    text = __import__("inspect").getsource(worker._operations_chatbot_diagnostic)
+    assert 'operation == "provider_runtime_verify"' in text
+    assert 'generation_status' in text
+
+
+def test_chat_headers_forwards_authenticated_research_proof():
+    import worker
+
+    class Request:
+        headers = {
+            "Authorization": "Bearer user",
+            "Idempotency-Key": "req-1",
+            "X-Heroic-Research-Proof": "1",
+        }
+
+    headers = worker._chat_headers(Request())
+    assert headers["Authorization"] == "Bearer user"
+    assert headers["Idempotency-Key"] == "req-1"
+    assert headers["X-Heroic-Research-Proof"] == "1"
+
+
+def test_provider_runtime_diagnostic_preserves_generation_status():
+    import worker
+
+    class Response:
+        status = 200
+
+        async def json(self):
+            return {
+                "ok": True,
+                "runtime_status": "ok",
+                "chatbot": {"allowed": True},
+                "runtime_checks": [
+                    {},
+                    {
+                        "name": "provider_runtime_workers_ai",
+                        "ok": True,
+                        "generation_status": "model_generated",
+                    },
+                ],
+            }
+
+    class Binding:
+        async def fetch(self, request):
+            return Response()
+
+    class Request:
+        headers = {"Authorization": "Bearer secret"}
+
+    body, status = asyncio.run(
+        worker._operations_chatbot_diagnostic(
+            SimpleNamespace(OPERATIONS=Binding()),
+            Request(),
+            operation="provider_runtime_verify",
+            payload={},
+        )
+    )
+    assert status == 200
+    assert body["runtime_checks"] == [
+        {"name": "provider_runtime_workers_ai", "ok": True, "generation_status": "model_generated"}
+    ]
+    class ResponseNoGeneration:
+        status = 200
+        async def json(self):
+            return {
+                "ok": True,
+                "runtime_status": "ok",
+                "chatbot": {"allowed": True},
+                "runtime_checks": [{"name": "provider_runtime_workers_ai", "ok": True, "generation_status": None}],
+            }
+    class BindingNoGeneration:
+        async def fetch(self, request):
+            return ResponseNoGeneration()
+    body2, status2 = asyncio.run(
+        worker._operations_chatbot_diagnostic(
+            SimpleNamespace(OPERATIONS=BindingNoGeneration()),
+            Request(), operation="provider_runtime_verify", payload={}
+        )
+    )
+    assert status2 == 200
+    assert body2["runtime_checks"] == [{"name": "provider_runtime_workers_ai", "ok": True}]
+
+
+def test_default_provider_runtime_diagnostic_route_is_authenticated_and_supported(monkeypatch):
+    import worker
+
+    async def diagnostic(*args, **kwargs):
+        return (
+            {
+                "ok": True,
+                "status": "ok",
+                "runtime_status": "ok",
+                "runtime_checks": [
+                    {"name": "provider_runtime_workers_ai", "ok": True, "generation_status": "model_generated"}
+                ],
+            },
+            200,
+        )
+
+    monkeypatch.setattr(worker, "_operations_chatbot_diagnostic", diagnostic)
+
+    class Request:
+        method = "POST"
+        url = "https://example/api/v1/chatbot/diagnostic"
+        headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
+
+        async def json(self):
+            return {"operation": "provider_runtime_verify"}
+
+    instance = worker.Default()
+    instance.env = SimpleNamespace(AUTH_TOKEN="secret")
+    response = asyncio.run(instance.fetch(Request()))
+    assert response.status == 200

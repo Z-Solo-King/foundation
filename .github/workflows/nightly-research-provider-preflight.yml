@@ -125,7 +125,7 @@ jobs:
                   "dns_or_network_unreachable" if int(os.environ.get("PREFLIGHT_WORKER_HEALTH_STATUS") or "0") == 0 else
                   "edge_http_403" if int(os.environ.get("PREFLIGHT_WORKER_HEALTH_STATUS") or "0") == 403 else
                   "worker_health_non_200" if int(os.environ.get("PREFLIGHT_WORKER_HEALTH_STATUS") or "0") != 200 else
-                  "worker_health_ok_provider_runtime_verified"
+                  "worker_health_ok_provider_runtime_verified" if os.environ.get("PREFLIGHT_WORKER_AI") == "true" else "worker_health_ok_provider_runtime_unverified"
               ),
           }
           with open("preflight.json", "w", encoding="utf-8") as handle:
