@@ -447,7 +447,17 @@ echo "Operations edge Worker deployment: PASS (${OPERATIONS_EDGE_SERVICE_NAME})"
 
 
 
-npx --yes wrangler@4.131.1 d1 migrations apply "$database_name" --remote --config wrangler.python-core.generated.toml
+d1_migrations_config="$RUNNER_TEMP/wrangler.d1.generated.toml"
+printf '%s\n' \
+  'name = "heroic-core-d1-migrations"' \
+  'compatibility_date = "2026-09-09"' \
+  '' \
+  '[[d1_databases]]' \
+  'binding = "DB"' \
+  "database_name = \"\${database_name}\"" \
+  "database_id = \"\${database_id}\"" \
+  > "$d1_migrations_config"
+npx --yes wrangler@4.131.1 d1 migrations apply "$database_name" --remote --config "$d1_migrations_config"
 pywrangler deploy --config wrangler.python-core.generated.toml --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}:python-core"
 (cd "$GITHUB_WORKSPACE" && npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}:javascript-edge")
 
