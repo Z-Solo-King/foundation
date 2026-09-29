@@ -63,6 +63,21 @@ def validate()->list[str]:
     for rel in feed:
         if rel not in seen:
             errors.append(f"{rel}: registry references missing workflow")
+    for rel, sources in reg["policy"].get("trusted_workflow_run_sources", {}).items():
+        path=ROOT/rel
+        if not path.is_file():
+            errors.append(f"{rel}: trusted workflow_run registry target is missing")
+            continue
+        text=path.read_text(encoding="utf-8")
+        if "workflow_run:" not in text:
+            errors.append(f"{rel}: trusted workflow_run registry entry exists but workflow_run is absent")
+            continue
+        declared=re.findall(r"(?ms)workflows:\s*\[([^\]]+)\]", text)
+        names=[]
+        for block in declared:
+            names.extend(re.findall(r"['\"]([^'\"]+)['\"]", block))
+        if sorted(set(names)) != sorted(set(sources)):
+            errors.append(f"{rel}: workflow_run source mismatch; declared={sorted(set(names))} expected={sorted(set(sources))}")
     return sorted(set(errors))
 
 if __name__=="__main__":
