@@ -9,7 +9,7 @@ on:
       operations_ref:
         description: Exact Operations revision containing the WooCommerce extractor
         required: false
-        default: e6c7df266288e1f2f1b6788eed50ed5a09497088
+        default: 7af5348a7dc35307881be041db7d249295238cb2
         type: string
 
 permissions:
@@ -32,7 +32,7 @@ jobs:
         shard: [0,1,2,3,4,5,6,7]
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || 'e6c7df266288e1f2f1b6788eed50ed5a09497088' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || '7af5348a7dc35307881be041db7d249295238cb2' }}
       SHARD: ${{ matrix.shard }}
       PYTHONUNBUFFERED: "1"
     steps:
