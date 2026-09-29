@@ -33,7 +33,7 @@ on:
       operations_ref:
         description: Immutable Operations revision to audit
         required: false
-        default: 8bee0ca4c41e02d2b7005589a73f53dc0512aa9d
+        default: ""
         type: string
 
 permissions:
@@ -45,8 +45,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      OPERATIONS_REF: ${{ inputs.operations_ref || '8bee0ca4c41e02d2b7005589a73f53dc0512aa9d' }}
+      REQUESTED_OPERATIONS_REF: ${{ inputs.operations_ref }}
     steps:
+      - name: Resolve canonical Operations audit revision
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${REQUESTED_OPERATIONS_REF:-}" ]; then
+            ref="$REQUESTED_OPERATIONS_REF"
+          else
+            ref="$(python -c 'import json; print(json.load(open("docs/OPERATIONS_PIN_MANIFEST.json", encoding="utf-8"))["pins"]["production_runtime"]["sha"]) ')"
+          fi
+          printf "%s\n" "$ref" | grep -Eq "^[0-9a-f]{40}$"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "Resolved Operations audit revision: $ref"
+
       - name: Checkout Foundation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
@@ -64,7 +78,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ env.OPERATIONS_REF }}
+          ref: ${{ steps.resolve.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
 
@@ -72,7 +86,7 @@ jobs:
         working-directory: operations
         shell: bash
         env:
-          EXPECTED: ${{ env.OPERATIONS_REF }}
+          EXPECTED: ${{ steps.resolve.outputs.ref }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED"
