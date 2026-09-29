@@ -71,9 +71,16 @@ jobs:
           )
           pids=()
           for workflow in "${workflows[@]}"; do
-            gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref main \
-              --field target_sha="$GITHUB_SHA" \
-              --field production_release_run_id="$GITHUB_RUN_ID" &
+            if [[ "$workflow" == "nightly-multi-agent-research-v3.yml" ]]; then
+              gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref main \
+                --field dry_run=false \
+                --field target_sha="$GITHUB_SHA" \
+                --field production_release_run_id="$GITHUB_RUN_ID" &
+            else
+              gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref main \
+                --field target_sha="$GITHUB_SHA" \
+                --field production_release_run_id="$GITHUB_RUN_ID" &
+            fi
             pids+=("$!")
           done
           status=0

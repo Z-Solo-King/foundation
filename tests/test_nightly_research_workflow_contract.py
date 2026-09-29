@@ -42,6 +42,12 @@ def test_dispatch_false_does_not_coerce_to_dry_run():
     assert 'if [[ "${{ inputs.dry_run }}" == "true" ]]; then' in text
 
 
+def test_production_release_explicitly_dispatches_nightly_live_mode():
+    release = (Path(__file__).parents[1] / ".github" / "workflows" / "heroic-ai-production-release.yml").read_text(encoding="utf-8")
+    assert 'if [[ "$workflow" == "nightly-multi-agent-research-v3.yml" ]]; then' in release
+    assert "--field dry_run=false" in release
+
+
 def test_private_operations_pin_and_app_auth_remain_explicit():
     text=workflow_text()
     assert "OPERATIONS_RESEARCH_REF: 8bee0ca4c41e02d2b7005589a73f53dc0512aa9d" in text
