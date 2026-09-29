@@ -458,8 +458,8 @@ printf '%s\n' \
   '' \
   '[[d1_databases]]' \
   'binding = "DB"' \
-  "database_name = \"\${database_name}\"" \
-  "database_id = \"\${database_id}\"" \
+  "database_name = \"${database_name}\"" \
+  "database_id = \"${database_id}\"" \
   > "$d1_migrations_config"
 npx --yes wrangler@4.131.1 d1 migrations apply "$database_name" --remote --config "$d1_migrations_config"
 
