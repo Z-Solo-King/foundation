@@ -224,52 +224,69 @@ function identityTokens(source, root) {
 
 async function inspect(name, root) {
   const variants = originVariants(root);
-  const endpointResults = [];
-  let homeBody="";
-  let apiBody="";
-  let selectedOrigin=root;
+  let endpointResults = [];
+  let homeBody = "";
+  let apiBody = "";
+  let selectedOrigin = root;
+
   for (const origin of variants) {
-    let foundAny=false;
-    for (const ep of ENDPOINTS) {
-      const r=await fetchPublic(origin+ep.path);
-      endpointResults.push({origin,endpoint:ep.name,status:r.status,finalUrl:r.url,contentType:r.contentType,transport:r.transport,challenge:!!r.challenge,bytes:r.body.length});
-      if (ep.name==="homepage" && r.status===200 && r.body) { homeBody=r.body; selectedOrigin=new URL(r.url).origin; foundAny=true; }
-      if ((ep.name==="wp-json" || ep.name==="rest-route-root") && r.status===200 && r.body) apiBody += "\n"+r.body;
+    const batch = await Promise.all(
+      ENDPOINTS.map(ep => fetchPublic(origin + ep.path))
+    );
+    endpointResults.push(...batch.map((r,i)=>({
+      origin,
+      endpoint:ENDPOINTS[i].name,
+      status:r.status,
+      finalUrl:r.url,
+      contentType:r.contentType,
+      transport:r.transport,
+      challenge:!!r.challenge,
+      bytes:r.body.length,
+      server:r.headers?.server || "",
+      xPoweredBy:r.headers?.["x-powered-by"] || ""
+    })));
+
+    const home = batch[0];
+    if (home.status===200 && home.body) {
+      homeBody=home.body;
+      try { selectedOrigin=new URL(home.url).origin; } catch {}
+      apiBody = batch
+        .filter((r,i)=>["wp-json","rest-route-root","wp-v2","rest-route-wp-v2"].includes(ENDPOINTS[i].name) && r.status===200)
+        .map(r=>r.body).join("\n");
+      break;
     }
-    if (foundAny) break;
   }
 
-  const combined=homeBody+"\n"+apiBody;
-  const assets=extractPluginAssets(combined);
-  const families=feedSignals(combined);
-  const namespaces=extractJsonNamespaces(apiBody);
-  const feedAssets=feedLikeAssets(assets);
+  const combined = homeBody + "\n" + apiBody;
+  const assets = extractPluginAssets(combined);
+  const families = feedSignals(combined);
+  const namespaces = extractJsonNamespaces(apiBody);
+  const feedAssets = feedLikeAssets(assets);
   const readmeTargets = [...new Set([
     ...feedAssets,
     ...families.flatMap(x=>FEED_FAMILIES[x.family]?.pluginSlugs || [])
   ])].slice(0,8);
 
-  const readmes=[];
-  for (const slug of readmeTargets) {
+  const readmes = (await Promise.all(readmeTargets.map(async slug => {
     for (const file of ["readme.txt","README.md"]) {
-      const r=await fetchPublic(selectedOrigin+"/wp-content/plugins/"+encodeURIComponent(slug)+"/"+file,5000,2);
+      const r=await fetchPublic(selectedOrigin+"/wp-content/plugins/"+encodeURIComponent(slug)+"/"+file,4000,2);
       if (r.status===200 && r.body && !r.challenge) {
         const title=(r.body.match(/^===\s*(.+?)\s*===/m)||[])[1] || "";
         const version=(r.body.match(/^Stable tag:\s*(.+)$/im)||[])[1] || "";
         const nameLine=(r.body.match(/^Plugin Name:\s*(.+)$/im)||[])[1] || title;
-        readmes.push({slug,file,pluginName:nameLine.trim(),stableTag:version.trim(),bytes:r.body.length});
-        break;
+        return {slug,file,pluginName:nameLine.trim(),stableTag:version.trim(),bytes:r.body.length};
       }
     }
-  }
+    return null;
+  }))).filter(Boolean);
 
-  const feedFamily=choosePrimary(families,assets);
+  const feedFamily = choosePrimary(families,assets);
   const status = homeBody
     ? (families.length || feedAssets.length ? "PLUGIN_SIGNALS_FOUND" : "WOOCOMMERCE_PLUGIN_SURFACE_NO_FEED_SIGNAL")
     : (endpointResults.some(x=>x.challenge) ? "PUBLIC_CHALLENGE_NO_PLUGIN_SURFACE" : "PUBLIC_FETCH_UNAVAILABLE");
 
   return {
-    schema_version:"woocommerce-31-plugin-extraction/v2",
+    schema_version:"woocommerce-31-plugin-extraction/v3",
     site:name, configured_root:root, selected_origin:selectedOrigin,
     status,
     platform:"woocommerce_corpus",
