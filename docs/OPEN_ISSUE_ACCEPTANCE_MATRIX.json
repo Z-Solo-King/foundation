@@ -2,11 +2,138 @@
   "schema": "family-issue-acceptance-matrix/v1",
   "audited_at": "2026-09-29",
   "repository_heads": {
-    "foundation": "f66d32cedd39ef076c06fce7bd69175c14a6b0bc",
-    "operations": "4e2c5860f306a5c481a4a0a6540aaac72cc3644a"
+    "foundation": "63ac2669a01906b16b28a586c7034a8d6e27c982",
+    "operations": "2d1667beeba912d9d5592322a664623e1ef07674"
   },
-  "open_issue_count": 0,
-  "issues": [],
+  "open_issue_count": 13,
+  "issues": [
+    {
+      "repo": "foundation",
+      "number": 58,
+      "title": "META: exhaustive Research Intelligence Engine coverage tracker",
+      "required_evidence": [
+        "child issue receipts",
+        "four-lane aggregate"
+      ]
+    },
+    {
+      "repo": "foundation",
+      "number": 157,
+      "title": "research: complete 24-program Heroic AI improvement run",
+      "required_evidence": [
+        "24 real provider-backed executions with exact revision"
+      ]
+    },
+    {
+      "repo": "foundation",
+      "number": 1157,
+      "title": "benchmark: project-native AI/agent benchmark and cross-language evaluation matrix",
+      "required_evidence": [
+        "benchmark contract",
+        "project-native task matrix",
+        "reproducible multi-model baseline"
+      ]
+    },
+    {
+      "repo": "foundation",
+      "number": 1247,
+      "title": "feed: WooCommerce Google Feed Recovery — 9 unresolved retailers",
+      "required_evidence": [
+        "public discovery for unresolved retailers",
+        "strict payload validation"
+      ]
+    },
+    {
+      "repo": "foundation",
+      "number": 1249,
+      "title": "feed: Custom/API Google Feed Recovery — chat handoff",
+      "required_evidence": [
+        "additional real Google Merchant XML feed discoveries",
+        "strict payload validation"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 145,
+      "title": "maintenance: activate approved periodic maintenance tick",
+      "required_evidence": [
+        "approved scheduled runtime receipt with exact revision/time/result/provenance"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 597,
+      "title": "migration: mapper capability decomposition and evidence lanes",
+      "required_evidence": [
+        "capability decomposition",
+        "capability inventory",
+        "differential",
+        "parity",
+        "bottleneck decisions",
+        "rollback dispositions"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 603,
+      "title": "migration: AI-model/tooling portability across migration components",
+      "required_evidence": [
+        "language governance",
+        "polyglot registry",
+        "rollback"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 1027,
+      "title": "security: move privileged provider-secret fan-out behind private boundary",
+      "required_evidence": [
+        "provider secrets",
+        "private boundary",
+        "credential isolation"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 1066,
+      "title": "security: protect Operations main with required PR checks",
+      "required_evidence": [
+        "branch protection enabled",
+        "required status checks",
+        "settings readback receipt"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 1103,
+      "title": "security: public-repo surface audit — infra leaks and disclosure remediation",
+      "required_evidence": [
+        "public surface remediation",
+        "private-boundary disclosure cleanup",
+        "current scan receipt"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 1135,
+      "title": "migration: investigate Worker 403/502 boundary and evaluate bounded TypeScript edge/SSE migration",
+      "required_evidence": [
+        "current Cloudflare runtime-status verification",
+        "host-runtime root-cause evidence",
+        "TS migration only if runtime evidence justifies it"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 1137,
+      "title": "migration: consolidated plan and execution order (tracking: #597, #603, #1134, #1135)",
+      "required_evidence": [
+        "single sequenced migration plan",
+        "phase gate receipts",
+        "dependency/blocker map"
+      ]
+    }
+  ],
   "evidence_rules": {
     "research_signal": "discovery/candidate evidence only",
     "benchmark": "deterministic or controlled comparative evidence; not production certification by itself",
@@ -43,66 +170,61 @@
     "public_worker": "heroic",
     "private_edge_worker": "operations-edge",
     "private_core_worker": "operations",
-    "chain": "heroic -> operations-edge (TypeScript) -> operations (Python)"
+    "chain": "heroic (JavaScript) -> heroic-core (Python) -> operations-edge (JavaScript) -> operations (Python)"
   },
   "public_surface_note": "Live private identifiers and secret values remain redacted.",
   "migration_status": {
     "strategy": "component-specific hybrid diversity",
     "pull_requests": [
       {
-        "repository": "foundation",
-        "number": 1395,
-        "state": "MERGED"
-      },
-      {
-        "repository": "foundation",
-        "number": 1397,
-        "state": "MERGED"
-      },
-      {
         "repository": "operations",
-        "number": 1164,
+        "number": 1345,
         "state": "MERGED"
       },
       {
-        "repository": "operations",
-        "number": 1165,
+        "repository": "foundation",
+        "number": 1503,
+        "state": "MERGED"
+      },
+      {
+        "repository": "foundation",
+        "number": 1504,
         "state": "MERGED"
       }
     ],
     "lanes": [
       {
+        "id": "P0",
+        "scope": "public ingress",
+        "language": "JavaScript",
+        "status": "MERGED_RUNTIME_PENDING"
+      },
+      {
         "id": "P1",
-        "scope": "private entry",
-        "language": "TypeScript",
-        "status": "PASS"
+        "scope": "private edge",
+        "language": "JavaScript",
+        "status": "MERGED"
       },
       {
         "id": "P2",
-        "scope": "private leaves",
+        "scope": "deterministic leaves",
         "language": "Rust/Wasm",
         "status": "PASS"
       },
       {
         "id": "P3",
-        "scope": "public entry",
-        "language": "TypeScript",
+        "scope": "bounded concurrency/tooling",
+        "language": "Go",
         "status": "PASS"
       },
       {
         "id": "P4",
-        "scope": "public deterministic leaf",
-        "language": "Rust/Wasm",
-        "status": "PASS"
-      },
-      {
-        "id": "P5",
-        "scope": "bounded concurrency/tooling",
-        "language": "Go",
-        "status": "PASS"
+        "scope": "WordPress/WooCommerce ecosystem",
+        "language": "PHP",
+        "status": "RESERVED_ADAPTER_LENS"
       }
     ],
-    "production_cutover": "DEPLOYED",
+    "production_cutover": "CODE_MERGED_RUNTIME_PENDING",
     "rollback_authority": "Python control-plane core",
     "candidate_freeze": "ACTIVE; promotion remains opt-in rather than a blocker"
   }
