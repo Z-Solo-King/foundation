@@ -63,6 +63,14 @@ def test_production_health_check_requires_production_environment():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
     assert '.ok == true and .environment == "production"' in text
 
+def test_release_d1_commands_use_dedicated_d1_config():
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'd1_migrations_config="$RUNNER_TEMP/wrangler.d1.generated.toml"' in text
+    assert 'd1 migrations apply "$database_name" --remote --config "$d1_migrations_config"' in text
+    assert text.count('d1 execute "$database_name" --remote') >= 3
+    assert '--config="$d1_migrations_config"' in text
+    assert '--config="$RUNNER_TEMP/operations/wrangler.toml"' not in text
+
 def test_reciprocal_service_bindings_use_binding_free_bootstrap():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
     assert "Operations binding-free bootstrap deployment: PASS" in text
