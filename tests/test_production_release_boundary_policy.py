@@ -133,7 +133,7 @@ def test_live_chat_provider_provenance_reconciliation_is_json_structural():
     assert "jq -e '[.. | objects" in text
     assert 'select((.state? // "") == "consumed")' in text
     assert 'contains("cloudflare_workers_ai")' in text
-    assert 'grep -q '"state":"consumed"' not in text
+    assert 'grep -q \'"state":"consumed"\'' not in text
     assert "sleep 2" in text
 
 def test_live_chat_provider_provenance_is_verified_privately():
