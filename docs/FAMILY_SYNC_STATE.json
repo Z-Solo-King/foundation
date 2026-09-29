@@ -4,7 +4,7 @@
   "audited_at": "2026-09-29",
   "public_safe": true,
   "live_main": {
-    "foundation": "aec73f457adc87dedd207486ad1153f0d784ff7c",
+    "foundation": "510b03b2ee2461c97b1c774349d08e3220985cce",
     "operations": "af3dc60349ca9de7c3747625949269234d34021f"
   },
   "runtime_pins": {
@@ -62,7 +62,7 @@
     "schema": "continuity-freshness/v1",
     "enforced_by": "tools/check_continuity_freshness.py",
     "workflow": ".github/workflows/cross-repository-contract-drift.yml",
-    "last_refresh_reason": "deep-scan full-receipt aggregation authority",
+    "last_refresh_reason": "true-live nightly dispatch encoded as JSON boolean",
     "checkout_history": "full-depth required for merge-commit-safe HEAD^ resolution"
   },
   "privacy_rule": "Do not publish protected worker origins, account/resource identifiers, private revisions, secret values, private issue details, or internal operational state.",
