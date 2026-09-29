@@ -84,7 +84,7 @@ def test_release_d1_commands_use_dedicated_d1_config():
 
 def test_d1_migration_config_pins_repository_migrations_dir():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'migrations_dir = "${GITHUB_WORKSPACE}/migrations"' in text
+    assert 'migrations_dir = \"${GITHUB_WORKSPACE}/migrations\"' in text
 
 def test_reciprocal_service_bindings_use_binding_free_bootstrap():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
