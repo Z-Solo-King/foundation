@@ -27,7 +27,7 @@ cleanup() {
     "$RUNNER_TEMP/git-askpass-operations.sh" "$RUNNER_TEMP/operations-app.pem" \
     "$RUNNER_TEMP/github-app-jwt.txt" "$RUNNER_TEMP/github-app-installation.json" \
     "$RUNNER_TEMP/github-app-installation-meta.json" "$RUNNER_TEMP/foundation-js-wrangler.toml" \
-    wrangler.production.generated.toml wrangler.python-core.generated.toml health.json readiness.json frontend.html \
+    wrangler.production.generated.toml wrangler.python-core.generated.toml wrangler.d1.migrations.generated.toml health.json readiness.json frontend.html \
     /tmp/styles.css /tmp/app.js /tmp/composer.js /tmp/lifecycle_controller.js
 }
 trap cleanup EXIT
@@ -340,7 +340,6 @@ printf '%s\n' \
   "database_name = \"${database_name}\"" \
   "database_id = \"${database_id}\"" \
   "migrations_dir = \"${GITHUB_WORKSPACE}/migrations\"" \
-  "migrations_dir = \"${GITHUB_WORKSPACE}/migrations\"" \
   '' \
   '[[services]]' \
   'binding = "OPERATIONS"' \
@@ -453,7 +452,7 @@ echo "Operations edge Worker deployment: PASS (${OPERATIONS_EDGE_SERVICE_NAME})"
 
 
 
-d1_migrations_config="$RUNNER_TEMP/wrangler.d1.generated.toml"
+d1_migrations_config="$GITHUB_WORKSPACE/wrangler.d1.migrations.generated.toml"
 printf '%s\n' \
   'name = "heroic-core-d1-migrations"' \
   'compatibility_date = "2026-09-09"' \
@@ -462,6 +461,7 @@ printf '%s\n' \
   'binding = "DB"' \
   "database_name = \"${database_name}\"" \
   "database_id = \"${database_id}\"" \
+  'migrations_dir = "migrations"' \
   > "$d1_migrations_config"
 npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 migrations apply "$database_name" --remote
 
