@@ -63,7 +63,7 @@ def validate()->list[str]:
                 declared=re.findall(r"(?ms)workflows:\s*\[([^\]]+)\]", text)
                 names=[]
                 for block in declared:
-                    names.extend(re.findall(r"['\\"]([^'\\"]+)['\\"]", block))
+                    names.extend(re.findall(r"""['"]([^'"]+)['"]""", block))
                 if sorted(set(names)) != sorted(set(expected_sources)):
                     errors.append(f"{rel}: workflow_run source mismatch; declared={sorted(set(names))} expected={sorted(set(expected_sources))}")
         if rel==".github/workflows/sync-secrets.yml":
