@@ -810,7 +810,7 @@ if [ -n "${AUTH_TOKEN:-}" ]; then
   diagnostic_status=$(curl -sS -o diagnostic.json -w '%{http_code}' \
     -H "Authorization: Bearer ${AUTH_TOKEN}" \
     -H 'Content-Type: application/json' \
-    -d '{"operation":"infrastructure_verify_public_test"}' \
+    -d '{"operation":"infrastructure_verify_public_test","release_acceptance":true}' \
     "$BASE_URL/api/v1/chatbot/diagnostic")
   echo "POST /api/v1/chatbot/diagnostic -> HTTP ${diagnostic_status}"
   test "$diagnostic_status" = '200'

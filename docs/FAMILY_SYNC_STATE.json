@@ -9,7 +9,7 @@
   },
   "runtime_pins": {
     "foundation_runtime": null,
-    "production_operations": "2d1667beeba912d9d5592322a664623e1ef07674",
+    "production_operations": "ca8fe15ee1143da96d0378201330941d5bb4a4f2",
     "research_operations": "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d",
     "foundation_runtime_status": "no independent immutable Foundation runtime pin; deployed Foundation provenance is release-receipt owned"
   },
