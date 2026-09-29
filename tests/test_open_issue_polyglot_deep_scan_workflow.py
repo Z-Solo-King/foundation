@@ -43,3 +43,11 @@ def test_deep_scan_aggregate_download_pattern_matches_lane_summary_artifacts():
     text = WORKFLOW.read_text(encoding="utf-8")
     assert "open-issue-deep-scan-*-summary-${{ github.run_id }}-attempt-${{ github.run_attempt }}" in text
     assert "open-issue-deep-scan-*-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}" not in text
+
+
+
+def test_deep_scan_uploads_full_lane_receipts_for_aggregation():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert "path: operations/.runtime/open-issue-deep-scan/*.json" in text
+    assert 'receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L?.json"))]' in text
+    assert 'root.glob("L?-summary.json")' not in text
