@@ -461,7 +461,9 @@ printf '%s\n' \
   "database_name = \"${database_name}\"" \
   "database_id = \"${database_id}\"" \
   > "$d1_migrations_config"
-npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 migrations apply "$database_name" --remote
+npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 execute "$database_name" --remote \
+  --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql"
+echo "D1 canonical schema bootstrap: PASS"
 
 # Pywrangler performs Python-project validation against the project's default Wrangler config.
 # Temporarily make the generated Python-core config the project-default config, then restore
