@@ -483,8 +483,7 @@
       ],
       "targets": [
         "foundation#58",
-        "foundation#157",
-        "operations#1137"
+        "foundation#157"
       ]
     },
     {
@@ -518,7 +517,6 @@
         "M17"
       ],
       "targets": [
-        "operations#1137",
         "foundation#58"
       ]
     },
