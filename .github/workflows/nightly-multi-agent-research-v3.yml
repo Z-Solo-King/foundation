@@ -320,12 +320,14 @@ jobs:
           from pathlib import Path
           root=Path('.runtime'); root.mkdir(parents=True, exist_ok=True)
           combined=root/'nightly-crossfire.jsonl'
+          rows=[json.loads(x) for x in combined.read_text(encoding='utf-8').splitlines() if x.strip()] if combined.exists() else []
+          mode=os.environ['MODE']; preflight=os.environ['PREFLIGHT']; runner=os.environ['RUN_CROSSFIRE']
           expected_all={f'lane{lane}-slot{slot}' for lane in range(3) for slot in range(8)}
           observed_all=[r.get('program_id') for r in rows]
           observed_set={item for item in observed_all if isinstance(item,str)}
           coverage={
               'schema':'nightly-research-coverage/v1',
-              'contract':os.environ['NIGHTLY_RESEARCH_CONTRACT'] if 'NIGHTLY_RESEARCH_CONTRACT' in os.environ else 'nightly-research-contract/v2',
+              'contract':'nightly-research-contract/v2',
               'run_id':os.environ['NIGHTLY_RUN_ID'],
               'foundation_revision':os.environ['FOUNDATION_REVISION'],
               'operations_revision':os.environ['OPERATIONS_REVISION'],
@@ -339,8 +341,7 @@ jobs:
               'status':'complete' if observed_set==expected_all and len(rows)==24 and len(observed_set)==24 else 'incomplete',
               'evidence_rule':'transport/challenge/provider failures are execution states, not negative findings.'
           }
-          (root/'nightly-research-coverage.json').write_text(json.dumps(coverage,indent=2,sort_keys=True)+'
-',encoding='utf-8')
+          (root/'nightly-research-coverage.json').write_text(json.dumps(coverage,indent=2,sort_keys=True)+'\n',encoding='utf-8')
           requirements={
               'schema':'nightly-research-acceptance-requirements/v1',
               'run_id':os.environ['NIGHTLY_RUN_ID'],
@@ -354,10 +355,7 @@ jobs:
               },
               'closure_rule':'This artifact never closes #58, #157, #597, or #603 by itself; required live/external evidence remains mandatory.'
           }
-          (root/'nightly-research-acceptance-requirements.json').write_text(json.dumps(requirements,indent=2,sort_keys=True)+'
-',encoding='utf-8')
-          rows=[json.loads(x) for x in combined.read_text(encoding='utf-8').splitlines() if x.strip()] if combined.exists() else []
-          mode=os.environ['MODE']; preflight=os.environ['PREFLIGHT']; runner=os.environ['RUN_CROSSFIRE']
+          (root/'nightly-research-acceptance-requirements.json').write_text(json.dumps(requirements,indent=2,sort_keys=True)+'\n',encoding='utf-8')
           allowed={'acquisition','mapper','chatbot','search','models','agents','architecture','infrastructure','performance','alternatives','evaluation'}
           errors=[]
           for lane in range(3):
@@ -370,7 +368,7 @@ jobs:
               validation='success' if valid else 'failed'
               state='blocked_before_execution' if mode=='live' and preflight!='success' else ('lane_failure' if runner!='success' else ('dry_run' if mode=='dry-run' else ('live_research_executed' if valid else 'lane_failure')))
               if mode=='live' and (preflight!='success' or runner!='success' or not valid): errors.append(f'lane{lane}')
-              status={'schema':'nightly-research-lane-status/v1','contract':'nightly-research-contract/v2','run_id':os.environ['NIGHTLY_RUN_ID'],'foundation_revision':os.environ['FOUNDATION_REVISION'],'lane':lane,'mode':mode,'state':state,'preflight':preflight,'runner':runner,'validation':validation,'program_count':len(lane_rows),'programs':[r.get('program_id') for r in lane_rows],'operations_revision':'${{ env.OPERATIONS_RESEARCH_REF }}','execution_strategy':'crossfire','global_capacity':20}
+              status={'schema':'nightly-research-lane-status/v1','contract':'nightly-research-contract/v2','run_id':os.environ['NIGHTLY_RUN_ID'],'foundation_revision':os.environ['FOUNDATION_REVISION'],'lane':lane,'mode':mode,'state':state,'preflight':preflight,'runner':runner,'validation':validation,'program_count':len(lane_rows),'programs':[r.get('program_id') for r in lane_rows],'operations_revision':os.environ['OPERATIONS_REVISION'],'execution_strategy':'crossfire','global_capacity':20}
               (root/f'nightly-lane-{lane}-status.json').write_text(json.dumps(status,indent=2,sort_keys=True)+'\n',encoding='utf-8')
           if mode=='live' and errors: raise SystemExit('Live CrossFire research did not satisfy the 24-program evidence contract')
       - name: Upload nightly research acceptance manifests
