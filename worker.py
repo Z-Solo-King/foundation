@@ -255,7 +255,7 @@ _PUBLIC_CHAT_RESPONSE_FIELDS = frozenset({
 })
 
 
-def _public_chat_body(body):
+def _public_chat_body(body, *, include_provider=False):
     """Project the private chat result onto the documented public response schema."""
     if not isinstance(body, dict):
         return {"ok": False, "error": "invalid_private_chat_response"}
@@ -267,6 +267,12 @@ def _public_chat_body(body):
             for key in _PUBLIC_CHAT_RESPONSE_FIELDS
             if key in response
         }
+        # Provider identity remains omitted from the normal public contract.
+        # The authenticated nightly proof path explicitly opts in to provenance.
+        if include_provider:
+            provider = response.get("provider")
+            if isinstance(provider, str) and provider.strip():
+                public["response"]["provider"] = provider.strip()
         sources = public["response"].get("sources")
         if isinstance(sources, list):
             safe_sources = []
@@ -304,7 +310,8 @@ async def _operations_chat(env, payload, request):
         body = await upstream.json()
         if not isinstance(body, dict):
             return {"ok": False, "error": "invalid_private_chat_response"}, 503
-        return _public_chat_body(body), upstream.status
+        include_provider = bool(payload.get("research_runtime_proof")) and _authorized(request, env)
+        return _public_chat_body(body, include_provider=include_provider), upstream.status
     except Exception as exc:
         return {"ok": False, "error": "chat_backend_unavailable"}, 503
 
