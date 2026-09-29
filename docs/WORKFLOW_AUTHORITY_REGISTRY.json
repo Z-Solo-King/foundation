@@ -1,0 +1,91 @@
+{
+  "schema": "workflow-authority-registry/v1",
+  "policy_version": "2026-09-30",
+  "default_class": "public_ci",
+  "public_feed_workflows": {
+    ".github/workflows/native-google-feed-hunt.yml": true,
+    ".github/workflows/woocommerce-clean-recovery.yml": true
+  },
+  "explicit_privileged_workflows": [
+    [
+      ".github/workflows/sync-secrets.yml",
+      "secret_sync"
+    ],
+    [
+      ".github/workflows/b2-repository-backup.yml",
+      "backup"
+    ],
+    [
+      ".github/workflows/b2-restore-verification.yml",
+      "backup_restore"
+    ],
+    [
+      ".github/workflows/family-integrity-gate.yml",
+      "family_governance"
+    ],
+    [
+      ".github/workflows/live-ai-agent-benchmark.yml",
+      "live_benchmark"
+    ],
+    [
+      ".github/workflows/canonical-nightly-pin-repair.yml",
+      "revision_maintenance"
+    ],
+    [
+      ".github/workflows/provider-fleet-runtime-state.yml",
+      "private_runtime_state"
+    ],
+    [
+      ".github/workflows/observation-contract-shadow.yml",
+      "private_benchmark"
+    ],
+    [
+      ".github/workflows/commerce-feed-product-crawl.yml",
+      "private_registry_feed_crawl"
+    ],
+    [
+      ".github/workflows/open-issue-polyglot-deep-scan.yml",
+      "private_audit"
+    ],
+    [
+      ".github/workflows/polyglot-migration-review.yml",
+      "private_benchmark"
+    ],
+    [
+      ".github/workflows/hybrid-language-pilots.yml",
+      "private_benchmark"
+    ],
+    [
+      ".github/workflows/operations-centralized-validation.yml",
+      "private_validation"
+    ],
+    [
+      ".github/workflows/live-nightly-research-canary.yml",
+      "private_research_canary"
+    ],
+    [
+      ".github/workflows/exhaustive-six-lane-audit.yml",
+      "private_audit"
+    ],
+    [
+      ".github/workflows/nightly-multi-agent-research-v3.yml",
+      "research_public_frontdoor"
+    ]
+  ],
+  "policy": {
+    "privileged_markers": [
+      "secrets.",
+      "actions/create-github-app-token",
+      "Z-Solo-King/operations",
+      "OPERATIONS_APP_ID",
+      "OPERATIONS_APP_PRIVATE_KEY",
+      "operations-app.outputs.token"
+    ],
+    "forbidden_events": [
+      "pull_request",
+      "pull_request_target"
+    ],
+    "privileged_push_branch": "main",
+    "principle": "workflow authority is a machine-enforced boundary; documentation alone is insufficient"
+  }
+}
