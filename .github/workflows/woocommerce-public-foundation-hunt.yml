@@ -9,7 +9,7 @@ on:
       operations_ref:
         description: Exact Operations revision containing the WooCommerce extractor
         required: false
-        default: 3015b531f01d0fc56917fb5a83712cd356c54281
+        default: e6c7df266288e1f2f1b6788eed50ed5a09497088
         type: string
 
 permissions:
@@ -22,6 +22,7 @@ concurrency:
 jobs:
   probe:
     name: WooCommerce shard ${{ matrix.shard }}
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run-woo-final]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
@@ -31,7 +32,7 @@ jobs:
         shard: [0,1,2,3,4,5,6,7]
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || '3015b531f01d0fc56917fb5a83712cd356c54281' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || 'e6c7df266288e1f2f1b6788eed50ed5a09497088' }}
       SHARD: ${{ matrix.shard }}
       PYTHONUNBUFFERED: "1"
     steps:
@@ -50,14 +51,14 @@ jobs:
           repositories: operations
           permission-contents: read
 
-      - name: Verify Operations token
+      - name: Verify Operations token and revision
         env:
           GH_TOKEN: ${{ steps.operations-app.outputs.token }}
         run: |
           set -euo pipefail
           test -n "$GH_TOKEN"
-          gh api repos/Z-Solo-King/operations --jq '.full_name'
-          gh api "repos/Z-Solo-King/operations/commits/${{ env.OPERATIONS_REF }}" --jq '.sha'
+          test "$(gh api repos/Z-Solo-King/operations --jq '.full_name')" = "Z-Solo-King/operations"
+          test "$(gh api "repos/Z-Solo-King/operations/commits/$OPERATIONS_REF" --jq '.sha')" = "$OPERATIONS_REF"
 
       - name: Checkout exact Operations extractor
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -80,7 +81,11 @@ jobs:
           python -m pip install --disable-pip-version-check -e ".[browser]"
           python -m playwright install --with-deps chromium
 
-      - name: Run v3 shard
+      - name: Compile WooCommerce probe
+        working-directory: operations
+        run: python -m py_compile scripts/woocommerce_browser_probe_v3.py extractor_mapper/extraction/google_merchant_feed_compat.py
+
+      - name: Run 32-site shard
         working-directory: operations
         env:
           SHARD: ${{ matrix.shard }}
@@ -101,43 +106,27 @@ jobs:
               "varietyinfotech.com","viperpc.in","aulaindia.com","thecosmicbyte.com",
               "meckeys.com","moskeys.com","ninjadog.in","stackskb.com","theproaudio.com",
           ]
-
           shard = int(os.environ["SHARD"])
           selected = sites[shard::8]
           out = Path("evidence/final-v3")
           out.mkdir(parents=True, exist_ok=True)
 
           for site in selected:
+              output = out / f"{site}.json"
               print(f"=== v3: {site} ===", flush=True)
               subprocess.run(
                   [
                       "python", "scripts/woocommerce_browser_probe_v3.py",
                       "--site", site,
-                      "--output", str(out / f"{site}.json"),
+                      "--output", str(output),
                   ],
-                  check=False,
+                  check=True,
               )
+              payload = json.loads(output.read_text(encoding="utf-8"))
+              assert payload.get("site") == site, (site, payload.get("site"))
+              assert payload.get("feed_status") in {"verified", "api_only", "unresolved"}, payload
 
-          rows = []
-          for path in sorted(out.glob("*.json")):
-              try:
-                  rows.append(json.loads(path.read_text(encoding="utf-8")))
-              except Exception as exc:
-                  rows.append({
-                      "site": path.stem,
-                      "feed_status": "unresolved",
-                      "parse_error": str(exc),
-                  })
-
-          Path(f"evidence/final-v3-shard-{shard}.json").write_text(
-              json.dumps({
-                  "schema": "foundation-woocommerce-v3-shard/v1",
-                  "shard": shard,
-                  "selected_sites": selected,
-                  "results": rows,
-              }, indent=2) + "\\n",
-              encoding="utf-8",
-          )
+          assert len(list(out.glob("*.json"))) == len(selected), selected
 
       - name: Upload v3 evidence
         if: always()
@@ -145,13 +134,13 @@ jobs:
         with:
           name: foundation-woocommerce-v3-shard-${{ matrix.shard }}
           path: operations/evidence/final-v3/
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 30
 
   aggregate:
     name: Aggregate v3 32-site evidence
     needs: probe
-    if: always()
+    if: ${{ always() && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run-woo-final]')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -162,7 +151,7 @@ jobs:
           path: evidence
           merge-multiple: true
 
-      - name: Aggregate
+      - name: Aggregate and enforce coverage
         shell: python
         run: |
           import json
@@ -170,44 +159,37 @@ jobs:
 
           expected = {
               "aarnacomputers.com","adsstore.in","avikaretails.com","ezpzsolutions.in",
-              "gamesncomps.com","geekbees.in","hotshiftpc.com","krgkart.com","kryptronix.in",
-              "nclcomputer.com","networkitstore.in","mynexusinfosys.com","onlyssd.com",
-              "pckumar.in","pcstudio.in","pchubshop.com","primeabgb.com","quickincomputers.com",
-              "sclgaming.in","solankienterprises.com","varietyinfotech.com","viperpc.in",
-              "aulaindia.com","thecosmicbyte.com","meckeys.com","moskeys.com","ninjadog.in",
-              "stackskb.com","theproaudio.com","kccomputers.co.in","ithunt.in",
               "gamesncomps.com","geekbees.in","hotshiftpc.com","itgadgetsonline.com",
+              "ithunt.in","kccomputers.co.in","krgkart.com","kryptronix.in",
+              "nclcomputer.com","networkitstore.in","mynexusinfosys.com","onlyssd.com",
+              "pckumar.in","pcstudio.in","pchubshop.com","primeabgb.com",
+              "quickincomputers.com","sclgaming.in","solankienterprises.com",
+              "varietyinfotech.com","viperpc.in","aulaindia.com","thecosmicbyte.com",
+              "meckeys.com","moskeys.com","ninjadog.in","stackskb.com","theproaudio.com",
           }
 
-          expected.discard("gamesncomps.com")
-          expected.discard("geekbees.in")
-          expected.discard("hotshiftpc.com")
-          expected.discard("itgadgetsonline.com")
-          expected.update({
-              "gamesncomps.com","geekbees.in","hotshiftpc.com","itgadgetsonline.com"
-          })
+          files = sorted(Path("evidence/final-v3").glob("*.json"))
+          by_site = {}
+          for path in files:
+              row = json.loads(path.read_text(encoding="utf-8"))
+              site = row.get("site")
+              if site:
+                  by_site[site] = row
 
-          rows = []
-          for path in sorted(Path("evidence").glob("**/*.json")):
-              if "shard" in path.name:
-                  continue
-              try:
-                  rows.append(json.loads(path.read_text(encoding="utf-8")))
-              except Exception:
-                  pass
-
-          by_site = {row.get("site"): row for row in rows if row.get("site")}
-
+          missing = sorted(expected - set(by_site))
+          duplicates = len(files) != len(by_site)
           verified = [r for r in by_site.values() if r.get("feed_status") == "verified"]
           api_only = [r for r in by_site.values() if r.get("feed_status") == "api_only"]
           unresolved = [r for r in by_site.values() if r.get("feed_status") == "unresolved"]
 
           summary = {
-              "schema": "foundation-woocommerce-v3-32-site-hunt/v1",
+              "schema": "foundation-woocommerce-v3.1-32-site-hunt/v1",
               "expected_sites": len(expected),
+              "observed_site_files": len(files),
               "observed_sites": len(by_site),
-              "coverage_complete": expected.issubset(by_site),
-              "missing_sites": sorted(expected - set(by_site)),
+              "coverage_complete": not missing and not duplicates and len(by_site) == len(expected),
+              "missing_sites": missing,
+              "duplicate_site_files": duplicates,
               "verified_feed_count": len(verified),
               "api_only_count": len(api_only),
               "unresolved_count": len(unresolved),
@@ -223,15 +205,19 @@ jobs:
           }
 
           Path("summary-v3.json").write_text(
-              json.dumps(summary, indent=2) + "\\n",
+              json.dumps(summary, indent=2, ensure_ascii=False) + "\n",
               encoding="utf-8",
           )
           print(json.dumps({
               k: summary[k] for k in (
-                  "expected_sites","observed_sites","coverage_complete",
-                  "verified_feed_count","api_only_count","unresolved_count","missing_sites"
+                  "expected_sites","observed_site_files","observed_sites",
+                  "coverage_complete","verified_feed_count",
+                  "api_only_count","unresolved_count","missing_sites"
               )
           }, indent=2))
+
+          if not summary["coverage_complete"]:
+              raise SystemExit("32-site evidence coverage is incomplete")
 
       - name: Upload v3 summary
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
