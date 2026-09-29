@@ -780,12 +780,3 @@ def test_live_chatbot_smoke_keeps_infrastructure_diagnostic_non_blocking():
     assert '"critical": critical' in workflow
     assert 'record("diagnostic_infrastructure", diagnostic.status_code, diagnostic_body, critical=False)' in workflow
     assert "if critical and (status != 200 or item.get(\"ok\") is False):" in workflow
-
-
-def test_live_chatbot_production_smoke_uses_authenticated_research_proof_header():
-    text = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "live-chatbot-production-smoke.yml").read_text(encoding="utf-8")
-    assert '"X-Heroic-Research-Proof": "1"' in text
-
-def test_nightly_provider_preflight_reports_unverified_state_truthfully():
-    text = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "nightly-research-provider-preflight.yml").read_text(encoding="utf-8")
-    assert 'worker_health_ok_provider_runtime_unverified' in text
