@@ -461,7 +461,7 @@ printf '%s\n' \
   "database_name = \"${database_name}\"" \
   "database_id = \"${database_id}\"" \
   > "$d1_migrations_config"
-npx --yes wrangler@4.131.1 d1 migrations apply "$database_name" --remote --config "$d1_migrations_config"
+npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 migrations apply "$database_name" --remote
 
 # Pywrangler performs Python-project validation against the project's default Wrangler config.
 # Temporarily make the generated Python-core config the project-default config, then restore
@@ -502,7 +502,7 @@ for asset in styles.css app.js composer.js lifecycle_controller.js; do
 done
 
 # Redeploy Operations against the new Foundation Worker, proving the final private binding.
-npx --yes wrangler@4.131.1 d1 execute "$database_name" --remote \
+npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 execute "$database_name" --remote \
   --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql" \
   --config="$d1_migrations_config"
 (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:foundation-binding-${ACCEPTANCE_RUN_ID}")
@@ -587,14 +587,14 @@ echo "Live memory/replay deployment-boundary acceptance: PASS"
 # Record the live durable MODEL_CALLS quota state before the required model-generation
 # acceptance. This is a bounded non-secret diagnostic: no auth token or provider payload
 # is queried, only governance counters from the canonical D1 authority.
-npx --yes wrangler@4.131.1 d1 execute "$database_name" --remote \
+npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 execute "$database_name" --remote \
   --config="$d1_migrations_config" \
   --command="SELECT scope, window_id, resource_kind, limit_units, reserved_units, consumed_units, updated_at FROM resource_governance_quota WHERE resource_kind = 'model_calls' ORDER BY updated_at DESC LIMIT 5;" \
   --json > "$RUNNER_TEMP/model-call-quota.json"
 echo "model-call quota snapshot: collected"
 cp "$RUNNER_TEMP/model-call-quota.json" .runtime/model-call-quota.json
 
-npx --yes wrangler@4.131.1 d1 execute "$database_name" --remote \
+npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 execute "$database_name" --remote \
   --config="$d1_migrations_config" \
   --command="SELECT reservation_id, scope, window_id, resource_kind, amount, state, idempotency_key, lease_expires_at, updated_at FROM resource_governance_reservations WHERE resource_kind = 'model_calls' ORDER BY updated_at DESC LIMIT 10;" \
   --json > "$RUNNER_TEMP/model-call-reservations.json"
