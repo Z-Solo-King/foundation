@@ -1,13 +1,10 @@
 from __future__ import annotations
-
 import json
 import re
 from pathlib import Path
-
 ROOT = Path(__file__).parents[1]
 WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
-
 CANONICAL_OPERATIONS_REPOSITORY = "Z-Solo-King/operations"
 PIN_MANIFEST = ROOT / "docs" / "OPERATIONS_PIN_MANIFEST.json"
 _PIN_DATA = json.loads(PIN_MANIFEST.read_text(encoding="utf-8"))
@@ -27,13 +24,11 @@ PRODUCTION_SCRIPT = ROOT / "scripts" / "production_release.sh"
 WRANGLER = ROOT / "wrangler.toml"
 INSTALLATION_HELPER = ROOT / "scripts" / "resolve_operations_installation.py"
 
-
 def _workflow_texts() -> dict[str, str]:
     return {
         path.name: path.read_text(encoding="utf-8")
         for path in sorted(WORKFLOW_ROOT.glob("*.y*ml"))
     }
-
 
 def test_all_third_party_actions_are_sha_pinned():
     violations = []
@@ -50,19 +45,16 @@ def test_all_third_party_actions_are_sha_pinned():
                 violations.append(f"{name}:{line_no}:{action}@{ref}")
     assert not violations, "Unpinned third-party GitHub Actions:\n" + "\n".join(violations)
 
-
 def test_legacy_worker_retirement_skips_empty_worker_names():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     guard = 'if [ -n "$legacy_worker" ] && [ "$legacy_worker" != "foundation" ] && [ "$legacy_worker" != "operations" ]; then'
     assert deployment.count(guard) == 2
-
 def test_production_deployment_has_one_owner():
     texts = _workflow_texts()
     assert "bash scripts/production_release.sh" in texts[PRODUCTION_WORKFLOW]
     assert "pywrangler deploy" in PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert all("pywrangler deploy" not in text for name, text in texts.items() if name != PRODUCTION_WORKFLOW)
     assert "prepare-live-chat-source-fix.yml" not in texts
-
     forbidden = re.compile(r"(?i)(workers\s+build|deploy\s+hook|deploy_hook|workers-builds)")
     violations = [
         f"{name}:{line_no}:{line.strip()}"
@@ -71,7 +63,6 @@ def test_production_deployment_has_one_owner():
         if forbidden.search(line)
     ]
     assert not violations, "Competing Cloudflare deployment references:\n" + "\n".join(violations)
-
 
 # Canonical Operations revision is declared once and used by the release self-check.\n\ndef test_canonical_operations_production_pin_is_current_and_immutable():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
@@ -83,7 +74,6 @@ def test_production_deployment_has_one_owner():
     assert 'git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git"' in deployment
     assert '"github:${OPERATIONS_REF}"' in deployment
     assert '.private == true' in deployment
-
 
 def test_production_release_does_not_publish_private_state_or_b2_literals():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
@@ -98,13 +88,11 @@ def test_production_release_does_not_publish_private_state_or_b2_literals():
     assert 'settings_worker="${PYTHON_CORE_WORKER_NAME}"' in deployment
     assert 'settings_worker="${PUBLIC_WORKER_NAME}"' in deployment
 
-
 def test_production_pin_self_check_matches_canonical_operations_revision():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'PIN_MANIFEST="docs/OPERATIONS_PIN_MANIFEST.json"' in deployment
     assert 'production_runtime' in deployment
     assert 'test "$OPERATIONS_REF" =' not in deployment
-
 
 def test_production_generates_private_operations_service_binding():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
@@ -115,7 +103,6 @@ def test_production_generates_private_operations_service_binding():
     assert '"service = \\\"${OPERATIONS_EDGE_SERVICE_NAME}\\\""' in deployment
     assert 'grep -q "^service = \\\"${OPERATIONS_EDGE_SERVICE_NAME}\\\"$" wrangler.python-core.generated.toml' in deployment
     assert 'grep -q "^service = \\\"${PYTHON_CORE_WORKER_NAME}\\\"$" wrangler.production.generated.toml' in deployment
-
 
 def test_operations_installation_is_discovered_from_app_jwt():
     workflow = _workflow_texts()[PRODUCTION_WORKFLOW]
@@ -129,7 +116,6 @@ def test_operations_installation_is_discovered_from_app_jwt():
     assert "api.github.com/app/installations" in deployment
     assert 'EXPECTED_ACCOUNT = "Z-Solo-King"' in helper
 
-
 def test_operations_checkout_uses_github_app_installation_credential():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert "OPERATIONS_APP_ID" in deployment
@@ -137,7 +123,6 @@ def test_operations_checkout_uses_github_app_installation_credential():
     assert "GITHUB_APP_TOKEN" in deployment
     assert "api.github.com/repos/${OPERATIONS_REPOSITORY}" in deployment
     assert "OPERATIONS_READ_TOKEN" not in deployment
-
 
 def test_production_release_has_one_minimal_main_push_job():
     frontend = _workflow_texts()[PRODUCTION_WORKFLOW]
@@ -167,8 +152,6 @@ def test_production_release_has_one_minimal_main_push_job():
     assert "actions: write" in frontend
 
 
-
-
 def test_production_release_fails_closed_and_retains_chat_policy_receipts():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     workflow = (ROOT / ".github/workflows/heroic-ai-production-release.yml").read_text(encoding="utf-8")
@@ -191,7 +174,6 @@ def test_production_release_fails_closed_and_retains_chat_policy_receipts():
     assert "production-runtime-acceptance-receipts" in workflow
     assert "allow_persistence_deferred" not in workflow
     assert "inputs:" not in workflow.split("permissions:", 1)[0]
-
 def test_public_worker_uses_native_javascript_edge_and_python_core():
     worker = (ROOT / "edge.js").read_text(encoding="utf-8")
     wrangler = WRANGLER.read_text(encoding="utf-8")
@@ -205,7 +187,6 @@ def test_public_worker_uses_native_javascript_edge_and_python_core():
     assert "python_workers" in core
     assert "wrangler.python-core.generated.toml" in deployment
     assert "wrangler@4.131.1 deploy --config wrangler.production.generated.toml" in deployment
-
 def test_public_production_deploy_injects_required_b2_secrets():
     workflow = _workflow_texts()[PRODUCTION_WORKFLOW]
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
@@ -224,13 +205,11 @@ def test_public_worker_static_assets_binding_is_declared():
     assert 'directory = "./frontend"' in wrangler
     assert 'binding = "ASSETS"' in wrangler
     assert 'not_found_handling = "single-page-application"' in wrangler
-
     worker = (ROOT / "worker.py").read_text(encoding="utf-8")
     assert 'getattr(self.env, "ASSETS", None)' in worker
     assert "response = await assets.fetch(request)" in worker
     assert "Content-Security-Policy" in worker
     assert 'X-Frame-Options\"] = "DENY"' in worker
-
 
 def test_production_script_preserves_static_asset_binding_and_diagnostic_smokes():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
@@ -247,8 +226,6 @@ def test_production_script_preserves_static_asset_binding_and_diagnostic_smokes(
     assert 'GET GitHub App installation metadata -> HTTP' in deployment
     assert 'POST GitHub App installation token -> HTTP' in deployment
 
-
-
 def test_private_operations_deployment_verifies_cloudflare_provenance():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments' in deployment
@@ -256,7 +233,6 @@ def test_private_operations_deployment_verifies_cloudflare_provenance():
     assert 'workers/message' in deployment
     assert 'workers/tag' in deployment
     assert 'Operations Cloudflare provenance: PASS' in deployment
-
 
 def test_private_operations_handoff_is_preflighted_and_diagnostic_runs_last():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
@@ -267,8 +243,6 @@ def test_private_operations_handoff_is_preflighted_and_diagnostic_runs_last():
     success = deployment.rindex("Production release completed")
     assert preflight < public_deploy
     assert public_deploy < operations_deploy < diagnostic < success
-
-
 
 def test_public_foundation_is_the_only_github_actions_bridge_owner():
     workflow = _workflow_texts()["foundation-canonical-workflow-bridge-v3.yml"]
@@ -284,8 +258,6 @@ def test_public_foundation_is_the_only_github_actions_bridge_owner():
     assert "foundation-canonical-workflow-bridge.yml" not in workflow
 
 
-
-
 def test_all_canonical_workflow_dispatch_requests_use_the_public_router():
     texts = _workflow_texts()
     raw_dispatch_callers = [
@@ -297,8 +269,6 @@ def test_all_canonical_workflow_dispatch_requests_use_the_public_router():
     assert raw_dispatch_callers == []
     acceptance = texts["canonical-workflow-dispatch-acceptance.yml"]
     assert "gh workflow run foundation-canonical-workflow-bridge-v3.yml" in acceptance
-
-
 
 def test_backup_workflow_uses_app_auth_for_private_operations_and_separates_b2_credentials():
     backup = _workflow_texts()["b2-repository-backup.yml"]
@@ -315,7 +285,6 @@ def test_credential_policy_documents_the_separation():
     policy = (ROOT / "docs" / "CREDENTIAL_AND_BACKUP_AUTHORITY.md").read_text(encoding="utf-8")
     deployment = (ROOT / "DEPLOYMENT.md").read_text(encoding="utf-8")
     backup = (ROOT / "backup" / "README.md").read_text(encoding="utf-8")
-
     for secret in (
         "OPERATIONS_APP_ID",
         "OPERATIONS_APP_PRIVATE_KEY",
@@ -325,18 +294,15 @@ def test_credential_policy_documents_the_separation():
         "AUTH_TOKEN",
     ):
         assert secret in policy
-
     assert "B2 credentials are secrets and never belong in Git" in deployment
     assert "`OPERATIONS_APP_ID`" in policy
     assert "purpose-specific GitHub App credential family" in backup
     assert "OPERATIONS_PIN_MANIFEST.json" in deployment
 
-
 def test_backup_manifests_cannot_claim_remote_restore_without_test():
     workflow = _workflow_texts()["b2-repository-backup.yml"]
     assert '"remote_b2_restore_verified": False' in workflow
     assert "remote B2 restore verification: PASS" in workflow
-
 
 def test_required_ci_contract_supports_merge_group():
     required = _workflow_texts()["required-pr-checks.yml"]
@@ -346,7 +312,6 @@ def test_required_ci_contract_supports_merge_group():
     assert "name: Analyze python" in required
     assert "npm test" in required
 
-
 def test_operations_installation_discovery_surfaces_failures():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     helper = INSTALLATION_HELPER.read_text(encoding="utf-8")
@@ -355,13 +320,11 @@ def test_operations_installation_discovery_surfaces_failures():
     assert '2>/dev/null || true' in deployment
     assert 'file=sys.stderr' in helper
 
-
 def test_operations_public_core_is_materialized_before_worker_deploy():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'scripts/sync_public_core.py' in deployment
     assert 'python "$RUNNER_TEMP/operations/scripts/sync_public_core.py"' in deployment
     assert 'test -f "$RUNNER_TEMP/operations/foundation_core/__init__.py"' in deployment
-
 
 def test_foundation_bridge_records_run_and_job_creation_control_plane_evidence():
     workflow = _workflow_texts()["foundation-canonical-workflow-bridge-v3.yml"]
@@ -378,8 +341,6 @@ def test_foundation_bridge_records_run_and_job_creation_control_plane_evidence()
     assert 'gh run download "$bridge_run_id"' in acceptance
     assert 'canonical-bridge-v3-receipt' in acceptance
     assert "jq -r '.target_run_id // empty'" in acceptance
-
-
 
 def test_hardened_workflows_have_timeout_and_concurrency_contract():
     texts = _workflow_texts()
@@ -405,13 +366,11 @@ def test_hardened_workflows_have_timeout_and_concurrency_contract():
             re.findall(r"^\s+timeout-minutes:\s+\d+\s*$", text, re.MULTILINE)
         ), name
 
-
 def test_superseded_nightly_variants_are_retired():
     texts = _workflow_texts()
     assert "nightly-multi-agent-research-v3.yml" in texts
     assert "nightly-multi-agent-research-v2.yml" not in texts
     assert "nightly-research-v4.yml" not in texts
-
 
 def test_live_extractor_benchmark_overlays_versioned_http_and_browser_producers():
     workflow = _workflow_texts()["live-extractor-benchmark.yml"]
@@ -421,14 +380,12 @@ def test_live_extractor_benchmark_overlays_versioned_http_and_browser_producers(
     assert "scripts/site_benchmark_execution.py" in workflow
     assert BENCHMARK_TOOLS_REF in workflow
 
-
 def test_live_extractor_benchmark_overlays_versioned_producer_tooling():
     workflow = _workflow_texts()["live-extractor-benchmark.yml"]
     assert "Checkout versioned benchmark tooling" in workflow
     assert "Overlay benchmark producer tooling" in workflow
     assert "scripts/browser_site_benchmark.py" in workflow
     assert BENCHMARK_TOOLS_REF in workflow
-
 
 def test_live_extractor_benchmark_uses_versioned_runtime_and_tool_pins():
     workflow = _workflow_texts()["live-extractor-benchmark.yml"]
@@ -443,12 +400,10 @@ def test_live_extractor_benchmark_uses_versioned_runtime_and_tool_pins():
     assert "PIN_MANIFEST" in production
     assert "production_runtime" in production
 
-
 def test_polyglot_review_installs_declared_operations_dependencies():
     workflow = _workflow_texts()["polyglot-migration-review.yml"]
     assert "python -m pip install --disable-pip-version-check -e ." in workflow
     assert " --no-deps" not in workflow
-
 
 def test_nightly_migration_review_uses_separate_immutable_tooling_pin():
     workflow = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
@@ -460,15 +415,12 @@ def test_nightly_migration_review_uses_separate_immutable_tooling_pin():
     assert "Checkout pinned Operations migration tooling" in workflow
     assert "Verify Operations migration-tools revision" in workflow
 
-
 def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'PIN_MANIFEST="docs/OPERATIONS_PIN_MANIFEST.json"' in deployment
     assert 'manifest["pins"]["production_runtime"]["sha"]' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
     assert f"OPERATIONS_RESEARCH_REF: {CANONICAL_RESEARCH_OPERATIONS_REF}" in nightly
-
-
 
 def test_coverage_runtime_matrix_uses_versioned_validation_tests():
     workflow = _workflow_texts()["coverage-driven-runtime-matrix.yml"]
@@ -477,7 +429,6 @@ def test_coverage_runtime_matrix_uses_versioned_validation_tests():
     assert VALIDATION_TOOLS_REF in workflow
     assert "Checkout versioned validation tests" in workflow
     assert "Overlay exact validation test files" in workflow
-
 def test_coverage_runtime_matrix_validates_immutable_operations_pin():
     workflow = _workflow_texts()["coverage-driven-runtime-matrix.yml"]
     assert "Validate immutable Operations acceptance pin" in workflow
@@ -489,12 +440,10 @@ def test_coverage_runtime_matrix_validates_immutable_operations_pin():
     assert "Idempotency-Key: $key-idem" in workflow
     assert "chat-rollover-before.json" in PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert "chat-rollover-after.json" in PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-
 def test_production_operations_compile_guard_is_executable():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert "# Fail before deployment if the pinned Operations tree contains any Python syntax error.\\npython" not in deployment
     assert '# Fail before deployment if the pinned Operations tree contains any Python syntax error.\npython -m compileall -q "$RUNNER_TEMP/operations"' in deployment
-
 
 def test_polyglot_migration_review_uses_declared_operations_python_runtime():
     workflow = _workflow_texts()["polyglot-migration-review.yml"]
@@ -504,14 +453,12 @@ def test_polyglot_migration_review_uses_declared_operations_python_runtime():
     install_index = workflow.index("python -m pip install --disable-pip-version-check -e .")
     assert setup_index < install_index
 
-
 def test_production_release_publishes_immutable_runtime_identity():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'RELEASE_FOUNDATION_SHA' in deployment
     assert 'RELEASE_OPERATIONS_REF' in deployment
     assert '"RELEASE_FOUNDATION_SHA = \\"${GITHUB_SHA}\\""' in deployment
     assert '"RELEASE_OPERATIONS_REF = \\"${OPERATIONS_REF}\\""' in deployment
-
 
 def test_live_acceptance_is_gated_by_runtime_provenance():
     diagnostics = (ROOT / "backend" / "worker_diagnostics.py").read_text(encoding="utf-8")
@@ -523,12 +470,10 @@ def test_live_acceptance_is_gated_by_runtime_provenance():
     assert ".release.operations_ref == $operations" in coverage
     assert "Live runtime provenance does not match the immutable revisions under test." in coverage
 
-
 def test_legacy_worker_retirement_uses_force_for_reciprocal_bindings():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'for legacy_worker in "$legacy_private_worker" "$legacy_public_worker"; do' in deployment
     assert 'workers/scripts/$legacy_worker?force=true' in deployment
-
 def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
@@ -594,38 +539,32 @@ def test_stream_probe_uses_explicit_response_identity_argument():
     assert 'jq -e --arg expected_response_id "$expected_stream_response_id"' in deployment
     assert 'env.ACCEPTANCE_RUN_ID' not in deployment
 
-
 def test_live_probe_waits_for_successful_production_release_r2():
     text = (ROOT / '.github/workflows/public-worker-live-probe.yml').read_text(encoding='utf-8')
     assert 'workflows:' in text and '"Heroic AI production release"' in text
     assert 'types: [completed]' in text
     assert "github.event.workflow_run.conclusion == 'success'" in text
     assert "github.event.workflow_run.head_branch == 'main'" in text
-
 def test_nightly_research_preflight_waits_for_successful_production_release_r2():
     text = (ROOT / '.github/workflows/nightly-research-provider-preflight.yml').read_text(encoding='utf-8')
     assert 'workflow_dispatch:' in text
     assert 'target_sha:' in text
     assert 'production_release_run_id:' in text
     assert 'github.event.workflow_run' not in text
-
 def test_rust_url_differential_uses_current_foundation_revision_r3():
     text = (ROOT / '.github/workflows/hybrid-language-pilots.yml').read_text(encoding='utf-8')
     assert 'Determine current Foundation URL-reference revision' in text
     assert 'echo "ref=${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"' in text
     assert 'git cat-file -e "$FOUNDATION_COMMIT:backend/sources/http.py"' in text
-
 def test_typescript_endpoint_differential_materializes_public_core_r3():
     text = (ROOT / '.github/workflows/hybrid-language-pilots.yml').read_text(encoding='utf-8')
     assert 'Materialize pinned Foundation public core for Python reference' in text
     assert 'FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core' in text
     assert 'python scripts/sync_public_core.py' in text
-
 def test_live_probe_acceptance_does_not_depend_on_issue_comment_permissions():
     texts = _workflow_texts()
     assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["public-worker-live-probe.yml"]
     assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["live-chatbot-production-smoke.yml"]
-
 
 def test_exhaustive_audit_freezes_live_issue_snapshot_before_register_validation():
     workflow = (WORKFLOW_ROOT / "exhaustive-six-lane-audit.yml").read_text(encoding="utf-8")
@@ -635,13 +574,11 @@ def test_exhaustive_audit_freezes_live_issue_snapshot_before_register_validation
     assert "registered_not_in_snapshot" in workflow
     assert "snapshot_captured_at" in workflow
 
-
 def test_exhaustive_audit_does_not_infer_operations_branch_from_foundation_pr():
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "exhaustive-six-lane-audit.yml").read_text(encoding="utf-8")
     assert 'context.payload.pull_request?.head?.ref' not in workflow
     assert 'github.rest.repos.getBranch' not in workflow
     assert 'core.setOutput("ref", "main")' in workflow
-
 
 def test_nightly_research_uses_authenticated_worker_ai_adapter():
     workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
@@ -666,7 +603,6 @@ def test_nightly_research_uses_authenticated_worker_ai_adapter():
     assert 'RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in canary
     assert "Checkout Foundation research adapter" in canary
     assert "uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in canary
-
 def test_research_proxy_probe_preserves_non_2xx_response_diagnostics():
     workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
     canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
@@ -675,7 +611,6 @@ def test_research_proxy_probe_preserves_non_2xx_response_diagnostics():
         assert 'probe_response_file="$RUNNER_TEMP/research-worker-probe.json"' in text
         assert "probe_response=$(curl -fsS" not in text
         assert 'jq -c \'.\' "$probe_response_file" 2>/dev/null || true' in text
-
 def test_research_worker_proxy_keeps_auth_token_out_of_command_line_and_logs():
     proxy = (ROOT / "scripts" / "research_worker_proxy.py").read_text(encoding="utf-8")
     workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
@@ -691,13 +626,11 @@ def test_production_release_enforces_cloudflare_free_neuron_cap():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert '"workers_ai_neurons":10000' in deployment
     assert '"workers_ai_neurons":9000' not in deployment
-
 def test_production_release_accepts_current_family_sync_state_schema():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert '.repositories?' in deployment
     assert '.live_main?' in deployment
     assert 'false' in deployment
-
 def test_production_sync_guard_accepts_current_operations_family_state_shape():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'if (.repositories? != null) then' in deployment
@@ -705,14 +638,12 @@ def test_production_sync_guard_accepts_current_operations_family_state_shape():
     assert '(.live_main.foundation | type == "string" and length == 40)' in deployment
     assert '(.live_main.operations | type == "string" and length == 40)' in deployment
 
-
 def test_public_live_probe_fails_closed_on_dns_or_http_failure():
     workflow = _workflow_texts()["public-worker-live-probe.yml"]
     assert 'URL:' in workflow and 'ai-cio.pages.dev' in workflow
     assert 'raise SystemExit(0 if out["ok"] else 1)' in workflow
     assert 'if status != 200:' in workflow
     assert 'item.get("ready") is not True' in workflow
-
 
 def test_live_chatbot_smoke_requires_real_model_generation():
     workflow = _workflow_texts()["live-chatbot-production-smoke.yml"]
@@ -722,7 +653,6 @@ def test_live_chatbot_smoke_requires_real_model_generation():
     assert 'chat_response.get("provider") != "cloudflare_workers_ai"' in workflow
     assert 'not chat_response.get("text", "").strip()' in workflow
 
-
 def test_production_bootstrap_precedes_foundation_deploy_and_is_unconditional():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     start = deployment.index("# Rename-safe Cloudflare deployment sequence.")
@@ -731,7 +661,6 @@ def test_production_bootstrap_precedes_foundation_deploy_and_is_unconditional():
     assert bootstrap < public_deploy
     assert deployment.count('pywrangler deploy --config "$bootstrap_config"') == 1
     assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings' not in deployment
-
 def test_public_probe_records_dns_failure_without_parser_crash():
     workflow = _workflow_texts()["public-worker-live-probe.yml"]
     assert ': > "probe/$item.body"' in workflow
@@ -739,7 +668,6 @@ def test_public_probe_records_dns_failure_without_parser_crash():
     assert ': > "probe/$item.error"' in workflow
     assert 'curl -sS --max-time 20' in workflow
     assert '|| true)' in workflow
-
 
 def test_current_public_runtime_identity_is_heroic_javascript_edge():
     wrangler = WRANGLER.read_text(encoding="utf-8")
@@ -755,14 +683,11 @@ def test_current_public_runtime_identity_is_heroic_javascript_edge():
     assert 'BASE_URL=' in deployment and 'ai-cio.pages.dev' in deployment
     assert 'OPERATIONS_SERVICE_NAME="operations"' in deployment
     assert 'OPERATIONS_EDGE_SERVICE_NAME="operations-edge"' in deployment
-
 def test_public_pages_front_door_is_documented_without_exposing_backend_origin():
     docs = (ROOT / "docs" / "WORKER_IDENTITY_2026-09-25.md").read_text(encoding="utf-8")
     assert "ai-cio.pages.dev/" in docs
     assert "workers.dev" not in docs
     assert "heroic.heroic-ai.workers.dev/" not in docs
-
-
 
 def test_nightly_research_preflight_has_network_failure_classification():
     preflight = (WORKFLOW_ROOT / "nightly-research-provider-preflight.yml").read_text(encoding="utf-8")
@@ -774,18 +699,15 @@ def test_nightly_research_preflight_has_network_failure_classification():
     assert '"network_classification"' in preflight
     assert "dns_or_network_unreachable" in preflight
     assert "edge_http_403" in preflight
-
 def test_deep_scan_concurrency_is_pr_scoped():
     text = (ROOT / ".github/workflows/open-issue-polyglot-deep-scan.yml").read_text(encoding="utf-8")
     assert "github.event.pull_request.number || github.ref" in text
     assert "cancel-in-progress: true" in text
 
-
 def test_polyglot_migration_review_validates_registry_integrity():
     text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
     assert "Validate Operations migration registry" in text
     assert "tools/validate_polyglot_registry.py" in text
-
 
 def test_observation_contract_differential_gate():
     text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
@@ -794,13 +716,10 @@ def test_observation_contract_differential_gate():
     assert "npm run differential:compare" in text
     assert '"case_count": len(ts)' in text
 
-
-
 def test_polyglot_migration_review_runs_both_operations_validators():
     text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
     assert "tools/validate_migration_evidence.py" in text
     assert "tools/validate_polyglot_registry.py" in text
-
 
 def test_observation_contract_benchmark_gate():
     text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
@@ -808,11 +727,9 @@ def test_observation_contract_benchmark_gate():
     assert "BENCHMARK_ITERATIONS=200 npm run benchmark" in text
     assert "observation-contract-benchmark" in text
 
-
 def test_polyglot_migration_review_creates_runtime_output_dir():
     text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
     assert 'mkdir -p "$GITHUB_WORKSPACE/.runtime"' in text
-
 
 def test_live_ai_agent_benchmark_is_bounded_and_non_authoritative():
     workflow = _workflow_texts()["live-ai-agent-benchmark.yml"]
@@ -826,7 +743,6 @@ def test_live_ai_agent_benchmark_is_bounded_and_non_authoritative():
     assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in workflow
     assert "expected_observations == 720" in workflow
 
-
 def test_polyglot_migration_review_runs_typescript_acquisition_planner_evidence():
     text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
     assert "Run TypeScript acquisition planner differential" in text
@@ -835,7 +751,6 @@ def test_polyglot_migration_review_runs_typescript_acquisition_planner_evidence(
     assert "BENCHMARK_ITERATIONS=200 npm run benchmark" in text
     assert 'differential["case_count"] == 32' in text
     assert 'benchmark["iterations"] == 200' in text
-
 
 def test_typescript_public_endpoint_discovery_is_executed_in_polyglot_review():
     workflow = (WORKFLOW_ROOT / "polyglot-migration-review.yml").read_text(encoding="utf-8")
@@ -846,14 +761,11 @@ def test_typescript_public_endpoint_discovery_is_executed_in_polyglot_review():
     assert 'benchmark["repeats"] == 3' in workflow
 
 
-
-
 def test_live_nightly_canary_runs_after_nightly_crossfire_not_release():
     canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
     assert 'workflows: ["nightly multi-agent research"]' in canary
     assert 'workflows: ["Heroic AI production release"]' not in canary
     assert "--global-capacity 8" in canary
-
 def test_live_chatbot_smoke_is_release_dispatched():
     text = (ROOT / '.github/workflows/live-chatbot-production-smoke.yml').read_text(encoding='utf-8')
     assert 'workflow_dispatch:' in text
@@ -861,7 +773,6 @@ def test_live_chatbot_smoke_is_release_dispatched():
     assert 'production_release_run_id:' in text
     assert 'github.event.workflow_run' not in text
     assert 'TARGET_FOUNDATION_SHA: ${{ inputs.target_sha || github.sha }}' in text
-
 
 def test_live_chatbot_smoke_keeps_infrastructure_diagnostic_non_blocking():
     workflow = (ROOT / ".github/workflows/live-chatbot-production-smoke.yml").read_text(encoding="utf-8")
