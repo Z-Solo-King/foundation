@@ -486,6 +486,53 @@ jobs:
             --operations "$GITHUB_WORKSPACE/operations" \
             --matrix "$GITHUB_WORKSPACE/benchmark/polyglot/migration_matrix_40.json" \
             --output .runtime/nightly-migration-review.json
+      - name: Publish explicit #597/#603 runtime-evidence requirements
+        shell: python
+        env:
+          NIGHTLY_RUN_ID: ${{ github.run_id }}
+          FOUNDATION_REVISION: ${{ env.TARGET_FOUNDATION_SHA }}
+          MIGRATION_REVISION: ${{ env.OPERATIONS_MIGRATION_TOOLS_REF }}
+        run: |
+          import json
+          import os
+          from pathlib import Path
+          payload = {
+              "schema": "migration-runtime-evidence-requirements/v1",
+              "run_id": os.environ["NIGHTLY_RUN_ID"],
+              "foundation_revision": os.environ["FOUNDATION_REVISION"],
+              "operations_revision": os.environ["MIGRATION_REVISION"],
+              "issue_597": {
+                  "status": "pending_external_runtime",
+                  "receipt_contract": "mapper-migration-runtime-receipt/v1",
+                  "cases": 32,
+                  "repeats_min": 3,
+                  "cold_start": True,
+                  "raw_samples": True,
+                  "parity": ["functional", "error_taxonomy", "security", "policy", "provenance", "cancellation", "timeout"],
+                  "performance_resource_measurements": True,
+                  "shadow": True,
+                  "canary": True,
+                  "rollback": True,
+              },
+              "issue_603": {
+                  "status": "pending_external_runtime",
+                  "receipt_contract": "model-portability-runtime-receipt/v1",
+                  "cases": 32,
+                  "repeats_min": 3,
+                  "parity": ["functional", "security", "policy", "provenance", "cancellation"],
+                  "serialization_conversion_measurement": True,
+                  "no_model_specific_hidden_assumptions": True,
+                  "one_canonical_authority": True,
+                  "shadow": True,
+                  "canary": True,
+                  "rollback": True,
+              },
+              "closure_rule": "Deterministic repository CI is supporting evidence only; it cannot substitute for required private/local runtime receipts.",
+          }
+          Path(".runtime/migration-runtime-evidence-requirements.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
       - name: Validate migration review receipt
         shell: python
         run: |
@@ -508,6 +555,15 @@ jobs:
           assert all(row["runtime_performance_valid"] is False for row in receipt["capacity_sweep"]["results"])
           assert len(receipt["language_review"]) == 40
           assert receipt["polyglot_audit"]["language_scoreboard"]
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-migration-runtime-evidence-requirements
+          path: .runtime/migration-runtime-evidence-requirements.json
+          if-no-files-found: error
+          retention-days: 30
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: .runtime/migration-runtime-evidence-requirements.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: nightly-migration-review
