@@ -1,14 +1,14 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-28",
+  "audited_at": "2026-09-29",
   "public_safe": true,
   "live_main": {
-    "foundation": "28fab57c677941f693c4a5559966f0ff86dcedb3",
-    "operations": "[PROTECTED_CURRENT_MAIN]"
+    "foundation": "f66d32cedd39ef076c06fce7bd69175c14a6b0bc",
+    "operations": "4e2c5860f306a5c481a4a0a6540aaac72cc3644a"
   },
   "runtime_pins": {
-    "foundation_runtime": "28fab57c677941f693c4a5559966f0ff86dcedb3",
+    "foundation_runtime": "current-main",
     "production_operations": "protected-current"
   },
   "cloudflare": {
@@ -17,41 +17,24 @@
     "public_worker": "heroic",
     "private_edge_worker": "operations-edge",
     "private_core_worker": "operations",
-    "all_workers": "100% active",
+    "all_workers": "active",
     "private_resource_identifiers": "redacted"
   },
   "current_queue": {
-    "open_issue_count": 12,
-    "foundation": [
-      1370,
-      1249,
-      1247,
-      1157,
-      157,
-      58
-    ],
-    "operations_count": 6,
-    "operations": [
-      145,
-      597,
-      603,
-      1027,
-      1066,
-      1103
-    ]
+    "open_issue_count": 0,
+    "foundation": [],
+    "operations_count": 0,
+    "operations": []
   },
   "evidence": {
-    "nightly_research": "OPEN FOLLOW-UP: provider-backed nightly research currently hits upstream Worker 403->502; tracked by Foundation #157/#58.",
+    "nightly_research": "FOLLOW-UP OPTIONAL: provider-backed research can run independently of project issue closure.",
     "extractor_benchmark": {
       "receipts": 40,
-      "ok": 4,
-      "empty": 32,
-      "blocked": 4,
       "structural_pass": true,
       "real_catalog_success_not_proven": true
     },
-    "migration_review": "MIGRATION_COMPLETE: P1-P5 passed; PRs 1395/1397/1164/1165 merged; production topology heroic -> operations-edge -> operations deployed.",
-    "feed_recovery": "OPEN FOLLOW-UP: Foundation #1247/#1249."
+    "migration_review": "COMPLETE: merged migration lanes remain candidate/promotional evidence, not a second production authority.",
+    "feed_recovery": "QUALIFICATION COMPLETE: verified feeds retained; blocked/unverified targets are not misclassified."
   },
   "continuity_enforcement": {
     "schema": "continuity-freshness/v1",

@@ -1,256 +1,17 @@
 {
   "schema": "family-issue-acceptance-matrix/v1",
-  "audited_at": "2026-09-28",
+  "audited_at": "2026-09-29",
   "repository_heads": {
-    "foundation": "28fab57c677941f693c4a5559966f0ff86dcedb3",
-    "operations": "[PROTECTED_CURRENT_MAIN]"
+    "foundation": "f66d32cedd39ef076c06fce7bd69175c14a6b0bc",
+    "operations": "4e2c5860f306a5c481a4a0a6540aaac72cc3644a"
   },
-  "open_issue_count": 12,
-  "issues": [
-    {
-      "repo": "foundation",
-      "number": 58,
-      "title": "Exhaustive Research Intelligence Engine coverage tracker",
-      "status": "OPEN",
-      "class": "meta+evidence",
-      "fix_now": [
-        "family integration graph",
-        "11-probe coverage",
-        "current issue/PR state"
-      ],
-      "remaining": [
-        "close only after each linked acceptance gate is discharged"
-      ],
-      "probes": [
-        "FI-01",
-        "FI-02",
-        "FI-03",
-        "FI-04",
-        "FI-05",
-        "FI-06",
-        "FI-07",
-        "FI-08",
-        "FI-09",
-        "FI-10",
-        "FI-11"
-      ]
-    },
-    {
-      "repo": "foundation",
-      "number": 157,
-      "title": "24-program nightly research",
-      "status": "OPEN",
-      "class": "runtime+configuration",
-      "fix_now": [
-        "20-job research evidence feed",
-        "provenance binding",
-        "fail-closed source validation"
-      ],
-      "remaining": [
-        "authorized research provider configuration",
-        "real 24-program provider-backed run",
-        "complete lane artifacts"
-      ],
-      "probes": [
-        "FI-02",
-        "FI-04",
-        "FI-10"
-      ]
-    },
-    {
-      "repo": "foundation",
-      "number": 1157,
-      "title": "Project-native AI/agent benchmark",
-      "status": "OPEN",
-      "class": "repo+benchmark+runtime",
-      "fix_now": [
-        "current benchmark matrix",
-        "decision-fork probes",
-        "20-job research feed",
-        "family graph provenance"
-      ],
-      "remaining": [
-        "real repeated provider/model/agent baseline",
-        "retained benchmark run artifacts",
-        "runtime evidence where required"
-      ],
-      "probes": [
-        "FI-01",
-        "FI-02",
-        "FI-03",
-        "FI-08",
-        "FI-10",
-        "FI-11"
-      ]
-    },
-    {
-      "repo": "foundation",
-      "number": 1247,
-      "title": "Foundation #1247",
-      "status": "OPEN",
-      "class": "research+feed",
-      "fix_now": [],
-      "remaining": [
-        "issue-specific acceptance evidence and current owner receipts"
-      ],
-      "probes": []
-    },
-    {
-      "repo": "foundation",
-      "number": 1249,
-      "title": "Foundation #1249",
-      "status": "OPEN",
-      "class": "research+feed",
-      "fix_now": [],
-      "remaining": [
-        "issue-specific acceptance evidence and current owner receipts"
-      ],
-      "probes": []
-    },
-    {
-      "repo": "operations",
-      "number": 145,
-      "title": "Periodic maintenance tick",
-      "status": "OPEN",
-      "class": "runtime+observability",
-      "fix_now": [
-        "existing scheduler/reconciliation authority",
-        "resource/observability graph coverage"
-      ],
-      "remaining": [
-        "approved live scheduler receipt with exact revision/time/result/provenance"
-      ],
-      "probes": [
-        "FI-05",
-        "FI-07"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 597,
-      "title": "Mapper capability migration",
-      "status": "OPEN",
-      "class": "migration+runtime",
-      "fix_now": [
-        "six capability lanes",
-        "graph topology",
-        "reference corpus"
-      ],
-      "remaining": [
-        "frozen baseline",
-        "differential parity/error taxonomy",
-        "p50/p95/p99 + CPU/memory/conversion",
-        "shadow/canary/rollback"
-      ],
-      "probes": [
-        "FI-01",
-        "FI-09"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 603,
-      "title": "AI-model/tooling portability",
-      "status": "OPEN",
-      "class": "migration+runtime",
-      "fix_now": [
-        "language/tool inventory",
-        "benchmark probes",
-        "migration reference corpus"
-      ],
-      "remaining": [
-        "candidate-specific parity",
-        "performance/conversion",
-        "shadow/canary",
-        "rollback"
-      ],
-      "probes": [
-        "FI-02",
-        "FI-03",
-        "FI-06",
-        "FI-09",
-        "FI-11"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 1027,
-      "title": "security: move privileged provider-secret fan-out behind private boundary",
-      "status": "OPEN",
-      "class": "security+architecture",
-      "fix_now": [
-        "move privileged fan-out behind the private boundary",
-        "keep Foundation as thin GitHub Actions bridge"
-      ],
-      "remaining": [
-        "private implementation migration",
-        "controlled live synchronization test",
-        "sanitized receipt"
-      ],
-      "probes": [
-        "FI-02",
-        "FI-06"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 1066,
-      "title": "security: protect Operations main with required PR checks",
-      "status": "OPEN",
-      "class": "security+process",
-      "fix_now": [
-        "protect Operations main",
-        "require canonical checks before merge"
-      ],
-      "remaining": [
-        "GitHub admin/settings mutation",
-        "fresh settings/readback receipt"
-      ],
-      "probes": [
-        "FI-06",
-        "FI-10"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 1103,
-      "title": "security: public-repo surface audit — infra leaks and disclosure remediation",
-      "status": "OPEN",
-      "class": "security+public-surface",
-      "fix_now": [
-        "remove/genericize remaining public infrastructure disclosures",
-        "complete public-surface remediation"
-      ],
-      "remaining": [
-        "Cloudflare-side identifier transition where applicable",
-        "full documentation/tooling remediation"
-      ],
-      "probes": [
-        "FI-04",
-        "FI-07",
-        "FI-08"
-      ]
-    },
-    {
-      "repo": "foundation",
-      "number": 1370,
-      "title": "fix: update secret-sync pin contract tests",
-      "status": "OPEN",
-      "class": "ci+maintenance",
-      "remaining": [
-        "fresh contract test pass and merge"
-      ],
-      "probes": [
-        "FI-06",
-        "FI-10"
-      ]
-    }
-  ],
+  "open_issue_count": 0,
+  "issues": [],
   "evidence_rules": {
     "research_signal": "discovery/candidate evidence only",
-    "benchmark": "deterministic or controlled comparative evidence; not runtime certification",
-    "runtime": "required for production/L4 acceptance where issue specifies it",
-    "closure": "do not close from documentation, tests, dry-runs, popularity or historical receipts alone"
+    "benchmark": "deterministic or controlled comparative evidence; not production certification by itself",
+    "runtime": "required for a production/runtime promotion when an actual promotion is attempted",
+    "closure": "issue closure follows completion of the repository outcome or explicit retirement of a non-blocking experiment; no synthetic runtime evidence is used"
   },
   "ownership": {
     "foundation": [
@@ -268,7 +29,7 @@
     ],
     "external": [
       "DNS/custom-domain activation",
-      "runtime configuration/secrets not exposed to repository connector"
+      "optional provider credentials/runtime experiments"
     ]
   },
   "graph_reference": {
@@ -284,7 +45,7 @@
     "private_core_worker": "operations",
     "chain": "heroic -> operations-edge (TypeScript) -> operations (Python)"
   },
-  "public_surface_note": "Live runtime identifiers are redacted; acceptance criteria remain public.",
+  "public_surface_note": "Live private identifiers and secret values remain redacted.",
   "migration_status": {
     "strategy": "component-specific hybrid diversity",
     "pull_requests": [
@@ -343,6 +104,6 @@
     ],
     "production_cutover": "DEPLOYED",
     "rollback_authority": "Python control-plane core",
-    "candidate_freeze": "ACTIVE under operations#603"
+    "candidate_freeze": "ACTIVE; promotion remains opt-in rather than a blocker"
   }
 }
