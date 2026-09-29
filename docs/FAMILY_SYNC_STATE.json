@@ -1,11 +1,11 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-29T22:00:00+05:30",
+  "audited_at": "2026-09-29T18:32:09+05:30",
   "public_safe": true,
   "live_main": {
-    "foundation": "ed833710199696717c2326bc73e0b2de4a9a1568",
-    "operations": "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676"
+    "foundation": "c4069bb7b1af12268a63ef5e2b384dcaa95f941a",
+    "operations": "1a91efa53b9202f1624ddde892b0e86bd6b360f0"
   },
   "runtime_pins": {
     "foundation_runtime": null,
@@ -33,20 +33,19 @@
   },
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
-    "observed_at": "2026-09-29T20:55:00+05:30",
-    "open_issue_count": 8,
+    "observed_at": "2026-09-29T18:32:09+05:30",
+    "open_issue_count": 7,
     "foundation": [
       58,
       157,
       1247,
       1249
     ],
-    "operations_count": 4,
+    "operations_count": 3,
     "operations_issue_numbers_omitted": false,
     "authority": "GitHub live issue API; descriptive snapshot only; never a production certificate",
     "operations": [
       1027,
-      1137,
       597,
       603
     ]
@@ -62,7 +61,7 @@
     "feed_recovery": "QUALIFICATION COMPLETE: verified feeds retained; blocked/unverified targets are not misclassified.",
     "d1_schema": "verified_live_2026-09-29",
     "production_signing_root": "provisioned_live_2026-09-29",
-    "production_runtime": "fresh release certification in progress after merged diagnostic signer/query/replay fixes",
+    "production_runtime": "fresh production release certification in progress for Foundation c4069bb7; provider-provenance repair merged and awaiting post-release smoke/nightly receipts",
     "post_release_dispatch": "live nightly research uses typed GitHub workflow inputs; production smoke and research preflight preserve purpose-scoped Operations pins",
     "post_release_provider_proof": "Foundation PR #1559 adds authenticated provider provenance and provider-runtime diagnostic contract fixes; pending fresh production certification."
   },
@@ -86,9 +85,9 @@
     "date": "2026-09-29",
     "foundation_pr": 1549,
     "component": "production workflow nightly dispatch",
-    "status": "validation_pending",
+    "status": "merged_validation_in_progress",
     "feed_scope": "excluded",
     "pull_request": 1559,
-    "head_sha": "3371f96c2cf8a8dcbe9c94f4d3307838d8263783"
+    "head_sha": "c4069bb7b1af12268a63ef5e2b384dcaa95f941a"
   }
 }
