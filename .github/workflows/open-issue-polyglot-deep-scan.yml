@@ -185,7 +185,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: open-issue-deep-scan-${{ matrix.lane }}-summary-${{ github.run_id }}-attempt-${{ github.run_attempt }}
-          path: operations/.runtime/open-issue-deep-scan/*-summary.json
+          path: operations/.runtime/open-issue-deep-scan/*.json
           if-no-files-found: warn
           retention-days: 7
   # Aggregate the frozen four-lane receipts from this run; issue scope is validated before execution.
@@ -233,7 +233,7 @@ jobs:
           from pathlib import Path
 
           root = Path(".runtime/open-issue-deep-scan")
-          receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L?-summary.json"))]
+          receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L?.json"))]
           assert len(receipts) == 4
           assert {r["lane"] for r in receipts} == {"L1", "L2", "L3", "L4"}
 
