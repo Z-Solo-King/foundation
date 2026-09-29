@@ -14,7 +14,7 @@ def test_chat_proxy_forwards_auth_and_idempotency():
     import worker
     class Response:
         status = 200
-        async def json(self): return {"ok": True, "response": {"text": "hello"}}
+        async def json(self): return {"ok": True, "response": {"text": "hello", "provider": "cloudflare_workers_ai"}}
     class Binding:
         def __init__(self): self.calls = []
         async def fetch(self, request): self.calls.append(request); return Response()
@@ -23,6 +23,7 @@ def test_chat_proxy_forwards_auth_and_idempotency():
     payload, status = asyncio.run(worker._operations_chat(SimpleNamespace(OPERATIONS=binding), {"message": "hello"}, Request()))
     assert status == 200
     assert payload["ok"] is True
+    assert payload["response"]["provider"] == "cloudflare_workers_ai"
     request = binding.calls[0]
     assert request.url == "https://chat/v1/chat"
     assert request.method == "POST"
