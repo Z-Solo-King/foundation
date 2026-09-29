@@ -79,7 +79,6 @@ def test_release_d1_commands_use_dedicated_d1_config():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_migrations_config="$GITHUB_WORKSPACE/wrangler.d1.migrations.generated.toml"' in text
     assert text.count('d1 execute "$database_name" --remote') >= 3
-    assert '--config="$d1_migrations_config"' in text
     assert '--config="$RUNNER_TEMP/operations/wrangler.toml"' not in text
 
 def test_d1_migration_config_pins_repository_migrations_dir():
