@@ -93,9 +93,9 @@ def test_production_release_does_not_publish_private_state_or_b2_literals():
     assert '  cat diagnostic.json' not in deployment
     assert 'B2_BUCKET = "SoloKing"' not in deployment
     assert 'B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"' not in deployment
-    assert 'workers/scripts/heroic/settings' in deployment
+    assert 'workers/scripts/${PYTHON_CORE_WORKER_NAME}/settings' in deployment
     assert 'B2_BUCKET' in deployment and 'B2_ENDPOINT' in deployment
-    assert 'Resolving B2 release configuration from canonical heroic Worker' in deployment
+    assert 'Resolving B2 release configuration from canonical ${PYTHON_CORE_WORKER_NAME} Worker' in deployment
 
 
 def test_production_pin_self_check_matches_canonical_operations_revision():
@@ -112,7 +112,8 @@ def test_production_generates_private_operations_service_binding():
     assert "'[[services]]'" in deployment
     assert "'binding = \"OPERATIONS\"'" in deployment
     assert '"service = \\\"${OPERATIONS_EDGE_SERVICE_NAME}\\\""' in deployment
-    assert 'grep -q "^service = \\\"${OPERATIONS_EDGE_SERVICE_NAME}\\\"$" wrangler.production.generated.toml' in deployment
+    assert 'grep -q "^service = \\\"${OPERATIONS_EDGE_SERVICE_NAME}\\\"$" wrangler.python-core.generated.toml' in deployment
+    assert 'grep -q "^service = \\\"${PYTHON_CORE_WORKER_NAME}\\\"$" wrangler.production.generated.toml' in deployment
 
 
 def test_operations_installation_is_discovered_from_app_jwt():
@@ -195,6 +196,7 @@ def test_public_worker_uses_native_javascript_edge_and_python_core():
     assert 'main = "edge.js"' in wrangler
     assert 'service = "heroic-core"' in wrangler
     assert "python_workers" not in wrangler
+    core = (ROOT / "wrangler.python-core.toml").read_text(encoding="utf-8")
     assert 'main = "worker.py"' in core
     assert "python_workers" in core
     assert "wrangler.python-core.generated.toml" in deployment
