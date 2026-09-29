@@ -9,7 +9,7 @@ on:
       operations_ref:
         description: Exact Operations revision containing the WooCommerce extractor
         required: false
-        default: 9a0fd617cb5292ee1603f81054f1559a9bdebac2
+        default: cb141f00519841a7db692a4e9dd864a2ddd8525d
         type: string
 
 permissions:
@@ -32,7 +32,7 @@ jobs:
         shard: [0,1,2,3,4,5,6,7]
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || '9a0fd617cb5292ee1603f81054f1559a9bdebac2' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || 'cb141f00519841a7db692a4e9dd864a2ddd8525d' }}
       SHARD: ${{ matrix.shard }}
       PYTHONUNBUFFERED: "1"
     steps:
@@ -117,7 +117,7 @@ jobs:
               print(f"=== v3: {site} ===", flush=True)
               subprocess.run(
                   [
-                      "python", "scripts/woocommerce_browser_probe_v3.py",
+                      "python", "scripts/woocommerce_cross_browser_probe.py",
                       "--site", site,
                       "--output", str(output),
                   ],
