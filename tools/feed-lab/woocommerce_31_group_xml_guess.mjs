@@ -230,7 +230,9 @@ function candidatesFor(site, group){
       add("/?woo_feed="+name+"&wt=xml",90,"generic-ctx-query");
   }
   // Use only URL naming guesses. Never mine HTML, JS, XML, directories, or search indexes for feed URLs.
-  return [...map.values()].sort((a,b)=>b.rank-a.rank || a.url.localeCompare(b.url)).slice(0,900);
+  const all=[...map.values()].sort((a,b)=>b.rank-a.rank || a.url.localeCompare(b.url));
+  const limit=group==="unknown_woocommerce" ? 450 : 240;
+  return all.slice(0,limit);
 }
 
 async function pool(items,n,fn){
@@ -259,11 +261,36 @@ async function main(){
     if(group==="google_for_woocommerce"){
       return {site:site.site,group,candidate_count:cands.length,candidate_hits:[],blocked_or_limited:0,status:"API_SYNC_LIKELY_NO_TRADITIONAL_XML_FEED"};
     }
-    const checks=await pool(cands,12,async c=>{
-      const r=await publicGet(c.url,3500,3);
+    const fastCandidates=cands.slice(0,140);
+    const fast=await pool(fastCandidates,12,async c=>{
+      const r=await publicGet(c.url,2500,2);
       const v=strictValidate(r.body);
       return {rank:c.rank,url:c.url,source:c.source,status:r.status,final_url:r.finalUrl,transport:r.transport,challenge:r.challenge,validation:v};
     });
+    const fastHits=fast.filter(x=>x.validation.valid);
+    let checks=[...fast];
+    if(!fastHits.length){
+      const rescue=fast.filter(x=>x.transport==="timeout" || x.status===429 || x.status===503 || x.status===504)
+        .sort((a,b)=>b.rank-a.rank)
+        .slice(0,24);
+      const rescueUrls=new Set(rescue.map(x=>x.url));
+      const slow=await pool([...rescueUrls],6,async url=>{
+        const r=await publicGet(url,12000,2);
+        const v=strictValidate(r.body);
+        const source=fast.find(x=>x.url===url)?.source || "slow-transport-rescue";
+        return {rank:fast.find(x=>x.url===url)?.rank||0,url,source,status:r.status,final_url:r.finalUrl,transport:r.transport,challenge:r.challenge,validation:v};
+      });
+      checks=checks.concat(slow);
+    }
+    const remaining=cands.slice(140);
+    if(!checks.some(x=>x.validation.valid) && remaining.length){
+      const second=await pool(remaining,12,async c=>{
+        const r=await publicGet(c.url,2500,1);
+        const v=strictValidate(r.body);
+        return {rank:c.rank,url:c.url,source:c.source,status:r.status,final_url:r.finalUrl,transport:r.transport,challenge:r.challenge,validation:v};
+      });
+      checks=checks.concat(second);
+    }
     const hits=checks.filter(x=>x.validation.valid && x.final_url && sameOrigin(x.final_url,site.configured_root));
     const limited=checks.filter(x=>x.transport==="timeout"||x.status===429||x.status===403||x.challenge);
     return {
