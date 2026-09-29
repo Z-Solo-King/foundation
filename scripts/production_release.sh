@@ -14,6 +14,8 @@ PY
 )"
 OPERATIONS_SERVICE_NAME="operations"
 OPERATIONS_EDGE_SERVICE_NAME="operations-edge"
+PUBLIC_WORKER_NAME="heroic"
+PYTHON_CORE_WORKER_NAME="heroic-core"
 BASE_URL="https://ai-cio.pages.dev"
 ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"
 
@@ -21,7 +23,7 @@ cleanup() {
   rm -rf "$RUNNER_TEMP/operations" "$RUNNER_TEMP/operations-secrets.env" "$RUNNER_TEMP/public-secrets.env" \
     "$RUNNER_TEMP/git-askpass-operations.sh" "$RUNNER_TEMP/operations-app.pem" \
     "$RUNNER_TEMP/github-app-jwt.txt" "$RUNNER_TEMP/github-app-installation.json" \
-    "$RUNNER_TEMP/github-app-installation-meta.json" wrangler.production.generated.toml health.json readiness.json frontend.html \
+    "$RUNNER_TEMP/github-app-installation-meta.json" wrangler.production.generated.toml wrangler.python-core.generated.toml health.json readiness.json frontend.html \
     /tmp/styles.css /tmp/app.js /tmp/composer.js /tmp/lifecycle_controller.js
 }
 trap cleanup EXIT
@@ -46,6 +48,7 @@ coverage run --branch --source=backend,foundation_core,worker --omit='tests/*' -
 coverage report --show-missing --fail-under=100 --omit='tests/*'
 python -m benchmark.chatbot_query_benchmark --input benchmark/chatbot-query-corpus.json --output .runtime/chatbot-query-benchmark.json
 python -m pytest -q tests/test_workflow_policy.py
+node tests/public_edge_js_test.mjs
 python scripts/public_security_lint.py --strict
 
 test ! -e backend/learning/promotion.py
@@ -53,7 +56,7 @@ test ! -e backend/learning/promotion.py
 # Scan production source for private implementation markers and concrete private
 # service topology instead of the generic binding identifier.
 ! grep -RniE 'extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE' foundation_core backend wrangler.toml migrations
-! grep -nE 'extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE' worker.py
+! grep -nE 'extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE' worker.py edge.js
 ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' foundation_core backend worker.py wrangler.toml migrations tests
 
 token_verify_status=$(curl -sS -o "$RUNNER_TEMP/cloudflare-token-verify.json" -w '%{http_code}' \
@@ -157,22 +160,22 @@ echo "private Operations access: PASS"
 # Resolve runtime B2 configuration from the canonical heroic Worker when the GitHub
 # environment does not provide the non-secret bucket/endpoint values.
 if [ -z "${B2_BUCKET:-}" ] || [ -z "${B2_ENDPOINT:-}" ]; then
-  echo "Resolving B2 release configuration from canonical heroic Worker"
+  echo "Resolving B2 release configuration from canonical ${PYTHON_CORE_WORKER_NAME} Worker"
   heroic_settings_status=$(curl -sS -o "$RUNNER_TEMP/heroic-settings.json" -w '%{http_code}' \
     -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
-    "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/heroic/settings" || true)
+    "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/${PYTHON_CORE_WORKER_NAME}/settings" || true)
   test "$heroic_settings_status" = '200' || {
-    echo "Canonical heroic Worker settings lookup failed: HTTP $heroic_settings_status"
+    echo "Canonical ${PYTHON_CORE_WORKER_NAME} Worker settings lookup failed: HTTP $heroic_settings_status"
     cat "$RUNNER_TEMP/heroic-settings.json" 2>/dev/null || true
     exit 1
   }
   resolved_b2_bucket=$(jq -r '.result.bindings[]? | select(.name == "B2_BUCKET" and .type == "plain_text") | .text' "$RUNNER_TEMP/heroic-settings.json" | head -n1)
   resolved_b2_endpoint=$(jq -r '.result.bindings[]? | select(.name == "B2_ENDPOINT" and .type == "plain_text") | .text' "$RUNNER_TEMP/heroic-settings.json" | head -n1)
-  test -n "$resolved_b2_bucket" || { echo 'Canonical heroic Worker has no B2_BUCKET'; exit 1; }
-  test -n "$resolved_b2_endpoint" || { echo 'Canonical heroic Worker has no B2_ENDPOINT'; exit 1; }
+  test -n "$resolved_b2_bucket" || { echo 'Canonical ${PYTHON_CORE_WORKER_NAME} Worker has no B2_BUCKET'; exit 1; }
+  test -n "$resolved_b2_endpoint" || { echo 'Canonical ${PYTHON_CORE_WORKER_NAME} Worker has no B2_ENDPOINT'; exit 1; }
   case "$resolved_b2_endpoint" in
     https://*) ;;
-    *) echo 'Canonical heroic Worker B2_ENDPOINT is not HTTPS'; exit 1 ;;
+    *) echo 'Canonical ${PYTHON_CORE_WORKER_NAME} Worker B2_ENDPOINT is not HTTPS'; exit 1 ;;
   esac
   B2_BUCKET="$resolved_b2_bucket"
   B2_ENDPOINT="$resolved_b2_endpoint"
@@ -180,7 +183,7 @@ if [ -z "${B2_BUCKET:-}" ] || [ -z "${B2_ENDPOINT:-}" ]; then
   echo "B2 release configuration: PASS"
 fi
 
-# Canonical runtime boundary checks. The public application is Pages -> heroic -> operations;
+# Canonical runtime boundary checks. The public application is Pages -> heroic (JavaScript edge) -> heroic-core (Python) -> operations-edge (JavaScript) -> operations;
 # no legacy foundation Worker, custom Worker domain, or workers.dev public backend should exist.
 heroic_subdomain_status=$(curl -sS -o "$RUNNER_TEMP/heroic-subdomain.json" -w '%{http_code}' \
   -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
@@ -304,7 +307,7 @@ test -f "$RUNNER_TEMP/operations/foundation_core/__init__.py"
 
 
 printf '%s\n' \
-  'name = "heroic"' \
+  'name = "heroic-core"' \
   'main = "worker.py"' \
   'compatibility_date = "2026-09-09"' \
   'compatibility_flags = ["python_workers", "enable_request_signal", "request_signal_passthrough"]' \
@@ -334,14 +337,32 @@ printf '%s\n' \
   "RELEASE_FOUNDATION_SHA = \"${GITHUB_SHA}\"" \
   "RELEASE_OPERATIONS_REF = \"${OPERATIONS_REF}\"" \
   "B2_BUCKET = \"${B2_BUCKET}\"" \
-  "B2_ENDPOINT = \"${B2_ENDPOINT}\"" \
+  "B2_ENDPOINT = \"${B2_ENDPOINT}\""
+  > wrangler.python-core.generated.toml
+
+grep -q '^name = "heroic-core"$' wrangler.python-core.generated.toml
+grep -q '^main = "worker.py"$' wrangler.python-core.generated.toml
+grep -q '^directory = "./frontend"$' wrangler.python-core.generated.toml
+grep -q '^binding = "ASSETS"$' wrangler.python-core.generated.toml
+grep -q "^service = \"${OPERATIONS_EDGE_SERVICE_NAME}\"$" wrangler.python-core.generated.toml
+
+printf '%s\n' \
+  'name = "heroic"' \
+  'main = "edge.js"' \
+  'compatibility_date = "2026-09-28"' \
+  'workers_dev = false' \
+  'preview_urls = false' \
+  '' \
+  '[[services]]' \
+  'binding = "CORE"' \
+  "service = \"${PYTHON_CORE_WORKER_NAME}\""
   > wrangler.production.generated.toml
 
-grep -q "^database_name = \"${database_name}\"$" wrangler.production.generated.toml
-grep -q '^directory = "./frontend"$' wrangler.production.generated.toml
-grep -q '^binding = "ASSETS"$' wrangler.production.generated.toml
-grep -q "^service = \"${OPERATIONS_EDGE_SERVICE_NAME}\"$" wrangler.production.generated.toml
-
+grep -q '^name = "heroic"$' wrangler.production.generated.toml
+grep -q '^main = "edge.js"$' wrangler.production.generated.toml
+grep -q '^binding = "CORE"$' wrangler.production.generated.toml
+grep -q "^service = \"${PYTHON_CORE_WORKER_NAME}\"$" wrangler.production.generated.toml
+! grep -q 'python_workers' wrangler.production.generated.toml
 public_secret_file="$RUNNER_TEMP/public-secrets.env"
 printf 'AUTH_TOKEN=%s\nB2_KEY_ID=%s\nB2_APPLICATION_KEY=%s\n' "$AUTH_TOKEN" "$B2_KEY_ID" "$B2_APPLICATION_KEY" > "$public_secret_file"
 chmod 600 "$public_secret_file"
@@ -398,7 +419,7 @@ PY
 (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config" --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:bootstrap-${ACCEPTANCE_RUN_ID}")
 echo "Operations binding-free bootstrap deployment: PASS"
 
-# Deploy the migrated TypeScript edge Worker before Foundation so the public OPERATIONS binding
+# Deploy the migrated JavaScript edge Worker before Foundation so the public OPERATIONS binding
 # targets the new edge transport boundary. The edge Worker calls the Python core privately.
 (cd "$RUNNER_TEMP/operations/polyglot/edge-worker" && npx --yes wrangler@4.131.1 deploy --config wrangler.toml --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:edge-${ACCEPTANCE_RUN_ID}")
 edge_deployments_status=$(curl -sS -o "$RUNNER_TEMP/edge-worker-deployments.json" -w '%{http_code}' \
@@ -414,8 +435,9 @@ echo "Operations edge Worker deployment: PASS (${OPERATIONS_EDGE_SERVICE_NAME})"
 
 
 
-npx --yes wrangler@4.131.1 d1 migrations apply "$database_name" --remote --config wrangler.production.generated.toml
-pywrangler deploy --config wrangler.production.generated.toml --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}"
+npx --yes wrangler@4.131.1 d1 migrations apply "$database_name" --remote --config wrangler.python-core.generated.toml
+pywrangler deploy --config wrangler.python-core.generated.toml --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}:python-core"
+(cd "$GITHUB_WORKSPACE" && npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}:javascript-edge")
 
 health_status=$(curl -sS -o health.json -w '%{http_code}' "$BASE_URL/health")
 echo "GET /health -> HTTP ${health_status}"

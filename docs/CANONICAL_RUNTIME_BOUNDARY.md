@@ -5,9 +5,10 @@
 ```
 User
   -> Cloudflare Pages: ai
-  -> Service Binding: HEROIC_BACKEND -> Worker: heroic
-  -> Service Binding: OPERATIONS -> Worker: operations-edge
-  -> Service Binding: CORE -> Worker: operations
+  -> Service Binding: HEROIC_BACKEND -> Worker: heroic (JavaScript edge)
+  -> Service Binding: CORE -> Worker: heroic-core (Python application core)
+  -> Service Binding: OPERATIONS -> Worker: operations-edge (JavaScript edge)
+  -> Service Binding: CORE -> Worker: operations (Python control plane)
   -> D1: research-intelligence
   -> Backblaze B2: artifacts/backups
 ```
@@ -15,17 +16,20 @@ User
 ## Authority
 
 - Foundation owns the public contract, deterministic core, frontend, GitHub Actions and canonical release orchestration.
+- `heroic` is a thin native JavaScript ingress gateway.
+- `heroic-core` retains the Python application/runtime implementation and its D1, artifact and Operations bindings.
 - Operations owns private chatbot orchestration, protected policy/resource governance, provider execution, private memory and promotion.
 - Cloudflare is the runtime authority for deployed Worker versions, bindings, schedules and live resource state.
-- D1 is the operational-state authority; B2 is artifact/backup storage.
+
+## Transport rule
+
+Worker-to-Worker transport uses Cloudflare Service Binding HTTP at language boundaries. Custom Python/JavaScript RPC is not required for the canonical transport path.
 
 ## Public boundary
 
-- `heroic` is the canonical backend Worker.
-- The `heroic` workers.dev subdomain is disabled.
-- No legacy `foundation` Worker is part of the production topology.
-- No stale Pages project aliases are production authorities.
-- `ai-cio.pages.dev` is the canonical public Pages front door.
+- `heroic` is the canonical public backend Worker identity.
+- The `heroic` workers.dev subdomain remains disabled.
+- `ai-cio.pages.dev` remains the canonical public Pages front door.
 
 ## Release invariant
 
