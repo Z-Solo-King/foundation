@@ -1,7 +1,7 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-29T20:55:00+05:30",
+  "audited_at": "2026-09-29T22:00:00+05:30",
   "public_safe": true,
   "live_main": {
     "foundation": "ed833710199696717c2326bc73e0b2de4a9a1568",
@@ -62,7 +62,8 @@
     "feed_recovery": "QUALIFICATION COMPLETE: verified feeds retained; blocked/unverified targets are not misclassified.",
     "d1_schema": "verified_live_2026-09-29",
     "production_signing_root": "provisioned_live_2026-09-29",
-    "production_runtime": "fresh release certification in progress after merged diagnostic signer/query/replay fixes"
+    "production_runtime": "fresh release certification in progress after merged diagnostic signer/query/replay fixes",
+    "post_release_dispatch": "live nightly research uses typed GitHub workflow inputs; production smoke and research preflight preserve purpose-scoped Operations pins"
   },
   "production_diagnostic_acceptance": "release_acceptance=true is forwarded into the private infrastructure diagnostic path",
   "continuity_enforcement": {

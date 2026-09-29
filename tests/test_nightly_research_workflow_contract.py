@@ -45,9 +45,11 @@ def test_dispatch_false_does_not_coerce_to_dry_run():
 def test_production_release_explicitly_dispatches_nightly_live_mode():
     release = (Path(__file__).parents[1] / ".github" / "workflows" / "heroic-ai-production-release.yml").read_text(encoding="utf-8")
     assert 'if [[ "$workflow" == "nightly-multi-agent-research-v3.yml" ]]; then' in release
-    assert "--json" in release
-    assert "dry_run:false" in release
-    assert "--field dry_run=false" not in release
+    assert "--field dry_run=false" in release
+    assert "--field target_sha=\"$GITHUB_SHA\"" in release
+    assert "--field production_release_run_id=\"$GITHUB_RUN_ID\"" in release
+    assert "--json" not in release
+    assert "dry_run:false" not in release
 
 
 def test_private_operations_pin_and_app_auth_remain_explicit():
