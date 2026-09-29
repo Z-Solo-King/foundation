@@ -102,8 +102,10 @@ jobs:
           }
           for(const k of Object.keys(groups)) groups[k].sort();
           const feedLike=rows.map(r=>({
-            site:r.site, primary_group:r.primary_group, status:r.status,
+            site:r.site, configured_root:r.configured_root, selected_origin:r.selected_origin,
+            primary_group:r.primary_group, status:r.status,
             feed_like_plugin_assets:r.feed_like_plugin_assets, feed_family_signals:r.feed_family_signals,
+            identity_tokens:r.identity_tokens,
             plugin_assets:r.plugin_assets, readme_metadata:r.readme_metadata,
             wordpress_generator:r.wordpress_generator, public_api_namespaces:r.public_api_namespaces,
             endpoint_summary:r.endpoints.map(x=>({origin:x.origin,endpoint:x.endpoint,status:x.status,finalUrl:x.finalUrl,transport:x.transport,challenge:x.challenge}))
@@ -117,7 +119,7 @@ jobs:
             sites:feedLike
           };
           fs.writeFileSync('out/plugin-groups.json',JSON.stringify(out,null,2)+'\n');
-          const matrix=Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0])).map(([group,sites])=>({group,sites}));
+          const matrix=Object.keys(groups).sort();
           fs.writeFileSync('out/groups-matrix.json',JSON.stringify(matrix)+'\n');
           const lines=['# WooCommerce 31 Plugin Extraction','',`Sites: ${rows.length}`,'','## Groups',''];
           for(const [g,sites] of Object.entries(groups).sort()) lines.push(`### ${g}`,'',...sites.map(s=>'- '+s),'');
@@ -166,7 +168,7 @@ jobs:
           node-version: 20
       - name: Guess plugin-family XML feeds
         run: |
-          node tools/feed-lab/woocommerce_31_group_xml_guess.mjs --group "${{ matrix.group.group }}" --input out/plugin-data/plugin-groups.json --out "out/group-guess/${{ matrix.group.group }}"
+          node tools/feed-lab/woocommerce_31_group_xml_guess.mjs --group "${{ matrix.group }}" --input out/plugin-data/plugin-groups.json --out "out/group-guess/${{ matrix.group.group }}"
       - name: Upload group XML evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
