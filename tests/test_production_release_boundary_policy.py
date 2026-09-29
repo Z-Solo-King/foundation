@@ -84,9 +84,11 @@ def test_production_uses_pages_front_door_with_private_backend_boundary():
     assert 'workers_dev = false' in text
     assert 'name = "heroic"' in text
     assert '! grep -q \'^service = "heroic"$\' "$bootstrap_config"' in text
-    assert 'workers/scripts/${PYTHON_CORE_WORKER_NAME}/settings' in text
+    assert 'settings_worker="${PYTHON_CORE_WORKER_NAME}"' in text
     assert 'B2_BUCKET' in text and 'B2_ENDPOINT' in text
-    assert 'Resolving B2 release configuration from canonical ${PYTHON_CORE_WORKER_NAME} Worker' in text
+    assert 'settings_worker="${PYTHON_CORE_WORKER_NAME}"' in text
+    assert 'settings_worker="${PUBLIC_WORKER_NAME}"' in text
+    assert 'settings_status=$(curl -sS -o "$settings_path" -w \'%{http_code}\'' in text
     assert 'workers/scripts/heroic/subdomain' in text
     assert 'pages/projects/ai' not in text
     assert 'Canonical Pages front door check failed' in text

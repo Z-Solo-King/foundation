@@ -157,30 +157,42 @@ jq -e --arg expected "$OPERATIONS_REF" '.sha == $expected' "$RUNNER_TEMP/operati
 
 echo "private Operations access: PASS"
 
-# Resolve runtime B2 configuration from the canonical heroic Worker when the GitHub
-# environment does not provide the non-secret bucket/endpoint values.
+# Resolve runtime B2 configuration before creating the new Python core Worker.
+# During the first split deployment, the non-secret bucket/endpoint bindings still live on
+# the existing heroic Worker. After heroic-core exists, prefer its copied values.
 if [ -z "${B2_BUCKET:-}" ] || [ -z "${B2_ENDPOINT:-}" ]; then
-  echo "Resolving B2 release configuration from canonical ${PYTHON_CORE_WORKER_NAME} Worker"
-  heroic_settings_status=$(curl -sS -o "$RUNNER_TEMP/heroic-settings.json" -w '%{http_code}' \
+  settings_worker="${PYTHON_CORE_WORKER_NAME}"
+  settings_path="$RUNNER_TEMP/python-core-settings.json"
+  settings_status=$(curl -sS -o "$settings_path" -w '%{http_code}' \
     -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
-    "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/${PYTHON_CORE_WORKER_NAME}/settings" || true)
-  test "$heroic_settings_status" = '200' || {
-    echo "Canonical ${PYTHON_CORE_WORKER_NAME} Worker settings lookup failed: HTTP $heroic_settings_status"
-    cat "$RUNNER_TEMP/heroic-settings.json" 2>/dev/null || true
+    "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$settings_worker/settings" || true)
+
+  if [ "$settings_status" = '404' ]; then
+    settings_worker="${PUBLIC_WORKER_NAME}"
+    settings_path="$RUNNER_TEMP/public-worker-settings.json"
+    settings_status=$(curl -sS -o "$settings_path" -w '%{http_code}' \
+      -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
+      "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$settings_worker/settings" || true)
+  fi
+
+  test "$settings_status" = '200' || {
+    echo "B2 settings lookup failed for bootstrap worker $settings_worker: HTTP $settings_status"
+    cat "$settings_path" 2>/dev/null || true
     exit 1
   }
-  resolved_b2_bucket=$(jq -r '.result.bindings[]? | select(.name == "B2_BUCKET" and .type == "plain_text") | .text' "$RUNNER_TEMP/heroic-settings.json" | head -n1)
-  resolved_b2_endpoint=$(jq -r '.result.bindings[]? | select(.name == "B2_ENDPOINT" and .type == "plain_text") | .text' "$RUNNER_TEMP/heroic-settings.json" | head -n1)
-  test -n "$resolved_b2_bucket" || { echo 'Canonical ${PYTHON_CORE_WORKER_NAME} Worker has no B2_BUCKET'; exit 1; }
-  test -n "$resolved_b2_endpoint" || { echo 'Canonical ${PYTHON_CORE_WORKER_NAME} Worker has no B2_ENDPOINT'; exit 1; }
+
+  resolved_b2_bucket=$(jq -r '.result.bindings[]? | select(.name == "B2_BUCKET" and .type == "plain_text") | .text' "$settings_path" | head -n1)
+  resolved_b2_endpoint=$(jq -r '.result.bindings[]? | select(.name == "B2_ENDPOINT" and .type == "plain_text") | .text' "$settings_path" | head -n1)
+  test -n "$resolved_b2_bucket" || { echo "Worker $settings_worker has no B2_BUCKET"; exit 1; }
+  test -n "$resolved_b2_endpoint" || { echo "Worker $settings_worker has no B2_ENDPOINT"; exit 1; }
   case "$resolved_b2_endpoint" in
     https://*) ;;
-    *) echo 'Canonical ${PYTHON_CORE_WORKER_NAME} Worker B2_ENDPOINT is not HTTPS'; exit 1 ;;
+    *) echo "Worker $settings_worker B2_ENDPOINT is not HTTPS"; exit 1 ;;
   esac
   B2_BUCKET="$resolved_b2_bucket"
   B2_ENDPOINT="$resolved_b2_endpoint"
   export B2_BUCKET B2_ENDPOINT
-  echo "B2 release configuration: PASS"
+  echo "B2 release configuration: PASS (source=$settings_worker)"
 fi
 
 # Canonical runtime boundary checks. The public application is Pages -> heroic (JavaScript edge) -> heroic-core (Python) -> operations-edge (JavaScript) -> operations;
