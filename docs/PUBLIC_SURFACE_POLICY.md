@@ -73,3 +73,5 @@ Public feed discovery workflows are a separate public-safe class. They must not 
 Any workflow that uses secrets or private Operations is privileged and must not execute on pull_request, pull_request_target, or merge_group. Push-based privileged workflows are restricted to main.
 
 This is an execution rule, not merely a documentation convention.
+
+Privileged workflow_run chains must also name an explicitly trusted upstream workflow in the authority registry. This prevents a new workflow from becoming a hidden privilege-transfer path.
