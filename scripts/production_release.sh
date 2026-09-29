@@ -20,10 +20,14 @@ BASE_URL="https://ai-cio.pages.dev"
 ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT:-1}"
 
 cleanup() {
+  if [ -f "$RUNNER_TEMP/foundation-js-wrangler.toml" ]; then
+    mv -f "$RUNNER_TEMP/foundation-js-wrangler.toml" wrangler.toml 2>/dev/null || true
+  fi
   rm -rf "$RUNNER_TEMP/operations" "$RUNNER_TEMP/operations-secrets.env" "$RUNNER_TEMP/public-secrets.env" \
     "$RUNNER_TEMP/git-askpass-operations.sh" "$RUNNER_TEMP/operations-app.pem" \
     "$RUNNER_TEMP/github-app-jwt.txt" "$RUNNER_TEMP/github-app-installation.json" \
-    "$RUNNER_TEMP/github-app-installation-meta.json" wrangler.production.generated.toml wrangler.python-core.generated.toml health.json readiness.json frontend.html \
+    "$RUNNER_TEMP/github-app-installation-meta.json" "$RUNNER_TEMP/foundation-js-wrangler.toml" \
+    wrangler.production.generated.toml wrangler.python-core.generated.toml health.json readiness.json frontend.html \
     /tmp/styles.css /tmp/app.js /tmp/composer.js /tmp/lifecycle_controller.js
 }
 trap cleanup EXIT
@@ -458,7 +462,18 @@ printf '%s\n' \
   "database_id = \"\${database_id}\"" \
   > "$d1_migrations_config"
 npx --yes wrangler@4.131.1 d1 migrations apply "$database_name" --remote --config "$d1_migrations_config"
-pywrangler deploy --config wrangler.python-core.generated.toml --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}:python-core"
+
+# Pywrangler performs Python-project validation against the project's default Wrangler config.
+# Temporarily make the generated Python-core config the project-default config, then restore
+# the JavaScript edge config before its own deployment. This avoids a false
+# "python_workers compat flag not specified" rejection while keeping both deployment
+# configs explicit for their respective Worker.
+python_core_default_backup="$RUNNER_TEMP/foundation-js-wrangler.toml"
+cp wrangler.toml "$python_core_default_backup"
+cp wrangler.python-core.generated.toml wrangler.toml
+pywrangler deploy --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}:python-core"
+mv -f "$python_core_default_backup" wrangler.toml
+
 (cd "$GITHUB_WORKSPACE" && npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}:javascript-edge")
 
 health_status=$(curl -sS -o health.json -w '%{http_code}' "$BASE_URL/health")
