@@ -36,3 +36,10 @@ def test_deep_scan_aggregate_uses_private_operations_access_and_exact_matrix_cov
     assert 'historical_issues = {"foundation#1264", "foundation#1267", "foundation#1281", "operations#197"}' in text
     assert 'observed_active == expected_lane_pairs' in text
     assert 'observed_historical == {(issue, lane) for issue in historical_issues}' in text
+
+
+
+def test_deep_scan_aggregate_download_pattern_matches_lane_summary_artifacts():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert "open-issue-deep-scan-*-summary-${{ github.run_id }}-attempt-${{ github.run_attempt }}" in text
+    assert "open-issue-deep-scan-*-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}" not in text
