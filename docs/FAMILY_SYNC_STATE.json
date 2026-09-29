@@ -4,12 +4,12 @@
   "audited_at": "2026-09-29",
   "public_safe": true,
   "live_main": {
-    "foundation": "34fcae8638fc2fb591131d5e53a6cf47ebdbe0dd",
-    "operations": "068c3cff76f194dd0188f704fda191388e6694cb"
+    "foundation": "63ac2669a01906b16b28a586c7034a8d6e27c982",
+    "operations": "2d1667beeba912d9d5592322a664623e1ef07674"
   },
   "runtime_pins": {
-    "foundation_runtime": "34fcae8638fc2fb591131d5e53a6cf47ebdbe0dd",
-    "production_operations": "068c3cff76f194dd0188f704fda191388e6694cb",
+    "foundation_runtime": "63ac2669a01906b16b28a586c7034a8d6e27c982",
+    "production_operations": "2d1667beeba912d9d5592322a664623e1ef07674",
     "research_operations": "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d"
   },
   "cloudflare": {
@@ -28,7 +28,7 @@
     "queues": 0,
     "durable_object_namespaces": 0,
     "private_resource_identifiers": "redacted",
-    "control_plane_snapshot": "live_verified_2026-09-29"
+    "control_plane_snapshot": "live_verified_pre_split; fresh post-release certification required"
   },
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
@@ -56,7 +56,7 @@
     "feed_recovery": "QUALIFICATION COMPLETE: verified feeds retained; blocked/unverified targets are not misclassified.",
     "d1_schema": "verified_live_2026-09-29",
     "production_signing_root": "provisioned_live_2026-09-29",
-    "production_runtime": "requires fresh canonical release certification"
+    "production_runtime": "requires fresh canonical release certification after the merged JavaScript public-edge cutover"
   },
   "continuity_enforcement": {
     "schema": "continuity-freshness/v1",
@@ -69,6 +69,6 @@
     "public_worker": "heroic",
     "private_edge_worker": "operations-edge",
     "private_core_worker": "operations",
-    "chain": "heroic -> operations-edge (TypeScript) -> operations (Python)"
+    "chain": "heroic (JavaScript) -> heroic-core (Python) -> operations-edge (JavaScript) -> operations (Python)"
   }
 }
