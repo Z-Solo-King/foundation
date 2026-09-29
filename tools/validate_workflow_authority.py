@@ -11,7 +11,7 @@ WORKFLOWS=ROOT/".github"/"workflows"
 
 def _events(text:str)->set[str]:
     return {
-        name for name in ("pull_request","pull_request_target","push","schedule","workflow_dispatch")
+        name for name in ("pull_request","pull_request_target","push","schedule","workflow_dispatch","merge_group","workflow_run")
         if re.search(rf"(?m)^\s{{0,2}}{name}\s*:", text)
     }
 
@@ -51,10 +51,21 @@ def validate()->list[str]:
         if rel in feed and any(m in text for m in markers):
             errors.append(f"{rel}: public feed workflow contains a privileged marker")
         if is_priv and events & forbidden:
-            errors.append(f"{rel}: privileged workflow has forbidden PR trigger: {sorted(events & forbidden)}")
+            errors.append(f"{rel}: privileged workflow has forbidden untrusted trigger: {sorted(events & forbidden)}")
         branches=_push_branches(text)
-        if is_priv and "push" in events and branches and branches != [reg["policy"]["privileged_push_branch"]]:
-            errors.append(f"{rel}: privileged push must be main-only, found {branches}")
+        if is_priv and "push" in events and branches != [reg["policy"]["privileged_push_branch"]]:
+            errors.append(f"{rel}: privileged push must be main-only, found {branches or ['<unrestricted>']}")
+        if is_priv and "workflow_run" in events:
+            expected_sources=reg["policy"].get("trusted_workflow_run_sources", {}).get(rel)
+            if not expected_sources:
+                errors.append(f"{rel}: privileged workflow_run requires explicit trusted upstream registration")
+            else:
+                declared=re.findall(r"(?ms)workflows:\s*\[([^\]]+)\]", text)
+                names=[]
+                for block in declared:
+                    names.extend(re.findall(r"['\\"]([^'\\"]+)['\\"]", block))
+                if sorted(set(names)) != sorted(set(expected_sources)):
+                    errors.append(f"{rel}: workflow_run source mismatch; declared={sorted(set(names))} expected={sorted(set(expected_sources))}")
         if rel==".github/workflows/sync-secrets.yml":
             if "environment: production-secret-sync" not in text:
                 errors.append(f"{rel}: missing protected environment")
