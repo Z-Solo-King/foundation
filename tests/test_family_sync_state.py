@@ -15,7 +15,7 @@ def test_family_sync_state_matches_current_main_and_graph():
     queue = state["current_queue"]
     assert queue["schema"] == "live-issue-snapshot/v1"
     assert queue["open_issue_count"] == len(queue["foundation"]) + queue["operations_count"]
-    assert queue["foundation"] == [58, 157, 1157, 1247, 1249]
+    assert queue["foundation"] == [58, 157, 1247, 1249]
     assert queue["operations_count"] == 8
     assert queue["operations_issue_numbers_omitted"] is True
     assert graph["schema"] == "family-integration-graph/v1"

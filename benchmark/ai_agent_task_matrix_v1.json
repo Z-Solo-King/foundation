@@ -892,12 +892,11 @@
     "started_at",
     "completed_at"
   ],
-  "last_reviewed": "2026-09-28",
+  "last_reviewed": "2026-09-29",
   "current_issue_targets": {
     "foundation": [
       58,
       157,
-      1157,
       1247,
       1249
     ],

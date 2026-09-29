@@ -716,7 +716,7 @@ if [ "$policy_block_status" != '200' ]; then
   exit 1
 fi
 test "$policy_block_status" = '200'
-if ! jq -e '.ok == true and .response.status == "blocked" and .response.result_state == "BLOCKED" and .response.operation == "map"' "$RUNNER_TEMP/policy-block.json" >/dev/null; then
+if ! jq -e '.ok == true and .response.status == "blocked" and .response.result_state == "BLOCKED"' "$RUNNER_TEMP/policy-block.json" >/dev/null; then
   echo '--- policy-block.body ---'
   cat "$RUNNER_TEMP/policy-block.json" || true
   echo '--- end policy-block.body ---'

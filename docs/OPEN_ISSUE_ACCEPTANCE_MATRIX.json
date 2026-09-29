@@ -2,10 +2,10 @@
   "schema": "family-issue-acceptance-matrix/v1",
   "audited_at": "2026-09-29",
   "repository_heads": {
-    "foundation": "ceefc21bffaed0f2ec471948f7a37ccff7f5a503",
+    "foundation": "69483338f32fd37fb6ca496e7aebfcf8087fa539",
     "operations": "af3dc60349ca9de7c3747625949269234d34021f"
   },
-  "open_issue_count": 13,
+  "open_issue_count": 12,
   "issues": [
     {
       "repo": "foundation",
@@ -22,16 +22,6 @@
       "title": "research: complete 24-program Heroic AI improvement run",
       "required_evidence": [
         "24 real provider-backed executions with exact revision"
-      ]
-    },
-    {
-      "repo": "foundation",
-      "number": 1157,
-      "title": "benchmark: project-native AI/agent benchmark and cross-language evaluation matrix",
-      "required_evidence": [
-        "benchmark contract",
-        "project-native task matrix",
-        "reproducible multi-model baseline"
       ]
     },
     {

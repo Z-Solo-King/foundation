@@ -9,8 +9,8 @@ def test_manifest_is_valid_and_targets_current_open_queue():
     matrix = json.loads(Path("benchmark/ai_agent_task_matrix_v1.json").read_text())
     assert validate_manifest(matrix) == []
     assert matrix["current_issue_targets"] == {
-        "foundation": [58, 157, 1157, 1247, 1249],
-        "operations": [145, 597, 603, 1027, 1066],
+        "foundation": [58, 157, 1247, 1249],
+        "operations": [145, 597, 603, 1027, 1066, 1103, 1135, 1137],
     }
 
 
