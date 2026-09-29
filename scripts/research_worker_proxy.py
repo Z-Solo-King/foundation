@@ -244,6 +244,8 @@ class Handler(BaseHTTPRequestHandler):
         attempt_count = 0
         transport_used = "urllib"
         last_error: dict[str, object] = {}
+        body: object = None
+        status = 0
         try:
             for attempt in range(1, MAX_UPSTREAM_ATTEMPTS + 1):
                 attempt_count = attempt
@@ -283,7 +285,7 @@ class Handler(BaseHTTPRequestHandler):
                         continue
                     break
                 except Exception as exc:
-                    last_error = {"type": type(exc).__name__}
+                    last_error = {"type": type(exc).__name__, "message": str(exc)[:200]}
                     status = 0
                     if attempt < MAX_UPSTREAM_ATTEMPTS and isinstance(exc, (TimeoutError, OSError, ConnectionError)):
                         time.sleep(_retry_delay_seconds(None, attempt))
