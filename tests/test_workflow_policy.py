@@ -456,7 +456,7 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     assert 'PIN_MANIFEST="docs/OPERATIONS_PIN_MANIFEST.json"' in deployment
     assert 'manifest["pins"]["production_runtime"]["sha"]' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
-    assert "OPERATIONS_RESEARCH_REF: ebbcde494b3d07aaef6a3a5a59a7135cb309114b" in nightly
+    assert "OPERATIONS_RESEARCH_REF: 8bee0ca4c41e02d2b7005589a73f53dc0512aa9d" in nightly
 
 
 
@@ -523,8 +523,8 @@ def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
 def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
-    expected_production = "ebbcde494b3d07aaef6a3a5a59a7135cb309114b"
-    expected_nightly = "ebbcde494b3d07aaef6a3a5a59a7135cb309114b"
+    expected_production = "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d"
+    expected_nightly = "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d"
     auxiliary = {
         "live-chatbot-production-smoke.yml": expected_production,
         "coverage-driven-runtime-matrix.yml": expected_production,
