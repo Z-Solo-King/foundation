@@ -99,7 +99,7 @@ jobs:
         run: |
           set -euo pipefail
           npm install --prefer-offline --no-audit --no-fund --ignore-scripts
-          npm run typecheck
+          npx --yes -p typescript@7.0.2 tsc --noEmit -p tsconfig.json
           npm test
       - name: Emit lane receipt
         run: |
