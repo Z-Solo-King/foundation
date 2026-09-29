@@ -20,6 +20,7 @@ MIGRATION_TOOLS_REF = None
 VALIDATION_TOOLS_REF = "92eb7a850dff11a10886a952d5db8a42dae2b318"
 CANONICAL_OPERATIONS_SERVICE = "operations"
 CANONICAL_OPERATIONS_EDGE_SERVICE = "operations-edge"
+PYTHON_CORE_WORKER_NAME = "heroic-core"
 LEGACY_OPERATIONS_REF = "bb1d8c33e926a9752de86492e9d35f26a5f2824c"
 PRODUCTION_WORKFLOW = "heroic-ai-production-release.yml"
 PRODUCTION_SCRIPT = ROOT / "scripts" / "production_release.sh"
@@ -186,16 +187,18 @@ def test_production_release_fails_closed_and_retains_chat_policy_receipts():
     assert "allow_persistence_deferred" not in workflow
     assert "inputs:" not in workflow.split("permissions:", 1)[0]
 
-def test_public_worker_propagates_client_request_cancellation_to_operations():
-    worker = (ROOT / "worker.py").read_text(encoding="utf-8")
+def test_public_worker_uses_native_javascript_edge_and_python_core():
+    worker = (ROOT / "edge.js").read_text(encoding="utf-8")
     wrangler = WRANGLER.read_text(encoding="utf-8")
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'signal=getattr(request, "signal", None)' in worker
-    assert 'if signal is not None:\n            init["signal"] = signal' in worker
-    assert "enable_request_signal" in wrangler
-    assert "request_signal_passthrough" in wrangler
-    assert "enable_request_signal" in deployment
-    assert "request_signal_passthrough" in deployment
+    assert "env.CORE.fetch(forwardRequest(request))" in worker
+    assert 'main = "edge.js"' in wrangler
+    assert 'service = "heroic-core"' in wrangler
+    assert "python_workers" not in wrangler
+    assert 'main = "worker.py"' in core
+    assert "python_workers" in core
+    assert "wrangler.python-core.generated.toml" in deployment
+    assert "wrangler@4.131.1 deploy --config wrangler.production.generated.toml" in deployment
 
 def test_public_production_deploy_injects_required_b2_secrets():
     workflow = _workflow_texts()[PRODUCTION_WORKFLOW]
@@ -210,7 +213,7 @@ def test_public_production_deploy_injects_required_b2_secrets():
     assert 'test -n "${B2_KEY_ID:-}"' in deployment
     assert 'test -n "${B2_APPLICATION_KEY:-}"' in deployment
 def test_public_worker_static_assets_binding_is_declared():
-    wrangler = WRANGLER.read_text(encoding="utf-8")
+    wrangler = (ROOT / "wrangler.python-core.toml").read_text(encoding="utf-8")
     assert '[assets]' in wrangler
     assert 'directory = "./frontend"' in wrangler
     assert 'binding = "ASSETS"' in wrangler
@@ -252,7 +255,7 @@ def test_private_operations_deployment_verifies_cloudflare_provenance():
 def test_private_operations_handoff_is_preflighted_and_diagnostic_runs_last():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     preflight = deployment.index("Preflight and stage the private Operations handoff")
-    public_deploy = deployment.index("pywrangler deploy --config wrangler.production.generated.toml")
+    public_deploy = deployment.index("npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml")
     operations_deploy = deployment.index("pywrangler deploy --config wrangler.toml --secrets-file")
     diagnostic = deployment.index("infrastructure_verify_public_test")
     success = deployment.rindex("Production release completed")
@@ -713,7 +716,7 @@ def test_production_bootstrap_precedes_foundation_deploy_and_is_unconditional():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     start = deployment.index("# Rename-safe Cloudflare deployment sequence.")
     bootstrap = deployment.index('pywrangler deploy --config "$bootstrap_config"', start)
-    public_deploy = deployment.index('pywrangler deploy --config wrangler.production.generated.toml --secrets-file "$public_secret_file"', start)
+    public_deploy = deployment.index('npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml', start)
     assert bootstrap < public_deploy
     assert deployment.count('pywrangler deploy --config "$bootstrap_config"') == 1
     assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings' not in deployment
@@ -727,11 +730,15 @@ def test_public_probe_records_dns_failure_without_parser_crash():
     assert '|| true)' in workflow
 
 
-def test_current_public_runtime_identity_is_heroic_backend():
+def test_current_public_runtime_identity_is_heroic_javascript_edge():
     wrangler = WRANGLER.read_text(encoding="utf-8")
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'name = "heroic"' in wrangler
     assert 'workers_dev = false' in wrangler
+    assert 'main = "edge.js"' in wrangler
+    assert 'binding = "CORE"' in wrangler
+    assert 'service = "heroic-core"' in wrangler
+    assert "python_workers" not in wrangler
     assert '[[routes]]' not in wrangler
     assert 'custom_domain = true' not in wrangler
     assert 'BASE_URL=' in deployment and 'ai-cio.pages.dev' in deployment
