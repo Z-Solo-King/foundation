@@ -85,3 +85,5 @@ The workflow authority registry and validator are the machine-checkable control 
 Public feed discovery is a public-safe Foundation workflow class. Private Operations implementation or registry access does not make Operations the workflow owner.
 
 Privileged workflows must not execute from pull_request, pull_request_target or merge_group. Push-based privileged execution is main-only.
+
+Privileged workflow_run execution is permitted only for an explicitly registered trusted upstream workflow. Do not treat workflow_run as automatically trusted.
