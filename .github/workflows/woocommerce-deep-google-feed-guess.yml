@@ -1,0 +1,188 @@
+name: WooCommerce deep Google feed guess
+
+on:
+  push:
+    branches:
+      - hunt/woocommerce-plugin-feed-fingerprinting-20260929
+  workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: Exact Operations revision containing the deep guesser
+        required: false
+        default: 4af8cd62a48f9fcad58dfbd3e0b3967d00940943
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foundation-woocommerce-deep-feed-guess
+  cancel-in-progress: false
+
+jobs:
+  guess:
+    name: Deep feed guess shard ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        shard: [0,1,2]
+    env:
+      OPERATIONS_REPOSITORY: Z-Solo-King/operations
+      OPERATIONS_REF: ${{ inputs.operations_ref || '4af8cd62a48f9fcad58dfbd3e0b3967d00940943' }}
+      SHARD: ${{ matrix.shard }}
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Verify Operations token
+        env:
+          GH_TOKEN: ${{ steps.operations-app.outputs.token }}
+        run: |
+          set -euo pipefail
+          test -n "$GH_TOKEN"
+          gh api repos/Z-Solo-King/operations --jq '.full_name'
+          gh api "repos/Z-Solo-King/operations/commits/${{ env.OPERATIONS_REF }}" --jq '.sha'
+
+      - name: Checkout exact Operations deep guesser
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.OPERATIONS_REPOSITORY }}
+          ref: ${{ env.OPERATIONS_REF }}
+          token: ${{ steps.operations-app.outputs.token }}
+          persist-credentials: false
+          path: operations
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Install browser dependencies
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -e ".[browser]"
+          python -m playwright install --with-deps chromium
+
+      - name: Run deep filename guessing
+        working-directory: operations
+        shell: python
+        run: |
+          import os
+          import subprocess
+          from pathlib import Path
+
+          groups = [
+              ["aarnacomputers.com", "hotshiftpc.com", "itgadgetsonline.com"],
+              ["kryptronix.in", "meckeys.com", "ninjadog.in"],
+              ["onlyssd.com", "stackskb.com", "viperpc.in"],
+          ]
+          shard = int(os.environ["SHARD"])
+          out = Path("evidence/deep-feed")
+          out.mkdir(parents=True, exist_ok=True)
+
+          for site in groups[shard]:
+              print(f"=== deep guess: {site} ===", flush=True)
+              subprocess.run(
+                  [
+                      "python", "scripts/woocommerce_deep_feed_guess.py",
+                      "--site", site,
+                      "--output", str(out / f"{site}.json"),
+                  ],
+                  check=False,
+              )
+
+      - name: Upload deep evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: foundation-woocommerce-deep-shard-${{ matrix.shard }}
+          path: operations/evidence/deep-feed/
+          if-no-files-found: warn
+          retention-days: 30
+
+  aggregate:
+    name: Aggregate deep feed guesses
+    needs: guess
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download deep evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v5.0.0
+        with:
+          pattern: foundation-woocommerce-deep-shard-*
+          path: deep
+          merge-multiple: true
+
+      - name: Build deep summary
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+
+          expected = {
+              "aarnacomputers.com","hotshiftpc.com","itgadgetsonline.com",
+              "kryptronix.in","meckeys.com","ninjadog.in",
+              "onlyssd.com","stackskb.com","viperpc.in",
+          }
+
+          rows = []
+          for path in sorted(Path("deep").glob("*.json")):
+              try:
+                  rows.append(json.loads(path.read_text(encoding="utf-8")))
+              except Exception as exc:
+                  rows.append({"site": path.stem, "feed_status": "unresolved", "parse_error": str(exc)})
+
+          by_site = {row.get("site"): row for row in rows if row.get("site")}
+          verified = [
+              {"site": row["site"], "urls": row.get("verified_feed_urls", [])}
+              for row in by_site.values()
+              if row.get("feed_status") == "verified"
+          ]
+
+          summary = {
+              "schema": "foundation-woocommerce-deep-feed-guess/v1",
+              "expected_sites": len(expected),
+              "observed_sites": len(by_site),
+              "coverage_complete": expected.issubset(by_site),
+              "missing_sites": sorted(expected - set(by_site)),
+              "verified_feed_count": len(verified),
+              "verified_feeds": verified,
+              "results": by_site,
+          }
+
+          Path("deep-summary.json").write_text(
+              json.dumps(summary, indent=2) + "\\n",
+              encoding="utf-8",
+          )
+          print(json.dumps({
+              "expected_sites": summary["expected_sites"],
+              "observed_sites": summary["observed_sites"],
+              "coverage_complete": summary["coverage_complete"],
+              "verified_feed_count": summary["verified_feed_count"],
+              "missing_sites": summary["missing_sites"],
+          }, indent=2))
+
+      - name: Upload deep summary
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: foundation-woocommerce-deep-summary
+          path: deep-summary.json
+          if-no-files-found: error
+          retention-days: 30
