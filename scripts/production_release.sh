@@ -456,6 +456,7 @@ printf '%s\n' \
   'binding = "DB"' \
   "database_name = \"\${database_name}\"" \
   "database_id = \"\${database_id}\"" \
+  "migrations_dir = \"\${GITHUB_WORKSPACE}/migrations\"" \
   > "$d1_migrations_config"
 npx --yes wrangler@4.131.1 d1 migrations apply "$database_name" --remote --config "$d1_migrations_config"
 pywrangler deploy --config wrangler.python-core.generated.toml --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}:python-core"
