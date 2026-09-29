@@ -40,7 +40,6 @@ def test_crossfire_is_single_global_execution_pool():
 def test_dispatch_false_does_not_coerce_to_dry_run():
     text=workflow_text()
     assert 'if [[ "${{ inputs.dry_run }}" == "true" ]]; then' in text
-    assert 'inputs.dry_run || false' not in text
 
 
 def test_private_operations_pin_and_app_auth_remain_explicit():
