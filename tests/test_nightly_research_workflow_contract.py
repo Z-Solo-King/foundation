@@ -55,6 +55,7 @@ def test_production_release_explicitly_dispatches_nightly_live_mode():
 def test_private_operations_pin_and_app_auth_remain_explicit():
     text=workflow_text()
     assert "OPERATIONS_RESEARCH_REF: 8bee0ca4c41e02d2b7005589a73f53dc0512aa9d" in text
+    assert "OPERATIONS_MIGRATION_TOOLS_REF: f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791" in text
     assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in text
     assert "OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}" in text
     assert "private.multi_agent.runner" in text
