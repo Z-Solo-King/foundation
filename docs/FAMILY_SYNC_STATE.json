@@ -4,8 +4,8 @@
   "audited_at": "2026-09-29",
   "public_safe": true,
   "live_main": {
-    "foundation": "63ac2669a01906b16b28a586c7034a8d6e27c982",
-    "operations": "2d1667beeba912d9d5592322a664623e1ef07674"
+    "foundation": "1769ae2af40b8e80cafcf566bc63b4d6591791d3",
+    "operations": "af3dc60349ca9de7c3747625949269234d34021f"
   },
   "runtime_pins": {
     "foundation_runtime": "63ac2669a01906b16b28a586c7034a8d6e27c982",

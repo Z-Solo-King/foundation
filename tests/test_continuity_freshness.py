@@ -38,3 +38,18 @@ def test_changed_files_fetches_missing_base_revision(monkeypatch):
     monkeypatch.setattr(module.subprocess, "run", fake_run)
     module.changed_files("deadbeef", "head")
     assert any(cmd[:3] == ["git", "fetch", "--no-tags"] for cmd in calls)
+
+
+def test_continuity_workflow_watches_canonical_surfaces():
+    workflow = (Path(__file__).parents[1] / ".github" / "workflows" / "cross-repository-contract-drift.yml").read_text(encoding="utf-8")
+    for path in (
+        "backend/**",
+        "foundation_core/**",
+        "frontend/**",
+        "migrations/**",
+        "polyglot/**",
+        ".github/workflows/**",
+        "docs/CURRENT_SOURCE_OF_TRUTH.md",
+        "docs/FAMILY_SYNC_STATE.json",
+    ):
+        assert path in workflow

@@ -3,9 +3,9 @@
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
 Checked: 2026-09-29.
-Foundation main code checkpoint: 34fcae8638fc2fb591131d5e53a6cf47ebdbe0dd.
-Operations main checkpoint: 068c3cff76f194dd0188f704fda191388e6694cb.
-Production Operations pin: 068c3cff76f194dd0188f704fda191388e6694cb.
+Foundation main code checkpoint: 1769ae2af40b8e80cafcf566bc63b4d6591791d3.
+Operations main checkpoint: af3dc60349ca9de7c3747625949269234d34021f.
+Production Operations pin: 2d1667beeba912d9d5592322a664623e1ef07674.
 Research Operations pin: 8bee0ca4c41e02d2b7005589a73f53dc0512aa9d.
 Live issue and PR counts must be read from GitHub; this file never serves as a mutable queue.
 
