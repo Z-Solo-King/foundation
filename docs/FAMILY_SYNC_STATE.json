@@ -79,5 +79,12 @@
     "private_edge_worker": "operations-edge",
     "private_core_worker": "operations",
     "chain": "heroic (JavaScript) -> heroic-core (Python) -> operations-edge (JavaScript) -> operations (Python)"
+  },
+  "last_runtime_repair": {
+    "date": "2026-09-29",
+    "foundation_pr": 1549,
+    "component": "production workflow nightly dispatch",
+    "status": "repair_in_progress",
+    "feed_scope": "excluded"
   }
 }
