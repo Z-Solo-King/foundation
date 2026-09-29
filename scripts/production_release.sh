@@ -271,7 +271,8 @@ test -n "$actual_provider_list"
 test "$actual_provider_list" = "$expected_provider_list"
 grep -q '^CHAT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/zai-org/glm-4.7-flash"$' "$RUNNER_TEMP/operations/wrangler.toml"
 grep -q '"workers_ai_neurons":10000' "$RUNNER_TEMP/operations/wrangler.toml"
-grep -q 'CHAT_BACKEND_TOKEN' "$RUNNER_TEMP/operations/worker.py"
+grep -q 'CHAT_BACKEND_TOKEN' "$RUNNER_TEMP/operations/private/chat_auth.py"
+grep -q 'from private.chat_auth import authorized_chat_request' "$RUNNER_TEMP/operations/worker.py"
 
 # Fail before deployment if the pinned Operations tree contains any Python syntax error.
 python -m compileall -q "$RUNNER_TEMP/operations"
