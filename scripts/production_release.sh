@@ -219,6 +219,13 @@ git clone --no-checkout "https://github.com/${OPERATIONS_REPOSITORY}.git" "$RUNN
 git -C "$RUNNER_TEMP/operations" fetch --no-tags origin "$OPERATIONS_REF"
 git -C "$RUNNER_TEMP/operations" checkout --detach "$OPERATIONS_REF"
 test "$(git -C "$RUNNER_TEMP/operations" rev-parse HEAD)" = "$OPERATIONS_REF"
+
+# Compile the exact immutable Operations revision before any Cloudflare deployment.
+# Operations intentionally has no competing GitHub Actions workflow, so this release-owner
+# check is the private-source integrity gate.
+echo "Compiling pinned Operations source: ${OPERATIONS_REF}"
+python -m compileall -q "$RUNNER_TEMP/operations"
+echo "Pinned Operations compile: PASS"
 # Resolve the private D1 binding name from the exact approved Operations revision.
 # The public Foundation tree never hardcodes the private database name.
 database_name="$(sed -n 's/^database_name = "\(.*\)"$/\1/p' "$RUNNER_TEMP/operations/wrangler.toml" | head -n1)"

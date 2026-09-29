@@ -4,12 +4,13 @@
   "audited_at": "2026-09-29",
   "public_safe": true,
   "live_main": {
-    "foundation": "f66d32cedd39ef076c06fce7bd69175c14a6b0bc",
-    "operations": "4e2c5860f306a5c481a4a0a6540aaac72cc3644a"
+    "foundation": "34fcae8638fc2fb591131d5e53a6cf47ebdbe0dd",
+    "operations": "068c3cff76f194dd0188f704fda191388e6694cb"
   },
   "runtime_pins": {
-    "foundation_runtime": "current-main",
-    "production_operations": "protected-current"
+    "foundation_runtime": "34fcae8638fc2fb591131d5e53a6cf47ebdbe0dd",
+    "production_operations": "068c3cff76f194dd0188f704fda191388e6694cb",
+    "research_operations": "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d"
   },
   "cloudflare": {
     "pages_project": "ai",
@@ -17,24 +18,45 @@
     "public_worker": "heroic",
     "private_edge_worker": "operations-edge",
     "private_core_worker": "operations",
-    "all_workers": "active",
-    "private_resource_identifiers": "redacted"
+    "workers": [
+      "heroic",
+      "operations-edge",
+      "operations"
+    ],
+    "workers_dev_subdomain": false,
+    "legacy_worker": null,
+    "queues": 0,
+    "durable_object_namespaces": 0,
+    "private_resource_identifiers": "redacted",
+    "control_plane_snapshot": "live_verified_2026-09-29"
   },
   "current_queue": {
-    "open_issue_count": 0,
-    "foundation": [],
-    "operations_count": 0,
-    "operations": []
+    "schema": "live-issue-snapshot/v1",
+    "observed_at": "2026-09-29",
+    "open_issue_count": 13,
+    "foundation": [
+      58,
+      157,
+      1157,
+      1247,
+      1249
+    ],
+    "operations_count": 8,
+    "operations_issue_numbers_omitted": true,
+    "authority": "GitHub live issue API; descriptive snapshot only; never a production certificate"
   },
   "evidence": {
-    "nightly_research": "FOLLOW-UP OPTIONAL: provider-backed research can run independently of project issue closure.",
+    "nightly_research": "requires provider-backed execution evidence",
     "extractor_benchmark": {
       "receipts": 40,
       "structural_pass": true,
       "real_catalog_success_not_proven": true
     },
     "migration_review": "COMPLETE: merged migration lanes remain candidate/promotional evidence, not a second production authority.",
-    "feed_recovery": "QUALIFICATION COMPLETE: verified feeds retained; blocked/unverified targets are not misclassified."
+    "feed_recovery": "QUALIFICATION COMPLETE: verified feeds retained; blocked/unverified targets are not misclassified.",
+    "d1_schema": "verified_live_2026-09-29",
+    "production_signing_root": "provisioned_live_2026-09-29",
+    "production_runtime": "requires fresh canonical release certification"
   },
   "continuity_enforcement": {
     "schema": "continuity-freshness/v1",

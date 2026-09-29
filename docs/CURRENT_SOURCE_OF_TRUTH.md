@@ -2,11 +2,12 @@
 
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
-Checked: 2026-09-28.
-Foundation main code checkpoint: 75a79a37775cc9f410916c47ac2b5ac8c50bf775.
-Active family issue count at checkpoint: 10.
-Public Foundation issues at checkpoint: #1249, #1247, #157, #58.
-Open Foundation PRs at checkpoint: #1439, #1427.
+Checked: 2026-09-29.
+Foundation main code checkpoint: 34fcae8638fc2fb591131d5e53a6cf47ebdbe0dd.
+Operations main checkpoint: 068c3cff76f194dd0188f704fda191388e6694cb.
+Production Operations pin: 068c3cff76f194dd0188f704fda191388e6694cb.
+Research Operations pin: 8bee0ca4c41e02d2b7005589a73f53dc0512aa9d.
+Live issue and PR counts must be read from GitHub; this file never serves as a mutable queue.
 
 ## Public architecture
 
@@ -41,6 +42,10 @@ The current Foundation execution policy is docs/AI_AGENT_EXECUTION_POLICY.md.
 Use GitHub live state, not this document, for current issue/PR counts after the checkpoint.
 Use canonical-authority clustering and cross-fire validation for implementation work.
 Do not create duplicate authorities for admission, URL/SSRF safety, evidence, routing, research execution, or deployment.
+
+## Runtime authority note
+
+The canonical public path is Pages `ai` -> `heroic` -> private `operations-edge` / `operations`. Production task-envelope signing uses the private `TASK_SIGNING_ROOT`; the bearer `AUTH_TOKEN` is a separate runtime authentication secret. D1 migrations 0001–0010 are live and verified.
 
 ## Continuity
 
