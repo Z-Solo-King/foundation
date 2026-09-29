@@ -1,6 +1,6 @@
 {
   "schema_version": "family-sync-state/v1",
-  "status": "CURRENT (post-release dispatch contract refresh)",
+  "status": "CURRENT",
   "audited_at": "2026-09-29T16:18:00+05:30",
   "public_safe": true,
   "live_main": {
