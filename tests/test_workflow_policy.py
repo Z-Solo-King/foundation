@@ -93,9 +93,10 @@ def test_production_release_does_not_publish_private_state_or_b2_literals():
     assert '  cat diagnostic.json' not in deployment
     assert 'B2_BUCKET = "SoloKing"' not in deployment
     assert 'B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"' not in deployment
-    assert 'workers/scripts/${PYTHON_CORE_WORKER_NAME}/settings' in deployment
+    assert 'settings_worker="${PYTHON_CORE_WORKER_NAME}"' in deployment
     assert 'B2_BUCKET' in deployment and 'B2_ENDPOINT' in deployment
-    assert 'Resolving B2 release configuration from canonical ${PYTHON_CORE_WORKER_NAME} Worker' in deployment
+    assert 'settings_worker="${PYTHON_CORE_WORKER_NAME}"' in deployment
+    assert 'settings_worker="${PUBLIC_WORKER_NAME}"' in deployment
 
 
 def test_production_pin_self_check_matches_canonical_operations_revision():
