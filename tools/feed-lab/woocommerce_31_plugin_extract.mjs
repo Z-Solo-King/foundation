@@ -196,9 +196,20 @@ function choosePrimary(families, assets) {
     "webtoffee_product_feed","wpfm_product_feed_manager","codesolz_feed","feedcraft","google_for_woocommerce"
   ];
   for (const family of priority) if (families.some(x=>x.family===family)) return family;
-  const feedAssets = feedLikeAssets(assets);
-  if (feedAssets.length===1) return "plugin:"+feedAssets[0];
-  if (feedAssets.length>1) return "plugin:"+feedAssets[0];
+  const knownAssetFamilies = new Map([
+    ["woo-feed","ctx_feed_webappick"],
+    ["webappick-product-feed-for-woocommerce","ctx_feed_webappick"],
+    ["ctx-feed","ctx_feed_webappick"],
+    ["woo-product-feed-pro","adtribes_product_feed_pro"],
+    ["merchant-feed-booster-lite-for-woocommerce","codesolz_feed"],
+    ["thebasics-product-feed","feedcraft"],
+    ["product-feed-manager","wpfm_product_feed_manager"],
+    ["wppfm","wpfm_product_feed_manager"],
+  ]);
+  for (const asset of assets) {
+    const family = knownAssetFamilies.get(asset.slug);
+    if (family) return family;
+  }
   return "unknown_woocommerce";
 }
 
