@@ -156,6 +156,24 @@ jq -e --arg expected "$OPERATIONS_REF" '.sha == $expected' "$RUNNER_TEMP/operati
 
 echo "private Operations access: PASS"
 
+# Canonical runtime boundary checks. The public application is Pages -> heroic -> operations;
+# no legacy foundation Worker, custom Worker domain, or workers.dev public backend should exist.
+heroic_subdomain_status=$(curl -sS -o "$RUNNER_TEMP/heroic-subdomain.json" -w '%{http_code}' \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
+  "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/heroic/subdomain" || true)
+test "$heroic_subdomain_status" = '200' || { echo "Canonical heroic subdomain check failed: HTTP $heroic_subdomain_status"; cat "$RUNNER_TEMP/heroic-subdomain.json" 2>/dev/null || true; exit 1; }
+jq -e '.success == true and .result.enabled == false and .result.previews_enabled == false' "$RUNNER_TEMP/heroic-subdomain.json" >/dev/null
+legacy_worker_status=$(curl -sS -o "$RUNNER_TEMP/legacy-foundation-worker.json" -w '%{http_code}' \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
+  "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/foundation" || true)
+test "$legacy_worker_status" = '404' || { echo "Legacy foundation Worker still exists or Cloudflare query failed: HTTP $legacy_worker_status"; cat "$RUNNER_TEMP/legacy-foundation-worker.json" 2>/dev/null || true; exit 1; }
+pages_status=$(curl -sS -o "$RUNNER_TEMP/pages-ai.json" -w '%{http_code}' \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
+  "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/ai" || true)
+test "$pages_status" = '200' || { echo "Canonical Pages project check failed: HTTP $pages_status"; cat "$RUNNER_TEMP/pages-ai.json" 2>/dev/null || true; exit 1; }
+jq -e '.success == true and .result.name == "ai" and .result.subdomain == "ai-cio.pages.dev" and .result.deployment_configs.production.services.HEROIC_BACKEND.service == "heroic"' "$RUNNER_TEMP/pages-ai.json" >/dev/null
+echo "Canonical Cloudflare runtime boundary: PASS"
+
 # The canonical public origin is the Pages front door; no custom-domain zone is required for this release.
 askpass="$RUNNER_TEMP/git-askpass-operations.sh"
 cat > "$askpass" <<'EOF'
@@ -256,7 +274,7 @@ printf '%s\n' \
   'main = "worker.py"' \
   'compatibility_date = "2026-09-09"' \
   'compatibility_flags = ["python_workers", "enable_request_signal", "request_signal_passthrough"]' \
-  'workers_dev = true' \
+  'workers_dev = false' \
   'preview_urls = false' \
   '' \
   '[assets]' \
@@ -416,6 +434,14 @@ echo "GET Operations active version -> HTTP ${operations_version_status}"
 test "$operations_version_status" = "200"
 jq -e --arg expected "github:${OPERATIONS_REF}" '((.result.annotations["workers/message"] // "") == $expected) or ((.result.annotations["workers/tag"] // "") == $expected)' "$RUNNER_TEMP/operations-version.json" >/dev/null
 echo "Operations Cloudflare provenance: PASS (github:${OPERATIONS_REF})"
+
+# Verify the live protected policy bindings match repository authority after deployment.
+operations_settings_status=$(curl -sS -o "$RUNNER_TEMP/operations-settings.json" -w '%{http_code}' \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
+  "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$OPERATIONS_SERVICE_NAME/settings" || true)
+test "$operations_settings_status" = "200" || { echo "Operations settings verification failed: HTTP $operations_settings_status"; cat "$RUNNER_TEMP/operations-settings.json"; exit 1; }
+jq -e '.success == true and any(.result.bindings[]?; .name == "CHAT_MODERATION_MODE" and .text == "block") and any(.result.bindings[]?; .name == "STRICT_ZERO_COST_ONLY" and .text == "true") and any(.result.bindings[]?; .name == "ALLOW_PAID_FALLBACK" and .text == "false") and any(.result.bindings[]?; .name == "ALLOW_UNKNOWN_PRICING" and .text == "false") and any(.result.bindings[]?; .name == "MAX_DAILY_COST_USD" and .text == "0")' "$RUNNER_TEMP/operations-settings.json" >/dev/null
+echo "Operations protected policy bindings: PASS"
 
 edge_active_status=$(curl -sS -o "$RUNNER_TEMP/edge-worker-active.json" -w '%{http_code}' \
   -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \

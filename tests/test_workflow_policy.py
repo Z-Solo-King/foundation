@@ -729,7 +729,7 @@ def test_current_public_runtime_identity_is_heroic_backend():
     wrangler = WRANGLER.read_text(encoding="utf-8")
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'name = "heroic"' in wrangler
-    assert 'workers_dev = true' in wrangler
+    assert 'workers_dev = false' in wrangler
     assert '[[routes]]' not in wrangler
     assert 'custom_domain = true' not in wrangler
     assert 'BASE_URL=' in deployment and 'ai-cio.pages.dev' in deployment
