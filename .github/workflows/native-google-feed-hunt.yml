@@ -1,16 +1,15 @@
 name: Native Google Feed URL Hunt
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - ".github/workflows/native-google-feed-hunt.yml"
   push:
     branches:
       - hunt/native-google-feed-urls-20260927
-      - feat/woocommerce-32-plugin-feed-hunt-20260930
     paths:
-      - ".github/workflows/native-google-feed-hunt.yml"
+      - ".github/workflows/woocommerce-32-plugin-xml-fast-hunt.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/woocommerce-32-plugin-xml-fast-hunt.yml"
   workflow_dispatch:
 
 permissions:
@@ -19,258 +18,373 @@ permissions:
 jobs:
   hunt:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - name: Extract plugins, group sites, and guess native XML feeds
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Plugin fingerprint and XML guessing
         shell: bash
         run: |
           set -uo pipefail
           mkdir -p out
-          cat > /tmp/hunt_site.sh <<'SH'
-          set -uo pipefail
-          site="$1"; root="$2"; output="$3"
+          cat > out/sites.tsv <<'EOF'
+Aarna Computers|https://aarnacomputers.com
+Ads Store|https://adsstore.in
+avikaretails|https://avikaretails.com
+EZPZ Solutions|https://www.ezpzsolutions.in
+GamesNComps|https://gamesncomps.com
+Geekbees|https://geekbees.in
+hotshiftpc|https://hotshiftpc.com
+itgadgetsonline|https://itgadgetsonline.com
+ithunt|https://ithunt.in
+KC Computers|https://kccomputers.co.in
+KRG KART|https://krgkart.com
+Kryptronix Gaming|https://kryptronix.in
+NCL Computer|https://nclcomputer.com
+networkitstore|https://networkitstore.in
+nexusinfosys|https://www.mynexusinfosys.com
+Only SDD|https://onlyssd.com
+PC Kumar Infotech|https://pckumar.in
+PC Studio|https://www.pcstudio.in
+PCHubShop|https://www.pchubshop.com
+Prime ABGB|https://www.primeabgb.com
+quickincomputers|https://quickincomputers.com
+SCL Gaming|https://sclgaming.in
+solankienterprises|https://solankienterprises.com
+Variety Infotech|https://varietyinfotech.com
+Viper PC|https://viperpc.in
+AULA India|https://aulaindia.com
+Cosmic Byte|https://www.thecosmicbyte.com
+Meckeys|https://www.meckeys.com
+Moskeys|https://moskeys.com
+Ninja Dog|https://ninjadog.in
+StacksKB|https://stackskb.com
+Theproaudio|https://www.theproaudio.com
+EOF
+          : > out/plugin-fingerprints.tsv
+          : > out/native-feed-results.tsv
+          : > out/native-feed-misses.tsv
 
-          # Stage 1: public plugin technology extraction only. No product API is called.
-          home=$(mktemp)
-          wp=$(mktemp)
-          curl -ksSL --connect-timeout 5 --max-time 10 -A 'Mozilla/5.0' -o "$home" "$root/" >/dev/null 2>&1 || : > "$home"
-          curl -ksSL --connect-timeout 5 --max-time 8 -A 'Mozilla/5.0' -o "$wp" "$root/wp-json/" >/dev/null 2>&1 || : > "$wp"
-          combined=$(mktemp)
-          cat "$home" "$wp" > "$combined"
-          families=""
-          markers=""
-          add_family() {
-            if [ -z "$families" ]; then families="$1"; else families="$families;$1"; fi
-            if [ -z "$markers" ]; then markers="$2"; else markers="$markers;$2"; fi
+          detect_plugin() {
+            local site="$1"
+            local root="$2"
+            local safe
+            safe=$(printf '%s' "$site" | tr ' /' '__')
+            local home="/tmp/$safe.home"
+            local wp="/tmp/$safe.wp"
+            curl -ksSL --connect-timeout 5 --max-time 8 -A 'Mozilla/5.0' -o "$home" "$root/" >/dev/null 2>&1 || : > "$home"
+            curl -ksSL --connect-timeout 5 --max-time 6 -A 'Mozilla/5.0' -o "$wp" "$root/wp-json/" >/dev/null 2>&1 || : > "$wp"
+            local combined="/tmp/$safe.all"
+            cat "$home" "$wp" > "$combined"
+            local families="" markers=""
+            add_family() {
+              if [ -z "$families" ]; then families="$1"; else families="$families;$1"; fi
+              if [ -z "$markers" ]; then markers="$2"; else markers="$markers;$2"; fi
+            }
+            if grep -Eqi 'woocommerce-google-product-feed|woocommerce_gpf|woocommerce_gpf_google' "$combined"; then add_family 'woocommerce_google_product_feed' 'woocommerce_gpf'; fi
+            if grep -Eqi 'webappick|ctx-feed|ctxfeed|woo-feed|woo_feed=' "$combined"; then add_family 'ctx_feed_webappick' 'webappick/ctx-feed/woo-feed'; fi
+            if grep -Eqi 'woo-product-feed-pro|adtribes|woosea' "$combined"; then add_family 'adtribes_product_feed_pro' 'woo-product-feed-pro/adtribes'; fi
+            if grep -Eqi 'webtoffee|webtoffee_product_feed' "$combined"; then add_family 'webtoffee_product_feed' 'webtoffee'; fi
+            if grep -Eqi 'wppfm|product feed manager|woocommerce product feed manager' "$combined"; then add_family 'wpfm_product_feed_manager' 'wppfm/product-feed-manager'; fi
+            if grep -Eqi 'codesolz|codesolz-feeds' "$combined"; then add_family 'codesolz_feed' 'codesolz'; fi
+            if grep -Eqi 'feedcraft-product-feed|feedcraft product feed' "$combined"; then add_family 'feedcraft' 'feedcraft-product-feed'; fi
+            if grep -Eqi 'google-listings-and-ads|google for woocommerce|google-merchant-api|google merchant api' "$combined"; then add_family 'google_for_woocommerce' 'google-listings-and-ads'; fi
+            local primary='unknown_woocommerce'
+            case "$families" in
+              *woocommerce_google_product_feed*) primary='woocommerce_google_product_feed' ;;
+              *ctx_feed_webappick*) primary='ctx_feed_webappick' ;;
+              *adtribes_product_feed_pro*) primary='adtribes_product_feed_pro' ;;
+              *webtoffee_product_feed*) primary='webtoffee_product_feed' ;;
+              *wpfm_product_feed_manager*) primary='wpfm_product_feed_manager' ;;
+              *codesolz_feed*) primary='codesolz_feed' ;;
+              *feedcraft*) primary='feedcraft' ;;
+              *google_for_woocommerce*) primary='google_for_woocommerce' ;;
+            esac
+            local assets
+            assets=$(grep -Eo '/wp-content/plugins/[A-Za-z0-9._-]+' "$home" 2>/dev/null | sed 's#^/wp-content/plugins/##' | sort -u | tr '\n' ',' | sed 's/,$//')
+            printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$site" "$root" "$primary" "${families:-none}" "${markers:-none}" "${assets:-none}" >> out/plugin-fingerprints.tsv
+            printf '%s\t%s\n' "$primary" "$site" >> out/plugin-groups.tsv
+            printf '%s\n' "$primary" > "/tmp/$safe.plugin"
+            rm -f "$home" "$wp" "$combined"
           }
-          if grep -Eqi 'woocommerce-google-product-feed|woocommerce_gpf|woocommerce_gpf_google' "$combined"; then add_family "woocommerce_google_product_feed" "woocommerce_gpf"; fi
-          if grep -Eqi 'webappick|ctx-feed|ctxfeed|woo-feed|woo_feed=' "$combined"; then add_family "ctx_feed_webappick" "webappick/ctx-feed/woo-feed"; fi
-          if grep -Eqi 'woo-product-feed-pro|adtribes|woosea' "$combined"; then add_family "adtribes_product_feed_pro" "woo-product-feed-pro/adtribes"; fi
-          if grep -Eqi 'webtoffee|webtoffee_product_feed' "$combined"; then add_family "webtoffee_product_feed" "webtoffee"; fi
-          if grep -Eqi 'wppfm|product feed manager|woocommerce product feed manager' "$combined"; then add_family "wpfm_product_feed_manager" "wppfm/product-feed-manager"; fi
-          if grep -Eqi 'codesolz|codesolz-feeds' "$combined"; then add_family "codesolz_feed" "codesolz"; fi
-          if grep -Eqi 'feedcraft-product-feed|feedcraft product feed' "$combined"; then add_family "feedcraft" "feedcraft-product-feed"; fi
-          if grep -Eqi 'google-listings-and-ads|google for woocommerce|google-merchant-api|google merchant api' "$combined"; then add_family "google_for_woocommerce" "google-listings-and-ads"; fi
-          primary="unknown_woocommerce"
-          case "$families" in
-            *woocommerce_google_product_feed*) primary="woocommerce_google_product_feed" ;;
-            *ctx_feed_webappick*) primary="ctx_feed_webappick" ;;
-            *adtribes_product_feed_pro*) primary="adtribes_product_feed_pro" ;;
-            *webtoffee_product_feed*) primary="webtoffee_product_feed" ;;
-            *wpfm_product_feed_manager*) primary="wpfm_product_feed_manager" ;;
-            *codesolz_feed*) primary="codesolz_feed" ;;
-            *feedcraft*) primary="feedcraft" ;;
-            *google_for_woocommerce*) primary="google_for_woocommerce" ;;
-          esac
-          assets=$(grep -Eo '/wp-content/plugins/[A-Za-z0-9._-]+' "$home" 2>/dev/null | sed 's#^/wp-content/plugins/##' | sort -u | tr '\n' ',' | sed 's/,$//')
-          families_out="$families"; [ -n "$families_out" ] || families_out="none"
-          markers_out="$markers"; [ -n "$markers_out" ] || markers_out="none"
-          assets_out="$assets"; [ -n "$assets_out" ] || assets_out="none"
-          printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$site" "$root" "$primary" "$families_out" "$markers_out" "$assets_out" >> out/plugin-fingerprints.tsv
-          printf '%s\t%s\n' "$primary" "$site" >> out/plugin-groups.tsv
-          rm -f "$home" "$wp" "$combined"
-          paths=(
-            '/?woocommerce_gpf=google'
-            '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=250'
-            '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=1000'
-            '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=5000'
-            '/woocommerce_gpf/google'
-            '/woocommerce_gpf/google?gpf_start=0&gpf_limit=250'
-            '/woocommerce_gpf/google?gpf_start=0&gpf_limit=1000'
-            '/google.xml' '/google_feed.xml' '/google-feed.xml'
-            '/google_base.xml' '/googlebase.xml'
-            '/google-products.xml' '/google-product-feed.xml' '/google_product_feed.xml'
-            '/google-products-feed.xml' '/google-shopping.xml' '/google-shopping-feed.xml'
-            '/google-shopping-products.xml' '/google-shopping-products-feed.xml'
-            '/google-merchant.xml' '/google-merchant-feed.xml' '/google_merchant_feed.xml'
-            '/merchant.xml' '/merchant-feed.xml' '/merchant_feed.xml'
-            '/gmerchant.xml' '/gpf.xml'
-            '/product-feed.xml' '/products-feed.xml' '/feed_products.xml' '/products.xml'
-            '/feed/google.xml' '/feed/google_feed.xml' '/feed/googlebase.xml'
-            '/feed/google_base.xml' '/feed/google-products.xml' '/feed/google-shopping.xml'
-            '/feed/google-shopping-feed.xml' '/feed/merchant.xml' '/feed/merchant-feed.xml'
-            '/feeds/google.xml' '/feeds/google_feed.xml' '/feeds/google_base.xml'
-            '/feeds/google-products.xml' '/feeds/google-product-feed.xml'
-            '/feeds/google-shopping.xml' '/feeds/google-shopping-feed.xml'
-            '/feeds/google-merchant.xml' '/feeds/google-merchant-feed.xml'
-            '/feeds/merchant.xml' '/feeds/merchant-feed.xml' '/feeds/products.xml'
-            '/media/feed/google.xml'
-            '/catalog/feed'
-            '/products/google.xml' '/products/google-feed.xml' '/products/google-shopping.xml'
-            '/product-feed/google.xml' '/product-feed/google-shopping.xml'
-            '/google-feed/index.xml' '/feeds/google/index.xml'
-            '/wp-content/uploads/woo-feed/google.xml'
-            '/wp-content/uploads/woo-feed/google/xml/google.xml'
-            '/wp-content/uploads/woo-feed/google/xml/google-shopping.xml'
-            '/wp-content/uploads/woo-feed/google/xml/google-shopping-feed.xml'
-            '/wp-content/uploads/woo-feed/google/xml/feed.xml'
-            '/wp-content/uploads/woo-product-feed-pro/xml/google.xml'
-            '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml'
-            '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping-feed.xml'
-            '/wp-content/uploads/woo-product-feed-pro/xml/feed.xml'
-            '/wp-content/uploads/wppfm-feeds/google.xml'
-            '/wp-content/uploads/codesolz-feeds/google.xml'
-            '/wp-content/uploads/codesolz-feeds/google-products.xml'
-            '/wp-json/feedcraft-product-feed/v1/xml'
-            '/feeds/products.rss'
-            '/products.rss'
-            '/feed.xml'
-          )
 
-          # Stage 2: plugin-specific XML guesses only. No feed URLs are read from HTML or directory indexes.
-          plugin_paths=()
-          case "$primary" in
-            woocommerce_google_product_feed)
-              plugin_paths+=( '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=100' '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=250' '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=1000' '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=2500' '/?woocommerce_gpf=google&gpf_start=0&gpf_limit=5000' ) ;;
-            ctx_feed_webappick)
-              plugin_paths+=( '/wp-content/uploads/woo-feed/google/xml/google.xml' '/wp-content/uploads/woo-feed/google/xml/google-shopping.xml' '/wp-content/uploads/woo-feed/google/xml/google-shopping-feed.xml' '/wp-content/uploads/woo-feed/google/xml/feed.xml' '/wp-content/uploads/woo-feed/google.xml' '/?woo_feed=google&wt=xml' '/?woo_feed=google-shopping&wt=xml' '/?woo_feed=google_shopping&wt=xml' '/?woo_feed=google-products&wt=xml' '/?woo_feed=google_product_feed&wt=xml' '/?woo_feed=google-feed&wt=xml' '/?woo_feed=google_feed&wt=xml' '/?woo_feed=google-merchant&wt=xml' '/?woo_feed=google_merchant&wt=xml' '/?woo_feed=gmc&wt=xml' '/?woo_feed=googlebase&wt=xml' ) ;;
-            adtribes_product_feed_pro)
-              plugin_paths+=( '/wp-content/uploads/woo-product-feed-pro/xml/google.xml' '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml' '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping-feed.xml' '/wp-content/uploads/woo-product-feed-pro/xml/feed.xml' '/wp-content/uploads/woo-product-feed-pro/xml/google.xml.gz' '/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml.gz' ) ;;
-            webtoffee_product_feed)
-              plugin_paths+=( '/wp-content/uploads/webtoffee_product_feed/wt_google_Feed.xml' '/wp-content/uploads/webtoffee_product_feed/wt_google_Feed.xml.gz' '/wp-content/uploads/webtoffee_product_feed/wt_gs_Feed.xml' '/wp-content/uploads/webtoffee_product_feed/wt_google_shopping_Feed.xml' '/wp-content/uploads/webtoffee_product_feed/wt_google_shopping_Feed.xml.gz' '/wp-content/uploads/webtoffee_product_feed/google.xml' '/wp-content/uploads/webtoffee_product_feed/google-shopping.xml' '/wp-content/uploads/webtoffee_product_feed/google-product-feed.xml' ) ;;
-            wpfm_product_feed_manager)
-              plugin_paths+=( '/wp-content/uploads/wppfm-feeds/google.xml' '/wp-content/uploads/wppfm-feeds/google-shopping.xml' '/wp-content/uploads/wppfm-feeds/product-feed.xml' ) ;;
-            codesolz_feed)
-              plugin_paths+=( '/wp-content/uploads/codesolz-feeds/google.xml' '/wp-content/uploads/codesolz-feeds/google-products.xml' '/wp-content/uploads/codesolz-feeds/google-shopping.xml' ) ;;
-            feedcraft)
-              plugin_paths+=( '/wp-json/feedcraft-product-feed/v1/xml' '/wp-json/feedcraft-product-feed/v1/google.xml' '/wp-json/feedcraft-product-feed/v1/google' '/wp-json/feedcraft-product-feed/v1/feed.xml' ) ;;
-          esac
-          if [ "$primary" = "unknown_woocommerce" ]; then
-            plugin_paths+=( '/?woo_feed=google&wt=xml' '/?woo_feed=google-shopping&wt=xml' '/wp-content/uploads/woo-feed/google/xml/google.xml' '/wp-content/uploads/woo-product-feed-pro/xml/google.xml' '/wp-content/uploads/webtoffee_product_feed/wt_google_Feed.xml' '/wp-content/uploads/wppfm-feeds/google.xml' '/wp-content/uploads/codesolz-feeds/google-products.xml' '/wp-json/feedcraft-product-feed/v1/xml' )
-          fi
-          token=$(printf '%s' "$root" | sed -E 's#https?://##; s#www\.##; s#/.*##; s/\..*$//; s/[^A-Za-z0-9]//g' | tr '[:upper:]' '[:lower:]')
-          if [ -n "$token" ]; then
-            for dir in '/wp-content/uploads/woo-feed/google/xml/' '/wp-content/uploads/woo-product-feed-pro/xml/' '/wp-content/uploads/webtoffee_product_feed/'; do
-              for seed in googlemerchantcenter googlemerchant googleshopping google-feed googlefeed product-feed productfeed google-shopping-feed; do
-                plugin_paths+=( "$dir$token$seed.xml" "$dir$seed$token.xml" "$dir$token-$seed.xml" "$dir$seed-$token.xml" )
-              done
-            done
-          fi
-          paths=("${plugin_paths[@]}" "${paths[@]}")
-          valid() {
+          native_valid() {
             local f="$1"
-            grep -Eqi 'http://base.google.com/ns/1.0|https://base.google.com/ns/1.0' "$f" &&
-            grep -Eqi '<rss\b|<feed\b' "$f" &&
-            grep -Eqi '<item\b|<entry\b' "$f" &&
-            grep -Eqi '<g:id\b|<g:title\b' "$f" &&
-            grep -Eqi '<g:link\b|<g:price\b' "$f" &&
-            ! grep -Eqi 'just a moment|cf-chl-|turnstile|captcha|access denied|attention required|checking your browser' "$f"
+            grep -Eqi 'xmlns:g[[:space:]]*=[[:space:]]*["'"']https?://base\.google\.com/ns/1\.0["'"']' "$f" || return 1
+            grep -Eqi '<(item|entry)\b' "$f" || return 1
+            grep -Eqi '<g:id\b' "$f" || return 1
+            grep -Eqi '<g:title\b' "$f" || return 1
+            grep -Eqi '<g:link\b' "$f" || return 1
+            grep -Eqi '<g:price\b' "$f" || return 1
+            ! grep -Eqi 'just a moment|cf-chl-|cf-turnstile|turnstile|captcha|access denied|attention required|checking your browser' "$f"
           }
 
-          same_host() {
-            python3 - "$1" "$root" <<'PY'
-          import sys
-          from urllib.parse import urlsplit
-          a=urlsplit(sys.argv[1]); b=urlsplit(sys.argv[2])
-          print("1" if a.hostname and b.hostname and a.hostname==b.hostname else "0")
-          PY
-          }
-
-          for p in "${paths[@]}"; do
-            u="${root}${p}"
-            hdr=$(mktemp); body=$(mktemp)
-            curl -ksSL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0'               -D "$hdr" -o "$body" "$u" >/dev/null 2>&1 || { rm -f "$hdr" "$body"; continue; }
-            code=$(awk 'tolower($1)=="http/2" || tolower($1)=="http/1.1" {c=$2} END{print c+0}' "$hdr")
-            final=$(curl -ksSIL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0' "$u" 2>/dev/null |               awk 'tolower($1)=="location:"{print $2}' | tail -1 | tr -d '\r')
-            [ -z "$final" ] && final="$u"
-            if [ "$code" = "200" ] && [ "$(same_host "$final")" = "1" ] && valid "$body"; then
-              printf '%s\t%s\n' "$site" "$final" >> "$output"
-              printf '%s\t%s\t%s\n' "$site" "$final" "$code" > "out/${site// /_}.hit"
-              rm -f "$hdr" "$body"
-              exit 0
+          add_plugin_guesses() {
+            local primary="$1"
+            local candidates="$2"
+            case "$primary" in
+              woocommerce_google_product_feed)
+                cat >> "$candidates" <<'EOF'
+/?woocommerce_gpf=google
+/woocommerce_gpf/google
+/?woocommerce_gpf=google&gpf_start=0&gpf_limit=100
+/?woocommerce_gpf=google&gpf_start=0&gpf_limit=250
+/?woocommerce_gpf=google&gpf_start=0&gpf_limit=1000
+/?woocommerce_gpf=google&gpf_start=0&gpf_limit=2500
+EOF
+                ;;
+              ctx_feed_webappick)
+                cat >> "$candidates" <<'EOF'
+/wp-content/uploads/woo-feed/google/xml/google.xml
+/wp-content/uploads/woo-feed/google/xml/google-shopping.xml
+/wp-content/uploads/woo-feed/google/xml/google-shopping-feed.xml
+/wp-content/uploads/woo-feed/google/xml/feed.xml
+/wp-content/uploads/woo-feed/google.xml
+/?woo_feed=google&wt=xml
+/?woo_feed=google-shopping&wt=xml
+/?woo_feed=google_shopping&wt=xml
+/?woo_feed=google-products&wt=xml
+/?woo_feed=google_product_feed&wt=xml
+/?woo_feed=google-feed&wt=xml
+/?woo_feed=google_feed&wt=xml
+/?woo_feed=google-merchant&wt=xml
+/?woo_feed=gmc&wt=xml
+EOF
+                ;;
+              adtribes_product_feed_pro)
+                cat >> "$candidates" <<'EOF'
+/wp-content/uploads/woo-product-feed-pro/xml/google.xml
+/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml
+/wp-content/uploads/woo-product-feed-pro/xml/google-shopping-feed.xml
+/wp-content/uploads/woo-product-feed-pro/xml/feed.xml
+/wp-content/uploads/woo-product-feed-pro/xml/google.xml.gz
+/wp-content/uploads/woo-product-feed-pro/xml/google-shopping.xml.gz
+EOF
+                ;;
+              webtoffee_product_feed)
+                cat >> "$candidates" <<'EOF'
+/wp-content/uploads/webtoffee_product_feed/wt_google_Feed.xml
+/wp-content/uploads/webtoffee_product_feed/wt_google_Feed.xml.gz
+/wp-content/uploads/webtoffee_product_feed/wt_gs_Feed.xml
+/wp-content/uploads/webtoffee_product_feed/wt_google_shopping_Feed.xml
+/wp-content/uploads/webtoffee_product_feed/wt_google_shopping_Feed.xml.gz
+/wp-content/uploads/webtoffee_product_feed/google.xml
+/wp-content/uploads/webtoffee_product_feed/google-shopping.xml
+EOF
+                ;;
+              wpfm_product_feed_manager)
+                cat >> "$candidates" <<'EOF'
+/wp-content/uploads/wppfm-feeds/google.xml
+/wp-content/uploads/wppfm-feeds/google-shopping.xml
+/wp-content/uploads/wppfm-feeds/product-feed.xml
+EOF
+                ;;
+              codesolz_feed)
+                cat >> "$candidates" <<'EOF'
+/wp-content/uploads/codesolz-feeds/google.xml
+/wp-content/uploads/codesolz-feeds/google-products.xml
+/wp-content/uploads/codesolz-feeds/google-shopping.xml
+EOF
+                ;;
+              feedcraft)
+                cat >> "$candidates" <<'EOF'
+/wp-json/feedcraft-product-feed/v1/xml
+/wp-json/feedcraft-product-feed/v1/google.xml
+/wp-json/feedcraft-product-feed/v1/google
+/wp-json/feedcraft-product-feed/v1/feed.xml
+EOF
+                ;;
+            esac
+            if [ "$primary" = 'unknown_woocommerce' ]; then
+              cat >> "$candidates" <<'EOF'
+/?woo_feed=google&wt=xml
+/?woo_feed=google-shopping&wt=xml
+/wp-content/uploads/woo-feed/google/xml/google.xml
+/wp-content/uploads/woo-product-feed-pro/xml/google.xml
+/wp-content/uploads/webtoffee_product_feed/wt_google_Feed.xml
+/wp-content/uploads/wppfm-feeds/google.xml
+/wp-content/uploads/codesolz-feeds/google-products.xml
+/wp-json/feedcraft-product-feed/v1/xml
+EOF
             fi
-            rm -f "$hdr" "$body"
-          done
-          printf '%s\tNOT_FOUND\n' "$site" > "out/${site// /_}.miss"
-          SH
-          chmod +x /tmp/hunt_site.sh
+          }
 
-          : > out/verified-native-feed-urls.tsv
-          declare -a sites=(
-            'Aarna Computers|https://aarnacomputers.com'
-            'Ads Store|https://adsstore.in'
-            'avikaretails|https://avikaretails.com'
-            'EZPZ Solutions|https://www.ezpzsolutions.in'
-            'GamesNComps|https://gamesncomps.com'
-            'Geekbees|https://geekbees.in'
-            'hotshiftpc|https://hotshiftpc.com'
-            'itgadgetsonline|https://itgadgetsonline.com'
-            'ithunt|https://ithunt.in'
-            'KC Computers|https://kccomputers.co.in'
-            'KRG KART|https://krgkart.com'
-            'Kryptronix Gaming|https://kryptronix.in'
-            'NCL Computer|https://nclcomputer.com'
-            'networkitstore|https://networkitstore.in'
-            'nexusinfosys|https://www.mynexusinfosys.com'
-            'Only SDD|https://onlyssd.com'
-            'PC Kumar Infotech|https://pckumar.in'
-            'PC Studio|https://www.pcstudio.in'
-            'PCHubShop|https://www.pchubshop.com'
-            'Prime ABGB|https://www.primeabgb.com'
-            'quickincomputers|https://quickincomputers.com'
-            'SCL Gaming|https://sclgaming.in'
-            'solankienterprises|https://solankienterprises.com'
-            'Variety Infotech|https://varietyinfotech.com'
-            'Viper PC|https://viperpc.in'
-            'AULA India|https://aulaindia.com'
-            'Cosmic Byte|https://www.thecosmicbyte.com'
-            'Meckeys|https://www.meckeys.com'
-            'Moskeys|https://moskeys.com'
-            'Ninja Dog|https://ninjadog.in'
-            'StacksKB|https://stackskb.com'
-            'Theproaudio|https://www.theproaudio.com'
-          )
+          guess_one() {
+            local site="$1" root="$2" primary="$3"
+            local safe candidates token
+            safe=$(printf '%s' "$site" | tr ' /' '__')
+            candidates="/tmp/$safe.candidates"
+            : > "$candidates"
+            add_plugin_guesses "$primary" "$candidates"
+            cat >> "$candidates" <<'EOF'
+/google.xml
+/google_feed.xml
+/google-feed.xml
+/google_base.xml
+/googlebase.xml
+/google-products.xml
+/google-product-feed.xml
+/google_product_feed.xml
+/google-products-feed.xml
+/google-shopping.xml
+/google-shopping-feed.xml
+/google-shopping-products.xml
+/google-shopping-products-feed.xml
+/google-merchant.xml
+/google-merchant-feed.xml
+/google_merchant_feed.xml
+/merchant.xml
+/merchant-feed.xml
+/merchant_feed.xml
+/gmerchant.xml
+/gpf.xml
+/product-feed.xml
+/products-feed.xml
+/feed_products.xml
+/products.xml
+/feed/google.xml
+/feed/google_feed.xml
+/feed/googlebase.xml
+/feed/google_base.xml
+/feed/google-products.xml
+/feed/google-shopping.xml
+/feed/google-shopping-feed.xml
+/feed/merchant.xml
+/feed/merchant-feed.xml
+/feeds/google.xml
+/feeds/google_feed.xml
+/feeds/google_base.xml
+/feeds/google-products.xml
+/feeds/google-product-feed.xml
+/feeds/google-shopping.xml
+/feeds/google-shopping-feed.xml
+/feeds/google-merchant.xml
+/feeds/google-merchant-feed.xml
+/feeds/merchant.xml
+/feeds/merchant-feed.xml
+/feeds/products.xml
+/media/feed/google.xml
+/catalog/feed
+/products/google.xml
+/products/google-feed.xml
+/products/google-shopping.xml
+/product-feed/google.xml
+/product-feed/google-shopping.xml
+/google-feed/index.xml
+/feeds/google/index.xml
+/feed.xml
+/feeds/products.rss
+/products.rss
+EOF
+            token=$(printf '%s' "$root" | sed -E 's#https?://##; s#www\.##; s#/.*##; s/\..*$//; s/[^A-Za-z0-9]//g' | tr '[:upper:]' '[:lower:]')
+            if [ -n "$token" ]; then
+              for dir in '/wp-content/uploads/woo-feed/google/xml/' '/wp-content/uploads/woo-product-feed-pro/xml/' '/wp-content/uploads/webtoffee_product_feed/'; do
+                for seed in googleshopping googlefeed productfeed merchant-feed google-shopping-feed; do
+                  printf '%s%s.xml\n' "$dir" "$token$seed" >> "$candidates"
+                  printf '%s%s.xml\n' "$dir" "$seed$token" >> "$candidates"
+                  printf '%s%s-%s.xml\n' "$dir" "$token" "$seed" >> "$candidates"
+                  printf '%s%s-%s.xml\n' "$dir" "$seed" "$token" >> "$candidates"
+                done
+              done
+            fi
 
-          pids=()
-          for item in "${sites[@]}"; do
-            name="${item%%|*}"
-            root="${item#*|}"
-            /tmp/hunt_site.sh "$name" "$root" out/verified-native-feed-urls.tsv &
-            pids+=("$!")
-          done
-          for p in "${pids[@]}"; do wait "$p" || true; done
+            local hitfile="/tmp/$safe.hit"
+            rm -f "$hitfile"
+            local active=0
+            while IFS= read -r path; do
+              [ -n "$path" ] || continue
+              (
+                local body="/tmp/$safe.body.$RANDOM"
+                local hdr="/tmp/$safe.hdr.$RANDOM"
+                curl -ksSL --connect-timeout 3 --max-time 5 -A 'Mozilla/5.0 (compatible; WooCommerceXMLGuess/1.0)' -D "$hdr" -o "$body" -w '%{url_effective}' "$root$path" > "$hdr.final" 2>/dev/null || true
+                local final
+                final=$(cat "$hdr.final" 2>/dev/null || true)
+                case "$final" in
+                  "$root"|"$root"/*) ;;
+                  *) rm -f "$body" "$hdr" "$hdr.final"; exit 0 ;;
+                esac
+                local code
+                code=$(awk 'toupper($1) ~ /^HTTP/ {c=$2} END {print c+0}' "$hdr")
+                if [ "$code" = '200' ] && native_valid "$body"; then
+                  printf '%s\t%s\t%s\tNATIVE_FEED_VERIFIED\n' "$site" "$primary" "$final" > "$hitfile"
+                fi
+                rm -f "$body" "$hdr" "$hdr.final"
+              ) &
+              active=$((active+1))
+              if [ "$active" -ge 8 ]; then wait -n || true; active=$((active-1)); fi
+              [ -f "$hitfile" ] && break
+            done < <(sort -u "$candidates")
+            wait || true
+            if [ -f "$hitfile" ]; then
+              cat "$hitfile" >> out/native-feed-results.tsv
+            else
+              printf '%s\t%s\tNO_NATIVE_FEED_VERIFIED\n' "$site" "$primary" >> out/native-feed-misses.tsv
+            fi
+            rm -f "$candidates" "$hitfile"
+          }
 
-          {
-            printf 'site\troot\tprimary_plugin\tall_plugin_signals\tmarkers\tplugin_assets\n'
-            sort -t$'\t' -k1,1 out/plugin-fingerprints.tsv
-          } > out/plugin-fingerprints.sorted.tsv
+          export -f detect_plugin native_valid add_plugin_guesses guess_one
+          : > out/plugin-groups.tsv
+          active_sites=0
+          while IFS='|' read -r site root; do
+            detect_plugin "$site" "$root" &
+            active_sites=$((active_sites+1))
+            if [ "$active_sites" -ge 4 ]; then wait -n || true; active_sites=$((active_sites-1)); fi
+          done < out/sites.tsv
+          wait
 
+          : > out/native-feed-misses.tsv
+          active_sites=0
+          while IFS=$'\t' read -r site root primary signals markers assets; do
+            guess_one "$site" "$root" "$primary" &
+            active_sites=$((active_sites+1))
+            if [ "$active_sites" -ge 4 ]; then wait -n || true; active_sites=$((active_sites-1)); fi
+          done < <(sort -t$'\t' -k1,1 out/plugin-fingerprints.tsv)
+          wait
+
+          sort -u out/plugin-fingerprints.tsv -o out/plugin-fingerprints.tsv
+          sort -u out/native-feed-results.tsv -o out/native-feed-results.tsv
+          sort -u out/native-feed-misses.tsv -o out/native-feed-misses.tsv
           {
             echo '# Plugin groups'
             echo
-            sort -t$'\t' -k1,1 out/plugin-groups.tsv |
-              awk -F '\t' '
-                BEGIN { current="" }
-                {
-                  if ($1 != current) {
-                    if (current != "") print ""
-                    printf "## %s\n\n", $1
-                    current=$1
-                  }
-                  printf "- %s\n", $2
-                }
-              '
+            sort -t$'\t' -k1,1 out/plugin-groups.tsv | awk -F '\t' '
+              BEGIN { current="" }
+              {
+                if ($1 != current) { if (current != "") print ""; printf "## %s\n\n", $1; current=$1 }
+                printf "- %s\n", $2
+              }
+            '
           } > out/plugin-groups.md
-          sort -u out/verified-native-feed-urls.tsv -o out/verified-native-feed-urls.tsv
-          echo '=== VERIFIED NATIVE FEEDS ==='
-          cat out/verified-native-feed-urls.tsv
-      - name: Validate plugin extraction and XML-guess coverage
+          {
+            echo '# XML feed guessing summary'
+            echo
+            echo '## Verified native feeds'
+            cat out/native-feed-results.tsv 2>/dev/null || true
+            echo
+            echo '## No native feed verified'
+            cat out/native-feed-misses.tsv 2>/dev/null || true
+          } > out/native-feed-summary.md
+
+      - name: Validate exact 32-site coverage and method boundary
         shell: bash
         run: |
           set -euo pipefail
           test "$(wc -l < out/plugin-fingerprints.tsv)" -eq 32
           test "$(cut -f1 out/plugin-fingerprints.tsv | sort -u | wc -l)" -eq 32
-          native_hits=$(wc -l < out/verified-native-feed-urls.tsv 2>/dev/null || echo 0)
-          misses=$(find out -name '*.miss' | wc -l)
-          test "$((native_hits + misses))" -eq 32
+          results=$(wc -l < out/native-feed-results.tsv 2>/dev/null || echo 0)
+          misses=$(wc -l < out/native-feed-misses.tsv 2>/dev/null || echo 0)
+          test "$((results + misses))" -eq 32
+          ! grep -Rqi 'wc/store/v1/products' out
+          ! grep -Rqi 'products.json' out
+          ! grep -Rqi 'graphql.json' out
           echo "plugin-sites=32"
-          echo "native-feed-hits=$native_hits"
+          echo "native-feed-hits=$results"
           echo "native-feed-misses=$misses"
-      - name: Upload feed URL evidence
+
+      - name: Upload 32-site plugin + XML evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: native-google-feed-url-results
+          name: woocommerce-32-plugin-fingerprint-xml-guess-fast
           path: out/
           retention-days: 14
