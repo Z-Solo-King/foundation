@@ -3,6 +3,7 @@
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
 Checked: 2026-09-29.
+Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
 Foundation main code checkpoint: ceefc21bffaed0f2ec471948f7a37ccff7f5a503.
 Operations main checkpoint: af3dc60349ca9de7c3747625949269234d34021f.
 Production Operations pin: 2d1667beeba912d9d5592322a664623e1ef07674.
