@@ -1,17 +1,148 @@
 {
   "schema": "family-issue-acceptance-matrix/v1",
-  "audited_at": "2026-09-29",
+  "audited_at": "2026-09-29T07:10:00Z",
   "repository_heads": {
-    "foundation": "f66d32cedd39ef076c06fce7bd69175c14a6b0bc",
-    "operations": "4e2c5860f306a5c481a4a0a6540aaac72cc3644a"
+    "foundation": "34fcae8638fc2fb591131d5e53a6cf47ebdbe0dd",
+    "operations": "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d"
   },
-  "open_issue_count": 0,
-  "issues": [],
+  "open_issue_count": 13,
+  "issues": [
+    {
+      "repo": "foundation",
+      "number": 58,
+      "title": "META: exhaustive Research Intelligence Engine coverage tracker",
+      "required_evidence": [
+        "child issue receipts",
+        "four-lane aggregate"
+      ]
+    },
+    {
+      "repo": "foundation",
+      "number": 1157,
+      "title": "benchmark: project-native AI/agent benchmark and cross-language evaluation matrix",
+      "required_evidence": [
+        "benchmark contract",
+        "project-native task matrix",
+        "reproducible multi-model baseline"
+      ]
+    },
+    {
+      "repo": "foundation",
+      "number": 157,
+      "title": "research: complete 24-program Heroic AI improvement run",
+      "required_evidence": [
+        "24 real provider-backed executions with exact revision",
+        "three lane artifacts",
+        "truthful final result"
+      ]
+    },
+    {
+      "repo": "foundation",
+      "number": 1247,
+      "title": "feed: WooCommerce Google Feed Recovery — 9 unresolved retailers",
+      "required_evidence": [
+        "public discovery for unresolved retailers",
+        "strict Google Merchant payload validation"
+      ]
+    },
+    {
+      "repo": "foundation",
+      "number": 1249,
+      "title": "feed: Custom/API Google Feed Recovery — chat handoff",
+      "required_evidence": [
+        "additional real Google Merchant XML feed discoveries",
+        "strict payload validation"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 145,
+      "title": "maintenance: activate approved periodic maintenance tick",
+      "required_evidence": [
+        "approved scheduled runtime receipt with exact revision/time/result/provenance"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 597,
+      "title": "migration: mapper capability decomposition and evidence lanes",
+      "required_evidence": [
+        "capability decomposition",
+        "capability inventory",
+        "differential",
+        "parity",
+        "bottleneck decisions",
+        "rollback dispositions"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 603,
+      "title": "migration: AI-model/tooling portability across migration components",
+      "required_evidence": [
+        "language governance",
+        "polyglot registry",
+        "candidate rollback/shadow evidence"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 1027,
+      "title": "security: move privileged provider-secret fan-out behind private boundary",
+      "required_evidence": [
+        "provider secrets",
+        "private boundary",
+        "credential isolation",
+        "controlled synchronization test"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 1066,
+      "title": "security: protect Operations main with required PR checks",
+      "required_evidence": [
+        "branch protection enabled",
+        "required status checks",
+        "settings readback receipt"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 1103,
+      "title": "security: public-repo surface audit — infra leaks and disclosure remediation",
+      "required_evidence": [
+        "public surface remediation",
+        "private-boundary disclosure cleanup",
+        "current scan receipt"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 1135,
+      "title": "migration: investigate Worker 403/502 boundary and evaluate bounded TypeScript edge/SSE migration",
+      "required_evidence": [
+        "current Cloudflare runtime-status verification",
+        "host-runtime root cause",
+        "contract/security/policy/provenance parity",
+        "shadow/canary/rollback evidence"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 1137,
+      "title": "migration: consolidated plan and execution order",
+      "required_evidence": [
+        "phase-by-phase execution evidence",
+        "issue-specific runtime receipts",
+        "promotion/rollback evidence"
+      ]
+    }
+  ],
   "evidence_rules": {
     "research_signal": "discovery/candidate evidence only",
     "benchmark": "deterministic or controlled comparative evidence; not production certification by itself",
-    "runtime": "required for a production/runtime promotion when an actual promotion is attempted",
-    "closure": "issue closure follows completion of the repository outcome or explicit retirement of a non-blocking experiment; no synthetic runtime evidence is used"
+    "runtime": "Required for any production/runtime acceptance claim; use exact live revision, observed timestamp, result and provenance.",
+    "closure": "Close an issue only after its required repository/runtime acceptance evidence is present and verified; administrative reclassification, stale documentation, dry-runs, or comments alone are not closure evidence."
   },
   "ownership": {
     "foundation": [

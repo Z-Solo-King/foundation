@@ -12,7 +12,7 @@ def test_open_issue_acceptance_matrix_is_current_and_complete() -> None:
         (ROOT / "docs" / "OPEN_ISSUE_ACCEPTANCE_MATRIX.json").read_text(encoding="utf-8")
     )
     assert matrix["schema"] == "family-issue-acceptance-matrix/v1"
-    assert matrix["open_issue_count"] == 21
+    assert matrix["open_issue_count"] == 13
     issues = {(row["repo"], row["number"]) for row in matrix["issues"]}
     assert issues == {
         ("foundation", 58),
@@ -20,23 +20,17 @@ def test_open_issue_acceptance_matrix_is_current_and_complete() -> None:
         ("foundation", 157),
         ("foundation", 1247),
         ("foundation", 1249),
-        ("foundation", 1265),
-                ("foundation", 1283),
-        ("foundation", 1284),
         ("operations", 145),
-                ("operations", 340),
-        ("operations", 385),
         ("operations", 597),
         ("operations", 603),
-        ("operations", 699),
-        ("operations", 713),
-        ("operations", 994),
-        ("operations", 997),
-        ("operations", 998),
-        ("operations", 1005),
+        ("operations", 1027),
+        ("operations", 1066),
+        ("operations", 1103),
+        ("operations", 1135),
+        ("operations", 1137),
     }
     assert matrix["graph_reference"]["schema"] == "family-integration-graph/v1"
-    assert matrix["graph_reference"]["materials"] == 19
+    assert matrix["graph_reference"]["materials"] == 20
     assert matrix["graph_reference"]["probes"] == 11
 
 

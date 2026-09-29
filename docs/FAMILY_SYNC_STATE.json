@@ -1,11 +1,11 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-29",
+  "audited_at": "2026-09-29T07:10:00Z",
   "public_safe": true,
   "live_main": {
-    "foundation": "f66d32cedd39ef076c06fce7bd69175c14a6b0bc",
-    "operations": "4e2c5860f306a5c481a4a0a6540aaac72cc3644a"
+    "foundation": "34fcae8638fc2fb591131d5e53a6cf47ebdbe0dd",
+    "operations": "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d"
   },
   "runtime_pins": {
     "foundation_runtime": "current-main",
@@ -21,20 +21,35 @@
     "private_resource_identifiers": "redacted"
   },
   "current_queue": {
-    "open_issue_count": 0,
-    "foundation": [],
-    "operations_count": 0,
-    "operations": []
+    "open_issue_count": 13,
+    "foundation": [
+      58,
+      1157,
+      157,
+      1247,
+      1249
+    ],
+    "operations_count": 8,
+    "operations": [
+      145,
+      597,
+      603,
+      1027,
+      1066,
+      1103,
+      1135,
+      1137
+    ]
   },
   "evidence": {
-    "nightly_research": "FOLLOW-UP OPTIONAL: provider-backed research can run independently of project issue closure.",
+    "nightly_research": "OPEN: requires production-release-dispatched provider-backed 24-program execution with exact revision and complete lane artifacts.",
     "extractor_benchmark": {
       "receipts": 40,
       "structural_pass": true,
       "real_catalog_success_not_proven": true
     },
-    "migration_review": "COMPLETE: merged migration lanes remain candidate/promotional evidence, not a second production authority.",
-    "feed_recovery": "QUALIFICATION COMPLETE: verified feeds retained; blocked/unverified targets are not misclassified."
+    "migration_review": "OPEN: candidate-specific parity, performance, shadow/canary and rollback evidence remain required before authority promotion.",
+    "feed_recovery": "OPEN: verified feeds are retained; transport-blocked and unverified targets remain unresolved and are not classified as negative."
   },
   "continuity_enforcement": {
     "schema": "continuity-freshness/v1",
