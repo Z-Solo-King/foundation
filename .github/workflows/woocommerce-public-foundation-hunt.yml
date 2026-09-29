@@ -9,7 +9,7 @@ on:
       operations_ref:
         description: Exact Operations revision containing the WooCommerce extractor
         required: false
-        default: 59f85b379dda46d8753db16b2da43ca63f1f0934
+        default: 3015b531f01d0fc56917fb5a83712cd356c54281
         type: string
 
 permissions:
@@ -31,18 +31,18 @@ jobs:
         shard: [0,1,2,3,4,5,6,7]
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || '59f85b379dda46d8753db16b2da43ca63f1f0934' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || '3015b531f01d0fc56917fb5a83712cd356c54281' }}
       SHARD: ${{ matrix.shard }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Checkout Foundation
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
 
       - name: Create Operations read token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
@@ -53,7 +53,6 @@ jobs:
       - name: Verify Operations token
         env:
           GH_TOKEN: ${{ steps.operations-app.outputs.token }}
-        shell: bash
         run: |
           set -euo pipefail
           test -n "$GH_TOKEN"
@@ -61,7 +60,7 @@ jobs:
           gh api "repos/Z-Solo-King/operations/commits/${{ env.OPERATIONS_REF }}" --jq '.sha'
 
       - name: Checkout exact Operations extractor
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ${{ env.OPERATIONS_REPOSITORY }}
           ref: ${{ env.OPERATIONS_REF }}
@@ -70,7 +69,7 @@ jobs:
           path: operations
 
       - name: Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.14"
 
@@ -81,7 +80,7 @@ jobs:
           python -m pip install --disable-pip-version-check -e ".[browser]"
           python -m playwright install --with-deps chromium
 
-      - name: Run 32-site shard
+      - name: Run v3 shard
         working-directory: operations
         env:
           SHARD: ${{ matrix.shard }}
@@ -102,45 +101,37 @@ jobs:
               "varietyinfotech.com","viperpc.in","aulaindia.com","thecosmicbyte.com",
               "meckeys.com","moskeys.com","ninjadog.in","stackskb.com","theproaudio.com",
           ]
+
           shard = int(os.environ["SHARD"])
           selected = sites[shard::8]
-          browser_dir = Path("evidence/public-browser")
-          http_dir = Path("evidence/public-http")
-          browser_dir.mkdir(parents=True, exist_ok=True)
-          http_dir.mkdir(parents=True, exist_ok=True)
+          out = Path("evidence/final-v3")
+          out.mkdir(parents=True, exist_ok=True)
 
           for site in selected:
-              browser_out = browser_dir / f"woocommerce-{site}.json"
-              http_out = http_dir / f"woocommerce-{site}.json"
-
-              print(f"=== browser: {site} ===", flush=True)
+              print(f"=== v3: {site} ===", flush=True)
               subprocess.run(
-                  ["python", "scripts/woocommerce_browser_probe.py",
-                   "--site", site, "--output", str(browser_out)],
+                  [
+                      "python", "scripts/woocommerce_browser_probe_v3.py",
+                      "--site", site,
+                      "--output", str(out / f"{site}.json"),
+                  ],
                   check=False,
               )
 
-              print(f"=== public-http: {site} ===", flush=True)
-              with http_out.open("w", encoding="utf-8") as handle:
-                  subprocess.run(
-                      ["python", "scripts/woocommerce_public_http_hunt.py", site],
-                      stdout=handle,
-                      stderr=subprocess.STDOUT,
-                      check=False,
-                  )
-
-              print(f"=== done: {site} ===", flush=True)
-
           rows = []
-          for path in sorted(browser_dir.glob("*.json")):
+          for path in sorted(out.glob("*.json")):
               try:
                   rows.append(json.loads(path.read_text(encoding="utf-8")))
               except Exception as exc:
-                  rows.append({"site": path.stem, "feed_status": "unresolved", "parse_error": str(exc)})
+                  rows.append({
+                      "site": path.stem,
+                      "feed_status": "unresolved",
+                      "parse_error": str(exc),
+                  })
 
-          Path(f"evidence/shard-{shard}.json").write_text(
+          Path(f"evidence/final-v3-shard-{shard}.json").write_text(
               json.dumps({
-                  "schema": "foundation-woocommerce-shard/v1",
+                  "schema": "foundation-woocommerce-v3-shard/v1",
                   "shard": shard,
                   "selected_sites": selected,
                   "results": rows,
@@ -148,27 +139,27 @@ jobs:
               encoding="utf-8",
           )
 
-      - name: Upload shard evidence
+      - name: Upload v3 evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: foundation-woocommerce-shard-${{ matrix.shard }}
-          path: operations/evidence/
+          name: foundation-woocommerce-v3-shard-${{ matrix.shard }}
+          path: operations/evidence/final-v3/
           if-no-files-found: warn
           retention-days: 30
 
   aggregate:
-    name: Aggregate 32-site evidence
+    name: Aggregate v3 32-site evidence
     needs: probe
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Download all shard evidence
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v5.0.0
+      - name: Download v3 evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          pattern: foundation-woocommerce-shard-*
-          path: shards
+          pattern: foundation-woocommerce-v3-shard-*
+          path: evidence
           merge-multiple: true
 
       - name: Aggregate
@@ -179,31 +170,40 @@ jobs:
 
           expected = {
               "aarnacomputers.com","adsstore.in","avikaretails.com","ezpzsolutions.in",
-              "gamesncomps.com","geekbees.in","hotshiftpc.com","itgadgetsonline.com",
-              "ithunt.in","kccomputers.co.in","krgkart.com","kryptronix.in",
+              "gamesncomps.com","geekbees.in","hotshiftpc.com","krgkart.com","kryptronix.in",
               "nclcomputer.com","networkitstore.in","mynexusinfosys.com","onlyssd.com",
-              "pckumar.in","pcstudio.in","pchubshop.com","primeabgb.com",
-              "quickincomputers.com","sclgaming.in","solankienterprises.com",
-              "varietyinfotech.com","viperpc.in","aulaindia.com","thecosmicbyte.com",
-              "meckeys.com","moskeys.com","ninjadog.in","stackskb.com","theproaudio.com",
+              "pckumar.in","pcstudio.in","pchubshop.com","primeabgb.com","quickincomputers.com",
+              "sclgaming.in","solankienterprises.com","varietyinfotech.com","viperpc.in",
+              "aulaindia.com","thecosmicbyte.com","meckeys.com","moskeys.com","ninjadog.in",
+              "stackskb.com","theproaudio.com","kccomputers.co.in","ithunt.in",
+              "gamesncomps.com","geekbees.in","hotshiftpc.com","itgadgetsonline.com",
           }
 
-          by_site = {}
-          for path in sorted(Path("shards").glob("**/woocommerce-*.json")):
-              try:
-                  row = json.loads(path.read_text(encoding="utf-8"))
-              except Exception:
+          expected.discard("gamesncomps.com")
+          expected.discard("geekbees.in")
+          expected.discard("hotshiftpc.com")
+          expected.discard("itgadgetsonline.com")
+          expected.update({
+              "gamesncomps.com","geekbees.in","hotshiftpc.com","itgadgetsonline.com"
+          })
+
+          rows = []
+          for path in sorted(Path("evidence").glob("**/*.json")):
+              if "shard" in path.name:
                   continue
-              site = row.get("site")
-              if site:
-                  by_site[site] = row
+              try:
+                  rows.append(json.loads(path.read_text(encoding="utf-8")))
+              except Exception:
+                  pass
+
+          by_site = {row.get("site"): row for row in rows if row.get("site")}
 
           verified = [r for r in by_site.values() if r.get("feed_status") == "verified"]
           api_only = [r for r in by_site.values() if r.get("feed_status") == "api_only"]
           unresolved = [r for r in by_site.values() if r.get("feed_status") == "unresolved"]
 
           summary = {
-              "schema": "foundation-woocommerce-32-site-hunt/v1",
+              "schema": "foundation-woocommerce-v3-32-site-hunt/v1",
               "expected_sites": len(expected),
               "observed_sites": len(by_site),
               "coverage_complete": expected.issubset(by_site),
@@ -222,7 +222,10 @@ jobs:
               "sites": by_site,
           }
 
-          Path("summary.json").write_text(json.dumps(summary, indent=2) + "\\n", encoding="utf-8")
+          Path("summary-v3.json").write_text(
+              json.dumps(summary, indent=2) + "\\n",
+              encoding="utf-8",
+          )
           print(json.dumps({
               k: summary[k] for k in (
                   "expected_sites","observed_sites","coverage_complete",
@@ -230,10 +233,10 @@ jobs:
               )
           }, indent=2))
 
-      - name: Upload aggregate
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - name: Upload v3 summary
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: foundation-woocommerce-32-site-summary
-          path: summary.json
+          name: foundation-woocommerce-v3-32-site-summary
+          path: summary-v3.json
           if-no-files-found: error
           retention-days: 30
