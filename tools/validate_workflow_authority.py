@@ -16,18 +16,28 @@ def _events(text:str)->set[str]:
     }
 
 def _push_branches(text:str)->list[str]:
-    head=text.split("jobs:",1)[0]
-    m=re.search(r"(?ms)^\s{2}push:\s*\n(.*?)(?=^\s{2}[A-Za-z0-9_.-]+:|^jobs:)",head)
-    if not m:
-        return []
-    block=m.group(1)
-    inline=re.search(r"(?m)^\s{4}branches:\s*\[([^\]]+)\]",block)
-    if inline:
-        return [v.strip().strip("'\\\"") for v in inline.group(1).split(",") if v.strip()]
-    bm=re.search(r"(?ms)^\s{4}branches:\s*\n(.*?)(?=^\s{4}[A-Za-z0-9_.-]+:|\Z)",block)
-    if not bm:
-        return []
-    return re.findall(r"(?m)^\s{6}-\s*['\\\"]?([^'\\\"\s]+)",bm.group(1))
+    lines=text.splitlines()
+    for index,line in enumerate(lines):
+        if line.strip() != "push:":
+            continue
+        push_indent=len(line)-len(line.lstrip())
+        block=[]
+        for child in lines[index+1:]:
+            stripped=child.strip()
+            if not stripped:
+                block.append(child)
+                continue
+            indent=len(child)-len(child.lstrip())
+            if indent <= push_indent:
+                break
+            block.append(child)
+        block_text="\n".join(block)
+        inline=re.search(r"(?m)^\s*branches:\s*\[([^\]]+)\]",block_text)
+        if inline:
+            return [v.strip().strip("'\\\"") for v in inline.group(1).split(",") if v.strip()]
+        listed=re.findall(r"(?m)^\s*-\s*['\\\"]?([^'\\\"\s]+)",block_text)
+        return listed
+    return []
 
 def workflow_paths():
     return sorted(WORKFLOWS.glob("*.yml"))+sorted(WORKFLOWS.glob("*.yaml"))
