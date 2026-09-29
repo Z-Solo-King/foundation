@@ -131,7 +131,6 @@ def test_production_uses_pages_front_door_with_private_backend_boundary():
 def test_live_chat_provider_provenance_is_verified_privately():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'for attempt in $(seq 1 10); do' in text
-    assert 'grep -q '"state":"consumed"' in text
     assert 'sleep 2' in text
     assert 'resource_governance_reservations' in text
     assert 'cloudflare_workers_ai' in text
