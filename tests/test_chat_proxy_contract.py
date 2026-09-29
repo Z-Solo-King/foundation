@@ -543,6 +543,28 @@ def test_provider_runtime_diagnostic_preserves_generation_status():
     assert body2["runtime_checks"] == [{"name": "provider_runtime_workers_ai", "ok": True}]
 
 
+def test_provider_runtime_diagnostic_accepts_dedicated_ok_without_chatbot_projection(monkeypatch):
+    import worker
+
+    class Response:
+        status = 200
+        async def json(self):
+            return {
+                "ok": True,
+                "runtime_checks": [{"name": "provider_runtime_workers_ai", "ok": True, "generation_status": "model_generated"}],
+            }
+
+    class Binding:
+        async def fetch(self, request): return Response()
+
+    class Request:
+        headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
+
+    body, status = asyncio.run(worker._operations_chatbot_diagnostic(SimpleNamespace(OPERATIONS=Binding()), Request(), operation="provider_runtime_verify", payload={}))
+    assert status == 200
+    assert body["ok"] is True
+
+
 def test_default_provider_runtime_diagnostic_route_is_authenticated_and_supported(monkeypatch):
     import worker
 
