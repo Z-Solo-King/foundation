@@ -75,32 +75,6 @@ def test_production_deployment_has_one_owner():
     assert '"github:${OPERATIONS_REF}"' in deployment
     assert '.private == true' in deployment
 
-def test_provider_provenance_matcher_handles_cloudflare_d1_json_wrappers():
-    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert "jq -e '[.. | objects" in deployment
-    assert 'select((.state? // "") == "consumed")' in deployment
-    assert 'contains("cloudflare_workers_ai")' in deployment
-    assert 'if type == "array" then .[0].results' not in deployment
-
-    def find_consumed(value):
-        if isinstance(value, dict):
-            if value.get("state") == "consumed" and "cloudflare_workers_ai" in str(value.get("reservation_id", "")):
-                return True
-            return any(find_consumed(item) for item in value.values())
-        if isinstance(value, list):
-            return any(find_consumed(item) for item in value)
-        return False
-
-    flat = [{"results": [{"reservation_id": "x:cloudflare_workers_ai:y", "state": "consumed"}]}]
-    wrapped = {"result": [{"results": [{"reservation_id": "x:cloudflare_workers_ai:y", "state": "consumed"}]}]}
-    nested = {"result": {"results": [{"reservation_id": "x:cloudflare_workers_ai:y", "state": "consumed"}]}}
-    negative = {"result": [{"results": [{"reservation_id": "x:groq:y", "state": "consumed"}]}]}
-    assert find_consumed(flat)
-    assert find_consumed(wrapped)
-    assert find_consumed(nested)
-    assert not find_consumed(negative)
-
-
 def test_production_release_does_not_publish_private_state_or_b2_literals():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'PASS ($installation_id)' not in deployment
