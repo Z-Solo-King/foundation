@@ -9,14 +9,14 @@ on:
       operations_ref:
         description: Exact Operations revision containing the WooCommerce extractor
         required: false
-        default: fdc387c06a7e0e08c04fe331a2e39732db426a63
+        default: 9a0fd617cb5292ee1603f81054f1559a9bdebac2
         type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: foundation-woocommerce-public-hunt
+  group: foundation-woocommerce-public-hunt-v2
   cancel-in-progress: false
 
 jobs:
@@ -32,7 +32,7 @@ jobs:
         shard: [0,1,2,3,4,5,6,7]
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || 'fdc387c06a7e0e08c04fe331a2e39732db426a63' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || '9a0fd617cb5292ee1603f81054f1559a9bdebac2' }}
       SHARD: ${{ matrix.shard }}
       PYTHONUNBUFFERED: "1"
     steps:
