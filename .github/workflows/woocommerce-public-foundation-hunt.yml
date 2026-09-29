@@ -9,7 +9,7 @@ on:
       operations_ref:
         description: Exact Operations revision containing the WooCommerce extractor
         required: false
-        default: 8eb38146a0c4481153f3bff7d9780157b45e1fe6
+        default: 9a0fd617cb5292ee1603f81054f1559a9bdebac2
         type: string
 
 permissions:
@@ -32,7 +32,7 @@ jobs:
         shard: [0,1,2,3,4,5,6,7]
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || '8eb38146a0c4481153f3bff7d9780157b45e1fe6' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || '9a0fd617cb5292ee1603f81054f1559a9bdebac2' }}
       SHARD: ${{ matrix.shard }}
       PYTHONUNBUFFERED: "1"
     steps:
@@ -79,11 +79,11 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check -e ".[browser]"
-          python -m playwright install --with-deps chromium
+          python -m playwright install --with-deps chromium firefox webkit
 
       - name: Compile WooCommerce probe
         working-directory: operations
-        run: python -m py_compile scripts/woocommerce_browser_probe_v3.py extractor_mapper/extraction/google_merchant_feed_compat.py
+        run: python -m py_compile scripts/woocommerce_browser_probe_v3.py scripts/woocommerce_cross_browser_probe.py extractor_mapper/acquisition/browser.py extractor_mapper/extraction/google_merchant_feed_compat.py
 
       - name: Run 32-site shard
         working-directory: operations
