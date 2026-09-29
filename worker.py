@@ -421,13 +421,21 @@ async def _operations_chatbot_diagnostic(env, request=None, operation="infrastru
         )
         chatbot = body_dict.get("chatbot")
         chatbot_allowed = isinstance(chatbot, dict) and bool(chatbot.get("allowed"))
-        healthy = (
-            upstream.status == 200
-            and isinstance(body, dict)
-            and bool(body_dict.get("ok"))
-            and chatbot_allowed
-            and runtime_ok
-        )
+        if operation == "provider_runtime_verify":
+            healthy = (
+                upstream.status == 200
+                and isinstance(body, dict)
+                and bool(body_dict.get("ok"))
+                and runtime_ok
+            )
+        else:
+            healthy = (
+                upstream.status == 200
+                and isinstance(body, dict)
+                and bool(body_dict.get("ok"))
+                and chatbot_allowed
+                and runtime_ok
+            )
         return {
             "ok": healthy,
             "status": "ok" if healthy else "degraded",
