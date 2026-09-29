@@ -79,3 +79,45 @@ def test_permissions_remain_job_scoped():
     research=text.split("  research:",1)[1].split("\n  migration_review:",1)[0]
     assert "id-token: write" in research
     assert "attestations: write" in research
+
+def test_research_contract_probe_is_structured_not_generic_text():
+    text=workflow_text()
+    assert "nightly-research-contract/v2" in text
+    assert "research-contract" in text
+    assert "fromjson" in text
+    assert 'has("findings")' in text
+    assert 'has("follow_up_questions")' in text
+    assert 'has("note")' in text
+    assert "max_tokens:96" in text
+
+
+def test_research_coverage_manifest_is_exact_and_truthful():
+    text=workflow_text()
+    assert "nightly-research-coverage/v1" in text
+    assert "expected_program_count':24" in text
+    assert "missing_program_ids" in text
+    assert "unexpected_program_ids" in text
+    assert "duplicate_program_ids" in text
+    assert "transport/challenge/provider failures are execution states" in text
+
+
+def test_open_issue_runtime_requirements_are_explicit():
+    text=workflow_text()
+    assert "nightly-research-acceptance-requirements/v1" in text
+    assert "'foundation_58'" in text
+    assert "'foundation_157'" in text
+    assert "'operations_597'" in text
+    assert "'operations_603'" in text
+    assert "pending_external_runtime" in text
+    assert "'cases':32" in text
+    assert "'repeats_min':3" in text
+    assert "shadow" in text and "canary" in text and "rollback" in text
+
+
+def test_proxy_has_bounded_transport_recovery():
+    proxy=(Path(__file__).parents[1]/"scripts"/"research_worker_proxy.py").read_text(encoding="utf-8")
+    assert "MAX_UPSTREAM_ATTEMPTS = 3" in proxy
+    assert "RETRYABLE_UPSTREAM_STATUS" in proxy
+    assert "Retry-After" in proxy
+    assert "bounded_3_attempts" in proxy
+    assert "research_agent" in proxy
