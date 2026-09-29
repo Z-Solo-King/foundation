@@ -63,7 +63,8 @@
     "schema": "continuity-freshness/v1",
     "enforced_by": "tools/check_continuity_freshness.py",
     "workflow": ".github/workflows/cross-repository-contract-drift.yml",
-    "last_refresh_reason": "production release acceptance namespace now uses authoritative github.run_attempt override"
+    "last_refresh_reason": "production release acceptance namespace now uses authoritative github.run_attempt override",
+    "checkout_history": "full-depth required for merge-commit-safe HEAD^ resolution"
   },
   "privacy_rule": "Do not publish protected worker origins, account/resource identifiers, private revisions, secret values, private issue details, or internal operational state.",
   "migration_topology": {
