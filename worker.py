@@ -416,9 +416,12 @@ async def _operations_chatbot_diagnostic(env, request=None, operation="infrastru
                 if isinstance(generation_status, str) and generation_status.strip():
                     item["generation_status"] = generation_status.strip()[:80]
             runtime_checks.append(item)
-        runtime_ok = bool(body_dict.get("runtime_status") == "ok") and bool(runtime_checks) and all(
-            bool(check["ok"]) for check in runtime_checks
-        )
+        if operation == "provider_runtime_verify":
+            runtime_ok = bool(runtime_checks) and all(bool(check["ok"]) for check in runtime_checks)
+        else:
+            runtime_ok = bool(body_dict.get("runtime_status") == "ok") and bool(runtime_checks) and all(
+                bool(check["ok"]) for check in runtime_checks
+            )
         chatbot = body_dict.get("chatbot")
         chatbot_allowed = isinstance(chatbot, dict) and bool(chatbot.get("allowed"))
         if operation == "provider_runtime_verify":
