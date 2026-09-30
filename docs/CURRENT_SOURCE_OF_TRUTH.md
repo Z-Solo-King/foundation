@@ -3,10 +3,10 @@
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
 Checked: 2026-09-30.
-Main verification checkpoint: ec4c7b41f75b8ad0b8e2ce6fb69cc1013f84eece (PR #1600 merged; production release certification is separate).
+Main verification checkpoint: f5909b8c432c73d31a746303d109738944b3d1a9 (PR #1600 merged; production release certification is separate).
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: ec4c7b41f75b8ad0b8e2ce6fb69cc1013f84eece.
+Foundation main code checkpoint: f5909b8c432c73d31a746303d109738944b3d1a9.
 Operations main checkpoint: current protected main revision is read from GitHub live state; research/migration jobs use explicit immutable pins below.
 Production Operations pin: ce4f9edbae3ddf1bf1c25a908d5bce014acc7676.
 Provider fleet runtime probe pin: b95e419254a9071beaeef57a1b0da22ba7dd2c4f.
