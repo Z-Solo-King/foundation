@@ -48,3 +48,11 @@ def test_provider_fleet_workflow_has_concurrency_and_bounded_schedule() -> None:
     assert 'cron: "17 */4 * * *"' in text
     assert "provider-fleet-runtime-state-production" in text
     assert "cancel-in-progress: true" in text
+
+
+def test_provider_fleet_workflow_exposes_only_the_six_active_external_provider_inputs() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    for name in ("PROVIDER_KEYS_JSON", "NVIDIA_NIM_API_KEY", "HF_TOKEN", "COHERE_API_KEY"):
+        assert name in text
+    assert '{"groq","gemini","cerebras","openrouter_free","siliconflow","mistral_free"}' not in text
+    assert '{"openrouter_free","groq","gemini","nvidia_nim","cohere_free","huggingface_free"}' in text
