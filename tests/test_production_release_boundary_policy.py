@@ -29,9 +29,11 @@ def test_production_release_shell_syntax_is_valid():
     result = subprocess.run(["bash", "-n", str(PRODUCTION_SCRIPT)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
 
-def test_production_release_has_one_canonical_operations_schema_and_two_intentional_deployments():
+def test_production_release_uses_migrations_once_and_does_not_reexecute_raw_d1_schema():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert text.count("RESOURCE_GOVERNANCE_D1_SCHEMA.sql") == 1
+    assert text.count("RESOURCE_GOVERNANCE_D1_SCHEMA.sql") == 0
+    assert text.count('d1 migrations apply "$database_name" --remote') == 1
+    assert 'd1 execute "$database_name" --remote' not in text
     assert text.count('foundation-binding-${ACCEPTANCE_RUN_ID}') == 1
     assert text.count('persistence-boundary-${ACCEPTANCE_RUN_ID}') == 1
     assert 'persistence_bootstrap_deferred' not in text
@@ -72,13 +74,14 @@ def test_production_health_check_requires_production_environment():
 def test_release_d1_config_is_passed_as_wrangler_global_option():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'wrangler@4.131.1 --config "$d1_migrations_config" d1 migrations apply "$database_name" --remote' in text
-    assert text.count('wrangler@4.131.1 --config "$d1_migrations_config" d1 execute "$database_name" --remote') >= 3
+    assert 'd1 execute "$database_name" --remote' not in text
     assert 'wrangler@4.131.1 d1 migrations apply "$database_name" --remote --config "$d1_migrations_config"' not in text
 
 def test_release_d1_commands_use_dedicated_d1_config():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_migrations_config="$GITHUB_WORKSPACE/wrangler.d1.migrations.generated.toml"' in text
-    assert text.count('d1 execute "$database_name" --remote') >= 3
+    assert 'd1 migrations apply "$database_name" --remote' in text
+    assert 'd1 execute "$database_name" --remote' not in text
     assert '--config="$RUNNER_TEMP/operations/wrangler.toml"' not in text
 
 def test_d1_migration_config_pins_repository_migrations_dir():
@@ -140,27 +143,13 @@ def test_infrastructure_diagnostic_failure_reports_only_failed_check_names():
     assert '.. | objects' in text
     assert 'select((.name? | type) == "string" and (.ok? | type) == "boolean" and .ok != true)' in text
 
-def test_live_chat_provider_provenance_reconciliation_is_json_structural():
+def test_live_chat_provider_provenance_uses_authenticated_proof_projection():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert "jq -e '[.. | objects" in text
-    assert 'select((.state? // "") == "consumed")' in text
-    assert 'contains("cloudflare_workers_ai")' in text
-    assert 'grep -q \'"state":"consumed"\'' not in text
-    assert "sleep 2" in text
-    assert "reservation_id LIKE 'chat-model:production-chat-${ACCEPTANCE_RUN_ID}:%'" in text
-    assert "instr(reservation_id, ':cloudflare_workers_ai:') > 0" in text
-    assert "reservation_id LIKE '%production-chat-${ACCEPTANCE_RUN_ID}%:cloudflare_workers_ai:%'" not in text
-
-
-def test_live_chat_provider_provenance_is_verified_privately():
-    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'for attempt in $(seq 1 10); do' in text
-    assert 'sleep 2' in text
-    assert 'resource_governance_reservations' in text
-    assert 'cloudflare_workers_ai' in text
-    assert 'live-chat-provider-provenance.json' in text
-    assert 'response.provider == \"cloudflare_workers_ai\"' not in text
-    assert 'jq -e \"[.. | objects' not in text
+    assert 'X-Heroic-Research-Proof: 1' in text
+    assert '.response.provider == "cloudflare_workers_ai"' in text
+    assert 'live_chat_provider=$(jq -r' in text
+    assert 'resource_governance_reservations' not in text
+    assert 'd1 execute "$database_name" --remote' not in text
 
 
 def test_chat_auth_boundary_checks_canonical_module():
