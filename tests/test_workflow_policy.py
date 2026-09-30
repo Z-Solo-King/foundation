@@ -738,7 +738,7 @@ def test_crossfire_research_proxy_lifecycle_is_colocated_with_consumer():
     assert "cleanup_proxy()" in block
     assert "trap cleanup_proxy EXIT INT TERM" in block
     assert "RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}" in block
-    assert "Authorization: Bearer ${RESEARCH_PROXY_AUTH_TOKEN}" in block
+    assert "Authorization: Bearer local-worker-proxy" in block
     assert "Start authenticated Workers AI research proxy" not in workflow
 
 # Policy contract: production release evidence must use authenticated runtime proof and must not consume duplicate D1 query budget.
