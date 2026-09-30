@@ -133,9 +133,16 @@ def test_operations_pin_manifest_matches_research_workflow():
     assert manifest["pins"]["research_runtime"]["sha"] in workflow
 
 
-def test_pinned_operations_contract_guard_is_whitespace_tolerant():
+def test_pinned_operations_contract_guard_is_semantic():
     text=workflow_text()
-    assert "research_agent[[:space:]]*" in text
-    assert "response_format" in text
+    assert "endpoint_compact" in text
+    assert 'research_agent=bool(payload.get("research_agent",False))' in text
+    assert "ast.parse(live)" in text
+    assert '"_output_token_limit"' in text
+    assert '"response_format"' in text
+    assert '"findings"' in text
+    assert '"follow_up_questions"' in text
+    assert '"note"' in text
     assert "private/chatbot/chat_endpoint.py" in text
     assert "private/chatbot/live_answer.py" in text
+t
