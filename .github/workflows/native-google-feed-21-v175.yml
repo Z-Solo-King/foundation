@@ -1,0 +1,109 @@
+name: WooCommerce 21 Plugin Extraction — V175 Channels
+
+on:
+  push:
+    branches: [hunt/native-google-feed-urls-20260927]
+    paths:
+      - "tools/feed-lab/woocommerce_21_plugin_extraction_v175.py"
+      - ".github/workflows/native-google-feed-21-v175.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    name: "plugin extraction — ${{ matrix.id }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      max-parallel: 7
+      matrix:
+        include:
+          - {id: aula-india, site: AULA India, root: https://aulaindia.com}
+          - {id: aarna-computers, site: Aarna Computers, root: https://aarnacomputers.com}
+          - {id: ads-store, site: Ads Store, root: https://adsstore.in}
+          - {id: cosmic-byte, site: Cosmic Byte, root: https://www.thecosmicbyte.com}
+          - {id: ezpz-solutions, site: EZPZ Solutions, root: https://www.ezpzsolutions.in}
+          - {id: kc-computers, site: KC Computers, root: https://kccomputers.co.in}
+          - {id: krg-kart, site: KRG KART, root: https://krgkart.com}
+          - {id: kryptronix-gaming, site: Kryptronix Gaming, root: https://kryptronix.in}
+          - {id: meckeys, site: Meckeys, root: https://www.meckeys.com}
+          - {id: moskeys, site: Moskeys, root: https://moskeys.com}
+          - {id: ncl-computer, site: NCL Computer, root: https://nclcomputer.com}
+          - {id: pc-kumar-infotech, site: PC Kumar Infotech, root: https://pckumar.in}
+          - {id: pchubshop, site: PCHubShop, root: https://www.pchubshop.com}
+          - {id: prime-abgb, site: Prime ABGB, root: https://www.primeabgb.com}
+          - {id: scl-gaming, site: SCL Gaming, root: https://sclgaming.in}
+          - {id: stackskb, site: StacksKB, root: https://stackskb.com}
+          - {id: theproaudio, site: Theproaudio, root: https://www.theproaudio.com}
+          - {id: variety-infotech, site: Variety Infotech, root: https://varietyinfotech.com}
+          - {id: viper-pc, site: Viper PC, root: https://viperpc.in}
+          - {id: hotshiftpc, site: hotshiftpc, root: https://hotshiftpc.com}
+          - {id: ithunt, site: ithunt, root: https://ithunt.in}
+    env:
+      SITE_NAME: ${{ matrix.site }}
+      SITE_ROOT: ${{ matrix.root }}
+      OUT_DIR: out/plugin-extraction/${{ matrix.id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install Playwright
+        run: |
+          python -m pip install --disable-pip-version-check -q playwright
+          python -m playwright install chromium
+      - name: Extract plugin evidence
+        run: python tools/feed-lab/woocommerce_21_plugin_extraction_v175.py
+      - name: Upload site evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wc21-plugin-${{ matrix.id }}
+          path: out/plugin-extraction/${{ matrix.id }}/
+          retention-days: 14
+
+  aggregate:
+    name: Aggregate 21 plugin extractions
+    needs: extract
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wc21-plugin-*
+          path: out/recovery
+          merge-multiple: false
+      - name: Aggregate
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib, collections
+          root=pathlib.Path("out/recovery")
+          rows=[]
+          for p in root.glob("**/fingerprint.json"):
+              rows.append(json.loads(p.read_text()))
+          rows=sorted({r.get("site",""):r for r in rows}.values(), key=lambda r:r.get("site","").lower())
+          assert len(rows)==21, f"expected 21 rows, got {len(rows)}"
+          counts=collections.Counter(r.get("primary_group","unknown_woocommerce") for r in rows)
+          statuses=collections.Counter(r.get("status","") for r in rows)
+          payload={"schema_version":"woocommerce-21-plugin-extraction-aggregate/v1","source_extractor_version":"V175-derived-21-plugin-extraction-v1",
+                   "site_count":len(rows),"group_counts":dict(sorted(counts.items())),"status_counts":dict(sorted(statuses.items())),
+                   "results":rows}
+          pathlib.Path("out/aggregate.json").write_text(json.dumps(payload,indent=2)+"\n")
+          lines=["# WooCommerce 21-site plugin extraction — V175 channels","","| Site | Status | Primary group | Feed signals | Plugin assets | WP namespaces | Homepage XHR |",
+                 "|---|---|---|---|---:|---:|---:|"]
+          for r in rows:
+              lines.append(f'| {r.get("site","")} | {r.get("status","")} | {r.get("primary_group","")} | {", ".join(x.get("family","") for x in r.get("feed_family_signals",[])) or "none"} | {len(r.get("plugin_assets",[]))} | {len(r.get("public_api_namespaces",[]))} | {len(r.get("homepage_xhr",[]))} |')
+          pathlib.Path("out/aggregate.md").write_text("\n".join(lines)+"\n")
+          PY
+      - name: Upload aggregate evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: wc21-plugin-aggregate
+          path: out/
+          retention-days: 14
