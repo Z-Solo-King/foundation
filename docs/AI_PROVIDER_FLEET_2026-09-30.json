@@ -5,7 +5,6 @@
     "openrouter_free",
     "groq",
     "gemini",
-    "cerebras",
     "nvidia_nim",
     "cohere_free",
     "huggingface_free",

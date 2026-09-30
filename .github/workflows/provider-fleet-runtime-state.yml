@@ -42,7 +42,6 @@ jobs:
           NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
-          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
         run: |
           set -euo pipefail
@@ -56,15 +55,13 @@ jobs:
           test -n "$NVIDIA_NIM_API_KEY"
           test -n "$HF_TOKEN"
           test -n "$COHERE_API_KEY"
-          test -n "$CEREBRAS_API_KEY"
           test -n "$SILICONFLOW_API_KEY"
-          test -n "$CEREBRAS_API_KEY"
           test -n "$SILICONFLOW_API_KEY"
           python - <<'PY'
           import json, os
           payload = json.loads(os.environ["PROVIDER_KEYS_JSON"])
           assert isinstance(payload, dict) and payload
-          allowed = {"openrouter_free","groq","gemini","cerebras","nvidia_nim","cohere_free","huggingface_free","siliconflow"}
+          allowed = {"openrouter_free","groq","gemini","nvidia_nim","cohere_free","huggingface_free","siliconflow"}
           unknown = sorted(set(payload) - allowed)
           assert not unknown, f"unsupported providers: {unknown}"
           print(f"configured provider count: {len(payload)}")
@@ -77,7 +74,6 @@ jobs:
           NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
-          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
         run: |
           set -euo pipefail
@@ -105,12 +101,6 @@ jobs:
               "endpoint": "https://api.cohere.ai/compatibility/v1/chat/completions",
               "api_key": os.environ["COHERE_API_KEY"],
               "model": "command-a-plus-05-2026",
-              "zero_cost": True,
-          }
-          payload["cerebras"] = {
-              "endpoint": "https://api.cerebras.ai/v1/chat/completions",
-              "api_key": os.environ["CEREBRAS_API_KEY"],
-              "model": "gpt-oss-120b",
               "zero_cost": True,
           }
           payload["siliconflow"] = {

@@ -84,4 +84,4 @@ Cross-repository continuity requires this document and docs/FAMILY_SYNC_STATE.js
 
 
 ## 2026-09-30 AI provider fleet
-The current external AI API fleet is defined in `docs/AI_PROVIDER_FLEET_2026-09-30.md` and `docs/AI_PROVIDER_FLEET_2026-09-30.json`: OpenRouter, Groq, Gemini, Cerebras, NVIDIA NIM, Cohere, Hugging Face, and SiliconFlow. Cloudflare Workers AI is the native runtime inference binding. Mistral is not part of the project provider fleet.
+The current external AI API fleet is defined in `docs/AI_PROVIDER_FLEET_2026-09-30.md` and `docs/AI_PROVIDER_FLEET_2026-09-30.json`: OpenRouter, Groq, Gemini, NVIDIA NIM, Cohere, Hugging Face, and SiliconFlow. Cloudflare Workers AI is the native runtime inference binding. Mistral is not part of the project provider fleet.

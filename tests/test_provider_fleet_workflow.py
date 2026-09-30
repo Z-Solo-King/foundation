@@ -29,7 +29,6 @@ def test_provider_fleet_workflow_uses_immutable_private_probe() -> None:
     assert "secrets.NVIDIA_NIM_API_KEY" in text
     assert "secrets.HF_TOKEN" in text
     assert "secrets.COHERE_API_KEY" in text
-    assert "secrets.CEREBRAS_API_KEY" in text
     assert "secrets.SILICONFLOW_API_KEY" in text
     assert "nvidia_nim" in text
     assert "huggingface_free" in text
@@ -40,7 +39,7 @@ def test_provider_fleet_workflow_rejects_secret_leak_patterns() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     assert "echo \"$PROVIDER_KEYS_JSON\"" not in text
     assert "cat \"$PROVIDER_KEYS_JSON\"" not in text
-    for provider in ("GROQ", "GEMINI", "CEREBRAS", "OPENROUTER", "SILICONFLOW", "NVIDIA_NIM", "COHERE", "HUGGINGFACE"):
+    for provider in ("GROQ", "GEMINI", "OPENROUTER", "SILICONFLOW", "NVIDIA_NIM", "COHERE", "HUGGINGFACE"):
         assert f"secrets.{provider}_API_KEY" not in text
     assert "PROVIDER_KEYS_JSON" in text
 
@@ -52,9 +51,9 @@ def test_provider_fleet_workflow_has_concurrency_and_bounded_schedule() -> None:
     assert "cancel-in-progress: true" in text
 
 
-def test_provider_fleet_workflow_exposes_only_the_eight_active_external_provider_inputs() -> None:
+def test_provider_fleet_workflow_exposes_only_the_seven_active_external_provider_inputs() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
-    for name in ("PROVIDER_KEYS_JSON", "NVIDIA_NIM_API_KEY", "HF_TOKEN", "COHERE_API_KEY", "CEREBRAS_API_KEY", "SILICONFLOW_API_KEY"):
+    for name in ("PROVIDER_KEYS_JSON", "NVIDIA_NIM_API_KEY", "HF_TOKEN", "COHERE_API_KEY", "SILICONFLOW_API_KEY"):
         assert name in text
-    assert '{"groq","gemini","cerebras","openrouter_free","siliconflow","mistral_free"}' not in text
-    assert 'allowed = {"openrouter_free","groq","gemini","cerebras","nvidia_nim","cohere_free","huggingface_free","siliconflow"}' in text
+    assert '{"groq","gemini","openrouter_free","siliconflow","mistral_free"}' not in text
+    assert 'allowed = {"openrouter_free","groq","gemini","nvidia_nim","cohere_free","huggingface_free","siliconflow"}' in text
