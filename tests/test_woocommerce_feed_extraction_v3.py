@@ -1,4 +1,15 @@
-from tools.woocommerce_feed_extraction_v3 import valid_store_product, valid_native_google, feed_routes
+import importlib.util
+from pathlib import Path
+
+MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "woocommerce_feed_extraction_v3.py"
+SPEC = importlib.util.spec_from_file_location("woocommerce_feed_extraction_v3", MODULE_PATH)
+assert SPEC and SPEC.loader
+MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MODULE)
+
+valid_store_product = MODULE.valid_store_product
+valid_native_google = MODULE.valid_native_google
+feed_routes = MODULE.feed_routes
 
 def test_valid_store_product_shape():
     assert valid_store_product({
