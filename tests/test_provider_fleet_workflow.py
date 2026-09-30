@@ -20,7 +20,7 @@ def test_provider_fleet_workflow_is_structured_and_protected() -> None:
 def test_provider_fleet_workflow_uses_immutable_private_probe() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
 
-    assert "OPERATIONS_PROVIDER_FLEET_REF: fb57c8c4021965c207030dfb668b7bd747d5f3c6" in text
+    assert "OPERATIONS_PROVIDER_FLEET_REF: 05bb78285cb3d42c0b90a9975bb28121895dfe53" in text
     assert "OPERATIONS_PROVIDER_FLEET_PATH: tools/provider_fleet_probe.py" in text
     assert "Provider fleet probe verified at immutable Operations ref" in text
     assert "CHAT_PROVIDER_RUNTIME_STATE" in text
@@ -50,9 +50,9 @@ def test_provider_fleet_workflow_has_concurrency_and_bounded_schedule() -> None:
     assert "cancel-in-progress: true" in text
 
 
-def test_provider_fleet_workflow_exposes_only_the_six_active_external_provider_inputs() -> None:
+def test_provider_fleet_workflow_exposes_only_the_eight_active_external_provider_inputs() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     for name in ("PROVIDER_KEYS_JSON", "NVIDIA_NIM_API_KEY", "HF_TOKEN", "COHERE_API_KEY"):
         assert name in text
     assert '{"groq","gemini","cerebras","openrouter_free","siliconflow","mistral_free"}' not in text
-    assert '{"openrouter_free","groq","gemini","nvidia_nim","cohere_free","huggingface_free"}' in text
+    assert '{"openrouter_free","groq","gemini","cerebras","nvidia_nim","cohere_free","huggingface_free","siliconflow"}' in text
