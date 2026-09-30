@@ -81,10 +81,10 @@ def test_family_integrity_normalizes_issue_targets_before_comparison():
 
 def test_nightly_preflight_preserves_network_failure_receipt_without_parse_crash():
     text = (ROOT / ".github" / "workflows" / "nightly-research-provider-preflight.yml").read_text(encoding="utf-8")
-    assert "worker_health_curl_exit=0" in text
-    assert "worker_health_curl_error=\"\"" in text
-    assert "probe_curl_exit=0" in text
-    assert "int(os.environ.get(\"PREFLIGHT_WORKER_HEALTH_STATUS\") or \"0\")" in text
+    probe = (ROOT / "scripts" / "nightly_runtime_contract_probe.py").read_text(encoding="utf-8")
+    assert "probe_transport_error" in probe
+    assert "runtime_revision_mismatch" in probe
+    assert "invalid_json_response" in probe
 
 
 def test_nightly_diagnosis_synthesizes_cancelled_research_lanes_without_masking_unexpected_missing_artifacts():

@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/multi-lens-plan-v1.schema.json",
+  "title": "Multi Lens Plan v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "authority",
+    "feasible",
+    "errors",
+    "target",
+    "constraints",
+    "selected",
+    "skipped",
+    "totals"
+  ],
+  "properties": {
+    "schema": {
+      "const": "multi-lens-plan/v1"
+    },
+    "authority": {
+      "const": "scheduling_only"
+    },
+    "feasible": {
+      "type": "boolean"
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "target": {},
+    "constraints": {
+      "type": "object",
+      "required": [
+        "max_lanes",
+        "cost_budget",
+        "latency_budget",
+        "quota_budget",
+        "freshness_need",
+        "total_verified_lanes"
+      ],
+      "properties": {
+        "max_lanes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "cost_budget": {
+          "type": "number",
+          "minimum": 1
+        },
+        "latency_budget": {
+          "type": "number",
+          "minimum": 1
+        },
+        "quota_budget": {
+          "type": "number",
+          "minimum": 1
+        },
+        "freshness_need": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "total_verified_lanes": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "selected": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "family",
+          "selection",
+          "score",
+          "estimated",
+          "batch"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "family": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "exclusive_group": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "selection": {
+            "enum": [
+              "required",
+              "adaptive"
+            ]
+          },
+          "score": {
+            "type": "number"
+          },
+          "runs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "components": {
+            "type": "object"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "estimated": {
+            "type": "object"
+          },
+          "batch": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "skipped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "selection",
+          "skip_reason"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "totals": {
+      "type": "object",
+      "required": [
+        "lanes",
+        "families",
+        "cost",
+        "latency",
+        "quota"
+      ],
+      "properties": {
+        "lanes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "families": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cost": {
+          "type": "number",
+          "minimum": 0
+        },
+        "latency": {
+          "type": "number",
+          "minimum": 0
+        },
+        "quota": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

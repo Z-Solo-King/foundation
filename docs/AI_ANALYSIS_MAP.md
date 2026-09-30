@@ -4,6 +4,8 @@ Compact routing index for human and AI repository analysis. Read this before ope
 
 ## Read first
 
+0. `docs/AI_PROVIDER_FLEET_2026-09-30.md` and `docs/AI_PROVIDER_FLEET_2026-09-30.json` for the current six-provider AI task-fabric contract.
+
 1. `README.md`
 2. `REPOSITORY_MAP.json`
 3. `DEPLOYMENT.md` for deployment questions

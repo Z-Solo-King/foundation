@@ -1,0 +1,91 @@
+name: Multi-lens planner contract
+
+on:
+  workflow_call:
+    inputs:
+      profile_path:
+        description: Repository-relative multi-lens profile
+        required: false
+        default: docs/MULTI_LENS_CHATBOT_PROFILE.json
+        type: string
+    outputs:
+      plan_json:
+        description: Compact machine-readable scheduling plan
+        value: ${{ jobs.plan.outputs.plan_json }}
+      lane_matrix:
+        description: Matrix include JSON for selected lanes
+        value: ${{ jobs.plan.outputs.lane_matrix }}
+  workflow_dispatch:
+    inputs:
+      profile_path:
+        description: Repository-relative multi-lens profile
+        required: true
+        default: docs/MULTI_LENS_CHATBOT_PROFILE.json
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: Generate multi-lens execution plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      plan_json: ${{ steps.plan.outputs.plan_json }}
+      lane_matrix: ${{ steps.plan.outputs.lane_matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          package-manager-cache: false
+
+      - name: Validate planner syntax and tests
+        run: |
+          node --check tools/multi_lens_planner.mjs
+          node --test tests/multi_lens_planner.test.mjs
+
+      - name: Generate and validate plan
+        id: plan
+        env:
+          PROFILE_PATH: ${{ inputs.profile_path || 'docs/MULTI_LENS_CHATBOT_PROFILE.json' }}
+        run: |
+          set -euo pipefail
+          test -f "$PROFILE_PATH"
+          node tools/multi_lens_planner.mjs < "$PROFILE_PATH" > multi-lens-plan.json
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          const profile = JSON.parse(fs.readFileSync(process.env.PROFILE_PATH, "utf8"));
+          const plan = JSON.parse(fs.readFileSync("multi-lens-plan.json", "utf8"));
+          if (plan.schema !== "multi-lens-plan/v1") throw new Error("invalid plan schema");
+          if (plan.authority !== "scheduling_only") throw new Error("planner authority boundary violated");
+          if (plan.feasible !== true) throw new Error("planner produced an infeasible plan: " + JSON.stringify(plan.errors));
+          if (plan.totals.lanes > plan.constraints.max_lanes) throw new Error("lane limit exceeded");
+          if (plan.totals.cost > plan.constraints.cost_budget) throw new Error("cost budget exceeded");
+          if (plan.totals.latency > plan.constraints.latency_budget) throw new Error("latency budget exceeded");
+          if (plan.totals.quota > plan.constraints.quota_budget) throw new Error("quota budget exceeded");
+          for (const id of profile.required_ids || []) {
+            if (!plan.selected.some((lane) => lane.id === id)) throw new Error("required lane missing: " + id);
+          }
+          if (new Set(plan.selected.map((lane) => lane.family)).size < 3) {
+            throw new Error("planner did not produce minimum evidence diversity");
+          }
+          const matrix = JSON.stringify({
+            include: plan.selected.map(({id, family, selection, batch}) => ({id, family, selection, batch}))
+          });
+          const compactPlan = JSON.stringify(plan);
+          const out = process.env.GITHUB_OUTPUT;
+          fs.appendFileSync(out, "plan_json=" + compactPlan + "\n");
+          fs.appendFileSync(out, "lane_matrix=" + matrix + "\n");
+          NODE
+
+      - name: Upload plan receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: multi-lens-plan-${{ github.run_id }}
+          path: multi-lens-plan.json
+          if-no-files-found: error
