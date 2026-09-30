@@ -513,6 +513,24 @@ pywrangler deploy --secrets-file "$public_secret_file" --message "github:${GITHU
 mv -f "$python_core_default_backup" wrangler.toml
 
 (cd "$GITHUB_WORKSPACE" && npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}:javascript-edge")
+# B2 credentials belong only to heroic-core, which performs artifact persistence.
+# The public heroic edge is transport-only and must not retain legacy B2 secrets.
+for public_b2_secret in B2_KEY_ID B2_APPLICATION_KEY; do
+  delete_secret_status=$(curl -sS -o "$RUNNER_TEMP/public-b2-secret-delete.json" -w '%{http_code}' \\
+    -X DELETE -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' \\
+    "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${PUBLIC_WORKER_NAME}/secrets/${public_b2_secret}" || true)
+  echo "DELETE public ${public_b2_secret} binding -> HTTP ${delete_secret_status}"
+  if [ "$delete_secret_status" != "200" ] && [ "$delete_secret_status" != "404" ]; then
+    jq -c '{success,message,errors}' "$RUNNER_TEMP/public-b2-secret-delete.json" 2>/dev/null || true
+    exit 1
+  fi
+done
+public_settings_status=$(curl -sS -o "$RUNNER_TEMP/public-worker-settings-after-b2-cleanup.json" -w '%{http_code}' \\
+  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' \\
+  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${PUBLIC_WORKER_NAME}/settings" || true)
+test "$public_settings_status" = "200"
+! jq -e '.result.bindings[]? | select(.name == "B2_KEY_ID" or .name == "B2_APPLICATION_KEY")' "$RUNNER_TEMP/public-worker-settings-after-b2-cleanup.json" >/dev/null
+
 
 health_status=$(curl -sS -o health.json -w '%{http_code}' "$BASE_URL/health")
 echo "GET /health -> HTTP ${health_status}"
