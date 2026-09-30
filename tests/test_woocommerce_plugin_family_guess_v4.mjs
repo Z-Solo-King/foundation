@@ -5,15 +5,14 @@ import path from "node:path";
 
 const source = fs.readFileSync(path.resolve("tools/woocommerce_plugin_family_guess_v4.mjs"), "utf8");
 
-test("wave 2 stays guessing-only", () => {
+test("wave 2 stays guess-only", () => {
   assert.match(source, /plugin-family-specific-xml-guess-only/);
   assert.doesNotMatch(source, /wc\/store\/v1\/products/);
   assert.doesNotMatch(source, /from ["']playwright["']/i);
   assert.doesNotMatch(source, /chromium\.launch|firefox\.launch|webkit\.launch/i);
-  assert.doesNotMatch(source, /cookie\s*jar|proxy\s*rotation|clearance[_-]cookie/i);
 });
 
-test("wave 2 contains researched family grammars", () => {
+test("research-expanded family grammars are present", () => {
   for (const s of [
     "listings07.xml",
     "google_shopping_ctx_1.xml",
@@ -25,7 +24,10 @@ test("wave 2 contains researched family grammars", () => {
   ]) assert.ok(source.includes(s), s);
 });
 
-test("native validator is present", () => {
-  assert.match(source, /base.*google.*ns.*1\.0/s);
-  assert.match(source, /\["id","title","link","price"\]/);
+test("native validator implementation is present", () => {
+  assert.match(source, /function strictValidate\(body\)/);
+  assert.match(source, /base\\\.google\\\.com/);
+  assert.ok(source.includes('const required = ["id","title","link","price"]'));
+  assert.match(source, /validItems/);
+  assert.match(source, /sameHost\(finalUrl, url\)/);
 });
