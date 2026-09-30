@@ -186,3 +186,11 @@ def test_policy_block_acceptance_matches_public_response_contract():
     assert '.response.status == "blocked"' in text
     assert '.response.result_state == "BLOCKED"' in text
     assert '.response.operation == "map"' not in text
+
+
+def test_public_edge_removes_legacy_b2_credentials():
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert "B2 credentials belong only to heroic-core" in text
+    assert "workers/scripts/${PUBLIC_WORKER_NAME}/secrets/${public_b2_secret}" in text
+    assert "public-worker-settings-after-b2-cleanup.json" in text
+    assert 'select(.name == "B2_KEY_ID" or .name == "B2_APPLICATION_KEY")' in text
