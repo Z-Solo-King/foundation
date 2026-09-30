@@ -83,13 +83,13 @@ def validate()->list[str]:
             errors.append(f"{rel}: privileged workflow has forbidden untrusted trigger: {sorted(events & forbidden)}")
         branches=_push_branches(text)
         if is_priv and "push" in events and branches != [reg["policy"]["privileged_push_branch"]]:
-            errors.append(f"{rel}: privileged push must be main-only, found {branches or ['<unrestricted>']}")
+            errors.append(f"{rel}: privileged push must be main-only")
         if is_priv and "workflow_run" in events:
             expected_sources=reg["policy"].get("trusted_workflow_run_sources",{}).get(rel)
             if not expected_sources:
                 errors.append(f"{rel}: privileged workflow_run requires explicit trusted upstream registration")
             elif _workflow_run_sources(text) != sorted(set(expected_sources)):
-                errors.append(f"{rel}: workflow_run source mismatch; declared={_workflow_run_sources(text)} expected={sorted(set(expected_sources))}")
+                errors.append(f"{rel}: workflow_run source mismatch")
         if rel==".github/workflows/sync-secrets.yml":
             if "environment: production-secret-sync" not in text:
                 errors.append(f"{rel}: missing protected environment")
@@ -107,13 +107,12 @@ def validate()->list[str]:
         if "workflow_run:" not in text:
             errors.append(f"{rel}: trusted workflow_run registry entry exists but workflow_run is absent")
         elif _workflow_run_sources(text) != sorted(set(sources)):
-            errors.append(f"{rel}: workflow_run source mismatch; declared={_workflow_run_sources(text)} expected={sorted(set(sources))}")
+            errors.append(f"{rel}: workflow_run source mismatch")
     return sorted(set(errors))
 
 if __name__=="__main__":
     errors=validate()
     if errors:
-        for error in errors:
-            print("ERROR:",error)
+        print(f"workflow authority policy: FAIL ({len(errors)} policy violations)")
         raise SystemExit(1)
     print(f"workflow authority policy: PASS ({len(workflow_paths())} workflows scanned)")
