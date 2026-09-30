@@ -1,13 +1,5 @@
-name: WooCommerce 21 Plugin Channel Extraction
-
 on:
-  push:
-    branches: [hunt/native-google-feed-urls-20260927]
-    paths:
-      - "tools/feed-lab/woocommerce_21_plugin_channel_extract.py"
-      - ".github/workflows/native-google-feed-21-channel-extraction.yml"
   workflow_dispatch:
-
 permissions:
   contents: read
 
