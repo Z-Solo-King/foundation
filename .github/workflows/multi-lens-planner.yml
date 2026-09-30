@@ -6,7 +6,7 @@ on:
       profile_path:
         description: Repository-relative multi-lens profile
         required: false
-        default: docs/MULTI_LENS_DEEP_AUDIT_PROFILE.json
+        default: docs/MULTI_LENS_CHATBOT_PROFILE.json
         type: string
     outputs:
       plan_json:
@@ -20,7 +20,7 @@ on:
       profile_path:
         description: Repository-relative multi-lens profile
         required: true
-        default: docs/MULTI_LENS_DEEP_AUDIT_PROFILE.json
+        default: docs/MULTI_LENS_CHATBOT_PROFILE.json
         type: string
 
 permissions:
@@ -52,7 +52,7 @@ jobs:
       - name: Generate and validate plan
         id: plan
         env:
-          PROFILE_PATH: ${{ inputs.profile_path || 'docs/MULTI_LENS_DEEP_AUDIT_PROFILE.json' }}
+          PROFILE_PATH: ${{ inputs.profile_path || 'docs/MULTI_LENS_CHATBOT_PROFILE.json' }}
         run: |
           set -euo pipefail
           test -f "$PROFILE_PATH"
