@@ -90,3 +90,6 @@ Privileged workflow_run execution is permitted only for an explicitly registered
 
 ## Multi-lens execution engine
 The active multi-lens execution engine is the canonical scheduling overlay for cross-language, runtime, browser, extraction, provider, GitHub/workflow, Cloudflare and historical lanes. Use `tools/multi_lens_planner.mjs`, `docs/MULTI_LENS_CHATBOT_PROFILE.json`, `schemas/multi-lens-plan-v1.schema.json` and `.github/workflows/multi-lens-planner.yml`. The scheduler does not become an acceptance or policy authority.
+
+## Current GitHub state
+Read active main heads, open issue inventory and open PRs from GitHub live state at audit start. Dated state documents are synchronization evidence, not mutable queue authorities.

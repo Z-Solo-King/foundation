@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).parents[1]
@@ -8,7 +9,8 @@ def test_nightly_v3_keeps_schedule_but_scopes_runs_by_revision():
     assert 'cron: "30 19 * * *"' in text
     assert "nightly-multi-agent-research-" + "${{" + " inputs.target_sha || github.sha }}" in text
     assert "operations_research_ref" in text
-    assert "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676" in text
+    manifest=json.loads((Path(__file__).parents[1] / "docs" / "OPERATIONS_PIN_MANIFEST.json").read_text(encoding="utf-8"))
+    assert manifest["pins"]["production_runtime"]["sha"] in text
     assert "Verify exact deployed research runtime" in text
     assert "nightly_runtime_contract_probe.py" in text
 
