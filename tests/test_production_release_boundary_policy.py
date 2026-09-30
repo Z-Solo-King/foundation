@@ -39,7 +39,8 @@ def test_production_release_uses_migrations_once_and_does_not_reexecute_raw_d1_s
     assert 'migration content fingerprint matches last live-verified production schema' in text
     assert 'migration content fingerprint differs from last live-verified production schema' in text
     assert 'current-heroic-core-settings.json' not in text
-    assert 'RELEASE_OPERATIONS_REF' not in text
+    assert 'RELEASE_OPERATIONS_REF' in text
+    assert 'current_operations_ref=' not in text
     assert 'd1 execute "$database_name" --remote' not in text
     assert text.count('foundation-binding-${ACCEPTANCE_RUN_ID}') == 1
     assert text.count('persistence-boundary-${ACCEPTANCE_RUN_ID}') == 1
