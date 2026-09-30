@@ -6,7 +6,13 @@
     "production_runtime": {
       "sha": "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676",
       "purpose": "Cloudflare Operations production runtime and Foundation public production release",
-      "status": "immutable runtime candidate containing the canonical memory, replay, and provider-runtime diagnostic repairs; canonical production release and fresh runtime evidence required before production acceptance"
+      "status": "canonical production runtime pin"
+    },
+    "provider_fleet_runtime": {
+      "sha": "b95e419254a9071beaeef57a1b0da22ba7dd2c4f",
+      "purpose": "immutable provider fleet runtime probe entrypoint",
+      "path": "tools/provider_fleet_runtime_probe.py",
+      "status": "immutable provider-fleet probe revision"
     },
     "research_runtime": {
       "sha": "1a91efa53b9202f1624ddde892b0e86bd6b360f0",
@@ -14,7 +20,7 @@
       "status": "immutable research-agent runtime reference with structured JSON output contract; independently promoted from production"
     },
     "secret_sync_utility": {
-      "sha": "6a36b3bd0e1f7bb0f1a1da36ed2bd090d8a06586",
+      "sha": "b95e419254a9071beaeef57a1b0da22ba7dd2c4f",
       "purpose": "private provider-secret synchronization utility",
       "path": "tools/sync_provider_secrets.py",
       "status": "immutable utility revision; separately certified before controlled use"

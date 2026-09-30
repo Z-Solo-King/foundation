@@ -14,8 +14,8 @@ concurrency:
 
 env:
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_PROVIDER_FLEET_REF: fb57c8c4021965c207030dfb668b7bd747d5f3c6
-  OPERATIONS_PROVIDER_FLEET_PATH: tools/provider_fleet_probe.py
+  OPERATIONS_PROVIDER_FLEET_REF: b95e419254a9071beaeef57a1b0da22ba7dd2c4f
+  OPERATIONS_PROVIDER_FLEET_PATH: tools/provider_fleet_runtime_probe.py
   CLOUDFLARE_SCRIPT_NAME: operations
 
 jobs:
@@ -42,6 +42,7 @@ jobs:
           NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
         run: |
           set -euo pipefail
           test "$GITHUB_REPOSITORY" = "Z-Solo-King/foundation"
@@ -54,11 +55,12 @@ jobs:
           test -n "$NVIDIA_NIM_API_KEY"
           test -n "$HF_TOKEN"
           test -n "$COHERE_API_KEY"
+          test -n "$SILICONFLOW_API_KEY"
           python - <<'PY'
           import json, os
           payload = json.loads(os.environ["PROVIDER_KEYS_JSON"])
           assert isinstance(payload, dict) and payload
-          allowed = {"openrouter_free","groq","gemini","nvidia_nim","cohere_free","huggingface_free"}
+          allowed = {"openrouter_free","groq","gemini","nvidia_nim","cohere_free","huggingface_free","siliconflow"}
           unknown = sorted(set(payload) - allowed)
           assert not unknown, f"unsupported providers: {unknown}"
           print(f"configured provider count: {len(payload)}")
@@ -71,6 +73,7 @@ jobs:
           NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
         run: |
           set -euo pipefail
           python - <<'PY'
@@ -79,6 +82,7 @@ jobs:
 
           payload = json.loads(os.environ["BASE_PROVIDER_KEYS_JSON"])
           assert isinstance(payload, dict) and payload
+          payload.pop("mistral_free", None)
 
           payload["nvidia_nim"] = {
               "endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
@@ -96,6 +100,12 @@ jobs:
               "endpoint": "https://api.cohere.ai/compatibility/v1/chat/completions",
               "api_key": os.environ["COHERE_API_KEY"],
               "model": "command-a-plus-05-2026",
+              "zero_cost": True,
+          }
+          payload["siliconflow"] = {
+              "endpoint": "https://api.siliconflow.cn/v1/chat/completions",
+              "api_key": os.environ["SILICONFLOW_API_KEY"],
+              "model": "Qwen/Qwen3.5-4B",
               "zero_cost": True,
           }
 
