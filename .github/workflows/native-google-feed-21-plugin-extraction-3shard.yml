@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: wc21-v175-final-extraction
+  cancel-in-progress: true
+
 jobs:
   shard:
     name: "V175 plugin extraction — shard ${{ matrix.id }}"
@@ -119,7 +123,8 @@ jobs:
               "WooCommerce REST v1 capability probe",
               "WooCommerce REST v2 capability probe",
               "WooCommerce REST v3 capability probe",
-              "product route OPTIONS v1/v2/v3 (capability only; no product records stored)"
+              "product route GET v1/v2/v3 with per_page=1&_fields=id (metadata only; body not persisted)",
+              "product route OPTIONS v1/v2/v3"
             ],
             "policy":"Public read-only plugin evidence. Product route probes record capability metadata only; no product records are retained. No feed URL mining, CAPTCHA solving, Cloudflare challenge bypass, clearance-cookie replay, authentication bypass, or stealth/evasion.",
             "site_count":21,
