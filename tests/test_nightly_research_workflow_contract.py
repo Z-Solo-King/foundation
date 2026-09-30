@@ -123,7 +123,8 @@ def test_proxy_has_bounded_transport_recovery():
     assert "RETRYABLE_UPSTREAM_STATUS" in proxy
     assert "Retry-After" in proxy
     assert "bounded_3_attempts" in proxy
-    assert "research_agent" in proxy
+    assert '"X-Heroic-Research-Proof": "1"' in proxy
+    assert '"research_agent": True' not in proxy
 
 
 def test_operations_pin_manifest_matches_research_workflow():
@@ -149,7 +150,8 @@ def test_pinned_operations_contract_guard_is_semantic():
 
 def test_post_nightly_canary_uses_same_structured_research_contract():
     text=(Path(__file__).parents[1] / ".github" / "workflows" / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
-    assert "research_agent:true" in text
+    assert "research_agent:true" not in text
+    assert '"X-Heroic-Research-Proof: 1"' in text
     assert 'has("findings")' in text
     assert 'has("follow_up_questions")' in text
     assert 'has("note")' in text

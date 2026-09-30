@@ -1,3 +1,4 @@
+import json
 import asyncio
 from types import SimpleNamespace
 
@@ -595,3 +596,58 @@ def test_default_provider_runtime_diagnostic_route_is_authenticated_and_supporte
     instance.env = SimpleNamespace(AUTH_TOKEN="secret")
     response = asyncio.run(instance.fetch(Request()))
     assert response.status == 200
+
+
+def test_chat_proxy_translates_authenticated_research_proof_to_private_payload():
+    import worker
+    class Response:
+        status = 200
+        async def json(self):
+            return {"ok": True, "response": {"text": "structured"}}
+    class Binding:
+        async def fetch(self, request):
+            payload = json.loads(request.body)
+            assert payload["operation"] == "knowledge"
+            assert payload["research_agent"] is True
+            return Response()
+    class Request:
+        headers = {"Authorization": "Bearer user", "Idempotency-Key": "research-req", "X-Heroic-Research-Proof": "1"}
+    original = worker._authorized
+    worker._authorized = lambda request, env: True
+    try:
+        payload, status = asyncio.run(worker._operations_chat(
+            SimpleNamespace(OPERATIONS=Binding()),
+            {"message": "hello", "operation": "knowledge", "mode": "chat", "strict_zero_cost_only": True},
+            Request(),
+        ))
+    finally:
+        worker._authorized = original
+    assert status == 200
+    assert payload["ok"] is True
+
+
+def test_chat_proxy_does_not_promote_research_without_proof_header():
+    import worker
+    class Response:
+        status = 200
+        async def json(self):
+            return {"ok": True, "response": {"text": "normal"}}
+    class Binding:
+        async def fetch(self, request):
+            payload = json.loads(request.body)
+            assert "research_agent" not in payload
+            return Response()
+    class Request:
+        headers = {"Authorization": "Bearer user", "Idempotency-Key": "normal-req"}
+    original = worker._authorized
+    worker._authorized = lambda request, env: True
+    try:
+        payload, status = asyncio.run(worker._operations_chat(
+            SimpleNamespace(OPERATIONS=Binding()),
+            {"message": "hello", "operation": "knowledge", "mode": "chat", "strict_zero_cost_only": True},
+            Request(),
+        ))
+    finally:
+        worker._authorized = original
+    assert status == 200
+    assert payload["ok"] is True

@@ -86,9 +86,9 @@ jobs:
             sleep 1
           done
           curl -fsS --max-time 2 http://127.0.0.1:8765/health >/dev/null || { cat "$RUNNER_TEMP/research-worker-proxy.log" 2>/dev/null || true; exit 1; }
-          probe_payload=$(jq -nc '{model:"@cf/zai-org/glm-4.7-flash",research_agent:true,messages:[{role:"user",content:"Return the smallest valid research object with findings as an empty array, follow_up_questions as an empty array, and note as probe."}],max_tokens:96,temperature:0}')
+          probe_payload=$(jq -nc '{model:"@cf/zai-org/glm-4.7-flash",messages:[{role:"user",content:"Return the smallest valid research object with findings as an empty array, follow_up_questions as an empty array, and note as probe."}],max_tokens:96,temperature:0}')
           probe_response_file="$RUNNER_TEMP/research-worker-probe.json"
-          probe_status=$(curl -sS --max-time 90 -o "$probe_response_file" -w '%{http_code}' -H "Authorization: Bearer local-worker-proxy" -H "Content-Type: application/json" -d "$probe_payload" http://127.0.0.1:8765/chat/completions)
+          probe_status=$(curl -sS --max-time 90 -o "$probe_response_file" -w '%{http_code}' -H "Authorization: Bearer local-worker-proxy" -H "X-Heroic-Research-Proof: 1" -H "Content-Type: application/json" -d "$probe_payload" http://127.0.0.1:8765/chat/completions)
           printf '%s' "$probe_status" > "$RUNNER_TEMP/research-worker-probe.status"
           echo "Authenticated Worker-backed Workers AI research-contract probe -> HTTP ${probe_status}"
           if [ "${probe_status}" = "200" ] && jq -e '

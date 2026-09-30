@@ -208,7 +208,6 @@ class Handler(BaseHTTPRequestHandler):
             "message": message,
             "mode": "chat",
             "operation": "knowledge",
-            "research_agent": True,
             "strict_zero_cost_only": True,
             # Nightly research is evidence-gated: deterministic fallback cannot count as provider execution.
             "require_model_generation": True,

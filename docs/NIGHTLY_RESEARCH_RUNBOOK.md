@@ -37,3 +37,14 @@ Cloudflare Workers AI documents JSON Schema response formats and also notes that
 The production research path remains a loopback CI proxy to the authenticated Foundation Worker, which reaches private Operations through the service boundary and native Workers AI binding.
 
 The workflow is scheduled for 01:00 IST using a UTC cron expression and is additionally dispatched by the successful production-release workflow with the exact released SHA. GitHub documents scheduled workflows as using UTC by default and executing from the default branch.
+
+
+## Public/private research contract boundary
+
+The public Foundation `ChatRequest` schema remains intentionally closed. `research_agent` is a private Operations execution capability and must not be placed in the public `/api/v1/chat` JSON payload.
+
+The approved path is:
+
+`authenticated client -> public ChatRequest validation -> X-Heroic-Research-Proof header -> Foundation boundary translation -> private Operations research_agent=true`
+
+This preserves a strict public API while allowing the private research executor to receive its capability flag only after Foundation authentication and boundary validation.
