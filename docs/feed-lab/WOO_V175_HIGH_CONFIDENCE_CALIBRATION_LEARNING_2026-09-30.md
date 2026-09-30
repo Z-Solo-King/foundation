@@ -1,58 +1,101 @@
-# WooCommerce V175 Feed Calibration — Phase 1 (10 Sites) — 2026-09-30
+# WooCommerce V175 — High-Confidence Calibration & Learning — 2026-09-30
 
-## Correct Phase 1 boundary
+## Objective
 
-The Phase 1 calibration cohort is 10 feed-related sites:
+Use the 10 known feed-related sites as a controlled learning cohort before applying improved feed-family discovery to the remaining 20 sites.
 
-### Standalone feed-generator families (4)
+The key design rule is to learn **methods and evidence patterns**, not to copy guessed URLs or classifications directly.
+
+## Cohort
+
+Phase 1 contains exactly 10 sites:
+
 - PC Studio — WooCommerce Google Product Feed
 - Quickin Computers — CTX Feed / WebAppick
 - Avikaretails — Product Feed PRO / AdTribes
 - IT Gadgets Online — Product Feed Manager / WPPFM
+- Geekbees — Google for WooCommerce / Google Listings & Ads
+- Ninja Dog — Google for WooCommerce / Google Listings & Ads
+- Network IT Store — Google for WooCommerce / Google Listings & Ads
+- My Nexus Infosys — Google for WooCommerce / Google Listings & Ads
+- Solanki Enterprises — Google for WooCommerce / Google Listings & Ads
+- AULA India — Google for WooCommerce / Google Listings & Ads
 
-### Google-for-WooCommerce / Google Listings & Ads family (6)
-- Geekbees
-- Ninja Dog
-- Network IT Store
-- My Nexus Infosys
-- Solanki Enterprises
-- AULA India
+Only SSD remains outside the calibration because its native feed was already separately established. Moskeys remains outside because the site is down/unresolvable.
 
-OnlySSD is excluded because its native Google feed was already separately established. Moskeys is excluded because the site is down.
+## Baseline and classifier learning
 
-## Calibration objective
+The first Phase 1 run produced 6/10 family matches, 0/10 standalone native Merchant XML validations and 0 probe errors.
 
-This phase learns two distinct feed behaviors:
-1. Standalone XML generator discovery and strict current-payload validation.
-2. Google-for-WooCommerce family detection, distinguishing API-integrated synchronization from a separately published XML feed.
+The mismatch set directly exposed a family-classification weakness: generic “Google Merchant Center” page copy could collide with Google-for-WooCommerce detection. The classifier was changed to prefer family-exclusive plugin slugs, REST namespaces and endpoint signatures. Synthetic regressions now preserve real CTX, GLA, WooCommerce GPF and WPFM signatures while rejecting generic GLA wording.
 
-The harness uses browser/XHR/resource discovery, public REST namespace discovery, robots/sitemap discovery, public output-directory discovery, historical URL discovery, plugin-specific candidates, and bounded fallbacks. Challenge/clearance state is diagnostic only.
+This is the principal Phase 1 learning result: **family identification and feed acceptance are separate inference problems**.
 
-## Learning records
+## Evidence hierarchy
 
-Each site records:
-- expected vs detected family and confidence
-- standalone native-feed verification status
-- explicit and query feed references
-- output-directory candidates
-- historical candidate URLs
-- browser engines, XHR/resource URLs, plugin assets and namespaces
-- response patterns and candidate source/rank
+Discovery and learning use this order:
 
-For Google-for-WooCommerce, absence of a standalone XML feed is not treated as an extraction failure when the family is positively identified and no independent public feed URL is observed.
+1. exact public feed URL/reference;
+2. explicit query/permalink feed grammar;
+3. current browser/XHR/resource or REST evidence;
+4. public plugin output directory;
+5. bounded historical feed/plugin references;
+6. documented family URL grammar;
+7. bounded stable filename candidates.
 
-## Transfer to the unknown 20
+Evidence lower in the list can generate a hypothesis or candidate, but cannot outrank stronger current evidence.
 
-After this 10-site calibration, learned URL grammars and evidence patterns are transferred to the unknown 20. Priority order:
-1. exact public feed reference
-2. browser/XHR/resource evidence
-3. public plugin output directory
-4. historical feed URL followed by current validation
-5. plugin-specific documented URL grammar
-6. generic filename guessing
+## Transfer rules for the unknown 20
 
-No random filename enumeration is promoted above observed evidence, and 403/challenge/404 HTML/sitemap/RSS responses are not treated as proof of feed absence.
+For each unknown site:
 
-## Acceptance
+- infer only a family when there is a concrete family-specific signal;
+- transfer URL grammar only when the grammar is supported by observed/documented evidence;
+- keep API-integrated Google for WooCommerce distinct from standalone XML generators;
+- revalidate every historical/discovered URL against the current host;
+- record response status and evidence source rather than treating failures as “no feed”.
 
-A standalone feed is accepted only when the current payload itself validates as Google Merchant XML with the required namespace and core product fields.
+The learned pass runs in six parallel shards. It is followed by an independent historical refinement stage and, where useful, an isolated family-targeted verifier.
+
+## Historical learning stage
+
+The post-classifier 20-site historical refinement analyzed 333 archived HTML snapshots and produced four low-confidence hypotheses:
+
+- Kryptronix Gaming → WebToffee Product Feed
+- NCL Computer → WebToffee Product Feed
+- Prime ABGB → WooCommerce Google Product Feed
+- Variety Infotech → Google for WooCommerce / Google Listings & Ads
+
+The other 16 remain unresolved. No native standalone Google Merchant XML feed was verified across the 20-site cohort.
+
+## Targeted learning stage
+
+The four hypotheses were then checked separately so the hypothesis set could be iterated without rerunning all 20 sites.
+
+Current targeted results:
+- Kryptronix Gaming: WebToffee; 77 candidates checked; no current native Merchant XML; filename unresolved.
+- NCL Computer: WebToffee; 7 candidates checked; no current native Merchant XML; output directory returned 403.
+- Prime ABGB: WooCommerce GPF; 1 candidate checked; no current native Merchant XML; filename unresolved.
+- Variety Infotech: Google for WooCommerce; GLA endpoints returned 403; no current XML verified.
+
+Targeted native verification: 0/4.
+
+## Acceptance contract
+
+Only a **current** public payload that validates as Google Merchant XML is `NATIVE_FEED_VERIFIED`.
+
+The following are retained as evidence states but do not certify a native feed:
+- historical captures;
+- reconstructed XML;
+- Store API/product JSON;
+- RSS/Atom;
+- sitemaps;
+- HTML/interstitials;
+- 403/429 transport responses;
+- guessed or documented URLs that do not return valid Merchant XML.
+
+Google-for-WooCommerce is represented separately as an API-integrated architecture when its public integration evidence is strong enough. It is not converted into a fictitious standalone XML feed.
+
+## Security boundary
+
+The learning system remains public-only and does not use CAPTCHA solving, Cloudflare challenge bypass, authentication bypass, clearance-cookie replay, stealth browsing or proxy rotation for evasion.
