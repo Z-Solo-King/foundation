@@ -3,6 +3,9 @@ run-name: >-
   Nightly research — ${{ github.event_name == 'schedule' && 'scheduled-live' || (inputs.dry_run == true && 'contract-dry-run' || 'production-live') }}
 
 'on':
+  schedule:
+    # 01:00 IST = 19:30 UTC on the previous day.
+    - cron: "30 19 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -131,7 +134,12 @@ jobs:
         run: |
           set -euo pipefail
           test -n "${AUTH_TOKEN:-}" || { echo "Missing AUTH_TOKEN; refusing live research."; exit 1; }
-          python scripts/nightly_runtime_contract_probe.py             --url "$PUBLIC_WORKER_URL"             --token "$AUTH_TOKEN"             --model "$RESEARCH_LLM_MODEL"             --expected-foundation-sha "$TARGET_FOUNDATION_SHA"             --expected-operations-ref "$OPERATIONS_RESEARCH_REF" > "$RUNNER_TEMP/nightly-runtime-contract.json"
+          python scripts/nightly_runtime_contract_probe.py \
+  --url "$PUBLIC_WORKER_URL" \
+  --token "$AUTH_TOKEN" \
+  --model "$RESEARCH_LLM_MODEL" \
+  --expected-foundation-sha "$TARGET_FOUNDATION_SHA" \
+  --expected-operations-ref "$OPERATIONS_RESEARCH_REF" > "$RUNNER_TEMP/nightly-runtime-contract.json"
           cat "$RUNNER_TEMP/nightly-runtime-contract.json"
 
       - name: Authenticate private research source
