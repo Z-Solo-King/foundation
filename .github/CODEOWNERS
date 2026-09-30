@@ -1,7 +1,18 @@
-# Keep the public repository boundary reviewable as collaborators are added.
+# Repository-wide owner
 * @Z-Solo-King
 
-# Higher-risk control surfaces.
-.github/workflows/* @Z-Solo-King
-tools/* @Z-Solo-King
-docs/* @Z-Solo-King
+# Family and deterministic core boundaries
+/foundation_core/ @Z-Solo-King
+/backend/ @Z-Solo-King
+/docs/FAMILY_*.md @Z-Solo-King
+/docs/FAMILY_*.json @Z-Solo-King
+
+# AI audit / multi-lens / project maps
+/docs/AI_*.md @Z-Solo-King
+/docs/AI_*.json @Z-Solo-King
+/tools/* @Z-Solo-King
+/tools/*audit* @Z-Solo-King
+
+# CI / deployment authority
+/.github/workflows/* @Z-Solo-King
+/.github/ @Z-Solo-King
