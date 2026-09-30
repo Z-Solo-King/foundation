@@ -152,7 +152,7 @@ def main() -> int:
             else "readiness_failure"
         )
     elif chat_status == 0:
-        classification = "transport_failure"
+        classification = "probe_transport_error"
     elif not payload:
         classification = "invalid_json_response"
     else:

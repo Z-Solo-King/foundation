@@ -10,5 +10,6 @@ def test_production_release_dispatches_nightly_with_typed_inputs():
     assert '--field dry_run=false' in workflow
     assert '--field target_sha="$GITHUB_SHA"' in workflow
     assert '--field production_release_run_id="$GITHUB_RUN_ID"' in workflow
-    assert '--json' not in workflow
+    assert 'gh workflow run nightly-research-provider-preflight.yml' in workflow
+    assert 'preflight_run_id' in workflow
     assert 'dry_run:false' not in workflow

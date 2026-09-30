@@ -695,7 +695,7 @@ def test_nightly_research_preflight_has_network_failure_classification():
     preflight = (WORKFLOW_ROOT / "nightly-research-provider-preflight.yml").read_text(encoding="utf-8")
     probe = (ROOT / "scripts" / "nightly_runtime_contract_probe.py").read_text(encoding="utf-8")
     assert "nightly_runtime_contract_probe.py" in preflight
-    assert "transport_failure" in probe
+    assert "probe_transport_error" in probe
     assert "runtime_revision_mismatch" in probe
     assert "invalid_json_response" in probe
     assert "probe_transport_error" in preflight
