@@ -14,12 +14,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: wc-feed-guess-v2-\${{ github.ref }}
+  group: wc-feed-guess-v2-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   guess:
-    name: V2 public discovery shard \${{ matrix.shard }}
+    name: V2 public discovery shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -27,7 +27,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5, 6]
     env:
-      SHARD: \${{ matrix.shard }}
+      SHARD: ${{ matrix.shard }}
       SHARDS: 6
       MAX_DIRECT_FEED_PROBES: "80"
       MAX_INTERNAL_PAGES: "3"
@@ -61,7 +61,7 @@ jobs:
       - name: Upload V2 evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: woocommerce-guessing-v2-shard-\${{ matrix.shard }}
+          name: woocommerce-guessing-v2-shard-${{ matrix.shard }}
           path: out/woocommerce-guessing-v2/
           retention-days: 30
 
@@ -115,21 +115,21 @@ jobs:
             ),
             results: rows
           };
-          if (rows.length !== 20) throw new Error(\`expected 20 rows, got \${rows.length}\`);
+          if (rows.length !== 20) throw new Error(`expected 20 rows, got ${rows.length}`);
           await mkdir("out/aggregate",{recursive:true});
-          await writeFile("out/aggregate/aggregate.json",JSON.stringify(payload,null,2)+"\\n","utf8");
+          await writeFile("out/aggregate/aggregate.json",JSON.stringify(payload,null,2)+"\n","utf8");
           const md = [
             "# WooCommerce Feed Guessing V2 — Public Discovery",
             "",
-            \`Targets: \${rows.length}\`,
-            \`Native Google Merchant XML verified: \${payload.native_verified}\`,
-            \`API-integrated Google sync sites: \${payload.api_integrated_google}\`,
-            \`Challenge encountered: \${payload.challenge_encountered}\`,
+            `Targets: ${rows.length}`,
+            `Native Google Merchant XML verified: ${payload.native_verified}`,
+            `API-integrated Google sync sites: ${payload.api_integrated_google}`,
+            `Challenge encountered: ${payload.challenge_encountered}`,
             "",
             "| Site | Detected family | Confidence | Native feed | Transport | Candidates |",
             "|---|---|---|---|---|---:|",
-            ...rows.map(x=>\`| \${x.site} | \${x.family} | \${x.family_confidence} | \${x.native_feed?.verified?"YES":"NO"} | \${x.feed_transport} | \${x.candidate_count||0} |\`)
-          ].join("\\n")+"\\n";
+            ...rows.map(x=>`| ${x.site} | ${x.family} | ${x.family_confidence} | ${x.native_feed?.verified?"YES":"NO"} | ${x.feed_transport} | ${x.candidate_count||0} |`)
+          ].join("\n")+"\n";
           await writeFile("out/aggregate/aggregate.md",md,"utf8");
           NODE
       - name: Upload aggregate evidence
