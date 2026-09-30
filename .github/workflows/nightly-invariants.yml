@@ -44,14 +44,17 @@ jobs:
           ! grep -RniE 'localStorage\\.(setItem|AUTH_TOKEN)|Bearer[[:space:]]+[A-Za-z0-9_-]{20,}' frontend --exclude='*.map'
           echo 'frontend secret boundary: PASS'
 
-      - name: Validate planned overnight schedule and coverage
+      - name: Validate dispatch-only research trigger and coverage
         shell: bash
         run: |
           set -euo pipefail
-          grep -Fq 'cron: "30 19 * * *"' .github/workflows/nightly-multi-agent-research-v3.yml
+          ! grep -Fq 'schedule:' .github/workflows/nightly-multi-agent-research-v3.yml
+          grep -Fq 'workflow_dispatch:' .github/workflows/nightly-multi-agent-research-v3.yml
+          grep -Fq 'production_release_run_id' .github/workflows/nightly-multi-agent-research-v3.yml
           ! grep -Fq 'matrix:' .github/workflows/nightly-multi-agent-research-v3.yml
           grep -Fq -- '--crossfire' .github/workflows/nightly-multi-agent-research-v3.yml
-          grep -Fq -- '--global-capacity 20' .github/workflows/nightly-multi-agent-research-v3.yml
+          grep -Fq 'RESEARCH_MAX_CONCURRENCY: "6"' .github/workflows/nightly-multi-agent-research-v3.yml
+          grep -Fq -- '--crossfire --global-capacity "$RESEARCH_MAX_CONCURRENCY"' .github/workflows/nightly-multi-agent-research-v3.yml
           grep -Fq 'assert completed == expected' .github/workflows/nightly-multi-agent-research-v3.yml
           grep -Fq "assert summary['program_count'] == 24" .github/workflows/nightly-multi-agent-research-v3.yml
           grep -Fq 'name: Nightly polyglot migration review' .github/workflows/nightly-multi-agent-research-v3.yml
@@ -60,7 +63,7 @@ jobs:
           grep -Fq 'name: nightly-migration-review' .github/workflows/nightly-multi-agent-research-v3.yml
           grep -Fq 'cron: "45 19 * * *"' .github/workflows/autonomous-benchmark.yml
           grep -Fq 'cron: "0 20 * * *"' .github/workflows/nightly-invariants.yml
-          echo 'overnight 01:00-09:00 IST schedule and 24-program coverage contract: PASS'
+          echo 'dispatch-only 24-program research trigger and coverage contract: PASS'
 
       - name: Validate no competing Cloudflare deployment workflow was added
         shell: bash
