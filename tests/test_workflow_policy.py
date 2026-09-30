@@ -723,3 +723,5 @@ def test_foundation_ai_map_tracks_current_m11_type_inventory():
     assert '"lane": "M11"' in text
     assert '"current_type_entries": 44' in text
     assert '"current_type_entries": 45' not in text
+
+# Policy contract: production release evidence must use authenticated runtime proof and must not consume duplicate D1 query budget.
