@@ -710,3 +710,17 @@ def test_nightly_research_pin_selection_requires_consumer_contract_validation():
     assert "private/chatbot/chat_endpoint.py" in text
     assert "private/chatbot/live_answer.py" in text
     assert "response_format" in text
+
+def test_extractor_surface_governance_includes_m11_type_contract_audit():
+    source = Path(".github/workflows/extractor-surface-governance.yml").read_text(encoding="utf-8")
+    assert "extractor_type_migration_audit.py" in source
+    assert "EXTRACTOR_MAPPER_TYPE_MIGRATION_MATRIX_2026-09-30.json" in source
+    assert "artifacts/extractor-type-migration.json" in source
+    assert "DEFERRED" in source
+    assert "tests/test_extractor_type_migration_audit.py" in source
+
+def test_foundation_ai_map_tracks_current_m11_type_inventory():
+    text = (ROOT / "docs" / "AI_PROJECT_MAP.json").read_text(encoding="utf-8")
+    assert '"lane": "M11"' in text
+    assert '"current_type_entries": 44' in text
+    assert '"current_type_entries": 45' not in text

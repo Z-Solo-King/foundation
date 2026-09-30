@@ -85,11 +85,24 @@ jobs:
             --foundation-root . \
             --output artifacts/extractor-surface.json
 
+      - name: Run extractor type-contract migration audit
+        run: |
+          mkdir -p artifacts
+          if [ -f operations/tools/extractor_type_migration_audit.py ] && [ -f operations/docs/EXTRACTOR_MAPPER_TYPE_MIGRATION_MATRIX_2026-09-30.json ]; then
+            PYTHONPATH=operations python operations/tools/extractor_type_migration_audit.py               --root operations               --output artifacts/extractor-type-migration.json
+          else
+            printf '%s\n' '{"schema":"extractor-mapper-type-audit/v1","status":"DEFERRED","reason":"Operations revision predates M11 typed-contract migration inventory"}'               > artifacts/extractor-type-migration.json
+          fi
+
       - name: Run focused extractor regression tests
         working-directory: operations
         run: |
           python -m pip install --disable-pip-version-check -e ".[test]"
-          python -m pytest -q tests/test_extractor_policy_seams.py tests/test_extractor_surface_governance.py
+          tests="tests/test_extractor_policy_seams.py tests/test_extractor_surface_governance.py"
+          if [ -f tests/test_extractor_type_migration_audit.py ]; then
+            tests="$tests tests/test_extractor_type_migration_audit.py"
+          fi
+          python -m pytest -q $tests
 
       - name: Run whole-feature governance audit
         run: |
