@@ -39,3 +39,6 @@ Snapshot: 2026-09-29 (Asia/Kolkata)
 
 ## Documentation hygiene
 Do not copy secret values, Cloudflare account IDs, private Worker origins, mutable deployment IDs, or mutable issue counts into current public-state documents. Historical documents remain useful only as provenance.
+
+## 2026-09-30 AI provider synchronization
+Foundation public automation and Operations private runtime share the six-provider external AI contract: OpenRouter, Groq, Gemini, NVIDIA NIM, Cohere, and Hugging Face. Cloudflare Workers AI remains the native in-Worker provider. Provider credentials are not documented here. Current public contract: `docs/AI_PROVIDER_FLEET_2026-09-30.md`; private runtime contract: Operations `docs/AI_PROVIDER_TASK_FABRIC_2026-09-30.md`.

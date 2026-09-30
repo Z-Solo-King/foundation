@@ -25,6 +25,7 @@ jobs:
     needs: authority_guard
     name: V175 plugin shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
+    environment: production-secret-sync
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -45,8 +46,10 @@ jobs:
       MAX_DIRECT_FEED_PROBES: "40"
       BROWSERLESS_DIAGNOSTIC_ENABLED: "0"
       BROWSERLESS_CONTENT_URL: ${{ secrets.BROWSERLESS_CONTENT_URL }}
-      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      GROQ_MODEL: ${{ vars.GROQ_MODEL }}
+      PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+      NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

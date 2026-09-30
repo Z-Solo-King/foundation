@@ -81,3 +81,7 @@ Foundation PR #1573 fixes a live nightly research contract defect exposed by the
 The PR was merged at 732a694cf2e272709640c379d9aed70ea28b2534. The canonical production release for that revision is separately tracked; no production-live research acceptance is claimed until the release dispatch and a fresh 24-program run pass.
 
 Cross-repository continuity requires this document and docs/FAMILY_SYNC_STATE.json to be refreshed whenever canonical worker/workflow boundaries change.
+
+
+## 2026-09-30 AI provider fleet
+The current external AI API fleet is defined in `docs/AI_PROVIDER_FLEET_2026-09-30.md` and `docs/AI_PROVIDER_FLEET_2026-09-30.json`: OpenRouter, Groq, Gemini, NVIDIA NIM, Cohere, and Hugging Face. Cloudflare Workers AI is the native runtime inference binding. Legacy provider references are historical compatibility material only.
