@@ -1,0 +1,93 @@
+name: WooCommerce Feed Extraction V3 - API First
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tools/woocommerce_feed_extraction_v3.py"
+      - "tests/test_woocommerce_feed_extraction_v3.py"
+      - ".github/workflows/woocommerce-feed-extraction-v3.yml"
+      - "docs/feed-lab/WOO_V3_API_FIRST_2026-09-30.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wc-feed-v3-\${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  extract:
+    name: API-first shard \${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    env:
+      SHARD: \${{ matrix.shard }}
+      SHARDS: 6
+      MAX_XML_PROBES: "24"
+      REQUEST_TIMEOUT: "12"
+      SITE_CONCURRENCY: "4"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+      - name: Install runtime
+        run: python -m pip install --disable-pip-version-check -q httpx pytest
+      - name: Unit tests
+        run: python -m pytest -q tests/test_woocommerce_feed_extraction_v3.py
+      - name: Public API-first extraction
+        run: python tools/woocommerce_feed_extraction_v3.py
+      - name: Upload evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92e8e0b5a5461e7c
+        with:
+          name: woocommerce-feed-v3-shard-\${{ matrix.shard }}
+          path: out/woocommerce-feed-v3/
+          retention-days: 30
+
+  aggregate:
+    needs: extract
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          pattern: woocommerce-feed-v3-shard-*
+          path: out/shards
+          merge-multiple: false
+      - name: Aggregate evidence
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib
+          files=list(pathlib.Path("out/shards").rglob("*.json"))
+          rows=[]
+          for f in files:
+              rows.extend(json.loads(f.read_text())["results"])
+          if len(rows) != 20:
+              raise SystemExit(f"expected 20 results, got {len(rows)}")
+          summary={
+              "schema":"woocommerce-feed-extraction-v3-aggregate/v1",
+              "target_count":len(rows),
+              "store_api_verified":sum(bool(x["store_api"]["verified"]) for x in rows),
+              "native_xml_verified":sum(bool(x["native_feed"]["verified"]) for x in rows),
+              "unverified":sum(x["transport"]=="unverified" for x in rows),
+              "total_products_reported":sum(x["store_api"]["reported_total"] for x in rows),
+              "results":rows
+          }
+          p=pathlib.Path("out/aggregate"); p.mkdir(parents=True,exist_ok=True)
+          (p/"aggregate.json").write_text(json.dumps(summary,indent=2))
+          print(json.dumps({k:v for k,v in summary.items() if k!="results"},indent=2))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92e8e0b5a5461e7c
+        with:
+          name: woocommerce-feed-v3-aggregate
+          path: out/aggregate/
+          retention-days: 30
