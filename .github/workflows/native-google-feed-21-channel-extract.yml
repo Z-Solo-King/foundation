@@ -1,4 +1,5 @@
 name: WooCommerce 21 Plugin Channel Extraction
+# Final hardened channel pass: browser/XHR + WP-JSON + REST + WooCommerce v1/v2/v3 route probes
 
 on:
   push:
