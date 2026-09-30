@@ -17,6 +17,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: wc21-v175-plugin-extraction
+  cancel-in-progress: true
+
 jobs:
   site:
     name: "plugin extraction — ${{ matrix.id }}"
