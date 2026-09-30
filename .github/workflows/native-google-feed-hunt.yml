@@ -118,7 +118,8 @@ jobs:
           for(const k of Object.keys(groups)) groups[k].sort();
           const feedLike=mergedRows.map(r=>({
             site:r.site, configured_root:r.configured_root, selected_origin:r.selected_origin,
-            primary_group:r.primary_group, status:r.status,\n            original_primary_group:r.original_primary_group, browser_group_override:r.browser_group_override,
+            primary_group:r.primary_group, status:r.status,
+            original_primary_group:r.original_primary_group, browser_group_override:r.browser_group_override,
             feed_like_plugin_assets:r.feed_like_plugin_assets, feed_family_signals:r.feed_family_signals,
             identity_tokens:r.identity_tokens,
             plugin_assets:r.plugin_assets, readme_metadata:r.readme_metadata,
