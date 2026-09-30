@@ -13,6 +13,11 @@ on:
         required: false
         default: ""
         type: string
+      operations_research_ref:
+        description: "Exact Operations revision deployed to the private production runtime"
+        required: false
+        default: "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676"
+        type: string
 
 permissions:
   contents: read
@@ -23,141 +28,78 @@ jobs:
       contents: read
       issues: write
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
+    env:
+      PUBLIC_WORKER_URL: "https://ai-cio.pages.dev"
+      TARGET_FOUNDATION_SHA: \${{ inputs.target_sha || github.sha }}
+      OPERATIONS_RESEARCH_REF: \${{ inputs.operations_research_ref || 'ce4f9edbae3ddf1bf1c25a908d5bce014acc7676' }}
+      RESEARCH_LLM_MODEL: "@cf/zai-org/glm-4.7-flash"
     steps:
-      - name: Verify authenticated Worker-backed Workers AI
-        env:
-          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          PUBLIC_WORKER_URL: "https://ai-cio.pages.dev"
-          OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
-          OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
-        run: |
-          set +e
-          auth_token=false; app_id=false; app_key=false; endpoint=false; api_key=false; model=false
-          [ -n "${AUTH_TOKEN:-}" ] && auth_token=true
-          [ -n "${OPERATIONS_APP_ID:-}" ] && app_id=true
-          [ -n "${OPERATIONS_APP_PRIVATE_KEY:-}" ] && app_key=true
-          [ -n "${PUBLIC_WORKER_URL:-}" ] && endpoint=true
-          [ "$auth_token" = true ] && api_key=true
-          model=true
-          ready=false
-          if [ "$auth_token" = true ] && [ "$app_id" = true ] && [ "$app_key" = true ] && [ "$endpoint" = true ]; then ready=true; fi
-          worker_health_status=000
-          worker_health_curl_exit=0
-          worker_health_curl_error=""
-          worker_dns=""
-          probe_curl_exit=0
-          probe_curl_error=""
-          worker_ai_verified=false
-          if [ "$ready" = true ]; then
-            health_file="$RUNNER_TEMP/nightly-research-worker-health.json"
-            health_headers="$RUNNER_TEMP/nightly-research-worker-health.headers"
-            health_error="$RUNNER_TEMP/nightly-research-worker-health.error"
-            worker_health_status=$(curl -sS --max-time 30 -D "$health_headers" -o "$health_file" -w '%{http_code}' \
-              "${PUBLIC_WORKER_URL}/health" 2>"$health_error")
-            worker_health_curl_exit=$?
-            worker_health_status="${worker_health_status:-000}"
-            worker_health_curl_error="$(cat "$health_error" 2>/dev/null || true)"
-            worker_dns="$(getent ahostsv4 "${PUBLIC_WORKER_URL#https://}" 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ' || true)"
-            echo "Public Worker health probe -> HTTP ${worker_health_status}"
-            echo "Worker health edge headers:"
-            awk 'BEGIN{IGNORECASE=1} /^(cf-ray|server|content-type):/ {print}' "$health_headers" | head -20 || true
+      - name: Checkout Foundation probe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: \${{ github.ref_name }}
+          persist-credentials: false
 
-            response_file="$RUNNER_TEMP/nightly-research-worker-preflight.json"
-            probe_id="nightly-provider-preflight-${GITHUB_RUN_ID}"
-            probe_payload='{"operation":"provider_runtime_verify"}'
-            probe_error="$RUNNER_TEMP/nightly-research-worker-preflight.error"
-            status=$(curl -sS --max-time 90 -o "$response_file" -w '%{http_code}' \
-              -H "Authorization: Bearer ${AUTH_TOKEN}" \
-              -H 'Content-Type: application/json' \
-              -d "$probe_payload" \
-              "${PUBLIC_WORKER_URL}/api/v1/chatbot/diagnostic" 2>"$probe_error")
-            probe_curl_exit=$?
-            probe_curl_error="$(cat "$probe_error" 2>/dev/null || true)"
-            echo "Authenticated Workers AI runtime diagnostic -> HTTP ${status}"
-            if [ "$status" = "200" ] && jq -e '.ok == true and any(.runtime_checks[]?; .name == "provider_runtime_workers_ai" and .ok == true and .generation_status == "model_generated")' "$response_file" >/dev/null 2>&1; then
-              worker_ai_verified=true
-              echo "Authenticated Workers AI runtime diagnostic: PASS"
-            else
-              echo "Authenticated Workers AI runtime diagnostic: FAIL"
-              jq -c '{ok,runtime_checks:(.runtime_checks // [])}' "$response_file" 2>/dev/null || true
-            fi
-          fi
-          ready=false
-          if [ "$auth_token" = true ] && [ "$app_id" = true ] && [ "$app_key" = true ] && [ "$endpoint" = true ] && [ "$worker_health_status" = 200 ] && [ "$worker_ai_verified" = true ]; then ready=true; fi
-          export PREFLIGHT_APP_ID="$app_id"
-          export PREFLIGHT_APP_KEY="$app_key"
-          export PREFLIGHT_ENDPOINT="$endpoint"
-          export PREFLIGHT_API_KEY="$api_key"
-          export PREFLIGHT_MODEL="$model"
-          export PREFLIGHT_AUTH_TOKEN="$auth_token"
-          export PREFLIGHT_WORKER_AI="$worker_ai_verified"
-          export PREFLIGHT_WORKER_HEALTH_STATUS="$worker_health_status"
-          export PREFLIGHT_WORKER_HEALTH_CURL_EXIT="${worker_health_curl_exit:-0}"
-          export PREFLIGHT_WORKER_HEALTH_CURL_ERROR="${worker_health_curl_error:-}"
-          export PREFLIGHT_WORKER_DNS="${worker_dns:-}"
-          export PREFLIGHT_PROBE_CURL_EXIT="${probe_curl_exit:-0}"
-          export PREFLIGHT_PROBE_CURL_ERROR="${probe_curl_error:-}"
-          export PREFLIGHT_READY="$ready"
-          python - <<'PY'
-          import json, os
-          d = {
-              "schema": "live-nightly-preflight/v2",
-              "ready": os.environ["PREFLIGHT_READY"] == "true",
-              "transport": "authenticated_foundation_worker",
-              "worker_ai_path_verified": os.environ["PREFLIGHT_WORKER_AI"] == "true",
-              "worker_health_http_status": int(os.environ.get("PREFLIGHT_WORKER_HEALTH_STATUS") or "0"),
-              "worker_health_curl_exit": int(os.environ.get("PREFLIGHT_WORKER_HEALTH_CURL_EXIT") or "0"),
-              "worker_health_transport_error": os.environ["PREFLIGHT_WORKER_HEALTH_CURL_ERROR"][:240],
-              "worker_dns_ipv4": os.environ["PREFLIGHT_WORKER_DNS"][:512],
-              "probe_curl_exit": int(os.environ["PREFLIGHT_PROBE_CURL_EXIT"]),
-              "probe_transport_error": os.environ["PREFLIGHT_PROBE_CURL_ERROR"][:240],
-              "edge_gate_suspected": int(os.environ.get("PREFLIGHT_WORKER_HEALTH_STATUS") or "0") == 403,
-              "auth_token_set": os.environ["PREFLIGHT_AUTH_TOKEN"] == "true",
-              "operations_app_id_set": os.environ["PREFLIGHT_APP_ID"] == "true",
-              "operations_app_private_key_set": os.environ["PREFLIGHT_APP_KEY"] == "true",
-              "research_endpoint_set": os.environ["PREFLIGHT_ENDPOINT"] == "true",
-              "research_api_key_set": os.environ["PREFLIGHT_API_KEY"] == "true",
-              "research_model_set": os.environ["PREFLIGHT_MODEL"] == "true",
-              "operations_ref": "1a91efa53b9202f1624ddde892b0e86bd6b360f0",
-              "workers_ai_model": "@cf/zai-org/glm-4.7-flash",
-              "network_classification": (
-                  "dns_or_network_unreachable" if int(os.environ.get("PREFLIGHT_WORKER_HEALTH_STATUS") or "0") == 0 else
-                  "edge_http_403" if int(os.environ.get("PREFLIGHT_WORKER_HEALTH_STATUS") or "0") == 403 else
-                  "worker_health_non_200" if int(os.environ.get("PREFLIGHT_WORKER_HEALTH_STATUS") or "0") != 200 else
-                  "worker_health_ok_provider_runtime_verified" if os.environ.get("PREFLIGHT_WORKER_AI") == "true" else "worker_health_ok_provider_runtime_unverified"
-              ),
-          }
-          with open("preflight.json", "w", encoding="utf-8") as handle:
-              json.dump(d, handle, indent=2, sort_keys=True)
-              handle.write("\n")
-          print(json.dumps(d, indent=2, sort_keys=True))
-          PY
-          if [ "$ready" != "true" ]; then
-            echo "Nightly research Worker-backed Workers AI path is unavailable; live research remains blocked."
-            exit 1
-          fi
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Verify required credentials
+        env:
+          AUTH_TOKEN: \${{ secrets.AUTH_TOKEN }}
+          OPERATIONS_APP_ID: \${{ secrets.OPERATIONS_APP_ID }}
+          OPERATIONS_APP_PRIVATE_KEY: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "\${AUTH_TOKEN:-}" || { echo "Missing AUTH_TOKEN"; exit 1; }
+          test -n "\${OPERATIONS_APP_ID:-}" || { echo "Missing OPERATIONS_APP_ID"; exit 1; }
+          test -n "\${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo "Missing OPERATIONS_APP_PRIVATE_KEY"; exit 1; }
+          printf "%s" "\$OPERATIONS_RESEARCH_REF" | grep -Eq "^[0-9a-f]{40}$"
+          printf "%s" "\$TARGET_FOUNDATION_SHA" | grep -Eq "^[0-9a-f]{40}$"
+
+      - name: Verify exact deployed research contract
+        env:
+          AUTH_TOKEN: \${{ secrets.AUTH_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/nightly_runtime_contract_probe.py \
+            --url "\$PUBLIC_WORKER_URL" \
+            --token "\$AUTH_TOKEN" \
+            --model "\$RESEARCH_LLM_MODEL" \
+            --expected-foundation-sha "\$TARGET_FOUNDATION_SHA" \
+            --expected-operations-ref "\$OPERATIONS_RESEARCH_REF" | tee preflight-probe.json
+
       - name: Publish preflight receipt
         if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          python - <<'PY' > preflight-comment.md
-          import json
+          set -euo pipefail
+          cp preflight-probe.json preflight.json 2>/dev/null || printf "%s\n" '{"ok":false,"classification":"probe_not_created"}' > preflight.json
+          cat preflight.json
+
+      - name: Comment preflight receipt
+        if: always()
+        env:
+          GH_TOKEN: \${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="\$(python - <<'PY'
           from pathlib import Path
-          path = Path("preflight.json")
-          data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {"ready": False, "error": "no receipt"}
-          print("### Live nightly research preflight")
-          print()
-          print("```json")
-          print(json.dumps(data, indent=2, sort_keys=True))
-          print("```")
+          print("Nightly exact runtime preflight receipt:")
+          print(Path("preflight.json").read_text(encoding="utf-8"))
           PY
-          gh api "repos/$GITHUB_REPOSITORY/issues/157/comments" -f body="$(cat preflight-comment.md)" || true
+          )"
+          gh api "repos/\$GITHUB_REPOSITORY/issues/157/comments" -f body="\$body" || true
+
       - name: Upload preflight receipt
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: live-nightly-preflight-${{ github.run_id }}
+          name: live-nightly-preflight-\${{ github.run_id }}
           path: preflight.json
           retention-days: 30
