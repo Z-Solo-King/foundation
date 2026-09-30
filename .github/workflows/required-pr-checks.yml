@@ -48,6 +48,28 @@ jobs:
         with:
           node-version: '22'
           package-manager-cache: false
+      - name: Validate multi-lens planner contract
+        run: |
+          set -euo pipefail
+          node --check tools/multi_lens_planner.mjs
+          node --test tests/multi_lens_planner.test.mjs
+          mkdir -p .runtime
+          node tools/multi_lens_planner.mjs < docs/MULTI_LENS_CHATBOT_PROFILE.json > .runtime/multi-lens-plan.json
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          const profile = JSON.parse(fs.readFileSync("docs/MULTI_LENS_CHATBOT_PROFILE.json", "utf8"));
+          const plan = JSON.parse(fs.readFileSync(".runtime/multi-lens-plan.json", "utf8"));
+          if (plan.schema !== "multi-lens-plan/v1") throw new Error("invalid multi-lens plan schema");
+          if (plan.authority !== "scheduling_only") throw new Error("planner authority boundary violated");
+          if (plan.totals.lanes > plan.constraints.max_lanes) throw new Error("lane limit exceeded");
+          if (plan.totals.cost > plan.constraints.cost_budget) throw new Error("cost budget exceeded");
+          if (plan.totals.latency > plan.constraints.latency_budget) throw new Error("latency budget exceeded");
+          if (plan.totals.quota > plan.constraints.quota_budget) throw new Error("quota budget exceeded");
+          for (const id of profile.required_ids || []) {
+            if (!plan.selected.some((lane) => lane.id === id)) throw new Error("required lane missing: " + id);
+          }
+          if (new Set(plan.selected.map((lane) => lane.family)).size < 3) throw new Error("insufficient lane diversity");
+          NODE
       - name: Install test tools and package
         run: |
           python -m pip install --upgrade pip
@@ -95,5 +117,5 @@ jobs:
         run: |
           set -euo pipefail
           test ! -e backend/learning/promotion.py
-          ! grep -RniE 'operations|extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-(private|public)' foundation_core backend worker.py wrangler.toml migrations
+          ! grep -RniE 'operations|extractor_mapper|private.chatbot|resource_ledger|promotion.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-(private|public)' foundation_core backend worker.py wrangler.toml migrations
           ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' backend foundation_core worker.py wrangler.toml migrations
