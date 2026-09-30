@@ -102,6 +102,10 @@
     [
       ".github/workflows/woocommerce-v175-22-plugin-extraction.yml",
       "private_feed_extraction"
+    ],
+    [
+      ".github/workflows/extractor-surface-governance.yml",
+      "private_audit"
     ]
   ],
   "policy": {
