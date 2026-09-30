@@ -16,3 +16,5 @@ Sources:
 - iCopyDoc example: citeturn428963search2
 
 Acceptance remains strict: a current same-host response must contain the Google Merchant namespace and `g:id`, `g:title`, `g:link`, and `g:price` in one item/entry. A 403, 404, challenge page, timeout, sitemap, RSS, or unrelated XML is not a positive hit.
+
+Run control: this document is intentionally updated when the executable guess workflow changes, to force the PR workflow to validate the current branch head.
