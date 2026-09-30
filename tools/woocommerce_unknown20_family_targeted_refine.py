@@ -216,11 +216,14 @@ async def run_target(name: str, root: str, family: str) -> dict:
         return result
 
 async def main() -> None:
-    aggregate = json.loads(CAL.read_text(encoding="utf-8"))
-    selected = []
-    for site, (root, family) in TARGET_FAMILIES.items():
-        selected.append((site, root, family))
-
+    # Aggregate evidence is optional. The targeted verifier must run independently
+    # from the 20-site historical workflow, so missing aggregate input is allowed.
+    if CAL.exists():
+        try:
+            json.loads(CAL.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    selected = [(site, root, family) for site, (root, family) in TARGET_FAMILIES.items()]
     results = await asyncio.gather(*(run_target(*x) for x in selected))
     out = ROOT / "out" / "woocommerce-family-targeted-refine"
     out.mkdir(parents=True, exist_ok=True)
