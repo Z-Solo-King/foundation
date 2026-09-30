@@ -12,7 +12,9 @@
     "docs/FAMILY_INTEGRATION_GRAPH.json",
     "Z-Solo-King/operations:docs/CURRENT_SOURCE_OF_TRUTH.md",
     "docs/AI_PROJECT_MAP.json",
-    "docs/AI_AUDIT_SYSTEM.md"
+    "docs/AI_AUDIT_SYSTEM.md",
+    "docs/AI_PROVIDER_FLEET_2026-09-30.md",
+    "docs/AI_PROVIDER_FLEET_2026-09-30.json"
   ],
   "canonical": {
     "chat_product_ui": "frontend/index.html",
@@ -36,6 +38,7 @@
     "benchmarks": "benchmark/",
     "family_integration_graph": "docs/FAMILY_INTEGRATION_GRAPH.json",
     "family_integration_architecture": "docs/FAMILY_INTEGRATION_ARCHITECTURE_2026-09-25.md",
+    "ai_provider_fleet": "docs/AI_PROVIDER_FLEET_2026-09-30.md",
     "python_application_core": "worker.py",
     "python_core_worker_config": "wrangler.python-core.toml"
   },
