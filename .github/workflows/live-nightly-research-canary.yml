@@ -1,3 +1,74 @@
+name: Live nightly research canary
+run-name: >-
+  Live nightly research canary — ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'main' && 'post-nightly-main' || (github.ref == 'refs/heads/main' && 'manual-main' || 'non-main-blocked') }}
+
+on: # zizmor: ignore[dangerous-triggers] trusted post-nightly canary; pinned source only
+  workflow_run:
+    workflows: ["nightly multi-agent research"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-nightly-research-canary
+  cancel-in-progress: true
+
+env:
+  OPERATIONS_REPOSITORY: Z-Solo-King/operations
+  OPERATIONS_REF: 1a91efa53b9202f1624ddde892b0e86bd6b360f0
+  PUBLIC_WORKER_URL: "https://ai-cio.pages.dev"
+  RESEARCH_LLM_ENDPOINT: "http://127.0.0.1:8765"
+  RESEARCH_LLM_API_KEY: "local-worker-proxy"
+  RESEARCH_LLM_MODEL: "@cf/zai-org/glm-4.7-flash"
+
+jobs:
+  canary:
+    permissions:
+      contents: read
+      issues: write
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Foundation research adapter
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Wait for canonical production revision
+        env:
+          EXPECTED_FOUNDATION: ${{ github.event.workflow_run.head_sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for _ in {1..60}; do
+            status=$(curl -sS --max-time 20 -o "$RUNNER_TEMP/live-nightly-readiness.json" -w '%{http_code}' "$PUBLIC_WORKER_URL/readiness" || true)
+            if [ "$status" = "200" ] && jq -e --arg f "$EXPECTED_FOUNDATION" --arg o "$OPERATIONS_REF" '.ready == true and .database == true and .release.foundation_sha == $f and .release.operations_ref == $o' "$RUNNER_TEMP/live-nightly-readiness.json" >/dev/null 2>&1; then
+              jq '{ready,database,release}' "$RUNNER_TEMP/live-nightly-readiness.json"
+              exit 0
+            fi
+            sleep 5
+          done
+          cat "$RUNNER_TEMP/live-nightly-readiness.json" 2>/dev/null || true
+          exit 1
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout pinned Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.OPERATIONS_REPOSITORY }}
+          ref: ${{ env.OPERATIONS_REF }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Start authenticated Workers AI research proxy
+        env:
+          RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
@@ -94,3 +165,64 @@
               probe_error_message="$(jq -r '.error.message // .message // empty' "$RUNNER_TEMP/research-worker-probe.json" 2>/dev/null | head -c 240 || true)"
               probe_upstream_status="$(jq -r '.error.upstream_status // empty' "$RUNNER_TEMP/research-worker-probe.json" 2>/dev/null | head -c 16 || true)"
               probe_upstream_error="$(jq -r '.error.upstream_error // empty' "$RUNNER_TEMP/research-worker-probe.json" 2>/dev/null | head -c 200 || true)"
+              probe_upstream_generation_status="$(jq -r '.error.upstream_generation_status // empty' "$RUNNER_TEMP/research-worker-probe.json" 2>/dev/null | head -c 80 || true)"
+              probe_upstream_provider="$(jq -r '.error.upstream_provider // empty' "$RUNNER_TEMP/research-worker-probe.json" 2>/dev/null | head -c 120 || true)"
+            fi
+            python - "$summary_file" "$failure_stage" "$JOB_STATUS" "$probe_http_status" "$probe_error_code" "$probe_error_message" "$probe_upstream_status" "$probe_upstream_error" "$probe_upstream_generation_status" "$probe_upstream_provider" <<'PY'
+          import json, sys
+          from pathlib import Path
+          out, stage, job_status, http_status, error_code, error_message, upstream_status, upstream_error, upstream_generation_status, upstream_provider = sys.argv[1:]
+          data = {
+              "schema": "live-nightly-canary/v1",
+              "ok": False,
+              "failure_stage": stage,
+              "job_status": job_status,
+              "probe_http_status": http_status,
+              "probe_error_code": error_code,
+              "probe_error_message": error_message,
+              "probe_upstream_status": upstream_status,
+              "probe_upstream_error": upstream_error,
+              "probe_upstream_generation_status": upstream_generation_status,
+              "probe_upstream_provider": upstream_provider,
+              "operations_ref": "1a91efa53b9202f1624ddde892b0e86bd6b360f0",
+          }
+          Path(out).write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(data, indent=2, sort_keys=True))
+          PY
+          fi
+
+      - name: Remove authenticated Workers AI research proxy
+        if: always()
+        shell: bash
+        run: |
+          if [ -f "$RUNNER_TEMP/research-worker-proxy.pid" ]; then kill "$(cat "$RUNNER_TEMP/research-worker-proxy.pid")" 2>/dev/null || true; fi
+          rm -f "$RUNNER_TEMP/research-worker-proxy.pid" "$RUNNER_TEMP/research-worker-proxy.log"
+      - name: Publish sanitized canary receipt
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: operations
+        run: |
+          if [ -f .runtime/live-nightly-canary/summary.json ]; then
+            body=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('.runtime/live-nightly-canary/summary.json').read_text())
+          print('### Live nightly research canary')
+          print('```json')
+          print(json.dumps(data,indent=2,sort_keys=True))
+          print('```')
+          PY
+            )
+          else
+            body='### Live nightly research canary'
+            body="$body\nStructured receipt generation failed unexpectedly; inspect the canary job."
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/issues/157/comments" -f body="$body"
+      - name: Upload canary evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: live-nightly-research-canary-${{ github.run_id }}
+          path: operations/.runtime/live-nightly-canary/
+          retention-days: 30
