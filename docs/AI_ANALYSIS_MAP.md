@@ -5,6 +5,7 @@ Compact routing index for human and AI repository analysis. Read this before ope
 ## Read first
 
 0. `docs/AI_PROVIDER_FLEET_2026-09-30.md` and `docs/AI_PROVIDER_FLEET_2026-09-30.json` for the current seven-provider Foundation AI task-fabric contract.
+0.5. `docs/MULTI_LENS_EXECUTION_ENGINE.md`, `docs/MULTI_LENS_EXECUTION_PATTERNS.md`, `tools/multi_lens_planner.mjs` and `docs/MULTI_LENS_CHATBOT_PROFILE.json` for adaptive multi-lens scheduling.
 
 1. `README.md`
 2. `REPOSITORY_MAP.json`
@@ -59,3 +60,9 @@ The former `test_coverage_*` files were broad aggregators. They were audited by 
 ## Cross-surface family navigation
 
 Use `docs/FAMILY_INTEGRATION_GRAPH.json` before changing behavior that crosses UI, public Worker, private Operations, extractor/mapper, chatbot, resource governance, research, benchmark or observability boundaries. The graph is a routing aid; canonical ownership still comes from `docs/FAMILY_CONTRACT.json` and executable source.
+
+## Multi-lens execution
+Use the multi-lens planner as a scheduling overlay across code, runtime, browser, extraction, provider, GitHub/workflow, Cloudflare and history lenses. It does not become a policy authority.
+
+## Extractor/mapper ownership
+The former standalone extractor-mapper repository is retired/deleted. Active runtime is under Operations `extractor_mapper/`; Foundation retains the public deterministic mapper core. Historical extractor-mapper documents are provenance only.

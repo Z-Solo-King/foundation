@@ -3,10 +3,10 @@
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
 Checked: 2026-09-30.
-Main verification checkpoint: ec4c7b41f75b8ad0b8e2ce6fb69cc1013f84eece (PR #1600 merged; production release certification is separate).
+Main verification checkpoint: 97e16717e394316178b531a23fda69b2917b3a35 (PR #1601 merged; production release certification is separate).
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: ec4c7b41f75b8ad0b8e2ce6fb69cc1013f84eece.
+Foundation main code checkpoint: 97e16717e394316178b531a23fda69b2917b3a35.
 Operations main checkpoint: current protected main revision is read from GitHub live state; research/migration jobs use explicit immutable pins below.
 Production Operations pin: ce4f9edbae3ddf1bf1c25a908d5bce014acc7676.
 Provider fleet runtime probe pin: b95e419254a9071beaeef57a1b0da22ba7dd2c4f.
@@ -86,3 +86,8 @@ Cross-repository continuity requires this document and docs/FAMILY_SYNC_STATE.js
 
 ## 2026-09-30 AI provider fleet
 The current Foundation external AI API fleet is defined in `docs/AI_PROVIDER_FLEET_2026-09-30.md` and `docs/AI_PROVIDER_FLEET_2026-09-30.json`: OpenRouter, Groq, Gemini, NVIDIA NIM, Cohere, Hugging Face, and SiliconFlow. Cloudflare Workers AI is the native runtime inference binding. Operations privately supports Cerebras as an additional provider family, but Foundation does not activate it because no Cerebras credential is configured. Mistral is not part of the production provider fleet.
+## 2026-09-30 multi-lens execution
+The multi-lens execution engine is active on Foundation main. It is a scheduling/evidence-composition layer only: it cannot change acceptance policy, protected authority, provider eligibility policy, or production promotion. The canonical planner is `tools/multi_lens_planner.mjs`; profile `docs/MULTI_LENS_CHATBOT_PROFILE.json`; output contract `schemas/multi-lens-plan-v1.schema.json`; reusable workflow `.github/workflows/multi-lens-planner.yml`.
+
+## 2026-09-30 extractor/mapper ownership
+The former standalone extractor-mapper repository is retired/deleted and is not an active ownership boundary. Active acquisition/extraction/mapping runtime lives under Operations `extractor_mapper/`; Foundation owns the public deterministic mapper core consumed through the family boundary. No third runtime owner is being introduced.
