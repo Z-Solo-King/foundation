@@ -58,7 +58,7 @@ jobs:
           import json, os
           payload = json.loads(os.environ["PROVIDER_KEYS_JSON"])
           assert isinstance(payload, dict) and payload
-          allowed = {"groq","gemini","cerebras","openrouter_free","siliconflow","mistral_free","nvidia_nim","huggingface_free","cohere_free"}
+          allowed = {"openrouter_free","groq","gemini","nvidia_nim","cohere_free","huggingface_free"}
           unknown = sorted(set(payload) - allowed)
           assert not unknown, f"unsupported providers: {unknown}"
           print(f"configured provider count: {len(payload)}")
