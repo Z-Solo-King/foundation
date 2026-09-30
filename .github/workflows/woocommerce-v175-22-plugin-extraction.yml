@@ -1,0 +1,143 @@
+name: WooCommerce V175 22 Plugin Extraction
+
+on:
+  push:
+    branches:
+      - feat/wc-v175-22-plugin-extraction-20260930
+    paths:
+      - "tools/woocommerce_v175_plugin_fingerprint_22.py"
+      - ".github/workflows/woocommerce-v175-22-plugin-extraction.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    name: V175 plugin shard \${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    env:
+      SHARD: \${{ matrix.shard }}
+      SHARDS: 6
+      PYTHONUNBUFFERED: "1"
+      CF_ACCOUNT_ID: \${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CF_API_TOKEN: \${{ secrets.CLOUDFLARE_API_TOKEN }}
+      BROWSERLESS_CONTENT_URL: \${{ secrets.BROWSERLESS_CONTENT_URL }}
+      GROQ_API_KEY: \${{ secrets.GROQ_API_KEY }}
+      GROQ_MODEL: \${{ vars.GROQ_MODEL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install extraction runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -q \
+            httpx curl_cffi playwright
+          python -m pip install --disable-pip-version-check -q \
+            camoufox nodriver || true
+          python -m playwright install --with-deps chromium firefox webkit
+          python -m camoufox fetch >/dev/null 2>&1 || true
+
+      - name: Run V175-derived plugin extraction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/woocommerce_v175_plugin_fingerprint_22.py
+
+      - name: Upload shard evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-v175-plugin-shard-\${{ matrix.shard }}
+          path: out/woocommerce-v175-plugin-recovery/shard-\${{ matrix.shard }}.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  aggregate:
+    name: Aggregate plugin groups
+    needs: extract
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download shard evidence
+        uses: actions/download-artifact@v4
+        with:
+          pattern: woocommerce-v175-plugin-shard-*
+          path: out/shards
+          merge-multiple: false
+
+      - name: Aggregate and validate
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          from collections import defaultdict
+
+          root = Path("out/shards")
+          files = sorted(root.glob("**/shard-*.json"))
+          rows = []
+          for p in files:
+              data = json.loads(p.read_text(encoding="utf-8"))
+              rows.extend(data.get("results") or [])
+
+          groups = defaultdict(list)
+          native = []
+          for r in rows:
+              groups[r.get("family") or "unknown_woocommerce"].append(r["site"])
+              feed = r.get("native_feed") or {}
+              if feed.get("verified"):
+                  native.append({
+                      "site": r["site"],
+                      "url": feed.get("url"),
+                      "item_count": feed.get("item_count"),
+                      "sha256": feed.get("sha256"),
+                  })
+
+          aggregate = {
+              "schema": "woocommerce-v175-plugin-recovery-aggregate/v1",
+              "target_count": len(rows),
+              "plugin_groups": {k: sorted(v) for k, v in sorted(groups.items())},
+              "native_verified": native,
+              "results": rows,
+          }
+
+          out = Path("out/aggregate")
+          out.mkdir(parents=True, exist_ok=True)
+          (out / "aggregate.json").write_text(
+              json.dumps(aggregate, indent=2, ensure_ascii=False),
+              encoding="utf-8",
+          )
+          with (out / "plugin-groups.tsv").open("w", encoding="utf-8") as f:
+              f.write("family\tsite\n")
+              for family, sites in sorted(groups.items()):
+                  for site in sorted(sites):
+                      f.write(f"{family}\t{site}\n")
+
+          assert len(rows) <= 22
+          assert all((r.get("site") not in {
+              "PC Studio", "quickincomputers", "avikaretails", "Geekbees",
+              "Ninja Dog", "networkitstore", "nexusinfosys",
+              "solankienterprises", "Only SDD", "itgadgetsonline"
+          }) for r in rows)
+
+      - name: Upload aggregate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-v175-plugin-aggregate
+          path: out/aggregate/
+          if-no-files-found: error
+          retention-days: 30
