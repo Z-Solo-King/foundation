@@ -479,7 +479,7 @@ def test_production_release_requires_concurrent_d1_overlimit_evidence():
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
 def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
     expected_production = CANONICAL_PRODUCTION_OPERATIONS_REF
-    expected_nightly = CANONICAL_RESEARCH_OPERATIONS_REF
+    expected_nightly = "9a942b0f8cc601f8d460ed71ccba908fa02e6c75"
     auxiliary = {
         "live-chatbot-production-smoke.yml": expected_production,
         "coverage-driven-runtime-matrix.yml": expected_nightly,

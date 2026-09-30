@@ -2,13 +2,13 @@
 
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
-Checked: 2026-09-29.
+Checked: 2026-09-30.
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: 510b03b2ee2461c97b1c774349d08e3220985cce.
-Operations main checkpoint: af3dc60349ca9de7c3747625949269234d34021f.
+Foundation main code checkpoint: 30e0f132cea88cf3a945238575d7e4cb6e162045.
+Operations main checkpoint: current protected main revision is read from GitHub live state; research/migration jobs use explicit immutable pins below.
 Production Operations pin: ce4f9edbae3ddf1bf1c25a908d5bce014acc7676.
-Research Operations pin: 8bee0ca4c41e02d2b7005589a73f53dc0512aa9d.
+Research Operations pin: 9a942b0f8cc601f8d460ed71ccba908fa02e6c75.
 Live issue and PR counts must be read from GitHub; this file never serves as a mutable queue.
 
 ## Public architecture
@@ -70,3 +70,6 @@ The live post-release test exposed a contract distinction: ordinary public chat 
 
 ## 2026-09-29 provider diagnostic status repair
 Foundation PR #1562 aligns the public authenticated diagnostic wrapper with the dedicated `provider_runtime_verify` response contract. A valid provider runtime receipt no longer requires the unrelated generic `chatbot.allowed` field; ordinary infrastructure diagnostics retain that requirement.
+
+### 2026-09-30 nightly evidence hardening
+Foundation PR #1565 hardens nightly research using the feed-recovery evidence pattern: provider capability preflight exercises the actual research-agent structured-output contract; exact 24-program coverage records missing, duplicate, and unexpected IDs; transient upstream transport recovery is bounded and preserves request identity; and machine-readable acceptance manifests map evidence to #58/#157/#597/#603. The migration review pin now uses the merged Operations PR #1109 bridge repair commit `f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791` rather than the older pre-repair audit revision.

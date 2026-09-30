@@ -1,6 +1,6 @@
 {
   "schema": "operations-pin-manifest/v1",
-  "generated_at": "2026-09-29",
+  "generated_at": "2026-09-30",
   "authority": "single public-safe immutable Operations revision manifest; runtime code remains authoritative",
   "pins": {
     "production_runtime": {
@@ -9,9 +9,9 @@
       "status": "immutable runtime candidate containing the canonical memory, replay, and provider-runtime diagnostic repairs; canonical production release and fresh runtime evidence required before production acceptance"
     },
     "research_runtime": {
-      "sha": "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d",
+      "sha": "9a942b0f8cc601f8d460ed71ccba908fa02e6c75",
       "purpose": "nightly research executor source checkout",
-      "status": "immutable research runtime reference; independently promoted from production"
+      "status": "immutable research-agent runtime reference with structured JSON output contract; independently promoted from production"
     },
     "secret_sync_utility": {
       "sha": "29bb556e9505a7e2c640f5c09e62574c917b65a3",
