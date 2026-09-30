@@ -718,3 +718,9 @@ def test_extractor_surface_governance_includes_m11_type_contract_audit():
     assert "artifacts/extractor-type-migration.json" in source
     assert "DEFERRED" in source
     assert "tests/test_extractor_type_migration_audit.py" in source
+
+def test_foundation_ai_map_tracks_current_m11_type_inventory():
+    text = (ROOT / "docs" / "AI_PROJECT_MAP.json").read_text(encoding="utf-8")
+    assert '"lane": "M11"' in text
+    assert '"current_type_entries": 44' in text
+    assert '"current_type_entries": 45' not in text
