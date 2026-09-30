@@ -75,8 +75,11 @@ jobs:
         run: |
           set -euo pipefail
           main_sha="$(git rev-parse HEAD)"
-          printf '%s
-' "$main_sha" | grep -Eq '^[0-9a-f]{40}        working-directory: operations
+          echo "$main_sha" | grep -Eq "^[0-9a-f]{40}$"
+          echo "Operations latest main revision for audit: $main_sha"
+
+      - name: Verify Operations revision
+        working-directory: operations
         shell: bash
         env:
           EXPECTED: ${{ steps.resolve.outputs.ref }}
