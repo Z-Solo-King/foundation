@@ -26,17 +26,20 @@ async def main():
     browser={"status":int(r.status) if r else 0,"final_url":str(r.url) if r else ROOT}
    except Exception as e: browser={"status":0,"final_url":ROOT,"goto_error":str(e)[:180]}
    results=[]; limited=0
-   for pat in PATTERNS:
+   async def probe(pat):
     u=urljoin(ROOT+"/",pat)
     try:
      rr=await p.request.get(u,timeout=7000,max_redirects=5,headers={"accept":"application/xml,text/xml,application/rss+xml,*/*","user-agent":"Mozilla/5.0"})
      body=await rr.text()
      lim=rr.status in (403,429) or any(x in body[:20000].lower() for x in CH)
-     limited += int(lim)
-     results.append({"url":str(rr.url),"status":int(rr.status),"content_type":rr.headers.get("content-type",""),"bytes":len(body),"native":bool(rr.status==200 and same(str(rr.url),ROOT) and valid(body))})
-     if results[-1]["native"]: break
-    except PWTimeout: limited+=1
-    except Exception: pass
+     return {"url":str(rr.url),"status":int(rr.status),"content_type":rr.headers.get("content-type",""),"bytes":len(body),"native":bool(rr.status==200 and same(str(rr.url),ROOT) and valid(body)),"limited":lim}
+    except PWTimeout: return {"url":u,"status":0,"content_type":"","bytes":0,"native":False,"limited":True}
+    except Exception: return {"url":u,"status":0,"content_type":"","bytes":0,"native":False,"limited":False}
+   for i in range(0,len(PATTERNS),8):
+    batch=await asyncio.gather(*(probe(pat) for pat in PATTERNS[i:i+8]))
+    limited += sum(1 for x in batch if x.pop("limited",False))
+    results.extend(batch)
+    if any(x["native"] for x in batch): break
    hit=[x for x in results if x["native"]]
    out={"schema_version":"woocommerce-22-browser-xml-guess/v2","site":SITE,"root":ROOT,"browser":browser,"candidate_count":len(PATTERNS),"tested_count":len(results),"transport_limited":limited,"status":"NATIVE_XML_FEED_VERIFIED" if hit else ("TRANSPORT_LIMITED_NO_NATIVE_FEED" if limited else "NO_NATIVE_FEED_VERIFIED"),"hits":hit}
    od=Path(os.environ.get("OUT_DIR","out")); od.mkdir(parents=True,exist_ok=True); (od/"result.json").write_text(json.dumps(out,indent=2)+"\n")
