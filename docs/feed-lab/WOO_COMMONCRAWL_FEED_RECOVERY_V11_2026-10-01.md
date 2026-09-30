@@ -1,0 +1,1 @@
+# WooCommerce Common Crawl Feed Recovery V11\nUses the latest Common Crawl index to recover historical feed/XML URLs, then re-probes exact URLs on the live same host. Only current payload-validated Google Merchant XML counts as native.\n

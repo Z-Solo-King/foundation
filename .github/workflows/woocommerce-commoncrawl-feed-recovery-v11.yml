@@ -1,0 +1,29 @@
+name: WooCommerce Common Crawl Feed Recovery V11
+on:
+  push:
+    branches: [feat/wc-commoncrawl-feed-recovery-v11-20261001]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Unit tests
+        run: node --test tests/test_woocommerce_commoncrawl_feed_recovery_v11.mjs
+      - name: Common Crawl feed recovery
+        run: node tools/woocommerce_commoncrawl_feed_recovery_v11.mjs
+      - name: Upload result
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-commoncrawl-feed-v11-results
+          path: out/woocommerce-commoncrawl-v11/
+          retention-days: 30
