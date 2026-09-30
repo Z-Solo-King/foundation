@@ -9,8 +9,6 @@
  *   node tools/multi_lens_planner.mjs < input.json
  */
 
-const fs = await import("node:fs/promises");
-
 function clamp(value, min = 0, max = 1) {
   return Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
 }
@@ -29,8 +27,10 @@ function scoreLane(lane, target, history, selectedFamilies) {
   const freshness = clamp(lane.freshness_need ?? target.freshness_need);
   const baseYield = runs > 0 ? clamp(h.novel_finding_rate) : clamp(lane.prior_yield ?? 0.5);
 
-  // Exploration bonus prevents never-run lenses from being permanently starved.
-  const exploration = Math.min(0.35, Math.sqrt(Math.log1p(Math.max(1, target.total_verified_lanes || 1)) / (runs + 1)) / 3);
+  const exploration = Math.min(
+    0.35,
+    Math.sqrt(Math.log1p(Math.max(1, target.total_verified_lanes || 1)) / (runs + 1)) / 3,
+  );
 
   const novelty = clamp(baseYield + exploration);
   const learningQuality = runs > 0 ? clamp(h.evidence_acceptance_rate ?? 0.5) : 0.5;
@@ -51,12 +51,19 @@ function scoreLane(lane, target, history, selectedFamilies) {
     0.35 * clamp(latency / Math.max(1, target.latency_budget)) +
     0.20 * clamp(quota / Math.max(1, target.quota_budget));
 
-  const familyPenalty = selectedFamilies.has(lane.family) ? clamp(lane.same_family_penalty ?? 0.08) : 0;
-  const score = rawBenefit / (1 + budgetPenalty + familyPenalty);
+  const familyPenalty = selectedFamilies.has(lane.family)
+    ? clamp(lane.same_family_penalty ?? 0.08)
+    : 0;
 
   return {
-    score,
-    components: { rawBenefit, budgetPenalty, familyPenalty, exploration, novelty },
+    score: rawBenefit / (1 + budgetPenalty + familyPenalty),
+    components: {
+      rawBenefit,
+      budgetPenalty,
+      familyPenalty,
+      exploration,
+      novelty,
+    },
     runs,
   };
 }
@@ -80,6 +87,7 @@ function plan(input) {
   for (const lane of lanes) {
     if (!lane || typeof lane.id !== "string" || !lane.family) continue;
     if (lane.enabled === false) continue;
+
     const scored = scoreLane(lane, target, history, new Set());
     const row = {
       id: lane.id,
@@ -95,6 +103,7 @@ function plan(input) {
         quota: positive(lane.quota_cost, 0),
       },
     };
+
     if (lane.required === true) mandatory.push(row);
     else candidates.push(row);
   }
@@ -115,7 +124,6 @@ function plan(input) {
     );
   }
 
-  // Required lanes get a floor: budget failures are explicit, never silently dropped.
   for (const row of mandatory) {
     if (canFit(row)) {
       selected.push({ ...row, selection: "required" });
@@ -124,7 +132,11 @@ function plan(input) {
       latency += row.estimated.latency;
       quota += row.estimated.quota;
     } else {
-      skipped.push({ ...row, selection: "required-but-blocked", skip_reason: "budget_or_lane_limit" });
+      skipped.push({
+        ...row,
+        selection: "required-but-blocked",
+        skip_reason: "budget_or_lane_limit",
+      });
     }
   }
 
@@ -133,11 +145,14 @@ function plan(input) {
   for (const row of candidates) {
     if (selected.some((x) => x.id === row.id)) continue;
     if (!canFit(row)) {
-      skipped.push({ ...row, selection: "candidate", skip_reason: "budget_or_lane_limit" });
+      skipped.push({
+        ...row,
+        selection: "candidate",
+        skip_reason: "budget_or_lane_limit",
+      });
       continue;
     }
 
-    // Prefer family diversity, but admit same-family work when its score is materially higher.
     const sameFamily = families.has(row.family);
     const diversityAdjusted = sameFamily ? row.score * 0.90 : row.score * 1.05;
     const weakestSelected = selected
@@ -145,7 +160,11 @@ function plan(input) {
       .sort((a, b) => a.score - b.score)[0];
 
     if (sameFamily && weakestSelected && diversityAdjusted < weakestSelected.score * 1.03) {
-      skipped.push({ ...row, selection: "candidate", skip_reason: "diversity_penalty" });
+      skipped.push({
+        ...row,
+        selection: "candidate",
+        skip_reason: "diversity_penalty",
+      });
       continue;
     }
 
@@ -157,7 +176,12 @@ function plan(input) {
   }
 
   for (const row of lanes) {
-    if (row && row.id && !selected.some((x) => x.id === row.id) && !skipped.some((x) => x.id === row.id)) {
+    if (
+      row &&
+      row.id &&
+      !selected.some((x) => x.id === row.id) &&
+      !skipped.some((x) => x.id === row.id)
+    ) {
       skipped.push({
         id: row.id,
         family: row.family,
@@ -184,7 +208,13 @@ function plan(input) {
   };
 }
 
-const raw = await fs.readFile(0, "utf8");
+async function readStdin() {
+  const chunks = [];
+  for await (const chunk of process.stdin) chunks.push(chunk);
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+const raw = await readStdin();
 if (!raw.trim()) {
   console.error("expected JSON input on stdin");
   process.exit(2);
@@ -193,7 +223,7 @@ if (!raw.trim()) {
 let input;
 try {
   input = JSON.parse(raw);
-} catch (error) {
+} catch {
   console.error("invalid JSON input");
   process.exit(2);
 }
