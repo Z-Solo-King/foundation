@@ -42,6 +42,7 @@ def assets(text):
 
 def family_hits(a, text, namespaces):
     low=(text or "").lower(); out={}
+    ns_low=[str(x).lower() for x in namespaces]
     for slug,fam in KNOWN.items():
         ev=[]
         if slug in a: ev.append("plugin_asset:"+slug)
@@ -56,6 +57,12 @@ def family_hits(a, text, namespaces):
     }.items():
         ev=["text_marker:"+m for m in markers if m in low]
         if ev: out.setdefault(fam,[]).extend(ev)
+    for marker, fam in {
+        "wpfm/v1":"wpfm_product_feed_manager",
+        "wppfm/v1":"wpfm_product_feed_manager",
+    }.items():
+        if any(x==marker or x.startswith(marker+"/") for x in ns_low):
+            out.setdefault(fam,[]).append("namespace:"+marker)
     return [{"family":k,"confidence":"strong" if len(set(v))>=2 else "signal","evidence":sorted(set(v))} for k,v in sorted(out.items())]
 
 async def get(req,url,timeout=12000):
@@ -79,7 +86,7 @@ async def one(name,root,pw):
         user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140.0 Safari/537.36",
         locale="en-IN",viewport={"width":1440,"height":900})
     page=await context.new_page()
-    out={"schema_version":"woocommerce-22-plugin-browser-recovery/v3","source_extractor_version":SOURCE_EXTRACTOR_VERSION,
+    out={"schema_version":"woocommerce-22-plugin-browser-recovery/v4","source_extractor_version":SOURCE_EXTRACTOR_VERSION,
          "site":name,"configured_root":root,"selected_origin":root}
     try:
         try:
