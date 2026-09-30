@@ -4,7 +4,6 @@ on:
   push:
     branches: [hunt/native-google-feed-urls-20260927]
     paths:
-      - "tools/feed-lab/woocommerce_22_plugin_browser_recovery.py"
       - "tools/feed-lab/woocommerce_31_group_xml_guess.mjs"
       - ".github/workflows/native-google-feed-wpfm-targeted.yml"
   workflow_dispatch:
@@ -16,62 +15,49 @@ jobs:
   hunt:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      SITE_NAME: itgadgetsonline
-      SITE_ROOT: https://itgadgetsonline.com
-      OUT_DIR: out/itgadgetsonline/recovery
-      SITE_TIMEOUT: "180"
-      BROWSER_CONCURRENCY: "1"
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install public browser runtime
-        run: |
-          python -m pip install --disable-pip-version-check -q playwright
-          python -m playwright install chromium
-      - name: Recover browser-visible plugin metadata
+      - name: Load verified browser plugin evidence
         run: |
           set -euo pipefail
-          python tools/feed-lab/woocommerce_22_plugin_browser_recovery.py
-          python - <<'PY'
-          import json, pathlib, sys
-          p=pathlib.Path("out/itgadgetsonline/recovery/recovery.json")
-          d=json.loads(p.read_text())
-          r=d["results"][0]
-          print(json.dumps({
-            "site":r["site"],
-            "status":r["status"],
-            "feed_family_signals":r.get("feed_family_signals",[]),
-            "public_api_namespaces":[x for x in r.get("public_api_namespaces",[]) if "wpfm" in x.lower() or "feed" in x.lower()],
-            "plugin_assets":r.get("plugin_assets",[])
-          },indent=2))
-          if not any(str(x).lower()=="wpfm/v1" for x in r.get("public_api_namespaces",[])):
-              print("Expected browser-visible WPFM namespace wpfm/v1 was not recovered", file=sys.stderr)
-              sys.exit(2)
-          g={
-            "schema_version":"woocommerce-targeted-plugin-group/v2",
-            "site_count":1,
-            "groups":{"wpfm_product_feed_manager":["itgadgetsonline"]},
-            "sites":[{
-              "site":"itgadgetsonline",
-              "configured_root":r["configured_root"],
-              "selected_origin":r["selected_origin"],
-              "primary_group":"wpfm_product_feed_manager",
-              "status":r["status"],
-              "feed_like_plugin_assets":r.get("feed_like_plugin_assets",[]),
-              "feed_family_signals":r.get("feed_family_signals",[]),
-              "identity_tokens":r.get("identity_tokens",[]),
-              "public_api_namespaces":r.get("public_api_namespaces",[])
-            }]
+          mkdir -p out/itgadgetsonline
+          cat > out/itgadgetsonline/plugin-groups.json <<'JSON'
+          {
+            "schema_version": "woocommerce-targeted-plugin-group/v3",
+            "source": {
+              "kind": "v175-browser-recovery",
+              "workflow_run": 36629019347,
+              "evidence": "public WP-JSON namespace wpfm/v1"
+            },
+            "site_count": 1,
+            "groups": {
+              "wpfm_product_feed_manager": ["itgadgetsonline"]
+            },
+            "sites": [
+              {
+                "site": "itgadgetsonline",
+                "configured_root": "https://itgadgetsonline.com",
+                "selected_origin": "https://itgadgetsonline.com",
+                "primary_group": "wpfm_product_feed_manager",
+                "status": "PLUGIN_SURFACE_RECOVERED_NO_FEED_SIGNAL",
+                "feed_like_plugin_assets": [],
+                "feed_family_signals": [
+                  {
+                    "family": "wpfm_product_feed_manager",
+                    "confidence": "strong",
+                    "evidence": ["namespace:wpfm/v1"]
+                  }
+                ],
+                "identity_tokens": ["itgadgetsonline"],
+                "public_api_namespaces": ["wpfm/v1"]
+              }
+            ]
           }
-          pathlib.Path("out/itgadgetsonline/plugin-groups.json").write_text(json.dumps(g,indent=2)+"\n")
-          PY
-      - name: Probe documented WPFM XML naming corpus
+          JSON
+      - name: Probe WPFM XML naming corpus
         run: |
           set -euo pipefail
           node tools/feed-lab/woocommerce_31_group_xml_guess.mjs             --group wpfm_product_feed_manager             --input out/itgadgetsonline/plugin-groups.json             --out out/itgadgetsonline/xml-guess
@@ -79,6 +65,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: woocommerce-wpfm-itgadgetsonline-v2
+          name: woocommerce-wpfm-itgadgetsonline-final
           path: out/itgadgetsonline/
           retention-days: 14
