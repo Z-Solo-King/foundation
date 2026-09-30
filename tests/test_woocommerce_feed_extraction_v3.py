@@ -8,7 +8,7 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 valid_store_product = MODULE.valid_store_product
-valid_native_google = MODULE.valid_native_google
+valid_native_google = MODULE.native_google
 feed_routes = MODULE.feed_routes
 
 def test_valid_store_product_shape():
