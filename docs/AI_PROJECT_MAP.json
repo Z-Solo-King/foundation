@@ -2,7 +2,7 @@
   "schema_version": "ai-project-map/v2",
   "repository": "Z-Solo-King/foundation",
   "visibility": "public-safe",
-  "generated_at": "2026-09-30",
+  "generated_at": "2026-10-01",
   "structural_inventory": {
     "tree_entries": 657,
     "documentation_files": 109,
@@ -310,7 +310,7 @@
     "PR -> required CI -> release -> runtime receipt"
   ],
   "audit_system": "docs/AI_AUDIT_SYSTEM.md",
-  "source_head_at_generation": "8a63879278f0b378e5d12d49d2e5d1c9433b4ca6",
+  "source_head_at_generation": "94a5b5dfeb17f18239ac5defba72021aeb542ce2",
   "map_intent": {
     "primary_goal": "Make the repository fast and token-efficient for both humans and AI by resolving architecture, ownership, connections, credentials, languages, functions, policies and evidence before deep source retrieval.",
     "navigation_order": [
@@ -634,36 +634,22 @@
     }
   ],
   "cloudflare_runtime_snapshot": {
-    "observed_at": "2026-09-28",
+    "observed_at": "2026-10-01",
     "source": "Cloudflare live API",
     "canonical_worker": {
       "name": "heroic",
       "role": "source-controlled Foundation user-facing Worker"
     },
     "bindings": {
-      "ASSETS": "assets",
       "AUTH_TOKEN": "secret",
-      "B2_APPLICATION_KEY": "secret",
-      "B2_BUCKET": "plain config",
-      "B2_ENDPOINT": "plain config",
-      "B2_KEY_ID": "secret",
-      "DB": "D1 research-intelligence",
-      "OPERATIONS": "service -> operations-edge",
-      "ENVIRONMENT": "plain config",
-      "RELEASE_FOUNDATION_SHA": "plain config",
-      "RELEASE_OPERATIONS_REF": "plain config",
-      "STRICT_ZERO_COST_ONLY": "plain config"
+      "CORE": "service -> heroic-core"
     },
     "related_workers": {
+      "heroic_core": "Foundation Python core",
       "operations_edge": "service CORE -> operations",
       "operations": "private control plane; FOUNDATION service -> heroic"
     },
-    "secondary_live_worker": {
-      "name": "foundation",
-      "status": "observed in account; current ownership/purpose is not established by this map; never delete automatically"
-    },
-    "auxiliary_workers": "probe/research workers exist separately and require reference/usage checks before cleanup",
-    "rule": "Live bindings are runtime truth; source Wrangler placeholders are not runtime credentials or runtime state."
+    "rule": "Live bindings/settings/deployments are runtime truth; source Wrangler placeholders are not runtime credentials or runtime state."
   },
   "audit_hooks": {
     "connection_audit": "verify every `connection_model` edge against source code, workflow configuration and live runtime receipt before marking connected/current",
@@ -990,7 +976,7 @@
     "authority": "Operations runtime types remain canonical; Foundation consumes audit evidence only.",
     "promotion_rule": "Type parity is necessary but never sufficient; differential, serialization, security/policy, provenance, resource, shadow, canary and rollback gates remain required."
   },
-  "updated_at": "2026-09-30",
+  "updated_at": "2026-10-01",
   "extractor_mapper_status": {
     "standalone_repository_status": "retired/deleted",
     "operations_private_runtime_path": "operations/extractor_mapper/",
@@ -1010,8 +996,8 @@
     }
   },
   "live_synchronization": {
-    "checked_at": "2026-09-30T21:36:00+05:30",
-    "foundation_main": "8a63879278f0b378e5d12d49d2e5d1c9433b4ca6",
+    "checked_at": "2026-10-01T01:55:00+05:30",
+    "foundation_main": "94a5b5dfeb17f18239ac5defba72021aeb542ce2",
     "foundation_open_issue_count": 4,
     "foundation_open_issues": [
       58,
@@ -1019,12 +1005,17 @@
       1247,
       1249
     ],
-    "foundation_open_pr_count": 2,
+    "foundation_open_pr_count": 7,
     "foundation_open_prs": [
-      1623,
-      1626
+      1663,
+      1660,
+      1658,
+      1657,
+      1656,
+      1653,
+      1652
     ],
-    "operations_main": "64f4ab3678f7060a235e61156bbf2d9230160559",
+    "operations_main": "7fe60d4630b30f38bfe30eff6666c9588cf2059f",
     "operations_open_issue_count": 2,
     "operations_open_issues": [
       597,
@@ -1036,13 +1027,38 @@
       1361
     ],
     "production_operations_revision": "ca3864a954569f6f8ce9a94793c53a0ef9ff03ec",
-    "source": "live GitHub",
+    "source": "live GitHub + live Cloudflare",
     "note": "Navigation metadata only; runtime and promotion authority remain with live receipts and canonical deployment manifests.",
     "open_issue_count": 6,
     "live_issue_source": "operations/benchmark/polyglot/current_open_issue_inventory.json",
     "last_verified_heads": {
-      "foundation": "8a63879278f0b378e5d12d49d2e5d1c9433b4ca6",
-      "operations": "64f4ab3678f7060a235e61156bbf2d9230160559"
-    }
+      "foundation": "94a5b5dfeb17f18239ac5defba72021aeb542ce2",
+      "operations": "7fe60d4630b30f38bfe30eff6666c9588cf2059f"
+    },
+    "open_pr_classification": {
+      "foundation": {
+        "non_feed": [],
+        "feed_only": [
+          1663,
+          1660,
+          1658,
+          1657,
+          1656,
+          1653,
+          1652
+        ],
+        "mixed": []
+      },
+      "operations": {
+        "non_feed": [],
+        "feed_only": [
+          1361
+        ],
+        "mixed": [
+          1400
+        ]
+      }
+    },
+    "cloudflare_provenance_rule": "Exact production Operations SHA is retained only in the dedicated pin field; public map does not store provider-formatted revision provenance literals."
   }
 }
