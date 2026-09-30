@@ -14,6 +14,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: wc31-plugin-extraction
+  cancel-in-progress: true
+
 jobs:
   fingerprint:
     name: "plugin extraction — ${{ matrix.site }}"
