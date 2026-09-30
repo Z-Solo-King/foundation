@@ -21,6 +21,6 @@ test("strict native acceptance",()=>{
   assert.ok(s.includes("[\"id\",\"title\",\"link\",\"price\"]"));
 });
 test("transport bound",()=>{
-  assert.ok(s.includes("const CONCURRENCY=3"));
+  assert.match(s,/const CONCURRENCY\s*=\s*3/);
   assert.ok(s.includes("slice(0,500)"));
 });
