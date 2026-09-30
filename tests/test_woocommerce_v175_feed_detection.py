@@ -7,9 +7,10 @@ import importlib.util
 sys.modules.setdefault("httpx", types.ModuleType("httpx"))
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "woocommerce_v175_plugin_fingerprint_22.py"
-spec = importlib.util.spec_from_file_location("wc_v175", MODULE_PATH)
+spec = importlib.util.spec_from_file_location("wc_v175_feed_detection", MODULE_PATH)
 assert spec and spec.loader
 module = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = module
 spec.loader.exec_module(module)
 
 
