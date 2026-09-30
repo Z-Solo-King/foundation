@@ -2,7 +2,7 @@
   "schema_version": "ai-project-map/v2",
   "repository": "Z-Solo-King/foundation",
   "visibility": "public-safe",
-  "generated_at": "2026-09-28",
+  "generated_at": "2026-09-30",
   "structural_inventory": {
     "tree_entries": 657,
     "documentation_files": 109,
@@ -671,7 +671,9 @@
     "language_audit": "scan each language as an independent semantic/paradigm lens against canonical contracts",
     "call_graph_audit": "forward and reverse traversal; detect service-binding cycles at request-path level, not merely graph topology",
     "token_efficiency": "retrieve map first; then only the feature, functions, policy and evidence needed to answer the current uncertainty",
-    "stale_data": "runtime snapshots are dated evidence; refresh before mutation or production claims"
+    "stale_data": "runtime snapshots are dated evidence; refresh before mutation or production claims",
+    "ai_provider_sync": "compare public provider fleet JSON, Operations task fabric/catalog/runtime/probe and task-family set; flag count/list/authority drift",
+    "ai_extractor_sync": "ensure extraction_assist remains candidate-only and Operations extractor mapper never becomes a provider-selection authority"
   },
   "credential_observations": [
     {
@@ -952,5 +954,25 @@
         "P07"
       ]
     }
-  ]
+  ],
+  "ai_provider_contract": {
+    "public_source": "docs/AI_PROVIDER_FLEET_2026-09-30.json",
+    "private_runtime_authority": "Operations private/chatbot/provider_catalog.py + private/chatbot/provider_runtime.py + private/chatbot/ai_task_fabric.py",
+    "supported_external_provider_count": 8,
+    "supported_external_providers": [
+      "openrouter_free",
+      "groq",
+      "gemini",
+      "cerebras",
+      "nvidia_nim",
+      "cohere_free",
+      "huggingface_free",
+      "siliconflow"
+    ],
+    "native_runtime_provider": "cloudflare_workers_ai",
+    "task_family_count": 9,
+    "extraction_task_family": "extraction_assist",
+    "extraction_ai_authority": "candidate_assistance_only",
+    "sync_rule": "Public-safe contract and private runtime must agree on provider families/task families; runtime eligibility, cost, quota, privacy and model semantics remain execution-time evidence."
+  }
 }
