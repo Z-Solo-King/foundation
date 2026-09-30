@@ -1,18 +1,24 @@
 name: Extractor surface governance
 
 on:
+  push:
+    branches: [main]
   schedule:
     - cron: "20 3 * * *"
   workflow_dispatch:
     inputs:
       operations_ref:
-        description: "Operations branch, tag, or commit to audit (commit preferred)"
-        required: true
-        default: "main"
+        description: "Operations immutable 40-hex commit to audit; leave blank for current main"
+        required: false
+        default: ""
         type: string
 
 permissions:
   contents: read
+
+concurrency:
+  group: extractor-surface-governance
+  cancel-in-progress: false
 
 jobs:
   audit:
@@ -24,6 +30,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Create Operations read token
         id: operations-app
@@ -35,6 +42,15 @@ jobs:
           repositories: operations
           permission-contents: read
 
+      - name: Validate Operations revision
+        env:
+          OPERATIONS_REF: ${{ github.event.inputs.operations_ref || 'main' }}
+        run: |
+          if [ "$OPERATIONS_REF" != "main" ] && ! printf '%s' "$OPERATIONS_REF" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "operations_ref must be main or an immutable 40-hex commit"
+            exit 1
+          fi
+
       - name: Checkout Operations
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -43,6 +59,7 @@ jobs:
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -51,6 +68,7 @@ jobs:
 
       - name: Run oldest critical surface audit
         run: |
+          mkdir -p artifacts
           python operations/tools/oldest_surface_audit.py \
             --root operations \
             --prefix extractor_mapper \
