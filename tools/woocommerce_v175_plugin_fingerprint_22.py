@@ -814,13 +814,26 @@ async def ai_advisory(evidence: Dict[str, Any]) -> Dict[str, Any]:
     It never verifies a feed, bypasses access controls, or changes extraction authority.
     """
     provider_specs = [
-        ("openrouter_free", "https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "OPENROUTER_MODEL", "openrouter/free"),
-        ("groq", "https://api.groq.com/openai/v1/chat/completions", "GROQ_API_KEY", "GROQ_MODEL", "openai/gpt-oss-120b"),
-        ("gemini", "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", "GEMINI_API_KEY", "GEMINI_MODEL", "gemini-3.8-flash"),
-        ("nvidia_nim", "https://integrate.api.nvidia.com/v1/chat/completions", "NVIDIA_NIM_API_KEY", "NVIDIA_NIM_MODEL", "deepseek-ai/deepseek-v4.1-flash"),
-        ("cohere_free", "https://api.cohere.ai/compatibility/v1/chat/completions", "COHERE_API_KEY", "COHERE_MODEL", "command-a-plus-05-2026"),
-        ("huggingface_free", "https://router.huggingface.co/v1/chat/completions", "HF_TOKEN", "HF_MODEL", "openai/gpt-oss-120b"),
+        ("openrouter_free", "https://openrouter.ai/api/v1/chat/completions", "openrouter/free", "OPENROUTER"),
+        ("groq", "https://api.groq.com/openai/v1/chat/completions", "openai/gpt-oss-120b", "GROQ"),
+        ("gemini", "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", "gemini-3.8-flash", "GEMINI"),
+        ("nvidia_nim", "https://integrate.api.nvidia.com/v1/chat/completions", "deepseek-ai/deepseek-v4.1-flash", "NVIDIA_NIM"),
+        ("cohere_free", "https://api.cohere.ai/compatibility/v1/chat/completions", "command-a-plus-05-2026", "COHERE"),
+        ("huggingface_free", "https://router.huggingface.co/v1/chat/completions", "openai/gpt-oss-120b", "HUGGINGFACE"),
     ]
+
+    try:
+        raw_config = json.loads(os.getenv("PROVIDER_KEYS_JSON", "{}") or "{}")
+    except json.JSONDecodeError:
+        raw_config = {}
+    if not isinstance(raw_config, dict):
+        raw_config = {}
+
+    explicit_keys = {
+        "nvidia_nim": os.getenv("NVIDIA_NIM_API_KEY", "").strip(),
+        "cohere_free": os.getenv("COHERE_API_KEY", "").strip(),
+        "huggingface_free": os.getenv("HF_TOKEN", "").strip(),
+    }
 
     prompt = {
         "task": "Classify WooCommerce plugin evidence. Return JSON {family,confidence,why}. Advisory only; never invent verification.",
@@ -834,12 +847,17 @@ async def ai_advisory(evidence: Dict[str, Any]) -> Dict[str, Any]:
 
     outcomes: List[Dict[str, Any]] = []
     async with httpx.AsyncClient(timeout=25) as client:
-        for provider, endpoint, key_env, model_env, default_model in provider_specs:
-            key = os.getenv(key_env, "").strip()
+        for provider, endpoint, default_model, config_name in provider_specs:
+            config = raw_config.get(provider) if isinstance(raw_config.get(provider), dict) else {}
+            key = explicit_keys.get(provider, str(config.get("api_key") or "").strip())
             if not key:
                 outcomes.append({"provider": provider, "outcome": "unconfigured"})
                 continue
-            model = os.getenv(model_env, default_model).strip() or default_model
+
+            model = str(config.get("model") or default_model).strip() or default_model
+            if provider in {"nvidia_nim", "cohere_free", "huggingface_free"}:
+                model = default_model
+
             started = time.monotonic()
             try:
                 r = await client.post(
@@ -861,10 +879,11 @@ async def ai_advisory(evidence: Dict[str, Any]) -> Dict[str, Any]:
                     failure = "rate_limited" if r.status_code == 429 else "request_failed"
                     outcomes.append({"provider": provider, "outcome": failure, "status": r.status_code, "latency_ms": latency_ms})
                     continue
+
                 body = r.json()
                 content = body.get("choices", [{}])[0].get("message", {}).get("content", "{}")
                 result = json.loads(content)
-                outcomes.append({"provider": provider, "outcome": "success", "status": r.status_code, "latency_ms": latency_ms, "result": result})
+                outcomes.append({"provider": provider, "outcome": "success", "status": r.status_code, "latency_ms": latency_ms})
                 return {
                     "enabled": True,
                     "provider": provider,
@@ -875,7 +894,12 @@ async def ai_advisory(evidence: Dict[str, Any]) -> Dict[str, Any]:
                     "outcomes": outcomes,
                 }
             except Exception as exc:
-                outcomes.append({"provider": provider, "outcome": "temporary", "latency_ms": max(0, int((time.monotonic() - started) * 1000)), "error": type(exc).__name__})
+                outcomes.append({
+                    "provider": provider,
+                    "outcome": "temporary",
+                    "latency_ms": max(0, int((time.monotonic() - started) * 1000)),
+                    "error": type(exc).__name__,
+                })
 
     return {
         "enabled": bool(outcomes),
@@ -887,6 +911,8 @@ async def ai_advisory(evidence: Dict[str, Any]) -> Dict[str, Any]:
         "outcomes": outcomes,
         "reason": "all_active_ai_providers_unavailable",
     }
+
+
 
 
 # Backward-compatible name for existing callers/tests.
