@@ -1,0 +1,2 @@
+# WooCommerce Historical Feed URL Recovery V10
+Mine public Wayback CDX wildcard URL history for feed/XML signals on the seven most reachable unknown targets, then re-probe exact historical URLs on the live same host. Historical URLs are candidate evidence only. A URL is positive only after current same-host Google Merchant XML payload validation.
