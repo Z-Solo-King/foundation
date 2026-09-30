@@ -26,7 +26,7 @@ run-name: >-
       operations_research_ref:
         description: "Exact Operations revision deployed to the private production runtime"
         required: false
-        default: "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676"
+        default: "09cef5b62aa4e7877412830e265a20731c4976c9"
         type: string
 permissions:
   actions: read
@@ -46,7 +46,7 @@ env:
   RESEARCH_LLM_API_KEY: "local-worker-proxy"
   RESEARCH_LLM_MODEL: "@cf/zai-org/glm-4.7-flash"
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || 'ce4f9edbae3ddf1bf1c25a908d5bce014acc7676' }}
+  OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || '09cef5b62aa4e7877412830e265a20731c4976c9' }}
   OPERATIONS_MIGRATION_TOOLS_REF: f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791
   NIGHTLY_RESEARCH_CONTRACT: nightly-research-contract/v2
   MAPPER_RUNTIME_EVIDENCE_CONTRACT: mapper-migration-runtime-receipt/v1
