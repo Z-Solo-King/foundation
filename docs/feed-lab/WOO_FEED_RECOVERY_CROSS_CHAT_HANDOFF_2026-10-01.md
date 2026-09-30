@@ -18,7 +18,7 @@ The intended pipeline is:
 
 Repository: `Z-Solo-King/foundation`
 
-Current main: `0c1593ce654cce91e4cf6017412a9953a61d7d37`
+Current main: `09850bbcae7d7bab0fc6d36d40de0c065d243313`
 
 Canonical acceptance issue: #1247
 
@@ -133,15 +133,17 @@ Purpose:
 
 Run: `36770921960`
 
-At handoff time:
-- shard 3: complete
-- shard 4: complete
-- shard 5: complete
-- shard 6: complete
-- shard 1: still running
-- shard 2: still running
+Final result:
+- all 6 shards completed successfully
+- aggregate artifact: `11124745690`
+- 17/17 unknown targets processed
+- 0 current native Google Merchant XML verified
+- 2 clean no-hit
+- 15 transport-limited
+- 7,468 candidate hypotheses
+- no new plugin-family classification emerged
 
-Do NOT start a duplicate public-index run until this one is fully reconciled.
+The result is now fully reconciled. Do NOT rerun the same public-index matrix without materially new evidence.
 
 ### PR #1656
 
@@ -206,15 +208,16 @@ Not allowed:
 
 ## Next-chat execution order
 
-1. First inspect the final result of PR #1660 / run `36770921960`.
-2. Extract every URL candidate found by Google/Bing/DDG and classify the URL grammar.
-3. If a candidate URL points to a new plugin family, research that family before expanding guesses.
-4. Re-probe exact current same-host URLs and apply the strict native validator.
-5. Update the family inventory with provenance and confidence.
-6. For any family hypothesis with enough evidence, run a bounded family-specific wave across the relevant unknown targets.
-7. Close/supersede duplicate experimental PRs once their evidence is incorporated.
-8. Continue family discovery using public indexed/code/forum references before any new broad filename expansion.
-9. Only stop a site after the current public evidence has been exhausted, and preserve 403/429/challenge as transport-unverified rather than negative.
+1. Inspect the completed PR #1660 / run `36770921960` aggregate artifact `11124745690` and extract its actual public-index candidates/evidence samples.
+2. Compare the recovered candidate URL families against the current 13-family inventory:
+   WooCommerce GPF, CTX/WebAppick, AdTribes, WPFM, WebToffee, CodeSolz, FeedCraft, RexFeed, KLPSoft, iCopyDoc, WPFactory/Alg, SVMPForge, and API-integrated Google for WooCommerce.
+3. Determine whether any candidate URL or indexed reference provides a genuinely new plugin/feed-generator family. A URL shape alone is not enough; research the underlying family first.
+4. For each newly supported family, run a small family-specific live validation wave against the relevant unknown targets. Do not repeat the 7,468-candidate generic matrix.
+5. Use public GitHub code/config search, search-engine indexed pages, vendor/plugin documentation, forums, Wayback and Common Crawl to discover site-specific feed URLs or new generator families.
+6. For random-token families, use exact indexed/historical references only; never enumerate token permutations.
+7. Keep transport-blocked separate from clean negative. A 403/429/challenge/timeout never proves feed absence.
+8. Close/supersede duplicate PRs #1653/#1656/#1657/#1658 after incorporating any genuinely new evidence.
+9. Keep PR #1660 as the latest public-index evidence source; do not create another duplicate until a materially different discovery method is justified.
 
 ## High-value research directions
 
