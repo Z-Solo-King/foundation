@@ -135,11 +135,11 @@ jobs:
           set -euo pipefail
           test -n "${AUTH_TOKEN:-}" || { echo "Missing AUTH_TOKEN; refusing live research."; exit 1; }
           python scripts/nightly_runtime_contract_probe.py \
-  --url "$PUBLIC_WORKER_URL" \
-  --token "$AUTH_TOKEN" \
-  --model "$RESEARCH_LLM_MODEL" \
-  --expected-foundation-sha "$TARGET_FOUNDATION_SHA" \
-  --expected-operations-ref "$OPERATIONS_RESEARCH_REF" > "$RUNNER_TEMP/nightly-runtime-contract.json"
+            --url "$PUBLIC_WORKER_URL" \
+            --token "$AUTH_TOKEN" \
+            --model "$RESEARCH_LLM_MODEL" \
+            --expected-foundation-sha "$TARGET_FOUNDATION_SHA" \
+            --expected-operations-ref "$OPERATIONS_RESEARCH_REF" > "$RUNNER_TEMP/nightly-runtime-contract.json"
           cat "$RUNNER_TEMP/nightly-runtime-contract.json"
 
       - name: Authenticate private research source
