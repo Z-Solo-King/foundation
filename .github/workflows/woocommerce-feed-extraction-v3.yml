@@ -14,12 +14,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: wc-feed-v3-\${{ github.ref }}
+  group: wc-feed-v3-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   extract:
-    name: API-first shard \${{ matrix.shard }}
+    name: API-first shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     strategy:
@@ -27,7 +27,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5, 6]
     env:
-      SHARD: \${{ matrix.shard }}
+      SHARD: ${{ matrix.shard }}
       SHARDS: 6
       MAX_XML_PROBES: "24"
       REQUEST_TIMEOUT: "12"
@@ -46,7 +46,7 @@ jobs:
       - name: Upload evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: woocommerce-feed-v3-shard-\${{ matrix.shard }}
+          name: woocommerce-feed-v3-shard-${{ matrix.shard }}
           path: out/woocommerce-feed-v3/
           retention-days: 30
 
