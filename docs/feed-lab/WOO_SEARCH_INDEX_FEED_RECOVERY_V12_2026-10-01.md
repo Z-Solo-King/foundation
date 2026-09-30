@@ -1,0 +1,1 @@
+# WooCommerce Search Index Feed Recovery V12\nPublic search-index discovery for exact XML/feed URLs across the 17 true-unknown WooCommerce targets, followed by current same-host Google Merchant XML validation.\n
