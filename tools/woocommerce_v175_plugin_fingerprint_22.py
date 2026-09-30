@@ -259,6 +259,7 @@ WC_REST_PATHS = [
 ]
 
 MAX_DIRECT_FEED_PROBES = max(10, int(os.getenv("MAX_DIRECT_FEED_PROBES", "40")))
+MAX_INTERNAL_PAGES = max(0, min(2, int(os.getenv("MAX_INTERNAL_PAGES", "2"))))
 PASSIVE_INDEX_ENABLED = os.getenv("PASSIVE_INDEX_ENABLED", "1").strip().lower() not in {"0", "false", "no"}
 WAYBACK_ENABLED = os.getenv("WAYBACK_ENABLED", "1").strip().lower() not in {"0", "false", "no"}
 COMMONCRAWL_ENABLED = os.getenv("COMMONCRAWL_ENABLED", "0").strip().lower() in {"1", "true", "yes"}
@@ -281,6 +282,7 @@ class BrowserEvidence:
     cookie_names: List[str] = None
     user_agent: str = ""
     html_len: int = 0
+    visited_internal_urls: List[str] = None
     plugin_asset_slugs: List[str] = None
     namespaces: List[str] = None
     xhr_urls: List[str] = None
@@ -289,6 +291,7 @@ class BrowserEvidence:
 
     def __post_init__(self):
         self.cookie_names = self.cookie_names or []
+        self.visited_internal_urls = self.visited_internal_urls or []
         self.plugin_asset_slugs = self.plugin_asset_slugs or []
         self.namespaces = self.namespaces or []
         self.xhr_urls = self.xhr_urls or []
@@ -563,6 +566,34 @@ async def api_surface(root: str, user_agent: str = "") -> Tuple[List[ApiEvidence
     return api_out, blobs, sorted(set(ns))
 
 
+def discover_internal_page_urls(text: str, root: str, limit: int = 2) -> List[str]:
+    """Select a tiny same-host set of store/product/category pages for deeper public discovery."""
+    scored: Dict[str, int] = {}
+    for raw in re.findall(r'''(?:href|data-href|data-url)=["']([^"']+)["']''', text or "", re.I):
+        try:
+            u = urljoin(root + "/", raw)
+            parts = urlsplit(u)
+        except Exception:
+            continue
+        if parts.scheme not in {"http", "https"} or not same_host(u, root) or parts.fragment:
+            continue
+        path = (parts.path or "/").lower()
+        if any(x in path for x in ("/wp-admin", "/wp-login", "/cart", "/checkout", "/my-account", "/logout")):
+            continue
+        score = 0
+        if "/product/" in path:
+            score += 100
+        if any(x in path for x in ("/shop", "/store", "/products", "/product-category", "/category/")):
+            score += 70
+        if "post_type=product" in (parts.query or "").lower():
+            score += 80
+        if path in {"/", ""}:
+            score -= 50
+        score -= min(len(path), 40) // 10
+        scored[u.split("#", 1)[0]] = max(score, scored.get(u.split("#", 1)[0], -999))
+    return sorted(scored, key=lambda u: (-scored[u], len(u), u))[:max(0, limit)]
+
+
 async def browser_engine(root: str, engine: str):
     try:
         from playwright.async_api import async_playwright
@@ -630,6 +661,24 @@ async def browser_engine(root: str, engine: str):
             except Exception:
                 pass
             html = await page.content()
+            visited_internal_urls: List[str] = []
+            page_htmls = [html]
+            status = getattr(resp, "status", 0) if resp else 0
+            challenge = is_challenge(status, html)
+            if status == 200 and not challenge and MAX_INTERNAL_PAGES:
+                for internal_url in discover_internal_page_urls(html, root, MAX_INTERNAL_PAGES):
+                    try:
+                        internal_resp = await page.goto(internal_url, wait_until="domcontentloaded", timeout=25_000)
+                        await page.wait_for_timeout(1000)
+                        internal_html = await page.content()
+                        visited_internal_urls.append(internal_url)
+                        page_htmls.append(internal_html)
+                        if is_challenge(getattr(internal_resp, "status", 0) if internal_resp else 0, internal_html):
+                            challenge = True
+                            break
+                    except Exception:
+                        continue
+            html = "\\n".join(page_htmls)
             try:
                 perf_urls = await page.evaluate("performance.getEntriesByType('resource').map(e => e.name)")
                 if isinstance(perf_urls, list):
@@ -644,8 +693,6 @@ async def browser_engine(root: str, engine: str):
                 ua = await page.evaluate("navigator.userAgent")
             except Exception:
                 pass
-            status = getattr(resp, "status", 0) if resp else 0
-            challenge = is_challenge(status, html)
             await browser.close()
             combined = html + "\n" + "\n".join(requests_seen) + "\n" + "\n".join(response_blobs)
             slugs = parse_plugin_slugs(combined)
@@ -659,6 +706,7 @@ async def browser_engine(root: str, engine: str):
                 cookie_names=cookie_names,
                 user_agent=ua,
                 html_len=len(html),
+                visited_internal_urls=visited_internal_urls,
                 plugin_asset_slugs=slugs,
                 namespaces=namespaces,
                 xhr_urls=sorted(set(requests_seen))[:300],
