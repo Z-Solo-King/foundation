@@ -110,3 +110,7 @@ Every material change should answer four questions:
 4. Which issue/document/evidence record must be synchronized?
 
 The machine-readable graph is an AI navigation and cross-surface coordination aid, not a competing authority.
+
+
+## 2026-09-30 extractor capability completeness
+The extractor/mapper branch is part of the Operations private control plane, not an external project. Every capability is expected to connect through owner, policy, test, evidence and migration disposition metadata. Foundation automation verifies this boundary without importing private runtime behavior.
