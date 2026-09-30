@@ -83,3 +83,46 @@ test("output is deterministic", () => {
 });
 
 assert.ok(readFileSync(planner, "utf8").includes("scheduling_only"));
+
+test("honors profile defaults and required IDs", () => {
+  const out = run({
+    target_defaults: { max_lanes: 2, cost_budget: 4, latency_budget: 20, quota_budget: 20, freshness_need: 0.4 },
+    required_ids: ["provider"],
+    lanes: [
+      { id: "provider", family: "ai_provider", coverage_gain: 0.4, failure_detection: 0.8, confidence_gain: 0.8, execution_cost: 1, latency_cost: 2, quota_cost: 1 },
+      { id: "other", family: "search", coverage_gain: 0.7, failure_detection: 0.5, confidence_gain: 0.6, execution_cost: 1, latency_cost: 2, quota_cost: 0 }
+    ]
+  });
+  assert.equal(out.constraints.max_lanes, 2);
+  assert.equal(out.selected[0].id, "provider");
+  assert.equal(out.selected[0].selection, "required");
+});
+
+test("orders dependent lanes into later batches", () => {
+  const out = run({
+    max_lanes: 3,
+    cost_budget: 5,
+    latency_budget: 50,
+    quota_budget: 20,
+    lanes: [
+      { id: "dependent", family: "browser", depends_on: ["base"], coverage_gain: 0.9, failure_detection: 0.9, confidence_gain: 0.9, execution_cost: 1, latency_cost: 5, quota_cost: 0 },
+      { id: "base", family: "search", coverage_gain: 0.5, failure_detection: 0.5, confidence_gain: 0.5, execution_cost: 1, latency_cost: 2, quota_cost: 0 }
+    ]
+  });
+  assert.deepEqual(out.selected.map((x) => [x.id, x.batch]), [["base", 0], ["dependent", 1]]);
+});
+
+test("enforces an explicit exclusive group", () => {
+  const out = run({
+    max_lanes: 3,
+    cost_budget: 5,
+    latency_budget: 50,
+    quota_budget: 20,
+    lanes: [
+      { id: "engine-a", family: "browser", exclusive_group: "browser-choice", coverage_gain: 0.8, failure_detection: 0.8, confidence_gain: 0.8, execution_cost: 1, latency_cost: 2, quota_cost: 0 },
+      { id: "engine-b", family: "browser", exclusive_group: "browser-choice", coverage_gain: 0.7, failure_detection: 0.7, confidence_gain: 0.7, execution_cost: 1, latency_cost: 2, quota_cost: 0 }
+    ]
+  });
+  assert.equal(out.selected.length, 1);
+  assert.equal(out.skipped[0].skip_reason, "exclusive_group_conflict");
+});
