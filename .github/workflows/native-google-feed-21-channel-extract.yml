@@ -56,8 +56,11 @@ jobs:
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
       - name: Extract plugin/channel evidence
-        run: |
-          node tools/feed-lab/woocommerce_21_plugin_channel_extract.mjs             --site "${SITE_NAME}"             --root "${SITE_ROOT}"             --out "${OUT_DIR}/report.json"
+        run: >
+          node tools/feed-lab/woocommerce_21_plugin_channel_extract.mjs
+          --site "${SITE_NAME}"
+          --root "${SITE_ROOT}"
+          --out "${OUT_DIR}/report.json"
       - name: Upload site evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -85,24 +88,34 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           import json, pathlib
-          root=pathlib.Path("out/21")
-          reports=[]
-          for p in sorted(root.glob("wc21-channel-*/report.json")):
-              reports.append(json.loads(p.read_text()))
-          assert len(reports)==21, f"expected 21 reports, got {len(reports)}"
-          reports=sorted(reports,key=lambda r:r["site"].lower())
+          root = pathlib.Path("out/21")
+          reports = [json.loads(p.read_text()) for p in sorted(root.glob("wc21-channel-*/report.json"))]
+          assert len(reports) == 21, f"expected 21 reports, got {len(reports)}"
+          reports = sorted(reports, key=lambda r: r["site"].lower())
+          aggregate = {
+              "schema_version": "woocommerce-21-plugin-channel-evidence-aggregate/v1",
+              "site_count": 21,
+              "basis": "V175-derived browser/XHR recovery + public WP-JSON, REST and WC v1/v2/v3 route-presence probes",
+              "results": reports,
+          }
           pathlib.Path("out/21/plugin-channel-evidence.json").write_text(
-              json.dumps({"schema_version":"woocommerce-21-plugin-channel-evidence-aggregate/v1",
-                          "site_count":21,
-                          "basis":"V175-derived browser/XHR recovery + public WP-JSON, REST and WC v1/v2/v3 route-presence probes",
-                          "results":reports},indent=2)+"
-"
+              json.dumps(aggregate, indent=2) + "\n"
           )
-          lines=["# WooCommerce 21-site plugin/channel extraction","","| Site | Browser | Plugins | Feed signals | WP namespaces | WC v1 | WC v2 | WC v3 |","|---|---:|---:|---|---|---:|---:|---:|"]
+          lines = [
+              "# WooCommerce 21-site plugin/channel extraction",
+              "",
+              "| Site | Browser | Plugins | Feed signals | WP namespaces | WC v1 | WC v2 | WC v3 |",
+              "|---|---:|---:|---|---|---:|---:|---:|",
+          ]
           for r in reports:
-              wc={x["endpoint"]:x["status"] for x in r["woocommerce_version_route_probes"]}
-              lines.append(f'| {r["site"]} | {r["browser"]["status"]} | {len(r["plugin_assets"])} | {", ".join(x["family"] for x in r["feed_family_signals"]) or "none"} | {", ".join(r["public_api_namespaces"]) or "none"} | {wc.get("wc-v1", "-")} | {wc.get("wc-v2", "-")} | {wc.get("wc-v3", "-")} |')
-          pathlib.Path("out/21/plugin-channel-evidence.md").write_text("\n".join(lines)+"\n")
+              wc = {x["endpoint"]: x["status"] for x in r["woocommerce_version_route_probes"]}
+              lines.append(
+                  f'| {r["site"]} | {r["browser"]["status"]} | {len(r["plugin_assets"])} | '
+                  f'{", ".join(x["family"] for x in r["feed_family_signals"]) or "none"} | '
+                  f'{", ".join(r["public_api_namespaces"]) or "none"} | '
+                  f'{wc.get("wc-v1", "-")} | {wc.get("wc-v2", "-")} | {wc.get("wc-v3", "-")} |'
+              )
+          pathlib.Path("out/21/plugin-channel-evidence.md").write_text("\n".join(lines) + "\n")
           PY
       - name: Upload aggregate evidence
         uses: actions/upload-artifact@v4
