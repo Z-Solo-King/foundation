@@ -143,13 +143,20 @@ def main() -> int:
     )
 
     ok = readiness_ok and chat_ok
-    classification = (
-        "accepted_exact_research_contract"
-        if ok
-        else "runtime_revision_mismatch"
-        if not readiness_ok and readiness_status == 200 and bool(release)
-        else "research_contract_rejected"
-    )
+    if ok:
+        classification = "accepted_exact_research_contract"
+    elif not readiness_ok:
+        classification = (
+            "runtime_revision_mismatch"
+            if readiness_status == 200 and bool(release)
+            else "readiness_failure"
+        )
+    elif chat_status == 0:
+        classification = "transport_failure"
+    elif not payload:
+        classification = "invalid_json_response"
+    else:
+        classification = "research_contract_rejected"
 
     print(json.dumps({
         "schema": "nightly-runtime-contract-probe/v2",

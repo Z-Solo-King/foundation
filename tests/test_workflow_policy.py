@@ -142,8 +142,9 @@ def test_production_release_has_one_minimal_main_push_job():
     assert "        if: always()" in frontend
     assert "Publish sanitized production receipt" in frontend
     assert "needs:" not in frontend
-    assert frontend.count('Dispatch certified post-release validation in parallel') == 1
-    assert 'gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref main' in frontend
+    assert frontend.count('Preflight exact nightly runtime before research dispatch') == 1
+    assert 'gh workflow run nightly-research-provider-preflight.yml --repo "$GITHUB_REPOSITORY" --ref main' in frontend
+    assert 'gh workflow run nightly-multi-agent-research-v3.yml --repo "$GITHUB_REPOSITORY" --ref main' in frontend
     assert frontend.count('Upload cross-repository audit receipt') == 1
     assert frontend.count('Upload runtime acceptance receipts') == 1
     assert frontend.count('Publish sanitized production receipt') == 1
@@ -420,7 +421,8 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     assert 'PIN_MANIFEST="docs/OPERATIONS_PIN_MANIFEST.json"' in deployment
     assert 'manifest["pins"]["production_runtime"]["sha"]' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
-    assert f"OPERATIONS_RESEARCH_REF: {CANONICAL_RESEARCH_OPERATIONS_REF}" in nightly
+    expected = "OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || '" + CANONICAL_PRODUCTION_OPERATIONS_REF + "' }}"
+    assert expected in nightly
 
 def test_coverage_runtime_matrix_uses_versioned_validation_tests():
     workflow = _workflow_texts()["coverage-driven-runtime-matrix.yml"]
@@ -479,13 +481,13 @@ def test_production_release_requires_concurrent_d1_overlimit_evidence():
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
 def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
     expected_production = CANONICAL_PRODUCTION_OPERATIONS_REF
-    expected_nightly = "1a91efa53b9202f1624ddde892b0e86bd6b360f0"
+    expected_nightly = CANONICAL_RESEARCH_OPERATIONS_REF
     auxiliary = {
         "live-chatbot-production-smoke.yml": expected_production,
         "coverage-driven-runtime-matrix.yml": expected_nightly,
         "polyglot-governance-audit.yml": expected_nightly,
-        "live-nightly-research-canary.yml": expected_nightly,
-        "nightly-research-provider-preflight.yml": expected_nightly,
+        "live-nightly-research-canary.yml": CANONICAL_PRODUCTION_OPERATIONS_REF,
+        "nightly-research-provider-preflight.yml": CANONICAL_PRODUCTION_OPERATIONS_REF,
     }
     for filename, expected in auxiliary.items():
         workflow = (WORKFLOW_ROOT / filename).read_text(encoding="utf-8")
@@ -597,9 +599,9 @@ def test_nightly_research_uses_authenticated_worker_ai_adapter():
     assert "scripts/research_worker_proxy.py" in workflow
     assert 'PUBLIC_WORKER_URL' in workflow
     assert 'AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in preflight
-    assert "/api/v1/chat" in preflight
-    assert 'worker_ai_path_verified' in preflight
-    assert 'transport": "authenticated_foundation_worker"' in preflight
+    assert "nightly_runtime_contract_probe.py" in preflight
+    assert "expected-foundation-sha" in preflight
+    assert "expected-operations-ref" in preflight
     assert 'RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in canary
     assert "Checkout Foundation research adapter" in canary
     assert "uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in canary
@@ -691,10 +693,11 @@ def test_public_pages_front_door_is_documented_without_exposing_backend_origin()
 
 def test_nightly_research_preflight_has_network_failure_classification():
     preflight = (WORKFLOW_ROOT / "nightly-research-provider-preflight.yml").read_text(encoding="utf-8")
-    assert "worker_health_curl_exit" in preflight
-    assert "worker_health_transport_error" in preflight
-    assert "worker_dns_ipv4" in preflight
-    assert "probe_curl_exit" in preflight
+    probe = (ROOT / "scripts" / "nightly_runtime_contract_probe.py").read_text(encoding="utf-8")
+    assert "nightly_runtime_contract_probe.py" in preflight
+    assert "transport_failure" in probe
+    assert "runtime_revision_mismatch" in probe
+    assert "invalid_json_response" in probe
     assert "probe_transport_error" in preflight
     assert '"network_classification"' in preflight
     assert "dns_or_network_unreachable" in preflight
