@@ -182,6 +182,29 @@ async def extract(name,root,outdir):
 
 async def main():
     name=os.environ["SITE_NAME"]; root=os.environ["SITE_ROOT"]; out=os.environ.get("OUT_DIR","out/site")
-    await extract(name,root,out)
+    try:
+        await extract(name,root,out)
+    except Exception as exc:
+        outdir=Path(out); outdir.mkdir(parents=True,exist_ok=True)
+        error={
+            "schema_version":"woocommerce-21-plugin-extraction/v1",
+            "extractor":EXTRACTOR,
+            "site":name,
+            "configured_root":root,
+            "selected_origin":root,
+            "status":"EXTRACTOR_RUNTIME_ERROR",
+            "error":str(exc)[:1000],
+            "homepage":{},
+            "plugin_assets":[],
+            "feed_like_plugin_assets":[],
+            "feed_family_signals":[],
+            "public_api_namespaces":[],
+            "xhr":[],
+            "rest_probes":[],
+            "product_api_options":[]
+        }
+        (outdir/"recovery.json").write_text(json.dumps(error,indent=2)+"\n",encoding="utf-8")
+        print(json.dumps({"site":name,"status":error["status"],"error":error["error"]},indent=2))
+        return 0
 
 if __name__=="__main__": asyncio.run(main())
