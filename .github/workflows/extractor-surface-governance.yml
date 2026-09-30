@@ -94,6 +94,13 @@ jobs:
             printf '%s\n' '{"schema":"extractor-mapper-type-audit/v1","status":"DEFERRED","reason":"Operations revision predates M11 typed-contract migration inventory"}'               > artifacts/extractor-type-migration.json
           fi
 
+      - name: Materialize pinned Foundation public core
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          FOUNDATION_CORE_GIT="$GITHUB_WORKSPACE" python scripts/sync_public_core.py
+          test -f foundation_core/__init__.py
+
       - name: Run focused extractor regression tests
         working-directory: operations
         run: |
