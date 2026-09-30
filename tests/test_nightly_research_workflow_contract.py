@@ -122,3 +122,10 @@ def test_proxy_has_bounded_transport_recovery():
     assert "Retry-After" in proxy
     assert "bounded_3_attempts" in proxy
     assert "research_agent" in proxy
+
+
+def test_operations_pin_manifest_matches_research_workflow():
+    workflow=workflow_text()
+    manifest=json.loads((Path(__file__).parents[1]/"docs"/"OPERATIONS_PIN_MANIFEST.json").read_text(encoding="utf-8"))
+    assert manifest["pins"]["research_runtime"]["sha"] == "9a942b0f8cc601f8d460ed71ccba908fa02e6c75"
+    assert manifest["pins"]["research_runtime"]["sha"] in workflow
