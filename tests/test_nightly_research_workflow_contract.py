@@ -162,3 +162,9 @@ def test_run_name_distinguishes_live_and_contract_only_runs():
     assert "scheduled-live" in text
     assert "contract-dry-run" in text
     assert "production-live" in text
+
+
+def test_canary_manual_execution_is_main_only_and_post_nightly_main_only():
+    text=(Path(__file__).parents[1] / ".github" / "workflows" / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
+    assert "github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'" in text
+    assert "github.event.workflow_run.head_branch == 'main'" in text
