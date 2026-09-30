@@ -38,12 +38,11 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.12"
-      - name: Install extraction runtime
+      - name: Install refinement runtime
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install --disable-pip-version-check -q httpx playwright
-          python -m playwright install --with-deps chromium firefox webkit
+          python -m pip install --disable-pip-version-check -q httpx
       - name: Acceptance boundary static guard
         shell: bash
         run: |
