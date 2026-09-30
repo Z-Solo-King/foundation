@@ -145,4 +145,3 @@ def test_pinned_operations_contract_guard_is_semantic():
     assert '"note"' in text
     assert "private/chatbot/chat_endpoint.py" in text
     assert "private/chatbot/live_answer.py" in text
-t
