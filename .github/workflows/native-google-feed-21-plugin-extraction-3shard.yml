@@ -1,4 +1,5 @@
 name: WooCommerce 21 Plugin Extraction — V175 3-Shard Final
+# Canonical 21-site plugin extraction lane: browser/XHR + WP-JSON + REST + WC v1/v2/v3.
 
 on:
   push:
