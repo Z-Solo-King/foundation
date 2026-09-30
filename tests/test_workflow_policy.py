@@ -93,6 +93,9 @@ def test_production_pin_self_check_matches_canonical_operations_revision():
     assert 'PIN_MANIFEST="docs/OPERATIONS_PIN_MANIFEST.json"' in deployment
     assert 'production_runtime' in deployment
     assert 'test "$OPERATIONS_REF" =' not in deployment
+    assert 'workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments' in deployment
+    assert 'git/refs/heads/main' in deployment
+    assert 'Stale Operations production pin' in deployment
 
 def test_production_generates_private_operations_service_binding():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
