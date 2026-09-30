@@ -1,16 +1,5 @@
-# staged 31-site extraction
-name: WooCommerce 31 Plugin Extraction
-
 on:
-  pull_request:
-    branches:
-      - main
-    types: [synchronize, reopened, opened]
-  push:
-    branches:
-      - hunt/native-google-feed-urls-20260927
   workflow_dispatch:
-
 permissions:
   contents: read
 
