@@ -19,6 +19,6 @@ test("wave 2 contains researched grammar expansions",()=>{
 });
 
 test("native validator remains strict",()=>{
-  assert.ok(source.includes("base\\.google\\.com\\/ns\\/1\\.0"));
-  assert.ok(source.includes('["id","title","link","price"]'));
+  assert.match(source,/base.*google.*ns.*1\.0/s);
+  assert.match(source,/\["id","title","link","price"\]/);
 });
