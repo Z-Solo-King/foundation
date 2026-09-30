@@ -44,7 +44,7 @@ jobs:
       - name: Public API-first extraction
         run: python tools/woocommerce_feed_extraction_v3.py
       - name: Upload evidence
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92e8e0b5a5461e7c
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: woocommerce-feed-v3-shard-\${{ matrix.shard }}
           path: out/woocommerce-feed-v3/
@@ -86,7 +86,7 @@ jobs:
           (p/"aggregate.json").write_text(json.dumps(summary,indent=2))
           print(json.dumps({k:v for k,v in summary.items() if k!="results"},indent=2))
           PY
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92e8e0b5a5461e7c
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: woocommerce-feed-v3-aggregate
           path: out/aggregate/
