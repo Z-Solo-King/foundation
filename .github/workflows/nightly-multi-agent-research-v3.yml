@@ -246,8 +246,8 @@ jobs:
           set -euo pipefail
           test -f private/chatbot/chat_endpoint.py
           test -f private/chatbot/live_answer.py
-          grep -Eq 'research_agent[[:space:]]*=\[[:space:]]*bool\\(payload\\.get\\("research_agent", False\\)\\)' private/chatbot/chat_endpoint.py
-          grep -Eq 'research_agent[[:space:]]*=\[[:space:]]*research_agent' private/chatbot/chat_endpoint.py
+          grep -Eq 'research_agent[[:space:]]*=[[:space:]]*bool\\(payload\\.get\\("research_agent", False\\)\\)' private/chatbot/chat_endpoint.py
+          grep -Eq 'research_agent[[:space:]]*=[[:space:]]*research_agent' private/chatbot/chat_endpoint.py
           grep -Eq 'if research_agent' private/chatbot/live_answer.py
           grep -Eq 'response_format' private/chatbot/live_answer.py
           echo "pinned Operations research-agent contract: PASS"
