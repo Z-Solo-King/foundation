@@ -13,10 +13,10 @@ ROOT = Path(__file__).resolve().parents[1]
 CAL = Path(os.getenv("REFINEMENT_JSON", ROOT / "aggregate.json"))
 
 TARGET_FAMILIES = {
-    "Cosmic Byte": ("https://www.thecosmicbyte.com", "adtribes_product_feed_pro"),
+    "Kryptronix Gaming": ("https://kryptronix.in", "webtoffee_product_feed"),
     "NCL Computer": ("https://nclcomputer.com", "webtoffee_product_feed"),
-    "PC Kumar Infotech": ("https://pckumar.in", "google_for_woocommerce"),
-    "ithunt": ("https://ithunt.in", "google_for_woocommerce"),
+    "Prime ABGB": ("https://www.primeabgb.com", "woocommerce_google_product_feed"),
+    "Variety Infotech": ("https://varietyinfotech.com", "google_for_woocommerce"),
 }
 
 FAMILY_PATHS = {
