@@ -2,7 +2,7 @@
 from __future__ import annotations
 import asyncio, json, os, re
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlencode
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
 
 EXTRACTOR="V175-derived-browser-plugin-extractor"
