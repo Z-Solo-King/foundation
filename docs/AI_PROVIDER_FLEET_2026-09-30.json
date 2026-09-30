@@ -5,16 +5,14 @@
     "openrouter_free",
     "groq",
     "gemini",
+    "cerebras",
     "nvidia_nim",
     "cohere_free",
-    "huggingface_free"
+    "huggingface_free",
+    "siliconflow"
   ],
   "native_runtime_provider": "cloudflare_workers_ai",
-  "legacy_compatibility": [
-    "cerebras",
-    "siliconflow",
-    "mistral_free"
-  ],
+  "legacy_compatibility": [],
   "task_families": [
     "chatbot",
     "research",
