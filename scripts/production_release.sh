@@ -53,7 +53,7 @@ coverage run --branch --source=backend,foundation_core,worker --omit='tests/*' -
 coverage report --show-missing --fail-under=100 --omit='tests/*'
 python -m benchmark.chatbot_query_benchmark --input benchmark/chatbot-query-corpus.json --output .runtime/chatbot-query-benchmark.json
 python -m pytest -q tests/test_workflow_policy.py
-node tests/public_edge_js_test.mjs
+node tests/public_edge_ts_test.mjs
 python scripts/public_security_lint.py --strict
 
 test ! -e backend/learning/promotion.py
