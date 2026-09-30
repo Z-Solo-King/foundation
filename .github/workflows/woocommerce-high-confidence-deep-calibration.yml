@@ -20,6 +20,10 @@ permissions:
   contents: read
   actions: read
 
+concurrency:
+  group: wc-feed-learning-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deep-calibration:
     name: V175 deep calibration - 10 known feed-related sites
