@@ -297,7 +297,8 @@ class BrowserEvidence:
 
 @dataclass
 class ApiEvidence:
-    url: str    status: int
+    url: str
+    status: int
     allow: str = ""
     content_type: str = ""
     namespaces: List[str] = None
@@ -596,7 +597,8 @@ async def browser_engine(root: str, engine: str):
                             b = await resp.body()
                             if 0 < len(b) <= 350_000:
                                 response_blobs.append(b.decode("utf-8", "ignore"))
-                        except Exception:                            pass
+                        except Exception:
+                            pass
                 except Exception:
                     pass
 
@@ -895,7 +897,8 @@ async def probe_site(name: str, root: str) -> Dict[str, Any]:
     except Exception:
         pass
 
-    # Public API surface without browser cookies / clearance state.    api_evidence: List[ApiEvidence] = []
+    # Public API surface without browser cookies / clearance state.
+    api_evidence: List[ApiEvidence] = []
     try:
         api_evidence, api_blobs, api_ns = await api_surface(root, direct_ua)
         source_blobs.extend(api_blobs)
