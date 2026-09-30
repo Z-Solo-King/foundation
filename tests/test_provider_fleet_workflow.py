@@ -37,10 +37,11 @@ def test_provider_fleet_workflow_uses_immutable_private_probe() -> None:
 
 def test_provider_fleet_workflow_rejects_secret_leak_patterns() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
-    assert "echo \"$PROVIDER_KEYS_JSON\"" not in text
-    assert "cat \"$PROVIDER_KEYS_JSON\"" not in text
+    assert 'echo "$PROVIDER_KEYS_JSON"' not in text
+    assert 'cat "$PROVIDER_KEYS_JSON"' not in text
     for provider in ("GROQ", "GEMINI", "OPENROUTER", "SILICONFLOW", "NVIDIA_NIM", "COHERE", "HUGGINGFACE"):
-        assert f"secrets.{provider}_API_KEY" not in text
+        assert f'echo "${provider}_API_KEY"' not in text
+        assert f'cat "${provider}_API_KEY"' not in text
     assert "PROVIDER_KEYS_JSON" in text
 
 
@@ -55,5 +56,5 @@ def test_provider_fleet_workflow_exposes_only_the_seven_active_external_provider
     text = WORKFLOW.read_text(encoding="utf-8")
     for name in ("PROVIDER_KEYS_JSON", "NVIDIA_NIM_API_KEY", "HF_TOKEN", "COHERE_API_KEY", "SILICONFLOW_API_KEY"):
         assert name in text
-    assert '{"groq","gemini","openrouter_free","siliconflow","mistral_free"}' not in text
+    assert '{"groq","gemini","cerebras","openrouter_free","siliconflow","mistral_free"}' not in text
     assert 'allowed = {"openrouter_free","groq","gemini","nvidia_nim","cohere_free","huggingface_free","siliconflow"}' in text

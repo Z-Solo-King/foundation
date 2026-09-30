@@ -56,7 +56,6 @@ jobs:
           test -n "$HF_TOKEN"
           test -n "$COHERE_API_KEY"
           test -n "$SILICONFLOW_API_KEY"
-          test -n "$SILICONFLOW_API_KEY"
           python - <<'PY'
           import json, os
           payload = json.loads(os.environ["PROVIDER_KEYS_JSON"])
