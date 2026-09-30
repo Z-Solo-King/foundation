@@ -484,7 +484,7 @@ printf '%s\n' \
 # from the Operations code revision. The current production database was live-verified with
 # migrations 0001-0010 applied; fingerprint the actual migration files and only issue a remote
 # D1 migration call when the repository schema content differs from that verified production set.
-D1_MIGRATIONS_FINGERPRINT="01e075fc2161a29e62bf45248eed5691bd3925d9c5586f65ffefa7791d205147"
+D1_MIGRATIONS_FINGERPRINT="f42ab2e7cf8c67ed13be1b2d4e0056d08dccef0763e5985a91b2000510844a5d"
 current_d1_migrations_fingerprint="$(
   find "$GITHUB_WORKSPACE/migrations" -type f -name '*.sql' -print0 |
     sort -z |
