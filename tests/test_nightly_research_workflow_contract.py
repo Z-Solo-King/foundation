@@ -130,3 +130,11 @@ def test_operations_pin_manifest_matches_research_workflow():
     manifest=json.loads((Path(__file__).parents[1]/"docs"/"OPERATIONS_PIN_MANIFEST.json").read_text(encoding="utf-8"))
     assert manifest["pins"]["research_runtime"]["sha"] == "9a942b0f8cc601f8d460ed71ccba908fa02e6c75"
     assert manifest["pins"]["research_runtime"]["sha"] in workflow
+
+
+def test_pinned_operations_contract_guard_is_whitespace_tolerant():
+    text=workflow_text()
+    assert "research_agent[[:space:]]*" in text
+    assert "response_format" in text
+    assert "private/chatbot/chat_endpoint.py" in text
+    assert "private/chatbot/live_answer.py" in text

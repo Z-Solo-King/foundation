@@ -11,7 +11,7 @@ permissions:
   security-events: write
 
 concurrency:
-  group: foundation-required-pr-checks-${{ github.ref }}
+  group: foundation-required-pr-checks-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
