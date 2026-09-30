@@ -104,7 +104,7 @@ jobs:
       - name: Run focused extractor regression tests
         working-directory: operations
         run: |
-          python -m pip install --disable-pip-version-check -e ".[test]"
+          python -m pip install --disable-pip-version-check -e ".[test,media]"
           python -m pip install --disable-pip-version-check workers-py workers-runtime-sdk coverage
           tests="tests/test_extractor_policy_seams.py tests/test_extractor_surface_governance.py"
           if [ -f tests/test_extractor_type_migration_audit.py ]; then
