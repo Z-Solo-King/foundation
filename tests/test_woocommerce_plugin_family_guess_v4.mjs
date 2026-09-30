@@ -10,8 +10,7 @@ test("uses plugin-family-only guessing contract", () => {
   assert.match(source,/plugin-family-specific-xml-guess-only/);
   assert.doesNotMatch(source,/wc\/store\/v1\/products/);
   assert.doesNotMatch(source,/playwright/i);
-  assert.doesNotMatch(source,/clearance.?cookie/i);
-  assert.doesNotMatch(source,/proxy.?rotation/i);
+  assert.doesNotMatch(source,/add_cookies|seed_cookies|cookie_jars|camoufox|nodriver|curl_cffi/i);
 });
 
 test("contains documented family grammars", () => {
@@ -25,8 +24,10 @@ test("contains documented family grammars", () => {
 });
 
 test("native validator requires Google namespace and core fields in one item", () => {
-  assert.match(source,/base\.google\.com\/ns\/1\.0/);
-  assert.match(source,/\["id","title","link","price"\]/);
+  assert.ok(source.includes("base\\.google\\.com\\/ns\\/1\\.0"));
+  assert.ok(source.includes('["id","title","link","price"]'));
+  assert.match(source,/<item\\b/);
+  assert.match(source,/<entry\\b/);
 });
 
 test("same-host validation is explicit", () => {
