@@ -15,12 +15,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: wc-plugin-family-guess-v4-${{ github.ref }}
+  group: wc-plugin-family-guess-v4-\${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   guess:
-    name: plugin-family XML guess shard ${{ matrix.shard }}
+    name: plugin-family XML guess shard \${{ matrix.shard }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -28,7 +28,7 @@ jobs:
       matrix:
         shard: [1,2,3,4,5,6]
     env:
-      SHARD: ${{ matrix.shard }}
+      SHARD: \${{ matrix.shard }}
       SHARDS: 6
       SITE_CONCURRENCY: "1"
       CANDIDATE_CONCURRENCY: "6"
@@ -48,7 +48,7 @@ jobs:
       - name: Upload shard evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: woocommerce-plugin-family-guess-v4-shard-${{ matrix.shard }}
+          name: woocommerce-plugin-family-guess-v4-shard-\${{ matrix.shard }}
           path: out/woocommerce-plugin-family-guess-v4/
           retention-days: 30
 
@@ -75,7 +75,7 @@ jobs:
             for(const ent of fs.readdirSync(p,{withFileTypes:true})){
               const q=path.join(p,ent.name);
               if(ent.isDirectory()) walk(q);
-              else if(ent.name.endsWith(".json") && /shard-d+.json$/.test(ent.name)) files.push(q);
+              else if(ent.name.endsWith(".json") && /shard-\d+\.json$/.test(ent.name)) files.push(q);
             }
           }
           walk("out/shards");
@@ -87,6 +87,7 @@ jobs:
             native_verified:rows.filter(x=>x.candidate_hits?.length).length,
             api_integrated_skipped:rows.filter(x=>x.status==="API_INTEGRATED_NO_XML_GUESS").length,
             transport_limited:rows.filter(x=>x.status.includes("TRANSPORT_LIMITED")).length,
+            no_feed_verified:rows.filter(x=>x.status==="NO_NATIVE_FEED_VERIFIED").length,
             results:rows
           };
           fs.mkdirSync("out/aggregate",{recursive:true});
