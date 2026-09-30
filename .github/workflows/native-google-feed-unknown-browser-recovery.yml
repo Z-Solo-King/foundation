@@ -1,21 +1,5 @@
-name: WooCommerce 22 Unknown Plugin Browser Recovery
-
 on:
-  pull_request:
-    branches: [main]
-    types: [opened, reopened, synchronize]
-    paths:
-      - "tools/feed-lab/woocommerce_22_plugin_browser_recovery.py"
-      - "tools/feed-lab/woocommerce_31_group_xml_guess.mjs"
-      - ".github/workflows/native-google-feed-unknown-browser-recovery.yml"
-  push:
-    branches: [hunt/native-google-feed-urls-20260927]
-    paths:
-      - "tools/feed-lab/woocommerce_22_plugin_browser_recovery.py"
-      - "tools/feed-lab/woocommerce_31_group_xml_guess.mjs"
-      - ".github/workflows/native-google-feed-unknown-browser-recovery.yml"
   workflow_dispatch:
-
 permissions:
   contents: read
 
