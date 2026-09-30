@@ -174,3 +174,10 @@ def test_canary_manual_execution_is_main_only_and_post_nightly_main_only():
     text=(Path(__file__).parents[1] / ".github" / "workflows" / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
     assert "github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'" in text
     assert "github.event.workflow_run.head_branch == 'main'" in text
+
+
+def test_nightly_research_aligns_scheduler_and_proxy_concurrency():
+    text = workflow_text()
+    assert 'RESEARCH_MAX_CONCURRENCY: "6"' in text
+    assert '--max-upstream-concurrency "${RESEARCH_MAX_CONCURRENCY}"' in text
+    assert '--crossfire --global-capacity "$RESEARCH_MAX_CONCURRENCY"' in text
