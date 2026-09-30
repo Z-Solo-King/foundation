@@ -1035,7 +1035,7 @@
       1400,
       1361
     ],
-    "production_operations_revision": "d0897d13751a092cc68ec7a0479a9000e18cff7d",
+    "production_operations_revision": "ca3864a954569f6f8ce9a94793c53a0ef9ff03ec",
     "source": "live GitHub",
     "note": "Navigation metadata only; runtime and promotion authority remain with live receipts and canonical deployment manifests.",
     "open_issue_count": 6,
