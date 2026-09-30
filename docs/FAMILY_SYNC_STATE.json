@@ -5,7 +5,7 @@
   "public_safe": true,
   "live_main": {
     "foundation": "5ec4d112cb5b5033e1fd895271c573f01a35353f",
-    "operations": "3fbe4f151c19d0e83d0afda874f008a3fdab07ce"
+    "operations": "current protected Operations main revision is read from GitHub live state; exact SHA is retained in the protected Operations sync state"
   },
   "runtime_pins": {
     "foundation_runtime": null,
@@ -62,7 +62,7 @@
     "feed_recovery": "QUALIFICATION COMPLETE: verified feeds retained; blocked/unverified targets are not misclassified.",
     "d1_schema": "verified_live_2026-09-29",
     "production_signing_root": "provisioned_live_2026-09-29",
-    "production_runtime": "Foundation main advanced after PR #1573; current Cloudflare public edge provenance remains separately recorded and no current-main production acceptance is inferred.",
+    "production_runtime": "Foundation main advanced after PR #1573; production/runtime provenance is maintained separately from the public snapshot.",
     "post_release_dispatch": "live nightly research uses typed GitHub workflow inputs; production smoke and research preflight preserve purpose-scoped Operations pins",
     "post_release_provider_proof": "Current production certification is pending the release-triggered research run after PR #1573",
     "provider_diagnostic_status": "Foundation PR #1562 fixes the dedicated provider_runtime_verify health calculation so a valid Operations {ok:true,runtime_checks:[...]} receipt is returned as HTTP 200 without requiring the generic chatbot.allowed field.",
@@ -112,7 +112,7 @@
         1349
       ]
     },
-    "production_operations_pin": "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676",
+    "production_operations_pin": "exact production Operations revision retained in the protected Operations sync state; omitted from public Foundation snapshot",
     "cloudflare_public_worker_provenance": "github:64b8bc2c9e3704610a8718483371991f9970dab9",
     "workflow_authority_repair_merged": 1568,
     "workflow_authority_followup": 1575,
