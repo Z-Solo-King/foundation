@@ -310,7 +310,7 @@
     "PR -> required CI -> release -> runtime receipt"
   ],
   "audit_system": "docs/AI_AUDIT_SYSTEM.md",
-  "source_head_at_generation": "39101d004e674bfb776a3a66907713f661746356",
+  "source_head_at_generation": "1238e2b2b56d7a90deda95145403f5cbff0d91fd",
   "map_intent": {
     "primary_goal": "Make the repository fast and token-efficient for both humans and AI by resolving architecture, ownership, connections, credentials, languages, functions, policies and evidence before deep source retrieval.",
     "navigation_order": [
@@ -1010,8 +1010,8 @@
     }
   },
   "live_synchronization": {
-    "checked_at": "2026-09-30T21:00:00+05:30",
-    "foundation_main": "39101d004e674bfb776a3a66907713f661746356",
+    "checked_at": "2026-09-30T21:22:00+05:30",
+    "foundation_main": "1238e2b2b56d7a90deda95145403f5cbff0d91fd",
     "foundation_open_issue_count": 4,
     "foundation_open_issues": [
       58,
@@ -1019,11 +1019,12 @@
       1247,
       1249
     ],
-    "foundation_open_pr_count": 1,
+    "foundation_open_pr_count": 2,
     "foundation_open_prs": [
-      1623
+      1623,
+      1626
     ],
-    "operations_main": "b2f6b9d092a50d46c601bf31f52e012e6b5023a2",
+    "operations_main": "be3e07150c3cb5aa155ecac66ac0a52e9732f107",
     "operations_open_issue_count": 2,
     "operations_open_issues": [
       597,
