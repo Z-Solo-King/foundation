@@ -182,22 +182,37 @@ async def current_probe(root: str, candidates: list[str]) -> dict:
 
 async def run_target(name: str, root: str, sem: asyncio.Semaphore) -> dict:
     async with sem:
-        base = await MODULE.probe_site(name, root)
+        import httpx
+        direct_status = 0
+        direct_html = ""
+        direct_slugs: list[str] = []
+        direct_namespaces: list[str] = []
+        challenge = False
+        try:
+            async with httpx.AsyncClient(
+                headers={"User-Agent": "Mozilla/5.0 (compatible; WooCommerceHistoricalRefine/2026.09)"},
+                timeout=15,
+                follow_redirects=True,
+            ) as client:
+                rr = await client.get(root)
+                direct_status = rr.status_code
+                direct_html = rr.text[:500_000] if rr.status_code == 200 else ""
+                challenge = MODULE.is_challenge(rr.status_code, rr.text[:15000])
+                direct_slugs = plugin_slugs(rr.text)
+                direct_namespaces = MODULE.parse_namespaces(rr.text)
+        except Exception:
+            pass
+
         hist = await fetch_snapshots(root)
-        recovered = set(base.get("explicit_feed_candidates") or [])
-        recovered.update(base.get("query_feed_candidates") or [])
         historical_urls = set()
-        historical_slugs = set(base.get("plugin_asset_slugs") or [])
-        historical_namespaces = set(base.get("namespaces") or [])
+        historical_slugs = set(direct_slugs)
+        historical_namespaces = set(direct_namespaces)
         historical_family_hits: dict[str, set[str]] = {}
         for snap in hist["snapshots"]:
             txt = snap["text"]
-            for u in discover_urls(txt, root):
-                historical_urls.add(u)
-            for s in plugin_slugs(txt):
-                historical_slugs.add(s)
-            ns = MODULE.parse_namespaces(txt)
-            historical_namespaces.update(ns)
+            historical_urls.update(discover_urls(txt, root))
+            historical_slugs.update(plugin_slugs(txt))
+            historical_namespaces.update(MODULE.parse_namespaces(txt))
             for fam, values in plugin_families(list(historical_slugs), txt).items():
                 historical_family_hits.setdefault(fam, set()).update(values)
 
@@ -207,42 +222,46 @@ async def run_target(name: str, root: str, sem: asyncio.Semaphore) -> dict:
         }
 
         combined_families = MODULE.find_plugin_hits(
-            [json.dumps(base.get("xhr_urls") or []), "\n".join(s["text"] for s in hist["snapshots"][:12])],
+            [direct_html] + [s["text"] for s in hist["snapshots"][:12]],
             sorted(historical_slugs),
             sorted(historical_namespaces),
         )
         for fam, hits in historical_family_hits.items():
             combined_families.setdefault(fam, [])
             combined_families[fam] = sorted(set(combined_families[fam]) | set(hits))
+
         top_family = None
         top_confidence = "low"
         if combined_families:
-            top_family = sorted(combined_families, key=lambda k: (-len(combined_families[k]), k))[0]
-            current_families = MODULE.find_plugin_hits(
-                [json.dumps(base.get("xhr_urls") or [])],
-                base.get("plugin_asset_slugs") or [],
-                base.get("namespaces") or [],
+            top_family = sorted(
+                combined_families,
+                key=lambda k: (-len(combined_families[k]), k),
+            )[0]
+            current_family_hits = MODULE.find_plugin_hits(
+                [direct_html],
+                direct_slugs,
+                direct_namespaces,
             )
-            if top_family in current_families:
-                top_confidence = MODULE.plugin_family_confidence(
-                    current_families,
-                    base.get("plugin_asset_slugs") or [],
-                    base.get("namespaces") or [],
+            top_confidence = (
+                MODULE.plugin_family_confidence(
+                    current_family_hits,
+                    direct_slugs,
+                    direct_namespaces,
                 )
-            else:
-                top_confidence = "low"
+                if top_family in current_family_hits else "low"
+            )
 
         result = {
             "site": name,
             "url": root,
-            "baseline_family": base.get("family"),
-            "baseline_family_confidence": base.get("family_confidence"),
-            "refined_family": top_family or base.get("family"),
-            "refined_family_confidence": top_confidence if top_family else base.get("family_confidence"),
-            "baseline_native_verified": bool((base.get("native_feed") or {}).get("verified")),
+            "baseline_family": "unknown_woocommerce",
+            "baseline_family_confidence": "low",
+            "refined_family": top_family or "unknown_woocommerce",
+            "refined_family_confidence": top_confidence,
+            "baseline_native_verified": False,
             "historical_native_verified": bool(current_feed.get("verified")),
-            "native_feed": current_feed if current_feed.get("verified") else (base.get("native_feed") or {}),
-            "baseline_candidate_count": base.get("candidate_count"),
+            "native_feed": current_feed,
+            "baseline_candidate_count": 0,
             "historical_candidate_count": len(historical_urls),
             "historical_snapshot_count": hist["snapshot_count"],
             "historical_plugin_slugs": sorted(historical_slugs)[:120],
@@ -250,14 +269,13 @@ async def run_target(name: str, root: str, sem: asyncio.Semaphore) -> dict:
             "historical_family_hits": {k: sorted(v)[:30] for k, v in sorted(historical_family_hits.items())},
             "historical_feed_candidates": sorted(historical_urls)[:120],
             "historical_tried": (current_feed.get("tried") or [])[:100],
-            "browser": base.get("browser") or [],
-            "challenge_encountered": bool(base.get("challenge_encountered")),
+            "browser": [],
+            "challenge_encountered": challenge,
+            "direct_status": direct_status,
             "feed_transport": "standalone_xml_candidate_probe",
-            "elapsed_s": base.get("elapsed_s"),
         }
         print(json.dumps({
             "site": name,
-            "baseline_family": result["baseline_family"],
             "refined_family": result["refined_family"],
             "refined_confidence": result["refined_family_confidence"],
             "historical_snapshots": result["historical_snapshot_count"],
