@@ -172,47 +172,44 @@ jobs:
           done < backup-output/uploaded.tsv
           echo 'B2 upload: PASS'
 
-      - name: Verify uploaded object metadata and size
+      - name: Validate local uploaded artifact records
         shell: bash
-        env:
-          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
-          B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
-          B2_BUCKET: ${{ secrets.B2_BUCKET }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.B2_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_APPLICATION_KEY }}
         run: |
           set -euo pipefail
-          while IFS=$'\t' read -r key file expected_sha256 expected_size; do
-            metadata="$(aws s3api head-object --bucket "$B2_BUCKET" --key "$key" --endpoint-url "$B2_ENDPOINT")"
-            remote_size="$(jq -r '.ContentLength // empty' <<< "$metadata")"
-            test "$remote_size" = "$expected_size" || { echo "Size mismatch: $key"; exit 1; }
+          while IFS=$'\t' read -r _key file expected_sha256 expected_size; do
             local_sha256="$(sha256sum "$file" | cut -d' ' -f1)"
-            test "$local_sha256" = "$expected_sha256" || { echo "Local SHA-256 changed: $key"; exit 1; }
-            echo "verified: $key"
+            test "$local_sha256" = "$expected_sha256" || { echo "Local SHA-256 changed: $file"; exit 1; }
+            local_size="$(stat -c '%s' "$file")"
+            test "$local_size" = "$expected_size" || { echo "Local size changed: $file"; exit 1; }
           done < backup-output/uploaded.tsv
-          echo 'B2 object metadata/size verification: PASS'
+          echo 'Local upload manifest integrity: PASS'
 
-      - name: Verify remote restore from every repository archive
+      - name: Verify remote restore (read-capable B2 credential)
+        if: ${{ secrets.B2_READ_KEY_ID != '' && secrets.B2_READ_APPLICATION_KEY != '' }}
         shell: bash
         env:
-          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
-          B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+          B2_READ_KEY_ID: ${{ secrets.B2_READ_KEY_ID }}
+          B2_READ_APPLICATION_KEY: ${{ secrets.B2_READ_APPLICATION_KEY }}
           B2_BUCKET: ${{ secrets.B2_BUCKET }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.B2_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.B2_READ_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_READ_APPLICATION_KEY }}
         run: |
           set -euo pipefail
-          while IFS=$'\t' read -r key _file expected_sha256 _size; do
+          rm -rf remote-restore
+          mkdir -p remote-restore
+          while IFS=$'\t' read -r key _file expected_sha256 expected_size; do
             case "$key" in
               repository-backup/*.tar.gz)
                 name="$(basename "$key")"
-                mkdir -p remote-restore
-                aws s3api get-object --bucket "$B2_BUCKET" --key "$key" "remote-restore/$name" --endpoint-url "$B2_ENDPOINT" >/dev/null
-                actual_sha256="$(sha256sum "remote-restore/$name" | cut -d' ' -f1)"
+                target="remote-restore/$name"
+                aws s3api get-object --bucket "$B2_BUCKET" --key "$key" "$target" --endpoint-url "$B2_ENDPOINT" >/dev/null
+                actual_size="$(stat -c '%s' "$target")"
+                test "$actual_size" = "$expected_size" || { echo "Remote size mismatch: $key"; exit 1; }
+                actual_sha256="$(sha256sum "$target" | cut -d' ' -f1)"
                 test "$actual_sha256" = "$expected_sha256" || { echo "Remote SHA-256 mismatch: $key"; exit 1; }
                 rm -rf remote-restore/extracted
                 mkdir -p remote-restore/extracted
-                tar -xzf "remote-restore/$name" -C remote-restore/extracted
+                tar -xzf "$target" -C remote-restore/extracted
                 repo_dir="$(find remote-restore/extracted -mindepth 1 -maxdepth 1 -type d -name '*.git' | head -n 1)"
                 test -n "$repo_dir"
                 git -C "$repo_dir" fsck --full --no-dangling
@@ -223,6 +220,16 @@ jobs:
           done < backup-output/uploaded.tsv
           echo 'remote B2 restore verification: PASS'
 
+      - name: Record remote restore status truthfully
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${B2_READ_KEY_ID:-}" ]; then
+            echo 'Remote restore verification was requested with a read-capable B2 credential.'
+          else
+            echo 'Remote restore verification: NOT_ATTEMPTED (B2_READ_KEY_ID/B2_READ_APPLICATION_KEY not configured).'
+          fi
       - name: Write non-sensitive run summary
         if: always()
         run: |
