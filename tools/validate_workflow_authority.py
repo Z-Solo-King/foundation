@@ -11,23 +11,33 @@ WORKFLOWS=ROOT/".github"/"workflows"
 
 def _events(text:str)->set[str]:
     return {
-        name for name in ("pull_request","pull_request_target","push","schedule","workflow_dispatch")
+        name for name in ("pull_request","pull_request_target","push","schedule","workflow_dispatch","merge_group","workflow_run")
         if re.search(rf"(?m)^\s{{0,2}}{name}\s*:", text)
     }
 
 def _push_branches(text:str)->list[str]:
-    head=text.split("jobs:",1)[0]
-    m=re.search(r"(?ms)^\s{2}push:\s*\n(.*?)(?=^\s{2}[A-Za-z0-9_.-]+:|^jobs:)",head)
-    if not m:
-        return []
-    block=m.group(1)
-    inline=re.search(r"(?m)^\s{4}branches:\s*\[([^\]]+)\]",block)
-    if inline:
-        return [v.strip().strip("'\\\"") for v in inline.group(1).split(",") if v.strip()]
-    bm=re.search(r"(?ms)^\s{4}branches:\s*\n(.*?)(?=^\s{4}[A-Za-z0-9_.-]+:|\Z)",block)
-    if not bm:
-        return []
-    return re.findall(r"(?m)^\s{6}-\s*['\\\"]?([^'\\\"\s]+)",bm.group(1))
+    lines=text.splitlines()
+    for index,line in enumerate(lines):
+        if line.strip() != "push:":
+            continue
+        push_indent=len(line)-len(line.lstrip())
+        block=[]
+        for child in lines[index+1:]:
+            stripped=child.strip()
+            if not stripped:
+                block.append(child)
+                continue
+            indent=len(child)-len(child.lstrip())
+            if indent <= push_indent:
+                break
+            block.append(child)
+        block_text="\n".join(block)
+        inline=re.search(r"(?m)^\s*branches:\s*\[([^\]]+)\]",block_text)
+        if inline:
+            return [v.strip().strip("'\\\"") for v in inline.group(1).split(",") if v.strip()]
+        listed=re.findall(r"(?m)^\s*-\s*['\\\"]?([^'\\\"\s]+)",block_text)
+        return listed
+    return []
 
 def workflow_paths():
     return sorted(WORKFLOWS.glob("*.yml"))+sorted(WORKFLOWS.glob("*.yaml"))
@@ -51,10 +61,21 @@ def validate()->list[str]:
         if rel in feed and any(m in text for m in markers):
             errors.append(f"{rel}: public feed workflow contains a privileged marker")
         if is_priv and events & forbidden:
-            errors.append(f"{rel}: privileged workflow has forbidden PR trigger: {sorted(events & forbidden)}")
+            errors.append(f"{rel}: privileged workflow has forbidden untrusted trigger: {sorted(events & forbidden)}")
         branches=_push_branches(text)
-        if is_priv and "push" in events and branches and branches != [reg["policy"]["privileged_push_branch"]]:
-            errors.append(f"{rel}: privileged push must be main-only, found {branches}")
+        if is_priv and "push" in events and branches != [reg["policy"]["privileged_push_branch"]]:
+            errors.append(f"{rel}: privileged push must be main-only, found {branches or ['<unrestricted>']}")
+        if is_priv and "workflow_run" in events:
+            expected_sources=reg["policy"].get("trusted_workflow_run_sources", {}).get(rel)
+            if not expected_sources:
+                errors.append(f"{rel}: privileged workflow_run requires explicit trusted upstream registration")
+            else:
+                declared=re.findall(r"(?ms)workflows:\s*\[([^\]]+)\]", text)
+                names=[]
+                for block in declared:
+                    names.extend(re.findall(r"""['"]([^'"]+)['"]""", block))
+                if sorted(set(names)) != sorted(set(expected_sources)):
+                    errors.append(f"{rel}: workflow_run source mismatch; declared={sorted(set(names))} expected={sorted(set(expected_sources))}")
         if rel==".github/workflows/sync-secrets.yml":
             if "environment: production-secret-sync" not in text:
                 errors.append(f"{rel}: missing protected environment")
@@ -75,7 +96,7 @@ def validate()->list[str]:
         declared=re.findall(r"(?ms)workflows:\s*\[([^\]]+)\]", text)
         names=[]
         for block in declared:
-            names.extend(re.findall(r"['\"]([^'\"]+)['\"]", block))
+            names.extend(re.findall(r"""['"]([^'"]+)['"]""", block))
         if sorted(set(names)) != sorted(set(sources)):
             errors.append(f"{rel}: workflow_run source mismatch; declared={sorted(set(names))} expected={sorted(set(sources))}")
     return sorted(set(errors))
