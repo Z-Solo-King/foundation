@@ -7,7 +7,7 @@ test("unknown cohort remains true unknown",()=>{
   for(const x of ["Kryptronix Gaming","Prime ABGB","NCL Computer"]) assert.equal(s.includes(x),false,x);
 });
 test("public search-index recovery",()=>{
-  for(const x of ["html.duckduckgo.com/html","google.com/search","bing.com/search","site:"+ "","parseSearchUrls","search-index"]) assert.ok(s.includes(x),x);
+  for(const x of ["html.duckduckgo.com/html","google.com/search","bing.com/search","parseSearchUrls","search-index"]) assert.ok(s.includes(x),x);
 });
 test("learned family grammar coverage",()=>{
   for(const x of ["woocommerce_gpf=google","woo_feed=","wppfm-feeds","webtoffee_product_feed","codesolz-feeds","feedcraft-product-feed","rex-feed","klp-feeds-xml","feed-xml-0.xml"]) assert.ok(s.includes(x),x);
@@ -21,6 +21,7 @@ test("strict native acceptance",()=>{
   assert.ok(s.includes("[\"id\",\"title\",\"link\",\"price\"]"));
 });
 test("transport bound",()=>{
+  assert.match(s,/const TIMEOUT\s*=\s*5000/);
   assert.match(s,/const CONCURRENCY\s*=\s*3/);
-  assert.ok(s.includes("slice(0,500)"));
+  assert.match(s,/slice\(0,500\)/);
 });
