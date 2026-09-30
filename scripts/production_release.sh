@@ -216,7 +216,7 @@ if [ -z "${B2_BUCKET:-}" ] || [ -z "${B2_ENDPOINT:-}" ]; then
   echo "B2 release configuration: PASS (source=$settings_worker)"
 fi
 
-# Canonical runtime boundary checks. The public application is Pages -> heroic (JavaScript edge) -> heroic-core (Python) -> operations-edge (JavaScript) -> operations;
+# Canonical runtime boundary checks. The public application is Pages -> heroic (TypeScript edge) -> heroic-core (Python) -> operations-edge (JavaScript) -> operations;
 # no legacy foundation Worker, custom Worker domain, or workers.dev public backend should exist.
 heroic_subdomain_status=$(curl -sS -o "$RUNNER_TEMP/heroic-subdomain.json" -w '%{http_code}' \
   -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
@@ -452,7 +452,7 @@ PY
 (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config" --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:bootstrap-${ACCEPTANCE_RUN_ID}")
 echo "Operations binding-free bootstrap deployment: PASS"
 
-# Deploy the migrated JavaScript edge Worker before Foundation so the public OPERATIONS binding
+# Deploy the TypeScript edge Worker before Foundation so the public OPERATIONS binding
 # targets the new edge transport boundary. The edge Worker calls the Python core privately.
 (cd "$RUNNER_TEMP/operations/polyglot/edge-worker" && npx --yes wrangler@4.131.1 deploy --config wrangler.toml --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:edge-${ACCEPTANCE_RUN_ID}")
 edge_deployments_status=$(curl -sS -o "$RUNNER_TEMP/edge-worker-deployments.json" -w '%{http_code}' \
@@ -486,12 +486,11 @@ printf '%s\n' \
 # D1 migration call when the repository schema content differs from that verified production set.
 D1_MIGRATIONS_FINGERPRINT="b4b3362c78a4231bd256702826089812211d02f20f7771906990114f8614c9d7"
 current_d1_migrations_fingerprint="$(
-  find "$GITHUB_WORKSPACE/migrations" -type f -name '*.sql' -print0 |
-    sort -z |
-    while IFS= read -r -d '' file; do
-      digest="$(sha256sum "$file" | awk '{print $1}')"
-      printf '%s\t%s\n' "${file#"$GITHUB_WORKSPACE/migrations/"}" "$digest"
-    done |
+  for file in "$GITHUB_WORKSPACE"/migrations/*.sql; do
+    digest="$(sha256sum "$file" | awk '{print $1}')"
+    printf '%s\t%s\n' "${file#"$GITHUB_WORKSPACE/"}" "$digest"
+  done |
+    LC_ALL=C sort |
     sha256sum | awk '{print $1}'
 )"
 if [ "$current_d1_migrations_fingerprint" = "$D1_MIGRATIONS_FINGERPRINT" ]; then
@@ -503,7 +502,7 @@ fi
 
 # Pywrangler performs Python-project validation against the project's default Wrangler config.
 # Temporarily make the generated Python-core config the project-default config, then restore
-# the JavaScript edge config before its own deployment. This avoids a false
+# the TypeScript edge config before its own deployment. This avoids a false
 # "python_workers compat flag not specified" rejection while keeping both deployment
 # configs explicit for their respective Worker.
 python_core_default_backup="$RUNNER_TEMP/foundation-js-wrangler.toml"
