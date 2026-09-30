@@ -1,0 +1,226 @@
+name: WooCommerce 22 V175 Plugin Extraction + XML Hunt
+
+on:
+  push:
+    branches: [hunt/native-google-feed-urls-20260927]
+    paths:
+      - tools/feed-lab/woocommerce_22_plugin_extract_v175.py
+      - tools/feed-lab/woocommerce_31_group_xml_guess.mjs
+      - .github/workflows/native-google-feed-unknown-v175.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    name: "V175 plugin extraction — ${{ matrix.id }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        include:
+          - {id: aula-india, site: AULA India, root: https://aulaindia.com}
+          - {id: aarna-computers, site: Aarna Computers, root: https://aarnacomputers.com}
+          - {id: ads-store, site: Ads Store, root: https://adsstore.in}
+          - {id: cosmic-byte, site: Cosmic Byte, root: https://www.thecosmicbyte.com}
+          - {id: ezpz-solutions, site: EZPZ Solutions, root: https://www.ezpzsolutions.in}
+          - {id: kc-computers, site: KC Computers, root: https://kccomputers.co.in}
+          - {id: krg-kart, site: KRG KART, root: https://krgkart.com}
+          - {id: kryptronix-gaming, site: Kryptronix Gaming, root: https://kryptronix.in}
+          - {id: meckeys, site: Meckeys, root: https://www.meckeys.com}
+          - {id: moskeys, site: Moskeys, root: https://moskeys.com}
+          - {id: ncl-computer, site: NCL Computer, root: https://nclcomputer.com}
+          - {id: pc-kumar-infotech, site: PC Kumar Infotech, root: https://pckumar.in}
+          - {id: pchubshop, site: PCHubShop, root: https://www.pchubshop.com}
+          - {id: prime-abgb, site: Prime ABGB, root: https://www.primeabgb.com}
+          - {id: scl-gaming, site: SCL Gaming, root: https://sclgaming.in}
+          - {id: stackskb, site: StacksKB, root: https://stackskb.com}
+          - {id: theproaudio, site: Theproaudio, root: https://www.theproaudio.com}
+          - {id: variety-infotech, site: Variety Infotech, root: https://varietyinfotech.com}
+          - {id: viper-pc, site: Viper PC, root: https://viperpc.in}
+          - {id: hotshiftpc, site: hotshiftpc, root: https://hotshiftpc.com}
+          - {id: itgadgetsonline, site: itgadgetsonline, root: https://itgadgetsonline.com}
+          - {id: ithunt, site: ithunt, root: https://ithunt.in}
+    env:
+      SITE_NAME: ${{ matrix.site }}
+      SITE_ROOT: ${{ matrix.root }}
+      OUT_DIR: out/${{ matrix.id }}
+      SITE_TIMEOUT: "240"
+      BROWSER_CONCURRENCY: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install Playwright
+        run: |
+          python -m pip install --disable-pip-version-check -q playwright
+          python -m playwright install chromium
+      - name: Run V175 plugin extraction
+        run: python tools/feed-lab/woocommerce_22_plugin_extract_v175.py
+      - name: Upload site evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce22-v175-${{ matrix.id }}
+          path: out/${{ matrix.id }}/
+          retention-days: 14
+
+  aggregate:
+    needs: extract
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: woocommerce22-v175-*
+          path: out/recovery
+          merge-multiple: false
+      - name: Aggregate plugin evidence
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib
+          root=pathlib.Path("out/recovery")
+          rows=[]
+          for p in sorted(root.glob("**/aggregate.json")):
+              rows.extend(json.loads(p.read_text()).get("results", []))
+          expected={
+            "AULA India","Aarna Computers","Ads Store","Cosmic Byte","EZPZ Solutions","KC Computers",
+            "KRG KART","Kryptronix Gaming","Meckeys","Moskeys","NCL Computer","PC Kumar Infotech",
+            "PCHubShop","Prime ABGB","SCL Gaming","StacksKB","Theproaudio","Variety Infotech",
+            "Viper PC","hotshiftpc","itgadgetsonline","ithunt"
+          }
+          by={r.get("site"):r for r in rows}
+          missing=sorted(expected-set(by))
+          if missing:
+              raise SystemExit("missing sites: "+", ".join(missing))
+          rows=sorted((by[s] for s in expected), key=lambda r:r["site"].lower())
+          groups={}
+          for r in rows:
+              fams=r.get("feed_family_signals",[])
+              primary=fams[0]["family"] if fams else "unknown_woocommerce"
+              groups.setdefault(primary,[]).append(r["site"])
+          out={"schema_version":"woocommerce-22-v175-plugin-extraction-aggregate/v1",
+               "source_extractor_version":"V175","site_count":len(rows),
+               "groups":{k:sorted(v) for k,v in sorted(groups.items())},"sites":rows}
+          pathlib.Path("out/groups-matrix.json").write_text(json.dumps(out,indent=2)+"\n")
+          pathlib.Path("out/aggregate.json").write_text(json.dumps(out,indent=2)+"\n")
+          print(json.dumps({"site_count":len(rows),"groups":out["groups"]},indent=2))
+          PY
+      - name: Upload aggregate matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce22-v175-aggregate
+          path: out/
+          retention-days: 14
+
+  xml:
+    needs: aggregate
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        group: [unknown_woocommerce, ctx_feed_webappick, adtribes_product_feed_pro, woocommerce_google_product_feed, webtoffee_product_feed, wpfm_product_feed_manager, codesolz_feed, feedcraft, google_for_woocommerce]
+    env:
+      GROUP: ${{ matrix.group }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: woocommerce22-v175-aggregate
+          path: out
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Determine group population
+        id: population
+        run: |
+          python - <<'PY'
+          import json,os
+          d=json.load(open("out/groups-matrix.json"))
+          n=len(d["groups"].get(os.environ["GROUP"],[]))
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f:
+              f.write(f"count={n}\n")
+          print("population",n)
+          PY
+      - name: Probe XML candidates
+        if: steps.population.outputs.count != '0'
+        run: |
+          node tools/feed-lab/woocommerce_31_group_xml_guess.mjs \
+            --group "${{ matrix.group }}" \
+            --input out/groups-matrix.json \
+            --out "out/xml/${{ matrix.group }}"
+      - name: Record empty group
+        if: steps.population.outputs.count == '0'
+        run: |
+          mkdir -p "out/xml/${{ matrix.group }}"
+          printf '{"group":"${{ matrix.group }}","site_count":0,"status":"SKIPPED_NO_SITES"}\n' > "out/xml/${{ matrix.group }}/group-result.json"
+      - name: Upload XML evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce22-v175-xml-${{ matrix.group }}
+          path: out/xml/${{ matrix.group }}/
+          retention-days: 14
+
+  final:
+    needs: [aggregate, xml]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: woocommerce22-v175-aggregate
+          path: out/aggregate
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: woocommerce22-v175-xml-*
+          path: out/xml
+          merge-multiple: false
+      - name: Build final receipt
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib
+          agg=json.loads(pathlib.Path("out/aggregate/groups-matrix.json").read_text())
+          results=[]
+          for p in sorted(pathlib.Path("out/xml").glob("**/group-result.json")):
+              results.append(json.loads(p.read_text()))
+          hits=[]
+          for g in results:
+              for s in g.get("results",[]):
+                  for h in s.get("candidate_hits",[]):
+                      hits.append({"site":s["site"],"group":s["group"],"hit":h})
+          report={"schema_version":"woocommerce-22-v175-final-result/v1","source_extractor_version":"V175",
+                  "site_count":agg["site_count"],"groups":agg["groups"],"xml_group_results":results,
+                  "native_feed_hits":hits}
+          pathlib.Path("out/final-result.json").write_text(json.dumps(report,indent=2)+"\n")
+          lines=["# WooCommerce 22 V175 final plugin/XML result","","## Plugin groups"]
+          for g,sites in agg["groups"].items():
+              lines.append(f"- {g}: {len(sites)} — {', '.join(sites)}")
+          lines += ["","## Native XML hits"]
+          if hits:
+              for h in hits:
+                  lines.append(f"- {h['site']} — {h['group']} — {h['hit']['url']}")
+          else:
+              lines.append("- None verified by the strict Google Merchant XML validator.")
+          pathlib.Path("out/final-result.md").write_text("\n".join(lines)+"\n")
+          print(json.dumps({"site_count":agg["site_count"],"native_feed_hits":len(hits)},indent=2))
+          PY
+      - name: Upload final result
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce22-v175-final
+          path: out/
+          retention-days: 14
