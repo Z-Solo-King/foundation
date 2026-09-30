@@ -480,23 +480,24 @@ printf '%s\n' \
   'migrations_dir = "migrations"' \
   > "$d1_migrations_config"
 
-# D1 free-tier enforcement is account-wide. Do not issue a remote D1 migration query
-# when the currently deployed heroic-core already carries the exact immutable Operations
-# revision being released. A real Operations revision change still runs migrations.
-current_core_settings="$RUNNER_TEMP/current-heroic-core-settings.json"
-current_core_settings_status=$(curl -sS -o "$current_core_settings" -w '%{http_code}' \
-  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
-  "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/${PYTHON_CORE_WORKER_NAME}/settings" || true)
-test "$current_core_settings_status" = '200' || {
-  echo "Current heroic-core settings lookup failed: HTTP $current_core_settings_status"
-  cat "$current_core_settings" 2>/dev/null || true
-  exit 1
-}
-current_operations_ref="$(jq -r '.result.bindings[]? | select(.name == "RELEASE_OPERATIONS_REF" and .type == "plain_text") | .text' "$current_core_settings" | head -n1)"
-if [ -n "$current_operations_ref" ] && [ "$current_operations_ref" = "$OPERATIONS_REF" ]; then
-  echo "D1 migrations: SKIP (live heroic-core Operations revision already equals target ${OPERATIONS_REF})"
+# D1 free-tier enforcement is account-wide. The database schema is a separate authority
+# from the Operations code revision. The current production database was live-verified with
+# migrations 0001-0010 applied; fingerprint the actual migration files and only issue a remote
+# D1 migration call when the repository schema content differs from that verified production set.
+D1_MIGRATIONS_FINGERPRINT="c7e6662129142532be92181579dd171572252257e3515bb0fd3b68674ea155b0"
+current_d1_migrations_fingerprint="$(
+  find "$GITHUB_WORKSPACE/migrations" -type f -name '*.sql' -print0 |
+    sort -z |
+    while IFS= read -r -d '' file; do
+      digest="$(sha256sum "$file" | awk '{print $1}')"
+      printf '%s\\t%s\\n' "\${file#"$GITHUB_WORKSPACE/migrations/"}" "$digest"
+    done |
+    sha256sum | awk '{print $1}'
+)"
+if [ "$current_d1_migrations_fingerprint" = "$D1_MIGRATIONS_FINGERPRINT" ]; then
+  echo "D1 migrations: SKIP (migration content fingerprint matches last live-verified production schema ${D1_MIGRATIONS_FINGERPRINT})"
 else
-  echo "D1 migrations: APPLY (live Operations revision differs or is unavailable)"
+  echo "D1 migrations: APPLY (migration content fingerprint differs from last live-verified production schema)"
   npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 migrations apply "$database_name" --remote
 fi
 
