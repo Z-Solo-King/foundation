@@ -6,11 +6,13 @@ on:
     types: [opened, reopened, synchronize]
     paths:
       - "tools/feed-lab/woocommerce_22_plugin_browser_recovery.py"
+      - "tools/feed-lab/woocommerce_31_group_xml_guess.mjs"
       - ".github/workflows/native-google-feed-unknown-browser-recovery.yml"
   push:
     branches: [hunt/native-google-feed-urls-20260927]
     paths:
       - "tools/feed-lab/woocommerce_22_plugin_browser_recovery.py"
+      - "tools/feed-lab/woocommerce_31_group_xml_guess.mjs"
       - ".github/workflows/native-google-feed-unknown-browser-recovery.yml"
   workflow_dispatch:
 
@@ -53,7 +55,7 @@ jobs:
       SITE_NAME: ${{ matrix.site }}
       SITE_ROOT: ${{ matrix.root }}
       OUT_DIR: out/${{ matrix.id }}
-      SITE_TIMEOUT: "180"
+      SITE_TIMEOUT: "120"
       BROWSER_CONCURRENCY: "1"
     steps:
       - uses: actions/checkout@v4
@@ -75,11 +77,13 @@ jobs:
           retention-days: 14
 
   aggregate:
-    name: Aggregate 22-site browser evidence
+    name: Aggregate 22-site browser evidence and groups
     needs: recovery
     if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
+    outputs:
+      groups_matrix: ${{ steps.set_matrix.outputs.groups_matrix }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -87,7 +91,8 @@ jobs:
           pattern: plugin-browser-recovery-*
           path: out/recovery
           merge-multiple: false
-      - name: Aggregate and validate
+      - name: Aggregate browser evidence and derive plugin groups
+        id: aggregate
         shell: bash
         run: |
           set -euo pipefail
@@ -96,22 +101,111 @@ jobs:
           root=pathlib.Path("out/recovery")
           rows=[]
           for p in sorted(root.glob("*/recovery.json")):
-              rows.extend(json.loads(p.read_text()).get("results", []))
+              d=json.loads(p.read_text())
+              rows.extend(d.get("results", []))
           for p in sorted(root.glob("recovery.json")):
-              rows.extend(json.loads(p.read_text()).get("results", []))
+              d=json.loads(p.read_text())
+              rows.extend(d.get("results", []))
           rows=sorted({r.get("site",""):r for r in rows}.values(), key=lambda x:x.get("site","").lower())
-          out={"schema_version":"woocommerce-22-plugin-browser-recovery-aggregate/v1","source_extractor_version":"V175",
-               "site_count":len(rows),"results":rows}
-          pathlib.Path("out/recovery-aggregate.json").write_text(json.dumps(out,indent=2)+"\n")
-          lines=["# 22-site plugin browser recovery","","| Site | Status | Feed family signals | Feed-like assets | Plugin assets |","|---|---|---|---|---:|"]
+          priority=[
+              "woocommerce_google_product_feed","ctx_feed_webappick","adtribes_product_feed_pro",
+              "webtoffee_product_feed","wpfm_product_feed_manager","codesolz_feed","feedcraft",
+              "google_for_woocommerce"
+          ]
+          def browser_primary(r):
+              fams=[x.get("family") for x in r.get("feed_family_signals",[]) if x.get("family")]
+              for g in priority:
+                  if g in fams:
+                      return g
+              return "unknown_woocommerce"
+          groups={}
+          sites=[]
           for r in rows:
-              lines.append(f'| {r.get("site","")} | {r.get("status","")} | {", ".join(x.get("family","") for x in r.get("feed_family_signals",[])) or "none"} | {", ".join(r.get("feed_like_plugin_assets",[])) or "none"} | {len(r.get("plugin_assets",[]))} |')
-          pathlib.Path("out/recovery-aggregate.md").write_text("\n".join(lines)+"\n")
+              g=browser_primary(r)
+              groups.setdefault(g,[]).append(r.get("site"))
+              sites.append({
+                  "site":r.get("site"), "configured_root":r.get("configured_root"),
+                  "selected_origin":r.get("selected_origin"),
+                  "primary_group":g, "status":r.get("status"),
+                  "feed_like_plugin_assets":r.get("feed_like_plugin_assets",[]),
+                  "feed_family_signals":r.get("feed_family_signals",[]),
+                  "identity_tokens":r.get("identity_tokens",[]),
+                  "plugin_assets":r.get("plugin_assets",[]),
+                  "browser_recovery_status":r.get("status"),
+                  "browser_public_api_namespaces":r.get("public_api_namespaces",[]),
+                  "browser_page_recovery":r.get("public_page_recovery",[])
+              })
+          for k in groups: groups[k]=sorted(groups[k])
+          out={
+              "schema_version":"woocommerce-22-browser-plugin-groups/v1",
+              "source_extractor_version":"V175",
+              "site_count":len(rows),
+              "grouping":"browser-visible strong feed-family signal > unknown_woocommerce",
+              "groups":groups,"sites":sorted(sites,key=lambda x:x["site"].lower())
+          }
+          pathlib.Path("out/recovery-aggregate.json").write_text(json.dumps({
+              "schema_version":"woocommerce-22-plugin-browser-recovery-aggregate/v2",
+              "source_extractor_version":"V175","site_count":len(rows),"results":rows
+          },indent=2)+"\n")
+          pathlib.Path("out/plugin-groups.json").write_text(json.dumps(out,indent=2)+"\n")
+          pathlib.Path("out/groups-matrix.json").write_text(json.dumps(sorted(groups))+"\n")
+          lines=[
+              "# 22-site plugin browser recovery and groups","","| Site | Group | Status | Feed family signals | Feed-like assets |",
+              "|---|---|---|---|---|"
+          ]
+          for s in out["sites"]:
+              lines.append(
+                  f'| {s["site"]} | {s["primary_group"]} | {s["status"]} | '
+                  f'{", ".join(x.get("family","") for x in s["feed_family_signals"]) or "none"} | '
+                  f'{", ".join(s["feed_like_plugin_assets"]) or "none"} |'
+              )
+          pathlib.Path("out/plugin-groups.md").write_text("\n".join(lines)+"\n")
           assert len(rows)==22, f"expected 22 site rows, got {len(rows)}"
+          print(json.dumps({"site_count":len(rows),"groups":groups},indent=2))
           PY
-      - name: Upload aggregate evidence
+      - id: set_matrix
+        name: Expose group matrix
+        shell: bash
+        run: |
+          {
+            echo 'groups_matrix<<EOF'
+            cat out/groups-matrix.json
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+      - name: Upload grouped browser evidence
         uses: actions/upload-artifact@v4
         with:
           name: woocommerce22-plugin-browser-recovery-aggregate
           path: out/
+          retention-days: 14
+
+  guess:
+    name: "XML guess — browser group ${{ matrix.group }}"
+    needs: aggregate
+    if: always() && needs.aggregate.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        group: ${{ fromJSON(needs.aggregate.outputs.groups_matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: woocommerce22-plugin-browser-recovery-aggregate
+          path: out/plugin-data
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Guess documented XML feed URLs
+        run: |
+          set -euo pipefail
+          node tools/feed-lab/woocommerce_31_group_xml_guess.mjs             --group "${{ matrix.group }}"             --input out/plugin-data/plugin-groups.json             --out "out/group-guess/${{ matrix.group }}"
+      - name: Upload browser-group XML evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-xml-guess-${{ matrix.group }}
+          path: out/group-guess/
           retention-days: 14
