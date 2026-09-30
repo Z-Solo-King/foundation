@@ -203,8 +203,8 @@ async function inspect(name,root){
     }
   }
   const wcRoutes=endpoints.filter(x=>/^wc-v[123]|^rest-wc-v[123]/.test(x.endpoint));
-  const browserPluginUrls=b.pluginResourceUrls.slice(0,100);
-  const browserRestUrls=b.restResourceUrls.slice(0,100);
+  const browserPluginUrls=(b.pluginResourceUrls||[]).slice(0,100);
+  const browserRestUrls=(b.restResourceUrls||[]).slice(0,100);
   const feedLike=plugins.map(x=>x.slug).filter(x=>/(feed|merchant|product-feed|google-product-feed)/i.test(x))
     .filter(x=>!/^(instagram-feed|facebook-for-woocommerce|feedzy-rss-feeds|advanced-ads)$/.test(x));
   return {
