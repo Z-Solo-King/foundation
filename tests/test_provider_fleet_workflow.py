@@ -31,6 +31,8 @@ def test_provider_fleet_workflow_uses_immutable_private_probe() -> None:
     assert "secrets.COHERE_API_KEY" in text
     assert "secrets.CEREBRAS_API_KEY" in text
     assert "secrets.SILICONFLOW_API_KEY" in text
+    assert "secrets.CEREBRAS_API_KEY" in text
+    assert "secrets.SILICONFLOW_API_KEY" in text
     assert "nvidia_nim" in text
     assert "huggingface_free" in text
     assert "cohere_free" in text
@@ -52,9 +54,9 @@ def test_provider_fleet_workflow_has_concurrency_and_bounded_schedule() -> None:
     assert "cancel-in-progress: true" in text
 
 
-def test_provider_fleet_workflow_exposes_only_the_six_active_external_provider_inputs() -> None:
+def test_provider_fleet_workflow_exposes_only_the_eight_active_external_provider_inputs() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     for name in ("PROVIDER_KEYS_JSON", "NVIDIA_NIM_API_KEY", "HF_TOKEN", "COHERE_API_KEY"):
         assert name in text
     assert '{"groq","gemini","cerebras","openrouter_free","siliconflow","mistral_free"}' not in text
-    assert '{"openrouter_free","groq","gemini","nvidia_nim","cohere_free","huggingface_free"}' in text
+    assert '{"openrouter_free","groq","gemini","cerebras","nvidia_nim","cohere_free","huggingface_free","siliconflow"}' in text
