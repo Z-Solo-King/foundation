@@ -2,7 +2,7 @@
   "schema_version": "ai-project-map/v2",
   "repository": "Z-Solo-King/foundation",
   "visibility": "public-safe",
-  "generated_at": "2026-09-28",
+  "generated_at": "2026-09-30",
   "structural_inventory": {
     "tree_entries": 657,
     "documentation_files": 109,
@@ -310,7 +310,7 @@
     "PR -> required CI -> release -> runtime receipt"
   ],
   "audit_system": "docs/AI_AUDIT_SYSTEM.md",
-  "source_head_at_generation": "b07827ff9fc295c48af2cf27e3dbcbff80e6472f",
+  "source_head_at_generation": "6adee271c0fffa9dbac5b2af001bb9351f8db9a8",
   "map_intent": {
     "primary_goal": "Make the repository fast and token-efficient for both humans and AI by resolving architecture, ownership, connections, credentials, languages, functions, policies and evidence before deep source retrieval.",
     "navigation_order": [
@@ -952,5 +952,44 @@
         "P07"
       ]
     }
-  ]
+  ],
+  "extractor_mapper_status": {
+    "standalone_repository_status": "retired/deleted",
+    "operations_private_runtime_path": "operations/extractor_mapper/",
+    "public_mapper_authority": "foundation_core.product_mapping / foundation_core.field_routing / foundation_core.product_identity / foundation_core.quality",
+    "operations_private_authority": "acquisition, private extraction, site/platform adapters, orchestration, verification and protected governance",
+    "compatibility_rule": "Operations compatibility facades are not a second semantic authority.",
+    "governance_bridge": ".github/workflows/extractor-surface-governance.yml",
+    "latest_governance_sync": {
+      "operations_pull_requests": [
+        1395,
+        1396
+      ],
+      "foundation_pull_request": 1615,
+      "status": "merged",
+      "evidence": "Foundation bridge checks and security checks passed on the final rebased PR; Operations audit hardening is on current Operations main."
+    }
+  },
+  "live_synchronization": {
+    "checked_at": "2026-09-30T17:40:00+05:30",
+    "foundation_main": "6adee271c0fffa9dbac5b2af001bb9351f8db9a8",
+    "foundation_open_issue_count": 4,
+    "foundation_open_issues": [
+      58,
+      157,
+      1247,
+      1249
+    ],
+    "foundation_open_pr_count": 6,
+    "foundation_open_prs": [
+      1616,
+      1606,
+      1604,
+      1602,
+      1575,
+      1558
+    ],
+    "source": "live GitHub",
+    "note": "Operations-private issue/PR identifiers are not duplicated into the public-safe map; cross-repository private state is consumed live by authorized Foundation workflows."
+  }
 }
