@@ -59,9 +59,9 @@ jobs:
           bash scripts/production_release.sh
 
       - name: Preflight exact nightly runtime before research dispatch
-        if: \${{ steps.production_release.outcome == 'success' }}
+        if: ${{ steps.production_release.outcome == 'success' }}
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
