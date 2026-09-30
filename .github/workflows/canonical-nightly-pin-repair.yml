@@ -38,6 +38,8 @@ jobs:
           APPLY: ${{ inputs.apply }}
           REPO: ${{ github.repository }}
           TARGET_PATH: .github/workflows/nightly-multi-agent-research-v3.yml
+          CONTRACT_PATH_CHAT: private/chatbot/chat_endpoint.py
+          CONTRACT_PATH_LIVE: private/chatbot/live_answer.py
         run: |
           set -euo pipefail
           [[ "$APPLY" == "true" ]] || { echo 'apply=false; refusing mutation.'; exit 0; }
@@ -45,6 +47,21 @@ jobs:
           git switch --create "$branch"
           SOURCE_REF="$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
           test -n "$SOURCE_REF"
+
+          # Newer is not automatically compatible. Validate the exact consumer-side
+          # research contract before changing an immutable runtime pin.
+          for contract_path in "$CONTRACT_PATH_CHAT" "$CONTRACT_PATH_LIVE"; do
+            contract_file="$RUNNER_TEMP/$(basename "$contract_path")"
+            gh api "repos/Z-Solo-King/operations/contents/$contract_path?ref=$SOURCE_REF" --jq '.content' | tr -d '\n' | base64 --decode > "$contract_file"
+            test -s "$contract_file"
+          done
+          grep -Eq 'research_agent[[:space:]]*=[[:space:]]*bool[(]payload[.]get[(]"research_agent", False[)][)]' "$RUNNER_TEMP/chat_endpoint.py"
+          grep -Eq 'research_agent[[:space:]]*=[[:space:]]*research_agent' "$RUNNER_TEMP/chat_endpoint.py"
+          grep -Eq 'def _output_token_limit[(].*research_agent: bool = False' "$RUNNER_TEMP/live_answer.py"
+          grep -Eq 'response_format' "$RUNNER_TEMP/live_answer.py"
+          grep -Eq 'if research_agent' "$RUNNER_TEMP/live_answer.py"
+          echo "candidate Operations revision is compatible with nightly research contract: $SOURCE_REF"
+
           python - "$TARGET_PATH" "$SOURCE_REF" <<'PY'
           import pathlib
           import sys

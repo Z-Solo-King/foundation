@@ -39,7 +39,7 @@ env:
   RESEARCH_LLM_API_KEY: "local-worker-proxy"
   RESEARCH_LLM_MODEL: "@cf/zai-org/glm-4.7-flash"
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_RESEARCH_REF: 9a942b0f8cc601f8d460ed71ccba908fa02e6c75
+  OPERATIONS_RESEARCH_REF: 1a91efa53b9202f1624ddde892b0e86bd6b360f0
   OPERATIONS_MIGRATION_TOOLS_REF: f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791
   NIGHTLY_RESEARCH_CONTRACT: nightly-research-contract/v2
   MAPPER_RUNTIME_EVIDENCE_CONTRACT: mapper-migration-runtime-receipt/v1
