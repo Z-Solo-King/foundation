@@ -58,37 +58,54 @@ jobs:
           test "$GITHUB_EVENT_NAME" != "pull_request_target" || { echo 'Privileged production release cannot run from pull_request_target'; exit 1; }
           bash scripts/production_release.sh
 
-      - name: Dispatch certified post-release validation in parallel
+      - name: Preflight exact nightly runtime before research dispatch
         if: ${{ steps.production_release.outcome == 'success' }}
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          workflows=(
-            "nightly-multi-agent-research-v3.yml"
-            "live-chatbot-production-smoke.yml"
-            "nightly-research-provider-preflight.yml"
-          )
-          pids=()
-          for workflow in "${workflows[@]}"; do
-            if [[ "$workflow" == "nightly-multi-agent-research-v3.yml" ]]; then
-              gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref main \
-                --field dry_run=false \
-                --field target_sha="$GITHUB_SHA" \
-                --field production_release_run_id="$GITHUB_RUN_ID" &
-            else
-              gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref main \
-                --field target_sha="$GITHUB_SHA" \
-                --field production_release_run_id="$GITHUB_RUN_ID" &
+          operations_ref="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          value=json.loads(Path("docs/OPERATIONS_PIN_MANIFEST.json").read_text(encoding="utf-8"))["pins"]["production_runtime"]["sha"]
+          print(value)
+          PY
+          )"
+          printf '%s' "$operations_ref" | grep -Eq '^[0-9a-f]{40}$'
+
+          dispatch_started="$(date +%s)"
+          gh workflow run nightly-research-provider-preflight.yml --repo "$GITHUB_REPOSITORY" --ref main \
+            --field target_sha="$GITHUB_SHA" \
+            --field production_release_run_id="$GITHUB_RUN_ID" \
+            --field operations_research_ref="$operations_ref"
+
+          preflight_run_id=""
+          for _ in $(seq 1 30); do
+            runs_json="$(gh run list --workflow nightly-research-provider-preflight.yml --repo "$GITHUB_REPOSITORY" --limit 20 --json databaseId,createdAt,status,conclusion,headSha,event)"
+            preflight_run_id="$(jq -r --arg sha "$GITHUB_SHA" --argjson started "$dispatch_started" '[.[] | select(.event == "workflow_dispatch" and .headSha == $sha and ((.createdAt | fromdateiso8601) >= $started))] | sort_by(.createdAt) | last | .databaseId // empty' <<<"$runs_json")"
+            if [ -n "$preflight_run_id" ]; then
+              status="$(jq -r --argjson id "$preflight_run_id" '.[] | select(.databaseId == $id) | .status' <<<"$runs_json" | head -1)"
+              conclusion="$(jq -r --argjson id "$preflight_run_id" '.[] | select(.databaseId == $id) | .conclusion // empty' <<<"$runs_json" | head -1)"
+              if [ "$status" = "completed" ]; then
+                test "$conclusion" = "success" || { echo "Research preflight failed; refusing to launch nightly."; exit 1; }
+                break
+              fi
             fi
-            pids+=("$!")
+            sleep 5
           done
-          status=0
-          for pid in "${pids[@]}"; do
-            wait "$pid" || status=1
-          done
-          exit "$status"
+          test -n "$preflight_run_id" || { echo "Unable to reconcile the dispatched research preflight run"; exit 1; }
+
+          gh workflow run nightly-multi-agent-research-v3.yml --repo "$GITHUB_REPOSITORY" --ref main \
+            --field dry_run=false \
+            --field target_sha="$GITHUB_SHA" \
+            --field production_release_run_id="$GITHUB_RUN_ID" \
+            --field operations_research_ref="$operations_ref"
+
+          gh workflow run live-chatbot-production-smoke.yml --repo "$GITHUB_REPOSITORY" --ref main \
+            --field target_sha="$GITHUB_SHA" \
+            --field production_release_run_id="$GITHUB_RUN_ID"
+
       - name: Upload cross-repository audit receipt
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

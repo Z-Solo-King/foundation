@@ -1,0 +1,33 @@
+{
+  "schema": "ai-provider-fleet-public/v1",
+  "reviewed_at": "2026-09-30",
+  "external_providers": [
+    "openrouter_free",
+    "groq",
+    "gemini",
+    "nvidia_nim",
+    "cohere_free",
+    "huggingface_free",
+    "siliconflow"
+  ],
+  "native_runtime_provider": "cloudflare_workers_ai",
+  "legacy_compatibility": [],
+  "task_families": [
+    "chatbot",
+    "research",
+    "search_synthesis",
+    "extraction_assist",
+    "audit_assist",
+    "scan_triage",
+    "action_plan",
+    "workflow_assist",
+    "cloudflare_diagnostic"
+  ],
+  "zero_cost_invariants": {
+    "max_daily_cost_usd": 0,
+    "paid_fallback_allowed": false,
+    "unknown_pricing_allowed": false,
+    "auto_recharge_allowed": false,
+    "auto_upgrade_allowed": false
+  }
+}

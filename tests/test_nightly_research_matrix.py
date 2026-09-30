@@ -6,7 +6,8 @@ def test_nightly_workflow_uses_pinned_private_operations_crossfire_runner():
     text=WORKFLOW.read_text(encoding="utf-8")
     research=text.split("  research:",1)[1].split("\n  migration_review:",1)[0]
     assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
-    assert "OPERATIONS_RESEARCH_REF: 1a91efa53b9202f1624ddde892b0e86bd6b360f0" in text
+    assert "OPERATIONS_RESEARCH_REF:" in text
+    assert "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676" in text
     assert "private.multi_agent.runner" in research
     assert "--crossfire" in research
     assert "--global-capacity 20" in research
