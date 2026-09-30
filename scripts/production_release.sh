@@ -381,7 +381,7 @@ grep -q "^service = \"${OPERATIONS_EDGE_SERVICE_NAME}\"$" wrangler.python-core.g
 
 printf '%s\n' \
   'name = "heroic"' \
-  'main = "edge.ts"'
+  'main = "edge.ts"' \
   'compatibility_date = "2026-09-28"' \
   'workers_dev = false' \
   'preview_urls = false' \
