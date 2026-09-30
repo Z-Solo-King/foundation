@@ -6,87 +6,67 @@ Original corpus: 32 sites.
 - Only SSD: excluded from active calibration because its native Google feed was already separately established.
 - Active calibration corpus: 30 sites.
 
-## Phase 1 — known feed-related cohort
-Phase 1 contains 10 sites: four standalone feed-generator families and six Google-for-WooCommerce / Google Listings & Ads integrations.
+## Phase 1 — known feed-related cohort (10)
+Standalone feed-generator families (4): PC Studio, Quickin Computers, Avikaretails, IT Gadgets Online.
+Google-for-WooCommerce / Google Listings & Ads (6): Geekbees, Ninja Dog, Network IT Store, My Nexus Infosys, Solanki Enterprises, AULA India.
 
-Standalone feed generators:
-- PC Studio — WooCommerce Google Product Feed
-- Quickin Computers — CTX Feed / WebAppick
-- Avikaretails — Product Feed PRO / AdTribes
-- IT Gadgets Online — Product Feed Manager / WPPFM
-
-API-integrated Google family:
-- Geekbees
-- Ninja Dog
-- Network IT Store
-- My Nexus Infosys
-- Solanki Enterprises
-- AULA India
-
-Baseline Phase 1 result:
-- Native standalone Google Merchant XML verified: 0/10
-- Expected family matches: 6/10
-- Probe errors: 0
-
-The mismatch set was used as classifier feedback rather than being copied into the unknown-site model.
+Completed baseline calibration: 0/10 standalone native Google Merchant XML verified; 6/10 expected family matches; 0 probe errors.
 
 ## Classifier correction
-Family detection now prefers exclusive fingerprints instead of generic page text. Generic Google Merchant Center wording cannot by itself create a Google-for-WooCommerce classification.
+V175 family detection now uses family-exclusive fingerprints instead of generic page wording. This prevents ordinary Google Merchant Center text from creating a false Google-for-WooCommerce classification.
 
-Family-specific signals include WooCommerce GPF, CTX/WebAppick/woo_feed, AdTribes/Product Feed PRO, WPFM/WPPFM, WebToffee, CodeSolz, FeedCraft, and Google Listings & Ads / wc/gla signatures.
-
-Synthetic regressions pass for CTX, GLA, WooCommerce GPF, and WPFM signatures.
+Regression checks pass for CTX/WebAppick, Google Listings & Ads, WooCommerce GPF, and WPFM signatures.
 
 ## Phase 2 — unknown 20
-The remaining 20 sites were executed in six parallel shards using learned evidence transfer.
+The 20 unknown sites were executed in six parallel shards using learned evidence transfer.
 - Native standalone Google Merchant XML verified: 0/20.
-- Weak family evidence is not forced into a definitive classification.
+- The corrected historical refinement analyzed 333 archived HTML snapshots.
 
-The corrected classifier plus historical refinement analyzed 333 archived HTML snapshots and currently yields four low-confidence family hypotheses:
+Current low-confidence family hypotheses:
 - Kryptronix Gaming → WebToffee Product Feed
 - NCL Computer → WebToffee Product Feed
 - Prime ABGB → WooCommerce Google Product Feed
 - Variety Infotech → Google for WooCommerce / Google Listings & Ads
 
-The other 16 remain unresolved.
+The other 16 remain unresolved because the evidence does not justify a family assignment.
 
-## Targeted family verification
-A separate fast workflow verifies the four current hypotheses without rerunning all 20 sites.
+## Phase 3 — targeted family verification
+A separate fast verifier tested the four current hypotheses against the live sites.
 
-WebToffee targets use the plugin output directory, stable/documented filename variants, discovered XML links, and same-host historical XML references.
-WooCommerce Google Product Feed targets use the documented query/permalink grammar and partial-feed parameters.
-Google for WooCommerce targets check public GLA REST signals and do not fabricate a standalone XML feed from the API integration.
+| Site | Family hypothesis | Current result | Evidence |
+|---|---|---|---|
+| Kryptronix Gaming | WebToffee Product Feed | FAMILY_IDENTIFIED_FEED_FILENAME_UNRESOLVED | 77 candidates checked; no current validated Merchant XML; WebToffee directory returned 404 |
+| NCL Computer | WebToffee Product Feed | FAMILY_IDENTIFIED_FEED_FILENAME_UNRESOLVED | 7 candidates checked; no current validated Merchant XML; WebToffee directory returned 403 |
+| Prime ABGB | WooCommerce Google Product Feed | FAMILY_IDENTIFIED_FEED_FILENAME_UNRESOLVED | 1 candidate checked; no current validated Merchant XML |
+| Variety Infotech | Google for WooCommerce / GLA | FAMILY_HYPOTHESIS_ONLY | GLA endpoints returned 403; no current XML feed verified |
+
+Targeted result: 0/4 native Google Merchant XML verified.
 
 ## Final acceptance model
 NATIVE_FEED_VERIFIED means the current response validates as Google Merchant XML.
-API_INTEGRATED_GOOGLE means a Google-for-WooCommerce integration is evidenced without an independent public XML feed.
-FAMILY_IDENTIFIED_FEED_FILENAME_UNRESOLVED means a feed-generator family is evidenced but the current public filename cannot be recovered.
-FAMILY_HYPOTHESIS_ONLY means only weak historical evidence exists.
+API_INTEGRATED_GOOGLE means an API integration is positively evidenced without requiring standalone XML.
+FAMILY_IDENTIFIED_FEED_FILENAME_UNRESOLVED means a family is evidenced but no current public filename/feed payload was recovered.
+FAMILY_HYPOTHESIS_ONLY means the historical evidence is insufficient for a stronger current classification.
 UNKNOWN means no family can be justified.
 
-HTTP 403/429, challenge HTML, 404 HTML, RSS, normal sitemaps, and historical-only URLs are response states, not proof of feed absence.
+403/429, challenge HTML, 404 HTML, RSS, normal sitemaps, and historical-only URLs are response states, not feed absence.
 
 ## Efficiency and reproducibility
 - Six parallel shards cover the unknown 20.
-- Historical refinement is HTTP-only and does not install browser runtimes.
-- Family-targeted verification is isolated from the 20-site historical run.
+- Historical refinement is HTTP-only.
+- Family-targeted verification is isolated from the full 20-site pass.
 - Concurrency guards cancel obsolete overlapping runs.
 - Superseded automatic guessing workflows are retired.
 - The no-cookie-replay / no-clearance-bypass boundary remains enforced.
-- Historical evidence is retained as learning input, while current payload validation remains the final acceptance gate.
+- Historical evidence is learning input; current payload validation remains the acceptance gate.
 
-## Current execution state
-The implementation, corrected family classifier, 20-site historical refinement, targeted verifier, concurrency controls, and documentation are committed to PR #1604.
-
-The latest live workflows are validation runs over this completed implementation. The authoritative historical result used for the current hypothesis set is the six-shard post-classifier refinement dataset.
-
-## Reusable algorithm
-1. Detect known family using exclusive fingerprints.
+## Final reusable algorithm
+1. Detect known family with exclusive fingerprints.
 2. Search exact public feed references and explicit feed query parameters.
-3. Inspect current browser/XHR/resource and REST evidence.
-4. Inspect public output directories.
+3. Inspect current browser/XHR/resource and REST evidence when appropriate.
+4. Inspect public feed output directories.
 5. Inspect bounded historical references.
-6. Transfer only family-specific URL grammar observed from evidence.
+6. Transfer only observed family-specific URL grammar.
 7. Revalidate candidates against the current site.
-8. Record transport, evidence sources, failure states, and confidence.
-9. Never infer feed absence solely from blocking, missing directory indexes, or unsuccessful filename guesses.
+8. Record transport, evidence source, response state and confidence.
+9. Never infer feed absence from blocking or an unsuccessful filename guess.
