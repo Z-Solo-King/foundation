@@ -128,11 +128,12 @@ def test_proxy_has_bounded_transport_recovery():
     assert '"research_agent": True' not in proxy
 
 
-def test_operations_pin_manifest_matches_research_workflow():
-    workflow=workflow_text()
+def test_operations_pin_manifest_matches_provider_fleet_workflow():
+    provider_fleet = (Path(__file__).parents[1]/".github"/"workflows"/"provider-fleet-runtime-state.yml").read_text(encoding="utf-8")
     manifest=json.loads((Path(__file__).parents[1]/"docs"/"OPERATIONS_PIN_MANIFEST.json").read_text(encoding="utf-8"))
-    assert manifest["pins"]["production_runtime"]["sha"] == "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676"
-    assert manifest["pins"]["production_runtime"]["sha"] in workflow
+    production_pin = manifest["pins"]["production_runtime"]["sha"]
+    assert production_pin == "425d6e2c589d652e45ad80dd251a598315923659"
+    assert production_pin in provider_fleet
 
 
 def test_pinned_operations_contract_guard_is_semantic():
