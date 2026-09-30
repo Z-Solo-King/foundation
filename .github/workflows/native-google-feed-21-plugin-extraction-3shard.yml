@@ -70,7 +70,8 @@ jobs:
             out="out/shard-${{ matrix.id }}/${slug}"
             mkdir -p "${out}"
             echo "=== ${site} ==="
-            SITE_NAME="${site}" SITE_ROOT="${root}" OUT_DIR="${out}"               python tools/feed-lab/woocommerce_21_plugin_extraction_browser_v175.py || true
+            SITE_NAME="${site}" SITE_ROOT="${root}" OUT_DIR="${out}" \
+              python tools/feed-lab/woocommerce_21_plugin_extraction_browser_v175.py || true
             test -f "${out}/recovery.json"
           done <<< "${TARGETS}"
       - name: Upload shard evidence
@@ -124,8 +125,7 @@ jobs:
             "site_count":21,
             "results":rows
           }
-          pathlib.Path("out/final-recovery-aggregate.json").write_text(json.dumps(payload,indent=2)+"
-")
+          pathlib.Path("out/final-recovery-aggregate.json").write_text(json.dumps(payload,indent=2)+"\\n")
           lines=["# Final 21-site V175 plugin extraction","","| Site | Status | Plugins | Feed-like assets | Feed families | WC v1 | WC v2 | WC v3 |","|---|---|---:|---|---|---:|---:|---:|"]
           for r in rows:
               wc={x["version"]:x["status"] for x in r.get("product_api_options",[])}
