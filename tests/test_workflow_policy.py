@@ -64,7 +64,9 @@ def test_production_deployment_has_one_owner():
     ]
     assert not violations, "Competing Cloudflare deployment references:\n" + "\n".join(violations)
 
-# Canonical Operations revision is declared once and used by the release self-check.\n\ndef test_canonical_operations_production_pin_is_current_and_immutable():
+# Canonical Operations revision is declared once and used by the release self-check.
+
+def test_canonical_operations_production_pin_is_current_and_immutable():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert f'OPERATIONS_REPOSITORY="{CANONICAL_OPERATIONS_REPOSITORY}"' in deployment
     assert 'PIN_MANIFEST="docs/OPERATIONS_PIN_MANIFEST.json"' in deployment
@@ -617,7 +619,7 @@ def test_research_proxy_probe_preserves_non_2xx_response_diagnostics():
     workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
     canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
     for text in (workflow, canary):
-        assert "probe_status=$(curl -sS" in text
+        assert "probe_status=\"$(curl -sS" in text
         assert 'probe_response_file="$RUNNER_TEMP/research-worker-probe.json"' in text
         assert "probe_response=$(curl -fsS" not in text
         assert 'jq -c \'.\' "$probe_response_file" 2>/dev/null || true' in text
@@ -729,6 +731,21 @@ def test_foundation_ai_map_tracks_current_m11_type_inventory():
     assert '"lane": "M11"' in text
     assert '"current_type_entries": 44' in text
     assert '"current_type_entries": 45' not in text
+
+
+
+def test_crossfire_research_proxy_lifecycle_is_colocated_with_consumer():
+    workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
+    start = workflow.index("      - name: Run complete crossfire research")
+    materialize = workflow.index("      - name: Materialize and validate lane artifacts", start)
+    block = workflow[start:materialize]
+    assert "research_worker_proxy.py" in block
+    assert "http://127.0.0.1:8765/health" in block
+    assert "cleanup_proxy()" in block
+    assert "trap cleanup_proxy EXIT INT TERM" in block
+    assert "RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}" in block
+    assert "Authorization: Bearer local-worker-proxy" in block
+    assert "Start authenticated Workers AI research proxy" not in workflow
 
 # Policy contract: production release evidence must use authenticated runtime proof and must not consume duplicate D1 query budget.
 

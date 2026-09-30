@@ -315,58 +315,86 @@ jobs:
             *) echo 'RESEARCH_LLM_ENDPOINT must be HTTP(S).'; exit 1 ;;
           esac
           echo "live research executor configuration: PASS"
-      - name: Start authenticated Workers AI research proxy
-        id: research_proxy
-        if: ${{ steps.mode.outputs.mode == 'live' }}
+      - name: Run complete crossfire research
+        id: run_crossfire
         shell: bash
         env:
           RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
         run: |
           set -euo pipefail
-          test -n "${RESEARCH_PROXY_AUTH_TOKEN:-}" || { echo "Missing AUTH_TOKEN; refusing live research."; exit 1; }
-          nohup python scripts/research_worker_proxy.py \
-            --public-worker-url "${PUBLIC_WORKER_URL}" \
-            --port 8765 \
-            --max-upstream-concurrency "${RESEARCH_MAX_CONCURRENCY}" \
-            > "$RUNNER_TEMP/research-worker-proxy.log" 2>&1 &
-          echo $! > "$RUNNER_TEMP/research-worker-proxy.pid"
-          for attempt in $(seq 1 20); do
-            if curl -fsS --max-time 2 http://127.0.0.1:8765/health >/dev/null; then
-              echo "authenticated Workers AI research proxy: READY"
-              break
-            fi
-            sleep 1
-          done
-          probe_payload=$(jq -nc '{model:"@cf/zai-org/glm-4.7-flash",messages:[{role:"user",content:"Return the smallest valid research object with findings as an empty array, follow_up_questions as an empty array, and note as probe."}],max_tokens:96,temperature:0}')
-          probe_response_file="$RUNNER_TEMP/research-worker-probe.json"
-          probe_status=$(curl -sS --max-time 90 -o "$probe_response_file" -w '%{http_code}' -H "Authorization: Bearer local-worker-proxy" -H "Content-Type: application/json" -d "$probe_payload" http://127.0.0.1:8765/chat/completions)
-          echo "Authenticated Worker-backed Workers AI research-contract probe -> HTTP ${probe_status}"
-          if [ "${probe_status}" = "200" ] && jq -e '
-              (.provider | type == "string" and length > 0) and
-              (.model == "@cf/zai-org/glm-4.7-flash") and
-              (.execution_id | type == "string" and length > 0) and
-              (.choices[0].message.content | type == "string" and length > 0) and
-              ((.choices[0].message.content | fromjson) | type == "object") and
-              ((.choices[0].message.content | fromjson) | has("findings") and has("follow_up_questions") and has("note")) and
-              (((.choices[0].message.content | fromjson).findings) | type == "array") and
-              (((.choices[0].message.content | fromjson).follow_up_questions) | type == "array") and
-              (((.choices[0].message.content | fromjson).note) | type == "string")
-            ' "$probe_response_file" >/dev/null 2>&1; then
-            echo "Authenticated Worker-backed Workers AI research contract: PASS"
-          else
-            echo "Authenticated Worker-backed Workers AI research contract: FAIL"
-            jq -c '.' "$probe_response_file" 2>/dev/null || true
-            exit 1
-          fi
-      - name: Run complete crossfire research
-        id: run_crossfire
-        shell: bash
-        run: |
-          set -euo pipefail
           mkdir -p .runtime
+
+          if [[ "${{ steps.mode.outputs.mode }}" == "live" ]]; then
+            test -n "${RESEARCH_PROXY_AUTH_TOKEN:-}" || { echo "Missing AUTH_TOKEN; refusing live research."; exit 1; }
+            # Keep the authenticated loopback proxy in the same shell/process lifecycle
+            # as CrossFire; GitHub Actions does not guarantee a prior background daemon
+            # survives independently between steps.
+            if [[ -f "$RUNNER_TEMP/research-worker-proxy.pid" ]]; then
+              old_pid="$(cat "$RUNNER_TEMP/research-worker-proxy.pid" 2>/dev/null || true)"
+              if [[ "$old_pid" =~ ^[0-9]+$ ]]; then
+                kill "$old_pid" 2>/dev/null || true
+              fi
+            fi
+            nohup python scripts/research_worker_proxy.py \
+              --public-worker-url "${PUBLIC_WORKER_URL}" \
+              --port 8765 \
+              --max-upstream-concurrency "${RESEARCH_MAX_CONCURRENCY}" \
+              > "$RUNNER_TEMP/research-worker-proxy.log" 2>&1 &
+            proxy_pid=$!
+            echo "$proxy_pid" > "$RUNNER_TEMP/research-worker-proxy.pid"
+            cleanup_proxy() {
+              if [[ -n "${proxy_pid:-}" ]]; then
+                kill "$proxy_pid" 2>/dev/null || true
+                wait "$proxy_pid" 2>/dev/null || true
+              fi
+              rm -f "$RUNNER_TEMP/research-worker-proxy.pid"
+            }
+            trap cleanup_proxy EXIT INT TERM
+
+            proxy_ready=false
+            for attempt in $(seq 1 30); do
+              if curl -fsS --max-time 2 http://127.0.0.1:8765/health >/dev/null; then
+                proxy_ready=true
+                echo "authenticated Workers AI research proxy: READY (attempt $attempt/30)"
+                break
+              fi
+              sleep 1
+            done
+            if [[ "$proxy_ready" != "true" ]]; then
+              echo "authenticated Workers AI research proxy: FAIL"
+              cat "$RUNNER_TEMP/research-worker-proxy.log" 2>/dev/null || true
+              exit 1
+            fi
+
+            probe_payload="$(jq -nc '{model:"@cf/zai-org/glm-4.7-flash",messages:[{role:"user",content:"Return the smallest valid research object with findings as an empty array, follow_up_questions as an empty array, and note as probe."}],max_tokens:96,temperature:0}')"
+            probe_response_file="$RUNNER_TEMP/research-worker-probe.json"
+            probe_status="$(curl -sS --max-time 90 -o "$probe_response_file" -w '%{http_code}' \
+              -H "Authorization: Bearer local-worker-proxy" \
+              -H "Content-Type: application/json" \
+              -d "$probe_payload" \
+              http://127.0.0.1:8765/chat/completions)"
+            echo "Worker-backed research contract probe -> HTTP $probe_status"
+            if [ "$probe_status" != "200" ]; then
+              jq -c '.' "$probe_response_file" 2>/dev/null || true
+              cat "$RUNNER_TEMP/research-worker-proxy.log" 2>/dev/null || true
+              exit 1
+            fi
+            jq -e '
+              (.choices[0].message.content | fromjson) as $obj
+              | ($obj | type == "object")
+              and ($obj | has("findings") and has("follow_up_questions") and has("note"))
+              and ($obj.findings | type == "array")
+              and ($obj.follow_up_questions | type == "array")
+              and ($obj.note | type == "string")
+            ' "$probe_response_file" >/dev/null
+          fi
+
           args=(--crossfire --global-capacity "$RESEARCH_MAX_CONCURRENCY" --output .runtime/nightly-crossfire.jsonl)
-          if [[ "${{ steps.mode.outputs.mode }}" == "dry-run" ]]; then args+=(--dry-run); fi
+          if [[ "${{ steps.mode.outputs.mode }}" == "dry-run" ]]; then
+            args+=(--dry-run)
+          fi
           PYTHONPATH="$RUNNER_TEMP/operations-research" python -m private.multi_agent.runner "${args[@]}"
+
       - name: Materialize and validate lane artifacts
         id: materialize
         if: ${{ always() }}
