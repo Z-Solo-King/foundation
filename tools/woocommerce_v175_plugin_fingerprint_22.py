@@ -15,14 +15,17 @@ The attached extract_universal_V175.py is the source/design authority for:
 V175 source SHA-256: 33d651b329c20372db40026c0626a3227408096beb910c1d1069266af5cc1b15
 
 This focused harness deliberately does NOT import the 1.5 MB monolith at runtime.
-It preserves the V175 contracts while adding:
-- Chromium + Firefox/Gecko + WebKit browser passes
-- API replay using in-memory public browser cookies
-- optional Cloudflare Browser Rendering API and Browserless content adapters
-- plugin fingerprint normalization
-- plugin-family grouping-ready JSON evidence
+It preserves the V175 evidence contracts while enforcing the repository acceptance boundary:
+- Chromium + Firefox/Gecko + WebKit clean browser passes
+- public API/XHR discovery without clearance-cookie replay
+- optional Cloudflare Browser Run and Browserless adapters
+- passive robots/sitemap + historical index discovery
+- plugin fingerprint normalization with provenance-aware confidence
 - plugin-specific native Google XML candidate generation
 - strict payload validation
+
+Important: challenge/clearance encounters are diagnostic only. No clearance cookies, CAPTCHA state,
+or anti-bot bypass state are replayed or admitted into native-feed verification.
 """
 
 import asyncio
@@ -35,7 +38,7 @@ import time
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urljoin, urlsplit, quote
 
 import httpx
 
@@ -90,23 +93,26 @@ PLUGIN_RULES: List[Tuple[str, Tuple[str, ...]]] = [
     )),
     ("ctx_feed_webappick", (
         "ctx feed", "ctx-feed", "webappick", "woo_feed", "woo-feed",
-        "woo feed", "woo_feed-",
+        "woo feed", "woo_feed-", "webappick-product-feed-for-woocommerce",
     )),
     ("adtribes_product_feed_pro", (
         "product feed pro", "adtribes", "woo-product-feed-pro",
-        "product-feed-pro",
+        "product-feed-pro", "woo-product-feed-pro-for-woocommerce",
     )),
     ("wpfm_product_feed_manager", (
         "product feed manager", "wppfm", "wppfm-feeds", "wpfm/v1",
+        "product-feed-manager-for-woocommerce",
     )),
     ("webtoffee_product_feed", (
         "webtoffee", "webtoffee_product_feed", "webtoffee-product-feed",
+        "webtoffee-product-feed-for-woocommerce",
     )),
     ("codesolz_merchant_feed_booster", (
         "codesolz", "codesolz-feeds", "merchant feed booster",
+        "merchant-feed-booster-lite-for-woocommerce",
     )),
     ("feedcraft", (
-        "feedcraft", "feedcraft-product-feed",
+        "feedcraft", "feedcraft-product-feed", "thebasics-product-feed",
     )),
     ("google_for_woocommerce", (
         "google-listings-and-ads", "google for woocommerce", "wc/gla",
@@ -252,12 +258,25 @@ WC_REST_PATHS = [
     "/wp-json/wc/v3/products",
 ]
 
+MAX_DIRECT_FEED_PROBES = max(10, int(os.getenv("MAX_DIRECT_FEED_PROBES", "40")))
+PASSIVE_INDEX_ENABLED = os.getenv("PASSIVE_INDEX_ENABLED", "1").strip().lower() not in {"0", "false", "no"}
+WAYBACK_ENABLED = os.getenv("WAYBACK_ENABLED", "1").strip().lower() not in {"0", "false", "no"}
+COMMONCRAWL_ENABLED = os.getenv("COMMONCRAWL_ENABLED", "0").strip().lower() in {"1", "true", "yes"}
+CF_BROWSER_RUN_ENABLED = os.getenv("CF_BROWSER_RUN_ENABLED", "0").strip().lower() in {"1", "true", "yes"}
+
+PASSIVE_FEED_HINT_RE = re.compile(
+    r"(?:feed|google|merchant|shopping|woocommerce_gpf|woo_feed|wppfm|wpfm|webtoffee|adtribes|feedcraft|product-feed)",
+    re.I,
+)
+
+
 
 @dataclass
 class BrowserEvidence:
     engine: str
     status: int = 0
     challenge: bool = False
+    challenge_encountered: bool = False
     cf_clearance: bool = False
     cookie_names: List[str] = None
     user_agent: str = ""
@@ -265,6 +284,7 @@ class BrowserEvidence:
     plugin_asset_slugs: List[str] = None
     namespaces: List[str] = None
     xhr_urls: List[str] = None
+    resource_urls: List[str] = None
     error: str = ""
 
     def __post_init__(self):
@@ -272,6 +292,7 @@ class BrowserEvidence:
         self.plugin_asset_slugs = self.plugin_asset_slugs or []
         self.namespaces = self.namespaces or []
         self.xhr_urls = self.xhr_urls or []
+        self.resource_urls = self.resource_urls or []
 
 
 @dataclass
@@ -353,29 +374,89 @@ def find_plugin_hits(blobs: Iterable[str], plugin_slugs: Iterable[str], namespac
     return hits
 
 
+def plugin_family_confidence(hits: Dict[str, List[str]], plugin_slugs: Iterable[str], namespaces: Iterable[str]) -> str:
+    """Prefer concrete plugin asset evidence over generic page text."""
+    if not hits:
+        return "low"
+    slugs = {str(x).lower() for x in plugin_slugs}
+    ns = {str(x).lower() for x in namespaces}
+    strong = {
+        str(needle).lower()
+        for family, needles in PLUGIN_RULES
+        if family in hits
+        for needle in needles
+    }
+    if any(any(n in s for n in strong) for s in slugs):
+        return "high"
+    if any(any(n in x for n in strong) for x in ns):
+        return "medium"
+    return "low"
+
+
+def query_feed_candidates(text: str, root: str) -> List[str]:
+    """Recover public feed URLs expressed as query parameters even when the slug is random."""
+    out = set()
+    for m in re.finditer(r"(?:[?&])(woo_feed|woocommerce_gpf)=([^&#\"' <>]+)", text or "", re.I):
+        key, value = m.group(1), m.group(2)
+        if not value:
+            continue
+        prefix = "/?"
+        if key.lower() == "woo_feed":
+            out.add(urljoin(root + "/", prefix + f"woo_feed={value}&wt=xml"))
+            out.add(urljoin(root + "/", prefix + f"woo_feed={value}"))
+        else:
+            out.add(urljoin(root + "/", prefix + f"woocommerce_gpf={value}"))
+            if value.lower() == "google":
+                for start in (0, 100):
+                    out.add(urljoin(root + "/", prefix + f"woocommerce_gpf=google&gpf_start={start}&gpf_limit=100"))
+    for raw in re.findall(r"https?://[^\s\"'<>]+", text or "", re.I):
+        u = raw.rstrip("),.;")
+        if same_host(u, root) and PASSIVE_FEED_HINT_RE.search(u):
+            out.add(u)
+    return sorted(out)[:120]
+
+
+def discover_urls_from_xml_or_text(text: str, root: str) -> List[str]:
+    urls = set(explicit_xml_candidates(text, root))
+    urls.update(query_feed_candidates(text, root))
+    for raw in re.findall(r"(?:href|src|loc)=['\"]([^'\"]+)['\"]", text or "", re.I):
+        try:
+            u = urljoin(root + "/", raw)
+        except Exception:
+            continue
+        if same_host(u, root) and PASSIVE_FEED_HINT_RE.search(u):
+            urls.add(u)
+    return sorted(urls)[:200]
+
+
+def passive_sitemap_candidates(text: str, root: str) -> List[str]:
+    out = set(discover_urls_from_xml_or_text(text, root))
+    for u in re.findall(r"<loc>\s*([^<\s]+)\s*</loc>", text or "", re.I):
+        try:
+            full = urljoin(root + "/", u)
+        except Exception:
+            continue
+        if same_host(full, root) and PASSIVE_FEED_HINT_RE.search(full):
+            out.add(full)
+    return sorted(out)[:200]
+
+
 def explicit_xml_candidates(text: str, root: str) -> List[str]:
     out = set()
     for raw in re.findall(r'https?://[^\s"\'<>]+', text or "", re.I):
         u = raw.rstrip("),.;")
         if not same_host(u, root):
             continue
-        if re.search(r"\.xml(?:\.gz)?(?:$|[?#])", u, re.I) or re.search(
-            r"(?:woo_feed|woocommerce_gpf|wpfm|feedcraft|webtoffee|adtribes|product-feed|google-feed|merchant-feed)",
-            u, re.I,
-        ):
+        if re.search(r"\.xml(?:\.gz)?(?:$|[?#])", u, re.I) or PASSIVE_FEED_HINT_RE.search(u):
             out.add(u)
-            out.add(u)
-    for raw in re.findall(r'(?:href|src|loc)=["\']([^"\']+)["\']', text or "", re.I):
+    for raw in re.findall(r'''(?:href|src|loc)=["']([^"']+)["']''', text or "", re.I):
         try:
             u = urljoin(root + "/", raw)
         except Exception:
             continue
-        if same_host(u, root) and re.search(r"\.xml(?:\.gz)?(?:$|[?#])", u, re.I):
+        if same_host(u, root) and (re.search(r"\.xml(?:\.gz)?(?:$|[?#])", u, re.I) or PASSIVE_FEED_HINT_RE.search(u)):
             out.add(u)
-    for raw in re.findall(r'(?i)(?:woo_feed|woocommerce_gpf|wppfm|feedcraft)[^"\'<>\s&]*', text or ""):
-        if raw.startswith("http"):
-            out.add(raw.rstrip("),.;"))
-    return sorted(out)[:100]
+    return sorted(out)[:160]
 
 
 def native_google_valid(body: bytes, content_type: str) -> Tuple[bool, int, str]:
@@ -401,7 +482,7 @@ def native_google_valid(body: bytes, content_type: str) -> Tuple[bool, int, str]
     prices = re.search(r"<g:price\b[^>]*>(.*?)</g:price>", text, re.S | re.I)
     if not all((ids, titles, links, prices)):
         return False, 0, ""
-    count = len(re.findall(r"<item\b", text, re.I))
+    count = len(re.findall(r"<(?:item|entry)\b", text, re.I))
     return True, count, hashlib.sha256(raw).hexdigest()
 
 
@@ -423,10 +504,9 @@ async def http_options(client: httpx.AsyncClient, url: str, cookies: Dict[str, s
         return 0, url, {}
 
 
-async def api_surface(root: str, cookies: Dict[str, str]) -> Tuple[List[ApiEvidence], List[str], List[str]]:
-    ua = cookies.pop("__ua__", "") if "__ua__" in cookies else ""
+async def api_surface(root: str, user_agent: str = "") -> Tuple[List[ApiEvidence], List[str], List[str]]:
     headers = {
-        "User-Agent": ua or "Mozilla/5.0 (compatible; WooCommerceV175PluginRecovery/2026.09)",
+        "User-Agent": user_agent or "Mozilla/5.0 (compatible; WooCommerceV175PluginRecovery/2026.09)",
         "Accept": "application/json, text/plain, */*",
         "X-Requested-With": "XMLHttpRequest",
     }
@@ -436,7 +516,7 @@ async def api_surface(root: str, cookies: Dict[str, str]) -> Tuple[List[ApiEvide
     async with httpx.AsyncClient(headers=headers) as client:
         for path in API_PATHS:
             url = urljoin(root + "/", path)
-            st, final, hdrs, body = await http_get(client, url, dict(cookies), 30)
+            st, final, hdrs, body = await http_get(client, url, {}, 20)
             txt = body.decode("utf-8", "ignore")[:500_000]
             if st == 200 and path.rstrip("/") in ("/wp-json", "/wp-json/"):
                 blobs.append(txt)
@@ -452,7 +532,7 @@ async def api_surface(root: str, cookies: Dict[str, str]) -> Tuple[List[ApiEvide
             ))
         for path in WC_REST_PATHS:
             url = urljoin(root + "/", path)
-            st, final, hdrs = await http_options(client, url, dict(cookies), 15)
+            st, final, hdrs = await http_options(client, url, {}, 12)
             api_out.append(ApiEvidence(
                 url=url, status=st, allow=hdrs.get("allow", ""),
                 content_type=hdrs.get("content-type", ""), body_read=False
@@ -460,7 +540,7 @@ async def api_surface(root: str, cookies: Dict[str, str]) -> Tuple[List[ApiEvide
     return api_out, blobs, sorted(set(ns))
 
 
-async def browser_engine(root: str, engine: str, seed_cookies: Optional[Dict[str, str]] = None):
+async def browser_engine(root: str, engine: str):
     try:
         from playwright.async_api import async_playwright
     except Exception as e:
@@ -474,46 +554,47 @@ async def browser_engine(root: str, engine: str, seed_cookies: Optional[Dict[str
                 locale="en-IN",
                 extra_http_headers={"Accept-Language": "en-IN,en;q=0.9"},
             )
-            if seed_cookies:
+            page = await context.new_page()
+            requests_seen: List[str] = []
+            response_blobs: List[str] = []
+            async def on_request(req):
                 try:
-                    await context.add_cookies([
-                        {"name": k, "value": str(v), "domain": bare_host(root), "path": "/"}
-                        for k, v in seed_cookies.items() if k and v
-                    ])
+                    if same_host(req.url, root):
+                        requests_seen.append(req.url)
                 except Exception:
                     pass
-            page = await context.new_page()
-            xhr: List[str] = []
-            response_blobs: List[str] = []
 
             async def on_response(resp):
                 try:
                     u = resp.url
-                    hdrs = await resp.all_headers()
-                    ct = hdrs.get("content-type", "")
                     if not same_host(u, root):
                         return
+                    hdrs = await resp.all_headers()
+                    ct = hdrs.get("content-type", "")
                     interesting = (
-                        "json" in ct.lower() or "xml" in ct.lower()
-                        or any(x in u.lower() for x in (
-                            "wp-json", "product", "catalog", "search", "feed",
-                            "google", "merchant", "ctx", "wpfm", "webtoffee",
-                            "adtribes", "woo-feed", "feedcraft", "/api/",
+                        "json" in ct.lower() or "xml" in ct.lower() or
+                        any(x in u.lower() for x in (
+                            "wp-json", "admin-ajax.php", "wc-ajax", "product", "catalog", "search", "feed",
+                            "google", "merchant", "ctx", "wpfm", "webtoffee", "adtribes", "woo-feed", "feedcraft", 
+                            "sitemap", "robots.txt", "/api/",
                         ))
                     )
                     if not interesting:
                         return
-                    xhr.append(u)
-                    if ("json" in ct.lower() or "xml" in ct.lower()) and len(response_blobs) < 25:
+                    requests_seen.append(u)
+                    if len(response_blobs) >= 40:
+                        return
+                    if any(x in u.lower() for x in ("feed", "google", "merchant", "woo_feed", "woocommerce_gpf", "wpfm", "webtoffee", "adtribes", "feedcraft", "admin-ajax.php")) or "json" in ct.lower() or "xml" in ct.lower():
                         try:
                             b = await resp.body()
-                            if 0 < len(b) <= 250_000:
+                            if 0 < len(b) <= 350_000:
                                 response_blobs.append(b.decode("utf-8", "ignore"))
                         except Exception:
                             pass
                 except Exception:
                     pass
 
+            page.on("request", on_request)
             page.on("response", on_response)
             try:
                 resp = await page.goto(root, wait_until="domcontentloaded", timeout=45_000)
@@ -526,11 +607,12 @@ async def browser_engine(root: str, engine: str, seed_cookies: Optional[Dict[str
             except Exception:
                 pass
             html = await page.content()
-            title = ""
             try:
-                title = await page.title()
+                perf_urls = await page.evaluate("performance.getEntriesByType('resource').map(e => e.name)")
+                if isinstance(perf_urls, list):
+                    requests_seen.extend(str(x) for x in perf_urls if same_host(str(x), root))
             except Exception:
-                pass
+                perf_urls = []
             cookies = await context.cookies()
             cookie_names = sorted({str(c.get("name")) for c in cookies if c.get("name")})
             cookie_values = {str(c["name"]): str(c.get("value") or "") for c in cookies if c.get("name")}
@@ -539,27 +621,34 @@ async def browser_engine(root: str, engine: str, seed_cookies: Optional[Dict[str
                 ua = await page.evaluate("navigator.userAgent")
             except Exception:
                 pass
+            status = getattr(resp, "status", 0) if resp else 0
+            challenge = is_challenge(status, html)
             await browser.close()
-            slugs = parse_plugin_slugs(html + "\n" + "\n".join(xhr) + "\n" + "\n".join(response_blobs))
-            namespaces = parse_namespaces(html + "\n" + "\n".join(response_blobs))
+            combined = html + "\n" + "\n".join(requests_seen) + "\n" + "\n".join(response_blobs)
+            slugs = parse_plugin_slugs(combined)
+            namespaces = parse_namespaces(combined)
             return BrowserEvidence(
                 engine=engine,
-                status=getattr(resp, "status", 0) if resp else 0,
-                challenge=is_challenge(getattr(resp, "status", 0) if resp else 0, html),
+                status=status,
+                challenge=challenge,
+                challenge_encountered=challenge,
                 cf_clearance=("cf_clearance" in cookie_values or "__cf_bm" in cookie_values),
                 cookie_names=cookie_names,
                 user_agent=ua,
                 html_len=len(html),
                 plugin_asset_slugs=slugs,
                 namespaces=namespaces,
-                xhr_urls=sorted(set(xhr))[:200],
+                xhr_urls=sorted(set(requests_seen))[:300],
+                resource_urls=sorted(set(str(x) for x in perf_urls if same_host(str(x), root)))[:300] if isinstance(perf_urls, list) else [],
                 error="",
-            ), cookie_values, html, response_blobs
+            ), {}, html, response_blobs
     except Exception as e:
         return BrowserEvidence(engine=engine, error=str(e)), {}, "", []
 
 
 async def optional_cf_content(root: str) -> Tuple[Optional[str], Dict[str, Any]]:
+    if not CF_BROWSER_RUN_ENABLED:
+        return None, {"enabled": False, "reason": "disabled_by_default_or_scope"}
     account = os.getenv("CF_ACCOUNT_ID", "").strip()
     token = os.getenv("CF_API_TOKEN", "").strip()
     if not account or not token:
@@ -599,34 +688,38 @@ async def optional_browserless(root: str) -> Tuple[Optional[str], Dict[str, Any]
         return None, {"enabled": True, "status": 0, "error": str(e)[:300]}
 
 
-async def direct_feed_probe(root: str, candidates: List[str], cookie_jars: List[Dict[str, str]]) -> Dict[str, Any]:
+async def direct_feed_probe(root: str, candidates: List[str], user_agent: str = "") -> Dict[str, Any]:
     tried = []
     seen = set()
-    for candidate in candidates[:140]:
+    prioritized = []
+    for candidate in candidates:
         u = urljoin(root + "/", candidate)
         if not same_host(u, root) or u in seen:
             continue
         seen.add(u)
-        for cookies in cookie_jars[:5]:
-            clean = {k: v for k, v in cookies.items() if k != "__ua__"}
-            headers = {
-                "User-Agent": cookies.get("__ua__") or "Mozilla/5.0 (compatible; WooCommerceV175FeedProbe/2026.09)",
-                "Accept": "application/xml, application/rss+xml, text/xml, */*",
-            }
+        score = 0
+        low = u.lower()
+        if "woocommerce_gpf" in low or "woo_feed=" in low:
+            score += 40
+        if any(x in low for x in ("google", "merchant", "shopping")):
+            score += 20
+        if low.endswith(".xml") or ".xml?" in low:
+            score += 10
+        prioritized.append((score, u))
+    prioritized = [u for _, u in sorted(prioritized, reverse=True)][:MAX_DIRECT_FEED_PROBES]
+    headers = {
+        "User-Agent": user_agent or "Mozilla/5.0 (compatible; WooCommerceV175FeedProbe/2026.09)",
+        "Accept": "application/xml, application/rss+xml, text/xml, */*",
+    }
+    async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=30) as client:
+        for u in prioritized:
             try:
-                async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=45) as client:
-                    r = await client.get(u, cookies=clean)
-                    body = await r.aread()
-                    ok, count, sha = native_google_valid(body, r.headers.get("content-type", ""))
-                    tried.append({"url": u, "status": r.status_code, "ct": r.headers.get("content-type", ""), "bytes": len(body), "native": ok})
-                    if ok and same_host(str(r.url), root):
-                        return {
-                            "verified": True,
-                            "url": str(r.url),
-                            "item_count": count,
-                            "sha256": sha,
-                            "tried": tried[-30:],
-                        }
+                r = await client.get(u)
+                body = await r.aread()
+                ok, count, sha = native_google_valid(body, r.headers.get("content-type", ""))
+                tried.append({"url": u, "status": r.status_code, "final_url": str(r.url), "ct": r.headers.get("content-type", ""), "bytes": len(body), "native": ok})
+                if ok and same_host(str(r.url), root):
+                    return {"verified": True, "url": str(r.url), "item_count": count, "sha256": sha, "tried": tried[-30:]}
             except Exception as e:
                 tried.append({"url": u, "status": 0, "error": str(e)[:180], "native": False})
     return {"verified": False, "url": None, "item_count": 0, "sha256": "", "tried": tried[-60:]}
@@ -669,105 +762,179 @@ async def groq_advisory(evidence: Dict[str, Any]) -> Dict[str, Any]:
         return {"enabled": True, "status": 0, "error": str(e)[:300]}
 
 
+async def passive_public_discovery(root: str) -> Dict[str, Any]:
+    if not PASSIVE_INDEX_ENABLED:
+        return {"enabled": False, "urls": [], "historical": [], "errors": []}
+    headers = {"User-Agent": "Mozilla/5.0 (compatible; WooCommerceV175PassiveDiscovery/2026.09)", "Accept": "text/plain, application/xml, */*"}
+    urls = set()
+    historical = set()
+    blobs = []
+    errors = []
+    probes = [
+        "/robots.txt", "/wp-sitemap.xml", "/wp-sitemap.xml.gz", "/sitemap.xml", "/sitemap_index.xml",
+        "/product-sitemap.xml", "/product-sitemap1.xml",
+    ]
+    async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=15) as client:
+        for path in probes:
+            u = urljoin(root + "/", path)
+            try:
+                r = await client.get(u)
+                body = await r.aread()
+                if r.status_code == 200:
+                    txt = body.decode("utf-8", "ignore")[:600_000]
+                    blobs.append(txt)
+                    urls.update(discover_urls_from_xml_or_text(txt, root))
+                    urls.update(passive_sitemap_candidates(txt, root))
+            except Exception as e:
+                errors.append({"url": u, "error": str(e)[:180]})
+        if WAYBACK_ENABLED:
+            try:
+                pattern = quote(bare_host(root) + "/*", safe="")
+                filter_expr = quote(".*(feed|google|merchant|woo_feed|woocommerce_gpf|wpfm|webtoffee|adtribes|product-feed).*", safe="")
+                api = f"https://web.archive.org/cdx/search/cdx?url={pattern}&output=json&fl=original,statuscode,mimetype&filter=statuscode:200&filter=urlkey:{filter_expr}&collapse=urlkey&limit=80"
+                r = await client.get(api, timeout=20)
+                if r.status_code == 200:
+                    data = r.json()
+                    rows = data[1:] if isinstance(data, list) and data and isinstance(data[0], list) else data
+                    for row in rows or []:
+                        if isinstance(row, list) and row:
+                            u = str(row[0])
+                            if same_host(u, root):
+                                historical.add(u)
+            except Exception as e:
+                errors.append({"source": "wayback", "error": str(e)[:180]})
+        if COMMONCRAWL_ENABLED:
+            try:
+                idx = await client.get("https://index.commoncrawl.org/collinfo.json", timeout=20)
+                if idx.status_code == 200:
+                    coll = idx.json()
+                    index_id = str(coll[0].get("id")) if coll else ""
+                    if index_id:
+                        pattern = quote(bare_host(root) + "/*", safe="")
+                        api = f"https://index.commoncrawl.org/{index_id}-index?url={pattern}&output=json&matchType=prefix&filter=status:200&filter=url:feed|google|merchant|woo_feed|woocommerce_gpf|wpfm|webtoffee|adtribes|product-feed&limit=80"
+                        cr = await client.get(api, timeout=25)
+                        if cr.status_code == 200:
+                            for line in cr.text.splitlines():
+                                try:
+                                    row = json.loads(line)
+                                    u = str(row.get("url", ""))
+                                    if same_host(u, root):
+                                        historical.add(u)
+                                except Exception:
+                                    continue
+            except Exception as e:
+                errors.append({"source": "commoncrawl", "error": str(e)[:180]})
+    return {
+        "enabled": True,
+        "urls": sorted(urls)[:300],
+        "historical": sorted(historical)[:300],
+        "blobs": blobs[:20],
+        "errors": errors,
+    }
+
+
 async def probe_site(name: str, root: str) -> Dict[str, Any]:
-    start = time.time()
+    start_time = time.time()
     host = bare_host(root)
     if host in KNOWN_10:
         raise RuntimeError(f"known-site exclusion violated for target: {host}")
 
     source_blobs: List[str] = []
-    all_xhr: List[str] = []
+    all_requests: List[str] = []
     all_slugs: List[str] = []
     all_namespaces: List[str] = []
     browser_results: List[Dict[str, Any]] = []
-    cookie_jars: List[Dict[str, str]] = []
 
-    seed: Dict[str, str] = {}
+    # Clean standard browser passes only. Browser state is never carried between engines.
     for engine in ("chromium", "firefox", "webkit"):
-        be, cookies, html, response_blobs = await browser_engine(root, engine, seed)
+        be, _, html, response_blobs = await browser_engine(root, engine)
         browser_results.append(asdict(be))
-        source_blobs.append(html)
-        source_blobs.extend(response_blobs)
-        all_xhr.extend(be.xhr_urls)
+        if not be.challenge:
+            source_blobs.append(html)
+            source_blobs.extend(response_blobs)
+        all_requests.extend(be.xhr_urls)
+        all_requests.extend(be.resource_urls)
+        # Plugin slugs remain diagnostic even when a challenge is present; they never make a blocked site admissible.
         all_slugs.extend(be.plugin_asset_slugs)
         all_namespaces.extend(be.namespaces)
-        if cookies:
-            cookies["__ua__"] = be.user_agent
-            cookie_jars.append(dict(cookies))
-            seed = {k: v for k, v in cookies.items() if k != "__ua__"}
+
+    challenge_encountered = any(bool(b.get("challenge_encountered")) for b in browser_results)
+    clean_browser_success = any(int(b.get("status") or 0) == 200 and not b.get("challenge") for b in browser_results)
 
     cf_html, cf_meta = await optional_cf_content(root)
     bl_html, bl_meta = await optional_browserless(root)
-    for x in (cf_html, bl_html):
-        if x:
-            source_blobs.append(x)
-            all_slugs.extend(parse_plugin_slugs(x))
-            all_namespaces.extend(parse_namespaces(x))
+    if cf_html:
+        all_slugs.extend(parse_plugin_slugs(cf_html))
+        all_namespaces.extend(parse_namespaces(cf_html))
+    if bl_html:
+        all_slugs.extend(parse_plugin_slugs(bl_html))
+        all_namespaces.extend(parse_namespaces(bl_html))
 
+    # Direct public fetch is deliberately cookie-free.
     direct_home = ""
-    direct_cookies = dict(seed)
-    direct_cookies.pop("__ua__", None)
+    direct_ua = "Mozilla/5.0 (compatible; WooCommerceV175PluginRecovery/2026.09)"
     try:
-        headers = {"User-Agent": seed.get("__ua__", "Mozilla/5.0"), "Accept": "text/html,application/xhtml+xml,*/*;q=.8"}
-        async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=30) as client:
-            r = await client.get(root, cookies=direct_cookies)
-            direct_home = (await r.aread()).decode("utf-8", "ignore")[:2_000_000]
-            source_blobs.append(direct_home)
+        headers = {"User-Agent": direct_ua, "Accept": "text/html,application/xhtml+xml,*/*;q=.8"}
+        async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=20) as client:
+            r = await client.get(root)
+            body = await r.aread()
+            direct_home = body.decode("utf-8", "ignore")[:2_000_000]
+            if r.status_code == 200 and not is_challenge(r.status_code, direct_home):
+                source_blobs.append(direct_home)
+            if is_challenge(r.status_code, direct_home):
+                challenge_encountered = True
     except Exception:
         pass
 
+    # Public API surface without browser cookies / clearance state.
     api_evidence: List[ApiEvidence] = []
     try:
-        api_cookies = dict(seed)
-        api_cookies["__ua__"] = seed.get("__ua__", "Mozilla/5.0")
-        api_evidence, api_blobs, api_ns = await api_surface(root, api_cookies)
+        api_evidence, api_blobs, api_ns = await api_surface(root, direct_ua)
         source_blobs.extend(api_blobs)
         all_namespaces.extend(api_ns)
     except Exception:
         pass
 
+    passive = await passive_public_discovery(root)
+    source_blobs.extend(passive.get("blobs") or [])
+    all_requests.extend(passive.get("urls") or [])
+    historical = passive.get("historical") or []
+
     all_slugs = sorted(set(all_slugs))
     all_namespaces = sorted(set(all_namespaces))
-    all_xhr = sorted(set(x for x in all_xhr if same_host(x, root)))[:300]
-
-    hits = find_plugin_hits(source_blobs + all_xhr, all_slugs, all_namespaces)
+    all_requests = sorted(set(x for x in all_requests if same_host(x, root)))[:500]
+    hits = find_plugin_hits(source_blobs + all_requests, all_slugs, all_namespaces)
     family = "unknown_woocommerce"
     family_confidence = "low"
     if hits:
         family = sorted(hits, key=lambda k: (-len(hits[k]), k))[0]
-        family_confidence = "high"
+        family_confidence = plugin_family_confidence(hits, all_slugs, all_namespaces)
 
-    explicit = explicit_xml_candidates("\n".join(source_blobs + all_xhr), root)
-    candidates = list(explicit)
+    explicit = explicit_xml_candidates("\n".join(source_blobs + all_requests), root)
+    query_candidates = query_feed_candidates("\n".join(source_blobs + all_requests), root)
+    candidates = list(dict.fromkeys(explicit + query_candidates + passive.get("urls", []) + historical))
     candidates.extend(GENERIC_FEED_PATHS)
     if family in PLUGIN_CANDIDATES:
         candidates = PLUGIN_CANDIDATES[family] + candidates
-    if family == "google_for_woocommerce" and not explicit:
-        candidates = []
-
-    for path in (
-        "/wp-content/uploads/woo-feed/google/xml/",
-        "/wp-content/uploads/woo-product-feed-pro/xml/",
-        "/wp-content/uploads/wppfm-feeds/",
-        "/wp-content/uploads/webtoffee_product_feed/",
-        "/wp-content/uploads/codesolz-feeds/",
-        "/feeds/",
-        "/feed/",
-    ):
-        for jar in cookie_jars[:3]:
-            clean = {k: v for k, v in jar.items() if k != "__ua__"}
-            headers = {"User-Agent": jar.get("__ua__") or "Mozilla/5.0", "Accept": "text/html,*/*;q=.5"}
-            try:
-                async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=12) as client:
-                    r = await client.get(urljoin(root + "/", path), cookies=clean)
-                    txt = (await r.aread()).decode("utf-8", "ignore")[:250_000]
-                    if r.status_code == 200:
-                        candidates.extend(explicit_xml_candidates(txt, root))
-            except Exception:
-                pass
-
     candidates = list(dict.fromkeys(candidates))
-    feed = await direct_feed_probe(root, candidates, cookie_jars or [{"__ua__": "Mozilla/5.0"}])
+
+    if challenge_encountered:
+        feed = {
+            "verified": False,
+            "url": None,
+            "item_count": 0,
+            "sha256": "",
+            "skipped": True,
+            "skip_reason": "challenge_or_challenge-like_response_encountered; native verification inadmissible",
+            "tried": [],
+        }
+    else:
+        feed = await direct_feed_probe(root, candidates, direct_ua)
+
+    admissible = bool(clean_browser_success and not challenge_encountered)
+    if not admissible and feed.get("verified"):
+        feed["verified"] = False
+        feed["rejected_reason"] = "transport evidence encountered a challenge; repository acceptance forbids challenge/clearance verification"
 
     evidence = {
         "site": name,
@@ -778,16 +945,25 @@ async def probe_site(name: str, root: str) -> Dict[str, Any]:
         "family_hits": hits,
         "plugin_asset_slugs": all_slugs,
         "namespaces": all_namespaces,
-        "xhr_urls": all_xhr,
+        "xhr_urls": all_requests,
         "api_evidence": [asdict(x) for x in api_evidence],
         "http_api_namespaces": sorted(set(x for a in api_evidence for x in a.namespaces)),
         "browser": browser_results,
+        "challenge_encountered": challenge_encountered,
+        "admissible_for_native_verification": admissible,
         "cloudflare": cf_meta,
         "browserless": bl_meta,
+        "passive_discovery": {
+            "enabled": passive.get("enabled"),
+            "current_candidate_urls": passive.get("urls", [])[:200],
+            "historical_candidate_urls": historical[:200],
+            "errors": passive.get("errors", []),
+        },
         "candidate_count": len(candidates),
-        "explicit_candidates": explicit[:100],
+        "explicit_candidates": explicit[:120],
+        "query_feed_candidates": query_candidates[:120],
         "native_feed": feed,
-        "elapsed_s": round(time.time() - start, 2),
+        "elapsed_s": round(time.time() - start_time, 2),
     }
     evidence["groq_advisory"] = await groq_advisory(evidence)
     return evidence
@@ -821,6 +997,7 @@ async def main() -> int:
         "summary": {
             "sites": len(results),
             "native_verified": sum(1 for x in results if x["native_feed"].get("verified")),
+            "challenge_encountered": sum(1 for x in results if x.get("challenge_encountered")),            "admissible_for_native_verification": sum(1 for x in results if x.get("admissible_for_native_verification")),
             "plugin_groups": {
                 k: sum(1 for x in results if x["family"] == k)
                 for k in sorted(set(x["family"] for x in results))

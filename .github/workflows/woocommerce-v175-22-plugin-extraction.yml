@@ -36,6 +36,13 @@ jobs:
       PYTHONUNBUFFERED: "1"
       CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      # Browser Run REST is intentionally off for this acceptance path.
+      # Workers Free allows only one Quick Action every 10s / 10 minutes of browser time per day.
+      CF_BROWSER_RUN_ENABLED: "0"
+      PASSIVE_INDEX_ENABLED: "1"
+      WAYBACK_ENABLED: "1"
+      COMMONCRAWL_ENABLED: "0"
+      MAX_DIRECT_FEED_PROBES: "40"
       BROWSERLESS_CONTENT_URL: ${{ secrets.BROWSERLESS_CONTENT_URL }}
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       GROQ_MODEL: ${{ vars.GROQ_MODEL }}
@@ -52,10 +59,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install --disable-pip-version-check -q httpx curl_cffi playwright
-          python -m pip install --disable-pip-version-check -q camoufox nodriver || true
+          python -m pip install --disable-pip-version-check -q httpx playwright
           python -m playwright install --with-deps chromium firefox webkit
-          python -m camoufox fetch >/dev/null 2>&1 || true
 
       - name: Run V175-derived plugin extraction
         shell: bash
@@ -134,11 +139,13 @@ jobs:
                       f.write(f"{family}\t{site}\n")
 
           assert len(rows) == 22
-          assert all((r.get("site") not in {
-              "PC Studio", "quickincomputers", "avikaretails", "Geekbees",
-              "Ninja Dog", "networkitstore", "nexusinfosys",
-              "solankienterprises", "Only SDD", "itgadgetsonline"
-          }) for r in rows)
+          excluded = {
+              "pcstudio.in", "quickincomputers.com", "avikaretails.com",
+              "geekbees.in", "ninjadog.in", "networkitstore.in",
+              "mynexusinfosys.com", "solankienterprises.com", "onlyssd.com",
+              "itgadgetsonline.com"
+          }
+          assert all((r.get("url", "").lower().split("/")[2].removeprefix("www.") not in excluded) for r in rows if r.get("url"))
 
       - name: Upload aggregate evidence
         if: always()
