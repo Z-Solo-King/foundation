@@ -4,7 +4,10 @@ import asyncio, gzip, hashlib, json, os, re, time
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin, urlsplit
-import httpx
+try:
+    import httpx
+except ModuleNotFoundError:  # pure helper tests do not require the HTTP client
+    httpx = None
 
 TARGETS = [
 ("Aarna Computers","https://aarnacomputers.com"),("Ads Store","https://adsstore.in"),
@@ -54,6 +57,8 @@ def native_google(body:bytes,ct:str):
     return True,len(blocks),hashlib.sha256(raw).hexdigest()
 
 async def get(client,url,accept):
+    if httpx is None:
+        raise RuntimeError("httpx is required for live extraction")
     try:
         r=await client.get(url,headers={"Accept":accept},follow_redirects=True,timeout=TIMEOUT)
         return r.status_code,str(r.url),dict(r.headers),await r.aread()
