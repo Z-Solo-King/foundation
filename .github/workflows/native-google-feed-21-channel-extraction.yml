@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: wc21-plugin-channel-extraction
+  cancel-in-progress: true
+
 jobs:
   extract:
     name: "21-site plugin channels — ${{ matrix.id }}"
