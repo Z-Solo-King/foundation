@@ -61,7 +61,7 @@ test ! -e backend/learning/promotion.py
 # Scan production source for private implementation markers and concrete private
 # service topology instead of the generic binding identifier.
 ! grep -RniE 'extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE' foundation_core backend wrangler.toml migrations
-! grep -nE 'extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE' worker.py edge.js
+! grep -nE 'extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE' worker.py edge.ts
 ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' foundation_core backend worker.py wrangler.toml migrations tests
 
 token_verify_status=$(curl -sS -o "$RUNNER_TEMP/cloudflare-token-verify.json" -w '%{http_code}' \
@@ -216,7 +216,7 @@ if [ -z "${B2_BUCKET:-}" ] || [ -z "${B2_ENDPOINT:-}" ]; then
   echo "B2 release configuration: PASS (source=$settings_worker)"
 fi
 
-# Canonical runtime boundary checks. The public application is Pages -> heroic (JavaScript edge) -> heroic-core (Python) -> operations-edge (JavaScript) -> operations;
+# Canonical runtime boundary checks. The public application is Pages -> heroic (TypeScript edge) -> heroic-core (Python) -> operations-edge (JavaScript) -> operations;
 # no legacy foundation Worker, custom Worker domain, or workers.dev public backend should exist.
 heroic_subdomain_status=$(curl -sS -o "$RUNNER_TEMP/heroic-subdomain.json" -w '%{http_code}' \
   -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
@@ -381,7 +381,7 @@ grep -q "^service = \"${OPERATIONS_EDGE_SERVICE_NAME}\"$" wrangler.python-core.g
 
 printf '%s\n' \
   'name = "heroic"' \
-  'main = "edge.js"' \
+  'main = "edge.ts"' \
   'compatibility_date = "2026-09-28"' \
   'workers_dev = false' \
   'preview_urls = false' \
@@ -392,7 +392,7 @@ printf '%s\n' \
   > wrangler.production.generated.toml
 
 grep -q '^name = "heroic"$' wrangler.production.generated.toml
-grep -q '^main = "edge.js"$' wrangler.production.generated.toml
+grep -q '^main = "edge.ts"$' wrangler.production.generated.toml
 grep -q '^binding = "CORE"$' wrangler.production.generated.toml
 grep -q "^service = \"${PYTHON_CORE_WORKER_NAME}\"$" wrangler.production.generated.toml
 ! grep -q 'python_workers' wrangler.production.generated.toml
@@ -452,7 +452,7 @@ PY
 (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config" --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:bootstrap-${ACCEPTANCE_RUN_ID}")
 echo "Operations binding-free bootstrap deployment: PASS"
 
-# Deploy the migrated JavaScript edge Worker before Foundation so the public OPERATIONS binding
+# Deploy the migrated TypeScript edge Worker before Foundation so the public OPERATIONS binding
 # targets the new edge transport boundary. The edge Worker calls the Python core privately.
 (cd "$RUNNER_TEMP/operations/polyglot/edge-worker" && npx --yes wrangler@4.131.1 deploy --config wrangler.toml --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:edge-${ACCEPTANCE_RUN_ID}")
 edge_deployments_status=$(curl -sS -o "$RUNNER_TEMP/edge-worker-deployments.json" -w '%{http_code}' \
@@ -484,7 +484,7 @@ printf '%s\n' \
 # from the Operations code revision. The current production database was live-verified with
 # migrations 0001-0010 applied; fingerprint the actual migration files and only issue a remote
 # D1 migration call when the repository schema content differs from that verified production set.
-D1_MIGRATIONS_FINGERPRINT="c7e6662129142532be92181579dd171572252257e3515bb0fd3b68674ea155b0"
+D1_MIGRATIONS_FINGERPRINT="01e075fc2161a29e62bf45248eed5691bd3925d9c5586f65ffefa7791d205147"
 current_d1_migrations_fingerprint="$(
   find "$GITHUB_WORKSPACE/migrations" -type f -name '*.sql' -print0 |
     sort -z |
@@ -503,7 +503,7 @@ fi
 
 # Pywrangler performs Python-project validation against the project's default Wrangler config.
 # Temporarily make the generated Python-core config the project-default config, then restore
-# the JavaScript edge config before its own deployment. This avoids a false
+# the TypeScript edge config before its own deployment. This avoids a false
 # "python_workers compat flag not specified" rejection while keeping both deployment
 # configs explicit for their respective Worker.
 python_core_default_backup="$RUNNER_TEMP/foundation-js-wrangler.toml"
