@@ -69,8 +69,60 @@ def _post_json(url: str, token: str, body: dict[str, Any]) -> tuple[int, dict[st
     return status, value if isinstance(value, dict) else {}
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
+def _validate_chat_response(payload: dict[str, Any], expected_model: str = "") -> tuple[bool, dict[str, Any]]:
+    """Validate the authenticated Foundation research response contract.
+
+    The public edge returns provider provenance inside response and intentionally
+    does not expose an OpenAI-compatible choices envelope. Model identity is
+    separately proven by the runtime/provider preflight; when a model field is
+    present here it must match the expected value.
+    """
+    response = payload.get("response")
+    if not isinstance(response, dict):
+        return False, {
+            "response_id_present": False,
+            "provider_present": False,
+            "generation_status": None,
+            "structured_output": False,
+        }
+    provider = response.get("provider")
+    response_id = response.get("response_id")
+    generation_status = response.get("generation_status")
+    text = response.get("text")
+    model = response.get("model")
+    structured = None
+    if isinstance(text, str) and text.strip():
+        try:
+            structured = json.loads(text)
+        except json.JSONDecodeError:
+            structured = None
+    model_ok = model is None or not expected_model or model == expected_model
+    details = {
+        "response_id_present": isinstance(response_id, str) and bool(response_id.strip()),
+        "provider_present": isinstance(provider, str) and bool(provider.strip()),
+        "provider": provider if isinstance(provider, str) else None,
+        "generation_status": generation_status if isinstance(generation_status, str) else None,
+        "model_present": isinstance(model, str) and bool(model.strip()),
+        "model_match": model_ok,
+        "structured_output": isinstance(structured, dict),
+    }
+    ok = (
+        payload.get("ok") is True
+        and details["response_id_present"]
+        and details["provider_present"]
+        and generation_status == "model_generated"
+        and isinstance(text, str)
+        and bool(text.strip())
+        and isinstance(structured, dict)
+        and isinstance(structured.get("findings"), list)
+        and isinstance(structured.get("follow_up_questions"), list)
+        and isinstance(structured.get("note"), str)
+        and model_ok
+    )
+    return ok, details
+
+
+def main() -> int:    parser = argparse.ArgumentParser()
     parser.add_argument("--url", required=True)
     parser.add_argument("--token", required=True)
     parser.add_argument("--model", required=True)
@@ -115,32 +167,8 @@ def main() -> int:
     if readiness_ok:
         chat_status, payload = _post_json(base + "/api/v1/chat", args.token, body)
 
-    content = (
-        payload.get("choices", [{}])[0].get("message", {}).get("content")
-        if isinstance(payload, dict)
-        else None
-    )
-    structured = None
-    if isinstance(content, str) and content.strip():
-        try:
-            structured = json.loads(content)
-        except json.JSONDecodeError:
-            pass
-
-    chat_ok = (
-        chat_status == 200
-        and isinstance(payload.get("provider"), str)
-        and bool(payload["provider"].strip())
-        and payload.get("model") == args.model
-        and isinstance(payload.get("execution_id"), str)
-        and bool(payload["execution_id"].strip())
-        and isinstance(content, str)
-        and bool(content.strip())
-        and isinstance(structured, dict)
-        and isinstance(structured.get("findings"), list)
-        and isinstance(structured.get("follow_up_questions"), list)
-        and isinstance(structured.get("note"), str)
-    )
+    chat_ok, chat_details = _validate_chat_response(payload, expected_model=args.model)
+    chat_ok = chat_status == 200 and chat_ok
 
     ok = readiness_ok and chat_ok
     if ok:
@@ -170,10 +198,8 @@ def main() -> int:
         "expected_foundation_sha": args.expected_foundation_sha,
         "expected_operations_ref": args.expected_operations_ref,
         "chat_http_status": chat_status,
-        "model": payload.get("model"),
-        "provider_present": isinstance(payload.get("provider"), str),
-        "execution_id_present": isinstance(payload.get("execution_id"), str),
-        "structured_output": isinstance(structured, dict),
+        "expected_model": args.model,
+        **chat_details,
         "request_contract": {
             "operation": "knowledge",
             "proof_header": True,
