@@ -53,7 +53,7 @@ coverage run --branch --source=backend,foundation_core,worker --omit='tests/*' -
 coverage report --show-missing --fail-under=100 --omit='tests/*'
 python -m benchmark.chatbot_query_benchmark --input benchmark/chatbot-query-corpus.json --output .runtime/chatbot-query-benchmark.json
 python -m pytest -q tests/test_workflow_policy.py
-node tests/public_edge_js_test.mjs
+node tests/public_edge_ts_test.mjs
 python scripts/public_security_lint.py --strict
 
 test ! -e backend/learning/promotion.py
@@ -61,7 +61,7 @@ test ! -e backend/learning/promotion.py
 # Scan production source for private implementation markers and concrete private
 # service topology instead of the generic binding identifier.
 ! grep -RniE 'extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE' foundation_core backend wrangler.toml migrations
-! grep -nE 'extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE' worker.py edge.js
+! grep -nE 'extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE' worker.py edge.ts
 ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' foundation_core backend worker.py wrangler.toml migrations tests
 
 token_verify_status=$(curl -sS -o "$RUNNER_TEMP/cloudflare-token-verify.json" -w '%{http_code}' \
@@ -512,7 +512,27 @@ cp wrangler.python-core.generated.toml wrangler.toml
 pywrangler deploy --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}:python-core"
 mv -f "$python_core_default_backup" wrangler.toml
 
-(cd "$GITHUB_WORKSPACE" && npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}:javascript-edge")
+(cd "$GITHUB_WORKSPACE" && npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml
+
+# The public heroic edge is transport-only; B2 credentials belong to heroic-core.
+# Remove any legacy public-edge B2 secrets and verify the trust surface is clean.
+for public_b2_secret in B2_KEY_ID B2_APPLICATION_KEY; do
+  delete_secret_status=$(curl -sS -o "$RUNNER_TEMP/public-b2-secret-delete.json" -w '%{http_code}' \
+    -X DELETE -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' \
+    "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${PUBLIC_WORKER_NAME}/secrets/${public_b2_secret}" || true)
+  echo "DELETE public ${public_b2_secret} binding -> HTTP ${delete_secret_status}"
+  if [ "${delete_secret_status}" != "200" ] && [ "${delete_secret_status}" != "404" ]; then
+    jq -c '{success,message,errors}' "$RUNNER_TEMP/public-b2-secret-delete.json" 2>/dev/null || true
+    exit 1
+  fi
+done
+public_settings_status=$(curl -sS -o "$RUNNER_TEMP/public-worker-settings-after-b2-cleanup.json" -w '%{http_code}' \
+  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' \
+  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${PUBLIC_WORKER_NAME}/settings" || true)
+test "${public_settings_status}" = "200"
+! jq -e '.result.bindings[]? | select(.name == "B2_KEY_ID" or .name == "B2_APPLICATION_KEY")' "$RUNNER_TEMP/public-worker-settings-after-b2-cleanup.json" >/dev/null
+
+ --message "github:${GITHUB_SHA}:javascript-edge")
 
 health_status=$(curl -sS -o health.json -w '%{http_code}' "$BASE_URL/health")
 echo "GET /health -> HTTP ${health_status}"
