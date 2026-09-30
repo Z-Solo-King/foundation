@@ -49,7 +49,7 @@ def test_production_release_explicitly_dispatches_nightly_live_mode():
     assert "--field dry_run=false" in release
     assert "--field target_sha=\"$GITHUB_SHA\"" in release
     assert "--field production_release_run_id=\"$GITHUB_RUN_ID\"" in release
-    assert "--json" not in release
+    assert 'gh workflow run nightly-multi-agent-research-v3.yml' in release
     assert "dry_run:false" not in release
 
 
