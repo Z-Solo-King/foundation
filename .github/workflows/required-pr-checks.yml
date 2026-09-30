@@ -72,6 +72,8 @@ jobs:
         run: python scripts/public_security_lint.py --strict
       - name: Public documentation surface scan
         run: python tools/public_surface_scan.py --strict
+      - name: Workflow authority boundary scan
+        run: python tools/validate_workflow_authority.py
 
       - name: Public PR metadata security scan
         if: "${{ github.event_name == 'pull_request' }}"

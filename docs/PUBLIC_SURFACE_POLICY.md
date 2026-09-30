@@ -62,3 +62,16 @@ Live retailer target registries and feed-recovery tooling do not belong in Found
 Runtime state is documented only at the level required to explain the public contract. Historical live identifiers are redacted even when they were previously observed.
 
 GitHub's current security guidance supports this boundary: secret scanning detects hardcoded credentials across repository history, and push protection is designed to block supported secrets before they reach the repository. Real exposed credentials still require rotation/revocation and history remediation; redaction of non-secret infrastructure metadata is a separate information-disclosure control. 
+
+
+## 2026-09-30 workflow authority enforcement
+
+Workflow authority is machine-enforced by docs/WORKFLOW_AUTHORITY_REGISTRY.json and tools/validate_workflow_authority.py.
+
+Public feed discovery workflows are a separate public-safe class. They must not reference repository secrets, create GitHub App tokens, or checkout private Operations.
+
+Any workflow that uses secrets or private Operations is privileged and must not execute on pull_request, pull_request_target, or merge_group. Push-based privileged workflows are restricted to main.
+
+This is an execution rule, not merely a documentation convention.
+
+Privileged workflow_run chains must also name an explicitly trusted upstream workflow in the authority registry. This prevents a new workflow from becoming a hidden privilege-transfer path.
