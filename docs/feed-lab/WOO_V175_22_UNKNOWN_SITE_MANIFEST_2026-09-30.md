@@ -1,69 +1,95 @@
-# WooCommerce V175 Unknown-Site Manifest — 2026-09-30
+# WooCommerce V175 Active-Cohort Manifest — 2026-09-30
 
 ## Scope
 
-Current unresolved cohort: 22 public WooCommerce retailers.
+The canonical recovery cohort is now **21 active public WooCommerce retailers**. Moskeys is explicitly excluded because the site is currently down / DNS-unresolvable from the extraction environment and is not useful as an active feed-recovery target.
 
-The canonical runner targets exactly these 22 sites and excludes the ten already-known sites. The workflow uses six independent shards and uploads one evidence JSON per shard.
+The repository retains the ten previously-known exclusions separately. The extraction workflow uses six independent shards and validates the aggregate against this 21-site active host set.
 
-V175 is the extraction authority for clearance-aware browser recovery, persistent-cookie reuse, browser/XHR discovery, transport/provenance separation, bounded recovery, and public-only acquisition.
+V175 is the extraction authority for clearance-aware browser recovery, persistent-cookie semantics, browser/XHR discovery, transport/provenance separation, bounded recovery, and public-only acquisition. Challenge/clearance state is diagnostic only and is never replayed or admitted into native-feed verification.
+
+## Canonical run
+
+- Workflow: **WooCommerce V175 22 Plugin Extraction** (active cohort semantics; legacy workflow filename retained for compatibility)
+- Run: **#14**
+- Run ID: **36686498909**
+- Head SHA: **adab53eb74a02d9eac55f48413c7787dceef805e**
+- Aggregate artifact: `woocommerce-v175-plugin-aggregate`
+- Aggregate validation: passed
+- Active targets: **21**
+- Verified native Google Merchant XML feeds: **0**
+- Feed-generator families verified with a native feed URL: **0**
+- Google for WooCommerce API-integrated targets: **1**
+- Challenge-unverified targets: **13**
+- Clean 200 browser targets still unresolved: **6**
+- Non-challenge HTTP 403 targets: **1** (KC Computers)
+- Excluded/down target: **1** (Moskeys)
 
 ## Final evidence classification
 
-| Site | Public evidence state | Feed-plugin family | Notes |
+| Site | Public evidence state | Feed-plugin family | Transport / interpretation |
 |---|---|---|---|
-| Aarna Computers | browser challenged | unknown | WooCommerce + Elementor surface; no feed-family signal recovered |
-| Ads Store | plugin surface recovered | unknown | WooCommerce + Safe SVG; no feed-family signal |
-| EZPZ Solutions | plugin surface recovered | unknown | Many WooCommerce extensions; no feed-family signal |
-| GamesNComps | live Cloudflare Browser Run surface recovered | unknown | WooCommerce; current rendered HTML exposed no feed-family marker |
-| hotshiftpc | plugin surface recovered | unknown | WooCommerce + Jet/Jet Woo extensions; no feed-family signal |
-| ithunt | browser challenged | unknown | No plugin surface |
-| KC Computers | browser challenged | unknown | No plugin surface |
-| KRG KART | browser challenged | unknown | Browser Run returned a 403 surface with no plugin marker |
-| Kryptronix Gaming | plugin surface recovered | unknown | WooCommerce + Easy Login/LiteSpeed/compare extensions; no feed-family signal |
-| NCL Computer | browser challenged | unknown | No plugin surface |
-| PC Kumar Infotech | plugin surface recovered | unknown | WooCommerce + product-builder/variation/wishlist/compare extensions; no feed-family signal |
-| PCHubShop | browser challenged | unknown | No plugin surface |
-| Prime ABGB | browser challenged | unknown | No plugin surface |
-| SCL Gaming | browser challenged | unknown | No plugin surface |
-| Variety Infotech | plugin surface recovered | unknown | WooCommerce + Cashfree/reviews/product-search extensions; no feed-family signal |
-| Viper PC | plugin surface recovered | unknown | Public surface recovered; no feed-family signal |
-| AULA India | browser reached / no plugin assets | unknown | 403 responses; public namespace hints did not identify a feed plugin |
-| Cosmic Byte | browser challenged | unknown | No feed-family marker recovered |
-| Meckeys | plugin surface recovered | unknown | WooCommerce + discount/filter/variation/product-search extensions; no feed-family signal |
-| Moskeys | transport/DNS failure | unknown | ERR_NAME_NOT_RESOLVED in V175 browser pass |
-| StacksKB | plugin surface recovered | unknown | WooCommerce + Ajax Search + LiteSpeed; no feed-family signal |
-| Theproaudio | browser challenged | unknown | No plugin surface |
+| Aarna Computers | challenge-unverified | unknown | standalone XML candidate probe skipped because challenge makes native verification inadmissible |
+| Ads Store | challenge-unverified | unknown | standalone XML candidate probe skipped |
+| EZPZ Solutions | clean browser | unknown | standalone XML candidates probed; no native feed validated |
+| GamesNComps | challenge-unverified | unknown | standalone XML candidate probe skipped |
+| hotshiftpc | clean browser | unknown | standalone XML candidates probed; no native feed validated |
+| ithunt | challenge-unverified | unknown | standalone XML candidate probe skipped |
+| KC Computers | HTTP 403 without challenge marker | unknown | public API/browser surface remained blocked; no native verification |
+| KRG KART | challenge-unverified | unknown | standalone XML candidate probe skipped |
+| Kryptronix Gaming | clean browser | unknown | standalone XML candidates probed; no native feed validated |
+| NCL Computer | challenge-unverified | unknown | standalone XML candidate probe skipped |
+| PC Kumar Infotech | challenge-unverified | unknown | standalone XML candidate probe skipped |
+| PCHubShop | challenge-unverified | unknown | standalone XML candidate probe skipped |
+| Prime ABGB | challenge-unverified | unknown | standalone XML candidate probe skipped |
+| SCL Gaming | challenge-unverified | unknown | standalone XML candidate probe skipped |
+| Variety Infotech | challenge-unverified | unknown | standalone XML candidate probe skipped |
+| Viper PC | clean browser | unknown | standalone XML candidates probed; no native feed validated |
+| AULA India | API surface recovered; homepage browser returned 403 with Cloudflare bot cookie | google_for_woocommerce | API-integrated via public `wc/gla`; no standalone XML expected from current evidence |
+| Cosmic Byte | challenge-unverified | unknown | standalone XML candidate probe skipped |
+| Meckeys | clean browser | unknown | standalone XML candidates probed; no native feed validated |
+| StacksKB | clean browser | unknown | standalone XML candidates probed; no native feed validated |
+| Theproaudio | challenge-unverified | unknown | standalone XML candidate probe skipped |
 
 ## Important result
 
-No current 22-site target has a verified native Google Merchant feed from this evidence set, and no current target has a sufficiently strong plugin-family fingerprint to assign one of the known feed-generator families.
+Run #14 is a successful **evidence-completion run**, not a claim that the remaining unknown sites have no feeds.
 
-Do not classify these as no feed exists. The correct state is feed plugin/feed URL unresolved unless a native Merchant XML payload is independently validated.
+The current evidence establishes one distinct architecture change: **AULA India exposes the Google for WooCommerce integration through the public `wc/gla` WordPress REST namespace**, and the harness therefore classifies it as `google_for_woocommerce / api_integrated` rather than attempting to invent or reconstruct an XML feed.
 
-The native-feed validator requires Google Merchant namespace plus real product fields such as g:id, g:title, g:link and g:price and rejects challenge pages/non-feed content.
+The remaining six clean-browser targets have public WooCommerce surfaces but no sufficiently strong known feed-generator fingerprint and no current native Google Merchant payload passing the strict validator.
 
-## Recovery status
+The 13 challenge-unverified targets remain unresolved by design. The repository does not bypass Cloudflare/CAPTCHA, replay clearance cookies, or treat challenge pages as feed evidence.
 
-The runner is split into clean-browser, public API, passive-discovery, and direct-feed lanes. Browser evidence is collected with Chromium, Firefox/Gecko and WebKit in independent contexts; direct API/feed requests are cookie-free. Challenge/clearance state is diagnostic only and is never replayed or admitted into native-feed verification.
+## Acceptance rule
 
-Cloudflare Browser Run remains an optional diagnostic lane. The current account is on Workers Free, so its low Browser Run limits make it unsuitable as a parallel 22-site execution dependency.
+A native Google Merchant feed is verified only when the **current public payload** independently validates with:
 
-## Remaining blockers
+- Google Merchant namespace;
+- RSS/Atom item/entry structure;
+- product fields including `g:id`, `g:title`, `g:link`, and `g:price`;
+- no challenge / CAPTCHA / access-denied payload.
 
-1. Ten targets remain challenge-blocked for this acceptance path; the repository deliberately does not bypass those challenges.
-2. Moskeys remains DNS-unresolvable from the GitHub runner, so it is transport-unresolved.
-3. Cloudflare Browser Run remains quota-limited on the current Workers Free account, but it is no longer a required execution dependency.
+Sitemaps, robots.txt, WooCommerce Store API responses, normal product APIs, historical URLs, or reconstructed XML are discovery evidence only and are never promoted to a native Merchant feed.
 
-The canonical `main` extraction run completed successfully and produced a validated aggregate, so there is no CI queue blocker remaining.
+## Blocker assessment
 
-## Current completion state
+1. **Target-side challenge controls:** still the dominant blocker for 13 active sites. Further repository-side probing cannot legitimately turn those into verified feeds without crossing the acceptance boundary.
+2. **Clean unknowns:** six sites were reachable with clean browser passes but exposed no known feed-family signal and no verified current Merchant XML. The current candidate-mining/probe budget is therefore sufficient for this cohort unless a new site-specific signal appears.
+3. **HTTP 403 without challenge marker:** KC Computers remains transport-blocked. It should not be labeled as feed-absent.
+4. **Google for WooCommerce:** API-integrated architecture is now handled as a separate mode. Without Merchant account authorization, there is no public standalone Google feed URL to extract from the plugin itself.
+5. **Cloudflare Browser Run:** remains optional diagnostic only; the current Free-plan limits make it unsuitable as a 21-site execution dependency.
 
-22/22 targets are accounted for in canonical `main` run #11 (`e2dea16f0e52a23df475e8a46eaa1dbb9f18314d`).
-0/22 feed-plugin families verified.
-0/22 native Google Merchant feeds verified.
-22/22 targets have deterministic evidence state and documented blocker/next state.
-6/22 targets had an admissible, non-challenged browser path for native verification in this run; all six still produced zero native-feed validations.
-16/22 targets were non-admissible because of challenge, transport, or lack of a clean 200 browser path.
+## Completion state
 
-The aggregate validator passed with exactly 22 rows and the known-ten exclusion assertion. GamesNComps is now included in the canonical 22-site run and no feed-family marker was recovered.
+**21/21 active targets are accounted for in canonical main run #14.**
+
+- 0/21 native Google Merchant XML feeds verified
+- 0/21 native feed-generator families verified by current feed payload
+- 1/21 Google for WooCommerce API-integrated
+- 13/21 challenge-unverified
+- 6/21 clean-but-unknown
+- 1/21 transport-blocked by HTTP 403
+- 1 down site (Moskeys) explicitly excluded from the active cohort
+
+The extraction implementation is complete for the active cohort under the repository's public-only acceptance contract. Remaining work is target-side re-access / authenticated Merchant evidence for blocked or API-integrated sites, not another generic feed-URL guessing pass.
