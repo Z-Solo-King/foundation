@@ -177,8 +177,8 @@ def test_production_release_fails_closed_and_retains_chat_policy_receipts():
     assert "production-runtime-acceptance-receipts" in workflow
     assert "allow_persistence_deferred" not in workflow
     assert "inputs:" not in workflow.split("permissions:", 1)[0]
-def test_public_worker_uses_native_javascript_edge_and_python_core():
-    worker = (ROOT / "edge.js").read_text(encoding="utf-8")
+def test_public_worker_uses_native_typescript_edge_and_python_core():
+    worker = (ROOT / "edge.ts").read_text(encoding="utf-8")
     wrangler = WRANGLER.read_text(encoding="utf-8")
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert "env.CORE.fetch(forwardRequest(request))" in worker
