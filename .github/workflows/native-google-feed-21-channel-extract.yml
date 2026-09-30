@@ -1,0 +1,112 @@
+name: WooCommerce 21 Plugin Channel Extraction
+
+on:
+  push:
+    branches: [hunt/native-google-feed-urls-20260927]
+    paths:
+      - "tools/feed-lab/woocommerce_21_plugin_channel_extract.mjs"
+      - ".github/workflows/native-google-feed-21-channel-extract.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    name: "21-channel extraction — ${{ matrix.id }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        include:
+          - {id: aula-india, site: AULA India, root: https://aulaindia.com}
+          - {id: aarna-computers, site: Aarna Computers, root: https://aarnacomputers.com}
+          - {id: ads-store, site: Ads Store, root: https://adsstore.in}
+          - {id: cosmic-byte, site: Cosmic Byte, root: https://www.thecosmicbyte.com}
+          - {id: ezpz-solutions, site: EZPZ Solutions, root: https://www.ezpzsolutions.in}
+          - {id: kc-computers, site: KC Computers, root: https://kccomputers.co.in}
+          - {id: krg-kart, site: KRG KART, root: https://krgkart.com}
+          - {id: kryptronix-gaming, site: Kryptronix Gaming, root: https://kryptronix.in}
+          - {id: meckeys, site: Meckeys, root: https://www.meckeys.com}
+          - {id: moskeys, site: Moskeys, root: https://moskeys.com}
+          - {id: ncl-computer, site: NCL Computer, root: https://nclcomputer.com}
+          - {id: pc-kumar-infotech, site: PC Kumar Infotech, root: https://pckumar.in}
+          - {id: pchubshop, site: PCHubShop, root: https://www.pchubshop.com}
+          - {id: prime-abgb, site: Prime ABGB, root: https://www.primeabgb.com}
+          - {id: scl-gaming, site: SCL Gaming, root: https://sclgaming.in}
+          - {id: stackskb, site: StacksKB, root: https://stackskb.com}
+          - {id: theproaudio, site: Theproaudio, root: https://www.theproaudio.com}
+          - {id: variety-infotech, site: Variety Infotech, root: https://varietyinfotech.com}
+          - {id: viper-pc, site: Viper PC, root: https://viperpc.in}
+          - {id: hotshiftpc, site: hotshiftpc, root: https://hotshiftpc.com}
+          - {id: ithunt, site: ithunt, root: https://ithunt.in}
+    env:
+      SITE_NAME: ${{ matrix.site }}
+      SITE_ROOT: ${{ matrix.root }}
+      OUT_DIR: out/21/${{ matrix.id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Extract plugin/channel evidence
+        run: |
+          node tools/feed-lab/woocommerce_21_plugin_channel_extract.mjs             --site "${SITE_NAME}"             --root "${SITE_ROOT}"             --out "${OUT_DIR}/report.json"
+      - name: Upload site evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wc21-channel-${{ matrix.id }}
+          path: out/21/${{ matrix.id }}/
+          retention-days: 14
+
+  aggregate:
+    name: Aggregate 21-channel evidence
+    needs: extract
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wc21-channel-*
+          path: out/21
+          merge-multiple: false
+      - name: Build aggregate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib
+          root=pathlib.Path("out/21")
+          reports=[]
+          for p in sorted(root.glob("wc21-channel-*/report.json")):
+              reports.append(json.loads(p.read_text()))
+          assert len(reports)==21, f"expected 21 reports, got {len(reports)}"
+          reports=sorted(reports,key=lambda r:r["site"].lower())
+          pathlib.Path("out/21/plugin-channel-evidence.json").write_text(
+              json.dumps({"schema_version":"woocommerce-21-plugin-channel-evidence-aggregate/v1",
+                          "site_count":21,
+                          "basis":"V175-derived browser/XHR recovery + public WP-JSON, REST and WC v1/v2/v3 route-presence probes",
+                          "results":reports},indent=2)+"
+"
+          )
+          lines=["# WooCommerce 21-site plugin/channel extraction","","| Site | Browser | Plugins | Feed signals | WP namespaces | WC v1 | WC v2 | WC v3 |","|---|---:|---:|---|---|---:|---:|---:|"]
+          for r in reports:
+              wc={x["endpoint"]:x["status"] for x in r["woocommerce_version_route_probes"]}
+              lines.append(f'| {r["site"]} | {r["browser"]["status"]} | {len(r["plugin_assets"])} | {", ".join(x["family"] for x in r["feed_family_signals"]) or "none"} | {", ".join(r["public_api_namespaces"]) or "none"} | {wc.get("wc-v1", "-")} | {wc.get("wc-v2", "-")} | {wc.get("wc-v3", "-")} |')
+          pathlib.Path("out/21/plugin-channel-evidence.md").write_text("\n".join(lines)+"\n")
+          PY
+      - name: Upload aggregate evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce21-plugin-channel-evidence
+          path: out/21/
+          retention-days: 14
