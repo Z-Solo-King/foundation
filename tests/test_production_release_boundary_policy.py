@@ -33,10 +33,14 @@ def test_production_release_uses_migrations_once_and_does_not_reexecute_raw_d1_s
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert text.count("RESOURCE_GOVERNANCE_D1_SCHEMA.sql") == 0
     assert text.count('d1 migrations apply "$database_name" --remote') == 1
-    assert 'current-heroic-core-settings.json' in text
+    assert 'D1_MIGRATIONS_FINGERPRINT=' in text
+    assert 'current_d1_migrations_fingerprint=' in text
+    assert 'sha256sum "$file" | awk' in text
+    assert 'migration content fingerprint matches last live-verified production schema' in text
+    assert 'migration content fingerprint differs from last live-verified production schema' in text
+    assert 'current-heroic-core-settings.json' not in text
     assert 'RELEASE_OPERATIONS_REF' in text
-    assert 'D1 migrations: SKIP (live heroic-core Operations revision already equals target' in text
-    assert 'D1 migrations: APPLY (live Operations revision differs or is unavailable)' in text
+    assert 'current_operations_ref=' not in text
     assert 'd1 execute "$database_name" --remote' not in text
     assert text.count('foundation-binding-${ACCEPTANCE_RUN_ID}') == 1
     assert text.count('persistence-boundary-${ACCEPTANCE_RUN_ID}') == 1
