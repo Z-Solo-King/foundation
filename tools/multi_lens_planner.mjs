@@ -35,6 +35,7 @@ function scoreLane(lane, target, history, selectedFamilies) {
   const novelty = clamp(baseYield + exploration);
   const learningQuality = runs > 0 ? clamp(h.evidence_acceptance_rate ?? 0.5) : 0.5;
 
+  // Weighted evidence value is deliberately bounded and numerically stable.
   const rawBenefit =
     0.23 * coverage +
     0.18 * failure +
@@ -86,27 +87,32 @@ function plan(input) {
 
   const lanes = Array.isArray(input.lanes) ? input.lanes : [];
   const history = input.history && typeof input.history === "object" ? input.history : {};
-  const requiredIds = new Set(Array.isArray(input.required_ids) ? input.required_ids : []);
+  const requestedRequiredIds = new Set(Array.isArray(input.required_ids) ? input.required_ids : []);
   const requiredFamilies = new Set(Array.isArray(input.required_families) ? input.required_families : []);
   const disabledIds = new Set(Array.isArray(input.disabled_ids) ? input.disabled_ids : []);
 
-  const mandatory = [];
-  const candidates = [];
-  const validIds = new Set();
+  const rows = [];
+  const byId = new Map();
+  const errors = [];
 
   for (const lane of lanes) {
     if (!lane || typeof lane.id !== "string" || !lane.family) continue;
-    if (lane.enabled === false || disabledIds.has(lane.id)) continue;
-    if (validIds.has(lane.id)) continue;
-    validIds.add(lane.id);
+    if (disabledIds.has(lane.id) || lane.enabled === false) continue;
 
-    const required = lane.required === true || requiredIds.has(lane.id) || requiredFamilies.has(lane.family);
+    if (byId.has(lane.id)) {
+      errors.push({
+        code: "duplicate_lane_id",
+        lane_id: lane.id,
+        message: "duplicate lane IDs are not schedulable",
+      });
+      continue;
+    }
+
     const scored = scoreLane(lane, target, history, new Set());
     const row = {
       id: lane.id,
       family: lane.family,
-      required,
-      depends_on: Array.isArray(lane.depends_on) ? lane.depends_on.filter(Boolean) : [],
+      depends_on: Array.isArray(lane.depends_on) ? [...new Set(lane.depends_on.filter(Boolean))] : [],
       exclusive_group: lane.exclusive_group || null,
       score: scored.score,
       components: scored.components,
@@ -119,14 +125,57 @@ function plan(input) {
       },
     };
 
-    if (required) mandatory.push(row);
-    else candidates.push(row);
+    rows.push(row);
+    byId.set(row.id, row);
   }
+
+  for (const id of requestedRequiredIds) {
+    if (!byId.has(id)) {
+      errors.push({
+        code: "unknown_required_lane",
+        lane_id: id,
+        message: "required lane is missing or disabled",
+      });
+    }
+  }
+
+  const requiredIds = new Set(requestedRequiredIds);
+  for (const row of rows) {
+    if (requiredFamilies.has(row.family)) requiredIds.add(row.id);
+  }
+
+  // Required dependency closure: a required lane pulls its prerequisites into the required set.
+  const closureQueue = [...requiredIds];
+  while (closureQueue.length) {
+    const id = closureQueue.shift();
+    const row = byId.get(id);
+    if (!row) continue;
+
+    for (const dependencyId of row.depends_on) {
+      if (!byId.has(dependencyId)) {
+        errors.push({
+          code: "missing_dependency",
+          lane_id: id,
+          dependency_id: dependencyId,
+          message: "required lane dependency is missing or disabled",
+        });
+        continue;
+      }
+      if (!requiredIds.has(dependencyId)) {
+        requiredIds.add(dependencyId);
+        closureQueue.push(dependencyId);
+      }
+    }
+  }
+
+  const mandatory = rows.filter((row) => requiredIds.has(row.id));
+  const candidates = rows.filter((row) => !requiredIds.has(row.id));
 
   const selected = [];
   const skipped = [];
   const families = new Set();
   const exclusiveGroups = new Set();
+
   let cost = 0;
   let latency = 0;
   let quota = 0;
@@ -149,10 +198,12 @@ function plan(input) {
   }
 
   function commit(row, selection) {
-    const batch = row.depends_on.length
-      ? Math.max(...row.depends_on.map((id) => selected.find((x) => x.id === id)?.batch ?? 0)) + 1
-      : 0;
-    const materialized = { ...row, selection, batch };
+    const dependencyBatches = row.depends_on
+      .map((id) => selected.find((x) => x.id === id)?.batch)
+      .filter((value) => Number.isInteger(value));
+
+    const batch = dependencyBatches.length ? Math.max(...dependencyBatches) + 1 : 0;
+    const materialized = { ...row, selection, required: requiredIds.has(row.id), batch };
     selected.push(materialized);
     families.add(row.family);
     if (row.exclusive_group) exclusiveGroups.add(row.exclusive_group);
@@ -161,37 +212,96 @@ function plan(input) {
     quota += row.estimated.quota;
   }
 
-  for (const row of mandatory) {
-    if (!dependenciesSatisfied(row)) {
-      skipped.push({ ...row, selection: "required-but-blocked", skip_reason: "missing_dependency" });
-      continue;
-    }
-    if (conflicts(row)) {
-      skipped.push({ ...row, selection: "required-but-blocked", skip_reason: "exclusive_group_conflict" });
-      continue;
-    }
-    if (canFit(row)) commit(row, "required");
-    else skipped.push({ ...row, selection: "required-but-blocked", skip_reason: "budget_or_lane_limit" });
-  }
+  // Resolve required lanes in dependency order. Cycles are explicit infeasibility.
+  const pendingMandatory = new Set(mandatory.map((row) => row.id));
+  while (pendingMandatory.size) {
+    let progress = false;
 
-  candidates.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
-
-  const pending = new Set(candidates.map((row) => row.id));
-  let progress = true;
-  while (pending.size && progress) {
-    progress = false;
-    for (const row of candidates) {
-      if (!pending.has(row.id)) continue;
+    for (const row of mandatory) {
+      if (!pendingMandatory.has(row.id)) continue;
       if (!dependenciesSatisfied(row)) continue;
-      pending.delete(row.id);
+      pendingMandatory.delete(row.id);
       progress = true;
 
       if (conflicts(row)) {
-        skipped.push({ ...row, selection: "candidate", skip_reason: "exclusive_group_conflict" });
+        skipped.push({
+          ...row,
+          selection: "required-but-blocked",
+          skip_reason: "exclusive_group_conflict",
+        });
+        errors.push({
+          code: "required_exclusive_conflict",
+          lane_id: row.id,
+          exclusive_group: row.exclusive_group,
+          message: "two required lanes cannot occupy the same exclusive group",
+        });
+        continue;
+      }
+
+      if (!canFit(row)) {
+        skipped.push({
+          ...row,
+          selection: "required-but-blocked",
+          skip_reason: "budget_or_lane_limit",
+        });
+        errors.push({
+          code: "required_budget_conflict",
+          lane_id: row.id,
+          message: "required lanes do not fit the declared execution budget",
+        });
+        continue;
+      }
+
+      commit(row, "required");
+    }
+
+    if (!progress) {
+      for (const id of pendingMandatory) {
+        const row = byId.get(id);
+        if (row) {
+          skipped.push({
+            ...row,
+            selection: "required-but-blocked",
+            skip_reason: "dependency_cycle",
+          });
+        }
+        errors.push({
+          code: "dependency_cycle",
+          lane_id: id,
+          message: "required dependency graph could not be resolved",
+        });
+      }
+      pendingMandatory.clear();
+    }
+  }
+
+  // Once required constraints are feasible, choose adaptive candidates.
+  if (errors.length === 0) {
+    candidates.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+
+    for (const row of candidates) {
+      if (conflicts(row)) {
+        skipped.push({
+          ...row,
+          selection: "candidate",
+          skip_reason: "exclusive_group_conflict",
+        });
+        continue;
+      }
+      if (!dependenciesSatisfied(row)) {
+        skipped.push({
+          ...row,
+          selection: "candidate",
+          skip_reason: "missing_dependency",
+        });
         continue;
       }
       if (!canFit(row)) {
-        skipped.push({ ...row, selection: "candidate", skip_reason: "budget_or_lane_limit" });
+        skipped.push({
+          ...row,
+          selection: "candidate",
+          skip_reason: "budget_or_lane_limit",
+        });
         continue;
       }
 
@@ -202,32 +312,44 @@ function plan(input) {
         .sort((a, b) => a.score - b.score)[0];
 
       if (sameFamily && weakestSelected && diversityAdjusted < weakestSelected.score * 1.03) {
-        skipped.push({ ...row, selection: "candidate", skip_reason: "diversity_penalty" });
+        skipped.push({
+          ...row,
+          selection: "candidate",
+          skip_reason: "diversity_penalty",
+        });
         continue;
       }
 
       commit(row, "adaptive");
     }
-  }
-
-  for (const row of candidates) {
-    if (!pending.has(row.id)) continue;
-    pending.delete(row.id);
-    skipped.push({ ...row, selection: "candidate", skip_reason: "missing_dependency" });
-  }
-
-  for (const row of lanes) {
-    if (
-      row &&
-      row.id &&
-      !selected.some((x) => x.id === row.id) &&
-      !skipped.some((x) => x.id === row.id)
-    ) {
+  } else {
+    for (const row of candidates) {
       skipped.push({
-        id: row.id,
-        family: row.family,
+        ...row,
         selection: "candidate",
-        skip_reason: disabledIds.has(row.id) || row.enabled === false ? "disabled" : "invalid_or_duplicate",
+        skip_reason: "required_constraints_infeasible",
+      });
+    }
+  }
+
+  // Record disabled/invalid input explicitly.
+  for (const lane of lanes) {
+    if (!lane || !lane.id || !lane.family) continue;
+    if (selected.some((x) => x.id === lane.id) || skipped.some((x) => x.id === lane.id)) continue;
+
+    if (disabledIds.has(lane.id) || lane.enabled === false) {
+      skipped.push({
+        id: lane.id,
+        family: lane.family,
+        selection: "candidate",
+        skip_reason: "disabled",
+      });
+    } else {
+      skipped.push({
+        id: lane.id,
+        family: lane.family,
+        selection: "candidate",
+        skip_reason: "invalid_or_duplicate",
       });
     }
   }
@@ -235,6 +357,8 @@ function plan(input) {
   return {
     schema: "multi-lens-plan/v1",
     authority: "scheduling_only",
+    feasible: errors.length === 0,
+    errors,
     target: input.target || null,
     constraints: target,
     selected,
