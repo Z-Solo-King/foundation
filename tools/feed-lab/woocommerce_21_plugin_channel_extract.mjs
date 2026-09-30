@@ -174,7 +174,7 @@ function familySignals(plugins,namespaces,xhrUrls,html){
 
 async function inspect(name,root){
   const b=await browserEvidence(root);
-  const selected=(b.finalUrl||root).replace(/\/$/,"");
+  const selected=String(b.finalUrl||root).replace(/\/$/,"");
   const bodies=[b.html||""];
   const endpoints=[];
   let ns=[];
