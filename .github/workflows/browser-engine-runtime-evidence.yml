@@ -1,0 +1,78 @@
+name: Browser engine runtime evidence
+
+on:
+  schedule:
+    - cron: "15 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: "Immutable Operations revision containing browser engine support"
+        required: false
+        default: "b2f6b9d092a50d46c601bf31f52e012e6b5023a2"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-engine-runtime-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  playwright-engine-smoke:
+    name: Playwright ${{ matrix.engine }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, firefox, webkit]
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref || 'b2f6b9d092a50d46c601bf31f52e012e6b5023a2' }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+
+      - name: Install browser adapter
+        working-directory: operations
+        run: |
+          python -m pip install --disable-pip-version-check -e ".[test,browser]"
+          python -m pip install --disable-pip-version-check workers-py workers-runtime-sdk
+
+      - name: Install browser runtime
+        working-directory: operations
+        run: python -m playwright install --with-deps ${{ matrix.engine }}
+
+      - name: Run real browser-engine smoke
+        working-directory: operations
+        run: python scripts/browser_engine_smoke.py --engine ${{ matrix.engine }} --url https://example.com/ | tee browser-engine-receipt.json
+
+      - name: Upload engine receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: browser-engine-${{ matrix.engine }}-${{ github.run_id }}
+          path: operations/browser-engine-receipt.json
+          retention-days: 14
