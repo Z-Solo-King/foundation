@@ -6,7 +6,10 @@ const TARGETS = [
   {site:"PC Studio",root:"https://www.pcstudio.in",family:"woocommerce_google_product_feed",tokens:["pcstudio","pc-studio","pc_studio"]},
   {site:"Quickin Computers",root:"https://quickincomputers.com",family:"ctx_feed_webappick",tokens:["quickin","quickincomputers","quickin-computers"]},
   {site:"Avikaretails",root:"https://avikaretails.com",family:"adtribes_product_feed_pro",tokens:["avikaretails","avika-retails","avika"]},
-  {site:"IT Gadgets Online",root:"https://itgadgetsonline.com",family:"wpfm_product_feed_manager",tokens:["itgadgetsonline","it-gadgets-online","itgadgets","itgo"]}
+  {site:"IT Gadgets Online",root:"https://itgadgetsonline.com",family:"wpfm_product_feed_manager",tokens:["itgadgetsonline","it-gadgets-online","itgadgets","itgo"]},
+  {site:"Prime ABGB",root:"https://www.primeabgb.com",family:"woocommerce_google_product_feed",tokens:["primeabgb","prime-abgb","prime_abgb"]},
+  {site:"Kryptronix Gaming",root:"https://kryptronix.in",family:"webtoffee_product_feed",tokens:["kryptronix","kryptronix-gaming"]},
+  {site:"NCL Computer",root:"https://nclcomputer.com",family:"webtoffee_product_feed",tokens:["nclcomputer","ncl-computer","ncl"]}
 ];
 
 const UA="Mozilla/5.0 (compatible; WooCommerceIdentifiedFamilyGuess/5.1)";
@@ -21,6 +24,8 @@ const WPFM_DIRS=["/wp-content/uploads/wppfm-feeds/"];
 const WPFM_NAMES=["Google.xml","Google-Products.xml","Google-Products-New.xml","Google-Products-1.xml","Google_Products.xml","Google-Feed.xml","Google-Feed_1.xml","GoogleFeed.xml","Google-Shopping.xml","Google-Shopping-Feed.xml","googlefeed.xml","google-feed.xml","google-products-feed.xml","feed-google.xml","feed-google-shopping.xml","feed.xml"];
 const ADTRIBES_DIRS=["/wp-content/uploads/woo-product-feed-pro/","/wp-content/uploads/woo-product-feed-pro/xml/"];
 const ADTRIBES_NAMES=["google.xml","google-shopping.xml","google-shopping-feed.xml","google-products.xml","google-product-feed.xml","Google.xml","feed.xml"];
+const WEBTOFFEE_DIRS=["/wp-content/uploads/webtoffee_product_feed/"];
+const WEBTOFFEE_NAMES=["wt_google_Feed.xml","wt_gs_Feed.xml","wt_google_feed.xml","wt_google_shopping_Feed.xml","wt_google_shopping_feed.xml","google.xml","google-shopping.xml","google-product-feed.xml","google-shopping-feed.xml","feed.xml"];
 
 function host(u){try{return new URL(u).hostname.toLowerCase().replace(/^www\./,"")}catch{return ""}}
 function sameHost(a,b){return host(a)!==""&&host(a)===host(b)}
@@ -111,8 +116,8 @@ function initialCandidates(site){
       add(m,site.root,"/woocommerce_gpf/google?pricecountry="+c,210,"gpf-pricecountry-permalink",site.family);
     }
   }else{
-    const dirs=site.family==="ctx_feed_webappick"?CTX_DIRS:site.family==="adtribes_product_feed_pro"?ADTRIBES_DIRS:WPFM_DIRS;
-    const names=site.family==="ctx_feed_webappick"?CTX_NAMES:site.family==="adtribes_product_feed_pro"?ADTRIBES_NAMES:WPFM_NAMES;
+    const dirs=site.family==="ctx_feed_webappick"?CTX_DIRS:site.family==="adtribes_product_feed_pro"?ADTRIBES_DIRS:site.family==="webtoffee_product_feed"?WEBTOFFEE_DIRS:WPFM_DIRS;
+    const names=site.family==="ctx_feed_webappick"?CTX_NAMES:site.family==="adtribes_product_feed_pro"?ADTRIBES_NAMES:site.family==="webtoffee_product_feed"?WEBTOFFEE_NAMES:WPFM_NAMES;
     for(const d of dirs)for(const n of names)add(m,site.root,d+n,220,"family-fixed",site.family);
     for(const n of identityNames(site.tokens))for(const d of dirs)add(m,site.root,d+n,130,"identity-semantic",site.family);
     if(site.family==="ctx_feed_webappick"){
@@ -126,10 +131,10 @@ function initialCandidates(site){
 }
 async function runSite(site){
   const m=initialCandidates(site);
-  const dirs=site.family==="ctx_feed_webappick"?CTX_DIRS:site.family==="adtribes_product_feed_pro"?ADTRIBES_DIRS:WPFM_DIRS;
+  const dirs=site.family==="ctx_feed_webappick"?CTX_DIRS:site.family==="adtribes_product_feed_pro"?ADTRIBES_DIRS:site.family==="webtoffee_product_feed"?WEBTOFFEE_DIRS:WPFM_DIRS;
   const dirEvidence=site.family==="woocommerce_google_product_feed"?[]:await directoryProbe(site,dirs);
   for(const d of dirEvidence)for(const u of d.linked_xml)add(m,site.root,u,360,"current-directory-index",site.family);
-  const histPatterns=site.family==="woocommerce_google_product_feed"?["/?woocommerce_gpf=google*","/woocommerce_gpf/google*"]:site.family==="ctx_feed_webappick"?["/wp-content/uploads/woo-feed/*","/feed/*","/feeds/*"]:site.family==="adtribes_product_feed_pro"?["/wp-content/uploads/woo-product-feed-pro/*","/wp-content/uploads/woo-product-feed-pro/xml/*"]:["/wp-content/uploads/wppfm-feeds/*"];
+  const histPatterns=site.family==="woocommerce_google_product_feed"?["/?woocommerce_gpf=google*","/woocommerce_gpf/google*"]:site.family==="ctx_feed_webappick"?["/wp-content/uploads/woo-feed/*","/feed/*","/feeds/*"]:site.family==="adtribes_product_feed_pro"?["/wp-content/uploads/woo-product-feed-pro/*","/wp-content/uploads/woo-product-feed-pro/xml/*"]:site.family==="webtoffee_product_feed"?["/wp-content/uploads/webtoffee_product_feed/*"]:["/wp-content/uploads/wppfm-feeds/*"];
   const historical=await wayback(site,histPatterns);
   for(const h of historical)add(m,site.root,h.url,340,"wayback-reference",site.family);
   const selected=[...m.values()].sort((a,b)=>b.rank-a.rank||a.url.localeCompare(b.url)).slice(0,300);
@@ -153,7 +158,8 @@ async function runSite(site){
 const shard=Number(process.env.SHARD||1),shards=Number(process.env.SHARDS||4),outDir="out/woocommerce-identified-family-v5";
 const selected=TARGETS.filter((_,i)=>i%shards+1===shard);
 await mkdir(outDir,{recursive:true});
-const results=await Promise.all(selected.map(site=>runSite(site)));
+const results=[];
+for(const site of selected)results.push(await runSite(site));
 const payload={schema:"woocommerce-identified-family-guess-v5/v1",phase:"confirmed-standalone-only",strategy:"research-expanded-family-guessing",shard,shards,target_count:results.length,policy:{public_only:true,no_product_api:true,no_plugin_extraction:true,no_playwright:true,no_auth:true,no_clearance_cookie_replay:true,no_captcha_bypass:true,no_proxy_rotation:true,no_random_token_enumeration:true,historical_non_authoritative:true,native_acceptance:"current_same_host_google_merchant_xml_payload"},results};
 await writeFile(outDir+"/shard-"+shard+".json",JSON.stringify(payload,null,2)+"\n");
 console.log(JSON.stringify({shard,target_count:results.length,native_verified:results.filter(x=>x.candidate_hits.length).length,positive_urls:results.flatMap(x=>x.positive_urls),historical_refs:results.reduce((n,x)=>n+x.historical_reference_count,0)},null,2));

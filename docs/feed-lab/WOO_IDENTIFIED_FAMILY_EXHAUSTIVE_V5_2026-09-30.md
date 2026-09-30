@@ -1,25 +1,18 @@
-# WooCommerce Identified-Family Exhaustive Guess V5 — 2026-09-30
+# WooCommerce Identified-Family Exhaustive Guess V5 — Expanded 7-site identified cohort — 2026-09-30
 
-This phase intentionally covers only the four confirmed standalone feed-generator families. The 16 unknown-family sites and four low-confidence hypotheses are outside this run.
+This phase now exhausts every standalone feed-generator family identified by the 30-site V4 corpus before the true unknown-family group:
+- PC Studio → WooCommerce Google Product Feed
+- Prime ABGB → WooCommerce Google Product Feed
+- Quickin Computers → CTX/WebAppick
+- Avikaretails → AdTribes Product Feed PRO
+- IT Gadgets Online → Product Feed Manager/WPFM
+- Kryptronix Gaming → WebToffee Product Feed (low-confidence hypothesis carried forward as identified-family candidate)
+- NCL Computer → WebToffee Product Feed (low-confidence hypothesis carried forward as identified-family candidate)
 
-Research changed the guessing strategy:
-- WooCommerce Google Product Feed has deterministic query/permalink forms and documented partial-feed parameters. Currency and price-country URL parameters are also documented.
-- CTX/WebAppick stores generated feeds under the WooCommerce uploads area, but feed names are configurable; documented/community examples include google_shopping_ctx_1.xml and listings07-style names.
-- WPFM uses wp-content/uploads/wppfm-feeds/ and feed names are user-defined; public examples include Google-Products-New.xml and Google-Feed_1.xml.
-- AdTribes stores static feed files under woo-product-feed-pro; current docs/examples show random-looking generated names, so random token brute force is not logical. Directory-index and historical public URL recovery are used instead.
+The 7 Google-for-WooCommerce/API-integrated targets are handled separately and are not forced into standalone XML URL guessing.
 
-The run therefore uses:
-1. family-specific deterministic/query grammars;
-2. public output-directory XML references where exposed;
-3. site-identity semantic filename variants for name-based families;
-4. Wayback CDX historical feed URLs, re-probed against the current host;
-5. strict current same-host native Merchant XML validation.
+The run uses family-specific public URL grammars, current directory indexes, site-identity filename variants, and Wayback CDX historical references re-probed against the live same host. Native acceptance requires a current HTTP 200 same-host Google Merchant XML payload with the Google namespace and g:id, g:title, g:link and g:price within the same item/entry.
 
-A historical URL is only a candidate source. 403/429, challenge pages, 404s, timeouts, sitemaps, RSS and unrelated XML are not positive feeds.
+No product API extraction, authentication, challenge bypass, clearance-cookie replay, proxy rotation or random-token enumeration is used.
 
-Research:
-- WooCommerce GPF query/partial/currency/pricecountry: https://woocommerce.com/document/google-product-feed-feed-generation-options/ and https://woocommerce.com/document/google-product-feed-extension-compatibility/
-- WebToffee current feed creation requires a unique file name: https://www.webtoffee.com/docs/product-feed/generate-and-setup-google-product-reviews-feed/
-- AdTribes static feed output under woo-product-feed-pro: https://adtribes.io/knowledge-base/cache-plugin-compatibility-with-product-feed-pro/
-
-Repository policy keeps feed workflows public/read-only and separates them from privileged workflows. The workflow uses a four-shard matrix and an aggregate exactly over the four confirmed standalone sites.
+The previous V4 aggregate established 30-site family buckets and specifically placed Prime ABGB in WooCommerce GPF and Kryptronix/NCL in WebToffee; this expanded run makes those identified-family candidates explicit rather than prematurely moving them into the unknown bucket.

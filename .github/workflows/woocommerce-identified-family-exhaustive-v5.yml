@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   guess:
-    name: confirmed standalone families
+    name: all identified standalone families
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -35,8 +35,8 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const p=JSON.parse(fs.readFileSync('out/aggregate/aggregate.json','utf8'));
-          if((p.results||[]).length!==4) throw new Error('expected 4 confirmed standalone sites');
-          const s={schema:'woocommerce-identified-family-v5-aggregate/v2',target_count:4,native_verified:(p.results||[]).filter(x=>x.candidate_hits?.length).length,native_urls:(p.results||[]).flatMap(x=>x.positive_urls||[]),transport_limited:(p.results||[]).filter(x=>x.status.includes('TRANSPORT_LIMITED')).length,clean_no_hit:(p.results||[]).filter(x=>x.status==='NO_NATIVE_FEED_VERIFIED').length,historical_reference_total:(p.results||[]).reduce((n,x)=>n+(x.historical_reference_count||0),0),results:p.results};
+          if((p.results||[]).length!==7) throw new Error('expected 7 identified standalone sites');
+          const s={schema:'woocommerce-identified-family-v5-aggregate/v3',target_count:7,native_verified:(p.results||[]).filter(x=>x.candidate_hits?.length).length,native_urls:(p.results||[]).flatMap(x=>x.positive_urls||[]),transport_limited:(p.results||[]).filter(x=>x.status.includes('TRANSPORT_LIMITED')).length,clean_no_hit:(p.results||[]).filter(x=>x.status==='NO_NATIVE_FEED_VERIFIED').length,historical_reference_total:(p.results||[]).reduce((n,x)=>n+(x.historical_reference_count||0),0),results:p.results};
           fs.writeFileSync('out/aggregate/aggregate.json',JSON.stringify(s,null,2)+'\n');
           console.log(JSON.stringify({...s,results:undefined},null,2));
           NODE
