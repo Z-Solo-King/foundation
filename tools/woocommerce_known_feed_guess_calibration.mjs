@@ -53,6 +53,7 @@ function xmlLinks(text,base){
   }
   return [...out].slice(0,80);
 }
+async function probe(base,url,family,lane){const r=await get(url);return {lane,family,url,status:r.status,final_url:r.url||"",content_type:r.ct||"",native:valid(r.body,r.ct),same_host:sameHost(r.url||"",base)}}
 async function fixedLane(base){const jobs=[];for(const [family,paths] of Object.entries(FIXED))for(const p of paths)jobs.push(probe(base,new URL(p,base).href,family,"fixed_paths"));return Promise.all(jobs)}
 async function directoryLane(base){const jobs=DIRECTORIES.map(async ([dir,family])=>{const index=await get(new URL(dir,base).href,8000,"text/html,text/plain,*/*");if(index.status!==200)return [{lane:"directory_index",family,url:new URL(dir,base).href,status:index.status,final_url:index.url||"",content_type:index.ct||"",native:false,same_host:sameHost(index.url||"",base)}];return Promise.all(xmlLinks(index.body,index.url||new URL(dir,base).href).slice(0,30).map(u=>probe(base,u,family,"directory_index")))});return (await Promise.all(jobs)).flat()}
 async function referenceLane(base){const pages=["/","/robots.txt","/sitemap.xml","/sitemap_index.xml","/wp-sitemap.xml"];const rs=await Promise.all(pages.map(p=>get(new URL(p,base).href,7000)));const urls=new Set();for(const r of rs)for(const u of xmlLinks(r.body,base))if(/feed|google|merchant|shopping|woo|wpfm|webtoffee|adtribes|product/i.test(u))urls.add(u);return Promise.all([...urls].slice(0,40).map(u=>probe(base,u,"public_reference","public_reference")))}
