@@ -287,8 +287,8 @@ async function inspect(name, root) {
 
   const combined = homeBody + "\n" + apiBody;
   const assets = extractPluginAssets(combined);
-  const families = feedSignals(combined, namespaces);
   const namespaces = extractJsonNamespaces(apiBody);
+  const families = feedSignals(combined, namespaces);
   const feedAssets = feedLikeAssets(assets);
   const readmeTargets = [...new Set([
     ...feedAssets,
