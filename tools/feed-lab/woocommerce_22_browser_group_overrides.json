@@ -1,0 +1,14 @@
+{
+  "schema_version": "woocommerce-22-browser-group-overrides/v1",
+  "overrides": {
+    "itgadgetsonline": {
+      "primary_group": "wpfm_product_feed_manager",
+      "confidence": "strong",
+      "source": {
+        "extractor": "V175-derived browser recovery",
+        "workflow_run": 36629019347,
+        "evidence": "public WP-JSON namespace wpfm/v1"
+      }
+    }
+  }
+}
