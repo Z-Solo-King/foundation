@@ -1,6 +1,6 @@
 {
   "schema": "operations-pin-manifest/v1",
-  "generated_at": "2026-09-30",
+  "generated_at": "2026-10-01",
   "authority": "single public-safe immutable Operations revision manifest; runtime code remains authoritative",
   "pins": {
     "production_runtime": {
