@@ -1,6 +1,11 @@
 name: WooCommerce V175 22 Plugin Extraction
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tools/woocommerce_v175_plugin_fingerprint_22.py"
+      - ".github/workflows/woocommerce-v175-22-plugin-extraction.yml"
   push:
     branches:
       - feat/wc-v175-22-plugin-extraction-20260930
@@ -14,7 +19,7 @@ permissions:
 
 jobs:
   extract:
-    name: V175 plugin shard \${{ matrix.shard }}
+    name: V175 plugin shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -22,14 +27,14 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5, 6]
     env:
-      SHARD: \${{ matrix.shard }}
+      SHARD: ${{ matrix.shard }}
       SHARDS: 6
       PYTHONUNBUFFERED: "1"
-      CF_ACCOUNT_ID: \${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      CF_API_TOKEN: \${{ secrets.CLOUDFLARE_API_TOKEN }}
-      BROWSERLESS_CONTENT_URL: \${{ secrets.BROWSERLESS_CONTENT_URL }}
-      GROQ_API_KEY: \${{ secrets.GROQ_API_KEY }}
-      GROQ_MODEL: \${{ vars.GROQ_MODEL }}
+      CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      BROWSERLESS_CONTENT_URL: ${{ secrets.BROWSERLESS_CONTENT_URL }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      GROQ_MODEL: ${{ vars.GROQ_MODEL }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -43,10 +48,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install --disable-pip-version-check -q \
-            httpx curl_cffi playwright
-          python -m pip install --disable-pip-version-check -q \
-            camoufox nodriver || true
+          python -m pip install --disable-pip-version-check -q httpx curl_cffi playwright
+          python -m pip install --disable-pip-version-check -q camoufox nodriver || true
           python -m playwright install --with-deps chromium firefox webkit
           python -m camoufox fetch >/dev/null 2>&1 || true
 
@@ -60,8 +63,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: woocommerce-v175-plugin-shard-\${{ matrix.shard }}
-          path: out/woocommerce-v175-plugin-recovery/shard-\${{ matrix.shard }}.json
+          name: woocommerce-v175-plugin-shard-${{ matrix.shard }}
+          path: out/woocommerce-v175-plugin-recovery/shard-${{ matrix.shard }}.json
           if-no-files-found: warn
           retention-days: 14
 
@@ -126,7 +129,7 @@ jobs:
                   for site in sorted(sites):
                       f.write(f"{family}\t{site}\n")
 
-          assert len(rows) <= 22
+          assert len(rows) == 22
           assert all((r.get("site") not in {
               "PC Studio", "quickincomputers", "avikaretails", "Geekbees",
               "Ninja Dog", "networkitstore", "nexusinfosys",
