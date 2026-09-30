@@ -15,9 +15,9 @@ test("Wayback and directory recovery exist",()=>{
   assert.match(s,/current-directory-index/);
   assert.match(s,/wayback-reference/);
 });
-test("no token enumeration implementation",()=>{
-  assert.doesNotMatch(s,/random(?:32|16|64)?[-_ ]?(?:character|token|id).*(?:loop|enumerat|brute)/i);
-  assert.doesNotMatch(s,/for\s*\([^)]*random/i);
+test("no product or browser extraction is implemented",()=>{
+  assert.doesNotMatch(s,/playwright\.launch|async_playwright/i);
+  assert.doesNotMatch(s,/wc\/store\/v1\/products/);
 });
 test("strict native gate",()=>{
   assert.match(s,/function native\(body\)/);
