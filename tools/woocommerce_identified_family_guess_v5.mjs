@@ -153,8 +153,7 @@ async function runSite(site){
 const shard=Number(process.env.SHARD||1),shards=Number(process.env.SHARDS||4),outDir="out/woocommerce-identified-family-v5";
 const selected=TARGETS.filter((_,i)=>i%shards+1===shard);
 await mkdir(outDir,{recursive:true});
-const results=[];
-for(const site of selected)results.push(await runSite(site));
+const results=await Promise.all(selected.map(site=>runSite(site)));
 const payload={schema:"woocommerce-identified-family-guess-v5/v1",phase:"confirmed-standalone-only",strategy:"research-expanded-family-guessing",shard,shards,target_count:results.length,policy:{public_only:true,no_product_api:true,no_plugin_extraction:true,no_playwright:true,no_auth:true,no_clearance_cookie_replay:true,no_captcha_bypass:true,no_proxy_rotation:true,no_random_token_enumeration:true,historical_non_authoritative:true,native_acceptance:"current_same_host_google_merchant_xml_payload"},results};
 await writeFile(outDir+"/shard-"+shard+".json",JSON.stringify(payload,null,2)+"\n");
 console.log(JSON.stringify({shard,target_count:results.length,native_verified:results.filter(x=>x.candidate_hits.length).length,positive_urls:results.flatMap(x=>x.positive_urls),historical_refs:results.reduce((n,x)=>n+x.historical_reference_count,0)},null,2));
