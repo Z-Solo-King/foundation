@@ -8,3 +8,6 @@ Canonical chain:
 The workflow uses the existing read-only GitHub App credential pair already used for cross-repository Operations access. It adds no new credential requirement.
 
 Operations has no separate GitHub Actions authority. Foundation remains the automation/release owner; Operations remains the private runtime/governance owner.
+
+## 2026-09-30 verification repair
+Operations #1388 corrected the Git-history parser used by the extractor governance bridge. The bridge must run against the live Operations main and keep the resulting report as CI evidence rather than treating the parser or report as runtime authority.
