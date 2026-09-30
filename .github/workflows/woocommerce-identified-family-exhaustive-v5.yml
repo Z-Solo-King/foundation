@@ -10,11 +10,11 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: wc-identified-family-v5-\${{ github.ref }}
+  group: wc-identified-family-v5-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   guess:
-    name: confirmed-family guess shard \${{ matrix.shard }}
+    name: confirmed-family guess shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -22,7 +22,7 @@ jobs:
       matrix:
         shard: [1,2,3,4]
     env:
-      SHARD: \${{ matrix.shard }}
+      SHARD: ${{ matrix.shard }}
       SHARDS: 4
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -37,7 +37,7 @@ jobs:
       - name: Upload shard evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: woocommerce-identified-family-v5-shard-\${{ matrix.shard }}
+          name: woocommerce-identified-family-v5-shard-${{ matrix.shard }}
           path: out/woocommerce-identified-family-v5/
           retention-days: 30
   aggregate:
