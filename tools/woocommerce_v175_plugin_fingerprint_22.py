@@ -109,7 +109,7 @@ PLUGIN_RULES: List[Tuple[str, Tuple[str, ...]]] = [
         "feedcraft", "feedcraft-product-feed",
     )),
     ("google_for_woocommerce", (
-        "google-listings-and-ads", "google for woocommerce",
+        "google-listings-and-ads", "google for woocommerce", "wc/gla",
         "google_merchant_center", "google merchant center",
     )),
 ]
@@ -357,7 +357,13 @@ def explicit_xml_candidates(text: str, root: str) -> List[str]:
     out = set()
     for raw in re.findall(r'https?://[^\s"\'<>]+', text or "", re.I):
         u = raw.rstrip("),.;")
-        if same_host(u, root) and re.search(r"\.xml(?:\.gz)?(?:$|[?#])", u, re.I):
+        if not same_host(u, root):
+            continue
+        if re.search(r"\.xml(?:\.gz)?(?:$|[?#])", u, re.I) or re.search(
+            r"(?:woo_feed|woocommerce_gpf|wpfm|feedcraft|webtoffee|adtribes|product-feed|google-feed|merchant-feed)",
+            u, re.I,
+        ):
+            out.add(u)
             out.add(u)
     for raw in re.findall(r'(?:href|src|loc)=["\']([^"\']+)["\']', text or "", re.I):
         try:
