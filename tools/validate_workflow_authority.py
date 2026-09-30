@@ -8,29 +8,58 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 REGISTRY=ROOT/"docs"/"WORKFLOW_AUTHORITY_REGISTRY.json"
 WORKFLOWS=ROOT/".github"/"workflows"
+WORKFLOW_EVENTS=frozenset({
+    "pull_request",
+    "pull_request_target",
+    "push",
+    "schedule",
+    "workflow_dispatch",
+    "merge_group",
+    "workflow_run",
+})
 
 def _events(text:str)->set[str]:
-    return {
-        name for name in ("pull_request","pull_request_target","push","schedule","workflow_dispatch")
-        if re.search(rf"(?m)^\s{{0,2}}{name}\s*:", text)
-    }
+    found=set()
+    for line in text.splitlines():
+        stripped=line.lstrip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        event, separator, _ = stripped.partition(":")
+        if separator and not event.startswith("-") and event.strip() in WORKFLOW_EVENTS:
+            found.add(event.strip())
+    return found
 
 def _push_branches(text:str)->list[str]:
-    head=text.split("jobs:",1)[0]
-    m=re.search(r"(?ms)^\s{2}push:\s*\n(.*?)(?=^\s{2}[A-Za-z0-9_.-]+:|^jobs:)",head)
-    if not m:
-        return []
-    block=m.group(1)
-    inline=re.search(r"(?m)^\s{4}branches:\s*\[([^\]]+)\]",block)
-    if inline:
-        return [v.strip().strip("'\\\"") for v in inline.group(1).split(",") if v.strip()]
-    bm=re.search(r"(?ms)^\s{4}branches:\s*\n(.*?)(?=^\s{4}[A-Za-z0-9_.-]+:|\Z)",block)
-    if not bm:
-        return []
-    return re.findall(r"(?m)^\s{6}-\s*['\\\"]?([^'\\\"\s]+)",bm.group(1))
+    lines=text.splitlines()
+    for index,line in enumerate(lines):
+        if line.strip() != "push:":
+            continue
+        push_indent=len(line)-len(line.lstrip())
+        block=[]
+        for child in lines[index+1:]:
+            if not child.strip():
+                block.append(child)
+                continue
+            indent=len(child)-len(child.lstrip())
+            if indent <= push_indent:
+                break
+            block.append(child)
+        block_text="\n".join(block)
+        inline=re.search(r"(?m)^\s*branches:\s*\[([^\]]+)\]",block_text)
+        if inline:
+            return [value.strip().strip("'\\\"") for value in inline.group(1).split(",") if value.strip()]
+        listed=re.findall(r"(?m)^\s*-\s*['\\\"]?([^'\\\"\s]+)",block_text)
+        return listed
+    return []
 
 def workflow_paths():
     return sorted(WORKFLOWS.glob("*.yml"))+sorted(WORKFLOWS.glob("*.yaml"))
+
+def _workflow_run_sources(text:str)->list[str]:
+    names=[]
+    for block in re.findall(r"(?ms)workflows:\s*\[([^\]]+)\]",text):
+        names.extend(re.findall(r"""['"]([^'"]+)['"]""",block))
+    return sorted(set(names))
 
 def validate()->list[str]:
     reg=json.loads(REGISTRY.read_text(encoding="utf-8"))
@@ -45,16 +74,22 @@ def validate()->list[str]:
         seen.add(rel)
         text=path.read_text(encoding="utf-8")
         events=_events(text)
-        is_priv=any(m in text for m in markers)
+        is_priv=any(marker in text for marker in markers)
         if is_priv and rel not in privileged:
             errors.append(f"{rel}: privileged workflow is not explicitly registered")
-        if rel in feed and any(m in text for m in markers):
+        if rel in feed and any(marker in text for marker in markers):
             errors.append(f"{rel}: public feed workflow contains a privileged marker")
         if is_priv and events & forbidden:
-            errors.append(f"{rel}: privileged workflow has forbidden PR trigger: {sorted(events & forbidden)}")
+            errors.append(f"{rel}: privileged workflow has forbidden untrusted trigger: {sorted(events & forbidden)}")
         branches=_push_branches(text)
-        if is_priv and "push" in events and branches and branches != [reg["policy"]["privileged_push_branch"]]:
-            errors.append(f"{rel}: privileged push must be main-only, found {branches}")
+        if is_priv and "push" in events and branches != [reg["policy"]["privileged_push_branch"]]:
+            errors.append(f"{rel}: privileged push must be main-only")
+        if is_priv and "workflow_run" in events:
+            expected_sources=reg["policy"].get("trusted_workflow_run_sources",{}).get(rel)
+            if not expected_sources:
+                errors.append(f"{rel}: privileged workflow_run requires explicit trusted upstream registration")
+            elif _workflow_run_sources(text) != sorted(set(expected_sources)):
+                errors.append(f"{rel}: workflow_run source mismatch")
         if rel==".github/workflows/sync-secrets.yml":
             if "environment: production-secret-sync" not in text:
                 errors.append(f"{rel}: missing protected environment")
@@ -63,7 +98,7 @@ def validate()->list[str]:
     for rel in feed:
         if rel not in seen:
             errors.append(f"{rel}: registry references missing workflow")
-    for rel, sources in reg["policy"].get("trusted_workflow_run_sources", {}).items():
+    for rel,sources in reg["policy"].get("trusted_workflow_run_sources",{}).items():
         path=ROOT/rel
         if not path.is_file():
             errors.append(f"{rel}: trusted workflow_run registry target is missing")
@@ -71,18 +106,13 @@ def validate()->list[str]:
         text=path.read_text(encoding="utf-8")
         if "workflow_run:" not in text:
             errors.append(f"{rel}: trusted workflow_run registry entry exists but workflow_run is absent")
-            continue
-        declared=re.findall(r"(?ms)workflows:\s*\[([^\]]+)\]", text)
-        names=[]
-        for block in declared:
-            names.extend(re.findall(r"['\"]([^'\"]+)['\"]", block))
-        if sorted(set(names)) != sorted(set(sources)):
-            errors.append(f"{rel}: workflow_run source mismatch; declared={sorted(set(names))} expected={sorted(set(sources))}")
+        elif _workflow_run_sources(text) != sorted(set(sources)):
+            errors.append(f"{rel}: workflow_run source mismatch")
     return sorted(set(errors))
 
 if __name__=="__main__":
     errors=validate()
     if errors:
-        for e in errors: print("ERROR:",e)
+        print(f"workflow authority policy: FAIL ({len(errors)} policy violations)")
         raise SystemExit(1)
     print(f"workflow authority policy: PASS ({len(workflow_paths())} workflows scanned)")
