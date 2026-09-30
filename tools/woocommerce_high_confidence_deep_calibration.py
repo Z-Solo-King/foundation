@@ -5,15 +5,15 @@ import importlib.util
 import json
 from pathlib import Path
 import os
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("wc_v175", ROOT / "tools" / "woocommerce_v175_plugin_fingerprint_22.py")
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
+sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)
 
-# Calibration override: the production V175 harness normally excludes the known cohort.
-# This phase intentionally re-opens only the four feed-generator calibration targets.
 MODULE.KNOWN_10 = set()
 
 TARGETS = [
