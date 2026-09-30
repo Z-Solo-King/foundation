@@ -8,7 +8,7 @@ def test_nightly_v3_keeps_schedule_but_scopes_runs_by_revision():
     assert 'cron: "30 19 * * *"' in text
     assert "nightly-multi-agent-research-" + "${{" + " inputs.target_sha || github.sha }}" in text
     assert "operations_research_ref" in text
-    assert "6e1b18ab6b8460c63f5cf664d6915f0a9bc71293" in text
+    assert "05bb78285cb3d42c0b90a9975bb28121895dfe53" in text
     assert "Verify exact deployed research runtime" in text
     assert "nightly_runtime_contract_probe.py" in text
 
