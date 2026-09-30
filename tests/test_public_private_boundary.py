@@ -12,6 +12,7 @@ def test_secret_sync_workflow_is_a_private_operations_bridge():
     assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
     assert "OPERATIONS_SECRET_SYNC_REF: ${{ vars.OPERATIONS_SECRET_SYNC_REF }}" in text
     assert "b95e419254a9071beaeef57a1b0da22ba7dd2c4f" in text
+    assert 'payload.pop("cerebras", None)' in text
     assert "OPERATIONS_SECRET_SYNC_PATH: ${{ vars.OPERATIONS_SECRET_SYNC_PATH }}" in text
     assert "github.ref == 'refs/heads/main'" in text
     assert "environment: production-secret-sync" in text

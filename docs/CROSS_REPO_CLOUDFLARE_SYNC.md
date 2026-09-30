@@ -1,6 +1,6 @@
 # Cross-repo + Cloudflare synchronization record
 
-Snapshot: 2026-09-29 (Asia/Kolkata)
+Snapshot: 2026-09-30 (Asia/Kolkata)
 
 ## Authority model
 - GitHub `main` trees are repository source truth.
@@ -10,9 +10,9 @@ Snapshot: 2026-09-29 (Asia/Kolkata)
 - Production and research Operations pins are intentionally independent.
 
 ## Current repository state
-- Foundation main: `34fcae8638fc2fb591131d5e53a6cf47ebdbe0dd`
-- Operations main: `068c3cff76f194dd0188f704fda191388e6694cb`
-- Production Operations pin: `068c3cff76f194dd0188f704fda191388e6694cb`
+- Foundation main: `f5909b8c432c73d31a746303d109738944b3d1a9`
+- Operations main: `70daff88817d5ab62e7eab2d5dca45e32743f728`
+- Production Operations pin: `ce4f9edbae3ddf1bf1c25a908d5bce014acc7676`
 - Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`
 - Operations contains no `.github/workflows`; Foundation owns automation.
 
@@ -41,4 +41,4 @@ Snapshot: 2026-09-29 (Asia/Kolkata)
 Do not copy secret values, Cloudflare account IDs, private Worker origins, mutable deployment IDs, or mutable issue counts into current public-state documents. Historical documents remain useful only as provenance.
 
 ## 2026-09-30 AI provider synchronization
-Foundation public automation and Operations private runtime share the six-provider external AI contract: OpenRouter, Groq, Gemini, NVIDIA NIM, Cohere, and Hugging Face. Cloudflare Workers AI remains the native in-Worker provider. Provider credentials are not documented here. Current public contract: `docs/AI_PROVIDER_FLEET_2026-09-30.md`; private runtime contract: Operations `docs/AI_PROVIDER_TASK_FABRIC_2026-09-30.md`.
+Foundation currently activates seven external AI lanes: OpenRouter, Groq, Gemini, NVIDIA NIM, Cohere, Hugging Face, and SiliconFlow. Operations supports an eight-family private catalog, with Cerebras remaining unconfigured on Foundation because no credential is supplied. Cloudflare Workers AI remains the native in-Worker provider. Mistral is excluded from the production fleet. Provider credentials are not documented here. Current public contract: `docs/AI_PROVIDER_FLEET_2026-09-30.md`; private runtime contract: Operations `docs/AI_PROVIDER_TASK_FABRIC_2026-09-30.md`.
