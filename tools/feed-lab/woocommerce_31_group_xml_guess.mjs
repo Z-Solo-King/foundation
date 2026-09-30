@@ -203,6 +203,14 @@ function candidatesFor(site, group){
     for(const n of ["wt_google_Feed.xml","wt_gs_Feed.xml","wt_google_shopping_Feed.xml","wt_google_feed.xml","wt_google_shopping_feed.xml","google.xml","google-shopping.xml","google-product-feed.xml"])
       add("/wp-content/uploads/webtoffee_product_feed/"+n,185,"documented-webtoffee-family");
   }
+  if(group==="wpfm_product_feed_manager"){
+    const dir="/wp-content/uploads/wppfm-feeds/";
+    for(const n of [
+      "Google.xml","Google-Products.xml","Google_Product.xml","Google-Feed.xml","Google-Products-Feed.xml",
+      "Google-Shopping.xml","Google-Shopping-Feed.xml","googlefeed.xml","google-feed.xml",
+      "google-products-feed.xml","feed-google.xml","feed-google-shopping.xml","google-shopping-feed.xml","feed.xml"
+    ]) add(dir+n,185,"documented-wppfm-family");
+  }
   for(const dir of (FAMILY_DIRS[group]||[])){
     for(const n of GENERIC_NAMES) add(dir+n,130,"generic-name-in-plugin-family");
     for(const token of normalizeIdentityTokens(site)){
@@ -214,8 +222,11 @@ function candidatesFor(site, group){
       }
       add(dir+token+".xml",112,"identity-derived");
       add(dir+token+"-feed.xml",111,"identity-derived");
-      add(dir+token+"-google.xml",110,"identity-derived");
-      add(dir+token+"-shopping.xml",109,"identity-derived");
+      add(dir+"feed-"+token+".xml",110,"identity-derived");
+      add(dir+token+"_feed.xml",109,"identity-derived");
+      add(dir+token+"-google.xml",108,"identity-derived");
+      add(dir+"google-"+token+"-feed.xml",107,"identity-derived");
+      add(dir+token+"-shopping.xml",106,"identity-derived");
     }
   }
   if(group==="unknown_woocommerce"){
