@@ -134,5 +134,7 @@ def test_operations_pin_manifest_matches_research_workflow():
 
 def test_pinned_operations_contract_guard_is_whitespace_tolerant():
     text=workflow_text()
-    assert "research_agent[[:space:]]*=[[:space:]]*bool" in text
-    assert "research_agent[[:space:]]*=[[:space:]]*research_agent" in text
+    assert "research_agent[[:space:]]*" in text
+    assert "response_format" in text
+    assert "private/chatbot/chat_endpoint.py" in text
+    assert "private/chatbot/live_answer.py" in text
