@@ -17,10 +17,10 @@ Checked from live GitHub and Cloudflare state immediately before writing this do
 ### GitHub
 
 Foundation main:
-`0c1593ce654cce91e4cf6017412a9953a61d7d37`
+`94a5b5dfeb17f18239ac5defba72021aeb542ce2`
 
 Operations main:
-`75d067595ce820181cb2efcf58e83422cd5163ec`
+`7fe60d4630b30f38bfe30eff6666c9588cf2059f`
 
 Canonical production Operations pin:
 `ca3864a954569f6f8ce9a94793c53a0ef9ff03ec`
