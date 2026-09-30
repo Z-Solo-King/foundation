@@ -1,0 +1,1 @@
+import test from "node:test";import assert from "node:assert/strict";import fs from "node:fs";const s=fs.readFileSync("tools/woocommerce_svmpforge_historical_v9.mjs","utf8");test("svmpforge family",()=>{assert.ok(s.includes("/apfw-feed/*.xml"));assert.ok(s.includes("base.google.com/ns/1.0"));assert.ok(s.includes("native(body)"));assert.ok(!/random.?token.?enumerat/i.test(s));});

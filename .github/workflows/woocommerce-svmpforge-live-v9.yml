@@ -1,0 +1,65 @@
+name: WooCommerce SVMPForge Live Guess V9
+on:
+  push:
+    branches: [feat/wc-svmpforge-live-v9-20261001]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1,2,3,4,5,6]
+    env:
+      SHARD: ${{ matrix.shard }}
+      SHARDS: 6
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Unit tests
+        run: node --test tests/test_woocommerce_svmpforge_live_v9.mjs
+      - name: Live SVMPForge guessing
+        run: node tools/woocommerce_svmpforge_historical_v9.mjs
+      - name: Upload shard
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: svmpforge-v9-shard-${{ matrix.shard }}
+          path: out/woocommerce-svmpforge-v9/
+          retention-days: 30
+  aggregate:
+    needs: hunt
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          pattern: svmpforge-v9-shard-*
+          path: out/shards
+          merge-multiple: false
+      - name: Aggregate
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs'; import path from 'node:path';
+          const files=[]; function walk(p){for(const e of fs.readdirSync(p,{withFileTypes:true})){const q=path.join(p,e.name);if(e.isDirectory())walk(q);else if(e.name.endsWith('.json'))files.push(q)}}
+          walk('out/shards'); const rows=files.flatMap(f=>JSON.parse(fs.readFileSync(f,'utf8')).results||[]);
+          const unique=[...new Map(rows.map(x=>[x.root,x])).values()];
+          if(unique.length!==17)throw new Error('expected 17 targets, got '+unique.length);
+          const out={schema:'svmpforge-v9-aggregate/v1',target_count:17,native_verified:unique.filter(x=>x.hits?.length).length,native_urls:unique.flatMap(x=>x.positive_urls||[]),historical_reference_total:unique.reduce((n,x)=>n+(x.historical_reference_count||0),0),transport_limited:unique.filter(x=>x.status.includes('TRANSPORT_LIMITED')).length,clean_no_hit:unique.filter(x=>x.status==='NO_NATIVE_FEED_VERIFIED').length,results:unique};
+          fs.mkdirSync('out/aggregate',{recursive:true});fs.writeFileSync('out/aggregate/aggregate.json',JSON.stringify(out,null,2)+'\n');console.log(JSON.stringify({...out,results:undefined},null,2));
+          NODE
+      - name: Upload aggregate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: svmpforge-v9-aggregate
+          path: out/aggregate/
+          retention-days: 30
