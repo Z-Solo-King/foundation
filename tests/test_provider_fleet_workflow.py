@@ -29,6 +29,8 @@ def test_provider_fleet_workflow_uses_immutable_private_probe() -> None:
     assert "secrets.NVIDIA_NIM_API_KEY" in text
     assert "secrets.HF_TOKEN" in text
     assert "secrets.COHERE_API_KEY" in text
+    assert "secrets.CEREBRAS_API_KEY" in text
+    assert "secrets.SILICONFLOW_API_KEY" in text
     assert "nvidia_nim" in text
     assert "huggingface_free" in text
     assert "cohere_free" in text
