@@ -613,7 +613,7 @@ def test_research_proxy_probe_preserves_non_2xx_response_diagnostics():
     workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
     canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
     for text in (workflow, canary):
-        assert "probe_status=$(curl -sS" in text
+        assert "probe_status=\"$(curl -sS" in text
         assert 'probe_response_file="$RUNNER_TEMP/research-worker-probe.json"' in text
         assert "probe_response=$(curl -fsS" not in text
         assert 'jq -c \'.\' "$probe_response_file" 2>/dev/null || true' in text
