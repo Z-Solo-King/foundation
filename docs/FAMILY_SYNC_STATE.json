@@ -1,11 +1,11 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-30T10:08:00+05:30",
+  "audited_at": "2026-09-30",
   "public_safe": true,
   "live_main": {
-    "foundation": "732a694cf2e272709640c379d9aed70ea28b2534",
-    "operations": "1a91efa53b9202f1624ddde892b0e86bd6b360f0"
+    "foundation": "5ec4d112cb5b5033e1fd895271c573f01a35353f",
+    "operations": "3fbe4f151c19d0e83d0afda874f008a3fdab07ce"
   },
   "runtime_pins": {
     "foundation_runtime": null,
@@ -34,7 +34,7 @@
   },
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
-    "observed_at": "2026-09-29T18:32:09+05:30",
+    "observed_at": "2026-09-30T11:34:00+05:30",
     "open_issue_count": 7,
     "foundation": [
       58,
@@ -62,10 +62,11 @@
     "feed_recovery": "QUALIFICATION COMPLETE: verified feeds retained; blocked/unverified targets are not misclassified.",
     "d1_schema": "verified_live_2026-09-29",
     "production_signing_root": "provisioned_live_2026-09-29",
-    "production_runtime": "Foundation PR #1573 merged; canonical production release run is in progress for 732a694cf2e272709640c379d9aed70ea28b2534",
+    "production_runtime": "Foundation main advanced after PR #1573; current Cloudflare public edge provenance remains separately recorded and no current-main production acceptance is inferred.",
     "post_release_dispatch": "live nightly research uses typed GitHub workflow inputs; production smoke and research preflight preserve purpose-scoped Operations pins",
     "post_release_provider_proof": "Current production certification is pending the release-triggered research run after PR #1573",
-    "provider_diagnostic_status": "Foundation PR #1562 fixes the dedicated provider_runtime_verify health calculation so a valid Operations {ok:true,runtime_checks:[...]} receipt is returned as HTTP 200 without requiring the generic chatbot.allowed field."
+    "provider_diagnostic_status": "Foundation PR #1562 fixes the dedicated provider_runtime_verify health calculation so a valid Operations {ok:true,runtime_checks:[...]} receipt is returned as HTTP 200 without requiring the generic chatbot.allowed field.",
+    "audit_control": "Workflow trigger repair #1568 is merged; workflow authority follow-up #1575 requires its own CI acceptance."
   },
   "production_diagnostic_acceptance": "release_acceptance=true is forwarded into the private infrastructure diagnostic path",
   "continuity_enforcement": {
@@ -90,6 +91,31 @@
     "status": "merged; production certification pending",
     "feed_scope": "excluded",
     "operations_migration_tools_pin": "f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791",
-    "related_operations_pr": 1109
+    "related_operations_pr": 1109,
+    "audit_control_pr": 1568
+  },
+  "audit_reconciliation_2026_09_30": {
+    "observed_at": "2026-09-30",
+    "foundation_main": "5ec4d112cb5b5033e1fd895271c573f01a35353f",
+    "operations_main": "3fbe4f151c19d0e83d0afda874f008a3fdab07ce",
+    "open_issues": 7,
+    "open_prs": {
+      "foundation": [
+        1577,
+        1575,
+        1558,
+        1556
+      ],
+      "operations": [
+        1363,
+        1361,
+        1349
+      ]
+    },
+    "production_operations_pin": "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676",
+    "cloudflare_public_worker_provenance": "github:64b8bc2c9e3704610a8718483371991f9970dab9",
+    "workflow_authority_repair_merged": 1568,
+    "workflow_authority_followup": 1575,
+    "runtime_acceptance_rule": "CI/static audit evidence does not equal production acceptance"
   }
 }
