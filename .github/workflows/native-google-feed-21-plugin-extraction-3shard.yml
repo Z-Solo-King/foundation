@@ -1,0 +1,161 @@
+name: WooCommerce 21 Plugin Extraction — V175 3-Shard Final
+
+on:
+  push:
+    branches: [hunt/native-google-feed-urls-20260927]
+    paths:
+      - "tools/feed-lab/woocommerce_21_plugin_extraction_browser_v175.py"
+      - ".github/workflows/native-google-feed-21-plugin-extraction-3shard.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wc21-v175-final-extraction
+  cancel-in-progress: true
+
+jobs:
+  shard:
+    name: "V175 plugin extraction — shard ${{ matrix.id }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - id: "a"
+            targets: |
+              AULA India|https://aulaindia.com
+              Aarna Computers|https://aarnacomputers.com
+              Ads Store|https://adsstore.in
+              Cosmic Byte|https://www.thecosmicbyte.com
+              EZPZ Solutions|https://www.ezpzsolutions.in
+              KC Computers|https://kccomputers.co.in
+              KRG KART|https://krgkart.com
+          - id: "b"
+            targets: |
+              Kryptronix Gaming|https://kryptronix.in
+              Meckeys|https://www.meckeys.com
+              Moskeys|https://moskeys.com
+              NCL Computer|https://nclcomputer.com
+              PC Kumar Infotech|https://pckumar.in
+              PCHubShop|https://www.pchubshop.com
+              Prime ABGB|https://www.primeabgb.com
+          - id: "c"
+            targets: |
+              SCL Gaming|https://sclgaming.in
+              StacksKB|https://stackskb.com
+              Theproaudio|https://www.theproaudio.com
+              Variety Infotech|https://varietyinfotech.com
+              Viper PC|https://viperpc.in
+              hotshiftpc|https://hotshiftpc.com
+              ithunt|https://ithunt.in
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install Playwright
+        run: |
+          python -m pip install --disable-pip-version-check -q playwright
+          python -m playwright install chromium
+      - name: Extract seven sites with V175-derived channels
+        env:
+          TARGETS: ${{ matrix.targets }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "out/shard-${{ matrix.id }}"
+          while IFS='|' read -r site root; do
+            [[ -z "${site}" ]] && continue
+            slug="$(printf '%s' "${site}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g; s/--*/-/g; s/^-//; s/-$//')"
+            out="out/shard-${{ matrix.id }}/${slug}"
+            mkdir -p "${out}"
+            echo "=== ${site} ==="
+            SITE_NAME="${site}" SITE_ROOT="${root}" OUT_DIR="${out}"               python tools/feed-lab/woocommerce_21_plugin_extraction_browser_v175.py || true
+            test -f "${out}/recovery.json"
+          done <<< "${TARGETS}"
+      - name: Upload shard evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wc21-final-shard-${{ matrix.id }}
+          path: out/shard-${{ matrix.id }}/
+          retention-days: 14
+
+  aggregate:
+    name: Aggregate final 21-site V175 evidence
+    needs: shard
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wc21-final-shard-*
+          path: out/shards
+          merge-multiple: false
+      - name: Validate and aggregate 21 sites
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib, collections
+          root=pathlib.Path("out/shards")
+          rows=[]
+          for p in sorted(root.glob("wc21-final-shard-*/**/recovery.json")):
+              rows.append(json.loads(p.read_text()))
+          rows=sorted({r.get("site",""):r for r in rows}.values(),key=lambda r:r.get("site","").lower())
+          assert len(rows)==21, f"expected 21 site reports, got {len(rows)}"
+          groups=collections.Counter()
+          for r in rows:
+              for fam in r.get("feed_family_signals",[]):
+                  groups[fam.get("family","")]+=1
+          payload={
+            "schema_version":"woocommerce-21-plugin-extraction-final-aggregate/v2",
+            "extractor":"V175-derived-browser-plugin-extractor",
+            "channels":[
+              "Playwright browser rendering",
+              "homepage XHR/fetch response URL capture",
+              "homepage XHR response marker scan (non-product endpoints)",
+              "WP-JSON root discovery",
+              "WordPress REST wp/v2",
+              "generic REST surface",
+              "WooCommerce REST v1/v2/v3 root probes",
+              "WooCommerce REST v1/v2/v3 product probes with per_page=1&_fields=id",
+              "WooCommerce REST v1/v2/v3 OPTIONS probes",
+              "public plugin asset fingerprinting",
+              "public plugin readme metadata"
+            ],
+            "policy":"Public read-only plugin identification. Product v1/v2/v3 probes retain metadata only; response bodies are discarded. No feed URL mining from HTML/JS/XHR, CAPTCHA solving, Cloudflare challenge bypass, clearance-cookie replay, authentication bypass, or stealth/evasion.",
+            "site_count":21,
+            "feed_family_counts":dict(sorted(groups.items())),
+            "results":rows
+          }
+          pathlib.Path("out/final-recovery-aggregate.json").write_text(json.dumps(payload,indent=2)+"\n")
+          lines=[
+            "# Final 21-site V175 plugin extraction",
+            "",
+            "| Site | Status | Feed families | Plugin assets | XHR | Namespaces | v1 | v2 | v3 |",
+            "|---|---|---|---:|---:|---:|---|---|---|"
+          ]
+          for r in rows:
+              wc={x["label"]:x["status"] for x in r.get("woocommerce_rest_v1_v2_v3",[])}
+              versions=[str(wc.get(f"wc-{v}-products-probe","-")) for v in ("v1","v2","v3")]
+              lines.append(
+                f'| {r.get("site","")} | {r.get("status","")} | '
+                f'{", ".join(x.get("family","") for x in r.get("feed_family_signals",[])) or "none"} | '
+                f'{len(r.get("plugin_assets",[]))} | {len(r.get("xhr",[]))} | '
+                f'{len(r.get("public_api_namespaces",[]))} | {versions[0]} | {versions[1]} | {versions[2]} |'
+              )
+          pathlib.Path("out/final-recovery-aggregate.md").write_text("\n".join(lines)+"\n")
+          PY
+      - name: Upload final aggregate
+        uses: actions/upload-artifact@v4
+        with:
+          name: wc21-final-plugin-extraction
+          path: out/
+          retention-days: 14
