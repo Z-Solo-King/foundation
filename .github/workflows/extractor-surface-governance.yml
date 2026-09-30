@@ -10,12 +10,6 @@ on:
         required: true
         default: "main"
         type: string
-  pull_request:
-    paths:
-      - "foundation_core/**"
-      - "docs/FAMILY_**"
-      - "docs/AI_**"
-      - ".github/**"
 
 permissions:
   contents: read

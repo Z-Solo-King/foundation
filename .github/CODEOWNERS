@@ -10,7 +10,9 @@
 # AI audit / multi-lens / project maps
 /docs/AI_*.md @Z-Solo-King
 /docs/AI_*.json @Z-Solo-King
+/tools/* @Z-Solo-King
 /tools/*audit* @Z-Solo-King
 
 # CI / deployment authority
+/.github/workflows/* @Z-Solo-King
 /.github/ @Z-Solo-King
