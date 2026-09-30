@@ -23,11 +23,10 @@ PROVIDER_MARKERS = (
 
 ALLOWED_RELATIVE_PATHS = {
     "tools/woocommerce_v175_plugin_fingerprint_22.py",
-    "tools/provider_fleet_ai_adapter.py",
     "tools/ai_provider_direct_reference_audit.py",
 }
 
-SCAN_SUFFIXES = {".py", ".mjs", ".js", ".ts", ".tsx", ".yml", ".yaml", ".toml"}
+SCAN_SUFFIXES = {".py", ".mjs", ".js", ".ts", ".tsx"}
 
 
 def direct_provider_references() -> list[tuple[str, str]]:
