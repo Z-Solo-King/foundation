@@ -484,6 +484,47 @@ def filter_explicit_feed_candidates(urls: Iterable[str]) -> List[str]:
     return sorted(out)[:160]
 
 
+PLUGIN_FEED_DIRECTORIES = [
+    "/wp-content/uploads/woo-feed/google/xml/",
+    "/wp-content/uploads/woo-feed/google/",
+    "/wp-content/uploads/woo-product-feed-pro/xml/",
+    "/wp-content/uploads/wppfm-feeds/",
+    "/wp-content/uploads/webtoffee_product_feed/",
+    "/wp-content/uploads/codesolz-feeds/",
+    "/feeds/",
+    "/feed/",
+]
+
+
+def public_directory_feed_candidates(text: str, root: str, directory: str) -> List[str]:
+    """Discover generated XML files from a public directory index; never invent filenames."""
+    out = set()
+    base = urljoin(root + "/", directory.lstrip("/"))
+    for raw in re.findall(r'''(?:href|data-href)=["']([^"']+)["']''', text or "", re.I):
+        if raw in ("../", "./", "#"):
+            continue
+        try:
+            u = urljoin(base, raw)
+            path = (urlsplit(u).path or "").lower()
+        except Exception:
+            continue
+        if not same_host(u, root):
+            continue
+        if not (path.endswith(".xml") or path.endswith(".xml.gz")):
+            continue
+        # Known plugin output directories may use arbitrary/generated filenames.
+        out.add(u)
+    for raw in re.findall(r'https?://[^\s"\'<>]+', text or "", re.I):
+        try:
+            u = raw.rstrip("),.;")
+            path = (urlsplit(u).path or "").lower()
+        except Exception:
+            continue
+        if same_host(u, root) and (path.endswith(".xml") or path.endswith(".xml.gz")):
+            out.add(u)
+    return sorted(out)[:120]
+
+
 def native_verification_admissible(
     challenge_encountered: bool,
     clean_browser_success: bool,
@@ -856,6 +897,8 @@ async def passive_public_discovery(root: str) -> Dict[str, Any]:
         "/robots.txt", "/wp-sitemap.xml", "/wp-sitemap.xml.gz", "/sitemap.xml", "/sitemap_index.xml",
         "/product-sitemap.xml", "/product-sitemap1.xml",
     ]
+    directory_urls = set()
+    directory_reports = []
     async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=15) as client:
         for path in probes:
             u = urljoin(root + "/", path)
@@ -869,6 +912,29 @@ async def passive_public_discovery(root: str) -> Dict[str, Any]:
                     urls.update(passive_sitemap_candidates(txt, root))
             except Exception as e:
                 errors.append({"url": u, "error": str(e)[:180]})
+
+        # Public directory indexes are an important recovery path for plugins whose feed
+        # filename is generated/randomized (e.g. CTX Feed and Product Feed PRO).
+        async def inspect_directory(directory: str):
+            u = urljoin(root + "/", directory.lstrip("/"))
+            try:
+                r = await client.get(u, timeout=8)
+                body = await r.aread()
+                text = body.decode("utf-8", "ignore")[:250_000]
+                candidates = public_directory_feed_candidates(text, root, directory) if r.status_code == 200 else []
+                return {
+                    "directory": directory,
+                    "status": r.status_code,
+                    "candidate_urls": candidates,
+                }
+            except Exception as e:
+                return {"directory": directory, "status": 0, "candidate_urls": [], "error": str(e)[:180]}
+
+        directory_results = await asyncio.gather(*(inspect_directory(d) for d in PLUGIN_FEED_DIRECTORIES))
+        for report in directory_results:
+            directory_reports.append(report)
+            directory_urls.update(report.get("candidate_urls") or [])
+            urls.update(report.get("candidate_urls") or [])
         if WAYBACK_ENABLED:
             try:
                 pattern = quote(bare_host(root) + "/*", safe="")
@@ -912,6 +978,8 @@ async def passive_public_discovery(root: str) -> Dict[str, Any]:
         "historical": sorted(historical)[:300],
         "blobs": blobs[:20],
         "errors": errors,
+        "directory_candidates": sorted(directory_urls)[:240],
+        "directory_reports": directory_reports[:20],
     }
 
 
@@ -995,7 +1063,13 @@ async def probe_site(name: str, root: str) -> Dict[str, Any]:
     explicit = explicit_xml_candidates("\n".join(source_blobs + all_requests), root)
     explicit_feed_candidates = filter_explicit_feed_candidates(explicit)
     query_candidates = query_feed_candidates("\n".join(source_blobs + all_requests), root)
-    candidates = list(dict.fromkeys(explicit_feed_candidates + query_candidates + passive.get("urls", []) + historical))
+    candidates = list(dict.fromkeys(
+        explicit_feed_candidates
+        + query_candidates
+        + passive.get("urls", [])
+        + passive.get("directory_candidates", [])
+        + historical
+    ))
     candidates.extend(GENERIC_FEED_PATHS)
     if family in PLUGIN_CANDIDATES:
         candidates = PLUGIN_CANDIDATES[family] + candidates
@@ -1044,6 +1118,8 @@ async def probe_site(name: str, root: str) -> Dict[str, Any]:
         "passive_discovery": {
             "enabled": passive.get("enabled"),
             "current_candidate_urls": passive.get("urls", [])[:200],
+            "directory_candidates": passive.get("directory_candidates", [])[:200],
+            "directory_reports": passive.get("directory_reports", [])[:20],
             "historical_candidate_urls": historical[:200],
             "errors": passive.get("errors", []),
         },
