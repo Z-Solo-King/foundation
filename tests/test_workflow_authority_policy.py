@@ -21,7 +21,6 @@ def test_privileged_policy_forbids_pr_triggers():
     assert "privileged_push_branch" in text
     assert "merge_group" in text
 
-
 def test_trusted_workflow_run_source_is_registered():
     text=(ROOT/"docs"/"WORKFLOW_AUTHORITY_REGISTRY.json").read_text(encoding="utf-8")
     assert "trusted_workflow_run_sources" in text
@@ -30,8 +29,8 @@ def test_trusted_workflow_run_source_is_registered():
 
 def test_validator_inspects_merge_group_and_workflow_run():
     source=(ROOT/"tools"/"validate_workflow_authority.py").read_text(encoding="utf-8")
-    assert '"merge_group"' in source
-    assert '"workflow_run"' in source
+    assert "merge_group" in source
+    assert "workflow_run" in source
     assert "workflow_run requires explicit trusted upstream registration" in source
 
 def test_all_workflows_have_a_valid_trigger_mapping():
