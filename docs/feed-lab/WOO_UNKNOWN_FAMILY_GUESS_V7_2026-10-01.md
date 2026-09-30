@@ -1,1 +1,17 @@
-# WooCommerce Unknown Family Guess V7 — adaptive transport-aware cross-family guessing — 2026-10-01\n\nV6 established that a 24-way burst produced transport amplification, so V7 uses family-level probing at concurrency 2 and expands only families whose representative endpoints return public 200 responses without challenge.\n\nThe true unknown cohort is the 17 sites remaining after the identified-family gate. Variety Infotech is included as unknown because its previous Google-for-WooCommerce hypothesis was not supported by current public plugin evidence.\n\nV7 uses documented/researched grammars for WooCommerce Google Product Feed, CTX/WebAppick, AdTribes, WPFM, WebToffee, CodeSolz, FeedCraft, RexFeed, KLPSoft and iCopyDoc. It does not perform plugin extraction, Store API extraction, browser crawling, authentication or anti-bot bypass.\n\nA family is expanded only after core public reachability. Native feed acceptance remains current same-host HTTP 200 with the Google Merchant namespace and g:id, g:title, g:link and g:price within the same item/entry.\n
+# WooCommerce Unknown Family Guess V7 — 2026-10-01
+
+This wave follows V6 after an important live-run finding: high parallelism caused large timeout/challenge amplification, while many HTTP 200 results were HTML fallbacks rather than feeds.
+
+V7 changes only the guessing/transport strategy:
+- lower per-target concurrency (4) and 5s timeout;
+- recover historically published same-host feed URLs from the Wayback CDX API;
+- recover same-host URL references from the latest Common Crawl index;
+- infer a feed-generator family from recovered URL grammar;
+- re-probe recovered URLs against the current site before accepting them;
+- retain the existing bounded family grammar matrix.
+
+No page crawling, plugin extraction, Store API extraction, authentication, CAPTCHA/challenge bypass, clearance-cookie replay, proxy rotation, or random token enumeration is used.
+
+Native acceptance remains current same-host HTTP 200 XML with the Google Merchant namespace and g:id, g:title, g:link and g:price in the same item/entry.
+
+The 17-site unknown cohort is unchanged.
