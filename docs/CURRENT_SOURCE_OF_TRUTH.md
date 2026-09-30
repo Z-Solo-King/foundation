@@ -8,7 +8,7 @@ Release continuity note: production acceptance namespaces are derived from GitHu
 Foundation main code checkpoint: 30e0f132cea88cf3a945238575d7e4cb6e162045.
 Operations main checkpoint: current protected main revision is read from GitHub live state; research/migration jobs use explicit immutable pins below.
 Production Operations pin: ce4f9edbae3ddf1bf1c25a908d5bce014acc7676.
-Research Operations pin: 9a942b0f8cc601f8d460ed71ccba908fa02e6c75.
+Research Operations pin: 1a91efa53b9202f1624ddde892b0e86bd6b360f0.
 Live issue and PR counts must be read from GitHub; this file never serves as a mutable queue.
 
 ## Public architecture

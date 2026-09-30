@@ -13,7 +13,7 @@ Snapshot: 2026-09-29 (Asia/Kolkata)
 - Foundation main: `34fcae8638fc2fb591131d5e53a6cf47ebdbe0dd`
 - Operations main: `068c3cff76f194dd0188f704fda191388e6694cb`
 - Production Operations pin: `068c3cff76f194dd0188f704fda191388e6694cb`
-- Research Operations pin: `9a942b0f8cc601f8d460ed71ccba908fa02e6c75`
+- Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`
 - Operations contains no `.github/workflows`; Foundation owns automation.
 
 ## Current Cloudflare topology

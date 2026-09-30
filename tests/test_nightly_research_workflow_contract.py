@@ -55,7 +55,7 @@ def test_production_release_explicitly_dispatches_nightly_live_mode():
 
 def test_private_operations_pin_and_app_auth_remain_explicit():
     text=workflow_text()
-    assert "OPERATIONS_RESEARCH_REF: 9a942b0f8cc601f8d460ed71ccba908fa02e6c75" in text
+    assert "OPERATIONS_RESEARCH_REF: 1a91efa53b9202f1624ddde892b0e86bd6b360f0" in text
     assert "OPERATIONS_MIGRATION_TOOLS_REF: f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791" in text
     assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in text
     assert "OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}" in text
@@ -128,7 +128,7 @@ def test_proxy_has_bounded_transport_recovery():
 def test_operations_pin_manifest_matches_research_workflow():
     workflow=workflow_text()
     manifest=json.loads((Path(__file__).parents[1]/"docs"/"OPERATIONS_PIN_MANIFEST.json").read_text(encoding="utf-8"))
-    assert manifest["pins"]["research_runtime"]["sha"] == "9a942b0f8cc601f8d460ed71ccba908fa02e6c75"
+    assert manifest["pins"]["research_runtime"]["sha"] == "1a91efa53b9202f1624ddde892b0e86bd6b360f0"
     assert manifest["pins"]["research_runtime"]["sha"] in workflow
 
 
