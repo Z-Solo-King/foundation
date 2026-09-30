@@ -47,3 +47,5 @@ jobs:
           name: woocommerce-family-targeted-refine
           path: out/woocommerce-family-targeted-refine/
           retention-days: 30
+
+# Keep an explicit workflow-source touchpoint so the targeted verifier can be revalidated after script-only fixes.
