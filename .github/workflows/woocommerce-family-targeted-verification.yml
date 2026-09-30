@@ -1,0 +1,49 @@
+name: WooCommerce Family Targeted Verification
+
+on:
+  push:
+    branches:
+      - feat/wc-high-confidence-feed-guessing-20260930
+    paths:
+      - "tools/woocommerce_unknown20_family_targeted_refine.py"
+      - ".github/workflows/woocommerce-family-targeted-verification.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wc-feed-family-targeted-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  targeted:
+    name: Family-targeted verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+      - name: Install targeted runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -q httpx
+      - name: Acceptance boundary static guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -nE 'add_cookies|seed_cookies|cookie_jars|camoufox|nodriver|curl_cffi' tools/woocommerce_v175_plugin_fingerprint_22.py tools/woocommerce_unknown20_family_targeted_refine.py
+      - name: Run family-targeted verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/woocommerce_unknown20_family_targeted_refine.py
+      - name: Upload targeted evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-family-targeted-refine
+          path: out/woocommerce-family-targeted-refine/
+          retention-days: 30
