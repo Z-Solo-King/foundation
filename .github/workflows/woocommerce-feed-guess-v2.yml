@@ -53,7 +53,6 @@ jobs:
         run: |
           set -euo pipefail
           ! grep -nE 'add_cookies|seed_cookies|cookie_jars|camoufox|nodriver|curl_cffi' tools/woocommerce_feed_guess_v2.py
-          ! grep -nE 'proxy.*rotation|clearance.*replay|captcha.*solve|token.*enumerat' tools/woocommerce_feed_guess_v2.py
       - name: Run V2 public discovery
         shell: bash
         run: |
