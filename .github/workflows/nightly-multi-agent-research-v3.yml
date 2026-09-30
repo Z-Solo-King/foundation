@@ -239,6 +239,18 @@ jobs:
             echo "mode=live" >> "$GITHUB_OUTPUT"
             echo "Scheduled/live research mode selected."
           fi
+      - name: Validate pinned Operations research contract
+        working-directory: ${{ runner.temp }}/operations-research
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f private/chatbot/chat_endpoint.py
+          test -f private/chatbot/live_answer.py
+          grep -Eq 'research_agent = bool\\(payload\\.get\\("research_agent", False\\)\\)' private/chatbot/chat_endpoint.py
+          grep -Eq 'research_agent=research_agent' private/chatbot/chat_endpoint.py
+          grep -Eq 'if research_agent' private/chatbot/live_answer.py
+          grep -Eq 'response_format' private/chatbot/live_answer.py
+          echo "pinned Operations research-agent contract: PASS"
       - name: Require live research executor configuration
         id: preflight
         if: ${{ steps.mode.outputs.mode == 'live' }}
