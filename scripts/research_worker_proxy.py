@@ -28,6 +28,10 @@ MAX_MESSAGE_CHARS = 11_800
 UPSTREAM_USER_AGENT = "HeroicAI-NightlyResearch/1.1"
 DEFAULT_MAX_UPSTREAM_CONCURRENCY = 6
 MAX_QUEUE_WAIT_SECONDS = 180
+MAX_UPSTREAM_ATTEMPTS = 3
+RETRYABLE_UPSTREAM_STATUS = {408, 429, 500, 502, 503, 504}
+RETRY_BASE_DELAY_SECONDS = 1.0
+RETRY_MAX_DELAY_SECONDS = 8.0
 
 
 def _compact_messages(messages: object) -> str:
@@ -100,6 +104,22 @@ def _safe_header_details(headers: object) -> dict[str, object]:
             details[target] = value.strip()[:limit]
     return details
 
+def _retry_delay_seconds(headers: object, attempt: int) -> float:
+    """Return bounded retry delay; honor Retry-After when safely parseable."""
+    retry_after = None
+    if headers is not None:
+        try:
+            raw = headers.get("retry-after") or headers.get("Retry-After")
+        except AttributeError:
+            raw = None
+        try:
+            retry_after = float(str(raw)) if raw is not None else None
+        except (TypeError, ValueError):
+            retry_after = None
+    if retry_after is not None and retry_after >= 0:
+        return min(RETRY_MAX_DELAY_SECONDS, retry_after)
+    return min(RETRY_MAX_DELAY_SECONDS, RETRY_BASE_DELAY_SECONDS * (2 ** max(0, attempt - 1)))
+
 def _curl_post(url: str, payload: bytes, auth_token: str, request_id: str) -> tuple[int, bytes, str]:
     """Mirror the known-working CI curl transport for an edge-403 recovery attempt."""
     completed = subprocess.run([
@@ -108,6 +128,7 @@ def _curl_post(url: str, payload: bytes, auth_token: str, request_id: str) -> tu
         "-H", "Accept: application/json",
         "-H", "Content-Type: application/json",
         "-H", "Idempotency-Key: " + request_id,
+        "-H", "X-Heroic-Research-Proof: 1",
         "-H", "User-Agent: " + UPSTREAM_USER_AGENT,
         "--data-binary", "@-", "--write-out", "\n%{http_code}", url,
     ], input=payload, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
@@ -200,6 +221,7 @@ class Handler(BaseHTTPRequestHandler):
                 "Authorization": "Bearer " + self.server.auth_token,
                 "Content-Type": "application/json",
                 "Idempotency-Key": request_id,
+                "X-Heroic-Research-Proof": "1",
                 # Explicit API-client identity; do not rely on urllib's default
                 # Python-urllib User-Agent, which may be classified as automated web traffic.
                 "User-Agent": UPSTREAM_USER_AGENT,
@@ -218,51 +240,66 @@ class Handler(BaseHTTPRequestHandler):
             )
             return
         queue_wait_ms = round((time.monotonic() - acquired_at) * 1000, 3)
+        attempt_count = 0
+        transport_used = "urllib"
+        last_error: dict[str, object] = {}
+        body: object = None
+        status = 0
         try:
-            try:
-                with urlopen(request, timeout=90) as response:
-                    body = json.loads(response.read().decode("utf-8"))
-                    status = int(response.status)
-            except HTTPError as exc:
-                if exc.code != 403:
-                    details = _safe_upstream_error_details(exc)
-                    details.update(_safe_header_details(exc.headers))
-                    self._json({"error": {"message": "upstream_worker_rejected", "type": "upstream_http_error", **details}, "request_id": request_digest}, 502)
-                    return
-                curl_status, curl_body, curl_error = _curl_post(
-                    url,
-                    json.dumps(upstream_payload, ensure_ascii=False).encode("utf-8"),
-                    self.server.auth_token,
-                    request_id,
-                )
-                if curl_status == 200:
-                    try:
-                        body = json.loads(curl_body.decode("utf-8"))
-                        status = 200
-                    except (UnicodeDecodeError, json.JSONDecodeError):
-                        self._json({"error": {"message": "upstream_worker_invalid_curl_response", "type": "protocol_error"}, "request_id": request_digest}, 502)
-                        return
-                else:
-                    details = _safe_upstream_error_details(exc)
-                    details.update(_safe_header_details(exc.headers))
-                    details["fallback_transport"] = "curl"
-                    details["fallback_http_status"] = curl_status
-                    if curl_error:
-                        details["fallback_transport_error"] = curl_error
-                    self._json({"error": {"message": "upstream_worker_rejected", "type": "upstream_http_error", **details}, "request_id": request_digest}, 502)
-                    return
-            except Exception as exc:
-                self._json(
-                    {"error": {"message": "upstream_worker_failure", "type": type(exc).__name__}, "request_id": request_digest},
-                    502,
-                )
-                return
+            for attempt in range(1, MAX_UPSTREAM_ATTEMPTS + 1):
+                attempt_count = attempt
+                try:
+                    with urlopen(request, timeout=90) as response:
+                        body = json.loads(response.read().decode("utf-8"))
+                        status = int(response.status)
+                        break
+                except HTTPError as exc:
+                    last_error = _safe_upstream_error_details(exc)
+                    last_error.update(_safe_header_details(exc.headers))
+                    if exc.code == 403:
+                        transport_used = "curl"
+                        curl_status, curl_body, curl_error = _curl_post(
+                            url,
+                            json.dumps(upstream_payload, ensure_ascii=False).encode("utf-8"),
+                            self.server.auth_token,
+                            request_id,
+                        )
+                        if curl_status == 200:
+                            try:
+                                body = json.loads(curl_body.decode("utf-8"))
+                                status = 200
+                                break
+                            except (UnicodeDecodeError, json.JSONDecodeError):
+                                self._json({"error": {"message": "upstream_worker_invalid_curl_response", "type": "protocol_error"}, "request_id": request_digest}, 502)
+                                return
+                        last_error["fallback_transport"] = "curl"
+                        last_error["fallback_http_status"] = curl_status
+                        if curl_error:
+                            last_error["fallback_transport_error"] = curl_error
+                        status = curl_status
+                    else:
+                        status = int(exc.code)
+                    if status in RETRYABLE_UPSTREAM_STATUS and attempt < MAX_UPSTREAM_ATTEMPTS:
+                        time.sleep(_retry_delay_seconds(getattr(exc, "headers", None), attempt))
+                        continue
+                    break
+                except Exception as exc:
+                    last_error = {"type": type(exc).__name__, "message": str(exc)[:200]}
+                    status = 0
+                    if attempt < MAX_UPSTREAM_ATTEMPTS and isinstance(exc, (TimeoutError, OSError, ConnectionError)):
+                        time.sleep(_retry_delay_seconds(None, attempt))
+                        continue
+                    break
         finally:
             UPSTREAM_CONCURRENCY.release()
 
         if status < 200 or status >= 300 or not isinstance(body, dict):
+            details = dict(last_error)
+            details["attempts"] = attempt_count
+            details["transport"] = transport_used
+            details["retry_policy"] = "bounded_3_attempts"
             self._json(
-                {"error": {"message": "upstream_worker_rejected", "type": "upstream_error"}, "request_id": request_digest},
+                {"error": {"message": "upstream_worker_rejected", "type": "upstream_error", **details}, "request_id": request_digest},
                 502,
             )
             return

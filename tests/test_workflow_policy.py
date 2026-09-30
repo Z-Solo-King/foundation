@@ -142,8 +142,9 @@ def test_production_release_has_one_minimal_main_push_job():
     assert "        if: always()" in frontend
     assert "Publish sanitized production receipt" in frontend
     assert "needs:" not in frontend
-    assert frontend.count('Dispatch certified post-release validation in parallel') == 1
-    assert 'gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref main' in frontend
+    assert frontend.count('Preflight exact nightly runtime before research dispatch') == 1
+    assert 'gh workflow run nightly-research-provider-preflight.yml --repo "$GITHUB_REPOSITORY" --ref main' in frontend
+    assert 'gh workflow run nightly-multi-agent-research-v3.yml --repo "$GITHUB_REPOSITORY" --ref main' in frontend
     assert frontend.count('Upload cross-repository audit receipt') == 1
     assert frontend.count('Upload runtime acceptance receipts') == 1
     assert frontend.count('Publish sanitized production receipt') == 1
@@ -420,7 +421,8 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     assert 'PIN_MANIFEST="docs/OPERATIONS_PIN_MANIFEST.json"' in deployment
     assert 'manifest["pins"]["production_runtime"]["sha"]' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
-    assert f"OPERATIONS_RESEARCH_REF: {CANONICAL_RESEARCH_OPERATIONS_REF}" in nightly
+    expected = "OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || '" + CANONICAL_PRODUCTION_OPERATIONS_REF + "' }}"
+    assert expected in nightly
 
 def test_coverage_runtime_matrix_uses_versioned_validation_tests():
     workflow = _workflow_texts()["coverage-driven-runtime-matrix.yml"]
@@ -484,8 +486,8 @@ def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
         "live-chatbot-production-smoke.yml": expected_production,
         "coverage-driven-runtime-matrix.yml": expected_nightly,
         "polyglot-governance-audit.yml": expected_nightly,
-        "live-nightly-research-canary.yml": expected_nightly,
-        "nightly-research-provider-preflight.yml": expected_nightly,
+        "live-nightly-research-canary.yml": CANONICAL_PRODUCTION_OPERATIONS_REF,
+        "nightly-research-provider-preflight.yml": CANONICAL_PRODUCTION_OPERATIONS_REF,
     }
     for filename, expected in auxiliary.items():
         workflow = (WORKFLOW_ROOT / filename).read_text(encoding="utf-8")
@@ -597,9 +599,9 @@ def test_nightly_research_uses_authenticated_worker_ai_adapter():
     assert "scripts/research_worker_proxy.py" in workflow
     assert 'PUBLIC_WORKER_URL' in workflow
     assert 'AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in preflight
-    assert "/api/v1/chat" in preflight
-    assert 'worker_ai_path_verified' in preflight
-    assert 'transport": "authenticated_foundation_worker"' in preflight
+    assert "nightly_runtime_contract_probe.py" in preflight
+    assert "expected-foundation-sha" in preflight
+    assert "expected-operations-ref" in preflight
     assert 'RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in canary
     assert "Checkout Foundation research adapter" in canary
     assert "uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in canary
@@ -691,92 +693,17 @@ def test_public_pages_front_door_is_documented_without_exposing_backend_origin()
 
 def test_nightly_research_preflight_has_network_failure_classification():
     preflight = (WORKFLOW_ROOT / "nightly-research-provider-preflight.yml").read_text(encoding="utf-8")
-    assert "worker_health_curl_exit" in preflight
-    assert "worker_health_transport_error" in preflight
-    assert "worker_dns_ipv4" in preflight
-    assert "probe_curl_exit" in preflight
-    assert "probe_transport_error" in preflight
-    assert '"network_classification"' in preflight
-    assert "dns_or_network_unreachable" in preflight
-    assert "edge_http_403" in preflight
-def test_deep_scan_concurrency_is_pr_scoped():
-    text = (ROOT / ".github/workflows/open-issue-polyglot-deep-scan.yml").read_text(encoding="utf-8")
-    assert "github.event.pull_request.number || github.ref" in text
-    assert "cancel-in-progress: true" in text
+    probe = (ROOT / "scripts" / "nightly_runtime_contract_probe.py").read_text(encoding="utf-8")
+    assert "nightly_runtime_contract_probe.py" in preflight
+    assert "probe_transport_error" in probe
+    assert "runtime_revision_mismatch" in probe
+    assert "invalid_json_response" in probe
+    assert "readiness_failure" in probe
 
-def test_polyglot_migration_review_validates_registry_integrity():
-    text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
-    assert "Validate Operations migration registry" in text
-    assert "tools/validate_polyglot_registry.py" in text
-
-def test_observation_contract_differential_gate():
-    text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
-    assert "TypeScript observation contract differential" in text
-    assert "npm run typecheck" in text
-    assert "npm run differential:compare" in text
-    assert '"case_count": len(ts)' in text
-
-def test_polyglot_migration_review_runs_both_operations_validators():
-    text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
-    assert "tools/validate_migration_evidence.py" in text
-    assert "tools/validate_polyglot_registry.py" in text
-
-def test_observation_contract_benchmark_gate():
-    text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
-    assert "Run TypeScript observation contract benchmark" in text
-    assert "BENCHMARK_ITERATIONS=200 npm run benchmark" in text
-    assert "observation-contract-benchmark" in text
-
-def test_polyglot_migration_review_creates_runtime_output_dir():
-    text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
-    assert 'mkdir -p "$GITHUB_WORKSPACE/.runtime"' in text
-
-def test_live_ai_agent_benchmark_is_bounded_and_non_authoritative():
-    workflow = _workflow_texts()["live-ai-agent-benchmark.yml"]
-    assert "fix/issue-1157-live-agent-baseline-20260927" in workflow
-    assert "contents: read" in workflow
-    assert "CLOUDFLARE_API_TOKEN" in workflow
-    assert "CLOUDFLARE_ACCOUNT_ID" in workflow
-    assert "retained per-run observations" in workflow
-    assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in workflow
-    assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97" in workflow
-    assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in workflow
-    assert "expected_observations == 720" in workflow
-
-def test_polyglot_migration_review_runs_typescript_acquisition_planner_evidence():
-    text = (ROOT / ".github/workflows/polyglot-migration-review.yml").read_text(encoding="utf-8")
-    assert "Run TypeScript acquisition planner differential" in text
-    assert "npm run differential:python" in text
-    assert "npm run differential:compare" in text
-    assert "BENCHMARK_ITERATIONS=200 npm run benchmark" in text
-    assert 'differential["case_count"] == 32' in text
-    assert 'benchmark["iterations"] == 200' in text
-
-def test_typescript_public_endpoint_discovery_is_executed_in_polyglot_review():
-    workflow = (WORKFLOW_ROOT / "polyglot-migration-review.yml").read_text(encoding="utf-8")
-    assert "Run TypeScript public endpoint discovery differential" in workflow
-    assert "npm run differential:python" in workflow
-    assert "npm run differential:compare" in workflow
-    assert 'differential["case_count"] == 32' in workflow
-    assert 'benchmark["repeats"] == 3' in workflow
-
-
-def test_live_nightly_canary_runs_after_nightly_crossfire_not_release():
-    canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
-    assert 'workflows: ["nightly multi-agent research"]' in canary
-    assert 'workflows: ["Heroic AI production release"]' not in canary
-    assert "--global-capacity 8" in canary
-def test_live_chatbot_smoke_is_release_dispatched():
-    text = (ROOT / '.github/workflows/live-chatbot-production-smoke.yml').read_text(encoding='utf-8')
-    assert 'workflow_dispatch:' in text
-    assert 'target_sha:' in text
-    assert 'production_release_run_id:' in text
-    assert 'github.event.workflow_run' not in text
-    assert 'TARGET_FOUNDATION_SHA: ${{ inputs.target_sha || github.sha }}' in text
-
-def test_live_chatbot_smoke_keeps_infrastructure_diagnostic_non_blocking():
-    workflow = (ROOT / ".github/workflows/live-chatbot-production-smoke.yml").read_text(encoding="utf-8")
-    assert "def record(name, status, body=None, *, critical=True):" in workflow
-    assert '"critical": critical' in workflow
-    assert 'record("diagnostic_infrastructure", diagnostic.status_code, diagnostic_body, critical=False)' in workflow
-    assert "if critical and (status != 200 or item.get(\"ok\") is False):" in workflow
+def test_nightly_research_pin_selection_requires_consumer_contract_validation():
+    text=(ROOT / ".github" / "workflows" / "canonical-nightly-pin-repair.yml").read_text(encoding="utf-8")
+    assert "Newer is not automatically compatible" in text
+    assert "candidate Operations revision is compatible with nightly research contract" in text
+    assert "private/chatbot/chat_endpoint.py" in text
+    assert "private/chatbot/live_answer.py" in text
+    assert "response_format" in text

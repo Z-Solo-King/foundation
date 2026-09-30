@@ -34,7 +34,6 @@ jobs:
           - PCHubShop
           - "SCL Gaming"
           - "Variety Infotech"
-          - Moskeys
           - Theproaudio
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -59,7 +58,7 @@ jobs:
           const domains = {
             'Ads Store':'adsstore.in','ithunt':'ithunt.in','kccomputers':'kccomputers.co.in','KRG KART':'krgkart.com',
             'PC Kumar Infotech':'pckumar.in','PCHubShop':'www.pchubshop.com','SCL Gaming':'sclgaming.in',
-            'Variety Infotech':'varietyinfotech.com','Moskeys':'moskeys.com','Theproaudio':'www.theproaudio.com'
+            'Variety Infotech':'varietyinfotech.com','Theproaudio':'www.theproaudio.com'
           };
           const domain = domains[site];
           await fs.mkdir('out/archive',{recursive:true});

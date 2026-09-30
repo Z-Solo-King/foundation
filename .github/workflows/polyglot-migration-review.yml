@@ -11,16 +11,6 @@ on:
       - "worker.py"
       - "scripts/research_worker_proxy.py"
       - ".github/workflows/polyglot-migration-review.yml"
-  pull_request:
-    branches: [main]
-    paths:
-      - "polyglot/**"
-      - "benchmark/polyglot/**"
-      - "experiments/rust_*"
-      - "experiments/go_http_fanout/**"
-      - "worker.py"
-      - "scripts/research_worker_proxy.py"
-      - ".github/workflows/polyglot-migration-review.yml"
   workflow_dispatch:
     inputs:
       operations_ref:

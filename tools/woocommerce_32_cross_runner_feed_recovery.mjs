@@ -15,7 +15,6 @@ const TARGETS=[
   ["PCHubShop","https://www.pchubshop.com"],
   ["SCL Gaming","https://sclgaming.in"],
   ["Variety Infotech","https://varietyinfotech.com"],
-  ["Moskeys","https://moskeys.com"],
   ["Theproaudio","https://www.theproaudio.com"]
 ];
 

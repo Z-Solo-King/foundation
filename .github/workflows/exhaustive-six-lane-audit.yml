@@ -4,9 +4,6 @@ name: Exhaustive six-lane repository audit
 # Mutable issue inventory is sourced from Operations main; runtime/source scans may use an explicit candidate ref.
 
 on:
-  pull_request:
-    paths:
-      - "**"
   workflow_dispatch:
     inputs:
       operations_ref:

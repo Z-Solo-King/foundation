@@ -1,17 +1,18 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-29T22:00:00+05:30",
+  "audited_at": "2026-09-30T10:08:00+05:30",
   "public_safe": true,
   "live_main": {
-    "foundation": "ed833710199696717c2326bc73e0b2de4a9a1568",
-    "operations": "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676"
+    "foundation": "732a694cf2e272709640c379d9aed70ea28b2534",
+    "operations": "1a91efa53b9202f1624ddde892b0e86bd6b360f0"
   },
   "runtime_pins": {
     "foundation_runtime": null,
     "production_operations": "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676",
-    "research_operations": "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d",
-    "foundation_runtime_status": "no independent immutable Foundation runtime pin; deployed Foundation provenance is release-receipt owned"
+    "research_operations": "1a91efa53b9202f1624ddde892b0e86bd6b360f0",
+    "foundation_runtime_status": "no independent immutable Foundation runtime pin; deployed Foundation provenance is release-receipt owned",
+    "migration_tools": "f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791"
   },
   "cloudflare": {
     "pages_project": "ai",
@@ -33,44 +34,45 @@
   },
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
-    "observed_at": "2026-09-29T20:55:00+05:30",
-    "open_issue_count": 8,
+    "observed_at": "2026-09-29T18:32:09+05:30",
+    "open_issue_count": 7,
     "foundation": [
       58,
       157,
       1247,
       1249
     ],
-    "operations_count": 4,
+    "operations_count": 3,
     "operations_issue_numbers_omitted": false,
     "authority": "GitHub live issue API; descriptive snapshot only; never a production certificate",
     "operations": [
       1027,
-      1137,
       597,
       603
     ]
   },
   "evidence": {
-    "nightly_research": "requires provider-backed execution evidence",
+    "nightly_research": "latest live run failed at the public/private ChatRequest boundary; PR #1573 repairs the boundary and a fresh post-release 24-program live run is required",
     "extractor_benchmark": {
       "receipts": 40,
       "structural_pass": true,
       "real_catalog_success_not_proven": true
     },
-    "migration_review": "COMPLETE: merged migration lanes remain candidate/promotional evidence, not a second production authority.",
+    "migration_review": "deterministic structural evidence exists; nightly now publishes explicit #597/#603 runtime receipt requirements while preserving the external-runtime acceptance boundary",
     "feed_recovery": "QUALIFICATION COMPLETE: verified feeds retained; blocked/unverified targets are not misclassified.",
     "d1_schema": "verified_live_2026-09-29",
     "production_signing_root": "provisioned_live_2026-09-29",
-    "production_runtime": "fresh release certification in progress after merged diagnostic signer/query/replay fixes",
-    "post_release_dispatch": "live nightly research uses typed GitHub workflow inputs; production smoke and research preflight preserve purpose-scoped Operations pins"
+    "production_runtime": "Foundation PR #1573 merged; canonical production release run is in progress for 732a694cf2e272709640c379d9aed70ea28b2534",
+    "post_release_dispatch": "live nightly research uses typed GitHub workflow inputs; production smoke and research preflight preserve purpose-scoped Operations pins",
+    "post_release_provider_proof": "Current production certification is pending the release-triggered research run after PR #1573",
+    "provider_diagnostic_status": "Foundation PR #1562 fixes the dedicated provider_runtime_verify health calculation so a valid Operations {ok:true,runtime_checks:[...]} receipt is returned as HTTP 200 without requiring the generic chatbot.allowed field."
   },
   "production_diagnostic_acceptance": "release_acceptance=true is forwarded into the private infrastructure diagnostic path",
   "continuity_enforcement": {
     "schema": "continuity-freshness/v1",
     "enforced_by": "tools/check_continuity_freshness.py",
     "workflow": ".github/workflows/cross-repository-contract-drift.yml",
-    "last_refresh_reason": "true-live nightly dispatch encoded as JSON boolean",
+    "last_refresh_reason": "PR #1573 research capability-boundary repair",
     "checkout_history": "full-depth required for merge-commit-safe HEAD^ resolution"
   },
   "privacy_rule": "Do not publish protected worker origins, account/resource identifiers, private revisions, secret values, private issue details, or internal operational state.",
@@ -82,10 +84,12 @@
     "chain": "heroic (JavaScript) -> heroic-core (Python) -> operations-edge (JavaScript) -> operations (Python)"
   },
   "last_runtime_repair": {
-    "date": "2026-09-29",
-    "foundation_pr": 1549,
-    "component": "production workflow nightly dispatch",
-    "status": "repair_in_progress",
-    "feed_scope": "excluded"
+    "date": "2026-09-30",
+    "foundation_pr": 1573,
+    "component": "public/private research-agent capability boundary",
+    "status": "merged; production certification pending",
+    "feed_scope": "excluded",
+    "operations_migration_tools_pin": "f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791",
+    "related_operations_pr": 1109
   }
 }

@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 WORKFLOW = Path(__file__).parents[1] / ".github" / "workflows" / "nightly-multi-agent-research-v3.yml"
 
@@ -44,17 +45,19 @@ def test_dispatch_false_does_not_coerce_to_dry_run():
 
 def test_production_release_explicitly_dispatches_nightly_live_mode():
     release = (Path(__file__).parents[1] / ".github" / "workflows" / "heroic-ai-production-release.yml").read_text(encoding="utf-8")
-    assert 'if [[ "$workflow" == "nightly-multi-agent-research-v3.yml" ]]; then' in release
+    assert "Preflight exact nightly runtime before research dispatch" in release
     assert "--field dry_run=false" in release
     assert "--field target_sha=\"$GITHUB_SHA\"" in release
     assert "--field production_release_run_id=\"$GITHUB_RUN_ID\"" in release
-    assert "--json" not in release
+    assert 'gh workflow run nightly-multi-agent-research-v3.yml' in release
     assert "dry_run:false" not in release
 
 
 def test_private_operations_pin_and_app_auth_remain_explicit():
     text=workflow_text()
-    assert "OPERATIONS_RESEARCH_REF: 8bee0ca4c41e02d2b7005589a73f53dc0512aa9d" in text
+    assert "OPERATIONS_RESEARCH_REF:" in text
+    assert "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676" in text
+    assert "OPERATIONS_MIGRATION_TOOLS_REF: f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791" in text
     assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in text
     assert "OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}" in text
     assert "private.multi_agent.runner" in text
@@ -79,3 +82,92 @@ def test_permissions_remain_job_scoped():
     research=text.split("  research:",1)[1].split("\n  migration_review:",1)[0]
     assert "id-token: write" in research
     assert "attestations: write" in research
+
+def test_research_contract_probe_is_structured_not_generic_text():
+    text=workflow_text()
+    assert "nightly-research-contract/v2" in text
+    assert "research-contract" in text
+    assert "fromjson" in text
+    assert 'has("findings")' in text
+    assert 'has("follow_up_questions")' in text
+    assert 'has("note")' in text
+    assert "max_tokens:96" in text
+
+
+def test_research_coverage_manifest_is_exact_and_truthful():
+    text=workflow_text()
+    assert "nightly-research-coverage/v1" in text
+    assert "expected_program_count" in text
+    assert "24" in text
+    assert "missing_program_ids" in text
+    assert "unexpected_program_ids" in text
+    assert "duplicate_program_ids" in text
+    assert "transport/challenge/provider failures are execution states" in text
+
+
+def test_open_issue_runtime_requirements_are_explicit():
+    text=workflow_text()
+    assert "nightly-research-acceptance-requirements/v1" in text
+    assert "'foundation_58'" in text
+    assert "'foundation_157'" in text
+    assert "'operations_597'" in text
+    assert "'operations_603'" in text
+    assert "pending_external_runtime" in text
+    assert "'cases'" in text and "32" in text
+    assert "'repeats_min'" in text and "3" in text
+    assert "shadow" in text and "canary" in text and "rollback" in text
+
+
+def test_proxy_has_bounded_transport_recovery():
+    proxy=(Path(__file__).parents[1]/"scripts"/"research_worker_proxy.py").read_text(encoding="utf-8")
+    assert "MAX_UPSTREAM_ATTEMPTS = 3" in proxy
+    assert "RETRYABLE_UPSTREAM_STATUS" in proxy
+    assert "Retry-After" in proxy
+    assert "bounded_3_attempts" in proxy
+    assert '"X-Heroic-Research-Proof": "1"' in proxy
+    assert '"research_agent": True' not in proxy
+
+
+def test_operations_pin_manifest_matches_research_workflow():
+    workflow=workflow_text()
+    manifest=json.loads((Path(__file__).parents[1]/"docs"/"OPERATIONS_PIN_MANIFEST.json").read_text(encoding="utf-8"))
+    assert manifest["pins"]["production_runtime"]["sha"] == "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676"
+    assert manifest["pins"]["production_runtime"]["sha"] in workflow
+
+
+def test_pinned_operations_contract_guard_is_semantic():
+    text=workflow_text()
+    assert "endpoint_compact" in text
+    assert 'research_agent=bool(payload.get("research_agent",False))' in text
+    assert "ast.parse(live)" in text
+    assert '"_output_token_limit"' in text
+    assert '"response_format"' in text
+    assert '"findings"' in text
+    assert '"follow_up_questions"' in text
+    assert '"note"' in text
+    assert "private/chatbot/chat_endpoint.py" in text
+    assert "private/chatbot/live_answer.py" in text
+
+
+def test_post_nightly_canary_uses_same_structured_research_contract():
+    text=(Path(__file__).parents[1] / ".github" / "workflows" / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
+    assert "research_agent:true" not in text
+    assert '"X-Heroic-Research-Proof: 1"' in text
+    assert 'has("findings")' in text
+    assert 'has("follow_up_questions")' in text
+    assert 'has("note")' in text
+    assert "fromjson" in text
+
+
+def test_run_name_distinguishes_live_and_contract_only_runs():
+    text=workflow_text()
+    assert "run-name: >-" in text
+    assert "scheduled-live" in text
+    assert "contract-dry-run" in text
+    assert "production-live" in text
+
+
+def test_canary_manual_execution_is_main_only_and_post_nightly_main_only():
+    text=(Path(__file__).parents[1] / ".github" / "workflows" / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
+    assert "github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'" in text
+    assert "github.event.workflow_run.head_branch == 'main'" in text

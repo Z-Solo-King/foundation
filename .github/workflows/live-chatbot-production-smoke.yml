@@ -106,7 +106,7 @@ jobs:
               }
               r = client.post(
                   base + "/api/v1/chat",
-                  headers={**headers, "Content-Type": "application/json", "Idempotency-Key": rid},
+                  headers={**headers, "Content-Type": "application/json", "Idempotency-Key": rid, "X-Heroic-Research-Proof": "1"},
                   json=payload,
               )
               body = r.json() if "application/json" in r.headers.get("content-type", "") else {"raw": r.text[:200]}

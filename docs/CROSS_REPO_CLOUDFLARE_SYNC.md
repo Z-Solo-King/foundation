@@ -13,7 +13,7 @@ Snapshot: 2026-09-29 (Asia/Kolkata)
 - Foundation main: `34fcae8638fc2fb591131d5e53a6cf47ebdbe0dd`
 - Operations main: `068c3cff76f194dd0188f704fda191388e6694cb`
 - Production Operations pin: `068c3cff76f194dd0188f704fda191388e6694cb`
-- Research Operations pin: `8bee0ca4c41e02d2b7005589a73f53dc0512aa9d`
+- Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`
 - Operations contains no `.github/workflows`; Foundation owns automation.
 
 ## Current Cloudflare topology
@@ -39,3 +39,6 @@ Snapshot: 2026-09-29 (Asia/Kolkata)
 
 ## Documentation hygiene
 Do not copy secret values, Cloudflare account IDs, private Worker origins, mutable deployment IDs, or mutable issue counts into current public-state documents. Historical documents remain useful only as provenance.
+
+## 2026-09-30 AI provider synchronization
+Foundation public automation and Operations private runtime share the six-provider external AI contract: OpenRouter, Groq, Gemini, NVIDIA NIM, Cohere, and Hugging Face. Cloudflare Workers AI remains the native in-Worker provider. Provider credentials are not documented here. Current public contract: `docs/AI_PROVIDER_FLEET_2026-09-30.md`; private runtime contract: Operations `docs/AI_PROVIDER_TASK_FABRIC_2026-09-30.md`.

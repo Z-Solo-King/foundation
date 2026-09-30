@@ -1,11 +1,11 @@
 {
   "schema": "family-issue-acceptance-matrix/v1",
-  "audited_at": "2026-09-29T20:55:00+05:30",
+  "audited_at": "2026-09-30T09:55:00+05:30",
   "repository_heads": {
-    "foundation": "ed833710199696717c2326bc73e0b2de4a9a1568",
-    "operations": "de82440330bc4279c38eb46d3fdc2282e79b001e"
+    "foundation": "eade4fead016c206e777abba23f715e0e990c13e",
+    "operations": "22cce3ec7243ab11cc2406fbcbca752b8bd7ebea"
   },
-  "open_issue_count": 8,
+  "open_issue_count": 7,
   "issues": [
     {
       "repo": "foundation",
@@ -21,7 +21,7 @@
       "number": 157,
       "title": "research: complete 24-program Heroic AI improvement run",
       "required_evidence": [
-        "24 real provider-backed executions with exact revision"
+        "24 real provider-backed executions with exact Foundation revision and contract-compatible immutable Operations revision"
       ]
     },
     {
@@ -53,15 +53,6 @@
     },
     {
       "repo": "operations",
-      "number": 1137,
-      "title": "migration: consolidated plan and execution order (tracking: #597, #603, #1134, #1135)",
-      "required_evidence": [
-        "current migration dependency plan",
-        "production/runtime certification receipts"
-      ]
-    },
-    {
-      "repo": "operations",
       "number": 597,
       "title": "migration: mapper capability decomposition and evidence lanes",
       "required_evidence": [
@@ -88,7 +79,8 @@
     "research_signal": "discovery/candidate evidence only",
     "benchmark": "deterministic or controlled comparative evidence; not production certification by itself",
     "runtime": "required for a production/runtime promotion when an actual promotion is attempted",
-    "closure": "issue closure follows completion of the repository outcome or explicit retirement of a non-blocking experiment; no synthetic runtime evidence is used"
+    "closure": "issue closure follows completion of the repository outcome or explicit retirement of a non-blocking experiment; no synthetic runtime evidence is used",
+    "pin_selection": "immutable revision must pass the exact consumer contract before promotion; newer is not sufficient"
   },
   "ownership": {
     "foundation": [

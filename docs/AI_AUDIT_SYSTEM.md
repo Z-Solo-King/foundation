@@ -47,3 +47,43 @@ Stop on a definitive finding, concrete admin/external blocker, protected runtime
 
 ## Authority
 Repository contracts, source, tests, workflow evidence and runtime receipts remain authoritative; the project map and audit system only route work.
+
+
+## 9. Historical recurrence / control forensics
+
+Use this mode when the goal is to explain repeated fixes, long remediation chains, policy drift, or recurring workflow mistakes.
+
+Required lenses:
+- closed issues and PRs across the full paginated population;
+- current workflow/action definitions;
+- representative failed/cancelled Action cohorts;
+- owner/repository routing;
+- exact revision/pin history;
+- public/private disclosure boundaries;
+- evidence-tier transitions;
+- second-lens corroboration from the saved Master Audit and six-lane systems.
+
+Primary output is a causal chain, not a list of old tickets:
+
+trigger -> authority decision -> implementation surface -> validation boundary -> observed failure -> corrective action -> residual control gap -> preventive rule.
+
+For recurring workflow problems, the audit must ask whether the documented rule is executable. A policy that exists only in Markdown or agent instructions is insufficient when the conflicting execution path remains technically available.
+
+## 10. Workflow authority is a gate
+
+Before selecting or editing a GitHub Action, resolve:
+- authority class;
+- owning repository;
+- event trust level;
+- secret/private-resource requirements;
+- allowed workflow path;
+- exact revision;
+- evidence tier.
+
+The workflow authority registry and validator are the machine-checkable control for Foundation workflows.
+
+Public feed discovery is a public-safe Foundation workflow class. Private Operations implementation or registry access does not make Operations the workflow owner.
+
+Privileged workflows must not execute from pull_request, pull_request_target or merge_group. Push-based privileged execution is main-only.
+
+Privileged workflow_run execution is permitted only for an explicitly registered trusted upstream workflow. Do not treat workflow_run as automatically trusted.

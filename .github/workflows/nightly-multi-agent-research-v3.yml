@@ -1,4 +1,6 @@
 name: nightly multi-agent research
+run-name: >-
+  Nightly research — ${{ github.event_name == 'schedule' && 'scheduled-live' || (inputs.dry_run == true && 'contract-dry-run' || 'production-live') }}
 
 'on':
   schedule:
@@ -21,12 +23,17 @@ name: nightly multi-agent research
         required: false
         default: ""
         type: string
+      operations_research_ref:
+        description: "Exact Operations revision deployed to the private production runtime"
+        required: false
+        default: "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676"
+        type: string
 permissions:
   actions: read
   contents: read
 
 concurrency:
-  group: nightly-multi-agent-research
+  group: nightly-multi-agent-research-${{ inputs.target_sha || github.sha }}
   # A queued run for a newer immutable main SHA must be able to displace
   # an obsolete run that is permanently blocked on a failed release gate.
   cancel-in-progress: true
@@ -39,8 +46,11 @@ env:
   RESEARCH_LLM_API_KEY: "local-worker-proxy"
   RESEARCH_LLM_MODEL: "@cf/zai-org/glm-4.7-flash"
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_RESEARCH_REF: 8bee0ca4c41e02d2b7005589a73f53dc0512aa9d
-  OPERATIONS_MIGRATION_TOOLS_REF: 41db817dee6aa7d369ea9a07dd072b58ece1695a
+  OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || 'ce4f9edbae3ddf1bf1c25a908d5bce014acc7676' }}
+  OPERATIONS_MIGRATION_TOOLS_REF: f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791
+  NIGHTLY_RESEARCH_CONTRACT: nightly-research-contract/v2
+  MAPPER_RUNTIME_EVIDENCE_CONTRACT: mapper-migration-runtime-receipt/v1
+  MODEL_PORTABILITY_EVIDENCE_CONTRACT: model-portability-runtime-receipt/v1
 
 jobs:
   production_gate:
@@ -117,6 +127,21 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
+      - name: Verify exact deployed research runtime
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${AUTH_TOKEN:-}" || { echo "Missing AUTH_TOKEN; refusing live research."; exit 1; }
+          python scripts/nightly_runtime_contract_probe.py \
+            --url "$PUBLIC_WORKER_URL" \
+            --token "$AUTH_TOKEN" \
+            --model "$RESEARCH_LLM_MODEL" \
+            --expected-foundation-sha "$TARGET_FOUNDATION_SHA" \
+            --expected-operations-ref "$OPERATIONS_RESEARCH_REF" > "$RUNNER_TEMP/nightly-runtime-contract.json"
+          cat "$RUNNER_TEMP/nightly-runtime-contract.json"
+
       - name: Authenticate private research source
         shell: bash
         env:
@@ -236,6 +261,46 @@ jobs:
             echo "mode=live" >> "$GITHUB_OUTPUT"
             echo "Scheduled/live research mode selected."
           fi
+      - name: Validate pinned Operations research contract
+        working-directory: ${{ runner.temp }}/operations-research
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f private/chatbot/chat_endpoint.py
+          test -f private/chatbot/live_answer.py
+          python - <<'PY'
+          import ast
+          import re
+          from pathlib import Path
+
+          endpoint = Path("private/chatbot/chat_endpoint.py").read_text(encoding="utf-8")
+          live = Path("private/chatbot/live_answer.py").read_text(encoding="utf-8")
+
+          endpoint_compact = re.sub(r"\s+", "", endpoint)
+          assert 'research_agent=bool(payload.get("research_agent",False))' in endpoint_compact
+          assert 'research_agent=research_agent' in endpoint_compact
+
+          tree = ast.parse(live)
+          functions = {
+              node.name: node
+              for node in tree.body
+              if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+          }
+          assert "_output_token_limit" in functions
+          limit_source = ast.unparse(functions["_output_token_limit"])
+          assert "research_agent" in limit_source
+          assert "CHAT_RESEARCH_MAX_OUTPUT_TOKENS" in limit_source
+
+          provider_source = ast.unparse(functions.get("_execute_provider") or functions.get("generate_answer"))
+          assert "research_agent" in provider_source
+          assert '"response_format"' in live
+          assert '"findings"' in live
+          assert '"follow_up_questions"' in live
+          assert '"note"' in live
+          assert "if research_agent" in live
+          print("pinned Operations research-agent contract: PASS (semantic validation)")
+          PY
+
       - name: Require live research executor configuration
         id: preflight
         if: ${{ steps.mode.outputs.mode == 'live' }}
@@ -271,14 +336,24 @@ jobs:
             fi
             sleep 1
           done
-          probe_payload=$(jq -nc '{model:"@cf/zai-org/glm-4.7-flash",messages:[{role:"user",content:"Return exactly OK."}],max_tokens:1,temperature:0}')
+          probe_payload=$(jq -nc '{model:"@cf/zai-org/glm-4.7-flash",messages:[{role:"user",content:"Return the smallest valid research object with findings as an empty array, follow_up_questions as an empty array, and note as probe."}],max_tokens:96,temperature:0}')
           probe_response_file="$RUNNER_TEMP/research-worker-probe.json"
           probe_status=$(curl -sS --max-time 90 -o "$probe_response_file" -w '%{http_code}' -H "Authorization: Bearer local-worker-proxy" -H "Content-Type: application/json" -d "$probe_payload" http://127.0.0.1:8765/chat/completions)
-          echo "Authenticated Worker-backed Workers AI probe -> HTTP ${probe_status}"
-          if [ "${probe_status}" = "200" ] && jq -e '.choices[0].message.content | type == "string" and length > 0' "$probe_response_file" >/dev/null 2>&1; then
-            echo "Authenticated Worker-backed Workers AI probe: PASS"
+          echo "Authenticated Worker-backed Workers AI research-contract probe -> HTTP ${probe_status}"
+          if [ "${probe_status}" = "200" ] && jq -e '
+              (.provider | type == "string" and length > 0) and
+              (.model == "@cf/zai-org/glm-4.7-flash") and
+              (.execution_id | type == "string" and length > 0) and
+              (.choices[0].message.content | type == "string" and length > 0) and
+              ((.choices[0].message.content | fromjson) | type == "object") and
+              ((.choices[0].message.content | fromjson) | has("findings") and has("follow_up_questions") and has("note")) and
+              (((.choices[0].message.content | fromjson).findings) | type == "array") and
+              (((.choices[0].message.content | fromjson).follow_up_questions) | type == "array") and
+              (((.choices[0].message.content | fromjson).note) | type == "string")
+            ' "$probe_response_file" >/dev/null 2>&1; then
+            echo "Authenticated Worker-backed Workers AI research contract: PASS"
           else
-            echo "Authenticated Worker-backed Workers AI probe: FAIL"
+            echo "Authenticated Worker-backed Workers AI research contract: FAIL"
             jq -c '.' "$probe_response_file" 2>/dev/null || true
             exit 1
           fi
@@ -299,6 +374,9 @@ jobs:
           MODE: ${{ steps.mode.outputs.mode || 'unknown' }}
           PREFLIGHT: ${{ steps.preflight.outcome || 'skipped' }}
           RUN_CROSSFIRE: ${{ steps.run_crossfire.outcome || 'skipped' }}
+          FOUNDATION_REVISION: ${{ env.TARGET_FOUNDATION_SHA }}
+          OPERATIONS_REVISION: ${{ env.OPERATIONS_RESEARCH_REF }}
+          NIGHTLY_RUN_ID: ${{ github.run_id }}
         run: |
           import json, os
           from pathlib import Path
@@ -306,6 +384,40 @@ jobs:
           combined=root/'nightly-crossfire.jsonl'
           rows=[json.loads(x) for x in combined.read_text(encoding='utf-8').splitlines() if x.strip()] if combined.exists() else []
           mode=os.environ['MODE']; preflight=os.environ['PREFLIGHT']; runner=os.environ['RUN_CROSSFIRE']
+          expected_all={f'lane{lane}-slot{slot}' for lane in range(3) for slot in range(8)}
+          observed_all=[r.get('program_id') for r in rows]
+          observed_set={item for item in observed_all if isinstance(item,str)}
+          coverage={
+              'schema':'nightly-research-coverage/v1',
+              'contract':'nightly-research-contract/v2',
+              'run_id':os.environ['NIGHTLY_RUN_ID'],
+              'foundation_revision':os.environ['FOUNDATION_REVISION'],
+              'operations_revision':os.environ['OPERATIONS_REVISION'],
+              'mode':mode,
+              'expected_program_count':24,
+              'observed_program_count':len(rows),
+              'unique_program_count':len(observed_set),
+              'duplicate_program_ids':sorted({x for x in observed_all if isinstance(x,str) and observed_all.count(x)>1}),
+              'missing_program_ids':sorted(expected_all-observed_set),
+              'unexpected_program_ids':sorted(observed_set-expected_all),
+              'status':'complete' if observed_set==expected_all and len(rows)==24 and len(observed_set)==24 else 'incomplete',
+              'evidence_rule':'transport/challenge/provider failures are execution states, not negative findings.'
+          }
+          (root/'nightly-research-coverage.json').write_text(json.dumps(coverage,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+          requirements={
+              'schema':'nightly-research-acceptance-requirements/v1',
+              'run_id':os.environ['NIGHTLY_RUN_ID'],
+              'foundation_revision':os.environ['FOUNDATION_REVISION'],
+              'operations_research_revision':os.environ['OPERATIONS_REVISION'],
+              'issues':{
+                  'foundation_58':{'status':'derived_tracker','requires':['foundation_157','operations_597','operations_603']},
+                  'foundation_157':{'status':'live_24_program_acceptance','program_count':24,'lanes':3,'programs_per_lane':8,'provider_execution_required':True,'dry_run_acceptable':False,'exact_revision_required':True,'artifact_attestation_required':True},
+                  'operations_597':{'status':'pending_external_runtime','receipt_contract':'mapper-migration-runtime-receipt/v1','cases':32,'repeats_min':3,'cold_start':True,'raw_samples':True,'parity':['functional','error_taxonomy','security','policy','provenance','cancellation','timeout'],'performance_resource_measurements':True,'shadow':True,'canary':True,'rollback':True},
+                  'operations_603':{'status':'pending_external_runtime','receipt_contract':'model-portability-runtime-receipt/v1','cases':32,'repeats_min':3,'parity':['functional','security','policy','provenance','cancellation'],'serialization_conversion_measurement':True,'no_model_specific_hidden_assumptions':True,'one_canonical_authority':True,'shadow':True,'canary':True,'rollback':True}
+              },
+              'closure_rule':'This artifact never closes #58, #157, #597, or #603 by itself; required live/external evidence remains mandatory.'
+          }
+          (root/'nightly-research-acceptance-requirements.json').write_text(json.dumps(requirements,indent=2,sort_keys=True)+'\n',encoding='utf-8')
           allowed={'acquisition','mapper','chatbot','search','models','agents','architecture','infrastructure','performance','alternatives','evaluation'}
           errors=[]
           for lane in range(3):
@@ -318,9 +430,20 @@ jobs:
               validation='success' if valid else 'failed'
               state='blocked_before_execution' if mode=='live' and preflight!='success' else ('lane_failure' if runner!='success' else ('dry_run' if mode=='dry-run' else ('live_research_executed' if valid else 'lane_failure')))
               if mode=='live' and (preflight!='success' or runner!='success' or not valid): errors.append(f'lane{lane}')
-              status={'schema':'nightly-research-lane-status/v1','run_id':'${{ github.run_id }}','lane':lane,'mode':mode,'state':state,'preflight':preflight,'runner':runner,'validation':validation,'program_count':len(lane_rows),'programs':[r.get('program_id') for r in lane_rows],'operations_revision':'${{ env.OPERATIONS_RESEARCH_REF }}','execution_strategy':'crossfire','global_capacity':20}
+              status={'schema':'nightly-research-lane-status/v1','contract':'nightly-research-contract/v2','run_id':os.environ['NIGHTLY_RUN_ID'],'foundation_revision':os.environ['FOUNDATION_REVISION'],'lane':lane,'mode':mode,'state':state,'preflight':preflight,'runner':runner,'validation':validation,'program_count':len(lane_rows),'programs':[r.get('program_id') for r in lane_rows],'operations_revision':os.environ['OPERATIONS_REVISION'],'execution_strategy':'crossfire','global_capacity':20}
               (root/f'nightly-lane-{lane}-status.json').write_text(json.dumps(status,indent=2,sort_keys=True)+'\n',encoding='utf-8')
           if mode=='live' and errors: raise SystemExit('Live CrossFire research did not satisfy the 24-program evidence contract')
+      - name: Upload nightly research acceptance manifests
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-research-acceptance-manifests
+          path: |
+            .runtime/nightly-research-coverage.json
+            .runtime/nightly-research-acceptance-requirements.json
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Upload nightly research lane 0
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -425,6 +548,53 @@ jobs:
             --operations "$GITHUB_WORKSPACE/operations" \
             --matrix "$GITHUB_WORKSPACE/benchmark/polyglot/migration_matrix_40.json" \
             --output .runtime/nightly-migration-review.json
+      - name: Publish explicit #597/#603 runtime-evidence requirements
+        shell: python
+        env:
+          NIGHTLY_RUN_ID: ${{ github.run_id }}
+          FOUNDATION_REVISION: ${{ env.TARGET_FOUNDATION_SHA }}
+          MIGRATION_REVISION: ${{ env.OPERATIONS_MIGRATION_TOOLS_REF }}
+        run: |
+          import json
+          import os
+          from pathlib import Path
+          payload = {
+              "schema": "migration-runtime-evidence-requirements/v1",
+              "run_id": os.environ["NIGHTLY_RUN_ID"],
+              "foundation_revision": os.environ["FOUNDATION_REVISION"],
+              "operations_revision": os.environ["MIGRATION_REVISION"],
+              "issue_597": {
+                  "status": "pending_external_runtime",
+                  "receipt_contract": "mapper-migration-runtime-receipt/v1",
+                  "cases": 32,
+                  "repeats_min": 3,
+                  "cold_start": True,
+                  "raw_samples": True,
+                  "parity": ["functional", "error_taxonomy", "security", "policy", "provenance", "cancellation", "timeout"],
+                  "performance_resource_measurements": True,
+                  "shadow": True,
+                  "canary": True,
+                  "rollback": True,
+              },
+              "issue_603": {
+                  "status": "pending_external_runtime",
+                  "receipt_contract": "model-portability-runtime-receipt/v1",
+                  "cases": 32,
+                  "repeats_min": 3,
+                  "parity": ["functional", "security", "policy", "provenance", "cancellation"],
+                  "serialization_conversion_measurement": True,
+                  "no_model_specific_hidden_assumptions": True,
+                  "one_canonical_authority": True,
+                  "shadow": True,
+                  "canary": True,
+                  "rollback": True,
+              },
+              "closure_rule": "Deterministic repository CI is supporting evidence only; it cannot substitute for required private/local runtime receipts.",
+          }
+          Path(".runtime/migration-runtime-evidence-requirements.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
       - name: Validate migration review receipt
         shell: python
         run: |
@@ -447,6 +617,15 @@ jobs:
           assert all(row["runtime_performance_valid"] is False for row in receipt["capacity_sweep"]["results"])
           assert len(receipt["language_review"]) == 40
           assert receipt["polyglot_audit"]["language_scoreboard"]
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-migration-runtime-evidence-requirements
+          path: .runtime/migration-runtime-evidence-requirements.json
+          if-no-files-found: error
+          retention-days: 30
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: .runtime/migration-runtime-evidence-requirements.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: nightly-migration-review

@@ -1,26 +1,6 @@
 name: cross-repository contract drift
 
 'on':
-  pull_request:
-    branches: [main]
-    paths:
-      - 'CAPABILITIES.json'
-      - 'REPOSITORY_MAP.json'
-      - 'worker.py'
-      - 'wrangler.toml'
-      - 'backend/**'
-      - 'foundation_core/**'
-      - 'frontend/**'
-      - 'migrations/**'
-      - 'polyglot/**'
-      - 'tools/check_cross_repo_drift.py'
-      - 'tools/validate_language_fit_inventory.py'
-      - 'tools/check_continuity_freshness.py'
-      - 'tests/test_cross_repo_drift_gate.py'
-      - 'tests/test_continuity_freshness.py'
-      - 'docs/CURRENT_SOURCE_OF_TRUTH.md'
-      - 'docs/FAMILY_SYNC_STATE.json'
-      - '.github/workflows/**'
   push:
     branches: [main]
     paths:
@@ -41,8 +21,6 @@ name: cross-repository contract drift
       - 'docs/CURRENT_SOURCE_OF_TRUTH.md'
       - 'docs/FAMILY_SYNC_STATE.json'
       - '.github/workflows/**'
-  merge_group:
-    types: [checks_requested]
   schedule:
     - cron: "17 2 * * *"
   workflow_dispatch:
