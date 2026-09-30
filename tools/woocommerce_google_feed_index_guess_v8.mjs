@@ -24,7 +24,7 @@ const TARGETS = [
 
 const UA = "Mozilla/5.0 (compatible; WooCommerceUnknownFamilyGuess/7.0)";
 const TIMEOUT = 5000;
-const CONCURRENCY = 4;
+const CONCURRENCY = 3;
 const MAX_CANDIDATES = 450;
 const CHALLENGE = /just a moment|cf-chl-|cf-turnstile|turnstile|captcha|access denied|attention required|checking your browser|verify you are human|request blocked/i;
 const GOOGLE_NS = /https?:\/\/base\.google\.com\/ns\/1\.0/i;
