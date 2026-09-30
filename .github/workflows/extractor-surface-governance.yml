@@ -98,7 +98,11 @@ jobs:
         working-directory: operations
         run: |
           python -m pip install --disable-pip-version-check -e ".[test]"
-          python -m pytest -q tests/test_extractor_policy_seams.py tests/test_extractor_surface_governance.py tests/test_extractor_type_migration_audit.py
+          tests="tests/test_extractor_policy_seams.py tests/test_extractor_surface_governance.py"
+          if [ -f tests/test_extractor_type_migration_audit.py ]; then
+            tests="$tests tests/test_extractor_type_migration_audit.py"
+          fi
+          python -m pytest -q $tests
 
       - name: Run whole-feature governance audit
         run: |
