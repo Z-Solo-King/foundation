@@ -4,8 +4,9 @@ on:
   push:
     branches: [hunt/native-google-feed-urls-20260927]
     paths:
-      - "tools/feed-lab/woocommerce_31_group_xml_guess.mjs"
-      - ".github/workflows/native-google-feed-wpfm-targeted.yml"
+      - tools/feed-lab/woocommerce_22_plugin_extract_v175.py
+      - tools/feed-lab/woocommerce_31_group_xml_guess.mjs
+      - .github/workflows/native-google-feed-wpfm-targeted.yml
   workflow_dispatch:
 
 permissions:
@@ -14,57 +15,59 @@ permissions:
 jobs:
   hunt:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      SITE_NAME: itgadgetsonline
+      SITE_ROOT: https://itgadgetsonline.com
+      OUT_DIR: out/itgadgetsonline
+      SITE_TIMEOUT: "240"
+      BROWSER_CONCURRENCY: "1"
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - name: Load verified browser plugin evidence
+          node-version: "20"
+      - name: Install public extraction runtimes
+        run: |
+          python -m pip install --disable-pip-version-check -q playwright
+          python -m playwright install chromium
+      - name: Run V175 metadata extraction
+        run: python tools/feed-lab/woocommerce_22_plugin_extract_v175.py
+      - name: Require WPFM evidence
         run: |
           set -euo pipefail
-          mkdir -p out/itgadgetsonline
-          cat > out/itgadgetsonline/plugin-groups.json <<'JSON'
-          {
-            "schema_version": "woocommerce-targeted-plugin-group/v3",
-            "source": {
-              "kind": "v175-browser-recovery",
-              "workflow_run": 36629019347,
-              "evidence": "public WP-JSON namespace wpfm/v1"
-            },
-            "site_count": 1,
-            "groups": {
-              "wpfm_product_feed_manager": ["itgadgetsonline"]
-            },
-            "sites": [
-              {
-                "site": "itgadgetsonline",
-                "configured_root": "https://itgadgetsonline.com",
-                "selected_origin": "https://itgadgetsonline.com",
-                "primary_group": "wpfm_product_feed_manager",
-                "status": "PLUGIN_SURFACE_RECOVERED_NO_FEED_SIGNAL",
-                "feed_like_plugin_assets": [],
-                "feed_family_signals": [
-                  {
-                    "family": "wpfm_product_feed_manager",
-                    "confidence": "strong",
-                    "evidence": ["namespace:wpfm/v1"]
-                  }
-                ],
-                "identity_tokens": ["itgadgetsonline"],
-                "public_api_namespaces": ["wpfm/v1"]
-              }
-            ]
-          }
-          JSON
-      - name: Probe WPFM XML naming corpus
+          python - <<'PY'
+          import json, pathlib, sys
+          r=json.loads(pathlib.Path("out/itgadgetsonline/aggregate.json").read_text())["results"][0]
+          print(json.dumps({
+            "site":r["site"],
+            "status":r["status"],
+            "feed_family_signals":r["feed_family_signals"],
+            "wpfm_namespaces":[x for x in r["public_api_namespaces"] if "wpfm" in x.lower()],
+            "wc_rest_products":[x for x in r["woocommerce_rest_v1_v2_v3"] if "products" in x["label"]]
+          },indent=2))
+          if not any(x.get("family")=="wpfm_product_feed_manager" for x in r.get("feed_family_signals",[])):
+              print("WPFM family was not positively identified by V175 metadata extraction", file=sys.stderr)
+              sys.exit(2)
+          g={"schema_version":"woocommerce-targeted-plugin-group/v3","site_count":1,
+             "groups":{"wpfm_product_feed_manager":["itgadgetsonline"]},
+             "sites":[{"site":r["site"],"configured_root":r["configured_root"],
+                       "selected_origin":r["selected_origin"],"primary_group":"wpfm_product_feed_manager",
+                       "status":r["status"],"feed_family_signals":r["feed_family_signals"],
+                       "feed_like_plugin_assets":r["feed_like_plugin_assets"],
+                       "identity_tokens":r["identity_tokens"]}]}
+          pathlib.Path("out/itgadgetsonline/plugin-groups.json").write_text(json.dumps(g,indent=2)+"\n")
+          PY
+      - name: Probe documented WPFM XML candidates
         run: |
-          set -euo pipefail
           node tools/feed-lab/woocommerce_31_group_xml_guess.mjs             --group wpfm_product_feed_manager             --input out/itgadgetsonline/plugin-groups.json             --out out/itgadgetsonline/xml-guess
-      - name: Upload WPFM targeted evidence
+      - name: Upload targeted evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: woocommerce-wpfm-itgadgetsonline-final
+          name: woocommerce-wpfm-itgadgetsonline-v3
           path: out/itgadgetsonline/
           retention-days: 14
