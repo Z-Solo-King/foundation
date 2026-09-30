@@ -1,0 +1,56 @@
+name: WooCommerce WPFM Targeted Native XML Hunt
+
+on:
+  push:
+    branches: [hunt/native-google-feed-urls-20260927]
+    paths:
+      - "tools/feed-lab/woocommerce_31_plugin_extract.mjs"
+      - "tools/feed-lab/woocommerce_31_group_xml_guess.mjs"
+      - ".github/workflows/native-google-feed-wpfm-targeted.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Fingerprint itgadgetsonline
+        run: |
+          set -euo pipefail
+          mkdir -p out/itgadgetsonline
+          node tools/feed-lab/woocommerce_31_plugin_extract.mjs             --site "itgadgetsonline"             --root "https://itgadgetsonline.com"             --out out/itgadgetsonline/fingerprint.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const r=JSON.parse(fs.readFileSync('out/itgadgetsonline/fingerprint.json','utf8'));
+          console.log(JSON.stringify({
+            site:r.site,
+            primary_group:r.primary_group,
+            feed_family_signals:r.feed_family_signals,
+            public_api_namespaces:r.public_api_namespaces.filter(x=>/wpfm|feed|google|merchant|shopping/i.test(x)),
+            plugin_assets:r.plugin_assets
+          },null,2));
+          const g={schema_version:'woocommerce-targeted-plugin-group/v1',site_count:1,groups:{[r.primary_group]:[r.site]},sites:[{
+            site:r.site,configured_root:r.configured_root,selected_origin:r.selected_origin,
+            primary_group:r.primary_group,status:r.status,feed_like_plugin_assets:r.feed_like_plugin_assets,
+            feed_family_signals:r.feed_family_signals,identity_tokens:r.identity_tokens
+          }]};
+          fs.writeFileSync('out/itgadgetsonline/plugin-groups.json',JSON.stringify(g,null,2)+'\n');
+          if(r.primary_group!=='wpfm_product_feed_manager') process.exit(2);
+          NODE
+      - name: Probe documented WPFM XML naming corpus
+        run: |
+          set -euo pipefail
+          node tools/feed-lab/woocommerce_31_group_xml_guess.mjs             --group wpfm_product_feed_manager             --input out/itgadgetsonline/plugin-groups.json             --out out/itgadgetsonline/xml-guess
+      - name: Upload WPFM targeted evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: woocommerce-wpfm-itgadgetsonline
+          path: out/itgadgetsonline/
+          retention-days: 14
