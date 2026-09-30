@@ -675,7 +675,10 @@ async def optional_cf_content(root: str) -> Tuple[Optional[str], Dict[str, Any]]
 
 
 async def optional_browserless(root: str) -> Tuple[Optional[str], Dict[str, Any]]:
+    enabled = os.getenv("BROWSERLESS_DIAGNOSTIC_ENABLED", "0").strip().lower() in {"1", "true", "yes"}
     endpoint = os.getenv("BROWSERLESS_CONTENT_URL", "").strip()
+    if not enabled:
+        return None, {"enabled": False, "reason": "disabled_by_default_or_scope"}
     if not endpoint:
         return None, {"enabled": False, "reason": "missing_env"}
     try:
@@ -994,8 +997,7 @@ async def main() -> int:
         "shards": shards,
         "targets": [n for n, _ in selected],
         "results": results,
-        "summary": {
-            "sites": len(results),
+        "summary": {            "sites": len(results),
             "native_verified": sum(1 for x in results if x["native_feed"].get("verified")),
             "challenge_encountered": sum(1 for x in results if x.get("challenge_encountered")),            "admissible_for_native_verification": sum(1 for x in results if x.get("admissible_for_native_verification")),
             "plugin_groups": {
