@@ -498,7 +498,7 @@ def test_production_release_d1_fingerprint_is_current_repository_schema():
         payload.append(f"{file.relative_to(ROOT)}\\t{digest}\\n")
     expected = hashlib.sha256("".join(payload).encode()).hexdigest()
     assert f'D1_MIGRATIONS_FINGERPRINT="{expected}"' in deployment
-    assert "D1_MIGRATIONS_FINGERPRINT="01e075fc2161a29e62bf45248eed5691bd3925d9c5586f65ffefa7791d205147"" not in deployment
+    assert 'D1_MIGRATIONS_FINGERPRINT="01e075fc2161a29e62bf45248eed5691bd3925d9c5586f65ffefa7791d205147"' not in deployment
 
 def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
