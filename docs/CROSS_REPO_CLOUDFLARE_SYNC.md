@@ -11,7 +11,7 @@ Snapshot: 2026-09-30 (Asia/Kolkata)
 
 ## Current repository state
 - Foundation main: `READ LIVE FROM GITHUB` (last verified `f85b61ebc521dbfab3b25fa3b7fceafcf696cdbb`)
-- Operations main: `READ LIVE FROM GITHUB` (last verified `7b55c97331a9a066dcb1d46c4bbe17e173dc60ca`)
+- Operations main: `READ LIVE FROM GITHUB` (last verified `09cef5b62aa4e7877412830e265a20731c4976c9`)
 - Production Operations pin: `ce4f9edbae3ddf1bf1c25a908d5bce014acc7676`
 - Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`
 - Operations contains no `.github/workflows`; Foundation owns automation.
