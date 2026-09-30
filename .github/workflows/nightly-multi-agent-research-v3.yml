@@ -1,4 +1,6 @@
 name: nightly multi-agent research
+run-name: >-
+  Nightly research — ${{ github.event_name == 'schedule' && 'scheduled-live' || (inputs.dry_run == true && 'contract-dry-run' || 'production-live') }}
 
 'on':
   schedule:
@@ -246,11 +248,39 @@ jobs:
           set -euo pipefail
           test -f private/chatbot/chat_endpoint.py
           test -f private/chatbot/live_answer.py
-          grep -Eq 'research_agent[[:space:]]*=[[:space:]]*bool\\(payload\\.get\\("research_agent", False\\)\\)' private/chatbot/chat_endpoint.py
-          grep -Eq 'research_agent[[:space:]]*=[[:space:]]*research_agent' private/chatbot/chat_endpoint.py
-          grep -Eq 'if research_agent' private/chatbot/live_answer.py
-          grep -Eq 'response_format' private/chatbot/live_answer.py
-          echo "pinned Operations research-agent contract: PASS"
+          python - <<'PY'
+          import ast
+          import re
+          from pathlib import Path
+
+          endpoint = Path("private/chatbot/chat_endpoint.py").read_text(encoding="utf-8")
+          live = Path("private/chatbot/live_answer.py").read_text(encoding="utf-8")
+
+          endpoint_compact = re.sub(r"\s+", "", endpoint)
+          assert 'research_agent=bool(payload.get("research_agent",False))' in endpoint_compact
+          assert 'research_agent=research_agent' in endpoint_compact
+
+          tree = ast.parse(live)
+          functions = {
+              node.name: node
+              for node in tree.body
+              if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+          }
+          assert "_output_token_limit" in functions
+          limit_source = ast.unparse(functions["_output_token_limit"])
+          assert "research_agent" in limit_source
+          assert "CHAT_RESEARCH_MAX_OUTPUT_TOKENS" in limit_source
+
+          provider_source = ast.unparse(functions.get("_execute_provider") or functions.get("generate_answer"))
+          assert "research_agent" in provider_source
+          assert '"response_format"' in live
+          assert '"findings"' in live
+          assert '"follow_up_questions"' in live
+          assert '"note"' in live
+          assert "if research_agent" in live
+          print("pinned Operations research-agent contract: PASS (semantic validation)")
+          PY
+
       - name: Require live research executor configuration
         id: preflight
         if: ${{ steps.mode.outputs.mode == 'live' }}

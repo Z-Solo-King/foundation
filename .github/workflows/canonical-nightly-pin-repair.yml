@@ -55,11 +55,45 @@ jobs:
             gh api "repos/Z-Solo-King/operations/contents/$contract_path?ref=$SOURCE_REF" --jq '.content' | tr -d '\n' | base64 --decode > "$contract_file"
             test -s "$contract_file"
           done
-          grep -Eq 'research_agent[[:space:]]*=[[:space:]]*bool[(]payload[.]get[(]"research_agent", False[)][)]' "$RUNNER_TEMP/chat_endpoint.py"
-          grep -Eq 'research_agent[[:space:]]*=[[:space:]]*research_agent' "$RUNNER_TEMP/chat_endpoint.py"
-          grep -Eq 'def _output_token_limit[(].*research_agent: bool = False' "$RUNNER_TEMP/live_answer.py"
-          grep -Eq 'response_format' "$RUNNER_TEMP/live_answer.py"
-          grep -Eq 'if research_agent' "$RUNNER_TEMP/live_answer.py"
+          python - "$RUNNER_TEMP/chat_endpoint.py" "$RUNNER_TEMP/live_answer.py" <<'PY'
+          import ast
+          import re
+          import sys
+          from pathlib import Path
+
+          endpoint = Path(sys.argv[1]).read_text(encoding="utf-8")
+          live = Path(sys.argv[2]).read_text(encoding="utf-8")
+          compact = re.sub(r"\s+", "", endpoint)
+          if 'research_agent=bool(payload.get("research_agent",False))' not in compact:
+              raise SystemExit("candidate Operations revision lacks the research-agent request flag")
+          if 'research_agent=research_agent' not in compact:
+              raise SystemExit("candidate Operations revision does not forward research_agent")
+          tree = ast.parse(live)
+          functions = {
+              node.name: node
+              for node in tree.body
+              if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+          }
+          limit = functions.get("_output_token_limit")
+          provider = functions.get("_execute_provider") or functions.get("generate_answer")
+          if limit is None or provider is None:
+              raise SystemExit("candidate Operations revision lacks required research execution functions")
+          limit_src = ast.unparse(limit)
+          provider_src = ast.unparse(provider)
+          required = [
+              "research_agent",
+              "CHAT_RESEARCH_MAX_OUTPUT_TOKENS",
+          ]
+          if not all(token in limit_src for token in required):
+              raise SystemExit("candidate Operations revision lacks the research token-budget contract")
+          if "research_agent" not in provider_src:
+              raise SystemExit("candidate Operations revision does not propagate research_agent into provider execution")
+          for marker in ('"response_format"', '"findings"', '"follow_up_questions"', '"note"', "if research_agent"):
+              if marker not in live:
+                  raise SystemExit(f"candidate Operations revision lacks required structured research marker: {marker}")
+          print("candidate Operations revision is compatible with nightly research contract: semantic validation")
+          PY
+
           echo "candidate Operations revision is compatible with nightly research contract: $SOURCE_REF"
 
           python - "$TARGET_PATH" "$SOURCE_REF" <<'PY'
