@@ -381,7 +381,7 @@ grep -q "^service = \"${OPERATIONS_EDGE_SERVICE_NAME}\"$" wrangler.python-core.g
 
 printf '%s\n' \
   'name = "heroic"' \
-  'main = "edge.js"' \
+  'main = "edge.ts"'
   'compatibility_date = "2026-09-28"' \
   'workers_dev = false' \
   'preview_urls = false' \
@@ -392,7 +392,7 @@ printf '%s\n' \
   > wrangler.production.generated.toml
 
 grep -q '^name = "heroic"$' wrangler.production.generated.toml
-grep -q '^main = "edge.js"$' wrangler.production.generated.toml
+grep -q '^main = "edge.ts"$' wrangler.production.generated.toml
 grep -q '^binding = "CORE"$' wrangler.production.generated.toml
 grep -q "^service = \"${PYTHON_CORE_WORKER_NAME}\"$" wrangler.production.generated.toml
 ! grep -q 'python_workers' wrangler.production.generated.toml
@@ -484,13 +484,13 @@ printf '%s\n' \
 # from the Operations code revision. The current production database was live-verified with
 # migrations 0001-0010 applied; fingerprint the actual migration files and only issue a remote
 # D1 migration call when the repository schema content differs from that verified production set.
-D1_MIGRATIONS_FINGERPRINT="f42ab2e7cf8c67ed13be1b2d4e0056d08dccef0763e5985a91b2000510844a5d"
+D1_MIGRATIONS_FINGERPRINT="b4b3362c78a4231bd256702826089812211d02f20f7771906990114f8614c9d7"
 current_d1_migrations_fingerprint="$(
   find "$GITHUB_WORKSPACE/migrations" -type f -name '*.sql' -print0 |
     sort -z |
     while IFS= read -r -d '' file; do
       digest="$(sha256sum "$file" | awk '{print $1}')"
-      printf '%s\\t%s\\n' "\${file#"$GITHUB_WORKSPACE/migrations/"}" "$digest"
+      printf '%s\t%s\n' "${file#"$GITHUB_WORKSPACE/migrations/"}" "$digest"
     done |
     sha256sum | awk '{print $1}'
 )"
