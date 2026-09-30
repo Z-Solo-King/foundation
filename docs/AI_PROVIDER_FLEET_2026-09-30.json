@@ -1,7 +1,28 @@
 {
-  "schema": "ai-provider-fleet-public/v1",
+  "schema": "ai-provider-fleet-public/v2",
   "reviewed_at": "2026-09-30",
+  "supported_external_providers": [
+    "openrouter_free",
+    "groq",
+    "gemini",
+    "cerebras",
+    "nvidia_nim",
+    "cohere_free",
+    "huggingface_free",
+    "siliconflow"
+  ],
   "external_providers": [
+    "openrouter_free",
+    "groq",
+    "gemini",
+    "cerebras",
+    "nvidia_nim",
+    "cohere_free",
+    "huggingface_free",
+    "siliconflow"
+  ],
+  "native_runtime_provider": "cloudflare_workers_ai",
+  "currently_configured_external_providers": [
     "openrouter_free",
     "groq",
     "gemini",
@@ -10,7 +31,10 @@
     "huggingface_free",
     "siliconflow"
   ],
-  "native_runtime_provider": "cloudflare_workers_ai",
+  "configuration_note": "Cerebras is supported by the cross-repository contract but is not configured in the documented Foundation environment until its credential/account conditions are explicitly supplied.",
+  "conditional_candidates": [
+    "mistral"
+  ],
   "legacy_compatibility": [],
   "task_families": [
     "chatbot",
