@@ -4,7 +4,7 @@
   "authority": "single public-safe immutable Operations revision manifest; runtime code remains authoritative",
   "pins": {
     "production_runtime": {
-      "sha": "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676",
+      "sha": "425d6e2c589d652e45ad80dd251a598315923659",
       "purpose": "Cloudflare Operations production runtime and Foundation public production release",
       "status": "immutable runtime candidate containing the canonical memory, replay, and provider-runtime diagnostic repairs; canonical production release and fresh runtime evidence required before production acceptance"
     },
@@ -14,7 +14,7 @@
       "status": "immutable research-agent runtime reference with structured JSON output contract; independently promoted from production"
     },
     "secret_sync_utility": {
-      "sha": "6a36b3bd0e1f7bb0f1a1da36ed2bd090d8a06586",
+      "sha": "425d6e2c589d652e45ad80dd251a598315923659",
       "purpose": "private provider-secret synchronization utility",
       "path": "tools/sync_provider_secrets.py",
       "status": "immutable utility revision; separately certified before controlled use"
