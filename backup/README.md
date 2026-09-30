@@ -56,7 +56,16 @@ The workflow creates for each repository:
 
 Backup manifests contain non-secret provenance only. They must never contain tokens, B2 application keys, Cloudflare credentials, authentication headers, GitHub App private keys, or other secret values.
 
-## Verification standard
+The workflow must always perform local archive/manifest integrity checks and successful B2 upload.
+Remote restore verification additionally requires the dedicated read-capable B2_READ_KEY_ID + B2_READ_APPLICATION_KEY credential and performs:
+
+1. remote archive download;
+2. remote size and SHA-256 comparison;
+3. extraction;
+4. git fsck --full --no-dangling;
+5. confirmation that the expected main ref exists.
+
+When B2_READ_KEY_ID and B2_READ_APPLICATION_KEY are absent, remote restore is not attempted and must not be represented as successful evidence.
 
 A backup is not considered verified merely because B2 accepted an upload.
 
