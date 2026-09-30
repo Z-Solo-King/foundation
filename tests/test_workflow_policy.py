@@ -724,4 +724,4 @@ def test_foundation_ai_map_tracks_current_m11_type_inventory():
     assert '"current_type_entries": 44' in text
     assert '"current_type_entries": 45' not in text
 
-# Policy contract: production release evidence must use authenticated runtime proof and must not consume duplicate D1 query budget.
+\n\ndef test_crossfire_research_proxy_lifecycle_is_colocated_with_consumer():\n    workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")\n    start = workflow.index("      - name: Run complete crossfire research")\n    materialize = workflow.index("      - name: Materialize and validate lane artifacts", start)\n    block = workflow[start:materialize]\n    assert "research_worker_proxy.py" in block\n    assert "ThreadingHTTPServer" not in block\n    assert "http://127.0.0.1:8765/health" in block\n    assert "cleanup_proxy()" in block\n    assert "trap cleanup_proxy EXIT INT TERM" in block\n    assert "Start authenticated Workers AI research proxy" not in workflow\n\n# Policy contract: production release evidence must use authenticated runtime proof and must not consume duplicate D1 query budget.
