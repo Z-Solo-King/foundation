@@ -467,7 +467,6 @@
         "M20"
       ],
       "targets": [
-        "operations#1027",
         "operations#603"
       ]
     },
@@ -493,8 +492,7 @@
         "M09"
       ],
       "targets": [
-        "operations#597",
-        "operations#1027"
+        "operations#597"
       ]
     },
     {
@@ -505,8 +503,7 @@
         "M11"
       ],
       "targets": [
-        "foundation#157",
-        "operations#1027"
+        "foundation#157"
       ]
     },
     {
