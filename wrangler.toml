@@ -1,5 +1,5 @@
 name = "heroic"
-main = "edge.js"
+main = "edge.ts"
 compatibility_date = "2026-09-28"
 workers_dev = false
 preview_urls = false

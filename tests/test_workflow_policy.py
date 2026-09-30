@@ -177,12 +177,12 @@ def test_production_release_fails_closed_and_retains_chat_policy_receipts():
     assert "production-runtime-acceptance-receipts" in workflow
     assert "allow_persistence_deferred" not in workflow
     assert "inputs:" not in workflow.split("permissions:", 1)[0]
-def test_public_worker_uses_native_javascript_edge_and_python_core():
-    worker = (ROOT / "edge.js").read_text(encoding="utf-8")
+def test_public_worker_uses_native_typescript_edge_and_python_core():
+    worker = (ROOT / "edge.ts").read_text(encoding="utf-8")
     wrangler = WRANGLER.read_text(encoding="utf-8")
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert "env.CORE.fetch(forwardRequest(request))" in worker
-    assert 'main = "edge.js"' in wrangler
+    assert 'main = "edge.ts"' in wrangler
     assert 'service = "heroic-core"' in wrangler
     assert "python_workers" not in wrangler
     core = (ROOT / "wrangler.python-core.toml").read_text(encoding="utf-8")
@@ -190,18 +190,24 @@ def test_public_worker_uses_native_javascript_edge_and_python_core():
     assert "python_workers" in core
     assert "wrangler.python-core.generated.toml" in deployment
     assert "wrangler@4.131.1 deploy --config wrangler.production.generated.toml" in deployment
-def test_public_production_deploy_injects_required_b2_secrets():
+def test_python_core_deploy_injects_required_b2_secrets():
     workflow = _workflow_texts()[PRODUCTION_WORKFLOW]
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert "B2_KEY_ID: ${{ secrets.B2_KEY_ID }}" in workflow
     assert "B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}" in workflow
     assert "B2_BUCKET: ${{ secrets.B2_BUCKET }}" in workflow
     assert "B2_ENDPOINT: ${{ vars.B2_ENDPOINT }}" in workflow
-    assert "--secrets-file \"$public_secret_file\"" in deployment
-    assert 'printf \'AUTH_TOKEN=%s\\nCHAT_BACKEND_TOKEN=%s\\n\' "$AUTH_TOKEN" "$AUTH_TOKEN" > "$secret_file"' in deployment
+    assert '--secrets-file "$public_secret_file"' in deployment
     assert 'printf \'AUTH_TOKEN=%s\\nB2_KEY_ID=%s\\nB2_APPLICATION_KEY=%s\\n\'' in deployment
+    assert 'pywrangler deploy --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}:python-core"' in deployment
     assert 'test -n "${B2_KEY_ID:-}"' in deployment
     assert 'test -n "${B2_APPLICATION_KEY:-}"' in deployment
+
+def test_public_edge_does_not_retain_b2_credentials():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'for public_b2_secret in B2_KEY_ID B2_APPLICATION_KEY; do' in deployment
+    assert 'workers/scripts/${PUBLIC_WORKER_NAME}/secrets/${public_b2_secret}' in deployment
+    assert 'public-worker-settings-after-b2-cleanup.json' in deployment
 def test_public_worker_static_assets_binding_is_declared():
     wrangler = (ROOT / "wrangler.python-core.toml").read_text(encoding="utf-8")
     assert '[assets]' in wrangler
@@ -673,12 +679,12 @@ def test_public_probe_records_dns_failure_without_parser_crash():
     assert 'curl -sS --max-time 20' in workflow
     assert '|| true)' in workflow
 
-def test_current_public_runtime_identity_is_heroic_javascript_edge():
+def test_current_public_runtime_identity_is_heroic_typescript_edge():
     wrangler = WRANGLER.read_text(encoding="utf-8")
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'name = "heroic"' in wrangler
     assert 'workers_dev = false' in wrangler
-    assert 'main = "edge.js"' in wrangler
+    assert 'main = "edge.ts"' in wrangler
     assert 'binding = "CORE"' in wrangler
     assert 'service = "heroic-core"' in wrangler
     assert "python_workers" not in wrangler
@@ -725,3 +731,10 @@ def test_foundation_ai_map_tracks_current_m11_type_inventory():
     assert '"current_type_entries": 45' not in text
 
 # Policy contract: production release evidence must use authenticated runtime proof and must not consume duplicate D1 query budget.
+
+
+def test_public_edge_removes_legacy_b2_credentials():
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert "B2 credentials belong to heroic-core" in text
+    assert "workers/scripts/${PUBLIC_WORKER_NAME}/secrets/${public_b2_secret}" in text
+    assert "public-worker-settings-after-b2-cleanup.json" in text

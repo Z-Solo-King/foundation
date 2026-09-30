@@ -19,7 +19,7 @@
     "chat_frontend_lifecycle": "frontend/app.js",
     "research_lifecycle": "frontend/lifecycle_controller.js",
     "public_chat_contract_module": "backend/api/models.py",
-    "public_worker_chat_boundary": "edge.js",
+    "public_worker_chat_boundary": "edge.ts",
     "public_research_api": "backend/api/main.py",
     "request_model": "backend/api/models.py",
     "product_identity": "foundation_core/product_identity.py",
@@ -31,7 +31,7 @@
     "claims": "backend/intelligence/claims.py",
     "execution": "backend/execution/engine.py",
     "research_pipeline": "backend/execution/pipeline.py",
-    "public_worker_boundary": "edge.js",
+    "public_worker_boundary": "edge.ts",
     "artifacts": "backend/artifacts/manifest.py",
     "benchmarks": "benchmark/",
     "family_integration_graph": "docs/FAMILY_INTEGRATION_GRAPH.json",
@@ -87,7 +87,7 @@
     "rule": "navigation metadata never becomes policy or implementation authority"
   },
   "runtime": {
-    "public_worker": "heroic (native JavaScript edge)",
+    "public_worker": "heroic (native TypeScript edge)",
     "python_core": "heroic-core (Python worker.py)",
     "transport": "Cloudflare Service Binding HTTP",
     "operations_edge": "operations-edge (native JavaScript)",

@@ -1,4 +1,12 @@
-function forwardRequest(request) {
+interface ServiceBinding {
+  fetch(request: Request): Promise<Response>;
+}
+
+interface EdgeEnv {
+  CORE?: ServiceBinding;
+}
+
+function forwardRequest(request: Request): Request {
   const incoming = new URL(request.url);
   const target = new URL("https://heroic-core");
   target.pathname = incoming.pathname;
@@ -6,7 +14,7 @@ function forwardRequest(request) {
   return new Request(target, request.clone());
 }
 
-function unavailableResponse() {
+function unavailableResponse(): Response {
   return new Response(
     JSON.stringify({ ok: false, error: "core_service_unavailable" }),
     {
@@ -19,8 +27,8 @@ function unavailableResponse() {
   );
 }
 
-export default {
-  async fetch(request, env) {
+const handler = {
+  async fetch(request: Request, env: EdgeEnv): Promise<Response> {
     if (!env.CORE || typeof env.CORE.fetch !== "function") {
       return unavailableResponse();
     }
@@ -33,3 +41,5 @@ export default {
     }
   },
 };
+
+export default handler;
