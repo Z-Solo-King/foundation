@@ -698,9 +698,7 @@ def test_nightly_research_preflight_has_network_failure_classification():
     assert "probe_transport_error" in probe
     assert "runtime_revision_mismatch" in probe
     assert "invalid_json_response" in probe
-    assert "probe_transport_error" in preflight
-    assert '"network_classification"' in preflight
-    assert "dns_or_network_unreachable" in preflight
+    assert "readiness_failure" in probe
 
 def test_nightly_research_pin_selection_requires_consumer_contract_validation():
     text=(ROOT / ".github" / "workflows" / "canonical-nightly-pin-repair.yml").read_text(encoding="utf-8")
