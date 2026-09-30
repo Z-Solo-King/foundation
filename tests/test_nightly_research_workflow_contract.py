@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 WORKFLOW = Path(__file__).parents[1] / ".github" / "workflows" / "nightly-multi-agent-research-v3.yml"
 
