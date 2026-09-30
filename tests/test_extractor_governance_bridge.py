@@ -50,3 +50,10 @@ def test_extractor_manual_revision_validation_is_fail_closed():
     workflow = (ROOT / ".github/workflows/extractor-surface-governance.yml").read_text(encoding="utf-8")
     assert "must be main or an immutable 40-hex commit" in workflow
     assert "grep -Eq '^[0-9a-f]{40}$'" in workflow
+
+
+def test_extractor_governance_bridge_serializes_evidence_runs():
+    workflow = (ROOT / ".github/workflows/extractor-surface-governance.yml").read_text(encoding="utf-8")
+    assert "concurrency:" in workflow
+    assert "group: extractor-surface-governance" in workflow
+    assert "cancel-in-progress: false" in workflow

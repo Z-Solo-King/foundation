@@ -16,6 +16,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: extractor-surface-governance
+  cancel-in-progress: false
+
 jobs:
   audit:
     name: Audit Operations extractor surface
@@ -26,6 +30,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Create Operations read token
         id: operations-app
@@ -41,64 +46,7 @@ jobs:
         env:
           OPERATIONS_REF: ${{ github.event.inputs.operations_ref || 'main' }}
         run: |
-          if [ "$OPERATIONS_REF" != "main" ] && ! printf '%s' "$OPERATIONS_REF" | grep -Eq '^[0-9a-f]{40}        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: Z-Solo-King/operations
-          ref: ${{ github.event.inputs.operations_ref || 'main' }}
-          token: ${{ steps.operations-app.outputs.token }}
-          path: operations
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.14'
-
-      - name: Run oldest critical surface audit
-        run: |
-          python operations/tools/oldest_surface_audit.py \
-            --root operations \
-            --prefix extractor_mapper \
-            --prefix private \
-            --prefix polyglot \
-            --stale-days 14 \
-            --limit 150 \
-            --output artifacts/oldest-surface.json
-
-      - name: Run extractor capability governance audit
-        run: |
-          PYTHONPATH=operations python operations/tools/extractor_surface_audit.py \
-            --root operations \
-            --foundation-root . \
-            --output artifacts/extractor-surface.json
-
-      - name: Run focused extractor regression tests
-        working-directory: operations
-        run: |
-          python -m pip install --disable-pip-version-check -e ".[test]"
-          python -m pytest -q tests/test_extractor_policy_seams.py tests/test_extractor_surface_governance.py
-
-      - name: Run whole-feature governance audit
-        run: |
-          PYTHONPATH=operations python operations/tools/feature_surface_audit.py \
-            --root operations \
-            --output artifacts/feature-surface.json
-
-      - name: Verify retired shadow surfaces stay absent
-        run: |
-          test ! -e operations/extractor_mapper/execution_plan.py
-          test ! -e operations/extractor_mapper/policies/retention.py
-          test -f operations/private/planner/execution_bridge.py
-          test -f operations/private/retention_deletion.py
-
-      - name: Upload governance evidence
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: extractor-surface-governance-${{ github.run_id }}
-          path: artifacts/
-          retention-days: 30
-; then
+          if [ "$OPERATIONS_REF" != "main" ] && ! printf '%s' "$OPERATIONS_REF" | grep -Eq '^[0-9a-f]{40}$'; then
             echo "operations_ref must be main or an immutable 40-hex commit"
             exit 1
           fi
@@ -120,6 +68,7 @@ jobs:
 
       - name: Run oldest critical surface audit
         run: |
+          mkdir -p artifacts
           python operations/tools/oldest_surface_audit.py \
             --root operations \
             --prefix extractor_mapper \
