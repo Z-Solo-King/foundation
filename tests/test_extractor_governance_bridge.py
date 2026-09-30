@@ -44,3 +44,9 @@ def test_extractor_manual_revision_is_constrained_to_immutable_or_default_main()
     workflow = (ROOT / ".github/workflows/extractor-surface-governance.yml").read_text(encoding="utf-8")
     assert "immutable 40-hex commit" in workflow
     assert "github.event.inputs.operations_ref || 'main'" in workflow
+
+
+def test_extractor_manual_revision_validation_is_fail_closed():
+    workflow = (ROOT / ".github/workflows/extractor-surface-governance.yml").read_text(encoding="utf-8")
+    assert "must be main or an immutable 40-hex commit" in workflow
+    assert "grep -Eq '^[0-9a-f]{40}$'" in workflow
