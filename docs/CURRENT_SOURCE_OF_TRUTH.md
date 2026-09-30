@@ -3,12 +3,13 @@
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
 Checked: 2026-09-30.
-Main verification checkpoint: 732a694cf2e272709640c379d9aed70ea28b2534 (PR #1573 merged; production release certification is separate).
+Main verification checkpoint: f5909b8c432c73d31a746303d109738944b3d1a9 (PR #1600 merged; production release certification is separate).
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: 732a694cf2e272709640c379d9aed70ea28b2534.
+Foundation main code checkpoint: f5909b8c432c73d31a746303d109738944b3d1a9.
 Operations main checkpoint: current protected main revision is read from GitHub live state; research/migration jobs use explicit immutable pins below.
 Production Operations pin: ce4f9edbae3ddf1bf1c25a908d5bce014acc7676.
+Provider fleet runtime probe pin: b95e419254a9071beaeef57a1b0da22ba7dd2c4f.
 Research Operations pin: 1a91efa53b9202f1624ddde892b0e86bd6b360f0.
 Live issue and PR counts must be read from GitHub; this file never serves as a mutable queue.
 
@@ -84,4 +85,4 @@ Cross-repository continuity requires this document and docs/FAMILY_SYNC_STATE.js
 
 
 ## 2026-09-30 AI provider fleet
-The current external AI API fleet is defined in `docs/AI_PROVIDER_FLEET_2026-09-30.md` and `docs/AI_PROVIDER_FLEET_2026-09-30.json`: OpenRouter, Groq, Gemini, NVIDIA NIM, Cohere, Hugging Face, and SiliconFlow. Cloudflare Workers AI is the native runtime inference binding. Mistral is not part of the project provider fleet.
+The current Foundation external AI API fleet is defined in `docs/AI_PROVIDER_FLEET_2026-09-30.md` and `docs/AI_PROVIDER_FLEET_2026-09-30.json`: OpenRouter, Groq, Gemini, NVIDIA NIM, Cohere, Hugging Face, and SiliconFlow. Cloudflare Workers AI is the native runtime inference binding. Operations privately supports Cerebras as an additional provider family, but Foundation does not activate it because no Cerebras credential is configured. Mistral is not part of the production provider fleet.

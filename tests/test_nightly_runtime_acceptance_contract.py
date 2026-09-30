@@ -33,6 +33,43 @@ def test_release_waits_for_preflight_before_nightly():
 def test_runtime_probe_does_not_print_response_body_or_token():
     text = (ROOT / "scripts/nightly_runtime_contract_probe.py").read_text(encoding="utf-8")
     assert "AUTH_TOKEN" not in text
-    assert 'payload.get("choices"' in text
+    assert "_validate_chat_response" in text
+    assert 'payload.get("response")' in text
+    assert 'generation_status == "model_generated"' in text
     print_section = text.split("print(json.dumps", 1)[1]
     assert "raw" not in print_section
+
+
+def test_runtime_probe_accepts_authenticated_nested_research_response():
+    from scripts import nightly_runtime_contract_probe as probe
+
+    payload = {
+        "ok": True,
+        "request_id": "nightly-contract-probe-1",
+        "response": {
+            "response_id": "chat-nightly-contract-probe-1",
+            "provider": "cloudflare_workers_ai",
+            "generation_status": "model_generated",
+            "text": '{"findings":[],"follow_up_questions":[],"note":"probe"}',
+        },
+    }
+    ok, details = probe._validate_chat_response(payload, expected_model="@cf/zai-org/glm-4.7-flash")
+    assert ok is True
+    assert details["provider"] == "cloudflare_workers_ai"
+    assert details["response_id_present"] is True
+    assert details["structured_output"] is True
+
+
+def test_runtime_probe_rejects_missing_provider_or_generation_proof():
+    from scripts import nightly_runtime_contract_probe as probe
+
+    payload = {
+        "ok": True,
+        "response": {
+            "response_id": "chat-probe",
+            "generation_status": "deterministic_fallback",
+            "text": '{"findings":[],"follow_up_questions":[],"note":"probe"}',
+        },
+    }
+    ok, _details = probe._validate_chat_response(payload, expected_model="@cf/zai-org/glm-4.7-flash")
+    assert ok is False
