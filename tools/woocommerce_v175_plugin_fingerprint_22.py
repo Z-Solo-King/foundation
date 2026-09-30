@@ -807,41 +807,90 @@ async def direct_feed_probe(root: str, candidates: List[str], user_agent: str = 
     return {"verified": False, "url": None, "item_count": 0, "sha256": "", "tried": tried[-60:]}
 
 
-async def groq_advisory(evidence: Dict[str, Any]) -> Dict[str, Any]:
-    key = os.getenv("GROQ_API_KEY", "").strip()
-    if not key:
-        return {"enabled": False, "reason": "missing_env"}
-    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile").strip()
+async def ai_advisory(evidence: Dict[str, Any]) -> Dict[str, Any]:
+    """Use the six configured external AI APIs as bounded advisory fallbacks.
+
+    The advisory output can classify evidence or suggest candidate feed hypotheses.
+    It never verifies a feed, bypasses access controls, or changes extraction authority.
+    """
+    provider_specs = [
+        ("openrouter_free", "https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "OPENROUTER_MODEL", "openrouter/free"),
+        ("groq", "https://api.groq.com/openai/v1/chat/completions", "GROQ_API_KEY", "GROQ_MODEL", "openai/gpt-oss-120b"),
+        ("gemini", "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", "GEMINI_API_KEY", "GEMINI_MODEL", "gemini-3.8-flash"),
+        ("nvidia_nim", "https://integrate.api.nvidia.com/v1/chat/completions", "NVIDIA_NIM_API_KEY", "NVIDIA_NIM_MODEL", "deepseek-ai/deepseek-v4.1-flash"),
+        ("cohere_free", "https://api.cohere.ai/compatibility/v1/chat/completions", "COHERE_API_KEY", "COHERE_MODEL", "command-a-plus-05-2026"),
+        ("huggingface_free", "https://router.huggingface.co/v1/chat/completions", "HF_TOKEN", "HF_MODEL", "openai/gpt-oss-120b"),
+    ]
+
     prompt = {
-        "task": "Classify WooCommerce plugin evidence for one site. Do not invent. Return JSON {family,confidence,why}.",
+        "task": "Classify WooCommerce plugin evidence. Return JSON {family,confidence,why}. Advisory only; never invent verification.",
         "evidence": {
             "plugin_asset_slugs": evidence.get("plugin_asset_slugs", []),
             "namespaces": evidence.get("namespaces", []),
             "xhr_urls": evidence.get("xhr_urls", [])[:80],
             "http_api_namespaces": evidence.get("http_api_namespaces", []),
-        }
+        },
     }
-    try:
-        async with httpx.AsyncClient(timeout=30) as client:
-            r = await client.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-                json={
+
+    outcomes: List[Dict[str, Any]] = []
+    async with httpx.AsyncClient(timeout=25) as client:
+        for provider, endpoint, key_env, model_env, default_model in provider_specs:
+            key = os.getenv(key_env, "").strip()
+            if not key:
+                outcomes.append({"provider": provider, "outcome": "unconfigured"})
+                continue
+            model = os.getenv(model_env, default_model).strip() or default_model
+            started = time.monotonic()
+            try:
+                r = await client.post(
+                    endpoint,
+                    headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                    json={
+                        "model": model,
+                        "temperature": 0,
+                        "max_tokens": 256,
+                        "response_format": {"type": "json_object"},
+                        "messages": [
+                            {"role": "system", "content": "Return only JSON. Advisory classification only; never claim feed existence or successful web access."},
+                            {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)},
+                        ],
+                    },
+                )
+                latency_ms = max(0, int((time.monotonic() - started) * 1000))
+                if r.status_code < 200 or r.status_code >= 300:
+                    failure = "rate_limited" if r.status_code == 429 else "request_failed"
+                    outcomes.append({"provider": provider, "outcome": failure, "status": r.status_code, "latency_ms": latency_ms})
+                    continue
+                body = r.json()
+                content = body.get("choices", [{}])[0].get("message", {}).get("content", "{}")
+                result = json.loads(content)
+                outcomes.append({"provider": provider, "outcome": "success", "status": r.status_code, "latency_ms": latency_ms, "result": result})
+                return {
+                    "enabled": True,
+                    "provider": provider,
                     "model": model,
-                    "temperature": 0,
-                    "response_format": {"type": "json_object"},
-                    "messages": [
-                        {"role": "system", "content": "Return only JSON; advisory classification, never claim feed existence."},
-                        {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)},
-                    ],
-                },
-            )
-            if r.status_code != 200:
-                return {"enabled": True, "status": r.status_code, "error": r.text[:300]}
-            content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "{}")
-            return {"enabled": True, "status": 200, "result": json.loads(content)}
-    except Exception as e:
-        return {"enabled": True, "status": 0, "error": str(e)[:300]}
+                    "status": r.status_code,
+                    "latency_ms": latency_ms,
+                    "result": result,
+                    "outcomes": outcomes,
+                }
+            except Exception as exc:
+                outcomes.append({"provider": provider, "outcome": "temporary", "latency_ms": max(0, int((time.monotonic() - started) * 1000)), "error": type(exc).__name__})
+
+    return {
+        "enabled": bool(outcomes),
+        "provider": None,
+        "model": None,
+        "status": None,
+        "latency_ms": None,
+        "result": {},
+        "outcomes": outcomes,
+        "reason": "all_active_ai_providers_unavailable",
+    }
+
+
+# Backward-compatible name for existing callers/tests.
+groq_advisory = ai_advisory
 
 
 async def passive_public_discovery(root: str) -> Dict[str, Any]:
@@ -1055,7 +1104,7 @@ async def probe_site(name: str, root: str) -> Dict[str, Any]:
         "feed_transport": "api_integrated" if api_integrated_google else "standalone_xml_candidate_probe",
         "elapsed_s": round(time.time() - start_time, 2),
     }
-    evidence["groq_advisory"] = await groq_advisory(evidence)
+    evidence["ai_advisory"] = await ai_advisory(evidence)
     return evidence
 
 
