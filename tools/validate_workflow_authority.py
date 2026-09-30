@@ -8,12 +8,12 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 REGISTRY=ROOT/"docs"/"WORKFLOW_AUTHORITY_REGISTRY.json"
 WORKFLOWS=ROOT/".github"/"workflows"
+_EVENT_RE = re.compile(
+    r"(?m)^\s{0,2}(pull_request|pull_request_target|push|schedule|workflow_dispatch|merge_group|workflow_run)\s*:"
+)
 
 def _events(text:str)->set[str]:
-    return {
-        name for name in ("pull_request","pull_request_target","push","schedule","workflow_dispatch","merge_group","workflow_run")
-        if re.search(rf"(?m)^\s{{0,2}}{name}\s*:", text)
-    }
+    return set(_EVENT_RE.findall(text))
 
 def _push_branches(text:str)->list[str]:
     lines=text.splitlines()
@@ -42,6 +42,12 @@ def _push_branches(text:str)->list[str]:
 def workflow_paths():
     return sorted(WORKFLOWS.glob("*.yml"))+sorted(WORKFLOWS.glob("*.yaml"))
 
+def _workflow_run_sources(text:str)->list[str]:
+    names=[]
+    for block in re.findall(r"(?ms)workflows:\s*\[([^\]]+)\]",text):
+        names.extend(re.findall(r"""['"]([^'"]+)['"]""",block))
+    return sorted(set(names))
+
 def validate()->list[str]:
     reg=json.loads(REGISTRY.read_text(encoding="utf-8"))
     privileged=dict(reg.get("explicit_privileged_workflows",[]))
@@ -69,13 +75,8 @@ def validate()->list[str]:
             expected_sources=reg["policy"].get("trusted_workflow_run_sources", {}).get(rel)
             if not expected_sources:
                 errors.append(f"{rel}: privileged workflow_run requires explicit trusted upstream registration")
-            else:
-                declared=re.findall(r"(?ms)workflows:\s*\[([^\]]+)\]", text)
-                names=[]
-                for block in declared:
-                    names.extend(re.findall(r"""['"]([^'"]+)['"]""", block))
-                if sorted(set(names)) != sorted(set(expected_sources)):
-                    errors.append(f"{rel}: workflow_run source mismatch; declared={sorted(set(names))} expected={sorted(set(expected_sources))}")
+            elif _workflow_run_sources(text) != sorted(set(expected_sources)):
+                errors.append(f"{rel}: workflow_run source mismatch; declared={_workflow_run_sources(text)} expected={sorted(set(expected_sources))}")
         if rel==".github/workflows/sync-secrets.yml":
             if "environment: production-secret-sync" not in text:
                 errors.append(f"{rel}: missing protected environment")
@@ -84,7 +85,7 @@ def validate()->list[str]:
     for rel in feed:
         if rel not in seen:
             errors.append(f"{rel}: registry references missing workflow")
-    for rel, sources in reg["policy"].get("trusted_workflow_run_sources", {}).items():
+    for rel,sources in reg["policy"].get("trusted_workflow_run_sources",{}).items():
         path=ROOT/rel
         if not path.is_file():
             errors.append(f"{rel}: trusted workflow_run registry target is missing")
@@ -92,18 +93,14 @@ def validate()->list[str]:
         text=path.read_text(encoding="utf-8")
         if "workflow_run:" not in text:
             errors.append(f"{rel}: trusted workflow_run registry entry exists but workflow_run is absent")
-            continue
-        declared=re.findall(r"(?ms)workflows:\s*\[([^\]]+)\]", text)
-        names=[]
-        for block in declared:
-            names.extend(re.findall(r"""['"]([^'"]+)['"]""", block))
-        if sorted(set(names)) != sorted(set(sources)):
-            errors.append(f"{rel}: workflow_run source mismatch; declared={sorted(set(names))} expected={sorted(set(sources))}")
+        elif _workflow_run_sources(text) != sorted(set(sources)):
+            errors.append(f"{rel}: workflow_run source mismatch; declared={_workflow_run_sources(text)} expected={sorted(set(sources))}")
     return sorted(set(errors))
 
 if __name__=="__main__":
     errors=validate()
     if errors:
-        for e in errors: print("ERROR:",e)
+        for e in errors:
+            print("ERROR:",e)
         raise SystemExit(1)
     print(f"workflow authority policy: PASS ({len(workflow_paths())} workflows scanned)")
