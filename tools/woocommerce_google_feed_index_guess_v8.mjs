@@ -274,7 +274,8 @@ async function searchIndexCandidates(root){
 
 async function probeSite(name,root){
   const base=buildCandidates(name,root);
-  const indexed=await indexedCandidates(root);\n  const searchIndexed=await searchIndexCandidates(root);
+  const indexed=await indexedCandidates(root);
+  const searchIndexed=await searchIndexCandidates(root);
   const merged=new Map(base.map(x=>[x.url,x]));
   for(const x of [...indexed,...searchIndexed]){
     const prev=merged.get(x.url);
