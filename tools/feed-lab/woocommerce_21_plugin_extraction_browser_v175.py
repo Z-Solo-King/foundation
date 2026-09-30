@@ -189,7 +189,8 @@ async def extract(name,root,outdir):
              "feed_like_plugin_assets":result["feed_like_plugin_assets"],
              "feed_family_signals":result["feed_family_signals"],
              "xhr_api_events":sum(bool(classify_api_url(x["url"])) for x in result["xhr"]),
-             "wc_v1_v2_v3":{x["version"]:x["status"] for x in result["product_api_options"]}}
+             "wc_v1_v2_v3":{x["version"]:x.get("get_status", x.get("options",{}).get("status", 0))
+                            for x in result["product_api_options"]}}
     print(json.dumps(summary,indent=2))
     return result
 
