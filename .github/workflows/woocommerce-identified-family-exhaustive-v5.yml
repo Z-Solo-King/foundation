@@ -1,5 +1,12 @@
 name: WooCommerce Identified Family Exhaustive Guess V5
 on:
+  push:
+    branches:
+      - feat/wc-identified-family-exhaustive-v5-20260930
+    paths:
+      - "tools/woocommerce_identified_family_guess_v5.mjs"
+      - "tests/test_woocommerce_identified_family_guess_v5.mjs"
+      - ".github/workflows/woocommerce-identified-family-exhaustive-v5.yml"
   pull_request:
     branches: [main]
     paths:
