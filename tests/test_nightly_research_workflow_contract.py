@@ -32,7 +32,7 @@ def test_crossfire_is_single_global_execution_pool():
     assert "name: Nightly research CrossFire (24-program global scheduler)" in research
     assert "strategy:" not in research
     assert "--crossfire" in research
-    assert "--global-capacity 20" in research
+    assert '--crossfire --global-capacity "$RESEARCH_MAX_CONCURRENCY"' in research
     assert "Materialize and validate lane artifacts" in research
     assert "Upload nightly research lane 0" in research
     assert "Upload nightly research lane 1" in research
@@ -174,3 +174,10 @@ def test_canary_manual_execution_is_main_only_and_post_nightly_main_only():
     text=(Path(__file__).parents[1] / ".github" / "workflows" / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
     assert "github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'" in text
     assert "github.event.workflow_run.head_branch == 'main'" in text
+
+
+def test_nightly_research_aligns_scheduler_and_proxy_concurrency():
+    text = workflow_text()
+    assert 'RESEARCH_MAX_CONCURRENCY: "6"' in text
+    assert '--max-upstream-concurrency "${RESEARCH_MAX_CONCURRENCY}"' in text
+    assert '--crossfire --global-capacity "$RESEARCH_MAX_CONCURRENCY"' in text
