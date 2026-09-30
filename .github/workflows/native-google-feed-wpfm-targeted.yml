@@ -1,14 +1,5 @@
-name: WooCommerce WPFM Targeted Native XML Hunt
-
 on:
-  push:
-    branches: [hunt/native-google-feed-urls-20260927]
-    paths:
-      - tools/feed-lab/woocommerce_22_plugin_extract_v175.py
-      - tools/feed-lab/woocommerce_31_group_xml_guess.mjs
-      - .github/workflows/native-google-feed-wpfm-targeted.yml
   workflow_dispatch:
-
 permissions:
   contents: read
 
