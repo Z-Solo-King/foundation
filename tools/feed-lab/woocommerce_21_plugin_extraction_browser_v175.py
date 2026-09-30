@@ -155,11 +155,24 @@ async def extract(name,root,outdir):
                 if p.startswith("/wp-json/") or "rest_route" in p:
                     bodies.append(z["body"])
                     all_ns.update(namespaces(z["body"]))
-        # Product route capability probes: OPTIONS only; no product data retrieved.
+        # Product API v1/v2/v3 probes. Request the smallest public shape and retain only metadata.
         for v in ("v1","v2","v3"):
-            u=base+f"/wp-json/wc/{v}/products"
-            o=await req_options(page.request,u)
-            result["product_api_options"].append({"version":v,"url":u,**o})
+            u=base+f"/wp-json/wc/{v}/products?per_page=1&_fields=id"
+            o=await req_options(page.request,base+f"/wp-json/wc/{v}/products")
+            g=await req_get(page.request,u,timeout=12000)
+            result["product_api_options"].append({
+                "version":v,"url":u,
+                "options":o,
+                "get_status":g["status"],
+                "get_final_url":g["final_url"],
+                "get_content_type":g["ct"],
+                "get_bytes":g["bytes"],
+                "get_challenge":g["challenge"],
+                "get_transport":g.get("transport","ok"),
+                "get_response_markers":sorted(set(re.findall(
+                    r"wpfm|wppfm|feed|google|merchant|product|woocommerce",g.get("body",""),re.I
+                )))[:40],
+            })
         result["xhr"]=sorted({(x["url"],x["method"],x["status"]):(x) for x in xhr}.values(),key=lambda x:x["url"])[:500]
         combined="\n".join(bodies)
         assets=plugin_assets(combined+json.dumps(result["xhr"]))
