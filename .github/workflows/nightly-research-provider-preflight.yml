@@ -31,14 +31,14 @@ jobs:
     timeout-minutes: 8
     env:
       PUBLIC_WORKER_URL: "https://ai-cio.pages.dev"
-      TARGET_FOUNDATION_SHA: \${{ inputs.target_sha || github.sha }}
-      OPERATIONS_RESEARCH_REF: \${{ inputs.operations_research_ref || 'ce4f9edbae3ddf1bf1c25a908d5bce014acc7676' }}
+      TARGET_FOUNDATION_SHA: ${{ inputs.target_sha || github.sha }}
+      OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || 'ce4f9edbae3ddf1bf1c25a908d5bce014acc7676' }}
       RESEARCH_LLM_MODEL: "@cf/zai-org/glm-4.7-flash"
     steps:
       - name: Checkout Foundation probe
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: \${{ github.ref_name }}
+          ref: ${{ github.ref_name }}
           persist-credentials: false
 
       - name: Setup Python
@@ -48,30 +48,30 @@ jobs:
 
       - name: Verify required credentials
         env:
-          AUTH_TOKEN: \${{ secrets.AUTH_TOKEN }}
-          OPERATIONS_APP_ID: \${{ secrets.OPERATIONS_APP_ID }}
-          OPERATIONS_APP_PRIVATE_KEY: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
+          OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
         shell: bash
         run: |
           set -euo pipefail
-          test -n "\${AUTH_TOKEN:-}" || { echo "Missing AUTH_TOKEN"; exit 1; }
-          test -n "\${OPERATIONS_APP_ID:-}" || { echo "Missing OPERATIONS_APP_ID"; exit 1; }
-          test -n "\${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo "Missing OPERATIONS_APP_PRIVATE_KEY"; exit 1; }
-          printf "%s" "\$OPERATIONS_RESEARCH_REF" | grep -Eq "^[0-9a-f]{40}$"
-          printf "%s" "\$TARGET_FOUNDATION_SHA" | grep -Eq "^[0-9a-f]{40}$"
+          test -n "${AUTH_TOKEN:-}" || { echo "Missing AUTH_TOKEN"; exit 1; }
+          test -n "${OPERATIONS_APP_ID:-}" || { echo "Missing OPERATIONS_APP_ID"; exit 1; }
+          test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo "Missing OPERATIONS_APP_PRIVATE_KEY"; exit 1; }
+          printf "%s" "$OPERATIONS_RESEARCH_REF" | grep -Eq "^[0-9a-f]{40}$"
+          printf "%s" "$TARGET_FOUNDATION_SHA" | grep -Eq "^[0-9a-f]{40}$"
 
       - name: Verify exact deployed research contract
         env:
-          AUTH_TOKEN: \${{ secrets.AUTH_TOKEN }}
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
           python scripts/nightly_runtime_contract_probe.py \
-            --url "\$PUBLIC_WORKER_URL" \
-            --token "\$AUTH_TOKEN" \
-            --model "\$RESEARCH_LLM_MODEL" \
-            --expected-foundation-sha "\$TARGET_FOUNDATION_SHA" \
-            --expected-operations-ref "\$OPERATIONS_RESEARCH_REF" | tee preflight-probe.json
+            --url "$PUBLIC_WORKER_URL" \
+            --token "$AUTH_TOKEN" \
+            --model "$RESEARCH_LLM_MODEL" \
+            --expected-foundation-sha "$TARGET_FOUNDATION_SHA" \
+            --expected-operations-ref "$OPERATIONS_RESEARCH_REF" | tee preflight-probe.json
 
       - name: Publish preflight receipt
         if: always()
@@ -84,22 +84,22 @@ jobs:
       - name: Comment preflight receipt
         if: always()
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          body="\$(python - <<'PY'
+          body="$(python - <<'PY'
           from pathlib import Path
           print("Nightly exact runtime preflight receipt:")
           print(Path("preflight.json").read_text(encoding="utf-8"))
           PY
           )"
-          gh api "repos/\$GITHUB_REPOSITORY/issues/157/comments" -f body="\$body" || true
+          gh api "repos/$GITHUB_REPOSITORY/issues/157/comments" -f body="$body" || true
 
       - name: Upload preflight receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: live-nightly-preflight-\${{ github.run_id }}
+          name: live-nightly-preflight-${{ github.run_id }}
           path: preflight.json
           retention-days: 30
