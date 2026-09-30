@@ -167,8 +167,12 @@ operations_main_status=$(curl -sS -o "$RUNNER_TEMP/operations-main-response.json
   "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/git/refs/heads/main")
 test "$operations_main_status" = '200' || { echo "Operations main head lookup failed: HTTP $operations_main_status"; cat "$RUNNER_TEMP/operations-main-response.json"; exit 1; }
 operations_main_sha="$(jq -r '.object.sha // empty' "$RUNNER_TEMP/operations-main-response.json")"
-test "$operations_main_sha" = "$OPERATIONS_REF" || { echo "Stale Operations production pin: manifest=$OPERATIONS_REF current_main=$operations_main_sha"; exit 1; }
-echo "Operations production pin/current main parity: PASS (${OPERATIONS_REF})"
+test "$operations_main_sha" =~ ^[0-9a-f]{40}$
+if [ "$operations_main_sha" = "$OPERATIONS_REF" ]; then
+  echo "Operations certified production pin equals Operations main: PASS (${OPERATIONS_REF})"
+else
+  echo "Operations main is ${operations_main_sha}; certified production pin remains ${OPERATIONS_REF} (warn-only drift; release stays immutable)"
+fi
 
 echo "private Operations access: PASS"
 
