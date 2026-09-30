@@ -310,7 +310,7 @@
     "PR -> required CI -> release -> runtime receipt"
   ],
   "audit_system": "docs/AI_AUDIT_SYSTEM.md",
-  "source_head_at_generation": "39101d004e674bfb776a3a66907713f661746356",
+  "source_head_at_generation": "732d4c160aee2fe062b82ee34d92121504ace8f2",
   "map_intent": {
     "primary_goal": "Make the repository fast and token-efficient for both humans and AI by resolving architecture, ownership, connections, credentials, languages, functions, policies and evidence before deep source retrieval.",
     "navigation_order": [
@@ -1037,5 +1037,10 @@
     "production_operations_revision": "d0897d13751a092cc68ec7a0479a9000e18cff7d",
     "source": "live GitHub",
     "note": "Navigation metadata only; runtime and promotion authority remain with live receipts and canonical deployment manifests."
+  },
+  "sync_reconciliation": {
+    "operations_main": "b1c04322a7f6705936de6bc934953e468b3331e7",
+    "operations_previous_main": "213159b22cd8652a015e7c11067d07a8a459b10d",
+    "reason": "Refresh cross-repository open-issue scan authority after Operations live-issue activity correction; audit metadata only."
   }
 }
