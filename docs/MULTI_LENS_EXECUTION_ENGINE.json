@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "date": "2026-09-30",
+  "principle": "one_target_many_lenses_shared_evidence_adaptive_scheduling",
+  "lane_families": ["language","runtime","browser","extraction","search","ai_provider","github","cloudflare","workflow","evidence","time","failure","boundary"],
+  "default_parallel_lanes": 6,
+  "high_risk_parallel_lanes": 8,
+  "scheduler": {
+    "priority_formula": "(coverage_gain*historical_yield*confidence_gain*failure_detection_probability*freshness_need)/(execution_cost+latency_cost+quota_cost+duplication_penalty)",
+    "authority": "priority_only",
+    "acceptance_policy_is_not_learned": true
+  },
+  "escalation": ["static_http","known_api_or_feed","network_resource_discovery","lightweight_browser","full_browser_interaction"],
+  "browser_engines": ["chromium","gecko","webkit"],
+  "browser_protocols": ["playwright","puppeteer","cdp"],
+  "execution_locations": ["github_runner","cloudflare_browser_run","approved_runtime"],
+  "evidence_classes": ["authoritative","corroborative","diagnostic"],
+  "required_receipt_fields": ["target","lens","lens_version","immutable_input","environment","status","timestamps","observations","artifacts","confidence","limitations"],
+  "learning_metrics": ["success_rate","novel_finding_rate","false_positive_rate","median_latency","p95_latency","quota_cost","acceptance_rate","regression_detection_rate","failure_classes","last_verified_revision"]
+}
