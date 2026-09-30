@@ -15,4 +15,4 @@ def test_public_safe_project_map_tracks_live_state_and_extractor_authority():
     live = data["live_synchronization"]
     assert live["foundation_main"] == "6adee271c0fffa9dbac5b2af001bb9351f8db9a8"
     assert live["foundation_open_issue_count"] == 4
-    assert 1620 in live["foundation_open_prs"]
+    assert set(live["foundation_open_prs"]).issuperset({1616, 1606, 1604, 1602, 1575, 1558})
