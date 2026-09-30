@@ -229,7 +229,7 @@ async def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     payload = {
         "schema": "woocommerce-family-targeted-refine/v1",
-        "source_schema": aggregate.get("schema"),
+        "source_schema": "woocommerce-unknown20-family-targeted-independent",
         "targets": [x[0] for x in selected],
         "results": results,
         "native_verified": sum(1 for x in results if x["native_feed_verified"]),
