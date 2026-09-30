@@ -73,7 +73,18 @@ The canonical backup workflow mirrors both active repositories:
 
 Each backup must produce an immutable Git mirror archive and a machine-readable manifest containing non-secret provenance such as repository, visibility, `main` commit, tree, timestamp, archive name, SHA-256, size, and reference count.
 
-A backup is verified only after:
+Upload integrity and remote restore are separate evidence layers.
+
+The upload layer requires successful B2 upload plus local archive/manifest integrity.
+Remote restore verification additionally requires a dedicated read-capable B2 credential and must perform:
+
+- remote archive download;
+- remote size and SHA-256 comparison against the local archive;
+- extraction;
+- git fsck --full --no-dangling;
+- confirmation that the expected main ref exists.
+
+Without the read-capable credential, remote restore evidence is not attempted and remote_b2_restore_verified must remain false.
 
 - successful B2 upload;
 - remote object metadata/size verification;
