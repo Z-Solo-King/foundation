@@ -1,18 +1,19 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-30T10:08:00+05:30",
+  "audited_at": "2026-09-30T15:12:00+05:30",
   "public_safe": true,
   "live_main": {
-    "foundation": "732a694cf2e272709640c379d9aed70ea28b2534",
-    "operations": "1a91efa53b9202f1624ddde892b0e86bd6b360f0"
+    "foundation": "ec4c7b41f75b8ad0b8e2ce6fb69cc1013f84eece",
+    "operations": "70daff88817d5ab62e7eab2d5dca45e32743f728"
   },
   "runtime_pins": {
     "foundation_runtime": null,
     "production_operations": "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676",
     "research_operations": "1a91efa53b9202f1624ddde892b0e86bd6b360f0",
     "foundation_runtime_status": "no independent immutable Foundation runtime pin; deployed Foundation provenance is release-receipt owned",
-    "migration_tools": "f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791"
+    "migration_tools": "f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791",
+    "provider_fleet_runtime": "b95e419254a9071beaeef57a1b0da22ba7dd2c4f"
   },
   "cloudflare": {
     "pages_project": "ai",
@@ -35,18 +36,17 @@
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
     "observed_at": "2026-09-29T18:32:09+05:30",
-    "open_issue_count": 7,
+    "open_issue_count": 6,
     "foundation": [
       58,
       157,
       1247,
       1249
     ],
-    "operations_count": 3,
+    "operations_count": 2,
     "operations_issue_numbers_omitted": false,
     "authority": "GitHub live issue API; descriptive snapshot only; never a production certificate",
     "operations": [
-      1027,
       597,
       603
     ]
@@ -62,10 +62,11 @@
     "feed_recovery": "QUALIFICATION COMPLETE: verified feeds retained; blocked/unverified targets are not misclassified.",
     "d1_schema": "verified_live_2026-09-29",
     "production_signing_root": "provisioned_live_2026-09-29",
-    "production_runtime": "Foundation PR #1573 merged; canonical production release run is in progress for 732a694cf2e272709640c379d9aed70ea28b2534",
+    "production_runtime": "Foundation PR #1600 is merged at ec4c7b41f75b8ad0b8e2ce6fb69cc1013f84eece; fresh production certification remains separate.",
     "post_release_dispatch": "live nightly research uses typed GitHub workflow inputs; production smoke and research preflight preserve purpose-scoped Operations pins",
     "post_release_provider_proof": "Current production certification is pending the release-triggered research run after PR #1573",
-    "provider_diagnostic_status": "Foundation PR #1562 fixes the dedicated provider_runtime_verify health calculation so a valid Operations {ok:true,runtime_checks:[...]} receipt is returned as HTTP 200 without requiring the generic chatbot.allowed field."
+    "provider_diagnostic_status": "Foundation PR #1562 fixes the dedicated provider_runtime_verify health calculation so a valid Operations {ok:true,runtime_checks:[...]} receipt is returned as HTTP 200 without requiring the generic chatbot.allowed field.",
+    "provider_activation": "Foundation currently activates seven external provider lanes; SiliconFlow is newly activated, Cerebras remains supported privately but unconfigured, and Mistral is excluded."
   },
   "production_diagnostic_acceptance": "release_acceptance=true is forwarded into the private infrastructure diagnostic path",
   "continuity_enforcement": {
