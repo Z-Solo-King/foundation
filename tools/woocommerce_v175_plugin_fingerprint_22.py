@@ -467,6 +467,20 @@ def explicit_xml_candidates(text: str, root: str) -> List[str]:
     return sorted(out)[:160]
 
 
+def filter_explicit_feed_candidates(urls: Iterable[str]) -> List[str]:
+    """Remove discovery documents before deciding whether GLA has an explicit feed."""
+    out = []
+    for raw in urls:
+        try:
+            path = (urlsplit(str(raw)).path or "").lower()
+        except Exception:
+            continue
+        if any(token in path for token in ("sitemap", "robots.txt")):
+            continue
+        out.append(str(raw))
+    return sorted(set(out))[:120]
+
+
 def native_google_valid(body: bytes, content_type: str) -> Tuple[bool, int, str]:
     if not body:
         return False, 0, ""
@@ -922,6 +936,7 @@ async def probe_site(name: str, root: str) -> Dict[str, Any]:
         family_confidence = plugin_family_confidence(hits, all_slugs, all_namespaces)
 
     explicit = explicit_xml_candidates("\n".join(source_blobs + all_requests), root)
+    explicit_feed = filter_explicit_feed_candidates(explicit)
     query_candidates = query_feed_candidates("\n".join(source_blobs + all_requests), root)
     candidates = list(dict.fromkeys(explicit + query_candidates + passive.get("urls", []) + historical))
     candidates.extend(GENERIC_FEED_PATHS)
@@ -929,7 +944,7 @@ async def probe_site(name: str, root: str) -> Dict[str, Any]:
         candidates = PLUGIN_CANDIDATES[family] + candidates
     candidates = list(dict.fromkeys(candidates))
 
-    api_integrated_google = family == "google_for_woocommerce" and not explicit and not query_candidates
+    api_integrated_google = family == "google_for_woocommerce" and not explicit_feed and not query_candidates
     if challenge_encountered:
         feed = {
             "verified": False,
@@ -983,54 +998,3 @@ async def probe_site(name: str, root: str) -> Dict[str, Any]:
         },
         "candidate_count": len(candidates),
         "explicit_candidates": explicit[:120],
-        "query_feed_candidates": query_candidates[:120],
-        "native_feed": feed,
-        "feed_transport": "api_integrated" if api_integrated_google else "standalone_xml_candidate_probe",
-        "elapsed_s": round(time.time() - start_time, 2),
-    }
-    evidence["groq_advisory"] = await groq_advisory(evidence)
-    return evidence
-
-
-async def main() -> int:
-    shard = int(os.getenv("SHARD", "1"))
-    shards = int(os.getenv("SHARDS", "6"))
-    selected = [(n, u) for i, (n, u) in enumerate(TARGETS) if i % shards + 1 == shard]
-    out_dir = Path("out") / "woocommerce-v175-plugin-recovery"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    results: List[Dict[str, Any]] = []
-    for name, root in selected:
-        result = await probe_site(name, root)
-        results.append(result)
-        print(json.dumps({
-            "site": result["site"],
-            "family": result["family"],
-            "native_verified": bool(result["native_feed"].get("verified")),
-            "candidate_count": result["candidate_count"],
-            "elapsed_s": result["elapsed_s"],
-            "browser": [(b["engine"], b["status"], b["cf_clearance"]) for b in result["browser"]],
-        }), flush=True)
-    payload = {
-        "schema": "woocommerce-v175-plugin-recovery/v1",
-        "version": "V175-derived-plugin-harness-2026.09",
-        "shard": shard,
-        "shards": shards,
-        "targets": [n for n, _ in selected],
-        "results": results,
-        "summary": {            "sites": len(results),
-            "native_verified": sum(1 for x in results if x["native_feed"].get("verified")),
-            "challenge_encountered": sum(1 for x in results if x.get("challenge_encountered")),            "admissible_for_native_verification": sum(1 for x in results if x.get("admissible_for_native_verification")),
-            "plugin_groups": {
-                k: sum(1 for x in results if x["family"] == k)
-                for k in sorted(set(x["family"] for x in results))
-            }
-        }
-    }
-    (out_dir / f"shard-{shard}.json").write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(asyncio.run(main()))
-
-# v175-run-sync: latest workflow head dispatch
