@@ -18,6 +18,7 @@ def test_extractor_governance_bridge_has_one_trusted_trigger_class():
     assert "merge_group:" not in workflow
     assert "permissions:" in workflow
     assert "contents: read" in workflow
+    assert "persist-credentials: false" in workflow
 
 
 def test_extractor_governance_bridge_registers_with_workflow_authority():
@@ -37,3 +38,9 @@ def test_extractor_governance_bridge_invokes_canonical_operations_audits():
     assert "operations/extractor_mapper/policies/retention.py" in workflow
     assert "test ! -e operations/extractor_mapper/execution_plan.py" in workflow
     assert "test ! -e operations/extractor_mapper/policies/retention.py" in workflow
+
+
+def test_extractor_manual_revision_is_constrained_to_immutable_or_default_main():
+    workflow = (ROOT / ".github/workflows/extractor-surface-governance.yml").read_text(encoding="utf-8")
+    assert "immutable 40-hex commit" in workflow
+    assert "github.event.inputs.operations_ref || 'main'" in workflow
