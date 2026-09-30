@@ -33,6 +33,7 @@ test("selects required lanes before adaptive lanes", () => {
   assert.equal(out.selected[0].id, "required");
   assert.equal(out.selected[0].selection, "required");
   assert.equal(out.totals.lanes, 2);
+  assert.equal(out.feasible, true);
 });
 
 test("keeps untested lanes alive through exploration", () => {
@@ -65,9 +66,10 @@ test("never silently drops a required lane when over budget", () => {
       { id: "required", family: "security", required: true, coverage_gain: 1, failure_detection: 1, confidence_gain: 1, execution_cost: 2, latency_cost: 1, quota_cost: 0 }
     ]
   });
+  assert.equal(out.feasible, false);
   assert.equal(out.selected.length, 0);
   assert.equal(out.skipped[0].skip_reason, "budget_or_lane_limit");
-  assert.equal(out.skipped[0].selection, "required-but-blocked");
+  assert.equal(out.errors[0].code, "required_budget_conflict");
 });
 
 test("output is deterministic", () => {
@@ -123,6 +125,58 @@ test("enforces an explicit exclusive group", () => {
       { id: "engine-b", family: "browser", exclusive_group: "browser-choice", coverage_gain: 0.7, failure_detection: 0.7, confidence_gain: 0.7, execution_cost: 1, latency_cost: 2, quota_cost: 0 }
     ]
   });
+  assert.equal(out.feasible, true);
   assert.equal(out.selected.length, 1);
   assert.equal(out.skipped[0].skip_reason, "exclusive_group_conflict");
+});
+
+test("promotes required dependencies into required lanes", () => {
+  const out = run({
+    max_lanes: 3,
+    cost_budget: 5,
+    latency_budget: 50,
+    quota_budget: 20,
+    required_ids: ["child"],
+    lanes: [
+      { id: "child", family: "browser", depends_on: ["base"], coverage_gain: 0.9, failure_detection: 0.9, confidence_gain: 0.9, execution_cost: 1, latency_cost: 5, quota_cost: 0 },
+      { id: "base", family: "search", coverage_gain: 0.5, failure_detection: 0.5, confidence_gain: 0.5, execution_cost: 1, latency_cost: 2, quota_cost: 0 }
+    ]
+  });
+  assert.equal(out.feasible, true);
+  assert.deepEqual(out.selected.map((x) => [x.id, x.required, x.selection]), [
+    ["base", true, "required"],
+    ["child", true, "required"],
+  ]);
+});
+
+test("reports an infeasible required dependency cycle", () => {
+  const out = run({
+    max_lanes: 4,
+    cost_budget: 10,
+    latency_budget: 50,
+    quota_budget: 20,
+    required_ids: ["a"],
+    lanes: [
+      { id: "a", family: "search", depends_on: ["b"], coverage_gain: 0.5, failure_detection: 0.5, confidence_gain: 0.5, execution_cost: 1, latency_cost: 1, quota_cost: 0 },
+      { id: "b", family: "runtime", depends_on: ["a"], coverage_gain: 0.5, failure_detection: 0.5, confidence_gain: 0.5, execution_cost: 1, latency_cost: 1, quota_cost: 0 }
+    ]
+  });
+  assert.equal(out.feasible, false);
+  assert.ok(out.errors.some((e) => e.code === "dependency_cycle"));
+});
+
+test("reports an infeasible required exclusive conflict", () => {
+  const out = run({
+    max_lanes: 3,
+    cost_budget: 10,
+    latency_budget: 50,
+    quota_budget: 20,
+    required_ids: ["a", "b"],
+    lanes: [
+      { id: "a", family: "browser", exclusive_group: "engine", coverage_gain: 0.5, failure_detection: 0.5, confidence_gain: 0.5, execution_cost: 1, latency_cost: 1, quota_cost: 0 },
+      { id: "b", family: "browser", exclusive_group: "engine", coverage_gain: 0.5, failure_detection: 0.5, confidence_gain: 0.5, execution_cost: 1, latency_cost: 1, quota_cost: 0 }
+    ]
+  });
+  assert.equal(out.feasible, false);
+  assert.ok(out.errors.some((e) => e.code === "required_exclusive_conflict"));
 });
