@@ -289,48 +289,73 @@ function plan(input) {
   if (errors.length === 0) {
     candidates.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
 
+    // Dependency-aware candidate selection: defer unresolved dependencies instead
+    // of incorrectly converting them into permanent skips just because a
+    // dependency sorts later in the score order.
+    const pending = new Set(candidates.map((row) => row.id));
+    let progress = true;
+
+    while (pending.size && progress) {
+      progress = false;
+
+      for (const row of candidates) {
+        if (!pending.has(row.id)) continue;
+        if (!dependenciesSatisfied(row)) continue;
+
+        pending.delete(row.id);
+        progress = true;
+
+        if (conflicts(row)) {
+          skipped.push({
+            ...row,
+            selection: "candidate",
+            skip_reason: "exclusive_group_conflict",
+          });
+          continue;
+        }
+
+        if (!canFit(row)) {
+          skipped.push({
+            ...row,
+            selection: "candidate",
+            skip_reason: "budget_or_lane_limit",
+          });
+          continue;
+        }
+
+        const sameFamily = families.has(row.family);
+        const diversityAdjusted = sameFamily ? row.score * 0.90 : row.score * 1.05;
+        const weakestSelected = selected
+          .filter((x) => x.selection !== "required")
+          .sort((a, b) => a.score - b.score)[0];
+
+        if (
+          sameFamily &&
+          weakestSelected &&
+          diversityAdjusted < weakestSelected.score * 1.03
+        ) {
+          skipped.push({
+            ...row,
+            selection: "candidate",
+            skip_reason: "diversity_penalty",
+          });
+          continue;
+        }
+
+        commit(row, "adaptive");
+      }
+    }
+
+    // Anything still pending has an unavailable dependency (including a
+    // dependency that was skipped by conflict/budget rules) or a cycle.
     for (const row of candidates) {
-      if (conflicts(row)) {
-        skipped.push({
-          ...row,
-          selection: "candidate",
-          skip_reason: "exclusive_group_conflict",
-        });
-        continue;
-      }
-      if (!dependenciesSatisfied(row)) {
-        skipped.push({
-          ...row,
-          selection: "candidate",
-          skip_reason: "missing_dependency",
-        });
-        continue;
-      }
-      if (!canFit(row)) {
-        skipped.push({
-          ...row,
-          selection: "candidate",
-          skip_reason: "budget_or_lane_limit",
-        });
-        continue;
-      }
-
-      const sameFamily = families.has(row.family);
-      const diversityAdjusted = sameFamily ? row.score * 0.90 : row.score * 1.05;
-      const weakestSelected = selected
-        .filter((x) => x.selection !== "required")
-        .sort((a, b) => a.score - b.score)[0];
-
-      if (sameFamily && weakestSelected && diversityAdjusted < weakestSelected.score * 1.03) {
-        skipped.push({
-          ...row,
-          selection: "candidate",
-          skip_reason: "diversity_penalty",
-        });
-        continue;
-      }
-
-      commit(row, "adaptive");
+      if (!pending.has(row.id)) continue;
+      pending.delete(row.id);
+      skipped.push({
+        ...row,
+        selection: "candidate",
+        skip_reason: "missing_dependency",
+      });
     }
   } else {
     for (const row of candidates) {
