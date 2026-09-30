@@ -1,11 +1,11 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-30T15:25:00+05:30",
+  "audited_at": "2026-09-30T15:35:00+05:30",
   "public_safe": true,
   "live_main": {
     "foundation": "f5909b8c432c73d31a746303d109738944b3d1a9",
-    "operations": "70daff88817d5ab62e7eab2d5dca45e32743f728"
+    "operations": "90b9c59c4a1cca3b99e46e4df10a493a21725623"
   },
   "runtime_pins": {
     "foundation_runtime": null,
@@ -35,7 +35,7 @@
   },
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
-    "observed_at": "2026-09-30T15:25:00+05:30",
+    "observed_at": "2026-09-30T15:35:00+05:30",
     "open_issue_count": 6,
     "foundation": [
       58,
@@ -92,5 +92,78 @@
     "feed_scope": "excluded",
     "operations_migration_tools_pin": "f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791",
     "related_operations_pr": 1109
+  },
+  "github_heads": {
+    "foundation": "f5909b8c432c73d31a746303d109738944b3d1a9",
+    "operations": "90b9c59c4a1cca3b99e46e4df10a493a21725623"
+  },
+  "current_prs": {
+    "open_pr_count": 7,
+    "foundation": [
+      1602,
+      1604,
+      1575,
+      1558,
+      1606
+    ],
+    "operations": [
+      1374,
+      1361
+    ],
+    "merged_recent": {
+      "foundation": [
+        1601,
+        1603
+      ],
+      "operations": [
+        1376,
+        1381,
+        1382
+      ]
+    },
+    "superseded_closed": {
+      "foundation": [
+        1578,
+        1556
+      ],
+      "operations": [
+        1349
+      ]
+    }
+  },
+  "foundation_open_prs": [
+    1602,
+    1604,
+    1575,
+    1558,
+    1606
+  ],
+  "operations_open_prs": [
+    1374,
+    1361
+  ],
+  "open_pr_count": 7,
+  "open_implementation_pr_count": 7,
+  "extractor_mapper": {
+    "status": "active_runtime_boundary",
+    "repository": "operations",
+    "path": "extractor_mapper/",
+    "historical_repository": "retired/deleted",
+    "foundation_public_mapper": "Foundation public deterministic mapper core",
+    "authority": "Operations owns private acquisition/extraction runtime; Foundation owns public deterministic mapper core"
+  },
+  "multi_lens": {
+    "status": "active_on_foundation_main",
+    "planner": "Foundation tools/multi_lens_planner.mjs",
+    "profile": "Foundation docs/MULTI_LENS_CHATBOT_PROFILE.json",
+    "schema": "Foundation schemas/multi-lens-plan-v1.schema.json",
+    "workflow": "Foundation .github/workflows/multi-lens-planner.yml",
+    "authority": "scheduling_only"
+  },
+  "post_merge_sync": {
+    "checked_at": "2026-09-30T15:35:00+05:30",
+    "foundation_main": "f5909b8c432c73d31a746303d109738944b3d1a9",
+    "operations_main": "90b9c59c4a1cca3b99e46e4df10a493a21725623",
+    "operations_sync_commit": "d9bd39b6035b289db720f43934e5ec4cbd55ee54"
   }
 }
