@@ -61,6 +61,7 @@ jobs:
           const plan = JSON.parse(fs.readFileSync(".runtime/multi-lens-plan.json", "utf8"));
           if (plan.schema !== "multi-lens-plan/v1") throw new Error("invalid multi-lens plan schema");
           if (plan.authority !== "scheduling_only") throw new Error("planner authority boundary violated");
+          if (plan.feasible !== true) throw new Error("planner produced an infeasible plan: " + JSON.stringify(plan.errors));
           if (plan.totals.lanes > plan.constraints.max_lanes) throw new Error("lane limit exceeded");
           if (plan.totals.cost > plan.constraints.cost_budget) throw new Error("cost budget exceeded");
           if (plan.totals.latency > plan.constraints.latency_budget) throw new Error("latency budget exceeded");
