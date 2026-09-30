@@ -1,10 +1,10 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-30T09:30:00+05:30",
+  "audited_at": "2026-09-30T10:08:00+05:30",
   "public_safe": true,
   "live_main": {
-    "foundation": "30e0f132cea88cf3a945238575d7e4cb6e162045",
+    "foundation": "732a694cf2e272709640c379d9aed70ea28b2534",
     "operations": "1a91efa53b9202f1624ddde892b0e86bd6b360f0"
   },
   "runtime_pins": {
@@ -52,7 +52,7 @@
     ]
   },
   "evidence": {
-    "nightly_research": "24-program live acceptance is hardened; fresh acceptance must use the post-hardening Foundation revision and explicit structured-provider preflight",
+    "nightly_research": "latest live run failed at the public/private ChatRequest boundary; PR #1573 repairs the boundary and a fresh post-release 24-program live run is required",
     "extractor_benchmark": {
       "receipts": 40,
       "structural_pass": true,
@@ -62,9 +62,9 @@
     "feed_recovery": "QUALIFICATION COMPLETE: verified feeds retained; blocked/unverified targets are not misclassified.",
     "d1_schema": "verified_live_2026-09-29",
     "production_signing_root": "provisioned_live_2026-09-29",
-    "production_runtime": "fresh production release certification in progress for Foundation c4069bb7; provider-provenance repair merged and awaiting post-release smoke/nightly receipts",
+    "production_runtime": "Foundation PR #1573 merged; canonical production release run is in progress for 732a694cf2e272709640c379d9aed70ea28b2534",
     "post_release_dispatch": "live nightly research uses typed GitHub workflow inputs; production smoke and research preflight preserve purpose-scoped Operations pins",
-    "post_release_provider_proof": "Foundation PR #1559 adds authenticated provider provenance and provider-runtime diagnostic contract fixes; pending fresh production certification.",
+    "post_release_provider_proof": "Current production certification is pending the release-triggered research run after PR #1573",
     "provider_diagnostic_status": "Foundation PR #1562 fixes the dedicated provider_runtime_verify health calculation so a valid Operations {ok:true,runtime_checks:[...]} receipt is returned as HTTP 200 without requiring the generic chatbot.allowed field."
   },
   "production_diagnostic_acceptance": "release_acceptance=true is forwarded into the private infrastructure diagnostic path",
@@ -72,7 +72,7 @@
     "schema": "continuity-freshness/v1",
     "enforced_by": "tools/check_continuity_freshness.py",
     "workflow": ".github/workflows/cross-repository-contract-drift.yml",
-    "last_refresh_reason": "nightly research evidence contract hardening and repaired Operations polyglot-audit pin",
+    "last_refresh_reason": "PR #1573 research capability-boundary repair",
     "checkout_history": "full-depth required for merge-commit-safe HEAD^ resolution"
   },
   "privacy_rule": "Do not publish protected worker origins, account/resource identifiers, private revisions, secret values, private issue details, or internal operational state.",
@@ -85,9 +85,9 @@
   },
   "last_runtime_repair": {
     "date": "2026-09-30",
-    "foundation_pr": 1565,
-    "component": "nightly research evidence and recovery contract",
-    "status": "CI_validation_in_progress",
+    "foundation_pr": 1573,
+    "component": "public/private research-agent capability boundary",
+    "status": "merged; production certification pending",
     "feed_scope": "excluded",
     "operations_migration_tools_pin": "f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791",
     "related_operations_pr": 1109

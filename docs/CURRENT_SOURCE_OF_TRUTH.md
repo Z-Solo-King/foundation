@@ -3,9 +3,10 @@
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
 Checked: 2026-09-30.
+Main verification checkpoint: 732a694cf2e272709640c379d9aed70ea28b2534 (PR #1573 merged; production release certification is separate).
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: 30e0f132cea88cf3a945238575d7e4cb6e162045.
+Foundation main code checkpoint: 732a694cf2e272709640c379d9aed70ea28b2534.
 Operations main checkpoint: current protected main revision is read from GitHub live state; research/migration jobs use explicit immutable pins below.
 Production Operations pin: ce4f9edbae3ddf1bf1c25a908d5bce014acc7676.
 Research Operations pin: 1a91efa53b9202f1624ddde892b0e86bd6b360f0.
@@ -73,3 +74,10 @@ Foundation PR #1562 aligns the public authenticated diagnostic wrapper with the 
 
 ### 2026-09-30 nightly evidence hardening
 Foundation PR #1565 hardens nightly research using the feed-recovery evidence pattern: provider capability preflight exercises the actual research-agent structured-output contract; exact 24-program coverage records missing, duplicate, and unexpected IDs; transient upstream transport recovery is bounded and preserves request identity; and machine-readable acceptance manifests map evidence to #58/#157/#597/#603. The migration review pin now uses the merged Operations PR #1109 bridge repair commit `f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791` rather than the older pre-repair audit revision.
+## 2026-09-30 research boundary repair
+
+Foundation PR #1573 fixes a live nightly research contract defect exposed by the production-live run: the CI research proxy had placed the private Operations research_agent capability inside the public ChatRequest JSON payload, which correctly failed public schema validation. The corrected boundary keeps ChatRequest closed, uses the authenticated X-Heroic-Research-Proof: 1 header as the capability signal, and adds research_agent=true only when Foundation forwards an authorized knowledge request to private Operations.
+
+The PR was merged at 732a694cf2e272709640c379d9aed70ea28b2534. The canonical production release for that revision is separately tracked; no production-live research acceptance is claimed until the release dispatch and a fresh 24-program run pass.
+
+Cross-repository continuity requires this document and docs/FAMILY_SYNC_STATE.json to be refreshed whenever canonical worker/workflow boundaries change.
