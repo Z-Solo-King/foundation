@@ -343,14 +343,22 @@ def parse_plugin_slugs(text: str) -> List[str]:
     return sorted(slugs)[:80]
 
 
+def _normalize_namespace(value: str) -> str:
+    # WordPress REST discovery may JSON-escape slashes as \\/.
+    return str(value or "").replace(r"\/", "/").strip()
+
+
 def parse_namespaces(text: str) -> List[str]:
     out = set()
     for m in re.finditer(r'"namespaces"\s*:\s*\[(.*?)\]', text or "", re.S):
         for item in re.findall(r'"([^"]+)"', m.group(1)):
-            out.add(item)
-    for m in re.findall(r'"([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)"', text or ""):
-        if any(k in m.lower() for k in ("feed", "wpfm", "woo", "google", "merchant", "ctx")):
-            out.add(m)
+            n = _normalize_namespace(item)
+            if n:
+                out.add(n)
+    for m in re.findall(r'"([A-Za-z0-9_.-]+(?:\\/|/)[A-Za-z0-9_.-]+)"', text or ""):
+        n = _normalize_namespace(m)
+        if any(k in n.lower() for k in ("feed", "wpfm", "woo", "google", "merchant", "ctx")):
+            out.add(n)
     return sorted(out)
 
 
@@ -921,6 +929,7 @@ async def probe_site(name: str, root: str) -> Dict[str, Any]:
         candidates = PLUGIN_CANDIDATES[family] + candidates
     candidates = list(dict.fromkeys(candidates))
 
+    api_integrated_google = family == "google_for_woocommerce" and not explicit and not query_candidates
     if challenge_encountered:
         feed = {
             "verified": False,
@@ -929,6 +938,16 @@ async def probe_site(name: str, root: str) -> Dict[str, Any]:
             "sha256": "",
             "skipped": True,
             "skip_reason": "challenge_or_challenge-like_response_encountered; native verification inadmissible",
+            "tried": [],
+        }
+    elif api_integrated_google:
+        feed = {
+            "verified": False,
+            "url": None,
+            "item_count": 0,
+            "sha256": "",
+            "skipped": True,
+            "skip_reason": "google_for_woocommerce_is_api_integrated; no standalone_xml_feed_expected_without_public_feed_url",
             "tried": [],
         }
     else:
@@ -966,6 +985,7 @@ async def probe_site(name: str, root: str) -> Dict[str, Any]:
         "explicit_candidates": explicit[:120],
         "query_feed_candidates": query_candidates[:120],
         "native_feed": feed,
+        "feed_transport": "api_integrated" if api_integrated_google else "standalone_xml_candidate_probe",
         "elapsed_s": round(time.time() - start_time, 2),
     }
     evidence["groq_advisory"] = await groq_advisory(evidence)
