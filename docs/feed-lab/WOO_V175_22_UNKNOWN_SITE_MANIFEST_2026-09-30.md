@@ -45,22 +45,25 @@ The native-feed validator requires Google Merchant namespace plus real product f
 
 ## Recovery status
 
-The runner is split into browser and API lanes. Browser evidence is collected with Chromium, Firefox/Gecko and WebKit, followed by public-cookie API replay and feed probing.
+The runner is split into clean-browser, public API, passive-discovery, and direct-feed lanes. Browser evidence is collected with Chromium, Firefox/Gecko and WebKit in independent contexts; direct API/feed requests are cookie-free. Challenge/clearance state is diagnostic only and is never replayed or admitted into native-feed verification.
 
-Cloudflare Browser Run is an additional rendered-public-page lane; current account rate limiting prevented a fresh browser pass across every target during this session.
+Cloudflare Browser Run remains an optional diagnostic lane. The current account is on Workers Free, so its low Browser Run limits make it unsuitable as a parallel 22-site execution dependency.
 
 ## Remaining blockers
 
-1. Cloudflare Browser Run account rate limiting prevented a full fresh browser pass across all 22 during this session.
-2. Several sites return Cloudflare challenge/403 responses before plugin assets are exposed.
-3. Moskeys currently fails DNS resolution.
-4. The clean GitHub Actions extraction workflow is still queued, so no unfinished clean-run artifact is being presented as final evidence.
+1. Ten targets remain challenge-blocked for this acceptance path; the repository deliberately does not bypass those challenges.
+2. Moskeys remains DNS-unresolvable from the GitHub runner, so it is transport-unresolved.
+3. Cloudflare Browser Run remains quota-limited on the current Workers Free account, but it is no longer a required execution dependency.
+
+The canonical `main` extraction run completed successfully and produced a validated aggregate, so there is no CI queue blocker remaining.
 
 ## Current completion state
 
-22/22 targets are accounted for.
+22/22 targets are accounted for in canonical `main` run #11 (`e2dea16f0e52a23df475e8a46eaa1dbb9f18314d`).
 0/22 feed-plugin families verified.
-0/22 native Google Merchant feeds verified in the current evidence set.
-22/22 targets have a documented next state or blocker.
+0/22 native Google Merchant feeds verified.
+22/22 targets have deterministic evidence state and documented blocker/next state.
+6/22 targets had an admissible, non-challenged browser path for native verification in this run; all six still produced zero native-feed validations.
+16/22 targets were non-admissible because of challenge, transport, or lack of a clean 200 browser path.
 
-GamesNComps was the final previously unobserved target; the live Cloudflare Browser Run pass reached its public WooCommerce surface and found no feed-plugin marker.
+The aggregate validator passed with exactly 22 rows and the known-ten exclusion assertion. GamesNComps is now included in the canonical 22-site run and no feed-family marker was recovered.

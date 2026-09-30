@@ -26,7 +26,7 @@ This audit covers the current 22-site unresolved WooCommerce Google Merchant coh
 | Randomized native GPF paths | WooCommerce Google Product Feed can use generated feed endpoints | Fixed-only probing misses configured/random paths | Mine explicit href/src/loc and historical URLs; validate only current payload |
 | Historical URL drift | Wayback/Common Crawl can expose stale feed URLs | Old feed may disappear or change | Historical URLs are candidate hints only; current request must pass strict native validation |
 | Sitemaps/robots | Valuable passive source, not guaranteed feed source | Feed URLs can be referenced indirectly | Probe robots and sitemap surfaces and harvest feed-like URLs without treating the sitemap itself as a Merchant feed |
-| GitHub Actions capacity | Six matrix jobs can spend time in setup/queue | Runner availability | Keep six shards; use one clean browser context per engine and cap direct feed requests |
+| GitHub Actions capacity | Initial six-shard run queued behind runner capacity; canonical main run later completed | Runner availability | Keep six shards; canonical run #11 finished successfully; no execution blocker remains |
 
 ## Implemented alternative
 
@@ -61,6 +61,8 @@ Official plugin documentation also confirms several public feed conventions used
 
 Historical candidates are never certified solely because an archive contained them.
 
-## Next acceptance event
+## Final acceptance result
 
-The improved workflow must run on the trusted `main` ref. Its aggregate must contain exactly the current 22 targets, exclude the known 10, and preserve the distinction between `verified`, `unverified`, and `blocked` evidence.
+The improved workflow ran on trusted `main` as run #11 and completed successfully. Its aggregate contains exactly 22 current targets and excludes the known ten. All six shards and the aggregate validator passed. Native-feed verification remains payload-based, and the final aggregate contains 0 verified native Google Merchant feeds and 0 verified feed-generator families for this cohort.
+
+The remaining target-side blockers are therefore genuine public-access limitations (challenge/DNS) rather than CI or extractor execution failures.
