@@ -32,7 +32,7 @@ def test_crossfire_is_single_global_execution_pool():
     assert "name: Nightly research CrossFire (24-program global scheduler)" in research
     assert "strategy:" not in research
     assert "--crossfire" in research
-    assert "--global-capacity 20" in research
+    assert '--crossfire --global-capacity "$RESEARCH_MAX_CONCURRENCY"' in research
     assert "Materialize and validate lane artifacts" in research
     assert "Upload nightly research lane 0" in research
     assert "Upload nightly research lane 1" in research
