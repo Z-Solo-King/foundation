@@ -11,7 +11,7 @@ Snapshot: 2026-09-30 (Asia/Kolkata)
 
 ## Current repository state
 - Foundation main: `f5909b8c432c73d31a746303d109738944b3d1a9`
-- Operations main: `70daff88817d5ab62e7eab2d5dca45e32743f728`
+- Operations main: `90b9c59c4a1cca3b99e46e4df10a493a21725623`
 - Production Operations pin: `ce4f9edbae3ddf1bf1c25a908d5bce014acc7676`
 - Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`
 - Operations contains no `.github/workflows`; Foundation owns automation.
@@ -42,3 +42,11 @@ Do not copy secret values, Cloudflare account IDs, private Worker origins, mutab
 
 ## 2026-09-30 AI provider synchronization
 Foundation currently activates seven external AI lanes: OpenRouter, Groq, Gemini, NVIDIA NIM, Cohere, Hugging Face, and SiliconFlow. Operations supports an eight-family private catalog, with Cerebras remaining unconfigured on Foundation because no credential is supplied. Cloudflare Workers AI remains the native in-Worker provider. Mistral is excluded from the production fleet. Provider credentials are not documented here. Current public contract: `docs/AI_PROVIDER_FLEET_2026-09-30.md`; private runtime contract: Operations `docs/AI_PROVIDER_TASK_FABRIC_2026-09-30.md`.
+
+## 2026-09-30 post-merge family synchronization
+- Foundation main: `f5909b8c432c73d31a746303d109738944b3d1a9`.
+- Operations main: `90b9c59c4a1cca3b99e46e4df10a493a21725623`.
+- Operations live issue inventory and extractor/mapper records were synchronized in PR #1382.
+- Former standalone extractor-mapper repository is retired/deleted; active runtime is Operations `extractor_mapper/` and public deterministic mapping remains Foundation-owned.
+- Multi-lens execution is active on Foundation and remains scheduling-only.
+- Cloudflare deployment/runtime state is separate live evidence and is not inferred from these GitHub changes.
