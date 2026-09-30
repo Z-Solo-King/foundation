@@ -38,7 +38,7 @@ def test_provider_fleet_workflow_rejects_secret_leak_patterns() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     assert "echo \"$PROVIDER_KEYS_JSON\"" not in text
     assert "cat \"$PROVIDER_KEYS_JSON\"" not in text
-    for provider in ("GROQ", "GEMINI", "CEREBRAS", "OPENROUTER", "SILICONFLOW", "MISTRAL"):
+    for provider in ("GROQ", "GEMINI", "CEREBRAS", "OPENROUTER", "SILICONFLOW", "MISTRAL", "NVIDIA_NIM", "COHERE", "HUGGINGFACE"):
         assert f"secrets.{provider}_API_KEY" not in text
     assert "PROVIDER_KEYS_JSON" in text
 
