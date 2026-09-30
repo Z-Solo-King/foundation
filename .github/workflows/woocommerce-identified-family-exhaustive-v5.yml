@@ -10,7 +10,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: wc-identified-family-v5b-${{ github.ref }}
+  group: wc-identified-family-v5c-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   guess:
