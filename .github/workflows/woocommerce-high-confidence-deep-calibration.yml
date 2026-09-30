@@ -47,7 +47,7 @@ jobs:
           set -euo pipefail
           python tools/woocommerce_high_confidence_deep_calibration.py
       - name: Upload calibration evidence
-        uses: actions/upload-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: woocommerce-high-confidence-deep-calibration
           path: out/woocommerce-high-confidence-deep-calibration/
@@ -101,7 +101,7 @@ jobs:
           set -euo pipefail
           python tools/woocommerce_unknown20_learned_feed_guess.py
       - name: Upload unknown-20 shard evidence
-        uses: actions/upload-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: woocommerce-unknown20-learned-shard-${{ matrix.shard }}
           path: out/woocommerce-unknown20-learned-feed-guess/
@@ -173,7 +173,7 @@ jobs:
           await writeFile("out/aggregate/aggregate.md",md,"utf8");
           NODE
       - name: Upload unknown-20 aggregate evidence
-        uses: actions/upload-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: woocommerce-unknown20-learned-aggregate
           path: out/aggregate/
