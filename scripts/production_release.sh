@@ -587,8 +587,18 @@ persistence_seed_status=$(curl -sS --max-time 30 -o "$persistence_seed_file" -w 
   -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' \
   -d "$persistence_seed_payload" "$BASE_URL/api/v1/chatbot/diagnostic" || true)
 echo "POST persistence_seed -> HTTP $persistence_seed_status"
-test "$persistence_seed_status" = "200"
-jq -e '.ok == true and (.sentinel_id | type == "string" and length > 0)' "$persistence_seed_file" >/dev/null
+if [ "$persistence_seed_status" != "200" ]; then
+  echo '--- persistence-seed.error ---'
+  jq -c '{ok,error,message,detail,code,errors}' "$persistence_seed_file" 2>/dev/null || cat "$persistence_seed_file"
+  echo '--- end persistence-seed.error ---'
+  exit 1
+fi
+if ! jq -e '.ok == true and (.sentinel_id | type == "string" and length > 0)' "$persistence_seed_file" >/dev/null; then
+  echo '--- persistence-seed.body ---'
+  cat "$persistence_seed_file" || true
+  echo '--- end persistence-seed.body ---'
+  exit 1
+fi
 
 chat_rollover_payload=$(jq -nc --arg chat_id "production-chat-rollover-${ACCEPTANCE_RUN_ID}" --arg request_id "production-chat-rollover-request-${ACCEPTANCE_RUN_ID}" '{chat_id:$chat_id,request_id:$request_id,message:"Return one concise sentence explaining why the public Worker uses an authenticated private service binding.",mode:"chat",strict_zero_cost_only:true}')
 chat_rollover_key="production-chat-rollover-${ACCEPTANCE_RUN_ID}"
