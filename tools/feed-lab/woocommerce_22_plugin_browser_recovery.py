@@ -79,7 +79,7 @@ async def one(name,root,pw):
         user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140.0 Safari/537.36",
         locale="en-IN",viewport={"width":1440,"height":900})
     page=await context.new_page()
-    out={"schema_version":"woocommerce-22-plugin-browser-recovery/v2","source_extractor_version":SOURCE_EXTRACTOR_VERSION,
+    out={"schema_version":"woocommerce-22-plugin-browser-recovery/v3","source_extractor_version":SOURCE_EXTRACTOR_VERSION,
          "site":name,"configured_root":root,"selected_origin":root}
     try:
         try:
@@ -106,8 +106,24 @@ async def one(name,root,pw):
                         namespaces += [str(x) for x in (j.get("namespaces") or [])]
                         namespaces += [str(k) for k in j.keys() if re.search(r"feed|google|merchant|product",str(k),re.I)]
                     except Exception: pass
+        # Some stores expose a cleaner public theme on catalog pages while the home page is challenged.
+        page_paths=["/shop/","/store/","/products/"]
+        page_results=[]
+        for page_path in page_paths:
+            u=out["selected_origin"].rstrip("/") + page_path
+            try:
+                pr=await page.goto(u,wait_until="domcontentloaded",timeout=15000)
+                await page.wait_for_timeout(500)
+                ph=await page.content()
+                page_results.append({"path":page_path,"status":int(pr.status) if pr else 0,
+                    "final_url":str(pr.url) if pr else u,"challenge":blocked(ph),"html_bytes":len(ph)})
+                if pr and pr.status==200 and ph and not blocked(ph):
+                    bodies.append(ph)
+            except Exception as e:
+                page_results.append({"path":page_path,"status":0,"final_url":u,"challenge":False,
+                    "transport":"error","error":str(e)[:180]})
         combined="\n".join(bodies); pa=assets(combined)
-        out["public_endpoints"]=endpoints; out["plugin_assets"]=pa
+        out["public_endpoints"]=endpoints; out["public_page_recovery"]=page_results; out["plugin_assets"]=pa
         out["feed_like_plugin_assets"]=[x for x in pa if not DENY.match(x) and (
             x in KNOWN or bool(re.search(r"(^|[-_])(product-feed|merchant-feed|shopping-feed|google-product-feed)([-_]|$)",x,re.I)))]
         out["feed_family_signals"]=family_hits(pa,combined,namespaces)
