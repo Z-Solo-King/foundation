@@ -10,10 +10,11 @@ This public-safe document defines the current external AI API fleet available to
 - NVIDIA NIM
 - Cohere
 - Hugging Face Inference Providers
+- SiliconFlow
 
 Cloudflare Workers AI is a native runtime binding and is not counted as an external API provider.
 
-Cerebras, SiliconFlow and Mistral are legacy compatibility references and are not active production provider routes.
+Mistral is not part of the project provider fleet.
 
 ## Cross-task contract
 
@@ -44,7 +45,7 @@ The project is configured to fail closed for cost:
 - automatic upgrade: disabled
 - runtime availability must be observed before use
 
-The six external providers have independent limits and availability. The system must not invent a combined free quota.
+The seven active external providers have independent limits and availability. The system must not invent a combined free quota.
 
 ## Provider endpoints
 
@@ -52,6 +53,6 @@ The canonical OpenAI-compatible endpoints are recorded in the private Operations
 
 ## Cross-repository authority
 
-Foundation owns public contracts and workflows. Operations owns private provider policy and the canonical runtime task fabric. Public and private documents must point to the same six-provider contract and must not create competing provider authorities.
+Foundation owns public contracts and workflows. Operations owns private provider policy and the canonical runtime task fabric. Public and private documents must point to the same seven-provider contract and must not create competing provider authorities.
 
 Reviewed: 2026-09-30.

@@ -11,7 +11,7 @@ def test_secret_sync_workflow_is_a_private_operations_bridge():
     text = (ROOT / ".github" / "workflows" / "sync-secrets.yml").read_text(encoding="utf-8")
     assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
     assert "OPERATIONS_SECRET_SYNC_REF: ${{ vars.OPERATIONS_SECRET_SYNC_REF }}" in text
-    assert "6a36b3bd0e1f7bb0f1a1da36ed2bd090d8a06586" in text
+    assert "b95e419254a9071beaeef57a1b0da22ba7dd2c4f" in text
     assert "OPERATIONS_SECRET_SYNC_PATH: ${{ vars.OPERATIONS_SECRET_SYNC_PATH }}" in text
     assert "github.ref == 'refs/heads/main'" in text
     assert "environment: production-secret-sync" in text
