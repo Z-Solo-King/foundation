@@ -1,4 +1,4 @@
-name: WooCommerce V175 Active Cohort Extraction
+name: WooCommerce V175 22 Plugin Extraction
 
 on:
   push:
@@ -150,7 +150,7 @@ jobs:
               "hotshiftpc.com", "ithunt.in", "kccomputers.co.in", "krgkart.com",
               "kryptronix.in", "nclcomputer.com", "pckumar.in", "pchubshop.com",
               "primeabgb.com", "sclgaming.in", "varietyinfotech.com", "viperpc.in",
-              "aulaindia.com", "thecosmicbyte.com", "meckeys.com", "moskeys.com",
+              "aulaindia.com", "thecosmicbyte.com", "meckeys.com",
               "stackskb.com", "theproaudio.com",
           }
           assert len(rows) == 21

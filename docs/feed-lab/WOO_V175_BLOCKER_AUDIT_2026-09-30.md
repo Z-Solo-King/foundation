@@ -2,7 +2,7 @@
 
 ## Scope
 
-This audit covers the current 22-site unresolved WooCommerce Google Merchant cohort on the V175-derived extraction branch. The V175 source remains the technical evidence authority, while repository issue #1247 is the acceptance authority for what can be certified.
+This audit covers the current 21-site active unresolved WooCommerce Google Merchant cohort on the V175-derived extraction branch. The V175 source remains the technical evidence authority, while repository issue #1247 is the acceptance authority for what can be certified.
 
 ### Current acceptance boundary
 
@@ -66,3 +66,11 @@ Historical candidates are never certified solely because an archive contained th
 The improved workflow ran on trusted `main` as run #11 and completed successfully. Its aggregate contains exactly 22 current targets and excludes the known ten. All six shards and the aggregate validator passed. Native-feed verification remains payload-based, and the final aggregate contains 0 verified native Google Merchant feeds and 0 verified feed-generator families for this cohort.
 
 The remaining target-side blockers are therefore genuine public-access limitations (challenge/DNS) rather than CI or extractor execution failures.
+
+## Addendum — 2026-09-30 run #14
+
+Run #14 (`36686498909`, head `adab53eb74a02d9eac55f48413c7787dceef805e`) completed successfully with all six shards and aggregate validation.
+
+For the active denominator, Moskeys is excluded. The filtered 21-target result is: 0 native Merchant XML feeds; 1 Google for WooCommerce API-integrated site (AULA India); 13 challenge-blocked sites; 6 clean/admissible-but-unknown sites; and 1 HTTP-403 site without a classified challenge (KC Computers).
+
+This changes the blocker picture from “transport/DNS” to a cleaner split between target-side access protection, one unclassified HTTP 403, and unresolved feed-family discovery on clean sites.
