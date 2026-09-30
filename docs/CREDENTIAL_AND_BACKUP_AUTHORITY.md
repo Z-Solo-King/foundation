@@ -17,7 +17,7 @@ The governing rule is: **a credential is named and scoped by the authority it se
 | `OPERATIONS_APP_ID` | Identify the GitHub App used by Foundation deployment | GitHub App / Foundation deployment | B2, Cloudflare, arbitrary repository writes |
 | `OPERATIONS_APP_PRIVATE_KEY` | Sign the short-lived GitHub App JWT used to mint an Operations installation token | GitHub App / Foundation deployment | B2, Cloudflare, general repository writes |
 | `OPERATIONS_APP_ID` + `OPERATIONS_APP_PRIVATE_KEY` | Mint a short-lived GitHub App installation token for private Operations backup mirroring | Foundation B2 backup workflow | B2, Cloudflare, arbitrary writes |
-| `B2_KEY_ID` | Authenticate the backup workflow to the configured B2 S3 API | Backblaze B2 | GitHub, Cloudflare |
+| `B2_KEY_ID + B2_APPLICATION_KEY` | Authenticate the backup workflow to the configured B2 S3 API | Backblaze B2 | GitHub, Cloudflare |
 | `B2_APPLICATION_KEY` | B2 backup/restore application credential | Backblaze B2 | GitHub, Cloudflare |
 | `B2_BUCKET` | Authoritative backup bucket name | B2 backup configuration | GitHub authentication |
 | `CLOUDFLARE_API_TOKEN` | Cloudflare API/deployment access | Cloudflare deployment boundary | GitHub, B2 |
