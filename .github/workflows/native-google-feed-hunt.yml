@@ -95,15 +95,30 @@ jobs:
           const dir='out/fingerprints';
           const files=fs.readdirSync(dir).filter(f=>f.endsWith('.json')).sort();
           const rows=files.map(f=>JSON.parse(fs.readFileSync(path.join(dir,f),'utf8')));
+          const overridePath='tools/feed-lab/woocommerce_22_browser_group_overrides.json';
+          const overrides=fs.existsSync(overridePath)
+            ? JSON.parse(fs.readFileSync(overridePath,'utf8')).overrides || {}
+            : {};
+          const mergedRows=rows.map(r=>{
+            const ov=overrides[r.site];
+            return ov && r.primary_group==='unknown_woocommerce'
+              ? {
+                  ...r,
+                  original_primary_group:r.primary_group,
+                  primary_group:ov.primary_group,
+                  browser_group_override:ov
+                }
+              : {...r,browser_group_override:null,original_primary_group:r.primary_group};
+          });
           const groups={};
-          for(const r of rows){
+          for(const r of mergedRows){
             const g=r.primary_group || 'unknown_woocommerce';
             (groups[g]??=[]).push(r.site);
           }
           for(const k of Object.keys(groups)) groups[k].sort();
-          const feedLike=rows.map(r=>({
+          const feedLike=mergedRows.map(r=>({
             site:r.site, configured_root:r.configured_root, selected_origin:r.selected_origin,
-            primary_group:r.primary_group, status:r.status,
+            primary_group:r.primary_group, status:r.status,\n            original_primary_group:r.original_primary_group, browser_group_override:r.browser_group_override,
             feed_like_plugin_assets:r.feed_like_plugin_assets, feed_family_signals:r.feed_family_signals,
             identity_tokens:r.identity_tokens,
             plugin_assets:r.plugin_assets, readme_metadata:r.readme_metadata,
@@ -112,7 +127,7 @@ jobs:
           }));
           const out={
             schema_version:'woocommerce-31-plugin-groups/v2',
-            site_count:rows.length,
+            site_count:mergedRows.length,
             excluded_known_feed:'Only SDD (already verified separately)',
             grouping:'strong known feed family > exact feed-like plugin asset > unknown_woocommerce',
             groups,
@@ -124,7 +139,7 @@ jobs:
           const lines=['# WooCommerce 31 Plugin Extraction','',`Sites: ${rows.length}`,'','## Groups',''];
           for(const [g,sites] of Object.entries(groups).sort()) lines.push(`### ${g}`,'',...sites.map(s=>'- '+s),'');
           lines.push('## Site evidence','','| Site | Group | Status | Feed-like plugin assets | Plugin asset count |','|---|---|---|---|---:|');
-          for(const r of rows.sort((a,b)=>a.site.localeCompare(b.site))){
+          for(const r of mergedRows.sort((a,b)=>a.site.localeCompare(b.site))){
             lines.push(`| ${r.site} | ${r.primary_group} | ${r.status} | ${r.feed_like_plugin_assets.join(', ')||'none'} | ${r.plugin_assets.length} |`);
           }
           fs.writeFileSync('out/plugin-groups.md',lines.join('\n')+'\n');
