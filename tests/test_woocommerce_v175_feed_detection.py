@@ -31,3 +31,16 @@ def test_sitemap_is_not_explicit_feed():
     kept = module.filter_explicit_feed_candidates(urls)
     assert root + "/wp-content/uploads/google.xml" in kept
     assert all("sitemap" not in u and not u.endswith("robots.txt") for u in kept)
+
+
+
+def test_active_target_cohort_excludes_known_down_site():
+    assert len(module.TARGETS) == 21
+    assert all(host != "moskeys.com" for _, url in module.TARGETS for host in [module.bare_host(url)])
+
+
+
+def test_independent_feed_can_be_verified_despite_homepage_challenge():
+    assert module.native_verification_admissible(True, False, True)
+    assert not module.native_verification_admissible(True, False, False)
+    assert module.native_verification_admissible(False, True, False)

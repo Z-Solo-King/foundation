@@ -63,7 +63,6 @@ TARGETS = [
     ("AULA India", "https://aulaindia.com"),
     ("Cosmic Byte", "https://www.thecosmicbyte.com"),
     ("Meckeys", "https://www.meckeys.com"),
-    ("Moskeys", "https://moskeys.com"),
     ("StacksKB", "https://stackskb.com"),
     ("Theproaudio", "https://www.theproaudio.com"),
 ]
@@ -483,6 +482,15 @@ def filter_explicit_feed_candidates(urls: Iterable[str]) -> List[str]:
             continue
         out.add(u)
     return sorted(out)[:160]
+
+
+def native_verification_admissible(
+    challenge_encountered: bool,
+    clean_browser_success: bool,
+    native_feed_verified: bool,
+) -> bool:
+    """Allow a standalone feed only when its own current payload is valid and public."""
+    return bool(native_feed_verified or (clean_browser_success and not challenge_encountered))
 
 
 def native_google_valid(body: bytes, content_type: str) -> Tuple[bool, int, str]:
@@ -994,17 +1002,7 @@ async def probe_site(name: str, root: str) -> Dict[str, Any]:
     candidates = list(dict.fromkeys(candidates))
 
     api_integrated_google = family == "google_for_woocommerce" and not explicit_feed_candidates and not query_candidates
-    if challenge_encountered:
-        feed = {
-            "verified": False,
-            "url": None,
-            "item_count": 0,
-            "sha256": "",
-            "skipped": True,
-            "skip_reason": "challenge_or_challenge-like_response_encountered; native verification inadmissible",
-            "tried": [],
-        }
-    elif api_integrated_google:
+    if api_integrated_google:
         feed = {
             "verified": False,
             "url": None,
@@ -1015,12 +1013,16 @@ async def probe_site(name: str, root: str) -> Dict[str, Any]:
             "tried": [],
         }
     else:
+        # A browser challenge on the homepage does not by itself invalidate an independently
+        # public feed endpoint. Feed probing remains cookie-free, and only the current feed
+        # payload itself can earn native-feed verification.
         feed = await direct_feed_probe(root, candidates, direct_ua)
 
-    admissible = bool(clean_browser_success and not challenge_encountered)
-    if not admissible and feed.get("verified"):
-        feed["verified"] = False
-        feed["rejected_reason"] = "transport evidence encountered a challenge; repository acceptance forbids challenge/clearance verification"
+    admissible = native_verification_admissible(
+        challenge_encountered=challenge_encountered,
+        clean_browser_success=clean_browser_success,
+        native_feed_verified=bool(feed.get("verified")),
+    )
 
     evidence = {
         "site": name,

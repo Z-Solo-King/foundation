@@ -150,10 +150,10 @@ jobs:
               "hotshiftpc.com", "ithunt.in", "kccomputers.co.in", "krgkart.com",
               "kryptronix.in", "nclcomputer.com", "pckumar.in", "pchubshop.com",
               "primeabgb.com", "sclgaming.in", "varietyinfotech.com", "viperpc.in",
-              "aulaindia.com", "thecosmicbyte.com", "meckeys.com", "moskeys.com",
+              "aulaindia.com", "thecosmicbyte.com", "meckeys.com",
               "stackskb.com", "theproaudio.com",
           }
-          assert len(rows) == 22
+          assert len(rows) == 21
           actual_hosts = {r.get("url", "").lower().split("/")[2].removeprefix("www.") for r in rows if r.get("url")}
           assert actual_hosts == expected_hosts
           excluded = {
