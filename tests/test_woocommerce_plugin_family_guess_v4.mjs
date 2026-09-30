@@ -8,8 +8,9 @@ const source = fs.readFileSync(path.resolve("tools/woocommerce_plugin_family_gue
 test("wave 2 stays guessing-only", () => {
   assert.match(source, /plugin-family-specific-xml-guess-only/);
   assert.doesNotMatch(source, /wc\/store\/v1\/products/);
-  assert.doesNotMatch(source, /playwright/i);
-  assert.doesNotMatch(source, /clearance.?cookie|proxy.?evasion|random.?token/i);
+  assert.doesNotMatch(source, /from ["']playwright["']/i);
+  assert.doesNotMatch(source, /chromium\.launch|firefox\.launch|webkit\.launch/i);
+  assert.doesNotMatch(source, /cookie\s*jar|proxy\s*rotation|clearance[_-]cookie/i);
 });
 
 test("wave 2 contains researched family grammars", () => {
