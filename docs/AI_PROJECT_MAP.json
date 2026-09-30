@@ -673,7 +673,8 @@
     "token_efficiency": "retrieve map first; then only the feature, functions, policy and evidence needed to answer the current uncertainty",
     "stale_data": "runtime snapshots are dated evidence; refresh before mutation or production claims",
     "ai_provider_sync": "compare public provider fleet JSON, Operations task fabric/catalog/runtime/probe and task-family set; flag count/list/authority drift",
-    "ai_extractor_sync": "ensure extraction_assist remains candidate-only and Operations extractor mapper never becomes a provider-selection authority"
+    "ai_extractor_sync": "ensure extraction_assist remains candidate-only and Operations extractor mapper never becomes a provider-selection authority",
+    "extractor_type_contract": "Foundation workflow consumes the Operations M11 source/inventory parity artifact; no public implementation authority is created."
   },
   "credential_observations": [
     {
@@ -974,5 +975,20 @@
     "extraction_task_family": "extraction_assist",
     "extraction_ai_authority": "candidate_assistance_only",
     "sync_rule": "Public-safe contract and private runtime must agree on provider families/task families; runtime eligibility, cost, quota, privacy and model semantics remain execution-time evidence."
-  }
+  },
+  "cross_repository_type_contract": {
+    "lane": "M11",
+    "inventory": "Operations/docs/EXTRACTOR_MAPPER_TYPE_MIGRATION_MATRIX_2026-09-30.json",
+    "auditor": "Operations/tools/extractor_type_migration_audit.py",
+    "current_type_entries": 45,
+    "current_class_bearing_files": 19,
+    "candidate_languages": [
+      "typescript",
+      "rust_wasm",
+      "go"
+    ],
+    "authority": "Operations runtime types remain canonical; Foundation consumes audit evidence only.",
+    "promotion_rule": "Type parity is necessary but never sufficient; differential, serialization, security/policy, provenance, resource, shadow, canary and rollback gates remain required."
+  },
+  "updated_at": "2026-09-30"
 }

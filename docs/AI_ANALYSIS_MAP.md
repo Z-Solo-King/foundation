@@ -69,3 +69,6 @@ The Operations extractor capability registry is the feature/function inventory. 
 The public provider contract lists eight supported external API families plus native Cloudflare Workers AI. Operations is the private runtime authority for provider eligibility, quota, freshness, cost and task-fabric routing.
 
 For extractor work, use the extraction_assist task family only for candidate assistance. The mapper/extractor cross-audit in Operations is the cross-fire authority for detecting provider/task-fabric/extractor drift; it does not promote implementation authority.
+
+## Extractor typed-contract migration
+Operations now exposes an M11 typed-contract inventory for every current extractor/mapper class, enum and dataclass surface. Foundation consumes the audit evidence through the extractor-surface governance workflow. This is a schema/migration coverage check only; it does not move private extractor authority or promote a replacement implementation.
