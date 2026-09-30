@@ -182,7 +182,7 @@ def test_public_worker_uses_native_javascript_edge_and_python_core():
     wrangler = WRANGLER.read_text(encoding="utf-8")
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert "env.CORE.fetch(forwardRequest(request))" in worker
-    assert 'main = "edge.js"' in wrangler
+    assert 'main = "edge.ts"' in wrangler
     assert 'service = "heroic-core"' in wrangler
     assert "python_workers" not in wrangler
     core = (ROOT / "wrangler.python-core.toml").read_text(encoding="utf-8")
@@ -673,12 +673,12 @@ def test_public_probe_records_dns_failure_without_parser_crash():
     assert 'curl -sS --max-time 20' in workflow
     assert '|| true)' in workflow
 
-def test_current_public_runtime_identity_is_heroic_javascript_edge():
+def test_current_public_runtime_identity_is_heroic_typescript_edge():
     wrangler = WRANGLER.read_text(encoding="utf-8")
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'name = "heroic"' in wrangler
     assert 'workers_dev = false' in wrangler
-    assert 'main = "edge.js"' in wrangler
+    assert 'main = "edge.ts"' in wrangler
     assert 'binding = "CORE"' in wrangler
     assert 'service = "heroic-core"' in wrangler
     assert "python_workers" not in wrangler
@@ -725,3 +725,10 @@ def test_foundation_ai_map_tracks_current_m11_type_inventory():
     assert '"current_type_entries": 45' not in text
 
 # Policy contract: production release evidence must use authenticated runtime proof and must not consume duplicate D1 query budget.
+
+
+def test_public_edge_removes_legacy_b2_credentials():
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert "B2 credentials belong to heroic-core" in text
+    assert "workers/scripts/${PUBLIC_WORKER_NAME}/secrets/${public_b2_secret}" in text
+    assert "public-worker-settings-after-b2-cleanup.json" in text
