@@ -3,9 +3,6 @@ run-name: >-
   Nightly research — ${{ github.event_name == 'schedule' && 'scheduled-live' || (inputs.dry_run == true && 'contract-dry-run' || 'production-live') }}
 
 'on':
-  schedule:
-    # 01:00 IST = 19:30 UTC on the previous day.
-    - cron: "30 19 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -23,12 +20,17 @@ run-name: >-
         required: false
         default: ""
         type: string
+      operations_research_ref:
+        description: "Exact Operations revision deployed to the private production runtime"
+        required: false
+        default: "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676"
+        type: string
 permissions:
   actions: read
   contents: read
 
 concurrency:
-  group: nightly-multi-agent-research
+  group: nightly-multi-agent-research-${{ inputs.target_sha || github.sha }}
   # A queued run for a newer immutable main SHA must be able to displace
   # an obsolete run that is permanently blocked on a failed release gate.
   cancel-in-progress: true
@@ -41,7 +43,7 @@ env:
   RESEARCH_LLM_API_KEY: "local-worker-proxy"
   RESEARCH_LLM_MODEL: "@cf/zai-org/glm-4.7-flash"
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_RESEARCH_REF: 1a91efa53b9202f1624ddde892b0e86bd6b360f0
+  OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || 'ce4f9edbae3ddf1bf1c25a908d5bce014acc7676' }}
   OPERATIONS_MIGRATION_TOOLS_REF: f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791
   NIGHTLY_RESEARCH_CONTRACT: nightly-research-contract/v2
   MAPPER_RUNTIME_EVIDENCE_CONTRACT: mapper-migration-runtime-receipt/v1
