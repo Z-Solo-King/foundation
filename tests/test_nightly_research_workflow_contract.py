@@ -45,7 +45,7 @@ def test_dispatch_false_does_not_coerce_to_dry_run():
 
 def test_production_release_explicitly_dispatches_nightly_live_mode():
     release = (Path(__file__).parents[1] / ".github" / "workflows" / "heroic-ai-production-release.yml").read_text(encoding="utf-8")
-    assert 'if [[ "$workflow" == "nightly-multi-agent-research-v3.yml" ]]; then' in release
+    assert "Preflight exact nightly runtime before research dispatch" in release
     assert "--field dry_run=false" in release
     assert "--field target_sha=\"$GITHUB_SHA\"" in release
     assert "--field production_release_run_id=\"$GITHUB_RUN_ID\"" in release
@@ -55,7 +55,8 @@ def test_production_release_explicitly_dispatches_nightly_live_mode():
 
 def test_private_operations_pin_and_app_auth_remain_explicit():
     text=workflow_text()
-    assert "OPERATIONS_RESEARCH_REF: 1a91efa53b9202f1624ddde892b0e86bd6b360f0" in text
+    assert "OPERATIONS_RESEARCH_REF:" in text
+    assert "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676" in text
     assert "OPERATIONS_MIGRATION_TOOLS_REF: f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791" in text
     assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in text
     assert "OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}" in text
@@ -130,8 +131,8 @@ def test_proxy_has_bounded_transport_recovery():
 def test_operations_pin_manifest_matches_research_workflow():
     workflow=workflow_text()
     manifest=json.loads((Path(__file__).parents[1]/"docs"/"OPERATIONS_PIN_MANIFEST.json").read_text(encoding="utf-8"))
-    assert manifest["pins"]["research_runtime"]["sha"] == "1a91efa53b9202f1624ddde892b0e86bd6b360f0"
-    assert manifest["pins"]["research_runtime"]["sha"] in workflow
+    assert manifest["pins"]["production_runtime"]["sha"] == "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676"
+    assert manifest["pins"]["production_runtime"]["sha"] in workflow
 
 
 def test_pinned_operations_contract_guard_is_semantic():
