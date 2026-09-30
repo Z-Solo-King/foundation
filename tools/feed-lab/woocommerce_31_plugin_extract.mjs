@@ -169,8 +169,9 @@ function extractPluginAssets(text) {
   return [...assets.entries()].map(([slug,versions]) => ({slug, versions:[...versions]}));
 }
 
-function feedSignals(source) {
+function feedSignals(source, namespaces=[]) {
   const lower = String(source||"").toLowerCase();
+  const ns = namespaces.map(x=>String(x).toLowerCase());
   const found = [];
   for (const [family,spec] of Object.entries(FEED_FAMILIES)) {
     const matches = [];
@@ -178,6 +179,22 @@ function feedSignals(source) {
       if (lower.includes(marker.toLowerCase())) matches.push({marker,snippet:snippet(source,marker)});
     }
     if (matches.length) found.push({family, confidence:matches.length>=2?"strong":"signal", matches});
+  }
+  const namespaceFamilies = new Map([
+    ["wpfm/v1", "wpfm_product_feed_manager"],
+    ["wppfm/v1", "wpfm_product_feed_manager"],
+  ]);
+  for (const [marker, family] of namespaceFamilies) {
+    if (ns.some(x=>x===marker || x.startsWith(marker+"/"))) {
+      const existing=found.find(x=>x.family===family);
+      const entry={marker:`namespace:${marker}`, snippet:`WP-JSON namespace ${marker}`};
+      if (existing) {
+        existing.matches.push(entry);
+        existing.confidence="strong";
+      } else {
+        found.push({family, confidence:"strong", matches:[entry]});
+      }
+    }
   }
   return found;
 }
@@ -270,7 +287,7 @@ async function inspect(name, root) {
 
   const combined = homeBody + "\n" + apiBody;
   const assets = extractPluginAssets(combined);
-  const families = feedSignals(combined);
+  const families = feedSignals(combined, namespaces);
   const namespaces = extractJsonNamespaces(apiBody);
   const feedAssets = feedLikeAssets(assets);
   const readmeTargets = [...new Set([
