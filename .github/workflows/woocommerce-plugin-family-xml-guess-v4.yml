@@ -34,6 +34,7 @@ jobs:
       CANDIDATE_CONCURRENCY: "6"
       REQUEST_TIMEOUT_MS: "6500"
       ATTEMPTS: "2"
+      GUESS_WAVE: "2"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
@@ -74,14 +75,14 @@ jobs:
             for(const ent of fs.readdirSync(p,{withFileTypes:true})){
               const q=path.join(p,ent.name);
               if(ent.isDirectory()) walk(q);
-              else if(ent.name.endsWith(".json") && /shard-\d+\.json$/.test(ent.name)) files.push(q);
+              else if(ent.name.endsWith(".json") && /shard-d+.json$/.test(ent.name)) files.push(q);
             }
           }
           walk("out/shards");
           const rows=files.sort().flatMap(f=>JSON.parse(fs.readFileSync(f,"utf8")).results||[]);
           if(rows.length!==30) throw new Error("expected 30 site results, got "+rows.length);
           const summary={
-            schema:"woocommerce-plugin-family-guess-v4-aggregate/v1",
+            schema:"woocommerce-plugin-family-guess-v4-aggregate/v2",
             target_count:rows.length,
             native_verified:rows.filter(x=>x.candidate_hits?.length).length,
             api_integrated_skipped:rows.filter(x=>x.status==="API_INTEGRATED_NO_XML_GUESS").length,
