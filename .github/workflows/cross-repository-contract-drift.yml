@@ -1,7 +1,7 @@
 name: cross-repository contract drift
 
 'on':
-push:
+  push:
     branches: [main]
     paths:
       - 'CAPABILITIES.json'
