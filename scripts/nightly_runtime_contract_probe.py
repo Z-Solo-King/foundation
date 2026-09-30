@@ -122,7 +122,8 @@ def _validate_chat_response(payload: dict[str, Any], expected_model: str = "") -
     return ok, details
 
 
-def main() -> int:    parser = argparse.ArgumentParser()
+def main() -> int:
+    parser = argparse.ArgumentParser()
     parser.add_argument("--url", required=True)
     parser.add_argument("--token", required=True)
     parser.add_argument("--model", required=True)
