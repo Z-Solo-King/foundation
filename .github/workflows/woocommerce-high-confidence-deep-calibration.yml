@@ -1,0 +1,52 @@
+name: WooCommerce High-Confidence Deep Calibration
+
+on:
+  push:
+    branches:
+      - feat/wc-high-confidence-feed-guessing-20260930
+    paths:
+      - "tools/woocommerce_high_confidence_deep_calibration.py"
+      - ".github/workflows/woocommerce-high-confidence-deep-calibration.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "tools/woocommerce_high_confidence_deep_calibration.py"
+      - ".github/workflows/woocommerce-high-confidence-deep-calibration.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  deep-calibration:
+    name: V175 deep calibration - 4 known families
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+      - name: Install extraction runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -q httpx playwright
+          python -m playwright install --with-deps chromium firefox webkit
+      - name: Acceptance boundary static guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -nE 'add_cookies|seed_cookies|cookie_jars|camoufox|nodriver|curl_cffi' tools/woocommerce_v175_plugin_fingerprint_22.py
+      - name: Run deep known-family calibration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/woocommerce_high_confidence_deep_calibration.py
+      - name: Upload calibration evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-high-confidence-deep-calibration
+          path: out/woocommerce-high-confidence-deep-calibration/
+          retention-days: 30
