@@ -980,7 +980,7 @@
     "lane": "M11",
     "inventory": "Operations/docs/EXTRACTOR_MAPPER_TYPE_MIGRATION_MATRIX_2026-09-30.json",
     "auditor": "Operations/tools/extractor_type_migration_audit.py",
-    "current_type_entries": 45,
+    "current_type_entries": 44,
     "current_class_bearing_files": 19,
     "candidate_languages": [
       "typescript",
