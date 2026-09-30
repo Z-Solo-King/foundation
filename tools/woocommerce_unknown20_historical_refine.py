@@ -211,11 +211,26 @@ async def run_target(name: str, root: str, sem: asyncio.Semaphore) -> dict:
             sorted(historical_slugs),
             sorted(historical_namespaces),
         )
+        for fam, hits in historical_family_hits.items():
+            combined_families.setdefault(fam, [])
+            combined_families[fam] = sorted(set(combined_families[fam]) | set(hits))
         top_family = None
         top_confidence = "low"
         if combined_families:
             top_family = sorted(combined_families, key=lambda k: (-len(combined_families[k]), k))[0]
-            top_confidence = MODULE.plugin_family_confidence(combined_families, sorted(historical_slugs), sorted(historical_namespaces))
+            current_families = MODULE.find_plugin_hits(
+                [json.dumps(base.get("xhr_urls") or [])],
+                base.get("plugin_asset_slugs") or [],
+                base.get("namespaces") or [],
+            )
+            if top_family in current_families:
+                top_confidence = MODULE.plugin_family_confidence(
+                    current_families,
+                    base.get("plugin_asset_slugs") or [],
+                    base.get("namespaces") or [],
+                )
+            else:
+                top_confidence = "low"
 
         result = {
             "site": name,
