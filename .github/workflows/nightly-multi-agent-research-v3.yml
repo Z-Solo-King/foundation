@@ -51,7 +51,10 @@ env:
   NIGHTLY_RESEARCH_CONTRACT: nightly-research-contract/v2
   MAPPER_RUNTIME_EVIDENCE_CONTRACT: mapper-migration-runtime-receipt/v1
   MODEL_PORTABILITY_EVIDENCE_CONTRACT: model-portability-runtime-receipt/v1
-  # Keep the orchestration semaphore aligned with the loopback proxy upstream semaphore.\n  # This prevents 20 coordinator slots from queueing behind 6 proxy slots for 180s.\n  RESEARCH_MAX_CONCURRENCY: "6"\n
+  # Keep the orchestration semaphore aligned with the loopback proxy upstream semaphore.
+  # This prevents 20 coordinator slots from queueing behind 6 proxy slots for 180s.
+  RESEARCH_MAX_CONCURRENCY: "6"
+
 jobs:
   production_gate:
     name: Verify exact production release
@@ -327,6 +330,7 @@ jobs:
           nohup python scripts/research_worker_proxy.py \
             --public-worker-url "${PUBLIC_WORKER_URL}" \
             --port 8765 \
+            --max-upstream-concurrency "${RESEARCH_MAX_CONCURRENCY}" \
             > "$RUNNER_TEMP/research-worker-proxy.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/research-worker-proxy.pid"
           for attempt in $(seq 1 20); do
