@@ -512,7 +512,7 @@ cp wrangler.python-core.generated.toml wrangler.toml
 pywrangler deploy --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}:python-core"
 mv -f "$python_core_default_backup" wrangler.toml
 
-(cd "$GITHUB_WORKSPACE" && npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml
+(cd "$GITHUB_WORKSPACE" && npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}:typescript-edge")
 
 # The public heroic edge is transport-only; B2 credentials belong to heroic-core.
 # Remove any legacy public-edge B2 secrets and verify the trust surface is clean.
@@ -532,7 +532,6 @@ public_settings_status=$(curl -sS -o "$RUNNER_TEMP/public-worker-settings-after-
 test "${public_settings_status}" = "200"
 ! jq -e '.result.bindings[]? | select(.name == "B2_KEY_ID" or .name == "B2_APPLICATION_KEY")' "$RUNNER_TEMP/public-worker-settings-after-b2-cleanup.json" >/dev/null
 
- --message "github:${GITHUB_SHA}:javascript-edge")
 
 health_status=$(curl -sS -o health.json -w '%{http_code}' "$BASE_URL/health")
 echo "GET /health -> HTTP ${health_status}"
