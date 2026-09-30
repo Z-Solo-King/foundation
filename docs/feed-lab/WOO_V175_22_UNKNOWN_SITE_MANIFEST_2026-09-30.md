@@ -79,3 +79,9 @@ The extraction sweep is complete for the **21 active targets** represented by ru
 
 The remaining 20 active cases are not evidence of “no feed exists”; they are either blocked or unresolved under the public-only acceptance boundary. The next meaningful acceptance event for any of them is a current, publicly retrievable and independently validated Merchant XML payload, or a concrete plugin/API architecture signal that changes the transport classification.
 
+
+## Addendum — acceptance fix identified after run #14
+
+Run #14 is a valid baseline, but its implementation had one conservative blocker: any browser challenge caused the extractor to skip all direct native-feed probes for that site.
+
+The V175 public-only boundary does not require that behavior. A feed endpoint can be independently public even when the homepage is challenged. The fix in PR #1594 now keeps feed requests cookie-free and permits native-feed verification only when the **feed payload itself** passes the strict current-payload validator and remains same-host. Homepage challenge evidence is still recorded and no challenge/clearance state is reused.

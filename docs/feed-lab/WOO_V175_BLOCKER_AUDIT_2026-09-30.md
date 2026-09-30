@@ -74,3 +74,19 @@ Run #14 (`36686498909`, head `adab53eb74a02d9eac55f48413c7787dceef805e`) complet
 For the active denominator, Moskeys is excluded. The filtered 21-target result is: 0 native Merchant XML feeds; 1 Google for WooCommerce API-integrated site (AULA India); 13 challenge-blocked sites; 6 clean/admissible-but-unknown sites; and 1 HTTP-403 site without a classified challenge (KC Computers).
 
 This changes the blocker picture from “transport/DNS” to a cleaner split between target-side access protection, one unclassified HTTP 403, and unresolved feed-family discovery on clean sites.
+
+## Addendum — new blocker and code fix
+
+### New blocker found after run #14
+
+The extractor previously treated any browser challenge on a site as sufficient reason to skip the standalone feed probe entirely. This could miss a public native feed whose endpoint is independently accessible without cookies.
+
+### Resolution
+
+PR #1594 changes the acceptance path so:
+- Google for WooCommerce remains API-integrated and is not forced into XML probing.
+- Other candidates are still probed directly with cookie-free requests even when the homepage was challenged.
+- A native feed is accepted only when the current response itself passes the strict Google Merchant XML validator and remains on the same host.
+- No CAPTCHA solving, challenge bypass, clearance-cookie replay, or anti-bot state is introduced.
+
+The next canonical main extraction will measure any recovery unlocked by this correction.
