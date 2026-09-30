@@ -1,7 +1,7 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-30T01:09:00+05:30",
+  "audited_at": "2026-09-30T09:30:00+05:30",
   "public_safe": true,
   "live_main": {
     "foundation": "30e0f132cea88cf3a945238575d7e4cb6e162045",
@@ -10,7 +10,7 @@
   "runtime_pins": {
     "foundation_runtime": null,
     "production_operations": "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676",
-    "research_operations": "8bee0ca4c41e02d2b7005589a73f53dc0512aa9d",
+    "research_operations": "9a942b0f8cc601f8d460ed71ccba908fa02e6c75",
     "foundation_runtime_status": "no independent immutable Foundation runtime pin; deployed Foundation provenance is release-receipt owned",
     "migration_tools": "f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791"
   },
