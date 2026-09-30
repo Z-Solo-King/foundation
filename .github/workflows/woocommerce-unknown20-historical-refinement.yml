@@ -1,0 +1,166 @@
+name: WooCommerce Unknown 20 Historical Refinement
+
+on:
+  push:
+    branches:
+      - feat/wc-high-confidence-feed-guessing-20260930
+    paths:
+      - "tools/woocommerce_unknown20_historical_refine.py"
+      - "tools/woocommerce_v175_plugin_fingerprint_22.py"
+      - ".github/workflows/woocommerce-unknown20-historical-refinement.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  refine:
+    name: Historical refinement shard ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    env:
+      SHARD: ${{ matrix.shard }}
+      SHARDS: 6
+      SITE_CONCURRENCY: "2"
+      MAX_DIRECT_FEED_PROBES: "100"
+      MAX_INTERNAL_PAGES: "2"
+      PASSIVE_INDEX_ENABLED: "1"
+      WAYBACK_ENABLED: "1"
+      COMMONCRAWL_ENABLED: "0"
+      CF_BROWSER_RUN_ENABLED: "0"
+      BROWSERLESS_DIAGNOSTIC_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+      - name: Install refinement runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -q httpx
+      - name: Acceptance boundary static guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -nE 'add_cookies|seed_cookies|cookie_jars|camoufox|nodriver|curl_cffi' tools/woocommerce_v175_plugin_fingerprint_22.py tools/woocommerce_unknown20_historical_refine.py
+      - name: Run historical refinement
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/woocommerce_unknown20_historical_refine.py
+      - name: Upload shard evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-unknown20-historical-refine-shard-${{ matrix.shard }}
+          path: out/woocommerce-unknown20-historical-refine/
+          retention-days: 30
+
+  aggregate:
+    name: Aggregate historical refinement
+    needs: refine
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Download refinement shards
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: woocommerce-unknown20-historical-refine-shard-*
+          path: out/shards
+          merge-multiple: false
+      - name: Aggregate and validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFile, readdir, mkdir, writeFile } from "node:fs/promises";
+          async function collect(dir) {
+            const out = [];
+            for (const e of await readdir(dir, {withFileTypes:true})) {
+              const p = dir + "/" + e.name;
+              if (e.isDirectory()) out.push(...await collect(p));
+              else if (e.isFile() && e.name.endsWith(".json")) out.push(p);
+            }
+            return out;
+          }
+          const files = await collect("out/shards");
+          const rows = [];
+          for (const f of files) rows.push(...(JSON.parse(await readFile(f,"utf8")).results||[]));
+          rows.sort((a,b)=>a.site.localeCompare(b.site));
+          if (rows.length !== 20) throw new Error("expected 20 refined rows, got " + rows.length);
+          const payload = {
+            schema:"woocommerce-unknown20-historical-refine-aggregate/v1",
+            target_count:rows.length,
+            native_verified:rows.filter(x=>Boolean(x.native_feed?.verified)).length,
+            historical_snapshot_total:rows.reduce((n,x)=>n+(x.historical_snapshot_count||0),0),
+            refined_families:Object.fromEntries(Object.entries(rows.reduce((m,x)=>{const k=x.refined_family||"unknown_woocommerce";m[k]=(m[k]||0)+1;return m;},{})).sort(([a],[b])=>a.localeCompare(b))),
+            results:rows
+          };
+          await mkdir("out/aggregate",{recursive:true});
+          await writeFile("out/aggregate/aggregate.json",JSON.stringify(payload,null,2)+"\n","utf8");
+          const md=[
+            "# WooCommerce Unknown 20 — Historical Refinement",
+            "",
+            `Targets: ${payload.target_count}`,
+            `Current native Google Merchant XML verified: ${payload.native_verified}`,
+            `Archived HTML snapshots analyzed: ${payload.historical_snapshot_total}`,
+            "",
+            "| Site | Baseline family | Refined family | Confidence | Historical snapshots | Historical candidates | Native feed |",
+            "|---|---|---|---|---:|---:|---|",
+            ...rows.map(x=>`| ${x.site} | ${x.baseline_family} | ${x.refined_family} | ${x.refined_family_confidence} | ${x.historical_snapshot_count||0} | ${x.historical_candidate_count||0} | ${x.native_feed?.verified?"YES":"NO"} |`)
+          ].join("\n")+"\n";
+          await writeFile("out/aggregate/aggregate.md",md,"utf8");
+          NODE
+      - name: Upload aggregate evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-unknown20-historical-refine-aggregate
+          path: out/aggregate/
+          retention-days: 30
+
+
+  family-targeted:
+    name: Targeted family verification
+    needs: aggregate
+    if: needs.aggregate.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Download historical aggregate
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: woocommerce-unknown20-historical-refine-aggregate
+          path: refinement
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+      - name: Install targeted runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -q httpx
+      - name: Acceptance boundary static guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -nE 'add_cookies|seed_cookies|cookie_jars|camoufox|nodriver|curl_cffi' tools/woocommerce_v175_plugin_fingerprint_22.py tools/woocommerce_unknown20_family_targeted_refine.py
+      - name: Run targeted family verification
+        shell: bash
+        env:
+          REFINEMENT_JSON: refinement/aggregate.json
+        run: |
+          set -euo pipefail
+          python tools/woocommerce_unknown20_family_targeted_refine.py
+      - name: Upload targeted family evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-family-targeted-refine
+          path: out/woocommerce-family-targeted-refine/
+          retention-days: 30

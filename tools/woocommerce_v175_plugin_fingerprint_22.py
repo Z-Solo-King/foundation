@@ -365,24 +365,73 @@ def parse_namespaces(text: str) -> List[str]:
 
 
 def find_plugin_hits(blobs: Iterable[str], plugin_slugs: Iterable[str], namespaces: Iterable[str]) -> Dict[str, List[str]]:
+    """Return family hits using family-exclusive fingerprints where possible.
+
+    Generic page copy such as "Google Merchant Center" is not sufficient to
+    classify a Google-for-WooCommerce integration. Strong fingerprints must be
+    present in a plugin asset slug, REST namespace, resource URL, or explicit
+    family-specific endpoint signature.
+    """
     all_text = "\n".join(str(x or "") for x in blobs).lower()
     evidence = set(str(x).lower() for x in plugin_slugs)
     evidence.update(str(x).lower() for x in namespaces)
     hits: Dict[str, List[str]] = {}
+
+    exclusive = {
+        "woocommerce_google_product_feed": (
+            "woocommerce_gpf", "woocommerce-gpf", "woocommerce-google-product-feed",
+            "google_product_feed", "google-product-feed", "lw_woocommerce_gpf",
+        ),
+        "ctx_feed_webappick": (
+            "ctx feed", "ctx-feed", "webappick", "woo_feed", "woo-feed",
+            "webappick-product-feed-for-woocommerce",
+        ),
+        "adtribes_product_feed_pro": (
+            "adtribes", "woo-product-feed-pro", "product-feed-pro",
+            "woo-product-feed-pro-for-woocommerce",
+        ),
+        "wpfm_product_feed_manager": (
+            "wppfm", "wppfm-feeds", "wpfm/v1",
+            "product-feed-manager-for-woocommerce",
+        ),
+        "webtoffee_product_feed": (
+            "webtoffee", "webtoffee_product_feed", "webtoffee-product-feed",
+            "webtoffee-product-feed-for-woocommerce",
+        ),
+        "codesolz_merchant_feed_booster": (
+            "codesolz", "codesolz-feeds", "merchant-feed-booster",
+        ),
+        "feedcraft": ("feedcraft", "feedcraft-product-feed", "thebasics-product-feed"),
+        "google_for_woocommerce": (
+            "google-listings-and-ads", "wc/gla", "google_merchant_center_plugin",
+        ),
+    }
+
     for family, needles in PLUGIN_RULES:
         family_hits = []
-        for n in needles:
-            if n in all_text:
-                family_hits.append(n)
+        strong = exclusive.get(family, needles)
+
         for e in evidence:
-            for n in needles:
+            for n in strong:
                 if n in e:
                     family_hits.append(e)
                     break
+
+        for n in strong:
+            if n in all_text:
+                family_hits.append(n)
+
+        if family == "google_for_woocommerce":
+            family_hits = [
+                x for x in family_hits
+                if x in {"google-listings-and-ads", "wc/gla", "google_merchant_center_plugin"}
+                or "google-listings-and-ads" in x
+                or "wc/gla" in x
+            ]
+
         if family_hits:
             hits[family] = sorted(set(family_hits))[:20]
     return hits
-
 
 def plugin_family_confidence(hits: Dict[str, List[str]], plugin_slugs: Iterable[str], namespaces: Iterable[str]) -> str:
     """Prefer concrete plugin asset evidence over generic page text."""

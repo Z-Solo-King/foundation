@@ -1,0 +1,184 @@
+name: WooCommerce High-Confidence Deep Calibration
+
+on:
+  push:
+    branches:
+      - feat/wc-high-confidence-feed-guessing-20260930
+    paths:
+      - "tools/woocommerce_high_confidence_deep_calibration.py"
+      - "tools/woocommerce_unknown20_learned_feed_guess.py"
+      - ".github/workflows/woocommerce-high-confidence-deep-calibration.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "tools/woocommerce_high_confidence_deep_calibration.py"
+      - "tools/woocommerce_unknown20_learned_feed_guess.py"
+      - ".github/workflows/woocommerce-high-confidence-deep-calibration.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: wc-feed-learning-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deep-calibration:
+    name: V175 deep calibration - 10 known feed-related sites
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+      - name: Install extraction runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -q httpx playwright
+          python -m playwright install --with-deps chromium firefox webkit
+      - name: Acceptance boundary static guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -nE 'add_cookies|seed_cookies|cookie_jars|camoufox|nodriver|curl_cffi' tools/woocommerce_v175_plugin_fingerprint_22.py
+      - name: Run deep known-family calibration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/woocommerce_high_confidence_deep_calibration.py
+      - name: Upload calibration evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: woocommerce-high-confidence-deep-calibration
+          path: out/woocommerce-high-confidence-deep-calibration/
+          retention-days: 30
+
+  unknown20:
+    name: Learned feed guessing - unknown 20 shard ${{ matrix.shard }}
+    needs: deep-calibration
+    if: needs.deep-calibration.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    env:
+      SHARD: ${{ matrix.shard }}
+      SHARDS: 6
+      CALIBRATION_JSON: phase1b/phase1b.json
+      MAX_DIRECT_FEED_PROBES: "80"
+      MAX_INTERNAL_PAGES: "2"
+      PASSIVE_INDEX_ENABLED: "1"
+      WAYBACK_ENABLED: "1"
+      COMMONCRAWL_ENABLED: "0"
+      CF_BROWSER_RUN_ENABLED: "0"
+      BROWSERLESS_DIAGNOSTIC_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Download Phase 1 calibration evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4
+        with:
+          name: woocommerce-high-confidence-deep-calibration
+          path: phase1b
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+      - name: Install extraction runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -q httpx playwright
+          python -m playwright install --with-deps chromium firefox webkit
+      - name: Acceptance boundary static guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -nE 'add_cookies|seed_cookies|cookie_jars|camoufox|nodriver|curl_cffi' tools/woocommerce_v175_plugin_fingerprint_22.py tools/woocommerce_unknown20_learned_feed_guess.py
+      - name: Run learned unknown-20 extraction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/woocommerce_unknown20_learned_feed_guess.py
+      - name: Upload unknown-20 shard evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: woocommerce-unknown20-learned-shard-${{ matrix.shard }}
+          path: out/woocommerce-unknown20-learned-feed-guess/
+          retention-days: 30
+
+  unknown20-aggregate:
+    name: Aggregate learned unknown 20
+    needs: unknown20
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Download unknown-20 shards
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4
+        with:
+          pattern: woocommerce-unknown20-learned-shard-*
+          path: out/shards
+          merge-multiple: false
+      - name: Aggregate and validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFile, mkdir, writeFile, readdir } from "node:fs/promises";
+          async function collect(dir) {
+            const out = [];
+            for (const e of await readdir(dir, {withFileTypes:true})) {
+              const p = dir + "/" + e.name;
+              if (e.isDirectory()) out.push(...await collect(p));
+              else if (e.isFile() && e.name.endsWith(".json")) out.push(p);
+            }
+            return out;
+          }
+          const files = await collect("out/shards");
+          const rows = [];
+          for (const f of files) {
+            const data = JSON.parse(await readFile(f, "utf8"));
+            rows.push(...(data.results || []));
+          }
+          rows.sort((a,b)=>String(a.site).localeCompare(String(b.site)));
+          const payload = {
+            schema: "woocommerce-unknown20-learned-feed-aggregate/v1",
+            target_count: rows.length,
+            native_verified: rows.filter(x=>Boolean(x.native_feed?.verified)).length,
+            api_integrated_google: rows.filter(x=>x.feed_transport==="api_integrated").length,
+            family_counts: Object.fromEntries(
+              Object.entries(rows.reduce((m,x)=>{
+                const k=x.family||"unknown_woocommerce";
+                m[k]=(m[k]||0)+1; return m;
+              },{})).sort(([a],[b])=>a.localeCompare(b))
+            ),
+            results: rows
+          };
+          if (rows.length !== 20) throw new Error(`expected 20 rows, got ${rows.length}`);
+          await mkdir("out/aggregate",{recursive:true});
+          await writeFile("out/aggregate/aggregate.json",JSON.stringify(payload,null,2)+"\n","utf8");
+          const md = [
+            "# WooCommerce Unknown 20 — Learned Feed Guessing",
+            "",
+            `Targets: ${rows.length}`,
+            `Native Google Merchant XML verified: ${payload.native_verified}`,
+            `API-integrated Google sync sites: ${payload.api_integrated_google}`,
+            "",
+            "| Site | Detected family | Confidence | Native feed | Transport | Candidates |",
+            "|---|---|---|---|---|---:|",
+            ...rows.map(x=>`| ${x.site} | ${x.family} | ${x.family_confidence} | ${x.native_feed?.verified?"YES":"NO"} | ${x.feed_transport} | ${x.candidate_count||0} |`)
+          ].join("\n")+"\n";
+          await writeFile("out/aggregate/aggregate.md",md,"utf8");
+          NODE
+      - name: Upload unknown-20 aggregate evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: woocommerce-unknown20-learned-aggregate
+          path: out/aggregate/
+          retention-days: 30
