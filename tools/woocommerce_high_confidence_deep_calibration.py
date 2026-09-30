@@ -37,9 +37,8 @@ os.environ.setdefault("COMMONCRAWL_ENABLED", "0")
 os.environ.setdefault("CF_BROWSER_RUN_ENABLED", "0")
 os.environ.setdefault("BROWSERLESS_DIAGNOSTIC_ENABLED", "0")
 
-async def main() -> None:
-    results = []
-    for name, root, expected in TARGETS:
+async def run_target(name: str, root: str, expected: str, sem: asyncio.Semaphore) -> dict:
+    async with sem:
         try:
             result = await MODULE.probe_site(name, root)
         except Exception as exc:
@@ -58,7 +57,6 @@ async def main() -> None:
         result["expected_family"] = expected
         result["expected_family_match"] = result.get("family") == expected
         result["calibration_phase"] = "known_high_confidence_deep_10"
-        results.append(result)
         print(json.dumps({
             "site": name,
             "expected_family": expected,
@@ -69,6 +67,14 @@ async def main() -> None:
             "elapsed_s": result.get("elapsed_s"),
             "probe_error": result.get("probe_error"),
         }), flush=True)
+        return result
+
+async def main() -> None:
+    site_concurrency = max(1, min(len(TARGETS), int(os.getenv("SITE_CONCURRENCY", "5"))))
+    sem = asyncio.Semaphore(site_concurrency)
+    results = list(await asyncio.gather(
+        *(run_target(name, root, expected, sem) for name, root, expected in TARGETS)
+    ))
 
     learning = []
     for r in results:
