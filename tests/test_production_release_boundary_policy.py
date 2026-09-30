@@ -29,6 +29,20 @@ def test_production_release_shell_syntax_is_valid():
     result = subprocess.run(["bash", "-n", str(PRODUCTION_SCRIPT)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
 
+def test_d1_migration_fingerprint_matches_repository_bytes():
+    import hashlib
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    entries = []
+    for path in sorted(root.joinpath("migrations").glob("*.sql")):
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        entries.append(f"{path.name}\t{digest}\n")
+    expected = hashlib.sha256("".join(entries).encode("utf-8")).hexdigest()
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert f'D1_MIGRATIONS_FINGERPRINT="{expected}"' in text
+
+
 def test_production_release_uses_migrations_once_and_does_not_reexecute_raw_d1_schema():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert text.count("RESOURCE_GOVERNANCE_D1_SCHEMA.sql") == 0
