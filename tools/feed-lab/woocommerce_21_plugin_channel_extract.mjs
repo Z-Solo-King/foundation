@@ -236,7 +236,23 @@ async function main(){
   const name=arg("--site"),root=arg("--root"),out=arg("--out");
   if(!name||!root||!out) throw new Error("usage: --site <name> --root <url> --out <path>");
   await mkdir(out.split("/").slice(0,-1).join("/")||".",{recursive:true});
-  const report=await inspect(name,root);
+  let report;
+  try {
+    report=await inspect(name,root);
+  } catch (e) {
+    report={
+      schema_version:"woocommerce-21-plugin-channel-evidence/v2",
+      extractor_basis:"V175-derived browser/XHR recovery + public REST/WP-JSON/WC v1-v3 probes",
+      site:name,configured_root:root,selected_origin:root,status:"RUNNER_ERROR",
+      browser:{status:0,finalUrl:root,title:"",challenge:false,error:String(e?.message||e)},
+      plugin_assets:[],feed_like_plugin_assets:[],feed_family_signals:[],
+      readme_metadata:[],public_api_namespaces:[],rest_namespace_feed_signals:[],
+      woocommerce_version_route_probes:[],woocommerce_product_version_route_probes:[],
+      homepage_xhr:{resource_count:0,plugin_resource_urls:[],rest_resource_urls:[]},
+      public_endpoints:[],xhr_plugin_signal_urls:[],
+      identity_tokens:[new URL(root).hostname.replace(/^www\./,"").split(".")[0],name.toLowerCase()].slice(0,10)
+    };
+  }
   await writeFile(out,JSON.stringify(report,null,2)+"\n");
   console.log(JSON.stringify({
     site:name,browser_status:report.browser.status,
