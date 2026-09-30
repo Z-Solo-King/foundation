@@ -6,6 +6,7 @@ on:
       - feat/wc-high-confidence-feed-guessing-20260930
     paths:
       - "tools/woocommerce_unknown20_historical_refine.py"
+      - "tools/woocommerce_v175_plugin_fingerprint_22.py"
       - ".github/workflows/woocommerce-unknown20-historical-refinement.yml"
   workflow_dispatch: {}
 
