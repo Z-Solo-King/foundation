@@ -4,7 +4,7 @@ Compact routing index for human and AI repository analysis. Read this before ope
 
 ## Read first
 
-0. `docs/AI_PROVIDER_FLEET_2026-09-30.md` and `docs/AI_PROVIDER_FLEET_2026-09-30.json` for the current seven-provider Foundation AI task-fabric contract.
+0. `docs/AI_PROVIDER_FLEET_2026-09-30.md` and `docs/AI_PROVIDER_FLEET_2026-09-30.json` for the current eight-family Foundation AI task-fabric contract.
 
 1. `README.md`
 2. `REPOSITORY_MAP.json`
@@ -63,3 +63,9 @@ Use `docs/FAMILY_INTEGRATION_GRAPH.json` before changing behavior that crosses U
 
 ## Extractor / mapper deep audit
 The Operations extractor capability registry is the feature/function inventory. Foundation CI consumes `tools/extractor_surface_audit.py` and `tools/oldest_surface_audit.py` to detect orphan/shadow authorities, missing policy/evidence/migration linkage and stale critical seams.
+
+## AI provider / extractor synchronization
+
+The public provider contract lists eight supported external API families plus native Cloudflare Workers AI. Operations is the private runtime authority for provider eligibility, quota, freshness, cost and task-fabric routing.
+
+For extractor work, use the extraction_assist task family only for candidate assistance. The mapper/extractor cross-audit in Operations is the cross-fire authority for detecting provider/task-fabric/extractor drift; it does not promote implementation authority.
