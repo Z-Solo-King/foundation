@@ -25,7 +25,7 @@ test("contains documented family grammars", () => {
 });
 
 test("native validator requires Google namespace and core fields in one item", () => {
-  assert.match(source,/base\\\.google\\\.com\\/ns\\/1\\\.0/);
+  assert.match(source,/base\.google\.com\/ns\/1\.0/);
   assert.match(source,/\["id","title","link","price"\]/);
 });
 
