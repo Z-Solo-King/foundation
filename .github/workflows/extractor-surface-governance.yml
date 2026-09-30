@@ -1,6 +1,8 @@
 name: Extractor surface governance
 
 on:
+  push:
+    branches: [main]
   schedule:
     - cron: "20 3 * * *"
   workflow_dispatch:

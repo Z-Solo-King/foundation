@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_extractor_governance_bridge_has_one_trusted_trigger_class():
     workflow = (ROOT / ".github/workflows/extractor-surface-governance.yml").read_text(encoding="utf-8")
+    assert "push:" in workflow
+    assert "branches: [main]" in workflow
     assert "schedule:" in workflow
     assert "workflow_dispatch:" in workflow
     assert "pull_request:" not in workflow
