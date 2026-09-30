@@ -1034,7 +1034,34 @@
       ]
     },
     "feed_extraction_out_of_scope": true,
-    "note": "Live GitHub/Cloudflare state refreshed for this handoff. AI_PROJECT_MAP is navigation metadata, never production/evidence authority."
+    "note": "Live GitHub/Cloudflare state refreshed for this handoff. AI_PROJECT_MAP is navigation metadata, never production/evidence authority.",
+    "production_operations_revision": "ca3864a954569f6f8ce9a94793c53a0ef9ff03ec",
+    "foundation_open_issues": [
+      58,
+      157,
+      1247,
+      1249
+    ],
+    "foundation_open_issue_count": 4,
+    "foundation_open_prs": [
+      1652,
+      1653,
+      1656,
+      1657,
+      1658,
+      1660
+    ],
+    "foundation_open_pr_count": 6,
+    "operations_open_issues": [
+      597,
+      603
+    ],
+    "operations_open_issue_count": 2,
+    "operations_open_prs": [
+      1400,
+      1361
+    ],
+    "operations_open_pr_count": 2
   },
   "continue_handoff": {
     "as_of": "2026-10-01T00:30:00+05:30",
