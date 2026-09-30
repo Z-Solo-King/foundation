@@ -21,7 +21,8 @@ The workflow validates the App installation/token against the GitHub API before 
 
 - `B2_KEY_ID` — B2 upload API credential;
 - `B2_READ_KEY_ID` — optional read-only B2 credential for remote restore verification;
-- `B2_APPLICATION_KEY` — B2 backup/restore credential;
+- `B2_APPLICATION_KEY` — B2 upload application key;
+- `B2_READ_APPLICATION_KEY` — optional read-only B2 application key paired with `B2_READ_KEY_ID`;
 - `B2_BUCKET` — authoritative backup bucket name.
 
 Current B2 endpoint:
