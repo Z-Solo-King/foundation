@@ -44,3 +44,30 @@ def test_independent_feed_can_be_verified_despite_homepage_challenge():
     assert module.native_verification_admissible(True, False, True)
     assert not module.native_verification_admissible(True, False, False)
     assert module.native_verification_admissible(False, True, False)
+
+
+
+def test_public_directory_feed_candidates_discovers_generated_xml():
+    root = "https://example.com"
+    html = '<html><a href="google-shopping-9Kx7.xml">feed</a><a href="/other.txt">x</a></html>'
+    found = module.public_directory_feed_candidates(
+        html, root, "/wp-content/uploads/woo-product-feed-pro/xml/"
+    )
+    assert found == ["https://example.com/wp-content/uploads/woo-product-feed-pro/xml/google-shopping-9Kx7.xml"]
+
+
+def test_public_directory_feed_candidates_ignores_cross_host():
+    root = "https://example.com"
+    html = '<a href="https://evil.example/feed.xml">feed</a>'
+    assert module.public_directory_feed_candidates(html, root, "/feeds/") == []
+
+
+def test_known_guess_calibration_cohort_is_outside_active_cohort():
+    known = {
+        "pcstudio.in", "quickincomputers.com", "avikaretails.com", "geekbees.in",
+        "ninjadog.in", "networkitstore.in", "mynexusinfosys.com", "solankienterprises.com",
+        "onlyssd.com", "itgadgetsonline.com",
+    }
+    active = {module.bare_host(url) for _, url in module.TARGETS}
+    assert len(known) == 10
+    assert known.isdisjoint(active)
