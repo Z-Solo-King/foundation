@@ -4,13 +4,17 @@ The public Foundation repository owns the nightly research evidence workflow. He
 
 ## Window
 
-The scheduled kickoff is **01:00 IST** (**19:30 UTC** on the previous day). The production-release workflow dispatches the nightly workflow after a successful canonical release, passing the exact Foundation SHA and release-run ID. The nightly gate verifies that exact completed release run. Scheduled/manual invocations use only a short reconciliation window. The complete run remains bounded for the **09:00 IST** maintenance-window boundary.
+The 24-program research workflow is **not time-scheduled**. It accepts `workflow_dispatch` only. The canonical production-release workflow explicitly dispatches it after a successful release and preflight, passing the exact Foundation SHA, production release run ID, and deployed Operations revision. Manual dispatch remains available for controlled testing and explicit live runs.
+
+A research workflow run therefore has two intentional launch paths: an explicit manual/API dispatch, or the post-release dispatch performed by the canonical production-release workflow. There is no 01:00 IST cron on the research workflow. GitHub's `schedule` event is intentionally absent so the research engine cannot wake up once per day merely because the clock reached the overnight window.
+
+The complete run remains bounded by its workflow timeout and the existing executor/resource controls.
 
 ## Coverage
 
 There are 24 nightly programs: 8 programs in each of three logical lanes. They execute through one work-conserving **CrossFire** scheduler with a single global capacity of 20 active agents. This removes lane-local capacity fragmentation and lets newly free agent slots immediately serve another program, including while a prior program is synthesizing. After execution, the workflow materializes the same three lane artifacts and validates each exact eight-program set; the summary validates all 24.
 
-No silent deterministic dry-run is permitted for the scheduled workflow; missing live executor configuration is a hard failure.
+No silent deterministic dry-run is permitted for a live dispatch; missing live executor configuration is a hard failure.
 
 ## Evidence
 
@@ -36,7 +40,7 @@ Cloudflare Workers AI documents JSON Schema response formats and also notes that
 
 The production research path remains a loopback CI proxy to the authenticated Foundation Worker, which reaches private Operations through the service boundary and native Workers AI binding.
 
-The workflow is scheduled for 01:00 IST using a UTC cron expression and is additionally dispatched by the successful production-release workflow with the exact released SHA. GitHub documents scheduled workflows as using UTC by default and executing from the default branch.
+The workflow is dispatch-only. The successful production-release workflow is the controlled automatic launcher for a released SHA; the research workflow itself has no recurring cron trigger.
 
 
 ## Public/private research contract boundary
