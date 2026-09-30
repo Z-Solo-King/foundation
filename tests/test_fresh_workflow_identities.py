@@ -8,7 +8,8 @@ ROOT = Path(__file__).parents[1] / ".github" / "workflows"
 def test_fresh_nightly_identity_is_dispatchable_and_uses_current_operations():
     text = (ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
     assert "workflow_dispatch:" in text
-    assert "schedule:" in text
+    assert "schedule:" not in text
+    assert "production_release_run_id" in text
     assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
     assert "OPERATIONS_RESEARCH_REF:" in text
     manifest=json.loads((Path(__file__).parents[1] / "docs" / "OPERATIONS_PIN_MANIFEST.json").read_text(encoding="utf-8"))

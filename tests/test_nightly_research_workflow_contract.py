@@ -8,6 +8,8 @@ def workflow_text() -> str:
 
 def test_production_gate_is_event_driven_and_exact_sha_bound():
     text=workflow_text()
+    assert "workflow_dispatch:" in text
+    assert "schedule:" not in text
     assert "workflow_run:" not in text
     assert "production_release_run_id" in text
     assert "heroic-ai-production-release.yml" in text
@@ -165,7 +167,7 @@ def test_post_nightly_canary_uses_same_structured_research_contract():
 def test_run_name_distinguishes_live_and_contract_only_runs():
     text=workflow_text()
     assert "run-name: >-" in text
-    assert "scheduled-live" in text
+    assert "scheduled-live" not in text
     assert "contract-dry-run" in text
     assert "production-live" in text
 

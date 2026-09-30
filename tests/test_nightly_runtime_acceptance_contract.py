@@ -4,9 +4,11 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 
 
-def test_nightly_v3_keeps_schedule_but_scopes_runs_by_revision():
+def test_nightly_v3_is_dispatch_only_and_scopes_runs_by_revision():
     text = (ROOT / ".github/workflows/nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
-    assert 'cron: "30 19 * * *"' in text
+    assert "schedule:" not in text
+    assert "workflow_dispatch:" in text
+    assert "production_release_run_id" in text
     assert "nightly-multi-agent-research-" + "${{" + " inputs.target_sha || github.sha }}" in text
     assert "operations_research_ref" in text
     manifest=json.loads((Path(__file__).parents[1] / "docs" / "OPERATIONS_PIN_MANIFEST.json").read_text(encoding="utf-8"))
