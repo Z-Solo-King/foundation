@@ -97,7 +97,16 @@ function plan(input) {
 
   for (const lane of lanes) {
     if (!lane || typeof lane.id !== "string" || !lane.family) continue;
-    if (disabledIds.has(lane.id) || lane.enabled === false) continue;
+    if (disabledIds.has(lane.id) || lane.enabled === false) {
+      if (lane.required === true || requestedRequiredIds.has(lane.id) || requiredFamilies.has(lane.family)) {
+        errors.push({
+          code: "disabled_required_lane",
+          lane_id: lane.id,
+          message: "a required lane is disabled and cannot satisfy the schedule",
+        });
+      }
+      continue;
+    }
 
     if (byId.has(lane.id)) {
       errors.push({
@@ -112,6 +121,7 @@ function plan(input) {
     const row = {
       id: lane.id,
       family: lane.family,
+      required: lane.required === true,
       depends_on: Array.isArray(lane.depends_on) ? [...new Set(lane.depends_on.filter(Boolean))] : [],
       exclusive_group: lane.exclusive_group || null,
       score: scored.score,
@@ -141,7 +151,7 @@ function plan(input) {
 
   const requiredIds = new Set(requestedRequiredIds);
   for (const row of rows) {
-    if (requiredFamilies.has(row.family)) requiredIds.add(row.id);
+    if (row.required || requiredFamilies.has(row.family)) requiredIds.add(row.id);
   }
 
   // Required dependency closure: a required lane pulls its prerequisites into the required set.
