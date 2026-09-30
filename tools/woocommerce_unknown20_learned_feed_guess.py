@@ -140,21 +140,28 @@ def derive_learning(calibration: dict) -> dict:
         "evidence": evidence,
     }
 
-async def main() -> None:
-    calibration = json.loads(CAL.read_text(encoding="utf-8"))
-    transfer = derive_learning(calibration)
-    shard = int(os.getenv("SHARD", "1"))
-    shards = int(os.getenv("SHARDS", "6"))
-    selected = [x for i, x in enumerate(TARGETS) if i % shards + 1 == shard]
-    results = []
-    for name, root in selected:
-        result = await MODULE.probe_site(name, root)
+async def run_target(name: str, root: str, transfer: dict, sem: asyncio.Semaphore) -> dict:
+    async with sem:
+        try:
+            result = await MODULE.probe_site(name, root)
+        except Exception as exc:
+            result = {
+                "site": name,
+                "url": root,
+                "family": "probe_error",
+                "family_confidence": "low",
+                "candidate_count": 0,
+                "browser": [],
+                "passive_discovery": {},
+                "native_feed": {"verified": False, "url": None, "item_count": 0, "sha256": "", "tried": []},
+                "elapsed_s": 0,
+                "probe_error": f"{type(exc).__name__}:{exc}",
+            }
         result["phase"] = "unknown20_learned"
         result["learning_transfer"] = {
             "global_transfer_path_count": len(transfer["global_transfer_paths"]),
             "learned_directory_count": len(transfer["learned_directories"]),
         }
-        results.append(result)
         print(json.dumps({
             "site": name,
             "family": result.get("family"),
@@ -163,7 +170,22 @@ async def main() -> None:
             "feed_transport": result.get("feed_transport"),
             "candidate_count": result.get("candidate_count"),
             "elapsed_s": result.get("elapsed_s"),
+            "probe_error": result.get("probe_error"),
         }), flush=True)
+        return result
+
+async def main() -> None:
+    calibration = json.loads(CAL.read_text(encoding="utf-8"))
+    transfer = derive_learning(calibration)
+    shard = int(os.getenv("SHARD", "1"))
+    shards = int(os.getenv("SHARDS", "6"))
+    selected = [x for i, x in enumerate(TARGETS) if i % shards + 1 == shard]
+    site_concurrency = max(1, min(len(selected), int(os.getenv("SITE_CONCURRENCY", "2"))))
+    sem = asyncio.Semaphore(site_concurrency)
+    results = list(await asyncio.gather(
+        *(run_target(name, root, transfer, sem) for name, root in selected)
+    ))
+
     out = ROOT / "out" / "woocommerce-unknown20-learned-feed-guess"
     out.mkdir(parents=True, exist_ok=True)
     payload = {
