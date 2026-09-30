@@ -14,7 +14,7 @@
       "status": "immutable research-agent runtime reference with structured JSON output contract; independently promoted from production"
     },
     "secret_sync_utility": {
-      "sha": "29bb556e9505a7e2c640f5c09e62574c917b65a3",
+      "sha": "d21bc2620b93521beabc7c36704654e327fb153e",
       "purpose": "private provider-secret synchronization utility",
       "path": "tools/sync_provider_secrets.py",
       "status": "immutable utility revision; separately certified before controlled use"
