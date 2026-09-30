@@ -1,11 +1,11 @@
 {
   "schema": "family-issue-acceptance-matrix/v1",
-  "audited_at": "2026-09-30T09:55:00+05:30",
+  "audited_at": "2026-09-30T17:10:00+05:30",
   "repository_heads": {
-    "foundation": "eade4fead016c206e777abba23f715e0e990c13e",
-    "operations": "22cce3ec7243ab11cc2406fbcbca752b8bd7ebea"
+    "foundation": "5c1f3aa8ba4cb89ce4aac9ab1321e1ccf9326210",
+    "operations": "c6cc64364b7d3bd3e536a8a847ee01357458fb31"
   },
-  "open_issue_count": 7,
+  "open_issue_count": 6,
   "issues": [
     {
       "repo": "foundation",
@@ -40,15 +40,6 @@
       "required_evidence": [
         "additional real Google Merchant XML feed discoveries",
         "strict payload validation"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 1027,
-      "title": "security: move privileged provider-secret fan-out behind private boundary",
-      "required_evidence": [
-        "private implementation boundary",
-        "controlled live secret-sync proof"
       ]
     },
     {
