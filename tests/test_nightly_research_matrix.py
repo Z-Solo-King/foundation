@@ -12,7 +12,7 @@ def test_nightly_workflow_uses_pinned_private_operations_crossfire_runner():
     assert manifest["pins"]["production_runtime"]["sha"] in text
     assert "private.multi_agent.runner" in research
     assert "--crossfire" in research
-    assert "--global-capacity 20" in research
+    assert '--crossfire --global-capacity "$RESEARCH_MAX_CONCURRENCY"' in research
     assert "matrix:" not in research
     assert "production_release_run_id" in text
 
