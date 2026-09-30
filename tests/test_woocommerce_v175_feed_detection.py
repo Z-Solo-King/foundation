@@ -60,3 +60,14 @@ def test_public_directory_feed_candidates_ignores_cross_host():
     root = "https://example.com"
     html = '<a href="https://evil.example/feed.xml">feed</a>'
     assert module.public_directory_feed_candidates(html, root, "/feeds/") == []
+
+
+def test_known_guess_calibration_cohort_is_outside_active_cohort():
+    known = {
+        "pcstudio.in", "quickincomputers.com", "avikaretails.com", "geekbees.in",
+        "ninjadog.in", "networkitstore.in", "mynexusinfosys.com", "solankienterprises.com",
+        "onlyssd.com", "itgadgetsonline.com",
+    }
+    active = {module.bare_host(url) for _, url in module.TARGETS}
+    assert len(known) == 10
+    assert known.isdisjoint(active)
