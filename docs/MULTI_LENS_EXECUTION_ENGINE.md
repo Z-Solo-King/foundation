@@ -82,9 +82,13 @@ Every candidate lane receives:
 - duplication_penalty
 - freshness_need
 
-A practical priority score is:
+The implementation uses a bounded weighted evidence value:
 
-priority = (coverage_gain * historical_yield * confidence_gain * failure_detection_probability * freshness_need) / (execution_cost + latency_cost + quota_cost + duplication_penalty)
+benefit = 0.23*coverage + 0.18*failure_detection + 0.14*confidence + 0.12*freshness + 0.18*novelty + 0.15*learning_quality
+
+priority = benefit / (1 + budget_penalty + family_overlap_penalty)
+
+Untested lanes receive a bounded exploration bonus. Required lanes, dependency closure, exclusive groups and declared budgets are hard scheduling constraints. A feasible=false plan must be surfaced rather than silently dropping required work.
 
 This is a scheduling heuristic, not a correctness authority.
 
