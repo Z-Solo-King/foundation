@@ -8,7 +8,7 @@ on:
       operations_ref:
         description: "Immutable Operations revision containing browser engine support"
         required: false
-        default: "90b9c59c4a1cca3b99e46e4df10a493a21725623"
+        default: "b2f6b9d092a50d46c601bf31f52e012e6b5023a2"
         type: string
 
 permissions:
@@ -45,7 +45,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || '90b9c59c4a1cca3b99e46e4df10a493a21725623' }}
+          ref: ${{ inputs.operations_ref || 'b2f6b9d092a50d46c601bf31f52e012e6b5023a2' }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
           fetch-depth: 1
