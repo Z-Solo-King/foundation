@@ -59,3 +59,7 @@ The former `test_coverage_*` files were broad aggregators. They were audited by 
 ## Cross-surface family navigation
 
 Use `docs/FAMILY_INTEGRATION_GRAPH.json` before changing behavior that crosses UI, public Worker, private Operations, extractor/mapper, chatbot, resource governance, research, benchmark or observability boundaries. The graph is a routing aid; canonical ownership still comes from `docs/FAMILY_CONTRACT.json` and executable source.
+
+
+## Extractor / mapper deep audit
+The Operations extractor capability registry is the feature/function inventory. Foundation CI consumes `tools/extractor_surface_audit.py` and `tools/oldest_surface_audit.py` to detect orphan/shadow authorities, missing policy/evidence/migration linkage and stale critical seams.

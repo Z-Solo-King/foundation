@@ -93,3 +93,7 @@ The active multi-lens execution engine is the canonical scheduling overlay for c
 
 ## Current GitHub state
 Read active main heads, open issue inventory and open PRs from GitHub live state at audit start. Dated state documents are synchronization evidence, not mutable queue authorities.
+
+
+## Extractor surface governance
+The family audit now has two dedicated lenses: `OLDEST_SURFACE` for Git-history ordering of critical files, and `SURFACE_GOVERNANCE` for capability -> owner -> policy -> test -> evidence -> migration linkage. The Operations tools are `tools/oldest_surface_audit.py` and `tools/extractor_surface_audit.py`.

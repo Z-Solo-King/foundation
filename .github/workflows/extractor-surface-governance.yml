@@ -1,0 +1,87 @@
+name: Extractor surface governance
+
+on:
+  schedule:
+    - cron: "20 3 * * *"
+  workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: "Operations branch, tag, or commit to audit (commit preferred)"
+        required: true
+        default: "main"
+        type: string
+  pull_request:
+    paths:
+      - "foundation_core/**"
+      - "docs/FAMILY_**"
+      - "docs/AI_**"
+      - ".github/**"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit Operations extractor surface
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ github.event.inputs.operations_ref || 'main' }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+
+      - name: Run oldest critical surface audit
+        run: |
+          python operations/tools/oldest_surface_audit.py \
+            --root operations \
+            --prefix extractor_mapper \
+            --prefix private \
+            --prefix polyglot \
+            --stale-days 14 \
+            --limit 150 \
+            --output artifacts/oldest-surface.json
+
+      - name: Run extractor capability governance audit
+        run: |
+          PYTHONPATH=operations python operations/tools/extractor_surface_audit.py \
+            --root operations \
+            --output artifacts/extractor-surface.json
+
+      - name: Verify retired shadow surfaces stay absent
+        run: |
+          test ! -e operations/extractor_mapper/execution_plan.py
+          test ! -e operations/extractor_mapper/policies/retention.py
+          test -f operations/private/planner/execution_bridge.py
+          test -f operations/private/retention_deletion.py
+
+      - name: Upload governance evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: extractor-surface-governance-${{ github.run_id }}
+          path: artifacts/
+          retention-days: 30
