@@ -63,14 +63,13 @@ jobs:
           const plan = JSON.parse(fs.readFileSync("multi-lens-plan.json", "utf8"));
           if (plan.schema !== "multi-lens-plan/v1") throw new Error("invalid plan schema");
           if (plan.authority !== "scheduling_only") throw new Error("planner authority boundary violated");
+          if (plan.feasible !== true) throw new Error("planner produced an infeasible plan: " + JSON.stringify(plan.errors));
           if (plan.totals.lanes > plan.constraints.max_lanes) throw new Error("lane limit exceeded");
           if (plan.totals.cost > plan.constraints.cost_budget) throw new Error("cost budget exceeded");
           if (plan.totals.latency > plan.constraints.latency_budget) throw new Error("latency budget exceeded");
           if (plan.totals.quota > plan.constraints.quota_budget) throw new Error("quota budget exceeded");
           for (const id of profile.required_ids || []) {
-            if (!plan.selected.some((lane) => lane.id === id)) {
-              throw new Error("required lane not selected: " + id);
-            }
+            if (!plan.selected.some((lane) => lane.id === id)) throw new Error("required lane missing: " + id);
           }
           if (new Set(plan.selected.map((lane) => lane.family)).size < 3) {
             throw new Error("planner did not produce minimum evidence diversity");
