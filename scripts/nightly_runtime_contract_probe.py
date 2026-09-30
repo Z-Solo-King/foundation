@@ -1,20 +1,35 @@
 #!/usr/bin/env python3
-"""Exact production-path nightly research contract probe.
-
-This probes the same public Worker /api/v1/chat boundary used by the nightly
-research proxy. It intentionally does not call the separate infrastructure
-diagnostic endpoint, because that endpoint is not sufficient to prove that
-CrossFire's research request is accepted.
-"""
+"""Probe the exact deployed public Worker contract used by nightly CrossFire."""
 from __future__ import annotations
 
 import argparse
 import json
-import sys
 import time
 import urllib.error
 import urllib.request
 import uuid
+from typing import Any
+
+
+def _request(url: str, *, token: str | None = None, body: dict[str, Any] | None = None) -> tuple[int, bytes]:
+    data = json.dumps(body, separators=(",", ":")).encode("utf-8") if body is not None else None
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": "HeroicNightlyResearchContract/2026.09",
+        "Connection": "close",
+    }
+    if token:
+        headers["Authorization"] = "Bearer " + token
+    if body is not None:
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(url, data=data, headers=headers, method="POST" if body is not None else "GET")
+    try:
+        with urllib.request.urlopen(req, timeout=90) as response:
+            return int(response.status), response.read(2_000_001)
+    except urllib.error.HTTPError as exc:
+        return int(exc.code), exc.read(2_000_001)
+    except (urllib.error.URLError, TimeoutError):
+        return 0, b""
 
 
 def main() -> int:
@@ -25,6 +40,31 @@ def main() -> int:
     parser.add_argument("--expected-foundation-sha", default="")
     parser.add_argument("--expected-operations-ref", default="")
     args = parser.parse_args()
+
+    base = args.url.rstrip("/")
+    readiness_status, readiness_raw = _request(base + "/readiness")
+    readiness: dict[str, Any] = {}
+    try:
+        parsed = json.loads(readiness_raw.decode("utf-8"))
+        if isinstance(parsed, dict):
+            readiness = parsed
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        pass
+
+    release = readiness.get("release") if isinstance(readiness.get("release"), dict) else {}
+    readiness_ok = (
+        readiness_status == 200
+        and readiness.get("ready") is True
+        and readiness.get("database") is True
+        and (
+            not args.expected_foundation_sha
+            or release.get("foundation_sha") == args.expected_foundation_sha
+        )
+        and (
+            not args.expected_operations_ref
+            or release.get("operations_ref") == args.expected_operations_ref
+        )
+    )
 
     request_id = "nightly-contract-probe-" + uuid.uuid4().hex
     body = {
@@ -39,11 +79,12 @@ def main() -> int:
         "strict_zero_cost_only": True,
         "require_model_generation": True,
     }
-    data = json.dumps(body, separators=(",", ":")).encode("utf-8")
-    req = urllib.request.Request(
-        args.url.rstrip("/") + "/api/v1/chat",
-        data=data,
-        headers={
+
+    chat_status = 0
+    payload: dict[str, Any] = {}
+    if readiness_ok:
+        data = json.dumps(body, separators=(",", ":")).encode("utf-8")
+        headers = {
             "Authorization": "Bearer " + args.token,
             "Content-Type": "application/json",
             "Idempotency-Key": request_id,
@@ -52,37 +93,28 @@ def main() -> int:
             "Accept": "application/json",
             "Accept-Encoding": "identity",
             "Connection": "close",
-        },
-        method="POST",
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=90) as response:
-            status = int(response.status)
-            raw = response.read(2_000_001)
-    except urllib.error.HTTPError as exc:
-        status = int(exc.code)
-        raw = exc.read(2_000_001)
-    except (urllib.error.URLError, TimeoutError) as exc:
-        print(json.dumps({
-            "schema": "nightly-runtime-contract-probe/v1",
-            "ok": False,
-            "classification": "transport_failure",
-            "http_status": 0,
-            "error_type": type(exc).__name__,
-        }, sort_keys=True))
-        return 1
-
-    try:
-        payload = json.loads(raw.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError):
-        print(json.dumps({
-            "schema": "nightly-runtime-contract-probe/v1",
-            "ok": False,
-            "classification": "invalid_json_response",
-            "http_status": status,
-        }, sort_keys=True))
-        return 1
+        }
+        request = urllib.request.Request(
+            base + "/api/v1/chat",
+            data=data,
+            headers=headers,
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=90) as response:
+                chat_status = int(response.status)
+                raw = response.read(2_000_001)
+        except urllib.error.HTTPError as exc:
+            chat_status = int(exc.code)
+            raw = exc.read(2_000_001)
+        except (urllib.error.URLError, TimeoutError):
+            raw = b""
+        try:
+            parsed = json.loads(raw.decode("utf-8"))
+            if isinstance(parsed, dict):
+                payload = parsed
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            pass
 
     content = (
         payload.get("choices", [{}])[0].get("message", {}).get("content")
@@ -94,11 +126,10 @@ def main() -> int:
         try:
             structured = json.loads(content)
         except json.JSONDecodeError:
-            structured = None
+            pass
 
-    ok = (
-        status == 200
-        and isinstance(payload, dict)
+    chat_ok = (
+        chat_status == 200
         and isinstance(payload.get("provider"), str)
         and bool(payload["provider"].strip())
         and payload.get("model") == args.model
@@ -112,18 +143,38 @@ def main() -> int:
         and isinstance(structured.get("note"), str)
     )
 
+    ok = readiness_ok and chat_ok
+    classification = (
+        "accepted_exact_research_contract"
+        if ok
+        else "runtime_revision_mismatch"
+        if not readiness_ok
+        and readiness_status == 200
+        and release
+        else "research_contract_rejected"
+    )
+
     result = {
-        "schema": "nightly-runtime-contract-probe/v1",
+        "schema": "nightly-runtime-contract-probe/v2",
         "ok": ok,
-        "classification": "accepted_exact_research_contract" if ok else "research_contract_rejected",
-        "http_status": status,
+        "classification": classification,
+        "readiness_http_status": readiness_status,
+        "readiness_ready": readiness.get("ready") is True,
+        "readiness_database": readiness.get("database") is True,
+        "deployed_foundation_sha": release.get("foundation_sha"),
+        "deployed_operations_ref": release.get("operations_ref"),
+        "expected_foundation_sha": args.expected_foundation_sha,
+        "expected_operations_ref": args.expected_operations_ref,
+        "chat_http_status": chat_status,
         "model": payload.get("model") if isinstance(payload, dict) else None,
         "provider_present": isinstance(payload.get("provider"), str) if isinstance(payload, dict) else False,
         "execution_id_present": isinstance(payload.get("execution_id"), str) if isinstance(payload, dict) else False,
         "structured_output": isinstance(structured, dict),
-        "expected_foundation_sha": args.expected_foundation_sha,
-        "expected_operations_ref": args.expected_operations_ref,
-        "request_id_prefix": request_id[:28],
+        "request_contract": {
+            "operation": "knowledge",
+            "proof_header": True,
+            "require_model_generation": True,
+        },
         "probe_timestamp_unix": int(time.time()),
     }
     print(json.dumps(result, sort_keys=True))
