@@ -479,7 +479,26 @@ printf '%s\n' \
   "database_id = \"${database_id}\"" \
   'migrations_dir = "migrations"' \
   > "$d1_migrations_config"
-npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 migrations apply "$database_name" --remote
+
+# D1 free-tier enforcement is account-wide. Do not issue a remote D1 migration query
+# when the currently deployed heroic-core already carries the exact immutable Operations
+# revision being released. A real Operations revision change still runs migrations.
+current_core_settings="$RUNNER_TEMP/current-heroic-core-settings.json"
+current_core_settings_status=$(curl -sS -o "$current_core_settings" -w '%{http_code}' \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
+  "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/${PYTHON_CORE_WORKER_NAME}/settings" || true)
+test "$current_core_settings_status" = '200' || {
+  echo "Current heroic-core settings lookup failed: HTTP $current_core_settings_status"
+  cat "$current_core_settings" 2>/dev/null || true
+  exit 1
+}
+current_operations_ref="$(jq -r '.result.bindings[]? | select(.name == "RELEASE_OPERATIONS_REF" and .type == "plain_text") | .text' "$current_core_settings" | head -n1)"
+if [ -n "$current_operations_ref" ] && [ "$current_operations_ref" = "$OPERATIONS_REF" ]; then
+  echo "D1 migrations: SKIP (live heroic-core Operations revision already equals target ${OPERATIONS_REF})"
+else
+  echo "D1 migrations: APPLY (live Operations revision differs or is unavailable)"
+  npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 migrations apply "$database_name" --remote
+fi
 
 # Pywrangler performs Python-project validation against the project's default Wrangler config.
 # Temporarily make the generated Python-core config the project-default config, then restore
