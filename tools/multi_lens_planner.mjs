@@ -69,13 +69,19 @@ function scoreLane(lane, target, history, selectedFamilies) {
 }
 
 function plan(input) {
+  const defaults = input.target_defaults && typeof input.target_defaults === "object"
+    ? input.target_defaults
+    : {};
   const target = {
-    max_lanes: Math.max(1, Number(input.max_lanes) || 6),
-    cost_budget: Math.max(1, Number(input.cost_budget) || 6),
-    latency_budget: Math.max(1, Number(input.latency_budget) || 120),
-    quota_budget: Math.max(1, Number(input.quota_budget) || 100),
-    freshness_need: clamp(input.freshness_need ?? 0.5),
-    total_verified_lanes: Math.max(1, Number(input.total_verified_lanes) || 1),
+    max_lanes: Math.max(1, Number(input.max_lanes ?? defaults.max_lanes) || 6),
+    cost_budget: Math.max(1, Number(input.cost_budget ?? defaults.cost_budget) || 6),
+    latency_budget: Math.max(1, Number(input.latency_budget ?? defaults.latency_budget) || 120),
+    quota_budget: Math.max(1, Number(input.quota_budget ?? defaults.quota_budget) || 100),
+    freshness_need: clamp(input.freshness_need ?? defaults.freshness_need ?? 0.5),
+    total_verified_lanes: Math.max(
+      1,
+      Number(input.total_verified_lanes ?? defaults.total_verified_lanes) || 1,
+    ),
   };
 
   const lanes = Array.isArray(input.lanes) ? input.lanes : [];
