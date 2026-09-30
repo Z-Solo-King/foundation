@@ -98,6 +98,10 @@
     [
       ".github/workflows/sync-secrets.yml",
       "secret_sync"
+    ],
+    [
+      ".github/workflows/woocommerce-v175-22-plugin-extraction.yml",
+      "private_feed_extraction"
     ]
   ],
   "policy": {
