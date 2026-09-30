@@ -1,11 +1,11 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-30T15:35:00+05:30",
+  "audited_at": "2026-09-30T15:45:00+05:30",
   "public_safe": true,
   "live_main": {
-    "foundation": "f5909b8c432c73d31a746303d109738944b3d1a9",
-    "operations": "90b9c59c4a1cca3b99e46e4df10a493a21725623"
+    "foundation": "READ_LIVE_FROM_GITHUB",
+    "operations": "READ_LIVE_FROM_GITHUB"
   },
   "runtime_pins": {
     "foundation_runtime": null,
@@ -35,7 +35,7 @@
   },
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
-    "observed_at": "2026-09-30T15:35:00+05:30",
+    "observed_at": "2026-09-30T15:45:00+05:30",
     "open_issue_count": 6,
     "foundation": [
       58,
@@ -98,7 +98,7 @@
     "operations": "90b9c59c4a1cca3b99e46e4df10a493a21725623"
   },
   "current_prs": {
-    "open_pr_count": 7,
+    "open_pr_count": 6,
     "foundation": [
       1602,
       1604,
@@ -107,18 +107,20 @@
       1606
     ],
     "operations": [
-      1374,
       1361
     ],
     "merged_recent": {
       "foundation": [
         1601,
-        1603
+        1603,
+        1607
       ],
       "operations": [
         1376,
+        1374,
         1381,
-        1382
+        1382,
+        1383
       ]
     },
     "superseded_closed": {
@@ -139,11 +141,10 @@
     1606
   ],
   "operations_open_prs": [
-    1374,
     1361
   ],
-  "open_pr_count": 7,
-  "open_implementation_pr_count": 7,
+  "open_pr_count": 6,
+  "open_implementation_pr_count": 6,
   "extractor_mapper": {
     "status": "active_runtime_boundary",
     "repository": "operations",
@@ -161,9 +162,21 @@
     "authority": "scheduling_only"
   },
   "post_merge_sync": {
-    "checked_at": "2026-09-30T15:35:00+05:30",
-    "foundation_main": "f5909b8c432c73d31a746303d109738944b3d1a9",
-    "operations_main": "90b9c59c4a1cca3b99e46e4df10a493a21725623",
-    "operations_sync_commit": "d9bd39b6035b289db720f43934e5ec4cbd55ee54"
+    "checked_at": "2026-09-30T15:45:00+05:30",
+    "head_reference_mode": "live_github",
+    "last_verified_main": {
+      "foundation": "f85b61ebc521dbfab3b25fa3b7fceafcf696cdbb",
+      "operations": "7b55c97331a9a066dcb1d46c4bbe17e173dc60ca"
+    },
+    "operations_last_sync_commits": [
+      "d9bd39b6035b289db720f43934e5ec4cbd55ee54",
+      "6a23abdd6b7df6fe07a0ac4e08c4eb40289ab1e1",
+      "7b55c97331a9a066dcb1d46c4bbe17e173dc60ca"
+    ]
+  },
+  "head_reference_mode": "live_github",
+  "last_verified_main": {
+    "foundation": "f85b61ebc521dbfab3b25fa3b7fceafcf696cdbb",
+    "operations": "7b55c97331a9a066dcb1d46c4bbe17e173dc60ca"
   }
 }
