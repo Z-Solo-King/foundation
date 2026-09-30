@@ -63,7 +63,6 @@ TARGETS = [
     ("AULA India", "https://aulaindia.com"),
     ("Cosmic Byte", "https://www.thecosmicbyte.com"),
     ("Meckeys", "https://www.meckeys.com"),
-    ("Moskeys", "https://moskeys.com"),
     ("StacksKB", "https://stackskb.com"),
     ("Theproaudio", "https://www.theproaudio.com"),
 ]
