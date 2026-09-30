@@ -1,21 +1,5 @@
-name: WooCommerce 21 Plugin Extraction — Browser XHR + REST v1-v3
-# Canonical non-concurrent run for deterministic 21-site evidence
-
 on:
-  push:
-    branches: [hunt/native-google-feed-urls-20260927]
-    paths:
-      - "tools/feed-lab/woocommerce_21_plugin_extraction_browser_v175.py"
-      - ".github/workflows/native-google-feed-21-plugin-extraction.yml"
-  pull_request:
-    branches: [main]
-    types: [opened, reopened, synchronize]
-    # Full V175-derived public plugin channel pass
-    paths:
-      - "tools/feed-lab/woocommerce_21_plugin_extraction_browser_v175.py"
-      - ".github/workflows/native-google-feed-21-plugin-extraction.yml"
   workflow_dispatch:
-
 permissions:
   contents: read
 
