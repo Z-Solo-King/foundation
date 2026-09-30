@@ -1,0 +1,2 @@
+# WooCommerce Google XML Now V8
+Targeted live hunt over the four highest-reach unknown sites, using deterministic Google-feed family grammars only. Acceptance is current same-host Google Merchant XML payload validation.
