@@ -190,18 +190,24 @@ def test_public_worker_uses_native_typescript_edge_and_python_core():
     assert "python_workers" in core
     assert "wrangler.python-core.generated.toml" in deployment
     assert "wrangler@4.131.1 deploy --config wrangler.production.generated.toml" in deployment
-def test_public_production_deploy_injects_required_b2_secrets():
+def test_python_core_deploy_injects_required_b2_secrets():
     workflow = _workflow_texts()[PRODUCTION_WORKFLOW]
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert "B2_KEY_ID: ${{ secrets.B2_KEY_ID }}" in workflow
     assert "B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}" in workflow
     assert "B2_BUCKET: ${{ secrets.B2_BUCKET }}" in workflow
     assert "B2_ENDPOINT: ${{ vars.B2_ENDPOINT }}" in workflow
-    assert "--secrets-file \"$public_secret_file\"" in deployment
-    assert 'printf \'AUTH_TOKEN=%s\\nCHAT_BACKEND_TOKEN=%s\\n\' "$AUTH_TOKEN" "$AUTH_TOKEN" > "$secret_file"' in deployment
+    assert '--secrets-file "$public_secret_file"' in deployment
     assert 'printf \'AUTH_TOKEN=%s\\nB2_KEY_ID=%s\\nB2_APPLICATION_KEY=%s\\n\'' in deployment
+    assert 'pywrangler deploy --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}:python-core"' in deployment
     assert 'test -n "${B2_KEY_ID:-}"' in deployment
     assert 'test -n "${B2_APPLICATION_KEY:-}"' in deployment
+
+def test_public_edge_does_not_retain_b2_credentials():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'for public_b2_secret in B2_KEY_ID B2_APPLICATION_KEY; do' in deployment
+    assert 'workers/scripts/${PUBLIC_WORKER_NAME}/secrets/${public_b2_secret}' in deployment
+    assert 'public-worker-settings-after-b2-cleanup.json' in deployment
 def test_public_worker_static_assets_binding_is_declared():
     wrangler = (ROOT / "wrangler.python-core.toml").read_text(encoding="utf-8")
     assert '[assets]' in wrangler
