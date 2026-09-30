@@ -3,7 +3,11 @@ import importlib.util
 import sys
 
 
-MODULE_PATH = Path(__file__).resolve().parent / "woocommerce_v175_plugin_fingerprint_22.py"
+_candidates = [
+    Path(__file__).resolve().parents[1] / "tools" / "woocommerce_v175_plugin_fingerprint_22.py",
+    Path(__file__).resolve().parent / "woocommerce_v175_plugin_fingerprint_22.py",
+]
+MODULE_PATH = next(path for path in _candidates if path.exists())
 spec = importlib.util.spec_from_file_location("woocommerce_v175_feed_detection", MODULE_PATH)
 assert spec and spec.loader
 module = importlib.util.module_from_spec(spec)
