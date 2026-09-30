@@ -10,7 +10,7 @@ Snapshot: 2026-09-30 (Asia/Kolkata)
 - Production and research Operations pins are intentionally independent.
 
 ## Current repository state
-- Foundation main: `ec4c7b41f75b8ad0b8e2ce6fb69cc1013f84eece`
+- Foundation main: `f5909b8c432c73d31a746303d109738944b3d1a9`
 - Operations main: `70daff88817d5ab62e7eab2d5dca45e32743f728`
 - Production Operations pin: `ce4f9edbae3ddf1bf1c25a908d5bce014acc7676`
 - Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`

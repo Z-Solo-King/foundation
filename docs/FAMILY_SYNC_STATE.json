@@ -1,10 +1,10 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-09-30T15:12:00+05:30",
+  "audited_at": "2026-09-30T15:25:00+05:30",
   "public_safe": true,
   "live_main": {
-    "foundation": "ec4c7b41f75b8ad0b8e2ce6fb69cc1013f84eece",
+    "foundation": "f5909b8c432c73d31a746303d109738944b3d1a9",
     "operations": "70daff88817d5ab62e7eab2d5dca45e32743f728"
   },
   "runtime_pins": {
@@ -35,7 +35,7 @@
   },
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
-    "observed_at": "2026-09-29T18:32:09+05:30",
+    "observed_at": "2026-09-30T15:25:00+05:30",
     "open_issue_count": 6,
     "foundation": [
       58,
@@ -62,9 +62,9 @@
     "feed_recovery": "QUALIFICATION COMPLETE: verified feeds retained; blocked/unverified targets are not misclassified.",
     "d1_schema": "verified_live_2026-09-29",
     "production_signing_root": "provisioned_live_2026-09-29",
-    "production_runtime": "Foundation PR #1600 is merged at ec4c7b41f75b8ad0b8e2ce6fb69cc1013f84eece; fresh production certification remains separate.",
+    "production_runtime": "Foundation PR #1603 is merged at f5909b8c432c73d31a746303d109738944b3d1a9; fresh production deployment/runtime certification remains separate.",
     "post_release_dispatch": "live nightly research uses typed GitHub workflow inputs; production smoke and research preflight preserve purpose-scoped Operations pins",
-    "post_release_provider_proof": "Current production certification is pending the release-triggered research run after PR #1573",
+    "post_release_provider_proof": "Current production provider certification remains pending fresh post-merge deployment and research evidence.",
     "provider_diagnostic_status": "Foundation PR #1562 fixes the dedicated provider_runtime_verify health calculation so a valid Operations {ok:true,runtime_checks:[...]} receipt is returned as HTTP 200 without requiring the generic chatbot.allowed field.",
     "provider_activation": "Foundation currently activates seven external provider lanes; SiliconFlow is newly activated, Cerebras remains supported privately but unconfigured, and Mistral is excluded."
   },
