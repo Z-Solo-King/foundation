@@ -1,5 +1,5 @@
-import asyncio
 import json
+import asyncio
 from types import SimpleNamespace
 
 
@@ -59,24 +59,559 @@ def test_chat_stream_proxy_uses_proven_json_chat():
 
 def test_chat_stream_proxy_handles_binding_error():
     import worker
-def test_chat_proxy_translates_authenticated_research_proof_to_private_payload():
+    class Binding:
+        async def fetch(self, request): raise RuntimeError("binding unavailable")
+    class Request: headers = {}
+    payload, status = asyncio.run(worker._operations_chat_stream(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request()))
+    assert status == 503
+    assert payload["error"] == "chat_backend_unavailable"
+
+
+def test_chat_sse_body_rejects_invalid_private_response():
+    import pytest
+    import worker
+
+    with pytest.raises(ValueError, match="invalid_private_chat_response"):
+        worker._chat_sse_body({"ok": True})
+
+    with pytest.raises(ValueError, match="stream_execution_identity_missing"):
+        worker._chat_sse_body({"response": {"result_state": "PARTIAL", "text": "x"}})
+
+    with pytest.raises(ValueError, match="blocked_chat_stream"):
+        worker._chat_sse_body({"response": {"response_id": "r", "result_state": "BLOCKED", "text": "x"}})
+
+
+def test_chat_sse_body_covers_usage_complete_and_bounded_size():
+    import pytest
+    import worker
+
+    body = worker._chat_sse_body({
+        "response": {
+            "response_id": "chat-complete",
+            "result_state": "COMPLETE",
+            "text": "x" * 300,
+            "generation_status": "model_generated",
+            "usage": {"input_tokens": 3, "output_tokens": 2},
+        }
+    })
+    assert "event: usage" in body
+    assert '"status":"completed"' in body
+    assert '"result_state":"COMPLETE"' in body
+
+    with pytest.raises(ValueError, match="stream response exceeds supported size"):
+        worker._chat_sse_body({
+            "response": {
+                "response_id": "too-large",
+                "result_state": "PARTIAL",
+                "text": "x" * (worker.MAX_PUBLIC_JSON_BODY_BYTES + 1),
+            }
+        })
+
+
+def test_chat_sse_body_has_start_delta_and_done_contract():
+    import worker
+    body = worker._chat_sse_body({
+        "ok": True,
+        "response": {
+            "response_id": "chat-r1",
+            "result_state": "PARTIAL",
+            "text": "hello world",
+            "generation_status": "deterministic_fallback",
+        },
+    })
+    assert "event: start" in body
+    assert "event: delta" in body
+    assert "hello world" in body
+    assert "event: done" in body
+    assert '"result_state":"PARTIAL"' in body
+
+
+
+
+def test_public_worker_chat_stream_returns_private_non_200(monkeypatch):
+    import worker
+
+    async def backend(*args, **kwargs):
+        return {"ok": False, "error": "chat_backend_unavailable"}, 503
+
+    monkeypatch.setattr(worker, "_operations_chat_stream", backend)
+    async def admit(*args, **kwargs):
+        return type("Decision", (), {"allowed": True})(), None
+    monkeypatch.setattr(worker, "_public_admit", admit)
+
+    class Request:
+        method = "POST"
+        url = "https://example/api/v1/chat/stream"
+        headers = {"Authorization": "Bearer secret", "Idempotency-Key": "r2", "Content-Type": "application/json"}
+        async def json(self):
+            return {"chat_id": "c2", "request_id": "r2", "message": "hello", "mode": "chat", "strict_zero_cost_only": True}
+
+    instance = worker.Default()
+    instance.env = SimpleNamespace(AUTH_TOKEN="secret", DB=object(), ENVIRONMENT="development", LOCAL_DEVELOPMENT_AUTH_BYPASS="true")
+    response = asyncio.run(instance.fetch(Request()))
+    assert response.status == 503
+
+
+def test_public_worker_chat_stream_returns_503_for_invalid_sse_payload(monkeypatch):
+    import worker
+
+    async def backend(*args, **kwargs):
+        return {"ok": True, "response": {"result_state": "BLOCKED"}}, 200
+
+    monkeypatch.setattr(worker, "_operations_chat_stream", backend)
+    async def admit(*args, **kwargs):
+        return type("Decision", (), {"allowed": True})(), None
+    monkeypatch.setattr(worker, "_public_admit", admit)
+
+    class Request:
+        method = "POST"
+        url = "https://example/api/v1/chat/stream"
+        headers = {"Authorization": "Bearer secret", "Idempotency-Key": "r3", "Content-Type": "application/json"}
+        async def json(self):
+            return {"chat_id": "c3", "request_id": "r3", "message": "hello", "mode": "chat", "strict_zero_cost_only": True}
+
+    instance = worker.Default()
+    instance.env = SimpleNamespace(AUTH_TOKEN="secret", DB=object(), ENVIRONMENT="development", LOCAL_DEVELOPMENT_AUTH_BYPASS="true")
+    response = asyncio.run(instance.fetch(Request()))
+    assert response.status == 503
+
+
+def test_public_worker_chat_stream_route_requires_auth():
+    import worker
+    class Request:
+        method = "POST"; url = "https://example/api/v1/chat/stream"
+        def __init__(self, headers, body): self.headers = headers; self._body = body
+        async def json(self): return self._body
+    instance = worker.Default(); instance.env = SimpleNamespace(AUTH_TOKEN="secret")
+    response = asyncio.run(instance.fetch(Request({}, {"chat_id": "c1", "request_id": "r1", "message": "hello"})))
+    assert response.status == 401
+
+
+def test_public_worker_chat_stream_route_validates_payload():
+    import worker
+    class Request:
+        method = "POST"; url = "https://example/api/v1/chat/stream"
+        def __init__(self, headers, body): self.headers = headers; self._body = body
+        async def json(self): return self._body
+    instance = worker.Default(); instance.env = SimpleNamespace(AUTH_TOKEN="secret")
+    response = asyncio.run(instance.fetch(Request({"Authorization": "Bearer secret", "Content-Type": "application/json"}, {"message": "hello"})))
+    assert response.status == 400
+
+
+def test_public_worker_chat_stream_route_returns_invalid_json_for_non_object_body():
+    import worker
+    class Request:
+        method = "POST"; url = "https://example/api/v1/chat/stream"; headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
+        async def json(self): return "not an object"
+    instance = worker.Default(); instance.env = SimpleNamespace(AUTH_TOKEN="secret")
+    response = asyncio.run(instance.fetch(Request()))
+    assert response.status == 400
+
+
+def test_public_worker_chat_stream_route_returns_private_unavailable_response_without_binding():
+    import worker
+    class Request:
+        method = "POST"; url = "https://example/api/v1/chat/stream"; headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
+        async def json(self): return {"chat_id": "c1", "request_id": "r1", "message": "hello", "strict_zero_cost_only": True}
+    instance = worker.Default(); instance.env = SimpleNamespace(AUTH_TOKEN="secret")
+    response = asyncio.run(instance.fetch(Request()))
+    assert response.status == 503
+
+
+def test_public_worker_chat_stream_route_frames_proven_private_json():
+    import worker
+    class Response:
+        status = 200
+        async def json(self):
+            return {"ok": True, "response": {"response_id": "chat-r1", "result_state": "PARTIAL", "text": "hello", "generation_status": "deterministic_fallback"}}
+    class Binding:
+        async def fetch(self, request):
+            assert request.url == "https://chat/v1/chat"
+            assert request.method == "POST"
+            assert request.headers.get("Authorization") == "Bearer secret"
+            assert request.headers.get("Idempotency-Key") == "r1"
+            return Response()
+    class Request:
+        method = "POST"; url = "https://example/api/v1/chat/stream"; headers = {"Authorization": "Bearer secret", "Idempotency-Key": "r1", "Content-Type": "application/json"}
+        async def json(self): return {"chat_id": "c1", "request_id": "r1", "message": "hello", "strict_zero_cost_only": True}
+    instance = worker.Default(); instance.env = SimpleNamespace(AUTH_TOKEN="secret", OPERATIONS=Binding(), ENVIRONMENT="development", LOCAL_DEVELOPMENT_AUTH_BYPASS="true")
+    response = asyncio.run(instance.fetch(Request()))
+    assert response.status == 200
+
+
+def test_public_worker_chat_route_requires_auth_and_validates_payload():
+    import worker
+    class Request:
+        method = "POST"; url = "https://example/api/v1/chat"
+        def __init__(self, headers, body): self.headers = headers; self._body = body
+        async def json(self): return self._body
+    unauthorized = worker.Default(); unauthorized.env = SimpleNamespace(AUTH_TOKEN="secret")
+    response = asyncio.run(unauthorized.fetch(Request({}, {"message": "hello"})))
+    assert response.status == 401
+    invalid = worker.Default(); invalid.env = SimpleNamespace(AUTH_TOKEN="secret")
+    response = asyncio.run(invalid.fetch(Request({"Authorization": "Bearer secret", "Content-Type": "application/json"}, {"message": "hello"})))
+    assert response.status == 400
+
+
+def test_public_sse_response_uses_only_allowlisted_headers(monkeypatch):
+    import worker
+
+    calls = []
+
+    class Response:
+        def __init__(self, body, *, status=200, headers=None):
+            calls.append((body, status, headers))
+            self.status = status
+
+    monkeypatch.setattr(worker, "Response", Response)
+    upstream = type("Upstream", (), {"body": b"data: hello\\n\\n", "status": 200})()
+    response = worker._public_sse_response(upstream)
+
+    assert response.status == 200
+    body, status, headers = calls[0]
+    assert body == b"data: hello\\n\\n"
+    assert status == 200
+    assert headers == {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-store, no-cache, max-age=0, must-revalidate",
+        "X-Content-Type-Options": "nosniff",
+    }
+
+
+def test_service_request_uses_cloudflare_js_request_when_available(monkeypatch):
+    import sys
+    import types
+    import worker
+
+    class FakeRequest:
+        @classmethod
+        def new(cls, url, init):
+            return types.SimpleNamespace(url=url, init=init, method=init["method"], headers=init["headers"], body=init.get("body"))
+
+    class FakeObject:
+        @staticmethod
+        def fromEntries(value):
+            return dict(value)
+
+    js_module = types.ModuleType("js")
+    js_module.Request = FakeRequest
+    js_module.Object = FakeObject
+    ffi_module = types.ModuleType("pyodide.ffi")
+    ffi_module.to_js = lambda value, dict_converter: dict_converter(value.items())
+    pyodide_module = types.ModuleType("pyodide")
+    pyodide_module.ffi = ffi_module
+    monkeypatch.setitem(sys.modules, "js", js_module)
+    monkeypatch.setitem(sys.modules, "pyodide", pyodide_module)
+    monkeypatch.setitem(sys.modules, "pyodide.ffi", ffi_module)
+
+    request = worker._service_request(
+        "https://chat/v1/chat",
+        method="POST",
+        headers={"Authorization": "Bearer test"},
+        body='{"message":"hello"}',
+    )
+    assert request.url == "https://chat/v1/chat"
+    assert request.method == "POST"
+    assert request.headers == {"Authorization": "Bearer test"}
+    assert request.body == '{"message":"hello"}'
+    get_request = worker._service_request(
+        "https://private/v1/dashboard",
+        method="GET",
+        headers={"Authorization": "Bearer test"},
+    )
+    assert get_request.url == "https://private/v1/dashboard"
+    assert get_request.method == "GET"
+    assert get_request.headers == {"Authorization": "Bearer test"}
+    assert get_request.body is None
+
+
+def test_service_request_uses_structural_fallback_without_js_runtime(monkeypatch):
+    import sys
+    import types
+    import worker
+
+    js_module = types.ModuleType("js")
+    pyodide_module = types.ModuleType("pyodide")
+    ffi_module = types.ModuleType("pyodide.ffi")
+    monkeypatch.setitem(sys.modules, "js", js_module)
+    monkeypatch.setitem(sys.modules, "pyodide", pyodide_module)
+    monkeypatch.setitem(sys.modules, "pyodide.ffi", ffi_module)
+
+    request = worker._service_request(
+        "https://chat/v1/chat",
+        method="POST",
+        headers={"Content-Type": "application/json"},
+        body='{"message":"hello"}',
+    )
+    assert request.url == "https://chat/v1/chat"
+    assert request.method == "POST"
+    assert request.headers == {"Content-Type": "application/json"}
+    assert request.body == '{"message":"hello"}'
+
+
+
+def test_chat_proxy_strips_private_route_metadata(monkeypatch):
+    import worker
+
+    class Response:
+        status = 200
+
+        async def json(self):
+            return {
+                "ok": True,
+                "chat_id": "c1",
+                "request_id": "r1",
+                "owner_repo": "Z-Solo-King/operations",
+                "response": {
+                    "response_id": "resp-1",
+                    "status": "completed",
+                    "result_state": "COMPLETE",
+                    "text": "hello",
+                    "owner_repo": "Z-Solo-King/operations",
+                    "canonical_entrypoint": "private.chatbot.chat_endpoint.handle_chat",
+                    "configuration_diagnostics": ["internal"],
+                    "sources": [{"title": "Example", "url": "https://example.com", "internal": "secret"}],
+                },
+            }
+
+    class Binding:
+        async def fetch(self, request):
+            return Response()
+
+    class Request:
+        headers = {}
+
+    body, status = asyncio.run(
+        worker._operations_chat(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request())
+    )
+
+    assert status == 200
+    assert body["ok"] is True
+    assert body["response"]["text"] == "hello"
+    assert "owner_repo" not in body
+    assert "canonical_entrypoint" not in body["response"]
+    assert "configuration_diagnostics" not in body["response"]
+    assert body["response"]["sources"] == [{"title": "Example", "url": "https://example.com"}]
+
+
+def test_chat_proxy_error_does_not_expose_exception_detail():
+    import worker
+
+    class Binding:
+        async def fetch(self, request):
+            raise RuntimeError("private stack details")
+
+    class Request:
+        headers = {}
+
+    body, status = asyncio.run(
+        worker._operations_chat(SimpleNamespace(OPERATIONS=Binding()), {"message": "hello"}, Request())
+    )
+
+    assert status == 503
+    assert body == {"ok": False, "error": "chat_backend_unavailable"}
+
+
+
+def test_public_chat_body_handles_non_dict_response():
+    import worker
+    assert worker._public_chat_body(None) == {"ok": False, "error": "invalid_private_chat_response"}
+    assert worker._public_chat_body({"ok": True}) == {"ok": True}
+
+
+def test_public_chat_body_covers_string_sources_and_malformed_sources():
+    import worker
+    body = worker._public_chat_body({
+        "ok": True,
+        "response": {
+            "text": "hello",
+            "sources": ["https://example.com/source", {"title": "Example", "url": "https://example.com", "private": "secret"}, 123],
+        },
+    })
+    assert body["response"]["sources"] == ["https://example.com/source", {"title": "Example", "url": "https://example.com"}]
+    malformed = worker._public_chat_body({"response": {"text": "hello", "sources": {"private": "secret"}}})
+    assert malformed["response"]["sources"] == []
+
+
+def test_public_chat_body_hides_provider_by_default_and_exposes_it_for_proof_path():
+    import worker
+
+    body = {
+        "ok": True,
+        "response": {
+            "response_id": "r1",
+            "status": "completed",
+            "result_state": "COMPLETE",
+            "text": "hello",
+            "generation_status": "model_generated",
+            "provider": "cloudflare_workers_ai",
+        },
+    }
+
+    public = worker._public_chat_body(body)
+    assert "provider" not in public["response"]
+
+    proof = worker._public_chat_body(body, include_provider=True)
+    assert proof["response"]["provider"] == "cloudflare_workers_ai"
+    no_provider = worker._public_chat_body({"response": {"text": "hello", "provider": None}}, include_provider=True)
+    assert "provider" not in no_provider["response"]
+
+
+def test_provider_runtime_diagnostic_shape_preserves_generation_status():
+    import worker
+    source = worker._operations_chatbot_diagnostic.__code__
+    assert source is not None
+    text = __import__("inspect").getsource(worker._operations_chatbot_diagnostic)
+    assert 'operation == "provider_runtime_verify"' in text
+    assert 'generation_status' in text
+
+
+def test_chat_headers_forwards_authenticated_research_proof():
+    import worker
+
+    class Request:
+        headers = {
+            "Authorization": "Bearer user",
+            "Idempotency-Key": "req-1",
+            "X-Heroic-Research-Proof": "1",
+        }
+
+    headers = worker._chat_headers(Request())
+    assert headers["Authorization"] == "Bearer user"
+    assert headers["Idempotency-Key"] == "req-1"
+    assert headers["X-Heroic-Research-Proof"] == "1"
+
+
+def test_provider_runtime_diagnostic_preserves_generation_status():
+    import worker
+
+    class Response:
+        status = 200
+
+        async def json(self):
+            return {
+                "ok": True,
+                "runtime_status": "ok",
+                "chatbot": {"allowed": True},
+                "runtime_checks": [
+                    {},
+                    {
+                        "name": "provider_runtime_workers_ai",
+                        "ok": True,
+                        "generation_status": "model_generated",
+                    },
+                ],
+            }
+
+    class Binding:
+        async def fetch(self, request):
+            return Response()
+
+    class Request:
+        headers = {"Authorization": "Bearer secret"}
+
+    body, status = asyncio.run(
+        worker._operations_chatbot_diagnostic(
+            SimpleNamespace(OPERATIONS=Binding()),
+            Request(),
+            operation="provider_runtime_verify",
+            payload={},
+        )
+    )
+    assert status == 200
+    assert body["runtime_checks"] == [
+        {"name": "provider_runtime_workers_ai", "ok": True, "generation_status": "model_generated"}
+    ]
+    class ResponseNoGeneration:
+        status = 200
+        async def json(self):
+            return {
+                "ok": True,
+                "runtime_status": "ok",
+                "chatbot": {"allowed": True},
+                "runtime_checks": [{"name": "provider_runtime_workers_ai", "ok": True, "generation_status": None}],
+            }
+    class BindingNoGeneration:
+        async def fetch(self, request):
+            return ResponseNoGeneration()
+    body2, status2 = asyncio.run(
+        worker._operations_chatbot_diagnostic(
+            SimpleNamespace(OPERATIONS=BindingNoGeneration()),
+            Request(), operation="provider_runtime_verify", payload={}
+        )
+    )
+    assert status2 == 200
+    assert body2["runtime_checks"] == [{"name": "provider_runtime_workers_ai", "ok": True}]
+
+
+def test_provider_runtime_diagnostic_accepts_dedicated_ok_without_chatbot_projection(monkeypatch):
     import worker
 
     class Response:
         status = 200
         async def json(self):
-            return {"ok": True, "response": {"text": "structured"}}
+            return {
+                "ok": True,
+                "runtime_checks": [{"name": "provider_runtime_workers_ai", "ok": True, "generation_status": "model_generated"}],
+            }
 
+    class Binding:
+        async def fetch(self, request): return Response()
+
+    class Request:
+        headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
+
+    body, status = asyncio.run(worker._operations_chatbot_diagnostic(SimpleNamespace(OPERATIONS=Binding()), Request(), operation="provider_runtime_verify", payload={}))
+    assert status == 200
+    assert body["ok"] is True
+
+
+def test_default_provider_runtime_diagnostic_route_is_authenticated_and_supported(monkeypatch):
+    import worker
+
+    async def diagnostic(*args, **kwargs):
+        return (
+            {
+                "ok": True,
+                "status": "ok",
+                "runtime_status": "ok",
+                "runtime_checks": [
+                    {"name": "provider_runtime_workers_ai", "ok": True, "generation_status": "model_generated"}
+                ],
+            },
+            200,
+        )
+
+    monkeypatch.setattr(worker, "_operations_chatbot_diagnostic", diagnostic)
+
+    class Request:
+        method = "POST"
+        url = "https://example/api/v1/chatbot/diagnostic"
+        headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
+
+        async def json(self):
+            return {"operation": "provider_runtime_verify"}
+
+    instance = worker.Default()
+    instance.env = SimpleNamespace(AUTH_TOKEN="secret")
+    response = asyncio.run(instance.fetch(Request()))
+    assert response.status == 200
+
+
+def test_chat_proxy_translates_authenticated_research_proof_to_private_payload():
+    import worker
+    class Response:
+        status = 200
+        async def json(self):
+            return {"ok": True, "response": {"text": "structured"}}
     class Binding:
         async def fetch(self, request):
             payload = json.loads(request.body)
             assert payload["operation"] == "knowledge"
             assert payload["research_agent"] is True
             return Response()
-
     class Request:
         headers = {"Authorization": "Bearer user", "Idempotency-Key": "research-req", "X-Heroic-Research-Proof": "1"}
-
     original = worker._authorized
     worker._authorized = lambda request, env: True
     try:
@@ -93,21 +628,17 @@ def test_chat_proxy_translates_authenticated_research_proof_to_private_payload()
 
 def test_chat_proxy_does_not_promote_research_without_proof_header():
     import worker
-
     class Response:
         status = 200
         async def json(self):
             return {"ok": True, "response": {"text": "normal"}}
-
     class Binding:
         async def fetch(self, request):
             payload = json.loads(request.body)
             assert "research_agent" not in payload
             return Response()
-
     class Request:
         headers = {"Authorization": "Bearer user", "Idempotency-Key": "normal-req"}
-
     original = worker._authorized
     worker._authorized = lambda request, env: True
     try:
