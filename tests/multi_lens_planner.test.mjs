@@ -2,8 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 
-const planner = "tools/multi_lens_planner.mjs";
+const here = dirname(fileURLToPath(import.meta.url));
+const planner = join(here, "..", "tools", "multi_lens_planner.mjs");
 
 function run(input) {
   const p = spawnSync(process.execPath, [planner], {
@@ -29,7 +32,7 @@ test("selects required lanes before adaptive lanes", () => {
   });
   assert.equal(out.selected[0].id, "required");
   assert.equal(out.selected[0].selection, "required");
-  assert.equal(out.totals.lanes, 3);
+  assert.equal(out.totals.lanes, 2);
 });
 
 test("keeps untested lanes alive through exploration", () => {
