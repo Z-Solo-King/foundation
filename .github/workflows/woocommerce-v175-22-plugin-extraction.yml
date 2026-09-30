@@ -1,4 +1,4 @@
-name: WooCommerce V175 22 Plugin Extraction
+name: WooCommerce V175 Active Cohort Extraction
 
 on:
   push:
@@ -153,7 +153,7 @@ jobs:
               "aulaindia.com", "thecosmicbyte.com", "meckeys.com", "moskeys.com",
               "stackskb.com", "theproaudio.com",
           }
-          assert len(rows) == 22
+          assert len(rows) == 21
           actual_hosts = {r.get("url", "").lower().split("/")[2].removeprefix("www.") for r in rows if r.get("url")}
           assert actual_hosts == expected_hosts
           excluded = {
