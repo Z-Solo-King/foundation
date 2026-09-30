@@ -1,0 +1,100 @@
+name: WooCommerce Plugin-Family XML Guess V4 — 30 Site
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tools/woocommerce_plugin_family_guess_v4.mjs"
+      - "tests/test_woocommerce_plugin_family_guess_v4.mjs"
+      - "docs/feed-lab/WOOCOMMERCE_PLUGIN_FAMILY_GUESS_MANIFEST_2026-09-30.json"
+      - "docs/feed-lab/WOO_V175_PLUGIN_GROUPING_AND_GUESSING_2026-09-30.md"
+      - ".github/workflows/woocommerce-plugin-family-xml-guess-v4.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wc-plugin-family-guess-v4-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guess:
+    name: plugin-family XML guess shard ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1,2,3,4,5,6]
+    env:
+      SHARD: ${{ matrix.shard }}
+      SHARDS: 6
+      SITE_CONCURRENCY: "1"
+      CANDIDATE_CONCURRENCY: "6"
+      REQUEST_TIMEOUT_MS: "6500"
+      ATTEMPTS: "2"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Unit tests
+        run: node --test tests/test_woocommerce_plugin_family_guess_v4.mjs
+      - name: Plugin-family XML guess
+        run: node tools/woocommerce_plugin_family_guess_v4.mjs --shard "$SHARD" --shards "$SHARDS"
+      - name: Upload shard evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-plugin-family-guess-v4-shard-${{ matrix.shard }}
+          path: out/woocommerce-plugin-family-guess-v4/
+          retention-days: 30
+
+  aggregate:
+    needs: guess
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          pattern: woocommerce-plugin-family-guess-v4-shard-*
+          path: out/shards
+          merge-multiple: false
+      - name: Aggregate evidence
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          import path from "node:path";
+          const files=[];
+          function walk(p){
+            for(const ent of fs.readdirSync(p,{withFileTypes:true})){
+              const q=path.join(p,ent.name);
+              if(ent.isDirectory()) walk(q);
+              else if(ent.name.endsWith(".json") && /shard-\d+\.json$/.test(ent.name)) files.push(q);
+            }
+          }
+          walk("out/shards");
+          const rows=files.sort().flatMap(f=>JSON.parse(fs.readFileSync(f,"utf8")).results||[]);
+          if(rows.length!==30) throw new Error("expected 30 site results, got "+rows.length);
+          const summary={
+            schema:"woocommerce-plugin-family-guess-v4-aggregate/v1",
+            target_count:rows.length,
+            native_verified:rows.filter(x=>x.candidate_hits?.length).length,
+            api_integrated_skipped:rows.filter(x=>x.status==="API_INTEGRATED_NO_XML_GUESS").length,
+            transport_limited:rows.filter(x=>x.status.includes("TRANSPORT_LIMITED")).length,
+            results:rows
+          };
+          fs.mkdirSync("out/aggregate",{recursive:true});
+          fs.writeFileSync("out/aggregate/aggregate.json",JSON.stringify(summary,null,2));
+          console.log(JSON.stringify({...summary,results:undefined},null,2));
+          NODE
+      - name: Upload aggregate evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-plugin-family-guess-v4-aggregate
+          path: out/aggregate/
+          retention-days: 30
