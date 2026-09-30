@@ -17,10 +17,18 @@ SPEC.loader.exec_module(MODULE)
 MODULE.KNOWN_10 = set()
 
 TARGETS = [
+    # Standalone feed-generator families (4)
     ("PC Studio", "https://www.pcstudio.in", "woocommerce_google_product_feed"),
     ("Quickin Computers", "https://quickincomputers.com", "ctx_feed_webappick"),
     ("Avikaretails", "https://avikaretails.com", "adtribes_product_feed_pro"),
     ("IT Gadgets Online", "https://itgadgetsonline.com", "wpfm_product_feed_manager"),
+    # Google-for-WooCommerce / Google Listings & Ads family (6)
+    ("Geekbees", "https://geekbees.in", "google_for_woocommerce"),
+    ("Ninja Dog", "https://ninjadog.in", "google_for_woocommerce"),
+    ("Network IT Store", "https://networkitstore.in", "google_for_woocommerce"),
+    ("My Nexus Infosys", "https://mynexusinfosys.com", "google_for_woocommerce"),
+    ("Solanki Enterprises", "https://solankienterprises.com", "google_for_woocommerce"),
+    ("AULA India", "https://aulaindia.com", "google_for_woocommerce"),
 ]
 
 os.environ.setdefault("MAX_DIRECT_FEED_PROBES", "80")
@@ -37,7 +45,7 @@ async def main() -> None:
         result = await MODULE.probe_site(name, root)
         result["expected_family"] = expected
         result["expected_family_match"] = result.get("family") == expected
-        result["calibration_phase"] = "known_high_confidence_deep"
+        result["calibration_phase"] = "known_high_confidence_deep_10"
         results.append(result)
         print(json.dumps({
             "site": name,
@@ -83,8 +91,11 @@ async def main() -> None:
         })
 
     summary = {
-        "schema": "woocommerce-high-confidence-deep-calibration/v1",
+        "schema": "woocommerce-high-confidence-deep-calibration/v2",
         "targets": [x[0] for x in TARGETS],
+        "target_count": len(TARGETS),
+        "standalone_feed_generator_count": 4,
+        "google_for_woocommerce_count": 6,
         "native_verified": sum(1 for r in results if (r.get("native_feed") or {}).get("verified")),
         "family_matches": sum(1 for r in results if r.get("expected_family_match")),
         "learning": learning,
@@ -94,7 +105,7 @@ async def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     (out / "phase1b.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
     lines = [
-        "# WooCommerce High-Confidence Deep Calibration",
+        "# WooCommerce High-Confidence Deep Calibration — Phase 1 (10 Sites)",
         "",
         "| Site | Expected family | Detected family | Confidence | Native feed | Candidates |",
         "|---|---|---|---|---|---:|",

@@ -1,77 +1,58 @@
-# WooCommerce High-Confidence Feed Calibration Learning — 2026-09-30
+# WooCommerce V175 Feed Calibration — Phase 1 (10 Sites) — 2026-09-30
 
-## Phase 1 result
+## Correct Phase 1 boundary
 
-Targets:
+The Phase 1 calibration cohort is 10 feed-related sites:
+
+### Standalone feed-generator families (4)
 - PC Studio — WooCommerce Google Product Feed
 - Quickin Computers — CTX Feed / WebAppick
 - Avikaretails — Product Feed PRO / AdTribes
 - IT Gadgets Online — Product Feed Manager / WPPFM
 
-Phase 1 fixed-path + filename guessing result: **0/4 native Google Merchant XML feeds verified**.
+### Google-for-WooCommerce / Google Listings & Ads family (6)
+- Geekbees
+- Ninja Dog
+- Network IT Store
+- My Nexus Infosys
+- Solanki Enterprises
+- AULA India
 
-## Observed response patterns
+OnlySSD is excluded because its native Google feed was already separately established. Moskeys is excluded because the site is down.
 
-### PC Studio / WooCommerce Google Product Feed
-- `/?woocommerce_gpf=google` returned HTTP 403 with an access-denied/interstitial response.
-- Some partial-feed query variants returned HTTP 200 but were full HTML, not XML.
-- The permalink-style `/woocommerce_gpf/google` route returned HTTP 404.
-- Generic root XML guesses were predominantly 404 or challenge responses.
+## Calibration objective
 
-Learning:
-- Do not infer that the official plugin is absent from a 403/HTML response.
-- For this family, query-vs-permalink behavior must be recorded separately.
-- Public plugin configuration references and browser/network discovery are higher-value than generic filename guessing.
+This phase learns two distinct feed behaviors:
+1. Standalone XML generator discovery and strict current-payload validation.
+2. Google-for-WooCommerce family detection, distinguishing API-integrated synchronization from a separately published XML feed.
 
-### Quickin Computers / CTX Feed
-- Public references included ordinary `/feed/` and sitemap URLs, which must not be promoted as Merchant feeds.
-- CTX query hypotheses returned HTTP 200 HTML rather than native Merchant XML.
-- The plugin's generated filenames remain unresolved.
+The harness uses browser/XHR/resource discovery, public REST namespace discovery, robots/sitemap discovery, public output-directory discovery, historical URL discovery, plugin-specific candidates, and bounded fallbacks. Challenge/clearance state is diagnostic only.
 
-Learning:
-- CTX filenames are merchant-selected; public directory indexing and exact feed references are primary.
-- Generic `feed/` results are normal WordPress RSS and should be excluded automatically.
-- Browser resource/XHR inspection is needed to locate hidden feed-generation references.
+## Learning records
 
-### Avikaretails / Product Feed PRO
-- Public sitemap/product-sitemap surfaces were live but contained no Google namespace.
-- The known upload-folder filename hypotheses were not verified.
-- Product Feed PRO is documented to use static generated files and may expose non-deterministic filenames.
+Each site records:
+- expected vs detected family and confidence
+- standalone native-feed verification status
+- explicit and query feed references
+- output-directory candidates
+- historical candidate URLs
+- browser engines, XHR/resource URLs, plugin assets and namespaces
+- response patterns and candidate source/rank
 
-Learning:
-- Arbitrary filename enumeration is low-yield for Product Feed PRO.
-- Directory indexes, HTML/source references, historical feed URLs, and feed-list traces should rank above guessed names.
-- Current payload validation is mandatory.
+For Google-for-WooCommerce, absence of a standalone XML feed is not treated as an extraction failure when the family is positively identified and no independent public feed URL is observed.
 
-### IT Gadgets Online / WPFM
-- Public sitemap surfaces were accessible and clearly non-Merchant XML.
-- Fixed filenames under `/wp-content/uploads/wppfm-feeds/` returned 404 HTML.
-- No native payload was verified.
+## Transfer to the unknown 20
 
-Learning:
-- WPFM feed filenames are merchant-defined rather than guaranteed to be `google.xml`.
-- The feed directory itself is a better discovery primitive than expanding generic names.
+After this 10-site calibration, learned URL grammars and evidence patterns are transferred to the unknown 20. Priority order:
+1. exact public feed reference
+2. browser/XHR/resource evidence
+3. public plugin output directory
+4. historical feed URL followed by current validation
+5. plugin-specific documented URL grammar
+6. generic filename guessing
 
-## Phase 2 improved method
+No random filename enumeration is promoted above observed evidence, and 403/challenge/404 HTML/sitemap/RSS responses are not treated as proof of feed absence.
 
-The next calibration run therefore uses:
-1. Clean Chromium + Firefox + WebKit discovery.
-2. Same-host request/XHR/resource capture.
-3. Public WordPress REST namespaces.
-4. Public robots/sitemap discovery.
-5. Public output-directory discovery.
-6. Wayback feed-like URL hints followed by current validation.
-7. Plugin-specific candidates before generic fallbacks.
-8. Up to 80 direct feed probes for the four high-confidence targets.
-9. Strict current Google Merchant validation; no challenge bypass or cookie replay.
+## Acceptance
 
-## Reuse rules for the unknown 20
-
-The unknown-family cohort should inherit evidence only after it is observed:
-- If a public directory exposes generated XML, learn the directory + filename structure.
-- If a public HTML/XHR reference exposes a feed, learn the URL grammar.
-- If a plugin family is positively fingerprinted, switch that site into the matching learned family lane.
-- Do not classify a site from a generic WooCommerce stack alone.
-- Do not turn HTTP 403, 429, challenge pages, 404 HTML, sitemaps, or historical-only URLs into feed absence.
-
-The key learning objective is **pattern transfer from verified/public evidence**, not increasing the number of blind filename permutations.
+A standalone feed is accepted only when the current payload itself validates as Google Merchant XML with the required namespace and core product fields.

@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   deep-calibration:
-    name: V175 deep calibration - 4 known families
+    name: V175 deep calibration - 10 known feed-related sites
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
