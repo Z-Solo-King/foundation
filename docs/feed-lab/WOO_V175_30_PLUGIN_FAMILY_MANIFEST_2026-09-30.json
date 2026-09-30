@@ -1,0 +1,92 @@
+{
+  "schema_version": "woocommerce-30-plugin-family-manifest/v1",
+  "date": "2026-09-30",
+  "exclusions": {
+    "Moskeys": "site currently down/unresolvable; excluded from active 30",
+    "Only SDD": "native Google Merchant feed already verified; excluded from guessing cohort"
+  },
+  "totals": {
+    "original": 32,
+    "excluded": 2,
+    "active": 30
+  },
+  "groups": {
+    "woocommerce_google_product_feed": {
+      "confidence": "high",
+      "sites": [
+        "PC Studio"
+      ],
+      "evidence": "Historical known plugin/feed-family calibration; canonical ?woocommerce_gpf=google family."
+    },
+    "ctx_feed_webappick": {
+      "confidence": "high",
+      "sites": [
+        "Quickin Computers"
+      ],
+      "evidence": "Historical known CTX Feed/WebAppick feed family."
+    },
+    "adtribes_product_feed_pro": {
+      "confidence": "high",
+      "sites": [
+        "Avikaretails"
+      ],
+      "evidence": "Historical known Product Feed PRO/AdTribes feed family."
+    },
+    "google_for_woocommerce": {
+      "confidence": "high",
+      "sites": [
+        "Geekbees",
+        "Ninja Dog",
+        "Network IT Store",
+        "My Nexus Infosys",
+        "Solanki Enterprises",
+        "AULA India"
+      ],
+      "evidence": "Public google-listings-and-ads / wc(gla) API integration; separate from standalone XML."
+    },
+    "wpfm_product_feed_manager": {
+      "confidence": "high",
+      "sites": [
+        "IT Gadgets Online"
+      ],
+      "evidence": "Historical known Product Feed Manager/WPPFM family."
+    },
+    "unknown_feed_generator": {
+      "confidence": "not_identified",
+      "sites": [
+        "Aarna Computers",
+        "Ads Store",
+        "EZPZ Solutions",
+        "GamesNComps",
+        "hotshiftpc",
+        "ithunt",
+        "KC Computers",
+        "KRG KART",
+        "Kryptronix Gaming",
+        "NCL Computer",
+        "PC Kumar Infotech",
+        "PCHubShop",
+        "Prime ABGB",
+        "SCL Gaming",
+        "Variety Infotech",
+        "Viper PC",
+        "Cosmic Byte",
+        "Meckeys",
+        "StacksKB",
+        "Theproaudio"
+      ],
+      "evidence": "Historical/current V175 records contain WooCommerce/plugin-stack information, but no sufficiently strong feed-generator fingerprint. These sites receive all known public feed-family hypotheses as lower-priority guesses."
+    }
+  },
+  "feed_hypothesis_families": [
+    "woocommerce_google_product_feed",
+    "ctx_feed_webappick",
+    "adtribes_product_feed_pro",
+    "wpfm_product_feed_manager",
+    "webtoffee_product_feed",
+    "codesolz_merchant_feed_booster",
+    "feedcraft"
+  ],
+  "acceptance": "A candidate is a verified native feed only when the current same-host payload contains the Google Merchant namespace plus a real product item with g:id, g:title, g:link and g:price. Sitemaps, generic RSS/Atom, Store API reconstruction and guessed filenames without payload validation are not native-feed evidence.",
+  "safety": "Public read-only only. No authentication, CAPTCHA solving, Cloudflare challenge bypass, clearance-cookie replay, proxy evasion or stealth logic."
+}

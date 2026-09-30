@@ -1,0 +1,58 @@
+name: WooCommerce 30 Grouped Feed Guessing
+
+on:
+  push:
+    branches:
+      - feat/wc-30-grouped-feed-guessing-20260930
+    paths:
+      - "tools/woocommerce_30_grouped_feed_guess.mjs"
+      - "docs/feed-lab/WOO_V175_30_PLUGIN_FAMILY_MANIFEST_2026-09-30.json"
+      - ".github/workflows/woocommerce-30-grouped-feed-guessing.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "tools/woocommerce_30_grouped_feed_guess.mjs"
+      - "docs/feed-lab/WOO_V175_30_PLUGIN_FAMILY_MANIFEST_2026-09-30.json"
+      - ".github/workflows/woocommerce-30-grouped-feed-guessing.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  grouped-guess:
+    name: WC 30 shard ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1,2,3,4,5,6]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+      - name: Runtime smoke
+        run: node --version
+      - name: Validate 30-site manifest
+        shell: node
+        run: |
+          const fs=require("fs");
+          const p=JSON.parse(fs.readFileSync("docs/feed-lab/WOO_V175_30_PLUGIN_FAMILY_MANIFEST_2026-09-30.json","utf8"));
+          if(p.totals.original!==32||p.totals.excluded!==2||p.totals.active!==30)process.exit(1);
+          const n=Object.values(p.groups).reduce((s,g)=>s+g.sites.length,0);
+          if(n!==30)process.exit(1);
+          console.log("manifest-ok",n);
+      - name: Run grouped feed guessing
+        env:
+          SHARD: ${{ matrix.shard }}
+          SHARDS: "6"
+        run: node tools/woocommerce_30_grouped_feed_guess.mjs
+      - name: Upload shard evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: woocommerce-30-grouped-guess-shard-${{ matrix.shard }}
+          path: out/woocommerce-30-grouped-feed-guess/
+          retention-days: 14
