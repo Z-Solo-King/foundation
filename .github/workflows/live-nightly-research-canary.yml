@@ -81,13 +81,23 @@ jobs:
           RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
         run: |
           set -euo pipefail
-          set -euo pipefail
           test -n "${RESEARCH_PROXY_AUTH_TOKEN:-}" || { echo 'Missing AUTH_TOKEN'; exit 1; }
+          proxy_pid=""
+          cleanup_proxy() {
+            if [[ -n "${proxy_pid:-}" ]]; then
+              kill "$proxy_pid" 2>/dev/null || true
+              wait "$proxy_pid" 2>/dev/null || true
+            fi
+            rm -f "$RUNNER_TEMP/research-worker-proxy.pid"
+          }
+          trap cleanup_proxy EXIT INT TERM
           nohup python scripts/research_worker_proxy.py \
             --public-worker-url "${PUBLIC_WORKER_URL}" \
             --port 8765 \
+            --max-upstream-concurrency 8 \
             > "$RUNNER_TEMP/research-worker-proxy.log" 2>&1 &
-          echo $! > "$RUNNER_TEMP/research-worker-proxy.pid"
+          proxy_pid=$!
+          echo "$proxy_pid" > "$RUNNER_TEMP/research-worker-proxy.pid"
           for attempt in $(seq 1 20); do
             if curl -fsS --max-time 2 http://127.0.0.1:8765/health >/dev/null; then
               echo 'authenticated Workers AI research proxy: READY'
@@ -122,7 +132,7 @@ jobs:
           mkdir -p .runtime/live-nightly-canary
           PYTHONPATH=. python -m private.multi_agent.runner --start-slot 0 --slots 2 --global-capacity 8 --output .runtime/live-nightly-canary/research.jsonl
           python - <<'PY'
-          import json
+          import json, os
           from pathlib import Path
           rows=[json.loads(line) for line in Path('.runtime/live-nightly-canary/research.jsonl').read_text().splitlines() if line.strip()]
           expected={f'lane{lane}-slot{slot}' for lane in range(3) for slot in range(2)}
@@ -182,7 +192,7 @@ jobs:
               "probe_upstream_error": upstream_error,
               "probe_upstream_generation_status": upstream_generation_status,
               "probe_upstream_provider": upstream_provider,
-              "operations_ref": "1a91efa53b9202f1624ddde892b0e86bd6b360f0",
+              "operations_ref": os.environ.get("OPERATIONS_REF", "unknown"),
           }
           Path(out).write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
           print(json.dumps(data, indent=2, sort_keys=True))
