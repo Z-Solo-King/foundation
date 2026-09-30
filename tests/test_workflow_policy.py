@@ -169,7 +169,7 @@ def test_production_release_fails_closed_and_retains_chat_policy_receipts():
     assert 'require_model_generation:true' in deployment
     assert 'generation_status == \"model_generated\"' in deployment
     assert 'generation_status == \"model_generated\"' in deployment
-    assert "resource_governance_reservations" in deployment
+    assert "D1 governance snapshots: intentionally omitted from release-time REST/CLI queries" in deployment
     assert "cloudflare_workers_ai" in deployment
     assert 'provider == \"cloudflare_workers_ai\"' not in deployment
     assert "policy denial -> HTTP" in deployment
