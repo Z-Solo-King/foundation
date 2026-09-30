@@ -520,8 +520,8 @@ for asset in styles.css app.js composer.js lifecycle_controller.js; do
 done
 
 # Redeploy Operations against the new Foundation Worker, proving the final private binding.
-npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 execute "$database_name" --remote \
-  --file="$RUNNER_TEMP/operations/docs/RESOURCE_GOVERNANCE_D1_SCHEMA.sql"
+# The canonical schema is applied exactly once above through the pinned migrations directory;
+# do not re-run the raw DDL here because D1 DDL can consume row-read/write budget.
 (cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:foundation-binding-${ACCEPTANCE_RUN_ID}")
 
 operations_deployments_status=$(curl -sS -o "$RUNNER_TEMP/operations-deployments.json" -w '%{http_code}' \
@@ -601,20 +601,11 @@ echo "Live chat redeployment replay acceptance: PASS"
 cp "$RUNNER_TEMP/persistence-rollover-verify.json" .runtime/persistence-rollover-verify.json
 echo "Live memory/replay deployment-boundary acceptance: PASS"
 
-# Record the live durable MODEL_CALLS quota state before the required model-generation
-# acceptance. This is a bounded non-secret diagnostic: no auth token or provider payload
-# is queried, only governance counters from the canonical D1 authority.
-npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 execute "$database_name" --remote \
-  --command="SELECT scope, window_id, resource_kind, limit_units, reserved_units, consumed_units, updated_at FROM resource_governance_quota WHERE resource_kind = 'model_calls' ORDER BY updated_at DESC LIMIT 5;" \
-  --json > "$RUNNER_TEMP/model-call-quota.json"
-echo "model-call quota snapshot: collected"
-cp "$RUNNER_TEMP/model-call-quota.json" .runtime/model-call-quota.json
-
-npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 execute "$database_name" --remote \
-  --command="SELECT reservation_id, scope, window_id, resource_kind, amount, state, idempotency_key, lease_expires_at, updated_at FROM resource_governance_reservations WHERE resource_kind = 'model_calls' ORDER BY updated_at DESC LIMIT 10;" \
-  --json > "$RUNNER_TEMP/model-call-reservations.json"
-echo "model-call reservations snapshot: collected"
-cp "$RUNNER_TEMP/model-call-reservations.json" .runtime/model-call-reservations.json
+# Do not spend D1 row-read budget on release-time governance snapshots. D1 free-tier
+# query enforcement is account-wide; the authoritative runtime path already exercises
+# the quota/reservation state through the Worker binding. Release receipts remain
+# focused on externally observable acceptance rather than duplicating D1 diagnostics.
+echo "D1 governance snapshots: intentionally omitted from release-time REST/CLI queries"
 
 # Exercise the real public-to-private conversational and research paths only after
 # both Workers are deployed and the private provenance gate has passed.
@@ -628,6 +619,7 @@ live_chat_status=$(curl -sS --max-time 90 \
   -H "Authorization: Bearer ${AUTH_TOKEN}" \
   -H 'Content-Type: application/json' \
   -H "Idempotency-Key: ${live_chat_key}" \
+  -H 'X-Heroic-Research-Proof: 1' \
   -d "${live_chat_payload}" \
   "${BASE_URL}/api/v1/chat")
 echo "POST /api/v1/chat -> HTTP ${live_chat_status}"
@@ -637,30 +629,18 @@ if [ "$live_chat_status" != '200' ]; then
   echo '--- end live-chat.body ---'
   exit 1
 fi
-jq -e '.ok == true and (.response.result_state == "COMPLETE" or .response.result_state == "PARTIAL") and .response.generation_status == "model_generated" and ((.response.text // "") | length > 0) and (.response.provider == null)' \
+jq -e '.ok == true and (.response.result_state == "COMPLETE" or .response.result_state == "PARTIAL") and .response.generation_status == "model_generated" and ((.response.text // "") | length > 0) and .response.provider == "cloudflare_workers_ai"' \
   "$RUNNER_TEMP/live-chat.json" >/dev/null
 live_chat_state=$(jq -r '.response.result_state' "$RUNNER_TEMP/live-chat.json")
 live_chat_generation=$(jq -r '.response.generation_status' "$RUNNER_TEMP/live-chat.json")
 echo "Live chat public-contract acceptance: PASS (result_state=${live_chat_state}; generation_status=${live_chat_generation})"
 
-# Provider identity is intentionally private and is proven from the durable model-call
-# reservation ledger rather than exposed in the public response.
-npx --yes wrangler@4.131.1 --config "$d1_migrations_config" d1 execute "$database_name" --remote --command="SELECT reservation_id, state FROM resource_governance_reservations WHERE resource_kind = 'model_calls' AND state = 'consumed' AND reservation_id LIKE 'chat-model:production-chat-${ACCEPTANCE_RUN_ID}:%' AND instr(reservation_id, ':cloudflare_workers_ai:') > 0 ORDER BY updated_at DESC LIMIT 5;" --json > "$RUNNER_TEMP/live-chat-provider-provenance.json"
-for attempt in $(seq 1 10); do
-  if jq -e '[.. | objects
-    | select((.state? // "") == "consumed")
-    | select(((.reservation_id? // "") | contains("cloudflare_workers_ai")))
-  ] | length > 0' "$RUNNER_TEMP/live-chat-provider-provenance.json" >/dev/null 2>&1; then
-    echo "Live chat provider provenance: PASS (cloudflare_workers_ai; durable reservation ledger; attempt=$attempt)"
-    break
-  fi
-  if [ "$attempt" -eq 10 ]; then
-    echo "Live chat provider provenance: FAIL (durable reservation receipt not visible after bounded reconciliation)"
-    cat "$RUNNER_TEMP/live-chat-provider-provenance.json" || true
-    exit 1
-  fi
-  sleep 2
-done
+# Provider identity is visible only on the authenticated research-proof projection.
+# The public edge adds this field only when the caller supplies the proof header, so the
+# release can verify the actual provider without issuing another account-level D1 query.
+live_chat_provider=$(jq -r '.response.provider // empty' "$RUNNER_TEMP/live-chat.json")
+test "$live_chat_provider" = "cloudflare_workers_ai"
+echo "Live chat provider provenance: PASS (${live_chat_provider}; authenticated research-proof response)"
 
 live_chat_replay_status=$(curl -sS --max-time 30 \
   -o "$RUNNER_TEMP/live-chat-replay.json" -w '%{http_code}' \
