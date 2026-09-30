@@ -467,6 +467,21 @@ def explicit_xml_candidates(text: str, root: str) -> List[str]:
     return sorted(out)[:160]
 
 
+def filter_explicit_feed_candidates(urls: Iterable[str]) -> List[str]:
+    """Keep actual feed-like URLs, excluding sitemap/robots discovery documents."""
+    out = set()
+    for raw in urls:
+        try:
+            u = str(raw)
+            path = (urlsplit(u).path or "").lower()
+        except Exception:
+            continue
+        if path.endswith("robots.txt") or "sitemap" in path:
+            continue
+        out.add(u)
+    return sorted(out)[:160]
+
+
 def native_google_valid(body: bytes, content_type: str) -> Tuple[bool, int, str]:
     if not body:
         return False, 0, ""
@@ -922,14 +937,15 @@ async def probe_site(name: str, root: str) -> Dict[str, Any]:
         family_confidence = plugin_family_confidence(hits, all_slugs, all_namespaces)
 
     explicit = explicit_xml_candidates("\n".join(source_blobs + all_requests), root)
+    explicit_feed_candidates = filter_explicit_feed_candidates(explicit)
     query_candidates = query_feed_candidates("\n".join(source_blobs + all_requests), root)
-    candidates = list(dict.fromkeys(explicit + query_candidates + passive.get("urls", []) + historical))
+    candidates = list(dict.fromkeys(explicit_feed_candidates + query_candidates + passive.get("urls", []) + historical))
     candidates.extend(GENERIC_FEED_PATHS)
     if family in PLUGIN_CANDIDATES:
         candidates = PLUGIN_CANDIDATES[family] + candidates
     candidates = list(dict.fromkeys(candidates))
 
-    api_integrated_google = family == "google_for_woocommerce" and not explicit and not query_candidates
+    api_integrated_google = family == "google_for_woocommerce" and not explicit_feed_candidates and not query_candidates
     if challenge_encountered:
         feed = {
             "verified": False,
@@ -983,6 +999,7 @@ async def probe_site(name: str, root: str) -> Dict[str, Any]:
         },
         "candidate_count": len(candidates),
         "explicit_candidates": explicit[:120],
+        "explicit_feed_candidates": explicit_feed_candidates[:120],
         "query_feed_candidates": query_candidates[:120],
         "native_feed": feed,
         "feed_transport": "api_integrated" if api_integrated_google else "standalone_xml_candidate_probe",
