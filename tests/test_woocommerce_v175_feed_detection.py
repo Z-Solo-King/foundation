@@ -3,7 +3,9 @@ import types
 from pathlib import Path
 import importlib.util
 
+# The generic repository test environment does not install extractor-only httpx.
 sys.modules.setdefault("httpx", types.ModuleType("httpx"))
+
 MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "woocommerce_v175_plugin_fingerprint_22.py"
 spec = importlib.util.spec_from_file_location("wc_v175_feed_detection", MODULE_PATH)
 assert spec and spec.loader
