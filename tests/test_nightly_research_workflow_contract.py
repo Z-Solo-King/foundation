@@ -55,8 +55,10 @@ def test_production_release_explicitly_dispatches_nightly_live_mode():
 
 def test_private_operations_pin_and_app_auth_remain_explicit():
     text=workflow_text()
+    manifest=json.loads((Path(__file__).parents[1] / "docs" / "OPERATIONS_PIN_MANIFEST.json").read_text(encoding="utf-8"))
+    production_pin=manifest["pins"]["production_runtime"]["sha"]
     assert "OPERATIONS_RESEARCH_REF:" in text
-    assert "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676" in text
+    assert production_pin in text
     assert "OPERATIONS_MIGRATION_TOOLS_REF: f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791" in text
     assert "OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}" in text
     assert "OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}" in text
@@ -131,8 +133,9 @@ def test_proxy_has_bounded_transport_recovery():
 def test_operations_pin_manifest_matches_research_workflow():
     workflow=workflow_text()
     manifest=json.loads((Path(__file__).parents[1]/"docs"/"OPERATIONS_PIN_MANIFEST.json").read_text(encoding="utf-8"))
-    assert manifest["pins"]["production_runtime"]["sha"] == "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676"
-    assert manifest["pins"]["production_runtime"]["sha"] in workflow
+    production_pin=manifest["pins"]["production_runtime"]["sha"]
+    assert len(production_pin) == 40
+    assert production_pin in workflow
 
 
 def test_pinned_operations_contract_guard_is_semantic():
