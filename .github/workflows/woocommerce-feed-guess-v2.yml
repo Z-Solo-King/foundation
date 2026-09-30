@@ -1,0 +1,140 @@
+name: WooCommerce Feed Guessing V2 — Public Discovery
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tools/woocommerce_feed_guess_v2.py"
+      - "tests/test_woocommerce_feed_guess_v2.py"
+      - ".github/workflows/woocommerce-feed-guess-v2.yml"
+      - "docs/feed-lab/WOO_V2_PUBLIC_DISCOVERY_2026-09-30.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wc-feed-guess-v2-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guess:
+    name: V2 public discovery shard ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    env:
+      SHARD: ${{ matrix.shard }}
+      SHARDS: 6
+      MAX_DIRECT_FEED_PROBES: "80"
+      MAX_INTERNAL_PAGES: "3"
+      PASSIVE_INDEX_ENABLED: "1"
+      WAYBACK_ENABLED: "1"
+      COMMONCRAWL_ENABLED: "1"
+      CF_BROWSER_RUN_ENABLED: "0"
+      BROWSERLESS_DIAGNOSTIC_ENABLED: "0"
+      SITE_CONCURRENCY: "2"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+      - name: Install extraction runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -q httpx playwright
+          python -m playwright install --with-deps chromium firefox webkit
+      - name: Acceptance boundary static guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -nE 'add_cookies|seed_cookies|cookie_jars|camoufox|nodriver|curl_cffi' tools/woocommerce_feed_guess_v2.py
+      - name: Run V2 public discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/woocommerce_feed_guess_v2.py
+      - name: Upload V2 evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-guessing-v2-shard-${{ matrix.shard }}
+          path: out/woocommerce-guessing-v2/
+          retention-days: 30
+
+  aggregate:
+    name: Aggregate V2 guessing evidence
+    needs: guess
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Download shard evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          pattern: woocommerce-guessing-v2-shard-*
+          path: out/shards
+          merge-multiple: false
+      - name: Aggregate and validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFile, mkdir, writeFile, readdir } from "node:fs/promises";
+          async function collect(dir) {
+            const out = [];
+            for (const e of await readdir(dir, {withFileTypes:true})) {
+              const p = dir + "/" + e.name;
+              if (e.isDirectory()) out.push(...await collect(p));
+              else if (e.isFile() && e.name.endsWith(".json")) out.push(p);
+            }
+            return out;
+          }
+          const files = await collect("out/shards");
+          const rows = [];
+          for (const f of files) {
+            const data = JSON.parse(await readFile(f, "utf8"));
+            rows.push(...(data.results || []));
+          }
+          rows.sort((a,b)=>String(a.site).localeCompare(String(b.site)));
+          const payload = {
+            schema: "woocommerce-guessing-v2-aggregate/v1",
+            target_count: rows.length,
+            native_verified: rows.filter(x=>Boolean(x.native_feed?.verified)).length,
+            api_integrated_google: rows.filter(x=>x.feed_transport==="api_integrated").length,
+            challenge_encountered: rows.filter(x=>Boolean(x.challenge_encountered)).length,
+            family_counts: Object.fromEntries(
+              Object.entries(rows.reduce((m,x)=>{
+                const k=x.family||"unknown_woocommerce";
+                m[k]=(m[k]||0)+1; return m;
+              },{})).sort(([a],[b])=>a.localeCompare(b))
+            ),
+            results: rows
+          };
+          if (rows.length !== 20) throw new Error(`expected 20 rows, got ${rows.length}`);
+          await mkdir("out/aggregate",{recursive:true});
+          await writeFile("out/aggregate/aggregate.json",JSON.stringify(payload,null,2)+"\n","utf8");
+          const md = [
+            "# WooCommerce Feed Guessing V2 — Public Discovery",
+            "",
+            `Targets: ${rows.length}`,
+            `Native Google Merchant XML verified: ${payload.native_verified}`,
+            `API-integrated Google sync sites: ${payload.api_integrated_google}`,
+            `Challenge encountered: ${payload.challenge_encountered}`,
+            "",
+            "| Site | Detected family | Confidence | Native feed | Transport | Candidates |",
+            "|---|---|---|---|---|---:|",
+            ...rows.map(x=>`| ${x.site} | ${x.family} | ${x.family_confidence} | ${x.native_feed?.verified?"YES":"NO"} | ${x.feed_transport} | ${x.candidate_count||0} |`)
+          ].join("\n")+"\n";
+          await writeFile("out/aggregate/aggregate.md",md,"utf8");
+          NODE
+      - name: Upload aggregate evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-guessing-v2-aggregate
+          path: out/aggregate/
+          retention-days: 30
