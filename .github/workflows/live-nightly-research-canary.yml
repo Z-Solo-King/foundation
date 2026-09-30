@@ -17,7 +17,7 @@ concurrency:
 
 env:
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_REF: 7b55c97331a9a066dcb1d46c4bbe17e173dc60ca
+  OPERATIONS_REF: 09cef5b62aa4e7877412830e265a20731c4976c9
   PUBLIC_WORKER_URL: "https://ai-cio.pages.dev"
   RESEARCH_LLM_ENDPOINT: "http://127.0.0.1:8765"
   RESEARCH_LLM_API_KEY: "local-worker-proxy"
