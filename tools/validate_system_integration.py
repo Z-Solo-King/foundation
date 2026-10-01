@@ -36,8 +36,8 @@ def main() -> int:
     foundation = args.foundation_root.resolve()
     operations = args.operations_root.resolve() if args.operations_root else None
 
-    contract = load(foundation / CONTRACT.name)
-    matrix = load(foundation / MATRIX.name)
+    contract = load(foundation / "docs" / CONTRACT.name)
+    matrix = load(foundation / "docs" / MATRIX.name)
 
     if contract.get("schema_version") != "system-integration-contract/v1":
         errors.append("contract schema mismatch")
