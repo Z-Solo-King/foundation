@@ -26,8 +26,8 @@ Internal access is capability-scoped. Autonomous AI can request approved operati
 `operations` binds AI `AI`, service `FOUNDATION=heroic`, D1 `OPERATIONS_DB`, and protected chatbot/provider configuration.
 
 Live Cloudflare annotations:
-- public Foundation revision: `f43028ca6c6a4f4d3cecbfdb99ae4602330228b4`;
-- deployed Operations production pin: `da86e92d4e0fdb68912efb54ef95c69281a7d613`.
+- approved Operations production/runtime pin: `f43028ca6c6a4f4d3cecbfdb99ae4602330228b4`;
+- deployed Operations production pin: `6042cb8cd972ba25d42ebebddcb763b9dfb57b67`.
 
 No secret values belong in this document.
 

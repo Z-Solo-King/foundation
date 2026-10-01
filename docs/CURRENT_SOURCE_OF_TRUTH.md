@@ -8,7 +8,8 @@ Continuity CI uses a full-depth Foundation checkout so merge-commit parent resol
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
 Foundation main code checkpoint: current main is read live from GitHub; last verified commit `139cbea93cb876889b234f28fc2bdc8b3b669fdd`.
 Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `2133534f9512eee4df49d78f6c39530502944b74`. Research and migration jobs use explicit immutable pins below.
-Production Operations pin: `da86e92d4e0fdb68912efb54ef95c69281a7d613`.
+Approved production Operations pin: `6042cb8cd972ba25d42ebebddcb763b9dfb57b67`.
+Live production observed revision remains separately tracked by the release-evidence state; a fresh canonical certification is required after this pin change.
 Provider fleet runtime probe pin: `b95e419254a9071beaeef57a1b0da22ba7dd2c4f`.
 Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`.
 Live issue and PR counts must be read from GitHub; this file never serves as a mutable queue.
@@ -130,7 +131,7 @@ Foundation is the sole hosted Actions authority. Operations remains the private 
 
 ## 2026-10-01 canonical Operations production pin promotion
 
-The production Operations pin is now the merged revision `da86e92d4e0fdb68912efb54ef95c69281a7d613`, which includes the bounded D1 persistence-sentinel optimization from Operations PR #1437. Operations main remains a separate moving branch and is not production authority. The pin change is a cost-efficiency/control-plane change only; a fresh production deployment and runtime certification remain required before claiming production acceptance.
+The production Operations pin is now the merged revision `6042cb8cd972ba25d42ebebddcb763b9dfb57b67`, which includes the bounded D1 persistence-sentinel optimization from Operations PR #1437. Operations main remains a separate moving branch and is not production authority. The pin change is a cost-efficiency/control-plane change only; a fresh production deployment and runtime certification remain required before claiming production acceptance.
 
 ## 2026-10-01 final cohesion checkpoint
 
