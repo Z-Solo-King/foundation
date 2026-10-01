@@ -1,1 +1,27 @@
-successfully downloaded text file (SHA: 05be3574078d5a6ed228b271c875d4c4566d9cc0)
+import {mkdir,writeFile} from "node:fs/promises";
+const targets=[
+["PC Studio","https://www.pcstudio.in"],["Quickin Computers","https://quickincomputers.com"],["Avikaretails","https://avikaretails.com"],["IT Gadgets Online","https://itgadgetsonline.com"],["Geekbees","https://geekbees.in"],["Ninja Dog","https://ninjadog.in"],["Network IT Store","https://networkitstore.in"],["My Nexus Infosys","https://www.mynexusinfosys.com"],["Solanki Enterprises","https://solankienterprises.com"],["AULA India","https://aulaindia.com"],["Aarna Computers","https://aarnacomputers.com"],["Ads Store","https://adsstore.in"],["EZPZ Solutions","https://www.ezpzsolutions.in"],["GamesNComps","https://gamesncomps.com"],["hotshiftpc","https://hotshiftpc.com"],["ithunt","https://ithunt.in"],["KC Computers","https://kccomputers.co.in"],["KRG KART","https://krgkart.com"],["PC Kumar Infotech","https://pckumar.in"],["PCHubShop","https://www.pchubshop.com"],["SCL Gaming","https://sclgaming.in"],["Variety Infotech","https://varietyinfotech.com"],["Viper PC","https://viperpc.in"],["Cosmic Byte","https://www.thecosmicbyte.com"],["Meckeys","https://www.meckeys.com"],["StacksKB","https://stackskb.com"],["Theproaudio","https://www.theproaudio.com"],["Prime ABGB","https://www.primeabgb.com"],["Kryptronix Gaming","https://kryptronix.in"],["NCL Computer","https://nclcomputer.com"]];
+const ns=/base\.google\.com\/ns\/1\.0/i;
+const bad=/just a moment|cf-chl-|turnstile|captcha|access denied|attention required|checking your browser|verify you are human|request blocked|sorry, you have been blocked/i;
+const same=(a,b)=>{try{return new URL(a).hostname.toLowerCase().replace(/^www\./,"")===new URL(b).hostname.toLowerCase().replace(/^www\./,"")}catch{return false}};
+const xml=(u)=>/\.xml(?:\.gz)?(?:[?#].*)?$/i.test(u);
+const feed=(u)=>xml(u)||/(feed|google|merchant|shopping|woo_feed|woocommerce_gpf|wppfm|webtoffee|adtribes)/i.test(u);
+function valid(s){
+ s=String(s||"");const t=s.trimStart();if(bad.test(s.slice(0,50000)))return{valid:false,reason:"blocked_page"};if(/^\s*<(?:urlset|sitemapindex)\b/i.test(t))return{valid:false,reason:"sitemap"};if(!/^\s*(?:<\?xml\b|<rss\b|<feed\b|<channel\b)/i.test(t))return{valid:false,reason:"not_xml"};if(!ns.test(s))return{valid:false,reason:"no_google_namespace"};const items=[...[...s.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)].map(m=>m[1]),...[...s.matchAll(/<entry\b[^>]*>([\s\S]*?)<\/entry>/gi)].map(m=>m[1])];let good=0;for(const b of items)if(["id","title","link","price"].every(k=>new RegExp("<g:"+k+"\\b[\\s\\S]*?<\\/g:"+k+">","i").test(b)))good++;return{valid:good>0,reason:good?"validated_google_merchant_xml":"no_item_with_core_google_fields",items:items.length,valid_items:good};
+}
+async function run(name,root){
+ let p;try{p=await import("playwright")}catch(e){return{site:name,root,status:"BROWSER_UNAVAILABLE",error:String(e)}}let b,c;const cap=[];try{
+  b=await p.chromium.launch({headless:true});c=await b.newContext({javaScriptEnabled:true,acceptDownloads:false,serviceWorkers:"block"});
+  await c.route("**/*",async r=>{const q=r.request(),m=(q.method()||"GET").toUpperCase();if(!["GET","HEAD","OPTIONS"].includes(m)){await r.abort();return}try{const u=new URL(q.url());if(!["http:","https:"].includes(u.protocol)||!same(u.href,root)){await r.abort();return}}catch{await r.abort();return}await r.continue()});
+  const page=await c.newPage();
+  page.on("response",async r=>{if(cap.length>=100)return;try{const u=r.url(),m=(r.request().method()||"GET").toUpperCase();if(m!=="GET"||!same(u,root))return;const ct=await r.headerValue("content-type")||"";if(!/(xml|text|json|javascript|html)/i.test(ct)&&!feed(u))return;const body=await r.body();if(body.length<=1200000)cap.push({url:u,status:r.status(),content_type:ct,body:body.toString("utf8")})}catch{}});
+  let main=null;try{main=await page.goto(root,{waitUntil:"domcontentloaded",timeout:25000})}catch{}
+  await page.waitForTimeout(1800);
+  const html=await page.content().catch(()=> "");
+  if(main)cap.push({url:page.url(),status:main.status(),content_type:await main.headerValue("content-type")||"",body:html});
+  const candidates=[...new Map(cap.filter(x=>feed(x.url)).map(x=>[x.url,x])).values()];
+  for(const x of candidates){try{const r=await fetch(x.url,{redirect:"follow",headers:{"accept":"application/xml,text/xml,*/*;q=0.1"}});const body=await r.text();const v=r.status===200&&same(r.url,root)?valid(body):{valid:false,reason:"http_or_redirect"};if(v.valid)return{site:name,root,status:"NATIVE_FEED_VERIFIED",winner:{url:x.url,status:r.status,final_url:r.url,validation:v},capture_count:cap.length}}catch{}}
+  return{site:name,root,status:bad.test(html)?"BROWSER_BLOCKED":"NO_NATIVE_FEED_VERIFIED",capture_count:cap.length,candidates:candidates.map(x=>({url:x.url,status:x.status,content_type:x.content_type})).slice(0,100)};
+ }catch(e){return{site:name,root,status:"BROWSER_ERROR",error:String(e)}}finally{try{await c?.close()}catch{}try{await b?.close()}catch{}}
+}
+await mkdir("out/woocommerce-browser-feed-v17",{recursive:true});const results=[];for(const t of targets)results.push(await run(t[0],t[1]));const out={schema:"woocommerce-browser-feed-recovery-v17/v1",generated_at:new Date().toISOString(),target_count:30,acceptance:"current same-host XML with Google Merchant namespace and g:id/g:title/g:link/g:price",results};await writeFile("out/woocommerce-browser-feed-v17/report.json",JSON.stringify(out,null,2));console.log(JSON.stringify({native_verified:results.filter(x=>x.status==="NATIVE_FEED_VERIFIED").length,urls:results.filter(x=>x.status==="NATIVE_FEED_VERIFIED").map(x=>x.winner.final_url)}));
