@@ -17,7 +17,7 @@ export const FORBIDDEN_WORKFLOWS = new Set(['heroic-ai-production-release.yml'])
 
 function stripFence(value) {
   const text = String(value ?? '').trim();
-  const match = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  const match = text.match(/^\`\`\`(?:json)?\s*([\s\S]*?)\s*\`\`\`$/i);
   return match ? match[1].trim() : text;
 }
 
@@ -41,6 +41,7 @@ export function validatePlan(plan) {
   if (plan.terminal === null && plan.actions.length === 0) throw new Error('non-terminal plan requires an action');
   if (plan.terminal !== null && plan.actions.length !== 0) throw new Error('terminal plan cannot contain actions');
   const ids = new Set();
+  const workflows = new Set();
   for (const action of plan.actions) {
     if (!action || action.kind !== 'dispatch_workflow') throw new Error('unsupported action kind');
     if (typeof action.id !== 'string' || !/^a[0-9a-z._:-]{1,63}$/i.test(action.id)) throw new Error('invalid action id');
