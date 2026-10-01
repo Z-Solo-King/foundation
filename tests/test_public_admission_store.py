@@ -316,7 +316,7 @@ async def test_worker_research_uses_legacy_create_run_fallback(monkeypatch):
     monkeypatch.setattr(
         worker,
         "submit_research",
-        lambda request: type(
+        lambda request, **kwargs: type(
             "Result",
             (),
             {"ok": True, "run_id": "run-legacy", "metadata": {"mode": "test"}},
