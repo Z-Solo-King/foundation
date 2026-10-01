@@ -1,0 +1,61 @@
+{
+  "schema_version": "github-app-integration-policy/v1",
+  "updated_on": "2026-10-01",
+  "marketplace_installation_default": "disabled",
+  "installation_requires_explicit_approval": true,
+  "allowed_repository_scope": [
+    "Z-Solo-King/foundation",
+    "Z-Solo-King/operations"
+  ],
+  "external_marketplace_apps": [],
+  "required_controls": {
+    "minimum_repository_permissions": true,
+    "selected_repository_access": true,
+    "short_lived_installation_tokens": true,
+    "token_revocation_or_expiry": true,
+    "webhook_secret_if_webhooks_are_used": true,
+    "minimum_webhook_events": true,
+    "audit_receipt_for_privileged_actions": true,
+    "no_production_deploy_authority": true,
+    "no_secret_mutation_authority": true
+  },
+  "permission_baseline": {
+    "contents": "read",
+    "issues": "read",
+    "pull_requests": "read",
+    "actions": "read"
+  },
+  "higher_permissions_require": [
+    "documented_functional_need",
+    "code_review",
+    "deterministic_policy_test",
+    "live_runtime_evidence",
+    "rollback_path"
+  ],
+  "app_roles": {
+    "security": "research_only",
+    "code_review": "research_only",
+    "ai_agent": "research_only",
+    "project_management": "research_only",
+    "observability": "research_only",
+    "deployment": "forbidden",
+    "production_authority": "forbidden"
+  },
+  "webhook_policy": {
+    "enabled_by_default": false,
+    "allowed_events": [
+      "issues",
+      "issue_comment",
+      "pull_request",
+      "pull_request_review",
+      "workflow_run"
+    ],
+    "signature_validation_required": true,
+    "https_required": true
+  },
+  "provenance": {
+    "marketplace_is_discovery_only": true,
+    "app_installation_is_not_runtime_authority": true,
+    "third_party_apps_must_not_override_canonical_foundation_workflows": true
+  }
+}

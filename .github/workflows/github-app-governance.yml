@@ -1,0 +1,50 @@
+name: GitHub App governance
+
+on:
+  pull_request:
+    paths:
+      - "docs/GITHUB_APP_INTEGRATION_POLICY.json"
+      - "scripts/validate_github_app_policy.py"
+      - "tests/test_github_app_marketplace_policy.py"
+      - "scripts/create_github_app_jwt.py"
+      - "scripts/resolve_operations_installation.py"
+      - ".github/workflows/**"
+  push:
+    branches: [main]
+    paths:
+      - "docs/GITHUB_APP_INTEGRATION_POLICY.json"
+      - "scripts/validate_github_app_policy.py"
+      - "tests/test_github_app_marketplace_policy.py"
+      - "scripts/create_github_app_jwt.py"
+      - "scripts/resolve_operations_installation.py"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foundation-github-app-governance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate GitHub App boundary
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Validate policy
+        run: python scripts/validate_github_app_policy.py
+
+      - name: Run policy tests
+        run: python -m pytest -q tests/test_github_app_marketplace_policy.py
