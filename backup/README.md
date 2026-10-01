@@ -70,3 +70,14 @@ The workflow must perform:
 A valid repository archive is evidence of Git-data recoverability. Full disaster-recovery certification remains a separate acceptance class.
 
 <!-- GitHub App deployment-auth boundary verified 2026-09-16; no B2 credential reuse. -->
+
+
+## Retention and storage bound
+
+The scheduled backup creates a new generation only on its daily run or a manual dispatch; ordinary main commits no longer trigger a full backup. After the new generation's object metadata, SHA-256, remote download, extraction and Git integrity checks all pass, the workflow deletes older B2 object versions under the repository-backup/ prefix and retains only the latest verified generation. A failed backup therefore leaves the previous verified generation intact.
+
+Cleanup is version-aware. Backblaze B2 buckets are versioned, so deleting an object by key alone creates a delete marker while older versions can remain stored. The cleanup lists object versions and permanently deletes stale version IDs instead.
+
+The B2 backup Application Key must permit the object listing and deletion capabilities required by the cleanup path. Those deletion capabilities are used only for the dedicated repository-backup/ prefix.
+
+This design bounds the recurring backup storage to roughly one full repository generation rather than accumulating another multi-gigabyte archive on every commit. It is separate from B2 Usage Report monitoring; the Operations dashboard does not need B2 credentials to enforce this retention policy.
