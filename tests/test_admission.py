@@ -41,7 +41,7 @@ def snapshot(**changes):
 
 def test_admission_accepts_within_burst_and_concurrency_limits():
     decision = decide_admission(
-        policy=AdmissionPolicy(),
+        policy(),
         snapshot=snapshot(),
         subject_fingerprint="subject-1",
         route=AdmissionRoute.RESEARCH,
@@ -54,18 +54,16 @@ def test_admission_accepts_within_burst_and_concurrency_limits():
 
 def test_global_and_subject_request_limits_fail_closed():
     policy = AdmissionPolicy()
-    assert decide_admission(policy=policy, snapshot=snapshot(global_requests=300), subject_fingerprint="s", route=AdmissionRoute.RESEARCH).outcome is AdmissionOutcome.RATE_LIMITED
-    assert decide_admission(policy=policy, snapshot=snapshot(subject_requests=30), subject_fingerprint="s", route=AdmissionRoute.RESEARCH).outcome is AdmissionOutcome.RATE_LIMITED
+    assert decide_admission(policy=policy, snapshot=snapshot(global_requests=70), subject_fingerprint="s", route=AdmissionRoute.RESEARCH).outcome is AdmissionOutcome.RATE_LIMITED
+    assert decide_admission(policy=policy, snapshot=snapshot(subject_requests=7), subject_fingerprint="s", route=AdmissionRoute.RESEARCH).outcome is AdmissionOutcome.RATE_LIMITED
 
 
 def test_global_and_subject_concurrency_limits_fail_closed():
     policy = AdmissionPolicy()
-    assert policy.max_concurrent_per_subject == 22
-    assert policy.max_concurrent_global == 22
-    assert decide_admission(policy=policy, snapshot=snapshot(global_concurrent=22), subject_fingerprint="s", route=AdmissionRoute.CHAT).outcome is AdmissionOutcome.CONCURRENCY_LIMITED
-    assert decide_admission(policy=policy, snapshot=snapshot(subject_concurrent=22), subject_fingerprint="s", route=AdmissionRoute.CHAT).outcome is AdmissionOutcome.CONCURRENCY_LIMITED
-    assert decide_admission(policy=policy, snapshot=snapshot(global_concurrent=21), subject_fingerprint="s", route=AdmissionRoute.CHAT).allowed is True
-    assert decide_admission(policy=policy, snapshot=snapshot(subject_concurrent=21), subject_fingerprint="s", route=AdmissionRoute.CHAT).allowed is True
+        assert decide_admission(policy=policy, snapshot=snapshot(global_concurrent=8), subject_fingerprint="s", route=AdmissionRoute.CHAT).outcome is AdmissionOutcome.CONCURRENCY_LIMITED
+    assert decide_admission(policy=policy, snapshot=snapshot(subject_concurrent=4), subject_fingerprint="s", route=AdmissionRoute.CHAT).outcome is AdmissionOutcome.CONCURRENCY_LIMITED
+    assert decide_admission(policy=policy, snapshot=snapshot(global_concurrent=7), subject_fingerprint="s", route=AdmissionRoute.CHAT).allowed is True
+    assert decide_admission(policy=policy, snapshot=snapshot(subject_concurrent=3), subject_fingerprint="s", route=AdmissionRoute.CHAT).allowed is True
 
 
 def test_duplicate_suppression_does_not_create_second_resource_authority():

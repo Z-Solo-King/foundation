@@ -195,18 +195,6 @@ def _chat_headers(request):
 
 
 
-async def _private_admission_policy(env):
-    operations = getattr(env, "OPERATIONS", None)
-    if operations is None:
-        return None
-    try:
-        token = _bearer_token(_TestServiceRequest("", method="GET", headers={}))
-    except Exception:
-        token = None
-    # The caller's bearer token is passed by _public_admit so the private endpoint
-    # authenticates the same subject without exposing policy values in source control.
-    return None
-
 async def _public_admit(env, route, subject_fingerprint, event_id, request=None):
     db = getattr(env, "DB", None)
     environment = str(getattr(env, "ENVIRONMENT", "production") or "production").casefold()

@@ -44,7 +44,7 @@ async def test_d1_store_admits_with_existing_admission_policy():
     decision, lease = await store.acquire(
         subject_fingerprint="subject-1",
         route=AdmissionRoute.RESEARCH,
-        policy=AdmissionPolicy(),
+        policy=policy()
         event_id="event-1",
         now=120,
     )

@@ -25,6 +25,16 @@ FORBIDDEN_PRIVATE_MARKERS = (
     "extractor_mapper",
 )
 NETWORK_MODULES = {"requests", "httpx", "urllib", "aiohttp"}
+PROTECTED_POLICY_MARKERS = (
+    "CATEGORY_REQUIRED_SOURCE_FAMILIES",
+    "PROTECTED_POLICY_RULES",
+    "PROVIDER_KEYS_JSON",
+    "HEROIC_AUTH_TOKEN",
+    "max_requests_per_subject",
+    "max_concurrent_per_subject",
+    "CHAT_LLM_PROVIDERS",
+)
+
 PRIVATE_IMPORT_PATTERN = re.compile(r"(?<![A-Za-z0-9_.-])(?:from|import)\s+private\.[A-Za-z0-9_.]+")
 PRIVATE_PATH_PATTERN = re.compile(r"(?<![A-Za-z0-9_.-])operations/private/[A-Za-z0-9_./-]+")
 PRIVATE_REVISION_PATTERN = re.compile(r"Z-Solo-King/operations@[0-9a-f]{40}")
@@ -134,6 +144,16 @@ def workflow_private_execution_findings(path: Path, source: str, root: Path = RO
     return []
 
 
+def protected_policy_findings(path: Path, source: str, root: Path = ROOT) -> list[Finding]:
+    relative = rel(path, root)
+    if relative == "scripts/public_security_lint.py" or _is_test(relative) or relative.startswith(".github/workflows/") or relative.startswith("docs/"):
+        return []
+    findings = []
+    for marker in PROTECTED_POLICY_MARKERS:
+        if marker in source:
+            findings.append(Finding(relative, "protected-policy-public", f"protected operational policy marker {marker} is present in public source"))
+    return findings
+
 def private_revision_findings(path: Path, source: str, root: Path = ROOT) -> list[Finding]:
     relative = rel(path, root)
     if relative == "scripts/public_security_lint.py" or _is_public_safe_reference(relative):
@@ -182,6 +202,7 @@ def lint_file(path: Path, root: Path = ROOT) -> list[Finding]:
     findings.extend(private_reference_findings(path, source, root))
     findings.extend(workflow_private_execution_findings(path, source, root))
     findings.extend(private_revision_findings(path, source, root))
+    findings.extend(protected_policy_findings(path, source, root))
     if path.suffix.lower() == ".py":
         findings.extend(python_findings(path, source))
     return findings
