@@ -11,7 +11,7 @@ Operations main checkpoint: current main is read live from GitHub; last verified
 Production Operations pin: `da86e92d4e0fdb68912efb54ef95c69281a7d613`.
 Provider fleet runtime probe pin: `b95e419254a9071beaeef57a1b0da22ba7dd2c4f`.
 Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`.
-Live issue and PR counts must be read from GitHub; this file never serves as a mutable queue. Current checkpoint: 8 open issues total (7 Foundation, 1 Operations) and 1 open PR (#1791).
+Live issue and PR counts must be read from GitHub; this file never serves as a mutable queue. Current checkpoint: 8 open issues total (7 Foundation, 1 Operations) and no open pull requests.
 
 ## Public architecture
 
