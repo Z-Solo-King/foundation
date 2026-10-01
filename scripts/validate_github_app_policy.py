@@ -94,12 +94,6 @@ def validate_first_party_app_workflows() -> None:
 
     workflows = ROOT / ".github" / "workflows"
     token_pattern = re.compile(r"actions/create-github-app-token@([0-9a-f]{40})")
-    expected = {
-        "client-id: " + "${{ secrets.OPERATIONS_APP_ID }}",
-        "private-key: " + "${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}",
-        "repositories: operations",
-        "permission-contents: read",
-    }
 
     for path in workflows.rglob("*.yml"):
         lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
@@ -113,15 +107,16 @@ def validate_first_party_app_workflows() -> None:
                     break
                 block_lines.append(candidate)
             block = "\n".join(block_lines)
-            missing = sorted(item for item in expected if item not in block)
-            if missing:
-                raise ValueError(f"first-party App boundary drift in {path}: missing {missing}")
-            for candidate in block.splitlines():
-                stripped = candidate.strip()
-                if stripped.startswith("permission-") and stripped.endswith(": write"):
-                    raise ValueError(f"first-party App write permission in {path}")
-            if "${{ inputs." in block and "repositories: operations" not in block:
-                raise ValueError(f"dynamic repository App scope in {path}")
+            if not re.search(r"client-id:\s*\$\{\{\s*secrets\.OPERATIONS_APP_ID\s*\}\}", block):
+                raise ValueError(f"first-party App client-id drift in {path}")
+            if not re.search(r"private-key:\s*\$\{\{\s*secrets\.OPERATIONS_APP_PRIVATE_KEY\s*\}\}", block):
+                raise ValueError(f"first-party App private-key drift in {path}")
+            if not re.search(r"repositories:\s*operations\b", block):
+                raise ValueError(f"first-party App repository scope drift in {path}")
+            if not re.search(r"permission-contents:\s*read\b", block):
+                raise ValueError(f"first-party App contents permission drift in {path}")
+            if re.search(r"permission-[A-Za-z0-9_-]+:\s*write\b", block):
+                raise ValueError(f"first-party App write permission in {path}")
 
 if __name__ == "__main__":
     validate_policy()
