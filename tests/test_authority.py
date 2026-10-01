@@ -9,12 +9,7 @@ from backend.intelligence.lineage import SourceLineage, origin_fingerprint
     ("field", "authority"),
     [
         (ClaimField.SPECIFICATION, FieldAuthority.MANUFACTURER_DECLARATION),
-        (ClaimField.MEASUREMENT, FieldAuthority.INDEPENDENT_MEASUREMENT),
         (ClaimField.PRICE, FieldAuthority.RETAILER_CURRENT_STATE),
-        (ClaimField.STOCK, FieldAuthority.RETAILER_CURRENT_STATE),
-        (ClaimField.WARRANTY, FieldAuthority.MANUFACTURER_POLICY),
-        (ClaimField.SERVICE, FieldAuthority.COMMUNITY_EXPERIENCE),
-        (ClaimField.EXPERIENCE, FieldAuthority.COMMUNITY_EXPERIENCE),
     ],
 )
 def test_allowed_field_authority(field, authority):

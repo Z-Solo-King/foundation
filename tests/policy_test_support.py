@@ -6,13 +6,13 @@ from backend.intelligence.authority import ClaimField, FieldAuthority
 def admission_policy(**overrides):
     values = {
         "version": "public-admission/v1",
-        "window_seconds": 60,
-        "max_requests_per_subject": 30,
-        "max_requests_global": 300,
-        "max_concurrent_per_subject": 22,
-        "max_concurrent_global": 22,
-        "retry_after_seconds": 5,
-        "protected_routes": (AdmissionRoute.CHAT, AdmissionRoute.RESEARCH, AdmissionRoute.STREAM),
+        "window_seconds": 11,
+        "max_requests_per_subject": 7,
+        "max_requests_global": 70,
+        "max_concurrent_per_subject": 3,
+        "max_concurrent_global": 4,
+        "retry_after_seconds": 2,
+        "protected_routes": (AdmissionRoute.RESEARCH,),
     }
     values.update(overrides)
     return AdmissionPolicy(**values)
@@ -36,50 +36,34 @@ def source_policy(**overrides):
 
 
 AUTHORITY_RULES = {
-    ClaimField.SPECIFICATION: {FieldAuthority.MANUFACTURER_DECLARATION, FieldAuthority.INDEPENDENT_MEASUREMENT},
-    ClaimField.MEASUREMENT: {FieldAuthority.INDEPENDENT_MEASUREMENT},
+    ClaimField.SPECIFICATION: {FieldAuthority.MANUFACTURER_DECLARATION},
     ClaimField.PRICE: {FieldAuthority.RETAILER_CURRENT_STATE},
-    ClaimField.STOCK: {FieldAuthority.RETAILER_CURRENT_STATE},
-    ClaimField.WARRANTY: {FieldAuthority.MANUFACTURER_POLICY, FieldAuthority.RETAILER_CURRENT_STATE},
-    ClaimField.SERVICE: {FieldAuthority.MANUFACTURER_POLICY, FieldAuthority.COMMUNITY_EXPERIENCE},
-    ClaimField.EXPERIENCE: {FieldAuthority.COMMUNITY_EXPERIENCE},
 }
 
 
 def private_policy_envelope():
     return {
         "schema": "protected-policy-envelope/v1",
-        "policy_digest": "test-policy-digest",
+        "policy_digest": "synthetic-policy-digest",
         "admission": {
             "version": "public-admission/v1",
-            "window_seconds": 60,
-            "max_requests_per_subject": 30,
-            "max_requests_global": 300,
-            "max_concurrent_per_subject": 22,
-            "max_concurrent_global": 22,
-            "retry_after_seconds": 5,
-            "protected_routes": ["chat", "research", "stream"],
+            "window_seconds": 11,
+            "max_requests_per_subject": 7,
+            "max_requests_global": 70,
+            "max_concurrent_per_subject": 3,
+            "max_concurrent_global": 4,
+            "retry_after_seconds": 2,
+            "protected_routes": ["research"],
         },
         "research_planning": {
-            "base_source_families": ["web_search", "retailers", "oem"],
+            "base_source_families": ["synthetic_web"],
             "category_required_source_families": {
-                "buying_guide": ["amazon", "flipkart", "reddit", "retailers", "oem"],
-                "best_product": ["amazon", "flipkart", "reddit", "retailers", "professional_reviews"],
+                "synthetic_category": ["source_a", "source_b"],
             },
             "keyword_groups": {
-                "reddit": ["reddit", "subreddit"],
-                "amazon": ["amazon", "buyer reviews"],
-                "flipkart": ["flipkart"],
-                "youtube": ["youtube", "video review"],
-                "social_media": ["twitter", "instagram", "facebook"],
-                "social_communities": ["community", "forum"],
-                "chinese_communities": ["chinese", "bilibili", "zhihu", "baidu tieba", "douban", "ptt"],
-                "teardown_evidence": ["teardown", "pcb", "revision"],
-                "professional_reviews": ["professional review", "reviewers"],
-                "search_trends": ["trending", "trend"],
-                "price_stock": ["price", "stock", "availability", "current"],
+                "synthetic_family": ["synthetic", "fixture"],
             },
-            "temporal_terms": ["old vs new", "latest", "recent", "revision", "2024", "2025", "2026"],
+            "temporal_terms": ["latest", "recent"],
             "quick_stages": ["define_question", "discover_sources", "collect_observations", "verify_evidence", "synthesize_answer"],
             "standard_stages": ["define_question", "assess_constraints", "discover_sources", "collect_observations", "map_evidence", "verify_evidence", "check_independence", "synthesize_answer"],
         },

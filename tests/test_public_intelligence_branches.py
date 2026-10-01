@@ -72,7 +72,7 @@ def test_evidence_upsert_get_and_export_extended_metadata():
 
 
 def test_planner_source_family_expansion_and_temporal_flag():
-    plan = create_plan(ResearchContract(question="Amazon Flipkart Reddit YouTube Chinese Bilibili Zhihu Baidu Tieba Douban PTT teardown PCB price current revision", depth="standard"), planning_policy=TEST_PLANNING_POLICY)
+    plan = create_plan(ResearchContract(question="synthetic_source_a synthetic_source_b synthetic_community synthetic_video synthetic_region teardown pcb price current revision", depth="standard"), planning_policy=TEST_PLANNING_POLICY)
     families = plan.metadata["required_source_families"]
     for family in ("amazon", "flipkart", "reddit", "youtube", "chinese_communities", "teardown_evidence", "price_stock"):
         assert family in families

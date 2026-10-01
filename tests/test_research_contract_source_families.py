@@ -13,13 +13,13 @@ def test_research_contract_accepts_category_and_explicit_families() -> None:
     contract = ResearchContract(
         question="best laptop under 100000",
         depth="deep",
-        query_category="best_product",
-        required_source_families=("reddit", "  flipkart  "),
+        query_category="synthetic_category",
+        required_source_families=("source_a", "  source_b  "),
     )
     contract.validate()
     plan = create_plan(contract, planning_policy=TEST_PLANNING_POLICY)
     families = set(plan.metadata["required_source_families"].split(","))
-    assert {"amazon", "flipkart", "reddit", "retailers", "professional_reviews"} <= families
+    assert {"source_a", "source_b"} <= families
     assert plan.metadata["required_source_families_origin"] == "explicit+private_policy"
     assert plan.metadata["query_category"] == "best_product"
 
@@ -39,20 +39,20 @@ def test_research_contract_rejects_duplicate_source_families() -> None:
 def test_planner_handles_missing_category_and_normalizes_explicit_entries() -> None:
     contract = ResearchContract(
         question="basic product research",
-        required_source_families=("  reddit  ", "youtube"),
+        required_source_families=("source_a", "source_b"),
     )
-    plan = create_plan(contract)
+    plan = create_plan(contract, planning_policy=TEST_PLANNING_POLICY)
     families = set(plan.metadata["required_source_families"].split(","))
-    assert "reddit" in families
-    assert "youtube" in families
-    assert "  reddit  " not in families
+    assert "source_a" in families
+    assert "source_b" in families
+    assert "  source_a  " not in families
     assert plan.metadata["query_category"] == ""
 
 
 def test_planner_category_and_temporal_metadata_are_independent() -> None:
-    category_plan = create_plan(ResearchContract(question="buying guide", query_category="buying_guide"), planning_policy=TEST_PLANNING_POLICY)
+    category_plan = create_plan(ResearchContract(question="synthetic category", query_category="synthetic_category"), planning_policy=TEST_PLANNING_POLICY)
     temporal_plan = create_plan(ResearchContract(question="latest revision versus 2024", query_category=None, freshness_requirement="recent"), planning_policy=TEST_PLANNING_POLICY)
-    assert "amazon" in category_plan.metadata["required_source_families"]
+    assert "source_a" in category_plan.metadata["required_source_families"]
     assert category_plan.metadata["temporal_reconciliation"] == "false"
     assert temporal_plan.metadata["temporal_reconciliation"] == "true"
 
