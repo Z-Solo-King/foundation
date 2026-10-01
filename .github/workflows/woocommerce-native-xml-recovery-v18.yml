@@ -109,6 +109,8 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          HEROIC_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          HEROIC_WORKER_URL: https://ai-cio.pages.dev
           AI_CROSSFIRE_MAX_PROVIDERS: "5"
           AI_CROSSFIRE_TIMEOUT_MS: "18000"
           AI_CROSSFIRE_PROVIDERS: "gemini,openrouter_free,groq,cerebras,cloudflare_workers_ai,siliconflow,nvidia_nim,cohere_free,huggingface_free"
