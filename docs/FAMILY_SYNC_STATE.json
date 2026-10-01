@@ -95,9 +95,8 @@
     "related_operations_pr": 1109
   },
   "current_prs": {
-    "open_pr_count": 20,
+    "open_pr_count": 19,
     "foundation": [
-      1716,
       1713,
       1710,
       1706,
@@ -118,12 +117,12 @@
       1438,
       1435,
       1400,
-      1361
+      1361,
+      1444
     ],
-    "source": "GitHub live PR API"
+    "source": "GitHub live PR API at 2026-10-01T09:58:00Z"
   },
   "foundation_open_prs": [
-    1716,
     1713,
     1710,
     1706,
@@ -144,10 +143,11 @@
     1438,
     1435,
     1400,
-    1361
+    1361,
+    1444
   ],
-  "open_pr_count": 20,
-  "open_implementation_pr_count": 20,
+  "open_pr_count": 19,
+  "open_implementation_pr_count": 19,
   "extractor_mapper": {
     "status": "active_runtime_boundary",
     "repository": "operations",
@@ -165,11 +165,11 @@
     "authority": "scheduling_only"
   },
   "post_merge_sync": {
-    "checked_at": "2026-10-01T09:40:00Z",
+    "checked_at": "2026-10-01T09:58:00Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "cfc266088846fb9f6a084da13481df4cc2c17536",
-      "operations": "109550ea068d703a79dad77960fc3a03a10c08fa"
+      "foundation": "0b2a04fddab627701149d108345cc4fb1336b278",
+      "operations": "c69d5c113d43809e28ba622009ad0cc568b94a12"
     },
     "operations_last_sync_commits": [
       "d9bd39b6035b289db720f43934e5ec4cbd55ee54",
@@ -179,17 +179,19 @@
     "foundation_main": "READ_LIVE_FROM_GITHUB",
     "operations_main": "READ_LIVE_FROM_GITHUB",
     "integration_contract": "Foundation docs/SYSTEM_INTEGRATION_CONTRACT.json",
-    "evaluation_evolution_bridge": "Operations private/evolution_integration.py on current main"
+    "evaluation_evolution_bridge": "Operations private/evolution_integration.py on current main",
+    "operations_evaluation_bridge": "Operations private/evaluation_integration.py + EvaluationReceipt.universal_metrics",
+    "control_plane_diagnostics_split": "Operations private/control_plane_infrastructure.py"
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "cfc266088846fb9f6a084da13481df4cc2c17536",
-    "operations": "109550ea068d703a79dad77960fc3a03a10c08fa"
+    "foundation": "0b2a04fddab627701149d108345cc4fb1336b278",
+    "operations": "c69d5c113d43809e28ba622009ad0cc568b94a12"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "cfc266088846fb9f6a084da13481df4cc2c17536",
-    "operations": "109550ea068d703a79dad77960fc3a03a10c08fa"
+    "foundation": "0b2a04fddab627701149d108345cc4fb1336b278",
+    "operations": "c69d5c113d43809e28ba622009ad0cc568b94a12"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",
@@ -239,14 +241,25 @@
     "foundation_contract": "docs/SYSTEM_INTEGRATION_CONTRACT.json",
     "project_matrix": "docs/PROJECT_IMPROVEMENT_MATRIX.json",
     "operations_evaluation_bridge": "private/evolution_integration.py",
+    "operations_diagnostics_facade": "private/control_plane_diagnostics.py",
+    "operations_diagnostics_infrastructure": "private/control_plane_infrastructure.py",
     "status": "reconciled",
-    "note": "Cross-cutting controls remain overlays; canonical subsystem authorities remain unchanged."
+    "note": "Cross-cutting controls remain overlays; subsystem authorities remain canonical."
   },
   "source_maintainability": {
     "schema": "source-surface-audit/v1",
     "critical": "source_bytes>50000 or source_lines>1000",
     "attention": "source_bytes>25000 or source_lines>500",
-    "decomposition_rule": "responsibility-aligned splits with compatibility facades permitted",
-    "first_split": "operations/private/runtime_language_policy.py"
+    "completed_decompositions": [
+      "operations/private/runtime_language_policy.py",
+      "operations/private/control_plane_diagnostics.py"
+    ],
+    "next_wave": [
+      "foundation/.github/workflows/hybrid-language-pilots.yml",
+      "foundation/scripts/production_release.sh",
+      "foundation/tools/woocommerce_v175_plugin_fingerprint_22.py",
+      "foundation/.github/workflows/nightly-multi-agent-research-v3.yml",
+      "operations/tools/exhaustive_audit.py"
+    ]
   }
 }
