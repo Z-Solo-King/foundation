@@ -1,0 +1,317 @@
+{
+  "schema_version": "system-integration-contract/v1",
+  "updated_on": "2026-10-01",
+  "purpose": "Prevent recently-added automation, API, audit, quality, learning, self-evolution, and extractor/mapper features from becoming independent bolt-ons.",
+  "architecture": {
+    "vertical_surfaces": "Project improvement matrix defines what is being improved.",
+    "cross_cutting_controls": "Cross-cutting controls observe, evaluate, learn and govern every vertical surface without taking ownership away from the canonical component.",
+    "one_authority_per_responsibility": true
+  },
+  "canonical_flow": [
+    {
+      "stage": "observe",
+      "owner": "component_runtime",
+      "output": "versioned observation"
+    },
+    {
+      "stage": "audit",
+      "owner": "foundation+operations",
+      "output": "validated finding/evidence reference"
+    },
+    {
+      "stage": "evaluate",
+      "owner": "operations",
+      "output": "candidate/baseline evaluation"
+    },
+    {
+      "stage": "score",
+      "owner": "operations",
+      "output": "domain-specific universal quality score + confidence"
+    },
+    {
+      "stage": "learn",
+      "owner": "operations",
+      "output": "bounded learned signal"
+    },
+    {
+      "stage": "generate_candidate",
+      "owner": "foundation+operations",
+      "output": "candidate configuration/implementation"
+    },
+    {
+      "stage": "policy_gate",
+      "owner": "existing canonical policy authorities",
+      "output": "allow/deny"
+    },
+    {
+      "stage": "shadow",
+      "owner": "existing promotion authority",
+      "output": "controlled runtime evidence"
+    },
+    {
+      "stage": "canary",
+      "owner": "existing promotion authority",
+      "output": "controlled production evidence"
+    },
+    {
+      "stage": "existing_promotion_authority",
+      "owner": "existing release/promotion authority",
+      "output": "promotion decision"
+    },
+    {
+      "stage": "monitor",
+      "owner": "observability/runtime evidence",
+      "output": "fresh observation"
+    },
+    {
+      "stage": "rollback_or_supersede",
+      "owner": "existing rollback authority",
+      "output": "restored or superseded state"
+    }
+  ],
+  "cross_cutting_controls": {
+    "ai_automation": {
+      "owner": "foundation",
+      "canonical": "tools/autonomous_engineering_supervisor.mjs",
+      "consumes": [
+        "project-improvement-matrix",
+        "evidence/results",
+        "mission state"
+      ],
+      "produces": [
+        "bounded workflow dispatch decisions",
+        "mission receipts"
+      ],
+      "forbidden": [
+        "acceptance authority",
+        "policy mutation",
+        "production authority"
+      ]
+    },
+    "ai_api": {
+      "owner": "operations",
+      "canonical": [
+        "private/chatbot/provider_runtime.py",
+        "private/multi_agent/governed_llm.py"
+      ],
+      "consumes": [
+        "request/task contract",
+        "resource policy",
+        "provider capability state"
+      ],
+      "produces": [
+        "provider/model result",
+        "runtime/economic evidence"
+      ],
+      "forbidden": [
+        "self-authorized provider promotion",
+        "billing bypass"
+      ]
+    },
+    "audit": {
+      "owner": "foundation+operations",
+      "canonical": [
+        "tools/validate_family_full_coverage.py",
+        "tools/feature_surface_audit.py",
+        "tools/master_audit.py",
+        "tools/exhaustive_audit.py"
+      ],
+      "consumes": [
+        "repository state",
+        "canonical maps",
+        "live evidence where permitted"
+      ],
+      "produces": [
+        "findings",
+        "receipts",
+        "candidate work items"
+      ],
+      "forbidden": [
+        "direct production promotion"
+      ]
+    },
+    "quality": {
+      "owner": "operations",
+      "canonical": [
+        "private/evolution_score.py",
+        "private/evolution_engine.py"
+      ],
+      "consumes": [
+        "versioned observations"
+      ],
+      "produces": [
+        "domain-aware scores",
+        "confidence",
+        "uncertainty",
+        "trend",
+        "learning actions"
+      ],
+      "hard_gates": [
+        "security_policy",
+        "provenance"
+      ]
+    },
+    "learning": {
+      "owner": "operations",
+      "canonical": [
+        "private/chatbot/chat_learning.py",
+        "private/chatbot/chat_learning_index.py",
+        "private/chatbot/feedback_evaluation_bridge.py"
+      ],
+      "consumes": [
+        "bounded conversation feedback"
+      ],
+      "produces": [
+        "candidate learning signals",
+        "evaluation case candidates"
+      ],
+      "forbidden": [
+        "authoritative evidence",
+        "policy mutation"
+      ]
+    },
+    "self_evolution": {
+      "owner": "operations",
+      "canonical": "private/self_evolution_boundary.py",
+      "consumes": [
+        "candidate configuration + evaluation evidence"
+      ],
+      "produces": [
+        "candidate/shadow/canary authorization decision"
+      ],
+      "forbidden": [
+        "protected authority mutation",
+        "production-stage self-promotion"
+      ]
+    },
+    "mapper_extractor": {
+      "owner": "operations+foundation",
+      "canonical": [
+        "operations/extractor_mapper/",
+        "foundation/foundation_core/"
+      ],
+      "consumes": [
+        "source acquisition observations",
+        "mapping contracts"
+      ],
+      "produces": [
+        "bounded observations",
+        "deterministic canonical mapping"
+      ],
+      "forbidden": [
+        "duplicate mapper authority",
+        "mapping without provenance"
+      ]
+    },
+    "evidence": {
+      "owner": "operations",
+      "canonical": "private/evaluation_receipt.py",
+      "consumes": [
+        "evaluation results",
+        "baseline/candidate/corpus identity",
+        "optional universal quality metrics"
+      ],
+      "produces": [
+        "verifiable evaluation receipt"
+      ],
+      "feeds": [
+        "quality",
+        "promotion"
+      ]
+    }
+  },
+  "integration_requirements": {
+    "every_feature_must_declare": [
+      "owner",
+      "canonical_entrypoint",
+      "inputs",
+      "outputs",
+      "consumers",
+      "evidence_type",
+      "policy_gate",
+      "resource_budget",
+      "failure_behavior",
+      "rollback_or_disable_path"
+    ],
+    "every_score_must_declare": [
+      "domain",
+      "workload",
+      "environment",
+      "sample_count",
+      "evidence_quality",
+      "uncertainty",
+      "hard_gates"
+    ],
+    "every_learning_signal_must_be": [
+      "bounded",
+      "versioned",
+      "provenance-linked",
+      "candidate-only until independently promoted"
+    ],
+    "every_automation_action_must_be": [
+      "allowlisted",
+      "bounded",
+      "idempotent_or_replay-safe",
+      "non-authoritative"
+    ],
+    "every_ai_api_path_must_be": [
+      "resource-governed",
+      "cost-aware",
+      "provider-provenance-bearing on protected evidence paths"
+    ],
+    "every_audit_must_produce": [
+      "machine-readable findings",
+      "source/provenance",
+      "explicit uncertainty_or_limitation"
+    ],
+    "extractor_mapper_must_use": [
+      "acquisition/extraction observations -> deterministic mapping contract -> evidence"
+    ]
+  },
+  "anti_bolt_on_rules": [
+    "Do not create a second quality score when an existing domain adapter can feed the universal evolution score.",
+    "Do not create a second learning store for a subject already owned by chat learning or limitation knowledge.",
+    "Do not let AI automation dispatch a workflow that is not represented by the project improvement matrix or mission router.",
+    "Do not let an audit tool become an acceptance authority.",
+    "Do not let a score directly promote production.",
+    "Do not let self-evolution rewrite protected policy, resource, identity, evidence, billing, provider promotion or deployment ownership.",
+    "Do not create a duplicate mapper, identity, routing, resource, provenance or deployment authority.",
+    "Keep component-specific scoring as adapters/measurements; the universal evolution score is the common comparison vocabulary."
+  ],
+  "required_cross_repo_anchors": {
+    "foundation": [
+      "docs/PROJECT_IMPROVEMENT_MATRIX.json",
+      "docs/SYSTEM_INTEGRATION_CONTRACT.json",
+      "tools/autonomous_mission_router.mjs",
+      "tools/autonomous_engineering_supervisor.mjs",
+      "tools/validate_family_full_coverage.py"
+    ],
+    "operations": [
+      "private/evolution_score.py",
+      "private/evolution_engine.py",
+      "private/self_evolution_boundary.py",
+      "private/chatbot/chat_learning.py",
+      "private/chatbot/feedback_evaluation_bridge.py",
+      "private/strategy_matrix.py",
+      "private/evaluation_receipt.py",
+      "extractor_mapper/"
+    ]
+  },
+  "maintainability": {
+    "source_audit": "tools/source_surface_audit.py",
+    "critical_thresholds": {
+      "source_bytes": 50000,
+      "source_lines": 1000
+    },
+    "attention_thresholds": {
+      "source_bytes": 25000,
+      "source_lines": 500
+    },
+    "exceptions": [
+      "historical archives",
+      "evidence datasets",
+      "generated corpora"
+    ],
+    "split_rule": "critical production/code/workflow files require decomposition; compatibility facades are allowed."
+  }
+}

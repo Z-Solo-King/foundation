@@ -246,5 +246,171 @@
       ],
       "mutation_policy": "public_acquisition_only_no_bypass"
     }
-  }
+  },
+  "system_integration_contract": "docs/SYSTEM_INTEGRATION_CONTRACT.json",
+  "cross_cutting_controls": {
+    "ai_automation": {
+      "owner": "foundation",
+      "canonical": "tools/autonomous_engineering_supervisor.mjs",
+      "consumes": [
+        "project-improvement-matrix",
+        "evidence/results",
+        "mission state"
+      ],
+      "produces": [
+        "bounded workflow dispatch decisions",
+        "mission receipts"
+      ],
+      "forbidden": [
+        "acceptance authority",
+        "policy mutation",
+        "production authority"
+      ]
+    },
+    "ai_api": {
+      "owner": "operations",
+      "canonical": [
+        "private/chatbot/provider_runtime.py",
+        "private/multi_agent/governed_llm.py"
+      ],
+      "consumes": [
+        "request/task contract",
+        "resource policy",
+        "provider capability state"
+      ],
+      "produces": [
+        "provider/model result",
+        "runtime/economic evidence"
+      ],
+      "forbidden": [
+        "self-authorized provider promotion",
+        "billing bypass"
+      ]
+    },
+    "audit": {
+      "owner": "foundation+operations",
+      "canonical": [
+        "tools/validate_family_full_coverage.py",
+        "tools/feature_surface_audit.py",
+        "tools/master_audit.py",
+        "tools/exhaustive_audit.py"
+      ],
+      "consumes": [
+        "repository state",
+        "canonical maps",
+        "live evidence where permitted"
+      ],
+      "produces": [
+        "findings",
+        "receipts",
+        "candidate work items"
+      ],
+      "forbidden": [
+        "direct production promotion"
+      ]
+    },
+    "quality": {
+      "owner": "operations",
+      "canonical": [
+        "private/evolution_score.py",
+        "private/evolution_engine.py"
+      ],
+      "consumes": [
+        "versioned observations"
+      ],
+      "produces": [
+        "domain-aware scores",
+        "confidence",
+        "uncertainty",
+        "trend",
+        "learning actions"
+      ],
+      "hard_gates": [
+        "security_policy",
+        "provenance"
+      ]
+    },
+    "learning": {
+      "owner": "operations",
+      "canonical": [
+        "private/chatbot/chat_learning.py",
+        "private/chatbot/chat_learning_index.py",
+        "private/chatbot/feedback_evaluation_bridge.py"
+      ],
+      "consumes": [
+        "bounded conversation feedback"
+      ],
+      "produces": [
+        "candidate learning signals",
+        "evaluation case candidates"
+      ],
+      "forbidden": [
+        "authoritative evidence",
+        "policy mutation"
+      ]
+    },
+    "self_evolution": {
+      "owner": "operations",
+      "canonical": "private/self_evolution_boundary.py",
+      "consumes": [
+        "candidate configuration + evaluation evidence"
+      ],
+      "produces": [
+        "candidate/shadow/canary authorization decision"
+      ],
+      "forbidden": [
+        "protected authority mutation",
+        "production-stage self-promotion"
+      ]
+    },
+    "mapper_extractor": {
+      "owner": "operations+foundation",
+      "canonical": [
+        "operations/extractor_mapper/",
+        "foundation/foundation_core/"
+      ],
+      "consumes": [
+        "source acquisition observations",
+        "mapping contracts"
+      ],
+      "produces": [
+        "bounded observations",
+        "deterministic canonical mapping"
+      ],
+      "forbidden": [
+        "duplicate mapper authority",
+        "mapping without provenance"
+      ]
+    },
+    "evidence": {
+      "owner": "operations",
+      "canonical": "private/evaluation_receipt.py",
+      "consumes": [
+        "evaluation results",
+        "baseline/candidate/corpus identity",
+        "optional universal quality metrics"
+      ],
+      "produces": [
+        "verifiable evaluation receipt"
+      ],
+      "feeds": [
+        "quality",
+        "promotion"
+      ]
+    }
+  },
+  "integration_flow": [
+    "observe",
+    "audit",
+    "evaluate",
+    "score",
+    "learn",
+    "generate_candidate",
+    "policy_gate",
+    "shadow",
+    "canary",
+    "existing_promotion_authority",
+    "monitor",
+    "rollback_or_supersede"
+  ]
 }
