@@ -1,4 +1,5 @@
 name: WooCommerce Google XML Feed Recovery V19
+# Production trigger marker: 2026-10-02
 
 on:
   workflow_dispatch:
