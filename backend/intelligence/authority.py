@@ -15,5 +15,6 @@ def evaluate_authority(field: ClaimField|str, authority: FieldAuthority|str, *, 
     f=ClaimField(field); a=FieldAuthority(authority); raw=allowed_authorities.get(f,allowed_authorities.get(f.value,()))
     allowed=a in {FieldAuthority(v) for v in raw}
     return AuthorityDecision(allowed,f,a,"allowed field authority" if allowed else "authority is not permitted for this field")
-def independent_sources(first: SourceLineage, second: SourceLineage)->bool: return is_independent(first,second)
+def independent_sources(first: SourceLineage, second: SourceLineage) -> bool:
+    return bool(is_independent(first, second))
 __all__=["AuthorityDecision","ClaimField","FieldAuthority","evaluate_authority","independent_sources"]

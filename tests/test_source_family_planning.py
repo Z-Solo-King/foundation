@@ -7,6 +7,7 @@ from benchmark.chatbot_query_benchmark import SOURCE_ALIASES, load_queries
 from backend.intelligence.contracts import ResearchContract
 from backend.intelligence.planning import create_plan
 
+
 TEST_PLANNING_POLICY = {
     "base_source_families": ["synthetic_web"],
     "category_required_source_families": {},
