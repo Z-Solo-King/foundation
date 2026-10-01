@@ -44,26 +44,27 @@ The Marketplace extraction showed two relevant families:
 1. GitHub's native Dependency Review Action.
 2. OSV-Scanner / OSV.dev based scanning.
 
-A native Dependency Review workflow was tested on the PR during this audit. The live run failed closed with GitHub's explicit message that Dependency Review is not supported because the repository's Dependency Graph is disabled. This is an environment capability gap, not an action syntax failure.
+A native Dependency Review workflow was tested live. The action failed closed because Foundation's Dependency Graph is disabled. This is an environment capability gap, not an action syntax failure.
 
-The unsupported workflow was removed rather than leaving a permanently failing check in the project.
+A live OSV-Scanner experiment was also performed. It found no lockfiles/package sources in the Foundation repository and therefore produced no dependency scan. It was removed rather than retaining a permanently ineffective workflow.
 
 ## Implemented improvement
 
-Foundation now adds an advisory OSV-Scanner workflow:
+The useful native capability is retained as a capability-aware workflow:
 
-- .github/workflows/osv-scanner.yml
-- pull-request scanning;
-- weekly scheduled scanning;
-- manual dispatch;
-- contents read plus job-scoped security-events write for SARIF reporting;
-- 15-minute timeout;
+- .github/workflows/dependency-review.yml
+- pull-request trigger plus manual dispatch;
+- a read-only preflight checks the Dependency Graph capability;
+- HTTP 200 enables the native dependency-review job;
+- HTTP 404 records a notice and skips the unsupported capability;
+- unexpected API responses fail closed instead of silently skipping;
+- dependency review fails on newly introduced high-severity vulnerabilities when the graph is available;
+- 5-minute preflight and 10-minute review timeouts;
 - concurrency cancellation for obsolete PR runs;
-- full SHA pin to OSV-Scanner Action v2.6.0;
-- advisory mode during the initial baseline period so existing findings do not silently become unrelated merge blockers;
-- deterministic tests enforcing the workflow contract.
+- all third-party actions are pinned to full commit SHAs;
+- deterministic tests enforce the contract.
 
-OSV-Scanner is an appropriate fallback because it uses the OSV vulnerability database and supports multiple dependency ecosystems. Once the baseline is reviewed, the project can decide whether newly introduced findings should become blocking.
+This means the workflow is useful immediately without creating a permanently failing check, and it automatically becomes an enforcement control if the repository's Dependency Graph is enabled later.
 
 ## What was deliberately not adopted
 
@@ -76,6 +77,7 @@ The project does not add:
 - generic cloud deployment wrappers;
 - third-party Cloudflare deploy wrappers;
 - duplicate lint/test aggregators;
+- ineffective dependency scanners without dependency manifests;
 - arbitrary SBOM generators;
 - release automation that competes with the canonical Foundation release authority.
 
