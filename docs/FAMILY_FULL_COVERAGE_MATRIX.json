@@ -291,10 +291,6 @@
           "frontend/chat_view.js"
         ],
         [
-          "foundation",
-          "tests/test_chatbot.py"
-        ],
-        [
           "operations",
           "private/chatbot/router.py"
         ],
@@ -305,6 +301,10 @@
         [
           "operations",
           "tests/test_chat_endpoint.py"
+        ],
+        [
+          "foundation",
+          "benchmark/public_chatbot_runner.py"
         ]
       ]
     },
@@ -644,10 +644,6 @@
       "anchors": [
         [
           "foundation",
-          "docs/MCP_DERIVED_TOOLING_PATTERNS.md"
-        ],
-        [
-          "foundation",
           "docs/GITHUB_APP_MARKETPLACE_AUDIT_2026-10-01.md"
         ],
         [
@@ -669,6 +665,10 @@
         [
           "foundation",
           "tests/test_github_actions_zero_cost_policy.py"
+        ],
+        [
+          "operations",
+          "docs/MCP_DERIVED_TOOLING_PATTERNS.md"
         ]
       ]
     },
@@ -728,19 +728,19 @@
         ],
         [
           "operations",
-          "private/maintenance_plan.py"
-        ],
-        [
-          "operations",
-          "private/maintenance_execution.py"
-        ],
-        [
-          "operations",
           "tests/test_chat_memory.py"
         ],
         [
           "operations",
           "tests/test_maintenance_execution.py"
+        ],
+        [
+          "operations",
+          "private/chatbot/maintenance_plan.py"
+        ],
+        [
+          "operations",
+          "private/chatbot/maintenance_execution.py"
         ]
       ]
     },
