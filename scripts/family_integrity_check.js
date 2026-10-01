@@ -52,19 +52,27 @@ const normalizeIssueKeys = (pairs) => {
   return [...new Set(normalized)].sort();
 };
 
+// Autonomous mission and machine-generated integrity issues are durable execution
+// state/incident records, not acceptance-queue work items. Their lifecycle is
+// validated by the mission/incident subsystems rather than the static acceptance matrix.
+const isAcceptanceIssue = (issue) => {
+  const title = String(issue?.title || "");
+  return !title.startsWith("[autonomous-mission]") && !title.startsWith("[integrity]");
+};
+
 const activeIssues = {};
 const snapshotPath = process.env.LIVE_ISSUE_SNAPSHOT;
 if (snapshotPath) {
   const snapshot = readJson(snapshotPath);
   for (const repo of ["foundation", "operations"]) {
     activeIssues[repo] = normalizeIssueNumbers(
-      (snapshot.actual || []).filter(x => x.repo === repo).map(x => x.number)
+      (snapshot.actual || []).filter(x => x.repo === repo && isAcceptanceIssue(x)).map(x => x.number)
     );
   }
 } else {
   for (const repo of ["foundation", "operations"]) {
     const rows = gh(repo, `repos/Z-Solo-King/${repo}/issues?state=open&per_page=100`);
-    activeIssues[repo] = normalizeIssueNumbers(rows.filter(x => !x.pull_request).map(x => x.number));
+    activeIssues[repo] = normalizeIssueNumbers(rows.filter(x => !x.pull_request && isAcceptanceIssue(x)).map(x => x.number));
   }
 }
 
