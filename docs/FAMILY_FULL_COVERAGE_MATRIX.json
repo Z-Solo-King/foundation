@@ -118,6 +118,10 @@
         "repository_configuration"
       ],
       [
+        "DEPLOYMENT.md",
+        "documentation_governance"
+      ],
+      [
         ".gitignore",
         "repository_configuration"
       ],
@@ -226,6 +230,14 @@
       [
         "pyproject.toml",
         "repository_configuration"
+      ],
+      [
+        ".coveragerc",
+        "repository_configuration"
+      ],
+      [
+        "CONTINUE_MIGRATION_2026-10-01.md",
+        "documentation_governance"
       ],
       [
         ".gitignore",
