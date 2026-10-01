@@ -67,6 +67,7 @@ jobs:
     environment: production-secret-sync
     timeout-minutes: 10
     env:
+      PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
       AI_CROSSFIRE_PROVIDERS: "gemini,groq,cerebras,openrouter_free"
       AI_CROSSFIRE_MAX_PROVIDERS: "4"
       AI_CROSSFIRE_TIMEOUT_MS: "18000"
