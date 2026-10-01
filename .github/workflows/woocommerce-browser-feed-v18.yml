@@ -2,10 +2,10 @@ name: WooCommerce Browser Feed Recovery V18
 on:
   push:
     branches: [feat/woocommerce-adaptive-feed-recovery-v16-20261001]
-    paths: [tools/woocommerce_browser_feed_v18.mjs,tests/test_woocommerce_browser_feed_v18.mjs,.github/workflows/woocommerce-browser-feed-v18.yml]
+    paths: [tools/woocommerce_browser_feed_v18.mjs,tools/woocommerce_wc_pos_catalog_probe_v20.mjs,tests/test_woocommerce_browser_feed_v18.mjs,tests/test_woocommerce_wc_pos_catalog_probe_v20.mjs,.github/workflows/woocommerce-browser-feed-v18.yml]
   pull_request:
     branches: [main]
-    paths: [tools/woocommerce_browser_feed_v18.mjs,tests/test_woocommerce_browser_feed_v18.mjs,.github/workflows/woocommerce-browser-feed-v18.yml]
+    paths: [tools/woocommerce_browser_feed_v18.mjs,tools/woocommerce_wc_pos_catalog_probe_v20.mjs,tests/test_woocommerce_browser_feed_v18.mjs,tests/test_woocommerce_wc_pos_catalog_probe_v20.mjs,.github/workflows/woocommerce-browser-feed-v18.yml]
   workflow_dispatch:
 permissions:
   contents: read
@@ -24,12 +24,21 @@ jobs:
       - run: npm install --no-save --ignore-scripts playwright@1.55.0
       - run: npx playwright install chromium
       - run: node --test tests/test_woocommerce_browser_feed_v18.mjs
+      - run: node --test tests/test_woocommerce_wc_pos_catalog_probe_v20.mjs
+      - run: node tools/woocommerce_wc_pos_catalog_probe_v20.mjs
+      - run: |
+          set -euo pipefail
+          jq -e '.schema=="woocommerce-wc-pos-catalog-probe/v1" and .target_count==7' out/woocommerce-wc-pos-catalog-probe/report.json >/dev/null
+          echo "POS catalog native feeds: $(jq '[.results[] | select(.status=="NATIVE_FEED_VERIFIED")] | length' out/woocommerce-wc-pos-catalog-probe/report.json)"
+          jq -r '.results[] | select(.winner != null) | [.site,.status,(.winner.final_url // .winner.url)] | @tsv' out/woocommerce-wc-pos-catalog-probe/report.json || true
       - run: node tools/woocommerce_browser_feed_v18.mjs
-      - run: jq -e '.schema=="woocommerce-browser-feed-recovery-v18/v1" and .target_count==30' out/woocommerce-browser-feed-v18/report.json >/dev/null
+      - run: jq -e '.schema=="woocommerce-browser-feed-recovery-v18/v1" and .target_count==30' out/woocommerce-browser-feed-v18/report.json
       - if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: woocommerce-browser-feed-v18
-          path: out/woocommerce-browser-feed-v18/
+          path: |
+            out/woocommerce-browser-feed-v18/
+            out/woocommerce-wc-pos-catalog-probe/
           if-no-files-found: error
           retention-days: 30
