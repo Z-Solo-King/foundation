@@ -1,6 +1,8 @@
 """CPython test bootstrap for Cloudflare-only Workers runtime imports."""
 from __future__ import annotations
 
+import pytest
+
 import importlib
 import sys
 import types
