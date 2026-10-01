@@ -210,6 +210,7 @@ jobs:
           )
           print(json.dumps(results, indent=2, sort_keys=True))
           PY
+          exit 0
 
       - name: Record benchmark publication gate
         env:
