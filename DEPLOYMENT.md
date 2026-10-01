@@ -74,7 +74,7 @@ The bucket and endpoint are supplied by the deployment environment (`B2_BUCKET`,
 
 B2 credentials are secrets and never belong in Git, documentation, backup manifests, or logs. B2 stores artifact/backup material; it is not an authority for identity, authorization, routing, policy, resource governance, evidence, deployment approval, or application result state.
 
-The repository backup workflow is `.github/workflows/b2-repository-backup.yml`; execution detail is documented in `backup/README.md` and policy in `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md`.
+The repository backup workflow is `.github/workflows/b2-repository-backup.yml`; execution detail is documented in `backup/README.md` and policy in `docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md`. It retains one latest verified generation under `repository-backup/` and removes older B2 object versions only after remote restore verification succeeds.
 
 ## Backup artifact and restore policy
 
