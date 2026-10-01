@@ -68,6 +68,10 @@
       "live_benchmark"
     ],
     [
+      ".github/workflows/live-ai-provider-crossfire.yml",
+      "ai_provider_crossfire"
+    ],
+    [
       ".github/workflows/live-chatbot-production-smoke.yml",
       "private_production_smoke"
     ],
@@ -128,11 +132,15 @@
       "private_registry_feed_crawl"
     ],
     [
-      ".github/workflows/woocommerce-v175-22-plugin-extraction.yml",
+      ".github/workflows/woocommerce-emergency-xml-recovery.yml",
       "private_feed_extraction"
     ],
     [
       ".github/workflows/woocommerce-native-xml-recovery-v18.yml",
+      "private_feed_extraction"
+    ],
+    [
+      ".github/workflows/woocommerce-v175-22-plugin-extraction.yml",
       "private_feed_extraction"
     ]
   ],

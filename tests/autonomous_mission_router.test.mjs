@@ -61,3 +61,11 @@ test('accepts three distinct migration cross-fire workflows', () => {
     'hybrid-language-pilots.yml',
   ]);
 });
+
+
+test('accepts live AI provider cross-fire workflow as runtime reconciliation', () => {
+  const result = validatePlan(base({mission_type:'runtime_reconciliation',actions:[
+    {id:'a1',kind:'dispatch_workflow',workflow:'live-ai-provider-crossfire.yml',inputs:{},reason:'compare configured zero-cost AI providers concurrently',retry_policy:'bounded'},
+  ]}));
+  assert.equal(result.actions[0].workflow, 'live-ai-provider-crossfire.yml');
+});
