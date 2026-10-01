@@ -157,7 +157,7 @@ Foundation main `68aff623472af4df03688ddb24f33259d1fe5532` and Operations main `
 Foundation main `2239ae23706e5ab14c61869022eca93618b74cb9` contains the repaired Operations private integrity guard. The workflow now constructs its validator input with `jq -n`, preventing empty-stdin JSON generation and preserving the fail-closed comparison against the immutable approved Operations production revision. The repair changes no authority, credential, policy, or deployment boundary.
 
 ## 2026-10-01 final live reconciliation
-Foundation main is `22f81074ac41b19a671d692d48f8d111d78a3786`; Operations main is `3c780e33772c87ec6c3b6df75a857e5404f0b861`. No Foundation or Operations pull requests remain open. Superseded autonomous missions and stale feed recovery PRs were retired; runtime/evidence issues remain open until their stated gates are actually satisfied. The current live WooCommerce V18 and emergency 30-way recovery runs are evidence work and are not treated as completed merely because their workflows started.
+Foundation main is `22f81074ac41b19a671d692d48f8d111d78a3786`; Operations main is `3c780e33772c87ec6c3b6df75a857e5404f0b861`. Foundation has one open PR (#1791), a feed-only workflow-trigger change; no non-feed Foundation or Operations PRs remain open. Superseded autonomous missions and stale feed recovery PRs were retired; runtime/evidence issues remain open until their stated gates are actually satisfied. The current live WooCommerce V18 and emergency 30-way recovery runs are evidence work and are not treated as completed merely because their workflows started.
 
 ## Unified AI navigation and observability
 
