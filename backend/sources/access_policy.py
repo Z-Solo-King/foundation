@@ -48,7 +48,7 @@ class SourceAccessDecision:
         if not self.reason.strip(): raise ValueError("decision reason is required")
         if not self.allowed and self.retention_class is RetentionClass.STANDARD: raise ValueError("rejected sources cannot receive standard retention")
 
-def decide_source_access(policy: SourceAccessPolicy, *, requested_disclosure: DisclosureClass, request_authenticated: bool, restricted_research: bool)->SourceAccessDecision:
+def decide_source_access(policy: SourceAccessPolicy, *, requested_disclosure: DisclosureClass, request_authenticated: bool, restricted_research: bool = True)->SourceAccessDecision:
     policy.validate()
     if requested_disclosure is DisclosureClass.PUBLIC_SAFE and policy.disclosure_class is not DisclosureClass.PUBLIC_SAFE:
         decision=SourceAccessDecision(False,"policy does not permit public disclosure",policy.retention_class,policy.disclosure_class,policy.revalidation_required)

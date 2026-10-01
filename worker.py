@@ -210,30 +210,36 @@ async def _private_policy_envelope(env, request):
     return body
 
 
-async def _public_admit(env, route, subject_fingerprint, event_id, request=None, policy_envelope=None):
+async def _public_admit(env, route, subject_fingerprint, event_id, request=None, policy_envelope=None, return_policy=False):
     db=getattr(env,"DB",None)
     environment=str(getattr(env,"ENVIRONMENT","production") or "production").casefold()
     local_bypass=str(getattr(env,"LOCAL_DEVELOPMENT_AUTH_BYPASS","") or "").casefold()=="true"
     if db is None:
         if environment=="development" and local_bypass:
-            return AdmissionDecision(AdmissionOutcome.ACCEPTED,route,True,"explicit local development admission bypass"),None
-        return AdmissionDecision(AdmissionOutcome.AUTHORITY_UNAVAILABLE,route,False,"admission authority is unavailable for a protected resource-consuming route"),None
+            result=(AdmissionDecision(AdmissionOutcome.ACCEPTED,route,True,"explicit local development admission bypass"),None)
+            return (*result, policy_envelope) if return_policy else result
+        result=(AdmissionDecision(AdmissionOutcome.AUTHORITY_UNAVAILABLE,route,False,"admission authority is unavailable for a protected resource-consuming route"),None)
+        return (*result, policy_envelope) if return_policy else result
     if policy_envelope is None:
         try:
             policy_envelope=await _private_policy_envelope(env,request)
         except Exception as exc:
             _stable_exception_log("private policy lookup failure",exc)
-            return AdmissionDecision(AdmissionOutcome.AUTHORITY_UNAVAILABLE,route,False,"protected admission policy authority is unavailable"),None
+            result=(AdmissionDecision(AdmissionOutcome.AUTHORITY_UNAVAILABLE,route,False,"protected admission policy authority is unavailable"),None)
+            return (*result, policy_envelope) if return_policy else result
     payload=policy_envelope.get("admission") if isinstance(policy_envelope,dict) else None
     if not isinstance(payload,dict):
-        return AdmissionDecision(AdmissionOutcome.AUTHORITY_UNAVAILABLE,route,False,"protected admission policy authority is unavailable"),None
+        result=(AdmissionDecision(AdmissionOutcome.AUTHORITY_UNAVAILABLE,route,False,"protected admission policy authority is unavailable"),None)
+        return (*result, policy_envelope) if return_policy else result
     try:
         policy=AdmissionPolicy.from_mapping(payload)
         policy.validate()
     except Exception as exc:
         _stable_exception_log("private admission policy parse failure",exc)
-        return AdmissionDecision(AdmissionOutcome.AUTHORITY_UNAVAILABLE,route,False,"protected admission policy authority is unavailable"),None
-    return await D1AdmissionStore(db).acquire(subject_fingerprint=subject_fingerprint,route=route,policy=policy,event_id=event_id)
+        result=(AdmissionDecision(AdmissionOutcome.AUTHORITY_UNAVAILABLE,route,False,"protected admission policy authority is unavailable"),None)
+        return (*result, policy_envelope) if return_policy else result
+    result = await D1AdmissionStore(db).acquire(subject_fingerprint=subject_fingerprint,route=route,policy=policy,event_id=event_id)
+    return (*result, policy_envelope) if return_policy else result
 
 
 def _admission_response(decision):
@@ -689,13 +695,16 @@ class Default(WorkerEntrypoint):
             event_id = _idempotency_key(request, f"research:{uuid.uuid4().hex}")
             if raw_key is not None and event_id is None:
                 return _authenticated_json({"ok": False, "error": "invalid_idempotency_key"}, status=400)
-            policy_envelope = None
-            try:
-                policy_envelope = await _private_policy_envelope(self.env, request)
-            except Exception as exc:
-                _stable_exception_log("private research policy lookup failure", exc)
-                return _authenticated_json({"ok": False, "error": "protected policy authority unavailable"}, status=503)
-            decision, lease = await _public_admit(self.env, AdmissionRoute.RESEARCH, subject_fingerprint, event_id, request, policy_envelope=policy_envelope)
+            admission_result = await _public_admit(
+                self.env,
+                AdmissionRoute.RESEARCH,
+                subject_fingerprint,
+                event_id,
+                request,
+                return_policy=True,
+            )
+            decision, lease = admission_result[:2]
+            policy_envelope = admission_result[2] if len(admission_result) > 2 else None
             denied = _admission_response(decision)
             if denied is not None:
                 return denied
