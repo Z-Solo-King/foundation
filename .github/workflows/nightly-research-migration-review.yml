@@ -1,0 +1,182 @@
+name: Nightly research — migration review
+
+'on':
+  workflow_call:
+    inputs:
+      dry_run:
+        description: Whether this run is the explicit deterministic contract dry-run
+        required: true
+        type: boolean
+      target_sha:
+        description: Exact Foundation revision being researched
+        required: true
+        type: string
+      production_release_run_id:
+        description: Exact successful production release run identifier
+        required: true
+        type: string
+      operations_research_ref:
+        description: Exact Operations revision used for private research
+        required: true
+        type: string
+    secrets:
+      OPERATIONS_APP_ID:
+        required: true
+      OPERATIONS_APP_PRIVATE_KEY:
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  TARGET_FOUNDATION_SHA: ${{ inputs.target_sha }}
+  OPERATIONS_REPOSITORY: Z-Solo-King/operations
+  OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref }}
+  OPERATIONS_MIGRATION_TOOLS_REF: f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791
+  NIGHTLY_RESEARCH_CONTRACT: nightly-research-contract/v2
+  MAPPER_RUNTIME_EVIDENCE_CONTRACT: mapper-migration-runtime-receipt/v1
+  MODEL_PORTABILITY_EVIDENCE_CONTRACT: model-portability-runtime-receipt/v1
+  RESEARCH_MAX_CONCURRENCY: "3"
+
+jobs:
+migration_review:
+  name: Nightly polyglot migration review
+  permissions:
+    contents: read
+    id-token: write
+    attestations: write
+  runs-on: ubuntu-latest
+  timeout-minutes: 30
+  steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        ref: ${{ env.TARGET_FOUNDATION_SHA }}
+    - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: "3.14"
+    - name: Authenticate private migration review source
+      id: operations-app
+      uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+      with:
+        client-id: ${{ secrets.OPERATIONS_APP_ID }}
+        private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+        owner: Z-Solo-King
+        repositories: operations
+        permission-contents: read
+    - name: Checkout pinned Operations migration tooling
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: Z-Solo-King/operations
+        ref: ${{ env.OPERATIONS_MIGRATION_TOOLS_REF }}
+        token: ${{ steps.operations-app.outputs.token }}
+        path: operations
+    - name: Verify Operations migration-tools revision
+      working-directory: operations
+      shell: bash
+      env:
+        EXPECTED: ${{ env.OPERATIONS_MIGRATION_TOOLS_REF }}
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$EXPECTED"
+    - name: Install Operations package
+      working-directory: operations
+      run: python -m pip install --disable-pip-version-check -e . --no-deps
+    - name: Run deterministic migration review sweep
+      env:
+        PYTHONPATH: ${{ github.workspace }}/operations
+      run: |
+        set -euo pipefail
+        mkdir -p .runtime
+        python operations/private/multi_agent/migration_review.py \
+          --foundation "$GITHUB_WORKSPACE" \
+          --operations "$GITHUB_WORKSPACE/operations" \
+          --matrix "$GITHUB_WORKSPACE/benchmark/polyglot/migration_matrix_40.json" \
+          --output .runtime/nightly-migration-review.json
+    - name: Publish explicit #597/#603 runtime-evidence requirements
+      shell: python
+      env:
+        NIGHTLY_RUN_ID: ${{ github.run_id }}
+        FOUNDATION_REVISION: ${{ env.TARGET_FOUNDATION_SHA }}
+        MIGRATION_REVISION: ${{ env.OPERATIONS_MIGRATION_TOOLS_REF }}
+      run: |
+        import json
+        import os
+        from pathlib import Path
+        payload = {
+            "schema": "migration-runtime-evidence-requirements/v1",
+            "run_id": os.environ["NIGHTLY_RUN_ID"],
+            "foundation_revision": os.environ["FOUNDATION_REVISION"],
+            "operations_revision": os.environ["MIGRATION_REVISION"],
+            "issue_597": {
+                "status": "pending_external_runtime",
+                "receipt_contract": "mapper-migration-runtime-receipt/v1",
+                "cases": 32,
+                "repeats_min": 3,
+                "cold_start": True,
+                "raw_samples": True,
+                "parity": ["functional", "error_taxonomy", "security", "policy", "provenance", "cancellation", "timeout"],
+                "performance_resource_measurements": True,
+                "shadow": True,
+                "canary": True,
+                "rollback": True,
+            },
+            "issue_603": {
+                "status": "pending_external_runtime",
+                "receipt_contract": "model-portability-runtime-receipt/v1",
+                "cases": 32,
+                "repeats_min": 3,
+                "parity": ["functional", "security", "policy", "provenance", "cancellation"],
+                "serialization_conversion_measurement": True,
+                "no_model_specific_hidden_assumptions": True,
+                "one_canonical_authority": True,
+                "shadow": True,
+                "canary": True,
+                "rollback": True,
+            },
+            "closure_rule": "Deterministic repository CI is supporting evidence only; it cannot substitute for required private/local runtime receipts.",
+        }
+        Path(".runtime/migration-runtime-evidence-requirements.json").write_text(
+            json.dumps(payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+    - name: Validate migration review receipt
+      shell: python
+      run: |
+        import json
+        from pathlib import Path
+        receipt = json.loads(Path(".runtime/nightly-migration-review.json").read_text(encoding="utf-8"))
+        assert receipt["schema"] == "nightly-migration-review/v1"
+        assert receipt["matrix"]["case_count"] == 40
+        assert receipt["capacity_sweep"]["agent_capacities"] == [1, 2, 4, 8]
+        assert receipt["capacity_sweep"]["execution_modes"] == ["serial", "parallel"]
+        assert receipt["capacity_sweep"]["repeats"] == 3
+        assert receipt["capacity_sweep"]["all_cases_completed"] is True
+        # The current capacity sweep uses the deterministic executor. It validates
+        # scheduling/capacity structure only and must never be treated as runtime
+        # latency, token, source-count, or answer-quality benchmark evidence.
+        assert receipt["capacity_sweep"]["evidence_class"] == "deterministic-structural"
+        assert receipt["capacity_sweep"]["runtime_performance_valid"] is False
+        assert receipt["capacity_sweep"]["executor"] == "deterministic_executor"
+        assert all(row["evidence_class"] == "deterministic-structural" for row in receipt["capacity_sweep"]["results"])
+        assert all(row["runtime_performance_valid"] is False for row in receipt["capacity_sweep"]["results"])
+        assert len(receipt["language_review"]) == 40
+        assert receipt["polyglot_audit"]["language_scoreboard"]
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: nightly-migration-runtime-evidence-requirements
+        path: .runtime/migration-runtime-evidence-requirements.json
+        if-no-files-found: error
+        retention-days: 30
+    - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+      with:
+        subject-path: .runtime/migration-runtime-evidence-requirements.json
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: nightly-migration-review
+        path: .runtime/nightly-migration-review.json
+        if-no-files-found: error
+        retention-days: 30
+    - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+      with:
+        subject-path: .runtime/nightly-migration-review.json
+
