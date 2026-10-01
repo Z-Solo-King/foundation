@@ -7,3 +7,6 @@ preview_urls = false
 [[services]]
 binding = "CORE"
 service = "heroic-core"
+
+[observability.issues]
+enabled = true

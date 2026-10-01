@@ -43,8 +43,10 @@ jobs:
         with:
           node-version: '22'
           package-manager-cache: false
+      - name: Validate project observability contract
+        run: node tools/project_observability_audit.mjs
       - name: Validate improvement contracts
-        run: node --check tools/autonomous_mission_router.mjs && node --check tools/autonomous_engineering_supervisor.mjs && node --test tests/autonomous_mission_router.test.mjs tests/autonomous_engineering_supervisor.test.mjs tests/project_improvement_matrix.test.mjs
+        run: node --check tools/autonomous_mission_router.mjs && node --check tools/autonomous_engineering_supervisor.mjs && node --test tests/autonomous_mission_router.test.mjs tests/autonomous_engineering_supervisor.test.mjs tests/project_improvement_matrix.test.mjs tests/project_observability_audit.test.mjs
       - name: Run project-wide improvement supervisor
         env:
           GH_TOKEN: ${{ github.token }}

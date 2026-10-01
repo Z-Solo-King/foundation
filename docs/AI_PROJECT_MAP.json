@@ -1060,5 +1060,69 @@
       }
     },
     "cloudflare_provenance_rule": "Exact production Operations SHA is retained only in the dedicated pin field; public map does not store provider-formatted revision provenance literals."
+  },
+  "navigation_overlay": {
+    "entrypoint": "docs/AI_SYSTEM_DIRECTORY.md",
+    "unified_map": "docs/AI_SYSTEM_MAP.json",
+    "purpose": "Connect detailed Foundation architecture to unified observability, audit, evolution, autonomous-control, evidence and runtime navigation.",
+    "navigation_order": [
+      "intent",
+      "functional_plane",
+      "component",
+      "owner",
+      "canonical_path",
+      "policy_or_contract",
+      "tests",
+      "workflow",
+      "evidence",
+      "runtime"
+    ],
+    "taxonomy": {
+      "functional_plane": "what capability does",
+      "execution_class": "how it runs",
+      "authority_layer": "what it may decide",
+      "evidence_class": "how claims are established",
+      "resource_class": "what quota/cost/limits affect it"
+    },
+    "categories_are_orthogonal": true,
+    "categories_may_overlap": true,
+    "unknown_is_not_zero": true,
+    "ai_output_is_not_evidence_authority": true,
+    "quality_score_is_telemetry_quality_only": true,
+    "cross_cutting_systems": {
+      "observability": "operations/private/project_observability.py",
+      "evolution": [
+        "operations/private/evolution_score.py",
+        "operations/private/evolution_engine.py",
+        "operations/private/evolution_integration.py"
+      ],
+      "autonomous_control": [
+        "tools/autonomous_engineering_supervisor.mjs",
+        "tools/autonomous_mission_router.mjs"
+      ],
+      "audit": [
+        "tools/project_observability_audit.mjs",
+        "operations/tools/master_audit.py"
+      ]
+    }
+  },
+  "combined_architecture": {
+    "flow": [
+      "observe",
+      "audit",
+      "evaluate",
+      "score",
+      "learn",
+      "bounded_candidate",
+      "policy_gate",
+      "shadow_or_canary",
+      "promotion",
+      "monitor",
+      "rollback_or_supersede"
+    ],
+    "authority_rule": "navigation and scoring are non-authoritative; existing policy, evidence, resource, provider, deployment and promotion authorities remain canonical",
+    "storage_b2": "Foundation-owned backup evidence; archive size/restore/retention",
+    "cloudflare_r2": "excluded",
+    "ai_map_role": "navigation overlay only"
   }
 }
