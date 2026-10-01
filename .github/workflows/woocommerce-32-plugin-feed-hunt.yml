@@ -1,0 +1,99 @@
+name: WooCommerce 32 Plugin + Google Feed Hunt
+
+on:
+  schedule:
+    - cron: "20 4 * * *"
+  workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: "Optional immutable Operations commit; blank resolves current main"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foundation-woocommerce-32-plugin-feed-hunt
+  cancel-in-progress: true
+
+jobs:
+  hunt:
+    name: Run 32-site public feed hunt
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Resolve Operations revision
+        id: resolve-operations
+        env:
+          GH_TOKEN: ${{ steps.operations-app.outputs.token }}
+          REQUESTED_REF: ${{ inputs.operations_ref }}
+        run: |
+          set -euo pipefail
+          ref="${REQUESTED_REF:-}"
+          if [[ -z "$ref" ]]; then
+            ref="$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
+          fi
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "operations_ref must be an immutable 40-hex commit"; exit 1; }
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+      - name: Checkout Operations source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ steps.resolve-operations.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Validate feed-hunt source
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          test -f tools/woocommerce_32_plugin_feed_hunt.mjs
+          test -f tests/test_woocommerce_plugin_feed_hunt.mjs
+          node --check tools/woocommerce_32_plugin_feed_hunt.mjs
+          node --test tests/test_woocommerce_plugin_feed_hunt.mjs
+      - name: Run 32-site public feed hunt
+        working-directory: operations
+        env:
+          FEED_HUNT_CONCURRENCY: "8"
+          FEED_HUNT_TIMEOUT_MS: "3000"
+        run: node tools/woocommerce_32_plugin_feed_hunt.mjs
+      - name: Validate report shape and provenance
+        working-directory: operations
+        env:
+          OPERATIONS_REF: ${{ steps.resolve-operations.outputs.ref }}
+        run: |
+          set -euo pipefail
+          report="out/woocommerce-32-plugin-feed/woocommerce_32_plugin_feed_matrix.json"
+          test -f "$report"
+          jq -e '
+            .schema_version == "woocommerce-32-plugin-feed-matrix/v1"
+            and .target_count == 32
+            and (.results | length) == 32
+            and (.acquisition_policy | contains("No authentication"))
+            and (.validation_policy | contains("Google Merchant namespace"))
+          ' "$report" >/dev/null
+          jq -n --arg ref "$OPERATIONS_REF" --arg sha "$(sha256sum "$report" | cut -d" " -f1)"             '{schema:"foundation-woocommerce-32-plugin-feed-hunt-receipt/v1",operations_ref:$ref,report_sha256:$sha}'             > out/woocommerce-32-plugin-feed/foundation-receipt.json
+      - name: Upload feed-hunt evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: foundation-woocommerce-32-plugin-feed-hunt
+          path: operations/out/woocommerce-32-plugin-feed/
+          if-no-files-found: error
+          retention-days: 30
