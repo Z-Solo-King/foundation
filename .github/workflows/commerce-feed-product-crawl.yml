@@ -49,7 +49,7 @@ jobs:
       - name: Checkout private registry
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: ${{ inputs.registry_repository }}
+          repository: Z-Solo-King/operations
           ref: ${{ inputs.registry_ref }}
           token: ${{ steps.registry-app.outputs.token }}
           persist-credentials: false
@@ -62,7 +62,7 @@ jobs:
         run: |
           set -euo pipefail
           test -f "registry-source/$REGISTRY_PATH"
-          install -D -m 0600             "registry-source/$REGISTRY_PATH"             data/feed_lab/commerce_feed_targets.json
+          install -D -m 0600 "registry-source/$REGISTRY_PATH" data/feed_lab/commerce_feed_targets.json
           jq -e '
             .schema_version == "operations-feed-target-registry/v1"
             and .registry == "commerce_feed_targets"
@@ -87,7 +87,7 @@ jobs:
         run: |
           node - <<'JS'
           const fs = require("fs");
-          const read = (path) => fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, "utf8")) : null;
+          const read = path => fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, "utf8")) : null;
           const commerce = read("out/commerce-feed-crawl/report.json");
           const custom = read("out/custom-feed-crawl/report.json");
           const aggregate = {
@@ -97,7 +97,7 @@ jobs:
             custom,
             target_count: (commerce?.target_count || 0) || (custom?.target_count || 0),
             verified_feed_count: (commerce?.verified_feed_count || 0) + (custom?.verified_feed_count || 0),
-            visited_page_count: (commerce?.visited_page_count || 0) + (custom?.visited_page_count || 0),
+            visited_page_count: (commerce?.visited_page_count || 0) + (custom?.visited_page_count || 0)
           };
           fs.mkdirSync("out", {recursive:true});
           fs.writeFileSync("out/feed-product-crawl-summary.json", JSON.stringify(aggregate, null, 2) + "\n");
