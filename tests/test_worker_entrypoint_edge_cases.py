@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 def test_worker_http_entrypoint_all_paths():
     import worker
+from tests.policy_test_support import policy_binding
     class Req:
         def __init__(self, method, url, payload=None, headers=None): self.method, self.url, self._payload, self.headers = method, url, payload, headers or {}
         async def json(self): return self._payload

@@ -1,3 +1,4 @@
+import pytest
 """CPython test bootstrap for Cloudflare-only Workers runtime imports."""
 from __future__ import annotations
 
@@ -49,3 +50,12 @@ def _install_workers_compat() -> None:
 
 
 _install_workers_compat()
+
+
+@pytest.fixture(autouse=True)
+def private_policy_authority_fixture(monkeypatch):
+    import worker
+    async def _synthetic_policy(_env, _request):
+        from tests.policy_test_support import private_policy_envelope
+        return private_policy_envelope()
+    monkeypatch.setattr(worker, "_private_policy_envelope", _synthetic_policy)

@@ -219,7 +219,7 @@ async def test_worker_http_all_branches(monkeypatch):
     unauthorized_post = await entry.fetch(Request("POST", "https://x/api/v1/research", headers={"Authorization":"Bearer bad", "Content-Type":"application/json"})); assert unauthorized_post
     invalid_json = await entry.fetch(Request("POST", "https://x/api/v1/research", payload=[], headers={"Authorization":"Bearer secret", "Content-Type":"application/json"})); assert invalid_json
     bad_shape = await entry.fetch(Request("POST", "https://x/api/v1/research", payload={"unknown":1}, headers={"Authorization":"Bearer secret", "Content-Type":"application/json"})); assert bad_shape
-    monkeypatch.setattr(worker, "submit_research", lambda req: SimpleNamespace(ok=False, error="bad request"))
+    monkeypatch.setattr(worker, "submit_research", lambda req, **kwargs: SimpleNamespace(ok=False, error="bad request"))
     rejected = await entry.fetch(Request("POST", "https://x/api/v1/research", payload={"question":"q"}, headers={"Authorization":"Bearer secret", "Content-Type":"application/json"})); assert rejected
     monkeypatch.setattr(worker, "submit_research", lambda req: SimpleNamespace(ok=True, run_id="r1", metadata={}))
     class Persistence:

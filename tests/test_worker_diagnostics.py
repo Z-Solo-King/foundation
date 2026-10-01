@@ -4,6 +4,7 @@ import hashlib
 import pytest
 
 import worker
+from tests.policy_test_support import policy_binding
 
 
 class Request:

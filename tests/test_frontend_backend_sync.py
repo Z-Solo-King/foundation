@@ -89,7 +89,7 @@ async def test_worker_extracts_bounded_urls_and_reports_capability_boundary(monk
 async def test_worker_stays_honest_when_no_source_urls_are_available(monkeypatch):
     persistence = FakePersistence()
     monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: persistence)
-    monkeypatch.setattr(worker, "submit_research", lambda request: SimpleNamespace(ok=True, run_id="r1", metadata={"strict_zero_cost_only": True}))
+    monkeypatch.setattr(worker, "submit_research", lambda request, **kwargs: SimpleNamespace(ok=True, run_id="r1", metadata={"strict_zero_cost_only": True}))
 
     class Request:
         method = "POST"
