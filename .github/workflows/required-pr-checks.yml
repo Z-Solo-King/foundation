@@ -101,6 +101,8 @@ jobs:
         run: python tools/validate_family_full_coverage.py --foundation-root . --output .runtime/foundation-full-coverage.json --strict
       - name: GitHub Actions zero-cost policy
         run: python scripts/validate_github_actions_zero_cost.py
+      - name: Hybrid & Alternative zero-cost policy
+        run: python scripts/validate_hybrid_alternative_policy.py
       - name: GitHub Actions zero-cost policy
         run: python scripts/validate_github_actions_zero_cost.py
 

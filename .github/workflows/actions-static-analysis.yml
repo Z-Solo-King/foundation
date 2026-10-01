@@ -8,6 +8,10 @@ on:
       - ".github/zizmor.yml"
       - "tests/test_workflow_static_analysis_policy.py"
       - "docs/GITHUB_ACTIONS_ZERO_COST_POLICY.json"
+      - "docs/HYBRID_ALTERNATIVE_ZERO_COST_POLICY.json"
+      - "docs/HYBRID_ALTERNATIVE_ECOSYSTEM_AUDIT_2026-10-01.json"
+      - "scripts/validate_hybrid_alternative_policy.py"
+      - "tests/test_hybrid_alternative_policy.py"
       - "scripts/validate_github_actions_zero_cost.py"
       - "tests/test_github_actions_zero_cost_policy.py"
   push:

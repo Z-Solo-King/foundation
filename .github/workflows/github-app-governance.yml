@@ -4,6 +4,10 @@ on:
   pull_request:
     paths:
       - "docs/GITHUB_APP_INTEGRATION_POLICY.json"
+      - "docs/HYBRID_ALTERNATIVE_ZERO_COST_POLICY.json"
+      - "docs/HYBRID_ALTERNATIVE_ECOSYSTEM_AUDIT_2026-10-01.json"
+      - "scripts/validate_hybrid_alternative_policy.py"
+      - "tests/test_hybrid_alternative_policy.py"
       - "docs/GITHUB_APP_CAPABILITY_CATALOG.json"
       - "scripts/validate_github_app_policy.py"
       - "tests/test_github_app_marketplace_policy.py"
