@@ -476,7 +476,7 @@ async def test_worker_research_success_handles_missing_admission_lease(monkeypat
     monkeypatch.setattr(
         worker,
         "submit_research",
-        lambda request: type(
+        lambda request, **kwargs: type(
             "Result",
             (),
             {"ok": True, "run_id": "run-no-lease", "metadata": {"mode": "test"}},
@@ -630,7 +630,7 @@ async def test_worker_research_success_missing_lease_runs_through_finally(monkey
     monkeypatch.setattr(
         worker,
         "submit_research",
-        lambda request: type(
+        lambda request, **kwargs: type(
             "Result",
             (),
             {"ok": True, "run_id": "run-full", "metadata": {"mode": "test"}},
