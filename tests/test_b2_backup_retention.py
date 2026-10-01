@@ -45,3 +45,23 @@ def test_keep_file_rejects_keys_outside_backup_prefix(tmp_path):
         assert "outside" in str(exc)
     else:
         raise AssertionError("expected prefix guard")
+
+
+def test_archive_size_policy_uses_multipart_transfer():
+    from pathlib import Path
+    text = (Path(__file__).resolve().parents[1] / ".github/workflows/b2-repository-backup.yml").read_text(encoding="utf-8")
+    assert "single_put_limit_bytes=5000000000" in text
+    assert 'upload_mode="multipart"' in text
+    assert "multipart_threshold = 100MB" in text
+    assert "multipart_chunksize = 100MB" in text
+    assert "max_large_file_bytes=10000000000000" in text
+    assert "aws s3 cp" in text
+
+
+def test_manifest_records_archive_size_and_upload_policy():
+    from pathlib import Path
+    text = (Path(__file__).resolve().parents[1] / ".github/workflows/b2-repository-backup.yml").read_text(encoding="utf-8")
+    assert 'schema:"repository-backup/v3"' in text
+    assert "single_put_threshold_bytes:5000000000" in text
+    assert "max_supported_large_file_bytes:10000000000000" in text
+    assert "configured_multipart_part_bytes:104857600" in text
