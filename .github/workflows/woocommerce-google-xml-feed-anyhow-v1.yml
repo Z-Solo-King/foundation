@@ -1,0 +1,220 @@
+name: WooCommerce Google XML Feed Recovery — Anyhow V1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/woocommerce-google-xml-feed-anyhow-v1.yml"
+  workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: "Immutable Operations commit; blank resolves current main"
+        required: false
+        default: ""
+        type: string
+  schedule:
+    - cron: "17 3 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: woocommerce-google-xml-feed-anyhow-v1
+  cancel-in-progress: true
+
+jobs:
+  ai-crossfire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production-secret-sync
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: \${{ secrets.OPERATIONS_APP_ID }}
+          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Resolve immutable Operations revision
+        id: resolve
+        env:
+          GH_TOKEN: \${{ steps.operations-app.outputs.token }}
+          REQUESTED_REF: \${{ inputs.operations_ref }}
+        run: |
+          set -euo pipefail
+          ref="\${REQUESTED_REF:-}"
+          if [[ -z "\$ref" ]]; then
+            ref="\$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
+          fi
+          [[ "\$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "operations_ref must be a 40-char immutable SHA"; exit 1; }
+          echo "ref=\$ref" >> "\$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: \${{ steps.resolve.outputs.ref }}
+          token: \${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Run multi-provider AI crossfire
+        env:
+          PROVIDER_KEYS_JSON: \${{ secrets.PROVIDER_KEYS_JSON }}
+          GEMINI_API_KEY: \${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: \${{ secrets.GROQ_API_KEY }}
+          NVIDIA_NIM_API_KEY: \${{ secrets.NVIDIA_NIM_API_KEY }}
+          COHERE_API_KEY: \${{ secrets.COHERE_API_KEY }}
+          OPENROUTER_API_KEY: \${{ secrets.OPENROUTER_API_KEY }}
+          HF_TOKEN: \${{ secrets.HF_TOKEN }}
+          CEREBRAS_API_KEY: \${{ secrets.CEREBRAS_API_KEY }}
+          SILICONFLOW_API_KEY: \${{ secrets.SILICONFLOW_API_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: \${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: \${{ secrets.CLOUDFLARE_API_TOKEN }}
+          HEROIC_AUTH_TOKEN: \${{ secrets.AUTH_TOKEN }}
+          HEROIC_WORKER_URL: https://ai-cio.pages.dev
+          AI_CROSSFIRE_MAX_PROVIDERS: "6"
+          AI_CROSSFIRE_TIMEOUT_MS: "18000"
+          AI_CROSSFIRE_PROVIDERS: "heroic_worker,cloudflare_workers_ai,gemini,groq,cerebras,siliconflow,openrouter_free,nvidia_nim,cohere_free,huggingface_free"
+        run: |
+          set -euo pipefail
+          mkdir -p operations/out/rescue-fast
+          node operations/private/feed_recovery/ai_crossfire.mjs operations/data/feed_lab/woocommerce_30_registry_v18.json operations/out/rescue-fast/ai_candidates.json || true
+          test -f operations/out/rescue-fast/ai_candidates.json || printf '{"retailers":[]}\n' > operations/out/rescue-fast/ai_candidates.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wc-xml-anyhow-ai-crossfire
+          path: operations/out/rescue-fast/ai_candidates.json
+          retention-days: 14
+
+  recover:
+    needs: ai-crossfire
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    env:
+      SHARD: \${{ matrix.shard }}
+      SHARDS: 6
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: \${{ secrets.OPERATIONS_APP_ID }}
+          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Resolve immutable Operations revision
+        id: resolve
+        env:
+          GH_TOKEN: \${{ steps.operations-app.outputs.token }}
+        run: |
+          set -euo pipefail
+          ref="\$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
+          [[ "\$ref" =~ ^[0-9a-f]{40}$ ]]
+          echo "ref=\$ref" >> "\$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: \${{ steps.resolve.outputs.ref }}
+          token: \${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: wc-xml-anyhow-ai-crossfire
+          path: operations/out/rescue-fast
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install Chromium and build shard
+        working-directory: operations
+        env:
+          WC_XML_MAX_PRODUCTS: "20000"
+          WC_XML_MAX_PRODUCT_URLS: "500"
+          WC_XML_MAX_BROWSER_PAGES: "80"
+          WC_XML_HOST_DELAY_MS: "180"
+        run: |
+          set -euo pipefail
+          npm install --no-save --ignore-scripts playwright@1.55.0
+          npx playwright install --with-deps chromium
+          node --check private/feed_recovery/google_xml_feed_builder_30.mjs
+          node --test tests/test_google_xml_feed_builder_30.mjs
+          node private/feed_recovery/google_xml_feed_builder_30.mjs \
+            data/feed_lab/woocommerce_30_registry_v18.json \
+            out/google-xml-feed \
+            --shard "\$SHARD" \
+            --shards "\$SHARDS" \
+            --ai out/rescue-fast/ai_candidates.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wc-google-xml-anyhow-shard-\${{ matrix.shard }}
+          path: operations/out/google-xml-feed/
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    needs: recover
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        continue-on-error: true
+        with:
+          pattern: wc-google-xml-anyhow-shard-*
+          path: out/shards
+          merge-multiple: false
+      - name: Aggregate 30 feed assets
+        env:
+          GH_TOKEN: \${{ github.token }}
+          GH_REPO: \${{ github.repository }}
+        run: |
+          set -euo pipefail
+          rm -rf out/release
+          mkdir -p out/release
+          node <<'JS'
+          const fs=require("fs"),path=require("path");
+          const root="out/shards",release="out/release",manifests=[],feeds=[];
+          function walk(dir){if(!fs.existsSync(dir))return;for(const e of fs.readdirSync(dir,{withFileTypes:true})){const p=path.join(dir,e.name);if(e.isDirectory())walk(p);else if(e.name.startsWith("manifest-shard-")&&e.name.endsWith(".json"))manifests.push(p);else if(e.name.endsWith(".xml"))feeds.push(p)}}
+          walk(root);
+          const items=manifests.flatMap(p=>{try{return [JSON.parse(fs.readFileSync(p,"utf8"))]}catch{return[]}}).flatMap(x=>x.items||[]);
+          if(items.length!==30)throw new Error("Expected 30 site records, found "+items.length);
+          for(const file of feeds)fs.copyFileSync(file,path.join(release,path.basename(file)));
+          const names=new Set(feeds.map(x=>path.basename(x)));
+          const missing=items.filter(x=>!names.has(x.filename));
+          if(missing.length)throw new Error("Missing feed files: "+missing.map(x=>x.site).join(", "));
+          const index={schema_version:"woocommerce-google-xml-anyhow-v1/published-index",generated_on:new Date().toISOString(),target_count:30,release_tag:"wc-google-feed-latest",feeds:items.map(x=>({site:x.site,filename:x.filename,item_count:x.item_count,feed_kind:x.feed_kind,native_url:x.native_url||null,download_url:"https://github.com/"+process.env.GH_REPO+"/releases/download/wc-google-feed-latest/"+x.filename,validation:x.validation||null}))};
+          fs.writeFileSync(path.join(release,"feeds-index.json"),JSON.stringify(index,null,2)+"\n");
+          JS
+          TAG=wc-google-feed-latest
+          if ! gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GH_REPO" --title "WooCommerce Google XML Feeds — Latest" --notes "30-site public catalog recovery feeds. A feed is labeled native_current_xml only when a current native Google Merchant XML payload was observed; otherwise it is synthetic_public_catalog built from current public product data."
+          fi
+          gh release upload "$TAG" --repo "$GH_REPO" out/release/*.xml out/release/feeds-index.json --clobber
+          cat out/release/feeds-index.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wc-google-xml-anyhow-latest
+          path: out/release/
+          retention-days: 30
