@@ -136,6 +136,10 @@
       "private_feed_extraction"
     ],
     [
+      ".github/workflows/woocommerce-google-xml-feed-anyhow-v1.yml",
+      "private_feed_extraction"
+    ],
+    [
       ".github/workflows/woocommerce-native-xml-recovery-v18.yml",
       "private_feed_extraction"
     ],
