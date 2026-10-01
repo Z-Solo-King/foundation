@@ -311,7 +311,7 @@ It derives completion from #157/#597/#603 plus broader coverage. Do not close it
 
 ## 8. Open PR state — current scope
 
-Current open PR inventory after refresh contains only feed-related/mixed work.
+Current open PR inventory after refresh is empty; feed-trigger PR #1791 merged and remaining feed evidence is tracked separately.
 
 Foundation:
 - #1663 — feed recovery handoff docs — feed-only
