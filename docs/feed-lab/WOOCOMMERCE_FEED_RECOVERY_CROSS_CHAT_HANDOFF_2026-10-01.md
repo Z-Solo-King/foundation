@@ -405,3 +405,28 @@ The operational goal is:
 
 The next chat should begin by reading this checkpoint from main, checking #1247/#1249 comments, checking any V7 branch state, then running V7 transport-aware family probes.
 
+
+
+---
+
+## 10. V7 material run result — 2026-10-01
+
+V7 live run: 36820461029. Source-of-truth baseline: 94a5b5dfeb17f18239ac5defba72021aeb542ce2.
+
+Six shards completed successfully with 17/17 unique targets and strict native Merchant validation.
+
+Result:
+- 0/17 current native Google Merchant XML feeds verified.
+- 10/17 transport-limited.
+- 7/17 clean/no-hit under the bounded representative-family strategy.
+- 10 researched feed families each received one representative public endpoint per target.
+- Family expansion occurred only after a stable useful public 200 response; four expansion probes ran for StacksKB/iCopyDoc.
+- StacksKB produced the only useful family signal: current HTTP 200 application/xml at /wp-content/uploads/feed-xml-0.xml, matching the researched iCopyDoc URL grammar, but the payload was empty; expansion candidates returned 404. This is family evidence only, not plugin identity and not a Merchant feed.
+- Aarna had a representative timeout; KC Computers returned 403 on all ten representatives; Cosmic Byte, KRG KART, PC Kumar Infotech, PCHubShop, Theproaudio and ithunt were broadly transport/challenge limited; GamesNComps and SCL Gaming had partial transport/challenge limits.
+- Ads Store, EZPZ Solutions, hotshiftpc, Meckeys, Variety Infotech and Viper PC were broadly reachable but produced no useful feed-family signal or native Merchant payload.
+
+V7 interpretation: transport-limited remains unverified, not feed absence. The StacksKB/iCopyDoc signal is the first V8 targeted family-identification candidate.
+
+The next phase is V8: corroborate family identity from the collected fingerprints/evidence, then V9 can expand only the supported family grammar. V10 remains reserved for one-at-a-time public recovery of persistent transport-blocked targets.
+
+No CAPTCHA solving, Cloudflare challenge bypass, authentication bypass, clearance-cookie replay, proxy rotation/evasion, or random token enumeration was used.
