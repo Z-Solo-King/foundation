@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 from pathlib import Path
 
@@ -24,6 +25,16 @@ def require_text(path: Path, needles: list[str], errors: list[str], label: str) 
         if needle not in text:
             errors.append(f"{label}:missing-anchor:{needle}")
 
+
+
+def require_python_syntax(path: Path, errors: list[str], label: str) -> None:
+    if not path.is_file():
+        errors.append(f"{label}:missing")
+        return
+    try:
+        ast.parse(path.read_text(encoding="utf-8", errors="strict"), filename=str(path))
+    except (OSError, SyntaxError) as exc:
+        errors.append(f"{label}:syntax:{exc}")
 
 def main() -> int:
     parser = argparse.ArgumentParser()
@@ -84,6 +95,18 @@ def main() -> int:
                     errors.append(f"operations:{rel}:missing")
             else:
                 require_text(path, [], errors, f"operations:{rel}")
+
+        for rel in (
+            "private/evolution_score.py",
+            "private/evolution_engine.py",
+            "private/evolution_integration.py",
+            "private/evaluation_receipt.py",
+            "private/language_fit_policy.py",
+            "private/migration_artifact_policy.py",
+            "private/ai_maintainability_policy.py",
+            "private/runtime_language_policy.py",
+        ):
+            require_python_syntax(operations / rel, errors, f"operations:{rel}")
 
         require_text(
             operations / "private/evolution_engine.py",
