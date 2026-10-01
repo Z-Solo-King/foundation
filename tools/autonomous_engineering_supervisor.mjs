@@ -152,6 +152,16 @@ async function callPlanner(missionId, cycle, context) {
   return body;
 }
 
+export function reconcileChildState(state, childResults) {
+  if (!state || state.state !== 'executing' || !Array.isArray(state.child_runs) || state.child_runs.length === 0) return state;
+  if (!Array.isArray(childResults) || childResults.length === 0) return state;
+  const active = childResults.some((run) => ['queued','in_progress','waiting','requested','pending'].includes(run.status));
+  if (active) return state;
+  const terminalKnown = childResults.filter((run) => ['completed','cancelled'].includes(run.status) || ['success','failure','cancelled','skipped','timed_out','action_required','neutral'].includes(run.conclusion));
+  const allKnown = terminalKnown.length === childResults.length && terminalKnown.length === state.child_runs.length;
+  if (!allKnown) return state;
+  return { ...state, state: 'verifying', last_summary: 'Child workflow execution finished; verification and next-step planning are now required.', terminal_reason: null, retriable: true };
+}
 async function main() {
   if (!process.env.AUTH_TOKEN) throw new Error('AUTH_TOKEN is required for autonomous planner');
   if (!owner || !repo || !token) throw new Error('GitHub repository/token environment is required');
@@ -185,9 +195,15 @@ async function main() {
   }
   const activeChild = childResults.find((r) => ['queued','in_progress','waiting','requested','pending'].includes(r.status));
   if (state.state === 'executing' && activeChild) {
-    await updateIssue(missionIssue.number, {body:missionBody(state,`Child workflow ${activeChild.name || activeChild.database_id} is still ${activeChild.status}.`)});
+    await updateIssue(missionIssue.number, {body:missionBody(state, `Child workflow ${activeChild.name || activeChild.database_id} is still ${activeChild.status}.`)});
     console.log(JSON.stringify({mission_id:state.mission_id,state:'executing',child_run:activeChild.database_id}));
     return;
+  }
+  const reconciledState = reconcileChildState(state, childResults);
+  if (reconciledState !== state) {
+    state = reconciledState;
+    await updateIssue(missionIssue.number, {body:missionBody(state, state.last_summary)});
+    console.log(JSON.stringify({mission_id:state.mission_id,state:'verifying',child_runs:state.child_runs}));
   }
 
   const cycle = Number(state.cycle || 0) + 1;
