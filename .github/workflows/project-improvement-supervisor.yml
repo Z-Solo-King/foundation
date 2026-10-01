@@ -1,0 +1,52 @@
+name: Project-wide autonomous improvement sweep
+
+on:
+  schedule:
+    - cron: '17 */4 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Plan/validate only; never dispatch a child workflow'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+
+concurrency:
+  group: project-wide-autonomous-improvement
+  cancel-in-progress: false
+
+jobs:
+  improve:
+    name: Rotate one canonical component
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PUBLIC_WORKER_URL: https://ai-cio.pages.dev
+      MAX_PLANNING_CYCLES: '6'
+      MAX_WORKFLOW_ATTEMPTS: '3'
+      FOUNDATION_SHA: ${{ github.sha }}
+      MISSION_MODE: component_improvement
+      DRY_RUN: ${{ inputs.dry_run || false }}
+    steps:
+      - name: Checkout Foundation main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Validate improvement contracts
+        run: node --check tools/autonomous_mission_router.mjs && node --check tools/autonomous_engineering_supervisor.mjs && node --test tests/autonomous_mission_router.test.mjs tests/autonomous_engineering_supervisor.test.mjs tests/project_improvement_matrix.test.mjs
+      - name: Run project-wide improvement supervisor
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        run: node tools/autonomous_engineering_supervisor.mjs

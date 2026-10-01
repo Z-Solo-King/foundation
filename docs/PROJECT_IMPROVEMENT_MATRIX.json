@@ -1,0 +1,250 @@
+{
+  "schema": "project-improvement-matrix/v1",
+  "purpose": "Project-wide improvement routing; existing subsystem authorities remain canonical.",
+  "components": {
+    "chatbot": {
+      "owner": "operations",
+      "canonical_paths": [
+        "private/chatbot/"
+      ],
+      "workflows": [
+        "live-chatbot-production-smoke.yml",
+        "nightly-invariants.yml",
+        "operations-centralized-validation.yml"
+      ],
+      "ai_task_families": [
+        "chatbot",
+        "action_plan",
+        "workflow_assist",
+        "audit_assist"
+      ],
+      "evidence": [
+        "functional",
+        "security",
+        "policy",
+        "provenance",
+        "runtime"
+      ]
+    },
+    "extractor": {
+      "owner": "operations",
+      "canonical_paths": [
+        "extractor_mapper/"
+      ],
+      "workflows": [
+        "extractor-surface-governance.yml",
+        "live-extractor-benchmark.yml",
+        "operations-centralized-validation.yml"
+      ],
+      "ai_task_families": [
+        "extraction_assist",
+        "scan_triage",
+        "audit_assist"
+      ],
+      "evidence": [
+        "differential",
+        "security",
+        "policy",
+        "provenance",
+        "performance"
+      ]
+    },
+    "mapper": {
+      "owner": "foundation+operations",
+      "canonical_paths": [
+        "foundation_core/",
+        "extractor_mapper/"
+      ],
+      "workflows": [
+        "observation-contract-shadow.yml",
+        "hybrid-language-pilots.yml",
+        "polyglot-migration-review.yml",
+        "exhaustive-six-lane-audit.yml"
+      ],
+      "ai_task_families": [
+        "extraction_assist",
+        "audit_assist",
+        "action_plan"
+      ],
+      "evidence": [
+        "differential",
+        "errors",
+        "security",
+        "policy",
+        "provenance",
+        "cancellation",
+        "timeout",
+        "resource",
+        "shadow",
+        "canary",
+        "rollback"
+      ]
+    },
+    "research": {
+      "owner": "foundation+operations",
+      "canonical_paths": [
+        "nightly research executor",
+        "private/research/"
+      ],
+      "workflows": [
+        "nightly-research-provider-preflight.yml",
+        "nightly-multi-agent-research-v3.yml",
+        "live-nightly-research-canary.yml"
+      ],
+      "ai_task_families": [
+        "research",
+        "search_synthesis",
+        "action_plan"
+      ],
+      "evidence": [
+        "provider",
+        "coverage",
+        "diagnosis",
+        "provenance"
+      ]
+    },
+    "provider_fleet": {
+      "owner": "operations",
+      "canonical_paths": [
+        "private/chatbot/provider_runtime.py",
+        "private/multi_agent/governed_llm.py"
+      ],
+      "workflows": [
+        "provider-fleet-runtime-state.yml",
+        "live-ai-agent-benchmark.yml",
+        "operations-centralized-validation.yml"
+      ],
+      "ai_task_families": [
+        "action_plan",
+        "audit_assist",
+        "workflow_assist"
+      ],
+      "evidence": [
+        "capability",
+        "quota",
+        "privacy",
+        "runtime",
+        "errors",
+        "cost"
+      ]
+    },
+    "runtime_governance": {
+      "owner": "operations",
+      "canonical_paths": [
+        "private/resource_governance*",
+        "private/runtime_policy*"
+      ],
+      "workflows": [
+        "nightly-invariants.yml",
+        "operations-centralized-validation.yml",
+        "cross-repository-contract-drift.yml"
+      ],
+      "ai_task_families": [
+        "audit_assist",
+        "action_plan",
+        "workflow_assist"
+      ],
+      "evidence": [
+        "admission",
+        "reservation",
+        "reconciliation",
+        "idempotency",
+        "policy",
+        "resource"
+      ]
+    },
+    "cloudflare_runtime": {
+      "owner": "foundation+operations",
+      "canonical_paths": [
+        "worker/",
+        "operations control-plane"
+      ],
+      "workflows": [
+        "public-worker-live-probe.yml",
+        "live-chatbot-production-smoke.yml"
+      ],
+      "ai_task_families": [
+        "cloudflare_diagnostic",
+        "audit_assist",
+        "workflow_assist"
+      ],
+      "evidence": [
+        "topology",
+        "binding",
+        "auth",
+        "runtime",
+        "receipt"
+      ],
+      "mutation_policy": "read_or_existing_authority_only"
+    },
+    "storage_b2": {
+      "owner": "foundation+operations",
+      "canonical_paths": [
+        "Backblaze B2 artifact/backup boundary"
+      ],
+      "workflows": [
+        "b2-repository-backup.yml",
+        "b2-restore-verification.yml",
+        "live-chatbot-production-smoke.yml"
+      ],
+      "ai_task_families": [
+        "cloudflare_diagnostic",
+        "audit_assist"
+      ],
+      "evidence": [
+        "authorization",
+        "integrity",
+        "restore",
+        "provenance"
+      ],
+      "mutation_policy": "controlled_backup_or_restore_verification_only"
+    },
+    "security_ci": {
+      "owner": "foundation",
+      "canonical_paths": [
+        ".github/workflows/",
+        "tools/validate_workflow_authority.py"
+      ],
+      "workflows": [
+        "full-history-secret-scan.yml",
+        "actions-static-analysis.yml",
+        "codeql.yml",
+        "release-quality-regression.yml"
+      ],
+      "ai_task_families": [
+        "audit_assist",
+        "scan_triage",
+        "action_plan"
+      ],
+      "evidence": [
+        "secret_scan",
+        "workflow_security",
+        "static_analysis",
+        "regression"
+      ]
+    },
+    "feed_recovery": {
+      "owner": "foundation+operations",
+      "canonical_paths": [
+        "private/feed_recovery/"
+      ],
+      "workflows": [
+        "woocommerce-clean-recovery.yml",
+        "native-google-feed-hunt.yml",
+        "woocommerce-identified-family-exhaustive-v5.yml"
+      ],
+      "ai_task_families": [
+        "extraction_assist",
+        "scan_triage",
+        "audit_assist"
+      ],
+      "evidence": [
+        "current_payload",
+        "native_namespace",
+        "product_fields",
+        "provenance"
+      ],
+      "mutation_policy": "public_acquisition_only_no_bypass"
+    }
+  }
+}

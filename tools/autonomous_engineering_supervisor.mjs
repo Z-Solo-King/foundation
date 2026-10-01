@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { validatePlan } from './autonomous_mission_router.mjs';
+import { IMPROVEMENT_COMPONENTS, PROJECT_IMPROVEMENT_MATRIX, validatePlan } from './autonomous_mission_router.mjs';
 
 const owner = process.env.GITHUB_REPOSITORY?.split('/')[0];
 const repo = process.env.GITHUB_REPOSITORY?.split('/')[1];
@@ -67,15 +67,22 @@ async function updateIssue(number, patch) {
   return github(`/repos/${owner}/${repo}/issues/${number}`, {method:'PATCH', body:patch});
 }
 
+function improvementComponentForRun() {
+  const digits = String(process.env.GITHUB_RUN_NUMBER || process.env.GITHUB_RUN_ID || '0').replace(/[^0-9]/g, '') || '0';
+  return IMPROVEMENT_COMPONENTS[Number(BigInt(digits) % BigInt(IMPROVEMENT_COMPONENTS.length))];
+}
+
 async function createMission(missionId, foundationSha) {
+  const mode = process.env.MISSION_MODE || 'standard';
+  const targetComponent = mode === 'component_improvement' ? improvementComponentForRun() : null;
   const state = {
-    schema:'autonomous-mission-state/v1', mission_id:missionId, mission_type:null, state:'planning',
+    schema:'autonomous-mission-state/v1', mission_id:missionId, mission_type:null, target_component:targetComponent, mode, state:'planning',
     foundation_sha:foundationSha, cycle:0, workflow_attempts:{}, child_runs:[], last_plan_digest:null,
     last_provider:null, last_summary:'mission created by autonomous supervisor', terminal_reason:null,
     failure_class:null, retriable:true
   };
   const issue = await github(`/repos/${owner}/${repo}/issues`, {method:'POST', body:{
-    title:`[autonomous-mission] ${missionId}`, body:missionBody(state,'Waiting for governed AI planning.')
+    title:`[${mode === 'component_improvement' ? 'autonomous-improvement' : 'autonomous-mission'}] ${missionId}`, body:missionBody(state,'Waiting for governed AI planning.')
   }});
   return {issue, state};
 }
@@ -104,7 +111,7 @@ async function callPlanner(missionId, cycle, context) {
   const payload = {
     chat_id: missionId,
     request_id: `autonomous-plan:${missionId}:${cycle}`,
-    message: 'AUTONOMOUS_ENGINEERING_PLAN_V1\nReturn JSON only. You are a bounded planner, not an execution authority. Choose one next step that maximizes useful evidence while avoiding repeated known failures. '+JSON.stringify(context),
+    message: 'AUTONOMOUS_ENGINEERING_PLAN_V1\nReturn JSON only. You are a bounded planner, not an execution authority. For component_improvement, target_component is mandatory and the action must come from that component allowlist. Treat this as an action_plan candidate and choose one next step that maximizes useful evidence while avoiding repeated known failures. '+JSON.stringify(context),
     mode:'chat', operation:'knowledge', strict_zero_cost_only:true, require_model_generation:true,
     metadata:{autonomous:'true',plan_version:'v1'},
   };
@@ -128,8 +135,10 @@ async function main() {
   }));
   if (!foundationSha) throw new Error('FOUNDATION_SHA is required');
   const allIssues = await listIssues('open', 50);
-  const activeMissions = allIssues.filter((i) => !i.pull_request && String(i.title || '').startsWith('[autonomous-mission]'));
-  const openIssues = allIssues.filter((i) => !i.pull_request && !String(i.title || '').startsWith('[autonomous-mission]')).slice(0,20);
+  const mode = process.env.MISSION_MODE || 'standard';
+  const missionPrefix = mode === 'component_improvement' ? '[autonomous-improvement]' : '[autonomous-mission]';
+  const activeMissions = allIssues.filter((i) => !i.pull_request && String(i.title || '').startsWith(missionPrefix));
+  const openIssues = allIssues.filter((i) => !i.pull_request && !String(i.title || '').startsWith('[autonomous-mission]') && !String(i.title || '').startsWith('[autonomous-improvement]')).slice(0,20);
   const recentRuns = (await listRuns(35)).slice(0,35);
 
   let missionIssue = activeMissions[0] || null;
@@ -166,10 +175,13 @@ async function main() {
   const context = {
     mission:state,
     foundation_sha:foundationSha,
+    mode,
+    target_component:state.target_component,
+    target_component_definition:state.target_component ? PROJECT_IMPROVEMENT_MATRIX.components[state.target_component] : null,
     open_issues:openIssues.slice(0,10).map((i)=>({number:i.number,title:sanitize(i.title).slice(0,240),body:sanitize(i.body).slice(0,650),updatedAt:i.updated_at})),
     recent_runs:recentRuns.slice(0,20).map((r)=>({id:r.id,name:sanitize(r.name).slice(0,160),status:r.status,conclusion:r.conclusion,head_sha:r.head_sha,event:r.event,created_at:r.created_at})),
     child_runs:childResults.map((r)=>({id:r.id,name:r.name,status:r.status,conclusion:r.conclusion,head_sha:r.head_sha,event:r.event,url:r.html_url})),
-    hard_constraints:{production_release_allowed:false,secrets_or_credentials_mutation:false,policy_changes:false,workflow_inputs:{},max_same_workflow_dispatches:maxWorkflowAttempts},
+    hard_constraints:{production_release_allowed:false,secrets_or_credentials_mutation:false,policy_changes:false,workflow_inputs:{},max_same_workflow_dispatches:maxWorkflowAttempts,cloudflare_destructive_mutation_allowed:false},
   };
 
   let planner;
@@ -188,6 +200,13 @@ async function main() {
     state = {...state,state:'blocked',cycle,last_summary:'AI plan failed deterministic validation',terminal_reason:'planner_output_invalid',failure_class:'policy_blocked',retriable:false};
     await updateIssue(missionIssue.number,{body:missionBody(state,`Planner output rejected: ${String(error).slice(0,500)}`)});
     console.log(JSON.stringify({mission_id:state.mission_id,state:'blocked',reason:'planner_output_invalid'}));
+    return;
+  }
+
+  if (mode === 'component_improvement' && (plan.mission_type !== 'component_improvement' || plan.target_component !== state.target_component)) {
+    state = {...state,state:'blocked',cycle,last_summary:'AI plan targeted the wrong component or mission class',terminal_reason:'improvement_component_mismatch',failure_class:'policy_blocked',retriable:false};
+    await updateIssue(missionIssue.number,{body:missionBody(state,'Improvement plan rejected: component target mismatch.')});
+    console.log(JSON.stringify({mission_id:state.mission_id,state:'blocked',reason:'improvement_component_mismatch'}));
     return;
   }
 
