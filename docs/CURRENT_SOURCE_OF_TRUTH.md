@@ -3,11 +3,11 @@
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
 Checked: 2026-10-01.
-Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `282d7eae9fda93dcd4440bcf123f328a67a66a8d`.
+Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `68aff623472af4df03688ddb24f33259d1fe5532`.
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: current main is read live from GitHub; last verified commit `282d7eae9fda93dcd4440bcf123f328a67a66a8d`.
-Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `7f28470ea512715dc4f65eb0832cdfab831dfe73`. Research and migration jobs use explicit immutable pins below.
+Foundation main code checkpoint: current main is read live from GitHub; last verified commit `68aff623472af4df03688ddb24f33259d1fe5532`.
+Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `942eb72d1df90299d52977918dd56e9d25e0c41f`. Research and migration jobs use explicit immutable pins below.
 Production Operations pin: `da86e92d4e0fdb68912efb54ef95c69281a7d613`.
 Provider fleet runtime probe pin: `b95e419254a9071beaeef57a1b0da22ba7dd2c4f`.
 Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`.
@@ -147,3 +147,7 @@ The live GitHub PR queue is the authority for current PR state. Feed-recovery PR
 ## 2026-10-01 Operations syntax repair checkpoint
 
 Operations main now includes the syntax repair from PR #1451 after centralized Foundation validation exposed two malformed refactor artifacts. The universal method-effectiveness bridge remains in its dedicated adapter; the legacy method-effectiveness compatibility module is valid again. The exhaustive-audit autofix module no longer contains an incomplete entrypoint stub. This repair is structural and does not change promotion authority.
+
+## 2026-10-01 live feed-workflow deconfliction
+
+Foundation main `68aff623472af4df03688ddb24f33259d1fe5532` and Operations main `942eb72d1df90299d52977918dd56e9d25e0c41f` include the current WooCommerce V18 feed-recovery deconfliction and Common Crawl pacing repairs. Legacy native-feed and clean-recovery harnesses are manual-only compatibility surfaces; the current V18 executor remains the canonical feed-recovery authority. These changes are feed-track state and do not alter the public/private runtime authority model.
