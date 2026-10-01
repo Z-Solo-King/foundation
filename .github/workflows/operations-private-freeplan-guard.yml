@@ -1,0 +1,102 @@
+name: Operations private integrity guard
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: operations-private-integrity-guard
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    name: Verify private Operations integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Create read-only Operations installation token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Fetch Operations repository and main state
+        env:
+          GH_TOKEN: ${{ steps.operations-app.outputs.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime/operations-guard
+          curl -fsS             -H 'Accept: application/vnd.github+json'             -H "Authorization: Bearer ${GH_TOKEN}"             -H 'X-GitHub-Api-Version: 2022-11-28'             https://api.github.com/repos/Z-Solo-King/operations > .runtime/operations-guard/repository.json
+          curl -fsS             -H 'Accept: application/vnd.github+json'             -H "Authorization: Bearer ${GH_TOKEN}"             -H 'X-GitHub-Api-Version: 2022-11-28'             https://api.github.com/repos/Z-Solo-King/operations/branches/main > .runtime/operations-guard/main.json
+          code=$(curl -sS -o .runtime/operations-guard/workflows.json -w '%{http_code}'             -H 'Accept: application/vnd.github+json'             -H "Authorization: Bearer ${GH_TOKEN}"             -H 'X-GitHub-Api-Version: 2022-11-28'             https://api.github.com/repos/Z-Solo-King/operations/contents/.github/workflows)
+          if [[ "$code" == "404" ]]; then
+            echo '{"present":false}' > .runtime/operations-guard/workflows-state.json
+          elif [[ "$code" == "200" ]]; then
+            jq -n --argjson x "$(cat .runtime/operations-guard/workflows.json)" '{present:true,entries:($x|map(.name))}' > .runtime/operations-guard/workflows-state.json
+          else
+            echo "unexpected .github/workflows API status: $code" >&2
+            cat .runtime/operations-guard/workflows.json >&2 || true
+            exit 1
+          fi
+
+      - name: Validate immutable approval
+        id: validate
+        env:
+          APPROVED_SHA: ${{ vars.OPERATIONS_APPROVED_SHA || '90fa37df10d63824acd3fe20b64cc91043af9627' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq --arg approved "$APPROVED_SHA"              --slurpfile repo .runtime/operations-guard/repository.json              --slurpfile branch .runtime/operations-guard/main.json              --slurpfile workflows .runtime/operations-guard/workflows-state.json              '{repository:$repo[0],mainBranch:$branch[0],workflowsPresent:($workflows[0].present),approvedSha:$approved}'              > .runtime/operations-guard/input.json
+          node tools/validate_operations_main_guard.mjs .runtime/operations-guard/input.json > .runtime/operations-guard/receipt.json
+
+      - name: Record drift incident
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          observed="$(jq -r '.observed_main_sha // "unknown"' .runtime/operations-guard/receipt.json 2>/dev/null || true)"
+          approved="$(jq -r '.approved_sha // "unknown"' .runtime/operations-guard/receipt.json 2>/dev/null || true)"
+          number="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search '"[integrity] Operations main drift" in:title' --json number --limit 1 --jq '.[0].number // empty')"
+          body=$(cat <<EOF
+          # Operations main integrity incident
+
+          The private Operations repository does not match the Foundation-approved immutable revision.
+
+          Observed main: `$observed`
+          Approved revision: `$approved`
+
+          Do not treat Operations `main` as production authority until the revision is reviewed and the Foundation approval manifest is intentionally updated.
+          EOF
+          )
+          if [[ -z "$number" ]]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "[integrity] Operations main drift" --body "$body" >/dev/null
+          else
+            gh issue comment "$number" --repo "$GITHUB_REPOSITORY" --body "$body" >/dev/null
+          fi
+
+      - name: Upload integrity receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0 # v7.0.1
+        with:
+          name: operations-private-integrity-${{ github.run_id }}
+          path: .runtime/operations-guard/
+          if-no-files-found: error
+          retention-days: 30
