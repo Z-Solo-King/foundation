@@ -52,6 +52,19 @@ def validate_policy() -> dict:
         raise ValueError("webhook signature validation is mandatory")
     if policy["provenance"]["marketplace_is_discovery_only"] is not True:
         raise ValueError("Marketplace must remain a discovery source")
+
+    zero_cost = policy["zero_cost_policy"]
+    if zero_cost["max_additional_cost_usd"] != 0:
+        raise ValueError("GitHub Apps maximum additional cost must remain $0")
+    for key in (
+        "paid_plans_allowed",
+        "free_trials_allowed",
+        "payment_method_required",
+        "external_billing_dependency_allowed",
+    ):
+        if zero_cost[key] is not False:
+            raise ValueError(f"GitHub App zero-cost control drift: {key}")
+
     return policy
 
 

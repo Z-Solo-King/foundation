@@ -66,6 +66,34 @@ The useful native capability is retained as a capability-aware workflow:
 
 This means the workflow is useful immediately without creating a permanently failing check, and it automatically becomes an enforcement control if the repository's Dependency Graph is enabled later.
 
+
+## Strict $0 policy reconciliation — 2026-10-01
+
+GitHub's current billing documentation states that standard GitHub-hosted runners are free for public repositories, while larger runners are charged even for public repositories. Usage above a paid/private allowance can also become billable, and without a valid payment method usage is blocked after the included quota. The Foundation repository is public, so the implementation deliberately restricts workflows to the static `ubuntu-latest` standard runner class. It does not rely on larger runners or private-repository hosted-runner allowances.
+
+The project also treats Marketplace Apps differently from ordinary Actions. GitHub Marketplace permits both free and paid App plans; paid App plans use an account payment method, and a free trial of a paid plan automatically becomes a paid subscription unless canceled. Therefore **free trial is not considered $0-safe** for this project.
+
+The repository-side rules are now:
+- App paid plans: forbidden;
+- App free trials: forbidden;
+- App installation that requires adding a payment method: forbidden;
+- external billing dependency: forbidden;
+- Marketplace App installation: disabled by default;
+- third-party Actions: exact full-SHA allowlist only;
+- unknown/new Marketplace Action refs: denied until explicitly reviewed;
+- Docker-based Actions: forbidden;
+- non-standard/dynamic/paid runner labels: denied;
+- zizmor Advanced Security mode: disabled;
+- Scorecard result publishing: disabled.
+
+### Current Action census
+
+At the current Foundation `main`, the workflow tree contains **63 workflow files**. The live repository code search found **15 unique immutable Action refs across 11 Action repositories**. No unpinned third-party Action ref was found in that census, and all current `runs-on` targets are `ubuntu-latest`.
+
+The approved immutable set is recorded in `docs/GITHUB_ACTIONS_ZERO_COST_POLICY.json`. This is intentionally an allowlist rather than a popularity-based Marketplace selection: a newly introduced Action must first pass the zero-cost policy, security review, deterministic tests, and live validation.
+
+The policy does not claim that an arbitrary third-party service is economically free merely because its Action is free to download. It only admits dependencies for which this repository has explicit project-side evidence and bounded policy coverage.
+
 ## What was deliberately not adopted
 
 No Marketplace listing was treated as an authority simply because it was popular or present in the 10k extraction.
