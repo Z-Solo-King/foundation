@@ -1,6 +1,10 @@
 name: WooCommerce Native XML Recovery V18
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/woocommerce-native-xml-recovery-v18.yml"
   workflow_dispatch:
     inputs:
       operations_ref:
@@ -164,7 +168,7 @@ jobs:
       - name: Run canonical rescue engine
         working-directory: operations
         env:
-          WC_FEED_PROBE_CONCURRENCY: "4"
+          WC_FEED_PROBE_CONCURRENCY: "8"
           WC_FEED_MIN_INTERVAL_MS: "200"
           WC_FEED_RATE_RETRIES: "2"
         run: |
