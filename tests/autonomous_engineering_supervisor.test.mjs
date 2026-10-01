@@ -53,3 +53,26 @@ test('unknown child run does not create false verification', () => {
   const next = reconcileChildState(state,[{id:101,status:'unknown',conclusion:'unavailable'}]);
   assert.equal(next.state,'executing');
 });
+
+test('deterministic fallback rotates after a workflow reaches its attempt budget', () => {
+  const plan = deterministicFallbackPlan({
+    mode:'standard',
+    open_issues:[{title:'feed recovery',body:'woocommerce'}],
+    recent_runs:[],
+    workflow_attempts:{'woocommerce-clean-recovery.yml':3},
+  });
+  assert.notEqual(plan.actions[0].workflow, 'woocommerce-clean-recovery.yml');
+});
+
+test('deterministic fallback blocks only when every candidate reached the attempt budget', () => {
+  assert.throws(() => deterministicFallbackPlan({
+    mode:'standard',
+    open_issues:[{title:'feed recovery',body:'woocommerce'}],
+    recent_runs:[],
+    workflow_attempts:{
+      'woocommerce-clean-recovery.yml':3,
+      'native-google-feed-hunt.yml':3,
+      'woocommerce-identified-family-exhaustive-v5.yml':3,
+    },
+  }), /fallback_workflow_unavailable/);
+});

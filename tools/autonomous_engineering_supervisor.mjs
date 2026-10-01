@@ -126,7 +126,12 @@ export function deterministicFallbackPlan(context) {
   const workflowKey = (run) => String(run.path || '').split('/').pop() || String(run.name || '');
   const active = new Set((context?.recent_runs || []).filter((run) => ['queued','in_progress','waiting','requested','pending'].includes(run.status)).map(workflowKey));
   const recentlyFailed = new Set((context?.recent_runs || []).filter((run) => run.conclusion === 'failure' && run.created_at && (Date.now() - Date.parse(run.created_at)) < 24 * 60 * 60 * 1000).map(workflowKey));
-  const workflow = workflows.find((candidate) => !active.has(candidate) && !recentlyFailed.has(candidate)) || workflows.find((candidate) => !active.has(candidate)) || workflows[0];
+  const attemptCounts = context?.workflow_attempts && typeof context.workflow_attempts === 'object' ? context.workflow_attempts : {};
+  const withinBudget = (candidate) => Number(attemptCounts[candidate] || 0) < maxWorkflowAttempts;
+  const workflow = workflows.find((candidate) => withinBudget(candidate) && !active.has(candidate) && !recentlyFailed.has(candidate))
+    || workflows.find((candidate) => withinBudget(candidate) && !active.has(candidate))
+    || workflows.find((candidate) => withinBudget(candidate))
+    || null;
   if (!workflow) throw new Error('fallback_workflow_unavailable');
   return {schema:'autonomous-mission-plan/v1',mission_type:missionType,target_component:targetComponent,summary:'Deterministic fallback selected an existing bounded evidence workflow after planner unavailability.',terminal:null,actions:[{id:'a1',kind:'dispatch_workflow',workflow,inputs:{},reason:'Maintain autonomous progress using an existing allowlisted evidence workflow without changing authority.',retry_policy:'bounded'}],next_state:'executing',stop_reason:null};
 }
@@ -221,6 +226,7 @@ async function main() {
     target_component_definition:state.target_component ? PROJECT_IMPROVEMENT_MATRIX.components[state.target_component] : null,
     open_issues:openIssues.slice(0,10).map((i)=>({number:i.number,title:sanitize(i.title).slice(0,240),body:sanitize(i.body).slice(0,650),updatedAt:i.updated_at})),
     recent_runs:recentRuns.slice(0,20).map((r)=>({id:r.id,name:sanitize(r.name).slice(0,160),path:sanitize(r.path).slice(0,240),status:r.status,conclusion:r.conclusion,head_sha:r.head_sha,event:r.event,created_at:r.created_at})),
+    workflow_attempts:state.workflow_attempts || {},
     child_runs:childResults.map((r)=>({id:r.id,name:r.name,status:r.status,conclusion:r.conclusion,head_sha:r.head_sha,event:r.event,url:r.html_url})),
     hard_constraints:{production_release_allowed:false,secrets_or_credentials_mutation:false,policy_changes:false,workflow_inputs:{},max_same_workflow_dispatches:maxWorkflowAttempts,cloudflare_destructive_mutation_allowed:false},
   };
