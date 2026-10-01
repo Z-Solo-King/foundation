@@ -1,6 +1,10 @@
 name: Commerce feed product crawl
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/commerce-feed-product-crawl.yml"
   workflow_dispatch:
     inputs:
       registry_ref:
