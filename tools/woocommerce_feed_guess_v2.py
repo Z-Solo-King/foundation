@@ -44,7 +44,9 @@ TARGETS = [
     ("Theproaudio", "https://www.theproaudio.com"),
 ]
 
-BASE.PLUGIN_RULES = list(BASE.PLUGIN_RULES) + [
+from tools import woocommerce_v175_discovery as DISCOVERY
+
+DISCOVERY.PLUGIN_RULES = list(DISCOVERY.PLUGIN_RULES) + [
     ("rexfed_product_feed", ("best-woocommerce-feed", "rexfeed", "rex-wpfm", "rex_product_feed")),
     ("wpfactory_product_xml_feeds", (
         "product-xml-feeds-for-woocommerce",
@@ -58,14 +60,14 @@ BASE.PLUGIN_RULES = list(BASE.PLUGIN_RULES) + [
     )),
 ]
 
-BASE.PLUGIN_CANDIDATES = dict(BASE.PLUGIN_CANDIDATES)
-BASE.PLUGIN_CANDIDATES.update({
+DISCOVERY.PLUGIN_CANDIDATES = dict(DISCOVERY.PLUGIN_CANDIDATES)
+DISCOVERY.PLUGIN_CANDIDATES.update({
     "rexfed_product_feed": [],
     "wpfactory_product_xml_feeds": ["/products.xml"],
     "svmpforge_product_feed": [],
 })
 
-BASE.PASSIVE_FEED_HINT_RE = re.compile(
+DISCOVERY.PASSIVE_FEED_HINT_RE = re.compile(
     r"(?:feed|google|merchant|shopping|woocommerce_gpf|woo_feed|wppfm|wpfm|"
     r"webtoffee|adtribes|feedcraft|product-feed|apfw-feed|best-woocommerce-feed|"
     r"product-xml-feeds-for-woocommerce|alg_products_xml)",
@@ -176,6 +178,10 @@ def native_google_valid(body: bytes, content_type: str) -> Tuple[bool, int, str]
         return False, 0, ""
     return True, len(blocks), hashlib.sha256(raw).hexdigest()
 
+BASE.PLUGIN_RULES = DISCOVERY.PLUGIN_RULES
+BASE.PLUGIN_CANDIDATES = DISCOVERY.PLUGIN_CANDIDATES
+BASE.PASSIVE_FEED_HINT_RE = DISCOVERY.PASSIVE_FEED_HINT_RE
+BASE.find_plugin_hits = DISCOVERY.find_plugin_hits
 BASE.filter_explicit_feed_candidates = filter_explicit_feed_candidates
 BASE.query_feed_candidates = query_feed_candidates
 BASE.native_google_valid = native_google_valid
