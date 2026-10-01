@@ -1,0 +1,41 @@
+name: WooCommerce XML Index Recovery V13
+on:
+  push:
+    branches: [feat/wc-xml-index-recovery-v13-20261001]
+    paths:
+      - "tools/woocommerce_xml_index_v13.mjs"
+      - "tests/test_woocommerce_xml_index_v13.mjs"
+      - ".github/workflows/woocommerce-xml-index-v13.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "tools/woocommerce_xml_index_v13.mjs"
+      - "tests/test_woocommerce_xml_index_v13.mjs"
+      - ".github/workflows/woocommerce-xml-index-v13.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1,2,3,4,5,6]
+    env:
+      SHARD: ${{ matrix.shard }}
+      SHARDS: 6
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - run: node --test tests/test_woocommerce_xml_index_v13.mjs
+      - run: node tools/woocommerce_xml_index_v13.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-xml-index-v13-shard-${{ matrix.shard }}
+          path: out/woocommerce-xml-index-v13/
+          retention-days: 30
