@@ -45,6 +45,5 @@ def test_paused_task_workflows_have_no_automatic_trigger():
         source = (workflows / name).read_text(encoding="utf-8")
         assert "workflow_dispatch:" in source
         assert "schedule:" not in source
-        assert "
-  push:" not in source
+        assert "\n  push:" not in source
         assert "task workflow is paused" in source
