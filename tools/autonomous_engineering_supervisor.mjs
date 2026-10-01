@@ -153,7 +153,6 @@ async function callPlanner(missionId, cycle, context) {
 async function main() {
   if (!process.env.AUTH_TOKEN) throw new Error('AUTH_TOKEN is required for autonomous planner');
   if (!owner || !repo || !token) throw new Error('GitHub repository/token environment is required');
-  if (!process.env.AUTH_TOKEN) throw new Error('AUTH_TOKEN is required for autonomous planner');
   const foundationSha = process.env.FOUNDATION_SHA || (await new Promise((resolve, reject) => {
     import('node:child_process').then(({ execFile }) => execFile('git', ['rev-parse', 'HEAD'], {encoding:'utf8'}, (error, stdout) => error ? reject(error) : resolve(stdout.trim()))).catch(reject);
   }));
