@@ -3,11 +3,11 @@
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
 Checked: 2026-10-01.
-Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `69bf2a47d5788623094f377c3fdaf4c755f1e0bc`.
+Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `8ef127fcb6a0aa81f3926658125d7f4561f9064c`.
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
 Foundation main code checkpoint: current main is read live from GitHub; last verified commit `69bf2a47d5788623094f377c3fdaf4c755f1e0bc`.
-Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `4d94cc7d285b07149ab30d0d205f6e88a943391b`; research/migration jobs use explicit immutable pins below.
+Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `5216d30ea83c3ae9c3295510d42301af7611c6cc`; research/migration jobs use explicit immutable pins below.
 Production Operations pin: ce4f9edbae3ddf1bf1c25a908d5bce014acc7676.
 Provider fleet runtime probe pin: b95e419254a9071beaeef57a1b0da22ba7dd2c4f.
 Research Operations pin: 1a91efa53b9202f1624ddde892b0e86bd6b360f0.
@@ -95,3 +95,6 @@ The adaptive multi-lens engine is active on Foundation and is scheduling-only; i
 
 ### 2026-10-01 hosted CI authority reconciliation
 Foundation remains the sole hosted GitHub Actions authority for the family. The WooCommerce 32-site public feed-hunt capability remains implemented in Operations (`tools/woocommerce_32_plugin_feed_hunt.mjs`), but its hosted CI workflow was retired from Operations and is now executed by the Foundation-owned `.github/workflows/woocommerce-32-plugin-feed-hunt.yml` at an immutable Operations revision. Operations main contains no hosted GitHub Actions workflow after this reconciliation.
+
+### 2026-10-01 Marketplace App indirect implementation
+The 1,408 supplied GitHub Marketplace App records were analyzed as capability patterns rather than installation requests. Foundation now maintains a capability catalog and an App policy v2 boundary: Marketplace installation remains disabled, while the first-party Operations access App is explicitly limited to the Operations repository and `contents: read`. Foundation CI validates its usage across workflows. No external Marketplace App is a runtime dependency.
