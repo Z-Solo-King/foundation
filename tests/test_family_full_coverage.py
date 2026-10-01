@@ -19,6 +19,11 @@ def test_representative_primary_classification() -> None:
     assert classify("operations", "extractor_mapper/contracts.py", matrix) == "extractor_mapper"
 
 
+def test_most_specific_prefix_wins_deterministically() -> None:
+    matrix = load_matrix()
+    assert classify("operations", "private/chatbot/router.py", matrix) == "chatbot_control_plane"
+
+
 def test_unknown_path_is_not_silently_covered() -> None:
     matrix = load_matrix()
     assert classify("foundation", "not/a/real/root/file.xyz", matrix) is None

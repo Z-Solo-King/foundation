@@ -13,7 +13,7 @@ The standard covers the application and control-plane surfaces that are easy to 
 100% is a structural claim only:
 
 - every Git-tracked file in each supplied repository is visited;
-- every file receives exactly one primary audit surface;
+- every file receives one deterministic primary audit surface using the most-specific matching path prefix;
 - no tracked file is silently ignored because of extension;
 - all declared critical functional anchors exist;
 - MCP remains discovery-only with no runtime dependency;
@@ -24,7 +24,7 @@ This does **not** mean 100% runtime correctness. Runtime acceptance remains owne
 
 ## Current family scope
 
-The matrix contains the full repository tree classification for Foundation and Operations plus explicit functional surfaces and external ecosystem controls. The classifier uses `git ls-files`, so the denominator is the repository's tracked Git surface rather than filesystem noise.
+The matrix contains the full repository tree classification for Foundation and Operations plus explicit functional surfaces and external ecosystem controls. The classifier uses `git ls-files`, so the denominator is the repository's tracked Git surface rather than filesystem noise. Overlapping taxonomy prefixes are permitted, but the longest matching prefix is the only authority; ties with different surfaces fail closed.
 
 ## External ecosystems
 

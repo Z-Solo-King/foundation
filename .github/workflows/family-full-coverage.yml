@@ -3,6 +3,13 @@ name: Family full coverage
 on:
   push:
     branches: [main]
+    paths:
+      - 'docs/FAMILY_FULL_COVERAGE_MATRIX.json'
+      - 'docs/FAMILY_FULL_COVERAGE_STANDARD.md'
+      - 'tools/validate_family_full_coverage.py'
+      - 'tests/test_family_full_coverage.py'
+      - '.github/workflows/family-full-coverage.yml'
+      - '.github/workflows/**'
   schedule:
     - cron: "55 2 * * *"
   workflow_dispatch:
