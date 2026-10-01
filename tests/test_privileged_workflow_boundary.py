@@ -46,6 +46,12 @@ def test_backup_retention_runs_only_after_verified_restore():
     assert "scripts/cleanup_b2_backup_generations.py" in text
     assert "list-object-versions" in text
     assert "repository-backup/" in text
+    assert "AWS_CONFIG_FILE" in text
+    assert "multipart_threshold = 100MB" in text
+    assert "multipart_chunksize = 100MB" in text
+    assert "5000000000" in text
+    assert "10000000000000" in text
+    assert "aws s3 cp" in text
     assert "BACKUP_GITHUB_TOKEN" not in text
 def test_privileged_boundary_contract_is_documented():
     text = (ROOT / "docs" / "PRIVILEGED_WORKFLOW_TRUST_BOUNDARY.md").read_text(encoding="utf-8")
