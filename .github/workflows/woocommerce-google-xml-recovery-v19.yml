@@ -79,8 +79,7 @@ jobs:
           set -euo pipefail
           mkdir -p out
           node private/feed_recovery/ai_crossfire.mjs data/feed_lab/woocommerce_30_registry_v18.json out/ai-crossfire.json || true
-          test -s out/ai-crossfire.json || printf '{"retailers":[]}
-' > out/ai-crossfire.json
+          test -s out/ai-crossfire.json || printf '{"retailers":[]}\n' > out/ai-crossfire.json
       - name: Upload AI candidate pool
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -158,8 +157,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p out
-          test -f out/ai-crossfire.json || printf '{"retailers":[]}
-' > out/ai-crossfire.json
+          test -f out/ai-crossfire.json || printf '{"retailers":[]}\n' > out/ai-crossfire.json
           node private/feed_recovery/google_xml_feed_builder_30_v2.mjs             data/feed_lab/woocommerce_30_registry_v18.json             out/google-xml-v19             --shard "$SHARD" --shards 6 --ai out/ai-crossfire.json
       - name: Upload shard evidence
         if: always()
