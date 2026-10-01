@@ -92,3 +92,15 @@ Current GitHub main revisions and mutable issue/PR counts are live state. This d
 Current family state: Foundation and Operations are the only active repositories. The former standalone extractor-mapper repository is retired/deleted; active private extraction/mapping runtime is Operations `extractor_mapper/`, while Foundation retains the public deterministic mapper core.
 
 The adaptive multi-lens engine is active on Foundation and is scheduling-only; it does not transfer acceptance, security, provider, resource, extractor/mapper or promotion authority.
+
+## 2026-10-01 internal access / private Operations control refresh
+
+Live verification on 2026-10-01 established:
+- Foundation `main`: `f43028ca6c6a4f4d3cecbfdb99ae4602330228b4`.
+- Operations `main`: `37b35ba9e94600d746bc81e48cd2918b0c239bc7`.
+- Approved production Operations pin: `90fa37df10d63824acd3fe20b64cc91043af9627`.
+- Cloudflare production annotations: `heroic` and `heroic-core` carry Foundation `f43028ca6c6a4f4d3cecbfdb99ae4602330228b4`; `operations` and `operations-edge` carry Operations `90fa37df10d63824acd3fe20b64cc91043af9627`.
+- Operations `main` is intentionally ahead of the approved production pin. This is recorded as integrity drift until a reviewed promotion updates the immutable approval manifest.
+- Cloudflare Worker topology exposes `heroic -> heroic-core`, `heroic-core -> operations-edge`, `operations-edge -> operations`, plus the protected D1/B2/AI bindings documented in `docs/INTERNAL_ACCESS_CAPABILITY_POLICY.md`.
+- The private Operations repository does not have native protected-main enforcement on the current GitHub Free plan. The compensating control is the Foundation-hosted immutable approval manifest plus the 15-minute private-integrity guard.
+
