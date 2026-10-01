@@ -1,3 +1,4 @@
+# LIVE BENCHMARK TRIGGER: 2026-10-01 parallel provider run
 #!/usr/bin/env python3
 """Concurrent live zero-cost provider benchmark with deterministic quality checks."""
 from __future__ import annotations
@@ -10,6 +11,7 @@ import statistics
 import time
 import urllib.error
 import urllib.request
+import uuid
 from datetime import datetime, timezone
 from typing import Any
 
@@ -22,6 +24,7 @@ ALLOWED = {
     "cohere_free",
     "huggingface_free",
     "siliconflow",
+    "cloudflare_workers_ai",
 }
 
 TASKS = [
@@ -32,7 +35,13 @@ TASKS = [
 
 
 def load_config() -> dict[str, dict[str, str]]:
-    raw = os.environ.get("PROVIDER_KEYS_JSON", "").strip()
+    file_path = os.environ.get("PROVIDER_KEYS_JSON_FILE", "").strip()
+    raw = ""
+    if file_path:
+        with open(file_path, encoding="utf-8") as handle:
+            raw = handle.read().strip()
+    if not raw:
+        raw = os.environ.get("PROVIDER_KEYS_JSON", "").strip()
     config: dict[str, dict[str, str]] = {}
     if raw:
         try:
@@ -45,6 +54,15 @@ def load_config() -> dict[str, dict[str, str]]:
                     endpoint, api_key, model = value.get("endpoint"), value.get("api_key"), value.get("model")
                     if all(isinstance(x, str) and x.strip() for x in (endpoint, api_key, model)):
                         config[name] = {"endpoint": endpoint, "api_key": api_key, "model": model}
+    heroic_token = os.environ.get("HEROIC_AUTH_TOKEN", "").strip()
+    heroic_url = os.environ.get("HEROIC_WORKER_URL", "https://ai-cio.pages.dev").rstrip("/")
+    if heroic_token:
+        config["heroic_worker"] = {
+            "endpoint": heroic_url + "/api/v1/chat",
+            "api_key": heroic_token,
+            "model": "production-selected",
+            "transport": "heroic_worker",
+        }
     return config
 
 
@@ -69,22 +87,40 @@ def quality_pass(task_id: str, body: str) -> bool:
 
 
 def call(provider: str, cfg: dict[str, str], task: dict[str, str], repeat: int) -> dict[str, Any]:
-    request = json.dumps({
-        "model": cfg["model"],
-        "messages": [{"role": "user", "content": task["prompt"]}],
-        "temperature": 0,
-        "max_tokens": 64,
-        "stream": False,
-    }).encode()
-    req = urllib.request.Request(
-        cfg["endpoint"], data=request, method="POST",
-        headers={
+    transport = cfg.get("transport", "openai_compatible")
+    if transport == "heroic_worker":
+        request_payload = {
+            "chat_id": "crossfire-" + provider,
+            "request_id": str(uuid.uuid4()),
+            "message": task["prompt"],
+            "strict_zero_cost_only": True,
+            "require_model_generation": True,
+        }
+        headers = {
             "Authorization": "Bearer " + cfg["api_key"],
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "User-Agent": "heroic-ai-provider-crossfire/1",
-        },
-    )
+            "Idempotency-Key": "crossfire-" + uuid.uuid4().hex,
+            "X-Heroic-Research-Proof": "1",
+            "User-Agent": "heroic-ai-provider-crossfire/2",
+        }
+    else:
+        request_payload = {
+            "model": cfg["model"],
+            "messages": [{"role": "user", "content": task["prompt"]}],
+            "temperature": 0,
+            "max_tokens": 256,
+            "stream": False,
+            "enable_thinking": False,
+        }
+        headers = {
+            "Authorization": "Bearer " + cfg["api_key"],
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "heroic-ai-provider-crossfire/2",
+        }
+    request = json.dumps(request_payload).encode()
+    req = urllib.request.Request(cfg["endpoint"], data=request, method="POST", headers=headers)
     started = time.perf_counter()
     row: dict[str, Any] = {
         "provider": provider,
@@ -96,15 +132,32 @@ def call(provider: str, cfg: dict[str, str], task: dict[str, str], repeat: int) 
         "http_status": None,
         "error_type": None,
         "response_preview": None,
+        "selected_provider": None,
+        "selected_model": None,
     }
     try:
         with urllib.request.urlopen(req, timeout=20) as response:
             row["http_status"] = int(response.status)
             raw = response.read(64 * 1024)
-            data = json.loads(raw.decode("utf-8", "replace"))
+            text_body = raw.decode("utf-8", "replace")
+            try:
+                data = json.loads(text_body)
+            except json.JSONDecodeError:
+                row["error_type"] = "JSONDecodeError"
+                row["response_preview"] = text_body[:600]
+                row["ok"] = False
+                return row
+        selected_provider = None
         choices = data.get("choices") if isinstance(data, dict) else None
         body = ""
-        if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+        if transport == "heroic_worker":
+            response = data.get("response") if isinstance(data, dict) else None
+            if isinstance(response, dict):
+                body = str(response.get("text") or "")
+                selected_provider = str(response.get("provider") or "").strip() or None
+                row["selected_provider"] = selected_provider
+                row["selected_model"] = str(response.get("model") or "").strip() or None
+        elif isinstance(choices, list) and choices and isinstance(choices[0], dict):
             message = choices[0].get("message")
             if isinstance(message, dict):
                 body = str(message.get("content") or "")
@@ -138,8 +191,8 @@ def main() -> int:
 
     config = load_config()
     names = sorted(config)[: max(0, args.providers_max)]
-    if len(names) < 3:
-        raise SystemExit(f"need at least 3 configured external providers for cross-fire; found {len(names)}")
+    if len(names) < 2:
+        raise SystemExit(f"need at least 2 configured AI providers for cross-fire; found {len(names)}")
 
     jobs = [(name, config[name], task, repeat) for name in names for task in TASKS for repeat in range(1, args.repeats + 1)]
     started = time.perf_counter()

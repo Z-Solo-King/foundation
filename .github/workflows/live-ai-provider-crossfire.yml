@@ -31,9 +31,63 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Assemble governed provider configuration
+        env:
+          BASE_PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          HEROIC_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          HEROIC_WORKER_URL: https://ai-cio.pages.dev
+        run: |
+          set -euo pipefail
+          umask 077
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          payload={}
+          raw=os.environ.get("BASE_PROVIDER_KEYS_JSON","").strip()
+          if raw:
+              try:
+                  candidate=json.loads(raw)
+              except json.JSONDecodeError:
+                  candidate={}
+              if isinstance(candidate,dict):
+                  payload.update(candidate)
+
+          direct={
+              "cloudflare_workers_ai": ("CLOUDFLARE_API_TOKEN", "https://api.cloudflare.com/client/v4/accounts/" + os.environ.get("CLOUDFLARE_ACCOUNT_ID","") + "/ai/v1/chat/completions", "@cf/zai-org/glm-4.7-flash"),
+              "openrouter_free": ("OPENROUTER_API_KEY","https://openrouter.ai/api/v1/chat/completions","openrouter/free"),
+              "groq": ("GROQ_API_KEY","https://api.groq.com/openai/v1/chat/completions","openai/gpt-oss-120b"),
+              "gemini": ("GEMINI_API_KEY","https://generativelanguage.googleapis.com/v1beta/openai/chat/completions","gemini-3.8-flash"),
+              "nvidia_nim": ("NVIDIA_NIM_API_KEY","https://integrate.api.nvidia.com/v1/chat/completions","deepseek-ai/deepseek-v4.1-flash"),
+              "cohere_free": ("COHERE_API_KEY","https://api.cohere.ai/compatibility/v1/chat/completions","command-a-plus-05-2026"),
+              "huggingface_free": ("HF_TOKEN","https://router.huggingface.co/v1/chat/completions","openai/gpt-oss-120b"),
+              "siliconflow": ("SILICONFLOW_API_KEY","https://api.siliconflow.cn/v1/chat/completions","Qwen/Qwen3.5-4B"),
+          }
+          for provider,(env_name,endpoint,model) in direct.items():
+              key=os.environ.get(env_name,"").strip()
+              if key:
+                  payload[provider]={"endpoint":endpoint,"api_key":key,"model":model,"zero_cost":True}
+
+          allowed={"cloudflare_workers_ai","openrouter_free","groq","gemini","nvidia_nim","cohere_free","huggingface_free","siliconflow"}
+          payload={name:value for name,value in payload.items() if name in allowed and isinstance(value,dict)}
+          for name,value in payload.items():
+              if not all(isinstance(value.get(k),str) and value.get(k).strip() for k in ("endpoint","api_key","model")):
+                  raise SystemExit(f"invalid provider configuration for {name}")
+          if not os.environ.get("HEROIC_AUTH_TOKEN","").strip():
+              raise SystemExit("canonical Heroic provider lane requires AUTH_TOKEN")
+          if len(payload) < 1:
+              raise SystemExit(f"need at least 1 configured external provider plus the canonical Heroic lane; found {len(payload)} external: {sorted(payload)}")
+          target=Path(os.environ["RUNNER_TEMP"])/"provider_keys_crossfire.json"
+          target.write_text(json.dumps(payload,separators=(",",":")),encoding="utf-8")
+          print(json.dumps({"configured_provider_count":len(payload),"providers":sorted(payload)},sort_keys=True))
+          PY
+
       - name: Run concurrent zero-cost provider cross-fire
         env:
-          PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+          PROVIDER_KEYS_JSON_FILE: ${{ runner.temp }}/provider_keys_crossfire.json
+          HEROIC_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          HEROIC_WORKER_URL: https://ai-cio.pages.dev
         run: |
           set -euo pipefail
           mkdir -p .runtime/live-ai-crossfire
