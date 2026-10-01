@@ -1,5 +1,7 @@
 name: WooCommerce Native XML Recovery V18
 
+# Live rerun trigger: exercise current Operations provider crossfire and feed recovery
+
 on:
   push:
     branches: [main]
