@@ -768,3 +768,9 @@ def test_public_edge_removes_legacy_b2_credentials():
     assert "B2 credentials belong to heroic-core" in text
     assert "workers/scripts/${PUBLIC_WORKER_NAME}/secrets/${public_b2_secret}" in text
     assert "public-worker-settings-after-b2-cleanup.json" in text
+
+def test_unified_ai_system_directory_is_part_of_agent_navigation():
+    directory = ROOT / "docs" / "AI_SYSTEM_DIRECTORY.md"
+    navigation_map = ROOT / "docs" / "AI_SYSTEM_MAP.json"
+    assert directory.is_file()
+    assert navigation_map.is_file()
