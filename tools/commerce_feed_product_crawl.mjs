@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs/promises";
 import { chromium } from "playwright";
+import { mapBoundedByKey } from "./bounded_parallel.mjs";
 
 const NAV_TIMEOUT = 12000;
 const SETTLE_MS = 1800;
@@ -8,6 +9,7 @@ const MAX_PAGES = 4;
 const MAX_LINKS_PER_PAGE = 20;
 const MAX_RESPONSES = 300;
 const SITE_TIMEOUT = 60000;
+const SITE_CONCURRENCY = Math.max(1, Number(process.env.SITE_CONCURRENCY || 4));
 const REGISTRY = "data/feed_lab/commerce_feed_targets.json";
 
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
@@ -25,9 +27,9 @@ function rank(u){
   let s=0;
   if(/\/product\//.test(p)) s+=10;
   if(/\/products?\//.test(p)) s+=9;
-  if(/\/category\//.test(p)||/\/product-category\//.test(p)) s+=8;
+  if(/\/category\//.test(p) || /\/product-category\//.test(p)) s+=8;
   if(/\/shop\/?$/.test(p)) s+=6;
-  if(/\/collections?\//.test(p)||/\/catalog\//.test(p)) s+=5;
+  if(/\/collections?\//.test(p) || /\/catalog\//.test(p)) s+=5;
   return s;
 }
 function xmlValid(status,ct,body){
@@ -74,12 +76,13 @@ async function main(){
   await fs.mkdir("out/commerce-feed-crawl",{recursive:true});
   const browser=await chromium.launch({headless:true});
   try{
-    const results=[]; for(const t of targets) results.push(await probeSite(browser,t));
+    const results=await mapBoundedByKey(targets,SITE_CONCURRENCY,([,root])=>new URL(root).hostname.toLowerCase().replace(/^www\./,""),t=>probeSite(browser,t),1);
     const verified=results.flatMap(x=>x.verified_google_xml);
     const report={
       schema_version:"foundation-commerce-feed-product-crawl/v1",
       generated_on:new Date().toISOString(),
       target_count:results.length,
+      site_concurrency:SITE_CONCURRENCY,
       verified_feed_count:verified.length,
       visited_page_count:results.reduce((n,x)=>n+x.visited_pages.length,0),
       successful_target_count:results.filter(x=>x.pages.some(p=>p.status===200)).length

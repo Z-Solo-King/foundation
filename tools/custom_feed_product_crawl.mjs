@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 import fs from "node:fs/promises";
 import { chromium } from "playwright";
+import { mapBoundedByKey } from "./bounded_parallel.mjs";
 
 const NAV_TIMEOUT = 20000, SETTLE_MS = 5000, MAX_PAGES = 5, MAX_LINKS = 25, MAX_RESPONSES = 450;
+const SITE_CONCURRENCY = Math.max(1, Number(process.env.SITE_CONCURRENCY || 4));
+const SHARD = Math.max(1, Number(process.env.SHARD || 1));
+const SHARDS = Math.max(1, Number(process.env.SHARDS || 1));
 const REGISTRY = "data/feed_lab/commerce_feed_targets.json";
 
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
@@ -76,19 +80,21 @@ async function siteProbe(browser,site){
 }
 async function main(){
   const input=JSON.parse(await fs.readFile(REGISTRY,"utf8"));
-  const sites=Array.isArray(input.targets)
-    ? input.targets.map(([name,root])=>({name,roots:[root]}))
-    : [];
-  if(!sites.length) throw new Error("private feed target registry is empty");
+  const allSites=Array.isArray(input.targets) ? input.targets.map(([name,root])=>({name,roots:[root]})) : [];
+  const sites=allSites.filter((_,i)=>(i % SHARDS)+1===SHARD);
+  if(!allSites.length) throw new Error("private feed target registry is empty");
   await fs.mkdir("out/custom-feed-crawl",{recursive:true});
   const browser=await chromium.launch({headless:true});
   try{
-    const results=[]; for(const s of sites) results.push(await siteProbe(browser,s));
+    const results=await mapBoundedByKey(sites,SITE_CONCURRENCY,s=>new URL(s.roots[0]).hostname.toLowerCase().replace(/^www\./,""),s=>siteProbe(browser,s),1);
     const verified=results.flatMap(x=>x.verified_google_xml);
     const report={
-      schema_version:"foundation-custom-feed-product-crawl/v1",
+      schema_version:"foundation-custom-feed-product-crawl/v2",
       generated_on:new Date().toISOString(),
+      shard:SHARD,
+      shards:SHARDS,
       target_count:results.length,
+      site_concurrency:SITE_CONCURRENCY,
       verified_feed_count:verified.length,
       visited_page_count:results.reduce((n,x)=>n+x.visited_pages.length,0),
       successful_target_count:results.filter(x=>x.visited_pages.some(v=>v.status===200)).length
