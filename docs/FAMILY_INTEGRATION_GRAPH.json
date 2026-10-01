@@ -1,6 +1,6 @@
 {
   "schema": "family-integration-graph/v1",
-  "version": "1.4",
+  "version": "1.5",
   "status": "CURRENT",
   "purpose": "Cross-surface integration map for Foundation + Operations. Links docs, AI navigation, research, benchmark, extractor/mapper, chatbot, UI, persistence, runtime, resource, security and observability without creating new authority.",
   "hard_rules": [
@@ -440,7 +440,7 @@
         "M19"
       ],
       "targets": [
-        "operations#597"
+        "operations#603"
       ]
     },
     {
@@ -453,7 +453,7 @@
         "M16"
       ],
       "targets": [
-        "foundation#157",
+        "foundation#58",
         "operations#603"
       ]
     },
@@ -482,7 +482,7 @@
       ],
       "targets": [
         "foundation#58",
-        "foundation#157"
+        "foundation#58"
       ]
     },
     {
@@ -492,7 +492,7 @@
         "M09"
       ],
       "targets": [
-        "operations#597"
+        "operations#603"
       ]
     },
     {
@@ -503,7 +503,7 @@
         "M11"
       ],
       "targets": [
-        "foundation#157"
+        "foundation#58"
       ]
     },
     {
@@ -526,7 +526,7 @@
         "M19"
       ],
       "targets": [
-        "operations#597",
+        "operations#603",
         "operations#603"
       ]
     },
@@ -539,7 +539,7 @@
         "M18"
       ],
       "targets": [
-        "operations#597",
+        "operations#603",
         "operations#603"
       ]
     },
@@ -551,7 +551,7 @@
         "M17"
       ],
       "targets": [
-        "foundation#157",
+        "foundation#58",
         "operations#603"
       ]
     },
@@ -574,5 +574,17 @@
     "no production wiring of the research-memory scaffold without an owner/integration decision",
     "no financial trading parameters in Heroic AI runtime",
     "no UI transport state treated as execution truth"
-  ]
+  ],
+  "last_reconciled": "2026-10-01",
+  "current_issue_targets": {
+    "foundation": [
+      58,
+      1247,
+      1249,
+      1672
+    ],
+    "operations": [
+      603
+    ]
+  }
 }

@@ -35,22 +35,21 @@
   },
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
-    "observed_at": "2026-10-01T06:35:00Z",
-    "open_issue_count": 7,
+    "observed_at": "2026-10-01",
+    "open_issue_count": 5,
     "foundation": [
       58,
-      157,
       1247,
       1249,
       1672
     ],
-    "operations_count": 2,
+    "operations_count": 1,
     "operations_issue_numbers_omitted": false,
-    "authority": "GitHub live issue API; descriptive snapshot only; never a production certificate",
+    "authority": "GitHub live issue API; acceptance queue excludes autonomous execution/improvement and integrity incident state; never a production certificate",
     "operations": [
-      597,
       603
-    ]
+    ],
+    "total_open_issue_count": 7
   },
   "evidence": {
     "nightly_research": "latest live run failed at the public/private ChatRequest boundary; PR #1573 repairs the boundary and a fresh post-release 24-program live run is required",
@@ -117,10 +116,9 @@
       1438,
       1435,
       1400,
-      1361,
-      1444
+      1361
     ],
-    "source": "GitHub live PR API at 2026-10-01T09:58:00Z"
+    "source": "GitHub live PR API"
   },
   "foundation_open_prs": [
     1713,
@@ -143,8 +141,7 @@
     1438,
     1435,
     1400,
-    1361,
-    1444
+    1361
   ],
   "open_pr_count": 19,
   "open_implementation_pr_count": 19,
@@ -165,11 +162,11 @@
     "authority": "scheduling_only"
   },
   "post_merge_sync": {
-    "checked_at": "2026-10-01T09:58:00Z",
+    "checked_at": "2026-10-01T10:20:00Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "0b2a04fddab627701149d108345cc4fb1336b278",
-      "operations": "c69d5c113d43809e28ba622009ad0cc568b94a12"
+      "foundation": "dcdb4ccbe9dc2e25b33a312e6bac75bb323979c3",
+      "operations": "1a4bcb51615585ce9ee7f5d9d2774f7169e872bf"
     },
     "operations_last_sync_commits": [
       "d9bd39b6035b289db720f43934e5ec4cbd55ee54",
@@ -181,24 +178,38 @@
     "integration_contract": "Foundation docs/SYSTEM_INTEGRATION_CONTRACT.json",
     "evaluation_evolution_bridge": "Operations private/evolution_integration.py on current main",
     "operations_evaluation_bridge": "Operations private/evaluation_integration.py + EvaluationReceipt.universal_metrics",
-    "control_plane_diagnostics_split": "Operations private/control_plane_infrastructure.py"
+    "control_plane_diagnostics_split": "Operations private/control_plane_infrastructure.py",
+    "operations_diagnostics_facade": "Operations private/control_plane_diagnostics.py",
+    "operations_diagnostics_infrastructure": "Operations private/control_plane_infrastructure.py",
+    "live_acceptance_queue": {
+      "foundation": [
+        58,
+        1247,
+        1249,
+        1672
+      ],
+      "operations": [
+        603
+      ],
+      "total": 5
+    }
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "0b2a04fddab627701149d108345cc4fb1336b278",
-    "operations": "c69d5c113d43809e28ba622009ad0cc568b94a12"
+    "foundation": "dcdb4ccbe9dc2e25b33a312e6bac75bb323979c3",
+    "operations": "1a4bcb51615585ce9ee7f5d9d2774f7169e872bf"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "0b2a04fddab627701149d108345cc4fb1336b278",
-    "operations": "c69d5c113d43809e28ba622009ad0cc568b94a12"
+    "foundation": "dcdb4ccbe9dc2e25b33a312e6bac75bb323979c3",
+    "operations": "1a4bcb51615585ce9ee7f5d9d2774f7169e872bf"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",
     "repository": "Z-Solo-King/foundation",
     "foundation_is_canonical": true,
     "operations_workflow_directory": "absent_after_reconciliation",
-    "operations_main": "dab6f409b0340b7eabfb08d12715b8a6528c027c",
+    "operations_main": "1a4bcb51615585ce9ee7f5d9d2774f7169e872bf",
     "feed_hunt_capability": "Operations tools/woocommerce_32_plugin_feed_hunt.mjs",
     "hosted_workflow": ".github/workflows/woocommerce-32-plugin-feed-hunt.yml",
     "execution": "Foundation-hosted, Operations source at immutable commit",
