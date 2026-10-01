@@ -12,7 +12,7 @@ The public Worker is deployed with Python Worker tooling (`pywrangler`), not pla
 
 ## Canonical production workflow
 
-The canonical Foundation production deployment workflow is `.github/workflows/heroic-ai-production-release.yml`. It contains the single `pywrangler deploy` production owner and runs the public deployment only after `Public tests` succeeds on a push to `main`.
+The canonical Foundation production deployment workflow is `.github/workflows/heroic-ai-production-release.yml`. It contains the single `pywrangler deploy` production owner and runs only from an explicit `workflow_dispatch`; a `main` push does not implicitly deploy production.
 
 The same workflow performs the public post-deployment smoke checks. There is no second public production deployment workflow.
 
