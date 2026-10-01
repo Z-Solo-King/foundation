@@ -134,12 +134,6 @@ jobs:
         with:
           node-version: "24"
           package-manager-cache: false
-      - name: Install browser runtime
-        working-directory: operations
-        run: |
-          set -euo pipefail
-          npm install --no-save --ignore-scripts playwright@1.55.0
-          npx playwright install --with-deps chromium
       - name: Validate recovery builder
         working-directory: operations
         run: |
@@ -154,7 +148,7 @@ jobs:
           WC_ANY_MAX_PRODUCTS: "10000"
           WC_ANY_MAX_PRODUCT_URLS: "120"
           WC_ANY_LIVE_PAGE_LIMIT: "60"
-          WC_ANY_CC_PAGE_LIMIT: "80"
+          WC_ANY_CC_PAGE_LIMIT: "30"
           SHARD: ${{ matrix.shard }}
         run: |
           set -euo pipefail
