@@ -133,8 +133,9 @@
     "quality": {
       "owner": "operations",
       "canonical": [
-        "private/evolution_score.py",
-        "private/evolution_engine.py"
+        "operations/private/evolution_score.py",
+        "operations/private/evolution_engine.py",
+        "operations/private/evolution_integration.py"
       ],
       "consumes": [
         "versioned observations"
@@ -205,7 +206,10 @@
     },
     "evidence": {
       "owner": "operations",
-      "canonical": "private/evaluation_receipt.py",
+      "canonical": [
+        "operations/private/evaluation_receipt.py",
+        "operations/private/evolution_integration.py"
+      ],
       "consumes": [
         "evaluation results",
         "baseline/candidate/corpus identity",
@@ -296,7 +300,11 @@
       "private/evaluation_receipt.py",
       "extractor_mapper/",
       "docs/FEATURE_SURFACE_GOVERNANCE_POLICY.json",
-      "tools/feature_surface_audit.py"
+      "tools/feature_surface_audit.py",
+      "private/evolution_integration.py",
+      "private/language_fit_policy.py",
+      "private/migration_artifact_policy.py",
+      "private/ai_maintainability_policy.py"
     ]
   },
   "maintainability": {
