@@ -226,3 +226,5 @@ jobs:
             gh release create "$TAG" --repo "$GH_REPO" --title "WooCommerce Google XML Feeds — Latest" --notes "30-site public recovery feeds. Native feeds are labeled separately from synthetic/archive-backed feeds."
           fi
           gh release upload "$TAG" --repo "$GH_REPO" out/release/*.xml out/release/feeds-index.json --clobber
+
+# fresh validation marker
