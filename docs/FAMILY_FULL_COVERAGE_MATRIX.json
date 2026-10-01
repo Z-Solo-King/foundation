@@ -1,0 +1,808 @@
+{
+  "schema": "family-full-coverage/v1",
+  "updated_on": "2026-10-01",
+  "definition": "100% structural coverage means every Git-tracked file in both family repositories is classified exactly once into a deterministic primary audit surface using most-specific-prefix precedence, and every declared critical functional surface has its required code/test/document/workflow anchors present. It does not by itself certify runtime correctness, production health, or external-provider availability.",
+  "repositories": {
+    "foundation": "Z-Solo-King/foundation",
+    "operations": "Z-Solo-King/operations"
+  },
+  "external_ecosystems": {
+    "mcp": {
+      "policy": "discovery_only",
+      "runtime_dependency_allowed": false,
+      "evidence_files": [
+        "docs/MCP_DERIVED_TOOLING_PATTERNS.md"
+      ]
+    },
+    "github_apps": {
+      "supplied_dataset_entries": 1408,
+      "marketplace_installation_default": "disabled",
+      "external_marketplace_apps": 0,
+      "policy_file": "docs/GITHUB_APP_INTEGRATION_POLICY.json",
+      "audit_file": "docs/GITHUB_APP_MARKETPLACE_AUDIT_2026-10-01.md"
+    },
+    "github_actions": {
+      "supplied_dataset_entries": 9999,
+      "policy_file": "docs/GITHUB_ACTIONS_ZERO_COST_POLICY.json",
+      "audit_file": "docs/GITHUB_ACTIONS_MARKETPLACE_AUDIT_2026-10-01.md",
+      "unknown_action_policy": "deny",
+      "full_sha_required": true,
+      "docker_actions_allowed": false,
+      "standard_runner_only": true
+    }
+  },
+  "primary_classification": {
+    "foundation": [
+      [
+        ".claude/",
+        "developer_tooling"
+      ],
+      [
+        ".github/",
+        "github_governance"
+      ],
+      [
+        ".gitignore",
+        "repository_configuration"
+      ],
+      [
+        "AGENTS.md",
+        "developer_tooling"
+      ],
+      [
+        "backend/",
+        "backend_intelligence_api"
+      ],
+      [
+        "backup/",
+        "backup_storage"
+      ],
+      [
+        "benchmark/",
+        "benchmark_evaluation"
+      ],
+      [
+        "CAPABILITIES.json",
+        "repository_configuration"
+      ],
+      [
+        "CHATGPT.md",
+        "developer_tooling"
+      ],
+      [
+        "CLAUDE.md",
+        "developer_tooling"
+      ],
+      [
+        "conftest.py",
+        "tests_regression"
+      ],
+      [
+        "DEPLOYMENT.md",
+        "documentation_governance"
+      ],
+      [
+        "docs/",
+        "documentation_governance"
+      ],
+      [
+        "edge.ts",
+        "cloudflare_runtime"
+      ],
+      [
+        "experiments/",
+        "polyglot_languages"
+      ],
+      [
+        "foundation_core/",
+        "deterministic_mapper_core"
+      ],
+      [
+        "frontend/",
+        "frontend_ui"
+      ],
+      [
+        "GEMINI.md",
+        "developer_tooling"
+      ],
+      [
+        "migrations/",
+        "persistence_d1"
+      ],
+      [
+        "polyglot/",
+        "polyglot_languages"
+      ],
+      [
+        "pyproject.toml",
+        "repository_configuration"
+      ],
+      [
+        "pytest.ini",
+        "repository_configuration"
+      ],
+      [
+        "README.md",
+        "repository_configuration"
+      ],
+      [
+        "REPOSITORY_MAP.json",
+        "repository_configuration"
+      ],
+      [
+        "schemas/",
+        "schemas_contracts"
+      ],
+      [
+        "scripts/",
+        "scripts_automation"
+      ],
+      [
+        "SECURITY.md",
+        "security_policy"
+      ],
+      [
+        "tests/",
+        "tests_regression"
+      ],
+      [
+        "tools/",
+        "tools_audit_automation"
+      ],
+      [
+        "worker.py",
+        "cloudflare_runtime"
+      ],
+      [
+        "wrangler.python-core.toml",
+        "cloudflare_runtime"
+      ],
+      [
+        "wrangler.toml",
+        "cloudflare_runtime"
+      ]
+    ],
+    "operations": [
+      [
+        ".claude/",
+        "developer_tooling"
+      ],
+      [
+        ".github/",
+        "github_governance"
+      ],
+      [
+        "private/chatbot/",
+        "chatbot_control_plane"
+      ],
+      [
+        "private/feed_recovery/",
+        "feed_recovery"
+      ],
+      [
+        "private/multi_agent/",
+        "ai_orchestration"
+      ],
+      [
+        "private/",
+        "policy_provider_resource_control"
+      ],
+      [
+        "extractor_mapper/",
+        "extractor_mapper"
+      ],
+      [
+        "polyglot/",
+        "polyglot_languages"
+      ],
+      [
+        "experiments/",
+        "polyglot_languages"
+      ],
+      [
+        "benchmark/",
+        "benchmark_evaluation"
+      ],
+      [
+        "tests/",
+        "tests_regression"
+      ],
+      [
+        "docs/",
+        "documentation_governance"
+      ],
+      [
+        "schemas/",
+        "schemas_contracts"
+      ],
+      [
+        "scripts/",
+        "scripts_automation"
+      ],
+      [
+        "tools/",
+        "tools_audit_automation"
+      ],
+      [
+        "backup/",
+        "backup_storage"
+      ],
+      [
+        "worker.py",
+        "cloudflare_runtime"
+      ],
+      [
+        "wrangler.toml",
+        "cloudflare_runtime"
+      ],
+      [
+        "pyproject.toml",
+        "repository_configuration"
+      ],
+      [
+        ".coveragerc",
+        "repository_configuration"
+      ],
+      [
+        "CONTINUE_MIGRATION_2026-10-01.md",
+        "documentation_governance"
+      ],
+      [
+        ".gitignore",
+        "repository_configuration"
+      ],
+      [
+        "CAPABILITIES.json",
+        "repository_configuration"
+      ],
+      [
+        "REPOSITORY_MAP.json",
+        "repository_configuration"
+      ],
+      [
+        "README.md",
+        "repository_configuration"
+      ],
+      [
+        "AGENTS.md",
+        "developer_tooling"
+      ],
+      [
+        "CHATGPT.md",
+        "developer_tooling"
+      ],
+      [
+        "CLAUDE.md",
+        "developer_tooling"
+      ],
+      [
+        "GEMINI.md",
+        "developer_tooling"
+      ]
+    ]
+  },
+  "functional_surfaces": [
+    {
+      "id": "chatbot",
+      "description": "Chat lifecycle, routing, memory, UI and governed model execution.",
+      "anchors": [
+        [
+          "foundation",
+          "frontend/chat_view.js"
+        ],
+        [
+          "foundation",
+          "benchmark/public_chatbot_runner.py"
+        ],
+        [
+          "foundation",
+          "tests/test_public_chatbot_diagnostic.py"
+        ],
+        [
+          "operations",
+          "private/chatbot/router.py"
+        ],
+        [
+          "operations",
+          "private/chatbot/live_answer.py"
+        ],
+        [
+          "operations",
+          "tests/test_chat_endpoint.py"
+        ]
+      ]
+    },
+    {
+      "id": "extractor_mapper",
+      "description": "Acquisition, extraction, observation, deterministic mapping and quality.",
+      "anchors": [
+        [
+          "foundation",
+          "foundation_core/product_mapping.py"
+        ],
+        [
+          "foundation",
+          "tests/test_public_core.py"
+        ],
+        [
+          "operations",
+          "extractor_mapper/capability_registry.py"
+        ],
+        [
+          "operations",
+          "extractor_mapper/observation_contract.py"
+        ],
+        [
+          "operations",
+          "tools/mapper_extractor_cross_audit.py"
+        ],
+        [
+          "operations",
+          "tests/test_mapper_extractor_cross_audit.py"
+        ]
+      ]
+    },
+    {
+      "id": "feed_recovery",
+      "description": "Native Merchant/Google feed recovery remains a distinct evidence track.",
+      "anchors": [
+        [
+          "foundation",
+          ".github/workflows/woocommerce-clean-recovery.yml"
+        ],
+        [
+          "foundation",
+          "tests/test_woocommerce_feed_extraction_v3.py"
+        ],
+        [
+          "foundation",
+          "docs/feed-lab/WOO_V3_API_FIRST_2026-09-30.md"
+        ],
+        [
+          "operations",
+          "private/feed_recovery/custom_api_google_feed_recovery_1249.mjs"
+        ],
+        [
+          "operations",
+          "private/feed_recovery/woocommerce_google_feed_ai_agents_1247.mjs"
+        ]
+      ]
+    },
+    {
+      "id": "search",
+      "description": "Public search acquisition and private provider/search routing.",
+      "anchors": [
+        [
+          "foundation",
+          "backend/sources/search.py"
+        ],
+        [
+          "foundation",
+          "tests/test_sources.py"
+        ],
+        [
+          "operations",
+          "private/search_provider_execution.py"
+        ],
+        [
+          "operations",
+          "private/search_provider_catalog.py"
+        ],
+        [
+          "operations",
+          "tests/test_search_provider_execution.py"
+        ]
+      ]
+    },
+    {
+      "id": "research_evidence",
+      "description": "Research orchestration, claims, evidence, verification and artifact acceptance.",
+      "anchors": [
+        [
+          "foundation",
+          "backend/intelligence/evidence.py"
+        ],
+        [
+          "foundation",
+          "backend/evidence_certificate.py"
+        ],
+        [
+          "foundation",
+          "benchmark/research_artifact_validator.py"
+        ],
+        [
+          "operations",
+          "private/research_adjudication.py"
+        ],
+        [
+          "operations",
+          "private/multi_agent/project_research.py"
+        ],
+        [
+          "operations",
+          "tests/test_research_adjudication.py"
+        ]
+      ]
+    },
+    {
+      "id": "maps_documents_structure",
+      "description": "AI map, repository map, documentation structure, schema and placement metadata.",
+      "anchors": [
+        [
+          "foundation",
+          "docs/AI_PROJECT_MAP.json"
+        ],
+        [
+          "foundation",
+          "REPOSITORY_MAP.json"
+        ],
+        [
+          "foundation",
+          "docs/DOCUMENTATION_INDEX.md"
+        ],
+        [
+          "operations",
+          "docs/AI_PROJECT_MAP.json"
+        ],
+        [
+          "operations",
+          "docs/MASTER_AUDIT_SYSTEM.md"
+        ],
+        [
+          "operations",
+          "REPOSITORY_MAP.json"
+        ]
+      ]
+    },
+    {
+      "id": "ai_providers_api_policy",
+      "description": "Provider catalog, runtime eligibility, zero-cost firewall, API configuration and response admission.",
+      "anchors": [
+        [
+          "foundation",
+          "backend/api/main.py"
+        ],
+        [
+          "foundation",
+          "docs/PUBLIC_API_AUTH_CONTRACT.md"
+        ],
+        [
+          "operations",
+          "private/chatbot/provider_catalog.py"
+        ],
+        [
+          "operations",
+          "private/chatbot/provider_runtime.py"
+        ],
+        [
+          "operations",
+          "private/runtime_policy.py"
+        ],
+        [
+          "operations",
+          "docs/AI_PROVIDER_TASK_FABRIC_2026-09-30.json"
+        ],
+        [
+          "operations",
+          "docs/AI_PROVIDER_CONTROL_POLICY_2026-09-25.md"
+        ]
+      ]
+    },
+    {
+      "id": "cloudflare_ai_browser",
+      "description": "Cloudflare Worker/AI runtime, Browser Run/Playwright acquisition and browser evidence.",
+      "anchors": [
+        [
+          "foundation",
+          "worker.py"
+        ],
+        [
+          "foundation",
+          "wrangler.toml"
+        ],
+        [
+          "foundation",
+          ".github/workflows/browser-engine-runtime-evidence.yml"
+        ],
+        [
+          "operations",
+          "private/chatbot/live_answer.py"
+        ],
+        [
+          "operations",
+          "scripts/browser_engine_smoke.py"
+        ],
+        [
+          "operations",
+          "docs/BROWSER_ENGINE_RUNTIME_MATRIX.md"
+        ]
+      ]
+    },
+    {
+      "id": "backblaze_b2",
+      "description": "B2 repository backup, restore verification and storage credential boundary.",
+      "anchors": [
+        [
+          "foundation",
+          ".github/workflows/b2-repository-backup.yml"
+        ],
+        [
+          "foundation",
+          ".github/workflows/b2-restore-verification.yml"
+        ],
+        [
+          "foundation",
+          "docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md"
+        ],
+        [
+          "operations",
+          "docs/CREDENTIAL_AND_BACKUP_BOUNDARY.md"
+        ],
+        [
+          "operations",
+          "private/dashboard_b2.py"
+        ]
+      ]
+    },
+    {
+      "id": "polyglot_languages",
+      "description": "TypeScript, Rust, Go, Java, Zig and additional language qualification/migration surfaces.",
+      "anchors": [
+        [
+          "foundation",
+          "polyglot/edge-worker/src/router.ts"
+        ],
+        [
+          "foundation",
+          "docs/HYBRID_LANGUAGE_RUNTIME_ARCHITECTURE.md"
+        ],
+        [
+          "operations",
+          "polyglot/REGISTRY.json"
+        ],
+        [
+          "operations",
+          "tools/code_language_coverage.py"
+        ],
+        [
+          "operations",
+          "docs/POLYGLOT_IMPLEMENTATION_MAP_2026-09-20.md"
+        ],
+        [
+          "operations",
+          "experiments/small-language-qualification/src/java/Main.java"
+        ]
+      ]
+    },
+    {
+      "id": "artifacts_schemas",
+      "description": "Machine-readable contracts, manifests, receipts and evidence artifacts.",
+      "anchors": [
+        [
+          "foundation",
+          "schemas/registry.json"
+        ],
+        [
+          "foundation",
+          "backend/artifacts/manifest.py"
+        ],
+        [
+          "foundation",
+          "tests/test_artifact_manifest.py"
+        ],
+        [
+          "operations",
+          "private/artifact_manifest.py"
+        ],
+        [
+          "operations",
+          "schemas/evolution-observation.schema.json"
+        ],
+        [
+          "operations",
+          "tests/test_artifact_manifest.py"
+        ]
+      ]
+    },
+    {
+      "id": "github_ci_authority",
+      "description": "Hosted workflow ownership, immutable action pins, authority rules and CI safety.",
+      "anchors": [
+        [
+          "foundation",
+          ".github/workflows/required-pr-checks.yml"
+        ],
+        [
+          "foundation",
+          ".github/workflows/actions-static-analysis.yml"
+        ],
+        [
+          "foundation",
+          "docs/WORKFLOW_AUTHORITY_REGISTRY.json"
+        ],
+        [
+          "foundation",
+          "tools/validate_workflow_authority.py"
+        ],
+        [
+          "foundation",
+          "docs/GITHUB_ACTIONS_ZERO_COST_POLICY.json"
+        ],
+        [
+          "foundation",
+          "docs/GITHUB_APP_INTEGRATION_POLICY.json"
+        ]
+      ]
+    },
+    {
+      "id": "mcp_apps_actions",
+      "description": "External ecosystem discovery and zero-cost/supply-chain governance.",
+      "anchors": [
+        [
+          "operations",
+          "docs/MCP_DERIVED_TOOLING_PATTERNS.md"
+        ],
+        [
+          "foundation",
+          "docs/GITHUB_APP_MARKETPLACE_AUDIT_2026-10-01.md"
+        ],
+        [
+          "foundation",
+          "docs/GITHUB_ACTIONS_MARKETPLACE_AUDIT_2026-10-01.md"
+        ],
+        [
+          "foundation",
+          "docs/GITHUB_APP_INTEGRATION_POLICY.json"
+        ],
+        [
+          "foundation",
+          "docs/GITHUB_ACTIONS_ZERO_COST_POLICY.json"
+        ],
+        [
+          "foundation",
+          "tests/test_github_app_marketplace_policy.py"
+        ],
+        [
+          "foundation",
+          "tests/test_github_actions_zero_cost_policy.py"
+        ]
+      ]
+    },
+    {
+      "id": "security_identity_resources",
+      "description": "Authentication, admission, trust, resource reservation, replay and protected execution.",
+      "anchors": [
+        [
+          "foundation",
+          "backend/admission.py"
+        ],
+        [
+          "foundation",
+          "backend/worker_auth.py"
+        ],
+        [
+          "foundation",
+          "tests/test_public_auth_contract.py"
+        ],
+        [
+          "operations",
+          "private/policy.py"
+        ],
+        [
+          "operations",
+          "private/trust_boundary.py"
+        ],
+        [
+          "operations",
+          "private/resource_ledger.py"
+        ],
+        [
+          "operations",
+          "private/durable_resource_ledger.py"
+        ],
+        [
+          "operations",
+          "tests/test_durable_resource_ledger.py"
+        ]
+      ]
+    },
+    {
+      "id": "learning_memory_maintenance",
+      "description": "Knowledge/limitation learning, bounded memory, maintenance scheduling and lifecycle.",
+      "anchors": [
+        [
+          "foundation",
+          "backend/intelligence/knowledge.py"
+        ],
+        [
+          "foundation",
+          "tests/test_completeness.py"
+        ],
+        [
+          "operations",
+          "private/control_plane_memory.py"
+        ],
+        [
+          "operations",
+          "private/chatbot/maintenance_plan.py"
+        ],
+        [
+          "operations",
+          "private/chatbot/maintenance_execution.py"
+        ],
+        [
+          "operations",
+          "tests/test_chatbot_maintenance_scheduler.py"
+        ],
+        [
+          "operations",
+          "tests/test_maintenance_execution.py"
+        ]
+      ]
+    },
+    {
+      "id": "autonomous_control_plane",
+      "description": "Planner, mission routing, workflow assistance and bounded autonomous engineering.",
+      "anchors": [
+        [
+          "foundation",
+          "tools/autonomous_engineering_supervisor.mjs"
+        ],
+        [
+          "foundation",
+          "tools/autonomous_mission_router.mjs"
+        ],
+        [
+          "foundation",
+          "tests/autonomous_engineering_supervisor.test.mjs"
+        ],
+        [
+          "foundation",
+          "docs/AUTONOMOUS_ENGINEERING_CONTROL_PLANE_2026-10-01.md"
+        ],
+        [
+          "operations",
+          "private/planner/execution_bridge.py"
+        ],
+        [
+          "operations",
+          "private/multi_agent/orchestrator.py"
+        ]
+      ]
+    },
+    {
+      "id": "observability_continuity",
+      "description": "Telemetry, dashboards, provenance, continuity and live family synchronization.",
+      "anchors": [
+        [
+          "foundation",
+          "docs/FAMILY_INTEGRATION_GRAPH.json"
+        ],
+        [
+          "foundation",
+          "docs/FAMILY_SYNC_STATE.json"
+        ],
+        [
+          "foundation",
+          ".github/workflows/family-integrity-gate.yml"
+        ],
+        [
+          "foundation",
+          ".github/workflows/cross-repository-contract-drift.yml"
+        ],
+        [
+          "operations",
+          "private/telemetry_contract.py"
+        ],
+        [
+          "operations",
+          "private/dashboard.py"
+        ],
+        [
+          "operations",
+          "docs/FAMILY_SYNC_STATE.json"
+        ]
+      ]
+    }
+  ]
+}
