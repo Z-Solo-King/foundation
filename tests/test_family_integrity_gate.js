@@ -14,6 +14,7 @@ assert(workflow.includes('cron: "45 17 * * *"'), "family integrity schedule miss
 assert(workflow.includes("node scripts/family_integrity_check.js"), "family integrity checker missing");
 assert(workflow.includes("actions/upload-artifact@"), "integrity receipt upload missing");
 assert(checker.includes("issues?state=open"), "live issue query missing");
+assert(checker.includes("[autonomous-improvement]"), "autonomous improvement issue exclusion missing");
 assert(checker.includes("FAMILY_INTEGRITY_PASS"), "pass receipt missing");
 assert(checker.includes("Foundation #282"), "stale-issue guard missing");
 assert(checker.includes("Foundation #154"), "closed-credential stale guard missing");
