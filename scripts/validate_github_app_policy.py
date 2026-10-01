@@ -97,8 +97,8 @@ def validate_first_party_app_workflows() -> None:
                     break
                 block_lines.append(candidate)
             block = "\n".join(block_lines)
-            if not re.search(r"app-id:\s*\$\{\{\s*secrets\.OPERATIONS_APP_ID\s*\}\}", block):
-                raise ValueError(f"first-party App app-id drift in {path}")
+            if not re.search(r"client-id:\s*\$\{\{\s*secrets\.OPERATIONS_APP_ID\s*\}\}", block):
+                raise ValueError(f"first-party App client-id drift in {path}")
             if not re.search(r"private-key:\s*\$\{\{\s*secrets\.OPERATIONS_APP_PRIVATE_KEY\s*\}\}", block):
                 raise ValueError(f"first-party App private-key drift in {path}")
             if not re.search(r"repositories:\s*operations\b", block):
