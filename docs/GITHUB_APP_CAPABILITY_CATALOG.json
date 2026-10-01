@@ -1,0 +1,124 @@
+{
+  "schema_version": "github-app-capability-catalog/v1",
+  "source": {
+    "supplied_marketplace_dataset_entries": 1408,
+    "discovery_date": "2026-10-01",
+    "purpose": "Translate Marketplace capability patterns into first-party project capabilities without installing third-party Apps."
+  },
+  "principles": {
+    "marketplace_is_discovery_only": true,
+    "no_automatic_installation": true,
+    "prefer_existing_first_party_capability": true,
+    "one_authority_per_responsibility": true,
+    "paid_or_billing_dependency_allowed": false
+  },
+  "capability_families": [
+    {
+      "id": "security_secret_supply_chain",
+      "marketplace_signal": "secret management, dependency security, SAST, supply-chain monitoring",
+      "representative_examples": [
+        "GitGuardian",
+        "Snyk",
+        "Semgrep",
+        "Socket Security",
+        "SonarQube Cloud"
+      ],
+      "native_project_surfaces": [
+        "full history secret scan",
+        "CodeQL",
+        "zizmor",
+        "OpenSSF Scorecard",
+        "Dependency Review capability preflight"
+      ],
+      "disposition": "native_controls",
+      "residual_gap": "live Dependency Graph capability is environment-dependent; no external SaaS authority is required"
+    },
+    {
+      "id": "ai_code_review_agents",
+      "marketplace_signal": "AI pull-request review, code intelligence, autonomous agents",
+      "representative_examples": [
+        "CodeRabbit",
+        "Qodo",
+        "DeepSource"
+      ],
+      "native_project_surfaces": [
+        "autonomous engineering supervisor",
+        "bounded mission router",
+        "required PR checks",
+        "static security analysis"
+      ],
+      "disposition": "native_controls",
+      "residual_gap": "AI-generated suggestions remain advisory; canonical acceptance stays in deterministic tests and workflow policy"
+    },
+    {
+      "id": "project_management",
+      "marketplace_signal": "issue/project synchronization with Linear, Jira and chat systems",
+      "representative_examples": [
+        "Linear",
+        "Atlassian/Jira",
+        "Slack + GitHub"
+      ],
+      "native_project_surfaces": [
+        "GitHub issue API",
+        "mission state in issues",
+        "autonomous mission router",
+        "family sync state"
+      ],
+      "disposition": "native_controls",
+      "residual_gap": "no external project-management system is a source of truth"
+    },
+    {
+      "id": "observability",
+      "marketplace_signal": "monitoring, error tracking, application telemetry",
+      "representative_examples": [
+        "Datadog"
+      ],
+      "native_project_surfaces": [
+        "telemetry contracts",
+        "workflow artifacts",
+        "runtime receipts",
+        "family integrity and continuity checks"
+      ],
+      "disposition": "native_controls",
+      "residual_gap": "external monitoring can observe but cannot become acceptance authority"
+    },
+    {
+      "id": "documentation_knowledge",
+      "marketplace_signal": "documentation synchronization and knowledge management",
+      "representative_examples": [],
+      "native_project_surfaces": [
+        "AI project maps",
+        "repository maps",
+        "documentation indexes",
+        "evidence manifests"
+      ],
+      "disposition": "native_controls",
+      "residual_gap": "documentation remains versioned with the repositories"
+    },
+    {
+      "id": "deployment_cloud",
+      "marketplace_signal": "deployment automation, cloud integrations, hosted build/release",
+      "representative_examples": [],
+      "native_project_surfaces": [
+        "Foundation-owned GitHub Actions",
+        "Cloudflare deployment orchestration",
+        "immutable production release"
+      ],
+      "disposition": "native_controls",
+      "residual_gap": "third-party deployment Apps cannot become canonical production authority"
+    },
+    {
+      "id": "ai_agent_orchestration",
+      "marketplace_signal": "autonomous coding/issue agents",
+      "representative_examples": [],
+      "native_project_surfaces": [
+        "autonomous engineering control plane",
+        "bounded planner",
+        "workflow allowlist",
+        "policy-gated execution"
+      ],
+      "disposition": "native_controls",
+      "residual_gap": "planner does not self-authorize writes, deploys, permissions or production authority"
+    }
+  ]
+}
