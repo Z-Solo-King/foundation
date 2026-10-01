@@ -95,31 +95,59 @@
     "related_operations_pr": 1109
   },
   "current_prs": {
-    "open_pr_count": 6,
+    "open_pr_count": 20,
     "foundation": [
-      1606,
-      1604,
-      1602,
-      1575,
-      1558
+      1716,
+      1713,
+      1710,
+      1706,
+      1692,
+      1685,
+      1684,
+      1683,
+      1677,
+      1663,
+      1660,
+      1658,
+      1657,
+      1656,
+      1653,
+      1652
     ],
     "operations": [
+      1438,
+      1435,
+      1400,
       1361
     ],
     "source": "GitHub live PR API"
   },
   "foundation_open_prs": [
-    1602,
-    1604,
-    1575,
-    1558,
-    1606
+    1716,
+    1713,
+    1710,
+    1706,
+    1692,
+    1685,
+    1684,
+    1683,
+    1677,
+    1663,
+    1660,
+    1658,
+    1657,
+    1656,
+    1653,
+    1652
   ],
   "operations_open_prs": [
+    1438,
+    1435,
+    1400,
     1361
   ],
-  "open_pr_count": 6,
-  "open_implementation_pr_count": 6,
+  "open_pr_count": 20,
+  "open_implementation_pr_count": 20,
   "extractor_mapper": {
     "status": "active_runtime_boundary",
     "repository": "operations",
@@ -137,11 +165,11 @@
     "authority": "scheduling_only"
   },
   "post_merge_sync": {
-    "checked_at": "2026-10-01T08:40:00Z",
+    "checked_at": "2026-10-01T09:40:00Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "10834911158f53ee8809afb0d0f9e437c2dfe11c",
-      "operations": "dab6f409b0340b7eabfb08d12715b8a6528c027c"
+      "foundation": "cfc266088846fb9f6a084da13481df4cc2c17536",
+      "operations": "109550ea068d703a79dad77960fc3a03a10c08fa"
     },
     "operations_last_sync_commits": [
       "d9bd39b6035b289db720f43934e5ec4cbd55ee54",
@@ -149,17 +177,19 @@
       "7b55c97331a9a066dcb1d46c4bbe17e173dc60ca"
     ],
     "foundation_main": "READ_LIVE_FROM_GITHUB",
-    "operations_main": "READ_LIVE_FROM_GITHUB"
+    "operations_main": "READ_LIVE_FROM_GITHUB",
+    "integration_contract": "Foundation docs/SYSTEM_INTEGRATION_CONTRACT.json",
+    "evaluation_evolution_bridge": "Operations private/evolution_integration.py on current main"
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "10834911158f53ee8809afb0d0f9e437c2dfe11c",
-    "operations": "dab6f409b0340b7eabfb08d12715b8a6528c027c"
+    "foundation": "cfc266088846fb9f6a084da13481df4cc2c17536",
+    "operations": "109550ea068d703a79dad77960fc3a03a10c08fa"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "10834911158f53ee8809afb0d0f9e437c2dfe11c",
-    "operations": "dab6f409b0340b7eabfb08d12715b8a6528c027c"
+    "foundation": "cfc266088846fb9f6a084da13481df4cc2c17536",
+    "operations": "109550ea068d703a79dad77960fc3a03a10c08fa"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",
@@ -202,5 +232,21 @@
     "direct_paid_runtime_dependency": false,
     "license_ip_gate": true,
     "single_authority_preserved": true
+  },
+  "open_issue_count": 7,
+  "system_integration": {
+    "schema": "system-integration-receipt/v1",
+    "foundation_contract": "docs/SYSTEM_INTEGRATION_CONTRACT.json",
+    "project_matrix": "docs/PROJECT_IMPROVEMENT_MATRIX.json",
+    "operations_evaluation_bridge": "private/evolution_integration.py",
+    "status": "reconciled",
+    "note": "Cross-cutting controls remain overlays; canonical subsystem authorities remain unchanged."
+  },
+  "source_maintainability": {
+    "schema": "source-surface-audit/v1",
+    "critical": "source_bytes>50000 or source_lines>1000",
+    "attention": "source_bytes>25000 or source_lines>500",
+    "decomposition_rule": "responsibility-aligned splits with compatibility facades permitted",
+    "first_split": "operations/private/runtime_language_policy.py"
   }
 }
