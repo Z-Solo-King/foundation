@@ -46,6 +46,7 @@ jobs:
         shell: bash
         env:
           REQUESTED_OPERATIONS_REF: ${{ inputs.operations_ref }}
+          GH_TOKEN: ${{ steps.operations-token.outputs.token }}
         run: |
           set -euo pipefail
           ref="${REQUESTED_OPERATIONS_REF:-}"
