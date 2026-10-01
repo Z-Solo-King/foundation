@@ -238,6 +238,7 @@ jobs:
             operations_ref:process.env.OPERATIONS_REF,
             target_count,
             verified_native_feeds:verified,
+            ai_provider_quality_speed_benchmark:crossfire?.provider_quality_speed_benchmark || [],
             counts:{
               native_verified:verified.length,
               browser_verified:(browser?.verified_google_xml || []).length,
