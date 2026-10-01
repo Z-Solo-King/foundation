@@ -50,7 +50,7 @@ env:
   MODEL_PORTABILITY_EVIDENCE_CONTRACT: model-portability-runtime-receipt/v1
   # Keep the orchestration semaphore aligned with the loopback proxy upstream semaphore.
   # This prevents 20 coordinator slots from queueing behind 6 proxy slots for 180s.
-  RESEARCH_MAX_CONCURRENCY: "6"
+  RESEARCH_MAX_CONCURRENCY: "3"
 
 jobs:
   production_gate:
