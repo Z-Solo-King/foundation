@@ -4,7 +4,7 @@ from backend.intelligence.agentic import ResearchAgent, ResearchTask, TaskObserv
 from backend.intelligence.contracts import ResearchContract
 from backend.intelligence.evidence import EvidenceKnowledgeStore, EvidenceRecord
 from backend.intelligence.planning import create_plan
-TEST_PLANNING_POLICY={"base_source_families":[],"category_required_source_families":{},"keyword_groups":{"amazon":["amazon"],"flipkart":["flipkart"],"reddit":["reddit"],"youtube":["youtube"],"chinese_communities":["chinese","bilibili","zhihu","baidu tieba","douban","ptt"],"teardown_evidence":["teardown","pcb"],"price_stock":["price","current"]},"temporal_terms":["latest","revision","2024"]}
+TEST_PLANNING_POLICY={"base_source_families":[],"category_required_source_families":{},"keyword_groups":{"source_a":["synthetic_source_a"],"source_b":["synthetic_source_b"],"source_c":["synthetic_community"],"source_d":["synthetic_video"],"source_e":["synthetic_region"],"teardown_evidence":["teardown","pcb"],"price_stock":["price","current"]},"temporal_terms":["latest","revision","recent"]}
 
 
 
@@ -74,7 +74,7 @@ def test_evidence_upsert_get_and_export_extended_metadata():
 def test_planner_source_family_expansion_and_temporal_flag():
     plan = create_plan(ResearchContract(question="synthetic_source_a synthetic_source_b synthetic_community synthetic_video synthetic_region teardown pcb price current revision", depth="standard"), planning_policy=TEST_PLANNING_POLICY)
     families = plan.metadata["required_source_families"]
-    for family in ("amazon", "flipkart", "reddit", "youtube", "chinese_communities", "teardown_evidence", "price_stock"):
+    for family in ("source_a", "source_b", "source_c", "source_d", "source_e", "teardown_evidence", "price_stock"):
         assert family in families
     assert plan.metadata["temporal_reconciliation"] == "true"
 

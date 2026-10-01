@@ -54,7 +54,9 @@ _install_workers_compat()
 
 
 @pytest.fixture(autouse=True)
-def private_policy_authority_fixture(monkeypatch):
+def private_policy_authority_fixture(monkeypatch, request):
+    if request.path.basename == "test_private_policy_boundary.py":
+        return
     import worker
     async def _synthetic_policy(_env, _request):
         from tests.policy_test_support import private_policy_envelope

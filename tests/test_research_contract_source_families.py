@@ -4,7 +4,14 @@ import pytest
 
 from backend.intelligence.contracts import ResearchContract
 from backend.intelligence.planning import create_plan
-TEST_PLANNING_POLICY={"base_source_families":["web_search","retailers","oem"],"category_required_source_families":{"best_product":["amazon","flipkart","reddit","retailers","professional_reviews"],"buying_guide":["amazon","flipkart","reddit","retailers","oem"]},"keyword_groups":{},"temporal_terms":["latest","revision","2024"],"quick_stages":["define_question","discover_sources","collect_observations","verify_evidence","synthesize_answer"],"standard_stages":["define_question","assess_constraints","discover_sources","collect_observations","map_evidence","verify_evidence","check_independence","synthesize_answer"]}
+TEST_PLANNING_POLICY={
+    "base_source_families":["synthetic_web"],
+    "category_required_source_families":{"synthetic_category":["source_a","source_b"]},
+    "keyword_groups":{},
+    "temporal_terms":["latest","recent","revision"],
+    "quick_stages":["define_question","discover_sources","collect_observations","verify_evidence","synthesize_answer"],
+    "standard_stages":["define_question","assess_constraints","discover_sources","collect_observations","map_evidence","verify_evidence","check_independence","synthesize_answer"],
+}
 
 
 
@@ -21,7 +28,7 @@ def test_research_contract_accepts_category_and_explicit_families() -> None:
     families = set(plan.metadata["required_source_families"].split(","))
     assert {"source_a", "source_b"} <= families
     assert plan.metadata["required_source_families_origin"] == "explicit+private_policy"
-    assert plan.metadata["query_category"] == "best_product"
+    assert plan.metadata["query_category"] == "synthetic_category"
 
 
 def test_research_contract_rejects_blank_source_family() -> None:

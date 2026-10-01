@@ -83,7 +83,7 @@ def test_source_access_validation_fail_closed_edges():
     with pytest.raises(ValueError, match="raw content"):
         source_policy(disclosure_class=DisclosureClass.PUBLIC_SAFE, raw_content_allowed=True).validate()
     with pytest.raises(ValueError, match="retention is none"):
-        source_policy(retention_class=RetentionClass.NONE, raw_content_allowed=True).validate()
+        source_policy(retention_class=RetentionClass.NONE, raw_content_allowed=True, disclosure_class=DisclosureClass.METADATA_ONLY).validate()
 
 
 def test_source_access_error_and_policy_resolution_branches():

@@ -836,7 +836,7 @@ def test_d1_store_reclaims_expired_admission_lease():
     )
     assert decision.allowed is True
     assert lease is not None
-    assert lease.expires_at == 181
+    assert lease.expires_at == 120 + admission_policy().window_seconds
 
 
 def test_d1_store_keeps_released_non_idempotent_duplicate_on_admission_decision():
@@ -1029,13 +1029,13 @@ def test_admission_decision_uses_weighted_cost_fields():
     policy = admission_policy()
     accepted = decide_admission(
         policy=policy,
-        snapshot=AdmissionSnapshot(authority_available=True, subject_cost_units=29),
+        snapshot=AdmissionSnapshot(authority_available=True, subject_cost_units=admission_policy().max_requests_per_subject - 1),
         subject_fingerprint="subject-1",
         route=AdmissionRoute.CHAT,
     )
     denied = decide_admission(
         policy=policy,
-        snapshot=AdmissionSnapshot(authority_available=True, subject_cost_units=30),
+        snapshot=AdmissionSnapshot(authority_available=True, subject_cost_units=admission_policy().max_requests_per_subject),
         subject_fingerprint="subject-1",
         route=AdmissionRoute.CHAT,
     )

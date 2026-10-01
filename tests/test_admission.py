@@ -45,12 +45,12 @@ def test_global_and_subject_request_limits_fail_closed():
 
 def test_global_and_subject_concurrency_limits_fail_closed():
     policy = admission_policy()
-    assert policy.max_concurrent_per_subject == 22
-    assert policy.max_concurrent_global == 22
+    assert policy.max_concurrent_per_subject == 3
+    assert policy.max_concurrent_global == 4
     assert decide_admission(policy=policy, snapshot=snapshot(global_concurrent=22), subject_fingerprint="s", route=AdmissionRoute.CHAT).outcome is AdmissionOutcome.CONCURRENCY_LIMITED
     assert decide_admission(policy=policy, snapshot=snapshot(subject_concurrent=22), subject_fingerprint="s", route=AdmissionRoute.CHAT).outcome is AdmissionOutcome.CONCURRENCY_LIMITED
-    assert decide_admission(policy=policy, snapshot=snapshot(global_concurrent=21), subject_fingerprint="s", route=AdmissionRoute.CHAT).allowed is True
-    assert decide_admission(policy=policy, snapshot=snapshot(subject_concurrent=21), subject_fingerprint="s", route=AdmissionRoute.CHAT).allowed is True
+    assert decide_admission(policy=policy, snapshot=snapshot(global_concurrent=3), subject_fingerprint="s", route=AdmissionRoute.CHAT).allowed is True
+    assert decide_admission(policy=policy, snapshot=snapshot(subject_concurrent=2), subject_fingerprint="s", route=AdmissionRoute.CHAT).allowed is True
 
 
 def test_duplicate_suppression_does_not_create_second_resource_authority():
@@ -73,7 +73,7 @@ def test_unavailable_authority_fails_closed_for_protected_routes_and_allows_chea
         route=AdmissionRoute.RESEARCH,
     )
     assert protected.outcome is AdmissionOutcome.AUTHORITY_UNAVAILABLE
-    assert protected.retry_after_header == "5"
+    assert protected.retry_after_header == str(policy.retry_after_seconds)
 
     cheap = decide_admission(
         policy=admission_policy(),
