@@ -25,6 +25,11 @@ test('rejects non-empty workflow inputs', () => {
   assert.throws(() => validatePlan(base({actions:[{...base().actions[0],inputs:{auto_fix:true}}]})), /inputs must be empty/);
 });
 
+test('accepts a component-scoped improvement plan', () => {
+  const result = validatePlan(base({mission_type:'component_improvement',target_component:'chatbot',actions:[{id:'a1',kind:'dispatch_workflow',workflow:'live-chatbot-production-smoke.yml',inputs:{},reason:'exercise chatbot runtime evidence',retry_policy:'bounded'}]}));
+  assert.equal(result.target_component, 'chatbot');
+});
+
 test('accepts a blocked terminal plan', () => {
   const result = validatePlan(base({terminal:'blocked',actions:[],next_state:'blocked',stop_reason:'requires admin'}));
   assert.equal(result.terminal, 'blocked');
