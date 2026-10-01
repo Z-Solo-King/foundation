@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { deterministicFallbackPlan, parseState, sanitize } from '../tools/autonomous_engineering_supervisor.mjs';
+import { deterministicFallbackPlan, parseState, reconcileChildState, sanitize } from '../tools/autonomous_engineering_supervisor.mjs';
 
 test('mission state parser reads durable issue marker', () => {
   const body = '<!-- autonomous-mission-state:start -->\n```json\n{"schema":"autonomous-mission-state/v1","state":"executing"}\n```\n<!-- autonomous-mission-state:end -->';
@@ -33,4 +33,23 @@ test('deterministic fallback classifies migration issues', () => {
 test('deterministic fallback avoids an active matching workflow path', () => {
   const plan = deterministicFallbackPlan({mode:'component_improvement',target_component:'chatbot',open_issues:[],recent_runs:[{path:'.github/workflows/live-chatbot-production-smoke.yml',status:'in_progress',conclusion:null,created_at:new Date().toISOString()}]});
   assert.notEqual(plan.actions[0].workflow, 'live-chatbot-production-smoke.yml');
+});
+
+test('completed child run advances execution into verification state', () => {
+  const state = { state:'executing', child_runs:[101], last_summary:'running', terminal_reason:null, retriable:true };
+  const next = reconcileChildState(state, [{id:101,status:'completed',conclusion:'success'}]);
+  assert.equal(next.state, 'verifying');
+  assert.equal(next.retriable, true);
+});
+
+test('active child run remains executing', () => {
+  const state = {state:'executing',child_runs:[101],retriable:true};
+  const next = reconcileChildState(state,[{id:101,status:'in_progress',conclusion:null}]);
+  assert.equal(next.state,'executing');
+});
+
+test('unknown child run does not create false verification', () => {
+  const state = {state:'executing',child_runs:[101],retriable:true};
+  const next = reconcileChildState(state,[{id:101,status:'unknown',conclusion:'unavailable'}]);
+  assert.equal(next.state,'executing');
 });
