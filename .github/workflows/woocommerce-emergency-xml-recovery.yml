@@ -1,0 +1,251 @@
+name: WooCommerce Emergency 30-Way XML Recovery
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/woocommerce-emergency-xml-recovery.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foundation-wc-emergency-xml-v1
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Build 30-site emergency matrix
+    runs-on: ubuntu-latest
+    environment: production-secret-sync
+    timeout-minutes: 5
+    outputs:
+      sites: ${{ steps.matrix.outputs.sites }}
+      operations_ref: ${{ steps.matrix.outputs.operations_ref }}
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Read current Operations registry
+        id: matrix
+        env:
+          GH_TOKEN: ${{ steps.operations-app.outputs.token }}
+        run: |
+          set -euo pipefail
+          ref="$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]]
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.raw+json"             "https://api.github.com/repos/Z-Solo-King/operations/contents/data/feed_lab/woocommerce_30_registry_v18.json?ref=$ref"             -o /tmp/registry.json
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const x = JSON.parse(fs.readFileSync("/tmp/registry.json","utf8"));
+          if (x.schema_version !== "woocommerce-native-xml-recovery-v18-registry/v1" || !Array.isArray(x.sites) || x.sites.length !== 30) {
+            throw new Error("expected exact V18 30-site registry");
+          }
+          const sites = x.sites.map((s,i)=>({index:i,name:String(s.name),root:String(s.roots?.[0]||"")}));
+          if (sites.some(s=>!s.name || !/^https:/.test(s.root))) throw new Error("invalid site registry entry");
+          process.stdout.write(JSON.stringify(sites));
+          NODE
+          echo "operations_ref=$ref" >> "$GITHUB_OUTPUT"
+          echo -n "sites=" >> "$GITHUB_OUTPUT"
+          node -e 'process.stdout.write(JSON.stringify(JSON.parse(require("fs").readFileSync("/tmp/registry.json","utf8")).sites.map((s,i)=>({index:i,name:String(s.name),root:String(s.roots?.[0]||"")}))))' >> "$GITHUB_OUTPUT"
+
+  ai_crossfire:
+    name: 4-provider AI feed crossfire
+    needs: prepare
+    outputs:
+      candidates_b64: ${{ steps.publish_crossfire.outputs.candidates_b64 }}
+    runs-on: ubuntu-latest
+    environment: production-secret-sync
+    timeout-minutes: 10
+    env:
+      PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+      AI_CROSSFIRE_PROVIDERS: "gemini,groq,cerebras,openrouter_free"
+      AI_CROSSFIRE_MAX_PROVIDERS: "4"
+      AI_CROSSFIRE_TIMEOUT_MS: "18000"
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+      SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.prepare.outputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Run AI crossfire
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          mkdir -p out/emergency
+          node private/feed_recovery/ai_crossfire.mjs data/feed_lab/woocommerce_30_registry_v18.json out/emergency/ai-crossfire.json
+      - name: Publish compact crossfire output
+        id: publish_crossfire
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node - <<'NODE' >> "$GITHUB_OUTPUT"
+          const fs=require("node:fs");
+          const x=JSON.parse(fs.readFileSync("out/emergency/ai-crossfire.json","utf8"));
+          const compact={schema_version:x.schema_version,target_count:x.target_count,providers:x.providers,benchmark:x.benchmark,retailers:(x.retailers||[]).map(r=>({name:r.name,base:r.base,paths:(r.paths||[]).slice(0,120)}))};
+          const b64=Buffer.from(JSON.stringify(compact),"utf8").toString("base64");
+          if(b64.length>900000) throw new Error("compact AI crossfire output exceeds GitHub job-output safety bound");
+          process.stdout.write("candidates_b64="+b64+"\n");
+          NODE
+  recover:
+    name: Recover ${{ matrix.site.name }}
+    needs: [prepare, ai_crossfire]
+    if: always() && needs.prepare.result == 'success'
+    runs-on: ubuntu-latest
+    environment: production-secret-sync
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      max-parallel: 30
+      matrix:
+        site: ${{ fromJSON(needs.prepare.outputs.sites) }}
+    env:
+      SITE_NAME: ${{ matrix.site.name }}
+      SITE_ROOT: ${{ matrix.site.root }}
+      SITE_INDEX: ${{ matrix.site.index }}
+      WC_FEED_PROBE_CONCURRENCY: "8"
+      WC_FEED_MIN_INTERVAL_MS: "200"
+      WC_FEED_RATE_RETRIES: "2"
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.prepare.outputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Materialize AI crossfire candidates
+        working-directory: operations
+        env:
+          AI_CANDIDATES_B64: ${{ needs.ai_crossfire.outputs.candidates_b64 }}
+        run: |
+          set -euo pipefail
+          mkdir -p out/rescue-fast
+          if [[ -n "${AI_CANDIDATES_B64:-}" ]]; then
+            printf '%s' "$AI_CANDIDATES_B64" | base64 --decode > out/rescue-fast/ai_candidates.json
+          else
+            printf '%s\n' '{"schema_version":"woocommerce-ai-crossfire-v1","retailers":[],"providers":[],"benchmark":[]}' > out/rescue-fast/ai_candidates.json
+          fi
+      - name: Build one-site registry
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from "node:fs/promises";
+          const x = {
+            schema_version:"woocommerce-native-xml-recovery-v18-registry/v1",
+            generated_on:new Date().toISOString().slice(0,10),
+            corpus:"emergency one-site slice from V18 30-site registry",
+            sites:[{name:process.env.SITE_NAME,roots:[process.env.SITE_ROOT]}]
+          };
+          await fs.writeFile("out/emergency-site-registry.json",JSON.stringify(x,null,2)+"\n");
+          NODE
+      - name: Validate recovery source
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node --check private/feed_recovery/woocommerce_google_feed_rescue_fast.mjs
+          node --check private/feed_recovery/ai_crossfire.mjs
+      - name: Run emergency XML recovery
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node private/feed_recovery/woocommerce_google_feed_rescue_fast.mjs out/emergency-site-registry.json
+      - name: Collect XML-only evidence
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          mkdir -p "out/emergency-site"
+          cp out/rescue-fast/summary.json "out/emergency-site/summary.json"
+          cp out/rescue-fast/audit.json "out/emergency-site/audit.json"
+          find out/rescue-fast/feeds -maxdepth 1 -type f -name '*.xml' -exec cp {} out/emergency-site/ \; || true
+          test -f out/emergency-site/summary.json
+      - name: Upload site XML evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wc-emergency-xml-${{ matrix.site.index }}
+          path: operations/out/emergency-site/
+          if-no-files-found: warn
+          retention-days: 30
+
+  aggregate:
+    name: Emergency recovery receipt
+    needs: recover
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish completion receipt
+        run: |
+          set -euo pipefail
+          mkdir -p out/final
+          printf '%s\n' '{"schema_version":"foundation-woocommerce-emergency-recovery-v1","note":"Per-site XML artifacts are authoritative outputs; no cross-job artifact download is required."}' > out/final/receipt.json
+      - name: Upload completion receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: wc-emergency-final-receipt
+          path: out/final/receipt.json
+          if-no-files-found: error
+          retention-days: 30
