@@ -1000,3 +1000,14 @@ jobs:
     needs: [research, migration_review, project-summary]
     if: ${{ always() }}
     runs-on: ubuntu-latest
+    steps:
+      - name: Verify research and diagnosis outcomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "research=${{ needs.research.result }}"
+          echo "diagnosis=${{ needs.project-summary.result }}"
+          echo "migration-review=${{ needs.migration_review.result }}"
+          test "${{ needs.migration_review.result }}" = "success" || { echo "Nightly migration review failed; truthful migration evidence remains failed."; exit 1; }
+          test "${{ needs.project-summary.result }}" = "success" || { echo 'Nightly diagnosis failed.'; exit 1; }
+          test "${{ needs.research.result }}" = "success" || { echo 'One or more research lanes failed/blocked; truthful nightly result remains failed.'; exit 1; }
