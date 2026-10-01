@@ -20,13 +20,14 @@ def test_provider_fleet_workflow_is_structured_and_protected() -> None:
 def test_provider_fleet_workflow_uses_immutable_private_probe() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
 
-    assert "OPERATIONS_PROVIDER_FLEET_REF: b95e419254a9071beaeef57a1b0da22ba7dd2c4f" in text
+    assert "OPERATIONS_PROVIDER_FLEET_REF: 2a4a49d2c11bd9ff2b9290bc780eb0da97c73ecb" in text
     assert "OPERATIONS_PROVIDER_FLEET_PATH: tools/provider_fleet_runtime_probe.py" in text
     assert "Provider fleet probe verified at immutable Operations ref" in text
     assert "CHAT_PROVIDER_RUNTIME_STATE" in text
     assert "secrets.CLOUDFLARE_API_TOKEN" in text
     assert "secrets.CLOUDFLARE_ACCOUNT_ID" in text
     assert "PROVIDER_KEYS_JSON" in text
+    assert "secrets.CEREBRAS_API_KEY" in text
     assert "secrets.NVIDIA_NIM_API_KEY" in text
     assert "secrets.HF_TOKEN" in text
     assert "secrets.COHERE_API_KEY" in text
@@ -34,6 +35,7 @@ def test_provider_fleet_workflow_uses_immutable_private_probe() -> None:
     assert "nvidia_nim" in text
     assert "huggingface_free" in text
     assert "cohere_free" in text
+    assert "cerebras" in text
 
 
 def test_provider_fleet_workflow_rejects_secret_leak_patterns() -> None:
