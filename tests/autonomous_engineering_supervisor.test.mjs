@@ -76,3 +76,23 @@ test('deterministic fallback blocks only when every candidate reached the attemp
     },
   }), /fallback_workflow_unavailable/);
 });
+
+test('dispatches independent plan actions concurrently and records every child', async () => {
+  const started = [];
+  const plan = {actions:[{workflow:'a.yml'},{workflow:'b.yml'},{workflow:'c.yml'}]};
+  const state = {workflow_attempts:{}};
+  const dispatchWorkflowFn = async (workflow) => {
+    started.push(workflow);
+    await new Promise((resolve) => setTimeout(resolve, 15));
+  };
+  const findRecentWorkflowRunFn = async (workflow) => ({id:workflow});
+  const result = await dispatchPlanActions({
+    plan, state, dryRun:false, maxWorkflowAttempts:3, foundationSha:'sha',
+    dispatchWorkflowFn, findRecentWorkflowRunFn,
+  });
+  assert.deepEqual(started.sort(), ['a.yml','b.yml','c.yml']);
+  assert.deepEqual(result.children.map((item)=>item.run.id).sort(), ['a.yml','b.yml','c.yml']);
+  assert.equal(result.attempts['a.yml'], 1);
+  assert.equal(result.attempts['b.yml'], 1);
+  assert.equal(result.attempts['c.yml'], 1);
+});
