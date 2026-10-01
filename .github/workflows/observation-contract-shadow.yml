@@ -1,4 +1,5 @@
-name: observation-contract-shadow
+# Operations differential reference: import-light boundary; rerun against current canonical Operations revision b6773d6.
+name: TypeScript observation contract shadow
 
 on:
   workflow_dispatch:
@@ -7,11 +8,106 @@ permissions:
   contents: read
 
 jobs:
-  paused:
+  shadow:
+    name: TypeScript observation contract shadow
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 15
     steps:
-      - name: Confirm task workflow is paused
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: main
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          persist-credentials: false
+
+      - name: Capture exact Operations revision
+        id: revision
+        working-directory: operations
+        shell: bash
         run: |
-          echo "Task workflow is paused by policy."
-          echo "No task execution, model calls, provider calls, benchmark execution, research execution, dispatch, mutation, or self-improvement occurs."
+          set -euo pipefail
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Verify live reference contract version
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          contract_version="$(sed -n 's/^CONTRACT_VERSION = "\([^"]*\)".*/\1/p' extractor_mapper/contracts.py | head -n 1)"
+          test "$contract_version" = "1"
+          echo "reference contract version: $contract_version"
+          
+      - name: Verify differential harness
+        working-directory: operations/polyglot/observation-contract-strict
+        run: |
+          set -euo pipefail
+          test -f differential.ts
+          test -f differential_reference.py
+          test -f compare_differential.py
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+
+      - name: Typecheck shadow
+        working-directory: operations/polyglot/observation-contract-strict
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+
+      - name: Run shadow contract tests
+        working-directory: operations/polyglot/observation-contract-strict
+        run: npm test
+
+      - name: Setup Python for reference differential
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+
+      - name: Run exact Python/TypeScript differential
+        working-directory: operations/polyglot/observation-contract-strict
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime
+          npm run differential
+          npm run differential:python
+          npm run differential:compare
+
+      - name: Emit exact revision receipt
+        working-directory: operations
+        shell: bash
+        env:
+          OPERATIONS_SHA: ${{ steps.revision.outputs.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p ../shadow-receipt
+          PYTHONPATH=. python - <<'PY' > ../shadow-receipt/receipt.json
+          import json, subprocess
+          from extractor_mapper.contracts import CONTRACT_VERSION
+          print(json.dumps({
+              "schema": "typescript-observation-shadow/v1",
+              "operations_sha": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+              "candidate": "typescript-observation-contract-strict",
+              "authority": "python-reference",
+              "contract_version": CONTRACT_VERSION,
+          }, sort_keys=True))
+          PY
+
+      - name: Upload shadow receipt
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: typescript-observation-contract-shadow
+          path: shadow-receipt/receipt.json
+          retention-days: 14

@@ -1,17 +1,1570 @@
-name: hybrid-language-pilots
+name: Hybrid language pilots
 
 on:
   workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: Optional immutable Operations revision; blank uses current main SHA resolved at run start
+        required: false
+        default: ""
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/hybrid-language-pilots.yml"
+      - "polyglot/edge-worker/**"
+      - "docs/**"
+      - "tools/verify_rust_url_identity_parity.py"
 
 permissions:
   contents: read
 
+concurrency:
+  group: foundation-hybrid-language-pilots-${{github.ref}}
+  cancel-in-progress: true
+
 jobs:
-  paused:
+  resolve_operations_ref:
+    name: Resolve immutable Operations revision
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
+    outputs:
+      ref: ${{ steps.resolve.outputs.ref }}
     steps:
-      - name: Confirm task workflow is paused
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Resolve Operations ref
+        id: resolve
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        with:
+          github-token: ${{ steps.operations-app.outputs.token }}
+          script: |
+            const requested = (context.payload.inputs?.operations_ref || "").trim();
+            if (requested) {
+              core.setOutput("ref", requested);
+              return;
+            }
+            const response = await github.rest.repos.getBranch({
+              owner: "Z-Solo-King",
+              repo: "operations",
+              branch: "main",
+            });
+            core.setOutput("ref", response.data.commit.sha);
+
+  rust:
+    needs: resolve_operations_ref
+    name: Rust HTML parser pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+
+      - name: Test
+        working-directory: operations
+        run: cargo test --manifest-path experiments/rust_html_kernel/Cargo.toml
+
+  go:
+    needs: resolve_operations_ref
+    name: Go HTTP fanout pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version: "1.25"
+
+      - name: Test
+        working-directory: operations/experiments/go_http_fanout
         run: |
-          echo "Task workflow is paused by policy."
-          echo "No task execution, model calls, provider calls, benchmark execution, research execution, dispatch, mutation, or self-improvement occurs."
+          go test ./...
+          go test -race ./...
+
+  typescript:
+    needs: resolve_operations_ref
+    name: TypeScript search adapter shadow
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+
+      - name: Install and typecheck
+        working-directory: operations/polyglot/search-adapters
+        run: |
+          set -euo pipefail
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          npm test
+
+
+  rust_url_identity:
+    needs: resolve_operations_ref
+    name: Rust URL identity parity pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: foundation
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.14'
+
+      - name: Verify Rust/Python URL parity
+        working-directory: foundation
+        run: python tools/verify_rust_url_identity_parity.py
+
+      - name: Test
+        working-directory: operations
+        run: cargo test --manifest-path benchmark/polyglot/rust_url_identity/Cargo.toml
+
+  edge_worker:
+    name: TypeScript public edge contract shadow
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: polyglot/edge-worker/package.json
+
+      - name: Install and test
+        working-directory: polyglot/edge-worker
+        run: |
+          set -euo pipefail
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          npm test
+
+
+  browser_acquisition:
+    needs: resolve_operations_ref
+    name: TypeScript browser acquisition shadow
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+
+      - name: Install and test
+        working-directory: operations/polyglot/browser-acquisition
+        run: |
+          set -euo pipefail
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          npm test
+
+
+  rust_text_normalization:
+    needs: resolve_operations_ref
+    name: Rust text normalization parity pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+
+      - name: Test
+        working-directory: operations
+        run: cargo test --manifest-path experiments/rust_text_normalization/Cargo.toml
+
+
+  frontend_state:
+    name: TypeScript frontend lifecycle parity shadow
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+
+      - name: Install and test
+        working-directory: polyglot/frontend-state
+        run: |
+          set -euo pipefail
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          npm test
+
+  rust_url_canonical_differential:
+    needs: resolve_operations_ref
+    name: Rust URL canonicalization Python differential
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{secrets.OPERATIONS_APP_ID}}
+          private-key: ${{secrets.OPERATIONS_APP_PRIVATE_KEY}}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{needs.resolve_operations_ref.outputs.ref}}
+          token: ${{steps.operations-app.outputs.token}}
+          path: operations
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+          cache: false
+      - name: Determine current Foundation URL-reference revision
+        id: foundation-url-ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${GITHUB_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          echo "ref=${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
+      - name: Checkout Foundation URL-reference repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/foundation
+          token: ${{ github.token }}
+          path: foundation-reference
+          fetch-depth: 1
+      - name: Select exact pinned Foundation URL-reference commit
+        working-directory: foundation-reference
+        shell: bash
+        env:
+          FOUNDATION_COMMIT: ${{ steps.foundation-url-ref.outputs.ref }}
+        run: |
+          set -euo pipefail
+          FOUNDATION_COMMIT="$(printf "%s" "$FOUNDATION_COMMIT" | tr -d "\r\n" | xargs)"
+          test -n "$FOUNDATION_COMMIT"
+          git fetch --no-tags --depth=1 origin "$FOUNDATION_COMMIT"
+          git cat-file -e "$FOUNDATION_COMMIT^{commit}"
+          git cat-file -e "$FOUNDATION_COMMIT:backend/sources/http.py"
+          git checkout --detach "$FOUNDATION_COMMIT"
+      - name: Build corpus with adversarial URL cases
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[json.loads(v) for v in Path("benchmark/polyglot/rust_url_identity/corpus.jsonl").read_text().splitlines() if v]
+          base_case_count = len(rows)
+          invalid=["not-a-url","ftp://example.com/file","https:///missing-host","https://","http:///example.com","https://example.com:8443/a","https://user:pass@example.com/a","http://user@example.com/a","http://localhost/a","http://127.0.0.1/a","http://10.0.0.1/a","http://192.168.1.1/a","http://[::1]/a","http://[fc00::1]/a"]
+          rows += [{"id":f"invalid-{i+1:02d}","input":value} for i,value in enumerate(invalid)]
+          Path("benchmark/polyglot/rust_url_identity/differential_corpus.jsonl").write_text("\n".join(json.dumps(v) for v in rows)+"\n", encoding="utf-8")
+          assert len(rows) == base_case_count + len(invalid)
+          assert len(invalid) == 14
+          PY
+      - name: Generate Python canonical outputs
+        working-directory: operations
+        env:
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations:${{ github.workspace }}/foundation-reference
+
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from backend.sources.http import canonicalize_url
+          rows=[json.loads(v) for v in Path("benchmark/polyglot/rust_url_identity/differential_corpus.jsonl").read_text().splitlines() if v]
+          out=[]
+          for row in rows:
+            try:
+              value=canonicalize_url(row["input"])
+            except Exception:
+              out.append({"id":row["id"],"ok":False})
+            else:
+              out.append({"id":row["id"],"ok":True,"output":value})
+          Path("python-url.jsonl").write_text("\n".join(json.dumps(v,sort_keys=True) for v in out)+"\n")
+          PY
+      - name: Verify URL Python reference import
+        working-directory: operations
+        env:
+          PYTHONPATH: ${{ github.workspace }}/foundation-reference
+        run: python -c "from backend.sources.http import canonicalize_url; assert callable(canonicalize_url)"
+      - name: Generate Rust candidate outputs
+        working-directory: operations
+        run: cargo run --quiet --manifest-path benchmark/polyglot/rust_url_identity/Cargo.toml --bin differential -- benchmark/polyglot/rust_url_identity/differential_corpus.jsonl rust-url.jsonl
+      - name: Compare Python and Rust URL contract
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          py=[json.loads(v) for v in Path("python-url.jsonl").read_text().splitlines() if v]
+          rs=[json.loads(v) for v in Path("rust-url.jsonl").read_text().splitlines() if v]
+          assert len(py)==len(rs)
+          assert len(py) >= 14
+          for a,b in zip(py,rs):
+              assert a["id"]==b["id"]
+              assert a["ok"]==b["ok"], (a,b)
+              if a["ok"]:
+                  assert a["output"]==b["output"], (a,b)
+          print("URL canonicalization differential parity: PASS (57 corpus + 14 adversarial)")
+          PY
+      - name: Benchmark Rust URL candidate
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_url_identity/Cargo.toml --bench normalization
+
+  rust_url_bench:
+    needs: resolve_operations_ref
+    name: Rust URL identity 32x3 benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Benchmark
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_url_identity/Cargo.toml --bench normalization
+
+  rust_text_bench:
+    needs: resolve_operations_ref
+    name: Rust text normalization 32x3 benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Benchmark
+        working-directory: operations
+        run: cargo bench --manifest-path experiments/rust_text_normalization/Cargo.toml --bench normalization
+
+  rust_html_sample:
+    needs: resolve_operations_ref
+    name: Rust HTML parity 32x3 differential benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+          cache: false
+      - name: Determine pinned Foundation public-core revision
+        id: foundation-core-pin
+        working-directory: operations
+        shell: python
+        run: |
+          import ast
+          import os
+          from pathlib import Path
+          tree = ast.parse(Path("scripts/sync_public_core.py").read_text(encoding="utf-8"))
+          output = Path(os.environ["GITHUB_OUTPUT"])
+          for node in tree.body:
+              if isinstance(node, ast.Assign):
+                  for target in node.targets:
+                      if isinstance(target, ast.Name) and target.id == "FOUNDATION_COMMIT":
+                          output.write_text(f"ref={node.value.value}\n", encoding="utf-8")
+                          raise SystemExit
+          raise SystemExit("FOUNDATION_COMMIT not found")
+
+      - name: Checkout Foundation public core repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/foundation
+          token: ${{ github.token }}
+          path: foundation-core
+          fetch-depth: 1
+
+      - name: Select exact pinned Foundation public-core commit
+        working-directory: foundation-core
+        shell: bash
+        env:
+          FOUNDATION_COMMIT: ${{ steps.foundation-core-pin.outputs.ref }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$FOUNDATION_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "foundation_core_pin_must_be_immutable_sha: $FOUNDATION_COMMIT"
+            exit 1
+          fi
+          git fetch --no-tags --depth=1 origin "$FOUNDATION_COMMIT"
+          git cat-file -e "$FOUNDATION_COMMIT^{commit}"
+          git cat-file -e "$FOUNDATION_COMMIT:foundation_core/__init__.py"
+          git checkout --detach "$FOUNDATION_COMMIT"
+      - name: Materialize pinned Foundation public core for Python reference
+        working-directory: operations
+        env:
+          FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core
+        run: |
+          set -euo pipefail
+          python scripts/sync_public_core.py
+          test -f foundation_core/__init__.py
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Install Python extractor baseline
+        working-directory: operations
+        run: |
+          python -m pip install --disable-pip-version-check -e . --no-deps
+          python -m pip install --disable-pip-version-check "lxml>=5,<7" "httpx>=0.27,<1"
+      - name: Build Rust kernel
+        working-directory: operations
+        run: cargo build --release --manifest-path experiments/rust_html_kernel/Cargo.toml
+      - name: Run 32x3 Python/Rust differential benchmark against active extractor
+        working-directory: operations
+        env:
+          PYTHONPATH: .
+        shell: python
+        run: |
+          import json, os, subprocess, time
+          from statistics import median
+          from extractor_mapper.extraction.generic import _products_from_html
+
+          cases = []
+          for i in range(32):
+              classes = ("product-card", "item-card", "listing-card", "catalog-card")
+              card = classes[i % len(classes)]
+              extras = []
+              if i % 2 == 0:
+                  extras.append(f'<meta itemprop="sku" content="SKU-{i}">')
+              else:
+                  extras.append(f'<span data-sku="SKU-{i}"></span>')
+              if i % 3 == 0:
+                  extras.append(f'<meta itemprop="mpn" content="MPN-{i}">')
+              if i % 4 == 0:
+                  extras.append(f'<meta itemprop="gtin" content="{1000000000000+i}">')
+              if i % 5 == 0:
+                  extras.append('<img src="/img/a.jpg" data-src="/img/b.jpg">')
+              if i % 6 == 0:
+                  extras.append('<table><tr><th>RAM</th><td>32 GB</td></tr></table>')
+              if i % 7 == 0:
+                  extras.append('<p itemprop="description">Fast machine</p>')
+              if i % 3 == 0:
+                  extras.append('<span>In Stock</span>')
+              price = f"₹{100+i:,}"
+              cases.append(
+                  f'<article class="{card}"><h2>Product {i}</h2>'
+                  f'<a href="/p/{i}">/p/{i}</a>'
+                  f'<span class="price">{price}</span>'
+                  + "".join(extras) + '</article>'
+              )
+
+          binary = "./experiments/rust_html_kernel/target/release/rie_html_kernel"
+          rust_times = []
+          for repeat in range(3):
+              for index, html in enumerate(cases):
+                  expected = _products_from_html(html)
+                  expected_norm = json.loads(json.dumps(expected, default=list, sort_keys=True))
+                  started = time.perf_counter_ns()
+                  proc = subprocess.run([binary], input=html, text=True, capture_output=True, check=True)
+                  rust_times.append(time.perf_counter_ns() - started)
+                  actual = json.loads(proc.stdout)
+                  assert actual == expected_norm, (
+                      f"full parity mismatch repeat={repeat+1} case={index}: "
+                      f"{actual!r} != {expected_norm!r}"
+                  )
+
+          ordered = sorted(rust_times)
+          def pct(p):
+              pos = (len(ordered)-1) * p
+              lo, hi = int(pos), min(int(pos)+1, len(ordered)-1)
+              return int(ordered[lo] + (ordered[hi]-ordered[lo]) * (pos-lo))
+
+          summary = {
+              "schema": "rust-html-active-extractor-differential-v2",
+              "cases": 32,
+              "repeats": 3,
+              "parity": "PASS",
+              "rust_latency_ns": {"p50": int(median(ordered)), "p95": pct(0.95), "p99": pct(0.99)},
+              "operations_revision": "${{needs.resolve_operations_ref.outputs.ref}}",
+              "python_reference": "extractor_mapper.extraction.generic._products_from_html",
+              "candidate": "experiments/rust_html_kernel",
+              "comparison": "full_record",
+          }
+          os.makedirs(".runtime", exist_ok=True)
+          with open(".runtime/rust-html-differential.json", "w", encoding="utf-8") as handle:
+              json.dump(summary, handle, indent=2)
+          print(json.dumps(summary, indent=2))
+      - name: Upload Rust HTML differential receipt
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: rust-html-differential-receipt
+          path: operations/.runtime/rust-html-differential.json
+          if-no-files-found: error
+          retention-days: 30
+
+  rust_url_cli:
+    needs: resolve_operations_ref
+    name: Rust URL identity CLI parity smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Run CLI
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          test "$(cargo run --quiet --manifest-path benchmark/polyglot/rust_url_identity/Cargo.toml -- https://example.com/a https://example.com/b | wc -l)" -eq 2
+
+  ts_search_typecheck:
+    needs: resolve_operations_ref
+    name: TypeScript search adapter typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Typecheck
+        working-directory: operations/polyglot/search-adapters
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+
+  ts_browser_typecheck:
+    needs: resolve_operations_ref
+    name: TypeScript browser acquisition typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Typecheck
+        working-directory: operations/polyglot/browser-acquisition
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+
+  edge_worker_typecheck:
+    name: TypeScript edge worker typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Typecheck
+        working-directory: polyglot/edge-worker
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+
+  frontend_state_typecheck:
+    name: TypeScript frontend lifecycle typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Typecheck
+        working-directory: polyglot/frontend-state
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+
+  go_bench:
+    needs: resolve_operations_ref
+    name: Go fanout 32x3 benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version: "1.25"
+      - name: Benchmark
+        working-directory: operations/experiments/go_http_fanout
+        run: go test -run '^$' -bench . -count=3
+
+  go_vet:
+    needs: resolve_operations_ref
+    name: Go fanout static analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version: "1.25"
+      - name: Vet
+        working-directory: operations/experiments/go_http_fanout
+        run: go vet ./...
+
+  python_language_policy:
+    needs: resolve_operations_ref
+    name: Migration language policy regression gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Determine pinned Foundation public-core revision
+        id: foundation-core-pin
+        working-directory: operations
+        shell: python
+        run: |
+          import ast
+          import os
+          from pathlib import Path
+          tree = ast.parse(Path("scripts/sync_public_core.py").read_text(encoding="utf-8"))
+          output = Path(os.environ["GITHUB_OUTPUT"])
+          for node in tree.body:
+              if isinstance(node, ast.Assign):
+                  for target in node.targets:
+                      if isinstance(target, ast.Name) and target.id == "FOUNDATION_COMMIT":
+                          output.write_text(f"ref={node.value.value}\n", encoding="utf-8")
+                          raise SystemExit
+          raise SystemExit("FOUNDATION_COMMIT not found")
+
+      - name: Checkout exact pinned Foundation public core
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/foundation
+          token: ${{ github.token }}
+          path: foundation-core
+          fetch-depth: 1
+
+      - name: Ensure exact Foundation Git object is present
+        working-directory: foundation-core
+        shell: bash
+        env:
+          FOUNDATION_COMMIT: ${{ steps.foundation-core-pin.outputs.ref }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin "$FOUNDATION_COMMIT"
+          git cat-file -e "$FOUNDATION_COMMIT^{commit}"
+          git cat-file -e "$FOUNDATION_COMMIT:foundation_core/__init__.py"
+          git checkout --detach "$FOUNDATION_COMMIT"
+
+      - name: Materialize pinned public foundation_core
+        working-directory: operations
+        env:
+          FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core
+        run: |
+          set -euo pipefail
+          python scripts/sync_public_core.py
+          test -f foundation_core/__init__.py
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Install migration policy test runtime
+        working-directory: operations
+        run: |
+          python -m pip install --disable-pip-version-check -e ".[test]"
+          python -m pip install --disable-pip-version-check "workers-py>=1.9" workers-runtime-sdk
+
+      - name: Run migration policy tests
+        working-directory: operations
+        run: |
+          python -m pytest -q tests/test_runtime_language_policy.py tests/test_runtime_language_catalog.py
+
+  adaptive_matrix_contract:
+    name: Validate 40-case adaptive migration matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Validate 40 orthogonal cases
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("benchmark/polyglot/migration_matrix_40.json")
+          data = json.loads(path.read_text(encoding="utf-8"))
+          cases = data["cases"]
+          assert data["case_count"] == 40
+          assert len(cases) == 40
+          assert len({case["id"] for case in cases}) == 40
+          assert all(case["repeats"] == 3 for case in cases)
+          assert {case["topic"] for case in cases} == set(data["topics"])
+          assert {case["approach"] for case in cases} == set(data["approaches"])
+          assert {case["agent_count"] for case in cases} == set(data["agent_counts"])
+          assert {case["execution_mode"] for case in cases} == set(data["execution_modes"])
+          assert all(case["candidate_pair"] in {"python-rust", "python-typescript", "python-go"} for case in cases)
+          assert all(case["evidence"] in {"contract", "error-taxonomy", "cancellation", "resource-bounds", "provenance"} for case in cases)
+          print("40-case adaptive migration matrix: PASS")
+          PY
+
+  rust_jsonld_differential:
+    needs: resolve_operations_ref
+    name: Rust JSON-LD differential parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Materialize pinned Foundation public core
+        working-directory: operations
+        run: python scripts/sync_public_core.py
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+
+      - name: Install Python reference runtime
+        working-directory: operations
+        run: python -m pip install --disable-pip-version-check -e ".[test]"
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+
+      - name: Generate Python reference outputs
+        working-directory: operations
+        run: |
+          python benchmark/polyglot/rust_jsonld_product/python_reference.py             benchmark/polyglot/rust_jsonld_product/corpus.jsonl             python-jsonld.jsonl
+
+      - name: Generate Rust candidate outputs
+        working-directory: operations
+        run: |
+          cargo run --quiet --manifest-path benchmark/polyglot/rust_jsonld_product/Cargo.toml             --bin differential --             benchmark/polyglot/rust_jsonld_product/corpus.jsonl             rust-jsonld.jsonl
+
+      - name: Compare Python and Rust outputs
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          py = [json.loads(line) for line in Path("python-jsonld.jsonl").read_text().splitlines() if line]
+          rs = [json.loads(line) for line in Path("rust-jsonld.jsonl").read_text().splitlines() if line]
+          assert py == rs, "Rust JSON-LD output diverges from Python canonical output"
+          assert len(py) == 32
+          print("JSON-LD differential parity: PASS (32/32)")
+          PY
+
+      - name: Benchmark Rust candidate
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_jsonld_product/Cargo.toml --bench normalization
+
+  rust_link_differential:
+    needs: resolve_operations_ref
+    name: Rust Link-header Python differential parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Materialize pinned Foundation public core
+        working-directory: operations
+        run: python scripts/sync_public_core.py
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Install Python reference runtime
+        working-directory: operations
+        run: python -m pip install --disable-pip-version-check -e .
+      - name: Generate Python reference
+        working-directory: operations
+        run: python benchmark/polyglot/rust_link_pagination/python_reference.py benchmark/polyglot/rust_link_pagination/corpus.jsonl python-link.jsonl
+      - name: Generate Rust candidate
+        working-directory: operations
+        run: cargo run --quiet --manifest-path benchmark/polyglot/rust_link_pagination/Cargo.toml --bin differential -- benchmark/polyglot/rust_link_pagination/corpus.jsonl rust-link.jsonl
+      - name: Compare exact outputs
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          py=[json.loads(v) for v in Path("python-link.jsonl").read_text().splitlines() if v]
+          rs=[json.loads(v) for v in Path("rust-link.jsonl").read_text().splitlines() if v]
+          assert len(py)==len(rs)==33, (len(py), len(rs))
+          for index, (python_row, rust_row) in enumerate(zip(py, rs)):
+              assert python_row == rust_row, (
+                  f"Rust Link-header parser diverges from Python at case {index}: "
+                  f"{rust_row!r} != {python_row!r}"
+              )
+          print("Link-header differential parity: PASS (33/33)")
+          PY
+      - name: Benchmark Rust candidate
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_link_pagination/Cargo.toml
+
+  rust_robots_differential:
+    needs: resolve_operations_ref
+    name: Rust robots/sitemap Python differential parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Materialize pinned Foundation public core
+        working-directory: operations
+        run: python scripts/sync_public_core.py
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Install Python reference runtime
+        working-directory: operations
+        run: python -m pip install --disable-pip-version-check -e .
+      - name: Generate Python reference
+        working-directory: operations
+        run: python benchmark/polyglot/rust_robots_sitemap/python_reference.py benchmark/polyglot/rust_robots_sitemap/corpus.jsonl python-robots.jsonl
+      - name: Generate Rust candidate
+        working-directory: operations
+        run: cargo run --quiet --manifest-path benchmark/polyglot/rust_robots_sitemap/Cargo.toml --bin differential -- benchmark/polyglot/rust_robots_sitemap/corpus.jsonl rust-robots.jsonl
+      - name: Compare exact outputs
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          py=[json.loads(v) for v in Path("python-robots.jsonl").read_text().splitlines() if v]
+          rs=[json.loads(v) for v in Path("rust-robots.jsonl").read_text().splitlines() if v]
+          assert len(py)==len(rs)==32, (len(py), len(rs))
+          for index, (python_row, rust_row) in enumerate(zip(py, rs)):
+              assert python_row == rust_row, (
+                  f"Rust robots/sitemap parser diverges from Python at case {index}: "
+                  f"{rust_row!r} != {python_row!r}"
+              )
+          print("robots/sitemap differential parity: PASS (32/32)")
+          PY
+      - name: Benchmark Rust candidate
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_robots_sitemap/Cargo.toml
+
+  rust_text_differential:
+    needs: resolve_operations_ref
+    name: Rust text normalization Python differential parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Materialize pinned Foundation public core
+        working-directory: operations
+        run: python scripts/sync_public_core.py
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Install Python reference runtime
+        working-directory: operations
+        run: python -m pip install --disable-pip-version-check -e .
+      - name: Generate Python reference
+        working-directory: operations
+        run: python experiments/rust_text_normalization/python_reference.py experiments/rust_text_normalization/corpus.jsonl python-text.jsonl
+      - name: Generate Rust candidate
+        working-directory: operations
+        run: cargo run --quiet --manifest-path experiments/rust_text_normalization/Cargo.toml --bin differential -- experiments/rust_text_normalization/corpus.jsonl rust-text.jsonl
+      - name: Compare exact outputs
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          py=[json.loads(v) for v in Path("python-text.jsonl").read_text().splitlines() if v]
+          rs=[json.loads(v) for v in Path("rust-text.jsonl").read_text().splitlines() if v]
+          assert len(py)==len(rs)==32
+          assert py==rs, "Rust text normalization diverges from Python"
+          print("text normalization differential parity: PASS (32/32)")
+          PY
+      - name: Benchmark Rust candidate
+        working-directory: operations
+        run: cargo bench --manifest-path experiments/rust_text_normalization/Cargo.toml
+
+  rust_link_pagination:
+    needs: resolve_operations_ref
+    name: Rust Link-header pagination parity pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Test
+        working-directory: operations
+        run: cargo test --manifest-path benchmark/polyglot/rust_link_pagination/Cargo.toml
+      - name: Benchmark
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_link_pagination/Cargo.toml
+
+  typescript_next_data_differential:
+    needs: resolve_operations_ref
+    name: TypeScript Next.js Python differential parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Materialize pinned Foundation public core
+        working-directory: operations
+        run: python scripts/sync_public_core.py
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Install runtimes
+        working-directory: operations
+        run: |
+          python -m pip install --disable-pip-version-check -e ".[test]"
+          cd polyglot/next-data-product
+          npm install --ignore-scripts --no-audit --no-fund
+      - name: Generate Python reference
+        working-directory: operations
+        run: python polyglot/next-data-product/python_reference.py polyglot/next-data-product/corpus.jsonl python-next.jsonl
+      - name: Generate TypeScript candidate
+        working-directory: operations/polyglot/next-data-product
+        run: npm run differential ../next-data-product/corpus.jsonl next-ts.jsonl
+      - name: Compare outputs
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          py = [json.loads(v) for v in Path("python-next.jsonl").read_text().splitlines() if v]
+          ts = [json.loads(v) for v in Path("polyglot/next-data-product/next-ts.jsonl").read_text().splitlines() if v]
+          assert len(py) == len(ts) == 32
+          assert py == ts, "TypeScript Next.js candidate diverges from Python"
+          print("Next.js differential parity: PASS (32/32)")
+          PY
+
+  typescript_next_data_product:
+    needs: resolve_operations_ref
+    name: TypeScript Next.js product-state shadow
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Install, typecheck and test
+        working-directory: operations/polyglot/next-data-product
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          npm test
+      - name: Benchmark
+        working-directory: operations/polyglot/next-data-product
+        run: npm run benchmark
+
+  typescript_public_endpoint_differential:
+    needs: resolve_operations_ref
+    name: TypeScript endpoint Python differential parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Install runtimes
+        working-directory: operations
+        run: |
+          python -m pip install --disable-pip-version-check -e ".[test]"
+          cd polyglot/public-endpoint-discovery
+          npm install --ignore-scripts --no-audit --no-fund
+      - name: Determine pinned Foundation public-core revision
+        id: foundation-core-pin
+        working-directory: operations
+        shell: python
+        run: |
+          import ast, os
+          from pathlib import Path
+          tree = ast.parse(Path("scripts/sync_public_core.py").read_text(encoding="utf-8"))
+          for node in tree.body:
+              if isinstance(node, ast.Assign):
+                  for target in node.targets:
+                      if isinstance(target, ast.Name) and target.id == "FOUNDATION_COMMIT":
+                          Path(os.environ["GITHUB_OUTPUT"]).write_text(f"ref={node.value.value}\n", encoding="utf-8")
+                          raise SystemExit
+          raise SystemExit("FOUNDATION_COMMIT not found")
+
+      - name: Checkout exact pinned Foundation public core
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/foundation
+          ref: ${{ steps.foundation-core-pin.outputs.ref }}
+          token: ${{ github.token }}
+          path: foundation-core
+          fetch-depth: 1
+
+      - name: Ensure exact Foundation Git object is present
+        working-directory: foundation-core
+        shell: bash
+        env:
+          FOUNDATION_COMMIT: ${{ steps.foundation-core-pin.outputs.ref }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin "$FOUNDATION_COMMIT"
+          git cat-file -e "$FOUNDATION_COMMIT^{commit}"
+          git cat-file -e "$FOUNDATION_COMMIT:foundation_core/__init__.py"
+
+      - name: Materialize pinned public foundation_core
+        working-directory: operations
+        env:
+          FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core
+        run: |
+          set -euo pipefail
+          python scripts/sync_public_core.py
+          test -f foundation_core/__init__.py
+
+      - name: Generate Python reference
+        working-directory: operations
+        run: python polyglot/public-endpoint-discovery/python_reference.py polyglot/public-endpoint-discovery/corpus.jsonl python-endpoint.jsonl
+      - name: Generate TypeScript candidate
+        working-directory: operations/polyglot/public-endpoint-discovery
+        run: npm run differential -- ../public-endpoint-discovery/corpus.jsonl endpoint-ts.jsonl
+      - name: Compare outputs
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          py = [json.loads(v) for v in Path("python-endpoint.jsonl").read_text().splitlines() if v]
+          ts = [json.loads(v) for v in Path("polyglot/public-endpoint-discovery/endpoint-ts.jsonl").read_text().splitlines() if v]
+          assert len(py) == len(ts) == 32
+          assert py == ts, "TypeScript public endpoint discovery diverges from Python"
+          print("endpoint differential parity: PASS (32/32)")
+          PY
+
+  typescript_public_endpoint_discovery:
+    needs: resolve_operations_ref
+    name: TypeScript public endpoint discovery shadow
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Install, typecheck and test
+        working-directory: operations/polyglot/public-endpoint-discovery
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          npm test
+      - name: Benchmark
+        working-directory: operations/polyglot/public-endpoint-discovery
+        run: npm run benchmark
+
+  typescript_acquisition_planner:
+    needs: resolve_operations_ref
+    name: TypeScript acquisition planner shadow
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Typecheck and test
+        working-directory: operations/polyglot/acquisition-planner
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          npm test
+
+  rust_robots_sitemap:
+    needs: resolve_operations_ref
+    name: Rust robots sitemap parity pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Test
+        working-directory: operations
+        run: cargo test --manifest-path benchmark/polyglot/rust_robots_sitemap/Cargo.toml
+      - name: Benchmark
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_robots_sitemap/Cargo.toml
+
+  workflow_yaml_syntax:
+    name: All Foundation workflow YAML syntax
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Parse every workflow
+        run: |
+          ruby -e 'require "yaml"; Dir[".github/workflows/*.yml"].sort.each { |path| data = YAML.load_file(path); abort "invalid workflow: #{path}" unless data.is_a?(Hash) && data.key?("jobs"); puts "YAML PASS #{path}" }'

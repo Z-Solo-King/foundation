@@ -1,17 +1,48 @@
-name: autonomous-engineering-supervisor
+name: Autonomous engineering supervisor
 
 on:
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Plan/validate only; never dispatch a child workflow"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
+  actions: write
   contents: read
+  issues: write
+
+concurrency:
+  group: autonomous-engineering-supervisor
+  cancel-in-progress: false
 
 jobs:
-  paused:
+  supervise:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 12
+    env:
+      PUBLIC_WORKER_URL: https://ai-cio.pages.dev
+      MAX_PLANNING_CYCLES: "6"
+      MAX_WORKFLOW_ATTEMPTS: "3"
+      FOUNDATION_SHA: ${{ github.sha }}
+      DRY_RUN: ${{ inputs.dry_run || false }}
     steps:
-      - name: Confirm task workflow is paused
-        run: |
-          echo "Task workflow is paused by policy."
-          echo "No task execution, model calls, provider calls, benchmark execution, research execution, dispatch, mutation, or self-improvement occurs."
+      - name: Checkout Foundation main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Validate supervisor
+        run: node --check tools/autonomous_engineering_supervisor.mjs && node --test tests/autonomous_mission_router.test.mjs tests/autonomous_engineering_supervisor.test.mjs
+      - name: Run independent autonomous supervisor
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        run: node tools/autonomous_engineering_supervisor.mjs

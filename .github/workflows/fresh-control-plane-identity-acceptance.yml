@@ -1,17 +1,89 @@
-name: fresh-control-plane-identity-acceptance
+name: Fresh control-plane identity acceptance
 
 on:
   workflow_dispatch:
 
 permissions:
+  actions: write
   contents: read
 
 jobs:
-  paused:
+  accept:
+    name: Dispatch fresh workflow identities
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 12
     steps:
-      - name: Confirm task workflow is paused
+      - name: Dispatch bridge v3
+        id: dispatch_bridge
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          echo "Task workflow is paused by policy."
-          echo "No task execution, model calls, provider calls, benchmark execution, research execution, dispatch, mutation, or self-improvement occurs."
+          set -euo pipefail
+          url="$(gh workflow run foundation-canonical-workflow-bridge-v3.yml --repo "$GITHUB_REPOSITORY" --ref main -f target=main-push-actions-control-plane-probe-v2.yml)"
+          run_id="$(printf '%s\n' "$url" | sed -n 's#.*/runs/\([0-9][0-9]*\).*#\1#p')"
+          test -n "$run_id"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+      - name: Verify bridge run and job
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.dispatch_bridge.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          test -n "$RUN_ID"
+          for _ in {1..60}; do
+            jobs_status="$(curl -sS -o "$RUNNER_TEMP/bridge-jobs.json" -w '%{http_code}' \
+              -H 'Accept: application/vnd.github+json' \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/jobs?per_page=100")"
+            case "$jobs_status" in
+              200) jobs="$(jq '.total_count // (.jobs|length)' "$RUNNER_TEMP/bridge-jobs.json")" ;;
+              404) jobs=0 ;;
+              *) echo "Unexpected bridge jobs HTTP status: $jobs_status"; cat "$RUNNER_TEMP/bridge-jobs.json"; exit 1 ;;
+            esac
+            if [ "$jobs" -gt 0 ]; then
+              echo "bridge_run_id=$RUN_ID jobs=$jobs"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "bridge run created without jobs after bounded 120s wait: run_id=$RUN_ID"
+          gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json status,conclusion,url
+          exit 1
+      - name: Dispatch nightly v3 contract-only
+        id: dispatch_nightly
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          url="$(gh workflow run nightly-multi-agent-research-v3.yml --repo "$GITHUB_REPOSITORY" --ref main -f dry_run=true)"
+          run_id="$(printf '%s\n' "$url" | sed -n 's#.*/runs/\([0-9][0-9]*\).*#\1#p')"
+          test -n "$run_id"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+      - name: Verify nightly run has jobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.dispatch_nightly.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          test -n "$RUN_ID"
+          for _ in {1..60}; do
+            jobs_status="$(curl -sS -o "$RUNNER_TEMP/nightly-jobs.json" -w '%{http_code}' \
+              -H 'Accept: application/vnd.github+json' \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/jobs?per_page=100")"
+            case "$jobs_status" in
+              200) jobs="$(jq '.total_count // (.jobs|length)' "$RUNNER_TEMP/nightly-jobs.json")" ;;
+              404) jobs=0 ;;
+              *) echo "Unexpected nightly jobs HTTP status: $jobs_status"; cat "$RUNNER_TEMP/nightly-jobs.json"; exit 1 ;;
+            esac
+            if [ "$jobs" -gt 0 ]; then
+              echo "nightly_run_id=$RUN_ID jobs=$jobs"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "nightly run created without jobs after bounded 120s wait: run_id=$RUN_ID"
+          gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json status,conclusion,url
+          exit 1
