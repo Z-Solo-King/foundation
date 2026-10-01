@@ -2,12 +2,12 @@
 
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
-Checked: 2026-09-30.
-Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `f85b61ebc521dbfab3b25fa3b7fceafcf696cdbb`.
+Checked: 2026-10-01.
+Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `69bf2a47d5788623094f377c3fdaf4c755f1e0bc`.
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: current main is read live from GitHub; last verified commit `f85b61ebc521dbfab3b25fa3b7fceafcf696cdbb`.
-Operations main checkpoint: current protected main revision is read from GitHub live state; research/migration jobs use explicit immutable pins below.
+Foundation main code checkpoint: current main is read live from GitHub; last verified commit `69bf2a47d5788623094f377c3fdaf4c755f1e0bc`.
+Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `4d94cc7d285b07149ab30d0d205f6e88a943391b`; research/migration jobs use explicit immutable pins below.
 Production Operations pin: ce4f9edbae3ddf1bf1c25a908d5bce014acc7676.
 Provider fleet runtime probe pin: b95e419254a9071beaeef57a1b0da22ba7dd2c4f.
 Research Operations pin: 1a91efa53b9202f1624ddde892b0e86bd6b360f0.
@@ -49,7 +49,7 @@ Do not create duplicate authorities for admission, URL/SSRF safety, evidence, ro
 
 ## Runtime authority note
 
-The canonical public path is Pages `ai` -> `heroic` -> private `operations-edge` / `operations`. Production task-envelope signing uses the private `TASK_SIGNING_ROOT`; the bearer `AUTH_TOKEN` is a separate runtime authentication secret. D1 migrations 0001–0010 are live and verified.
+The canonical public path is Pages `ai` -> `heroic` -> private `operations-edge` / `operations`. Production task-envelope signing uses the private `TASK_SIGNING_ROOT`; the bearer `AUTH_TOKEN` is a separate runtime authentication secret. D1 migrations 0001–0010 are live and verified. Foundation-owned feed-hunt CI is a public-read-only evidence workflow; it does not grant private production authority.
 
 ## Continuity
 
@@ -92,3 +92,6 @@ Current GitHub main revisions and mutable issue/PR counts are live state. This d
 Current family state: Foundation and Operations are the only active repositories. The former standalone extractor-mapper repository is retired/deleted; active private extraction/mapping runtime is Operations `extractor_mapper/`, while Foundation retains the public deterministic mapper core.
 
 The adaptive multi-lens engine is active on Foundation and is scheduling-only; it does not transfer acceptance, security, provider, resource, extractor/mapper or promotion authority.
+
+### 2026-10-01 hosted CI authority reconciliation
+Foundation remains the sole hosted GitHub Actions authority for the family. The WooCommerce 32-site public feed-hunt capability remains implemented in Operations (`tools/woocommerce_32_plugin_feed_hunt.mjs`), but its hosted CI workflow was retired from Operations and is now executed by the Foundation-owned `.github/workflows/woocommerce-32-plugin-feed-hunt.yml` at an immutable Operations revision. Operations main contains no hosted GitHub Actions workflow after this reconciliation.
