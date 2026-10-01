@@ -224,3 +224,5 @@ jobs:
           gh release upload "$TAG" --repo "$GH_REPO" out/release/*.xml out/release/feeds-index.json --clobber
 
 # fresh validation marker
+
+# Final corrected-run trigger nonce: 2026-10-02T21:13Z
