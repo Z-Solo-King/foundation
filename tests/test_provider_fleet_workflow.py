@@ -57,8 +57,8 @@ def test_provider_fleet_workflow_tolerates_malformed_base_config_for_benchmark_w
     text = WORKFLOW.read_text(encoding="utf-8")
     assert "except json.JSONDecodeError:" in text
     assert "base_config_valid=" in text
-    assert "if: steps.validate-config.outputs.base_config_valid == 'true'" in text
-    assert "Live endpoint probing will continue using explicitly configured provider overrides only." in text
+    assert "if: always() && hashFiles('provider-runtime-state.json') != ''" in text
+    assert "Only sanitized runtime state from explicitly configured providers will be published." in text
     assert "provider-fleet-benchmark-${{ github.run_id }}" in text
 
 
@@ -67,3 +67,11 @@ def test_provider_fleet_workflow_has_unique_benchmark_artifact_and_transport_dia
     assert text.count('name: provider-fleet-benchmark-${{ github.run_id }}') == 1
     assert text.count("provider-probe-diagnostic.json") >= 2
     assert 'provider-probe-diagnostic/v1' in text
+
+
+def test_provider_fleet_workflow_publishes_partial_runtime_state_safely() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert "provider-runtime-state.json" in text
+    assert "Only sanitized runtime state from explicitly configured providers will be published." in text
+    assert "secret_text" in text
+    assert "api_key" not in text.split("Publish runtime state to private Operations Worker", 1)[1].split("Upload provider evidence", 1)[0]
