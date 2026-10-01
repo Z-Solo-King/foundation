@@ -3,10 +3,6 @@ name: Commerce feed product crawl
 on:
   workflow_dispatch:
     inputs:
-      registry_repository:
-        description: "Private registry repository in owner/name form"
-        required: true
-        type: string
       registry_ref:
         description: "Immutable private registry revision"
         required: true
@@ -46,8 +42,8 @@ jobs:
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: ${{ inputs.registry_repository }}
+          owner: Z-Solo-King
+          repositories: operations
           permission-contents: read
 
       - name: Checkout private registry
