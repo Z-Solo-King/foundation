@@ -9,7 +9,7 @@ test("30 site corpus",()=>{
 });
 
 test("xml-only discovery",()=>{
-  for(const x of ["filetype:xml","/robots.txt","/sitemap.xml","/wp-sitemap.xml","search_index","public_reference","XML"]) assert.ok(s.includes(x),x);
+  for(const x of ["filetype:xml","/robots.txt","/sitemap.xml","/wp-sitemap.xml","search_index","current_public_surface","XML"]) assert.ok(s.includes(x),x);
 });
 
 test("strict Merchant validation",()=>{
