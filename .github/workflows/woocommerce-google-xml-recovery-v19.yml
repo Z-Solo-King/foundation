@@ -1,0 +1,230 @@
+name: WooCommerce Google XML Feed Recovery V19
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/woocommerce-google-xml-recovery-v19.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: foundation-wc-google-xml-v19
+  cancel-in-progress: false
+
+jobs:
+  crossfire:
+    name: AI candidate crossfire
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production-secret-sync
+    outputs:
+      operations_ref: ${{ steps.resolve.outputs.ref }}
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Resolve immutable Operations revision
+        id: resolve
+        env:
+          GH_TOKEN: ${{ steps.operations-app.outputs.token }}
+        run: |
+          set -euo pipefail
+          ref="$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]]
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ steps.resolve.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Optional AI crossfire
+        working-directory: operations
+        continue-on-error: true
+        env:
+          PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          AI_CROSSFIRE_MAX_PROVIDERS: "5"
+          AI_CROSSFIRE_TIMEOUT_MS: "18000"
+          AI_CROSSFIRE_PROVIDERS: "heroic_worker,cloudflare_workers_ai,siliconflow,gemini,openrouter_free,groq,cerebras"
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          node private/feed_recovery/ai_crossfire.mjs data/feed_lab/woocommerce_30_registry_v18.json out/ai-crossfire.json || true
+          test -s out/ai-crossfire.json || printf '{"retailers":[]}
+' > out/ai-crossfire.json
+      - name: Upload AI candidate pool
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: foundation-wc-google-xml-v19-ai-candidates
+          path: operations/out/ai-crossfire.json
+          retention-days: 7
+
+  build:
+    name: Recovery shard ${{ matrix.shard }}
+    needs: crossfire
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    environment: production-secret-sync
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        shard: [1,2,3,4,5,6]
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.crossfire.outputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Download AI candidate pool
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        continue-on-error: true
+        with:
+          name: foundation-wc-google-xml-v19-ai-candidates
+          path: operations/out
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install browser runtime
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          npm install --no-save --ignore-scripts playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Validate recovery builder
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node --check private/feed_recovery/google_xml_feed_builder_30_v2.mjs
+          node -e 'const x=require("./data/feed_lab/woocommerce_30_registry_v18.json"); if(x.sites.length!==30) process.exit(1)'
+      - name: Run recovery shard
+        working-directory: operations
+        env:
+          WC_ANY_FAST_TIMEOUT_MS: "12000"
+          WC_ANY_SLOW_TIMEOUT_MS: "60000"
+          WC_ANY_MAX_PRODUCTS: "10000"
+          WC_ANY_MAX_PRODUCT_URLS: "120"
+          WC_ANY_LIVE_PAGE_LIMIT: "60"
+          WC_ANY_CC_PAGE_LIMIT: "80"
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          test -f out/ai-crossfire.json || printf '{"retailers":[]}
+' > out/ai-crossfire.json
+          node private/feed_recovery/google_xml_feed_builder_30_v2.mjs             data/feed_lab/woocommerce_30_registry_v18.json             out/google-xml-v19             --shard "$SHARD" --shards 6 --ai out/ai-crossfire.json
+      - name: Upload shard evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: foundation-wc-google-xml-v19-shard-${{ matrix.shard }}
+          path: operations/out/google-xml-v19/
+          if-no-files-found: warn
+          retention-days: 30
+
+  publish:
+    name: Validate and publish 30 non-empty feeds
+    needs: build
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download all shard evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        continue-on-error: true
+        with:
+          pattern: foundation-wc-google-xml-v19-shard-*
+          path: out/shards
+          merge-multiple: false
+      - name: Hard completion gate
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf out/release
+          mkdir -p out/release
+          node <<'NODE'
+          const fs=require("fs"),path=require("path");
+          const root="out/shards",release="out/release",manifests=[],xmls=[];
+          const walk=d=>{if(!fs.existsSync(d))return;for(const e of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,e.name);if(e.isDirectory())walk(p);else if(/^manifest-shard-\d+\.json$/.test(e.name))manifests.push(p);else if(e.name.endsWith(".xml"))xmls.push(p);}};
+          walk(root);
+          const rows=manifests.flatMap(p=>{try{return JSON.parse(fs.readFileSync(p,"utf8")).items||[]}catch{return[]}});
+          if(rows.length!==30) throw new Error("expected 30 rows, got "+rows.length);
+          if(new Set(rows.map(x=>String(x.site).toLowerCase())).size!==30) throw new Error("duplicate site records");
+          let ok=0;
+          for(const r of rows){
+            if(Number(r.item_count||0)<=0) throw new Error("EMPTY: "+r.site);
+            const f=xmls.find(x=>path.basename(x)===r.filename);
+            if(!f) throw new Error("MISSING: "+r.site);
+            const x=fs.readFileSync(f,"utf8"),items=x.match(/<item>[\s\S]*?<\/item>/gi)||[];
+            if(items.length!==Number(r.item_count)) throw new Error("COUNT: "+r.site);
+            if(!/base\.google\.com\/ns\/1\.0/i.test(x)) throw new Error("NAMESPACE: "+r.site);
+            for(const i of items) if(!/<g:id>[^<]+<\/g:id>/i.test(i)||!/<title>[^<]+<\/title>/i.test(i)||!/<link>https?:\/\/[^<]+<\/link>/i.test(i)||!/<g:image_link>https?:\/\/[^<]+<\/g:image_link>/i.test(i)||!/<g:price>\s*\d[^<]*\s+[A-Z]{3}<\/g:price>/i.test(i)) throw new Error("FIELDS: "+r.site);
+            fs.copyFileSync(f,path.join(release,r.filename)); ok++;
+          }
+          if(ok!==30) throw new Error("expected 30 usable feeds, got "+ok);
+          fs.writeFileSync(path.join(release,"feeds-index.json"),JSON.stringify({schema_version:"woocommerce-google-xml-anyhow-v2/published-index",generated_on:new Date().toISOString(),target_count:30,release_tag:"wc-google-feed-latest",feeds:rows},null,2)+"\n");
+          NODE
+      - name: Publish release
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=wc-google-feed-latest
+          if ! gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GH_REPO" --title "WooCommerce Google XML Feeds — Latest" --notes "30-site public recovery feeds. Native feeds are labeled separately from synthetic/archive-backed feeds."
+          fi
+          gh release upload "$TAG" --repo "$GH_REPO" out/release/*.xml out/release/feeds-index.json --clobber
