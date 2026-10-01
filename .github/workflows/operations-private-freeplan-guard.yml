@@ -59,7 +59,7 @@ jobs:
           set -euo pipefail
           approved_sha="$(jq -r '.approved_sha // empty' docs/OPERATIONS_MAIN_APPROVAL.json)"
           test "${#approved_sha}" -eq 40
-          jq --arg approved "$approved_sha" --slurpfile repo .runtime/operations-guard/repository.json --slurpfile branch .runtime/operations-guard/main.json --slurpfile workflows .runtime/operations-guard/workflows-state.json '{repository:$repo[0],mainBranch:$branch[0],workflowsPresent:($workflows[0].present),approvedSha:$approved}' > .runtime/operations-guard/input.json
+          jq -n --arg approved "$approved_sha" --slurpfile repo .runtime/operations-guard/repository.json --slurpfile branch .runtime/operations-guard/main.json --slurpfile workflows .runtime/operations-guard/workflows-state.json '{repository:$repo[0],mainBranch:$branch[0],workflowsPresent:($workflows[0].present),approvedSha:$approved}' > .runtime/operations-guard/input.json
           node tools/validate_operations_main_guard.mjs .runtime/operations-guard/input.json > .runtime/operations-guard/receipt.json
 
       - name: Record integrity incident
