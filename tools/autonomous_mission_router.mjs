@@ -1,11 +1,17 @@
 import fs from 'node:fs';
 
+const IMPROVEMENT_MATRIX_URL = new URL('../docs/PROJECT_IMPROVEMENT_MATRIX.json', import.meta.url);
+export const PROJECT_IMPROVEMENT_MATRIX = JSON.parse(fs.readFileSync(IMPROVEMENT_MATRIX_URL, 'utf8'));
+export const IMPROVEMENT_COMPONENTS = Object.keys(PROJECT_IMPROVEMENT_MATRIX.components);
+const COMPONENT_WORKFLOWS = Object.fromEntries(IMPROVEMENT_COMPONENTS.map((component) => [component, PROJECT_IMPROVEMENT_MATRIX.components[component].workflows]));
+
 export const MISSION_WORKFLOWS = {
   migration: ['polyglot-migration-review.yml', 'open-issue-polyglot-deep-scan.yml'],
   feed_recovery: ['woocommerce-clean-recovery.yml', 'native-google-feed-hunt.yml', 'woocommerce-identified-family-exhaustive-v5.yml'],
   nightly_research: ['nightly-multi-agent-research-v3.yml'],
   audit: ['exhaustive-six-lane-audit.yml', 'cross-repository-contract-drift.yml'],
   runtime_reconciliation: ['provider-fleet-runtime-state.yml', 'nightly-invariants.yml', 'operations-centralized-validation.yml'],
+  component_improvement: [...new Set(Object.values(COMPONENT_WORKFLOWS).flat())],
 };
 export const FORBIDDEN_WORKFLOWS = new Set(['heroic-ai-production-release.yml']);
 
@@ -28,6 +34,7 @@ export function validatePlan(plan) {
   if (plan.schema !== 'autonomous-mission-plan/v1') throw new Error('invalid schema');
   if (!Object.hasOwn(MISSION_WORKFLOWS, plan.mission_type)) throw new Error('unsupported mission type');
   if (typeof plan.summary !== 'string' || !plan.summary.trim()) throw new Error('summary is required');
+  if (plan.mission_type === 'component_improvement' && (typeof plan.target_component !== 'string' || !IMPROVEMENT_COMPONENTS.includes(plan.target_component))) throw new Error('component improvement requires a valid target_component');
   if (!['planned','executing','verifying','retrying','blocked','complete'].includes(plan.next_state)) throw new Error('invalid next_state');
   if (plan.terminal !== null && plan.terminal !== 'complete' && plan.terminal !== 'blocked') throw new Error('invalid terminal state');
   if (!Array.isArray(plan.actions) || plan.actions.length > 3) throw new Error('invalid action count');
@@ -40,6 +47,7 @@ export function validatePlan(plan) {
     if (ids.has(action.id)) throw new Error('duplicate action id');
     ids.add(action.id);
     if (!MISSION_WORKFLOWS[plan.mission_type].includes(action.workflow) || FORBIDDEN_WORKFLOWS.has(action.workflow)) throw new Error(`workflow not allowlisted: ${action.workflow}`);
+    if (plan.mission_type === 'component_improvement' && !COMPONENT_WORKFLOWS[plan.target_component].includes(action.workflow)) throw new Error(`workflow not allowlisted for component: ${plan.target_component}`);
     if (!action.inputs || Object.keys(action.inputs).length !== 0) throw new Error('workflow inputs must be empty');
     if (typeof action.reason !== 'string' || !action.reason.trim()) throw new Error('action reason is required');
     if (!['none','transient_only','bounded'].includes(action.retry_policy)) throw new Error('invalid retry policy');
@@ -47,6 +55,7 @@ export function validatePlan(plan) {
   return {
     schema: plan.schema,
     mission_type: plan.mission_type,
+    target_component: plan.target_component == null ? null : plan.target_component,
     summary: plan.summary.trim().slice(0, 2000),
     terminal: plan.terminal,
     actions: plan.actions.map((action) => ({id:action.id,kind:action.kind,workflow:action.workflow,inputs:{},reason:action.reason.trim().slice(0,2000),retry_policy:action.retry_policy})),
