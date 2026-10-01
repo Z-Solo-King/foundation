@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: foundation-wc-google-xml-v19
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   crossfire:
