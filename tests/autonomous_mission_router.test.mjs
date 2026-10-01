@@ -36,34 +36,24 @@ test('accepts a blocked terminal plan', () => {
 });
 
 test('parses fenced JSON', () => {
-  const result = parsePlanDocument('```json\n' + JSON.stringify(base()) + '\n```');
+  const result = parsePlanDocument('\`\`\`json\n' + JSON.stringify(base()) + '\n\`\`\`');
   assert.equal(result.schema, 'autonomous-mission-plan/v1');
 });
- 
-test('rejects duplicate workflow actions even with distinct IDs', () => {
-  const action = base().actions[0];
-  assert.throws(() => validatePlan(base({actions:[action,{...action,id:'a2'}]})), /duplicate workflow action/);
-});
-
-test('accepts up to three distinct parallel actions', () => {
-  const result = validatePlan(base({mission_type:'runtime_reconciliation',actions:[
-    {id:'a1',kind:'dispatch_workflow',workflow:'provider-fleet-runtime-state.yml',inputs:{},reason:'provider evidence',retry_policy:'bounded'},
-    {id:'a2',kind:'dispatch_workflow',workflow:'nightly-invariants.yml',inputs:{},reason:'invariant evidence',retry_policy:'bounded'},
-    {id:'a3',kind:'dispatch_workflow',workflow:'operations-centralized-validation.yml',inputs:{},reason:'operations evidence',retry_policy:'bounded'},
-  ]}));
-  assert.equal(result.actions.length, 3);
-});
 
 test('rejects duplicate workflow actions even with distinct IDs', () => {
   const action = base().actions[0];
   assert.throws(() => validatePlan(base({actions:[action,{...action,id:'a2'}]})), /duplicate workflow action/);
 });
 
-test('accepts up to three distinct parallel actions', () => {
-  const result = validatePlan(base({mission_type:'runtime_reconciliation',actions:[
-    {id:'a1',kind:'dispatch_workflow',workflow:'provider-fleet-runtime-state.yml',inputs:{},reason:'provider evidence',retry_policy:'bounded'},
-    {id:'a2',kind:'dispatch_workflow',workflow:'nightly-invariants.yml',inputs:{},reason:'invariant evidence',retry_policy:'bounded'},
-    {id:'a3',kind:'dispatch_workflow',workflow:'operations-centralized-validation.yml',inputs:{},reason:'operations evidence',retry_policy:'bounded'},
-  ]}));
+test('accepts three distinct migration cross-fire actions', () => {
+  const result = validatePlan(base({
+    mission_type:'migration',
+    summary:'run migration cross-fire lanes',
+    actions:[
+      {id:'a1',kind:'dispatch_workflow',workflow:'polyglot-migration-review.yml',inputs:{},reason:'five-lane migration evidence',retry_policy:'bounded'},
+      {id:'a2',kind:'dispatch_workflow',workflow:'open-issue-polyglot-deep-scan.yml',inputs:{},reason:'independent open-issue deep scan',retry_policy:'bounded'},
+      {id:'a3',kind:'dispatch_workflow',workflow:'hybrid-language-pilots.yml',inputs:{},reason:'candidate-specific migration pilots',retry_policy:'bounded'},
+    ],
+  }));
   assert.equal(result.actions.length, 3);
 });
