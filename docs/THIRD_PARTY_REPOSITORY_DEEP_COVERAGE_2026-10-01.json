@@ -1,0 +1,444 @@
+{
+  "schema": "third-party-repository-deep-coverage/v1",
+  "generated_at": "2026-10-01",
+  "repository_count": 19,
+  "repositories": [
+    {
+      "name": "hoothin/SearchJumper",
+      "license": "GPL-3.0",
+      "features": [
+        "search-engine rules",
+        "URL transforms/templates",
+        "keyword filters",
+        "selection/image/link/find-in-page",
+        "React/schema"
+      ],
+      "mapped": [
+        "search/provider routing"
+      ],
+      "gaps": [
+        "declarative search-definition registry"
+      ],
+      "disposition": "candidate architecture only"
+    },
+    {
+      "name": "Panniantong/Agent-Reach",
+      "license": "MIT",
+      "features": [
+        "16 platforms",
+        "ordered fallback backends",
+        "doctor JSON",
+        "install/config separation",
+        "skills/MCP",
+        "security tests"
+      ],
+      "mapped": [
+        "source profiles",
+        "route health"
+      ],
+      "gaps": [
+        "unified source backend doctor"
+      ],
+      "disposition": "candidate architecture only"
+    },
+    {
+      "name": "whaleyxbt/patchright-enhanced",
+      "license": "unknown",
+      "features": [
+        "browser wrapper",
+        "session lifecycle",
+        "config/start/types/utils"
+      ],
+      "mapped": [
+        "browser acquisition",
+        "session pool",
+        "benchmark"
+      ],
+      "gaps": [
+        "none required beyond benchmark"
+      ],
+      "disposition": "lifecycle patterns only"
+    },
+    {
+      "name": "D4Vinci/Scrapling",
+      "license": "review-required",
+      "features": [
+        "adaptive tracking",
+        "multi-session",
+        "AutoThrottle",
+        "streaming",
+        "cache/replay",
+        "robots",
+        "DoH",
+        "XHR",
+        "CDP",
+        "MCP",
+        "agent skill",
+        "RAG Markdown"
+      ],
+      "mapped": [
+        "adaptive extraction",
+        "XHR/public discovery",
+        "robots/sitemap",
+        "browser/session",
+        "Markdown fallback"
+      ],
+      "gaps": [
+        "unified throttle/monitor"
+      ],
+      "disposition": "equivalents plus candidates"
+    },
+    {
+      "name": "Comfy-Org/ComfyUI",
+      "license": "GPL-3.0",
+      "features": [
+        "graph/node execution",
+        "queues",
+        "API/OpenAPI",
+        "custom nodes",
+        "model config",
+        "resource controls"
+      ],
+      "mapped": [
+        "capability graph",
+        "resource governance"
+      ],
+      "gaps": [
+        "no visual node runtime needed"
+      ],
+      "disposition": "architecture only"
+    },
+    {
+      "name": "Wan-Video/Wan2.1",
+      "license": "separate review",
+      "features": [
+        "T2V",
+        "I2V",
+        "config-driven inference",
+        "resource optimization"
+      ],
+      "mapped": [
+        "future video profiles"
+      ],
+      "gaps": [
+        "heavyweight runtime"
+      ],
+      "disposition": "future candidate"
+    },
+    {
+      "name": "Tencent-Hunyuan/HunyuanVideo",
+      "license": "Tencent Hunyuan Community License",
+      "features": [
+        "video generation",
+        "image/video conditioning",
+        "single GPU",
+        "multi GPU/xDiT",
+        "FP8"
+      ],
+      "mapped": [
+        "future resource profiles"
+      ],
+      "gaps": [
+        "territory/use/distribution constraints"
+      ],
+      "disposition": "restricted candidate"
+    },
+    {
+      "name": "black-forest-labs/flux",
+      "license": "mixed by model",
+      "features": [
+        "T2I",
+        "Fill",
+        "Canny",
+        "Depth",
+        "Redux",
+        "Kontext",
+        "Krea",
+        "TensorRT",
+        "usage tracking"
+      ],
+      "mapped": [
+        "future image capabilities",
+        "license-aware model registry"
+      ],
+      "gaps": [
+        "model/weight policy"
+      ],
+      "disposition": "future candidate"
+    },
+    {
+      "name": "facebookresearch/audiocraft",
+      "license": "MIT code / CC-BY-NC 4.0 weights",
+      "features": [
+        "MusicGen",
+        "AudioGen",
+        "EnCodec",
+        "MBD",
+        "MAGNeT",
+        "AudioSeal",
+        "MusicGen Style",
+        "JASCO"
+      ],
+      "mapped": [
+        "future audio registry",
+        "watermark/provenance"
+      ],
+      "gaps": [
+        "weight restrictions"
+      ],
+      "disposition": "future candidate"
+    },
+    {
+      "name": "ace-step/ACE-Step",
+      "license": "MIT project; checkpoint review",
+      "features": [
+        "music foundation model",
+        "fast generation",
+        "8GB optimization",
+        "offload",
+        "audio2audio",
+        "voice workflows",
+        "multilingual",
+        "ComfyUI"
+      ],
+      "mapped": [
+        "future low-resource audio profile"
+      ],
+      "gaps": [
+        "no production audio runtime"
+      ],
+      "disposition": "future candidate"
+    },
+    {
+      "name": "resemble-ai/chatterbox",
+      "license": "MIT repository",
+      "features": [
+        "Multilingual V3",
+        "Turbo",
+        "Nano",
+        "23+ languages",
+        "voice cloning",
+        "language packs",
+        "PerTh watermark"
+      ],
+      "mapped": [
+        "future TTS registry",
+        "watermark/provenance"
+      ],
+      "gaps": [
+        "not promoted"
+      ],
+      "disposition": "future candidate"
+    },
+    {
+      "name": "hpcaitech/Open-Sora",
+      "license": "Apache-2.0 plus notices",
+      "features": [
+        "11B T2V/I2V",
+        "prompt refine",
+        "motion score",
+        "seed reproducibility",
+        "offload",
+        "multi GPU",
+        "resource evaluation"
+      ],
+      "mapped": [
+        "future video jobs",
+        "reproducibility"
+      ],
+      "gaps": [
+        "heavyweight runtime"
+      ],
+      "disposition": "future candidate"
+    },
+    {
+      "name": "Stability-AI/stable-audio-tools",
+      "license": "MIT",
+      "features": [
+        "training/inference split",
+        "JSON configs",
+        "uv reproducibility",
+        "Flash Attention",
+        "DDP/DeepSpeed"
+      ],
+      "mapped": [
+        "future model/resource profiles"
+      ],
+      "gaps": [
+        "no heavy runtime"
+      ],
+      "disposition": "future candidate"
+    },
+    {
+      "name": "deepbeepmeep/Wan2GP",
+      "license": "WanGP Community License 2.0",
+      "features": [
+        "low VRAM",
+        "quantization",
+        "CPU offload",
+        "JIT checkpoint loading",
+        "queue",
+        "API/headless",
+        "cancellation",
+        "offline agent"
+      ],
+      "mapped": [
+        "resource/job lifecycle"
+      ],
+      "gaps": [
+        "hosted/API/OEM restrictions"
+      ],
+      "disposition": "architecture only until cleared"
+    },
+    {
+      "name": "firecrawl/firecrawl",
+      "license": "AGPL-3.0",
+      "features": [
+        "search",
+        "scrape",
+        "interact",
+        "map",
+        "crawl",
+        "CLI",
+        "MCP",
+        "skills",
+        "workflows",
+        "self-host"
+      ],
+      "mapped": [
+        "task routing",
+        "skills/workflow architecture"
+      ],
+      "gaps": [
+        "strict-$0 hosted dependency",
+        "copyleft"
+      ],
+      "disposition": "architecture only"
+    },
+    {
+      "name": "unclecode/crawl4ai",
+      "license": "Apache-2.0 + attribution",
+      "features": [
+        "memory adaptive dispatcher",
+        "semaphore dispatcher",
+        "rate limiter",
+        "monitor",
+        "streaming",
+        "scraping strategies"
+      ],
+      "mapped": [
+        "bounded frontier",
+        "resource budgets"
+      ],
+      "gaps": [
+        "unified resource controller"
+      ],
+      "disposition": "candidate architecture"
+    },
+    {
+      "name": "apify/crawlee",
+      "license": "Apache-2.0",
+      "features": [
+        "RequestQueue",
+        "SessionPool",
+        "ProxyConfiguration",
+        "Dataset",
+        "KeyValueStore",
+        "Router",
+        "Snapshotter/SystemStatus",
+        "retries",
+        "hooks"
+      ],
+      "mapped": [
+        "PriorityFairFrontier",
+        "BrowserSessionPool",
+        "retry/routing"
+      ],
+      "gaps": [
+        "no second persistent crawler datastore"
+      ],
+      "disposition": "implemented patterns"
+    },
+    {
+      "name": "scrapy/scrapy",
+      "license": "BSD-3-Clause",
+      "features": [
+        "scheduler",
+        "downloader middleware",
+        "spider middleware",
+        "item pipelines",
+        "feed exports",
+        "extensions",
+        "signals"
+      ],
+      "mapped": [
+        "planner",
+        "capability registry",
+        "output",
+        "diagnostics"
+      ],
+      "gaps": [
+        "lightweight lifecycle signal bus"
+      ],
+      "disposition": "candidate architecture"
+    },
+    {
+      "name": "browser-use/browser-use",
+      "license": "MIT",
+      "features": [
+        "BrowserSession",
+        "agent",
+        "Tools",
+        "structured output",
+        "skills",
+        "CLI",
+        "local/cloud browser",
+        "profiles/recordings"
+      ],
+      "mapped": [
+        "bounded browser",
+        "session pool",
+        "tool contract"
+      ],
+      "gaps": [
+        "no hosted cloud under strict-$0"
+      ],
+      "disposition": "implemented patterns; hosted services excluded"
+    }
+  ],
+  "heroic_existing_capabilities": [
+    "browser_xhr_capture",
+    "public_endpoint_discovery",
+    "spa_xhr_discovery",
+    "public_search_api",
+    "rss_atom",
+    "json_feed",
+    "llm_markdown_fallback",
+    "next_app_router",
+    "historical_public_url_recovery",
+    "image_ocr",
+    "checkpoint_change_state",
+    "multi_format_output",
+    "shopify_public_json",
+    "shopify_storefront_graphql",
+    "woocommerce_store_api",
+    "wordpress_products_api",
+    "wix_catalog",
+    "bigcommerce_graphql",
+    "magento_graphql",
+    "prestashop_payload",
+    "squarespace_payload",
+    "dotpe_payload"
+  ],
+  "new_runtime_change": "PriorityFairFrontier is now used by extract_and_map_many as deterministic batch admission scheduling while preserving input/result order and duplicate semantics.",
+  "validation": {
+    "batch_scheduler_tests": "3/3",
+    "third_party_runtime_tests": "9/9"
+  },
+  "safety": {
+    "no_feed_changes": true,
+    "no_production_pin_change": true,
+    "third_party_code_copied": false,
+    "third_party_weights_promoted": false
+  }
+}
