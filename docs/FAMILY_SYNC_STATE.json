@@ -113,7 +113,7 @@
     1652
   ],
   "operations_open_prs": [],
-  "open_pr_count": 5,
+  "open_pr_count": 7,
   "open_implementation_pr_count": 5,
   "extractor_mapper": {
     "status": "active_runtime_boundary",
@@ -132,10 +132,10 @@
     "authority": "scheduling_only"
   },
   "post_merge_sync": {
-    "checked_at": "2026-10-01T12:24:00Z",
+    "checked_at": "2026-10-01T12:31:30Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "68aff623472af4df03688ddb24f33259d1fe5532",
+      "foundation": "2239ae23706e5ab14c61869022eca93618b74cb9",
       "operations": "942eb72d1df90299d52977918dd56e9d25e0c41f"
     },
     "operations_last_sync_commits": [
@@ -167,12 +167,12 @@
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "68aff623472af4df03688ddb24f33259d1fe5532",
+    "foundation": "2239ae23706e5ab14c61869022eca93618b74cb9",
     "operations": "942eb72d1df90299d52977918dd56e9d25e0c41f"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "68aff623472af4df03688ddb24f33259d1fe5532",
+    "foundation": "2239ae23706e5ab14c61869022eca93618b74cb9",
     "operations": "942eb72d1df90299d52977918dd56e9d25e0c41f"
   },
   "hosted_ci_authority": {
@@ -252,5 +252,12 @@
     "canonical_executor": "Operations private/feed_recovery at immutable production/research pins as selected by the Foundation release/evidence workflows",
     "legacy_workflows_manual_only": true,
     "source": "live main reconciliation 2026-10-01"
+  },
+  "integrity_guard": {
+    "workflow": ".github/workflows/operations-private-freeplan-guard.yml",
+    "fixed_commit": "2239ae23706e5ab14c61869022eca93618b74cb9",
+    "fix": "jq -n input generation",
+    "policy": "fail closed on Operations main drift from approved immutable production pin",
+    "source": "live CI reproduction 2026-10-01"
   }
 }
