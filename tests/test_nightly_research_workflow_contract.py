@@ -76,7 +76,8 @@ def test_public_failure_contract_is_preserved():
     assert "name: Diagnose nightly Heroic AI research" in text
     assert "name: Preserve truthful nightly result" in text
     assert "needs: [research, migration_review, project-summary]" in text
-    assert "One or more research lanes failed/blocked" in text
+    assert "final-gate:" in text
+    assert "name: Preserve truthful nightly result" in text
 
 def test_permissions_remain_job_scoped():
     text=workflow_text()
