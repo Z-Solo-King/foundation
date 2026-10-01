@@ -149,7 +149,7 @@ jobs:
       - name: Classify live provider transport results
         if: always()
         env:
-          PROVIDER_KEYS_JSON_FILE: \${{ runner.temp }}/provider_keys.json
+          PROVIDER_KEYS_JSON_FILE: ${{ runner.temp }}/provider_keys.json
         run: |
           set +e
           python - <<'PY'
@@ -331,7 +331,7 @@ jobs:
             -X PUT \
             -H "Authorization: Bearer $CF_API_TOKEN" \
             -H 'Content-Type: application/json' \
-            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts/$CLOUDFLARE_SCRIPT_NAME/secrets/CHAT_PROVIDER_RUNTIME_STATE" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts/$CLOUDFLARE_SCRIPT_NAME/secrets" \
             --data "$(jq -cn --arg text "$state" '{name:"CHAT_PROVIDER_RUNTIME_STATE",text:$text,type:"secret_text"}')")"
           test "$response_status" = "200"
           jq -e '.success == true' "$RUNNER_TEMP/provider-runtime-state-publish.json" >/dev/null
