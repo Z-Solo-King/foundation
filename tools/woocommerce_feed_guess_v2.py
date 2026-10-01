@@ -44,7 +44,12 @@ TARGETS = [
     ("Theproaudio", "https://www.theproaudio.com"),
 ]
 
-from tools import woocommerce_v175_discovery as DISCOVERY
+DISCOVERY_PATH = ROOT / "tools" / "woocommerce_v175_discovery.py"
+discovery_spec = importlib.util.spec_from_file_location("wc_v175_discovery_v2", DISCOVERY_PATH)
+assert discovery_spec and discovery_spec.loader
+DISCOVERY = importlib.util.module_from_spec(discovery_spec)
+sys.modules[discovery_spec.name] = DISCOVERY
+discovery_spec.loader.exec_module(DISCOVERY)
 
 DISCOVERY.PLUGIN_RULES = list(DISCOVERY.PLUGIN_RULES) + [
     ("rexfed_product_feed", ("best-woocommerce-feed", "rexfeed", "rex-wpfm", "rex_product_feed")),
