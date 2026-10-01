@@ -20,6 +20,25 @@ BASE_URL="https://ai-cio.pages.dev"
 RELEASE_RUN_ATTEMPT="${RELEASE_RUN_ATTEMPT:-${GITHUB_RUN_ATTEMPT:-1}}"
 ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${RELEASE_RUN_ATTEMPT}"
 
+# Release validation traffic gets a signed admission subject so repeated release
+# transactions do not consume the operator credential's shared public budget.
+RELEASE_SUBJECT_SIGNATURE="$(python - "$AUTH_TOKEN" "$ACCEPTANCE_RUN_ID" <<'PY'
+import hashlib
+import hmac
+import sys
+token, release_id = sys.argv[1:]
+print(hmac.new(
+    token.encode("utf-8"),
+    f"heroic-release-v1:{release_id}".encode("utf-8"),
+    hashlib.sha256,
+).hexdigest())
+PY
+)"
+RELEASE_SUBJECT_HEADERS=(
+  -H "X-Heroic-Release-ID: ${ACCEPTANCE_RUN_ID}"
+  -H "X-Heroic-Release-Signature: ${RELEASE_SUBJECT_SIGNATURE}"
+)
+
 cleanup() {
   if [ -f "$RUNNER_TEMP/foundation-js-wrangler.toml" ]; then
     mv -f "$RUNNER_TEMP/foundation-js-wrangler.toml" wrangler.toml 2>/dev/null || true
@@ -603,7 +622,7 @@ echo "Operations edge Worker active deployment verification: PASS"
 
 # P0 deployment-boundary persistence/replay acceptance on the renamed Worker pair.
 persistence_seed_status=$(curl -sS --max-time 30 -o "$persistence_seed_file" -w '%{http_code}' \
-  -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $AUTH_TOKEN" "${RELEASE_SUBJECT_HEADERS[@]}" -H 'Content-Type: application/json' \
   -d "$persistence_seed_payload" "$BASE_URL/api/v1/chatbot/diagnostic" || true)
 echo "POST persistence_seed -> HTTP $persistence_seed_status"
 if [ "$persistence_seed_status" != "200" ]; then
@@ -622,7 +641,7 @@ fi
 chat_rollover_payload=$(jq -nc --arg chat_id "production-chat-rollover-${ACCEPTANCE_RUN_ID}" --arg request_id "production-chat-rollover-request-${ACCEPTANCE_RUN_ID}" '{chat_id:$chat_id,request_id:$request_id,message:"Return one concise sentence explaining why the public Worker uses an authenticated private service binding.",mode:"chat",strict_zero_cost_only:true}')
 chat_rollover_key="production-chat-rollover-${ACCEPTANCE_RUN_ID}"
 chat_rollover_status=$(curl -sS --max-time 90 -o "$RUNNER_TEMP/chat-rollover-before.json" -w '%{http_code}' \
-  -H "Authorization: Bearer ${AUTH_TOKEN}" -H 'Content-Type: application/json' -H "Idempotency-Key: ${chat_rollover_key}" \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" "${RELEASE_SUBJECT_HEADERS[@]}" -H 'Content-Type: application/json' -H "Idempotency-Key: ${chat_rollover_key}" \
   -d "$chat_rollover_payload" "$BASE_URL/api/v1/chat")
 echo "POST /api/v1/chat rollover seed -> HTTP ${chat_rollover_status}"
 test "$chat_rollover_status" = "200"
@@ -637,11 +656,11 @@ test -n "$boundary_version_id" || { echo 'No active Operations boundary version 
 echo "Operations version boundary: PASS (${operations_version_id} -> ${boundary_version_id})"
 persistence_sentinel_id=$(jq -r '.sentinel_id' "$persistence_seed_file")
 persistence_verify_payload=$(jq -nc --arg operation "persistence_verify" --arg sentinel_id "$persistence_sentinel_id" '{operation:$operation,sentinel_id:$sentinel_id}')
-persistence_verify_status=$(curl -sS --max-time 30 -o "$RUNNER_TEMP/persistence-rollover-verify.json" -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -d "$persistence_verify_payload" "$BASE_URL/api/v1/chatbot/diagnostic" || true)
+persistence_verify_status=$(curl -sS --max-time 30 -o "$RUNNER_TEMP/persistence-rollover-verify.json" -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" "${RELEASE_SUBJECT_HEADERS[@]}" -H 'Content-Type: application/json' -d "$persistence_verify_payload" "$BASE_URL/api/v1/chatbot/diagnostic" || true)
 echo "POST persistence_verify -> HTTP ${persistence_verify_status}"
 test "$persistence_verify_status" = "200"
 jq -e '.ok == true and .memory_persisted_across_version == true and .replay_nonce_rejected_after_version_change == true and .cleanup_status == 200' "$RUNNER_TEMP/persistence-rollover-verify.json" >/dev/null
-chat_rollover_after_status=$(curl -sS --max-time 60 -o "$RUNNER_TEMP/chat-rollover-after.json" -w '%{http_code}' -H "Authorization: Bearer ${AUTH_TOKEN}" -H 'Content-Type: application/json' -H "Idempotency-Key: ${chat_rollover_key}" -d "$chat_rollover_payload" "$BASE_URL/api/v1/chat")
+chat_rollover_after_status=$(curl -sS --max-time 60 -o "$RUNNER_TEMP/chat-rollover-after.json" -w '%{http_code}' -H "Authorization: Bearer ${AUTH_TOKEN}" "${RELEASE_SUBJECT_HEADERS[@]}" -H 'Content-Type: application/json' -H "Idempotency-Key: ${chat_rollover_key}" -d "$chat_rollover_payload" "$BASE_URL/api/v1/chat")
 echo "POST /api/v1/chat rollover replay -> HTTP ${chat_rollover_after_status}"
 test "$chat_rollover_after_status" = "200"
 jq -e --arg expected_id "$(jq -r '.response.response_id' "$RUNNER_TEMP/chat-rollover-before.json")" '.ok == true and .response.response_id == $expected_id' "$RUNNER_TEMP/chat-rollover-after.json" >/dev/null
@@ -664,7 +683,7 @@ live_chat_payload=$(jq -nc \
 live_chat_key="production-chat-${ACCEPTANCE_RUN_ID}"
 live_chat_status=$(curl -sS --max-time 90 \
   -o "$RUNNER_TEMP/live-chat.json" -w '%{http_code}' \
-  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" "${RELEASE_SUBJECT_HEADERS[@]}" \
   -H 'Content-Type: application/json' \
   -H "Idempotency-Key: ${live_chat_key}" \
   -H 'X-Heroic-Research-Proof: 1' \
@@ -692,7 +711,7 @@ echo "Live chat provider provenance: PASS (${live_chat_provider}; authenticated 
 
 live_chat_replay_status=$(curl -sS --max-time 30 \
   -o "$RUNNER_TEMP/live-chat-replay.json" -w '%{http_code}' \
-  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" "${RELEASE_SUBJECT_HEADERS[@]}" \
   -H 'Content-Type: application/json' \
   -H "Idempotency-Key: ${live_chat_key}" \
   -d "${live_chat_payload}" \
@@ -711,11 +730,11 @@ concurrent_chat_payload=$(jq -nc \
   '{chat_id:$chat_id,request_id:$request_id,message:"Return one concise sentence about authenticated service bindings.",mode:"chat",strict_zero_cost_only:true}')
 concurrent_chat_key="production-concurrent-${ACCEPTANCE_RUN_ID}"
 curl -sS --max-time 90 -o "$RUNNER_TEMP/concurrent-chat-1.json" -w '%{http_code}' \
-  -H "Authorization: Bearer ${AUTH_TOKEN}" -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" "${RELEASE_SUBJECT_HEADERS[@]}" -H 'Content-Type: application/json' \
   -H "Idempotency-Key: ${concurrent_chat_key}" -d "$concurrent_chat_payload" "$BASE_URL/api/v1/chat" > "$RUNNER_TEMP/concurrent-chat-1.status" &
 concurrent_pid_1=$!
 curl -sS --max-time 90 -o "$RUNNER_TEMP/concurrent-chat-2.json" -w '%{http_code}' \
-  -H "Authorization: Bearer ${AUTH_TOKEN}" -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" "${RELEASE_SUBJECT_HEADERS[@]}" -H 'Content-Type: application/json' \
   -H "Idempotency-Key: ${concurrent_chat_key}" -d "$concurrent_chat_payload" "$BASE_URL/api/v1/chat" > "$RUNNER_TEMP/concurrent-chat-2.status" &
 concurrent_pid_2=$!
 set +e
@@ -750,7 +769,7 @@ policy_block_payload=$(jq -nc \
   --arg request_id "production-policy-request-${ACCEPTANCE_RUN_ID}" \
   '{chat_id:$chat_id,request_id:$request_id,message:"https://example.com/",operation:"map",input_records:[{"id":"policy-probe"}],mode:"chat",strict_zero_cost_only:true}')
 policy_block_status=$(curl -sS --max-time 30 -o "$RUNNER_TEMP/policy-block.json" -w '%{http_code}' \
-  -H "Authorization: Bearer ${AUTH_TOKEN}" -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" "${RELEASE_SUBJECT_HEADERS[@]}" -H 'Content-Type: application/json' \
   -H "Idempotency-Key: production-policy-${ACCEPTANCE_RUN_ID}" -d "$policy_block_payload" "$BASE_URL/api/v1/chat")
 echo "POST /api/v1/chat policy denial -> HTTP ${policy_block_status}"
 if [ "$policy_block_status" != '200' ]; then
@@ -780,7 +799,7 @@ stream_payload=$(jq -nc \
   '{chat_id:$chat_id,request_id:$request_id,message:"Give a concise explanation of why authenticated service bindings are used between Foundation and the private control plane.",mode:"chat",strict_zero_cost_only:true,require_model_generation:true}')
 stream_json_status=$(curl -sS --max-time 90 \
   -o "$RUNNER_TEMP/live-stream-json.json" -w '%{http_code}' \
-  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" "${RELEASE_SUBJECT_HEADERS[@]}" \
   -H 'Content-Type: application/json' \
   -H "Idempotency-Key: production-stream-json-${ACCEPTANCE_RUN_ID}" \
   -d "${stream_payload}" \
@@ -803,7 +822,7 @@ stream_status=$(curl -sS --no-buffer --max-time 90 \
   -D "$RUNNER_TEMP/live-stream.headers" \
   -o "$RUNNER_TEMP/live-stream.txt" \
   -w '%{http_code}' \
-  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" "${RELEASE_SUBJECT_HEADERS[@]}" \
   -H 'Content-Type: application/json' \
   -H "Idempotency-Key: production-stream-${ACCEPTANCE_RUN_ID}" \
   -d "${stream_payload}" \
@@ -824,7 +843,7 @@ live_research_payload=$(jq -nc \
   '{question:"Production runtime acceptance: verify the public research path can ingest a permitted source without inventing facts.",depth:"quick",require_citations:true,max_sources:1,max_evidence_items:4,strict_zero_cost_only:true,source_urls:["https://example.com/"]}')
 live_research_status=$(curl -sS --max-time 90 \
   -o "$RUNNER_TEMP/live-research.json" -w '%{http_code}' \
-  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" "${RELEASE_SUBJECT_HEADERS[@]}" \
   -H 'Content-Type: application/json' \
   -H "Idempotency-Key: production-research-${ACCEPTANCE_RUN_ID}" \
   -d "${live_research_payload}" \
@@ -840,7 +859,7 @@ live_research_run_id=$(jq -r '.run_id' "$RUNNER_TEMP/live-research.json")
 
 live_research_read_status=$(curl -sS --max-time 30 \
   -o "$RUNNER_TEMP/live-research-read.json" -w '%{http_code}' \
-  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" "${RELEASE_SUBJECT_HEADERS[@]}" \
   "${BASE_URL}/api/v1/research/${live_research_run_id}")
 echo "GET /api/v1/research/${live_research_run_id} -> HTTP ${live_research_read_status}"
 test "$live_research_read_status" = '200'
@@ -852,7 +871,7 @@ echo "Live research execution/readback acceptance: PASS (${live_research_run_id}
 # Run the broader authenticated infrastructure diagnostic only after both deployments succeed.
 if [ -n "${AUTH_TOKEN:-}" ]; then
   diagnostic_status=$(curl -sS -o diagnostic.json -w '%{http_code}' \
-    -H "Authorization: Bearer ${AUTH_TOKEN}" \
+    -H "Authorization: Bearer ${AUTH_TOKEN}" "${RELEASE_SUBJECT_HEADERS[@]}" \
     -H 'Content-Type: application/json' \
     -d '{"operation":"infrastructure_verify_public_test","release_acceptance":true}' \
     "$BASE_URL/api/v1/chatbot/diagnostic")

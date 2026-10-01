@@ -10,6 +10,7 @@ from typing import Any
 from backend.json_admission import parse_bounded_json, validate_json_shape
 
 _URL_RE = re.compile(r"https?://[^\s<>\"']+")
+_RELEASE_ID_RE = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
 MAX_PUBLIC_JSON_BODY_BYTES = 1_048_576
 
 
@@ -37,12 +38,23 @@ def bearer_token(request: Any):
     return supplied.strip()
 
 
-def authenticated_subject_fingerprint(request: Any):
-    """Derive a non-secret principal fingerprint from the already-authenticated bearer token."""
+def authenticated_subject_fingerprint(request: Any, env: Any | None = None):
+    """Derive a non-secret principal fingerprint, with an optional signed CI release scope."""
     token = bearer_token(request)
     if not token:
         return None
-    return hashlib.sha256(token.encode()).hexdigest()
+    if env is not None:
+        release_id = str(getattr(request, "headers", {}).get("X-Heroic-Release-ID", "") or "").strip()
+        release_signature = str(getattr(request, "headers", {}).get("X-Heroic-Release-Signature", "") or "").strip().lower()
+        if release_id and release_signature and _RELEASE_ID_RE.fullmatch(release_id):
+            expected = hmac.new(
+                token.encode("utf-8"),
+                f"heroic-release-v1:{release_id}".encode("utf-8"),
+                hashlib.sha256,
+            ).hexdigest()
+            if hmac.compare_digest(release_signature, expected):
+                return hashlib.sha256(f"release-subject-v1:{release_id}".encode("utf-8")).hexdigest()
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def authorized(request: Any, env: Any) -> bool:
