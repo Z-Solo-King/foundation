@@ -104,7 +104,7 @@ The Foundation binding name is `DB`; Operations uses `OPERATIONS_DB` for the sam
 
 Backblaze B2 is **object storage**, not Cloudflare R2.
 
-Foundation's Cloudflare Worker exposes B2 configuration through `B2_BUCKET` and `B2_ENDPOINT` plus secret `B2_KEY_ID` and `B2_APPLICATION_KEY`. The production release script validates those credentials/configuration and checks a B2 lifecycle result before release acceptance.
+Foundation's Cloudflare Worker exposes B2 configuration through `B2_BUCKET` and `B2_ENDPOINT` plus secret `B2_KEY_ID` and `B2_APPLICATION_KEY`. The production release script validates those credentials/configuration; repository backup retention is enforced by the dedicated backup workflow after successful remote restore verification.
 
 Backblaze recommends the S3-Compatible API for broad SDK/tool compatibility and supports scoped application keys restricted by bucket, access type and optional file-prefix constraints.
 
