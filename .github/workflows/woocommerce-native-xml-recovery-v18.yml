@@ -64,6 +64,12 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
       - name: Install runtime
         run: |
           set -euo pipefail
@@ -107,11 +113,13 @@ jobs:
             "",
             ...reg.sites.map(s => s.name + ": " + s.roots[0])
           ].join("\n");
-          const runs = [];
-          for (const family of ["extraction_assist", "scan_triage", "audit_assist"]) {
-            try { runs.push(await runAiTask({family, prompt})); }
-            catch (error) { runs.push({provider:null, available:false, status:null, text:"", outcomes:[], error:String(error)}); }
-          }
+          const families = ["extraction_assist", "scan_triage", "audit_assist"];
+          const runs = await Promise.all(families.map(async family => {
+            try { return await runAiTask({family, prompt}); }
+            catch (error) {
+              return {provider:null, available:false, status:null, text:"", outcomes:[], error:String(error), family};
+            }
+          }));
           const rows = reg.sites.map(s => ({name:s.name, base:s.roots[0], paths:new Set(), ai_evidence:[]}));
           for (const result of runs) {
             for (const row of rows) {
@@ -213,7 +221,7 @@ jobs:
           WC_FEED_RATE_RETRIES: "2"
         run: |
           set -euo pipefail
-          node private/feed_recovery/woocommerce_google_feed_rescue_fast.mjs
+          node private/feed_recovery/woocommerce_google_feed_rescue_fast.mjs data/feed_lab/woocommerce_30_registry_v18.json
 
       - name: Build final audited result
         working-directory: operations
@@ -228,6 +236,7 @@ jobs:
           const custom = await read("out/v18/custom-recovery.json");
           const rescue = await read("out/rescue-fast/summary.json");
           const ai = await read("out/rescue-fast/ai_candidates.json");
+          const target_count = Number(ai?.retailers?.length || browser?.sites || 0) || 30;
           const winners = [];
           for (const x of custom?.verified_google_xml || []) winners.push({...x, source:"custom_public_recovery"});
           for (const x of browser?.verified_google_xml || []) winners.push({...x, source:"browser_network"});
@@ -237,7 +246,7 @@ jobs:
             schema_version:"foundation-woocommerce-native-xml-recovery-v18/v1",
             generated_at:new Date().toISOString(),
             operations_ref:process.env.OPERATIONS_REF,
-            target_count:30,
+            target_count,
             verified_native_feeds:verified,
             counts:{
               native_verified:verified.length,
