@@ -1,9 +1,6 @@
 name: B2 repository backup
 
 'on':
-  push:
-    branches:
-      - main
   workflow_dispatch:
   schedule:
     - cron: "30 20 * * *"
@@ -111,7 +108,9 @@ jobs:
           print('B2 endpoint configuration: PASS')
           PY
           aws s3api head-bucket --bucket "$B2_BUCKET" --endpoint-url "$B2_ENDPOINT" >/dev/null
+          aws s3api list-object-versions --bucket "$B2_BUCKET" --prefix repository-backup/ --max-items 1 --endpoint-url "$B2_ENDPOINT" >/dev/null
           echo 'B2 credential/bucket check: PASS'
+          echo 'B2 version-list capability check: PASS'
 
       - name: Mirror both repositories
         shell: bash
@@ -138,6 +137,7 @@ jobs:
         run: |
           set -euo pipefail
           timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+          printf '%s\n' "$timestamp" > backup-output/current-generation.txt
           : > backup-output/uploaded.tsv
           for repo in foundation operations; do
             mirror="backup-work/${repo}.git"
@@ -223,6 +223,20 @@ jobs:
           done < backup-output/uploaded.tsv
           echo 'remote B2 restore verification: PASS'
 
+      - name: Retain only the latest verified backup generation
+        env:
+          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+          B2_BUCKET: ${{ secrets.B2_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+        run: |
+          set -euo pipefail
+          test -s backup-output/current-generation.txt
+          test -s backup-output/uploaded.tsv
+          echo "verified backup generation: $(cat backup-output/current-generation.txt)"
+          python scripts/cleanup_b2_backup_generations.py             --bucket "$B2_BUCKET"             --endpoint "$B2_ENDPOINT"             --keep-file backup-output/uploaded.tsv
+
       - name: Write non-sensitive run summary
         if: always()
         run: |
@@ -231,4 +245,5 @@ jobs:
             echo
             echo 'Foundation and Operations mirrors were created.'
             echo 'Credential-purpose verification, B2 upload metadata checks, SHA-256 restore verification and Git integrity were checked.'
+            echo 'Retention cleanup runs only after successful remote restore verification and keeps one latest verified generation.'
           } >> "$GITHUB_STEP_SUMMARY"
