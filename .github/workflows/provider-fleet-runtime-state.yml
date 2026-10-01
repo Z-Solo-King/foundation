@@ -19,7 +19,7 @@ concurrency:
 
 env:
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_PROVIDER_FLEET_REF: b95e419254a9071beaeef57a1b0da22ba7dd2c4f
+  OPERATIONS_PROVIDER_FLEET_REF: 2a4a49d2c11bd9ff2b9290bc780eb0da97c73ecb
   OPERATIONS_PROVIDER_FLEET_PATH: tools/provider_fleet_runtime_probe.py
   CLOUDFLARE_SCRIPT_NAME: operations
 
