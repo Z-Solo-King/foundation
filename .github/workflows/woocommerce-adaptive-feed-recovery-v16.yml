@@ -1,0 +1,71 @@
+name: WooCommerce Adaptive Feed Recovery V16
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/woocommerce-adaptive-feed-recovery-v16.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      OPERATIONS_REF: fe88ae2fabc97b6d8c5e829f7ae52e6457e05103
+      JINA_PACE_MS: "3200"
+      FEED_HUNT_TIMEOUT_MS: "4000"
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: \${{ secrets.OPERATIONS_APP_ID }}
+          private-key: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: \${{ env.OPERATIONS_REF }}
+          token: \${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Validate adaptive recovery sources
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          test -f tools/woocommerce_32_plugin_feed_hunt.mjs
+          test -f tools/woocommerce_adaptive_feed_recovery_v16.mjs
+          test -f tests/test_woocommerce_adaptive_feed_recovery_v16.mjs
+          node --check tools/woocommerce_32_plugin_feed_hunt.mjs
+          node --check tools/woocommerce_adaptive_feed_recovery_v16.mjs
+          node --test tests/test_woocommerce_adaptive_feed_recovery_v16.mjs
+      - name: Run adaptive 30-site recovery
+        working-directory: operations
+        run: node tools/woocommerce_adaptive_feed_recovery_v16.mjs
+      - name: Validate result
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          report=out/woocommerce-adaptive-feed-v16/woocommerce_adaptive_feed_recovery_v16.json
+          test -f "\$report"
+          jq -e '.schema_version == "woocommerce-adaptive-feed-recovery-v16/v1" and .target_count == 30' "\$report" >/dev/null
+          echo "Native feeds verified: \$(jq '[.results[] | select(.status=="NATIVE_FEED_VERIFIED")] | length' "\$report")"
+          echo "Jina-observed feeds: \$(jq '[.results[] | select(.status=="JINA_OBSERVED_NATIVE_FEED")] | length' "\$report")"
+          jq -r '.results[] | select(.winner != null) | [.site,.status,(.winner.final_url // .winner.url)] | @tsv' "\$report" || true
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: foundation-woocommerce-adaptive-feed-v16
+          path: operations/out/woocommerce-adaptive-feed-v16/
+          if-no-files-found: error
+          retention-days: 30
