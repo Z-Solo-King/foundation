@@ -161,7 +161,7 @@ def _authenticated_json(payload, *, status=200):
 IDEMPOTENCY_KEY_RE = re.compile(r"^[A-Za-z0-9._:-]{1,256}$")
 
 def _subject_or_local(request, env):
-    subject = authenticated_subject_fingerprint(request)
+    subject = authenticated_subject_fingerprint(request, env)
     if subject:
         return subject
     environment = str(getattr(env, "ENVIRONMENT", "production") or "production").strip().lower()
