@@ -3,10 +3,10 @@
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
 Checked: 2026-10-01.
-Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `68aff623472af4df03688ddb24f33259d1fe5532`.
+Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `2239ae23706e5ab14c61869022eca93618b74cb9`.
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: current main is read live from GitHub; last verified commit `68aff623472af4df03688ddb24f33259d1fe5532`.
+Foundation main code checkpoint: current main is read live from GitHub; last verified commit `2239ae23706e5ab14c61869022eca93618b74cb9`.
 Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `942eb72d1df90299d52977918dd56e9d25e0c41f`. Research and migration jobs use explicit immutable pins below.
 Production Operations pin: `da86e92d4e0fdb68912efb54ef95c69281a7d613`.
 Provider fleet runtime probe pin: `b95e419254a9071beaeef57a1b0da22ba7dd2c4f`.
@@ -151,3 +151,7 @@ Operations main now includes the syntax repair from PR #1451 after centralized F
 ## 2026-10-01 live feed-workflow deconfliction
 
 Foundation main `68aff623472af4df03688ddb24f33259d1fe5532` and Operations main `942eb72d1df90299d52977918dd56e9d25e0c41f` include the current WooCommerce V18 feed-recovery deconfliction and Common Crawl pacing repairs. Legacy native-feed and clean-recovery harnesses are manual-only compatibility surfaces; the current V18 executor remains the canonical feed-recovery authority. These changes are feed-track state and do not alter the public/private runtime authority model.
+
+## 2026-10-01 private Operations integrity-input generation repair
+
+Foundation main `2239ae23706e5ab14c61869022eca93618b74cb9` contains the repaired Operations private integrity guard. The workflow now constructs its validator input with `jq -n`, preventing empty-stdin JSON generation and preserving the fail-closed comparison against the immutable approved Operations production revision. The repair changes no authority, credential, policy, or deployment boundary.
