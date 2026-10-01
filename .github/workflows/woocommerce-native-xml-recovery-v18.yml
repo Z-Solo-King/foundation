@@ -3,10 +3,6 @@ name: WooCommerce Native XML Recovery V18
 # Live rerun trigger: exercise current Operations provider crossfire and feed recovery
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/woocommerce-native-xml-recovery-v18.yml"
   workflow_dispatch:
     inputs:
       operations_ref:
@@ -14,8 +10,6 @@ on:
         required: false
         default: ""
         type: string
-  schedule:
-    - cron: "45 4 * * *"
 
 permissions:
   contents: read
@@ -415,7 +409,8 @@ jobs:
           retention-days: 30
 
   publish-anyhow-feeds:
-    name: Publish 30 Google XML feed assets
+    if: ${{ false }}
+    name: Legacy V18 publisher disabled; V19 is canonical
     needs: build-anyhow-feeds
     if: ${{ always() }}
     permissions:
