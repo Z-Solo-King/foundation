@@ -53,3 +53,17 @@ test('accepts up to three distinct parallel actions', () => {
   ]}));
   assert.equal(result.actions.length, 3);
 });
+
+test('rejects duplicate workflow actions even with distinct IDs', () => {
+  const action = base().actions[0];
+  assert.throws(() => validatePlan(base({actions:[action,{...action,id:'a2'}]})), /duplicate workflow action/);
+});
+
+test('accepts up to three distinct parallel actions', () => {
+  const result = validatePlan(base({mission_type:'runtime_reconciliation',actions:[
+    {id:'a1',kind:'dispatch_workflow',workflow:'provider-fleet-runtime-state.yml',inputs:{},reason:'provider evidence',retry_policy:'bounded'},
+    {id:'a2',kind:'dispatch_workflow',workflow:'nightly-invariants.yml',inputs:{},reason:'invariant evidence',retry_policy:'bounded'},
+    {id:'a3',kind:'dispatch_workflow',workflow:'operations-centralized-validation.yml',inputs:{},reason:'operations evidence',retry_policy:'bounded'},
+  ]}));
+  assert.equal(result.actions.length, 3);
+});
