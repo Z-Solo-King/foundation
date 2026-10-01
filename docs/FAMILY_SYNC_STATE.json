@@ -1,7 +1,7 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-10-01",
+  "audited_at": "2026-10-01T17:45:00Z",
   "public_safe": true,
   "live_main": {
     "foundation": "READ_LIVE_FROM_GITHUB",
@@ -31,26 +31,25 @@
     "queues": 0,
     "durable_object_namespaces": 0,
     "private_resource_identifiers": "redacted",
-    "control_plane_snapshot": "live_verified_pre_split; fresh post-release certification required"
+    "control_plane_snapshot": "live Worker version inventory verified; fresh post-release certification remains separate from repository main"
   },
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
-    "observed_at": "2026-10-01",
-    "open_issue_count": 6,
+    "observed_at": "2026-10-01T17:45:00Z",
+    "open_issue_count": 5,
     "foundation": [
       58,
       1247,
       1249,
       157
     ],
-    "operations_count": 2,
+    "operations_count": 1,
     "operations_issue_numbers_omitted": false,
     "authority": "GitHub live issue API; acceptance queue excludes autonomous execution/improvement and integrity incident state; never a production certificate",
     "operations": [
-      603,
-      1466
+      603
     ],
-    "total_open_issue_count": 6
+    "total_open_issue_count": 5
   },
   "evidence": {
     "nightly_research": "latest live run failed at the public/private ChatRequest boundary; PR #1573 repairs the boundary and a fresh post-release 24-program live run is required",
@@ -95,27 +94,19 @@
     "related_operations_pr": 1109
   },
   "current_prs": {
-    "open_pr_count": 5,
+    "open_pr_count": 1,
     "foundation": [
-      1685,
-      1684,
-      1683,
-      1677,
-      1652
+      1791
     ],
     "operations": [],
     "source": "GitHub live PR API"
   },
   "foundation_open_prs": [
-    1685,
-    1684,
-    1683,
-    1677,
-    1652
+    1791
   ],
   "operations_open_prs": [],
-  "open_pr_count": 7,
-  "open_implementation_pr_count": 5,
+  "open_pr_count": 1,
+  "open_implementation_pr_count": 1,
   "extractor_mapper": {
     "status": "active_runtime_boundary",
     "repository": "operations",
@@ -133,11 +124,11 @@
     "authority": "scheduling_only"
   },
   "post_merge_sync": {
-    "checked_at": "2026-10-01T12:31:30Z",
+    "checked_at": "2026-10-01T17:45:00Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "b4446e3d74a6d968c6681a849582525f0eb49d16",
-      "operations": "2133534f9512eee4df49d78f6c39530502944b74"
+      "foundation": "9538b83e95314141ec262b7f691bbbe7ee4fd521",
+      "operations": "3c780e33772c87ec6c3b6df75a857e5404f0b861"
     },
     "operations_last_sync_commits": [
       "6071508a8cf5e24001f2238f0b581003d2300865",
@@ -160,22 +151,21 @@
         157
       ],
       "operations": [
-        603,
-        1466
+        603
       ],
-      "total": 6
+      "total": 5
     },
     "production_operations_pin": "da86e92d4e0fdb68912efb54ef95c69281a7d613"
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "b4446e3d74a6d968c6681a849582525f0eb49d16",
-    "operations": "2133534f9512eee4df49d78f6c39530502944b74"
+    "foundation": "9538b83e95314141ec262b7f691bbbe7ee4fd521",
+    "operations": "3c780e33772c87ec6c3b6df75a857e5404f0b861"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "b4446e3d74a6d968c6681a849582525f0eb49d16",
-    "operations": "2133534f9512eee4df49d78f6c39530502944b74"
+    "foundation": "9538b83e95314141ec262b7f691bbbe7ee4fd521",
+    "operations": "3c780e33772c87ec6c3b6df75a857e5404f0b861"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",
@@ -219,7 +209,7 @@
     "license_ip_gate": true,
     "single_authority_preserved": true
   },
-  "open_issue_count": 6,
+  "open_issue_count": 8,
   "system_integration": {
     "schema": "system-integration-receipt/v1",
     "foundation_contract": "docs/SYSTEM_INTEGRATION_CONTRACT.json",
@@ -261,5 +251,22 @@
     "fix": "jq -n input generation",
     "policy": "fail closed on Operations main drift from approved immutable production pin",
     "source": "live CI reproduction 2026-10-01"
+  },
+  "ai_navigation": {
+    "entrypoint": "docs/AI_SYSTEM_DIRECTORY.md",
+    "unified_map": "docs/AI_SYSTEM_MAP.json",
+    "detailed_maps": [
+      "docs/AI_PROJECT_MAP.json",
+      "operations/docs/AI_PROJECT_MAP.json"
+    ],
+    "classification_axes": [
+      "functional_plane",
+      "execution_class",
+      "authority_layer",
+      "evidence_class",
+      "resource_class"
+    ],
+    "categories_may_overlap": true,
+    "navigation_is_non_authoritative": true
   }
 }
