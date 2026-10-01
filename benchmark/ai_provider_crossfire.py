@@ -120,12 +120,6 @@ def call(provider: str, cfg: dict[str, str], task: dict[str, str], repeat: int) 
             "User-Agent": "heroic-ai-provider-crossfire/2",
         }
     request = json.dumps(request_payload).encode()
-        "model": cfg["model"],
-        "messages": [{"role": "user", "content": task["prompt"]}],
-        "temperature": 0,
-        "max_tokens": 64,
-        "stream": False,
-    }).encode()
     req = urllib.request.Request(cfg["endpoint"], data=request, method="POST", headers=headers)
     started = time.perf_counter()
     row: dict[str, Any] = {
