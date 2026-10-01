@@ -33,6 +33,10 @@ jobs:
       SHARDS: 6
       SITE_CONCURRENCY: 4
     steps:
+      - name: Record runner start
+        shell: bash
+        run: date +%s%3N > "$RUNNER_TEMP/job_start_ms"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -92,6 +96,45 @@ jobs:
       - name: Crawl custom feed targets
         run: node tools/custom_feed_product_crawl.mjs
 
+      - name: Write runner resource receipt
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          node - <<'JS'
+          const fs = require("fs");
+          const os = require("os");
+          const { execFileSync } = require("child_process");
+          const start = Number(fs.readFileSync(process.env.RUNNER_TEMP + "/job_start_ms", "utf8").trim());
+          let diskFreeBytes = null;
+          try {
+            const line = execFileSync("df", ["-Pk", "."], {encoding:"utf8"}).trim().split("\n").pop().trim().split(/\s+/);
+            diskFreeBytes = Number(line[3]) * 1024;
+          } catch {}
+          const receipt = {
+            schema_version: "github-runner-resource-receipt/v1",
+            generated_on: new Date().toISOString(),
+            repository: process.env.GITHUB_REPOSITORY,
+            run_id: process.env.GITHUB_RUN_ID,
+            job: process.env.GITHUB_JOB,
+            shard: Number(process.env.SHARD || 0) || null,
+            shards: Number(process.env.SHARDS || 0) || null,
+            runner: {
+              os: process.env.RUNNER_OS || os.platform(),
+              arch: process.env.RUNNER_ARCH || os.arch(),
+              name: process.env.RUNNER_NAME || null,
+              cpu_count: os.cpus().length,
+              memory_total_bytes: os.totalmem(),
+              memory_free_bytes: os.freemem(),
+              disk_free_bytes: Number.isFinite(diskFreeBytes) ? diskFreeBytes : null
+            },
+            elapsed_ms: Math.max(0, Date.now() - start)
+          };
+          fs.writeFileSync("out/runner-resource-receipt.json", JSON.stringify(receipt, null, 2) + "\n");
+          console.log(JSON.stringify(receipt, null, 2));
+          JS
+
       - name: Upload shard evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -100,6 +143,7 @@ jobs:
           path: |
             out/commerce-feed-crawl/report.json
             out/custom-feed-crawl/report.json
+            out/runner-resource-receipt.json
           if-no-files-found: warn
           retention-days: 30
 
