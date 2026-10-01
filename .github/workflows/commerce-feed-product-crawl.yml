@@ -4,13 +4,18 @@ on:
   workflow_dispatch:
     inputs:
       registry_ref:
-        description: "Immutable private registry revision"
-        required: true
+        description: "Immutable private registry revision; blank resolves Operations main"
+        required: false
+        default: ""
         type: string
       registry_path:
-        description: "Private registry file path"
-        required: true
+        description: "Private registry file path for legacy crawl targets"
+        required: false
+        default: "data/feed_lab/commerce_feed_targets.json"
         type: string
+
+  schedule:
+    - cron: "17 3 * * *"
 
 permissions:
   contents: read
@@ -20,7 +25,81 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  ai-crossfire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production-secret-sync
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Resolve Operations revision
+        id: resolve
+        env:
+          GH_TOKEN: ${{ steps.operations-app.outputs.token }}
+          REQUESTED_REF: ${{ inputs.registry_ref }}
+        run: |
+          set -euo pipefail
+          ref="${REQUESTED_REF:-}"
+          if [[ -z "$ref" ]]; then
+            ref="$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
+          fi
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Operations ref must be a 40-char immutable SHA"; exit 1; }
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ steps.resolve.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: ai-operations
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v5.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Run multi-provider AI crossfire
+        env:
+          PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          HEROIC_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          HEROIC_WORKER_URL: https://ai-cio.pages.dev
+          AI_CROSSFIRE_MAX_PROVIDERS: "6"
+          AI_CROSSFIRE_TIMEOUT_MS: "18000"
+          AI_CROSSFIRE_PROVIDERS: "heroic_worker,cloudflare_workers_ai,gemini,groq,cerebras,siliconflow,openrouter_free,nvidia_nim,cohere_free,huggingface_free"
+        run: |
+          set -euo pipefail
+          mkdir -p out/google-xml-ai
+          node ai-operations/private/feed_recovery/ai_crossfire.mjs             ai-operations/data/feed_lab/woocommerce_30_registry_v18.json             out/google-xml-ai/ai_candidates.json || true
+          test -f out/google-xml-ai/ai_candidates.json || printf '{"retailers":[]}\n' > out/google-xml-ai/ai_candidates.json
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: wc-google-xml-ai-crossfire
+          path: out/google-xml-ai/ai_candidates.json
+          retention-days: 14
+
   crawl:
+    needs: ai-crossfire:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
@@ -59,11 +138,25 @@ jobs:
           repositories: operations
           permission-contents: read
 
+      - name: Resolve private Operations revision
+        id: registry-ref
+        env:
+          GH_TOKEN: ${{ steps.registry-app.outputs.token }}
+          REQUESTED_REF: ${{ inputs.registry_ref }}
+        run: |
+          set -euo pipefail
+          ref="${REQUESTED_REF:-}"
+          if [[ -z "$ref" ]]; then
+            ref="$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
+          fi
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Operations ref must be a 40-char immutable SHA"; exit 1; }
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
       - name: Checkout private registry
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.registry_ref }}
+          ref: ${{ steps.registry-ref.outputs.ref }}
           token: ${{ steps.registry-app.outputs.token }}
           persist-credentials: false
           path: registry-source
@@ -92,6 +185,24 @@ jobs:
 
       - name: Crawl commerce feed targets
         run: node tools/commerce_feed_product_crawl.mjs
+
+      - name: Download AI crossfire candidates
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v5.0.0
+        with:
+          name: wc-google-xml-ai-crossfire
+          path: out/google-xml-ai
+
+      - name: Build Google XML feed shard
+        env:
+          WC_XML_MAX_PRODUCTS: "20000"
+          WC_XML_MAX_PRODUCT_URLS: "500"
+          WC_XML_MAX_BROWSER_PAGES: "80"
+          WC_XML_HOST_DELAY_MS: "180"
+        run: |
+          set -euo pipefail
+          node --check registry-source/private/feed_recovery/google_xml_feed_builder_30.mjs
+          node --test registry-source/tests/test_google_xml_feed_builder_30.mjs
+          node registry-source/private/feed_recovery/google_xml_feed_builder_30.mjs             registry-source/data/feed_lab/woocommerce_30_registry_v18.json             out/google-xml-feed             --shard "$SHARD"             --shards "$SHARDS"             --ai out/google-xml-ai/ai_candidates.json
 
       - name: Crawl custom feed targets
         run: node tools/custom_feed_product_crawl.mjs
@@ -143,6 +254,7 @@ jobs:
           path: |
             out/commerce-feed-crawl/report.json
             out/custom-feed-crawl/report.json
+            out/google-xml-feed/
             out/runner-resource-receipt.json
           if-no-files-found: warn
           retention-days: 30
@@ -150,6 +262,8 @@ jobs:
   aggregate:
     needs: crawl
     if: always()
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -221,11 +335,39 @@ jobs:
           console.log(JSON.stringify(aggregate, null, 2));
           JS
 
+      - name: Aggregate and publish 30 Google XML feeds
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p out/google-xml-release
+          node - <<'JS'
+          const fs=require("fs"),path=require("path");
+          const root="out/shards",dest="out/google-xml-release",manifests=[],xmls=[];
+          function walk(dir){if(!fs.existsSync(dir))return;for(const e of fs.readdirSync(dir,{withFileTypes:true})){const p=path.join(dir,e.name);if(e.isDirectory())walk(p);else if(e.isFile()){if(e.name.startsWith("manifest-shard-")&&e.name.endsWith(".json"))manifests.push(p);if(e.name.endsWith(".xml")&&p.includes(path.join("google-xml-feed","feeds")))xmls.push(p);}}}
+          walk(root);
+          const items=manifests.flatMap(p=>{try{return [JSON.parse(fs.readFileSync(p,"utf8"))]}catch{return[]}}).flatMap(x=>x.items||[]);
+          if(items.length!==30)throw new Error("Expected 30 Google XML site records, found "+items.length);
+          for(const x of items){const matches=xmls.filter(p=>path.basename(p)===x.filename);if(matches.length!==1)throw new Error("Expected exactly one XML for "+x.site+"; found "+matches.length);fs.copyFileSync(matches[0],path.join(dest,x.filename));}
+          const index={schema_version:"woocommerce-google-xml-anyhow-v1/published-index",generated_on:new Date().toISOString(),target_count:30,release_tag:"wc-google-feed-latest",feeds:items.map(x=>({site:x.site,filename:x.filename,item_count:x.item_count,feed_kind:x.feed_kind,native_url:x.native_url||null,download_url:"https://github.com/"+process.env.GH_REPO+"/releases/download/wc-google-feed-latest/"+x.filename,validation:x.validation||null}))};
+          fs.writeFileSync(path.join(dest,"feeds-index.json"),JSON.stringify(index,null,2)+"\n");
+          console.log(JSON.stringify({target_count:30,total_xml_files:xmls.length,non_empty:items.filter(x=>x.item_count>0).length,total_items:items.reduce((n,x)=>n+x.item_count,0)},null,2));
+          JS
+          TAG=wc-google-feed-latest
+          if ! gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GH_REPO" --title "WooCommerce Google XML Feeds — Latest" --notes "30-site public catalog recovery feeds. Native feeds are preserved when independently observed; otherwise feeds are synthetic Google Merchant RSS/XML generated from current public product observations."
+          fi
+          gh release upload "$TAG" --repo "$GH_REPO" out/google-xml-release/*.xml out/google-xml-release/feeds-index.json --clobber
+          cat out/google-xml-release/feeds-index.json
+
       - name: Upload aggregate evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: commerce-feed-product-crawl
-          path: out/feed-product-crawl-summary.json
-          if-no-files-found: error
+          path: |
+            out/feed-product-crawl-summary.json
+            out/google-xml-release/
+          if-no-files-found: warn
           retention-days: 30
