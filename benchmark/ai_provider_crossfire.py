@@ -156,7 +156,7 @@ def call(provider: str, cfg: dict[str, str], task: dict[str, str], repeat: int) 
                 body = str(response.get("text") or "")
                 selected_provider = str(response.get("provider") or "").strip() or None
                 row["selected_provider"] = selected_provider
-                row["selected_model"] = str(response.get("status") or "").strip() or None
+                row["selected_model"] = str(response.get("model") or "").strip() or None
         elif isinstance(choices, list) and choices and isinstance(choices[0], dict):
             message = choices[0].get("message")
             if isinstance(message, dict):
