@@ -16,6 +16,7 @@ from typing import Any
 
 
 ALLOWED = {
+    "cloudflare_workers_ai",
     "openrouter_free",
     "groq",
     "gemini",
@@ -51,7 +52,7 @@ def load_config() -> dict[str, dict[str, str]]:
                 if name in ALLOWED and isinstance(value, dict):
                     endpoint, api_key, model = value.get("endpoint"), value.get("api_key"), value.get("model")
                     if all(isinstance(x, str) and x.strip() for x in (endpoint, api_key, model)):
-                        config[name] = {"endpoint": endpoint, "api_key": api_key, "model": model}
+                        config[name] = {"endpoint": endpoint, "api_key": api_key, "model": model, "response_style": str(value.get("response_style") or "openai_compatible")}
     return config
 
 
@@ -73,6 +74,20 @@ def quality_pass(task_id: str, body: str) -> bool:
     if task_id == "instruction":
         return value == {"answer": "PASS"}
     return False
+
+
+def extract_response_text(provider: str, data: Any) -> str:
+    if provider == "cloudflare_workers_ai":
+        result = data.get("result") if isinstance(data, dict) else None
+        if isinstance(result, dict) and isinstance(result.get("response"), str):
+            return result["response"]
+        return ""
+    choices = data.get("choices") if isinstance(data, dict) else None
+    if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+        message = choices[0].get("message")
+        if isinstance(message, dict) and isinstance(message.get("content"), str):
+            return message["content"]
+    return ""
 
 
 def call(provider: str, cfg: dict[str, str], task: dict[str, str], repeat: int) -> dict[str, Any]:
@@ -109,12 +124,7 @@ def call(provider: str, cfg: dict[str, str], task: dict[str, str], repeat: int) 
             row["http_status"] = int(response.status)
             raw = response.read(64 * 1024)
             data = json.loads(raw.decode("utf-8", "replace"))
-        choices = data.get("choices") if isinstance(data, dict) else None
-        body = ""
-        if isinstance(choices, list) and choices and isinstance(choices[0], dict):
-            message = choices[0].get("message")
-            if isinstance(message, dict):
-                body = str(message.get("content") or "")
+        body = extract_response_text(provider, data)
         row["ok"] = bool(body.strip())
         row["quality_pass"] = quality_pass(task["id"], body) if row["ok"] else False
         row["response_preview"] = body[:600]
@@ -145,8 +155,8 @@ def main() -> int:
 
     config = load_config()
     names = sorted(config)[: max(0, args.providers_max)]
-    if len(names) < 3:
-        raise SystemExit(f"need at least 3 configured external providers for cross-fire; found {len(names)}")
+    if len(names) < 2:
+        raise SystemExit(f"need at least 2 configured AI providers for cross-fire; found {len(names)}")
 
     jobs = [(name, config[name], task, repeat) for name in names for task in TASKS for repeat in range(1, args.repeats + 1)]
     started = time.perf_counter()
