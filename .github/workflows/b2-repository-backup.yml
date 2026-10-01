@@ -235,7 +235,10 @@ jobs:
           test -s backup-output/current-generation.txt
           test -s backup-output/uploaded.tsv
           echo "verified backup generation: $(cat backup-output/current-generation.txt)"
-          python scripts/cleanup_b2_backup_generations.py             --bucket "$B2_BUCKET"             --endpoint "$B2_ENDPOINT"             --keep-file backup-output/uploaded.tsv
+          python scripts/cleanup_b2_backup_generations.py \
+            --bucket "$B2_BUCKET" \
+            --endpoint "$B2_ENDPOINT" \
+            --keep-file backup-output/uploaded.tsv
 
       - name: Write non-sensitive run summary
         if: always()
