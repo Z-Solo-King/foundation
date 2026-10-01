@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from policy_test_support import policy_binding
+from tests.policy_test_support import policy_binding
 import hashlib
 
 import pytest

@@ -1,7 +1,7 @@
 import asyncio
 from types import SimpleNamespace
 
-from policy_test_support import policy_binding
+from tests.policy_test_support import policy_binding
 
 
 def test_worker_http_entrypoint_all_paths():
