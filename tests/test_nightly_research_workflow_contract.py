@@ -76,7 +76,8 @@ def test_public_failure_contract_is_preserved():
     assert "name: Diagnose nightly Heroic AI research" in text
     assert "name: Preserve truthful nightly result" in text
     assert "needs: [research, migration_review, project-summary]" in text
-    assert "One or more research lanes failed/blocked" in text
+    assert "final-gate:" in text
+    assert "name: Preserve truthful nightly result" in text
 
 def test_permissions_remain_job_scoped():
     text=workflow_text()
@@ -180,6 +181,6 @@ def test_canary_manual_execution_is_main_only_and_post_nightly_main_only():
 
 def test_nightly_research_aligns_scheduler_and_proxy_concurrency():
     text = workflow_text()
-    assert 'RESEARCH_MAX_CONCURRENCY: "6"' in text
+    assert 'RESEARCH_MAX_CONCURRENCY: "3"' in text
     assert '--max-upstream-concurrency "${RESEARCH_MAX_CONCURRENCY}"' in text
     assert '--crossfire --global-capacity "$RESEARCH_MAX_CONCURRENCY"' in text
