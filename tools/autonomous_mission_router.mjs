@@ -46,6 +46,8 @@ export function validatePlan(plan) {
     if (typeof action.id !== 'string' || !/^a[0-9a-z._:-]{1,63}$/i.test(action.id)) throw new Error('invalid action id');
     if (ids.has(action.id)) throw new Error('duplicate action id');
     ids.add(action.id);
+    if (workflows.has(action.workflow)) throw new Error(`duplicate workflow action: ${action.workflow}`);
+    workflows.add(action.workflow);
     if (!MISSION_WORKFLOWS[plan.mission_type].includes(action.workflow) || FORBIDDEN_WORKFLOWS.has(action.workflow)) throw new Error(`workflow not allowlisted: ${action.workflow}`);
     if (plan.mission_type === 'component_improvement' && !COMPONENT_WORKFLOWS[plan.target_component].includes(action.workflow)) throw new Error(`workflow not allowlisted for component: ${plan.target_component}`);
     if (!action.inputs || Object.keys(action.inputs).length !== 0) throw new Error('workflow inputs must be empty');
