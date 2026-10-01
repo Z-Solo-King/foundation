@@ -156,6 +156,10 @@
       [
         "GEMINI.md",
         "developer_tooling"
+      ],
+      [
+        "conftest.py",
+        "tests_regression"
       ]
     ],
     "operations": [
