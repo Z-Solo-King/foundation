@@ -28,3 +28,9 @@ test('deterministic fallback classifies migration issues', () => {
   const plan = deterministicFallbackPlan({mode:'standard',open_issues:[{title:'mapper migration',body:'polyglot evidence'}],recent_runs:[]});
   assert.equal(plan.mission_type, 'migration');
 });
+
+
+test('deterministic fallback avoids an active matching workflow path', () => {
+  const plan = deterministicFallbackPlan({mode:'component_improvement',target_component:'chatbot',open_issues:[],recent_runs:[{path:'.github/workflows/live-chatbot-production-smoke.yml',status:'in_progress',conclusion:null,created_at:new Date().toISOString()}]});
+  assert.notEqual(plan.actions[0].workflow, 'live-chatbot-production-smoke.yml');
+});
