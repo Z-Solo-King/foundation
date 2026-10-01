@@ -138,7 +138,7 @@
     [
       ".github/workflows/woocommerce-native-xml-recovery-v18.yml",
       "private_feed_extraction"
-    ],
+    ],\n    [\n      ".github/workflows/woocommerce-google-xml-recovery-v19.yml",\n      "private_feed_extraction"\n    ],
     [
       ".github/workflows/woocommerce-v175-22-plugin-extraction.yml",
       "private_feed_extraction"
