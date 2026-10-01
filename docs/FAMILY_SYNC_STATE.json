@@ -137,11 +137,11 @@
     "authority": "scheduling_only"
   },
   "post_merge_sync": {
-    "checked_at": "2026-10-01T08:19:30Z",
+    "checked_at": "2026-10-01T08:40:00Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "8ef127fcb6a0aa81f3926658125d7f4561f9064c",
-      "operations": "5216d30ea83c3ae9c3295510d42301af7611c6cc"
+      "foundation": "10834911158f53ee8809afb0d0f9e437c2dfe11c",
+      "operations": "dab6f409b0340b7eabfb08d12715b8a6528c027c"
     },
     "operations_last_sync_commits": [
       "d9bd39b6035b289db720f43934e5ec4cbd55ee54",
@@ -153,20 +153,20 @@
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "8ef127fcb6a0aa81f3926658125d7f4561f9064c",
-    "operations": "5216d30ea83c3ae9c3295510d42301af7611c6cc"
+    "foundation": "10834911158f53ee8809afb0d0f9e437c2dfe11c",
+    "operations": "dab6f409b0340b7eabfb08d12715b8a6528c027c"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "8ef127fcb6a0aa81f3926658125d7f4561f9064c",
-    "operations": "5216d30ea83c3ae9c3295510d42301af7611c6cc"
+    "foundation": "10834911158f53ee8809afb0d0f9e437c2dfe11c",
+    "operations": "dab6f409b0340b7eabfb08d12715b8a6528c027c"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",
     "repository": "Z-Solo-King/foundation",
     "foundation_is_canonical": true,
     "operations_workflow_directory": "absent_after_reconciliation",
-    "operations_main": "5216d30ea83c3ae9c3295510d42301af7611c6cc",
+    "operations_main": "dab6f409b0340b7eabfb08d12715b8a6528c027c",
     "feed_hunt_capability": "Operations tools/woocommerce_32_plugin_feed_hunt.mjs",
     "hosted_workflow": ".github/workflows/woocommerce-32-plugin-feed-hunt.yml",
     "execution": "Foundation-hosted, Operations source at immutable commit",
@@ -189,5 +189,18 @@
     },
     "external_marketplace_apps": 0,
     "runtime_installation_dependency": false
+  },
+  "hybrid_alternative": {
+    "schema": "hybrid-alternative-zero-cost-policy/v1",
+    "audit": "docs/HYBRID_ALTERNATIVE_ECOSYSTEM_AUDIT_2026-10-01.json",
+    "supplied_datasets": {
+      "mcp": 339,
+      "github_actions": 9999,
+      "github_apps": 1408
+    },
+    "paid_capabilities_researchable": true,
+    "direct_paid_runtime_dependency": false,
+    "license_ip_gate": true,
+    "single_authority_preserved": true
   }
 }
