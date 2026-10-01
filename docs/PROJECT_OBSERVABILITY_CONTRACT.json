@@ -1,0 +1,64 @@
+{
+  "schema": "project-observability-contract/v1",
+  "matrix_source": "docs/PROJECT_IMPROVEMENT_MATRIX.json",
+  "runtime_owner": "operations",
+  "runtime_snapshot": "private/dashboard.py",
+  "quality_adapter": "private/project_observability.py",
+  "observation_schema": "schemas/project-observation.schema.json",
+  "universal_evolution_adapter": "private/evolution_integration.py",
+  "audit_authorities": [
+    "tools/validate_system_integration.py",
+    "operations/tools/master_audit.py"
+  ],
+  "cadence": {
+    "resource_snapshot": "15m",
+    "provider_reconciliation": "1h",
+    "structural_audit": "nightly",
+    "candidate_experiment": "event-driven_bounded"
+  },
+  "quality_dimensions": {
+    "availability": 0.25,
+    "freshness": 0.2,
+    "provenance": 0.2,
+    "integrity": 0.2,
+    "coverage": 0.15
+  },
+  "score_type": "telemetry_quality_not_acceptance_authority",
+  "required_for_each_matrix_component": [
+    "owner",
+    "canonical_paths",
+    "workflows",
+    "evidence",
+    "cross_cutting_controls",
+    "evidence_contract"
+  ],
+  "learning_rules": {
+    "unknown_is_unavailable": true,
+    "complete_observation_required_for_evolution": true,
+    "security_and_provenance_are_hard_gates": true,
+    "candidate_only_until_existing_promotion_authority": true
+  },
+  "cloudflare": {
+    "r2_enabled": false,
+    "r2_reason": "project does not use Cloudflare R2; do not add collector or credentials",
+    "trace_policy": "do not enable broad tracing solely for this quality system"
+  },
+  "b2": {
+    "mode": "backup_evidence_only",
+    "measure": "archive_size_bytes",
+    "single_request_boundary_bytes": 5000000000,
+    "configured_multipart_threshold_bytes": 104857600,
+    "configured_multipart_part_bytes": 104857600,
+    "max_supported_large_file_bytes": 10000000000000,
+    "retention": "latest_verified_generation_only"
+  },
+  "safety": {
+    "read_only": true,
+    "no_policy_mutation": true,
+    "no_credential_mutation": true,
+    "no_resource_grant": true,
+    "no_provider_self_promotion": true,
+    "no_production_self_promotion": true,
+    "no_challenge_bypass": true
+  }
+}
