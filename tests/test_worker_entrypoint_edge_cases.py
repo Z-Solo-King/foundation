@@ -136,7 +136,7 @@ def test_worker_research_uses_scoped_persistence_adapter(monkeypatch):
 
     persistence = ScopedPersistence()
     monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: persistence)
-    monkeypatch.setattr(worker, "submit_research", lambda request: __import__("types").SimpleNamespace(ok=True, run_id="r-scope", metadata={"strict_zero_cost_only": True}))
+    monkeypatch.setattr(worker, "submit_research", lambda request, planning_policy=None: __import__("types").SimpleNamespace(ok=True, run_id="r-scope", metadata={"strict_zero_cost_only": True}))
 
     class Request:
         method = "POST"

@@ -27,7 +27,7 @@ def test_research_contract_accepts_category_and_explicit_families() -> None:
     plan = create_plan(contract, planning_policy=TEST_PLANNING_POLICY)
     families = set(plan.metadata["required_source_families"].split(","))
     assert {"amazon", "flipkart", "reddit", "retailers", "professional_reviews"} <= families
-    assert plan.metadata["required_source_families_origin"] == "explicit+category+question"
+    assert plan.metadata["required_source_families_origin"] == "explicit+private_policy"
     assert plan.metadata["query_category"] == "best_product"
 
 
@@ -71,7 +71,7 @@ def test_planner_category_and_temporal_metadata_are_independent() -> None:
 
 
 def test_planner_quick_contract_keeps_bounded_stage_set() -> None:
-    plan = create_plan(ResearchContract(question="quick lookup", depth="quick"))
+    plan = create_plan(ResearchContract(question="quick lookup", depth="quick"), planning_policy=TEST_PLANNING_POLICY)
     assert plan.stages == (
         "define_question",
         "discover_sources",
