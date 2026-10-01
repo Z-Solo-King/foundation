@@ -2,10 +2,10 @@
   "schema": "family-issue-acceptance-matrix/v1",
   "audited_at": "2026-10-01",
   "repository_heads": {
-    "foundation": "bd0f6029d93faf33af6669901d8b2fd6c586518c",
-    "operations": "8b5c7cf1e298a9a84865c2a9c19046955103e33a"
+    "foundation": "8a7033a9886151ce83b36a9c38f4641a3d8287c8",
+    "operations": "fdb2a1c1a5d0067868007a3499ae81b5c81bb176"
   },
-  "open_issue_count": 4,
+  "open_issue_count": 5,
   "issues": [
     {
       "repo": "foundation",
@@ -14,6 +14,18 @@
       "required_evidence": [
         "live child-issue reconciliation",
         "current family-integrity receipt"
+      ]
+    },
+    {
+      "repo": "foundation",
+      "number": 157,
+      "title": "research: complete 24-program Heroic AI improvement run",
+      "required_evidence": [
+        "exact Foundation + Operations revisions actually deployed",
+        "Worker-backed model preflight passes",
+        "all 24 programs execute and all 3 lane artifacts validate",
+        "truthful diagnosis/final-result gate passes",
+        "complete artifact provenance"
       ]
     },
     {

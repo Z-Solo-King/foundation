@@ -36,11 +36,12 @@
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
     "observed_at": "2026-10-01",
-    "open_issue_count": 4,
+    "open_issue_count": 5,
     "foundation": [
       58,
       1247,
-      1249
+      1249,
+      157
     ],
     "operations_count": 1,
     "operations_issue_numbers_omitted": false,
@@ -48,7 +49,7 @@
     "operations": [
       603
     ],
-    "total_open_issue_count": 5
+    "total_open_issue_count": 7
   },
   "evidence": {
     "nightly_research": "latest live run failed at the public/private ChatRequest boundary; PR #1573 repairs the boundary and a fresh post-release 24-program live run is required",
@@ -93,10 +94,8 @@
     "related_operations_pr": 1109
   },
   "current_prs": {
-    "open_pr_count": 18,
+    "open_pr_count": 13,
     "foundation": [
-      1713,
-      1710,
       1706,
       1692,
       1685,
@@ -111,17 +110,10 @@
       1653,
       1652
     ],
-    "operations": [
-      1438,
-      1435,
-      1400,
-      1361
-    ],
+    "operations": [],
     "source": "GitHub live PR API"
   },
   "foundation_open_prs": [
-    1713,
-    1710,
     1706,
     1692,
     1685,
@@ -136,14 +128,9 @@
     1653,
     1652
   ],
-  "operations_open_prs": [
-    1438,
-    1435,
-    1400,
-    1361
-  ],
-  "open_pr_count": 18,
-  "open_implementation_pr_count": 18,
+  "operations_open_prs": [],
+  "open_pr_count": 13,
+  "open_implementation_pr_count": 13,
   "extractor_mapper": {
     "status": "active_runtime_boundary",
     "repository": "operations",
@@ -161,11 +148,11 @@
     "authority": "scheduling_only"
   },
   "post_merge_sync": {
-    "checked_at": "2026-10-01T11:13:00Z",
+    "checked_at": "2026-10-01T12:11:38Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "21bb1bb8ef764ef51c494d54efb74d2a6d36c4b8",
-      "operations": "7f28470ea512715dc4f65eb0832cdfab831dfe73"
+      "foundation": "8a7033a9886151ce83b36a9c38f4641a3d8287c8",
+      "operations": "fdb2a1c1a5d0067868007a3499ae81b5c81bb176"
     },
     "operations_last_sync_commits": [
       "d9bd39b6035b289db720f43934e5ec4cbd55ee54",
@@ -184,24 +171,25 @@
       "foundation": [
         58,
         1247,
-        1249
+        1249,
+        157
       ],
       "operations": [
         603
       ],
-      "total": 4
+      "total": 5
     },
     "production_operations_pin": "da86e92d4e0fdb68912efb54ef95c69281a7d613"
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "21bb1bb8ef764ef51c494d54efb74d2a6d36c4b8",
-    "operations": "7f28470ea512715dc4f65eb0832cdfab831dfe73"
+    "foundation": "8a7033a9886151ce83b36a9c38f4641a3d8287c8",
+    "operations": "fdb2a1c1a5d0067868007a3499ae81b5c81bb176"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "21bb1bb8ef764ef51c494d54efb74d2a6d36c4b8",
-    "operations": "7f28470ea512715dc4f65eb0832cdfab831dfe73"
+    "foundation": "8a7033a9886151ce83b36a9c38f4641a3d8287c8",
+    "operations": "fdb2a1c1a5d0067868007a3499ae81b5c81bb176"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",
