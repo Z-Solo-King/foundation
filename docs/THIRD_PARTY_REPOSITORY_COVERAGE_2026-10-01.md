@@ -28,9 +28,16 @@ Foundation remains the public-safe deterministic contract/deployment authority; 
 
 ## Implemented change
 
-Operations now has a bounded adaptive HTML product recovery capability inspired by Scrapling. The conservative generic extractor remains first; adaptive recovery runs only when that path returns no products. The new result carries deterministic score/reason metadata and requires multiple independent product signals.
+The first implementation slice is merged in Operations main.
 
-This is implemented without a new crawler framework, without anti-bot bypass, and without changing the authority boundary.
+- Operations PR #1421 merged as `0e3764fc5d3000f26f7bb806173c92b71ea0b49b`: bounded adaptive HTML product recovery.
+- Operations PR #1422 merged as `ad67fb0af2e958c880f74a10a0d15c930b3dace1`: fixed the validated missing adaptive-extractor import.
+- Operations PR #1423 merged as `daede840e353bf6b5d2cf295e33ac562295c562f`: connected adaptive recovery to the existing chatbot `EXTRACT_AND_MAP` contract and added a regression test.
+- Foundation documentation was merged as `e9b67e37c997e7c51a5a20fb158930727302b120`.
+
+The adaptive path is bounded, deterministic, multi-signal and fallback-only. It does not bypass access controls or alter the authority boundary.
+
+**Deployment state:** Cloudflare production still runs the certified Operations pin `90fa37df10d63824acd3fe20b64cc91043af9627`. The third-party improvements are therefore GitHub-main implementation evidence, not production-runtime acceptance evidence.
 
 ## Durable follow-on plan
 
