@@ -63,6 +63,8 @@ jobs:
   ai_crossfire:
     name: 4-provider AI feed crossfire
     needs: prepare
+    outputs:
+      candidates_b64: ${{ steps.publish_crossfire.outputs.candidates_b64 }}
     runs-on: ubuntu-latest
     environment: production-secret-sync
     timeout-minutes: 10
@@ -113,14 +115,19 @@ jobs:
           set -euo pipefail
           mkdir -p out/emergency
           node private/feed_recovery/ai_crossfire.mjs data/feed_lab/woocommerce_30_registry_v18.json out/emergency/ai-crossfire.json
-      - name: Upload crossfire evidence
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: wc-emergency-ai-crossfire
-          path: operations/out/emergency/ai-crossfire.json
-          if-no-files-found: error
-          retention-days: 14
-
+      - name: Publish compact crossfire output
+        id: publish_crossfire
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node - <<'NODE' >> "$GITHUB_OUTPUT"
+          const fs=require("node:fs");
+          const x=JSON.parse(fs.readFileSync("out/emergency/ai-crossfire.json","utf8"));
+          const compact={schema_version:x.schema_version,target_count:x.target_count,providers:x.providers,benchmark:x.benchmark,retailers:(x.retailers||[]).map(r=>({name:r.name,base:r.base,paths:(r.paths||[]).slice(0,120)}))};
+          const b64=Buffer.from(JSON.stringify(compact),"utf8").toString("base64");
+          if(b64.length>900000) throw new Error("compact AI crossfire output exceeds GitHub job-output safety bound");
+          process.stdout.write("candidates_b64="+b64+"\n");
+          NODE
   recover:
     name: Recover ${{ matrix.site.name }}
     needs: [prepare, ai_crossfire]
@@ -168,11 +175,18 @@ jobs:
         with:
           node-version: "24"
           package-manager-cache: false
-      - name: Download AI crossfire
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c809b
-        with:
-          name: wc-emergency-ai-crossfire
-          path: operations/out/rescue-fast
+      - name: Materialize AI crossfire candidates
+        working-directory: operations
+        env:
+          AI_CANDIDATES_B64: ${{ needs.ai_crossfire.outputs.candidates_b64 }}
+        run: |
+          set -euo pipefail
+          mkdir -p out/rescue-fast
+          if [[ -n "${AI_CANDIDATES_B64:-}" ]]; then
+            printf '%s' "$AI_CANDIDATES_B64" | base64 --decode > out/rescue-fast/ai_candidates.json
+          else
+            printf '%s\n' '{"schema_version":"woocommerce-ai-crossfire-v1","retailers":[],"providers":[],"benchmark":[]}' > out/rescue-fast/ai_candidates.json
+          fi
       - name: Build one-site registry
         working-directory: operations
         run: |
@@ -217,76 +231,21 @@ jobs:
           retention-days: 30
 
   aggregate:
-    name: Aggregate emergency XML manifest
+    name: Emergency recovery receipt
     needs: recover
     if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
-      - name: Download all site evidence
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c809b
-        with:
-          pattern: wc-emergency-xml-*
-          path: out/sites
-          merge-multiple: false
-      - name: Build usable XML manifest
+      - name: Publish completion receipt
         run: |
           set -euo pipefail
           mkdir -p out/final
-          node - <<'NODE'
-          const fs=require("node:fs");
-          const path=require("node:path");
-          const root="out/sites";
-          const entries=[];
-          for(const dir of fs.existsSync(root)?fs.readdirSync(root):[]){
-            const d=path.join(root,dir);
-            if(!fs.statSync(d).isDirectory()) continue;
-            const summaryPath=path.join(d,"summary.json");
-            let summary=null; try{summary=JSON.parse(fs.readFileSync(summaryPath,"utf8"));}catch{}
-            const xmls=fs.existsSync(d)?fs.readdirSync(d).filter(x=>x.toLowerCase().endsWith(".xml")):[];
-            const site=(summary?.sites||[])[0] || {};
-            for(const file of xmls){
-              const p=path.join(d,file);
-              entries.push({
-                site:site.brand||site.name||dir,
-                kind:file.includes("-native-")?"native":file.includes("-store-api-")?"store_api_reconstruction":"xml",
-                artifact:dir,
-                file:p,
-                bytes:fs.statSync(p).size
-              });
-            }
-          }
-          const bySite=new Map();
-          for(const x of entries){
-            if(!bySite.has(x.site)) bySite.set(x.site,[]);
-            bySite.get(x.site).push(x);
-          }
-          const rows=[...bySite.entries()].map(([site,files])=>({
-            site,
-            preferred:(files.find(x=>x.kind==="native")||files.find(x=>x.kind==="store_api_reconstruction")||files[0]||null),
-            alternatives:files
-          }));
-          const manifest={
-            schema_version:"foundation-woocommerce-emergency-usable-xml-v1",
-            generated_at:new Date().toISOString(),
-            target_count:30,
-            policy:"native Merchant XML is preferred; Store API reconstruction is explicitly labeled fallback",
-            sites:rows,
-            counts:{
-              sites_with_xml:rows.length,
-              native_xml:entries.filter(x=>x.kind==="native").length,
-              reconstructed_xml:entries.filter(x=>x.kind==="store_api_reconstruction").length,
-              total_xml_files:entries.length
-            }
-          };
-          fs.writeFileSync("out/final/usable-xml-manifest.json",JSON.stringify(manifest,null,2)+"\n");
-          fs.writeFileSync("out/final/xml-index.tsv",["site","kind","artifact","file","bytes"].concat(entries.map(x=>[x.site,x.kind,x.artifact,x.file,x.bytes].join("\t"))).join("\n")+"\n");
-          console.log(JSON.stringify(manifest.counts));
-          NODE
-      - name: Upload final XML bundle and manifest
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+          printf '%s\n' '{"schema_version":"foundation-woocommerce-emergency-recovery-v1","note":"Per-site XML artifacts are authoritative outputs; no cross-job artifact download is required."}' > out/final/receipt.json
+      - name: Upload completion receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: wc-emergency-final-xml
-          path: out/final/
+          name: wc-emergency-final-receipt
+          path: out/final/receipt.json
           if-no-files-found: error
           retention-days: 30
