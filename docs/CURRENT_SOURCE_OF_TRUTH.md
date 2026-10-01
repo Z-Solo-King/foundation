@@ -3,11 +3,11 @@
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
 Checked: 2026-10-01.
-Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `10834911158f53ee8809afb0d0f9e437c2dfe11c`.
+Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `cfc266088846fb9f6a084da13481df4cc2c17536`.
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: current main is read live from GitHub; last verified commit `10834911158f53ee8809afb0d0f9e437c2dfe11c`.
-Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `dab6f409b0340b7eabfb08d12715b8a6528c027c`; research/migration jobs use explicit immutable pins below.
+Foundation main code checkpoint: current main is read live from GitHub; last verified commit `cfc266088846fb9f6a084da13481df4cc2c17536`.
+Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `109550ea068d703a79dad77960fc3a03a10c08fa`; research/migration jobs use explicit immutable pins below.
 Production Operations pin: ce4f9edbae3ddf1bf1c25a908d5bce014acc7676.
 Provider fleet runtime probe pin: b95e419254a9071beaeef57a1b0da22ba7dd2c4f.
 Research Operations pin: 1a91efa53b9202f1624ddde892b0e86bd6b360f0.
@@ -81,7 +81,7 @@ Foundation PR #1573 fixes a live nightly research contract defect exposed by the
 
 The PR was merged at 732a694cf2e272709640c379d9aed70ea28b2534. The canonical production release for that revision is separately tracked; no production-live research acceptance is claimed until the release dispatch and a fresh 24-program run pass.
 
-Cross-repository continuity requires this document and docs/FAMILY_SYNC_STATE.json to be refreshed whenever canonical worker/workflow boundaries change.
+Cross-repository continuity requires this document and docs/FAMILY_SYNC_STATE.json to be refreshed whenever canonical worker/workflow boundaries or integration contracts change.
 
 
 ## 2026-09-30 AI provider fleet
