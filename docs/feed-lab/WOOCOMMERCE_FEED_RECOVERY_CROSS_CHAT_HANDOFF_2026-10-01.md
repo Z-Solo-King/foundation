@@ -501,3 +501,8 @@ Foundation V19 workflow: PR #1814.
 The V19 publisher has a hard 30/30 non-empty gate; it refuses to publish empty XML shells. The legacy V18 automatic publisher is retired from automatic execution so it cannot overwrite the V19 publication with weaker output.
 
 Native-feed evidence remains separate from synthetic/archive-backed output. No CAPTCHA solving, Cloudflare clearance replay, authentication bypass, proxy evasion, or fabricated product values are permitted.
+
+
+## 16. V19 production trigger checkpoint
+
+A follow-up main-branch data push is used to execute the canonical V19 six-lane recovery after the workflow was merged. No extraction logic is changed by this trigger-only commit.
