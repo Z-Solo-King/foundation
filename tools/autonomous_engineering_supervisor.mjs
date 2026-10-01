@@ -6,6 +6,7 @@ const repo = process.env.GITHUB_REPOSITORY?.split('/')[1];
 const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
 const workerUrl = (process.env.PUBLIC_WORKER_URL || 'https://ai-cio.pages.dev').replace(/\/$/, '');
 const dryRun = process.env.DRY_RUN === 'true';
+if (!process.env.AUTH_TOKEN) throw new Error('AUTH_TOKEN is required for autonomous planner');
 const maxCycles = Number(process.env.MAX_PLANNING_CYCLES || 6);
 const maxWorkflowAttempts = Number(process.env.MAX_WORKFLOW_ATTEMPTS || 3);
 
@@ -31,7 +32,7 @@ async function github(path, options = {}) {
 
 function sanitize(value) {
   return String(value ?? '')
-    .replace(/(?:API[_ -]?KEY|PRIVATE[_ -]?KEY|ACCESS[_ -]?TOKEN|AUTH[_ -]?TOKEN|SECRET)\s*[:=]\s*[^\s,;]+/gi, '$1=[REDACTED]')
+    .replace(/(?:API[_ -]?KEY|PRIVATE[_ -]?KEY|ACCESS[_ -]?TOKEN|AUTH[_ -]?TOKEN|SECRET)\s*[:=]\s*[^\s,;]+/gi, '[REDACTED]')
     .replace(/-----BEGIN [^-]+-----[\s\S]*?-----END [^-]+-----/g, '[REDACTED_KEY]')
     .replace(/\s+/g, ' ')
     .slice(0, 1200);
@@ -200,8 +201,8 @@ async function main() {
 
   const action = plan.actions[0];
   const attempts = {...(state.workflow_attempts || {})};
-  attempts[action.workflow] = Number(attempts[action.workflow] || 0) + 1;
-  if (attempts[action.workflow] > maxWorkflowAttempts) {
+  if (!dryRun) attempts[action.workflow] = Number(attempts[action.workflow] || 0) + 1;
+  if (!dryRun && attempts[action.workflow] > maxWorkflowAttempts) {
     state = {...state,state:'blocked',workflow_attempts:attempts,terminal_reason:'same_workflow_attempt_bound_exceeded',failure_class:'policy_blocked',retriable:false};
     await updateIssue(missionIssue.number,{body:missionBody(state,`Workflow attempt bound exceeded for ${action.workflow}.`)});
     return;
