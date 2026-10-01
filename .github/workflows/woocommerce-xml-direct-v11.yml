@@ -1,0 +1,49 @@
+name: WooCommerce XML Direct Recovery V11
+on:
+  push:
+    branches: [feat/wc-xml-direct-recovery-v11-20261001]
+    paths: ["tools/woocommerce_xml_direct_v11.mjs","tests/test_woocommerce_xml_direct_v11.mjs",".github/workflows/woocommerce-xml-direct-v11.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["tools/woocommerce_xml_direct_v11.mjs","tests/test_woocommerce_xml_direct_v11.mjs",".github/workflows/woocommerce-xml-direct-v11.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix: {shard: [1,2,3,4,5,6]}
+    env: {SHARD: ${{ matrix.shard }}, SHARDS: 6}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with: {node-version: "22", package-manager-cache: false}
+      - run: node --test tests/test_woocommerce_xml_direct_v11.mjs
+      - run: node tools/woocommerce_xml_direct_v11.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with: {name: woocommerce-xml-direct-v11-shard-${{ matrix.shard }}, path: out/woocommerce-xml-direct-v11/, retention-days: 30}
+  aggregate:
+    needs: recover
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with: {pattern: woocommerce-xml-direct-v11-shard-*, path: out/shards, merge-multiple: false}
+      - name: Aggregate
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'fs'; import path from 'path';
+          const files=[];function walk(p){for(const e of fs.readdirSync(p,{withFileTypes:true})){const q=path.join(p,e.name);if(e.isDirectory())walk(q);else if(e.name.endsWith('.json'))files.push(q)}}walk('out/shards');
+          const rows=files.flatMap(f=>JSON.parse(fs.readFileSync(f,'utf8')).results||[]);
+          if(new Set(rows.map(x=>x.site)).size!==30)throw new Error('expected 30 unique sites');
+          const out={schema:'woocommerce-xml-direct-v11-aggregate/v1',target_count:30,native_verified:rows.filter(x=>x.native_urls?.length).length,native_urls:rows.flatMap(x=>x.native_urls||[]),results:rows};
+          fs.mkdirSync('out/aggregate',{recursive:true});fs.writeFileSync('out/aggregate/aggregate.json',JSON.stringify(out,null,2)+'\n');console.log(JSON.stringify({...out,results:undefined},null,2));
+          NODE
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92e8e0b5a5461e7c
+        with: {name: woocommerce-xml-direct-v11-aggregate, path: out/aggregate/, retention-days: 30}
