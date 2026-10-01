@@ -167,6 +167,14 @@ jobs:
         with:
           python-version: "3.14"
 
+      - name: Capture runner resources before tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p coverage-artifacts/${{ matrix.id }}
+          bash tools/github_runner_resource_snapshot.sh > coverage-artifacts/${{ matrix.id }}/runner-before-path.txt
+          mv runner-resource-snapshot.json coverage-artifacts/${{ matrix.id }}/runner-before.json
+
       - name: Install Operations test environment
         working-directory: operations
         run: |
@@ -379,6 +387,15 @@ jobs:
             *) echo "Unknown live probe: ${{ matrix.live_probe }}"; exit 2 ;;
           esac
           echo "live probe ${{ matrix.live_probe }}: PASS"
+
+      - name: Capture runner resources after tests
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          mkdir -p coverage-artifacts/${{ matrix.id }}
+          bash tools/github_runner_resource_snapshot.sh > coverage-artifacts/${{ matrix.id }}/runner-after-path.txt
+          mv runner-resource-snapshot.json coverage-artifacts/${{ matrix.id }}/runner-after.json
 
       - name: Finalize scenario evidence
         if: always()
