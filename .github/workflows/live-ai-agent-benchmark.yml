@@ -26,6 +26,33 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Resolve private Operations revision
+        id: operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          ref="$(jq -r '.pins.production_runtime.sha' docs/OPERATIONS_PIN_MANIFEST.json)"
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo 'production Operations pin must be a 40-hex immutable SHA'; exit 1; }
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Mint read-only Operations App token
+        id: operations-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout private benchmark runtime
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ steps.operations.outputs.ref }}
+          token: ${{ steps.operations-token.outputs.token }}
+          path: ${{ runner.temp }}/operations-agent-benchmark
+          persist-credentials: false
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -42,14 +69,15 @@ jobs:
           test -n "${CLOUDFLARE_ACCOUNT_ID:-}"
           echo "benchmark credentials: PRESENT"
 
-      - name: Run retained project-native benchmark
+      - name: Run retained private project-native benchmark
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
           rm -rf .runtime/live-ai-agent-benchmark
-          python -m benchmark.multi_agent.live_agent_benchmark \
+          python "${{ runner.temp }}/operations-agent-benchmark/private/multi_agent/live_agent_benchmark.py" \
+            --matrix "${{ runner.temp }}/operations-agent-benchmark/benchmark/ai_agent_private_task_matrix_v1.json" \
             --output-dir .runtime/live-ai-agent-benchmark \
             --run-id "${GITHUB_RUN_ID}" \
             --repo-sha "${GITHUB_SHA}" \
