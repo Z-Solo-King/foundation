@@ -36,3 +36,7 @@ A split module may not become a new authority merely because it becomes a new fi
 ## Next decomposition wave
 
 The next wave should address the Foundation workflow/release monoliths and Operations control-plane/audit monoliths. Each split must preserve imports, workflow authority, receipts, policy checks, and rollback behavior; no blind line-moving refactor is accepted without static/runtime evidence.
+
+
+## 2026-10-01 decomposition update
+The control-plane diagnostics monolith was split: the facade remains the stable route/import surface while the large infrastructure verification orchestration moved to Operations `private/control_plane_infrastructure.py`. The extracted module is below the critical source-size thresholds. The split is dependency-injected so facade-level test seams remain usable.

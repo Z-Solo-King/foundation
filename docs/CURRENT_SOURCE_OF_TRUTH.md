@@ -3,11 +3,11 @@
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
 Checked: 2026-10-01.
-Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `cfc266088846fb9f6a084da13481df4cc2c17536`.
+Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `0b2a04fddab627701149d108345cc4fb1336b278`.
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: current main is read live from GitHub; last verified commit `cfc266088846fb9f6a084da13481df4cc2c17536`.
-Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `109550ea068d703a79dad77960fc3a03a10c08fa`; research/migration jobs use explicit immutable pins below.
+Foundation main code checkpoint: current main is read live from GitHub; last verified commit `0b2a04fddab627701149d108345cc4fb1336b278`.
+Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `c69d5c113d43809e28ba622009ad0cc568b94a12; research/migration jobs use explicit immutable pins below.
 Production Operations pin: ce4f9edbae3ddf1bf1c25a908d5bce014acc7676.
 Provider fleet runtime probe pin: b95e419254a9071beaeef57a1b0da22ba7dd2c4f.
 Research Operations pin: 1a91efa53b9202f1624ddde892b0e86bd6b360f0.
@@ -93,7 +93,12 @@ Current family state: Foundation and Operations are the only active repositories
 
 The adaptive multi-lens engine is active on Foundation and is scheduling-only; it does not transfer acceptance, security, provider, resource, extractor/mapper or promotion authority.
 
-### 2026-10-01 hosted CI authority reconciliation
+### 2026-10-01 cohesion + decomposition reconciliation
+The project-wide integration contract is now bound to the improvement matrix and explicitly connects audit, quality/evolution, learning, AI automation, AI API governance, evidence, self-evolution, and mapper/extractor without creating duplicate authorities. Operations also restores the evaluation-receipt to universal-evolution bridge and keeps learning candidate-only.
+
+The first large-file decomposition wave split Operations `runtime_language_policy.py` into language-fit, migration-artifact, and AI-maintainability modules while retaining the original import surface. A second split extracted the large Operations infrastructure diagnostics orchestration into `control_plane_infrastructure.py`; the route/compatibility facade remains `control_plane_diagnostics.py`. Source-surface auditing treats >50,000 bytes or >1,000 lines as critical and >25,000 bytes or >500 lines as attention.
+
+## 2026-10-01 hosted CI authority reconciliation
 Foundation remains the sole hosted GitHub Actions authority for the family. The WooCommerce 32-site public feed-hunt capability remains implemented in Operations (`tools/woocommerce_32_plugin_feed_hunt.mjs`), but its hosted CI workflow was retired from Operations and is now executed by the Foundation-owned `.github/workflows/woocommerce-32-plugin-feed-hunt.yml` at an immutable Operations revision. Operations main contains no hosted GitHub Actions workflow after this reconciliation.
 
 ### 2026-10-01 Marketplace App indirect implementation
