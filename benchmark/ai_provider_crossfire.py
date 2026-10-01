@@ -23,6 +23,7 @@ ALLOWED = {
     "cohere_free",
     "huggingface_free",
     "siliconflow",
+    "cloudflare_workers_ai",
 }
 
 TASKS = [
@@ -145,8 +146,8 @@ def main() -> int:
 
     config = load_config()
     names = sorted(config)[: max(0, args.providers_max)]
-    if len(names) < 3:
-        raise SystemExit(f"need at least 3 configured external providers for cross-fire; found {len(names)}")
+    if len(names) < 2:
+        raise SystemExit(f"need at least 2 configured AI providers for cross-fire; found {len(names)}")
 
     jobs = [(name, config[name], task, repeat) for name in names for task in TASKS for repeat in range(1, args.repeats + 1)]
     started = time.perf_counter()
