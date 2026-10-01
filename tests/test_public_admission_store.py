@@ -44,7 +44,7 @@ async def test_d1_store_admits_with_existing_admission_policy():
     decision, lease = await store.acquire(
         subject_fingerprint="subject-1",
         route=AdmissionRoute.RESEARCH,
-        policy=AdmissionPolicy(),
+        admission_policy = policy(),
         event_id="event-1",
         now=120,
     )
@@ -62,7 +62,7 @@ async def test_d1_store_release_is_idempotent_at_statement_level():
     decision, lease = await store.acquire(
         subject_fingerprint="subject-1",
         route=AdmissionRoute.CHAT,
-        policy=AdmissionPolicy(),
+        admission_policy = policy(),
         event_id="event-1",
         now=120,
     )
@@ -110,7 +110,7 @@ async def test_concurrent_insert_loss_replays_existing_protected_event():
         cost_units=2,
         expires_at=181,
         now=121,
-        policy=AdmissionPolicy(),
+        admission_policy = policy(),
     )
 
     assert result.outcome is AdmissionOutcome.ACCEPTED
@@ -124,7 +124,7 @@ def test_public_admission_insert_is_idempotent_source_contract():
 
 
 def test_route_cost_classes_are_explicit_and_bounded():
-    policy = AdmissionPolicy()
+    admission_policy = policy()
     assert set(ROUTE_COST_UNITS) == {
         AdmissionRoute.CHEAP_READ,
         AdmissionRoute.CHAT,
@@ -214,7 +214,7 @@ async def test_concurrent_same_event_id_rechecks_existing_event(monkeypatch):
     decision, lease = await store.acquire(
         subject_fingerprint="subject-1",
         route=AdmissionRoute.CHAT,
-        policy=AdmissionPolicy(),
+        admission_policy = policy(),
         event_id="event-race",
         now=120,
     )
@@ -505,7 +505,7 @@ async def test_d1_store_rejects_negative_now():
         await store.acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.RESEARCH,
-            policy=AdmissionPolicy(),
+            admission_policy = policy(),
             event_id="event-1",
             now=-1,
         )
@@ -516,19 +516,19 @@ async def test_d1_store_returns_denied_decision_from_authoritative_snapshot(monk
     from backend.admission import AdmissionSnapshot
 
     store = D1AdmissionStore(FakeDB())
-    policy = AdmissionPolicy()
+    admission_policy = policy()
 
     async def snapshot(**kwargs):
         return AdmissionSnapshot(
             authority_available=True,
-            global_requests=policy.max_requests_global,
+            global_requests=admission_policy.max_requests_global,
         )
 
     monkeypatch.setattr(store, "_snapshot", snapshot)
     decision, lease = await store.acquire(
         subject_fingerprint="subject-1",
         route=AdmissionRoute.RESEARCH,
-        policy=policy,
+        policy=admission_policy,
         event_id="event-1",
         now=120,
     )
@@ -554,7 +554,7 @@ async def test_d1_store_fails_closed_when_insert_races():
     decision, lease = await store.acquire(
         subject_fingerprint="subject-1",
         route=AdmissionRoute.RESEARCH,
-        policy=AdmissionPolicy(),
+        admission_policy = policy(),
         event_id="event-1",
         now=120,
     )
@@ -570,7 +570,7 @@ async def test_d1_store_rejects_empty_identity_fields():
         await store.acquire(
             subject_fingerprint="",
             route=AdmissionRoute.RESEARCH,
-            policy=AdmissionPolicy(),
+            admission_policy = policy(),
             event_id="event-1",
             now=120,
         )
@@ -578,7 +578,7 @@ async def test_d1_store_rejects_empty_identity_fields():
         await store.acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.RESEARCH,
-            policy=AdmissionPolicy(),
+            admission_policy = policy(),
             event_id="",
             now=120,
         )
@@ -750,13 +750,13 @@ def test_d1_store_replays_same_event_without_a_second_admission_slot():
 
     db = IdempotentAdmissionDB()
     store = D1AdmissionStore(db)
-    policy = AdmissionPolicy()
+    admission_policy = policy()
 
     first_decision, first_lease = asyncio.run(
         store.acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.CHAT,
-            policy=policy,
+            policy=admission_policy,
             event_id="replay-key",
             now=120,
         )
@@ -769,7 +769,7 @@ def test_d1_store_replays_same_event_without_a_second_admission_slot():
         store.acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.CHAT,
-            policy=policy,
+            policy=admission_policy,
             event_id="replay-key",
             now=121,
         )
@@ -795,7 +795,7 @@ def test_d1_store_rejects_replay_across_admission_scopes():
         D1AdmissionStore(db).acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.CHAT,
-            policy=AdmissionPolicy(),
+            admission_policy = policy(),
             event_id="scope-key",
             now=121,
         )
@@ -814,7 +814,7 @@ def test_d1_store_reclaims_expired_admission_lease():
         store.acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.CHAT,
-            policy=AdmissionPolicy(),
+            admission_policy = policy(),
             event_id="expired-key",
             now=120,
         )
@@ -827,7 +827,7 @@ def test_d1_store_reclaims_expired_admission_lease():
         store.acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.CHAT,
-            policy=AdmissionPolicy(),
+            admission_policy = policy(),
             event_id="expired-key",
             now=121,
         )
@@ -854,7 +854,7 @@ def test_d1_store_keeps_released_non_idempotent_duplicate_on_admission_decision(
         D1AdmissionStore(db).acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.CHEAP_READ,
-            policy=AdmissionPolicy(),
+            admission_policy = policy(),
             event_id="cheap-key",
             now=121,
         )
@@ -873,7 +873,7 @@ def test_d1_store_blocks_active_non_idempotent_duplicate():
         store.acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.CHEAP_READ,
-            policy=AdmissionPolicy(),
+            admission_policy = policy(),
             event_id="cheap-active-key",
             now=120,
         )
@@ -885,7 +885,7 @@ def test_d1_store_blocks_active_non_idempotent_duplicate():
         store.acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.CHEAP_READ,
-            policy=AdmissionPolicy(),
+            admission_policy = policy(),
             event_id="cheap-active-key",
             now=121,
         )
@@ -904,7 +904,7 @@ def test_d1_store_delegates_active_chat_duplicate_to_idempotency_authority():
         store.acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.CHAT,
-            policy=AdmissionPolicy(),
+            admission_policy = policy(),
             event_id="active-key",
             now=120,
         )
@@ -916,7 +916,7 @@ def test_d1_store_delegates_active_chat_duplicate_to_idempotency_authority():
         store.acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.CHAT,
-            policy=AdmissionPolicy(),
+            admission_policy = policy(),
             event_id="active-key",
             now=121,
         )
@@ -935,7 +935,7 @@ def test_d1_store_delegates_active_stream_duplicate_to_idempotency_authority():
         store.acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.STREAM,
-            policy=AdmissionPolicy(),
+            admission_policy = policy(),
             event_id="active-stream-key",
             now=120,
         )
@@ -947,7 +947,7 @@ def test_d1_store_delegates_active_stream_duplicate_to_idempotency_authority():
         store.acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.STREAM,
-            policy=AdmissionPolicy(),
+            admission_policy = policy(),
             event_id="active-stream-key",
             now=121,
         )
@@ -966,7 +966,7 @@ def test_d1_store_delegates_active_research_duplicate_to_idempotency_authority()
         store.acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.RESEARCH,
-            policy=AdmissionPolicy(),
+            admission_policy = policy(),
             event_id="active-research-key",
             now=120,
         )
@@ -978,7 +978,7 @@ def test_d1_store_delegates_active_research_duplicate_to_idempotency_authority()
         store.acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.RESEARCH,
-            policy=AdmissionPolicy(),
+            admission_policy = policy(),
             event_id="active-research-key",
             now=121,
         )
@@ -997,7 +997,7 @@ def test_d1_store_delegates_chat_after_failed_lease_reclaim_race():
         store.acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.CHAT,
-            policy=AdmissionPolicy(),
+            admission_policy = policy(),
             event_id="reclaim-race-key",
             now=120,
         )
@@ -1011,7 +1011,7 @@ def test_d1_store_delegates_chat_after_failed_lease_reclaim_race():
         store.acquire(
             subject_fingerprint="subject-1",
             route=AdmissionRoute.CHAT,
-            policy=AdmissionPolicy(),
+            admission_policy = policy(),
             event_id="reclaim-race-key",
             now=121,
         )
@@ -1024,15 +1024,15 @@ def test_d1_store_delegates_chat_after_failed_lease_reclaim_race():
 def test_admission_decision_uses_weighted_cost_fields():
     from backend.admission import AdmissionSnapshot, decide_admission
 
-    policy = AdmissionPolicy()
+    admission_policy = policy()
     accepted = decide_admission(
-        policy=policy,
+        policy=admission_policy,
         snapshot=AdmissionSnapshot(authority_available=True, subject_cost_units=29),
         subject_fingerprint="subject-1",
         route=AdmissionRoute.CHAT,
     )
     denied = decide_admission(
-        policy=policy,
+        policy=admission_policy,
         snapshot=AdmissionSnapshot(authority_available=True, subject_cost_units=30),
         subject_fingerprint="subject-1",
         route=AdmissionRoute.CHAT,
@@ -1118,7 +1118,7 @@ async def test_released_duplicate_cost_ceiling_returns_rate_limit():
         cost_units=1,
         route=AdmissionRoute.CHAT,
         decision=AdmissionDecision(AdmissionOutcome.ACCEPTED, AdmissionRoute.CHAT, True, "ok"),
-        policy=AdmissionPolicy(),
+        admission_policy = policy(),
     )
     assert decision.outcome is AdmissionOutcome.RATE_LIMITED
     assert lease is None
@@ -1141,7 +1141,7 @@ async def test_active_protected_duplicate_cost_ceiling_returns_rate_limit():
         window_start=0,
         cost_units=1,
         route=AdmissionRoute.CHAT,
-        policy=AdmissionPolicy(),
+        admission_policy = policy(),
     )
     assert decision.outcome is AdmissionOutcome.RATE_LIMITED
     assert lease is None
@@ -1190,7 +1190,7 @@ async def test_insert_race_rechecks_canonical_scoped_event_id():
         cost_units=2,
         expires_at=10,
         now=1,
-        policy=AdmissionPolicy(),
+        admission_policy = policy(),
         storage_event_id="scoped-id",
     )
     assert db.lookups[:2] == ["scoped-id", "scoped-id"]
