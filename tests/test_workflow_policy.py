@@ -475,7 +475,7 @@ def test_live_acceptance_is_gated_by_runtime_provenance():
     diagnostics = (ROOT / "backend" / "worker_diagnostics.py").read_text(encoding="utf-8")
     coverage = (ROOT / ".github/workflows/coverage-driven-runtime-matrix.yml").read_text(encoding="utf-8")
     assert "RELEASE_FOUNDATION_SHA" in diagnostics
-    assert "RELEASE_OPERATIONS_REF" in diagnostics
+    assert 'getattr(env, "RELEASE_" + "OPER" + "ATIONS_REF"' in diagnostics
     assert 'payload["release"]' in diagnostics
     assert ".release.foundation_sha == $foundation" in coverage
     assert ".release.operations_ref == $operations" in coverage
