@@ -10,7 +10,7 @@ POLICY_PATH = ROOT / "docs" / "GITHUB_ACTIONS_ZERO_COST_POLICY.json"
 WORKFLOW_DIR = ROOT / ".github" / "workflows"
 
 ACTION_REF_RE = re.compile(
-    r"^\s*uses:\s*([^\s#]+)(?:\s+#.*)?$"
+    r"^\s*(?:-\s*)?uses:\s*([^\s#]+)(?:\s+#.*)?$"
 )
 RUNNER_RE = re.compile(r"^\s*runs-on:\s*([^\s#]+)(?:\s+#.*)?$")
 
