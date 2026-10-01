@@ -3,11 +3,11 @@
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
 Checked: 2026-10-01.
-Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `8ef127fcb6a0aa81f3926658125d7f4561f9064c`.
+Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `10834911158f53ee8809afb0d0f9e437c2dfe11c`.
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: current main is read live from GitHub; last verified commit `69bf2a47d5788623094f377c3fdaf4c755f1e0bc`.
-Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `5216d30ea83c3ae9c3295510d42301af7611c6cc`; research/migration jobs use explicit immutable pins below.
+Foundation main code checkpoint: current main is read live from GitHub; last verified commit `10834911158f53ee8809afb0d0f9e437c2dfe11c`.
+Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `dab6f409b0340b7eabfb08d12715b8a6528c027c`; research/migration jobs use explicit immutable pins below.
 Production Operations pin: ce4f9edbae3ddf1bf1c25a908d5bce014acc7676.
 Provider fleet runtime probe pin: b95e419254a9071beaeef57a1b0da22ba7dd2c4f.
 Research Operations pin: 1a91efa53b9202f1624ddde892b0e86bd6b360f0.
@@ -98,3 +98,7 @@ Foundation remains the sole hosted GitHub Actions authority for the family. The 
 
 ### 2026-10-01 Marketplace App indirect implementation
 The 1,408 supplied GitHub Marketplace App records were analyzed as capability patterns rather than installation requests. Foundation now maintains a capability catalog and an App policy v2 boundary: Marketplace installation remains disabled, while the first-party Operations access App is explicitly limited to the Operations repository and `contents: read`. Foundation CI validates its usage across workflows. No external Marketplace App is a runtime dependency.
+
+
+### 2026-10-01 hybrid & alternative capability-mining reconciliation
+The project-wide $0 model now treats paid, premium, hosted and proprietary ecosystems as research inputs rather than exclusion lists. The supplied MCP, GitHub Actions Marketplace, and GitHub Apps datasets are covered by `docs/HYBRID_ALTERNATIVE_ECOSYSTEM_AUDIT_2026-10-01.*`, while direct paid runtime dependencies remain forbidden. Useful public behavior, architecture, policy, resource controls, lifecycle semantics and UX may be reimplemented using native GitHub/Cloudflare capabilities, open-source components, or bounded documented free quotas subject to deterministic, security, resource, provenance, shadow, canary and rollback evidence.
