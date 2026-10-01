@@ -293,6 +293,33 @@ def _public_chat_body(body, *, include_provider=False):
     return public
 
 
+
+async def _operations_action_plan(env, payload, request):
+    """Proxy the governed autonomous planner through the private Operations service binding."""
+    operations = getattr(env, "OPERATIONS", None)
+    if operations is None:
+        return {"ok": False, "error": "action_plan_backend_unavailable"}, 503
+    headers = {"Content-Type": "application/json"}
+    token = _bearer_token(request)
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    try:
+        upstream = await operations.fetch(
+            _service_request(
+                "https://private/v1/action-plan",
+                method="POST",
+                headers=headers,
+                body=json.dumps(payload),
+            )
+        )
+        body = await upstream.json()
+        if not isinstance(body, dict):
+            return {"ok": False, "error": "invalid_action_plan_response"}, 503
+        return body, upstream.status
+    except Exception:
+        _LOGGER.exception("action-plan service binding failure")
+        return {"ok": False, "error": "action_plan_backend_unavailable"}, 503
+
 async def _operations_chat(env, payload, request):
     """Proxy synchronous Heroic AI chat only through the configured private service binding."""
     operations = getattr(env, "OPERATIONS", None)
@@ -495,6 +522,35 @@ class Default(WorkerEntrypoint):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
             body, status = await _operations_dashboard(self.env, request)
             return _authenticated_json(body, status=status)
+        if request.method == "POST" and path == "/api/v1/action-plan":
+            if not _authorized(request, self.env):
+                return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
+            if request.headers.get("X-Heroic-Autonomous-Control") != "1":
+                return _authenticated_json({"ok": False, "error": "autonomous_control_header_required"}, status=403)
+            payload = await _json(request)
+            if payload is None:
+                return _authenticated_json({"ok": False, "error": "invalid JSON object"}, status=400)
+            mission_id = str(payload.get("mission_id") or "").strip()
+            mission_type = str(payload.get("mission_type") or "auto_select").strip()
+            if not mission_id or len(mission_id) > 128:
+                return _authenticated_json({"ok": False, "error": "invalid_action_plan_request"}, status=400)
+            if mission_type not in {"auto_select","migration","feed_recovery","nightly_research","audit","runtime_reconciliation"}:
+                return _authenticated_json({"ok": False, "error": "invalid_action_plan_request"}, status=400)
+            subject = _subject_or_local(request, self.env)
+            if subject is None:
+                return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
+            event_id = f"action-plan:{mission_id}"
+            decision, lease = await _public_admit(self.env, AdmissionRoute.AUTONOMOUS_PLAN, subject, event_id)
+            denied = _admission_response(decision)
+            if denied is not None:
+                return denied
+            try:
+                body, status = await _operations_action_plan(self.env, payload, request)
+                return _authenticated_json(body, status=status)
+            finally:
+                if lease is not None:
+                    await D1AdmissionStore(self.env.DB).release(lease)
+
         if request.method == "POST" and path == "/api/v1/chat/stream":
             if not _authorized(request, self.env):
                 return _authenticated_json({"ok": False, "error": "unauthorized"}, status=401)
