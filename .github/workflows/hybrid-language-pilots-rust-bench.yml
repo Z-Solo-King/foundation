@@ -1,0 +1,526 @@
+name: Hybrid language pilots — Rust Bench
+
+'on':
+  workflow_call:
+    inputs:
+      operations_ref:
+        description: Immutable Operations revision resolved by the canonical parent workflow
+        required: true
+        type: string
+    secrets:
+      OPERATIONS_APP_ID:
+        required: true
+      OPERATIONS_APP_PRIVATE_KEY:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  rust_url_bench:
+        name: Rust URL identity 32x3 benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Benchmark
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_url_identity/Cargo.toml --bench normalization
+  
+  rust_text_bench:
+        name: Rust text normalization 32x3 benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Benchmark
+        working-directory: operations
+        run: cargo bench --manifest-path experiments/rust_text_normalization/Cargo.toml --bench normalization
+  
+  rust_html_sample:
+        name: Rust HTML parity 32x3 differential benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+          cache: false
+      - name: Determine pinned Foundation public-core revision
+        id: foundation-core-pin
+        working-directory: operations
+        shell: python
+        run: |
+          import ast
+          import os
+          from pathlib import Path
+          tree = ast.parse(Path("scripts/sync_public_core.py").read_text(encoding="utf-8"))
+          output = Path(os.environ["GITHUB_OUTPUT"])
+          for node in tree.body:
+              if isinstance(node, ast.Assign):
+                  for target in node.targets:
+                      if isinstance(target, ast.Name) and target.id == "FOUNDATION_COMMIT":
+                          output.write_text(f"ref={node.value.value}\n", encoding="utf-8")
+                          raise SystemExit
+          raise SystemExit("FOUNDATION_COMMIT not found")
+  
+      - name: Checkout Foundation public core repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/foundation
+          token: ${{ github.token }}
+          path: foundation-core
+          fetch-depth: 1
+  
+      - name: Select exact pinned Foundation public-core commit
+        working-directory: foundation-core
+        shell: bash
+        env:
+          FOUNDATION_COMMIT: ${{ steps.foundation-core-pin.outputs.ref }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$FOUNDATION_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "foundation_core_pin_must_be_immutable_sha: $FOUNDATION_COMMIT"
+            exit 1
+          fi
+          git fetch --no-tags --depth=1 origin "$FOUNDATION_COMMIT"
+          git cat-file -e "$FOUNDATION_COMMIT^{commit}"
+          git cat-file -e "$FOUNDATION_COMMIT:foundation_core/__init__.py"
+          git checkout --detach "$FOUNDATION_COMMIT"
+      - name: Materialize pinned Foundation public core for Python reference
+        working-directory: operations
+        env:
+          FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core
+        run: |
+          set -euo pipefail
+          python scripts/sync_public_core.py
+          test -f foundation_core/__init__.py
+  
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Install Python extractor baseline
+        working-directory: operations
+        run: |
+          python -m pip install --disable-pip-version-check -e . --no-deps
+          python -m pip install --disable-pip-version-check "lxml>=5,<7" "httpx>=0.27,<1"
+      - name: Build Rust kernel
+        working-directory: operations
+        run: cargo build --release --manifest-path experiments/rust_html_kernel/Cargo.toml
+      - name: Run 32x3 Python/Rust differential benchmark against active extractor
+        working-directory: operations
+        env:
+          PYTHONPATH: .
+        shell: python
+        run: |
+          import json, os, subprocess, time
+          from statistics import median
+          from extractor_mapper.extraction.generic import _products_from_html
+  
+          cases = []
+          for i in range(32):
+              classes = ("product-card", "item-card", "listing-card", "catalog-card")
+              card = classes[i % len(classes)]
+              extras = []
+              if i % 2 == 0:
+                  extras.append(f'<meta itemprop="sku" content="SKU-{i}">')
+              else:
+                  extras.append(f'<span data-sku="SKU-{i}"></span>')
+              if i % 3 == 0:
+                  extras.append(f'<meta itemprop="mpn" content="MPN-{i}">')
+              if i % 4 == 0:
+                  extras.append(f'<meta itemprop="gtin" content="{1000000000000+i}">')
+              if i % 5 == 0:
+                  extras.append('<img src="/img/a.jpg" data-src="/img/b.jpg">')
+              if i % 6 == 0:
+                  extras.append('<table><tr><th>RAM</th><td>32 GB</td></tr></table>')
+              if i % 7 == 0:
+                  extras.append('<p itemprop="description">Fast machine</p>')
+              if i % 3 == 0:
+                  extras.append('<span>In Stock</span>')
+              price = f"₹{100+i:,}"
+              cases.append(
+                  f'<article class="{card}"><h2>Product {i}</h2>'
+                  f'<a href="/p/{i}">/p/{i}</a>'
+                  f'<span class="price">{price}</span>'
+                  + "".join(extras) + '</article>'
+              )
+  
+          binary = "./experiments/rust_html_kernel/target/release/rie_html_kernel"
+          rust_times = []
+          for repeat in range(3):
+              for index, html in enumerate(cases):
+                  expected = _products_from_html(html)
+                  expected_norm = json.loads(json.dumps(expected, default=list, sort_keys=True))
+                  started = time.perf_counter_ns()
+                  proc = subprocess.run([binary], input=html, text=True, capture_output=True, check=True)
+                  rust_times.append(time.perf_counter_ns() - started)
+                  actual = json.loads(proc.stdout)
+                  assert actual == expected_norm, (
+                      f"full parity mismatch repeat={repeat+1} case={index}: "
+                      f"{actual!r} != {expected_norm!r}"
+                  )
+  
+          ordered = sorted(rust_times)
+          def pct(p):
+              pos = (len(ordered)-1) * p
+              lo, hi = int(pos), min(int(pos)+1, len(ordered)-1)
+              return int(ordered[lo] + (ordered[hi]-ordered[lo]) * (pos-lo))
+  
+          summary = {
+              "schema": "rust-html-active-extractor-differential-v2",
+              "cases": 32,
+              "repeats": 3,
+              "parity": "PASS",
+              "rust_latency_ns": {"p50": int(median(ordered)), "p95": pct(0.95), "p99": pct(0.99)},
+              "operations_revision": "${{needs.resolve_operations_ref.outputs.ref}}",
+              "python_reference": "extractor_mapper.extraction.generic._products_from_html",
+              "candidate": "experiments/rust_html_kernel",
+              "comparison": "full_record",
+          }
+          os.makedirs(".runtime", exist_ok=True)
+          with open(".runtime/rust-html-differential.json", "w", encoding="utf-8") as handle:
+              json.dump(summary, handle, indent=2)
+          print(json.dumps(summary, indent=2))
+      - name: Upload Rust HTML differential receipt
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: rust-html-differential-receipt
+          path: operations/.runtime/rust-html-differential.json
+          if-no-files-found: error
+          retention-days: 30
+  
+  rust_jsonld_differential:
+        name: Rust JSON-LD differential parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+  
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+  
+      - name: Materialize pinned Foundation public core
+        working-directory: operations
+        run: python scripts/sync_public_core.py
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+  
+      - name: Install Python reference runtime
+        working-directory: operations
+        run: python -m pip install --disable-pip-version-check -e ".[test]"
+  
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+  
+      - name: Generate Python reference outputs
+        working-directory: operations
+        run: |
+          python benchmark/polyglot/rust_jsonld_product/python_reference.py             benchmark/polyglot/rust_jsonld_product/corpus.jsonl             python-jsonld.jsonl
+  
+      - name: Generate Rust candidate outputs
+        working-directory: operations
+        run: |
+          cargo run --quiet --manifest-path benchmark/polyglot/rust_jsonld_product/Cargo.toml             --bin differential --             benchmark/polyglot/rust_jsonld_product/corpus.jsonl             rust-jsonld.jsonl
+  
+      - name: Compare Python and Rust outputs
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          py = [json.loads(line) for line in Path("python-jsonld.jsonl").read_text().splitlines() if line]
+          rs = [json.loads(line) for line in Path("rust-jsonld.jsonl").read_text().splitlines() if line]
+          assert py == rs, "Rust JSON-LD output diverges from Python canonical output"
+          assert len(py) == 32
+          print("JSON-LD differential parity: PASS (32/32)")
+          PY
+  
+      - name: Benchmark Rust candidate
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_jsonld_product/Cargo.toml --bench normalization
+  
+  rust_link_differential:
+        name: Rust Link-header Python differential parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Materialize pinned Foundation public core
+        working-directory: operations
+        run: python scripts/sync_public_core.py
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Install Python reference runtime
+        working-directory: operations
+        run: python -m pip install --disable-pip-version-check -e .
+      - name: Generate Python reference
+        working-directory: operations
+        run: python benchmark/polyglot/rust_link_pagination/python_reference.py benchmark/polyglot/rust_link_pagination/corpus.jsonl python-link.jsonl
+      - name: Generate Rust candidate
+        working-directory: operations
+        run: cargo run --quiet --manifest-path benchmark/polyglot/rust_link_pagination/Cargo.toml --bin differential -- benchmark/polyglot/rust_link_pagination/corpus.jsonl rust-link.jsonl
+      - name: Compare exact outputs
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          py=[json.loads(v) for v in Path("python-link.jsonl").read_text().splitlines() if v]
+          rs=[json.loads(v) for v in Path("rust-link.jsonl").read_text().splitlines() if v]
+          assert len(py)==len(rs)==33, (len(py), len(rs))
+          for index, (python_row, rust_row) in enumerate(zip(py, rs)):
+              assert python_row == rust_row, (
+                  f"Rust Link-header parser diverges from Python at case {index}: "
+                  f"{rust_row!r} != {python_row!r}"
+              )
+          print("Link-header differential parity: PASS (33/33)")
+          PY
+      - name: Benchmark Rust candidate
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_link_pagination/Cargo.toml
+  
+  rust_robots_differential:
+        name: Rust robots/sitemap Python differential parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Materialize pinned Foundation public core
+        working-directory: operations
+        run: python scripts/sync_public_core.py
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Install Python reference runtime
+        working-directory: operations
+        run: python -m pip install --disable-pip-version-check -e .
+      - name: Generate Python reference
+        working-directory: operations
+        run: python benchmark/polyglot/rust_robots_sitemap/python_reference.py benchmark/polyglot/rust_robots_sitemap/corpus.jsonl python-robots.jsonl
+      - name: Generate Rust candidate
+        working-directory: operations
+        run: cargo run --quiet --manifest-path benchmark/polyglot/rust_robots_sitemap/Cargo.toml --bin differential -- benchmark/polyglot/rust_robots_sitemap/corpus.jsonl rust-robots.jsonl
+      - name: Compare exact outputs
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          py=[json.loads(v) for v in Path("python-robots.jsonl").read_text().splitlines() if v]
+          rs=[json.loads(v) for v in Path("rust-robots.jsonl").read_text().splitlines() if v]
+          assert len(py)==len(rs)==32, (len(py), len(rs))
+          for index, (python_row, rust_row) in enumerate(zip(py, rs)):
+              assert python_row == rust_row, (
+                  f"Rust robots/sitemap parser diverges from Python at case {index}: "
+                  f"{rust_row!r} != {python_row!r}"
+              )
+          print("robots/sitemap differential parity: PASS (32/32)")
+          PY
+      - name: Benchmark Rust candidate
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_robots_sitemap/Cargo.toml
+  
+  rust_text_differential:
+        name: Rust text normalization Python differential parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Materialize pinned Foundation public core
+        working-directory: operations
+        run: python scripts/sync_public_core.py
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Install Python reference runtime
+        working-directory: operations
+        run: python -m pip install --disable-pip-version-check -e .
+      - name: Generate Python reference
+        working-directory: operations
+        run: python experiments/rust_text_normalization/python_reference.py experiments/rust_text_normalization/corpus.jsonl python-text.jsonl
+      - name: Generate Rust candidate
+        working-directory: operations
+        run: cargo run --quiet --manifest-path experiments/rust_text_normalization/Cargo.toml --bin differential -- experiments/rust_text_normalization/corpus.jsonl rust-text.jsonl
+      - name: Compare exact outputs
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          py=[json.loads(v) for v in Path("python-text.jsonl").read_text().splitlines() if v]
+          rs=[json.loads(v) for v in Path("rust-text.jsonl").read_text().splitlines() if v]
+          assert len(py)==len(rs)==32
+          assert py==rs, "Rust text normalization diverges from Python"
+          print("text normalization differential parity: PASS (32/32)")
+          PY
+      - name: Benchmark Rust candidate
+        working-directory: operations
+        run: cargo bench --manifest-path experiments/rust_text_normalization/Cargo.toml
+  
+  rust_link_pagination:
+        name: Rust Link-header pagination parity pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Test
+        working-directory: operations
+        run: cargo test --manifest-path benchmark/polyglot/rust_link_pagination/Cargo.toml
+      - name: Benchmark
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_link_pagination/Cargo.toml
+  

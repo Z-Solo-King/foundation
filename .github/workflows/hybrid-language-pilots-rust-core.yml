@@ -1,0 +1,311 @@
+name: Hybrid language pilots — Rust Core
+
+'on':
+  workflow_call:
+    inputs:
+      operations_ref:
+        description: Immutable Operations revision resolved by the canonical parent workflow
+        required: true
+        type: string
+    secrets:
+      OPERATIONS_APP_ID:
+        required: true
+      OPERATIONS_APP_PRIVATE_KEY:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+        name: Rust HTML parser pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+  
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+  
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+  
+      - name: Test
+        working-directory: operations
+        run: cargo test --manifest-path experiments/rust_html_kernel/Cargo.toml
+  
+  rust_url_identity:
+        name: Rust URL identity parity pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: foundation
+  
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.14'
+  
+      - name: Verify Rust/Python URL parity
+        working-directory: foundation
+        run: python tools/verify_rust_url_identity_parity.py
+  
+      - name: Test
+        working-directory: operations
+        run: cargo test --manifest-path benchmark/polyglot/rust_url_identity/Cargo.toml
+  
+  rust_text_normalization:
+        name: Rust text normalization parity pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+  
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+  
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+  
+      - name: Test
+        working-directory: operations
+        run: cargo test --manifest-path experiments/rust_text_normalization/Cargo.toml
+  
+  
+  rust_url_canonical_differential:
+        name: Rust URL canonicalization Python differential
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{secrets.OPERATIONS_APP_ID}}
+          private-key: ${{secrets.OPERATIONS_APP_PRIVATE_KEY}}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{needs.resolve_operations_ref.outputs.ref}}
+          token: ${{steps.operations-app.outputs.token}}
+          path: operations
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+          cache: false
+      - name: Determine current Foundation URL-reference revision
+        id: foundation-url-ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${GITHUB_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          echo "ref=${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
+      - name: Checkout Foundation URL-reference repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/foundation
+          token: ${{ github.token }}
+          path: foundation-reference
+          fetch-depth: 1
+      - name: Select exact pinned Foundation URL-reference commit
+        working-directory: foundation-reference
+        shell: bash
+        env:
+          FOUNDATION_COMMIT: ${{ steps.foundation-url-ref.outputs.ref }}
+        run: |
+          set -euo pipefail
+          FOUNDATION_COMMIT="$(printf "%s" "$FOUNDATION_COMMIT" | tr -d "\r\n" | xargs)"
+          test -n "$FOUNDATION_COMMIT"
+          git fetch --no-tags --depth=1 origin "$FOUNDATION_COMMIT"
+          git cat-file -e "$FOUNDATION_COMMIT^{commit}"
+          git cat-file -e "$FOUNDATION_COMMIT:backend/sources/http.py"
+          git checkout --detach "$FOUNDATION_COMMIT"
+      - name: Build corpus with adversarial URL cases
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[json.loads(v) for v in Path("benchmark/polyglot/rust_url_identity/corpus.jsonl").read_text().splitlines() if v]
+          base_case_count = len(rows)
+          invalid=["not-a-url","ftp://example.com/file","https:///missing-host","https://","http:///example.com","https://example.com:8443/a","https://user:pass@example.com/a","http://user@example.com/a","http://localhost/a","http://127.0.0.1/a","http://10.0.0.1/a","http://192.168.1.1/a","http://[::1]/a","http://[fc00::1]/a"]
+          rows += [{"id":f"invalid-{i+1:02d}","input":value} for i,value in enumerate(invalid)]
+          Path("benchmark/polyglot/rust_url_identity/differential_corpus.jsonl").write_text("\n".join(json.dumps(v) for v in rows)+"\n", encoding="utf-8")
+          assert len(rows) == base_case_count + len(invalid)
+          assert len(invalid) == 14
+          PY
+      - name: Generate Python canonical outputs
+        working-directory: operations
+        env:
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations:${{ github.workspace }}/foundation-reference
+  
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from backend.sources.http import canonicalize_url
+          rows=[json.loads(v) for v in Path("benchmark/polyglot/rust_url_identity/differential_corpus.jsonl").read_text().splitlines() if v]
+          out=[]
+          for row in rows:
+            try:
+              value=canonicalize_url(row["input"])
+            except Exception:
+              out.append({"id":row["id"],"ok":False})
+            else:
+              out.append({"id":row["id"],"ok":True,"output":value})
+          Path("python-url.jsonl").write_text("\n".join(json.dumps(v,sort_keys=True) for v in out)+"\n")
+          PY
+      - name: Verify URL Python reference import
+        working-directory: operations
+        env:
+          PYTHONPATH: ${{ github.workspace }}/foundation-reference
+        run: python -c "from backend.sources.http import canonicalize_url; assert callable(canonicalize_url)"
+      - name: Generate Rust candidate outputs
+        working-directory: operations
+        run: cargo run --quiet --manifest-path benchmark/polyglot/rust_url_identity/Cargo.toml --bin differential -- benchmark/polyglot/rust_url_identity/differential_corpus.jsonl rust-url.jsonl
+      - name: Compare Python and Rust URL contract
+        working-directory: operations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          py=[json.loads(v) for v in Path("python-url.jsonl").read_text().splitlines() if v]
+          rs=[json.loads(v) for v in Path("rust-url.jsonl").read_text().splitlines() if v]
+          assert len(py)==len(rs)
+          assert len(py) >= 14
+          for a,b in zip(py,rs):
+              assert a["id"]==b["id"]
+              assert a["ok"]==b["ok"], (a,b)
+              if a["ok"]:
+                  assert a["output"]==b["output"], (a,b)
+          print("URL canonicalization differential parity: PASS (57 corpus + 14 adversarial)")
+          PY
+      - name: Benchmark Rust URL candidate
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_url_identity/Cargo.toml --bench normalization
+  
+  rust_url_cli:
+        name: Rust URL identity CLI parity smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Run CLI
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          test "$(cargo run --quiet --manifest-path benchmark/polyglot/rust_url_identity/Cargo.toml -- https://example.com/a https://example.com/b | wc -l)" -eq 2
+  
+  rust_robots_sitemap:
+        name: Rust robots sitemap parity pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ inputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
+        with:
+          toolchain: stable
+      - name: Test
+        working-directory: operations
+        run: cargo test --manifest-path benchmark/polyglot/rust_robots_sitemap/Cargo.toml
+      - name: Benchmark
+        working-directory: operations
+        run: cargo bench --manifest-path benchmark/polyglot/rust_robots_sitemap/Cargo.toml
+  
