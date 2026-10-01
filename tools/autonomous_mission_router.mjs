@@ -10,7 +10,7 @@ export const MISSION_WORKFLOWS = {
   feed_recovery: ['woocommerce-clean-recovery.yml', 'native-google-feed-hunt.yml', 'woocommerce-identified-family-exhaustive-v5.yml'],
   nightly_research: ['nightly-multi-agent-research-v3.yml'],
   audit: ['exhaustive-six-lane-audit.yml', 'cross-repository-contract-drift.yml'],
-  runtime_reconciliation: ['provider-fleet-runtime-state.yml', 'nightly-invariants.yml', 'operations-centralized-validation.yml'],
+  runtime_reconciliation: ['provider-fleet-runtime-state.yml', 'live-ai-provider-crossfire.yml', 'nightly-invariants.yml', 'operations-centralized-validation.yml'],
   component_improvement: [...new Set(Object.values(COMPONENT_WORKFLOWS).flat())],
 };
 export const FORBIDDEN_WORKFLOWS = new Set(['heroic-ai-production-release.yml']);

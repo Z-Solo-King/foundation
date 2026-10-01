@@ -134,6 +134,10 @@
     [
       ".github/workflows/woocommerce-native-xml-recovery-v18.yml",
       "private_feed_extraction"
+    ],
+    [
+      ".github/workflows/live-ai-provider-crossfire.yml",
+      "ai_provider_crossfire"
     ]
   ],
   "policy": {

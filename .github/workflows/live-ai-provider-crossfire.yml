@@ -1,0 +1,85 @@
+name: Live AI provider cross-fire benchmark
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/live-ai-provider-crossfire.yml"
+      - "benchmark/ai_provider_crossfire.py"
+      - "docs/AI_PROVIDER_FLEET_2026-09-30.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-ai-provider-crossfire
+  cancel-in-progress: true
+
+jobs:
+  crossfire:
+    name: Parallel provider speed-quality cross-fire
+    runs-on: ubuntu-latest
+    environment: production-secret-sync
+    timeout-minutes: 12
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Run concurrent zero-cost provider cross-fire
+        env:
+          PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime/live-ai-crossfire
+          python benchmark/ai_provider_crossfire.py \
+            --providers-max 5 \
+            --repeats 3 \
+            --workers 12 \
+            --output .runtime/live-ai-crossfire/provider-crossfire.json
+
+      - name: Publish sanitized benchmark summary
+        if: always()
+        run: |
+          set -euo pipefail
+          test -f .runtime/live-ai-crossfire/provider-crossfire.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path(".runtime/live-ai-crossfire/provider-crossfire.json").read_text())
+          summary={
+            "schema":data.get("schema"),
+            "generated_at":data.get("generated_at"),
+            "providers_tested":len(data.get("providers",[])),
+            "call_count":data.get("call_count"),
+            "crossfire_batch_wall_ms":data.get("batch_wall_ms"),
+            "providers":[{
+              "provider":x.get("provider"),
+              "model":x.get("model"),
+              "calls":x.get("calls"),
+              "successes":x.get("successes"),
+              "quality_passes":x.get("quality_passes"),
+              "quality_total":x.get("quality_total"),
+              "quality_score":x.get("quality_score"),
+              "latency":x.get("latency_ms"),
+              "provider_batch_ms":x.get("provider_batch_ms"),
+              "errors":x.get("errors"),
+            } for x in data.get("providers",[])]
+          }
+          Path(".runtime/live-ai-crossfire/summary.json").write_text(json.dumps(summary,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(summary,indent=2,sort_keys=True))
+          PY
+
+      - name: Upload benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: live-ai-provider-crossfire
+          path: .runtime/live-ai-crossfire
+          retention-days: 30
+          if-no-files-found: error
