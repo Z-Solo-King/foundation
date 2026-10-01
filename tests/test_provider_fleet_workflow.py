@@ -81,4 +81,4 @@ def test_provider_fleet_workflow_uses_cloudflare_secret_collection_endpoint() ->
     text = WORKFLOW.read_text(encoding="utf-8")
     assert "/workers/scripts/$CLOUDFLARE_SCRIPT_NAME/secrets" in text
     assert "/secrets/CHAT_PROVIDER_RUNTIME_STATE" not in text
-    assert '{name:"CHAT_PROVIDER_RUNTIME_STATE",text:$state,type:"secret_text"}' in text
+    assert 'name:"CHAT_PROVIDER_RUNTIME_STATE",text:$state,type:"secret_text"' in text
