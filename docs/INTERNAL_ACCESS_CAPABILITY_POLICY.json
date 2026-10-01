@@ -1,0 +1,47 @@
+{
+  "schema": "internal-access-capability-policy/v1",
+  "checked_at": "2026-10-01",
+  "chatgpt_is_runtime_dependency": false,
+  "capabilities": {
+    "foundation": "github_actions_exact_ref_checkout",
+    "github_actions": "job_scoped_token_actions_write_contents_read_issues_write",
+    "operations_source": "repo_scoped_github_app_contents_read",
+    "chatbot": "foundation_api_to_operations_service_binding",
+    "cloudflare": "dedicated_workflow_and_service_bindings",
+    "backblaze": "protected_backup_runtime",
+    "operations_db": "OPERATIONS_DB_binding",
+    "provider_fleet": "AI_binding_and_governed_provider_runtime",
+    "production_release": "existing_release_gate_only"
+  },
+  "cloudflare_topology": {
+    "heroic": {
+      "CORE": "heroic-core"
+    },
+    "heroic_core": {
+      "OPERATIONS": "operations-edge",
+      "DB": "D1",
+      "B2": [
+        "B2_KEY_ID",
+        "B2_APPLICATION_KEY",
+        "B2_BUCKET",
+        "B2_ENDPOINT"
+      ]
+    },
+    "operations_edge": {
+      "CORE": "operations"
+    },
+    "operations": {
+      "AI": "AI",
+      "FOUNDATION": "heroic",
+      "OPERATIONS_DB": "D1",
+      "auth": [
+        "AUTH_TOKEN",
+        "CHAT_BACKEND_TOKEN"
+      ]
+    }
+  },
+  "private_operations_free_plan": {
+    "native_protection": false,
+    "compensating_control": "Foundation immutable approval manifest + 15-minute integrity guard + immutable production/runtime pins"
+  }
+}
