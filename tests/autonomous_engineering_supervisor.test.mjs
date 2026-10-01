@@ -1,12 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validatePlan } from '../tools/autonomous_mission_router.mjs';
+import { parseState, sanitize } from '../tools/autonomous_engineering_supervisor.mjs';
 
-test('autonomous supervisor contract stays compatible with router', () => {
-  const plan = {schema:'autonomous-mission-plan/v1',mission_type:'audit',summary:'run audit',terminal:null,
-    actions:[{id:'a1',kind:'dispatch_workflow',workflow:'exhaustive-six-lane-audit.yml',inputs:{},reason:'collect evidence',retry_policy:'bounded'}],
-    next_state:'executing',stop_reason:null};
-  const normalized = validatePlan(plan);
-  assert.equal(normalized.actions.length, 1);
-  assert.equal(Object.keys(normalized.actions[0].inputs).length, 0);
+test('mission state parser reads durable issue marker', () => {
+  const body = '<!-- autonomous-mission-state:start -->\n```json\n{"schema":"autonomous-mission-state/v1","state":"executing"}\n```\n<!-- autonomous-mission-state:end -->';
+  assert.equal(parseState(body).state, 'executing');
+});
+
+test('sanitizer removes credential-like values before planner context', () => {
+  const value = 'API_KEY=secret123 PRIVATE_KEY=abc SECRET=xyz ordinary';
+  const output = sanitize(value);
+  assert.equal(output.includes('secret123'), false);
+  assert.equal(output.includes('abc'), false);
+  assert.equal(output.includes('xyz'), false);
+  assert.equal(output.includes('ordinary'), true);
 });
