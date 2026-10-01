@@ -18,6 +18,7 @@ jobs:
   prepare:
     name: Build 30-site emergency matrix
     runs-on: ubuntu-latest
+    environment: production-secret-sync
     timeout-minutes: 5
     outputs:
       sites: ${{ steps.matrix.outputs.sites }}
@@ -122,6 +123,7 @@ jobs:
   recover:
     name: Recover ${{ matrix.site.name }}
     needs: [prepare, ai_crossfire]
+    if: always() && needs.prepare.result == 'success'
     runs-on: ubuntu-latest
     environment: production-secret-sync
     timeout-minutes: 12
