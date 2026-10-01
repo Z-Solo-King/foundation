@@ -1,9 +1,7 @@
 name: Project-wide autonomous improvement sweep
 
 on:
-  schedule:
-    - cron: '17 */4 * * *'
-  workflow_dispatch:
+workflow_dispatch:
     inputs:
       dry_run:
         description: 'Plan/validate only; never dispatch a child workflow'

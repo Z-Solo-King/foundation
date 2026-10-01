@@ -1,12 +1,6 @@
 name: Live AI provider cross-fire benchmark
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/live-ai-provider-crossfire.yml"
-      - "benchmark/ai_provider_crossfire.py"
-      - "docs/AI_PROVIDER_FLEET_2026-09-30.json"
   workflow_dispatch:
 
 permissions:

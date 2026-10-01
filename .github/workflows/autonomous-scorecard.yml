@@ -1,20 +1,7 @@
 name: autonomous research scorecard
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - benchmark/autonomous_scorecard.py
-      - benchmark/test_autonomous_scorecard.py
-      - benchmark/public_chatbot_runner.py
-      - benchmark/chatbot_query_benchmark.py
-      - benchmark/chatbot-query-corpus.json
-      - benchmark/research_artifact_validator.py
-      - benchmark/research_artifact_catalog.json
-      - .github/workflows/autonomous-scorecard.yml
   workflow_dispatch:
-  schedule:
-    - cron: '15 20 * * *' # 01:45 Asia/Kolkata
 
 permissions:
   contents: read

@@ -1,9 +1,7 @@
 name: Nightly AI research — 20 parallel jobs
 
 on:
-  schedule:
-    - cron: "0 18 * * *"
-  workflow_dispatch:
+workflow_dispatch:
     inputs:
       lookback_hours:
         description: "Look back window for current GitHub/Reddit/X signals"

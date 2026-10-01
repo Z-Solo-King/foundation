@@ -1,8 +1,6 @@
 name: Canonical workflow-dispatch bridge acceptance
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

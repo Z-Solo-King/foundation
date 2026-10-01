@@ -1,24 +1,6 @@
 name: autonomous benchmark
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "benchmark/targets-20.json"
-      - "benchmark/public_chatbot_runner.py"
-      - "benchmark/chatbot-query-corpus.json"
-      - "benchmark/chatbot_query_benchmark.py"
-      - "benchmark/nightly/**"
-      - "backend/intelligence/planning.py"
-      - "backend/intelligence/contracts.py"
-      - ".github/workflows/autonomous-benchmark.yml"
-      - ".github/workflows/nightly-ai-research-20jobs.yml"
-      - "scripts/build_nightly_ai_research_report.js"
-      - "docs/FAMILY_INTEGRATION_GRAPH.json"
-      - "benchmark/ai_agent_task_matrix_v1.json"
-  schedule:
-    # 21:15 IST = 15:45 UTC. Nightly benchmark run.
-    - cron: "45 15 * * *"
   workflow_dispatch:
 
 permissions:
