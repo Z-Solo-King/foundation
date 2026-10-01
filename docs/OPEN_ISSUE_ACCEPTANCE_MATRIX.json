@@ -1,11 +1,11 @@
 {
   "schema": "family-issue-acceptance-matrix/v1",
-  "audited_at": "2026-09-30T17:10:00+05:30",
+  "audited_at": "2026-10-01T06:35:00Z",
   "repository_heads": {
-    "foundation": "5c1f3aa8ba4cb89ce4aac9ab1321e1ccf9326210",
-    "operations": "c6cc64364b7d3bd3e536a8a847ee01357458fb31"
+    "foundation": "9ca2348f5acb696c85960932e8074d5fe0ad1681",
+    "operations": "37b35ba9e94600d746bc81e48cd2918b0c239bc7"
   },
-  "open_issue_count": 6,
+  "open_issue_count": 7,
   "issues": [
     {
       "repo": "foundation",
@@ -27,7 +27,7 @@
     {
       "repo": "foundation",
       "number": 1247,
-      "title": "feed: WooCommerce Google Feed Recovery — 10 unresolved retailers",
+      "title": "feed: WooCommerce Google Feed Recovery \u2014 10 unresolved retailers",
       "required_evidence": [
         "public discovery for unresolved retailers",
         "strict payload validation"
@@ -35,8 +35,19 @@
     },
     {
       "repo": "foundation",
+      "number": 1672,
+      "title": "architecture: autonomous AI engineering control plane",
+      "required_evidence": [
+        "single canonical orchestration authority",
+        "deterministic mission routing",
+        "human gate for production/authority/secret changes",
+        "no competing orchestration authority"
+      ]
+    },
+    {
+      "repo": "foundation",
       "number": 1249,
-      "title": "feed: Custom/API Google Feed Recovery — chat handoff",
+      "title": "feed: Custom/API Google Feed Recovery \u2014 chat handoff",
       "required_evidence": [
         "additional real Google Merchant XML feed discoveries",
         "strict payload validation"
