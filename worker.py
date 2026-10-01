@@ -193,32 +193,53 @@ def _chat_headers(request):
         headers["X-Heroic-Research-Proof"] = "1"
     return headers
 
+async def _private_policy_envelope(env, request):
+    operations = getattr(env, "OPERATIONS", None)
+    if operations is None:
+        raise RuntimeError("private policy authority is unavailable")
+    headers = {"Content-Type": "application/json"}
+    token = _bearer_token(request)
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    response = await operations.fetch(
+        _service_request("https://private/v1/policy/envelope", method="GET", headers=headers)
+    )
+    body = await response.json()
+    if int(response.status) != 200 or not isinstance(body, dict) or body.get("schema") != "protected-policy-envelope/v1":
+        raise RuntimeError("invalid private policy authority response")
+    if not str(body.get("policy_digest") or "").strip():
+        raise RuntimeError("private policy authority digest is missing")
+    return body
 
 
-async def _public_admit(env, route, subject_fingerprint, event_id):
+
+
+async def _public_admit(env, route, subject_fingerprint, event_id, request=None, policy_envelope=None):
     db = getattr(env, "DB", None)
     environment = str(getattr(env, "ENVIRONMENT", "production") or "production").casefold()
     local_bypass = str(getattr(env, "LOCAL_DEVELOPMENT_AUTH_BYPASS", "") or "").casefold() == "true"
     if db is None:
         if environment == "development" and local_bypass:
-            return AdmissionDecision(
-                AdmissionOutcome.ACCEPTED,
-                route,
-                True,
-                "explicit local development admission bypass",
-            ), None
-        return AdmissionDecision(
-            AdmissionOutcome.AUTHORITY_UNAVAILABLE,
-            route,
-            False,
-            "admission authority is unavailable for a protected resource-consuming route",
-            AdmissionPolicy().retry_after_seconds,
-        ), None
-    store = D1AdmissionStore(db)
-    return await store.acquire(
+            return AdmissionDecision(AdmissionOutcome.ACCEPTED, route, True, "explicit local development admission bypass"), None
+        return AdmissionDecision(AdmissionOutcome.AUTHORITY_UNAVAILABLE, route, False, "admission authority is unavailable for a protected resource-consuming route"), None
+    if policy_envelope is None:
+        try:
+            policy_envelope = await _private_policy_envelope(env, request)
+        except Exception as exc:
+            _stable_exception_log("private admission policy lookup failure", exc)
+            return AdmissionDecision(AdmissionOutcome.AUTHORITY_UNAVAILABLE, route, False, "protected admission policy authority is unavailable"), None
+    try:
+        admission_payload = policy_envelope.get("admission")
+        if not isinstance(admission_payload, dict):
+            raise ValueError("private admission policy is missing")
+        policy = AdmissionPolicy.from_mapping(admission_payload)
+    except Exception as exc:
+        _stable_exception_log("private admission policy parse failure", exc)
+        return AdmissionDecision(AdmissionOutcome.AUTHORITY_UNAVAILABLE, route, False, "protected admission policy authority is unavailable"), None
+    return await D1AdmissionStore(db).acquire(
         subject_fingerprint=subject_fingerprint,
         route=route,
-        policy=AdmissionPolicy(),
+        policy=policy,
         event_id=event_id,
     )
 
@@ -676,7 +697,20 @@ class Default(WorkerEntrypoint):
             event_id = _idempotency_key(request, f"research:{uuid.uuid4().hex}")
             if raw_key is not None and event_id is None:
                 return _authenticated_json({"ok": False, "error": "invalid_idempotency_key"}, status=400)
-            decision, lease = await _public_admit(self.env, AdmissionRoute.RESEARCH, subject_fingerprint, event_id)
+            policy_envelope = None
+            try:
+                policy_envelope = await _private_policy_envelope(self.env, request)
+            except Exception as exc:
+                _stable_exception_log("private research policy lookup failure", exc)
+                return _authenticated_json({"ok": False, "error": "protected policy authority unavailable"}, status=503)
+            decision, lease = await _public_admit(
+                self.env,
+                AdmissionRoute.RESEARCH,
+                subject_fingerprint,
+                event_id,
+                request,
+                policy_envelope=policy_envelope,
+            )
             denied = _admission_response(decision)
             if denied is not None:
                 return denied
@@ -684,7 +718,7 @@ class Default(WorkerEntrypoint):
             phase = "submit_research"
             persistence = None
             try:
-                result = submit_research(req)
+                result = submit_research(req, planning_policy=policy_envelope.get("research_planning") if isinstance(policy_envelope, dict) else None)
                 if not result.ok:
                     return _authenticated_json({"ok": False, "error": "research_rejected"}, status=400)
                 persistence = CloudflarePersistence(self.env)

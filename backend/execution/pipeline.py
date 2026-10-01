@@ -12,8 +12,8 @@ from backend.intelligence.planning import create_plan
 PipelineRun = ResearchRun
 
 
-def start_run(contract: ResearchContract, run_id: str = "pipeline-compat") -> ResearchRun:
-    return create_run(run_id, contract, create_plan(contract))
+def start_run(contract: ResearchContract, run_id: str = "pipeline-compat", planning_policy: dict[str, object] | None = None) -> ResearchRun:
+    return create_run(run_id, contract, create_plan(contract, planning_policy=planning_policy))
 
 
 def attach_observation(run: ResearchRun, observation, budget: ResourceBudget) -> ResearchRun:

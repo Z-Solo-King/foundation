@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Mapping
 
 
 SOURCE_ACCESS_POLICY_VERSION = "source-access/v1"
@@ -31,16 +32,16 @@ class DisclosureClass(StrEnum):
 
 @dataclass(frozen=True)
 class SourceAccessPolicy:
-    policy_version: str = SOURCE_ACCESS_POLICY_VERSION
-    access_class: AccessClass = AccessClass.PUBLIC
-    acquisition_method: str = "http_get"
-    requires_authentication: bool = False
-    robots_restriction: bool = False
-    retention_class: RetentionClass = RetentionClass.SHORT
-    raw_content_allowed: bool = False
-    disclosure_class: DisclosureClass = DisclosureClass.PUBLIC_SAFE
-    revalidation_required: bool = True
-    revalidation_after_seconds: int | None = None
+    policy_version: str
+    access_class: AccessClass
+    acquisition_method: str
+    requires_authentication: bool
+    robots_restriction: bool
+    retention_class: RetentionClass
+    raw_content_allowed: bool
+    disclosure_class: DisclosureClass
+    revalidation_required: bool
+    revalidation_after_seconds: int | None
 
     def validate(self) -> None:
         if self.policy_version != SOURCE_ACCESS_POLICY_VERSION:
@@ -79,13 +80,7 @@ class SourceAccessDecision:
             raise ValueError("rejected sources cannot receive standard retention")
 
 
-def decide_source_access(
-    policy: SourceAccessPolicy,
-    *,
-    requested_disclosure: DisclosureClass,
-    request_authenticated: bool,
-    restricted_research: bool = True,
-) -> SourceAccessDecision:
+def decide_source_access(policy: SourceAccessPolicy, *, requested_disclosure: DisclosureClass, request_authenticated: bool, restricted_research: bool) -> SourceAccessDecision:
     policy.validate()
     if requested_disclosure is DisclosureClass.PUBLIC_SAFE and policy.disclosure_class is not DisclosureClass.PUBLIC_SAFE:
         decision = SourceAccessDecision(False, "policy does not permit public disclosure", policy.retention_class, policy.disclosure_class, policy.revalidation_required)
@@ -101,72 +96,58 @@ def decide_source_access(
     return decision
 
 
-def retention_seconds(policy: SourceAccessPolicy) -> int | None:
+def retention_seconds(policy: SourceAccessPolicy, retention_ttl_seconds: Mapping[RetentionClass, int | None]) -> int | None:
     policy.validate()
-    return {
-        RetentionClass.NONE: 0,
-        RetentionClass.EPHEMERAL: 0,
-        RetentionClass.SHORT: 86_400,
-        RetentionClass.STANDARD: 7 * 86_400,
-        RetentionClass.UNKNOWN: None,
-    }[policy.retention_class]
+    if policy.retention_class not in retention_ttl_seconds:
+        raise ValueError("retention policy value is unavailable")
+    return retention_ttl_seconds[policy.retention_class]
 
 
-def expires_at(observed_at, policy: SourceAccessPolicy):
+def expires_at(observed_at, policy: SourceAccessPolicy, retention_ttl_seconds: Mapping[RetentionClass, int | None]):
     from datetime import timedelta, timezone
     policy.validate()
     if observed_at.tzinfo is None:
         raise ValueError("observed_at must be timezone-aware")
-    seconds = retention_seconds(policy)
+    seconds = retention_seconds(policy, retention_ttl_seconds)
+    if seconds is None:
+        return None
     return observed_at.astimezone(timezone.utc) + timedelta(seconds=seconds)
 
 
-def revalidation_due(observed_at, policy: SourceAccessPolicy):
+def revalidation_due(observed_at, policy: SourceAccessPolicy, default_revalidation_seconds: int | None):
     from datetime import timedelta, timezone
     policy.validate()
     if observed_at.tzinfo is None:
         raise ValueError("observed_at must be timezone-aware")
     if not policy.revalidation_required:
         return None
-    return observed_at.astimezone(timezone.utc) + timedelta(
-        seconds=policy.revalidation_after_seconds if policy.revalidation_after_seconds is not None else 86_400
-    )
+    seconds = policy.revalidation_after_seconds if policy.revalidation_after_seconds is not None else default_revalidation_seconds
+    if seconds is None or seconds < 0:
+        raise ValueError("revalidation policy value is unavailable")
+    return observed_at.astimezone(timezone.utc) + timedelta(seconds=seconds)
 
 
-def resolve_source_policy_conflict(policies: tuple[SourceAccessPolicy, ...] | list[SourceAccessPolicy]) -> SourceAccessPolicy:
+def resolve_source_policy_conflict(
+    policies: tuple[SourceAccessPolicy, ...] | list[SourceAccessPolicy],
+    *,
+    access_rank: Mapping[AccessClass, int],
+    disclosure_rank: Mapping[DisclosureClass, int],
+    retention_rank: Mapping[RetentionClass, int],
+) -> SourceAccessPolicy:
     if not policies:
         raise ValueError("at least one source policy is required")
     for policy in policies:
         policy.validate()
     if all(policy == policies[0] for policy in policies[1:]):
         return policies[0]
-    access_rank = {
-        AccessClass.RESTRICTED: 4,
-        AccessClass.AUTHENTICATED: 3,
-        AccessClass.PUBLIC: 2,
-        AccessClass.UNKNOWN: 0,
-    }
-    disclosure_rank = {
-        DisclosureClass.FORBIDDEN: 4,
-        DisclosureClass.PRIVATE_ONLY: 3,
-        DisclosureClass.METADATA_ONLY: 2,
-        DisclosureClass.PUBLIC_SAFE: 1,
-    }
-    retention_rank = {
-        RetentionClass.NONE: 4,
-        RetentionClass.EPHEMERAL: 3,
-        RetentionClass.SHORT: 2,
-        RetentionClass.STANDARD: 1,
-        RetentionClass.UNKNOWN: 0,
-    }
     return max(
         policies,
         key=lambda policy: (
-            access_rank[policy.access_class],
-            disclosure_rank[policy.disclosure_class],
-            retention_rank[policy.retention_class],
-            policy.requires_authentication,
-            policy.robots_restriction,
-            not policy.raw_content_allowed,
+            access_rank.get(policy.access_class, -1),
+            disclosure_rank.get(policy.disclosure_class, -1),
+            retention_rank.get(policy.retention_class, -1),
+            int(policy.requires_authentication),
+            int(policy.robots_restriction),
+            int(not policy.raw_content_allowed),
         ),
     )
