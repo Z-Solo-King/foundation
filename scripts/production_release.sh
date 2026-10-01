@@ -332,7 +332,12 @@ expected_provider_list="$(PYTHONPATH="$RUNNER_TEMP/operations" python -c 'from p
 test -n "$actual_provider_list"
 test "$actual_provider_list" = "$expected_provider_list"
 grep -q '^CHAT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/zai-org/glm-4.7-flash"$' "$RUNNER_TEMP/operations/wrangler.toml"
-grep -q '"workers_ai_neurons":10000' "$RUNNER_TEMP/operations/wrangler.toml"
+grep -q '"d1_reads":50000' "$RUNNER_TEMP/operations/wrangler.toml"
+grep -q '"d1_writes":1000' "$RUNNER_TEMP/operations/wrangler.toml"
+grep -q '"browser_minutes":0' "$RUNNER_TEMP/operations/wrangler.toml"
+grep -q '"workers_ai_neurons":100' "$RUNNER_TEMP/operations/wrangler.toml"
+grep -q '"model_calls":100' "$RUNNER_TEMP/operations/wrangler.toml"
+grep -q '"search_calls":500' "$RUNNER_TEMP/operations/wrangler.toml"
 grep -q 'CHAT_BACKEND_TOKEN' "$RUNNER_TEMP/operations/private/chat_auth.py"
 grep -q 'from private.chat_auth import authorized_chat_request' "$RUNNER_TEMP/operations/worker.py"
 

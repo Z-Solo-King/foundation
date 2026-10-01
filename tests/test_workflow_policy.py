@@ -649,8 +649,12 @@ def test_research_worker_proxy_keeps_auth_token_out_of_command_line_and_logs():
     assert 'log_message(self, fmt: str, *args: object) -> None:' in proxy
 def test_production_release_enforces_cloudflare_free_neuron_cap():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert '"workers_ai_neurons":10000' in deployment
-    assert '"workers_ai_neurons":9000' not in deployment
+    assert '"d1_reads":50000' in deployment
+    assert '"d1_writes":1000' in deployment
+    assert '"browser_minutes":0' in deployment
+    assert '"workers_ai_neurons":100' in deployment
+    assert '"model_calls":100' in deployment
+    assert '"search_calls":500' in deployment
 def test_production_release_accepts_current_family_sync_state_schema():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert '.repositories?' in deployment
