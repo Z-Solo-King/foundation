@@ -261,3 +261,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+# Live cross-fire trigger refresh: 2026-10-01T13:30Z
