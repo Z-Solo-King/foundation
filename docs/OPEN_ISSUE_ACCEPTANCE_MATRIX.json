@@ -1,11 +1,11 @@
 {
   "schema": "family-issue-acceptance-matrix/v1",
-  "audited_at": "2026-10-01",
+  "audited_at": "2026-10-01T17:45:00Z",
   "repository_heads": {
-    "foundation": "b4446e3d74a6d968c6681a849582525f0eb49d16",
-    "operations": "2133534f9512eee4df49d78f6c39530502944b74"
+    "foundation": "22f81074ac41b19a671d692d48f8d111d78a3786",
+    "operations": "3c780e33772c87ec6c3b6df75a857e5404f0b861"
   },
-  "open_issue_count": 6,
+  "open_issue_count": 5,
   "issues": [
     {
       "repo": "foundation",
@@ -56,18 +56,6 @@
         "AI maintainability",
         "rollback"
       ]
-    },
-    {
-      "repo": "operations",
-      "number": 1466,
-      "title": "ops: centralize hard-quota monitoring for B2, Cloudflare, AI providers, and GitHub",
-      "required_evidence": [
-        "single read-only resource snapshot",
-        "provenance for every metric",
-        "unavailable telemetry remains unavailable",
-        "15-minute monitoring and hourly billing reconciliation",
-        "regression coverage for quota/resource telemetry"
-      ]
     }
   ],
   "evidence_rules": {
@@ -107,7 +95,8 @@
     "public_worker": "heroic",
     "private_edge_worker": "operations-edge",
     "private_core_worker": "operations",
-    "chain": "heroic (JavaScript) -> heroic-core (Python) -> operations-edge (JavaScript) -> operations (Python)"
+    "chain": "heroic (JavaScript) -> heroic-core (Python) -> operations-edge (JavaScript) -> operations (Python)",
+    "source_of_truth": "live GitHub/Cloudflare; repository snapshots are continuity evidence only"
   },
   "public_surface_note": "Live private identifiers and secret values remain redacted.",
   "migration_status": {
@@ -164,5 +153,10 @@
     "production_cutover": "CODE_MERGED_RUNTIME_PENDING",
     "rollback_authority": "Python control-plane core",
     "candidate_freeze": "ACTIVE; promotion remains opt-in rather than a blocker"
+  },
+  "ai_navigation": {
+    "entrypoint": "docs/AI_SYSTEM_DIRECTORY.md",
+    "unified_map": "docs/AI_SYSTEM_MAP.json",
+    "categories_may_overlap": true
   }
 }
