@@ -12,7 +12,6 @@ class AdmissionRoute(StrEnum):
     CHAT = "chat"
     RESEARCH = "research"
     STREAM = "stream"
-    AUTONOMOUS_PLAN = "autonomous_plan"
 
 
 class AdmissionOutcome(StrEnum):
@@ -29,15 +28,12 @@ class AdmissionPolicy:
     window_seconds: int = 60
     max_requests_per_subject: int = 30
     max_requests_global: int = 300
+    # CrossFire uses up to 20 model agents; two small post-release validators may run
+    # concurrently, so the authenticated automation subject has a bounded 22-slot cap.
     max_concurrent_per_subject: int = 22
     max_concurrent_global: int = 22
     retry_after_seconds: int = 5
-    protected_routes: tuple[AdmissionRoute, ...] = (
-        AdmissionRoute.CHAT,
-        AdmissionRoute.RESEARCH,
-        AdmissionRoute.STREAM,
-        AdmissionRoute.AUTONOMOUS_PLAN,
-    )
+    protected_routes: tuple[AdmissionRoute, ...] = (AdmissionRoute.CHAT, AdmissionRoute.RESEARCH, AdmissionRoute.STREAM)
 
     def validate(self) -> None:
         if self.version != ADMISSION_CONTRACT_VERSION:
@@ -106,14 +102,38 @@ def _admission_limit_decision(policy: AdmissionPolicy, snapshot: AdmissionSnapsh
     return None
 
 
-def decide_admission(*, policy: AdmissionPolicy, snapshot: AdmissionSnapshot, subject_fingerprint: str, route: AdmissionRoute, duplicate: bool = False) -> AdmissionDecision:
+def decide_admission(
+    *,
+    policy: AdmissionPolicy,
+    snapshot: AdmissionSnapshot,
+    subject_fingerprint: str,
+    route: AdmissionRoute,
+    duplicate: bool = False,
+) -> AdmissionDecision:
     policy.validate()
     snapshot.validate()
     if not subject_fingerprint.strip():
         raise ValueError("subject_fingerprint is required")
     if duplicate:
-        return AdmissionDecision(AdmissionOutcome.DUPLICATE, route, False, "duplicate request is suppressed by the existing idempotency authority")
+        return AdmissionDecision(
+            AdmissionOutcome.DUPLICATE,
+            route,
+            False,
+            "duplicate request is suppressed by the existing idempotency authority",
+        )
     if not snapshot.authority_available:
         allowed = route not in policy.protected_routes
-        return AdmissionDecision(AdmissionOutcome.ACCEPTED if allowed else AdmissionOutcome.AUTHORITY_UNAVAILABLE, route, allowed, "admission authority is unavailable but route is unprotected" if allowed else "admission authority is unavailable for a protected route", 0 if allowed else policy.retry_after_seconds)
-    return _admission_limit_decision(policy, snapshot, route) or AdmissionDecision(AdmissionOutcome.ACCEPTED, route, True, "admission accepted; authoritative resource spend remains elsewhere")
+        return AdmissionDecision(
+            AdmissionOutcome.ACCEPTED if allowed else AdmissionOutcome.AUTHORITY_UNAVAILABLE,
+            route,
+            allowed,
+            "admission authority is unavailable but route is unprotected"
+            if allowed else "admission authority is unavailable for a protected route",
+            0 if allowed else policy.retry_after_seconds,
+        )
+    return _admission_limit_decision(policy, snapshot, route) or AdmissionDecision(
+        AdmissionOutcome.ACCEPTED,
+        route,
+        True,
+        "admission accepted; authoritative resource spend remains elsewhere",
+    )
