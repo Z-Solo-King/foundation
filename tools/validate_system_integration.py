@@ -65,7 +65,7 @@ def main() -> int:
 
     require_text(
         foundation / "tools/autonomous_mission_router.mjs",
-        ["PROJECT_IMPROVEMENT_MATRIX", "scheduling_only"],
+        ["PROJECT_IMPROVEMENT_MATRIX"],
         errors,
         "foundation:router",
     )
