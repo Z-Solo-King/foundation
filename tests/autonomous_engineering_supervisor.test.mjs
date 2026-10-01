@@ -97,22 +97,16 @@ test('dispatches independent plan actions concurrently and records every child',
   assert.equal(result.attempts['c.yml'], 1);
 });
 
-test('dispatches independent plan actions concurrently and records every child', async () => {
-  const started = [];
-  const plan = {actions:[{workflow:'a.yml'},{workflow:'b.yml'},{workflow:'c.yml'}]};
-  const state = {workflow_attempts:{}};
-  const dispatchWorkflowFn = async (workflow) => {
-    started.push(workflow);
-    await new Promise((resolve) => setTimeout(resolve, 15));
-  };
-  const findRecentWorkflowRunFn = async (workflow) => ({id:workflow});
-  const result = await dispatchPlanActions({
-    plan, state, dryRun:false, maxWorkflowAttempts:3, foundationSha:'sha',
-    dispatchWorkflowFn, findRecentWorkflowRunFn,
+
+ 
+test('fallback avoids recently successful workflow and selects the next independent lanes', () => {
+  const now = new Date().toISOString();
+  const plan = deterministicFallbackPlan({
+    mode:'component_improvement',
+    target_component:'extractor',
+    open_issues:[],
+    recent_runs:[{path:'.github/workflows/extractor-surface-governance.yml',status:'completed',conclusion:'success',created_at:now}],
+    workflow_attempts:{},
   });
-  assert.deepEqual(started.sort(), ['a.yml','b.yml','c.yml']);
-  assert.deepEqual(result.children.map((item)=>item.run.id).sort(), ['a.yml','b.yml','c.yml']);
-  assert.equal(result.attempts['a.yml'], 1);
-  assert.equal(result.attempts['b.yml'], 1);
-  assert.equal(result.attempts['c.yml'], 1);
+  assert.deepEqual(plan.actions.map((a)=>a.workflow), ['live-extractor-benchmark.yml','operations-centralized-validation.yml']);
 });
