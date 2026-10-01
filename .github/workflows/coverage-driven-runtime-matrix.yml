@@ -128,13 +128,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           if [[ ! "$PINNED_OPERATIONS_REF" =~ ^[0-9a-f]{40}$ ]]; then
             echo "operations_acceptance_pin_must_be_immutable_sha: $PINNED_OPERATIONS_REF"
             exit 1
           fi
+
           echo "Coverage matrix is intentionally testing immutable Operations revision: $PINNED_OPERATIONS_REF"
           echo "Unpromoted Operations main drift is not a reason to replace or reject the approved runtime pin."
-
       - name: Checkout pinned Operations
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -254,6 +255,7 @@ jobs:
           import json
           import os
           from pathlib import Path
+
           status = int(os.environ["SCENARIO_STATUS"])
           p = Path("../coverage-artifacts/${{ matrix.id }}/scenario.json")
           p.write_text(json.dumps({
@@ -315,6 +317,7 @@ jobs:
           set -euo pipefail
           test -n "${AUTH_TOKEN:-}" || { echo 'AUTH_TOKEN is required for main-branch live acceptance probes'; exit 1; }
           key="fast-${GITHUB_RUN_ID}-${{ matrix.id }}"
+          # Live acceptance requires the deployed Worker to advertise the exact immutable revisions under test.
           provenance_ok=false
           for attempt in $(seq 1 20); do
             readiness_status=$(curl -sS --max-time 20 -o /tmp/live-readiness.json -w '%{http_code}' "$BASE_URL/readiness" || true)
@@ -326,17 +329,22 @@ jobs:
           done
           if [ "$provenance_ok" != "true" ]; then
             echo "Live runtime provenance does not match the immutable revisions under test."
-            echo "Expected Foundation=$GITHUB_SHA Operations=$OPERATIONS_REF"
+            echo "Expected Foundation=${GITHUB_SHA} Operations=${OPERATIONS_REF}"
             cat /tmp/live-readiness.json 2>/dev/null || true
             exit 1
           fi
-          echo "Live runtime provenance: PASS (Foundation=$GITHUB_SHA, Operations=$OPERATIONS_REF)"
+          echo "Live runtime provenance: PASS (Foundation=${GITHUB_SHA}, Operations=${OPERATIONS_REF})"
           case "${{ matrix.live_probe }}" in
             chat)
               payload=$(jq -nc --arg chat_id "$key-chat" --arg request_id "$key-request" '{chat_id:$chat_id,request_id:$request_id,message:"Explain in one sentence why the public Worker uses an authenticated private service binding.",mode:"chat",strict_zero_cost_only:true}')
               status=$(curl -sS --max-time 60 -o /tmp/live-chat.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-chat" -d "$payload" "$BASE_URL/api/v1/chat")
               test "$status" = 200
               jq -e '.ok == true and (.response.result_state == "COMPLETE" or .response.result_state == "PARTIAL")' /tmp/live-chat.json >/dev/null
+              jq -e --arg rid "$key-request" '.request_id == $rid and .response.response_id == ("chat-" + $rid)' /tmp/live-chat.json >/dev/null
+              policy_payload=$(jq -nc --arg chat_id "$key-policy" --arg request_id "$key-policy-request" '{chat_id:$chat_id,request_id:$request_id,message:"https://example.com/",operation:"map",input_records:[{"id":"policy-probe"}],strict_zero_cost_only:true}')
+              policy_status=$(curl -sS --max-time 30 -o /tmp/live-chat-policy.json -w '%{http_code}' -H "Authorization: Bearer $AUTH_TOKEN" -H 'Content-Type: application/json' -H "Idempotency-Key: $key-policy" -d "$policy_payload" "$BASE_URL/api/v1/chat")
+              test "$policy_status" = 200
+              jq -e '.ok == true and .response.status == "blocked" and .response.result_state == "BLOCKED"' /tmp/live-chat-policy.json >/dev/null
               ;;
             idempotency)
               payload=$(jq -nc --arg chat_id "$key-chat" --arg request_id "$key-request" '{chat_id:$chat_id,request_id:$request_id,message:"Return a deterministic one-line acknowledgement for this idempotency probe.",mode:"chat",strict_zero_cost_only:true}')
@@ -400,9 +408,11 @@ jobs:
         run: |
           import json, os
           from pathlib import Path
+
           scenario = Path(f"../coverage-artifacts/${{ matrix.id }}/scenario.json")
           if not scenario.exists():
               raise SystemExit("scenario artifact missing before finalization")
+
           payload = json.loads(scenario.read_text())
           test_passed = payload.get("passed") is True
           probe_expected = os.environ.get("LIVE_PROBE_EXPECTED", "false").lower() == "true"
@@ -416,7 +426,6 @@ jobs:
               "acceptance_passed": test_passed and ((not probe_expected) or probe_outcome == "success"),
           })
           scenario.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
-
       - name: Upload scenario evidence
         if: always() && matrix.id != 'repository-policy'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -455,10 +464,12 @@ jobs:
         run: |
           import json
           from pathlib import Path
+
           results = []
           for p in Path("coverage-artifacts").glob("**/scenario.json"):
               results.append(json.loads(p.read_text()))
           results.sort(key=lambda x: x["scenario"])
+
           test_failures = [x for x in results if not x.get("test_passed", x.get("passed") is True)]
           runtime_failures = [x for x in results if x.get("live_probe_expected") and not x.get("live_probe_passed")]
           runtime_expected = [x for x in results if x.get("live_probe_expected")]
