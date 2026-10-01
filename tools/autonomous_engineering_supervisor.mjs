@@ -145,15 +145,23 @@ export function deterministicFallbackPlan(context) {
   }
   const workflowKey = (run) => String(run.path || '').split('/').pop() || String(run.name || '');
   const active = new Set((context?.recent_runs || []).filter((run) => ['queued','in_progress','waiting','requested','pending'].includes(run.status)).map(workflowKey));
+  const recentSuccess = new Set((context?.recent_runs || []).filter((run) => run.conclusion === 'success' && run.created_at && (Date.now() - Date.parse(run.created_at)) < 24 * 60 * 60 * 1000).map(workflowKey));
   const recentlyFailed = new Set((context?.recent_runs || []).filter((run) => run.conclusion === 'failure' && run.created_at && (Date.now() - Date.parse(run.created_at)) < 24 * 60 * 60 * 1000).map(workflowKey));
   const attemptCounts = context?.workflow_attempts && typeof context.workflow_attempts === 'object' ? context.workflow_attempts : {};
   const withinBudget = (candidate) => Number(attemptCounts[candidate] || 0) < maxWorkflowAttempts;
-  const workflow = workflows.find((candidate) => withinBudget(candidate) && !active.has(candidate) && !recentlyFailed.has(candidate))
-    || workflows.find((candidate) => withinBudget(candidate) && !active.has(candidate))
-    || workflows.find((candidate) => withinBudget(candidate))
-    || null;
-  if (!workflow) throw new Error('fallback_workflow_unavailable');
-  return {schema:'autonomous-mission-plan/v1',mission_type:missionType,target_component:targetComponent,summary:'Deterministic fallback selected an existing bounded evidence workflow after planner unavailability.',terminal:null,actions:[{id:'a1',kind:'dispatch_workflow',workflow,inputs:{},reason:'Maintain autonomous progress using an existing allowlisted evidence workflow without changing authority.',retry_policy:'bounded'}],next_state:'executing',stop_reason:null};
+  const candidates = workflows.filter((candidate) => withinBudget(candidate) && !active.has(candidate) && !recentlyFailed.has(candidate) && !recentSuccess.has(candidate));
+  const selected = candidates.slice(0, 3);
+  if (!selected.length) throw new Error('fallback_workflow_unavailable');
+  return {
+    schema:'autonomous-mission-plan/v1',
+    mission_type:missionType,
+    target_component:targetComponent,
+    summary:'Deterministic fallback selected untouched bounded evidence workflows after planner unavailability.',
+    terminal:null,
+    actions:selected.map((workflow,index)=>({id:`a${index+1}`,kind:'dispatch_workflow',workflow,inputs:{},reason:'Maintain autonomous progress using an existing allowlisted evidence workflow without changing authority.',retry_policy:'bounded'})),
+    next_state:'executing',
+    stop_reason:null
+  };
 }
 
 async function callPlanner(missionId, cycle, context) {
