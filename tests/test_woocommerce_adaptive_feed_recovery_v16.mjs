@@ -1,0 +1,2 @@
+import test from "node:test";import assert from "node:assert/strict";import fs from "node:fs";
+test("adaptive v16 contract",()=>{const s=fs.readFileSync("tools/woocommerce_adaptive_feed_recovery_v16.mjs","utf8");assert.equal((s.match(/\["[^"]+","https?:\/\//g)||[]).length,30);assert.match(s,/r\.jina\.ai/);assert.match(s,/clearance_cookie_replay:false/);assert.match(s,/deterministic_native_gate:true/);});
