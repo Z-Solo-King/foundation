@@ -1,0 +1,2 @@
+import test from "node:test";import assert from "node:assert/strict";import fs from "node:fs";
+test("wc pos catalog probe contract",()=>{const s=fs.readFileSync("tools/woocommerce_wc_pos_catalog_probe_v20.mjs","utf8");assert.match(s,/wp-json\/wc\/pos\/v1\/catalog/);assert.match(s,/validated_google_merchant_xml/);assert.equal((s.match(/https:\/\/[^"]+/g)||[]).length,7);});

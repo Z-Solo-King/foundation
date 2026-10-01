@@ -1,0 +1,30 @@
+name: WooCommerce POS Catalog Feed Probe V20
+on:
+  push:
+    branches: [feat/woocommerce-adaptive-feed-recovery-v16-20261001]
+    paths: [tools/woocommerce_wc_pos_catalog_probe_v20.mjs,tests/test_woocommerce_wc_pos_catalog_probe_v20.mjs,.github/workflows/woocommerce-wc-pos-catalog-v20.yml]
+  pull_request:
+    branches: [main]
+    paths: [tools/woocommerce_wc_pos_catalog_probe_v20.mjs,tests/test_woocommerce_wc_pos_catalog_probe_v20.mjs,.github/workflows/woocommerce-wc-pos-catalog-v20.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with: {node-version: "22", package-manager-cache: false}
+      - run: node --test tests/test_woocommerce_wc_pos_catalog_probe_v20.mjs
+      - run: node tools/woocommerce_wc_pos_catalog_probe_v20.mjs
+      - run: jq -e '.schema=="woocommerce-wc-pos-catalog-probe/v1" and .target_count==7' out/woocommerce-wc-pos-catalog-probe/report.json >/dev/null
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-wc-pos-catalog-v20
+          path: out/woocommerce-wc-pos-catalog-probe/
+          if-no-files-found: error
+          retention-days: 30
