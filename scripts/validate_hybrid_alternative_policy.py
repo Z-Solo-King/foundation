@@ -27,7 +27,8 @@ def validate() -> None:
     if "differential or parity tests where applicable" not in p["promotion_gate"]: raise ValueError("differential gate missing")
     if "shadow evidence" not in p["promotion_gate"] or "canary evidence" not in p["promotion_gate"] or "rollback path" not in p["promotion_gate"]: raise ValueError("runtime promotion gates incomplete")
     if not a["status"].startswith("100%"): raise ValueError("audit status is not complete")
-    if any(v is not True for v in a["acceptance"].values()): raise ValueError("audit acceptance contains a false control")
+    expected_acceptance={"all_supplied_rows_processed":True,"direct_paid_dependencies_added":False,"marketplace_apps_installed_for_discovery":False,"existing_first_party_operations_app_preserved":True,"action_policy_remains_full_sha_and_allowlist":True,"single_authority_rule_preserved":True}
+    if a["acceptance"] != expected_acceptance: raise ValueError("audit acceptance drift")
     if actions["zero_cost_invariants"]["max_additional_cost_usd"]!=0: raise ValueError("Actions $0 invariant drift")
     if actions["hybrid_alternative"]["research_paid_capabilities"] is not True or actions["hybrid_alternative"]["direct_paid_runtime_dependency_allowed"] is not False: raise ValueError("Actions hybrid policy drift")
     if apps["zero_cost_policy"]["max_additional_cost_usd"]!=0: raise ValueError("Apps $0 invariant drift")
