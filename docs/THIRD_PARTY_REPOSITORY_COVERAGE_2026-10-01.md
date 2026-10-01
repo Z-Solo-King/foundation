@@ -28,17 +28,23 @@ Foundation remains the public-safe deterministic contract/deployment authority; 
 
 ## Implemented change
 
-The first implementation slice is merged in Operations main.
+The external-repository review is now reflected in merged Operations runtime components.
 
-- Operations PR #1421 merged as `0e3764fc5d3000f26f7bb806173c92b71ea0b49b`: bounded adaptive HTML product recovery.
-- Operations PR #1422 merged as `ad67fb0af2e958c880f74a10a0d15c930b3dace1`: fixed the validated missing adaptive-extractor import.
-- Operations PR #1423 merged as `daede840e353bf6b5d2cf295e33ac562295c562f`: connected adaptive recovery to the existing chatbot `EXTRACT_AND_MAP` contract and added a regression test.
-- Foundation documentation was merged as `e9b67e37c997e7c51a5a20fb158930727302b120`.
+- Adaptive HTML product recovery is implemented in Operations behind the conservative extractor.
+- Source-route health ranking uses corroborated source-profile observations before measured evidence/latency ranking.
+- Priority/fair acquisition scheduling and transient-only retry are implemented as a bounded frontier layer.
+- Evidence-gain stopping is implemented as a public-safe Operations primitive and exposed through the chatbot facade.
+- Canonical web-document envelopes produce bounded provenance-bearing chatbot evidence context.
+- Bounded same-host browser session reuse is available for replay/benchmark workloads.
 
-The adaptive path is bounded, deterministic, multi-signal and fallback-only. It does not bypass access controls or alter the authority boundary.
+Operations merged runtime commit: 2141856baf82d818df121ee50fec4d6eea21277b.
+Operations durable plan commit: 1b8f23813295ab732fbe8bc19e617a0d688ece5c.
 
-**Deployment state:** Cloudflare production still runs the certified Operations pin `90fa37df10d63824acd3fe20b64cc91043af9627`. The third-party improvements are therefore GitHub-main implementation evidence, not production-runtime acceptance evidence.
+Foundation remains the deterministic mapper/public contract owner; Operations remains the private acquisition/chatbot/resource authority.
 
+Validation of the new runtime integration suite: 9/9 isolated tests passed, and changed Python files compile successfully.
+
+Deployment state: these improvements are not automatically production promotion evidence. Purpose-scoped immutable production pins and live Cloudflare receipts remain authoritative.
 ## Durable follow-on plan
 
 1. Source/backend health fabric using the existing Operations source-profile/revalidation authority.
