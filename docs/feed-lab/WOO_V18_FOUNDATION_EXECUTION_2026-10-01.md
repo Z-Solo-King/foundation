@@ -59,3 +59,17 @@ The engineering path is complete and reproducible. The recovery issue remains ev
 ## Current truth
 
 The V18 engineering pipeline is complete and reproducible on the current repository heads. A retailer is still not “native-feed verified” until a current payload satisfies the strict Google Merchant XML gate. Historical evidence, plugin fingerprints, Store API reconstruction, AI candidates, sitemaps, and archive records do not independently establish native-feed existence.
+
+
+## V18.2 live acceptance update — 2026-10-01
+
+- Fresh canonical V18 run: **36871370966**.
+- Foundation V18 job completed successfully: **30/30 retailer targets executed; 0 failed/cancelled site jobs**.
+- Final rescue result: **0/30 native Google Merchant XML feeds verified**.
+- Store API fallback result: **16/30 reconstructed Google RSS feeds**, totaling **9,037 products**. These files are explicitly classified as `store_api_reconstruction` and are not native-feed evidence.
+- Historical candidate lane: **10 Wayback candidate paths**; **0 Common Crawl candidates** in this run. Historical paths remain candidate-only.
+- Custom/API browser lane: **0/30 verified current native feeds**.
+- The final report records `no_reconstructed_xml_as_native: true`.
+- Live AI provider crossfire attempted three configured lanes: `heroic_worker` → HTTP 500, `cloudflare_workers_ai` → HTTP 401 from the GitHub runner secret path, and `siliconflow` → network error. Therefore **0 AI providers were credited as successful in the runner receipt**.
+- Independent direct Cloudflare account testing succeeded at HTTP 200 for Workers AI, but strict deterministic tests showed weak structured-output compliance for `@cf/zai-org/glm-4.7-flash` and `@cf/qwen/qwen3-30b-a3b-fp8`; `@cf/google/gemma-4-26b-a4b-it` passed 1/3 deterministic tasks. AI output therefore remains advisory/candidate-only.
+- No native-feed issue is closed by this run. The remaining blockers are current retailer evidence and provider/runtime configuration; the implementation pipeline itself is complete.
