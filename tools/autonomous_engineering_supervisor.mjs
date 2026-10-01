@@ -99,6 +99,8 @@ async function findRecentWorkflowRun(workflow, foundationSha, startedMs) {
 }
 
 async function callPlanner(missionId, cycle, context) {
+  const serializedContext = JSON.stringify(context);
+  if (serializedContext.length > 12000) throw new Error('planner_context_size_exceeded');
   const payload = {
     chat_id: missionId,
     request_id: `autonomous-plan:${missionId}:${cycle}`,
@@ -158,8 +160,8 @@ async function main() {
   const context = {
     mission:state,
     foundation_sha:foundationSha,
-    open_issues:openIssues.map((i)=>({number:i.number,title:sanitize(i.title),body:sanitize(i.body),updatedAt:i.updated_at})),
-    recent_runs:recentRuns.map((r)=>({id:r.id,name:r.name,status:r.status,conclusion:r.conclusion,head_sha:r.head_sha,event:r.event,created_at:r.created_at,url:r.html_url})),
+    open_issues:openIssues.slice(0,10).map((i)=>({number:i.number,title:sanitize(i.title).slice(0,240),body:sanitize(i.body).slice(0,650),updatedAt:i.updated_at})),
+    recent_runs:recentRuns.slice(0,20).map((r)=>({id:r.id,name:sanitize(r.name).slice(0,160),status:r.status,conclusion:r.conclusion,head_sha:r.head_sha,event:r.event,created_at:r.created_at})),
     child_runs:childResults.map((r)=>({id:r.id,name:r.name,status:r.status,conclusion:r.conclusion,head_sha:r.head_sha,event:r.event,url:r.html_url})),
     hard_constraints:{production_release_allowed:false,secrets_or_credentials_mutation:false,policy_changes:false,workflow_inputs:{},max_same_workflow_dispatches:maxWorkflowAttempts},
   };
