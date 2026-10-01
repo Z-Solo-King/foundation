@@ -1,15 +1,8 @@
 name: Native Google Feed URL Hunt
 
+# Legacy manual fallback; canonical current execution is WooCommerce Native XML Recovery V18.
+
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - ".github/workflows/native-google-feed-hunt.yml"
-  push:
-    branches:
-      - hunt/native-google-feed-urls-20260927
-    paths:
-      - ".github/workflows/native-google-feed-hunt.yml"
   workflow_dispatch:
 
 permissions:
@@ -110,7 +103,7 @@ jobs:
               rm -f "$hdr" "$body"
               exit 0
             fi
-            rm -f "$hdr" "$body" "$meta"
+            rm -f "$hdr" "$body"
           done
           # Discover random/custom feed filenames from public directory indexes.
           for dir in \
@@ -199,18 +192,9 @@ jobs:
             'ithunt|https://ithunt.in'
             'KC Computers|https://kccomputers.co.in'
             'KRG KART|https://krgkart.com'
-            'Kryptronix Gaming|https://kryptronix.in'
-            'NCL Computer|https://nclcomputer.com'
-            'networkitstore|https://networkitstore.in'
-            'nexusinfosys|https://www.mynexusinfosys.com'
-            'Only SDD|https://onlyssd.com'
             'PC Kumar Infotech|https://pckumar.in'
-            'PC Studio|https://www.pcstudio.in'
-            'PCHubShop|https://www.pchubshop.com'
-            'Prime ABGB|https://www.primeabgb.com'
-            'quickincomputers|https://quickincomputers.com'
+            'PCHubShop|https://pchubshop.com'
             'SCL Gaming|https://sclgaming.in'
-            'solankienterprises|https://solankienterprises.com'
             'Variety Infotech|https://varietyinfotech.com'
             'Viper PC|https://viperpc.in'
             'AULA India|https://aulaindia.com'
@@ -219,6 +203,14 @@ jobs:
             'Ninja Dog|https://ninjadog.in'
             'StacksKB|https://stackskb.com'
             'Theproaudio|https://www.theproaudio.com'
+            'Prime ABGB|https://www.primeabgb.com'
+            'Kryptronix Gaming|https://kryptronix.in'
+            'NCL Computer|https://nclcomputer.com'
+            'PC Studio|https://www.pcstudio.in'
+            'Quickin Computers|https://quickincomputers.com'
+            'My Nexus Infosys|https://www.mynexusinfosys.com'
+            'Solanki Enterprises|https://solankienterprises.com'
+            'Network IT Store|https://networkitstore.in'
           )
 
           pids=()

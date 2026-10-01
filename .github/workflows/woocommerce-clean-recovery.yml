@@ -1,17 +1,7 @@
 name: WooCommerce clean recovery execution
-# Final archive validation refresh 2026-09-27
+# Legacy manual compatibility harness; canonical current execution is WooCommerce Native XML Recovery V18.
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - "tools/woocommerce_32_cross_runner_feed_recovery.mjs"
-      - ".github/workflows/woocommerce-clean-recovery.yml"
-  push:
-    branches: [main]
-    paths:
-      - "tools/woocommerce_32_cross_runner_feed_recovery.mjs"
-      - ".github/workflows/woocommerce-clean-recovery.yml"
   workflow_dispatch:
 
 permissions:
