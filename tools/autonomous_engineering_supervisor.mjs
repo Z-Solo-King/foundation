@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { IMPROVEMENT_COMPONENTS, PROJECT_IMPROVEMENT_MATRIX, validatePlan } from './autonomous_mission_router.mjs';
+import { IMPROVEMENT_COMPONENTS, MISSION_WORKFLOWS, PROJECT_IMPROVEMENT_MATRIX, validatePlan } from './autonomous_mission_router.mjs';
 
 const owner = process.env.GITHUB_REPOSITORY?.split('/')[0];
 const repo = process.env.GITHUB_REPOSITORY?.split('/')[1];
@@ -105,6 +105,30 @@ async function findRecentWorkflowRun(workflow, foundationSha, startedMs) {
   return null;
 }
 
+export function deterministicFallbackPlan(context) {
+  const mode = context?.mode || 'standard';
+  const issues = Array.isArray(context?.open_issues) ? context.open_issues : [];
+  let missionType = 'runtime_reconciliation';
+  let targetComponent = null;
+  let workflows = MISSION_WORKFLOWS.runtime_reconciliation;
+  if (mode === 'component_improvement') {
+    targetComponent = context?.target_component;
+    if (!targetComponent || !PROJECT_IMPROVEMENT_MATRIX.components[targetComponent]) throw new Error('fallback_component_unavailable');
+    missionType = 'component_improvement';
+    workflows = PROJECT_IMPROVEMENT_MATRIX.components[targetComponent].workflows;
+  } else {
+    const issueText = issues.map((item) => String(item.title || '') + ' ' + String(item.body || '')).join(' ').toLowerCase();
+    if (/woocommerce|feed|merchant/.test(issueText)) { missionType = 'feed_recovery'; workflows = MISSION_WORKFLOWS.feed_recovery; }
+    else if (/migration|polyglot|mapper/.test(issueText)) { missionType = 'migration'; workflows = MISSION_WORKFLOWS.migration; }
+    else if (/research|nightly|provider/.test(issueText)) { missionType = 'nightly_research'; workflows = MISSION_WORKFLOWS.nightly_research; }
+    else if (/audit|security|integrity/.test(issueText)) { missionType = 'audit'; workflows = MISSION_WORKFLOWS.audit; }
+  }
+  const active = new Set((context?.recent_runs || []).filter((run) => ['queued','in_progress','waiting','requested','pending'].includes(run.status)).map((run) => String(run.name || '')));
+  const workflow = workflows.find((candidate) => !active.has(candidate)) || workflows[0];
+  if (!workflow) throw new Error('fallback_workflow_unavailable');
+  return {schema:'autonomous-mission-plan/v1',mission_type:missionType,target_component:targetComponent,summary:'Deterministic fallback selected an existing bounded evidence workflow after planner unavailability.',terminal:null,actions:[{id:'a1',kind:'dispatch_workflow',workflow,inputs:{},reason:'Maintain autonomous progress using an existing allowlisted evidence workflow without changing authority.',retry_policy:'bounded'}],next_state:'executing',stop_reason:null};
+}
+
 async function callPlanner(missionId, cycle, context) {
   const serializedContext = JSON.stringify(context);
   if (serializedContext.length > 12000) throw new Error('planner_context_size_exceeded');
@@ -185,12 +209,21 @@ async function main() {
   };
 
   let planner;
+  let plannerFallback = false;
   try { planner = await callPlanner(state.mission_id, cycle, context); }
   catch (error) {
-    state = {...state,state:'blocked',cycle,terminal_reason:'planner_unavailable',failure_class:'transient_provider',retriable:true,last_summary:String(error)};
-    await updateIssue(missionIssue.number,{body:missionBody(state,'Planner unavailable. The next scheduled supervisor run will retry without requiring ChatGPT.')});
-    console.log(JSON.stringify({mission_id:state.mission_id,state:'blocked',reason:'planner_unavailable'}));
-    return;
+    try {
+      const fallbackPlan = deterministicFallbackPlan(context);
+      planner = {response:{provider:'deterministic-fallback'},plan:fallbackPlan};
+      plannerFallback = true;
+      state = {...state,cycle,last_provider:'deterministic-fallback',last_summary:'Governed planner unavailable; deterministic fallback selected an existing evidence workflow.',failure_class:'transient_provider',retriable:true};
+      await updateIssue(missionIssue.number,{body:missionBody(state,state.last_summary)});
+    } catch (fallbackError) {
+      state = {...state,state:'blocked',cycle,terminal_reason:'planner_and_fallback_unavailable',failure_class:'transient_provider',retriable:true,last_summary:String(fallbackError).slice(0,240)};
+      await updateIssue(missionIssue.number,{body:missionBody(state,'Planner unavailable and deterministic fallback could not be constructed; the next scheduled run will retry.')});
+      console.log(JSON.stringify({mission_id:state.mission_id,state:'blocked',reason:'planner_and_fallback_unavailable'}));
+      return;
+    }
   }
 
   const rawPlan = planner?.response?.text ?? planner?.plan ?? planner;
@@ -211,7 +244,7 @@ async function main() {
   }
 
   const digest = crypto.createHash('sha256').update(JSON.stringify(plan)).digest('hex');
-  state = {...state, mission_type:plan.mission_type, cycle, last_plan_digest:digest, last_provider:planner?.response?.provider || null, last_summary:plan.summary, failure_class:null};
+  state = {...state, mission_type:plan.mission_type, target_component:plan.target_component || state.target_component || null, cycle, last_plan_digest:digest, last_provider:planner?.response?.provider || null, last_summary:plan.summary, failure_class:plannerFallback ? 'transient_provider' : null};
 
   if (plan.terminal === 'complete') {
     state = {...state,state:'complete',terminal_reason:plan.stop_reason || 'planner_closed_mission',retriable:false};
