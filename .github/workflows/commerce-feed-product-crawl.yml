@@ -99,7 +99,7 @@ jobs:
           retention-days: 14
 
   crawl:
-    needs: ai-crossfire:
+    needs: ai-crossfire
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
