@@ -52,12 +52,12 @@ const normalizeIssueKeys = (pairs) => {
   return [...new Set(normalized)].sort();
 };
 
-// Autonomous mission and machine-generated integrity issues are durable execution
+// Autonomous mission, autonomous improvement and machine-generated integrity issues are durable execution
 // state/incident records, not acceptance-queue work items. Their lifecycle is
 // validated by the mission/incident subsystems rather than the static acceptance matrix.
 const isAcceptanceIssue = (issue) => {
   const title = String(issue?.title || "");
-  return !title.startsWith("[autonomous-mission]") && !title.startsWith("[integrity]");
+  return !title.startsWith("[autonomous-mission]") && !title.startsWith("[autonomous-improvement]") && !title.startsWith("[integrity]");
 };
 
 const activeIssues = {};
