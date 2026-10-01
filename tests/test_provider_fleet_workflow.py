@@ -24,7 +24,8 @@ def test_provider_fleet_workflow_uses_immutable_private_probe() -> None:
     assert "OPERATIONS_PROVIDER_FLEET_PATH: tools/provider_fleet_runtime_probe.py" in text
     assert "Provider fleet probe verified at immutable Operations ref" in text
     assert "CHAT_PROVIDER_RUNTIME_STATE" in text
-    assert "CF_API_TOKEN" in text
+    assert "secrets.CLOUDFLARE_API_TOKEN" in text
+    assert "secrets.CLOUDFLARE_ACCOUNT_ID" in text
     assert "PROVIDER_KEYS_JSON" in text
     assert "secrets.NVIDIA_NIM_API_KEY" in text
     assert "secrets.HF_TOKEN" in text
@@ -52,9 +53,13 @@ def test_provider_fleet_workflow_has_concurrency_and_bounded_schedule() -> None:
     assert "cancel-in-progress: true" in text
 
 
-def test_provider_fleet_workflow_exposes_only_the_seven_active_external_provider_inputs() -> None:
+def test_provider_fleet_workflow_uses_base_provider_config_and_optional_overrides() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     for name in ("PROVIDER_KEYS_JSON", "NVIDIA_NIM_API_KEY", "HF_TOKEN", "COHERE_API_KEY", "SILICONFLOW_API_KEY"):
         assert name in text
-    assert '{"groq","gemini","cerebras","openrouter_free","siliconflow","mistral_free"}' not in text
+    assert 'test -n "$NVIDIA_NIM_API_KEY"' not in text
+    assert 'test -n "$HF_TOKEN"' not in text
+    assert 'test -n "$COHERE_API_KEY"' not in text
+    assert 'test -n "$SILICONFLOW_API_KEY"' not in text
     assert 'allowed = {"openrouter_free","groq","gemini","nvidia_nim","cohere_free","huggingface_free","siliconflow"}' in text
+    assert "if api_key:" in text
