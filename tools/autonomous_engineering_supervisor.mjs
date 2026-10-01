@@ -93,6 +93,26 @@ async function dispatchWorkflow(workflow) {
   });
 }
 
+
+export async function dispatchPlanActions({plan, state, dryRun, maxWorkflowAttempts: attemptBound, foundationSha, dispatchWorkflowFn = dispatchWorkflow, findRecentWorkflowRunFn = findRecentWorkflowRun}) {
+  if (!plan || !Array.isArray(plan.actions)) throw new Error('invalid_plan_actions');
+  const attempts = {...(state?.workflow_attempts || {})};
+  for (const action of plan.actions) {
+    if (!dryRun) attempts[action.workflow] = Number(attempts[action.workflow] || 0) + 1;
+    if (!dryRun && attempts[action.workflow] > attemptBound) {
+      throw new Error(`same_workflow_attempt_bound_exceeded:${action.workflow}`);
+    }
+  }
+  if (dryRun) return {attempts, children: []};
+  const children = await Promise.all(plan.actions.map(async (action) => {
+    const startedMs = Date.now();
+    await dispatchWorkflowFn(action.workflow);
+    const child = await findRecentWorkflowRunFn(action.workflow, foundationSha, startedMs);
+    return {workflow: action.workflow, run: child};
+  }));
+  return {attempts, children};
+}
+
 async function findRecentWorkflowRun(workflow, foundationSha, startedMs) {
   const path = `/repos/${owner}/${repo}/actions/workflows/${encodeURIComponent(workflow)}/runs?branch=main&event=workflow_dispatch&per_page=20`;
   for (let i=0;i<5;i++) {
@@ -283,28 +303,33 @@ async function main() {
     return;
   }
 
-  const action = plan.actions[0];
-  const attempts = {...(state.workflow_attempts || {})};
-  if (!dryRun) attempts[action.workflow] = Number(attempts[action.workflow] || 0) + 1;
-  if (!dryRun && attempts[action.workflow] > maxWorkflowAttempts) {
-    state = {...state,state:'blocked',workflow_attempts:attempts,terminal_reason:'same_workflow_attempt_bound_exceeded',failure_class:'policy_blocked',retriable:false};
-    await updateIssue(missionIssue.number,{body:missionBody(state,`Workflow attempt bound exceeded for ${action.workflow}.`)});
-    return;
+  let dispatched;
+  try {
+    dispatched = await dispatchPlanActions({plan,state,dryRun,maxWorkflowAttempts,foundationSha});
+  } catch (error) {
+    const message = String(error);
+    if (message.includes('same_workflow_attempt_bound_exceeded:')) {
+      const workflow = message.split(':').slice(1).join(':');
+      state = {...state,state:'blocked',workflow_attempts:{...(state.workflow_attempts || {})},terminal_reason:'same_workflow_attempt_bound_exceeded',failure_class:'policy_blocked',retriable:false};
+      await updateIssue(missionIssue.number,{body:missionBody(state,`Workflow attempt bound exceeded for ${workflow}.`)});
+      return;
+    }
+    state = {...state,state:'retrying',last_summary:`Parallel workflow dispatch failed: ${sanitize(message)}`,failure_class:'transient_workflow',retriable:true};
+    await updateIssue(missionIssue.number,{body:missionBody(state,state.last_summary)});
+    throw error;
   }
   if (dryRun) {
-    state = {...state,state:'planned',workflow_attempts:attempts};
-    await updateIssue(missionIssue.number,{body:missionBody(state,`DRY RUN: would dispatch ${action.workflow}.`)});
-    console.log(JSON.stringify({mission_id:state.mission_id,state:'planned',workflow:action.workflow,dry_run:true}));
+    state = {...state,state:'planned',workflow_attempts:dispatched.attempts};
+    await updateIssue(missionIssue.number,{body:missionBody(state,`DRY RUN: would dispatch ${plan.actions.map((a)=>a.workflow).join(', ')} in parallel.`)});
+    console.log(JSON.stringify({mission_id:state.mission_id,state:'planned',workflows:plan.actions.map((a)=>a.workflow),dry_run:true}));
     return;
   }
 
-  const startedMs = Date.now();
-  await dispatchWorkflow(action.workflow);
-  const child = await findRecentWorkflowRun(action.workflow, foundationSha, startedMs);
-  state = {...state,state:'executing',workflow_attempts:attempts,child_runs:[...new Set([...(state.child_runs || []), child?.id].filter(Boolean))],retriable:true,terminal_reason:null};
-  const note = child ? `Dispatched ${action.workflow} as child run ${child.id}.` : `Dispatched ${action.workflow}; child run identity will be reconciled on the next wake-up.`;
-  await updateIssue(missionIssue.number,{body:missionBody(state,`${plan.summary}\n\n${note}`)});
-  console.log(JSON.stringify({mission_id:state.mission_id,state:'executing',workflow:action.workflow,child_run:child?.id || null}));
+  const childIds = dispatched.children.map((item)=>item.run?.id).filter(Boolean);
+  state = {...state,state:'executing',workflow_attempts:dispatched.attempts,child_runs:[...new Set([...(state.child_runs || []), ...childIds])],retriable:true,terminal_reason:null};
+  const notes = dispatched.children.map(({workflow,run}) => run ? `Dispatched ${workflow} as child run ${run.id}.` : `Dispatched ${workflow}; child run identity will be reconciled on the next wake-up.`);
+  await updateIssue(missionIssue.number,{body:missionBody(state,`${plan.summary}\n\n${notes.join('\n')}`)});
+  console.log(JSON.stringify({mission_id:state.mission_id,state:'executing',workflows:plan.actions.map((a)=>a.workflow),child_runs:childIds}));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main();
