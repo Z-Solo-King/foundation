@@ -1,4 +1,5 @@
 name: nightly multi-agent research
+# TASK WORKFLOW PAUSED BY POLICY: automatic execution is disabled; manual execution remains explicit.
 run-name: >-
   Nightly research — ${{ inputs.dry_run == true && 'contract-dry-run' || 'production-live' }}
 

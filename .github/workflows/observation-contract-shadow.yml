@@ -1,4 +1,5 @@
 # Operations differential reference: import-light boundary; rerun against current canonical Operations revision b6773d6.
+# TASK WORKFLOW PAUSED BY POLICY: automatic execution is disabled; manual execution remains explicit.
 name: TypeScript observation contract shadow
 
 on:

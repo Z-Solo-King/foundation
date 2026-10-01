@@ -1,4 +1,5 @@
 name: Nightly AI research — 20 parallel jobs
+# TASK WORKFLOW PAUSED BY POLICY: automatic execution is disabled; manual execution remains explicit.
 
 on:
   workflow_dispatch:

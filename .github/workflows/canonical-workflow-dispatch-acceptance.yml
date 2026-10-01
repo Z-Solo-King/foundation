@@ -1,4 +1,5 @@
 name: Canonical workflow-dispatch bridge acceptance
+# TASK WORKFLOW PAUSED BY POLICY: automatic execution is disabled; manual execution remains explicit.
 
 on:
   workflow_dispatch:

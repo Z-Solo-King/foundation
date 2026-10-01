@@ -1,4 +1,5 @@
 name: Project-wide autonomous improvement sweep
+# TASK WORKFLOW PAUSED BY POLICY: automatic execution is disabled; manual execution remains explicit.
 
 on:
   workflow_dispatch:

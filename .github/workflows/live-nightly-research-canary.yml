@@ -1,4 +1,5 @@
 name: Live nightly research canary
+# TASK WORKFLOW PAUSED BY POLICY: automatic execution is disabled; manual execution remains explicit.
 run-name: >-
   Live nightly research canary — ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'main' && 'post-nightly-main' || (github.ref == 'refs/heads/main' && 'manual-main' || 'non-main-blocked') }}
 

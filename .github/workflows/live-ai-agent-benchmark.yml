@@ -1,4 +1,5 @@
 name: Live AI agent benchmark (issue 1157 acceptance)
+# TASK WORKFLOW PAUSED BY POLICY: automatic execution is disabled; manual execution remains explicit.
 
 on:
   workflow_dispatch:
