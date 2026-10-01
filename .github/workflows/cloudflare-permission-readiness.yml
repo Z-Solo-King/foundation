@@ -1,0 +1,79 @@
+name: Cloudflare permission readiness
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-permission-readiness
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Validate protected inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${CF_API_TOKEN}"
+          test -n "${CF_ACCOUNT_ID}"
+
+      - name: Probe read permissions
+        shell: bash
+        run: |
+          set -u
+          base="https://api.cloudflare.com/client/v4"
+          auth=(-H "Authorization: Bearer ${CF_API_TOKEN}" -H "Accept: application/json")
+          tmp="${RUNNER_TEMP}/cf-permission-probe.tsv"
+          : > "${tmp}"
+
+          probe() {
+            local name="$1"
+            local path="$2"
+            local status body result
+            body="${RUNNER_TEMP}/cf-${name}.json"
+            status="$(curl -sS --retry 2 --retry-all-errors -o "${body}" -w '%{http_code}' "${auth[@]}" "${base}${path}")" || status="000"
+
+            case "${status}" in
+              2??) result="PASS" ;;
+              401) result="AUTH_INVALID" ;;
+              403) result="PERMISSION_DENIED" ;;
+              404) result="NOT_AVAILABLE" ;;
+              *)   result="ERROR" ;;
+            esac
+
+            printf '%s\t%s\t%s\n' "${name}" "${status}" "${result}" | tee -a "${tmp}"
+            rm -f "${body}"
+          }
+
+          probe token_verify "/user/tokens/verify"
+          probe workers_scripts "/accounts/${CF_ACCOUNT_ID}/workers/scripts"
+          probe d1 "/accounts/${CF_ACCOUNT_ID}/d1/database?per_page=10"
+          probe r2 "/accounts/${CF_ACCOUNT_ID}/r2/buckets?per_page=10"
+          probe queues "/accounts/${CF_ACCOUNT_ID}/queues"
+          probe workers_ai "/accounts/${CF_ACCOUNT_ID}/ai/models/search"
+          probe billing "/accounts/${CF_ACCOUNT_ID}/billing/usage?metrics=workersRequests&time_delta=day&limit=1"
+          probe zones "/zones?account.id=${CF_ACCOUNT_ID}&per_page=10"
+
+          echo
+          echo "Permission probe summary:"
+          cat "${tmp}"
+
+          grep -q $'^token_verify\t2..\tPASS$' "${tmp}" || {
+            echo "Cloudflare authentication is not usable."
+            exit 1
+          }
+
+          echo
+          echo "Interpretation:"
+          echo "PASS = endpoint accessible."
+          echo "PERMISSION_DENIED = token is valid but lacks the product permission."
+          echo "NOT_AVAILABLE = endpoint/resource is not enabled or addressable; inspect separately."
+          echo "Billing is read-only; no payment or plan mutation is attempted."
