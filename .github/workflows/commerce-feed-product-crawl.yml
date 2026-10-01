@@ -23,6 +23,15 @@ jobs:
   crawl:
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    env:
+      SHARD: ${{ matrix.shard }}
+      SHARDS: 6
+      SITE_CONCURRENCY: 4
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -73,6 +82,7 @@ jobs:
 
       - name: Syntax check
         run: |
+          node --check tools/bounded_parallel.mjs
           node --check tools/commerce_feed_product_crawl.mjs
           node --check tools/custom_feed_product_crawl.mjs
 
@@ -82,23 +92,86 @@ jobs:
       - name: Crawl custom feed targets
         run: node tools/custom_feed_product_crawl.mjs
 
-      - name: Merge aggregate receipts
+      - name: Upload shard evidence
         if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: commerce-feed-product-crawl-shard-${{ matrix.shard }}
+          path: |
+            out/commerce-feed-crawl/report.json
+            out/custom-feed-crawl/report.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  aggregate:
+    needs: crawl
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download shard evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        continue-on-error: true
+        with:
+          pattern: commerce-feed-product-crawl-shard-*
+          path: out/shards
+          merge-multiple: false
+
+      - name: Merge aggregate receipts
+        shell: bash
         run: |
+          set -euo pipefail
           node - <<'JS'
           const fs = require("fs");
-          const read = path => fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, "utf8")) : null;
-          const commerce = read("out/commerce-feed-crawl/report.json");
-          const custom = read("out/custom-feed-crawl/report.json");
+          const path = require("path");
+
+          function collect(root, name) {
+            if (!fs.existsSync(root)) return [];
+            const found = [];
+            function walk(dir) {
+              for (const entry of fs.readdirSync(dir, {withFileTypes:true})) {
+                const p = path.join(dir, entry.name);
+                if (entry.isDirectory()) walk(p);
+                else if (entry.isFile() && entry.name === name) found.push(p);
+              }
+            }
+            walk(root);
+            return found;
+          }
+
+          function merge(reportFiles) {
+            const reports = reportFiles.flatMap(file => {
+              try { return [JSON.parse(fs.readFileSync(file, "utf8"))]; }
+              catch { return []; }
+            });
+            return {
+              target_count: reports.reduce((n, r) => n + (r.target_count || 0), 0),
+              verified_feed_count: reports.reduce((n, r) => n + (r.verified_feed_count || 0), 0),
+              visited_page_count: reports.reduce((n, r) => n + (r.visited_page_count || 0), 0),
+              successful_target_count: reports.reduce((n, r) => n + (r.successful_target_count || 0), 0),
+              shard_count: reports.length,
+            };
+          }
+
+          const commerceFiles = collect("out/shards", "report.json")
+            .filter(p => p.includes("commerce-feed-crawl"));
+          const customFiles = collect("out/shards", "report.json")
+            .filter(p => p.includes("custom-feed-crawl"));
+
+          const commerce = merge(commerceFiles);
+          const custom = merge(customFiles);
           const aggregate = {
-            schema_version: "foundation-feed-product-crawl/v2",
+            schema_version: "foundation-feed-product-crawl/v3",
             generated_on: new Date().toISOString(),
             commerce,
             custom,
-            target_count: (commerce?.target_count || 0) || (custom?.target_count || 0),
-            verified_feed_count: (commerce?.verified_feed_count || 0) + (custom?.verified_feed_count || 0),
-            visited_page_count: (commerce?.visited_page_count || 0) + (custom?.visited_page_count || 0)
+            target_count: commerce.target_count + custom.target_count,
+            verified_feed_count: commerce.verified_feed_count + custom.verified_feed_count,
+            visited_page_count: commerce.visited_page_count + custom.visited_page_count,
+            successful_target_count: commerce.successful_target_count + custom.successful_target_count,
+            shard_count: Math.max(commerce.shard_count, custom.shard_count),
           };
+
           fs.mkdirSync("out", {recursive:true});
           fs.writeFileSync("out/feed-product-crawl-summary.json", JSON.stringify(aggregate, null, 2) + "\n");
           console.log(JSON.stringify(aggregate, null, 2));
@@ -109,9 +182,6 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: commerce-feed-product-crawl
-          path: |
-            out/feed-product-crawl-summary.json
-            out/commerce-feed-crawl/report.json
-            out/custom-feed-crawl/report.json
-          if-no-files-found: warn
+          path: out/feed-product-crawl-summary.json
+          if-no-files-found: error
           retention-days: 30
