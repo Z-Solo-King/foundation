@@ -2,17 +2,6 @@ name: Open issue polyglot deep scan
 # Issue-count authority is the live Operations current_open_issue_inventory.json; never hard-code the queue size here.
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "benchmark/polyglot/**"
-      - ".github/workflows/open-issue-polyglot-deep-scan.yml"
-      - "docs/**"
-      - "frontend/**"
-      - "polyglot/**"
-      - "worker.py"
-      - "backend/**"
-      - "tests/**"
   workflow_dispatch:
 
 permissions:

@@ -1,17 +1,13 @@
 name: Polyglot governance audit
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "**"
   workflow_dispatch:
-    inputs:
-      operations_ref:
-        description: Immutable Operations revision to audit
-        required: false
-        default: ""
-        type: string
+      inputs:
+        operations_ref:
+          description: Immutable Operations revision to audit
+          required: false
+          default: ""
+          type: string
 
 permissions:
   contents: read

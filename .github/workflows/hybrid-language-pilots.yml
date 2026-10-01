@@ -8,13 +8,6 @@ on:
         required: false
         default: ""
         type: string
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/hybrid-language-pilots.yml"
-      - "polyglot/edge-worker/**"
-      - "docs/**"
-      - "tools/verify_rust_url_identity_parity.py"
 
 permissions:
   contents: read
