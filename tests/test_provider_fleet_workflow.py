@@ -82,3 +82,9 @@ def test_provider_fleet_workflow_uses_cloudflare_secret_collection_endpoint() ->
     assert "/workers/scripts/$CLOUDFLARE_SCRIPT_NAME/secrets" in text
     assert "/secrets/CHAT_PROVIDER_RUNTIME_STATE" not in text
     assert 'name:"CHAT_PROVIDER_RUNTIME_STATE",text:$text,type:"secret_text"' in text
+
+
+def test_provider_fleet_workflow_accepts_cloudflare_secret_create_201() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert 'test "$response_status" = "200" || test "$response_status" = "201"' in text
+    assert 'Cloudflare provider runtime-state secret API accepted the write' in text
