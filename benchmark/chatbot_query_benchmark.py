@@ -89,6 +89,7 @@ def run(
             max_evidence_items=200,
             query_category=category,
             required_source_families=tuple(sorted(expected_families)),
+            freshness_requirement="recent" if temporal == "old_vs_new" else None,
         )
         try:
             plan = create_plan(contract)

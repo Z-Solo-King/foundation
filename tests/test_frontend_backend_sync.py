@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import pytest
 
 import worker
+from tests.policy_test_support import policy_binding
 from backend.api.models import ResearchRequest
 
 
@@ -62,7 +63,7 @@ async def test_worker_extracts_bounded_urls_and_reports_capability_boundary(monk
 
     persistence = FakePersistence()
     monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: persistence)
-    monkeypatch.setattr(worker, "submit_research", lambda request: SimpleNamespace(ok=True, run_id="r1", metadata={"strict_zero_cost_only": True}))
+    monkeypatch.setattr(worker, "submit_research", lambda request, **kwargs: SimpleNamespace(ok=True, run_id="r1", metadata={"strict_zero_cost_only": True}))
 
     async def ingest(env, run_id, request):
         return [{"url": request.source_urls[0], "access_state": "accessible", "retrieval_method": "http_fetch"}]
@@ -78,7 +79,7 @@ async def test_worker_extracts_bounded_urls_and_reports_capability_boundary(monk
             return {"question": "Inspect https://example.com", "strict_zero_cost_only": True}
 
     entry = worker.Default()
-    entry.env = SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret", DB=FakeDB(), ARTIFACTS=SimpleNamespace())
+    entry.env = SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret", DB=FakeDB(), ARTIFACTS=SimpleNamespace(), OPERATIONS=policy_binding())
     response = await entry.fetch(Request())
     assert "source_url_ingestion" in str(response)
     assert persistence.status == "completed"
@@ -88,7 +89,7 @@ async def test_worker_extracts_bounded_urls_and_reports_capability_boundary(monk
 async def test_worker_stays_honest_when_no_source_urls_are_available(monkeypatch):
     persistence = FakePersistence()
     monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: persistence)
-    monkeypatch.setattr(worker, "submit_research", lambda request: SimpleNamespace(ok=True, run_id="r1", metadata={"strict_zero_cost_only": True}))
+    monkeypatch.setattr(worker, "submit_research", lambda request, **kwargs: SimpleNamespace(ok=True, run_id="r1", metadata={"strict_zero_cost_only": True}))
 
     class Request:
         method = "POST"
