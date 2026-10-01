@@ -12,11 +12,19 @@ test('matrix covers major project components', () => {
   assert.deepEqual([...IMPROVEMENT_COMPONENTS].sort(), [...expected].sort());
 });
 
-test('matrix workflows remain inside deterministic router allowlist', () => {
-  const allowed = new Set(MISSION_WORKFLOWS.component_improvement);
-  for (const entry of Object.values(PROJECT_IMPROVEMENT_MATRIX.components)) for (const workflow of entry.workflows) assert.ok(allowed.has(workflow));
+test('autonomous task execution is disabled for matrix workflows', () => {
+  assert.throws(() => validatePlan({
+    schema:'autonomous-mission-plan/v1',
+    mission_type:'component_improvement',
+    target_component:'chatbot',
+    summary:'x',
+    terminal:null,
+    actions:[{id:'a1',kind:'dispatch_workflow',workflow:'live-chatbot-production-smoke.yml',inputs:{},reason:'test',retry_policy:'none'}],
+    next_state:'executing',
+    stop_reason:null
+  }), /autonomous task workflow execution is disabled/);
 });
 
 test('component plan cannot cross into another component', () => {
-  assert.throws(() => validatePlan({schema:'autonomous-mission-plan/v1',mission_type:'component_improvement',target_component:'chatbot',summary:'x',terminal:null,actions:[{id:'a1',kind:'dispatch_workflow',workflow:'provider-fleet-runtime-state.yml',inputs:{},reason:'wrong component',retry_policy:'none'}],next_state:'executing',stop_reason:null}), /workflow not allowlisted for component/);
+  assert.throws(() => validatePlan({schema:'autonomous-mission-plan/v1',mission_type:'component_improvement',target_component:'chatbot',summary:'x',terminal:null,actions:[{id:'a1',kind:'dispatch_workflow',workflow:'provider-fleet-runtime-state.yml',inputs:{},reason:'wrong component',retry_policy:'none'}],next_state:'executing',stop_reason:null}), /autonomous task workflow execution is disabled/);
 });
