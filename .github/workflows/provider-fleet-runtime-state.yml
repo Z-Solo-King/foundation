@@ -107,12 +107,15 @@ jobs:
           from pathlib import Path
 
           raw = os.environ["BASE_PROVIDER_KEYS_JSON"].strip()
+          base_config_valid = True
           try:
               payload = json.loads(raw)
           except json.JSONDecodeError:
               payload = {}
+              base_config_valid = False
           if not isinstance(payload, dict):
               payload = {}
+              base_config_valid = False
           payload.pop("mistral_free", None)
           payload.pop("cerebras", None)
 
@@ -125,66 +128,43 @@ jobs:
           for provider, (env_name, endpoint, model) in optional.items():
               api_key = os.environ.get(env_name, "").strip()
               if api_key:
-                  payload[provider] = {
-                      "endpoint": endpoint,
-                      "api_key": api_key,
-                      "model": model,
-                      "zero_cost": True,
-                  }
+                  payload[provider] = {"endpoint": endpoint, "api_key": api_key, "model": model, "zero_cost": True}
 
+          if not payload:
+              raise SystemExit("no usable provider configuration remains after assembly")
           target = Path(os.environ["RUNNER_TEMP"]) / "provider_keys.json"
           target.write_text(json.dumps(payload, separators=(",", ":")), encoding="utf-8")
           target.chmod(0o600)
           receipt = {
               "schema": "provider-config-assembly/v1",
-              "base_config_valid": raw != "" and bool(__import__("json").loads(raw)) if False else None,
+              "base_config_valid": base_config_valid,
               "provider_count": len(payload),
               "providers": sorted(payload),
               "overrides_present": sorted(provider for provider, (env_name, _, _) in optional.items() if os.environ.get(env_name, "").strip()),
           }
-          (Path("provider-config-receipt.json")).write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-          print("provider configuration assembly: PASS")
-          receipt = {"schema":"provider-config-assembly/v1","provider_count":len(payload),"providers":sorted(payload),"overrides_present":sorted(provider for provider, (env_name, _, _) in optional.items() if os.environ.get(env_name, "").strip())}
+          Path("provider-config-receipt.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print(f"provider configuration assembly: PASS ({len(payload)} providers; base_config_valid={base_config_valid})")
+          PY
 
-      - name: Assemble merged provider configuration
+      - name: Record benchmark publication gate
         env:
-          BASE_PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
-          NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
-          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          BASE_CONFIG_VALID: ${{ steps.validate-config.outputs.base_config_valid }}
         run: |
           set -euo pipefail
-          python - <<'PY'
-          import json, os
-          from pathlib import Path
+          echo "base_config_valid=${BASE_CONFIG_VALID}"
+          if [ "$BASE_CONFIG_VALID" != "true" ]; then
+            echo "Runtime-state publication BLOCKED: malformed base provider configuration."
+            echo "Live endpoint probing will continue using explicitly configured provider overrides only."
+          fi
 
-          payload = json.loads(os.environ["BASE_PROVIDER_KEYS_JSON"])
-          assert isinstance(payload, dict) and payload
-          payload.pop("mistral_free", None)
-          payload.pop("cerebras", None)
-
-          optional = {
-              "nvidia_nim": ("NVIDIA_NIM_API_KEY", "https://integrate.api.nvidia.com/v1/chat/completions", "deepseek-ai/deepseek-v4.1-flash"),
-              "huggingface_free": ("HF_TOKEN", "https://router.huggingface.co/v1/chat/completions", "openai/gpt-oss-120b"),
-              "cohere_free": ("COHERE_API_KEY", "https://api.cohere.ai/compatibility/v1/chat/completions", "command-a-plus-05-2026"),
-              "siliconflow": ("SILICONFLOW_API_KEY", "https://api.siliconflow.cn/v1/chat/completions", "Qwen/Qwen3.5-4B"),
-          }
-          for provider, (env_name, endpoint, model) in optional.items():
-              api_key = os.environ.get(env_name, "").strip()
-              if api_key:
-                  payload[provider] = {
-                      "endpoint": endpoint,
-                      "api_key": api_key,
-                      "model": model,
-                      "zero_cost": True,
-                  }
-
-          target = Path(os.environ["RUNNER_TEMP"]) / "provider_keys.json"
-          target.write_text(json.dumps(payload, separators=(",", ":")), encoding="utf-8")
-          target.chmod(0o600)
-          print("provider configuration assembly: PASS")
-          PY
+      - name: Upload provider benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: provider-fleet-benchmark-${{ github.run_id }}
+          path: provider-config-receipt.json
+          retention-days: 14
+          if-no-files-found: error
 
       - name: Create GitHub App token
         env:
