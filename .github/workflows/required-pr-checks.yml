@@ -106,7 +106,7 @@ jobs:
       - name: System integration contract (Foundation)
         run: python tools/validate_system_integration.py --foundation-root . --strict
       - name: Source surface maintainability audit
-        run: python tools/source_surface_audit.py --root . --output .runtime/source-surface-audit.json
+        run: python tools/source_surface_audit.py --root . --output .runtime/source-surface-audit.json --fail-critical-code
 
       - name: Public PR metadata security scan
         if: "${{ github.event_name == 'pull_request' }}"
