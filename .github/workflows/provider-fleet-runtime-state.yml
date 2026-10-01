@@ -38,6 +38,7 @@ jobs:
           python-version: "3.12"
 
       - name: Verify protected inputs
+        id: validate-config
         env:
           OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
           OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
@@ -59,13 +60,37 @@ jobs:
           test -n "$PROVIDER_KEYS_JSON"
           python - <<'PY'
           import json, os
-          payload = json.loads(os.environ["PROVIDER_KEYS_JSON"])
-          assert isinstance(payload, dict) and payload
+          from pathlib import Path
+
           allowed = {"openrouter_free","groq","gemini","nvidia_nim","cohere_free","huggingface_free","siliconflow"}
+          raw = os.environ["PROVIDER_KEYS_JSON"].strip()
+          base_ok = True
+          try:
+              payload = json.loads(raw)
+          except json.JSONDecodeError as exc:
+              payload = {}
+              base_ok = False
+              print(f"base provider config parse: BLOCKED ({exc.msg}; line={exc.lineno}; column={exc.colno})")
+          if not isinstance(payload, dict):
+              base_ok = False
+              payload = {}
+              print("base provider config shape: BLOCKED (expected object)")
           unknown = sorted(set(payload) - allowed)
-          assert not unknown, f"unsupported providers: {unknown}"
-          print(f"configured provider count: {len(payload)}")
-          print("zero-cost attestation present for:", sorted(name for name, value in payload.items() if isinstance(value, dict) and value.get("zero_cost") is True))
+          if unknown:
+              raise SystemExit(f"unsupported providers: {unknown}")
+          explicit = {
+              "nvidia_nim": os.environ.get("NVIDIA_NIM_API_KEY", "").strip(),
+              "huggingface_free": os.environ.get("HF_TOKEN", "").strip(),
+              "cohere_free": os.environ.get("COHERE_API_KEY", "").strip(),
+              "siliconflow": os.environ.get("SILICONFLOW_API_KEY", "").strip(),
+          }
+          explicit_count = sum(bool(value) for value in explicit.values())
+          if not payload and explicit_count == 0:
+              raise SystemExit("no usable provider configuration remains after base parse")
+          Path(os.environ["GITHUB_OUTPUT"]).write_text(f"base_config_valid={str(base_ok).lower()}\n", encoding="utf-8")
+          print(f"base provider entries: {len(payload)}")
+          print(f"explicit provider overrides available: {explicit_count}")
+          print(f"base provider configuration valid: {base_ok}")
           PY
 
       - name: Assemble merged provider configuration
@@ -81,8 +106,16 @@ jobs:
           import json, os
           from pathlib import Path
 
-          payload = json.loads(os.environ["BASE_PROVIDER_KEYS_JSON"])
-          assert isinstance(payload, dict) and payload
+          raw = os.environ["BASE_PROVIDER_KEYS_JSON"].strip()
+          base_config_valid = True
+          try:
+              payload = json.loads(raw)
+          except json.JSONDecodeError:
+              payload = {}
+              base_config_valid = False
+          if not isinstance(payload, dict):
+              payload = {}
+              base_config_valid = False
           payload.pop("mistral_free", None)
           payload.pop("cerebras", None)
 
@@ -95,18 +128,43 @@ jobs:
           for provider, (env_name, endpoint, model) in optional.items():
               api_key = os.environ.get(env_name, "").strip()
               if api_key:
-                  payload[provider] = {
-                      "endpoint": endpoint,
-                      "api_key": api_key,
-                      "model": model,
-                      "zero_cost": True,
-                  }
+                  payload[provider] = {"endpoint": endpoint, "api_key": api_key, "model": model, "zero_cost": True}
 
+          if not payload:
+              raise SystemExit("no usable provider configuration remains after assembly")
           target = Path(os.environ["RUNNER_TEMP"]) / "provider_keys.json"
           target.write_text(json.dumps(payload, separators=(",", ":")), encoding="utf-8")
           target.chmod(0o600)
-          print("provider configuration assembly: PASS")
+          receipt = {
+              "schema": "provider-config-assembly/v1",
+              "base_config_valid": base_config_valid,
+              "provider_count": len(payload),
+              "providers": sorted(payload),
+              "overrides_present": sorted(provider for provider, (env_name, _, _) in optional.items() if os.environ.get(env_name, "").strip()),
+          }
+          Path("provider-config-receipt.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print(f"provider configuration assembly: PASS ({len(payload)} providers; base_config_valid={base_config_valid})")
           PY
+
+      - name: Record benchmark publication gate
+        env:
+          BASE_CONFIG_VALID: ${{ steps.validate-config.outputs.base_config_valid }}
+        run: |
+          set -euo pipefail
+          echo "base_config_valid=${BASE_CONFIG_VALID}"
+          if [ "$BASE_CONFIG_VALID" != "true" ]; then
+            echo "Runtime-state publication BLOCKED: malformed base provider configuration."
+            echo "Live endpoint probing will continue using explicitly configured provider overrides only."
+          fi
+
+      - name: Upload provider benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: provider-fleet-benchmark-${{ github.run_id }}
+          path: provider-config-receipt.json
+          retention-days: 14
+          if-no-files-found: error
 
       - name: Create GitHub App token
         env:
@@ -191,7 +249,28 @@ jobs:
           print(f"successful probes: {receipt['success_count']}/{receipt['configured_count']}")
           PY
 
+      - name: Record benchmark publication gate
+        env:
+          BASE_CONFIG_VALID: ${{ steps.validate-config.outputs.base_config_valid }}
+        run: |
+          set -euo pipefail
+          echo "base_config_valid=${BASE_CONFIG_VALID}"
+          if [ "$BASE_CONFIG_VALID" != "true" ]; then
+            echo "Runtime-state publication blocked because the base provider configuration is malformed."
+            echo "Live provider probing remains allowed using explicitly configured provider overrides."
+          fi
+
+      - name: Upload provider benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: provider-fleet-benchmark-${{ github.run_id }}
+          path: provider-config-receipt.json
+          retention-days: 14
+          if-no-files-found: error
+
       - name: Publish runtime state to private Operations Worker
+        if: steps.validate-config.outputs.base_config_valid == 'true'
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

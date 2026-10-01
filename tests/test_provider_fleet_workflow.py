@@ -53,13 +53,10 @@ def test_provider_fleet_workflow_has_concurrency_and_bounded_schedule() -> None:
     assert "cancel-in-progress: true" in text
 
 
-def test_provider_fleet_workflow_uses_base_provider_config_and_optional_overrides() -> None:
+def test_provider_fleet_workflow_tolerates_malformed_base_config_for_benchmark_without_partial_publish() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
-    for name in ("PROVIDER_KEYS_JSON", "NVIDIA_NIM_API_KEY", "HF_TOKEN", "COHERE_API_KEY", "SILICONFLOW_API_KEY"):
-        assert name in text
-    assert 'test -n "$NVIDIA_NIM_API_KEY"' not in text
-    assert 'test -n "$HF_TOKEN"' not in text
-    assert 'test -n "$COHERE_API_KEY"' not in text
-    assert 'test -n "$SILICONFLOW_API_KEY"' not in text
-    assert 'allowed = {"openrouter_free","groq","gemini","nvidia_nim","cohere_free","huggingface_free","siliconflow"}' in text
-    assert "if api_key:" in text
+    assert "except json.JSONDecodeError:" in text
+    assert "base_config_valid=" in text
+    assert "if: steps.validate-config.outputs.base_config_valid == 'true'" in text
+    assert "Live endpoint probing will continue using explicitly configured provider overrides only." in text
+    assert "provider-fleet-benchmark-${{ github.run_id }}" in text
