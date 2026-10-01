@@ -10,6 +10,23 @@ from backend.admission import (
 )
 
 
+
+
+def policy(**overrides):
+    values = dict(
+        version=ADMISSION_CONTRACT_VERSION,
+        window_seconds=60,
+        max_requests_per_subject=30,
+        max_requests_global=300,
+        max_concurrent_per_subject=22,
+        max_concurrent_global=22,
+        retry_after_seconds=5,
+        protected_routes=(AdmissionRoute.CHAT, AdmissionRoute.RESEARCH, AdmissionRoute.STREAM),
+    )
+    values.update(overrides)
+    return AdmissionPolicy(**values)
+
+
 def snapshot(**changes):
     values = dict(
         authority_available=True,

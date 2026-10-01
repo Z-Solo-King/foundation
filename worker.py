@@ -195,7 +195,19 @@ def _chat_headers(request):
 
 
 
-async def _public_admit(env, route, subject_fingerprint, event_id):
+async def _private_admission_policy(env):
+    operations = getattr(env, "OPERATIONS", None)
+    if operations is None:
+        return None
+    try:
+        token = _bearer_token(_TestServiceRequest("", method="GET", headers={}))
+    except Exception:
+        token = None
+    # The caller's bearer token is passed by _public_admit so the private endpoint
+    # authenticates the same subject without exposing policy values in source control.
+    return None
+
+async def _public_admit(env, route, subject_fingerprint, event_id, request=None):
     db = getattr(env, "DB", None)
     environment = str(getattr(env, "ENVIRONMENT", "production") or "production").casefold()
     local_bypass = str(getattr(env, "LOCAL_DEVELOPMENT_AUTH_BYPASS", "") or "").casefold() == "true"
@@ -212,13 +224,41 @@ async def _public_admit(env, route, subject_fingerprint, event_id):
             route,
             False,
             "admission authority is unavailable for a protected resource-consuming route",
-            AdmissionPolicy().retry_after_seconds,
+        ), None
+    operations = getattr(env, "OPERATIONS", None)
+    if operations is None:
+        return AdmissionDecision(
+            AdmissionOutcome.AUTHORITY_UNAVAILABLE,
+            route,
+            False,
+            "protected admission policy authority is unavailable",
+        ), None
+    headers = {"Content-Type": "application/json"}
+    token = _bearer_token(request) if request is not None else None
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    try:
+        upstream = await operations.fetch(
+            _service_request("https://private/v1/policy/admission", method="GET", headers=headers)
+        )
+        body = await upstream.json()
+        policy_payload = body.get("policy") if isinstance(body, dict) else None
+        if int(upstream.status) != 200 or not isinstance(policy_payload, dict):
+            raise ValueError("invalid private admission policy response")
+        policy = AdmissionPolicy.from_mapping(policy_payload)
+    except Exception as exc:
+        _stable_exception_log("private admission policy lookup failure", exc)
+        return AdmissionDecision(
+            AdmissionOutcome.AUTHORITY_UNAVAILABLE,
+            route,
+            False,
+            "protected admission policy authority is unavailable",
         ), None
     store = D1AdmissionStore(db)
     return await store.acquire(
         subject_fingerprint=subject_fingerprint,
         route=route,
-        policy=AdmissionPolicy(),
+        policy=policy,
         event_id=event_id,
     )
 
@@ -513,7 +553,7 @@ class Default(WorkerEntrypoint):
             event_id = _idempotency_key(request, req.request_id or uuid.uuid4().hex)
             if raw_key is not None and event_id is None:
                 return _authenticated_json({"ok": False, "error": "invalid_idempotency_key"}, status=400)
-            decision, lease = await _public_admit(self.env, AdmissionRoute.STREAM, subject, event_id)
+            decision, lease = await _public_admit(self.env, AdmissionRoute.STREAM, subject, event_id, request)
             denied = _admission_response(decision)
             if denied is not None:
                 return denied
@@ -555,7 +595,7 @@ class Default(WorkerEntrypoint):
             event_id = _idempotency_key(request, req.request_id or uuid.uuid4().hex)
             if raw_key is not None and event_id is None:
                 return _authenticated_json({"ok": False, "error": "invalid_idempotency_key"}, status=400)
-            decision, lease = await _public_admit(self.env, AdmissionRoute.CHAT, subject, event_id)
+            decision, lease = await _public_admit(self.env, AdmissionRoute.CHAT, subject, event_id, request)
             denied = _admission_response(decision)
             if denied is not None:
                 return denied
@@ -676,7 +716,7 @@ class Default(WorkerEntrypoint):
             event_id = _idempotency_key(request, f"research:{uuid.uuid4().hex}")
             if raw_key is not None and event_id is None:
                 return _authenticated_json({"ok": False, "error": "invalid_idempotency_key"}, status=400)
-            decision, lease = await _public_admit(self.env, AdmissionRoute.RESEARCH, subject_fingerprint, event_id)
+            decision, lease = await _public_admit(self.env, AdmissionRoute.RESEARCH, subject_fingerprint, event_id, request)
             denied = _admission_response(decision)
             if denied is not None:
                 return denied
