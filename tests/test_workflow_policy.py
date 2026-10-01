@@ -275,10 +275,12 @@ def test_all_canonical_workflow_dispatch_requests_use_the_public_router():
         for name, text in texts.items()
         if "actions/workflows/" in text and "/dispatches" in text
         and "foundation-canonical-workflow-bridge" not in name
+        and name != "canonical-workflow-dispatch-acceptance.yml"
     ]
     assert raw_dispatch_callers == []
     acceptance = texts["canonical-workflow-dispatch-acceptance.yml"]
-    assert "gh workflow run foundation-canonical-workflow-bridge-v3.yml" in acceptance
+    assert "task workflow is paused" in acceptance
+    assert "gh workflow run" not in acceptance
 
 def test_backup_workflow_uses_app_auth_for_private_operations_and_separates_b2_credentials():
     backup = _workflow_texts()["b2-repository-backup.yml"]
@@ -366,7 +368,6 @@ def test_hardened_workflows_have_timeout_and_concurrency_contract():
         "cross-repository-contract-drift.yml",
         "coverage-driven-runtime-matrix.yml",
         "live-extractor-benchmark.yml",
-        "canonical-workflow-dispatch-acceptance.yml",
         "hybrid-language-pilots.yml",
     }
     for name in affected:
@@ -768,3 +769,24 @@ def test_public_edge_removes_legacy_b2_credentials():
     assert "B2 credentials belong to heroic-core" in text
     assert "workers/scripts/${PUBLIC_WORKER_NAME}/secrets/${public_b2_secret}" in text
     assert "public-worker-settings-after-b2-cleanup.json" in text
+
+
+def test_paused_task_workflows_have_no_scheduled_or_push_trigger():
+    texts = _workflow_texts()
+    paused = [
+        "autonomous-benchmark.yml",
+        "autonomous-engineering-supervisor.yml",
+        "autonomous-scorecard.yml",
+        "project-improvement-supervisor.yml",
+        "live-ai-provider-crossfire.yml",
+        "live-ai-agent-benchmark.yml",
+        "nightly-ai-research-20jobs.yml",
+        "fresh-control-plane-identity-acceptance.yml",
+        "canonical-workflow-dispatch-acceptance.yml",
+    ]
+    for name in paused:
+        text = texts[name]
+        assert "workflow_dispatch:" in text, name
+        assert "schedule:" not in text, name
+        assert "push:" not in text, name
+        assert "task workflow is paused" in text, name
