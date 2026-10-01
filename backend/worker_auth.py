@@ -10,6 +10,7 @@ from typing import Any
 from backend.json_admission import parse_bounded_json, validate_json_shape
 
 _URL_RE = re.compile(r"https?://[^\s<>\"']+")
+_RELEASE_ID_RE = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
 MAX_PUBLIC_JSON_BODY_BYTES = 1_048_576
 
 
