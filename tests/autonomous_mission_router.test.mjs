@@ -13,8 +13,8 @@ const base = (overrides = {}) => ({
   ...overrides,
 });
 
-test('accepts allowlisted workflow', () => {
-  assert.equal(validatePlan(base()).actions[0].workflow, 'nightly-multi-agent-research-v3.yml');
+test('rejects autonomous task execution', () => {
+  assert.throws(() => validatePlan(base()), /autonomous task workflow execution is disabled/);
 });
 
 test('rejects production workflow', () => {
@@ -25,9 +25,8 @@ test('rejects non-empty workflow inputs', () => {
   assert.throws(() => validatePlan(base({actions:[{...base().actions[0],inputs:{auto_fix:true}}]})), /inputs must be empty/);
 });
 
-test('accepts a component-scoped improvement plan', () => {
-  const result = validatePlan(base({mission_type:'component_improvement',target_component:'chatbot',actions:[{id:'a1',kind:'dispatch_workflow',workflow:'live-chatbot-production-smoke.yml',inputs:{},reason:'exercise chatbot runtime evidence',retry_policy:'bounded'}]}));
-  assert.equal(result.target_component, 'chatbot');
+test('rejects component improvement execution while automation is disabled', () => {
+  assert.throws(() => validatePlan(base({mission_type:'component_improvement',target_component:'chatbot'})), /autonomous task workflow execution is disabled/);
 });
 
 test('accepts a blocked terminal plan', () => {
@@ -45,27 +44,8 @@ test('rejects duplicate workflow actions even with distinct IDs', () => {
   assert.throws(() => validatePlan(base({actions:[action,{...action,id:'a2'}]})), /duplicate workflow action/);
 });
 
-test('accepts three distinct migration cross-fire workflows', () => {
-  const result = validatePlan(base({
-    mission_type:'migration',
-    summary:'cross-fire migration',
-    actions:[
-      {id:'a1',kind:'dispatch_workflow',workflow:'polyglot-migration-review.yml',inputs:{},reason:'lane review',retry_policy:'bounded'},
-      {id:'a2',kind:'dispatch_workflow',workflow:'open-issue-polyglot-deep-scan.yml',inputs:{},reason:'issue deep scan',retry_policy:'bounded'},
-      {id:'a3',kind:'dispatch_workflow',workflow:'hybrid-language-pilots.yml',inputs:{},reason:'candidate pilots',retry_policy:'bounded'},
-    ],
-  }));
-  assert.deepEqual(result.actions.map((action) => action.workflow), [
-    'polyglot-migration-review.yml',
-    'open-issue-polyglot-deep-scan.yml',
-    'hybrid-language-pilots.yml',
-  ]);
+test('rejects migration dispatch while automation is disabled', () => {
+  assert.throws(() => validatePlan(base({mission_type:'migration', actions:[{id:'a1',kind:'dispatch_workflow',workflow:'polyglot-migration-review.yml',inputs:{},reason:'review',retry_policy:'bounded'}]})), /autonomous task workflow execution is disabled/);
 });
 
 
-test('accepts live AI provider cross-fire workflow as runtime reconciliation', () => {
-  const result = validatePlan(base({mission_type:'runtime_reconciliation',actions:[
-    {id:'a1',kind:'dispatch_workflow',workflow:'live-ai-provider-crossfire.yml',inputs:{},reason:'compare configured zero-cost AI providers concurrently',retry_policy:'bounded'},
-  ]}));
-  assert.equal(result.actions[0].workflow, 'live-ai-provider-crossfire.yml');
-});
