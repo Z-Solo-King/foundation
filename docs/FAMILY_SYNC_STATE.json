@@ -137,11 +137,11 @@
     "authority": "scheduling_only"
   },
   "post_merge_sync": {
-    "checked_at": "2026-10-01T08:02:30Z",
+    "checked_at": "2026-10-01T08:19:30Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "69bf2a47d5788623094f377c3fdaf4c755f1e0bc",
-      "operations": "4d94cc7d285b07149ab30d0d205f6e88a943391b"
+      "foundation": "8ef127fcb6a0aa81f3926658125d7f4561f9064c",
+      "operations": "5216d30ea83c3ae9c3295510d42301af7611c6cc"
     },
     "operations_last_sync_commits": [
       "d9bd39b6035b289db720f43934e5ec4cbd55ee54",
@@ -153,23 +153,41 @@
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "69bf2a47d5788623094f377c3fdaf4c755f1e0bc",
-    "operations": "4d94cc7d285b07149ab30d0d205f6e88a943391b"
+    "foundation": "8ef127fcb6a0aa81f3926658125d7f4561f9064c",
+    "operations": "5216d30ea83c3ae9c3295510d42301af7611c6cc"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "69bf2a47d5788623094f377c3fdaf4c755f1e0bc",
-    "operations": "4d94cc7d285b07149ab30d0d205f6e88a943391b"
+    "foundation": "8ef127fcb6a0aa81f3926658125d7f4561f9064c",
+    "operations": "5216d30ea83c3ae9c3295510d42301af7611c6cc"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",
     "repository": "Z-Solo-King/foundation",
     "foundation_is_canonical": true,
     "operations_workflow_directory": "absent_after_reconciliation",
-    "operations_main": "4d94cc7d285b07149ab30d0d205f6e88a943391b",
+    "operations_main": "5216d30ea83c3ae9c3295510d42301af7611c6cc",
     "feed_hunt_capability": "Operations tools/woocommerce_32_plugin_feed_hunt.mjs",
     "hosted_workflow": ".github/workflows/woocommerce-32-plugin-feed-hunt.yml",
     "execution": "Foundation-hosted, Operations source at immutable commit",
     "private_operations_permission": "contents:read"
+  },
+  "github_app_governance": {
+    "schema": "github-app-governance/v2",
+    "marketplace_apps": "discovery_only_disabled",
+    "supplied_marketplace_entries": 1408,
+    "capability_catalog": "docs/GITHUB_APP_CAPABILITY_CATALOG.json",
+    "policy": "docs/GITHUB_APP_INTEGRATION_POLICY.json",
+    "first_party_operations_app": {
+      "repository_scope": [
+        "Z-Solo-King/operations"
+      ],
+      "maximum_permissions": {
+        "contents": "read"
+      },
+      "maximum_installation_token_ttl_seconds": 3600
+    },
+    "external_marketplace_apps": 0,
+    "runtime_installation_dependency": false
   }
 }
