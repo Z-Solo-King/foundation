@@ -42,6 +42,12 @@ GitHub's current guidance for creating Apps recommends minimum permissions, scop
 
 Those principles are now encoded in `docs/GITHUB_APP_INTEGRATION_POLICY.json` and validated by a dedicated repository workflow.
 
+## Strict $0 policy
+
+GitHub Marketplace supports both free and paid App plans. Paid plans use an account payment method, and a free trial of a paid plan automatically becomes a paid subscription at the end of the trial unless canceled. Under this project policy, paid plans, paid-plan trials, payment-method-required installs, and external billing dependencies are all forbidden.
+
+Marketplace installation remains disabled by default, and no Marketplace App is installed as part of discovery or audit work. The existing first-party GitHub App used for private Operations access is not a Marketplace App and remains governed by the separate least-privilege installation controls.
+
 ## Implemented project changes
 
 ### 1. Explicit App installation policy

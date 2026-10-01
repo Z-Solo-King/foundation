@@ -15,6 +15,11 @@ def test_github_app_policy_is_valid() -> None:
     assert policy["marketplace_installation_default"] == "disabled"
     assert policy["installation_requires_explicit_approval"] is True
     assert policy["external_marketplace_apps"] == []
+    assert policy["zero_cost_policy"]["max_additional_cost_usd"] == 0
+    assert policy["zero_cost_policy"]["paid_plans_allowed"] is False
+    assert policy["zero_cost_policy"]["free_trials_allowed"] is False
+    assert policy["zero_cost_policy"]["payment_method_required"] is False
+    assert policy["zero_cost_policy"]["external_billing_dependency_allowed"] is False
 
 
 def test_github_app_policy_forbids_production_authority() -> None:

@@ -57,5 +57,12 @@
     "marketplace_is_discovery_only": true,
     "app_installation_is_not_runtime_authority": true,
     "third_party_apps_must_not_override_canonical_foundation_workflows": true
+  },
+  "zero_cost_policy": {
+    "max_additional_cost_usd": 0,
+    "paid_plans_allowed": false,
+    "free_trials_allowed": false,
+    "payment_method_required": false,
+    "external_billing_dependency_allowed": false
   }
 }

@@ -7,12 +7,18 @@ on:
       - ".github/workflows/**"
       - ".github/zizmor.yml"
       - "tests/test_workflow_static_analysis_policy.py"
+      - "docs/GITHUB_ACTIONS_ZERO_COST_POLICY.json"
+      - "scripts/validate_github_actions_zero_cost.py"
+      - "tests/test_github_actions_zero_cost_policy.py"
   push:
     branches: [main]
     paths:
       - ".github/workflows/**"
       - ".github/zizmor.yml"
       - "tests/test_workflow_static_analysis_policy.py"
+      - "docs/GITHUB_ACTIONS_ZERO_COST_POLICY.json"
+      - "scripts/validate_github_actions_zero_cost.py"
+      - "tests/test_github_actions_zero_cost_policy.py"
   schedule:
     - cron: "41 3 * * 6"
   workflow_dispatch:
@@ -64,6 +70,34 @@ jobs:
           name: scorecard-results
           path: results.sarif
           retention-days: 7
+
+  zero-cost:
+    name: GitHub Actions zero-cost policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Verify public repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/${{ github.repository }} --jq '.private')" = "false"
+      - name: Validate $0 policy
+        run: python scripts/validate_github_actions_zero_cost.py
+      - name: Install test runner
+        run: python -m pip install --disable-pip-version-check --timeout 120 --retries 5 "pytest"
+      - name: Run $0 policy tests
+        run: python -m pytest -q tests/test_github_actions_zero_cost_policy.py
 
   policy-regression:
     name: workflow security regression fixture
