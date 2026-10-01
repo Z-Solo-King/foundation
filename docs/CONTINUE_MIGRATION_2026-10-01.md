@@ -22,7 +22,7 @@ This is a non-feed migration/audit lane.
 ### GitHub main heads
 
 Foundation main:
-`9538b83e95314141ec262b7f691bbbe7ee4fd521`
+`f548a468b4dcd9e7c03263a130ce76e95eafc228`
 
 Operations main:
 `3c780e33772c87ec6c3b6df75a857e5404f0b861`
@@ -221,8 +221,7 @@ Critical failure found in live job `110229827662`:
 - lane/artifact materialization correctly failed closed
 - artifacts were uploaded, but this run is not #157 closure evidence
 
-This is now the primary concrete blocker to investigate next:
-**Foundation nightly research workflow must install/provide the Operations research proxy dependency `httpx` before starting `scripts/research_worker_proxy.py`.**
+The earlier runner dependency failure is addressed in current Foundation main: `nightly-multi-agent-research-v3.yml` installs `httpx>=0.27,<1` before starting `scripts/research_worker_proxy.py`. A fresh production-dispatched 24-program run remains required for #157.
 Do not merely rerun the failed workflow; first inspect the dependency ownership/installation contract, then make the smallest correct PR if needed.
 
 The failure is runner dependency/setup, not a Cloudflare model-generation failure.
