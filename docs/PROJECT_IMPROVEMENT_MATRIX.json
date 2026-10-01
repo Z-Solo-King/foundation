@@ -24,6 +24,17 @@
         "policy",
         "provenance",
         "runtime"
+      ],
+      "cross_cutting_controls": [
+        "audit",
+        "quality",
+        "learning",
+        "ai_automation"
+      ],
+      "evidence_contract": [
+        "observation",
+        "evaluation",
+        "provenance"
       ]
     },
     "extractor": {
@@ -47,6 +58,17 @@
         "policy",
         "provenance",
         "performance"
+      ],
+      "cross_cutting_controls": [
+        "audit",
+        "quality",
+        "learning",
+        "ai_automation"
+      ],
+      "evidence_contract": [
+        "observation",
+        "evaluation",
+        "provenance"
       ]
     },
     "mapper": {
@@ -78,6 +100,17 @@
         "shadow",
         "canary",
         "rollback"
+      ],
+      "cross_cutting_controls": [
+        "audit",
+        "quality",
+        "learning",
+        "ai_automation"
+      ],
+      "evidence_contract": [
+        "observation",
+        "evaluation",
+        "provenance"
       ]
     },
     "research": {
@@ -100,6 +133,17 @@
         "provider",
         "coverage",
         "diagnosis",
+        "provenance"
+      ],
+      "cross_cutting_controls": [
+        "audit",
+        "quality",
+        "learning",
+        "ai_automation"
+      ],
+      "evidence_contract": [
+        "observation",
+        "evaluation",
         "provenance"
       ]
     },
@@ -126,6 +170,17 @@
         "runtime",
         "errors",
         "cost"
+      ],
+      "cross_cutting_controls": [
+        "audit",
+        "quality",
+        "learning",
+        "ai_automation"
+      ],
+      "evidence_contract": [
+        "observation",
+        "evaluation",
+        "provenance"
       ]
     },
     "runtime_governance": {
@@ -151,6 +206,17 @@
         "idempotency",
         "policy",
         "resource"
+      ],
+      "cross_cutting_controls": [
+        "audit",
+        "quality",
+        "learning",
+        "ai_automation"
+      ],
+      "evidence_contract": [
+        "observation",
+        "evaluation",
+        "provenance"
       ]
     },
     "cloudflare_runtime": {
@@ -175,7 +241,18 @@
         "runtime",
         "receipt"
       ],
-      "mutation_policy": "read_or_existing_authority_only"
+      "mutation_policy": "read_or_existing_authority_only",
+      "cross_cutting_controls": [
+        "audit",
+        "quality",
+        "learning",
+        "ai_automation"
+      ],
+      "evidence_contract": [
+        "observation",
+        "evaluation",
+        "provenance"
+      ]
     },
     "storage_b2": {
       "owner": "foundation+operations",
@@ -197,7 +274,18 @@
         "restore",
         "provenance"
       ],
-      "mutation_policy": "controlled_backup_or_restore_verification_only"
+      "mutation_policy": "controlled_backup_or_restore_verification_only",
+      "cross_cutting_controls": [
+        "audit",
+        "quality",
+        "learning",
+        "ai_automation"
+      ],
+      "evidence_contract": [
+        "observation",
+        "evaluation",
+        "provenance"
+      ]
     },
     "security_ci": {
       "owner": "foundation",
@@ -221,6 +309,17 @@
         "workflow_security",
         "static_analysis",
         "regression"
+      ],
+      "cross_cutting_controls": [
+        "audit",
+        "quality",
+        "learning",
+        "ai_automation"
+      ],
+      "evidence_contract": [
+        "observation",
+        "evaluation",
+        "provenance"
       ]
     },
     "feed_recovery": {
@@ -244,7 +343,18 @@
         "product_fields",
         "provenance"
       ],
-      "mutation_policy": "public_acquisition_only_no_bypass"
+      "mutation_policy": "public_acquisition_only_no_bypass",
+      "cross_cutting_controls": [
+        "audit",
+        "quality",
+        "learning",
+        "ai_automation"
+      ],
+      "evidence_contract": [
+        "observation",
+        "evaluation",
+        "provenance"
+      ]
     }
   },
   "system_integration_contract": "docs/SYSTEM_INTEGRATION_CONTRACT.json",

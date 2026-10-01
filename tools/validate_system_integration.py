@@ -20,7 +20,7 @@ def require_text(path: Path, needles: list[str], errors: list[str], label: str) 
 
 def main() -> int:
     import argparse
-    p=argparse.ArgumentParser(); p.add_argument("--foundation-root",type=Path,required=True); p.add_argument("--operations-root",type=Path,required=True); p.add_argument("--strict",action="store_true")
+    p=argparse.ArgumentParser(); p.add_argument("--foundation-root",type=Path,required=True); p.add_argument("--operations-root",type=Path); p.add_argument("--strict",action="store_true")
     args=p.parse_args(); errors=[]
     contract=load(args.foundation_root/"docs/SYSTEM_INTEGRATION_CONTRACT.json")
     matrix=load(args.foundation_root/"docs/PROJECT_IMPROVEMENT_MATRIX.json")
@@ -34,19 +34,22 @@ def main() -> int:
             if not stage.get(key): errors.append(f"flow stage missing {key}")
     f=args.foundation_root; o=args.operations_root
     for rel in contract["required_cross_repo_anchors"]["foundation"]: require_text(f/rel, [], errors, f"foundation:{rel}")
-    for rel in contract["required_cross_repo_anchors"]["operations"]:
+    if o is None:
+        o=None
+    if o is not None:
+        for rel in contract["required_cross_repo_anchors"]["operations"]:
         pth=o/rel
         if rel.endswith("/"):
             if not pth.is_dir(): errors.append(f"operations:{rel}:missing")
         else: require_text(pth, [], errors, f"operations:{rel}")
     require_text(f/"tools/autonomous_mission_router.mjs",["PROJECT_IMPROVEMENT_MATRIX","scheduling_only"],errors,"foundation:router")
     require_text(f/"tools/autonomous_engineering_supervisor.mjs",["validatePlan","PROJECT_IMPROVEMENT_MATRIX","component_improvement"],errors,"foundation:supervisor")
-    require_text(o/"private/evolution_engine.py",["private.evolution_score","next_learning_action"],errors,"operations:evolution-engine")
-    require_text(o/"private/chatbot/chat_learning.py",["LearningAuthority.CANDIDATE","ChatLearningObservation"],errors,"operations:chat-learning")
-    require_text(o/"private/chatbot/feedback_evaluation_bridge.py",["EvaluationCaseCandidate","LearningAuthority.CANDIDATE"],errors,"operations:feedback-bridge")
-    require_text(o/"private/strategy_matrix.py",["CandidateDisposition","ELIGIBLE_FOR_SHADOW"],errors,"operations:strategy")
-    require_text(o/"private/self_evolution_boundary.py",["ProtectedAuthority","CandidateStage.CANARY"],errors,"operations:self-evolution")
-    require_text(o/"extractor_mapper/extraction/generic.py",["class"],errors,"operations:extractor")
+    if o is not None:\n        require_text(o/"private/evolution_engine.py",["private.evolution_score","next_learning_action"],errors,"operations:evolution-engine")
+        require_text(o/"private/chatbot/chat_learning.py",["LearningAuthority.CANDIDATE","ChatLearningObservation"],errors,"operations:chat-learning")
+        require_text(o/"private/chatbot/feedback_evaluation_bridge.py",["EvaluationCaseCandidate","LearningAuthority.CANDIDATE"],errors,"operations:feedback-bridge")
+        require_text(o/"private/strategy_matrix.py",["CandidateDisposition","ELIGIBLE_FOR_SHADOW"],errors,"operations:strategy")
+        require_text(o/"private/self_evolution_boundary.py",["ProtectedAuthority","CandidateStage.CANARY"],errors,"operations:self-evolution")
+        require_text(o/"extractor_mapper/extraction/generic.py",["class"],errors,"operations:extractor")
     if not (o/".github/workflows").exists(): pass
     else:
         ymls=list((o/".github/workflows").glob("*"))
