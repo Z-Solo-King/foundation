@@ -32,7 +32,13 @@ TASKS = [
 
 
 def load_config() -> dict[str, dict[str, str]]:
-    raw = os.environ.get("PROVIDER_KEYS_JSON", "").strip()
+    file_path = os.environ.get("PROVIDER_KEYS_JSON_FILE", "").strip()
+    raw = ""
+    if file_path:
+        with open(file_path, encoding="utf-8") as handle:
+            raw = handle.read().strip()
+    if not raw:
+        raw = os.environ.get("PROVIDER_KEYS_JSON", "").strip()
     config: dict[str, dict[str, str]] = {}
     if raw:
         try:
