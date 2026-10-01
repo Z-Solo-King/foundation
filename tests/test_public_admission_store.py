@@ -836,7 +836,7 @@ def test_d1_store_reclaims_expired_admission_lease():
     )
     assert decision.allowed is True
     assert lease is not None
-    assert lease.expires_at == 120 + admission_policy().window_seconds
+    assert lease.expires_at == lease.window_start + admission_policy().window_seconds
 
 
 def test_d1_store_keeps_released_non_idempotent_duplicate_on_admission_decision():

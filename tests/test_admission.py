@@ -73,7 +73,7 @@ def test_unavailable_authority_fails_closed_for_protected_routes_and_allows_chea
         route=AdmissionRoute.RESEARCH,
     )
     assert protected.outcome is AdmissionOutcome.AUTHORITY_UNAVAILABLE
-    assert protected.retry_after_header == str(policy.retry_after_seconds)
+    assert protected.retry_after_header == str(admission_policy().retry_after_seconds)
 
     cheap = decide_admission(
         policy=admission_policy(),
