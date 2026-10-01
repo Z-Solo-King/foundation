@@ -38,6 +38,8 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -72,13 +74,19 @@ jobs:
               if key:
                   payload[provider]={"endpoint":endpoint,"api_key":key,"model":model,"zero_cost":True}
 
-          allowed={"openrouter_free","groq","gemini","nvidia_nim","cohere_free","huggingface_free","siliconflow"}
+          cf_token=os.environ.get("CLOUDFLARE_API_TOKEN","").strip()
+          cf_account=os.environ.get("CLOUDFLARE_ACCOUNT_ID","").strip()
+          if cf_token and cf_account:
+              cf_model="@cf/zai-org/glm-4.7-flash"
+              payload["cloudflare_workers_ai"]={"endpoint":f"https://api.cloudflare.com/client/v4/accounts/{cf_account}/ai/run/{cf_model}","api_key":cf_token,"model":cf_model,"response_style":"cloudflare_native","zero_cost":True}
+
+          allowed={"cloudflare_workers_ai","openrouter_free","groq","gemini","nvidia_nim","cohere_free","huggingface_free","siliconflow"}
           payload={name:value for name,value in payload.items() if name in allowed and isinstance(value,dict)}
           for name,value in payload.items():
               if not all(isinstance(value.get(k),str) and value.get(k).strip() for k in ("endpoint","api_key","model")):
                   raise SystemExit(f"invalid provider configuration for {name}")
-          if len(payload) < 3:
-              raise SystemExit(f"need at least 3 configured external providers; found {len(payload)}: {sorted(payload)}")
+          if len(payload) < 2:
+              raise SystemExit(f"need at least 2 configured AI providers; found {len(payload)}: {sorted(payload)}")
           target=Path(os.environ["RUNNER_TEMP"])/"provider_keys_crossfire.json"
           target.write_text(json.dumps(payload,separators=(",",":")),encoding="utf-8")
           print(json.dumps({"configured_provider_count":len(payload),"providers":sorted(payload)},sort_keys=True))
