@@ -94,43 +94,27 @@
     "related_operations_pr": 1109
   },
   "current_prs": {
-    "open_pr_count": 13,
+    "open_pr_count": 5,
     "foundation": [
-      1706,
-      1692,
       1685,
       1684,
       1683,
       1677,
-      1663,
-      1660,
-      1658,
-      1657,
-      1656,
-      1653,
       1652
     ],
     "operations": [],
     "source": "GitHub live PR API"
   },
   "foundation_open_prs": [
-    1706,
-    1692,
     1685,
     1684,
     1683,
     1677,
-    1663,
-    1660,
-    1658,
-    1657,
-    1656,
-    1653,
     1652
   ],
   "operations_open_prs": [],
-  "open_pr_count": 13,
-  "open_implementation_pr_count": 13,
+  "open_pr_count": 5,
+  "open_implementation_pr_count": 5,
   "extractor_mapper": {
     "status": "active_runtime_boundary",
     "repository": "operations",
@@ -148,16 +132,16 @@
     "authority": "scheduling_only"
   },
   "post_merge_sync": {
-    "checked_at": "2026-10-01T12:11:38Z",
+    "checked_at": "2026-10-01T12:24:00Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "8a7033a9886151ce83b36a9c38f4641a3d8287c8",
-      "operations": "fdb2a1c1a5d0067868007a3499ae81b5c81bb176"
+      "foundation": "68aff623472af4df03688ddb24f33259d1fe5532",
+      "operations": "942eb72d1df90299d52977918dd56e9d25e0c41f"
     },
     "operations_last_sync_commits": [
-      "d9bd39b6035b289db720f43934e5ec4cbd55ee54",
-      "6a23abdd6b7df6fe07a0ac4e08c4eb40289ab1e1",
-      "7b55c97331a9a066dcb1d46c4bbe17e173dc60ca"
+      "6071508a8cf5e24001f2238f0b581003d2300865",
+      "49181030488cc0ee4f508c8eea7374033833254e",
+      "942eb72d1df90299d52977918dd56e9d25e0c41f"
     ],
     "foundation_main": "READ_LIVE_FROM_GITHUB",
     "operations_main": "READ_LIVE_FROM_GITHUB",
@@ -183,20 +167,20 @@
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "8a7033a9886151ce83b36a9c38f4641a3d8287c8",
-    "operations": "fdb2a1c1a5d0067868007a3499ae81b5c81bb176"
+    "foundation": "68aff623472af4df03688ddb24f33259d1fe5532",
+    "operations": "942eb72d1df90299d52977918dd56e9d25e0c41f"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "8a7033a9886151ce83b36a9c38f4641a3d8287c8",
-    "operations": "fdb2a1c1a5d0067868007a3499ae81b5c81bb176"
+    "foundation": "68aff623472af4df03688ddb24f33259d1fe5532",
+    "operations": "942eb72d1df90299d52977918dd56e9d25e0c41f"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",
     "repository": "Z-Solo-King/foundation",
     "foundation_is_canonical": true,
     "operations_workflow_directory": "absent_after_reconciliation",
-    "operations_main": "1a4bcb51615585ce9ee7f5d9d2774f7169e872bf",
+    "operations_main": "942eb72d1df90299d52977918dd56e9d25e0c41f",
     "feed_hunt_capability": "Operations tools/woocommerce_32_plugin_feed_hunt.mjs",
     "hosted_workflow": ".github/workflows/woocommerce-32-plugin-feed-hunt.yml",
     "execution": "Foundation-hosted, Operations source at immutable commit",
@@ -261,5 +245,12 @@
       "foundation/tests/test_public_admission_store.py",
       "operations/tools/exhaustive_audit.py"
     ]
+  },
+  "feed_workflow_deconfliction": {
+    "foundation_revision": "68aff623472af4df03688ddb24f33259d1fe5532",
+    "operations_revision": "942eb72d1df90299d52977918dd56e9d25e0c41f",
+    "canonical_executor": "Operations private/feed_recovery at immutable production/research pins as selected by the Foundation release/evidence workflows",
+    "legacy_workflows_manual_only": true,
+    "source": "live main reconciliation 2026-10-01"
   }
 }

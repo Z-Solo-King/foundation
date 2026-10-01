@@ -176,6 +176,10 @@
         "chatbot_control_plane"
       ],
       [
+        "data/feed_lab/",
+        "feed_recovery"
+      ],
+      [
         "private/feed_recovery/",
         "feed_recovery"
       ],
