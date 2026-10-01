@@ -37,24 +37,33 @@ Foundation already implements many high-value Actions ecosystem controls:
 
 GitHub currently recommends full-length commit-SHA pinning for third-party actions and minimum GITHUB_TOKEN permissions. OpenSSF Scorecard independently treats pinned dependencies and token permissions as supply-chain controls.
 
-## Gap selected for implementation
+## Dependency-security gap investigation
 
-The extracted Marketplace contains many dependency-security actions, but Foundation did not have a direct dependency-review gate.
+The Marketplace extraction showed two relevant families:
 
-That control is materially different from workflow static analysis: it evaluates dependency changes introduced by a pull request.
+1. GitHub's native Dependency Review Action.
+2. OSV-Scanner / OSV.dev based scanning.
 
-The project therefore adds the native GitHub actions/dependency-review-action rather than several overlapping third-party scanners.
+A native Dependency Review workflow was tested on the PR during this audit. The live run failed closed with GitHub's explicit message that Dependency Review is not supported because the repository's Dependency Graph is disabled. This is an environment capability gap, not an action syntax failure.
 
-Implemented:
+The unsupported workflow was removed rather than leaving a permanently failing check in the project.
 
-- .github/workflows/dependency-review.yml
-- pull-request trigger plus manual dispatch;
-- contents: read only;
-- 10-minute job timeout;
+## Implemented improvement
+
+Foundation now adds an advisory OSV-Scanner workflow:
+
+- .github/workflows/osv-scanner.yml
+- pull-request scanning;
+- weekly scheduled scanning;
+- manual dispatch;
+- contents read plus job-scoped security-events write for SARIF reporting;
+- 15-minute timeout;
 - concurrency cancellation for obsolete PR runs;
-- failure threshold at high;
-- full SHA pin to the verified v5.0.0 release commit;
-- regression tests enforcing the contract.
+- full SHA pin to OSV-Scanner Action v2.6.0;
+- advisory mode during the initial baseline period so existing findings do not silently become unrelated merge blockers;
+- deterministic tests enforcing the workflow contract.
+
+OSV-Scanner is an appropriate fallback because it uses the OSV vulnerability database and supports multiple dependency ecosystems. Once the baseline is reviewed, the project can decide whether newly introduced findings should become blocking.
 
 ## What was deliberately not adopted
 
@@ -90,6 +99,6 @@ Artifact attestations remain appropriate for actual released software or artifac
 
 Future Marketplace-derived improvements follow:
 
-10k extraction -> complete classification -> project gap analysis -> native capability where possible -> full-SHA pin -> least privilege -> timeout/concurrency -> deterministic test -> PR validation
+10k extraction -> complete classification -> project gap analysis -> native capability where possible -> full-SHA pin -> least privilege -> timeout/concurrency -> deterministic test -> live validation -> baseline review
 
 The Marketplace is a discovery source, not a runtime authority.
