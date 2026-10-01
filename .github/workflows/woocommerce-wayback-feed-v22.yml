@@ -1,0 +1,31 @@
+name: WooCommerce Wayback Feed Inventory V22
+on:
+  push:
+    branches: [feat/woocommerce-adaptive-feed-recovery-v16-20261001]
+    paths: [tools/woocommerce_wayback_feed_v22.mjs,tests/test_woocommerce_wayback_feed_v22.mjs,.github/workflows/woocommerce-wayback-feed-v22.yml]
+  pull_request:
+    branches: [main]
+    paths: [tools/woocommerce_wayback_feed_v22.mjs,tests/test_woocommerce_wayback_feed_v22.mjs,.github/workflows/woocommerce-wayback-feed-v22.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  wayback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with: {node-version:"22",package-manager-cache:false}
+      - run: node --test tests/test_woocommerce_wayback_feed_v22.mjs
+      - run: node tools/woocommerce_wayback_feed_v22.mjs
+      - run: jq -e '.schema=="woocommerce-wayback-feed-inventory-v22/v1" and .target_count==30' out/woocommerce-wayback-feed-v22/report.json >/dev/null
+      - run: jq -r '.results[] | select(.winner != null) | [.site,.status,.winner.final_url] | @tsv' out/woocommerce-wayback-feed-v22/report.json || true
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-wayback-v22
+          path: out/woocommerce-wayback-feed-v22/
+          if-no-files-found: error
+          retention-days: 30
