@@ -93,7 +93,7 @@
     "related_operations_pr": 1109
   },
   "current_prs": {
-    "open_pr_count": 19,
+    "open_pr_count": 18,
     "foundation": [
       1713,
       1710,
@@ -142,8 +142,8 @@
     1400,
     1361
   ],
-  "open_pr_count": 19,
-  "open_implementation_pr_count": 19,
+  "open_pr_count": 18,
+  "open_implementation_pr_count": 18,
   "extractor_mapper": {
     "status": "active_runtime_boundary",
     "repository": "operations",
@@ -161,11 +161,11 @@
     "authority": "scheduling_only"
   },
   "post_merge_sync": {
-    "checked_at": "2026-10-01T10:42:39Z",
+    "checked_at": "2026-10-01T11:06:00Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "bd0f6029d93faf33af6669901d8b2fd6c586518c",
-      "operations": "8b5c7cf1e298a9a84865c2a9c19046955103e33a"
+      "foundation": "282d7eae9fda93dcd4440bcf123f328a67a66a8d",
+      "operations": "3622efa5ba9d3639e8dd0998130a52cedada06f3"
     },
     "operations_last_sync_commits": [
       "d9bd39b6035b289db720f43934e5ec4cbd55ee54",
@@ -195,13 +195,13 @@
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "bd0f6029d93faf33af6669901d8b2fd6c586518c",
-    "operations": "8b5c7cf1e298a9a84865c2a9c19046955103e33a"
+    "foundation": "282d7eae9fda93dcd4440bcf123f328a67a66a8d",
+    "operations": "3622efa5ba9d3639e8dd0998130a52cedada06f3"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "bd0f6029d93faf33af6669901d8b2fd6c586518c",
-    "operations": "8b5c7cf1e298a9a84865c2a9c19046955103e33a"
+    "foundation": "282d7eae9fda93dcd4440bcf123f328a67a66a8d",
+    "operations": "3622efa5ba9d3639e8dd0998130a52cedada06f3"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",
@@ -253,8 +253,8 @@
     "operations_evaluation_bridge": "private/evolution_integration.py",
     "operations_diagnostics_facade": "private/control_plane_diagnostics.py",
     "operations_diagnostics_infrastructure": "private/control_plane_infrastructure.py",
-    "status": "reconciled",
-    "note": "Cross-cutting controls remain overlays; subsystem authorities remain canonical."
+    "status": "reconciled_on_current_main",
+    "note": "Cross-cutting controls remain overlays; subsystem authorities remain canonical. Evaluation receipts now bridge explicitly into universal evolution scoring."
   },
   "source_maintainability": {
     "schema": "source-surface-audit/v1",
@@ -262,13 +262,15 @@
     "attention": "source_bytes>25000 or source_lines>500",
     "completed_decompositions": [
       "operations/private/runtime_language_policy.py",
-      "operations/private/control_plane_diagnostics.py"
+      "operations/private/control_plane_diagnostics.py",
+      "foundation/tools/woocommerce_v175_plugin_fingerprint_22.py"
     ],
     "next_wave": [
       "foundation/.github/workflows/hybrid-language-pilots.yml",
       "foundation/scripts/production_release.sh",
-      "foundation/tools/woocommerce_v175_plugin_fingerprint_22.py",
       "foundation/.github/workflows/nightly-multi-agent-research-v3.yml",
+      "foundation/tests/test_workflow_policy.py",
+      "foundation/tests/test_public_admission_store.py",
       "operations/tools/exhaustive_audit.py"
     ]
   }
