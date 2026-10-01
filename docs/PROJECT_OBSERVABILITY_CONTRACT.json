@@ -6,9 +6,12 @@
   "quality_adapter": "private/project_observability.py",
   "observation_schema": "schemas/project-observation.schema.json",
   "universal_evolution_adapter": "private/evolution_integration.py",
+  "ai_navigation_map": "docs/AI_SYSTEM_MAP.json",
+  "ai_navigation_directory": "docs/AI_SYSTEM_DIRECTORY.md",
   "audit_authorities": [
     "tools/validate_system_integration.py",
-    "operations/tools/master_audit.py"
+    "operations/tools/master_audit.py",
+    "tools/project_observability_audit.mjs"
   ],
   "cadence": {
     "resource_snapshot": "15m",
@@ -32,6 +35,13 @@
     "cross_cutting_controls",
     "evidence_contract"
   ],
+  "navigation_rules": {
+    "purpose_over_filetype": true,
+    "most_specific_path_wins": true,
+    "categories_may_overlap": true,
+    "unknown_is_not_zero": true,
+    "ai_output_is_not_evidence_authority": true
+  },
   "learning_rules": {
     "unknown_is_unavailable": true,
     "complete_observation_required_for_evolution": true,
