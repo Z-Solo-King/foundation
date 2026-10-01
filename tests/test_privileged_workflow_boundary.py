@@ -26,15 +26,26 @@ def test_production_release_has_only_read_github_token_permissions_and_pinned_ac
     assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97" in text
 
 
-def test_backup_is_main_or_manual_only_and_separates_credential_purposes():
+def test_backup_is_daily_or_manual_only_and_separates_credential_purposes():
     text = _workflow("b2-repository-backup.yml")
-    assert "branches:" in text and "- main" in text
+    assert "push:" not in text
+    assert "workflow_dispatch:" in text
+    assert 'cron: "30 20 * * *"' in text
     assert "pull_request:" not in text
     assert "pull_request_target:" not in text
     assert "OPERATIONS_APP_ID" in text
     assert "OPERATIONS_APP_PRIVATE_KEY" in text
     assert "B2_APPLICATION_KEY" in text
     assert "CLOUDFLARE_API_TOKEN" not in text
+
+
+def test_backup_retention_runs_only_after_verified_restore():
+    text = _workflow("b2-repository-backup.yml")
+    assert "remote B2 restore verification: PASS" in text
+    assert text.index("remote B2 restore verification: PASS") < text.index("Retain only the latest verified backup generation")
+    assert "scripts/cleanup_b2_backup_generations.py" in text
+    assert "list-object-versions" in text
+    assert "repository-backup/" in text
     assert "BACKUP_GITHUB_TOKEN" not in text
 def test_privileged_boundary_contract_is_documented():
     text = (ROOT / "docs" / "PRIVILEGED_WORKFLOW_TRUST_BOUNDARY.md").read_text(encoding="utf-8")
