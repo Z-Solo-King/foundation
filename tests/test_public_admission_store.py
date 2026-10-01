@@ -1,7 +1,22 @@
 import asyncio
 import pytest
 
-from backend.admission import AdmissionDecision, AdmissionOutcome, AdmissionPolicy, AdmissionRoute
+from backend.admission import ADMISSION_CONTRACT_VERSION, AdmissionDecision, AdmissionOutcome, AdmissionPolicy, AdmissionRoute
+
+
+def policy(**overrides):
+    values = dict(
+        version=ADMISSION_CONTRACT_VERSION,
+        window_seconds=60,
+        max_requests_per_subject=7,
+        max_requests_global=70,
+        max_concurrent_per_subject=4,
+        max_concurrent_global=8,
+        retry_after_seconds=3,
+        protected_routes=(AdmissionRoute.CHAT, AdmissionRoute.RESEARCH, AdmissionRoute.STREAM),
+    )
+    values.update(overrides)
+    return AdmissionPolicy(**values)
 from backend.admission_store import D1AdmissionStore, ROUTE_COST_UNITS, _insert_new_admission, _storage_event_id
 
 
@@ -132,7 +147,7 @@ def test_route_cost_classes_are_explicit_and_bounded():
         AdmissionRoute.STREAM,
     }
     assert ROUTE_COST_UNITS[AdmissionRoute.RESEARCH] > ROUTE_COST_UNITS[AdmissionRoute.CHAT]
-    admission_policy.validate()
+    admission_admission_policy.validate()
 
 
 def test_public_worker_rejects_expensive_paths_before_upstream_call_source_contract():
