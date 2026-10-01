@@ -74,8 +74,10 @@ jobs:
           for name,value in payload.items():
               if not all(isinstance(value.get(k),str) and value.get(k).strip() for k in ("endpoint","api_key","model")):
                   raise SystemExit(f"invalid provider configuration for {name}")
-          if len(payload) < 2:
-              raise SystemExit(f"need at least 2 configured AI providers for cross-fire; found {len(payload)}: {sorted(payload)}")
+          if not os.environ.get("HEROIC_AUTH_TOKEN","").strip():
+              raise SystemExit("canonical Heroic provider lane requires AUTH_TOKEN")
+          if len(payload) < 1:
+              raise SystemExit(f"need at least 1 configured external provider plus the canonical Heroic lane; found {len(payload)} external: {sorted(payload)}")
           target=Path(os.environ["RUNNER_TEMP"])/"provider_keys_crossfire.json"
           target.write_text(json.dumps(payload,separators=(",",":")),encoding="utf-8")
           print(json.dumps({"configured_provider_count":len(payload),"providers":sorted(payload)},sort_keys=True))
