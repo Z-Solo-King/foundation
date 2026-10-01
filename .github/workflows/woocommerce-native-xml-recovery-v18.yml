@@ -259,8 +259,30 @@ jobs:
               deterministic_native_validator_is_authoritative:true
             }
           };
+          const usable_xml = [];
+          for (const x of rescue?.sites || []) {
+            const native = x.native_feed || null;
+            const reconstructed = x.reconstructed_file || null;
+            if (native) usable_xml.push({site:x.brand,kind:"native",url:native,file:null});
+            else if (reconstructed) usable_xml.push({site:x.brand,kind:"store_api_reconstruction",url:null,file:reconstructed});
+          }
+          result.usable_xml = usable_xml;
+          result.usable_xml_counts = {
+            native: usable_xml.filter(x => x.kind === "native").length,
+            store_api_reconstruction: usable_xml.filter(x => x.kind === "store_api_reconstruction").length,
+            none: target_count - usable_xml.length
+          };
           await fs.writeFile("out/v18/final-report.json", JSON.stringify(result,null,2) + "\n");
+          await fs.writeFile("out/v18/usable-xml-manifest.json", JSON.stringify({
+            schema_version:"foundation-woocommerce-usable-xml-manifest-v18/v1",
+            generated_at:new Date().toISOString(),
+            target_count,
+            policy:"native feed is preferred; Store API XML is an explicitly labeled reconstruction fallback and is not a native retailer feed",
+            entries:usable_xml,
+            counts:result.usable_xml_counts
+          },null,2)+"\n");
           console.log(JSON.stringify(result.counts,null,2));
+          console.log(JSON.stringify(result.usable_xml_counts,null,2));
           NODE
 
       - name: Upload recovery evidence
