@@ -13,7 +13,8 @@
     "research_operations": "1a91efa53b9202f1624ddde892b0e86bd6b360f0",
     "foundation_runtime_status": "no independent immutable Foundation runtime pin; deployed Foundation provenance is release-receipt owned",
     "migration_tools": "f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791",
-    "provider_fleet_runtime": "b95e419254a9071beaeef57a1b0da22ba7dd2c4f"
+    "provider_fleet_runtime": "b95e419254a9071beaeef57a1b0da22ba7dd2c4f",
+    "production_operations_status": "approved pin; fresh canonical production release certification pending"
   },
   "cloudflare": {
     "pages_project": "ai",
@@ -31,7 +32,7 @@
     "queues": 0,
     "durable_object_namespaces": 0,
     "private_resource_identifiers": "redacted",
-    "control_plane_snapshot": "live_verified_pre_split; fresh post-release certification required"
+    "control_plane_snapshot": "live verified before this pin promotion; fresh canonical post-pin release certification required"
   },
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
@@ -137,7 +138,7 @@
     "head_reference_mode": "live_github",
     "last_verified_main": {
       "foundation": "b4446e3d74a6d968c6681a849582525f0eb49d16",
-      "operations": "2133534f9512eee4df49d78f6c39530502944b74"
+      "operations": "6042cb8cd972ba25d42ebebddcb763b9dfb57b67"
     },
     "operations_last_sync_commits": [
       "6071508a8cf5e24001f2238f0b581003d2300865",
@@ -170,12 +171,12 @@
   "head_reference_mode": "live_github",
   "last_verified_main": {
     "foundation": "b4446e3d74a6d968c6681a849582525f0eb49d16",
-    "operations": "2133534f9512eee4df49d78f6c39530502944b74"
+    "operations": "6042cb8cd972ba25d42ebebddcb763b9dfb57b67"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
     "foundation": "b4446e3d74a6d968c6681a849582525f0eb49d16",
-    "operations": "2133534f9512eee4df49d78f6c39530502944b74"
+    "operations": "6042cb8cd972ba25d42ebebddcb763b9dfb57b67"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",

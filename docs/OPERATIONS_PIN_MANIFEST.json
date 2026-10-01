@@ -6,7 +6,7 @@
     "production_runtime": {
       "sha": "6042cb8cd972ba25d42ebebddcb763b9dfb57b67",
       "purpose": "Cloudflare Operations production runtime and Foundation public production release",
-      "status": "canonical production runtime pin; protected policy authority promoted and reviewed"
+      "status": "approved production/runtime pin; fresh canonical production release certification pending"
     },
     "provider_fleet_runtime": {
       "sha": "2a4a49d2c11bd9ff2b9290bc780eb0da97c73ecb",
