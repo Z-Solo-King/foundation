@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
-from tests.policy_test_support import policy_binding
+from policy_test_support import policy_binding
 
 import pytest
 

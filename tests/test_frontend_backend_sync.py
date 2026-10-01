@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from tests.policy_test_support import policy_binding
+from policy_test_support import policy_binding
 
 import worker
 from backend.api.models import ResearchRequest
@@ -46,7 +46,7 @@ class FakePersistence:
         self.created.append((run_id, request))
         return run_id
 
-    async def create_run_idempotent(self, request, key):
+    async def create_run_idempotent(self, request, key, subject_fingerprint=None):
         self.created.append(("idempotent", request, key))
         return "idempotent-run"
 
@@ -64,7 +64,7 @@ async def test_worker_extracts_bounded_urls_and_reports_capability_boundary(monk
 
     persistence = FakePersistence()
     monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: persistence)
-    monkeypatch.setattr(worker, "submit_research", lambda request: SimpleNamespace(ok=True, run_id="r1", metadata={"strict_zero_cost_only": True}))
+    monkeypatch.setattr(worker, "submit_research", lambda request, planning_policy=None: SimpleNamespace(ok=True, run_id="r1", metadata={"strict_zero_cost_only": True}))
 
     async def ingest(env, run_id, request):
         return [{"url": request.source_urls[0], "access_state": "accessible", "retrieval_method": "http_fetch"}]
@@ -90,7 +90,7 @@ async def test_worker_extracts_bounded_urls_and_reports_capability_boundary(monk
 async def test_worker_stays_honest_when_no_source_urls_are_available(monkeypatch):
     persistence = FakePersistence()
     monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: persistence)
-    monkeypatch.setattr(worker, "submit_research", lambda request: SimpleNamespace(ok=True, run_id="r1", metadata={"strict_zero_cost_only": True}))
+    monkeypatch.setattr(worker, "submit_research", lambda request, planning_policy=None: SimpleNamespace(ok=True, run_id="r1", metadata={"strict_zero_cost_only": True}))
 
     class Request:
         method = "POST"

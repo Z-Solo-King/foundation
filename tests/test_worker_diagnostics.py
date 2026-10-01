@@ -83,7 +83,7 @@ class Persistence:
     async def create_run(self, run_id, request):
         return run_id
 
-    async def create_run_idempotent(self, request, idempotency_key):
+    async def create_run_idempotent(self, request, idempotency_key, subject_fingerprint=None):
         return "run-idempotent"
 
 
