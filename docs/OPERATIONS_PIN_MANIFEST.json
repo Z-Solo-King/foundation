@@ -4,9 +4,9 @@
   "authority": "single public-safe immutable Operations revision manifest; runtime code remains authoritative",
   "pins": {
     "production_runtime": {
-      "sha": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
+      "sha": "6042cb8cd972ba25d42ebebddcb763b9dfb57b67",
       "purpose": "Cloudflare Operations production runtime and Foundation public production release",
-      "status": "canonical production runtime pin; promoted Operations D1 persistence-sentinel optimization"
+      "status": "canonical production runtime pin; protected policy authority promoted and reviewed"
     },
     "provider_fleet_runtime": {
       "sha": "2a4a49d2c11bd9ff2b9290bc780eb0da97c73ecb",
