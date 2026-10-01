@@ -187,6 +187,18 @@ def main() -> int:
     else:
         classification = "research_contract_rejected"
 
+    if not ok:
+        print(json.dumps({
+            "probe_failure_diagnostics": {
+                "readiness_status": readiness_status,
+                "readiness_release": release,
+                "expected_foundation_sha": args.expected_foundation_sha,
+                "expected_operations_ref": args.expected_operations_ref,
+                "chat_status": chat_status,
+                "chat_details": chat_details,
+            }
+        }, sort_keys=True), flush=True)
+
     print(json.dumps({
         "schema": "nightly-runtime-contract-probe/v2",
         "ok": ok,
