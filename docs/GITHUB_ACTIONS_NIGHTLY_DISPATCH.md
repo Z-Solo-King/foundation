@@ -16,13 +16,7 @@ GitHub documents that GitHub App installation tokens can create workflow-dispatc
 
 ## Allowlisted Foundation targets
 
-The router currently permits only:
-
-- `.github/workflows/nightly-multi-agent-research-v3.yml`
-- `.github/workflows/heroic-ai-production-release.yml`
-- `.github/workflows/cross-repository-contract-drift.yml`
-- `.github/workflows/operations-centralized-validation.yml`
-- `.github/workflows/main-push-actions-control-plane-probe-v2.yml`
+The autonomous router does not dispatch the production-release workflow. Production deployment is a separate manual `workflow_dispatch` boundary. The router is limited to its explicitly allowlisted evidence/maintenance workflows.
 
 No private Operations workflow is introduced.
 
@@ -34,7 +28,7 @@ The canonical nightly research workflow is `.github/workflows/nightly-multi-agen
 
 ## Production
 
-The production release workflow remains protected behind explicit `confirm_production=true`. The router never bypasses the production workflow's own guards.
+The production release workflow is manual-only and remains protected by its existing production environment/receipt guards. The autonomous router never dispatches it.
 
 ## Boundary
 
