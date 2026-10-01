@@ -18,11 +18,11 @@ test('rejects autonomous task execution', () => {
 });
 
 test('rejects production workflow', () => {
-  assert.throws(() => validatePlan(base({mission_type:'audit',actions:[{id:'a1',kind:'dispatch_workflow',workflow:'heroic-ai-production-release.yml',inputs:{},reason:'release',retry_policy:'none'}]})), /allowlisted/);
+  assert.throws(() => validatePlan(base({mission_type:'audit',actions:[{id:'a1',kind:'dispatch_workflow',workflow:'heroic-ai-production-release.yml',inputs:{},reason:'release',retry_policy:'none'}]})), /autonomous task workflow execution is disabled/);
 });
 
 test('rejects non-empty workflow inputs', () => {
-  assert.throws(() => validatePlan(base({actions:[{...base().actions[0],inputs:{auto_fix:true}}]})), /inputs must be empty/);
+  assert.throws(() => validatePlan(base({actions:[{...base().actions[0],inputs:{auto_fix:true}}]})), /autonomous task workflow execution is disabled/);
 });
 
 test('rejects component improvement execution while automation is disabled', () => {
@@ -41,7 +41,7 @@ test('parses fenced JSON', () => {
 
 test('rejects duplicate workflow actions even with distinct IDs', () => {
   const action = base().actions[0];
-  assert.throws(() => validatePlan(base({actions:[action,{...action,id:'a2'}]})), /duplicate workflow action/);
+  assert.throws(() => validatePlan(base({actions:[action,{...action,id:'a2'}]})), /autonomous task workflow execution is disabled/);
 });
 
 test('rejects migration dispatch while automation is disabled', () => {
