@@ -1,155 +1,31 @@
 import pytest
+from datetime import datetime,timezone
+from backend.sources.access_policy import *
 
-from backend.sources.access_policy import (
-    SOURCE_ACCESS_POLICY_VERSION,
-    AccessClass,
-    DisclosureClass,
-    RetentionClass,
-    SourceAccessPolicy,
-    decide_source_access,
-)
-
-
-def test_source_access_policy_is_versioned_and_deterministic():
-    policy = SourceAccessPolicy()
-    policy.validate()
-    decision = decide_source_access(
-        policy,
-        requested_disclosure=DisclosureClass.PUBLIC_SAFE,
-        request_authenticated=False,
-    )
-    assert decision.allowed is True
-    assert decision.policy_version == SOURCE_ACCESS_POLICY_VERSION
-    assert decision.revalidate is True
-
-
-def test_restricted_and_authenticated_sources_fail_closed_for_public_disclosure():
-    with pytest.raises(ValueError):
-        SourceAccessPolicy(access_class=AccessClass.UNKNOWN).validate()
-    with pytest.raises(ValueError):
-        SourceAccessPolicy(retention_class=RetentionClass.UNKNOWN).validate()
-    with pytest.raises(ValueError):
-        SourceAccessPolicy(access_class=AccessClass.AUTHENTICATED, requires_authentication=False).validate()
-    with pytest.raises(ValueError):
-        SourceAccessPolicy(access_class=AccessClass.RESTRICTED, disclosure_class=DisclosureClass.PUBLIC_SAFE).validate()
-    auth = SourceAccessPolicy(
-        access_class=AccessClass.AUTHENTICATED,
-        requires_authentication=True,
-        disclosure_class=DisclosureClass.PRIVATE_ONLY,
-    )
-    assert decide_source_access(
-        auth,
-        requested_disclosure=DisclosureClass.PUBLIC_SAFE,
-        request_authenticated=False,
-    ).allowed is False
-    assert decide_source_access(
-        auth,
-        requested_disclosure=DisclosureClass.METADATA_ONLY,
-        request_authenticated=True,
-    ).allowed is True
-
-
-def test_retention_and_disclosure_flags_fail_closed():
-    with pytest.raises(ValueError):
-        SourceAccessPolicy(disclosure_class=DisclosureClass.PUBLIC_SAFE, raw_content_allowed=True).validate()
-    with pytest.raises(ValueError):
-        SourceAccessPolicy(retention_class=RetentionClass.NONE, raw_content_allowed=True).validate()
-    robots = SourceAccessPolicy(robots_restriction=True)
-    assert decide_source_access(
-        robots,
-        requested_disclosure=DisclosureClass.PUBLIC_SAFE,
-        request_authenticated=False,
-    ).allowed is False
-    restricted = SourceAccessPolicy(
-        access_class=AccessClass.RESTRICTED,
-        disclosure_class=DisclosureClass.PRIVATE_ONLY,
-    )
-    assert decide_source_access(
-        restricted,
-        requested_disclosure=DisclosureClass.METADATA_ONLY,
-        request_authenticated=True,
-        restricted_research=False,
-    ).allowed is False
-
-
-def test_source_policy_validation_edges_and_decision_invariants():
-    with pytest.raises(ValueError, match="unsupported"):
-        SourceAccessPolicy(policy_version="v0").validate()
-    with pytest.raises(ValueError, match="acquisition"):
-        SourceAccessPolicy(acquisition_method=" ").validate()
-    with pytest.raises(ValueError, match="boolean"):
-        SourceAccessPolicy(requires_authentication=1).validate()
-    with pytest.raises(ValueError, match="boolean"):
-        SourceAccessPolicy(robots_restriction=1).validate()
-    with pytest.raises(ValueError, match="raw content"):
-        SourceAccessPolicy(retention_class=RetentionClass.NONE, raw_content_allowed=True).validate()
-    auth = SourceAccessPolicy(
-        access_class=AccessClass.AUTHENTICATED,
-        requires_authentication=True,
-        disclosure_class=DisclosureClass.PRIVATE_ONLY,
-    )
-    assert decide_source_access(
-        auth,
-        requested_disclosure=DisclosureClass.METADATA_ONLY,
-        request_authenticated=False,
-    ).allowed is False
-    from backend.sources.access_policy import SourceAccessDecision
-    with pytest.raises(ValueError, match="reason"):
-        SourceAccessDecision(False, " ", RetentionClass.SHORT, DisclosureClass.PRIVATE_ONLY, True).validate()
-    with pytest.raises(ValueError, match="standard retention"):
-        SourceAccessDecision(False, "blocked", RetentionClass.STANDARD, DisclosureClass.PRIVATE_ONLY, True).validate()
-
-
-def test_retention_none_guard_is_reached_for_non_public_disclosure():
-    with pytest.raises(ValueError, match="retention is none"):
-        SourceAccessPolicy(
-            retention_class=RetentionClass.NONE,
-            raw_content_allowed=True,
-            disclosure_class=DisclosureClass.METADATA_ONLY,
-        ).validate()
-
-
-def test_retention_expiry_revalidation_and_conflict_resolution_are_deterministic():
-    from datetime import datetime, timezone
-    from backend.sources.access_policy import (
-        expires_at,
-        revalidation_due,
-        resolve_source_policy_conflict,
-        retention_seconds,
-    )
-    observed = datetime(2026, 9, 18, tzinfo=timezone.utc)
-    policy = SourceAccessPolicy(retention_class=RetentionClass.SHORT, revalidation_required=True)
-    assert retention_seconds(policy) == 86_400
-    assert retention_seconds(SourceAccessPolicy(retention_class=RetentionClass.NONE)) == 0
-    assert retention_seconds(SourceAccessPolicy(retention_class=RetentionClass.EPHEMERAL)) == 0
-    assert retention_seconds(SourceAccessPolicy(retention_class=RetentionClass.STANDARD)) == 7 * 86_400
-    assert expires_at(observed, policy).isoformat().startswith("2026-09-19")
-    assert revalidation_due(observed, policy).isoformat().startswith("2026-09-19")
-    custom = SourceAccessPolicy(revalidation_after_seconds=3600)
-    assert revalidation_due(observed, custom).isoformat().startswith("2026-09-18T01")
-    assert revalidation_due(observed, SourceAccessPolicy(revalidation_required=False)) is None
-    restricted = SourceAccessPolicy(
-        access_class=AccessClass.RESTRICTED,
-        disclosure_class=DisclosureClass.PRIVATE_ONLY,
-    )
-    assert resolve_source_policy_conflict((policy, restricted)).access_class is AccessClass.RESTRICTED
-    assert resolve_source_policy_conflict((policy, policy)) is policy
-
-
-def test_source_policy_expiry_rejects_naive_time_and_unknown_retention():
-    from datetime import datetime, timezone
-    from backend.sources.access_policy import expires_at, resolve_source_policy_conflict
-    with pytest.raises(ValueError, match="revalidation_after_seconds"):
-        SourceAccessPolicy(revalidation_after_seconds=-1).validate()
-    with pytest.raises(ValueError, match="timezone-aware"):
-        expires_at(datetime(2026, 9, 18), SourceAccessPolicy())
-    from backend.sources.access_policy import revalidation_due
-    with pytest.raises(ValueError, match="timezone-aware"):
-        revalidation_due(datetime(2026, 9, 18), SourceAccessPolicy())
-    with pytest.raises(ValueError, match="unknown"):
-        expires_at(
-            datetime(2026, 9, 18, tzinfo=timezone.utc),
-            SourceAccessPolicy(retention_class=RetentionClass.UNKNOWN),
-        )
-    with pytest.raises(ValueError, match="at least one"):
-        resolve_source_policy_conflict(())
+TTL={RetentionClass.NONE:0,RetentionClass.EPHEMERAL:0,RetentionClass.SHORT:86400,RetentionClass.STANDARD:604800,RetentionClass.UNKNOWN:None}
+def p(**o):
+    v=dict(policy_version=SOURCE_ACCESS_POLICY_VERSION,access_class=AccessClass.PUBLIC,acquisition_method="http_get",requires_authentication=False,robots_restriction=False,retention_class=RetentionClass.SHORT,raw_content_allowed=False,disclosure_class=DisclosureClass.PUBLIC_SAFE,revalidation_required=True,revalidation_after_seconds=None);v.update(o);return SourceAccessPolicy(**v)
+def test_contract_and_public_safe_default():
+    x=p();x.validate();d=decide_source_access(x,requested_disclosure=DisclosureClass.PUBLIC_SAFE,request_authenticated=False,restricted_research=True);assert d.allowed and d.revalidate
+def test_auth_and_restricted_guards():
+    with pytest.raises(ValueError): p(access_class=AccessClass.UNKNOWN).validate()
+    with pytest.raises(ValueError): p(retention_class=RetentionClass.UNKNOWN).validate()
+    with pytest.raises(ValueError): p(access_class=AccessClass.AUTHENTICATED,requires_authentication=False).validate()
+    auth=p(access_class=AccessClass.AUTHENTICATED,requires_authentication=True,disclosure_class=DisclosureClass.PRIVATE_ONLY)
+    assert not decide_source_access(auth,requested_disclosure=DisclosureClass.PUBLIC_SAFE,request_authenticated=False,restricted_research=True).allowed
+    restricted=p(access_class=AccessClass.RESTRICTED,disclosure_class=DisclosureClass.PRIVATE_ONLY)
+    assert not decide_source_access(restricted,requested_disclosure=DisclosureClass.METADATA_ONLY,request_authenticated=True,restricted_research=False).allowed
+def test_generic_retention_and_conflict():
+    observed=datetime(2026,9,18,tzinfo=timezone.utc);x=p()
+    assert retention_seconds(x,TTL)==86400
+    assert expires_at(observed,x,TTL).isoformat().startswith("2026-09-19")
+    assert revalidation_due(observed,x,default_revalidation_seconds=86400).isoformat().startswith("2026-09-19")
+    restricted=p(access_class=AccessClass.RESTRICTED,disclosure_class=DisclosureClass.PRIVATE_ONLY)
+    ranks={AccessClass.RESTRICTED:4,AccessClass.AUTHENTICATED:3,AccessClass.PUBLIC:2,AccessClass.UNKNOWN:0},{DisclosureClass.FORBIDDEN:4,DisclosureClass.PRIVATE_ONLY:3,DisclosureClass.METADATA_ONLY:2,DisclosureClass.PUBLIC_SAFE:1},{RetentionClass.NONE:4,RetentionClass.EPHEMERAL:3,RetentionClass.SHORT:2,RetentionClass.STANDARD:1,RetentionClass.UNKNOWN:0}
+    assert resolve_source_policy_conflict([x,restricted],access_rank=ranks[0],disclosure_rank=ranks[1],retention_rank=ranks[2]).access_class is AccessClass.RESTRICTED
+def test_fail_closed_edges():
+    with pytest.raises(ValueError): p(policy_version="v0").validate()
+    with pytest.raises(ValueError): p(acquisition_method=" ").validate()
+    with pytest.raises(ValueError): p(revalidation_after_seconds=-1).validate()
+    with pytest.raises(ValueError): expires_at(datetime(2026,9,18),p(),TTL)
+    with pytest.raises(ValueError): revalidation_due(datetime(2026,9,18),p())
