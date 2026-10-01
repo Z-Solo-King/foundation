@@ -25,3 +25,7 @@ def test_paid_direct_runtime_is_denied() -> None:
     row=_run({"ecosystem":"mcp","source_id":"hosted-search","capability":"web-search","economic_class":"paid_direct_forbidden"})
     assert row["direct_runtime_allowed"] is False
     assert "reimplement" in row["recommended_route"]
+
+
+def test_validator_passes() -> None:
+    subprocess.check_output([sys.executable, str(ROOT / "scripts" / "validate_hybrid_alternative_policy.py")], text=True)
