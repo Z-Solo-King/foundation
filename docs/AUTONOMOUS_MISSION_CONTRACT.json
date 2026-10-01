@@ -1,0 +1,61 @@
+{
+  "schema": "autonomous-mission-contract/v1",
+  "chatgpt_is_runtime_dependency": false,
+  "durable_state": "github_issue_v1",
+  "limits": {
+    "max_actions_per_plan": 3,
+    "max_planning_cycles": 6,
+    "max_same_workflow_dispatches_per_mission": 3,
+    "workflow_inputs_must_be_empty": true
+  },
+  "mission_workflows": {
+    "migration": [
+      "polyglot-migration-review.yml",
+      "open-issue-polyglot-deep-scan.yml"
+    ],
+    "feed_recovery": [
+      "woocommerce-clean-recovery.yml",
+      "native-google-feed-hunt.yml",
+      "woocommerce-identified-family-exhaustive-v5.yml"
+    ],
+    "nightly_research": [
+      "nightly-multi-agent-research-v3.yml"
+    ],
+    "audit": [
+      "exhaustive-six-lane-audit.yml",
+      "cross-repository-contract-drift.yml"
+    ],
+    "runtime_reconciliation": [
+      "provider-fleet-runtime-state.yml",
+      "nightly-invariants.yml",
+      "operations-centralized-validation.yml"
+    ]
+  },
+  "forbidden_workflows": [
+    "heroic-ai-production-release.yml"
+  ],
+  "states": [
+    "queued",
+    "planning",
+    "planned",
+    "executing",
+    "verifying",
+    "retrying",
+    "blocked",
+    "complete"
+  ],
+  "failure_classes": [
+    "transient_provider",
+    "transient_workflow",
+    "evidence_incomplete",
+    "policy_blocked",
+    "external_admin_required"
+  ],
+  "authority": {
+    "planner": "governed_ai_candidate_only",
+    "router": "deterministic",
+    "execution": "foundation_github_actions",
+    "production_release": "human_and_existing_release_gate",
+    "cloudflare_mutation": "existing_cloudflare_authority"
+  }
+}
