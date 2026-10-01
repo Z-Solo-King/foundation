@@ -2,6 +2,8 @@ import json
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
+from tests.policy_test_support import policy_binding
+
 import pytest
 
 import backend.sources.http as source_http
@@ -200,7 +202,7 @@ async def test_worker_http_all_branches(monkeypatch):
 
     class FakeAssets:
         async def fetch(self, request): return FakeAssetResponse()
-    env = SimpleNamespace(DB=FakeDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets())
+    env = SimpleNamespace(DB=FakeDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets(), OPERATIONS=policy_binding())
     entry = worker.Default(); entry.env = env
     asset_response = await entry.fetch(Request("GET", "https://x/"))
     assert asset_response.status == 200
@@ -212,15 +214,15 @@ async def test_worker_http_all_branches(monkeypatch):
     not_found = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer secret"})); assert not_found
     class FailingDB(FakeDB):
         def prepare(self, sql): raise RuntimeError("db down")
-    entry.env = SimpleNamespace(DB=FailingDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets())
+    entry.env = SimpleNamespace(DB=FailingDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets(), OPERATIONS=policy_binding())
     persistence_error = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer secret"})); assert persistence_error
     entry.env = env
     unauthorized_post = await entry.fetch(Request("POST", "https://x/api/v1/research", headers={"Authorization":"Bearer bad", "Content-Type":"application/json"})); assert unauthorized_post
     invalid_json = await entry.fetch(Request("POST", "https://x/api/v1/research", payload=[], headers={"Authorization":"Bearer secret", "Content-Type":"application/json"})); assert invalid_json
     bad_shape = await entry.fetch(Request("POST", "https://x/api/v1/research", payload={"unknown":1}, headers={"Authorization":"Bearer secret", "Content-Type":"application/json"})); assert bad_shape
-    monkeypatch.setattr(worker, "submit_research", lambda req: SimpleNamespace(ok=False, error="bad request"))
+    monkeypatch.setattr(worker, "submit_research", lambda req, planning_policy=None: SimpleNamespace(ok=False, error="bad request"))
     rejected = await entry.fetch(Request("POST", "https://x/api/v1/research", payload={"question":"q"}, headers={"Authorization":"Bearer secret", "Content-Type":"application/json"})); assert rejected
-    monkeypatch.setattr(worker, "submit_research", lambda req: SimpleNamespace(ok=True, run_id="r1", metadata={}))
+    monkeypatch.setattr(worker, "submit_research", lambda req, planning_policy=None: SimpleNamespace(ok=True, run_id="r1", metadata={}))
     class Persistence:
         def __init__(self):
             self.subject_fingerprints = []

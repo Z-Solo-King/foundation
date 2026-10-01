@@ -2,6 +2,8 @@ from types import SimpleNamespace
 
 import pytest
 
+from tests.policy_test_support import policy_binding
+
 import worker
 from backend.api.models import ResearchRequest
 
@@ -78,7 +80,7 @@ async def test_worker_extracts_bounded_urls_and_reports_capability_boundary(monk
             return {"question": "Inspect https://example.com", "strict_zero_cost_only": True}
 
     entry = worker.Default()
-    entry.env = SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret", DB=FakeDB(), ARTIFACTS=SimpleNamespace())
+    entry.env = SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret", DB=FakeDB(), ARTIFACTS=SimpleNamespace(), OPERATIONS=policy_binding())
     response = await entry.fetch(Request())
     assert "source_url_ingestion" in str(response)
     assert persistence.status == "completed"
@@ -99,7 +101,7 @@ async def test_worker_stays_honest_when_no_source_urls_are_available(monkeypatch
             return {"question": "General question", "strict_zero_cost_only": True}
 
     entry = worker.Default()
-    entry.env = SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret", DB=FakeDB(), ARTIFACTS=SimpleNamespace())
+    entry.env = SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret", DB=FakeDB(), ARTIFACTS=SimpleNamespace(), OPERATIONS=policy_binding())
     response = await entry.fetch(Request())
     assert "awaiting_source_urls" in str(response)
     assert persistence.status == "planned"

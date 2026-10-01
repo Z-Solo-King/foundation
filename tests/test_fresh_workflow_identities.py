@@ -27,14 +27,8 @@ def test_fresh_bridge_identity_is_dispatchable_and_bounded():
     assert "actions/upload-artifact@" in text
 
 
-def test_fresh_acceptance_workflow_dispatches_both_identities():
+def test_fresh_acceptance_workflow_is_paused():
     text = (ROOT / "fresh-control-plane-identity-acceptance.yml").read_text(encoding="utf-8")
-    assert "gh workflow run foundation-canonical-workflow-bridge-v3.yml" in text
-    assert "gh workflow run nightly-multi-agent-research-v3.yml" in text
-    assert "-f dry_run=true" in text
-    assert "jobs?per_page=100" in text
-    assert 'jobs_status="$(curl -sS -o "$RUNNER_TEMP/bridge-jobs.json" -w \'%{http_code}\'' in text
-    assert 'jobs_status="$(curl -sS -o "$RUNNER_TEMP/nightly-jobs.json" -w \'%{http_code}\'' in text
-    assert "404) jobs=0" in text
-    assert "Unexpected bridge jobs HTTP status" in text
-    assert "Unexpected nightly jobs HTTP status" in text
+    assert "workflow_dispatch:" in text
+    assert "gh workflow run" not in text
+    assert "task workflow is paused" in text
