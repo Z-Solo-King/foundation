@@ -2,10 +2,10 @@
   "schema": "family-issue-acceptance-matrix/v1",
   "audited_at": "2026-10-01",
   "repository_heads": {
-    "foundation": "dcdb4ccbe9dc2e25b33a312e6bac75bb323979c3",
-    "operations": "1a4bcb51615585ce9ee7f5d9d2774f7169e872bf"
+    "foundation": "bd0f6029d93faf33af6669901d8b2fd6c586518c",
+    "operations": "8b5c7cf1e298a9a84865c2a9c19046955103e33a"
   },
-  "open_issue_count": 5,
+  "open_issue_count": 4,
   "issues": [
     {
       "repo": "foundation",
@@ -32,17 +32,6 @@
       "required_evidence": [
         "additional real Google Merchant XML feed discoveries",
         "strict payload validation"
-      ]
-    },
-    {
-      "repo": "foundation",
-      "number": 1672,
-      "title": "architecture: autonomous AI engineering control plane",
-      "required_evidence": [
-        "single canonical orchestration authority",
-        "deterministic mission routing",
-        "human gate for production/authority/secret changes",
-        "no competing orchestration authority"
       ]
     },
     {
