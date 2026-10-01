@@ -85,7 +85,7 @@
   },
   "graph_reference": {
     "schema": "family-integration-graph/v1",
-    "sha": "ca1f241d4e330a111ca50f8c00ef53f9f3d9279f",
+    "sha": "e88df6cca89bfa5f5476095f2bf0ecdb809c8c7b",
     "materials": 20,
     "probes": 11
   },
