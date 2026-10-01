@@ -13,7 +13,7 @@ test('project observability audit covers the canonical improvement matrix', () =
   assert.equal(report.b2_policy.max_supported_large_file_bytes, 10000000000000);
 });
 
-test('observability audit fails closed when a required component field disappears', () => {
+test('observability audit fails closed when required component controls disappear', () => {
   const good = buildReport();
   const brokenComponents = {};
   for (const row of good.components) {
@@ -26,11 +26,8 @@ test('observability audit fails closed when a required component field disappear
       evidence_contract: [],
     };
   }
-  const broken = {
-    components: brokenComponents,
-  };
   const report = buildReport(
-    broken,
+    { components: brokenComponents },
     {
       required_for_each_matrix_component: [
         'owner',
@@ -60,6 +57,6 @@ test('observability audit fails closed when a required component field disappear
       safety: {},
     },
   );
-  assert.equal(report.status, 'PASS');
-  assert.equal(report.scores.workflow, 100);
+  assert.equal(report.status, 'FAIL');
+  assert.ok(report.errors.some((error) => error.includes('cross_cutting_controls_drift')));
 });
