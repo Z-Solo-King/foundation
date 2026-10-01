@@ -25,6 +25,20 @@ FORBIDDEN_PRIVATE_MARKERS = (
     "extractor_mapper",
 )
 NETWORK_MODULES = {"requests", "httpx", "urllib", "aiohttp"}
+
+# These strings are allowed only inside the audit tool itself; runtime policy/provider
+# routing must never be embedded in the public repository.
+PROVIDER_MARKERS = (
+    "api.groq.com", "generativelanguage.googleapis.com", "openrouter.ai/api/v1",
+    "integrate.api.nvidia.com", "api.cohere.ai", "router.huggingface.co",
+    "CLOUDFLARE_API_TOKEN", "GROQ_API_KEY", "GEMINI_API_KEY",
+    "NVIDIA_NIM_API_KEY", "COHERE_API_KEY", "HF_TOKEN",
+)
+PROTECTED_RULE_SYMBOLS = (
+    "CATEGORY_REQUIRED_SOURCE_FAMILIES", "PROTECTED_POLICY_RULES",
+    "CHAT_LLM_PROVIDERS", "PROVIDER_PRIORITY", "ADMISSION_POLICY",
+)
+
 PRIVATE_IMPORT_PATTERN = re.compile(r"(?<![A-Za-z0-9_.-])(?:from|import)\s+private\.[A-Za-z0-9_.]+")
 PRIVATE_PATH_PATTERN = re.compile(r"(?<![A-Za-z0-9_.-])operations/private/[A-Za-z0-9_./-]+")
 PRIVATE_REVISION_PATTERN = re.compile(r"Z-Solo-King/operations@[0-9a-f]{40}")
@@ -149,6 +163,20 @@ def private_revision_findings(path: Path, source: str, root: Path = ROOT) -> lis
     return []
 
 
+def protected_rule_findings(path: Path, source: str, root: Path = ROOT) -> list[Finding]:
+    relative = rel(path, root)
+    if relative in {"scripts/public_security_lint.py", "tools/ai_provider_direct_reference_audit.py"}:
+        return []
+    findings = []
+    for marker in PROTECTED_RULE_SYMBOLS:
+        if marker in source:
+            findings.append(Finding(relative, "protected-rule", f"protected policy symbol {marker} appears in public source"))
+    if relative not in {"tools/ai_provider_direct_reference_audit.py"}:
+        for marker in PROVIDER_MARKERS:
+            if marker in source:
+                findings.append(Finding(relative, "provider-routing-public", f"provider endpoint/credential marker {marker} appears in public source"))
+    return findings
+
 def python_findings(path: Path, source: str) -> list[Finding]:
     relative = rel(path)
     try:
@@ -182,6 +210,7 @@ def lint_file(path: Path, root: Path = ROOT) -> list[Finding]:
     findings.extend(private_reference_findings(path, source, root))
     findings.extend(workflow_private_execution_findings(path, source, root))
     findings.extend(private_revision_findings(path, source, root))
+    findings.extend(protected_rule_findings(path, source, root))
     if path.suffix.lower() == ".py":
         findings.extend(python_findings(path, source))
     return findings
