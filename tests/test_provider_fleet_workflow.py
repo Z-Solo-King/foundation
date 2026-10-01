@@ -57,6 +57,6 @@ def test_provider_fleet_workflow_tolerates_malformed_base_config_for_benchmark_w
     text = WORKFLOW.read_text(encoding="utf-8")
     assert "except json.JSONDecodeError:" in text
     assert "base_config_valid=" in text
-    assert "if steps.validate-config.outputs.base_config_valid == 'true'" in text
+    assert "if: steps.validate-config.outputs.base_config_valid == 'true'" in text
     assert "Live endpoint probing will continue using explicitly configured provider overrides only." in text
     assert "provider-fleet-benchmark-${{ github.run_id }}" in text
