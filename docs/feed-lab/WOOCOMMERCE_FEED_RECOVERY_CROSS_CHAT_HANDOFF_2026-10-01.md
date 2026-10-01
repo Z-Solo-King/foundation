@@ -430,3 +430,21 @@ V7 interpretation: transport-limited remains unverified, not feed absence. The S
 The next phase is V8: corroborate family identity from the collected fingerprints/evidence, then V9 can expand only the supported family grammar. V10 remains reserved for one-at-a-time public recovery of persistent transport-blocked targets.
 
 No CAPTCHA solving, Cloudflare challenge bypass, authentication bypass, clearance-cookie replay, proxy rotation/evasion, or random token enumeration was used.
+
+
+---
+
+## 11. V8/V9 targeted family recovery result — 2026-10-01
+
+V8 independently corroborated the iCopyDoc family grammar for StacksKB: iCopyDoc documentation uses /wp-content/uploads/feed-xml-0.xml for WooCommerce Google Merchant Center feeds and supports multiple feed files. V7 had already observed that exact path returning current HTTP 200 application/xml on StacksKB, but empty.
+
+V9 then tested only the documented iCopyDoc feed indices:
+- /wp-content/uploads/feed-xml-0.xml -> HTTP 200, application/xml, empty payload;
+- /wp-content/uploads/feed-xml-1.xml -> HTTP 404;
+- /wp-content/uploads/feed-xml-2.xml -> HTTP 404.
+
+V9 native result: 0 verified current Google Merchant XML URLs.
+
+Terminal interpretation for this hypothesis: StacksKB has a current public endpoint matching iCopyDoc feed grammar, but no populated Merchant XML feed was recoverable through the documented public indices. This does not prove plugin absence. Do not broaden into arbitrary index/token enumeration.
+
+The next work should return to the unresolved V7 targets and use V8-style evidence-first family identification where new public fingerprints exist. Persistent transport-blocked targets remain transport-unverified, not feed negatives.
