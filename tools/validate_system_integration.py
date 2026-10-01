@@ -77,8 +77,8 @@ def main() -> int:
     args = parser.parse_args()
 
     errors: list[str] = []
-    validate_production_pin_consistency(foundation, errors)
     foundation = args.foundation_root.resolve()
+    validate_production_pin_consistency(foundation, errors)
     operations = args.operations_root.resolve() if args.operations_root else None
 
     contract = load(foundation / "docs" / CONTRACT.name)
