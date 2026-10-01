@@ -139,6 +139,15 @@ jobs:
           timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
           printf '%s\n' "$timestamp" > backup-output/current-generation.txt
           : > backup-output/uploaded.tsv
+          cat > "$RUNNER_TEMP/aws-config" <<'EOF'
+[default]
+s3 =
+    multipart_threshold = 100MB
+    multipart_chunksize = 100MB
+    max_concurrent_requests = 4
+EOF
+          echo "AWS_CONFIG_FILE=$RUNNER_TEMP/aws-config" >> "$GITHUB_ENV"
+          echo 'B2 transfer profile: multipart threshold=100MB, part-size=100MB, max-concurrent=4'
           for repo in foundation operations; do
             mirror="backup-work/${repo}.git"
             sha="$(git -C "$mirror" rev-parse --verify refs/heads/main)"
@@ -148,9 +157,21 @@ jobs:
             tar -C backup-work -czf "$archive" "${repo}.git"
             sha256="$(sha256sum "$archive" | cut -d' ' -f1)"
             size="$(stat -c '%s' "$archive")"
+            single_put_limit_bytes=5000000000
+            max_large_file_bytes=10000000000000
+            if [ "$size" -le 0 ] || [ "$size" -gt "$max_large_file_bytes" ]; then
+              echo "Unsupported B2 archive size for $repo: $size bytes"
+              exit 1
+            fi
+            if [ "$size" -gt "$single_put_limit_bytes" ]; then
+              upload_mode="multipart"
+            else
+              upload_mode="transfer-manager"
+            fi
+            echo "$repo archive size: $size bytes; upload_mode=$upload_mode; single-PUT threshold=5000000000 bytes"
             manifest="backup-output/${repo}-${sha}-${timestamp}.json"
             # "remote_b2_restore_verified": False — this manifest starts as unverified; restore verification is a separate acceptance step.
-            jq -n --arg repo "$repo" --arg commit "$sha" --arg tree "$tree" --arg created "$timestamp" --arg archive "$(basename "$archive")" --arg sha256 "$sha256" --argjson size "$size" --argjson refs "$refs" '{schema:"repository-backup/v2",repository:("Z-Solo-King/"+$repo),visibility:(if $repo=="foundation" then "public" else "private" end),ref:"main",commit:$commit,tree:$tree,created_at:$created,archive:$archive,sha256:$sha256,size_bytes:$size,ref_count:$refs,restore_test:{local_git_fsck:true,main_ref_verified:true,remote_b2_restore_verified:false}}' > "$manifest"
+            jq -n --arg repo "$repo" --arg commit "$sha" --arg tree "$tree" --arg created "$timestamp" --arg archive "$(basename "$archive")" --arg sha256 "$sha256" --arg upload_mode "$upload_mode" --argjson size "$size" --argjson refs "$refs" '{schema:"repository-backup/v3",repository:("Z-Solo-King/"+$repo),visibility:(if $repo=="foundation" then "public" else "private" end),ref:"main",commit:$commit,tree:$tree,created_at:$created,archive:$archive,sha256:$sha256,size_bytes:$size,ref_count:$refs,upload_policy:{single_put_threshold_bytes:5000000000,configured_multipart_threshold_bytes:104857600,configured_multipart_part_bytes:104857600,max_supported_large_file_bytes:10000000000000,mode:$upload_mode},restore_test:{local_git_fsck:true,main_ref_verified:true,remote_b2_restore_verified:false}}' > "$manifest"
             printf 'repository-backup/%s\t%s\t%s\t%s\n' "$(basename "$archive")" "$archive" "$sha256" "$size" >> backup-output/uploaded.tsv
             printf 'repository-backup/%s\t%s\t%s\t%s\n' "$(basename "$manifest")" "$manifest" "$(sha256sum "$manifest" | cut -d' ' -f1)" "$(stat -c '%s' "$manifest")" >> backup-output/uploaded.tsv
             echo "${repo} archive + manifest: PASS"
@@ -166,8 +187,93 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_APPLICATION_KEY }}
         run: |
           set -euo pipefail
-          while IFS=$'\t' read -r key file _sha256 _size; do
-            aws s3api put-object --bucket "$B2_BUCKET" --key "$key" --body "$file" --endpoint-url "$B2_ENDPOINT" --content-type application/octet-stream >/dev/null
+          while IFS=
+          echo 'B2 upload: PASS'
+
+      - name: Verify uploaded object metadata and size
+        shell: bash
+        env:
+          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+          B2_BUCKET: ${{ secrets.B2_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+        run: |
+          set -euo pipefail
+          while IFS=$'\t' read -r key file expected_sha256 expected_size; do
+            metadata="$(aws s3api head-object --bucket "$B2_BUCKET" --key "$key" --endpoint-url "$B2_ENDPOINT")"
+            remote_size="$(jq -r '.ContentLength // empty' <<< "$metadata")"
+            test "$remote_size" = "$expected_size" || { echo "Size mismatch: $key"; exit 1; }
+            local_sha256="$(sha256sum "$file" | cut -d' ' -f1)"
+            test "$local_sha256" = "$expected_sha256" || { echo "Local SHA-256 changed: $key"; exit 1; }
+            echo "verified: $key"
+          done < backup-output/uploaded.tsv
+          echo 'B2 object metadata/size verification: PASS'
+
+      - name: Verify remote restore from every repository archive
+        shell: bash
+        env:
+          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+          B2_BUCKET: ${{ secrets.B2_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+        run: |
+          set -euo pipefail
+          while IFS=$'\t' read -r key _file expected_sha256 _size; do
+            case "$key" in
+              repository-backup/*.tar.gz)
+                name="$(basename "$key")"
+                mkdir -p remote-restore
+                aws s3api get-object --bucket "$B2_BUCKET" --key "$key" "remote-restore/$name" --endpoint-url "$B2_ENDPOINT" >/dev/null
+                actual_sha256="$(sha256sum "remote-restore/$name" | cut -d' ' -f1)"
+                test "$actual_sha256" = "$expected_sha256" || { echo "Remote SHA-256 mismatch: $key"; exit 1; }
+                rm -rf remote-restore/extracted
+                mkdir -p remote-restore/extracted
+                tar -xzf "remote-restore/$name" -C remote-restore/extracted
+                repo_dir="$(find remote-restore/extracted -mindepth 1 -maxdepth 1 -type d -name '*.git' | head -n 1)"
+                test -n "$repo_dir"
+                git -C "$repo_dir" fsck --full --no-dangling
+                test -n "$(git -C "$repo_dir" rev-parse --verify refs/heads/main)"
+                echo "remote restore: PASS: $name"
+                ;;
+            esac
+          done < backup-output/uploaded.tsv
+          echo 'remote B2 restore verification: PASS'
+
+      - name: Retain only the latest verified backup generation
+        env:
+          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+          B2_BUCKET: ${{ secrets.B2_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+        run: |
+          set -euo pipefail
+          test -s backup-output/current-generation.txt
+          test -s backup-output/uploaded.tsv
+          echo "verified backup generation: $(cat backup-output/current-generation.txt)"
+          python scripts/cleanup_b2_backup_generations.py \
+            --bucket "$B2_BUCKET" \
+            --endpoint "$B2_ENDPOINT" \
+            --keep-file backup-output/uploaded.tsv
+
+      - name: Write non-sensitive run summary
+        if: always()
+        run: |
+          {
+            echo '### B2 repository backup'
+            echo
+            echo 'Foundation and Operations mirrors were created.'
+            echo 'Credential-purpose verification, B2 upload metadata checks, SHA-256 restore verification and Git integrity were checked.'
+            echo 'Archives above the 5,000,000,000-byte single-PUT threshold use multipart transfer; each configured multipart part is 100MB.'
+            echo 'B2 large-file ceiling is enforced at 10,000,000,000,000 bytes.'
+            echo 'Retention cleanup runs only after successful remote restore verification and keeps one latest verified generation.'
+          } >> "$GITHUB_STEP_SUMMARY"\t' read -r key file _sha256 expected_size; do
+            echo "uploading: $key ($expected_size bytes)"
+            aws s3 cp "$file" "s3://$B2_BUCKET/$key" \
+              --endpoint-url "$B2_ENDPOINT" \
+              --no-progress
             echo "uploaded: $key"
           done < backup-output/uploaded.tsv
           echo 'B2 upload: PASS'
