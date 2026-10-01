@@ -139,7 +139,7 @@ def test_public_admission_insert_is_idempotent_source_contract():
 
 
 def test_route_cost_classes_are_explicit_and_bounded():
-    policy=policy()
+    admission_policy=policy()
     assert set(ROUTE_COST_UNITS) == {
         AdmissionRoute.CHEAP_READ,
         AdmissionRoute.CHAT,
@@ -147,7 +147,7 @@ def test_route_cost_classes_are_explicit_and_bounded():
         AdmissionRoute.STREAM,
     }
     assert ROUTE_COST_UNITS[AdmissionRoute.RESEARCH] > ROUTE_COST_UNITS[AdmissionRoute.CHAT]
-    admission_admission_policy.validate()
+    admission_policy.validate()
 
 
 def test_public_worker_rejects_expensive_paths_before_upstream_call_source_contract():
