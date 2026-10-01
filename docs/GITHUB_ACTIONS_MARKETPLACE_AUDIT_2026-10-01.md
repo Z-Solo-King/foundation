@@ -88,9 +88,9 @@ The repository-side rules are now:
 
 ### Current Action census
 
-At the current Foundation `main`, the workflow tree contains **63 workflow files**. The live repository code search found **15 unique immutable Action refs across 11 Action repositories**. No unpinned third-party Action ref was found in that census, and all current `runs-on` targets are `ubuntu-latest`.
+At the current Foundation `main`, the workflow tree contains **63 workflow files**. The first repository census found **15 unique immutable Action refs across 11 Action repositories**. During live PR validation against the current merge ref, three additional immutable refs already present in the repository were discovered. No unpinned third-party Action ref was found in that census, and all current `runs-on` targets are `ubuntu-latest`.
 
-The approved immutable set is recorded in `docs/GITHUB_ACTIONS_ZERO_COST_POLICY.json`. This is intentionally an allowlist rather than a popularity-based Marketplace selection: a newly introduced Action must first pass the zero-cost policy, security review, deterministic tests, and live validation.
+The reconciled current set is **18 unique immutable Action refs across 14 Action repositories**. The three additional refs are `actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3`, `actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e`, and `actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6`. GitHub maintains the first two and lists them under MIT licensing; artifact attestations are available in public repositories on current GitHub plans. The approved immutable set is recorded in `docs/GITHUB_ACTIONS_ZERO_COST_POLICY.json`. This is intentionally an allowlist rather than a popularity-based Marketplace selection: a newly introduced Action must first pass the zero-cost policy, security review, deterministic tests, and live validation.
 
 The policy does not claim that an arbitrary third-party service is economically free merely because its Action is free to download. It only admits dependencies for which this repository has explicit project-side evidence and bounded policy coverage.
 
