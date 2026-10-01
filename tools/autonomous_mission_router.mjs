@@ -6,7 +6,7 @@ export const IMPROVEMENT_COMPONENTS = Object.keys(PROJECT_IMPROVEMENT_MATRIX.com
 const COMPONENT_WORKFLOWS = Object.fromEntries(IMPROVEMENT_COMPONENTS.map((component) => [component, PROJECT_IMPROVEMENT_MATRIX.components[component].workflows]));
 
 export const MISSION_WORKFLOWS = {
-  migration: ['polyglot-migration-review.yml', 'open-issue-polyglot-deep-scan.yml'],
+  migration: ['polyglot-migration-review.yml', 'open-issue-polyglot-deep-scan.yml', 'hybrid-language-pilots.yml'],
   feed_recovery: ['woocommerce-clean-recovery.yml', 'native-google-feed-hunt.yml', 'woocommerce-identified-family-exhaustive-v5.yml'],
   nightly_research: ['nightly-multi-agent-research-v3.yml'],
   audit: ['exhaustive-six-lane-audit.yml', 'cross-repository-contract-drift.yml'],
