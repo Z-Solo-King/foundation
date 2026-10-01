@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - name: Checkout Foundation
+      - name: Checkout Foundation approval state
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
@@ -35,38 +35,37 @@ jobs:
           repositories: operations
           permission-contents: read
 
-      - name: Fetch Operations repository and main state
+      - name: Fetch private Operations state
         env:
           GH_TOKEN: ${{ steps.operations-app.outputs.token }}
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p .runtime/operations-guard
-          curl -fsS             -H 'Accept: application/vnd.github+json'             -H "Authorization: Bearer ${GH_TOKEN}"             -H 'X-GitHub-Api-Version: 2022-11-28'             https://api.github.com/repos/Z-Solo-King/operations > .runtime/operations-guard/repository.json
-          curl -fsS             -H 'Accept: application/vnd.github+json'             -H "Authorization: Bearer ${GH_TOKEN}"             -H 'X-GitHub-Api-Version: 2022-11-28'             https://api.github.com/repos/Z-Solo-King/operations/branches/main > .runtime/operations-guard/main.json
-          code=$(curl -sS -o .runtime/operations-guard/workflows.json -w '%{http_code}'             -H 'Accept: application/vnd.github+json'             -H "Authorization: Bearer ${GH_TOKEN}"             -H 'X-GitHub-Api-Version: 2022-11-28'             https://api.github.com/repos/Z-Solo-King/operations/contents/.github/workflows)
-          if [[ "$code" == "404" ]]; then
-            echo '{"present":false}' > .runtime/operations-guard/workflows-state.json
-          elif [[ "$code" == "200" ]]; then
-            jq -n --argjson x "$(cat .runtime/operations-guard/workflows.json)" '{present:true,entries:($x|map(.name))}' > .runtime/operations-guard/workflows-state.json
-          else
-            echo "unexpected .github/workflows API status: $code" >&2
-            cat .runtime/operations-guard/workflows.json >&2 || true
-            exit 1
-          fi
+          api_headers=(-H 'Accept: application/vnd.github+json' -H "Authorization: Bearer $GH_TOKEN" -H 'X-GitHub-Api-Version: 2022-11-28')
+          curl -fsS "${api_headers[@]}"             https://api.github.com/repos/Z-Solo-King/operations             > .runtime/operations-guard/repository.json
+          curl -fsS "${api_headers[@]}"             https://api.github.com/repos/Z-Solo-King/operations/branches/main             > .runtime/operations-guard/main.json
+          code="$(curl -sS -o .runtime/operations-guard/workflows.json -w '%{http_code}' "${api_headers[@]}"             https://api.github.com/repos/Z-Solo-King/operations/contents/.github/workflows)"
+          case "$code" in
+            404) echo '{"present":false}' > .runtime/operations-guard/workflows-state.json ;;
+            200) jq -n --argjson x "$(cat .runtime/operations-guard/workflows.json)"               '{present:true,entries:($x|map(.name))}' > .runtime/operations-guard/workflows-state.json ;;
+            *) echo "unexpected .github/workflows API status: $code" >&2
+               cat .runtime/operations-guard/workflows.json >&2 || true
+               exit 1 ;;
+          esac
 
-      - name: Validate immutable approval
+      - name: Validate immutable production approval
         id: validate
-        env:
-          APPROVED_SHA: ${{ vars.OPERATIONS_APPROVED_SHA || '90fa37df10d63824acd3fe20b64cc91043af9627' }}
         shell: bash
         run: |
           set -euo pipefail
-          jq --arg approved "$APPROVED_SHA"              --slurpfile repo .runtime/operations-guard/repository.json              --slurpfile branch .runtime/operations-guard/main.json              --slurpfile workflows .runtime/operations-guard/workflows-state.json              '{repository:$repo[0],mainBranch:$branch[0],workflowsPresent:($workflows[0].present),approvedSha:$approved}'              > .runtime/operations-guard/input.json
-          node tools/validate_operations_main_guard.mjs .runtime/operations-guard/input.json > .runtime/operations-guard/receipt.json
+          approved_sha="$(jq -r '.approved_sha // empty' docs/OPERATIONS_MAIN_APPROVAL.json)"
+          test "${#approved_sha}" -eq 40
+          jq --arg approved "$approved_sha"              --slurpfile repo .runtime/operations-guard/repository.json              --slurpfile branch .runtime/operations-guard/main.json              --slurpfile workflows .runtime/operations-guard/workflows-state.json              '{repository:$repo[0],mainBranch:$branch[0],workflowsPresent:($workflows[0].present),approvedSha:$approved}'              > .runtime/operations-guard/input.json
+          node tools/validate_operations_main_guard.mjs .runtime/operations-guard/input.json             > .runtime/operations-guard/receipt.json
 
-      - name: Record drift incident
-        if: failure()
+      - name: Record integrity incident
+        if: steps.validate.outcome == 'failure'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -74,18 +73,8 @@ jobs:
           set -euo pipefail
           observed="$(jq -r '.observed_main_sha // "unknown"' .runtime/operations-guard/receipt.json 2>/dev/null || true)"
           approved="$(jq -r '.approved_sha // "unknown"' .runtime/operations-guard/receipt.json 2>/dev/null || true)"
-          number="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search '"[integrity] Operations main drift" in:title' --json number --limit 1 --jq '.[0].number // empty')"
-          body=$(cat <<EOF
-          # Operations main integrity incident
-
-          The private Operations repository does not match the Foundation-approved immutable revision.
-
-          Observed main: `$observed`
-          Approved revision: `$approved`
-
-          Do not treat Operations `main` as production authority until the revision is reviewed and the Foundation approval manifest is intentionally updated.
-          EOF
-          )
+          number="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open             --search '"[integrity] Operations main drift" in:title'             --json number --limit 1 --jq '.[0].number // empty')"
+          body="$(printf '%s\n'             '# Operations main integrity incident' ''             'The private Operations repository does not match the Foundation-approved immutable production revision.' ''             "Observed main: \`$observed\`"             "Approved revision: \`$approved\`" ''             'Do not treat Operations main as production authority until the revision is reviewed and the Foundation approval manifest is intentionally updated.')"
           if [[ -z "$number" ]]; then
             gh issue create --repo "$GITHUB_REPOSITORY" --title "[integrity] Operations main drift" --body "$body" >/dev/null
           else
