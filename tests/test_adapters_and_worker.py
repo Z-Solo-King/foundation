@@ -2,6 +2,8 @@ import json
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
+from tests.policy_test_support import policy_binding
+
 import pytest
 
 import backend.sources.http as source_http
@@ -200,7 +202,7 @@ async def test_worker_http_all_branches(monkeypatch):
 
     class FakeAssets:
         async def fetch(self, request): return FakeAssetResponse()
-    env = SimpleNamespace(DB=FakeDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets())
+    env = SimpleNamespace(DB=FakeDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets(), OPERATIONS=policy_binding())
     entry = worker.Default(); entry.env = env
     asset_response = await entry.fetch(Request("GET", "https://x/"))
     assert asset_response.status == 200

@@ -1,4 +1,6 @@
 from types import SimpleNamespace
+
+from tests.policy_test_support import policy_binding
 import hashlib
 
 import pytest
@@ -221,7 +223,7 @@ async def test_storage_diagnostic_verifies_round_trip_and_missing_artifacts(monk
 @pytest.mark.asyncio
 async def test_worker_http_public_diagnostics_and_research_fail_closed_paths(monkeypatch):
     monkeypatch.setattr(worker, "CloudflarePersistence", Persistence)
-    env = SimpleNamespace(DB=DB(rows=[]), ENVIRONMENT="production", AUTH_TOKEN="secret")
+    env = SimpleNamespace(DB=DB(rows=[] , OPERATIONS=policy_binding()), ENVIRONMENT="production", AUTH_TOKEN="secret")
     entry = worker.Default(); entry.env = env
     unauthorized = await entry.fetch(Request("POST", "https://x/api/v1/chatbot/diagnostic", [], {}))
     assert "unauthorized" in str(unauthorized)
@@ -244,7 +246,7 @@ async def test_worker_http_public_diagnostics_and_research_fail_closed_paths(mon
     assert "storage_diagnostic_unavailable" in str(failed_storage)
     missing = await entry.fetch(Request("GET", "https://x/api/v1/research/missing", None, {"Authorization": "Bearer secret"}))
     assert "run not found" in str(missing)
-    persistence_error = worker.Default(); persistence_error.env = SimpleNamespace(DB=BrokenDB(), ENVIRONMENT="production", AUTH_TOKEN="secret")
+    persistence_error = worker.Default( , OPERATIONS=policy_binding()); persistence_error.env = SimpleNamespace(DB=BrokenDB(), ENVIRONMENT="production", AUTH_TOKEN="secret")
     failed_get = await persistence_error.fetch(Request("GET", "https://x/api/v1/research/run-1", None, {"Authorization": "Bearer secret"}))
     assert "persistence_unavailable" in str(failed_get)
     invalid_research = await entry.fetch(Request("POST", "https://x/api/v1/research", [], auth_headers))

@@ -1,6 +1,8 @@
 import asyncio
 from types import SimpleNamespace
 
+from tests.policy_test_support import policy_binding
+
 
 def test_worker_http_entrypoint_all_paths():
     import worker
@@ -157,7 +159,7 @@ def test_worker_research_uses_scoped_persistence_adapter(monkeypatch):
             return AdmissionStatement()
 
     entry = worker.Default()
-    entry.env = __import__("types").SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret", DB=AdmissionDB())
+    entry.env = __import__("types").SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret", DB=AdmissionDB(), OPERATIONS=policy_binding())
     response = asyncio.run(entry.fetch(Request()))
     assert response.status == 200
     assert persistence.created[0] == "r-scope"
