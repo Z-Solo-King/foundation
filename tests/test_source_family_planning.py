@@ -12,7 +12,7 @@ TEST_PLANNING_POLICY = {
     "base_source_families": [],
     "category_required_source_families": {},
     "keyword_groups": {},
-    "temporal_terms": ["old","new","latest","current","revision","2024","2025","2026","previous","vs","versus"],
+    "temporal_terms": ["old","older","new","latest","recent","current","revision","2024","2025","2026","previous","vs","versus"],
     "quick_stages": ["define_question","discover_sources","collect_observations","verify_evidence","synthesize_answer"],
     "standard_stages": ["define_question","assess_constraints","discover_sources","collect_observations","map_evidence","verify_evidence","check_independence","synthesize_answer"],
 }
