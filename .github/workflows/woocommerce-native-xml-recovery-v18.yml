@@ -115,7 +115,7 @@ jobs:
           HEROIC_WORKER_URL: https://ai-cio.pages.dev
           AI_CROSSFIRE_MAX_PROVIDERS: "5"
           AI_CROSSFIRE_TIMEOUT_MS: "18000"
-          AI_CROSSFIRE_PROVIDERS: "gemini,openrouter_free,groq,cerebras,cloudflare_workers_ai,siliconflow,nvidia_nim,cohere_free,huggingface_free"
+          AI_CROSSFIRE_PROVIDERS: "heroic_worker,cloudflare_workers_ai,siliconflow,gemini,openrouter_free,groq,cerebras,nvidia_nim,cohere_free,huggingface_free"
         run: |
           set -euo pipefail
           mkdir -p out/rescue-fast out/v18
