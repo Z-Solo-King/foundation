@@ -13,7 +13,25 @@ export const MISSION_WORKFLOWS = {
   runtime_reconciliation: ['provider-fleet-runtime-state.yml', 'live-ai-provider-crossfire.yml', 'nightly-invariants.yml', 'operations-centralized-validation.yml'],
   component_improvement: [...new Set(Object.values(COMPONENT_WORKFLOWS).flat())],
 };
-export const FORBIDDEN_WORKFLOWS = new Set(['heroic-ai-production-release.yml']);
+export const FORBIDDEN_WORKFLOWS = new Set([
+  "heroic-ai-production-release.yml",
+  "autonomous-benchmark.yml",
+  "autonomous-engineering-supervisor.yml",
+  "autonomous-scorecard.yml",
+  "project-improvement-supervisor.yml",
+  "live-ai-provider-crossfire.yml",
+  "live-ai-agent-benchmark.yml",
+  "nightly-ai-research-20jobs.yml",
+  "fresh-control-plane-identity-acceptance.yml",
+  "canonical-workflow-dispatch-acceptance.yml",
+  "provider-fleet-runtime-state.yml",
+  "live-chatbot-production-smoke.yml",
+  "live-nightly-research-canary.yml",
+  "nightly-research-provider-preflight.yml",
+  "hybrid-language-pilots.yml",
+  "observation-contract-shadow.yml",
+  "nightly-multi-agent-research-v3.yml"
+]);
 
 function stripFence(value) {
   const text = String(value ?? '').trim();
@@ -40,6 +58,7 @@ export function validatePlan(plan) {
   if (!Array.isArray(plan.actions) || plan.actions.length > 3) throw new Error('invalid action count');
   if (plan.terminal === null && plan.actions.length === 0) throw new Error('non-terminal plan requires an action');
   if (plan.terminal !== null && plan.actions.length !== 0) throw new Error('terminal plan cannot contain actions');
+  if (plan.actions.length > 0) throw new Error('autonomous task workflow execution is disabled');
   const ids = new Set();
   const workflows = new Set();
   for (const action of plan.actions) {

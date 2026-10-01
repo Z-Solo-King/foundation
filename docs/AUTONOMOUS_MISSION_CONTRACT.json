@@ -8,56 +8,7 @@
     "max_same_workflow_dispatches_per_mission": 3,
     "workflow_inputs_must_be_empty": true
   },
-  "mission_workflows": {
-    "migration": [
-      "polyglot-migration-review.yml",
-      "open-issue-polyglot-deep-scan.yml"
-    ],
-    "feed_recovery": [
-      "woocommerce-clean-recovery.yml",
-      "native-google-feed-hunt.yml",
-      "woocommerce-identified-family-exhaustive-v5.yml"
-    ],
-    "nightly_research": [
-      "nightly-multi-agent-research-v3.yml"
-    ],
-    "audit": [
-      "exhaustive-six-lane-audit.yml",
-      "cross-repository-contract-drift.yml"
-    ],
-    "runtime_reconciliation": [
-      "provider-fleet-runtime-state.yml",
-      "nightly-invariants.yml",
-      "operations-centralized-validation.yml"
-    ],
-    "component_improvement": [
-      "actions-static-analysis.yml",
-      "b2-repository-backup.yml",
-      "b2-restore-verification.yml",
-      "codeql.yml",
-      "cross-repository-contract-drift.yml",
-      "exhaustive-six-lane-audit.yml",
-      "extractor-surface-governance.yml",
-      "full-history-secret-scan.yml",
-      "hybrid-language-pilots.yml",
-      "live-ai-agent-benchmark.yml",
-      "live-chatbot-production-smoke.yml",
-      "live-extractor-benchmark.yml",
-      "live-nightly-research-canary.yml",
-      "native-google-feed-hunt.yml",
-      "nightly-invariants.yml",
-      "nightly-multi-agent-research-v3.yml",
-      "nightly-research-provider-preflight.yml",
-      "observation-contract-shadow.yml",
-      "operations-centralized-validation.yml",
-      "polyglot-migration-review.yml",
-      "provider-fleet-runtime-state.yml",
-      "public-worker-live-probe.yml",
-      "release-quality-regression.yml",
-      "woocommerce-clean-recovery.yml",
-      "woocommerce-identified-family-exhaustive-v5.yml"
-    ]
-  },
+  "mission_workflows": {},
   "forbidden_workflows": [
     "heroic-ai-production-release.yml"
   ],
@@ -80,9 +31,29 @@
   ],
   "authority": {
     "planner": "governed_ai_candidate_only",
-    "router": "deterministic",
-    "execution": "foundation_github_actions",
+    "router": "validation_only",
+    "execution": "disabled",
     "production_release": "human_and_existing_release_gate",
     "cloudflare_mutation": "existing_cloudflare_authority"
-  }
+  },
+  "automation_enabled": false,
+  "mission_execution": "disabled",
+  "paused_task_workflows": [
+    "autonomous-benchmark.yml",
+    "autonomous-engineering-supervisor.yml",
+    "autonomous-scorecard.yml",
+    "project-improvement-supervisor.yml",
+    "live-ai-provider-crossfire.yml",
+    "live-ai-agent-benchmark.yml",
+    "nightly-ai-research-20jobs.yml",
+    "fresh-control-plane-identity-acceptance.yml",
+    "canonical-workflow-dispatch-acceptance.yml",
+    "provider-fleet-runtime-state.yml",
+    "live-chatbot-production-smoke.yml",
+    "live-nightly-research-canary.yml",
+    "nightly-research-provider-preflight.yml",
+    "hybrid-language-pilots.yml",
+    "observation-contract-shadow.yml",
+    "nightly-multi-agent-research-v3.yml"
+  ]
 }

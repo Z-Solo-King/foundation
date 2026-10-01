@@ -1,141 +1,17 @@
-name: Live AI provider cross-fire benchmark
+name: live-ai-provider-crossfire
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/live-ai-provider-crossfire.yml"
-      - "benchmark/ai_provider_crossfire.py"
-      - "docs/AI_PROVIDER_FLEET_2026-09-30.json"
   workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: live-ai-provider-crossfire
-  cancel-in-progress: true
-
 jobs:
-  crossfire:
-    name: Parallel provider speed-quality cross-fire
+  paused:
     runs-on: ubuntu-latest
-    environment: production-secret-sync
-    timeout-minutes: 12
+    timeout-minutes: 2
     steps:
-      - name: Checkout Foundation
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.12"
-
-      - name: Assemble governed provider configuration
-        env:
-          BASE_PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
-          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          HEROIC_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          HEROIC_WORKER_URL: https://ai-cio.pages.dev
+      - name: Confirm task workflow is paused
         run: |
-          set -euo pipefail
-          umask 077
-          python - <<'PY'
-          import json, os
-          from pathlib import Path
-
-          payload={}
-          raw=os.environ.get("BASE_PROVIDER_KEYS_JSON","").strip()
-          if raw:
-              try:
-                  candidate=json.loads(raw)
-              except json.JSONDecodeError:
-                  candidate={}
-              if isinstance(candidate,dict):
-                  payload.update(candidate)
-
-          direct={
-              "cloudflare_workers_ai": ("CLOUDFLARE_API_TOKEN", "https://api.cloudflare.com/client/v4/accounts/" + os.environ.get("CLOUDFLARE_ACCOUNT_ID","") + "/ai/v1/chat/completions", "@cf/zai-org/glm-4.7-flash"),
-              "openrouter_free": ("OPENROUTER_API_KEY","https://openrouter.ai/api/v1/chat/completions","openrouter/free"),
-              "groq": ("GROQ_API_KEY","https://api.groq.com/openai/v1/chat/completions","openai/gpt-oss-120b"),
-              "gemini": ("GEMINI_API_KEY","https://generativelanguage.googleapis.com/v1beta/openai/chat/completions","gemini-3.8-flash"),
-              "nvidia_nim": ("NVIDIA_NIM_API_KEY","https://integrate.api.nvidia.com/v1/chat/completions","deepseek-ai/deepseek-v4.1-flash"),
-              "cohere_free": ("COHERE_API_KEY","https://api.cohere.ai/compatibility/v1/chat/completions","command-a-plus-05-2026"),
-              "huggingface_free": ("HF_TOKEN","https://router.huggingface.co/v1/chat/completions","openai/gpt-oss-120b"),
-              "siliconflow": ("SILICONFLOW_API_KEY","https://api.siliconflow.cn/v1/chat/completions","Qwen/Qwen3.5-4B"),
-          }
-          for provider,(env_name,endpoint,model) in direct.items():
-              key=os.environ.get(env_name,"").strip()
-              if key:
-                  payload[provider]={"endpoint":endpoint,"api_key":key,"model":model,"zero_cost":True}
-
-          allowed={"cloudflare_workers_ai","openrouter_free","groq","gemini","nvidia_nim","cohere_free","huggingface_free","siliconflow"}
-          payload={name:value for name,value in payload.items() if name in allowed and isinstance(value,dict)}
-          for name,value in payload.items():
-              if not all(isinstance(value.get(k),str) and value.get(k).strip() for k in ("endpoint","api_key","model")):
-                  raise SystemExit(f"invalid provider configuration for {name}")
-          if not os.environ.get("HEROIC_AUTH_TOKEN","").strip():
-              raise SystemExit("canonical Heroic provider lane requires AUTH_TOKEN")
-          if len(payload) < 1:
-              raise SystemExit(f"need at least 1 configured external provider plus the canonical Heroic lane; found {len(payload)} external: {sorted(payload)}")
-          target=Path(os.environ["RUNNER_TEMP"])/"provider_keys_crossfire.json"
-          target.write_text(json.dumps(payload,separators=(",",":")),encoding="utf-8")
-          print(json.dumps({"configured_provider_count":len(payload),"providers":sorted(payload)},sort_keys=True))
-          PY
-
-      - name: Run concurrent zero-cost provider cross-fire
-        env:
-          PROVIDER_KEYS_JSON_FILE: ${{ runner.temp }}/provider_keys_crossfire.json
-          HEROIC_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          HEROIC_WORKER_URL: https://ai-cio.pages.dev
-        run: |
-          set -euo pipefail
-          mkdir -p .runtime/live-ai-crossfire
-          python benchmark/ai_provider_crossfire.py \
-            --providers-max 5 \
-            --repeats 3 \
-            --workers 12 \
-            --output .runtime/live-ai-crossfire/provider-crossfire.json
-
-      - name: Publish sanitized benchmark summary
-        if: always()
-        run: |
-          set -euo pipefail
-          test -f .runtime/live-ai-crossfire/provider-crossfire.json
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          data=json.loads(Path(".runtime/live-ai-crossfire/provider-crossfire.json").read_text())
-          summary={
-            "schema":data.get("schema"),
-            "generated_at":data.get("generated_at"),
-            "providers_tested":len(data.get("providers",[])),
-            "call_count":data.get("call_count"),
-            "crossfire_batch_wall_ms":data.get("batch_wall_ms"),
-            "providers":[{
-              "provider":x.get("provider"),
-              "model":x.get("model"),
-              "calls":x.get("calls"),
-              "successes":x.get("successes"),
-              "quality_passes":x.get("quality_passes"),
-              "quality_total":x.get("quality_total"),
-              "quality_score":x.get("quality_score"),
-              "latency":x.get("latency_ms"),
-              "provider_batch_ms":x.get("provider_batch_ms"),
-              "errors":x.get("errors"),
-            } for x in data.get("providers",[])]
-          }
-          Path(".runtime/live-ai-crossfire/summary.json").write_text(json.dumps(summary,indent=2,sort_keys=True)+"\n")
-          print(json.dumps(summary,indent=2,sort_keys=True))
-          PY
-
-      - name: Upload benchmark evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: live-ai-provider-crossfire
-          path: .runtime/live-ai-crossfire
-          retention-days: 30
-          if-no-files-found: error
+          echo "Task workflow is paused by policy."
+          echo "No task execution, model calls, provider calls, benchmark execution, research execution, dispatch, mutation, or self-improvement occurs."

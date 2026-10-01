@@ -164,6 +164,26 @@
       ".github/workflows/live-nightly-research-canary.yml": [
         "nightly multi-agent research"
       ]
-    }
-  }
+    },
+    "task_execution": "disabled",
+    "automation_principle": "AI may propose or analyze; task workflow execution requires explicit human action."
+  },
+  "paused_task_workflows": [
+    ".github/workflows/autonomous-benchmark.yml",
+    ".github/workflows/autonomous-engineering-supervisor.yml",
+    ".github/workflows/autonomous-scorecard.yml",
+    ".github/workflows/project-improvement-supervisor.yml",
+    ".github/workflows/live-ai-provider-crossfire.yml",
+    ".github/workflows/live-ai-agent-benchmark.yml",
+    ".github/workflows/nightly-ai-research-20jobs.yml",
+    ".github/workflows/fresh-control-plane-identity-acceptance.yml",
+    ".github/workflows/canonical-workflow-dispatch-acceptance.yml",
+    ".github/workflows/provider-fleet-runtime-state.yml",
+    ".github/workflows/live-chatbot-production-smoke.yml",
+    ".github/workflows/live-nightly-research-canary.yml",
+    ".github/workflows/nightly-research-provider-preflight.yml",
+    ".github/workflows/hybrid-language-pilots.yml",
+    ".github/workflows/observation-contract-shadow.yml",
+    ".github/workflows/nightly-multi-agent-research-v3.yml"
+  ]
 }

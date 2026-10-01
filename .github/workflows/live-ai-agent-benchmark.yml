@@ -1,4 +1,4 @@
-name: Live AI agent benchmark (issue 1157 acceptance)
+name: live-ai-agent-benchmark
 
 on:
   workflow_dispatch:
@@ -6,76 +6,12 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: live-ai-agent-benchmark-issue-1157
-  cancel-in-progress: false
-
 jobs:
-  benchmark:
-    if: >-
-      github.event_name == 'workflow_dispatch'
-      || (
-        github.head_ref == 'fix/issue-1157-live-agent-baseline-20260927'
-        && github.event.pull_request.head.repo.full_name == github.repository
-      )
+  paused:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 2
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 1
-
-      - name: Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.13"
-
-      - name: Verify benchmark credentials are present
-        shell: bash
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Confirm task workflow is paused
         run: |
-          set -euo pipefail
-          test -n "${CLOUDFLARE_API_TOKEN:-}"
-          test -n "${CLOUDFLARE_ACCOUNT_ID:-}"
-          echo "benchmark credentials: PRESENT"
-
-      - name: Run retained project-native benchmark
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set -euo pipefail
-          rm -rf .runtime/live-ai-agent-benchmark
-          python -m benchmark.multi_agent.live_agent_benchmark \
-            --output-dir .runtime/live-ai-agent-benchmark \
-            --run-id "${GITHUB_RUN_ID}" \
-            --repo-sha "${GITHUB_SHA}" \
-            --repeats 3 \
-            --max-workers 2
-
-      - name: Upload retained per-run observations
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: live-ai-agent-benchmark-${{ github.run_id }}
-          path: .runtime/live-ai-agent-benchmark
-          retention-days: 30
-          if-no-files-found: error
-
-      - name: Enforce complete benchmark evidence gate
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s .runtime/live-ai-agent-benchmark/summary.json
-          jq -e '
-            .schema == "live-ai-agent-benchmark/v1"
-            and .retained_per_run_observations == true
-            and .runtime_certification == false
-            and (.expected_observations == 720)
-            and (.successful_observations == .expected_observations)
-          ' .runtime/live-ai-agent-benchmark/summary.json >/dev/null
-          echo "live AI-agent benchmark evidence gate: PASS"
+          echo "Task workflow is paused by policy."
+          echo "No task execution, model calls, provider calls, benchmark execution, research execution, dispatch, mutation, or self-improvement occurs."
