@@ -190,7 +190,13 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_APPLICATION_KEY }}
         run: |
           set -euo pipefail
-          while IFS=
+          while IFS=$'\t' read -r key file _sha256 expected_size; do
+            echo "uploading: $key ($expected_size bytes)"
+            aws s3 cp "$file" "s3://$B2_BUCKET/$key" \
+              --endpoint-url "$B2_ENDPOINT" \
+              --no-progress
+            echo "uploaded: $key"
+          done < backup-output/uploaded.tsv
           echo 'B2 upload: PASS'
 
       - name: Verify uploaded object metadata and size
