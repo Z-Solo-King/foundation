@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { pathToFileURL } from 'node:url';
 import { validatePlan } from './autonomous_mission_router.mjs';
 
 const owner = process.env.GITHUB_REPOSITORY?.split('/')[0];
@@ -9,8 +10,6 @@ const dryRun = process.env.DRY_RUN === 'true';
 if (!process.env.AUTH_TOKEN) throw new Error('AUTH_TOKEN is required for autonomous planner');
 const maxCycles = Number(process.env.MAX_PLANNING_CYCLES || 6);
 const maxWorkflowAttempts = Number(process.env.MAX_WORKFLOW_ATTEMPTS || 3);
-
-if (!owner || !repo || !token) throw new Error('GitHub repository/token environment is required');
 
 async function github(path, options = {}) {
   const response = await fetch(`https://api.github.com${path}`, {
@@ -30,7 +29,7 @@ async function github(path, options = {}) {
   return body;
 }
 
-function sanitize(value) {
+export function sanitize(value) {
   return String(value ?? '')
     .replace(/(?:API[_ -]?KEY|PRIVATE[_ -]?KEY|ACCESS[_ -]?TOKEN|AUTH[_ -]?TOKEN|SECRET)\s*[:=]\s*[^\s,;]+/gi, '[REDACTED]')
     .replace(/-----BEGIN [^-]+-----[\s\S]*?-----END [^-]+-----/g, '[REDACTED_KEY]')
@@ -38,13 +37,13 @@ function sanitize(value) {
     .slice(0, 1200);
 }
 
-function parseState(body) {
+export function parseState(body) {
   const match = String(body || '').match(/<!-- autonomous-mission-state:start -->\s*```json\s*([\s\S]*?)\s*```\s*<!-- autonomous-mission-state:end -->/);
   if (!match) return null;
   try { return JSON.parse(match[1]); } catch { return null; }
 }
 
-function stateBlock(state) {
+export function stateBlock(state) {
   return `<!-- autonomous-mission-state:start -->\n\`\`\`json\n${JSON.stringify(state, null, 2)}\n\`\`\`\n<!-- autonomous-mission-state:end -->`;
 }
 
@@ -120,6 +119,8 @@ async function callPlanner(missionId, cycle, context) {
 }
 
 async function main() {
+  if (!owner || !repo || !token) throw new Error('GitHub repository/token environment is required');
+  if (!process.env.AUTH_TOKEN) throw new Error('AUTH_TOKEN is required for autonomous planner');
   const foundationSha = process.env.FOUNDATION_SHA;
   if (!foundationSha) throw new Error('FOUNDATION_SHA is required');
   const allIssues = await listIssues('open', 50);
@@ -223,4 +224,4 @@ async function main() {
   console.log(JSON.stringify({mission_id:state.mission_id,state:'executing',workflow:action.workflow,child_run:child?.id || null}));
 }
 
-await main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main();
