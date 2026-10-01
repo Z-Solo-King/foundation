@@ -75,3 +75,10 @@ def test_provider_fleet_workflow_publishes_partial_runtime_state_safely() -> Non
     assert "Only sanitized runtime state from explicitly configured providers will be published." in text
     assert "secret_text" in text
     assert "api_key" not in text.split("Publish runtime state to private Operations Worker", 1)[1].split("Upload provider evidence", 1)[0]
+
+
+def test_provider_fleet_workflow_uses_cloudflare_secret_collection_endpoint() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert "/workers/scripts/$CLOUDFLARE_SCRIPT_NAME/secrets" in text
+    assert "/secrets/CHAT_PROVIDER_RUNTIME_STATE" not in text
+    assert '{name:"CHAT_PROVIDER_RUNTIME_STATE",text:$state,type:"secret_text"}' in text
