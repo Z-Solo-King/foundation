@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs/promises";
 import { chromium } from "playwright";
-import { mapBounded } from "./bounded_parallel.mjs";
+import { mapBoundedByKey } from "./bounded_parallel.mjs";
 
 const NAV_TIMEOUT = 20000, SETTLE_MS = 5000, MAX_PAGES = 5, MAX_LINKS = 25, MAX_RESPONSES = 450;
 const SITE_CONCURRENCY = Math.max(1, Number(process.env.SITE_CONCURRENCY || 4));
@@ -86,7 +86,7 @@ async function main(){
   await fs.mkdir("out/custom-feed-crawl",{recursive:true});
   const browser=await chromium.launch({headless:true});
   try{
-    const results=await mapBounded(sites,SITE_CONCURRENCY,s=>siteProbe(browser,s));
+    const results=await mapBoundedByKey(sites,SITE_CONCURRENCY,s=>new URL(s.roots[0]).hostname.toLowerCase().replace(/^www\./,""),s=>siteProbe(browser,s),1);
     const verified=results.flatMap(x=>x.verified_google_xml);
     const report={
       schema_version:"foundation-custom-feed-product-crawl/v2",

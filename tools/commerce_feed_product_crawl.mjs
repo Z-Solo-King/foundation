@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs/promises";
 import { chromium } from "playwright";
-import { mapBounded } from "./bounded_parallel.mjs";
+import { mapBoundedByKey } from "./bounded_parallel.mjs";
 
 const NAV_TIMEOUT = 12000;
 const SETTLE_MS = 1800;
@@ -76,7 +76,7 @@ async function main(){
   await fs.mkdir("out/commerce-feed-crawl",{recursive:true});
   const browser=await chromium.launch({headless:true});
   try{
-    const results=await mapBounded(targets,SITE_CONCURRENCY,t=>probeSite(browser,t));
+    const results=await mapBoundedByKey(targets,SITE_CONCURRENCY,([,root])=>new URL(root).hostname.toLowerCase().replace(/^www\./,""),t=>probeSite(browser,t),1);
     const verified=results.flatMap(x=>x.verified_google_xml);
     const report={
       schema_version:"foundation-commerce-feed-product-crawl/v1",
