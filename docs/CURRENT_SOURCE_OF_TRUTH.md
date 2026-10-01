@@ -3,11 +3,11 @@
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
 Checked: 2026-10-01.
-Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `0b2a04fddab627701149d108345cc4fb1336b278`.
+Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `d990473426e4bcf07739965545c3f01a79ab8297`.
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: current main is read live from GitHub; last verified commit `0b2a04fddab627701149d108345cc4fb1336b278`.
-Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `c69d5c113d43809e28ba622009ad0cc568b94a12; research/migration jobs use explicit immutable pins below.
+Foundation main code checkpoint: current main is read live from GitHub; last verified commit `d990473426e4bcf07739965545c3f01a79ab8297`.
+Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `1a4bcb51615585ce9ee7f5d9d2774f7169e872bf`; research/migration jobs use explicit immutable pins below.
 Production Operations pin: ce4f9edbae3ddf1bf1c25a908d5bce014acc7676.
 Provider fleet runtime probe pin: b95e419254a9071beaeef57a1b0da22ba7dd2c4f.
 Research Operations pin: 1a91efa53b9202f1624ddde892b0e86bd6b360f0.
@@ -107,3 +107,10 @@ The 1,408 supplied GitHub Marketplace App records were analyzed as capability pa
 
 ### 2026-10-01 hybrid & alternative capability-mining reconciliation
 The project-wide $0 model now treats paid, premium, hosted and proprietary ecosystems as research inputs rather than exclusion lists. The supplied MCP, GitHub Actions Marketplace, and GitHub Apps datasets are covered by `docs/HYBRID_ALTERNATIVE_ECOSYSTEM_AUDIT_2026-10-01.*`, while direct paid runtime dependencies remain forbidden. Useful public behavior, architecture, policy, resource controls, lifecycle semantics and UX may be reimplemented using native GitHub/Cloudflare capabilities, open-source components, or bounded documented free quotas subject to deterministic, security, resource, provenance, shadow, canary and rollback evidence.
+
+
+## 2026-10-01 live cohesion reconciliation
+
+The live acceptance queue contains five canonical acceptance issues: Foundation #58, #1247, #1249, #1672 and Operations #603. Foundation #157 and Operations #597 are closed and are no longer current acceptance targets; historical references remain historical evidence and are not promoted back into the live queue.
+
+The current total open-issue universe is eight. Autonomous mission/improvement and Operations-main drift issues remain separate execution/incident state and are intentionally not mixed into the acceptance matrix.
