@@ -45,8 +45,10 @@ jobs:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
           NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
           COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
         run: |
@@ -62,7 +64,7 @@ jobs:
           import json, os
           from pathlib import Path
 
-          allowed = {"openrouter_free","groq","gemini","nvidia_nim","cohere_free","huggingface_free","siliconflow"}
+          allowed = {"openrouter_free","groq","gemini","cerebras","nvidia_nim","cohere_free","huggingface_free","siliconflow"}
           raw = os.environ["PROVIDER_KEYS_JSON"].strip()
           base_ok = True
           try:
@@ -117,9 +119,9 @@ jobs:
               payload = {}
               base_config_valid = False
           payload.pop("mistral_free", None)
-          payload.pop("cerebras", None)
 
           optional = {
+              "cerebras": ("CEREBRAS_API_KEY", "https://api.cerebras.ai/v1/chat/completions", "gpt-oss-120b"),
               "nvidia_nim": ("NVIDIA_NIM_API_KEY", "https://integrate.api.nvidia.com/v1/chat/completions", "deepseek-ai/deepseek-v4.1-flash"),
               "huggingface_free": ("HF_TOKEN", "https://router.huggingface.co/v1/chat/completions", "openai/gpt-oss-120b"),
               "cohere_free": ("COHERE_API_KEY", "https://api.cohere.ai/compatibility/v1/chat/completions", "command-a-plus-05-2026"),
