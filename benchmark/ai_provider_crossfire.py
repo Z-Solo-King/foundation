@@ -1,3 +1,4 @@
+# LIVE BENCHMARK TRIGGER: 2026-10-01 parallel provider run
 #!/usr/bin/env python3
 """Concurrent live zero-cost provider benchmark with deterministic quality checks."""
 from __future__ import annotations
