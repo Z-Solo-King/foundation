@@ -5,6 +5,20 @@ from backend.intelligence.contracts import ResearchContract
 from backend.intelligence.evidence import EvidenceKnowledgeStore, EvidenceRecord
 from backend.intelligence.planning import create_plan
 
+TEST_PLANNING_POLICY = {
+    "base_source_families": [],
+    "category_required_source_families": {},
+    "keyword_groups": {
+        "amazon": ["amazon"], "flipkart": ["flipkart"], "reddit": ["reddit"], "youtube": ["youtube"],
+        "chinese_communities": ["chinese", "bilibili", "zhihu", "baidu tieba", "douban", "ptt"],
+        "teardown_evidence": ["teardown", "pcb"], "price_stock": ["price", "current"],
+    },
+    "temporal_terms": ["latest", "revision", "2024"],
+    "quick_stages": ["define_question", "discover_sources", "collect_observations", "verify_evidence", "synthesize_answer"],
+    "standard_stages": ["define_question", "assess_constraints", "discover_sources", "collect_observations", "map_evidence", "verify_evidence", "check_independence", "synthesize_answer"],
+}
+
+
 
 NOW = datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)
 
@@ -74,7 +88,8 @@ def test_planner_source_family_expansion_and_temporal_flag():
         ResearchContract(
             question="Amazon Flipkart Reddit YouTube Chinese Bilibili Zhihu Baidu Tieba Douban PTT teardown PCB price current revision",
             depth="standard",
-        )
+        ),
+        planning_policy=TEST_PLANNING_POLICY,
     )
     families = plan.metadata["required_source_families"]
     for family in ("amazon", "flipkart", "reddit", "youtube", "chinese_communities", "teardown_evidence", "price_stock"):
