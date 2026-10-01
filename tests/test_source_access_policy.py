@@ -23,6 +23,7 @@ def test_source_access_policy_is_versioned_and_deterministic():
         policy,
         requested_disclosure=DisclosureClass.PUBLIC_SAFE,
         request_authenticated=False,
+        restricted_research=True,
     )
     assert decision.allowed is True
     assert decision.policy_version == SOURCE_ACCESS_POLICY_VERSION
@@ -52,6 +53,7 @@ def test_restricted_and_authenticated_sources_fail_closed_for_public_disclosure(
         auth,
         requested_disclosure=DisclosureClass.METADATA_ONLY,
         request_authenticated=True,
+        restricted_research=True,
     ).allowed is True
 
 
@@ -98,6 +100,7 @@ def test_source_policy_validation_edges_and_decision_invariants():
         auth,
         requested_disclosure=DisclosureClass.METADATA_ONLY,
         request_authenticated=False,
+        restricted_research=True,
     ).allowed is False
     from backend.sources.access_policy import SourceAccessDecision
     with pytest.raises(ValueError, match="reason"):

@@ -448,7 +448,7 @@ async def test_worker_research_rejected_result_handles_missing_admission_lease(m
     monkeypatch.setattr(
         worker,
         "submit_research",
-        lambda request: type("Result", (), {"ok": False, "error": "rejected"})(),
+        lambda request, **kwargs: type("Result", (), {"ok": False, "error": "rejected"})(),
     )
 
     env = type("Env", (), {"AUTH_TOKEN": "secret", "DB": object()})()
