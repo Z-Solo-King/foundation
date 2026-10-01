@@ -181,6 +181,6 @@ def test_canary_manual_execution_is_main_only_and_post_nightly_main_only():
 
 def test_nightly_research_aligns_scheduler_and_proxy_concurrency():
     text = workflow_text()
-    assert 'RESEARCH_MAX_CONCURRENCY: "6"' in text
+    assert 'RESEARCH_MAX_CONCURRENCY: "3"' in text
     assert '--max-upstream-concurrency "${RESEARCH_MAX_CONCURRENCY}"' in text
     assert '--crossfire --global-capacity "$RESEARCH_MAX_CONCURRENCY"' in text

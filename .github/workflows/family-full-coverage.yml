@@ -10,6 +10,12 @@ on:
       - 'tests/test_family_full_coverage.py'
       - '.github/workflows/family-full-coverage.yml'
       - '.github/workflows/**'
+      - 'docs/PROJECT_IMPROVEMENT_MATRIX.json'
+      - 'docs/SYSTEM_INTEGRATION_CONTRACT.json'
+      - 'tools/validate_system_integration.py'
+      - 'tools/source_surface_audit.py'
+      - 'tests/test_system_integration.py'
+      - 'tests/test_source_surface_audit.py'
   schedule:
     - cron: "55 2 * * *"
   workflow_dispatch:
@@ -68,12 +74,16 @@ jobs:
           python scripts/validate_github_actions_zero_cost.py
           python scripts/validate_github_app_policy.py
           python scripts/validate_hybrid_alternative_policy.py
+          python tools/validate_system_integration.py --foundation-root . --operations-root ../operations --strict
+          python tools/source_surface_audit.py --root . --root ../operations --output .runtime/source-surface-audit.json
 
       - name: Upload full coverage receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: family-full-coverage
-          path: foundation/.runtime/family-full-coverage.json
+          path: |
+            foundation/.runtime/family-full-coverage.json
+            foundation/.runtime/source-surface-audit.json
           if-no-files-found: error
           retention-days: 30

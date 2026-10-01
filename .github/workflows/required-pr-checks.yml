@@ -103,8 +103,10 @@ jobs:
         run: python scripts/validate_github_actions_zero_cost.py
       - name: Hybrid & Alternative zero-cost policy
         run: python scripts/validate_hybrid_alternative_policy.py
-      - name: GitHub Actions zero-cost policy
-        run: python scripts/validate_github_actions_zero_cost.py
+      - name: System integration contract (Foundation)
+        run: python tools/validate_system_integration.py --foundation-root . --strict
+      - name: Source surface maintainability audit
+        run: python tools/source_surface_audit.py --root . --output .runtime/source-surface-audit.json
 
       - name: Public PR metadata security scan
         if: "${{ github.event_name == 'pull_request' }}"

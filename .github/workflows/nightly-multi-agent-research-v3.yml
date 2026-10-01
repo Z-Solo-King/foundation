@@ -49,8 +49,10 @@ env:
   MAPPER_RUNTIME_EVIDENCE_CONTRACT: mapper-migration-runtime-receipt/v1
   MODEL_PORTABILITY_EVIDENCE_CONTRACT: model-portability-runtime-receipt/v1
   # Keep the orchestration semaphore aligned with the loopback proxy upstream semaphore.
-  # This prevents 20 coordinator slots from queueing behind 6 proxy slots for 180s.
-  RESEARCH_MAX_CONCURRENCY: "6"
+  # Live production CrossFire evidence showed a 6-slot provider envelope repeatedly
+  # producing mixed partial/failed programs at a ~604-664s wall-clock boundary.
+  # Use a conservative 3-slot envelope until a fresh run demonstrates stable completion.
+  RESEARCH_MAX_CONCURRENCY: "3"
 
 jobs:
   production_gate:
