@@ -140,12 +140,12 @@ jobs:
           printf '%s\n' "$timestamp" > backup-output/current-generation.txt
           : > backup-output/uploaded.tsv
           cat > "$RUNNER_TEMP/aws-config" <<'EOF'
-[default]
-s3 =
-    multipart_threshold = 100MB
-    multipart_chunksize = 100MB
-    max_concurrent_requests = 4
-EOF
+          [default]
+          s3 =
+              multipart_threshold = 100MB
+              multipart_chunksize = 100MB
+              max_concurrent_requests = 4
+          EOF
           echo "AWS_CONFIG_FILE=$RUNNER_TEMP/aws-config" >> "$GITHUB_ENV"
           echo 'B2 transfer profile: multipart threshold=100MB, part-size=100MB, max-concurrent=4'
           for repo in foundation operations; do
