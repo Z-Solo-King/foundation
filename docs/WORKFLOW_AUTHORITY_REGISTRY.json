@@ -1,6 +1,6 @@
 {
   "schema": "workflow-authority-registry/v1",
-  "policy_version": "2026-09-30",
+  "policy_version": "2026-10-01",
   "default_class": "public_ci",
   "public_feed_workflows": {
     ".github/workflows/native-google-feed-hunt.yml": true,
@@ -134,6 +134,10 @@
     [
       ".github/workflows/woocommerce-native-xml-recovery-v18.yml",
       "private_feed_extraction"
+    ],
+    [
+      ".github/workflows/live-ai-provider-crossfire.yml",
+      "live_benchmark"
     ]
   ],
   "policy": {
