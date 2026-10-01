@@ -1227,7 +1227,7 @@ async def test_periodic_cleanup_branch_executes():
     decision, lease = await D1AdmissionStore(db).acquire(
         subject_fingerprint="s",
         route=AdmissionRoute.CHEAP_READ,
-        policy=AdmissionPolicy(window_seconds=10),
+        policy=admission_policy(window_seconds=10),
         event_id="cleanup",
         now=100,
     )

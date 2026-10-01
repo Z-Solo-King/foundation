@@ -86,9 +86,9 @@ def test_unavailable_authority_fails_closed_for_protected_routes_and_allows_chea
 
 def test_policy_and_snapshot_validation_fail_closed():
     with pytest.raises(ValueError):
-        AdmissionPolicy(version="v0").validate()
+        admission_policy(version="v0").validate()
     with pytest.raises(ValueError):
-        AdmissionPolicy(window_seconds=0).validate()
+        admission_policy(window_seconds=0).validate()
     with pytest.raises(ValueError):
         AdmissionSnapshot(authority_available=True, global_requests=-1).validate()
     with pytest.raises(ValueError):

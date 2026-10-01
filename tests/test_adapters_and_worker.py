@@ -7,6 +7,7 @@ import pytest
 import backend.sources.http as source_http
 import backend.sources.wikipedia as wikipedia
 import worker
+from tests.policy_test_support import policy_binding
 from backend.api.models import ResearchRequest
 from backend.persistence.cloudflare import CloudflarePersistence, IdempotencyConflictError, request_fingerprint
 from backend.persistence.d1 import D1Repository, DocumentVersionRecord, EvidenceRecord, RunRecord, SourceLineageRecord
@@ -184,7 +185,7 @@ async def test_worker_helpers_and_source_ingestion(monkeypatch):
             return FakeStatement([{"observation_id":"o1","source_id":"s1"}])
     run_payload = await worker._get_run(SimpleNamespace(DB=RunDB()), "r1")
     assert run_payload["run"]["run_id"] == "r1" and run_payload["observations"][0]["observation_id"] == "o1"
-    assert await worker._get_run(SimpleNamespace(DB=FakeDB()), "missing") is None
+    assert await worker._get_run(SimpleNamespace(DB=FakeDB(), OPERATIONS=policy_binding()), "missing") is None
 
 
 @pytest.mark.asyncio
@@ -200,7 +201,7 @@ async def test_worker_http_all_branches(monkeypatch):
 
     class FakeAssets:
         async def fetch(self, request): return FakeAssetResponse()
-    env = SimpleNamespace(DB=FakeDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets())
+    env = SimpleNamespace(DB=FakeDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets(), OPERATIONS=policy_binding())
     entry = worker.Default(); entry.env = env
     asset_response = await entry.fetch(Request("GET", "https://x/"))
     assert asset_response.status == 200
@@ -212,7 +213,7 @@ async def test_worker_http_all_branches(monkeypatch):
     not_found = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer secret"})); assert not_found
     class FailingDB(FakeDB):
         def prepare(self, sql): raise RuntimeError("db down")
-    entry.env = SimpleNamespace(DB=FailingDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets())
+    entry.env = SimpleNamespace(DB=FailingDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets(), OPERATIONS=policy_binding())
     persistence_error = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer secret"})); assert persistence_error
     entry.env = env
     unauthorized_post = await entry.fetch(Request("POST", "https://x/api/v1/research", headers={"Authorization":"Bearer bad", "Content-Type":"application/json"})); assert unauthorized_post

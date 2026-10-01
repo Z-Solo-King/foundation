@@ -7,6 +7,13 @@ from benchmark.chatbot_query_benchmark import SOURCE_ALIASES, load_queries
 from backend.intelligence.contracts import ResearchContract
 from backend.intelligence.planning import create_plan
 
+TEST_PLANNING_POLICY = {
+    "base_source_families": ["web_search", "retailers", "oem"],
+    "category_required_source_families": {},
+    "keyword_groups": {},
+    "temporal_terms": ["old vs new", "latest", "recent", "revision", "2024", "2025", "2026"],
+    "standard_stages": ["define_question", "assess_constraints", "discover_sources", "collect_observations", "map_evidence", "verify_evidence", "check_independence", "synthesize_answer"],
+}
 
 CORPUS = Path("benchmark/chatbot-query-corpus.json")
 
@@ -24,8 +31,9 @@ def test_all_corpus_queries_plan_required_source_families() -> None:
                 max_evidence_items=200,
                 query_category=str(row.get("category", "")) or None,
                 required_source_families=tuple(sorted(expected)),
+                freshness_requirement="recent" if row.get("temporal") == "old_vs_new" else None,
             )
-        )
+        ), planning_policy=TEST_PLANNING_POLICY)
         planned = {value for value in plan.metadata["required_source_families"].split(",") if value}
         missing = expected - planned
         if missing:

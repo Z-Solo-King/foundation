@@ -1,5 +1,7 @@
 import pytest
 
+from tests.policy_test_support import source_policy
+
 from backend.sources.access_policy import (
     SOURCE_ACCESS_POLICY_VERSION,
     AccessClass,
@@ -8,6 +10,10 @@ from backend.sources.access_policy import (
     SourceAccessPolicy,
     decide_source_access,
 )
+
+
+TTL = {RetentionClass.NONE: 0, RetentionClass.EPHEMERAL: 0, RetentionClass.SHORT: 86_400, RetentionClass.STANDARD: 7 * 86_400, RetentionClass.UNKNOWN: None}
+RANKS = ({AccessClass.RESTRICTED: 4, AccessClass.AUTHENTICATED: 3, AccessClass.PUBLIC: 2, AccessClass.UNKNOWN: 0}, {DisclosureClass.FORBIDDEN: 4, DisclosureClass.PRIVATE_ONLY: 3, DisclosureClass.METADATA_ONLY: 2, DisclosureClass.PUBLIC_SAFE: 1}, {RetentionClass.NONE: 4, RetentionClass.EPHEMERAL: 3, RetentionClass.SHORT: 2, RetentionClass.STANDARD: 1, RetentionClass.UNKNOWN: 0})
 
 
 def test_source_access_policy_is_versioned_and_deterministic():
@@ -74,7 +80,7 @@ def test_retention_and_disclosure_flags_fail_closed():
 
 def test_source_policy_validation_edges_and_decision_invariants():
     with pytest.raises(ValueError, match="unsupported"):
-        SourceAccessPolicy(policy_version="v0").validate()
+        source_policy(policy_version="v0").validate()
     with pytest.raises(ValueError, match="acquisition"):
         source_policy(acquisition_method=" ").validate()
     with pytest.raises(ValueError, match="boolean"):
@@ -120,14 +126,14 @@ def test_retention_expiry_revalidation_and_conflict_resolution_are_deterministic
     observed = datetime(2026, 9, 18, tzinfo=timezone.utc)
     policy = source_policy(retention_class=RetentionClass.SHORT, revalidation_required=True)
     assert retention_seconds(policy, TTL) == 86_400
-    assert retention_seconds(source_policy(retention_class=RetentionClass.NONE)) == 0
-    assert retention_seconds(source_policy(retention_class=RetentionClass.EPHEMERAL)) == 0
-    assert retention_seconds(source_policy(retention_class=RetentionClass.STANDARD)) == 7 * 86_400
+    assert retention_seconds(source_policy(retention_class=RetentionClass.NONE), TTL) == 0
+    assert retention_seconds(source_policy(retention_class=RetentionClass.EPHEMERAL), TTL) == 0
+    assert retention_seconds(source_policy(retention_class=RetentionClass.STANDARD), TTL) == 7 * 86_400
     assert expires_at(observed, policy, TTL).isoformat().startswith("2026-09-19")
     assert revalidation_due(observed, policy, 86400).isoformat().startswith("2026-09-19")
     custom = source_policy(revalidation_after_seconds=3600)
     assert revalidation_due(observed, custom, 86400).isoformat().startswith("2026-09-18T01")
-    assert revalidation_due(observed, source_policy(revalidation_required=False)) is None
+    assert revalidation_due(observed, source_policy(revalidation_required=False), 86_400) is None
     restricted = source_policy(
         access_class=AccessClass.RESTRICTED,
         disclosure_class=DisclosureClass.PRIVATE_ONLY,
@@ -142,14 +148,11 @@ def test_source_policy_expiry_rejects_naive_time_and_unknown_retention():
     with pytest.raises(ValueError, match="revalidation_after_seconds"):
         source_policy(revalidation_after_seconds=-1).validate()
     with pytest.raises(ValueError, match="timezone-aware"):
-        expires_at(datetime(2026, 9, 18), source_policy())
+        expires_at(datetime(2026, 9, 18), source_policy(), TTL)
     from backend.sources.access_policy import revalidation_due
     with pytest.raises(ValueError, match="timezone-aware"):
-        revalidation_due(datetime(2026, 9, 18), source_policy())
+        revalidation_due(datetime(2026, 9, 18), source_policy(), 86_400)
     with pytest.raises(ValueError, match="unknown"):
-        expires_at(
-            datetime(2026, 9, 18, tzinfo=timezone.utc),
-            source_policy(retention_class=RetentionClass.UNKNOWN),
-        )
+        expires_at(datetime(2026, 9, 18, tzinfo=timezone.utc), source_policy(retention_class=RetentionClass.UNKNOWN), TTL)
     with pytest.raises(ValueError, match="at least one"):
         resolve_source_policy_conflict((), access_rank=RANKS[0], disclosure_rank=RANKS[1], retention_rank=RANKS[2])

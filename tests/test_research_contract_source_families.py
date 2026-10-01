@@ -20,7 +20,7 @@ def test_research_contract_accepts_category_and_explicit_families() -> None:
     plan = create_plan(contract, planning_policy=TEST_PLANNING_POLICY)
     families = set(plan.metadata["required_source_families"].split(","))
     assert {"amazon", "flipkart", "reddit", "retailers", "professional_reviews"} <= families
-    assert plan.metadata["required_source_families_origin"] == "explicit+category+question"
+    assert plan.metadata["required_source_families_origin"] == "explicit+private_policy"
     assert plan.metadata["query_category"] == "best_product"
 
 
