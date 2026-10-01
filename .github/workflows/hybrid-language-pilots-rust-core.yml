@@ -143,7 +143,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{needs.resolve_operations_ref.outputs.ref}}
+          ref: ${{ inputs.operations_ref }}
           token: ${{steps.operations-app.outputs.token}}
           path: operations
       - name: Setup Python

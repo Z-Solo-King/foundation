@@ -229,7 +229,7 @@ jobs:
               "repeats": 3,
               "parity": "PASS",
               "rust_latency_ns": {"p50": int(median(ordered)), "p95": pct(0.95), "p99": pct(0.99)},
-              "operations_revision": "${{needs.resolve_operations_ref.outputs.ref}}",
+              "operations_revision": "${{ inputs.operations_ref }}",
               "python_reference": "extractor_mapper.extraction.generic._products_from_html",
               "candidate": "experiments/rust_html_kernel",
               "comparison": "full_record",
