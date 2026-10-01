@@ -47,9 +47,65 @@ def test_keep_file_rejects_keys_outside_backup_prefix(tmp_path):
         raise AssertionError("expected prefix guard")
 
 
+def test_list_all_versions_paginates(monkeypatch):
+    module = _module()
+    calls = []
+    pages = [
+        {
+            "Versions": [
+                {"Key": "repository-backup/g1/a", "VersionId": "v1", "IsLatest": True}
+            ],
+            "DeleteMarkers": [],
+            "IsTruncated": True,
+            "NextKeyMarker": "repository-backup/g1/a",
+            "NextVersionIdMarker": "v1",
+        },
+        {
+            "Versions": [
+                {"Key": "repository-backup/g0/a", "VersionId": "v0", "IsLatest": True}
+            ],
+            "DeleteMarkers": [
+                {"Key": "repository-backup/g0/b", "VersionId": "m0", "IsLatest": False}
+            ],
+            "IsTruncated": False,
+        },
+    ]
+
+    def fake_aws(*args):
+        calls.append(args)
+        return pages[len(calls) - 1]
+
+    monkeypatch.setattr(module, "_aws_json", fake_aws)
+    result = module.list_all_versions(
+        "bucket", "https://s3.example.backblazeb2.com"
+    )
+    assert len(result["Versions"]) == 2
+    assert len(result["DeleteMarkers"]) == 1
+    assert "--key-marker" in calls[1]
+    assert "repository-backup/g1/a" in calls[1]
+    assert "--version-id-marker" in calls[1]
+    assert "v1" in calls[1]
+
+
+def test_truncated_listing_without_next_marker_fails_closed(monkeypatch):
+    module = _module()
+
+    def fake_aws(*_args):
+        return {"Versions": [], "DeleteMarkers": [], "IsTruncated": True}
+
+    monkeypatch.setattr(module, "_aws_json", fake_aws)
+    try:
+        module.list_all_versions("bucket", "https://s3.example.backblazeb2.com")
+    except SystemExit as exc:
+        assert "truncation" in str(exc)
+    else:
+        raise AssertionError("expected fail-closed truncation guard")
+
+
 def test_archive_size_policy_uses_multipart_transfer():
-    from pathlib import Path
-    text = (Path(__file__).resolve().parents[1] / ".github/workflows/b2-repository-backup.yml").read_text(encoding="utf-8")
+    text = (
+        ROOT / ".github/workflows/b2-repository-backup.yml"
+    ).read_text(encoding="utf-8")
     assert "single_put_limit_bytes=5000000000" in text
     assert 'upload_mode="multipart"' in text
     assert "multipart_threshold = 100MB" in text
@@ -59,8 +115,9 @@ def test_archive_size_policy_uses_multipart_transfer():
 
 
 def test_manifest_records_archive_size_and_upload_policy():
-    from pathlib import Path
-    text = (Path(__file__).resolve().parents[1] / ".github/workflows/b2-repository-backup.yml").read_text(encoding="utf-8")
+    text = (
+        ROOT / ".github/workflows/b2-repository-backup.yml"
+    ).read_text(encoding="utf-8")
     assert 'schema:"repository-backup/v3"' in text
     assert "single_put_threshold_bytes:5000000000" in text
     assert "max_supported_large_file_bytes:10000000000000" in text
