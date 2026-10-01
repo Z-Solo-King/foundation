@@ -2,13 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildReport } from '../tools/project_observability_audit.mjs';
 
-test('project observability audit covers the canonical improvement matrix', () => {
+test('project observability audit covers the canonical improvement matrix and AI directory', () => {
   const report = buildReport();
   assert.equal(report.schema, 'project-observability-audit/v1');
   assert.ok(report.component_count >= 10);
   assert.equal(report.status, 'PASS');
   assert.equal(report.score, 100);
   assert.equal(report.scores.contract, 100);
+  assert.equal(report.scores.navigation, 100);
+  assert.equal(report.navigation.reachable_component_count, report.component_count);
   assert.equal(report.cloudflare.r2_enabled, false);
   assert.equal(report.b2_policy.max_supported_large_file_bytes, 10000000000000);
 });
