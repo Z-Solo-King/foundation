@@ -3,6 +3,14 @@ name: Autonomous engineering supervisor
 on:
   schedule:
     - cron: "37 * * * *"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/autonomous-engineering-supervisor.yml"
+      - "tools/autonomous_engineering_supervisor.mjs"
+      - "tests/autonomous_engineering_supervisor.test.mjs"
+      - "docs/PROJECT_IMPROVEMENT_MATRIX.json"
+      - "docs/AUTONOMOUS_MISSION_CONTRACT.json"
   workflow_dispatch:
     inputs:
       dry_run:
