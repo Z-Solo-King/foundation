@@ -219,3 +219,29 @@ Each language is an independent analytical lens. Candidate implementations inher
 
 ## Token-efficiency rule
 Map-first retrieval is mandatory for large audits: map -> owner -> feature -> functions -> policies -> tests/evidence -> issue/PR -> runtime receipt. Measure retrieved bytes and duplicated context.
+
+## 18. Unified observability / audit / evolution / AI direction
+
+This detailed map is connected to the unified navigation overlay at `docs/AI_SYSTEM_MAP.json` and the human/AI entrypoint `docs/AI_SYSTEM_DIRECTORY.md`.
+
+The navigation sequence is:
+
+`intent -> functional plane -> component -> owner -> canonical path -> policy/contract -> tests -> workflow -> evidence -> runtime`
+
+The architecture is intentionally multi-axis rather than a single category tree:
+
+- **functional plane** = what the capability does;
+- **execution class** = how it runs;
+- **authority layer** = what it may decide;
+- **evidence class** = how claims are established;
+- **resource class** = what limits/cost affect it.
+
+Categories may overlap. A feature may therefore be searchable from more than one direction without creating duplicate ownership.
+
+The combined control loop is:
+
+`observe -> audit -> evaluate -> score -> learn -> bounded candidate -> policy gate -> shadow/canary -> existing promotion authority -> monitor -> rollback/supersede`
+
+The telemetry-quality score is descriptive only. The universal evolution scorer remains the candidate-comparison layer, and existing policy/resource/provider/evidence/promotion authorities remain canonical.
+
+For AI agents, `AI_SYSTEM_DIRECTORY.md` is the fast routing layer; this document remains the detailed architecture map. `AI_SYSTEM_MAP.json` is the cross-repository graph/navigation overlay.
