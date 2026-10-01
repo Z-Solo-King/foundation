@@ -84,7 +84,9 @@ jobs:
           node --check private/feed_recovery/custom_api_google_feed_browser_probe_1249.mjs
           node --check private/feed_recovery/custom_api_google_feed_recovery_1249.mjs
           node --check private/feed_recovery/woocommerce_google_feed_rescue_fast.mjs
+          node --check private/feed_recovery/historical_feed_candidates.mjs
           node --test tests/test_woocommerce_native_xml_recovery_30_v18.mjs
+          node --test tests/test_woocommerce_v18_historical_candidates.mjs
           test -f data/feed_lab/woocommerce_30_registry_v18.json
 
       - name: Build governed AI candidate set
@@ -180,8 +182,10 @@ jobs:
           set -euo pipefail
           node private/feed_recovery/custom_api_google_feed_browser_probe_1249.mjs             data/feed_lab/woocommerce_30_registry_v18.json out/v18/browser.json & p1=$!
           node private/feed_recovery/custom_api_google_feed_recovery_1249.mjs             data/feed_lab/woocommerce_30_registry_v18.json out/v18/custom-recovery.json & p2=$!
+          node private/feed_recovery/historical_feed_candidates.mjs             data/feed_lab/woocommerce_30_registry_v18.json out/v18/historical.json & p3=$!
           wait "$p1"
           wait "$p2"
+          wait "$p3"
 
       - name: Merge secondary observations into candidate pool
         working-directory: operations
@@ -190,6 +194,7 @@ jobs:
           node <<'NODE'
           import fs from "node:fs/promises";
           const browser = JSON.parse(await fs.readFile("out/v18/browser.json","utf8"));
+          const historical = JSON.parse(await fs.readFile("out/v18/historical.json","utf8"));
           const ai = JSON.parse(await fs.readFile("out/rescue-fast/ai_candidates.json","utf8"));
           const by = new Map(ai.retailers.map(x => [x.name, x]));
           for (const site of browser.results || []) {
@@ -208,7 +213,15 @@ jobs:
             }
             row.paths = [...new Set(row.paths)].slice(0,200);
           }
-          ai.schema_version = "woocommerce-feed-ai-candidates-v18/v4";
+          for (const site of historical.retailers || []) {
+            const row = by.get(site.name);
+            if (!row) continue;
+            for (const path of site.paths || []) row.paths.push(path);
+            row.historical_evidence = site.sources || {};
+            row.paths = [...new Set(row.paths)].slice(0,240);
+          }
+          ai.schema_version = "woocommerce-feed-ai-candidates-v18/v5";
+          ai.historical_candidate_sources = ["wayback_cdx", "commoncrawl_index"];
           ai.browser_observation = true;
           await fs.writeFile("out/rescue-fast/ai_candidates.json", JSON.stringify(ai,null,2) + "\n");
           NODE
