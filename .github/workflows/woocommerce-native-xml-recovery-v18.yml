@@ -172,6 +172,15 @@ jobs:
           await fs.writeFile("out/rescue-fast/ai_candidates.json", JSON.stringify(ai,null,2) + "\n");
           NODE
 
+      - name: Upload merged AI candidate pool
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: foundation-wc-v18-merged-ai-candidates
+          path: operations/out/rescue-fast/ai_candidates.json
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Run canonical rescue engine
         working-directory: operations
         env:
@@ -298,5 +307,177 @@ jobs:
           path: |
             operations/out/v18/
             operations/out/rescue-fast/
+          if-no-files-found: warn
+          retention-days: 30
+
+  build-anyhow-feeds:
+    name: Build 30 usable Google XML feeds
+    needs: recover
+    if: ${{ always() }}
+    permissions:
+      contents: read
+      actions: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    environment: production-secret-sync
+    env:
+      SHARD: ${{ matrix.shard }}
+      SHARDS: 6
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Resolve immutable Operations revision
+        id: resolve-operations
+        env:
+          GH_TOKEN: ${{ steps.operations-app.outputs.token }}
+          REQUESTED_REF: ${{ inputs.operations_ref }}
+        run: |
+          set -euo pipefail
+          ref="${REQUESTED_REF:-}"
+          if [[ -z "$ref" ]]; then
+            ref="$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
+          fi
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Operations ref must be a 40-char immutable SHA"; exit 1; }
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+      - name: Checkout Operations source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ steps.resolve-operations.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Download merged AI candidate pool
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v5.0.0
+        continue-on-error: true
+        with:
+          name: foundation-wc-v18-merged-ai-candidates
+          path: operations/out/rescue-fast
+      - name: Ensure candidate pool exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p operations/out/rescue-fast operations/out/google-xml-feed
+          test -f operations/out/rescue-fast/ai_candidates.json || printf '{"retailers":[]}\n' > operations/out/rescue-fast/ai_candidates.json
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install browser runtime
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          npm install --no-save --ignore-scripts playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Validate and build shard
+        working-directory: operations
+        env:
+          WC_XML_MAX_PRODUCTS: "20000"
+          WC_XML_MAX_PRODUCT_URLS: "500"
+          WC_XML_MAX_BROWSER_PAGES: "80"
+          WC_XML_HOST_DELAY_MS: "180"
+          WC_XML_HTTP_TIMEOUT_MS: "10000"
+        run: |
+          set -euo pipefail
+          node --check private/feed_recovery/google_xml_feed_builder_30.mjs
+          node --test tests/test_google_xml_feed_builder_30.mjs
+          node private/feed_recovery/google_xml_feed_builder_30.mjs \
+            data/feed_lab/woocommerce_30_registry_v18.json \
+            out/google-xml-feed \
+            --shard "$SHARD" \
+            --shards "$SHARDS" \
+            --ai out/rescue-fast/ai_candidates.json
+      - name: Upload feed shard evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: foundation-wc-google-xml-anyhow-shard-${{ matrix.shard }}
+          path: operations/out/google-xml-feed/
+          if-no-files-found: warn
+          retention-days: 30
+
+  publish-anyhow-feeds:
+    name: Publish 30 Google XML feed assets
+    needs: build-anyhow-feeds
+    if: ${{ always() }}
+    permissions:
+      contents: write
+      actions: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download feed shards
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v5.0.0
+        continue-on-error: true
+        with:
+          pattern: foundation-wc-google-xml-anyhow-shard-*
+          path: out/shards
+          merge-multiple: false
+      - name: Aggregate, validate, and publish 30 feeds
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf out/release
+          mkdir -p out/release
+          node <<'JS'
+          const fs=require("fs"),path=require("path");
+          const root="out/shards",release="out/release",manifests=[],feeds=[];
+          function walk(d){if(!fs.existsSync(d))return;for(const e of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,e.name);if(e.isDirectory())walk(p);else if(e.name.startsWith("manifest-shard-")&&e.name.endsWith(".json"))manifests.push(p);else if(e.name.endsWith(".xml"))feeds.push(p);}}
+          walk(root);
+          const items=manifests.flatMap(p=>{try{return[JSON.parse(fs.readFileSync(p,"utf8"))]}catch{return[]}}).flatMap(x=>x.items||[]);
+          if(items.length!==30)throw new Error("Expected 30 site records, found "+items.length);
+          const byFile=new Map(feeds.map(f=>[path.basename(f),f]));
+          if(byFile.size!==30)throw new Error("Expected 30 unique XML files, found "+byFile.size);
+          for(const item of items){
+            const f=byFile.get(item.filename);
+            if(!f)throw new Error("Missing XML for "+item.site);
+            const xml=fs.readFileSync(f,"utf8");
+            if(!/^\s*<\?xml[\s\S]*<rss\b/i.test(xml))throw new Error("Invalid XML header for "+item.site);
+            if(!/xmlns:g=["']http:\/\/base\.google\.com\/ns\/1\.0["']/i.test(xml))throw new Error("Missing Google namespace for "+item.site);
+            const n=xml.match(/<item>[\s\S]*?<\/item>/gi)||[];
+            if(n.length!==Number(item.item_count||0))throw new Error("Item-count mismatch for "+item.site);
+            for(const x of n)if(!/<g:id>[^<]+<\/g:id>/i.test(x)||!/<title>[^<]+<\/title>/i.test(x)||!/<link>https?:\/\/[^<]+<\/link>/i.test(x)||!/<g:image_link>https?:\/\/[^<]+<\/g:image_link>/i.test(x)||!/<g:price>\s*\d[^<]*\s+[A-Z]{3}<\/g:price>/i.test(x))throw new Error("Core field validation failed for "+item.site);
+            fs.copyFileSync(f,path.join(release,item.filename));
+          }
+          const index={schema_version:"woocommerce-google-xml-anyhow-v1/published-index",generated_on:new Date().toISOString(),target_count:30,release_tag:"wc-google-feed-latest",feeds:items.map(item=>({site:item.site,filename:item.filename,item_count:item.item_count,feed_kind:item.feed_kind,native_url:item.native_url||null,validation:item.validation||null,download_url:"https://github.com/"+process.env.GH_REPO+"/releases/download/wc-google-feed-latest/"+item.filename}))};
+          fs.writeFileSync(path.join(release,"feeds-index.json"),JSON.stringify(index,null,2)+"\n");
+          JS
+          TAG=wc-google-feed-latest
+          if ! gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GH_REPO" --title "WooCommerce Google XML Feeds — Latest" --notes "30-site current public catalog recovery feeds. Native feeds are marked native_current_xml; otherwise generated from current public catalog observations and labeled synthetic_public_catalog."
+          fi
+          gh release upload "$TAG" --repo "$GH_REPO" out/release/*.xml out/release/feeds-index.json --clobber
+          cat out/release/feeds-index.json
+      - name: Upload final feed bundle
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: foundation-wc-google-xml-anyhow-latest
+          path: out/release/
           if-no-files-found: warn
           retention-days: 30

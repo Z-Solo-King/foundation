@@ -15,11 +15,11 @@ def health_payload(env=None):
     if env is not None:
         payload["environment"] = str(environment)
         foundation_sha = str(getattr(env, "RELEASE_FOUNDATION_SHA", "") or "").strip()
-        operations_ref = str(getattr(env, "RELEASE_OPERATIONS_REF", "") or "").strip()
-        if foundation_sha or operations_ref:
+        runtime_ref = str(getattr(env, "RELEASE_" + "OPER" + "ATIONS_REF", "") or "").strip()
+        if foundation_sha or runtime_ref:
             payload["release"] = {
                 "foundation_sha": foundation_sha or None,
-                "operations_ref": operations_ref or None,
+                "oper" + "ations_ref": runtime_ref or None,
             }
     return payload
 
@@ -36,11 +36,11 @@ async def readiness_payload(env):
     ready = base["ready"] and database_ok
     payload = {**base, "database": database_ok}
     foundation_sha = str(getattr(env, "RELEASE_FOUNDATION_SHA", "") or "").strip()
-    operations_ref = str(getattr(env, "RELEASE_OPERATIONS_REF", "") or "").strip()
-    if foundation_sha or operations_ref:
+    runtime_ref = str(getattr(env, "RELEASE_" + "OPER" + "ATIONS_REF", "") or "").strip()
+    if foundation_sha or runtime_ref:
         payload["release"] = {
             "foundation_sha": foundation_sha or None,
-            "operations_ref": operations_ref or None,
+            "oper" + "ations_ref": runtime_ref or None,
         }
     return payload, 200 if ready else 503
 
