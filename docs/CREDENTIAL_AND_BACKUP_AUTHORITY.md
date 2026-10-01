@@ -129,3 +129,10 @@ Any material credential, backup, retention, restore, deployment-access, or secre
 - whether rotation/revocation is still required.
 
 Production certification requires runtime evidence; source-code existence is not certification.
+
+
+## Backup archive size policy
+
+The backup workflow records the exact compressed archive size before upload. Backblaze's 5 GB boundary applies to a normal/single upload; larger objects are supported as large files assembled from parts, up to 10 TB. citeturn625848search0turn625848search2
+
+The workflow uses multipart-safe S3 transfer settings for large archives and fails closed above the 10 TB large-file ceiling. Size, SHA-256, remote metadata and restore verification remain part of the backup acceptance contract.

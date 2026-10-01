@@ -81,3 +81,12 @@ Cleanup is version-aware. Backblaze B2 buckets are versioned, so deleting an obj
 The B2 backup Application Key must permit the object listing and deletion capabilities required by the cleanup path. Those deletion capabilities are used only for the dedicated repository-backup/ prefix.
 
 This design bounds the recurring backup storage to roughly one full repository generation rather than accumulating another multi-gigabyte archive on every commit. It is separate from B2 Usage Report monitoring; the Operations dashboard does not need B2 credentials to enforce this retention policy.
+
+
+## Archive size and B2 upload limit
+
+Backblaze distinguishes the 5 GB single-file/single-request boundary from large-file uploads. Large files can be assembled from parts and are supported up to 10 TB; each part may be up to 5 GB. citeturn625848search0turn625848search2
+
+This workflow measures every compressed archive before upload. It does not send an archive larger than the 5,000,000,000-byte single-PUT threshold as one request. The AWS S3 transfer manager is configured for multipart transfer with a 100 MB threshold and 100 MB parts, so a growing repository is transferred in bounded parts. The workflow fails closed only if the archive exceeds the 10 TB B2 large-file ceiling. citeturn625848search0
+
+The manifest records the archive byte size and upload policy. After upload, the workflow verifies remote size and SHA-256 and then performs the remote restore test.
