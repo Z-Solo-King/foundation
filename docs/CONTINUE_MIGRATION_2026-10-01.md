@@ -1,247 +1,496 @@
-# Migration Continuation Runbook — 2026-10-01
+# Heroic AI Migration / Audit Continuation Handoff — 2026-10-01
 
-## Purpose
+## 0. Purpose
 
-This document is the handoff point for continuing the cross-repository migration/audit work after the current chat reaches its context limit.
+This is the durable continuation point for the Heroic AI GitHub + Cloudflare migration/audit work when the current chat reaches its limit.
 
-The project is the GitHub + Cloudflare Heroic AI stack:
-- public repository: `Z-Solo-King/foundation`
-- private repository: `Z-Solo-King/operations`
+Repositories:
+- Public Foundation: `Z-Solo-King/foundation`
+- Private Operations: `Z-Solo-King/operations`
 
-Feed extraction work is explicitly excluded from this migration lane. Do not modify or merge feed-hunt work while continuing the non-feed migration.
+This is a non-feed migration/audit lane.
 
-## Live state verified for this handoff
+**Feed work is explicitly excluded.** Do not modify, merge, close, or use these as mutation vehicles unless the user explicitly changes scope:
+- Foundation #1247
+- Foundation #1249
+- Foundation feed PRs #1652, #1653, #1656, #1657, #1658, #1660
+- Operations #1361
+- Operations #1400 (mixed extractor/feed)
 
-Checked from live GitHub and Cloudflare state immediately before writing this document.
+## 1. Fresh live synchronization — 2026-10-01
 
-### GitHub
+### GitHub main heads
 
 Foundation main:
-`94a5b5dfeb17f18239ac5defba72021aeb542ce2`
+`55f06767f6ae948067b7f5bd72f4f28da8f5558b`
 
 Operations main:
-`7fe60d4630b30f38bfe30eff6666c9588cf2059f`
+`90fa37df10d63824acd3fe20b64cc91043af9627`
 
-Canonical production Operations pin:
-`ca3864a954569f6f8ce9a94793c53a0ef9ff03ec`
+Important state change from the previous handoff:
+- The previously certified Operations production pin `ca3864a954569f6f8ce9a94793c53a0ef9ff03ec` has now been explicitly advanced.
+- Current `docs/OPERATIONS_PIN_MANIFEST.json` production_runtime pin is:
+  `90fa37df10d63824acd3fe20b64cc91043af9627`
+- Operations `main` currently equals the production pin, but the normal rule remains: a moving main branch is not production authority unless explicitly promoted and then verified.
 
-Current open acceptance issues:
-- Foundation #58 — exhaustive coverage/meta tracker
-- Foundation #157 — genuine 24-program live research acceptance
-- Foundation #1247 — WooCommerce feed recovery (excluded)
-- Foundation #1249 — Custom/API feed recovery (excluded)
-- Operations #597 — mapper capability migration evidence
-- Operations #603 — AI/model/tooling portability evidence
+The Foundation head `55f06767...` is the promotion commit that advanced the public-safe Operations pin to the syntax-corrected persistence diagnostic runtime.
 
-Current open feed/mixed PRs that are intentionally not part of this lane:
-- Foundation feed PRs: #1652, #1653, #1656, #1657, #1658, #1660
-- Operations #1361 — feed-only
-- Operations #1400 — mixed extractor/feed work; do not use it as the non-feed migration merge vehicle
+The Operations head `90fa37df...` corrects the persistence diagnostic logger syntax in `private/control_plane_diagnostics.py`.
 
-### Cloudflare
+### Current pin manifest
 
-Current live production pair:
-- `heroic` -> Foundation `0c1593ce...` -> TypeScript edge
-- `heroic-core` -> Foundation `0c1593ce...` -> Python core
-- `operations` -> Operations production pin `ca3864a9...`
-- `operations-edge` -> Operations production pin `ca3864a9...`
+`docs/OPERATIONS_PIN_MANIFEST.json` current SHA:
+`ec8b1fa5f3cac2e4aa4cf25059fb4ee0967e4aa7`
 
-The public Worker rollout is therefore already on the TypeScript edge migration in live Cloudflare.
+Current purpose-scoped immutable pins:
+- production_runtime: `90fa37df10d63824acd3fe20b64cc91043af9627`
+- provider_fleet_runtime: `b95e419254a9071beaeef57a1b0da22ba7dd2c4f`
+- research_runtime: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`
+- secret_sync_utility: `b95e419254a9071beaeef57a1b0da22ba7dd2c4f`
 
-Backblaze B2 remains owned by the Foundation Python core artifact/backup path. B2 is not an identity, policy, routing, resource or promotion authority.
+Manifest rules remain:
+- 40 lowercase hex SHA
+- mutable refs forbidden
+- branch/tag refs forbidden
+- purpose scoped
 
-## Canonical architecture after this migration wave
+## 2. Cloudflare production — freshly reconciled
 
-Internet / Pages
--> `heroic` TypeScript public HTTP/SSE edge
--> `heroic-core` Python semantic/application core
--> `operations-edge` TypeScript/JS delegation boundary
--> `operations` Python private control plane
+Account:
+`66cd52347a2a64648eb0f4cca8ac88b7`
 
-Operations owns:
-- provider/task-fabric runtime
-- chatbot semantics and routing authority
-- resource/quota/lease governance
-- policy/evidence/provenance/idempotency/replay authority
-- private acquisition/extraction orchestration
-- research orchestration
+Latest live deployments observed immediately before this handoff:
+
+### heroic
+- role: public TypeScript edge
+- live GitHub annotation: Foundation `55f06767...`
+- latest deployment id: `be41d757-0eee-4370-9616-4780815eca63`
+- version: `8c9059ba-142b-4be3-8d4d-5846c8f3dec3`
+- traffic: 100%
+- binding: `CORE -> heroic-core`
+- secret: `AUTH_TOKEN`
+- schedules: none
+
+### heroic-core
+- role: Foundation Python semantic/application core
+- live GitHub annotation: Foundation `55f06767...`
+- latest deployment id: `af2e650f-c12a-4cd2-ad02-15309b13733f`
+- version: `e24a69b7-d8d8-4bad-905f-29ebc0db53e2`
+- traffic: 100%
+- D1: `19f51638-47a5-4218-a9dc-73dbfd6156fe`
+- service binding: `OPERATIONS -> operations-edge`
+- B2 bindings present: key id, application key, bucket, endpoint
+- `ENVIRONMENT=production`
+- `RELEASE_FOUNDATION_SHA=55f06767...`
+- `RELEASE_OPERATIONS_REF=90fa37df...`
+- `STRICT_ZERO_COST_ONLY=true`
+- schedules: none
+
+### operations
+- role: private Python control plane
+- latest live GitHub annotation: Operations `90fa37df...`
+- latest deployment id: `cf5be286-de7c-460d-b417-1fe62487274e`
+- version: `f6014487-a31b-4da2-b7af-1d300916385f`
+- traffic: 100%
+- service binding: `FOUNDATION -> heroic`
+- native Workers AI binding: `AI`
+- cost guards observed:
+  - `MAX_DAILY_COST_USD=0`
+  - auto-recharge false
+  - auto-upgrade false
+  - overage false
+  - paid-fallback false
+  - unknown-pricing false
+- configured provider fleet string includes:
+  `cloudflare_workers_ai,openrouter_free,groq,gemini,cerebras,nvidia_nim,cohere_free,huggingface_free,siliconflow`
+- default Workers AI model:
+  `@cf/zai-org/glm-4.7-flash`
+- research max output tokens: 512
+- chat max output tokens: 256
+- moderation mode: block
+- schedule: `*/15 * * * *`
+
+### operations-edge
+- role: private TypeScript/JS delegation boundary
+- latest live GitHub annotation: Operations `90fa37df...`
+- latest deployment id: `35a129c9-8de9-4dbb-9fbf-2ea9256d6a4c`
+- version: `ca625f24-7324-416a-ab0c-30c81b103dfc`
+- traffic: 100%
+- binding: `CORE -> operations`
+- schedules: none
+
+## 3. Canonical ownership
 
 Foundation owns:
 - public-safe contracts
-- public HTTP/SSE boundary
+- public HTTP/SSE edge
 - deterministic mapper/core/data-quality primitives
-- evidence publication/public admission
-- canonical hosted GitHub Actions release authority
+- public evidence publication/admission
+- canonical hosted GitHub Actions release/deployment authority
 
-Rust/Go/other languages remain capability candidates. Do not transfer authority because of a language score, benchmark, compilation success or AI recommendation.
+Operations owns:
+- private chatbot semantics and routing
+- provider/task fabric
+- resource/quota/lease governance
+- policy/evidence/provenance/idempotency/replay
+- private acquisition/extraction runtime
+- research orchestration
+- private mapper/extractor authority
 
-## Migration rule
+B2:
+- artifact/backup storage only
+- never identity, authorization, routing, policy or resource authority
 
-Use:
+AI_PROJECT_MAP:
+- navigation metadata only
+- never evidence authority
+- never deployment authority
+- never policy authority
 
-language score -> experiment selection
-measurement -> candidate value
-differential/security/policy/provenance -> authority eligibility
-shadow -> canary -> rollback -> promotion
+## 4. Migration language rule
 
-Python remains the reference/authority until a candidate satisfies its exact promotion envelope.
+Current intended language roles:
+- TypeScript: edge/application/browser/search/tooling contracts
+- Python: semantic logic, AI/research orchestration, provider governance, policy, evidence, provenance, replay, idempotency, resource governance and reference implementations
+- Rust: only measured CPU/memory-sensitive deterministic kernels
+- Go: only measured high-concurrency/network utilities
+- other languages: qualification candidates only
 
-TypeScript is the preferred application/edge/browser contract language.
-Rust is for measured deterministic CPU/memory-sensitive kernels.
-Go is for measured high-concurrency/network utilities.
-C++/Java/etc. remain qualification candidates only when a concrete workload demonstrates a unique advantage.
+Promotion rule:
+`language score -> candidate selection`
+`benchmarks/static scans/compilation -> supporting evidence`
 
-## Completed in the last migration wave
+Authority promotion additionally requires:
+- exact functional parity
+- deterministic differential tests
+- normalized error parity
+- security parity
+- policy parity
+- provenance/lineage parity
+- cancellation/timeout parity
+- resource/performance measurements
+- serialization/conversion measurements
+- shadow
+- canary
+- rollback
+- safe retirement of the canonical reference
 
-### Foundation
+Never transfer authority merely because an AI model, benchmark, language score, compilation result or static scan says a candidate is better.
 
-- Public Heroic edge migrated from JavaScript to TypeScript.
-- Production release generator updated to generate `edge.ts`.
-- Public edge B2 secret exposure cleanup is part of the release boundary.
-- CrossFire/research proxy lifecycle was consolidated into one execution step.
-- Strict all-file/file-symbol language coverage audit was added.
-- Extractor governance CI now installs the Workers runtime dependencies and materializes the pinned Foundation public core.
-- Production D1 migration detection was corrected to avoid unnecessary free-tier row-read consumption.
-- Mainline release/deployment was verified against live Cloudflare state.
+## 5. Latest production / nightly evidence
 
-### Operations
+### Production release
+Latest exact release associated with the live research gate:
+- Foundation: `55f06767...`
+- release run: `36818502155`
+- nightly production gate accepted this exact release.
 
-- Async research-provider transport migrated from thread-backed urllib to bounded async `httpx`.
-- Cloudflare Browser Run candidate adapter added and corrected to the current `BrowserWorker` SDK type.
-- Browser Run remains candidate-only and unpromoted.
-- Strict coverage scanner expanded to classify Swift and Gleam experimental source files.
-- Extractor-surface audit now matches test evidence by path as well as content.
-- Provider contract fixtures synchronized with the canonical zero-cost provider rules.
-- Migration evidence ledger synchronized with live state.
+### Same-head chatbot smoke
+Foundation run:
+`36818845457`
+- status: completed
+- conclusion: success
+- purpose: Live chatbot production smoke
 
-## Current acceptance status
+### Same-head live nightly research
+Foundation run:
+`36818843764`
+- workflow: Nightly research — production-live
+- head: `55f06767...`
+- event: `workflow_dispatch`
+- production gate: success
+- migration review: success
+- research CrossFire job: failure
+- final truthful-result gate: failure
+- diagnosis job: success
+- no genuine research closure
 
-### Foundation #157 — 24-program live research
+Critical failure found in live job `110229827662`:
+- exact deployed runtime probe passed
+- Foundation/Operations exact revisions matched:
+  - Foundation `55f06767...`
+  - Operations `90fa37df...`
+- provider: `cloudflare_workers_ai`
+- generation_status: `model_generated`
+- structured output: true
+- then research proxy startup failed on the runner because:
+  `ModuleNotFoundError: No module named 'httpx'`
+- proxy health therefore failed:
+  `curl: (7) Failed to connect to 127.0.0.1 port 8765`
+- CrossFire never obtained valid live execution
+- lane/artifact materialization correctly failed closed
+- artifacts were uploaded, but this run is not #157 closure evidence
 
-This is NOT closed.
+This is now the primary concrete blocker to investigate next:
+**Foundation nightly research workflow must install/provide the Operations research proxy dependency `httpx` before starting `scripts/research_worker_proxy.py`.**
+Do not merely rerun the failed workflow; first inspect the dependency ownership/installation contract, then make the smallest correct PR if needed.
 
-Closure requires a fresh production-release-dispatched run that:
-1. proves exact Foundation + Operations revisions deployed;
-2. passes Worker-backed model preflight;
-3. completes all 24 programs;
-4. validates all 3 lane artifacts;
-5. passes diagnosis and truthful-result gates;
-6. retains complete artifacts and provenance.
+The failure is runner dependency/setup, not a Cloudflare model-generation failure.
 
-A historical run with 24 program IDs is not enough. Coverage without valid lane execution is insufficient.
+## 6. Nightly trigger architecture
+
+The earlier accidental 01:00 IST schedule problem was fixed before this handoff.
+
+Current intended model:
+- canonical nightly research workflow is dispatch-driven
+- successful canonical production release dispatches provider preflight, then live nightly
+- manual/API dispatch remains available
+- the separate `nightly-invariants` scheduled workflow is regression checking, not the research engine
+- the post-nightly canary is downstream `workflow_run` consumption, not a research starter
+
+Do not reintroduce a direct cron schedule to `nightly-multi-agent-research-v3.yml`.
+
+The current research runtime remains purpose-pinned independently at:
+`1a91efa53b9202f1624ddde892b0e86bd6b360f0`
+
+CrossFire scheduler contract currently uses:
+`RESEARCH_MAX_CONCURRENCY=6`
+
+Do not confuse this with older historical artifacts that still mention a 20-agent aggregate contract.
+
+## 7. Remaining acceptance issues
+
+### Foundation #157 — genuine 24-program research
+Open.
+
+Required fresh evidence:
+1. exact Foundation production deployment
+2. exact Operations production revision
+3. Worker-backed model preflight
+4. actual provider-backed live execution
+5. 24 distinct programs
+6. 3 valid lane artifacts
+7. diagnosis success
+8. truthful final result gate success
+9. complete artifact bundle + provenance/attestation
+
+24 IDs by themselves are insufficient.
+Historical 6+2 lane failures are not closure evidence.
+Current run `36818843764` is also not closure evidence because of the `httpx` runner dependency failure.
 
 ### Operations #597 — mapper migration
+Open.
 
-Repository-side decomposition and governance are implemented.
+Current status:
+- repository-side decomposition/governance exists
+- candidate evidence exists for selected TS/Rust lanes
+- no authority promotion
 
-Still required for each actual candidate promotion:
-- deterministic differential/parity
-- normalized error taxonomy
+Next valid work:
+- choose a concrete candidate
+- generate fresh candidate-specific runtime receipt
+- 32 orthogonal cases x >=3 repeats where required
+- cold start/raw samples as applicable
+- differential functional/error/security/policy/provenance/cancellation/timeout parity
+- performance/resource/conversion measurements
+- shadow
+- canary
+- rollback
+
+### Operations #603 — AI/model/tooling portability
+Open.
+
+Current status:
+- portability architecture/evidence framework exists
+- no language/model/tooling promotion by score/benchmark
+- candidate-specific evidence remains required
+
+Next valid work:
+- select one concrete candidate
+- 32-case parity corpus x >=3 repeats where required
+- functional/security/policy/provenance/cancellation evidence
+- serialization/conversion/resource measurements
+- canonical authority comparison
+- shadow
+- canary
+- rollback
+
+### Foundation #58
+Open meta/tracker issue.
+It derives completion from #157/#597/#603 plus broader coverage. Do not close it from repository scans alone.
+
+## 8. Open PR state — current scope
+
+Current open PR inventory after refresh contains only feed-related/mixed work.
+
+Foundation:
+- #1663 — feed recovery handoff docs — feed-only
+- #1660 — feed guessing v8 — feed-only
+- #1658 — feed guessing v7 — feed-only
+- #1657 — Common Crawl feed recovery — feed-only
+- #1656 — historical feed URL recovery — feed-only
+- #1653 — SVMPForge feed guessing — feed-only
+- #1652 — targeted live Google XML hunt — feed-only
+
+Operations:
+- #1361 — WooCommerce feed recovery docs — feed-only
+- #1400 — extractor evolution/coverage connection — mixed extractor/feed; keep excluded
+
+Therefore there is currently no open non-feed PR that should be merged as the next migration change.
+
+## 9. Browser Run
+
+Live Cloudflare Browser Run `/content` has already been verified.
+
+Repository candidate adapter uses the Cloudflare `BrowserWorker` binding contract.
+
+Guardrails:
+- HTTPS/read-only acquisition policy
+- explicit host allowlist
+- bounded timeout/page/response limits
+- candidate-only
+
+Do not promote/add a production BROWSER binding until full:
+- resource
 - security
 - policy
 - provenance
-- cancellation/timeout parity
-- resource/performance measurement
-- serialization/conversion cost
+- differential
 - shadow
 - canary
 - rollback
+evidence exists.
 
-Do not retire the Python/reference path before those gates pass.
+## 10. Providers
 
-### Operations #603 — AI/model/tooling portability
+Strict zero-cost policy is mandatory.
 
-Repository-side portability framework is implemented.
+Current:
+- SiliconFlow: governed/integrated
+- Cerebras: intentionally unactivated for free path because card requirement is not satisfied
+- Mistral: conditional/excluded
+- Cloudflare Workers AI: live native provider
+- OpenAI-compatible transports are not assumed semantically equivalent
 
-Still required for each promotion:
-- orthogonal parity corpus (32 cases x >=3 repeats where required)
-- functional parity
-- security/policy/provenance
-- cancellation/timeout
-- serialization/conversion/resource cost
-- canonical correctness authority
-- shadow
-- canary
-- rollback
+For provider portability, validate provider-specific:
+- structured output
+- streaming
+- context limits
+- tool behavior
+- errors/retries
+- normalization
+- cost-policy behavior
 
-A score or benchmark is not authority evidence.
+No provider score becomes authority by itself.
 
-## Browser Run status
+## 11. Audit method for the next chat
 
-Live Cloudflare Browser Run `/content` execution has been verified separately.
+Use independent lenses and cover BOTH repositories:
+1. ownership/policy
+2. TypeScript edge/application
+3. Rust deterministic kernels
+4. Go concurrency/network
+5. Cloudflare/runtime/deployment
+6. security/evidence/provenance
 
-The repository Browser Run adapter now uses the SDK `BrowserWorker` binding shape and retains:
-- HTTPS/read-only acquisition policy
-- explicit host allowlist
-- max 50 allowed domains for Cloudflare guardrails
-- existing timeout/page/response bounds
-- candidate-only status
+Map-first retrieval:
+`AI_PROJECT_MAP -> REPOSITORY_MAP -> canonical feature/function -> policy/tests/workflows -> live runtime receipt`
 
-Do not add a production `BROWSER` binding or promote this path without a full resource + policy + provenance + differential + shadow + canary + rollback envelope.
+For each mutation:
+1. inspect current main
+2. identify canonical owner
+3. identify policy gates
+4. inspect tests/workflows
+5. inspect live runtime when relevant
+6. smallest correct change
+7. focused validation
+8. required CI
+9. merge only with verified green evidence
+10. update migration/evidence/map state
+11. re-check Cloudflare for deployment changes
 
-## Provider status
+Shared writes remain serialized and authority-owned.
 
-Current governed provider configuration is strict-zero-cost.
+## 12. Immediate next-chat execution order
 
-SiliconFlow remains configured according to the current project state.
-Cerebras remains intentionally unactivated for the free path because a card is required and no usable credential is configured.
-Mistral remains conditional/excluded.
+### Phase A — fix the known live blocker
+1. Re-read this handoff.
+2. Refresh Foundation/Operations main heads and the current pin manifest.
+3. Verify Cloudflare four-worker state.
+4. Inspect `nightly-multi-agent-research-v3.yml`, `scripts/research_worker_proxy.py`, and dependency installation files.
+5. Determine the canonical dependency owner for `httpx`.
+6. Add `httpx` to the correct workflow/setup contract if missing; do not duplicate incompatible dependency management.
+7. Run focused workflow-contract/unit validation.
+8. Open PR on Foundation.
+9. Wait for all required checks.
+10. Merge only green.
+11. Let canonical production release redeploy.
+12. Re-run the real production-dispatched nightly research.
+13. Verify all gates and artifacts before changing #157 status.
 
-OpenAI-compatible transport does not imply semantic equivalence. Structured output, streaming, context, errors and tool behavior still require provider-specific differential validation.
+### Phase B — complete #157
+Do not use dry-run evidence.
+Do not count the current failed run.
+Do not close until the entire 24-program live artifact/provenance contract passes.
 
-## Audit strategy to continue
+### Phase C — mapper candidate #597
+After #157 blocker is resolved, create a concrete candidate-specific evidence experiment for one migration lane.
+Preserve Python canonical authority.
+Generate the full parity/performance/shadow/canary/rollback receipt before promotion.
 
-Run the audits as independent lenses, not one giant rewrite.
+### Phase D — AI/model/tooling #603
+Select one concrete candidate and repeat the same evidence ladder.
+Do not infer portability from OpenAI-compatible API shape alone.
 
-Recommended lanes:
-1. repository/ownership/policy lens
-2. TypeScript edge/application lens
-3. Rust deterministic-kernel lens
-4. Go concurrency/network lens
-5. Cloudflare runtime/deployment lens
-6. evidence/provenance/security lens
+### Phase E — broad non-feed audit
+Only after the runtime acceptance blockers are controlled, continue the six-lens audit across:
+- mapper
+- extractor architecture
+- chatbot
+- search/provider APIs
+- Workers AI
+- Browser Run
+- B2
+- policy/rules
+- public/private structure
+- maps/evidence
+- deployment workflows
 
-Every lane still covers both repositories. Shared writes must remain serialized and owned by the canonical repository/authority.
+## 13. Failure handling rules
 
-Use map-first retrieval:
-AI_PROJECT_MAP -> REPOSITORY_MAP -> canonical feature/function -> policy/tests/workflows -> live runtime receipt.
+When a live run fails:
+- identify exact stage
+- capture exact error/HTTP status
+- separate runner/setup failure from provider failure from application failure
+- preserve the failed receipt
+- do not convert execution failure into a negative research finding
+- do not rerun blindly
+- fix the owning layer
+- repeat focused validation
+- then repeat live acceptance
 
-## Important safety / authority rules
+Historical receipts remain provenance only.
 
-- Do not bypass GitHub permissions, Cloudflare challenges, CAPTCHAs or authentication.
-- Do not infer credentials from names.
-- Do not put secret values into AI project maps or receipts.
-- Do not create a second deployment authority.
-- Do not allow AI, benchmark or scoring systems to become policy/evidence authority.
-- Do not treat historical receipts as current production proof.
-- Do not implicitly promote a moving Operations main branch; the production pin is immutable.
-- Do not merge feed work into the non-feed migration lane.
+## 14. Do not accidentally regress
 
-## First actions in the next chat
+Do not:
+- reintroduce nightly cron into the canonical research workflow
+- deploy Operations manually
+- create a second GitHub Actions deployment authority
+- promote moving Operations main without explicit evidence
+- expose private Operations implementation in Foundation
+- put secrets in maps/receipts
+- use B2 as authority
+- use AI_PROJECT_MAP as authority
+- use a benchmark as production proof
+- bypass Cloudflare/GitHub access controls
+- touch feed work in this lane
 
-1. Re-read this file.
-2. Refresh live GitHub Foundation/Operations heads.
-3. Refresh the Foundation Operations pin manifest.
-4. Refresh live Cloudflare deployments for the four canonical Workers.
-5. Check the current status of #157, #597, #603.
-6. Check open PRs and classify each as non-feed / feed / mixed.
-7. Only then mutate code.
-8. For candidate migrations, generate fresh evidence against the exact current authority/revision pair.
-9. For production changes, let the canonical Foundation release workflow deploy; do not manually deploy around it.
-10. After every accepted change, update AI_PROJECT_MAP / migration evidence and record the exact revision and receipt.
+## 15. Success condition for this continuation
 
-## Continuation invariant
+The work is complete only when every non-feed open issue is either:
+- fixed and live-verified,
+- explicitly evidence-gated with a concrete next experiment,
+- or intentionally retained with documented rationale.
 
-The objective is not “rewrite everything into the fastest language”.
-
-The objective is:
-- fastest stable architecture for the actual workload
-- minimum resource/token overhead
+Target architecture:
 - one authority per responsibility
 - deterministic behavior
-- strict $0 policy
+- strict $0 operation
+- low resource/token overhead
+- strong security/policy boundaries
 - complete provenance
-- recoverable migrations
-- measurable learning/evolution
+- measurable migration decisions
+- shadow/canary/rollback safety
+- fast recovery from runtime failures
 
-Any proposed migration that makes the system faster but duplicates authority, weakens evidence, violates cost policy, increases serialization overhead, or reduces rollback safety is a regression even if its benchmark is faster.
