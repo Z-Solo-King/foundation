@@ -129,11 +129,10 @@ def test_operations_checkout_uses_github_app_installation_credential():
     assert "api.github.com/repos/${OPERATIONS_REPOSITORY}" in deployment
     assert "OPERATIONS_READ_TOKEN" not in deployment
 
-def test_production_release_has_one_minimal_main_push_job():
+def test_production_release_is_manual_only():
     frontend = _workflow_texts()[PRODUCTION_WORKFLOW]
     assert "name: Heroic AI production release" in frontend
-    assert "push:" in frontend
-    assert "branches: [main]" in frontend
+    assert "push:" not in frontend
     assert "workflow_dispatch:" in frontend
     assert "jobs:" in frontend
     assert "release:" in frontend

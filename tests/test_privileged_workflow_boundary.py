@@ -9,7 +9,8 @@ def _workflow(name: str) -> str:
 
 def test_production_release_is_not_pull_request_privileged_execution():
     text = _workflow("heroic-ai-production-release.yml")
-    assert "branches: [main]" in text
+    assert "push:" not in text
+    assert "workflow_dispatch:" in text
     assert "pull_request:" not in text
     assert "pull_request_target:" not in text
     assert 'test "$GITHUB_REPOSITORY" = "Z-Solo-King/foundation"' in text
