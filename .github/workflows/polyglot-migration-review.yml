@@ -113,6 +113,8 @@ jobs:
           - rust_text_normalization
           - rust_html_kernel
           - rust_jsonld_product
+          - rust_link_pagination
+          - rust_robots_sitemap
     steps:
       - name: Create Operations read token
         id: operations-app
@@ -145,6 +147,8 @@ jobs:
             rust_text_normalization) cargo test --manifest-path experiments/rust_text_normalization/Cargo.toml ;;
             rust_html_kernel) cargo test --manifest-path experiments/rust_html_kernel/Cargo.toml ;;
             rust_jsonld_product) cargo test --manifest-path benchmark/polyglot/rust_jsonld_product/Cargo.toml ;;
+            rust_link_pagination) cargo test --manifest-path benchmark/polyglot/rust_link_pagination/Cargo.toml ;;
+            rust_robots_sitemap) cargo test --manifest-path benchmark/polyglot/rust_robots_sitemap/Cargo.toml ;;
             *) echo "unknown candidate: $CANDIDATE"; exit 2 ;;
           esac
       - name: Emit lane receipt
