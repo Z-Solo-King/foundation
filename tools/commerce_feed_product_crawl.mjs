@@ -27,9 +27,9 @@ function rank(u){
   let s=0;
   if(/\/product\//.test(p)) s+=10;
   if(/\/products?\//.test(p)) s+=9;
-  if(/\/category\//.test(p)||\/product-category\//.test(p)) s+=8;
+  if(/\/category\//.test(p) || /\/product-category\//.test(p)) s+=8;
   if(/\/shop\/?$/.test(p)) s+=6;
-  if(/\/collections?\//.test(p)||\/catalog\//.test(p)) s+=5;
+  if(/\/collections?\//.test(p) || /\/catalog\//.test(p)) s+=5;
   return s;
 }
 function xmlValid(status,ct,body){
