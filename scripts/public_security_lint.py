@@ -31,8 +31,8 @@ NETWORK_MODULES = {"requests", "httpx", "urllib", "aiohttp"}
 PROVIDER_MARKERS = (
     "api.groq.com", "generativelanguage.googleapis.com", "openrouter.ai/api/v1",
     "integrate.api.nvidia.com", "api.cohere.ai", "router.huggingface.co",
-    "CLOUDFLARE_API_TOKEN", "GROQ_API_KEY", "GEMINI_API_KEY",
-    "NVIDIA_NIM_API_KEY", "COHERE_API_KEY", "HF_TOKEN",
+    "openai/gpt-oss-120b", "gemini-3.8-flash", "deepseek-ai/deepseek-v4.1-flash",
+    "command-a-plus-05-2026", "openrouter/free",
 )
 PROTECTED_RULE_SYMBOLS = (
     "CATEGORY_REQUIRED_SOURCE_FAMILIES", "PROTECTED_POLICY_RULES",
