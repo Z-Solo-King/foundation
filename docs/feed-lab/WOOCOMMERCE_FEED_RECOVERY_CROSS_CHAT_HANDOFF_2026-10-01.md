@@ -405,3 +405,61 @@ The operational goal is:
 
 The next chat should begin by reading this checkpoint from main, checking #1247/#1249 comments, checking any V7 branch state, then running V7 transport-aware family probes.
 
+
+
+---
+
+## 10. V7 completed — 2026-10-01
+
+The adaptive V7 implementation is now the authoritative unknown-family runner. It uses six independent shards, 17 true-unknown targets, one representative endpoint per researched family, low concurrency, slow retries for 403/429/timeouts, transport/semantic separation, and strict Merchant XML validation. V7 explicitly does not restart Store API/plugin extraction or use browser/XHR discovery as its primary method. fileciteturn88file5L1-L1
+
+Live run: 36820461029.
+
+Result:
+- 17/17 targets completed.
+- 0 native Google Merchant XML feeds verified.
+- 10 transport-limited.
+- 7 clean/no-hit.
+- StacksKB produced the only useful family signal: /wp-content/uploads/feed-xml-0.xml returned current HTTP 200 application/xml but an empty payload.
+
+Transport-limited remains transport-unverified, not feed absence.
+
+## 11. V8/V9 targeted recovery — StacksKB / iCopyDoc
+
+V8 independently corroborated the iCopyDoc URL grammar from published iCopyDoc documentation. The current StacksKB endpoint matched that grammar, but plugin identity was not promoted without corroborating current evidence.
+
+V9 live run: 36820858331.
+
+Current public results:
+- /wp-content/uploads/feed-xml-0.xml -> HTTP 200, same host, application/xml, empty payload.
+- /wp-content/uploads/feed-xml-1.xml -> HTTP 404.
+- /wp-content/uploads/feed-xml-2.xml -> HTTP 404.
+- 0 native Merchant XML feeds verified.
+
+This targeted hypothesis is terminal for the currently documented iCopyDoc public indices. It does not prove plugin absence and must not expand into arbitrary index/token enumeration.
+
+## 12. V10 documented WPFactory family recovery
+
+Current main at the canonical branch update is e9b67e37c997e7c51a5a20fb158930727302b120. The known WPFactory family was tested because repository research identifies /products.xml as its deterministic default feed path. citeturn954034search0turn954034search1
+
+Live run: 36821812408.
+
+Result:
+- 17/17 targets completed.
+- 0 native Google Merchant XML feeds verified.
+- 0 WPFactory family signals.
+- 9 transport-limited.
+- 8 clean 404/non-XML outcomes.
+- No target reached the stable non-empty XML expansion gate, so no additional WPFactory paths were probed.
+
+The WPFactory family path therefore remains unverified for this cohort rather than “absent”.
+
+## 13. Current completion boundary
+
+The repository now preserves V7 adaptive recovery, V8 family identification, V9 deterministic family expansion, and V10 WPFactory family testing as auditable stages.
+
+No current native Google Merchant XML URL has been recovered for the 17 true-unknown targets.
+
+The unresolved targets remain divided into evidence categories: current clean negatives for tested deterministic paths, family hypotheses that terminate without a populated feed, and persistent transport-limited sites that remain unverified.
+
+Do not claim global feed absence or final recovery completion from these results alone. Future work should start from new public/current evidence or a newly discovered family grammar, not from another blind filename matrix.

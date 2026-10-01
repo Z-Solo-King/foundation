@@ -1,0 +1,76 @@
+name: WooCommerce WPFactory V10 Recovery
+on:
+  push:
+    branches: [feat/wc-feed-recovery-wpfactory-v10-20261001]
+    paths:
+      - "tools/woocommerce_wpfactory_v10.mjs"
+      - "tests/test_woocommerce_wpfactory_v10.mjs"
+      - ".github/workflows/woocommerce-wpfactory-v10.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "tools/woocommerce_wpfactory_v10.mjs"
+      - "tests/test_woocommerce_wpfactory_v10.mjs"
+      - ".github/workflows/woocommerce-wpfactory-v10.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1,2,3,4,5,6]
+    env:
+      SHARD: ${{ matrix.shard }}
+      SHARDS: 6
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Unit tests
+        run: node --test tests/test_woocommerce_wpfactory_v10.mjs
+      - name: WPFactory documented-family recovery
+        run: node tools/woocommerce_wpfactory_v10.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-wpfactory-v10-shard-${{ matrix.shard }}
+          path: out/woocommerce-wpfactory-v10/
+          retention-days: 30
+  aggregate:
+    needs: probe
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          pattern: woocommerce-wpfactory-v10-shard-*
+          path: out/shards
+          merge-multiple: false
+      - name: Aggregate
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'fs'; import path from 'path';
+          const files=[];
+          function walk(p){for(const e of fs.readdirSync(p,{withFileTypes:true})){const q=path.join(p,e.name);if(e.isDirectory())walk(q);else if(e.name.endsWith('.json'))files.push(q)}}
+          walk('out/shards');
+          const rows=files.sort().flatMap(f=>JSON.parse(fs.readFileSync(f,'utf8')).results||[]);
+          const unique=new Map(rows.map(x=>[x.site,x]));
+          if(unique.size!==17)throw new Error('expected 17 unique targets, got '+unique.size);
+          const ordered=[...unique.values()].sort((a,b)=>a.site.localeCompare(b.site));
+          const out={schema:'woocommerce-wpfactory-v10-aggregate/v1',target_count:ordered.length,native_verified:ordered.filter(x=>x.native_hits?.length).length,family_signals:ordered.filter(x=>x.family_signal).length,transport_limited:ordered.filter(x=>x.transport_limited).length,results:ordered};
+          fs.mkdirSync('out/aggregate',{recursive:true});
+          fs.writeFileSync('out/aggregate/aggregate.json',JSON.stringify(out,null,2)+'\n');
+          console.log(JSON.stringify({...out,results:undefined},null,2));
+          NODE
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-wpfactory-v10-aggregate
+          path: out/aggregate/
