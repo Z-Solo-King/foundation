@@ -161,11 +161,11 @@
     "authority": "scheduling_only"
   },
   "post_merge_sync": {
-    "checked_at": "2026-10-01T11:06:00Z",
+    "checked_at": "2026-10-01T11:13:00Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "282d7eae9fda93dcd4440bcf123f328a67a66a8d",
-      "operations": "3622efa5ba9d3639e8dd0998130a52cedada06f3"
+      "foundation": "21bb1bb8ef764ef51c494d54efb74d2a6d36c4b8",
+      "operations": "7f28470ea512715dc4f65eb0832cdfab831dfe73"
     },
     "operations_last_sync_commits": [
       "d9bd39b6035b289db720f43934e5ec4cbd55ee54",
@@ -176,7 +176,7 @@
     "operations_main": "READ_LIVE_FROM_GITHUB",
     "integration_contract": "Foundation docs/SYSTEM_INTEGRATION_CONTRACT.json",
     "evaluation_evolution_bridge": "Operations private/evolution_integration.py on current main",
-    "operations_evaluation_bridge": "Operations private/evaluation_integration.py + EvaluationReceipt.universal_metrics",
+    "operations_evaluation_bridge": "Operations private/evolution_integration.py + EvaluationReceipt.universal_metrics on current main",
     "control_plane_diagnostics_split": "Operations private/control_plane_infrastructure.py",
     "operations_diagnostics_facade": "Operations private/control_plane_diagnostics.py",
     "operations_diagnostics_infrastructure": "Operations private/control_plane_infrastructure.py",
@@ -195,13 +195,13 @@
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "282d7eae9fda93dcd4440bcf123f328a67a66a8d",
-    "operations": "3622efa5ba9d3639e8dd0998130a52cedada06f3"
+    "foundation": "21bb1bb8ef764ef51c494d54efb74d2a6d36c4b8",
+    "operations": "7f28470ea512715dc4f65eb0832cdfab831dfe73"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "282d7eae9fda93dcd4440bcf123f328a67a66a8d",
-    "operations": "3622efa5ba9d3639e8dd0998130a52cedada06f3"
+    "foundation": "21bb1bb8ef764ef51c494d54efb74d2a6d36c4b8",
+    "operations": "7f28470ea512715dc4f65eb0832cdfab831dfe73"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",

@@ -7,7 +7,7 @@ Main verification checkpoint: current Foundation main is read live from GitHub; 
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
 Foundation main code checkpoint: current main is read live from GitHub; last verified commit `282d7eae9fda93dcd4440bcf123f328a67a66a8d`.
-Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `3622efa5ba9d3639e8dd0998130a52cedada06f3`. Research and migration jobs use explicit immutable pins below.
+Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `7f28470ea512715dc4f65eb0832cdfab831dfe73`. Research and migration jobs use explicit immutable pins below.
 Production Operations pin: `da86e92d4e0fdb68912efb54ef95c69281a7d613`.
 Provider fleet runtime probe pin: `b95e419254a9071beaeef57a1b0da22ba7dd2c4f`.
 Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`.
@@ -142,3 +142,8 @@ The current cohesion layer is bound to `docs/SYSTEM_INTEGRATION_CONTRACT.json` a
 The latest maintainability pass split the Foundation WooCommerce V175 harness into focused contracts, discovery/validation, acquisition/advisory, and orchestration modules while retaining the legacy import/CLI facade. Oversized-source detection remains enforced by the family coverage audit. Current large source surfaces are tracked in `docs/SOURCE_DECOMPOSITION_BASELINE_2026-10-01.md`; further decomposition is staged by responsibility rather than by arbitrary line cutting.
 
 The live GitHub PR queue is the authority for current PR state. Feed-recovery PRs remain a separate evidence track and are intentionally not folded into this cohesion checkpoint.
+
+
+## 2026-10-01 Operations syntax repair checkpoint
+
+Operations main now includes the syntax repair from PR #1451 after centralized Foundation validation exposed two malformed refactor artifacts. The universal method-effectiveness bridge remains in its dedicated adapter; the legacy method-effectiveness compatibility module is valid again. The exhaustive-audit autofix module no longer contains an incomplete entrypoint stub. This repair is structural and does not change promotion authority.
