@@ -9,7 +9,7 @@
   },
   "runtime_pins": {
     "foundation_runtime": null,
-    "production_operations": "ce4f9edbae3ddf1bf1c25a908d5bce014acc7676",
+    "production_operations": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
     "research_operations": "1a91efa53b9202f1624ddde892b0e86bd6b360f0",
     "foundation_runtime_status": "no independent immutable Foundation runtime pin; deployed Foundation provenance is release-receipt owned",
     "migration_tools": "f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791",
@@ -165,7 +165,7 @@
     "checked_at": "2026-10-01T10:20:00Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "dcdb4ccbe9dc2e25b33a312e6bac75bb323979c3",
+      "foundation": "ebccf399f59400394bc60b1b7f84b711f7bb8cd7",
       "operations": "1a4bcb51615585ce9ee7f5d9d2774f7169e872bf"
     },
     "operations_last_sync_commits": [
@@ -192,16 +192,17 @@
         603
       ],
       "total": 5
-    }
+    },
+    "production_operations_pin": "da86e92d4e0fdb68912efb54ef95c69281a7d613"
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "dcdb4ccbe9dc2e25b33a312e6bac75bb323979c3",
+    "foundation": "ebccf399f59400394bc60b1b7f84b711f7bb8cd7",
     "operations": "1a4bcb51615585ce9ee7f5d9d2774f7169e872bf"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "dcdb4ccbe9dc2e25b33a312e6bac75bb323979c3",
+    "foundation": "ebccf399f59400394bc60b1b7f84b711f7bb8cd7",
     "operations": "1a4bcb51615585ce9ee7f5d9d2774f7169e872bf"
   },
   "hosted_ci_authority": {

@@ -16,7 +16,7 @@ on:
       operations_research_ref:
         description: "Exact Operations revision deployed to the private production runtime"
         required: false
-        default: "90fa37df10d63824acd3fe20b64cc91043af9627"
+        default: "da86e92d4e0fdb68912efb54ef95c69281a7d613"
         type: string
 
 permissions:
@@ -32,7 +32,7 @@ jobs:
     env:
       PUBLIC_WORKER_URL: "https://ai-cio.pages.dev"
       TARGET_FOUNDATION_SHA: ${{ inputs.target_sha || github.sha }}
-      OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || '90fa37df10d63824acd3fe20b64cc91043af9627' }}
+      OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || 'da86e92d4e0fdb68912efb54ef95c69281a7d613' }}
       RESEARCH_LLM_MODEL: "@cf/zai-org/glm-4.7-flash"
     steps:
       - name: Checkout Foundation probe

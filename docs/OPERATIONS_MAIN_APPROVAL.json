@@ -2,11 +2,18 @@
   "schema": "operations-main-approval/v1",
   "repository": "Z-Solo-King/operations",
   "branch": "main",
-  "approved_sha": "90fa37df10d63824acd3fe20b64cc91043af9627",
+  "approved_sha": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
   "purpose": "Only this immutable Operations revision is approved as production/runtime authority.",
   "update_rule": "Change only through reviewed Foundation promotion PR after runtime/evidence validation.",
   "observed_main_sha": "1a4bcb51615585ce9ee7f5d9d2774f7169e872bf",
   "observed_state": "DRIFT",
-  "production_observed_sha": "90fa37df10d63824acd3fe20b64cc91043af9627",
-  "native_private_branch_protection_available": false
+  "production_observed_sha": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
+  "native_private_branch_protection_available": false,
+  "promotion_evidence": {
+    "source_operations_merge": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
+    "change": "avoid full-table D1 scans for release persistence sentinel",
+    "current_operations_main": "1a4bcb51615585ce9ee7f5d9d2774f7169e872bf",
+    "main_is_authority": false,
+    "production_certification_required_after_pin_change": true
+  }
 }

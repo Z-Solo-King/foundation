@@ -8,7 +8,7 @@ Continuity CI uses a full-depth Foundation checkout so merge-commit parent resol
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
 Foundation main code checkpoint: current main is read live from GitHub; last verified commit `dcdb4ccbe9dc2e25b33a312e6bac75bb323979c3`.
 Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `1a4bcb51615585ce9ee7f5d9d2774f7169e872bf`. Research and migration jobs use explicit immutable pins below.
-Production Operations pin: `90fa37df10d63824acd3fe20b64cc91043af9627`.
+Production Operations pin: `da86e92d4e0fdb68912efb54ef95c69281a7d613`.
 Provider fleet runtime probe pin: `b95e419254a9071beaeef57a1b0da22ba7dd2c4f`.
 Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`.
 Live issue and PR counts must be read from GitHub; this file never serves as a mutable queue.
@@ -126,3 +126,8 @@ The privileged production workflow is now manual-only (workflow_dispatch). Ordin
 Current live issues: Foundation #58, #1247, #1249, #1672 and Operations #603 are the five acceptance-track items. Foundation autonomous mission/improvement issues and the Operations-main integrity drift issue remain live incident/execution state and are not folded into the acceptance matrix.
 
 Foundation is the sole hosted Actions authority. Operations remains the private runtime, provider, resource, memory, extractor/mapper and policy authority. The project integration contract binds each improvement surface to audit, quality/evolution, learning and bounded AI automation while preserving existing security, identity, resource, provenance and promotion authorities.
+
+
+## 2026-10-01 canonical Operations production pin promotion
+
+The production Operations pin is now the merged revision `da86e92d4e0fdb68912efb54ef95c69281a7d613`, which includes the bounded D1 persistence-sentinel optimization from Operations PR #1437. Operations main remains a separate moving branch and is not production authority. The pin change is a cost-efficiency/control-plane change only; a fresh production deployment and runtime certification remain required before claiming production acceptance.

@@ -74,6 +74,7 @@ jobs:
           python scripts/validate_github_actions_zero_cost.py
           python scripts/validate_github_app_policy.py
           python scripts/validate_hybrid_alternative_policy.py
+          python tools/validate_system_integration.py --foundation-root . --strict
           python tools/validate_system_integration.py --foundation-root . --operations-root ../operations --strict
           python tools/source_surface_audit.py --root . --root ../operations --output .runtime/source-surface-audit.json
 

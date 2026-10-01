@@ -16,3 +16,13 @@ def test_integration_validator_passes_against_live_checkouts():
     ops=ROOT.parent/"operations"
     if not ops.exists(): return
     subprocess.check_call([sys.executable,str(ROOT/"tools/validate_system_integration.py"),"--foundation-root",str(ROOT),"--operations-root",str(ops),"--strict"])
+
+def test_production_pin_manifest_is_consistent():
+    manifest = json.loads((ROOT/"docs/OPERATIONS_PIN_MANIFEST.json").read_text())
+    approval = json.loads((ROOT/"docs/OPERATIONS_MAIN_APPROVAL.json").read_text())
+    sync = json.loads((ROOT/"docs/FAMILY_SYNC_STATE.json").read_text())
+    canonical = manifest["pins"]["production_runtime"]["sha"]
+    assert len(canonical) == 40
+    assert approval["approved_sha"] == canonical
+    assert approval["production_observed_sha"] == canonical
+    assert sync["runtime_pins"]["production_operations"] == canonical
