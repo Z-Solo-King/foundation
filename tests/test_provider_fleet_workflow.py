@@ -60,3 +60,10 @@ def test_provider_fleet_workflow_tolerates_malformed_base_config_for_benchmark_w
     assert "if: steps.validate-config.outputs.base_config_valid == 'true'" in text
     assert "Live endpoint probing will continue using explicitly configured provider overrides only." in text
     assert "provider-fleet-benchmark-${{ github.run_id }}" in text
+
+
+def test_provider_fleet_workflow_has_unique_benchmark_artifact_and_transport_diagnostic() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert text.count('name: provider-fleet-benchmark-${{ github.run_id }}') == 1
+    assert text.count("provider-probe-diagnostic.json") >= 2
+    assert 'provider-probe-diagnostic/v1' in text

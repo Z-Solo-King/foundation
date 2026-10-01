@@ -146,6 +146,71 @@ jobs:
           print(f"provider configuration assembly: PASS ({len(payload)} providers; base_config_valid={base_config_valid})")
           PY
 
+      - name: Classify live provider transport results
+        if: always()
+        env:
+          PROVIDER_KEYS_JSON_FILE: \${{ runner.temp }}/provider_keys.json
+        run: |
+          set +e
+          python - <<'PY'
+          import json, time, urllib.error, urllib.request
+          from pathlib import Path
+
+          path = Path(__import__("os").environ["PROVIDER_KEYS_JSON_FILE"])
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          results = []
+          for provider in sorted(payload):
+              cfg = payload[provider]
+              endpoint = cfg.get("endpoint")
+              model = cfg.get("model")
+              request_body = json.dumps({
+                  "model": model,
+                  "messages": [{"role": "user", "content": "Return exactly OK."}],
+                  "temperature": 0,
+                  "max_tokens": 8,
+                  "stream": False,
+              }).encode()
+              request = urllib.request.Request(
+                  endpoint,
+                  data=request_body,
+                  method="POST",
+                  headers={
+                      "Authorization": "Bearer " + str(cfg.get("api_key", "")),
+                      "Content-Type": "application/json",
+                      "Accept": "application/json",
+                      "User-Agent": "heroic-ai-provider-benchmark/1",
+                  },
+              )
+              started = time.monotonic()
+              row = {
+                  "provider": provider,
+                  "model": model,
+                  "latency_ms": None,
+                  "http_status": None,
+                  "transport_error": None,
+              }
+              try:
+                  with urllib.request.urlopen(request, timeout=20) as response:
+                      row["http_status"] = int(response.status)
+                      response.read(4096)
+              except urllib.error.HTTPError as exc:
+                  row["http_status"] = int(exc.code)
+              except Exception as exc:
+                  row["transport_error"] = type(exc).__name__
+              row["latency_ms"] = max(0, int((time.monotonic() - started) * 1000))
+              results.append(row)
+
+          Path("provider-probe-diagnostic.json").write_text(
+              json.dumps(
+                  {"schema": "provider-probe-diagnostic/v1", "results": results},
+                  indent=2,
+                  sort_keys=True,
+              ) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(results, indent=2, sort_keys=True))
+          PY
+
       - name: Record benchmark publication gate
         env:
           BASE_CONFIG_VALID: ${{ steps.validate-config.outputs.base_config_valid }}
@@ -162,7 +227,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: provider-fleet-benchmark-${{ github.run_id }}
-          path: provider-config-receipt.json
+          path: |
+            provider-config-receipt.json
+            provider-probe-diagnostic.json
           retention-days: 14
           if-no-files-found: error
 
@@ -248,26 +315,6 @@ jobs:
           print(f"runtime state providers: {len(state['providers'])}")
           print(f"successful probes: {receipt['success_count']}/{receipt['configured_count']}")
           PY
-
-      - name: Record benchmark publication gate
-        env:
-          BASE_CONFIG_VALID: ${{ steps.validate-config.outputs.base_config_valid }}
-        run: |
-          set -euo pipefail
-          echo "base_config_valid=${BASE_CONFIG_VALID}"
-          if [ "$BASE_CONFIG_VALID" != "true" ]; then
-            echo "Runtime-state publication blocked because the base provider configuration is malformed."
-            echo "Live provider probing remains allowed using explicitly configured provider overrides."
-          fi
-
-      - name: Upload provider benchmark evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: provider-fleet-benchmark-${{ github.run_id }}
-          path: provider-config-receipt.json
-          retention-days: 14
-          if-no-files-found: error
 
       - name: Publish runtime state to private Operations Worker
         if: steps.validate-config.outputs.base_config_valid == 'true'
