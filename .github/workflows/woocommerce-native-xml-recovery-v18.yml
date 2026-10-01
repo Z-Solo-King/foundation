@@ -1,4 +1,315 @@
-successfully downloaded text file (SHA: cb29fd5a993bd3d274dfe26c39af05a00654333d)
+name: WooCommerce Native XML Recovery V18
+
+# Live rerun trigger: exercise current Operations provider crossfire and feed recovery
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/woocommerce-native-xml-recovery-v18.yml"
+  workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: "Immutable Operations commit; blank resolves current main"
+        required: false
+        default: ""
+        type: string
+  schedule:
+    - cron: "45 4 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foundation-woocommerce-native-xml-v18
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    name: Governed 30-site native XML recovery
+    runs-on: ubuntu-latest
+    environment: production-secret-sync
+    timeout-minutes: 40
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Resolve immutable Operations revision
+        id: resolve-operations
+        env:
+          GH_TOKEN: ${{ steps.operations-app.outputs.token }}
+          REQUESTED_REF: ${{ inputs.operations_ref }}
+        run: |
+          set -euo pipefail
+          ref="${REQUESTED_REF:-}"
+          if [[ -z "$ref" ]]; then
+            ref="$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
+          fi
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "operations_ref must be an immutable 40-hex commit"; exit 1; }
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout Operations source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ steps.resolve-operations.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Install runtime
+        run: |
+          set -euo pipefail
+          npm install --no-save --ignore-scripts playwright@1.55.0
+          npx playwright install chromium
+
+      - name: Validate recovery contracts
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node --check private/feed_recovery/ai_task_fabric.mjs
+          node --check private/feed_recovery/ai_crossfire.mjs
+          node --check private/feed_recovery/custom_api_google_feed_browser_probe_1249.mjs
+          node --check private/feed_recovery/custom_api_google_feed_recovery_1249.mjs
+          node --check private/feed_recovery/woocommerce_google_feed_rescue_fast.mjs
+          node --check private/feed_recovery/historical_feed_candidates.mjs
+          node --test tests/test_woocommerce_native_xml_recovery_30_v18.mjs
+          node --test tests/test_woocommerce_v18_historical_candidates.mjs
+          node --test tests/test_woocommerce_ai_crossfire.mjs
+          test -f data/feed_lab/woocommerce_30_registry_v18.json
+
+      - name: Parallel AI provider crossfire candidate set
+        working-directory: operations
+        env:
+          PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          HEROIC_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          HEROIC_WORKER_URL: https://ai-cio.pages.dev
+          AI_CROSSFIRE_MAX_PROVIDERS: "5"
+          AI_CROSSFIRE_TIMEOUT_MS: "18000"
+          AI_CROSSFIRE_PROVIDERS: "heroic_worker,cloudflare_workers_ai,siliconflow,gemini,openrouter_free,groq,cerebras,nvidia_nim,cohere_free,huggingface_free"
+        run: |
+          set -euo pipefail
+          mkdir -p out/rescue-fast out/v18
+          node private/feed_recovery/ai_crossfire.mjs data/feed_lab/woocommerce_30_registry_v18.json out/v18/ai-crossfire.json
+          cp out/v18/ai-crossfire.json out/rescue-fast/ai_candidates.json
+
+      - name: Parallel public recovery and browser observation
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node private/feed_recovery/custom_api_google_feed_browser_probe_1249.mjs             data/feed_lab/woocommerce_30_registry_v18.json out/v18/browser.json & p1=$!
+          node private/feed_recovery/custom_api_google_feed_recovery_1249.mjs             data/feed_lab/woocommerce_30_registry_v18.json out/v18/custom-recovery.json & p2=$!
+          node private/feed_recovery/historical_feed_candidates.mjs             data/feed_lab/woocommerce_30_registry_v18.json out/v18/historical.json & p3=$!
+          wait "$p1"
+          wait "$p2"
+          wait "$p3"
+
+      - name: Merge secondary observations into candidate pool
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          import fs from "node:fs/promises";
+          const browser = JSON.parse(await fs.readFile("out/v18/browser.json","utf8"));
+          const historical = JSON.parse(await fs.readFile("out/v18/historical.json","utf8"));
+          const ai = JSON.parse(await fs.readFile("out/rescue-fast/ai_candidates.json","utf8"));
+          const by = new Map(ai.retailers.map(x => [x.name, x]));
+          for (const site of browser.results || []) {
+            const row = by.get(site.name);
+            if (!row) continue;
+            for (const root of site.roots_results || []) {
+              for (const u of [...(root.candidate_urls || []), ...(root.script_hints || [])]) {
+                try {
+                  const x = new URL(u, row.base);
+                  if (x.origin === new URL(row.base).origin &&
+                      /(xml|feed|merchant|google|shopping|product|woo)/i.test(x.pathname+x.search)) {
+                    row.paths.push(x.pathname + (x.search || ""));
+                  }
+                } catch {}
+              }
+            }
+            row.paths = [...new Set(row.paths)].slice(0,200);
+          }
+          for (const site of historical.retailers || []) {
+            const row = by.get(site.name);
+            if (!row) continue;
+            for (const path of site.paths || []) row.paths.push(path);
+            row.historical_evidence = site.sources || {};
+            row.paths = [...new Set(row.paths)].slice(0,240);
+          }
+          ai.schema_version = "woocommerce-feed-ai-candidates-v18/v5";
+          ai.historical_candidate_sources = ["wayback_cdx", "commoncrawl_index"];
+          ai.browser_observation = true;
+          await fs.writeFile("out/rescue-fast/ai_candidates.json", JSON.stringify(ai,null,2) + "\n");
+          NODE
+
+      - name: Upload merged AI candidate pool
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: foundation-wc-v18-merged-ai-candidates
+          path: operations/out/rescue-fast/ai_candidates.json
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Run canonical rescue engine
+        working-directory: operations
+        env:
+          WC_FEED_PROBE_CONCURRENCY: "8"
+          WC_FEED_MIN_INTERVAL_MS: "200"
+          WC_FEED_RATE_RETRIES: "2"
+        run: |
+          set -euo pipefail
+          node private/feed_recovery/woocommerce_google_feed_rescue_fast.mjs data/feed_lab/woocommerce_30_registry_v18.json
+
+      - name: Build final audited result
+        working-directory: operations
+        env:
+          OPERATIONS_REF: ${{ steps.resolve-operations.outputs.ref }}
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          import fs from "node:fs/promises";
+          const read = async p => { try { return JSON.parse(await fs.readFile(p,"utf8")); } catch { return null; } };
+          const browser = await read("out/v18/browser.json");
+          const custom = await read("out/v18/custom-recovery.json");
+          const rescue = await read("out/rescue-fast/summary.json");
+          const ai = await read("out/rescue-fast/ai_candidates.json");
+          const crossfire = await read("out/v18/ai-crossfire.json");
+          const target_count = Number(crossfire?.target_count || ai?.retailers?.length || browser?.sites || 0) || 30;
+          const winners = [];
+          for (const x of custom?.verified_google_xml || []) winners.push({...x, source:"custom_public_recovery"});
+          for (const x of browser?.verified_google_xml || []) winners.push({...x, source:"browser_network"});
+          for (const x of rescue?.sites || []) if (x.native_feed) winners.push({site:x.brand,url:x.native_feed,source:"rescue_fast"});
+          const verified = [...new Map(winners.map(x => [String(x.site||"")+"|"+String(x.url||x.final_url||""), x])).values()];
+          const verifiedBySite = new Map(verified.map(x => [String(x.site || x.brand || "").toLowerCase(), x]));
+          const ai_crossfire_quality = (crossfire?.providers || [])
+            .filter(p => p.outcome === "success")
+            .map(p => {
+              const providerRows = (crossfire.retailers || []).map(site => site.by_provider?.[p.provider]).filter(Boolean);
+              const candidate_paths = [...new Set(providerRows.flatMap(r => r.paths || []))];
+              let exact_verified_path_hits = 0;
+              let verified_sites_evaluable = 0;
+              for (const site of crossfire.retailers || []) {
+                const winner = verifiedBySite.get(String(site.name || "").toLowerCase());
+                if (!winner || !(winner.url || winner.final_url)) continue;
+                verified_sites_evaluable++;
+                let target = "";
+                try {
+                  const u = new URL(winner.url || winner.final_url);
+                  target = u.pathname + (u.search || "");
+                } catch {}
+                const paths = site.by_provider?.[p.provider]?.paths || [];
+                if (target && paths.includes(target)) exact_verified_path_hits++;
+              }
+              const candidate_sites = providerRows.filter(r => (r.paths || []).length > 0).length;
+              return {
+                provider:p.provider,
+                model:p.model,
+                latency_ms:p.latency_ms ?? null,
+                candidate_sites,
+                candidate_paths:candidate_paths.length,
+                coverage_pct:Number((candidate_sites / target_count * 100).toFixed(2)),
+                verified_sites_evaluable,
+                exact_verified_path_hits,
+                verified_path_hit_pct:verified_sites_evaluable ? Number((exact_verified_path_hits / verified_sites_evaluable * 100).toFixed(2)) : null,
+                precision_proxy_pct:candidate_paths.length ? Number((exact_verified_path_hits / candidate_paths.length * 100).toFixed(4)) : null
+              };
+            });
+          const result = {
+            schema_version:"foundation-woocommerce-native-xml-recovery-v18/v1",
+            generated_at:new Date().toISOString(),
+            operations_ref:process.env.OPERATIONS_REF,
+            target_count,
+            verified_native_feeds:verified,
+            ai_provider_quality_speed_benchmark:crossfire?.provider_quality_speed_benchmark || [],
+            counts:{
+              native_verified:verified.length,
+              browser_verified:(browser?.verified_google_xml || []).length,
+              custom_verified:(custom?.verified_google_xml || []).length,
+              rescue_verified:(rescue?.sites || []).filter(x => x.native_feed).length,
+              ai_providers_available:[...new Set((crossfire?.providers || []).filter(x => x.outcome === "success" && x.provider).map(x => x.provider))],
+              ai_crossfire_wall_clock_ms:crossfire?.wall_clock_ms ?? null,
+              ai_crossfire_quality
+            },
+            policy:{
+              public_read_only:true,
+              no_cookie_injection:true,
+              no_clearance_cookie_replay:true,
+              no_captcha_bypass:true,
+              no_state_changing_requests:true,
+              no_store_api_for_native_result:true,
+              no_reconstructed_xml_as_native:true,
+              ai_candidates_are_non_authoritative:true,
+              deterministic_native_validator_is_authoritative:true
+            }
+          };
+          const usable_xml = [];
+          for (const x of rescue?.sites || []) {
+            const native = x.native_feed || null;
+            const reconstructed = x.reconstructed_file || null;
+            if (native) usable_xml.push({site:x.brand,kind:"native",url:native,file:null});
+            else if (reconstructed) usable_xml.push({site:x.brand,kind:"store_api_reconstruction",url:null,file:reconstructed});
+          }
+          result.usable_xml = usable_xml;
+          result.usable_xml_counts = {
+            native: usable_xml.filter(x => x.kind === "native").length,
+            store_api_reconstruction: usable_xml.filter(x => x.kind === "store_api_reconstruction").length,
+            none: target_count - usable_xml.length
+          };
+          await fs.writeFile("out/v18/final-report.json", JSON.stringify(result,null,2) + "\n");
+          await fs.writeFile("out/v18/usable-xml-manifest.json", JSON.stringify({
+            schema_version:"foundation-woocommerce-usable-xml-manifest-v18/v1",
+            generated_at:new Date().toISOString(),
+            target_count,
+            policy:"native feed is preferred; Store API XML is an explicitly labeled reconstruction fallback and is not a native retailer feed",
+            entries:usable_xml,
+            counts:result.usable_xml_counts
+          },null,2)+"\n");
+          console.log(JSON.stringify(result.counts,null,2));
+          console.log(JSON.stringify(result.usable_xml_counts,null,2));
+          NODE
+
+      - name: Upload recovery evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: foundation-woocommerce-native-xml-v18
+          path: |
+            operations/out/v18/
+            operations/out/rescue-fast/
+          if-no-files-found: warn
+          retention-days: 30
+
   build-anyhow-feeds:
     name: Build 30 usable Google XML feeds
     needs: recover
@@ -64,7 +375,7 @@ successfully downloaded text file (SHA: cb29fd5a993bd3d274dfe26c39af05a00654333d
         run: |
           set -euo pipefail
           mkdir -p operations/out/rescue-fast operations/out/google-xml-feed
-          test -f operations/out/rescue-fast/ai_candidates.json || printf '{"retailers":[]}\\n' > operations/out/rescue-fast/ai_candidates.json
+          test -f operations/out/rescue-fast/ai_candidates.json || printf '{"retailers":[]}\n' > operations/out/rescue-fast/ai_candidates.json
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -146,15 +457,15 @@ successfully downloaded text file (SHA: cb29fd5a993bd3d274dfe26c39af05a00654333d
             const f=byFile.get(item.filename);
             if(!f)throw new Error("Missing XML for "+item.site);
             const xml=fs.readFileSync(f,"utf8");
-            if(!/^\\s*<\\?xml[\\s\\S]*<rss\\b/i.test(xml))throw new Error("Invalid XML header for "+item.site);
-            if(!/xmlns:g=["']http:\\/\\/base\\.google\\.com\\/ns\\/1\\.0["']/i.test(xml))throw new Error("Missing Google namespace for "+item.site);
-            const n=xml.match(/<item>[\\s\\S]*?<\\/item>/gi)||[];
+            if(!/^\s*<\?xml[\s\S]*<rss\b/i.test(xml))throw new Error("Invalid XML header for "+item.site);
+            if(!/xmlns:g=["']http:\/\/base\.google\.com\/ns\/1\.0["']/i.test(xml))throw new Error("Missing Google namespace for "+item.site);
+            const n=xml.match(/<item>[\s\S]*?<\/item>/gi)||[];
             if(n.length!==Number(item.item_count||0))throw new Error("Item-count mismatch for "+item.site);
-            for(const x of n)if(!/<g:id>[^<]+<\\/g:id>/i.test(x)||!/<title>[^<]+<\\/title>/i.test(x)||!/<link>https?:\\/\\/[^<]+<\\/link>/i.test(x)||!/<g:image_link>https?:\\/\\/[^<]+<\\/g:image_link>/i.test(x)||!/<g:price>\\s*\\d[^<]*\\s+[A-Z]{3}<\\/g:price>/i.test(x))throw new Error("Core field validation failed for "+item.site);
+            for(const x of n)if(!/<g:id>[^<]+<\/g:id>/i.test(x)||!/<title>[^<]+<\/title>/i.test(x)||!/<link>https?:\/\/[^<]+<\/link>/i.test(x)||!/<g:image_link>https?:\/\/[^<]+<\/g:image_link>/i.test(x)||!/<g:price>\s*\d[^<]*\s+[A-Z]{3}<\/g:price>/i.test(x))throw new Error("Core field validation failed for "+item.site);
             fs.copyFileSync(f,path.join(release,item.filename));
           }
           const index={schema_version:"woocommerce-google-xml-anyhow-v1/published-index",generated_on:new Date().toISOString(),target_count:30,release_tag:"wc-google-feed-latest",feeds:items.map(item=>({site:item.site,filename:item.filename,item_count:item.item_count,feed_kind:item.feed_kind,native_url:item.native_url||null,validation:item.validation||null,download_url:"https://github.com/"+process.env.GH_REPO+"/releases/download/wc-google-feed-latest/"+item.filename}))};
-          fs.writeFileSync(path.join(release,"feeds-index.json"),JSON.stringify(index,null,2)+"\\n");
+          fs.writeFileSync(path.join(release,"feeds-index.json"),JSON.stringify(index,null,2)+"\n");
           JS
           TAG=wc-google-feed-latest
           if ! gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
