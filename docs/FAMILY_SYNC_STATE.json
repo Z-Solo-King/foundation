@@ -127,7 +127,7 @@
     "checked_at": "2026-10-01T17:45:00Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "22f81074ac41b19a671d692d48f8d111d78a3786",
+      "foundation": "9538b83e95314141ec262b7f691bbbe7ee4fd521",
       "operations": "3c780e33772c87ec6c3b6df75a857e5404f0b861"
     },
     "operations_last_sync_commits": [
@@ -159,12 +159,12 @@
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "22f81074ac41b19a671d692d48f8d111d78a3786",
+    "foundation": "9538b83e95314141ec262b7f691bbbe7ee4fd521",
     "operations": "3c780e33772c87ec6c3b6df75a857e5404f0b861"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "22f81074ac41b19a671d692d48f8d111d78a3786",
+    "foundation": "9538b83e95314141ec262b7f691bbbe7ee4fd521",
     "operations": "3c780e33772c87ec6c3b6df75a857e5404f0b861"
   },
   "hosted_ci_authority": {
