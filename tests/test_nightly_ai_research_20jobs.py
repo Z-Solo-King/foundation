@@ -10,32 +10,12 @@ REPORT = ROOT / "scripts" / "build_nightly_ai_research_report.js"
 AUTONOMOUS_WORKFLOW = ROOT / ".github" / "workflows" / "autonomous-benchmark.yml"
 
 
-def test_expanded_20_job_workflow_has_seeded_and_qualified_matrix():
+def test_public_20_job_workflow_is_paused():
     text = WORKFLOW.read_text(encoding="utf-8")
-    assert text.count("seed_repos:") == 20
-    matrix_rows = [
-        line
-        for line in text.splitlines()
-        if 'id: "' in line and "seed_repos:" in line and "issues:" in line
-    ]
-    assert len(matrix_rows) == 20
-    issue_fields = [re.search(r'issues: "([^"]+)"', line) for line in matrix_rows]
-    assert all(match for match in issue_fields)
-    assert all(
-        all(part.startswith(("foundation#", "operations#")) for part in match.group(1).split(","))
-        for match in issue_fields
-    )
-    assert "PieroSierra/SecondBrain" in text
-    assert "Shubhamsaboo/awesome-llm-apps" in text
-    assert "NipunaRanasinghe/awesome-ai-agents" in text
-    assert "modelcontextprotocol/quickstart-resources" in text
-    assert "akullpp/awesome-java" in text
-    assert "vinta/awesome-python" in text
-    assert "ashishps1/awesome-system-design-resources" in text
-    assert "ByteByteGoHq/system-design-101" in text
-    assert "rafska/Awesome-local-LLM" in text
-    assert "foundation#154" not in text
-
+    assert "workflow_dispatch:" in text
+    assert "schedule:" not in text
+    assert "push:" not in text
+    assert "task workflow is paused" in text
 
 def test_research_collector_and_synthesis_scripts_are_syntactically_valid():
     bash = subprocess.run(["bash", "-n", str(COLLECTOR)], capture_output=True, text=True)
@@ -65,13 +45,12 @@ def test_research_report_produces_deterministic_signal_candidates():
     assert 'evidence_class:"research-signal"' in text
 
 
-def test_autonomous_benchmark_consumes_latest_research_feed():
+def test_autonomous_benchmark_workflow_is_paused():
     text = AUTONOMOUS_WORKFLOW.read_text(encoding="utf-8")
-    assert "research_feed:" in text
-    assert "nightly-ai-research-20jobs.yml" in text
-    assert "latest-research-feed" in text
-    assert "research-feed-status/v1" in text
-
+    assert "workflow_dispatch:" in text
+    assert "schedule:" not in text
+    assert "push:" not in text
+    assert "task workflow is paused" in text
 
 def test_family_integrity_normalizes_issue_targets_before_comparison():
     checker = (ROOT / "scripts" / "family_integrity_check.js").read_text(encoding="utf-8")
