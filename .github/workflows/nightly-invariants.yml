@@ -61,9 +61,9 @@ jobs:
           grep -Fq 'agent_capacities"] == [1, 2, 4, 8]' .github/workflows/nightly-multi-agent-research-v3.yml
           grep -Fq 'execution_modes"] == ["serial", "parallel"]' .github/workflows/nightly-multi-agent-research-v3.yml
           grep -Fq 'name: nightly-migration-review' .github/workflows/nightly-multi-agent-research-v3.yml
-          grep -Fq 'cron: "45 19 * * *"' .github/workflows/autonomous-benchmark.yml
           grep -Fq 'cron: "0 20 * * *"' .github/workflows/nightly-invariants.yml
-          echo 'dispatch-only 24-program research trigger and coverage contract: PASS'
+          grep -Fq 'autonomous task workflow execution is disabled' tools/autonomous_mission_router.mjs
+          echo 'autonomous task workflows: PAUSED'
 
       - name: Validate no competing Cloudflare deployment workflow was added
         shell: bash

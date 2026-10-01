@@ -8,10 +8,6 @@
   },
   "explicit_privileged_workflows": [
     [
-      ".github/workflows/autonomous-engineering-supervisor.yml",
-      "autonomous_engineering_supervisor"
-    ],
-    [
       ".github/workflows/b2-repository-backup.yml",
       "backup"
     ],
@@ -64,14 +60,6 @@
       "private_benchmark"
     ],
     [
-      ".github/workflows/live-ai-agent-benchmark.yml",
-      "live_benchmark"
-    ],
-    [
-      ".github/workflows/live-ai-provider-crossfire.yml",
-      "ai_provider_crossfire"
-    ],
-    [
       ".github/workflows/live-chatbot-production-smoke.yml",
       "private_production_smoke"
     ],
@@ -114,10 +102,6 @@
     [
       ".github/workflows/polyglot-migration-review.yml",
       "private_benchmark"
-    ],
-    [
-      ".github/workflows/project-improvement-supervisor.yml",
-      "autonomous_component_improvement"
     ],
     [
       ".github/workflows/provider-fleet-runtime-state.yml",
@@ -164,6 +148,19 @@
       ".github/workflows/live-nightly-research-canary.yml": [
         "nightly multi-agent research"
       ]
-    }
-  }
+    },
+    "task_execution": "disabled",
+    "automation_principle": "AI may propose and analyze; no autonomous task workflow may dispatch, mutate, benchmark, research, or self-improve."
+  },
+  "paused_task_workflows": [
+    ".github/workflows/autonomous-benchmark.yml",
+    ".github/workflows/autonomous-engineering-supervisor.yml",
+    ".github/workflows/autonomous-scorecard.yml",
+    ".github/workflows/project-improvement-supervisor.yml",
+    ".github/workflows/live-ai-provider-crossfire.yml",
+    ".github/workflows/live-ai-agent-benchmark.yml",
+    ".github/workflows/nightly-ai-research-20jobs.yml",
+    ".github/workflows/fresh-control-plane-identity-acceptance.yml",
+    ".github/workflows/canonical-workflow-dispatch-acceptance.yml"
+  ]
 }
