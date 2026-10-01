@@ -158,6 +158,7 @@ EOF
             sha256="$(sha256sum "$archive" | cut -d' ' -f1)"
             size="$(stat -c '%s' "$archive")"
             single_put_limit_bytes=5000000000
+            multipart_threshold_bytes=104857600
             max_large_file_bytes=10000000000000
             if [ "$size" -le 0 ] || [ "$size" -gt "$max_large_file_bytes" ]; then
               echo "Unsupported B2 archive size for $repo: $size bytes"
@@ -165,10 +166,12 @@ EOF
             fi
             if [ "$size" -gt "$single_put_limit_bytes" ]; then
               upload_mode="multipart"
+            elif [ "$size" -gt "$multipart_threshold_bytes" ]; then
+              upload_mode="multipart"
             else
-              upload_mode="transfer-manager"
+              upload_mode="single-request"
             fi
-            echo "$repo archive size: $size bytes; upload_mode=$upload_mode; single-PUT threshold=5000000000 bytes"
+            echo "$repo archive size: $size bytes; upload_mode=$upload_mode; single-PUT ceiling=5000000000 bytes; configured-multipart-threshold=104857600 bytes"
             manifest="backup-output/${repo}-${sha}-${timestamp}.json"
             # "remote_b2_restore_verified": False — this manifest starts as unverified; restore verification is a separate acceptance step.
             jq -n --arg repo "$repo" --arg commit "$sha" --arg tree "$tree" --arg created "$timestamp" --arg archive "$(basename "$archive")" --arg sha256 "$sha256" --arg upload_mode "$upload_mode" --argjson size "$size" --argjson refs "$refs" '{schema:"repository-backup/v3",repository:("Z-Solo-King/"+$repo),visibility:(if $repo=="foundation" then "public" else "private" end),ref:"main",commit:$commit,tree:$tree,created_at:$created,archive:$archive,sha256:$sha256,size_bytes:$size,ref_count:$refs,upload_policy:{single_put_threshold_bytes:5000000000,configured_multipart_threshold_bytes:104857600,configured_multipart_part_bytes:104857600,max_supported_large_file_bytes:10000000000000,mode:$upload_mode},restore_test:{local_git_fsck:true,main_ref_verified:true,remote_b2_restore_verified:false}}' > "$manifest"
