@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {validateOperationsGuard} from '../tools/validate_operations_main_guard.mjs';
 
 const repo={full_name:'Z-Solo-King/operations',private:true,default_branch:'main'};
-const approved='da86e92d4e0fdb68912efb54ef95c69281a7d613';
+const approved='6042cb8cd972ba25d42ebebddcb763b9dfb57b67';
 
 test('approved revision passes',()=>assert.equal(validateOperationsGuard({repository:repo,mainBranch:{name:'main',sha:approved},workflowsPresent:false,approvedSha:approved}).status,'APPROVED'));
 test('main drift is detected',()=>assert.equal(validateOperationsGuard({repository:repo,mainBranch:{name:'main',sha:'37b35ba9e94600d746bc81e48cd2918b0c239bc7'},workflowsPresent:false,approvedSha:approved}).status,'DRIFT'));

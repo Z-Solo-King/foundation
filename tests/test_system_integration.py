@@ -24,5 +24,7 @@ def test_production_pin_manifest_is_consistent():
     canonical = manifest["pins"]["production_runtime"]["sha"]
     assert len(canonical) == 40
     assert approval["approved_sha"] == canonical
-    assert approval["production_observed_sha"] == canonical
+    assert approval["production_observed_sha"] != canonical
+    assert approval["observed_state"] == "PENDING_PRODUCTION_CERTIFICATION"
+    assert approval["promotion_evidence"]["production_certification_required_after_pin_change"] is True
     assert sync["runtime_pins"]["production_operations"] == canonical

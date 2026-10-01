@@ -52,8 +52,16 @@ def validate_production_pin_consistency(foundation: Path, errors: list[str]) -> 
     if not isinstance(canonical, str) or len(canonical) != 40:
         errors.append("production-pin:manifest invalid")
         return
-    if approval.get("approved_sha") != canonical or approval.get("production_observed_sha") != canonical:
+    if approval.get("approved_sha") != canonical:
         errors.append("production-pin:approval drift")
+    observed = approval.get("production_observed_sha")
+    pending = (
+        observed != canonical
+        and approval.get("observed_state") == "PENDING_PRODUCTION_CERTIFICATION"
+        and (approval.get("promotion_evidence") or {}).get("production_certification_required_after_pin_change") is True
+    )
+    if observed != canonical and not pending:
+        errors.append("production-pin:observed production revision is neither certified nor explicitly pending certification")
     if ((sync.get("runtime_pins") or {}).get("production_operations")) != canonical:
         errors.append("production-pin:family-sync drift")
     consumers = (

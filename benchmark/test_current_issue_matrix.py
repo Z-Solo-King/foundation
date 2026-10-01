@@ -9,7 +9,7 @@
   },
   "runtime_pins": {
     "foundation_runtime": null,
-    "production_operations": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
+    "production_operations": "6042cb8cd972ba25d42ebebddcb763b9dfb57b67",
     "research_operations": "1a91efa53b9202f1624ddde892b0e86bd6b360f0",
     "foundation_runtime_status": "no independent immutable Foundation runtime pin; deployed Foundation provenance is release-receipt owned",
     "migration_tools": "f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791",
@@ -163,7 +163,7 @@
       ],
       "total": 5
     },
-    "production_operations_pin": "da86e92d4e0fdb68912efb54ef95c69281a7d613"
+    "production_operations_pin": "6042cb8cd972ba25d42ebebddcb763b9dfb57b67"
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
