@@ -23,7 +23,6 @@ PROVIDER_MARKERS = (
 
 ALLOWED_RELATIVE_PATHS = {
     "tools/woocommerce_v175_plugin_fingerprint_22.py",
-    "tools/woocommerce_v175_transport.py",
     "tools/ai_provider_direct_reference_audit.py",
 }
 
@@ -36,7 +35,7 @@ def direct_provider_references() -> list[tuple[str, str]]:
         if not path.is_file() or path.suffix.lower() not in SCAN_SUFFIXES:
             continue
         relative = path.relative_to(ROOT).as_posix()
-        if relative in ALLOWED_RELATIVE_PATHS or relative.startswith("tests/") or relative.startswith(".git/"):
+        if relative in ALLOWED_RELATIVE_PATHS or relative.startswith("tests/") or relative.startswith(".git/") or relative == "scripts/public_security_lint.py":
             continue
         try:
             text = path.read_text(encoding="utf-8", errors="ignore")

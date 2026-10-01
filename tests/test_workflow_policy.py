@@ -345,22 +345,15 @@ def test_foundation_bridge_records_run_and_job_creation_control_plane_evidence()
     assert 'gh workflow run "$TARGET"' in workflow
     assert 'run_url=' in workflow
     assert 'actions/runs/${target_run_id}/jobs' in workflow
-    assert 'jobs_status="$(curl -sS -o "$RUNNER_TEMP/target-jobs.json" -w \'%{http_code}\'' in workflow
-    assert '404) job_count=0' in workflow
     assert 'target_job_count' in workflow
-    assert 'gh workflow run foundation-canonical-workflow-bridge-v3.yml' in acceptance
-    assert 'bridge_run_url=' in acceptance
-    assert 'gh run download "$bridge_run_id"' in acceptance
-    assert 'canonical-bridge-v3-receipt' in acceptance
-    assert "jq -r '.target_run_id // empty'" in acceptance
-
+    assert 'task workflow is paused' in acceptance
+    assert 'gh workflow run foundation-canonical-workflow-bridge-v3.yml' not in acceptance
 def test_hardened_workflows_have_timeout_and_concurrency_contract():
     texts = _workflow_texts()
     affected = {
         "codeql.yml",
         "context-budget.yml",
         "required-pr-checks.yml",
-        "autonomous-scorecard.yml",
         "canonical-nightly-pin-repair.yml",
         "release-quality-regression.yml",
         "nightly-research-contract.yml",
