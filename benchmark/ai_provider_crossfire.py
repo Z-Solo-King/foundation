@@ -24,13 +24,6 @@ ALLOWED = {
     "siliconflow",
 }
 
-OVERRIDES = {
-    "nvidia_nim": ("NVIDIA_NIM_API_KEY", "https://integrate.api.nvidia.com/v1/chat/completions", "deepseek-ai/deepseek-v4.1-flash"),
-    "huggingface_free": ("HF_TOKEN", "https://router.huggingface.co/v1/chat/completions", "openai/gpt-oss-120b"),
-    "cohere_free": ("COHERE_API_KEY", "https://api.cohere.ai/compatibility/v1/chat/completions", "command-a-plus-05-2026"),
-    "siliconflow": ("SILICONFLOW_API_KEY", "https://api.siliconflow.cn/v1/chat/completions", "Qwen/Qwen3.5-4B"),
-}
-
 TASKS = [
     {"id": "json_extract", "prompt": "Return JSON only with keys brand, price_inr, stock. Input: brand=Nova; price=59999; availability=in stock."},
     {"id": "arithmetic", "prompt": "Return only the integer result of 3847*29."},
@@ -52,10 +45,6 @@ def load_config() -> dict[str, dict[str, str]]:
                     endpoint, api_key, model = value.get("endpoint"), value.get("api_key"), value.get("model")
                     if all(isinstance(x, str) and x.strip() for x in (endpoint, api_key, model)):
                         config[name] = {"endpoint": endpoint, "api_key": api_key, "model": model}
-    for name, (env_name, endpoint, model) in OVERRIDES.items():
-        key = os.environ.get(env_name, "").strip()
-        if key:
-            config[name] = {"endpoint": endpoint, "api_key": key, "model": model}
     return config
 
 
