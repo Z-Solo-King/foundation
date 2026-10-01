@@ -112,7 +112,7 @@ A failed authentication event is evidence about the credential path; it is not e
 
 ## Documentation ownership
 
-This document owns credential-purpose and backup-boundary policy. `DEPLOYMENT.md` owns deployment procedure. `backup/README.md` and `.github/workflows/b2-repository-backup.yml` own backup execution details. Private runtime configuration remains owned by Operations.
+This document owns credential-purpose, backup-boundary and retention policy. `DEPLOYMENT.md` owns deployment procedure. `backup/README.md` and `.github/workflows/b2-repository-backup.yml` own backup execution details, including the one-generation retention cleanup under `repository-backup/`. Private runtime configuration remains owned by Operations.
 
 Do not create competing credential-policy documents. Cross-repository records should reference this standard.
 
