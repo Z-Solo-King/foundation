@@ -1,11 +1,11 @@
 {
   "schema": "family-issue-acceptance-matrix/v1",
-  "audited_at": "2026-10-01T06:35:00Z",
+  "audited_at": "2026-10-01",
   "repository_heads": {
-    "foundation": "9ca2348f5acb696c85960932e8074d5fe0ad1681",
-    "operations": "37b35ba9e94600d746bc81e48cd2918b0c239bc7"
+    "foundation": "dcdb4ccbe9dc2e25b33a312e6bac75bb323979c3",
+    "operations": "1a4bcb51615585ce9ee7f5d9d2774f7169e872bf"
   },
-  "open_issue_count": 7,
+  "open_issue_count": 5,
   "issues": [
     {
       "repo": "foundation",
@@ -18,18 +18,19 @@
     },
     {
       "repo": "foundation",
-      "number": 157,
-      "title": "research: complete 24-program Heroic AI improvement run",
+      "number": 1247,
+      "title": "feed: WooCommerce Google Feed Recovery — 21 active unresolved targets",
       "required_evidence": [
-        "24 real provider-backed executions with exact Foundation revision and contract-compatible immutable Operations revision"
+        "public discovery for unresolved retailers",
+        "strict payload validation"
       ]
     },
     {
       "repo": "foundation",
-      "number": 1247,
-      "title": "feed: WooCommerce Google Feed Recovery \u2014 10 unresolved retailers",
+      "number": 1249,
+      "title": "feed: Custom/API Google Feed Recovery — chat handoff",
       "required_evidence": [
-        "public discovery for unresolved retailers",
+        "additional real Google Merchant XML feed discoveries",
         "strict payload validation"
       ]
     },
@@ -42,27 +43,6 @@
         "deterministic mission routing",
         "human gate for production/authority/secret changes",
         "no competing orchestration authority"
-      ]
-    },
-    {
-      "repo": "foundation",
-      "number": 1249,
-      "title": "feed: Custom/API Google Feed Recovery \u2014 chat handoff",
-      "required_evidence": [
-        "additional real Google Merchant XML feed discoveries",
-        "strict payload validation"
-      ]
-    },
-    {
-      "repo": "operations",
-      "number": 597,
-      "title": "migration: mapper capability decomposition and evidence lanes",
-      "required_evidence": [
-        "capability decomposition",
-        "differential",
-        "parity",
-        "runtime/resource",
-        "shadow/canary/rollback evidence"
       ]
     },
     {
