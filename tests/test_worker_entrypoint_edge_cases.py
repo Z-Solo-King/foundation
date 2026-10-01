@@ -119,6 +119,11 @@ def test_worker_research_uses_scoped_persistence_adapter(monkeypatch):
     import asyncio
     import worker
 
+    from backend.admission import AdmissionDecision, AdmissionOutcome, AdmissionRoute
+    async def admit_for_test(*args, **kwargs):
+        return AdmissionDecision(AdmissionOutcome.ACCEPTED, AdmissionRoute.RESEARCH, True, "synthetic test admission"), None
+    monkeypatch.setattr(worker, "_public_admit", admit_for_test)
+
     class ScopedPersistence:
         def __init__(self):
             self.created = False

@@ -223,7 +223,11 @@ async def test_storage_diagnostic_verifies_round_trip_and_missing_artifacts(monk
 @pytest.mark.asyncio
 async def test_worker_http_public_diagnostics_and_research_fail_closed_paths(monkeypatch):
     monkeypatch.setattr(worker, "CloudflarePersistence", Persistence)
-    env = SimpleNamespace(DB=DB(rows=[] , OPERATIONS=policy_binding()), ENVIRONMENT="production", AUTH_TOKEN="secret")
+    from backend.admission import AdmissionDecision, AdmissionOutcome, AdmissionRoute
+    async def admit_for_test(*args, **kwargs):
+        return AdmissionDecision(AdmissionOutcome.ACCEPTED, AdmissionRoute.RESEARCH, True, "synthetic test admission"), None
+    monkeypatch.setattr(worker, "_public_admit", admit_for_test)
+    env = SimpleNamespace(DB=DB(rows=[]), ENVIRONMENT="production", AUTH_TOKEN="secret", OPERATIONS=policy_binding())
     entry = worker.Default(); entry.env = env
     unauthorized = await entry.fetch(Request("POST", "https://x/api/v1/chatbot/diagnostic", [], {}))
     assert "unauthorized" in str(unauthorized)
@@ -246,7 +250,7 @@ async def test_worker_http_public_diagnostics_and_research_fail_closed_paths(mon
     assert "storage_diagnostic_unavailable" in str(failed_storage)
     missing = await entry.fetch(Request("GET", "https://x/api/v1/research/missing", None, {"Authorization": "Bearer secret"}))
     assert "run not found" in str(missing)
-    persistence_error = worker.Default( , OPERATIONS=policy_binding()); persistence_error.env = SimpleNamespace(DB=BrokenDB(), ENVIRONMENT="production", AUTH_TOKEN="secret")
+    persistence_error = worker.Default(); persistence_error.env = SimpleNamespace(DB=BrokenDB(), ENVIRONMENT="production", AUTH_TOKEN="secret")
     failed_get = await persistence_error.fetch(Request("GET", "https://x/api/v1/research/run-1", None, {"Authorization": "Bearer secret"}))
     assert "persistence_unavailable" in str(failed_get)
     invalid_research = await entry.fetch(Request("POST", "https://x/api/v1/research", [], auth_headers))
@@ -260,7 +264,7 @@ async def test_worker_http_public_diagnostics_and_research_fail_closed_paths(mon
 @pytest.mark.asyncio
 async def test_research_persistence_failures_and_idempotency(monkeypatch):
     monkeypatch.setattr(worker, "CloudflarePersistence", BrokenPersistence)
-    entry = worker.Default(); entry.env = SimpleNamespace(DB=DB(), ENVIRONMENT="production", AUTH_TOKEN="secret")
+    entry = worker.Default(); entry.env = SimpleNamespace(DB=DB(), ENVIRONMENT="production", AUTH_TOKEN="secret", OPERATIONS=policy_binding())
     request = Request("POST", "https://x/api/v1/research", {"question": "x", "source_urls": [], "strict_zero_cost_only": True}, {"Authorization": "Bearer secret", "Content-Type": "application/json"})
     failed = await entry.fetch(request)
     assert "execution_unavailable" in str(failed)

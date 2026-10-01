@@ -2,7 +2,7 @@ import asyncio
 import pytest
 
 from backend.admission import ADMISSION_CONTRACT_VERSION, AdmissionDecision, AdmissionOutcome, AdmissionPolicy, AdmissionRoute
-def policy(**overrides):
+def synthetic_policy(**overrides):
     values = dict(
         version=ADMISSION_CONTRACT_VERSION,
         window_seconds=60,
@@ -52,7 +52,7 @@ class FakeDB:
 
 
 @pytest.mark.asyncio
-async def test_d1_store_admits_with_existing_admission_policy():
+async def test_d1_store_admits_with_existing_admission_synthetic_policy():
     db = FakeDB()
     store = D1AdmissionStore(db)
     decision, lease = await store.acquire(

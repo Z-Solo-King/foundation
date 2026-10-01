@@ -64,6 +64,11 @@ async def test_worker_extracts_bounded_urls_and_reports_capability_boundary(monk
 
     persistence = FakePersistence()
     monkeypatch.setattr(worker, "CloudflarePersistence", lambda env: persistence)
+    from backend.admission import AdmissionDecision, AdmissionOutcome, AdmissionRoute
+    async def admit_for_test(*args, **kwargs):
+        return AdmissionDecision(AdmissionOutcome.ACCEPTED, AdmissionRoute.RESEARCH, True, "synthetic test admission"), None
+    monkeypatch.setattr(worker, "_public_admit", admit_for_test)
+
     monkeypatch.setattr(worker, "submit_research", lambda request: SimpleNamespace(ok=True, run_id="r1", metadata={"strict_zero_cost_only": True}))
 
     async def ingest(env, run_id, request):
@@ -101,7 +106,7 @@ async def test_worker_stays_honest_when_no_source_urls_are_available(monkeypatch
             return {"question": "General question", "strict_zero_cost_only": True}
 
     entry = worker.Default()
-    entry.env = SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret", DB=FakeDB(), ARTIFACTS=SimpleNamespace())
+    entry.env = SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret", DB=FakeDB(), ARTIFACTS=SimpleNamespace(), OPERATIONS=policy_binding())
     response = await entry.fetch(Request())
     assert "awaiting_source_urls" in str(response)
     assert persistence.status == "planned"

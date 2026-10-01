@@ -203,6 +203,13 @@ async def test_worker_http_all_branches(monkeypatch):
     class FakeAssets:
         async def fetch(self, request): return FakeAssetResponse()
     env = SimpleNamespace(DB=FakeDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets(), OPERATIONS=policy_binding())
+    from backend.admission import AdmissionDecision, AdmissionOutcome, AdmissionRoute
+
+    async def admit_for_branch_test(*args, **kwargs):
+        return AdmissionDecision(AdmissionOutcome.ACCEPTED, AdmissionRoute.RESEARCH, True, "synthetic test admission"), None
+
+    monkeypatch.setattr(worker, "_public_admit", admit_for_branch_test)
+
     entry = worker.Default(); entry.env = env
     asset_response = await entry.fetch(Request("GET", "https://x/"))
     assert asset_response.status == 200
@@ -214,7 +221,7 @@ async def test_worker_http_all_branches(monkeypatch):
     not_found = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer secret"})); assert not_found
     class FailingDB(FakeDB):
         def prepare(self, sql): raise RuntimeError("db down")
-    entry.env = SimpleNamespace(DB=FailingDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets())
+    entry.env = SimpleNamespace(DB=FailingDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets(), OPERATIONS=policy_binding())
     persistence_error = await entry.fetch(Request("GET", "https://x/api/v1/research/r", headers={"Authorization":"Bearer secret"})); assert persistence_error
     entry.env = env
     unauthorized_post = await entry.fetch(Request("POST", "https://x/api/v1/research", headers={"Authorization":"Bearer bad", "Content-Type":"application/json"})); assert unauthorized_post
