@@ -123,7 +123,9 @@ async function main() {
   if (!process.env.AUTH_TOKEN) throw new Error('AUTH_TOKEN is required for autonomous planner');
   if (!owner || !repo || !token) throw new Error('GitHub repository/token environment is required');
   if (!process.env.AUTH_TOKEN) throw new Error('AUTH_TOKEN is required for autonomous planner');
-  const foundationSha = process.env.FOUNDATION_SHA;
+  const foundationSha = process.env.FOUNDATION_SHA || (await new Promise((resolve, reject) => {
+    import('node:child_process').then(({ execFile }) => execFile('git', ['rev-parse', 'HEAD'], {encoding:'utf8'}, (error, stdout) => error ? reject(error) : resolve(stdout.trim()))).catch(reject);
+  }));
   if (!foundationSha) throw new Error('FOUNDATION_SHA is required');
   const allIssues = await listIssues('open', 50);
   const activeMissions = allIssues.filter((i) => !i.pull_request && String(i.title || '').startsWith('[autonomous-mission]'));
@@ -139,6 +141,10 @@ async function main() {
   }
 
   const childResults = [];
+  if (state.state === 'blocked' && state.retriable !== true) {
+    console.log(JSON.stringify({mission_id:state.mission_id,state:'blocked',reason:state.terminal_reason || 'human_or_policy_gate'}));
+    return;
+  }
   for (const id of state.child_runs || []) {
     try { childResults.push(await readRun(id)); }
     catch (error) { childResults.push({database_id:id,status:'unknown',conclusion:'unavailable',error:String(error)}); }
@@ -220,7 +226,7 @@ async function main() {
   const startedMs = Date.now();
   await dispatchWorkflow(action.workflow);
   const child = await findRecentWorkflowRun(action.workflow, foundationSha, startedMs);
-  state = {...state,state:'executing',workflow_attempts:attempts,child_runs:child ? [child.id] : [],retriable:true,terminal_reason:null};
+  state = {...state,state:'executing',workflow_attempts:attempts,child_runs:[...new Set([...(state.child_runs || []), child?.id].filter(Boolean))],retriable:true,terminal_reason:null};
   const note = child ? `Dispatched ${action.workflow} as child run ${child.id}.` : `Dispatched ${action.workflow}; child run identity will be reconciled on the next wake-up.`;
   await updateIssue(missionIssue.number,{body:missionBody(state,`${plan.summary}\n\n${note}`)});
   console.log(JSON.stringify({mission_id:state.mission_id,state:'executing',workflow:action.workflow,child_run:child?.id || null}));
