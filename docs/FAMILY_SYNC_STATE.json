@@ -36,12 +36,11 @@
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
     "observed_at": "2026-10-01",
-    "open_issue_count": 5,
+    "open_issue_count": 4,
     "foundation": [
       58,
       1247,
-      1249,
-      1672
+      1249
     ],
     "operations_count": 1,
     "operations_issue_numbers_omitted": false,
@@ -49,7 +48,7 @@
     "operations": [
       603
     ],
-    "total_open_issue_count": 7
+    "total_open_issue_count": 5
   },
   "evidence": {
     "nightly_research": "latest live run failed at the public/private ChatRequest boundary; PR #1573 repairs the boundary and a fresh post-release 24-program live run is required",
@@ -162,11 +161,11 @@
     "authority": "scheduling_only"
   },
   "post_merge_sync": {
-    "checked_at": "2026-10-01T10:20:00Z",
+    "checked_at": "2026-10-01T10:42:39Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "ebccf399f59400394bc60b1b7f84b711f7bb8cd7",
-      "operations": "1a4bcb51615585ce9ee7f5d9d2774f7169e872bf"
+      "foundation": "bd0f6029d93faf33af6669901d8b2fd6c586518c",
+      "operations": "8b5c7cf1e298a9a84865c2a9c19046955103e33a"
     },
     "operations_last_sync_commits": [
       "d9bd39b6035b289db720f43934e5ec4cbd55ee54",
@@ -185,25 +184,24 @@
       "foundation": [
         58,
         1247,
-        1249,
-        1672
+        1249
       ],
       "operations": [
         603
       ],
-      "total": 5
+      "total": 4
     },
     "production_operations_pin": "da86e92d4e0fdb68912efb54ef95c69281a7d613"
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "ebccf399f59400394bc60b1b7f84b711f7bb8cd7",
-    "operations": "1a4bcb51615585ce9ee7f5d9d2774f7169e872bf"
+    "foundation": "bd0f6029d93faf33af6669901d8b2fd6c586518c",
+    "operations": "8b5c7cf1e298a9a84865c2a9c19046955103e33a"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "ebccf399f59400394bc60b1b7f84b711f7bb8cd7",
-    "operations": "1a4bcb51615585ce9ee7f5d9d2774f7169e872bf"
+    "foundation": "bd0f6029d93faf33af6669901d8b2fd6c586518c",
+    "operations": "8b5c7cf1e298a9a84865c2a9c19046955103e33a"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",
