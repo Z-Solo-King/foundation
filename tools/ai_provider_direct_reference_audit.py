@@ -23,7 +23,6 @@ PROVIDER_MARKERS = (
 
 ALLOWED_RELATIVE_PATHS = {
     "tools/woocommerce_v175_plugin_fingerprint_22.py",
-    "tools/woocommerce_v175_transport.py",
     "tools/ai_provider_direct_reference_audit.py",
 }
 
