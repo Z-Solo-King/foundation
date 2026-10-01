@@ -1,0 +1,2 @@
+import test from "node:test";import assert from "node:assert/strict";import fs from "node:fs";
+test("browser v18 contract",()=>{const s=fs.readFileSync("tools/woocommerce_browser_feed_v18.mjs","utf8");assert.equal((s.match(/https:\/\/[^"]+/g)||[]).length>=30,true);assert.match(s,/state_changing_methods_blocked:true/);assert.match(s,/validated_google_merchant_xml/);assert.match(s,/length:4/);});
