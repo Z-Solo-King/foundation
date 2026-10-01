@@ -1,0 +1,274 @@
+name: WooCommerce Native XML Recovery V18
+
+on:
+  workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: "Immutable Operations commit; blank resolves current main"
+        required: false
+        default: ""
+        type: string
+  schedule:
+    - cron: "45 4 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foundation-woocommerce-native-xml-v18
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    name: Governed 30-site native XML recovery
+    runs-on: ubuntu-latest
+    environment: production-secret-sync
+    timeout-minutes: 40
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Resolve immutable Operations revision
+        id: resolve-operations
+        env:
+          GH_TOKEN: ${{ steps.operations-app.outputs.token }}
+          REQUESTED_REF: ${{ inputs.operations_ref }}
+        run: |
+          set -euo pipefail
+          ref="${REQUESTED_REF:-}"
+          if [[ -z "$ref" ]]; then
+            ref="$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
+          fi
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "operations_ref must be an immutable 40-hex commit"; exit 1; }
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout Operations source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ steps.resolve-operations.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Install runtime
+        run: |
+          set -euo pipefail
+          npm install --no-save --ignore-scripts playwright@1.55.0
+          npx playwright install chromium
+
+      - name: Validate recovery contracts
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node --check private/feed_recovery/ai_task_fabric.mjs
+          node --check private/feed_recovery/custom_api_google_feed_browser_probe_1249.mjs
+          node --check private/feed_recovery/custom_api_google_feed_recovery_1249.mjs
+          node --check private/feed_recovery/woocommerce_google_feed_rescue_fast.mjs
+          node --test tests/test_woocommerce_native_xml_recovery_30_v18.mjs
+          test -f data/feed_lab/woocommerce_30_registry_v18.json
+
+      - name: Build governed AI candidate set
+        working-directory: operations
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p out/rescue-fast out/v18
+          node <<'NODE'
+          import fs from "node:fs/promises";
+          const reg = JSON.parse(await fs.readFile("data/feed_lab/woocommerce_30_registry_v18.json", "utf8"));
+          const {runAiTask} = await import("./private/feed_recovery/ai_task_fabric.mjs");
+          const prompt = [
+            "Generate additional public Google Merchant XML/feed path hypotheses for these retailers.",
+            "Candidates only: do not claim current existence, browsing, or verification.",
+            "Prefer plugin-specific routes, generated-feed directories, custom filenames, query endpoints, sitemap-disclosed feed URLs, and stable public URL patterns.",
+            "Return one line per retailer: NAME: candidate candidate candidate.",
+            "",
+            ...reg.sites.map(s => s.name + ": " + s.roots[0])
+          ].join("\n");
+          const runs = [];
+          for (const family of ["extraction_assist", "scan_triage", "audit_assist"]) {
+            try { runs.push(await runAiTask({family, prompt})); }
+            catch (error) { runs.push({provider:null, available:false, status:null, text:"", outcomes:[], error:String(error)}); }
+          }
+          const rows = reg.sites.map(s => ({name:s.name, base:s.roots[0], paths:new Set(), ai_evidence:[]}));
+          for (const result of runs) {
+            for (const row of rows) {
+              const low = row.name.toLowerCase();
+              const host = new URL(row.base).hostname.toLowerCase();
+              for (const line of String(result.text || "").split(/\r?\n/)) {
+                const ll = line.toLowerCase();
+                if (!ll.includes(low) && !ll.includes(host)) continue;
+                for (const token0 of line.split(/\s+/)) {
+                  let token = token0.replace(/[\[\](){},;"']/g, "");
+                  if (!token.startsWith("/") && !token.startsWith("http://") && !token.startsWith("https://")) continue;
+                  try {
+                    const u = new URL(token, row.base);
+                    if (u.origin === new URL(row.base).origin &&
+                        /(xml|feed|merchant|google|shopping|product|woo|wppfm|webtoffee|adtribes)/i.test(u.pathname + u.search)) {
+                      row.paths.add(u.pathname + (u.search || ""));
+                    }
+                  } catch {}
+                }
+              }
+              row.ai_evidence.push({
+                provider: result.provider || null,
+                model: result.model || null,
+                available: !!result.available,
+                status: result.status || null
+              });
+            }
+          }
+          const out = {
+            schema_version: "woocommerce-feed-ai-candidates-v18/v3",
+            generated_at: new Date().toISOString(),
+            policy: "candidate-only; deterministic validation remains authoritative",
+            providers: runs.map(r => ({
+              provider:r.provider || null,
+              model:r.model || null,
+              available:!!r.available,
+              status:r.status || null,
+              outcomes:r.outcomes || []
+            })),
+            retailers: rows.map(r => ({
+              name:r.name,
+              base:r.base,
+              paths:[...r.paths].slice(0,160),
+              ai_evidence:r.ai_evidence
+            }))
+          };
+          await fs.writeFile("out/rescue-fast/ai_candidates.json", JSON.stringify(out,null,2) + "\n");
+          await fs.writeFile("out/v18/ai-summary.json", JSON.stringify(out,null,2) + "\n");
+          console.log(JSON.stringify({
+            configured_or_available_providers: out.providers.filter(x => x.available).map(x => x.provider),
+            retailer_count: out.retailers.length
+          }));
+          NODE
+
+      - name: Parallel public recovery and browser observation
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node private/feed_recovery/custom_api_google_feed_browser_probe_1249.mjs             data/feed_lab/woocommerce_30_registry_v18.json out/v18/browser.json & p1=$!
+          node private/feed_recovery/custom_api_google_feed_recovery_1249.mjs             data/feed_lab/woocommerce_30_registry_v18.json out/v18/custom-recovery.json & p2=$!
+          wait "$p1"
+          wait "$p2"
+
+      - name: Merge secondary observations into candidate pool
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          import fs from "node:fs/promises";
+          const browser = JSON.parse(await fs.readFile("out/v18/browser.json","utf8"));
+          const ai = JSON.parse(await fs.readFile("out/rescue-fast/ai_candidates.json","utf8"));
+          const by = new Map(ai.retailers.map(x => [x.name, x]));
+          for (const site of browser.results || []) {
+            const row = by.get(site.name);
+            if (!row) continue;
+            for (const root of site.roots_results || []) {
+              for (const u of [...(root.candidate_urls || []), ...(root.script_hints || [])]) {
+                try {
+                  const x = new URL(u, row.base);
+                  if (x.origin === new URL(row.base).origin &&
+                      /(xml|feed|merchant|google|shopping|product|woo)/i.test(x.pathname+x.search)) {
+                    row.paths.push(x.pathname + (x.search || ""));
+                  }
+                } catch {}
+              }
+            }
+            row.paths = [...new Set(row.paths)].slice(0,200);
+          }
+          ai.schema_version = "woocommerce-feed-ai-candidates-v18/v4";
+          ai.browser_observation = true;
+          await fs.writeFile("out/rescue-fast/ai_candidates.json", JSON.stringify(ai,null,2) + "\n");
+          NODE
+
+      - name: Run canonical rescue engine
+        working-directory: operations
+        env:
+          WC_FEED_PROBE_CONCURRENCY: "4"
+          WC_FEED_MIN_INTERVAL_MS: "200"
+          WC_FEED_RATE_RETRIES: "2"
+        run: |
+          set -euo pipefail
+          node private/feed_recovery/woocommerce_google_feed_rescue_fast.mjs
+
+      - name: Build final audited result
+        working-directory: operations
+        env:
+          OPERATIONS_REF: ${{ steps.resolve-operations.outputs.ref }}
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          import fs from "node:fs/promises";
+          const read = async p => { try { return JSON.parse(await fs.readFile(p,"utf8")); } catch { return null; } };
+          const browser = await read("out/v18/browser.json");
+          const custom = await read("out/v18/custom-recovery.json");
+          const rescue = await read("out/rescue-fast/summary.json");
+          const ai = await read("out/rescue-fast/ai_candidates.json");
+          const winners = [];
+          for (const x of custom?.verified_google_xml || []) winners.push({...x, source:"custom_public_recovery"});
+          for (const x of browser?.verified_google_xml || []) winners.push({...x, source:"browser_network"});
+          for (const x of rescue?.sites || []) if (x.native_feed) winners.push({site:x.brand,url:x.native_feed,source:"rescue_fast"});
+          const verified = [...new Map(winners.map(x => [String(x.site||"")+"|"+String(x.url||x.final_url||""), x])).values()];
+          const result = {
+            schema_version:"foundation-woocommerce-native-xml-recovery-v18/v1",
+            generated_at:new Date().toISOString(),
+            operations_ref:process.env.OPERATIONS_REF,
+            target_count:30,
+            verified_native_feeds:verified,
+            counts:{
+              native_verified:verified.length,
+              browser_verified:(browser?.verified_google_xml || []).length,
+              custom_verified:(custom?.verified_google_xml || []).length,
+              rescue_verified:(rescue?.sites || []).filter(x => x.native_feed).length,
+              ai_providers_available:[...new Set((ai?.providers || []).filter(x => x.available && x.provider).map(x => x.provider))]
+            },
+            policy:{
+              public_read_only:true,
+              no_cookie_injection:true,
+              no_clearance_cookie_replay:true,
+              no_captcha_bypass:true,
+              no_state_changing_requests:true,
+              no_store_api_for_native_result:true,
+              no_reconstructed_xml_as_native:true,
+              ai_candidates_are_non_authoritative:true,
+              deterministic_native_validator_is_authoritative:true
+            }
+          };
+          await fs.writeFile("out/v18/final-report.json", JSON.stringify(result,null,2) + "\n");
+          console.log(JSON.stringify(result.counts,null,2));
+          NODE
+
+      - name: Upload recovery evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: foundation-woocommerce-native-xml-v18
+          path: |
+            operations/out/v18/
+            operations/out/rescue-fast/
+          if-no-files-found: warn
+          retention-days: 30
