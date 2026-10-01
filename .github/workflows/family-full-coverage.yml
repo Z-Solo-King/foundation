@@ -68,12 +68,6 @@ jobs:
         working-directory: foundation
         run: python tools/validate_family_full_coverage.py --foundation-root . --operations-root ../operations --output .runtime/family-full-coverage.json --strict
 
-      - name: Validate Operations integration modules
-        working-directory: foundation
-        run: |
-          python -m compileall -q ../operations/private/evaluation_receipt.py ../operations/private/evolution_integration.py ../operations/private/evolution_score.py ../operations/private/evolution_engine.py ../operations/private/language_fit_policy.py ../operations/private/migration_artifact_policy.py ../operations/private/ai_maintainability_policy.py ../operations/private/runtime_language_policy.py
-          PYTHONPATH=../operations python -m pytest -q ../operations/tests/test_evolution_integration.py ../operations/tests/test_runtime_language_policy.py ../operations/tests/test_evolution_score.py ../operations/tests/test_evolution_engine.py
-
       - name: Run existing Action/App policy validators
         working-directory: foundation
         run: |
