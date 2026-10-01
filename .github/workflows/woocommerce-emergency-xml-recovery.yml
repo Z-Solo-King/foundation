@@ -70,7 +70,7 @@ jobs:
     timeout-minutes: 10
     env:
       PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
-      AI_CROSSFIRE_PROVIDERS: "gemini,openrouter_free,groq,cerebras,cloudflare_workers_ai,siliconflow,nvidia_nim,cohere_free,huggingface_free"
+      AI_CROSSFIRE_PROVIDERS: "cloudflare_workers_ai,siliconflow,gemini,openrouter_free,groq,cerebras,nvidia_nim,cohere_free,huggingface_free"
       AI_CROSSFIRE_MAX_PROVIDERS: "5"
       AI_CROSSFIRE_TIMEOUT_MS: "18000"
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
