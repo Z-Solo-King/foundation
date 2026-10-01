@@ -1,47 +1,28 @@
-"""Validated authority-policy scaffold; not currently wired into the execution pipeline.
+"""Public claim-authority contract/evaluator.
 
-Runtime evidence authority is owned by the active verification path. This module
-is retained as a tested planning primitive until the tracked integration work
-explicitly connects it to execution/publication. It must not be treated as a
-second live authority source.
+Concrete field-to-authority rules belong to private Operations policy.
 """
-
 from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import StrEnum
-
+from typing import Mapping
 from .lineage import SourceLineage, is_independent
 
-
 class FieldAuthority(StrEnum):
-    MANUFACTURER_DECLARATION = "manufacturer_declaration"
-    INDEPENDENT_MEASUREMENT = "independent_measurement"
-    RETAILER_CURRENT_STATE = "retailer_current_state"
-    MANUFACTURER_POLICY = "manufacturer_policy"
-    COMMUNITY_EXPERIENCE = "community_experience"
-
+    MANUFACTURER_DECLARATION="manufacturer_declaration"
+    INDEPENDENT_MEASUREMENT="independent_measurement"
+    RETAILER_CURRENT_STATE="retailer_current_state"
+    MANUFACTURER_POLICY="manufacturer_policy"
+    COMMUNITY_EXPERIENCE="community_experience"
 
 class ClaimField(StrEnum):
-    SPECIFICATION = "specification"
-    MEASUREMENT = "measurement"
-    PRICE = "price"
-    STOCK = "stock"
-    WARRANTY = "warranty"
-    SERVICE = "service"
-    EXPERIENCE = "experience"
-
-
-_ALLOWED = {
-    ClaimField.SPECIFICATION: frozenset({FieldAuthority.MANUFACTURER_DECLARATION, FieldAuthority.INDEPENDENT_MEASUREMENT}),
-    ClaimField.MEASUREMENT: frozenset({FieldAuthority.INDEPENDENT_MEASUREMENT}),
-    ClaimField.PRICE: frozenset({FieldAuthority.RETAILER_CURRENT_STATE}),
-    ClaimField.STOCK: frozenset({FieldAuthority.RETAILER_CURRENT_STATE}),
-    ClaimField.WARRANTY: frozenset({FieldAuthority.MANUFACTURER_POLICY, FieldAuthority.RETAILER_CURRENT_STATE}),
-    ClaimField.SERVICE: frozenset({FieldAuthority.MANUFACTURER_POLICY, FieldAuthority.COMMUNITY_EXPERIENCE}),
-    ClaimField.EXPERIENCE: frozenset({FieldAuthority.COMMUNITY_EXPERIENCE}),
-}
-
+    SPECIFICATION="specification"
+    MEASUREMENT="measurement"
+    PRICE="price"
+    STOCK="stock"
+    WARRANTY="warranty"
+    SERVICE="service"
+    EXPERIENCE="experience"
 
 @dataclass(frozen=True)
 class AuthorityDecision:
@@ -50,16 +31,19 @@ class AuthorityDecision:
     authority: FieldAuthority
     reason: str
 
+def evaluate_authority(
+    field: ClaimField | str,
+    authority: FieldAuthority | str,
+    *,
+    allowed_authorities: Mapping[ClaimField | str, set[FieldAuthority | str] | frozenset[FieldAuthority | str]],
+) -> AuthorityDecision:
+    field_value=ClaimField(field)
+    authority_value=FieldAuthority(authority)
+    raw=allowed_authorities.get(field_value, allowed_authorities.get(field_value.value, ()))
+    allowed=authority_value in {FieldAuthority(v) for v in raw}
+    return AuthorityDecision(allowed,field_value,authority_value,"allowed field authority" if allowed else "authority is not permitted for this field")
 
-def evaluate_authority(field: ClaimField | str, authority: FieldAuthority | str) -> AuthorityDecision:
-    field_value = ClaimField(field)
-    authority_value = FieldAuthority(authority)
-    allowed = authority_value in _ALLOWED[field_value]
-    return AuthorityDecision(allowed, field_value, authority_value, "allowed field authority" if allowed else "authority is not permitted for this field")
+def independent_sources(first: SourceLineage, second: SourceLineage)->bool:
+    return is_independent(first,second)
 
-
-def independent_sources(first: SourceLineage, second: SourceLineage) -> bool:
-    return is_independent(first, second)
-
-
-__all__ = ["AuthorityDecision", "ClaimField", "FieldAuthority", "evaluate_authority", "independent_sources"]
+__all__=["AuthorityDecision","ClaimField","FieldAuthority","evaluate_authority","independent_sources"]

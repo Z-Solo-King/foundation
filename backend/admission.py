@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Mapping
 
 
 ADMISSION_CONTRACT_VERSION = "public-admission/v1"
@@ -24,16 +25,31 @@ class AdmissionOutcome(StrEnum):
 
 @dataclass(frozen=True)
 class AdmissionPolicy:
-    version: str = ADMISSION_CONTRACT_VERSION
-    window_seconds: int = 60
-    max_requests_per_subject: int = 30
-    max_requests_global: int = 300
-    # CrossFire uses up to 20 model agents; two small post-release validators may run
-    # concurrently, so the authenticated automation subject has a bounded 22-slot cap.
-    max_concurrent_per_subject: int = 22
-    max_concurrent_global: int = 22
-    retry_after_seconds: int = 5
-    protected_routes: tuple[AdmissionRoute, ...] = (AdmissionRoute.CHAT, AdmissionRoute.RESEARCH, AdmissionRoute.STREAM)
+    """Public contract for an admission policy supplied by the private authority."""
+    version: str
+    window_seconds: int
+    max_requests_per_subject: int
+    max_requests_global: int
+    max_concurrent_per_subject: int
+    max_concurrent_global: int
+    retry_after_seconds: int
+    protected_routes: tuple[AdmissionRoute, ...]
+
+    @classmethod
+    def from_mapping(cls, payload: Mapping[str, object]) -> "AdmissionPolicy":
+        try:
+            return cls(
+                version=str(payload["version"]),
+                window_seconds=int(payload["window_seconds"]),
+                max_requests_per_subject=int(payload["max_requests_per_subject"]),
+                max_requests_global=int(payload["max_requests_global"]),
+                max_concurrent_per_subject=int(payload["max_concurrent_per_subject"]),
+                max_concurrent_global=int(payload["max_concurrent_global"]),
+                retry_after_seconds=int(payload["retry_after_seconds"]),
+                protected_routes=tuple(AdmissionRoute(str(x)) for x in payload["protected_routes"]),
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("invalid private admission policy envelope") from exc
 
     def validate(self) -> None:
         if self.version != ADMISSION_CONTRACT_VERSION:
@@ -48,6 +64,8 @@ class AdmissionPolicy:
         )
         if any(value < 1 for value in values):
             raise ValueError("admission limits must be positive")
+        if not self.protected_routes:
+            raise ValueError("protected_routes must not be empty")
 
 
 @dataclass(frozen=True)

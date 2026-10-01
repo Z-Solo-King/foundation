@@ -296,112 +296,17 @@ async def direct_feed_probe(root: str, candidates: List[str], user_agent: str = 
 
 
 async def ai_advisory(evidence: Dict[str, Any]) -> Dict[str, Any]:
-    """Use the six configured external AI APIs as bounded advisory fallbacks.
-
-    The advisory output can classify evidence or suggest candidate feed hypotheses.
-    It never verifies a feed, bypasses access controls, or changes extraction authority.
-    """
-    provider_specs = [
-        ("openrouter_free", "https://openrouter.ai/api/v1/chat/completions", "openrouter/free", "OPENROUTER"),
-        ("groq", "https://api.groq.com/openai/v1/chat/completions", "openai/gpt-oss-120b", "GROQ"),
-        ("gemini", "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", "gemini-3.8-flash", "GEMINI"),
-        ("nvidia_nim", "https://integrate.api.nvidia.com/v1/chat/completions", "deepseek-ai/deepseek-v4.1-flash", "NVIDIA_NIM"),
-        ("cohere_free", "https://api.cohere.ai/compatibility/v1/chat/completions", "command-a-plus-05-2026", "COHERE"),
-        ("huggingface_free", "https://router.huggingface.co/v1/chat/completions", "openai/gpt-oss-120b", "HUGGINGFACE"),
-    ]
-
-    try:
-        raw_config = json.loads(os.getenv("PROVIDER_KEYS_JSON", "{}") or "{}")
-    except json.JSONDecodeError:
-        raw_config = {}
-    if not isinstance(raw_config, dict):
-        raw_config = {}
-
-    explicit_keys = {
-        "nvidia_nim": os.getenv("NVIDIA_NIM_API_KEY", "").strip(),
-        "cohere_free": os.getenv("COHERE_API_KEY", "").strip(),
-        "huggingface_free": os.getenv("HF_TOKEN", "").strip(),
-    }
-
-    prompt = {
-        "task": "Classify WooCommerce plugin evidence. Return JSON {family,confidence,why}. Advisory only; never invent verification.",
-        "evidence": {
-            "plugin_asset_slugs": evidence.get("plugin_asset_slugs", []),
-            "namespaces": evidence.get("namespaces", []),
-            "xhr_urls": evidence.get("xhr_urls", [])[:80],
-            "http_api_namespaces": evidence.get("http_api_namespaces", []),
-        },
-    }
-
-    outcomes: List[Dict[str, Any]] = []
-    async with httpx.AsyncClient(timeout=25) as client:
-        for provider, endpoint, default_model, config_name in provider_specs:
-            config = raw_config.get(provider) if isinstance(raw_config.get(provider), dict) else {}
-            key = explicit_keys.get(provider, str(config.get("api_key") or "").strip())
-            if not key:
-                outcomes.append({"provider": provider, "outcome": "unconfigured"})
-                continue
-
-            model = str(config.get("model") or default_model).strip() or default_model
-            if provider in {"nvidia_nim", "cohere_free", "huggingface_free"}:
-                model = default_model
-
-            started = time.monotonic()
-            try:
-                r = await client.post(
-                    endpoint,
-                    headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-                    json={
-                        "model": model,
-                        "temperature": 0,
-                        "max_tokens": 256,
-                        "response_format": {"type": "json_object"},
-                        "messages": [
-                            {"role": "system", "content": "Return only JSON. Advisory classification only; never claim feed existence or successful web access."},
-                            {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)},
-                        ],
-                    },
-                )
-                latency_ms = max(0, int((time.monotonic() - started) * 1000))
-                if r.status_code < 200 or r.status_code >= 300:
-                    failure = "rate_limited" if r.status_code == 429 else "request_failed"
-                    outcomes.append({"provider": provider, "outcome": failure, "status": r.status_code, "latency_ms": latency_ms})
-                    continue
-
-                body = r.json()
-                content = body.get("choices", [{}])[0].get("message", {}).get("content", "{}")
-                result = json.loads(content)
-                outcomes.append({"provider": provider, "outcome": "success", "status": r.status_code, "latency_ms": latency_ms})
-                return {
-                    "enabled": True,
-                    "provider": provider,
-                    "model": model,
-                    "status": r.status_code,
-                    "latency_ms": latency_ms,
-                    "result": result,
-                    "outcomes": outcomes,
-                }
-            except Exception as exc:
-                outcomes.append({
-                    "provider": provider,
-                    "outcome": "temporary",
-                    "latency_ms": max(0, int((time.monotonic() - started) * 1000)),
-                    "error": type(exc).__name__,
-                })
-
+    """Public-safe hook; provider advisory execution is private Operations only."""
     return {
-        "enabled": bool(outcomes),
+        "enabled": False,
         "provider": None,
         "model": None,
         "status": None,
         "latency_ms": None,
         "result": {},
-        "outcomes": outcomes,
-        "reason": "all_active_ai_providers_unavailable",
+        "outcomes": [],
+        "reason": "provider_advisory_private_operations_only",
     }
-
-
-
 
 # Backward-compatible name for existing callers/tests.
 groq_advisory = ai_advisory

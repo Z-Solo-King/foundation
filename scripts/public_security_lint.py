@@ -25,6 +25,17 @@ FORBIDDEN_PRIVATE_MARKERS = (
     "extractor_mapper",
 )
 NETWORK_MODULES = {"requests", "httpx", "urllib", "aiohttp"}
+PROTECTED_POLICY_MARKERS = (
+    "CATEGORY_REQUIRED_SOURCE_FAMILIES", "PROTECTED_POLICY_RULES", "_ALLOWED =",
+    "max_requests_per_subject: int = 30", "max_concurrent_global: int = 22",
+)
+PROVIDER_EXECUTION_MARKERS = (
+    "api.groq.com", "generativelanguage.googleapis.com", "openrouter.ai/api/v1",
+    "integrate.api.nvidia.com", "api.cohere.ai", "router.huggingface.co",
+    "openai/gpt-oss-120b", "gemini-3.8-flash", "deepseek-ai/deepseek-v4.1-flash",
+    "command-a-plus-05-2026", "openrouter/free",
+)
+
 PRIVATE_IMPORT_PATTERN = re.compile(r"(?<![A-Za-z0-9_.-])(?:from|import)\s+private\.[A-Za-z0-9_.]+")
 PRIVATE_PATH_PATTERN = re.compile(r"(?<![A-Za-z0-9_.-])operations/private/[A-Za-z0-9_./-]+")
 PRIVATE_REVISION_PATTERN = re.compile(r"Z-Solo-King/operations@[0-9a-f]{40}")
@@ -148,6 +159,20 @@ def private_revision_findings(path: Path, source: str, root: Path = ROOT) -> lis
         ]
     return []
 
+def protected_policy_findings(path: Path, source: str, root: Path = ROOT) -> list[Finding]:
+    relative = rel(path, root)
+    if relative in {"scripts/public_security_lint.py", "tests/test_public_security_lint.py"}:
+        return []
+    findings=[]
+    for marker in PROTECTED_POLICY_MARKERS:
+        if marker in source:
+            findings.append(Finding(relative, "protected-policy-public", f"protected policy marker {marker} appears in public source"))
+    if not _is_workflow(relative):
+        for marker in PROVIDER_EXECUTION_MARKERS:
+            if marker in source:
+                findings.append(Finding(relative, "provider-execution-public", f"provider endpoint/model marker {marker} appears in public source"))
+    return findings
+
 
 def python_findings(path: Path, source: str) -> list[Finding]:
     relative = rel(path)
@@ -182,6 +207,7 @@ def lint_file(path: Path, root: Path = ROOT) -> list[Finding]:
     findings.extend(private_reference_findings(path, source, root))
     findings.extend(workflow_private_execution_findings(path, source, root))
     findings.extend(private_revision_findings(path, source, root))
+    findings.extend(protected_policy_findings(path, source, root))
     if path.suffix.lower() == ".py":
         findings.extend(python_findings(path, source))
     return findings
