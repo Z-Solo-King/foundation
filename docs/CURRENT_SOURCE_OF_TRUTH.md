@@ -2,12 +2,12 @@
 
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
-Checked: 2026-10-01.
-Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `139cbea93cb876889b234f28fc2bdc8b3b669fdd`.
+Checked: 2026-10-01 (live heads refreshed after the observability/AI-map merge set).
+Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `e44a701398ca380d318e5c96620c29b27052349b`.
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: current main is read live from GitHub; last verified commit `139cbea93cb876889b234f28fc2bdc8b3b669fdd`.
-Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `2133534f9512eee4df49d78f6c39530502944b74`. Research and migration jobs use explicit immutable pins below.
+Foundation main code checkpoint: current main is read live from GitHub; last verified commit `e44a701398ca380d318e5c96620c29b27052349b`.
+Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `12e93865870343230c5c99edd140fbcfa7c77356`. Research and migration jobs use explicit immutable pins below.
 Production Operations pin: `da86e92d4e0fdb68912efb54ef95c69281a7d613`.
 Provider fleet runtime probe pin: `b95e419254a9071beaeef57a1b0da22ba7dd2c4f`.
 Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`.
@@ -157,4 +157,8 @@ Foundation main `68aff623472af4df03688ddb24f33259d1fe5532` and Operations main `
 Foundation main `2239ae23706e5ab14c61869022eca93618b74cb9` contains the repaired Operations private integrity guard. The workflow now constructs its validator input with `jq -n`, preventing empty-stdin JSON generation and preserving the fail-closed comparison against the immutable approved Operations production revision. The repair changes no authority, credential, policy, or deployment boundary.
 
 ## 2026-10-01 final live reconciliation
-Foundation main is `139cbea93cb876889b234f28fc2bdc8b3b669fdd`; Operations main is `2133534f9512eee4df49d78f6c39530502944b74`. No Foundation or Operations pull requests remain open. Superseded autonomous missions and stale feed recovery PRs were retired; runtime/evidence issues remain open until their stated gates are actually satisfied. The current live WooCommerce V18 and emergency 30-way recovery runs are evidence work and are not treated as completed merely because their workflows started.
+Foundation main is `e44a701398ca380d318e5c96620c29b27052349b`; Operations main is `12e93865870343230c5c99edd140fbcfa7c77356`. No Foundation or Operations pull requests remain open. Superseded autonomous missions and stale feed recovery PRs were retired; runtime/evidence issues remain open until their stated gates are actually satisfied. The current live WooCommerce V18 and emergency 30-way recovery runs are evidence work and are not treated as completed merely because their workflows started.
+
+## Unified AI navigation and observability
+
+The canonical navigation entrypoint is `docs/AI_SYSTEM_DIRECTORY.md`, backed by `docs/AI_SYSTEM_MAP.json`. Detailed Foundation/Operations AI project maps remain detailed architecture views and are linked into the unified overlay. The navigation layer is non-authoritative; existing policy, resource, evidence, provider, deployment, promotion and rollback authorities remain canonical.
