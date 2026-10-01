@@ -22,10 +22,10 @@ This is a non-feed migration/audit lane.
 ### GitHub main heads
 
 Foundation main:
-`55f06767f6ae948067b7f5bd72f4f28da8f5558b`
+`22f81074ac41b19a671d692d48f8d111d78a3786`
 
 Operations main:
-`1a4bcb51615585ce9ee7f5d9d2774f7169e872bf`
+`3c780e33772c87ec6c3b6df75a857e5404f0b861`
 
 Important state change from the previous handoff:
 - The previously certified Operations production pin `ca3864a954569f6f8ce9a94793c53a0ef9ff03ec` has now been explicitly advanced.
@@ -494,3 +494,8 @@ Target architecture:
 - shadow/canary/rollback safety
 - fast recovery from runtime failures
 
+
+
+## AI navigation
+
+Use `docs/AI_SYSTEM_DIRECTORY.md` and `docs/AI_SYSTEM_MAP.json` before broad retrieval. They route intent to overlapping categories, owner, canonical path, contract, tests, workflow, evidence and runtime while keeping navigation non-authoritative.
