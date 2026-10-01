@@ -1,0 +1,96 @@
+{
+  "schema": "internal-access-capability-policy/v1",
+  "checked_at": "2026-10-01",
+  "chatgpt_is_runtime_dependency": false,
+  "capabilities": {
+    "foundation": {
+      "access": "github_actions_checkout_exact_ref",
+      "ai_requestable": true,
+      "raw_secrets": false
+    },
+    "github_actions": {
+      "access": "job_scoped_github_token",
+      "permissions": [
+        "actions:write",
+        "contents:read",
+        "issues:write"
+      ],
+      "ai_requestable": true,
+      "raw_secrets": false
+    },
+    "operations_source": {
+      "access": "repository_scoped_short_lived_github_app_token",
+      "permission": "contents:read",
+      "ai_requestable": true,
+      "raw_secrets": false
+    },
+    "chatbot": {
+      "access": "foundation_public_api_to_operations_service_binding",
+      "ai_requestable": true,
+      "raw_provider_secrets": false
+    },
+    "cloudflare": {
+      "access": "dedicated_deployment_or_reconciliation_workflow_and_worker_service_bindings",
+      "ai_requestable": true,
+      "raw_secrets": false
+    },
+    "backblaze": {
+      "access": "protected_backup_runtime_or_workflow",
+      "ai_requestable": true,
+      "raw_secrets": false
+    },
+    "operations_db": {
+      "access": "operations_worker_binding",
+      "binding": "OPERATIONS_DB",
+      "ai_requestable": false,
+      "raw_secrets": false
+    },
+    "provider_fleet": {
+      "access": "operations_AI_binding_and_governed_provider_runtime",
+      "ai_requestable": true,
+      "raw_provider_secrets": false
+    },
+    "production_release": {
+      "access": "existing_canonical_release_gate",
+      "ai_requestable": false,
+      "autonomous_dispatch": false
+    }
+  },
+  "cloudflare_topology": {
+    "heroic": {
+      "CORE": "heroic-core"
+    },
+    "operations_edge": {
+      "CORE": "operations"
+    },
+    "heroic_core": {
+      "OPERATIONS": "operations-edge",
+      "DB": "D1",
+      "B2": [
+        "B2_KEY_ID",
+        "B2_APPLICATION_KEY",
+        "B2_BUCKET",
+        "B2_ENDPOINT"
+      ]
+    },
+    "operations": {
+      "AI": "AI",
+      "FOUNDATION": "heroic",
+      "OPERATIONS_DB": "D1",
+      "auth": [
+        "AUTH_TOKEN",
+        "CHAT_BACKEND_TOKEN"
+      ]
+    }
+  },
+  "free_plan_private_operations_control": {
+    "native_branch_protection_available": false,
+    "compensating_controls": [
+      "immutable approved Operations SHA",
+      "reviewed Foundation promotion manifest",
+      "scheduled private-repository integrity guard",
+      "production consumers require approved immutable pin",
+      "no automatic force-reset of Operations main"
+    ]
+  }
+}
