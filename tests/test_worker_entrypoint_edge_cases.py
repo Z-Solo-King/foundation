@@ -1,6 +1,8 @@
 import asyncio
 from types import SimpleNamespace
 
+from policy_test_support import policy_binding
+
 
 def test_worker_http_entrypoint_all_paths():
     import worker
@@ -157,7 +159,7 @@ def test_worker_research_uses_scoped_persistence_adapter(monkeypatch):
             return AdmissionStatement()
 
     entry = worker.Default()
-    entry.env = __import__("types").SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret", DB=AdmissionDB())
+    entry.env = __import__("types").SimpleNamespace(ENVIRONMENT="production", AUTH_TOKEN="secret", DB=AdmissionDB(), OPERATIONS=policy_binding())
     response = asyncio.run(entry.fetch(Request()))
     assert response.status == 200
     assert persistence.created[0] == "r-scope"
@@ -218,6 +220,6 @@ def test_public_read_cursor_signing_uses_auth_secret_not_subject_fingerprint():
     req = Req()
     req.url = "https://x/api/v1/research/run-1?limit=1&cursor=" + cursor
     instance = worker.Default()
-    instance.env = SimpleNamespace(DB=DB(), ARTIFACTS=Art(), ENVIRONMENT="production", AUTH_TOKEN="token", CONTROL_PLANE=None)
+    instance.env = SimpleNamespace(DB=DB(), ARTIFACTS=Art(), ENVIRONMENT="production", AUTH_TOKEN="token", CONTROL_PLANE=None, OPERATIONS=policy_binding())
     response = asyncio.run(instance.fetch(req))
     assert response.status == 400

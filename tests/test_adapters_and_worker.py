@@ -202,7 +202,7 @@ async def test_worker_http_all_branches(monkeypatch):
 
     class FakeAssets:
         async def fetch(self, request): return FakeAssetResponse()
-    env = SimpleNamespace(DB=FakeDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets(), OPERATIONS=policy_binding())
+    env = SimpleNamespace(DB=FakeDB(), ARTIFACTS=FakeArtifacts(), ENVIRONMENT="production", AUTH_TOKEN="secret", ASSETS=FakeAssets(), OPERATIONS=policy_binding(), OPERATIONS=policy_binding())
     entry = worker.Default(); entry.env = env
     asset_response = await entry.fetch(Request("GET", "https://x/"))
     assert asset_response.status == 200
