@@ -1,0 +1,289 @@
+name: WooCommerce Emergency 30-Way XML Recovery
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/woocommerce-emergency-xml-recovery.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foundation-wc-emergency-xml-v1
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Build 30-site emergency matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      sites: ${{ steps.matrix.outputs.sites }}
+      operations_ref: ${{ steps.matrix.outputs.operations_ref }}
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Read current Operations registry
+        id: matrix
+        env:
+          GH_TOKEN: ${{ steps.operations-app.outputs.token }}
+        run: |
+          set -euo pipefail
+          ref="$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]]
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.raw+json"             "https://api.github.com/repos/Z-Solo-King/operations/contents/data/feed_lab/woocommerce_30_registry_v18.json?ref=$ref"             -o /tmp/registry.json
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const x = JSON.parse(fs.readFileSync("/tmp/registry.json","utf8"));
+          if (x.schema_version !== "woocommerce-native-xml-recovery-v18-registry/v1" || !Array.isArray(x.sites) || x.sites.length !== 30) {
+            throw new Error("expected exact V18 30-site registry");
+          }
+          const sites = x.sites.map((s,i)=>({index:i,name:String(s.name),root:String(s.roots?.[0]||"")}));
+          if (sites.some(s=>!s.name || !/^https:/.test(s.root))) throw new Error("invalid site registry entry");
+          process.stdout.write(JSON.stringify(sites));
+          NODE
+          echo "operations_ref=$ref" >> "$GITHUB_OUTPUT"
+          echo -n "sites=" >> "$GITHUB_OUTPUT"
+          node -e 'process.stdout.write(JSON.stringify(JSON.parse(require("fs").readFileSync("/tmp/registry.json","utf8")).sites.map((s,i)=>({index:i,name:String(s.name),root:String(s.roots?.[0]||"")}))))' >> "$GITHUB_OUTPUT"
+
+  ai_crossfire:
+    name: 4-provider AI feed crossfire
+    needs: prepare
+    runs-on: ubuntu-latest
+    environment: production-secret-sync
+    timeout-minutes: 10
+    env:
+      AI_CROSSFIRE_PROVIDERS: "gemini,groq,cerebras,openrouter_free"
+      AI_CROSSFIRE_MAX_PROVIDERS: "4"
+      AI_CROSSFIRE_TIMEOUT_MS: "18000"
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+      SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.prepare.outputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Run AI crossfire
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          mkdir -p out/emergency
+          node private/feed_recovery/ai_crossfire.mjs data/feed_lab/woocommerce_30_registry_v18.json out/emergency/ai-crossfire.json
+      - name: Upload crossfire evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wc-emergency-ai-crossfire
+          path: operations/out/emergency/ai-crossfire.json
+          if-no-files-found: error
+          retention-days: 14
+
+  recover:
+    name: Recover ${{ matrix.site.name }}
+    needs: [prepare, ai_crossfire]
+    runs-on: ubuntu-latest
+    environment: production-secret-sync
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      max-parallel: 30
+      matrix:
+        site: ${{ fromJSON(needs.prepare.outputs.sites) }}
+    env:
+      SITE_NAME: ${{ matrix.site.name }}
+      SITE_ROOT: ${{ matrix.site.root }}
+      SITE_INDEX: ${{ matrix.site.index }}
+      WC_FEED_PROBE_CONCURRENCY: "8"
+      WC_FEED_MIN_INTERVAL_MS: "200"
+      WC_FEED_RATE_RETRIES: "2"
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.prepare.outputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Download AI crossfire
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c809b
+        with:
+          name: wc-emergency-ai-crossfire
+          path: operations/out/rescue-fast
+      - name: Build one-site registry
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from "node:fs/promises";
+          const x = {
+            schema_version:"woocommerce-native-xml-recovery-v18-registry/v1",
+            generated_on:new Date().toISOString().slice(0,10),
+            corpus:"emergency one-site slice from V18 30-site registry",
+            sites:[{name:process.env.SITE_NAME,roots:[process.env.SITE_ROOT]}]
+          };
+          await fs.writeFile("out/emergency-site-registry.json",JSON.stringify(x,null,2)+"\n");
+          NODE
+      - name: Validate recovery source
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node --check private/feed_recovery/woocommerce_google_feed_rescue_fast.mjs
+          node --check private/feed_recovery/ai_crossfire.mjs
+      - name: Run emergency XML recovery
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node private/feed_recovery/woocommerce_google_feed_rescue_fast.mjs out/emergency-site-registry.json
+      - name: Collect XML-only evidence
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          mkdir -p "out/emergency-site"
+          cp out/rescue-fast/summary.json "out/emergency-site/summary.json"
+          cp out/rescue-fast/audit.json "out/emergency-site/audit.json"
+          find out/rescue-fast/feeds -maxdepth 1 -type f -name '*.xml' -exec cp {} out/emergency-site/ \; || true
+          test -f out/emergency-site/summary.json
+      - name: Upload site XML evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wc-emergency-xml-${{ matrix.site.index }}
+          path: operations/out/emergency-site/
+          if-no-files-found: warn
+          retention-days: 30
+
+  aggregate:
+    name: Aggregate emergency XML manifest
+    needs: recover
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download all site evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c809b
+        with:
+          pattern: wc-emergency-xml-*
+          path: out/sites
+          merge-multiple: false
+      - name: Build usable XML manifest
+        run: |
+          set -euo pipefail
+          mkdir -p out/final
+          node - <<'NODE'
+          const fs=require("node:fs");
+          const path=require("node:path");
+          const root="out/sites";
+          const entries=[];
+          for(const dir of fs.existsSync(root)?fs.readdirSync(root):[]){
+            const d=path.join(root,dir);
+            if(!fs.statSync(d).isDirectory()) continue;
+            const summaryPath=path.join(d,"summary.json");
+            let summary=null; try{summary=JSON.parse(fs.readFileSync(summaryPath,"utf8"));}catch{}
+            const xmls=fs.existsSync(d)?fs.readdirSync(d).filter(x=>x.toLowerCase().endsWith(".xml")):[];
+            const site=(summary?.sites||[])[0] || {};
+            for(const file of xmls){
+              const p=path.join(d,file);
+              entries.push({
+                site:site.brand||site.name||dir,
+                kind:file.includes("-native-")?"native":file.includes("-store-api-")?"store_api_reconstruction":"xml",
+                artifact:dir,
+                file:p,
+                bytes:fs.statSync(p).size
+              });
+            }
+          }
+          const bySite=new Map();
+          for(const x of entries){
+            if(!bySite.has(x.site)) bySite.set(x.site,[]);
+            bySite.get(x.site).push(x);
+          }
+          const rows=[...bySite.entries()].map(([site,files])=>({
+            site,
+            preferred:(files.find(x=>x.kind==="native")||files.find(x=>x.kind==="store_api_reconstruction")||files[0]||null),
+            alternatives:files
+          }));
+          const manifest={
+            schema_version:"foundation-woocommerce-emergency-usable-xml-v1",
+            generated_at:new Date().toISOString(),
+            target_count:30,
+            policy:"native Merchant XML is preferred; Store API reconstruction is explicitly labeled fallback",
+            sites:rows,
+            counts:{
+              sites_with_xml:rows.length,
+              native_xml:entries.filter(x=>x.kind==="native").length,
+              reconstructed_xml:entries.filter(x=>x.kind==="store_api_reconstruction").length,
+              total_xml_files:entries.length
+            }
+          };
+          fs.writeFileSync("out/final/usable-xml-manifest.json",JSON.stringify(manifest,null,2)+"\n");
+          fs.writeFileSync("out/final/xml-index.tsv",["site","kind","artifact","file","bytes"].concat(entries.map(x=>[x.site,x.kind,x.artifact,x.file,x.bytes].join("\t"))).join("\n")+"\n");
+          console.log(JSON.stringify(manifest.counts));
+          NODE
+      - name: Upload final XML bundle and manifest
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wc-emergency-final-xml
+          path: out/final/
+          if-no-files-found: error
+          retention-days: 30
