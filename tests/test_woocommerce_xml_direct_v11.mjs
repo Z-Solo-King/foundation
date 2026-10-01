@@ -13,7 +13,7 @@ test("xml-only discovery",()=>{
 });
 
 test("strict Merchant validation",()=>{
-  for(const x of ["const NS=","function validate(body)","id","title","link","price","validated_google_merchant_xml","same(r.final_url,root)"]) assert.ok(s.includes(x),x);
+  for(const x of ["function native(body)","http://base.google.com/ns/1.0","id","title","link","price","validated_google_merchant_xml","same(r.final_url,root)"]) assert.ok(s.includes(x),x);
 });
 
 test("no APIs/browser/bypass",()=>{
