@@ -3,11 +3,33 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from scripts.validate_github_app_policy import validate_policy
+from scripts.validate_github_app_policy import validate_first_party_app_workflows, validate_policy
 
 
 ROOT = Path(__file__).parents[1]
 POLICY = ROOT / "docs" / "GITHUB_APP_INTEGRATION_POLICY.json"
+
+
+def test_github_app_capability_catalog_is_present() -> None:
+    catalog = json.loads((ROOT / "docs" / "GITHUB_APP_CAPABILITY_CATALOG.json").read_text(encoding="utf-8"))
+    assert catalog["schema_version"] == "github-app-capability-catalog/v1"
+    assert catalog["source"]["supplied_marketplace_dataset_entries"] == 1408
+    assert catalog["principles"]["marketplace_is_discovery_only"] is True
+    assert catalog["principles"]["no_automatic_installation"] is True
+
+
+def test_first_party_operations_app_contract_is_bounded() -> None:
+    policy = validate_policy()
+    app = policy["integration_contract"]["known_first_party_apps"]["operations_repository_access"]
+    assert app["marketplace_app"] is False
+    assert app["repository_scope"] == ["Z-Solo-King/operations"]
+    assert app["minimum_permissions"] == {"contents": "read"}
+    assert app["maximum_permissions"] == {"contents": "read"}
+    assert app["token_max_ttl_seconds"] == 3600
+
+
+def test_all_create_app_token_workflows_use_the_bounded_operations_app() -> None:
+    validate_first_party_app_workflows()
 
 
 def test_github_app_policy_is_valid() -> None:

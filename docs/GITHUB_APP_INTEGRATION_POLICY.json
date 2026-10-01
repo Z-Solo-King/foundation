@@ -1,5 +1,5 @@
 {
-  "schema_version": "github-app-integration-policy/v1",
+  "schema_version": "github-app-integration-policy/v2",
   "updated_on": "2026-10-01",
   "marketplace_installation_default": "disabled",
   "installation_requires_explicit_approval": true,
@@ -64,5 +64,70 @@
     "free_trials_allowed": false,
     "payment_method_required": false,
     "external_billing_dependency_allowed": false
+  },
+  "integration_contract": {
+    "external_marketplace_installation": "disabled",
+    "external_apps_are_discovery_inputs_only": true,
+    "known_first_party_apps": {
+      "operations_repository_access": {
+        "type": "first_party_github_app",
+        "marketplace_app": false,
+        "purpose": "private Operations repository read access from Foundation-owned workflows",
+        "installation_account": "Z-Solo-King",
+        "repository_scope": [
+          "Z-Solo-King/operations"
+        ],
+        "minimum_permissions": {
+          "contents": "read"
+        },
+        "maximum_permissions": {
+          "contents": "read"
+        },
+        "token_max_ttl_seconds": 3600,
+        "token_scope_must_be_explicit": true,
+        "forbidden_authorities": [
+          "production_deploy",
+          "secret_mutation",
+          "repository_admin",
+          "workflow_write",
+          "branch_protection_write"
+        ],
+        "credential_names": [
+          "OPERATIONS_APP_ID",
+          "OPERATIONS_APP_PRIVATE_KEY"
+        ]
+      }
+    },
+    "forbidden_external_capabilities": [
+      "production_deploy",
+      "secret_mutation",
+      "repository_administration",
+      "workflow_write",
+      "branch_protection_write",
+      "permission_escalation",
+      "billing_or_payment",
+      "unbounded_repository_access"
+    ],
+    "future_integration_receipt_required_fields": [
+      "app_name",
+      "app_type",
+      "installation_account",
+      "installation_id_redacted_or_reference",
+      "repository_scope",
+      "requested_permissions",
+      "effective_permissions",
+      "webhook_events",
+      "token_expiry",
+      "policy_decision",
+      "evidence_digest",
+      "rollback_reference"
+    ],
+    "runtime_app_token_rules": {
+      "must_use_short_lived_installation_tokens": true,
+      "maximum_token_ttl_seconds": 3600,
+      "must_scope_repository_explicitly": true,
+      "must_request_minimum_permissions": true,
+      "must_not_use_user_authorization_for_automation": true
+    }
   }
 }

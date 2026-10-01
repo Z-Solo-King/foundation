@@ -98,3 +98,14 @@ Future GitHub App changes follow:
 `Marketplace extraction -> complete classification -> current-project gap analysis -> explicit installation decision -> minimum repository scope -> minimum permissions -> short-lived credential -> webhook minimization -> signature validation -> deterministic policy test -> live evidence -> rollback plan`
 
 Marketplace discovery is not itself an authorization or deployment boundary.
+
+
+## Indirect implementation update — 2026-10-01
+
+The Marketplace Apps analysis is now translated into `docs/GITHUB_APP_CAPABILITY_CATALOG.json`. It records capability families, representative discovery signals, native project coverage, and residual gaps without turning Marketplace entries into installation dependencies.
+
+The App policy now distinguishes Marketplace Apps from the first-party Operations repository access App. That first-party App is constrained to the Operations repository and `contents: read`, with a maximum one-hour installation-token lifetime, explicit repository scope, forbidden authorities, and a receipt contract for any future external integration.
+
+Static App-token workflow validation is now part of policy enforcement. Every `actions/create-github-app-token` use must use the project Operations App credentials, explicit Operations repository scope, `permission-contents: read`, and an immutable Action ref. Dynamic arbitrary-repository App scoping is outside the canonical boundary.
+
+GitHub's current documentation confirms that App installation grants requested permissions and lets installations select repositories; installation access tokens can be explicitly scoped and expire after one hour. Webhooks should use a secret, HTTPS, minimum event subscriptions, signature validation, event/action validation, and delivery identifiers.
