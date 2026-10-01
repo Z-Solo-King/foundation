@@ -1,0 +1,2 @@
+import test from "node:test";import assert from "node:assert/strict";import fs from "node:fs";
+test("directory recovery contract",()=>{const s=fs.readFileSync("tools/woocommerce_feed_directory_v21.mjs","utf8");assert.match(s,/random_filename_generation:false/);assert.match(s,/explicit_xml_filename_observation:true/);assert.match(s,/validated_google_merchant_xml/);assert.equal((s.match(/https:\/\/[^"]+/g)||[]).length,30);});

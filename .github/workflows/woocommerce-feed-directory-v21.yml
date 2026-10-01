@@ -1,0 +1,31 @@
+name: WooCommerce Feed Directory Recovery V21
+on:
+  push:
+    branches: [feat/woocommerce-adaptive-feed-recovery-v16-20261001]
+    paths: [tools/woocommerce_feed_directory_v21.mjs,tests/test_woocommerce_feed_directory_v21.mjs,.github/workflows/woocommerce-feed-directory-v21.yml]
+  pull_request:
+    branches: [main]
+    paths: [tools/woocommerce_feed_directory_v21.mjs,tests/test_woocommerce_feed_directory_v21.mjs,.github/workflows/woocommerce-feed-directory-v21.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with: {node-version: "22",package-manager-cache:false}
+      - run: node --test tests/test_woocommerce_feed_directory_v21.mjs
+      - run: node tools/woocommerce_feed_directory_v21.mjs
+      - run: jq -e '.schema=="woocommerce-feed-directory-recovery-v21/v1" and .target_count==30' out/woocommerce-feed-directory-v21/report.json >/dev/null
+      - run: jq -r '.results[] | select(.winner != null) | [.site,.status,.winner.final_url] | @tsv' out/woocommerce-feed-directory-v21/report.json || true
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woocommerce-feed-directory-v21
+          path: out/woocommerce-feed-directory-v21/
+          if-no-files-found: error
+          retention-days: 30
