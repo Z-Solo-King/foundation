@@ -17,6 +17,7 @@
     [".github/workflows/exhaustive-six-lane-audit.yml","private_audit"],
     [".github/workflows/extractor-surface-governance.yml","private_audit"],
     [".github/workflows/family-integrity-gate.yml","family_governance"],
+    [".github/workflows/autonomous-engineering-supervisor.yml","autonomous_engineering_supervisor"],
     [".github/workflows/heroic-ai-production-release.yml","production_deployment"],
     [".github/workflows/hybrid-language-pilots.yml","private_benchmark"],
     [".github/workflows/live-ai-agent-benchmark.yml","live_benchmark"],
@@ -43,17 +44,11 @@
       "OPERATIONS_APP_PRIVATE_KEY",
       "operations-app.outputs.token"
     ],
-    "forbidden_events": [
-      "pull_request",
-      "pull_request_target",
-      "merge_group"
-    ],
+    "forbidden_events": ["pull_request","pull_request_target","merge_group"],
     "privileged_push_branch": "main",
     "principle": "workflow authority is a machine-enforced boundary; documentation alone is insufficient",
     "trusted_workflow_run_sources": {
-      ".github/workflows/live-nightly-research-canary.yml": [
-        "nightly multi-agent research"
-      ]
+      ".github/workflows/live-nightly-research-canary.yml": ["nightly multi-agent research"]
     }
   }
 }
