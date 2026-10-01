@@ -1,71 +1,72 @@
 # Heroic AI — Third-Party Repository Coverage — 2026-10-01
 
-This is the durable project-level record for the 19 external repositories supplied for architecture research. Repository-wide review includes top-level structure, core implementation areas, docs/skills, tests/CI surfaces where present, and license/reuse risk.
+This is the durable project-level record for the 19 external repositories supplied for architecture research. Repository-wide review includes repository structure, core implementation areas, docs/skills, tests/CI surfaces where present, and license/reuse risk.
 
 Foundation remains the public-safe deterministic contract/deployment authority; Operations remains the private chatbot/provider/policy/resource/acquisition/extraction/research authority.
 
-| Repository | Coverage focus | Decision |
-|---|---|---|
-| hoothin/SearchJumper | search definitions/schema, React UI, extension | Adopt configuration-driven search pattern; no GPL code |
-| Panniantong/Agent-Reach | channels, ordered backends, doctor/skills/tests | Adopt backend health/fallback pattern |
-| whaleyxbt/patchright-enhanced | browser/session/config/source | Benchmark only; no bypass promotion; licensing unclear |
-| D4Vinci/Scrapling | adaptive parser/fetchers/spiders/tests/docs | **Implemented adaptive extraction slice in Operations** |
-| Comfy-Org/ComfyUI | graph execution, queues, resources, plugins | Adopt workflow/resource pattern only |
-| Wan-Video/Wan2.1 | inference/config/resource efficiency | Adopt resource-profile ideas only |
-| Tencent-Hunyuan/HunyuanVideo | efficient inference, multi-GPU, FP8 | Adopt measured compute-efficiency principles only |
-| black-forest-labs/flux | inference surface, model cards, licenses | Adopt code-vs-weight license inventory |
-| facebookresearch/audiocraft | modular model/runtime package, tests | Adopt task/model configuration boundaries |
-| ace-step/ACE-Step | infer/API/train separation | Adopt capability boundary pattern |
-| resemble-ai/chatterbox | compact variants, examples, packaging | Adopt model/capability profile pattern |
-| hpcaitech/Open-Sora | configs/scripts/experiments | Adopt reproducible configuration |
-| Stability-AI/stable-audio-tools | JSON model/runtime configurations | Adopt versioned execution profiles |
-| deepbeepmeep/Wan2GP | low-resource runtime, plugins, profiles | Adopt lazy activation/resource envelopes |
-| firecrawl/firecrawl | scrape/crawl/map/browser/skills | Architecture reference only; AGPL main repository |
-| unclecode/crawl4ai | adaptive crawler, dispatcher, extraction/cache/browser | Adopt bounded adaptive stopping/dispatch |
-| apify/crawlee | scheduler/frontier/session pool/retries | Adopt policy-aware frontier/session concepts |
-| scrapy/scrapy | engine/scheduler/downloader/middleware/pipeline | Adopt separation-of-concerns model |
-| browser-use/browser-use | BrowserSession/CDP/watchdogs/tools | Adopt browser tool/session concepts as escalation |
+## Current implementation state
 
-## Implemented change
+The repository research has been converted into bounded, testable Operations capabilities rather than copied dependencies.
 
-The external-repository review is now reflected in merged Operations runtime components.
+- Adaptive HTML product recovery is implemented behind conservative extraction and carries deterministic score/reason metadata.
+- Source-route health ranking uses the existing corroborated source-profile revalidation authority.
+- Priority/fair acquisition scheduling uses hard crawl budgets and transient-only exponential retry; access-control/rate-limit outcomes are never retried.
+- Evidence-gain stopping is implemented as a public-safe primitive and exposed through the chatbot facade.
+- Canonical web-document envelopes normalize bounded URL/title/text/links/images/structured data/acquisition metadata into provenance-bearing chatbot evidence context.
+- Bounded same-host browser-session reuse is implemented for replay/benchmark workloads; it does not expand browser navigation or authentication authority.
+- The Operations capability registry and chatbot knowledge surface these capabilities without changing the Foundation mapper ownership boundary.
 
-- Adaptive HTML product recovery is implemented in Operations behind the conservative extractor.
-- Source-route health ranking uses corroborated source-profile observations before measured evidence/latency ranking.
-- Priority/fair acquisition scheduling and transient-only retry are implemented as a bounded frontier layer.
-- Evidence-gain stopping is implemented as a public-safe Operations primitive and exposed through the chatbot facade.
-- Canonical web-document envelopes produce bounded provenance-bearing chatbot evidence context.
-- Bounded same-host browser session reuse is available for replay/benchmark workloads.
+## Operations runtime lineage
 
-Operations merged runtime commit: 2141856baf82d818df121ee50fec4d6eea21277b.
-Operations durable plan commit: 1b8f23813295ab732fbe8bc19e617a0d688ece5c.
+- 2141856baf82d818df121ee50fec4d6eea21277b — initial integrated third-party runtime layer.
+- 1b8f23813295ab732fbe8bc19e617a0d688ece5c — durable third-party integration plan.
+- 37b35ba9e94600d746bc81e48cd2918b0c239bc7 — current Operations main after the non-feed migration-runtime evidence repair (#1427).
 
-Foundation remains the deterministic mapper/public contract owner; Operations remains the private acquisition/chatbot/resource authority.
+Validation:
+- Focused third-party integration suite: 9/9 isolated tests passing.
+- Changed Python modules/scripts compile successfully.
+- PR #1427 produced a complete evidence envelope for one concrete TypeScript observation-contract candidate against the canonical Python reference; the receipt explicitly keeps authority promotion false.
 
-Validation of the new runtime integration suite: 9/9 isolated tests passed, and changed Python files compile successfully.
+## What is intentionally not being promoted
 
-Deployment state: these improvements are not automatically production promotion evidence. Purpose-scoped immutable production pins and live Cloudflare receipts remain authoritative.
-## Durable follow-on plan
+These capabilities are implementation-ready building blocks, not automatic production authority.
 
-1. Source/backend health fabric using the existing Operations source-profile/revalidation authority.
-2. Priority/fairness/retry scheduling on top of the existing bounded crawl frontier.
-3. Bounded evidence-gain stopping for research/extraction.
-4. Canonical bounded web-document intermediate representation before chatbot context assembly.
-5. Cloudflare Browser Run session reuse benchmark with isolated contexts.
-6. Feed/extractor coverage experiments remain separate from non-feed migration controls unless explicitly opened.
+- Route health only ranks routes already admitted by source policy/revalidation.
+- Evidence stopping only shortens acquisition within explicit evidence/resource bounds.
+- Browser session reuse remains a benchmark/replay capability until a separate production service boundary earns evidence.
+- External AI/model/tooling suggestions remain candidate assistance.
+- Foundation remains the canonical deterministic mapper/data-quality authority.
+- No third-party repository code, weights, or hosted service becomes a Heroic AI authority merely from a benchmark or model opinion.
+
+## Production and Cloudflare state
+
+The immutable production boundary remains separate from GitHub main. Current Cloudflare inventory was read directly from the account API after the latest merges.
+
+- heroic and heroic-core are still deployed from Foundation source revision f43028ca6c6a4f4d3cecbfdb99ae4602330228b at 100%.
+- operations and operations-edge remain pinned to Operations revision 90fa37df10d63824acd3fe20b64cc91043af9627 at 100%.
+- The third-party Operations runtime changes and the autonomous engineering control plane have not been silently promoted to the Operations production pin.
+- Foundation main subsequently advanced to 9ca2348f5acb696c85960932e8074d5fe0ad1681; GitHub main is the source of truth for implementation, while Cloudflare deployment state remains the source of truth for production runtime.
+
+## Feed separation
+
+WooCommerce/Google Merchant feed recovery remains a separate lane. The 19-repository integration work did not mutate feed extraction logic, feed credentials, or feed recovery acceptance.
 
 ## Integration safety
 
-All candidates require deterministic tests, functional/error/security/policy/provenance/cancellation/timeout parity, resource/latency/token measurements, shadow, canary, rollback, and live evidence. A benchmark, LLM suggestion, or external repository score cannot become production authority.
+Every candidate still requires deterministic functional/error/security/policy/provenance/cancellation/timeout validation, resource/latency/token measurements, representative workload evidence, shadow, canary, rollback, and live production evidence before authority transfer. A benchmark, LLM suggestion, or external-repository score cannot become production authority.
 
 ## Licensing guard
 
-Code, model weights/checkpoints, hosted APIs, and trademarks are separate surfaces. SearchJumper is GPL-3.0; Firecrawl's main repository is AGPL-3.0; Browser Use is AGPL-3.0; Patchright Enhanced has no root LICENSE in the inspected tree. FLUX explicitly separates repository code from model licenses, with some models under non-commercial terms. These surfaces require review before copying or deployment.
+Code, model weights/checkpoints, hosted APIs, and trademarks are separate license surfaces. SearchJumper is GPL-3.0; Firecrawl's main repository is AGPL-3.0; Browser Use is AGPL-3.0; Patchright Enhanced has no root LICENSE in the inspected tree. FLUX explicitly separates repository code from model licenses, with some models under non-commercial terms. These surfaces require review before copying or deployment.
 
 ## Chatbot requirement
 
-The chatbot consumes improvements only through the existing capability, policy and provenance layers. Third-party READMEs are research inputs, not runtime authorities.
+The chatbot consumes these improvements only through the existing capability, policy, and provenance layers. Third-party READMEs are research inputs, not runtime authorities.
+
+## Autonomous engineering requirement
+
+The Foundation autonomous engineering supervisor is now merged on Foundation main. Its planner is candidate-only; deterministic workflow allowlisting and durable GitHub mission state remain the execution boundary. It is not permission to change production pins, policies, secrets, or access controls automatically.
 
 ## Continuation
 
-Future chats must read this document before repeating this repository research. The implementation state lives in GitHub and must be checked from current main/PRs rather than conversation memory.
+Future chats must read this document before repeating third-party repository research. Always refresh current GitHub heads, current PR/issue state, and live Cloudflare deployment state before treating a dated checkpoint as current.
