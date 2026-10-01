@@ -230,3 +230,41 @@ async def test_public_admit_fails_closed_on_malformed_admission_policy():
     assert not decision.allowed
     assert decision.outcome.value == "authority_unavailable"
     assert lease is None
+
+
+def test_source_policy_short_circuit_branches_are_both_exercised():
+    # Cover the second operand of compound validation guards.
+    with pytest.raises(ValueError, match="source access flags"):
+        source_policy(robots_restriction=1).validate()
+    with pytest.raises(ValueError, match="unknown"):
+        source_policy(retention_class=RetentionClass.UNKNOWN).validate()
+    with pytest.raises(ValueError, match="authenticated"):
+        source_policy(access_class=AccessClass.AUTHENTICATED, requires_authentication=False).validate()
+    with pytest.raises(ValueError, match="public-safe"):
+        source_policy(access_class=AccessClass.AUTHENTICATED, requires_authentication=True, disclosure_class=DisclosureClass.PUBLIC_SAFE).validate()
+
+    # Exercise the false branch of the raw-content guard and the second operand
+    # of the retention guard without relying on production values.
+    public_with_raw_forbidden = source_policy(disclosure_class=DisclosureClass.METADATA_ONLY, raw_content_allowed=False)
+    public_with_raw_forbidden.validate()
+    with pytest.raises(ValueError, match="retention is none"):
+        source_policy(
+            disclosure_class=DisclosureClass.METADATA_ONLY,
+            retention_class=RetentionClass.NONE,
+            raw_content_allowed=True,
+        ).validate()
+
+    # A non-empty override still leaves the validation branch false.
+    source_policy(revalidation_after_seconds=1).validate()
+
+    # The requested default is the second operand that can reject when the
+    # policy-specific override is absent.
+    with pytest.raises(ValueError, match="unavailable"):
+        revalidation_due(datetime(2026, 9, 18, tzinfo=timezone.utc), source_policy(), -1)
+
+    assert resolve_source_policy_conflict(
+        (source_policy(),),
+        access_rank={AccessClass.PUBLIC: 1},
+        disclosure_rank={DisclosureClass.PUBLIC_SAFE: 1},
+        retention_rank={RetentionClass.SHORT: 1},
+    ) is not None
