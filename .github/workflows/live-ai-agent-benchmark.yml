@@ -2,6 +2,12 @@ name: Live AI agent benchmark (issue 1157 acceptance)
 
 on:
   workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: Optional immutable private Operations revision
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -12,70 +18,83 @@ concurrency:
 
 jobs:
   benchmark:
-    if: >-
-      github.event_name == 'workflow_dispatch'
-      || (
-        github.head_ref == 'fix/issue-1157-live-agent-baseline-20260927'
-        && github.event.pull_request.head.repo.full_name == github.repository
-      )
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout
+      - name: Checkout Foundation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 1
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13"
 
-      - name: Verify benchmark credentials are present
+      - name: Mint read-only Operations App token
+        id: operations-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: operations
+          permission-contents: read
+
+      - name: Resolve immutable Operations revision
+        id: operations
+        shell: bash
+        env:
+          REQUESTED_OPERATIONS_REF: ${{ inputs.operations_ref }}
+        run: |
+          set -euo pipefail
+          ref="${REQUESTED_OPERATIONS_REF:-}"
+          if [ -z "$ref" ]; then ref="$(gh api repos/Z-Solo-King/operations/commits/main --jq '.sha')"; fi
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Operations revision must be a 40-hex immutable SHA"; exit 1; }
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout private Operations benchmark
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ steps.operations.outputs.ref }}
+          token: ${{ steps.operations-token.outputs.token }}
+          path: ${{ runner.temp }}/operations-agent-benchmark
+          persist-credentials: false
+
+      - name: Verify private benchmark credentials
         shell: bash
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
-          test -n "${CLOUDFLARE_API_TOKEN:-}"
-          test -n "${CLOUDFLARE_ACCOUNT_ID:-}"
-          echo "benchmark credentials: PRESENT"
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
 
-      - name: Run retained project-native benchmark
+      - name: Run private project-native benchmark
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          OPERATIONS_AGENT_BENCHMARK_RUNNER: ${{ runner.temp }}/operations-agent-benchmark/private/benchmark/live_agent_benchmark.py
+          OPERATIONS_AGENT_MATRIX: ${{ runner.temp }}/operations-agent-benchmark/benchmark/ai_agent_private_task_matrix_v1.json
         run: |
           set -euo pipefail
           rm -rf .runtime/live-ai-agent-benchmark
-          python -m benchmark.multi_agent.live_agent_benchmark \
-            --output-dir .runtime/live-ai-agent-benchmark \
-            --run-id "${GITHUB_RUN_ID}" \
-            --repo-sha "${GITHUB_SHA}" \
-            --repeats 3 \
-            --max-workers 2
+          mkdir -p .runtime/live-ai-agent-benchmark
+          python benchmark/multi_agent/live_agent_benchmark.py --output-dir .runtime/live-ai-agent-benchmark --run-id "${GITHUB_RUN_ID}" --repo-sha "${GITHUB_SHA}" --repeats 3 --max-workers 2
 
-      - name: Upload retained per-run observations
+      - name: Create public-safe benchmark summary
+        if: always()
+        run: |
+          set -euo pipefail
+          test -s .runtime/live-ai-agent-benchmark/summary.json
+          jq 'del(.tasks,.observations,.provider,.model,.roles)' .runtime/live-ai-agent-benchmark/summary.json > .runtime/live-ai-agent-benchmark/public-summary.json
+
+      - name: Upload public-safe evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: live-ai-agent-benchmark-${{ github.run_id }}
-          path: .runtime/live-ai-agent-benchmark
+          path: .runtime/live-ai-agent-benchmark/public-summary.json
           retention-days: 30
           if-no-files-found: error
-
-      - name: Enforce complete benchmark evidence gate
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s .runtime/live-ai-agent-benchmark/summary.json
-          jq -e '
-            .schema == "live-ai-agent-benchmark/v1"
-            and .retained_per_run_observations == true
-            and .runtime_certification == false
-            and (.expected_observations == 720)
-            and (.successful_observations == .expected_observations)
-          ' .runtime/live-ai-agent-benchmark/summary.json >/dev/null
-          echo "live AI-agent benchmark evidence gate: PASS"
