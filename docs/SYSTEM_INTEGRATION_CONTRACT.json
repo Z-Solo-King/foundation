@@ -294,7 +294,9 @@
       "private/chatbot/feedback_evaluation_bridge.py",
       "private/strategy_matrix.py",
       "private/evaluation_receipt.py",
-      "extractor_mapper/"
+      "extractor_mapper/",
+      "docs/FEATURE_SURFACE_GOVERNANCE_POLICY.json",
+      "tools/feature_surface_audit.py"
     ]
   },
   "maintainability": {
