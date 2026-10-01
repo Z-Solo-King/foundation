@@ -61,8 +61,7 @@ jobs:
           const unique=new Map(rows.map(x=>[x.site,x])); if(unique.size!==30)throw new Error('expected 30 unique targets, got '+unique.size);
           const ordered=[...unique.values()].sort((a,b)=>a.site.localeCompare(b.site));
           const out={schema:'woocommerce-xml-deep-v12-aggregate/v1',target_count:30,native_verified:ordered.filter(x=>x.native_urls?.length).length,native_urls:ordered.flatMap(x=>x.native_urls||[]),results:ordered};
-          fs.mkdirSync('out/aggregate',{recursive:true}); fs.writeFileSync('out/aggregate/aggregate.json',JSON.stringify(out,null,2)+'
-');
+          fs.mkdirSync('out/aggregate',{recursive:true}); fs.writeFileSync('out/aggregate/aggregate.json',JSON.stringify(out,null,2)+'\\n');
           console.log(JSON.stringify({target_count:30,native_verified:out.native_verified,native_urls:out.native_urls},null,2));
           NODE
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92e8e0b5a5461e7c
