@@ -486,3 +486,18 @@ No CAPTCHA solving, Cloudflare challenge bypass, clearance-cookie replay, authen
 ### Current completion boundary after V10B
 
 All ten previously researched family representatives have now been exercised against the persistent blocked cohort under a slow public-only transport strategy. Further work requires genuinely new public/current evidence or a newly corroborated feed-family grammar. Do not restart a blind cross-family matrix merely because native hits remain zero.
+
+
+## 15. V19 non-empty recovery engineering — 2026-10-02
+
+The prior `wc-google-feed-latest` publication was audited before continuation. It contained 30 XML assets, but 27 were empty XML shells; file existence therefore was not accepted as feed completion.
+
+V19 adds a dedicated six-shard production recovery pipeline. It keeps native Google Merchant XML certification strict, while generating explicitly labeled synthetic public-catalog XML when native XML is unavailable. The builder now uses 12-second fast and 60-second slow public probes, WooCommerce Store API, Shopify `products.json`, WordPress product REST, homepage JSON-LD/microdata, sitemap/robots discovery, live product pages, and Common Crawl as a last-resort public archive source.
+
+Operations builder commit: `fdfa366f1c32347dc43e72ddf607831cb0d9abb8`.
+Native rescue timeout repair: `4f026663e196bacd9b9951d5f79b48a4c93c3974`.
+Foundation V19 workflow: PR #1814.
+
+The V19 publisher has a hard 30/30 non-empty gate; it refuses to publish empty XML shells. The legacy V18 automatic publisher is retired from automatic execution so it cannot overwrite the V19 publication with weaker output.
+
+Native-feed evidence remains separate from synthetic/archive-backed output. No CAPTCHA solving, Cloudflare clearance replay, authentication bypass, proxy evasion, or fabricated product values are permitted.
