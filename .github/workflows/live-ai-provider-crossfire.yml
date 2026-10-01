@@ -1,0 +1,227 @@
+name: Live AI provider cross-fire benchmark
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/live-ai-provider-crossfire.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-ai-provider-crossfire
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    environment: production-secret-sync
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Build configured provider set
+        env:
+          PROVIDER_KEYS_JSON: \${{ secrets.PROVIDER_KEYS_JSON }}
+          NVIDIA_NIM_API_KEY: \${{ secrets.NVIDIA_NIM_API_KEY }}
+          HF_TOKEN: \${{ secrets.HF_TOKEN }}
+          COHERE_API_KEY: \${{ secrets.COHERE_API_KEY }}
+          SILICONFLOW_API_KEY: \${{ secrets.SILICONFLOW_API_KEY }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          payload = json.loads(os.environ.get("PROVIDER_KEYS_JSON", "{}") or "{}")
+          overrides = {
+              "nvidia_nim": ("NVIDIA_NIM_API_KEY", "https://integrate.api.nvidia.com/v1/chat/completions", "deepseek-ai/deepseek-v4.1-flash"),
+              "huggingface_free": ("HF_TOKEN", "https://router.huggingface.co/v1/chat/completions", "openai/gpt-oss-120b"),
+              "cohere_free": ("COHERE_API_KEY", "https://api.cohere.ai/compatibility/v1/chat/completions", "command-a-plus-05-2026"),
+              "siliconflow": ("SILICONFLOW_API_KEY", "https://api.siliconflow.cn/v1/chat/completions", "Qwen/Qwen3.5-4B"),
+          }
+          for provider, (env_name, endpoint, model) in overrides.items():
+              key = os.environ.get(env_name, "").strip()
+              if key:
+                  payload[provider] = {"endpoint": endpoint, "api_key": key, "model": model}
+
+          cleaned = {}
+          for provider, cfg in payload.items():
+              if isinstance(cfg, dict) and str(cfg.get("endpoint","")).startswith("https://") and cfg.get("api_key") and cfg.get("model"):
+                  cleaned[provider] = {"endpoint": str(cfg["endpoint"]), "api_key": str(cfg["api_key"]), "model": str(cfg["model"])}
+          if len(cleaned) < 2:
+              raise SystemExit(f"need at least 2 external providers; found {len(cleaned)}")
+          Path("crossfire-config.json").write_text(json.dumps(cleaned, separators=(",", ":")) + "\\n", encoding="utf-8")
+          print("configured external providers:", ", ".join(sorted(cleaned)))
+
+      - name: Run simultaneous quality and latency cross-fire
+        env:
+          CLOUDFLARE_API_TOKEN: \${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: \${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import concurrent.futures
+          import hashlib
+          import json
+          import os
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          from pathlib import Path
+
+          tasks = [
+              ("math", "Return one JSON object only with answer=323 and invariant='ok'. Compute 17*19.", {"answer":323,"invariant":"ok"}),
+              ("code", "Return one JSON object only with output='2,4,6' and language='javascript'. Use const x=[1,2,3]; x.map(n=>n*2).join(',').", {"output":"2,4,6","language":"javascript"}),
+              ("contract", "Return one JSON object only with allowed=true and rule='preserve-public-contract'. A public API keeps external behavior stable while internals change.", {"allowed":True,"rule":"preserve-public-contract"}),
+          ]
+          order = ["cloudflare_workers_ai","groq","gemini","openrouter_free","nvidia_nim","cohere_free","huggingface_free","siliconflow"]
+          external = json.loads(Path("crossfire-config.json").read_text())
+          participants = []
+
+          cf_token = os.environ.get("CLOUDFLARE_API_TOKEN","").strip()
+          cf_account = os.environ.get("CLOUDFLARE_ACCOUNT_ID","").strip()
+          if cf_token and cf_account:
+              model = "@cf/zai-org/glm-4.7-flash"
+              participants.append({
+                  "provider":"cloudflare_workers_ai",
+                  "model":model,
+                  "endpoint":f"https://api.cloudflare.com/client/v4/accounts/{cf_account}/ai/run/" + urllib.parse.quote(model, safe="@/"),
+                  "api_key":cf_token,
+                  "native":True,
+              })
+
+          for name in order:
+              cfg = external.get(name)
+              if cfg:
+                  participants.append({"provider":name,"model":cfg["model"],"endpoint":cfg["endpoint"],"api_key":cfg["api_key"],"native":False})
+
+          participants = participants[:6]
+          if len(participants) < 3:
+              raise SystemExit(f"need at least 3 participating providers; found {len(participants)}")
+
+          def invoke(p, task):
+              task_id, prompt, expected = task
+              body = {
+                  "messages":[
+                      {"role":"system","content":"Controlled benchmark. Return the requested JSON only."},
+                      {"role":"user","content":prompt},
+                  ],
+                  "temperature":0,
+                  "max_tokens":96,
+                  "stream":False,
+              }
+              if not p["native"]:
+                  body["model"] = p["model"]
+
+              started = time.perf_counter()
+              result = {
+                  "provider":p["provider"],
+                  "model":p["model"],
+                  "task":task_id,
+                  "http_status":None,
+                  "latency_ms":None,
+                  "quality_pass":False,
+                  "response_sha256":"",
+                  "output_chars":0,
+                  "error_class":"",
+              }
+              req = urllib.request.Request(
+                  p["endpoint"],
+                  data=json.dumps(body,separators=(",",":")).encode(),
+                  method="POST",
+                  headers={
+                      "Authorization":"Bearer "+p["api_key"],
+                      "Content-Type":"application/json",
+                      "Accept":"application/json",
+                      "User-Agent":"heroic-ai-provider-crossfire/1",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as response:
+                      result["http_status"] = int(response.status)
+                      payload = json.loads(response.read().decode())
+                  result["latency_ms"] = round((time.perf_counter()-started)*1000,3)
+                  if p["native"]:
+                      text_value = str((payload.get("result") or {}).get("response") or "").strip()
+                  else:
+                      choices = payload.get("choices") or []
+                      message = (choices[0].get("message") if choices else {}) or {}
+                      text_value = str(message.get("content") or "").strip()
+                  result["response_sha256"] = hashlib.sha256(text_value.encode()).hexdigest()
+                  result["output_chars"] = len(text_value)
+                  try:
+                      result["quality_pass"] = json.loads(text_value) == expected
+                  except Exception:
+                      result["quality_pass"] = False
+              except urllib.error.HTTPError as exc:
+                  result["http_status"] = int(exc.code)
+                  result["latency_ms"] = round((time.perf_counter()-started)*1000,3)
+                  result["error_class"] = f"http_{exc.code}"
+              except Exception as exc:
+                  result["latency_ms"] = round((time.perf_counter()-started)*1000,3)
+                  result["error_class"] = type(exc).__name__
+              return result
+
+          jobs = [(p,t) for p in participants for t in tasks]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=len(jobs)) as pool:
+              observations = list(pool.map(lambda pair: invoke(*pair), jobs))
+
+          provider_summary = {}
+          for p in participants:
+              rows = [r for r in observations if r["provider"] == p["provider"]]
+              lats = sorted(r["latency_ms"] for r in rows if r["latency_ms"] is not None)
+              quality = sum(1 for r in rows if r["quality_pass"])
+              provider_summary[p["provider"]] = {
+                  "model":p["model"],
+                  "tasks":len(rows),
+                  "quality_passes":quality,
+                  "quality_pass_rate":round(quality/len(rows),4),
+                  "successful_http":sum(1 for r in rows if r["http_status"] == 200),
+                  "latency_ms":{
+                      "min":min(lats) if lats else None,
+                      "median":lats[len(lats)//2] if lats else None,
+                      "max":max(lats) if lats else None,
+                  },
+              }
+
+          output = {
+              "schema":"live-ai-provider-crossfire-benchmark/v1",
+              "run_id":os.environ.get("GITHUB_RUN_ID","local"),
+              "repository_revision":os.environ.get("GITHUB_SHA","unknown"),
+              "parallel":True,
+              "same_tasks_across_providers":True,
+              "participant_count":len(participants),
+              "participants":[{"provider":p["provider"],"model":p["model"],"native":p["native"]} for p in participants],
+              "providers":provider_summary,
+              "observations":observations,
+              "raw_responses_retained":False,
+              "quality_method":"three deterministic JSON contract tasks",
+          }
+          Path("crossfire-benchmark.json").write_text(json.dumps(output,indent=2,sort_keys=True)+"\\n",encoding="utf-8")
+          print(json.dumps(provider_summary,indent=2,sort_keys=True))
+          if sum(v["quality_passes"] for v in provider_summary.values()) < 3:
+              raise SystemExit("fewer than three quality-passing provider-task observations")
+          PY
+
+      - name: Upload cross-fire evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v7.0.1
+        with:
+          name: live-ai-provider-crossfire-\${{ github.run_id }}
+          path: crossfire-benchmark.json
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Emit sanitized summary
+        if: always()
+        run: jq '{schema,run_id,repository_revision,parallel,participant_count,participants,providers}' crossfire-benchmark.json
