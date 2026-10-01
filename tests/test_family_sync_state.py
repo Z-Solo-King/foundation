@@ -20,7 +20,7 @@ def test_family_sync_state_matches_current_main_and_graph():
     assert queue["open_issue_count"] == len(queue["foundation"]) + queue["operations_count"]
     assert queue["foundation"] == [58, 1247, 1249, 157]
     assert queue["operations_count"] == len(queue.get("operations", []))
-    assert queue["total_open_issue_count"] == 7
+    assert queue["total_open_issue_count"] == 6
     assert queue["operations_issue_numbers_omitted"] is False
     assert graph["schema"] == "family-integration-graph/v1"
     assert len(graph["material_registry"]) == 20

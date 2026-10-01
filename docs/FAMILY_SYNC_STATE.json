@@ -36,20 +36,21 @@
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
     "observed_at": "2026-10-01",
-    "open_issue_count": 5,
+    "open_issue_count": 6,
     "foundation": [
       58,
       1247,
       1249,
       157
     ],
-    "operations_count": 1,
+    "operations_count": 2,
     "operations_issue_numbers_omitted": false,
     "authority": "GitHub live issue API; acceptance queue excludes autonomous execution/improvement and integrity incident state; never a production certificate",
     "operations": [
-      603
+      603,
+      1466
     ],
-    "total_open_issue_count": 7
+    "total_open_issue_count": 6
   },
   "evidence": {
     "nightly_research": "latest live run failed at the public/private ChatRequest boundary; PR #1573 repairs the boundary and a fresh post-release 24-program live run is required",
@@ -135,8 +136,8 @@
     "checked_at": "2026-10-01T12:31:30Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "2239ae23706e5ab14c61869022eca93618b74cb9",
-      "operations": "942eb72d1df90299d52977918dd56e9d25e0c41f"
+      "foundation": "b4446e3d74a6d968c6681a849582525f0eb49d16",
+      "operations": "2133534f9512eee4df49d78f6c39530502944b74"
     },
     "operations_last_sync_commits": [
       "6071508a8cf5e24001f2238f0b581003d2300865",
@@ -159,21 +160,22 @@
         157
       ],
       "operations": [
-        603
+        603,
+        1466
       ],
-      "total": 5
+      "total": 6
     },
     "production_operations_pin": "da86e92d4e0fdb68912efb54ef95c69281a7d613"
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "2239ae23706e5ab14c61869022eca93618b74cb9",
-    "operations": "942eb72d1df90299d52977918dd56e9d25e0c41f"
+    "foundation": "b4446e3d74a6d968c6681a849582525f0eb49d16",
+    "operations": "2133534f9512eee4df49d78f6c39530502944b74"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "2239ae23706e5ab14c61869022eca93618b74cb9",
-    "operations": "942eb72d1df90299d52977918dd56e9d25e0c41f"
+    "foundation": "b4446e3d74a6d968c6681a849582525f0eb49d16",
+    "operations": "2133534f9512eee4df49d78f6c39530502944b74"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",
@@ -217,7 +219,7 @@
     "license_ip_gate": true,
     "single_authority_preserved": true
   },
-  "open_issue_count": 7,
+  "open_issue_count": 6,
   "system_integration": {
     "schema": "system-integration-receipt/v1",
     "foundation_contract": "docs/SYSTEM_INTEGRATION_CONTRACT.json",

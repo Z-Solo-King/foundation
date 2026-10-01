@@ -2,10 +2,10 @@
   "schema": "family-issue-acceptance-matrix/v1",
   "audited_at": "2026-10-01",
   "repository_heads": {
-    "foundation": "8a7033a9886151ce83b36a9c38f4641a3d8287c8",
-    "operations": "fdb2a1c1a5d0067868007a3499ae81b5c81bb176"
+    "foundation": "b4446e3d74a6d968c6681a849582525f0eb49d16",
+    "operations": "2133534f9512eee4df49d78f6c39530502944b74"
   },
-  "open_issue_count": 5,
+  "open_issue_count": 6,
   "issues": [
     {
       "repo": "foundation",
@@ -55,6 +55,18 @@
         "toolchain portability",
         "AI maintainability",
         "rollback"
+      ]
+    },
+    {
+      "repo": "operations",
+      "number": 1466,
+      "title": "ops: centralize hard-quota monitoring for B2, Cloudflare, AI providers, and GitHub",
+      "required_evidence": [
+        "single read-only resource snapshot",
+        "provenance for every metric",
+        "unavailable telemetry remains unavailable",
+        "15-minute monitoring and hourly billing reconciliation",
+        "regression coverage for quota/resource telemetry"
       ]
     }
   ],
