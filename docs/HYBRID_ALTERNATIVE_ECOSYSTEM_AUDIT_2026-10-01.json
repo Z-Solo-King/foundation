@@ -1,0 +1,189 @@
+{
+  "schema_version": "hybrid-alternative-ecosystem-audit/v1",
+  "audited_on": "2026-10-01",
+  "coverage": {
+    "mcp": {
+      "supplied_entries": 339,
+      "unique_entries": 339,
+      "source": "github.com/mcp?page=12",
+      "dataset_sha256": "29f7414916991321923592383f971a72ef25d06f234197b2f6d770a94e5ee4c4",
+      "scope_note": "Supplied MCP workbook page, not the entire global Registry."
+    },
+    "github_actions": {
+      "supplied_entries": 9999,
+      "unique_entries": 9999,
+      "workbook": "github action.xlsx",
+      "dataset_sha256": "70f1fb06dbbc147050a33c8c256321eff47a1c0fce3f92b5d13a2fdf84362228"
+    },
+    "github_apps": {
+      "supplied_entries": 1408,
+      "unique_entries": 1408,
+      "workbook": "github app.xlsx",
+      "dataset_sha256": "39253b8dea75729f274e9c9af6186cc615b0a940e9d746cf7487b6213327c7e4"
+    }
+  },
+  "status": "100% of the three supplied datasets processed into discovery/capability coverage; no runtime dependency added solely from discovery.",
+  "discovery_signals": {
+    "mcp": {
+      "browser_automation": 5,
+      "search_discovery": 59,
+      "fetch_crawl_extract": 12,
+      "code_github_git": 22,
+      "database_data": 9,
+      "memory_knowledge_context": 29,
+      "observability_monitoring": 9,
+      "cloud_infrastructure": 20,
+      "documents_media": 11,
+      "diagram_design": 8,
+      "commerce_finance": 10,
+      "automation_tasks_agents": 39
+    },
+    "github_actions": {
+      "security": 690,
+      "testing_quality": 1268,
+      "build_release": 2077,
+      "artifacts_cache": 1437,
+      "ai_agent": 622,
+      "github_pr_workflow": 3451,
+      "cloudflare_wrangler": 49,
+      "performance": 177,
+      "documentation": 467
+    },
+    "github_apps": {
+      "security_secret_management": 125,
+      "ai_agent_code_intelligence": 303,
+      "code_review_quality": 183,
+      "ci_build_deployment": 126,
+      "project_issue_chat": 99,
+      "observability_monitoring": 26,
+      "documentation_knowledge": 57,
+      "performance_optimization": 36,
+      "cloud_infrastructure": 37
+    }
+  },
+  "feature_patterns": [
+    [
+      "structured_tool_contracts",
+      "MCP",
+      "ToolSpec, schemas, manifest digest"
+    ],
+    [
+      "tool_risk_annotations",
+      "MCP",
+      "read-only/destructive/idempotent/open-world risk vocabulary"
+    ],
+    [
+      "semantic_symbol_navigation",
+      "Serena",
+      "symbol-level retrieval and future read-only semantic index"
+    ],
+    [
+      "browser_accessibility_tree",
+      "Playwright MCP",
+      "structured browser interaction"
+    ],
+    [
+      "browser_diagnostics",
+      "Chrome DevTools MCP",
+      "network, console, performance evidence"
+    ],
+    [
+      "search_fetch_extract_pipeline",
+      "MCP ecosystem",
+      "separate discovery, fetch and extraction stages"
+    ],
+    [
+      "local_document_normalization",
+      "MarkItDown",
+      "bounded local document conversion"
+    ],
+    [
+      "token_efficient_database_access",
+      "DBHub",
+      "bounded schema-aware data access"
+    ],
+    [
+      "local_first_memory",
+      "Basic Memory",
+      "repository-owned versioned memory"
+    ],
+    [
+      "fresh_context_retrieval",
+      "Context7 / Microsoft Learn",
+      "revision-aware documentation context"
+    ],
+    [
+      "issue_project_sync",
+      "GitHub App ecosystem",
+      "GitHub issue and mission state as canonical source"
+    ],
+    [
+      "ai_pr_review",
+      "CodeRabbit / Qodo / DeepSource",
+      "advisory AI review feeding deterministic acceptance"
+    ],
+    [
+      "security_saas_patterns",
+      "GitGuardian / Snyk / Semgrep / Socket / SonarQube",
+      "native security controls"
+    ],
+    [
+      "observability_saas_patterns",
+      "Datadog ecosystem",
+      "receipts, artifacts, continuity checks"
+    ],
+    [
+      "artifact_provenance",
+      "GitHub Actions ecosystem",
+      "immutable refs and attestations"
+    ],
+    [
+      "workflow_fanout_matrix",
+      "GitHub Actions ecosystem",
+      "parallel bounded lanes"
+    ],
+    [
+      "long_running_tasks",
+      "MCP Tasks",
+      "checkpointed asynchronous lifecycle candidate"
+    ],
+    [
+      "partial_results_streaming",
+      "MCP evolution",
+      "bounded partial-result candidate"
+    ],
+    [
+      "capability_negotiation",
+      "MCP lifecycle",
+      "explicit capability registry and health"
+    ],
+    [
+      "auth_per_tool",
+      "MCP Apps authorization",
+      "sensitivity-aware authorization candidate"
+    ],
+    [
+      "tamper_evident_records",
+      "MCP governance proposals",
+      "request/result/provenance digests"
+    ],
+    [
+      "feature_lifecycle",
+      "MCP 2026-07-28",
+      "candidate/active/deprecated lifecycle"
+    ],
+    [
+      "dependency_capability_preflight",
+      "GitHub Actions Dependency Review",
+      "enable enforcement only when dependency graph exists"
+    ]
+  ],
+  "acceptance": {
+    "all_supplied_rows_processed": true,
+    "direct_paid_dependencies_added": false,
+    "marketplace_apps_installed_for_discovery": false,
+    "existing_first_party_operations_app_preserved": true,
+    "action_policy_remains_full_sha_and_allowlist": true,
+    "single_authority_rule_preserved": true
+  }
+}

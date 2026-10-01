@@ -1,0 +1,119 @@
+{
+  "schema_version": "hybrid-alternative-zero-cost-policy/v1",
+  "updated_on": "2026-10-01",
+  "mission": "Use paid, proprietary, hosted and premium ecosystems as research inputs while keeping project runtime spend at $0.",
+  "definition_of_zero_cost": "No additional paid subscription, paid trial, payment-method-dependent feature, metered external service, paid runner, or paid hosted dependency is required for canonical project execution.",
+  "hybrid_principle": {
+    "paid_capabilities_are_researchable": true,
+    "paid_capabilities_are_not_ignored": true,
+    "direct_paid_runtime_dependency_allowed": false,
+    "indirect_native_reimplementation_allowed": true,
+    "compose_existing_free_capabilities_allowed": true,
+    "self_host_open_source_components_allowed": true,
+    "free_quota_use_allowed_only_when_explicitly_evidenced": true
+  },
+  "implementation_boundary": {
+    "copy_publicly_documented_behavioral_ideas": true,
+    "reproduce_interfaces_and_functional_patterns": true,
+    "reproduce_architecture_and_control_logic": true,
+    "reproduce_policy_and_validation_patterns": true,
+    "copy_proprietary_source_code_or_assets_without_license": false,
+    "preserve_attribution_and_license_requirements": true
+  },
+  "economic_disposition": [
+    {
+      "id": "native_free",
+      "meaning": "Existing GitHub/Cloudflare/project capability already covers the feature.",
+      "runtime_allowed": true
+    },
+    {
+      "id": "composed_free",
+      "meaning": "Combine existing free capabilities to reproduce the user-visible function.",
+      "runtime_allowed": true
+    },
+    {
+      "id": "self_hosted_open_source",
+      "meaning": "Use an open-source implementation on existing permitted compute/storage.",
+      "runtime_allowed": true
+    },
+    {
+      "id": "free_quota_bounded",
+      "meaning": "A documented free allowance exists and is enforced by a hard resource gate.",
+      "runtime_allowed": true
+    },
+    {
+      "id": "paid_direct_forbidden",
+      "meaning": "Direct use would create paid/billing dependency.",
+      "runtime_allowed": false
+    },
+    {
+      "id": "paid_feature_reimplement",
+      "meaning": "Paid feature is analyzed and its safe public behavior is rebuilt with free/native components.",
+      "runtime_allowed": true
+    },
+    {
+      "id": "research_only",
+      "meaning": "No safe $0 equivalent has yet been proven.",
+      "runtime_allowed": false
+    }
+  ],
+  "required_candidate_fields": [
+    "ecosystem",
+    "source_id",
+    "capability",
+    "observed_behavior",
+    "economic_class",
+    "native_or_free_equivalent",
+    "implementation_surface",
+    "security_constraints",
+    "resource_constraints",
+    "provenance_strategy",
+    "differential_test_plan",
+    "shadow_plan",
+    "canary_plan",
+    "rollback_plan"
+  ],
+  "promotion_gate": [
+    "documented source/provenance",
+    "current-project gap analysis",
+    "zero-cost disposition",
+    "license/IP compatibility check",
+    "deterministic contract",
+    "security/policy validation",
+    "resource/latency measurement",
+    "differential or parity tests where applicable",
+    "shadow evidence",
+    "canary evidence",
+    "rollback path",
+    "single canonical authority"
+  ],
+  "ecosystem_scope": {
+    "mcp": {
+      "supplied_entries": 339,
+      "unique_entries": 339,
+      "source": "github.com/mcp?page=12",
+      "dataset_sha256": "29f7414916991321923592383f971a72ef25d06f234197b2f6d770a94e5ee4c4",
+      "scope_note": "Supplied MCP workbook page, not the entire global Registry."
+    },
+    "github_actions": {
+      "supplied_entries": 9999,
+      "unique_entries": 9999,
+      "workbook": "github action.xlsx",
+      "dataset_sha256": "70f1fb06dbbc147050a33c8c256321eff47a1c0fce3f92b5d13a2fdf84362228"
+    },
+    "github_apps": {
+      "supplied_entries": 1408,
+      "unique_entries": 1408,
+      "workbook": "github app.xlsx",
+      "dataset_sha256": "39253b8dea75729f274e9c9af6186cc615b0a940e9d746cf7487b6213327c7e4"
+    }
+  },
+  "prohibited_shortcuts": [
+    "install a paid Marketplace App just to obtain its feature",
+    "start a paid-plan free trial as a substitute for implementation",
+    "add an external SaaS dependency without an evidenced $0 operating path",
+    "use larger or paid GitHub Actions runners",
+    "make an external service the acceptance authority",
+    "copy proprietary code or copyrighted assets without permission"
+  ]
+}
