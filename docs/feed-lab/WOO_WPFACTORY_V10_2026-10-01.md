@@ -1,17 +1,12 @@
-# WooCommerce WPFactory Family Recovery V10 — 2026-10-01
 
-Source of truth: current main 1cabe0f0f8d5bc15788c24c68b1641b56a12a6f0 at branch creation.
 
-Research-backed family addition:
-WPFactory Product XML Feeds Manager for WooCommerce documents /products.xml as the default first-feed path. Additional-feed defaults are /products_2.xml and /products_3.xml, and a configurable subfolder example is /feeds/google.xml.
+## Live result — run 36821812408
 
-Recovery contract:
-- one /products.xml representative per target;
-- expand only after a stable non-empty XML-like 200 response;
-- strict current same-host Google Merchant XML validation;
-- retry 403/429/timeouts slowly and independently;
-- public-only and no bypass/evasion;
-- no Store API, plugin extraction or browser discovery;
-- no random filename/token enumeration.
+- 17/17 targets completed.
+- 0 native Google Merchant XML feeds verified.
+- 0 WPFactory family signals.
+- 9 targets were transport-limited by 403/challenge.
+- 8 targets returned a clean 404 or a 200 HTML/non-XML response.
+- No target met the stable non-empty XML-like expansion gate, so no additional WPFactory paths were probed.
 
-A family signal does not certify plugin identity, and transport-limited remains unverified.
+Interpretation: the documented WPFactory default path produced no current public feed-family evidence in this cohort. This does not prove the plugin is absent or that a custom feed filename/path does not exist.
