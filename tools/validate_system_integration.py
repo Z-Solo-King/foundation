@@ -36,6 +36,39 @@ def require_python_syntax(path: Path, errors: list[str], label: str) -> None:
     except (OSError, SyntaxError) as exc:
         errors.append(f"{label}:syntax:{exc}")
 
+
+def validate_production_pin_consistency(foundation: Path, errors: list[str]) -> None:
+    manifest_path = foundation / "docs/OPERATIONS_PIN_MANIFEST.json"
+    approval_path = foundation / "docs/OPERATIONS_MAIN_APPROVAL.json"
+    sync_path = foundation / "docs/FAMILY_SYNC_STATE.json"
+    try:
+        manifest = load(manifest_path)
+        approval = load(approval_path)
+        sync = load(sync_path)
+    except (OSError, json.JSONDecodeError) as exc:
+        errors.append(f"production-pin:metadata:{exc}")
+        return
+    canonical = (((manifest.get("pins") or {}).get("production_runtime") or {}).get("sha"))
+    if not isinstance(canonical, str) or len(canonical) != 40:
+        errors.append("production-pin:manifest invalid")
+        return
+    if approval.get("approved_sha") != canonical or approval.get("production_observed_sha") != canonical:
+        errors.append("production-pin:approval drift")
+    if ((sync.get("runtime_pins") or {}).get("production_operations")) != canonical:
+        errors.append("production-pin:family-sync drift")
+    consumers = (
+        ".github/workflows/nightly-research-provider-preflight.yml",
+        ".github/workflows/live-chatbot-production-smoke.yml",
+        ".github/workflows/live-nightly-research-canary.yml",
+        ".github/workflows/nightly-multi-agent-research-v3.yml",
+        "docs/CURRENT_SOURCE_OF_TRUTH.md",
+        "docs/CONTINUE_MIGRATION_2026-10-01.md",
+        "docs/INTERNAL_ACCESS_CAPABILITY_POLICY.md",
+        "tests/operations_main_guard.test.mjs",
+    )
+    for rel in consumers:
+        require_text(foundation / rel, [canonical], errors, "production-pin:" + rel)
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--foundation-root", type=Path, required=True)
@@ -45,6 +78,7 @@ def main() -> int:
 
     errors: list[str] = []
     foundation = args.foundation_root.resolve()
+    validate_production_pin_consistency(foundation, errors)
     operations = args.operations_root.resolve() if args.operations_root else None
 
     contract = load(foundation / "docs" / CONTRACT.name)
