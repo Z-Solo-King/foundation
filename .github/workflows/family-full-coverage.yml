@@ -1,0 +1,71 @@
+name: Family full coverage
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "55 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: family-full-coverage
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    name: 100% family tracked-file coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: foundation
+          fetch-depth: 0
+
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: main
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Full family coverage
+        working-directory: foundation
+        run: python tools/validate_family_full_coverage.py --foundation-root . --operations-root ../operations --output .runtime/family-full-coverage.json --strict
+
+      - name: Run existing Action/App policy validators
+        working-directory: foundation
+        run: |
+          python scripts/validate_github_actions_zero_cost.py
+          python scripts/validate_github_app_policy.py
+
+      - name: Upload full coverage receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: family-full-coverage
+          path: foundation/.runtime/family-full-coverage.json
+          if-no-files-found: error
+          retention-days: 30
