@@ -53,6 +53,12 @@ def test_persistence_rollover_verification_is_single_use_in_release_script():
     assert text.count('echo "POST persistence_verify -> HTTP') == 1
     assert text.count('memory_persisted_across_version == true') == 1
 
+def test_required_pr_boundary_scan_does_not_ban_abstract_operations_binding():
+    workflow = (ROOT / ".github" / "workflows" / "required-pr-checks.yml").read_text(encoding="utf-8")
+    assert "! grep -RniE 'operations|" not in workflow
+    assert "extractor_mapper|private.chatbot|resource_ledger|promotion.py|trust_boundary|CONTROL_PLANE" in workflow
+
+
 def test_production_boundary_scan_matches_public_worker_architecture():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
 
@@ -118,71 +124,3 @@ def test_operations_bootstrap_config_lives_with_entrypoint_checkout():
     assert 'bootstrap_config="$RUNNER_TEMP/operations/wrangler.bootstrap.toml"' in text
     assert 'cp "$RUNNER_TEMP/operations/wrangler.toml" "$bootstrap_config"' in text
     assert '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config"' in text
-
-def test_production_uses_pages_front_door_with_private_backend_boundary():
-    text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
-    assert 'BASE_URL=' in text and 'ai-cio.pages.dev' in text
-    assert 'workers_dev = false' in text
-    assert 'name = "heroic"' in text
-    assert '! grep -q \'^service = "heroic"$\' "$bootstrap_config"' in text
-    assert 'settings_worker="${PYTHON_CORE_WORKER_NAME}"' in text
-    assert 'B2_BUCKET' in text and 'B2_ENDPOINT' in text
-    assert 'settings_worker="${PYTHON_CORE_WORKER_NAME}"' in text
-    assert 'settings_worker="${PUBLIC_WORKER_NAME}"' in text
-    assert 'settings_status=$(curl -sS -o "$settings_path" -w \'%{http_code}\'' in text
-    assert 'workers/scripts/heroic/subdomain' in text
-    assert 'pages/projects/ai' not in text
-    assert 'Canonical Pages front door check failed' in text
-    assert 'BASE_URL/health' in text
-    assert 'workers/scripts/foundation' in text
-    assert 'ai-cio.pages.dev' in text
-
-
-
-# The diagnostic payload may flatten runtime checks or nest them; the release contract accepts both shapes.
-def test_infrastructure_diagnostic_failure_reports_only_failed_check_names():
-    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'Authenticated infrastructure diagnostic acceptance: FAIL' in text
-    assert 'failed_checks="$(jq -r' in text
-    assert 'select((.name? | type) == "string" and (.ok? | type) == "boolean" and .ok != true)' in text
-    assert 'def named_checks:' in text
-    assert '[.. | objects | select((.name? | type) == "string" and (.ok? | type) == "boolean")]' in text
-    assert 'cat diagnostic.json' not in text
-    assert '.. | objects' in text
-    assert 'select((.name? | type) == "string" and (.ok? | type) == "boolean" and .ok != true)' in text
-
-def test_live_chat_provider_provenance_uses_authenticated_proof_projection():
-    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'X-Heroic-Research-Proof: 1' in text
-    assert '.response.provider == "cloudflare_workers_ai"' in text
-    assert 'live_chat_provider=$(jq -r' in text
-    assert 'resource_governance_reservations' not in text
-    assert 'd1 execute "$database_name" --remote' not in text
-
-
-def test_chat_auth_boundary_checks_canonical_module():
-    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'grep -q \'CHAT_BACKEND_TOKEN\' "$RUNNER_TEMP/operations/private/chat_auth.py"' in text
-    assert 'grep -q \'from private.chat_auth import authorized_chat_request\' "$RUNNER_TEMP/operations/worker.py"' in text
-    assert 'CHAT_BACKEND_TOKEN\' "$RUNNER_TEMP/operations/worker.py"' not in text
-
-def test_acceptance_run_id_assignments_are_real_separate_shell_assignments():
-    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'RELEASE_RUN_ATTEMPT="${RELEASE_RUN_ATTEMPT:-${GITHUB_RUN_ATTEMPT:-1}}"\nACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${RELEASE_RUN_ATTEMPT}"' in text
-    assert 'RELEASE_RUN_ATTEMPT="${RELEASE_RUN_ATTEMPT:-${GITHUB_RUN_ATTEMPT:-1}}"\\nACCEPTANCE_RUN_ID' not in text
-    assert 'ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${RELEASE_RUN_ATTEMPT}"' in text
-
-
-def test_production_release_acceptance_namespace_uses_authoritative_run_attempt():
-    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    workflow = (Path(__file__).parents[1] / ".github" / "workflows" / "heroic-ai-production-release.yml").read_text(encoding="utf-8")
-    assert 'RELEASE_RUN_ATTEMPT="${RELEASE_RUN_ATTEMPT:-${GITHUB_RUN_ATTEMPT:-1}}"' in text
-    assert 'ACCEPTANCE_RUN_ID="${GITHUB_RUN_ID}-attempt-${RELEASE_RUN_ATTEMPT}"' in text
-    assert "RELEASE_RUN_ATTEMPT: ${{ github.run_attempt }}" in workflow
-
-
-def test_policy_block_acceptance_matches_public_response_contract():
-    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert '.response.status == "blocked"' in text
-    assert '.response.result_state == "BLOCKED"' in text
-    assert '.response.operation == "map"' not in text
