@@ -5,15 +5,182 @@ import pytest
 
 from backend.admission import AdmissionDecision, AdmissionOutcome, AdmissionPolicy, AdmissionRoute
 from backend.admission_store import D1AdmissionStore, ROUTE_COST_UNITS, _insert_new_admission, _storage_event_id
-from tests.admission_store_support import (
-    FakeDB,
-    Request,
-    AdmissionLeaseTracker,
-    Persistence,
-    accepted_admission,
-    ZeroInsertDB,
-    IdempotentAdmissionDB,
-)
+
+
+class FakeStatement:
+    def __init__(self, query):
+        self.query = query
+        self.args = ()
+
+    def bind(self, *args):
+        self.args = args
+        return self
+
+    async def run(self):
+        return {"meta": {"changes": 1}}
+
+    async def first(self):
+        if "SELECT EVENT_ID" in self.query.upper():
+            return None
+        return {
+            "subject_requests": 0,
+            "global_requests": 0,
+            "subject_concurrent": 0,
+            "global_concurrent": 0,
+        }
+
+
+
+class FakeDB:
+    def __init__(self):
+        self.queries = []
+
+    def prepare(self, query):
+        self.queries.append(query)
+        return FakeStatement(query)
+
+
+@pytest.mark.asyncio
+
+class Request:
+    def __init__(self, method, url, payload=None, headers=None):
+        self.method = method
+        self.url = url
+        self._payload = payload
+        self.headers = headers or {}
+
+    async def json(self):
+        return self._payload
+
+
+
+class AdmissionLeaseTracker:
+    def __init__(self):
+        self.released = []
+
+    async def release(self, lease):
+        self.released.append(lease)
+
+
+
+class Persistence:
+    def __init__(self):
+        self.created = []
+
+    async def create_run(self, run_id, request):
+        self.created.append(run_id)
+        return run_id
+
+
+
+def accepted_admission(lease):
+    from backend.admission import AdmissionDecision, AdmissionOutcome
+    return AdmissionDecision(
+        AdmissionOutcome.ACCEPTED,
+        AdmissionRoute.CHAT,
+        True,
+        "accepted",
+    ), lease
+
+
+@pytest.mark.asyncio
+
+class ZeroInsertDB(FakeDB):
+    def prepare(self, query):
+        statement = super().prepare(query)
+        if query.lstrip().startswith("INSERT OR IGNORE INTO public_admission_events"):
+            statement.run = self._zero_insert
+        return statement
+
+    async def _zero_insert(self):
+        return {"meta": {"changes": 0}}
+
+
+@pytest.mark.asyncio
+
+class IdempotentAdmissionDB(FakeDB):
+    def __init__(self):
+        super().__init__()
+        self.events = {}
+        self.reclaim_changes = 1
+
+    def prepare(self, query):
+        db = self
+
+        class StatefulStatement(FakeStatement):
+            async def run(self_inner):
+                sql = self_inner.query.lower().strip()
+                args = self_inner.args
+
+                if sql.startswith("delete from public_admission_events"):
+                    return {"meta": {"changes": 0}}
+
+                if sql.startswith("insert or ignore into public_admission_events"):
+                    event_id, window_start, subject, route, cost_units, expires_at = args[:6]
+                    if event_id in db.events:
+                        return {"meta": {"changes": 0}}
+                    db.events[event_id] = {
+                        "event_id": event_id,
+                        "window_start": window_start,
+                        "subject_fingerprint": subject,
+                        "route": route,
+                        "cost_units": cost_units,
+                        "lease_expires_at": expires_at,
+                        "released_at": None,
+                    }
+                    return {"meta": {"changes": 1}}
+
+                if sql.startswith("update public_admission_events set released_at"):
+                    released_at, event_id = args
+                    row = db.events.get(event_id)
+                    if row and row["released_at"] is None:
+                        row["released_at"] = released_at
+                        return {"meta": {"changes": 1}}
+                    return {"meta": {"changes": 0}}
+
+                if sql.startswith("update public_admission_events set window_start"):
+                    if db.reclaim_changes == 0:
+                        return {"meta": {"changes": 0}}
+                    window_start, expires_at, event_id, subject, route, now = args
+                    row = db.events.get(event_id)
+                    if (
+                        row
+                        and row["subject_fingerprint"] == subject
+                        and row["route"] == route
+                        and row["released_at"] is None
+                        and row["lease_expires_at"] <= now
+                    ):
+                        row.update(window_start=window_start, lease_expires_at=expires_at)
+                        return {"meta": {"changes": 1}}
+                    return {"meta": {"changes": 0}}
+
+                if sql.startswith("select event_id"):
+                    row = db.events.get(args[0])
+                    return {"results": [row] if row else []}
+
+                return {"meta": {"changes": 1}}
+
+            async def first(self_inner):
+                sql = self_inner.query.lower().strip()
+                if sql.startswith("select event_id"):
+                    row = db.events.get(self_inner.args[0])
+                    return row
+                return {
+                    "subject_requests": len(db.events),
+                    "global_requests": len(db.events),
+                    "subject_concurrent": sum(
+                        1 for row in db.events.values()
+                        if row["released_at"] is None
+                    ),
+                    "global_concurrent": sum(
+                        1 for row in db.events.values()
+                        if row["released_at"] is None
+                    ),
+                }
+
+        return StatefulStatement(query)
+
+
 
 def test_d1_store_replays_same_event_without_a_second_admission_slot():
     import asyncio
@@ -48,6 +215,7 @@ def test_d1_store_replays_same_event_without_a_second_admission_slot():
     assert second_lease is None
 
 
+
 def test_d1_store_rejects_replay_across_admission_scopes():
     import asyncio
 
@@ -73,6 +241,7 @@ def test_d1_store_rejects_replay_across_admission_scopes():
     assert decision.outcome.value == "duplicate"
     assert decision.allowed is False
     assert lease is None
+
 
 
 def test_d1_store_reclaims_expired_admission_lease():
@@ -107,6 +276,7 @@ def test_d1_store_reclaims_expired_admission_lease():
     assert lease.expires_at == 181
 
 
+
 def test_d1_store_keeps_released_non_idempotent_duplicate_on_admission_decision():
     import asyncio
 
@@ -132,6 +302,7 @@ def test_d1_store_keeps_released_non_idempotent_duplicate_on_admission_decision(
     assert decision.outcome is AdmissionOutcome.RATE_LIMITED
     assert decision.allowed is False
     assert lease is None
+
 
 
 def test_d1_store_blocks_active_non_idempotent_duplicate():
@@ -165,6 +336,7 @@ def test_d1_store_blocks_active_non_idempotent_duplicate():
     assert lease is None
 
 
+
 def test_d1_store_delegates_active_chat_duplicate_to_idempotency_authority():
     import asyncio
 
@@ -194,6 +366,7 @@ def test_d1_store_delegates_active_chat_duplicate_to_idempotency_authority():
     assert decision.outcome.value == "accepted"
     assert decision.allowed is True
     assert lease is None
+
 
 
 def test_d1_store_delegates_active_stream_duplicate_to_idempotency_authority():
@@ -227,6 +400,7 @@ def test_d1_store_delegates_active_stream_duplicate_to_idempotency_authority():
     assert lease is None
 
 
+
 def test_d1_store_delegates_active_research_duplicate_to_idempotency_authority():
     import asyncio
 
@@ -256,6 +430,7 @@ def test_d1_store_delegates_active_research_duplicate_to_idempotency_authority()
     assert decision.outcome.value == "accepted"
     assert decision.allowed is True
     assert lease is None
+
 
 
 def test_d1_store_delegates_chat_after_failed_lease_reclaim_race():
@@ -291,6 +466,7 @@ def test_d1_store_delegates_chat_after_failed_lease_reclaim_race():
     assert lease is None
 
 
+
 def test_admission_decision_uses_weighted_cost_fields():
     from backend.admission import AdmissionSnapshot, decide_admission
 
@@ -312,8 +488,10 @@ def test_admission_decision_uses_weighted_cost_fields():
     assert denied.outcome.value == "rate_limited"
 
 
+
 def test_admission_storage_identity_is_subject_scoped():
     assert _storage_event_id("subject-a", "same") != _storage_event_id("subject-b", "same")
+
 
 
 def test_admission_store_samples_cleanup_instead_of_deleting_every_request():
@@ -321,10 +499,12 @@ def test_admission_store_samples_cleanup_instead_of_deleting_every_request():
     assert "if now % (policy.window_seconds * 10) == 0:" in source
 
 
+
 def test_admission_store_uses_weighted_atomic_insert_guard():
     source = open("backend/admission_store.py", encoding="utf-8").read()
     assert "COALESCE(SUM(cost_units), 0)" in source
     assert " + ? <= ?" in source
+
 
 
 def test_duplicate_admission_is_http_conflict():
@@ -340,6 +520,7 @@ def test_duplicate_admission_is_http_conflict():
         )
     )
     assert response.status == 409
+
 
 
 def test_duplicate_spend_rejects_when_subject_cost_ceiling_would_be_exceeded():
@@ -370,9 +551,145 @@ def test_duplicate_spend_rejects_when_subject_cost_ceiling_would_be_exceeded():
     )) is False
 
 
+@pytest.mark.asyncio
+
+@pytest.mark.asyncio
+async def test_released_duplicate_cost_ceiling_returns_rate_limit():
+    from backend.admission_store import _handle_released_event
+    class DB:
+        def prepare(self, query):
+            class Statement:
+                def bind(self_inner, *args): return self_inner
+                async def first(self_inner): return {"total_cost": 30}
+                async def run(self_inner): return {"meta": {"changes": 0}}
+            return Statement()
+    decision, lease = await _handle_released_event(
+        DB(),
+        event_id="e",
+        subject_fingerprint="s",
+        window_start=0,
+        cost_units=1,
+        route=AdmissionRoute.CHAT,
+        decision=AdmissionDecision(AdmissionOutcome.ACCEPTED, AdmissionRoute.CHAT, True, "ok"),
+        policy=AdmissionPolicy(),
+    )
+    assert decision.outcome is AdmissionOutcome.RATE_LIMITED
+    assert lease is None
+
+
+@pytest.mark.asyncio
+
+@pytest.mark.asyncio
+async def test_active_protected_duplicate_cost_ceiling_returns_rate_limit():
+    from backend.admission_store import _handle_active_protected_duplicate
+    class DB:
+        def prepare(self, query):
+            class Statement:
+                def bind(self_inner, *args): return self_inner
+                async def first(self_inner): return {"total_cost": 30}
+                async def run(self_inner): return {"meta": {"changes": 0}}
+            return Statement()
+    decision, lease = await _handle_active_protected_duplicate(
+        DB(),
+        event_id="e",
+        subject_fingerprint="s",
+        window_start=0,
+        cost_units=1,
+        route=AdmissionRoute.CHAT,
+        policy=AdmissionPolicy(),
+    )
+    assert decision.outcome is AdmissionOutcome.RATE_LIMITED
+    assert lease is None
+
+
 
 def test_admission_identity_rejects_oversized_event_id():
     with pytest.raises(ValueError, match="exceeds supported size"):
         D1AdmissionStore._validate_identity("subject-1", "x" * 257)
 
+
+@pytest.mark.asyncio
+
+@pytest.mark.asyncio
+async def test_insert_race_rechecks_canonical_scoped_event_id():
+    from backend.admission_store import _insert_new_admission
+    class DB:
+        def __init__(self):
+            self.lookups = []
+        def prepare(self, query):
+            parent = self
+            class Statement:
+                def bind(self_inner, *args):
+                    self_inner.args = args
+                    return self_inner
+                async def run(self_inner): return {"meta": {"changes": 0}}
+                async def first(self_inner):
+                    parent.lookups.append(self_inner.args[0])
+                    if len(parent.lookups) == 1:
+                        return None
+                    return {
+                        "event_id": self_inner.args[0],
+                        "subject_fingerprint": "s",
+                        "route": "chat",
+                        "window_start": 0,
+                        "lease_expires_at": 10,
+                        "released_at": 1,
+                        "cost_units": 2,
+                    }
+            return Statement()
+    db = DB()
+    decision, lease = await _insert_new_admission(
+        D1AdmissionStore(db),
+        AdmissionDecision(AdmissionOutcome.ACCEPTED, AdmissionRoute.CHAT, True, "ok"),
+        event_id="raw-id",
+        window_start=0,
+        subject_fingerprint="s",
+        route=AdmissionRoute.CHAT,
+        cost_units=2,
+        expires_at=10,
+        now=1,
+        policy=AdmissionPolicy(),
+        storage_event_id="scoped-id",
+    )
+    assert db.lookups[:2] == ["scoped-id", "scoped-id"]
+    assert decision.allowed is True
+    assert lease is None
+
+
+@pytest.mark.asyncio
+
+@pytest.mark.asyncio
+async def test_periodic_cleanup_branch_executes():
+    class CleanupDB:
+        def __init__(self):
+            self.deleted = False
+        def prepare(self, query):
+            parent = self
+            class Statement:
+                def bind(self_inner, *args): return self_inner
+                async def run(self_inner):
+                    if query.lstrip().lower().startswith("delete from public_admission_events"):
+                        parent.deleted = True
+                    return {"meta": {"changes": 1}}
+                async def first(self_inner):
+                    return {
+                        "subject_requests": 0,
+                        "global_requests": 0,
+                        "subject_cost_units": 0,
+                        "global_cost_units": 0,
+                        "subject_concurrent": 0,
+                        "global_concurrent": 0,
+                    }
+            return Statement()
+    db = CleanupDB()
+    decision, lease = await D1AdmissionStore(db).acquire(
+        subject_fingerprint="s",
+        route=AdmissionRoute.CHEAP_READ,
+        policy=AdmissionPolicy(window_seconds=10),
+        event_id="cleanup",
+        now=100,
+    )
+    assert decision.allowed is True
+    assert lease is not None
+    assert db.deleted is True
 

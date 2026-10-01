@@ -1,8 +1,76 @@
-"""Shared deterministic test harness for public admission-store behavior."""
+from __future__ import annotations
+
+import asyncio
 import pytest
 
+
 from backend.admission import AdmissionDecision, AdmissionOutcome, AdmissionPolicy, AdmissionRoute
-from backend.admission_store import D1AdmissionStore, _storage_event_id
+from backend.admission_store import D1AdmissionStore, ROUTE_COST_UNITS, _insert_new_admission, _storage_event_id
+class FakeStatement:
+    def __init__(self, query):
+        self.query = query
+        self.args = ()
+
+    def bind(self, *args):
+        self.args = args
+        return self
+
+    async def run(self):
+        return {"meta": {"changes": 1}}
+
+    async def first(self):
+        if "SELECT EVENT_ID" in self.query.upper():
+            return None
+        return {
+            "subject_requests": 0,
+            "global_requests": 0,
+            "subject_concurrent": 0,
+            "global_concurrent": 0,
+        }
+
+
+
+class FakeDB:
+    def __init__(self):
+        self.queries = []
+
+    def prepare(self, query):
+        self.queries.append(query)
+        return FakeStatement(query)
+
+
+@pytest.mark.asyncio
+
+class Request:
+    def __init__(self, method, url, payload=None, headers=None):
+        self.method = method
+        self.url = url
+        self._payload = payload
+        self.headers = headers or {}
+
+    async def json(self):
+        return self._payload
+
+
+
+class AdmissionLeaseTracker:
+    def __init__(self):
+        self.released = []
+
+    async def release(self, lease):
+        self.released.append(lease)
+
+
+
+class Persistence:
+    def __init__(self):
+        self.created = []
+
+    async def create_run(self, run_id, request):
+        self.created.append(run_id)
+        return run_id
+
+
 
 def accepted_admission(lease):
     from backend.admission import AdmissionDecision, AdmissionOutcome
@@ -14,6 +82,7 @@ def accepted_admission(lease):
     ), lease
 
 
+@pytest.mark.asyncio
 
 class ZeroInsertDB(FakeDB):
     def prepare(self, query):
@@ -26,6 +95,7 @@ class ZeroInsertDB(FakeDB):
         return {"meta": {"changes": 0}}
 
 
+@pytest.mark.asyncio
 
 class IdempotentAdmissionDB(FakeDB):
     def __init__(self):
@@ -108,4 +178,5 @@ class IdempotentAdmissionDB(FakeDB):
                 }
 
         return StatefulStatement(query)
+
 
