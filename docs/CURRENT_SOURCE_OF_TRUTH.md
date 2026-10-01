@@ -3,14 +3,14 @@
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
 Checked: 2026-10-01.
-Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `0b2a04fddab627701149d108345cc4fb1336b278`.
+Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `d990473426e4bcf07739965545c3f01a79ab8297`.
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: current main is read live from GitHub; last verified commit `0b2a04fddab627701149d108345cc4fb1336b278`.
-Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `c69d5c113d43809e28ba622009ad0cc568b94a12; research/migration jobs use explicit immutable pins below.
-Production Operations pin: ce4f9edbae3ddf1bf1c25a908d5bce014acc7676.
-Provider fleet runtime probe pin: b95e419254a9071beaeef57a1b0da22ba7dd2c4f.
-Research Operations pin: 1a91efa53b9202f1624ddde892b0e86bd6b360f0.
+Foundation main code checkpoint: current main is read live from GitHub; last verified commit `d990473426e4bcf07739965545c3f01a79ab8297`.
+Operations main checkpoint: current protected main revision is read from GitHub live state; current main is `1a4bcb51615585ce9ee7f5d9d2774f7169e872bf`. Research and migration jobs use explicit immutable pins below.
+Production Operations pin: `90fa37df10d63824acd3fe20b64cc91043af9627`.
+Provider fleet runtime probe pin: `b95e419254a9071beaeef57a1b0da22ba7dd2c4f`.
+Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`.
 Live issue and PR counts must be read from GitHub; this file never serves as a mutable queue.
 
 ## Public architecture
@@ -107,3 +107,15 @@ The 1,408 supplied GitHub Marketplace App records were analyzed as capability pa
 
 ### 2026-10-01 hybrid & alternative capability-mining reconciliation
 The project-wide $0 model now treats paid, premium, hosted and proprietary ecosystems as research inputs rather than exclusion lists. The supplied MCP, GitHub Actions Marketplace, and GitHub Apps datasets are covered by `docs/HYBRID_ALTERNATIVE_ECOSYSTEM_AUDIT_2026-10-01.*`, while direct paid runtime dependencies remain forbidden. Useful public behavior, architecture, policy, resource controls, lifecycle semantics and UX may be reimplemented using native GitHub/Cloudflare capabilities, open-source components, or bounded documented free quotas subject to deterministic, security, resource, provenance, shadow, canary and rollback evidence.
+
+## 2026-10-01 autonomous control-plane acceptance
+
+The v1 autonomous engineering supervisor is independently scheduled and is not a ChatGPT/session dependency. Live hosted evidence includes provider runtime-state publication (run 36844955035), child-run reconciliation into verifying (run 36845396455), deterministic fallback rotation (run 36845689035), and successful child workflow completion (run 36845712210). Production release remains outside autonomous workflow authority.
+
+## 2026-10-01 provider/runtime acceptance
+
+The provider fleet workflow is operational end-to-end. Run 36844955035 generated a sanitized provider runtime snapshot and published CHAT_PROVIDER_RUNTIME_STATE to the private Operations Worker. The current live probe records SiliconFlow as temporary with zero successful probes; provider admission therefore remains fail-closed rather than falsely promoted.
+
+## 2026-10-01 production-release boundary
+
+The privileged production workflow is now manual-only (workflow_dispatch). Ordinary Foundation main pushes and autonomous merges no longer trigger production deployment. The latest attempted release before that boundary (run 36846407025) deployed the Worker pair and passed Operations provenance/policy checks, but persistence acceptance failed because the Cloudflare account had exhausted the D1 free-tier daily row-read limit. That run is not a production certification.
