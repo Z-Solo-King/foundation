@@ -333,8 +333,9 @@ jobs:
             -H 'Content-Type: application/json' \
             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts/$CLOUDFLARE_SCRIPT_NAME/secrets" \
             --data "$(jq -cn --arg text "$state" '{name:"CHAT_PROVIDER_RUNTIME_STATE",text:$text,type:"secret_text"}')")"
-          test "$response_status" = "200"
+          test "$response_status" = "200" || test "$response_status" = "201"
           jq -e '.success == true' "$RUNNER_TEMP/provider-runtime-state-publish.json" >/dev/null
+          echo "Cloudflare provider runtime-state secret API accepted the write (HTTP $response_status)."
           echo "Published sanitized provider runtime state to private Operations Worker."
 
       - name: Upload provider evidence
