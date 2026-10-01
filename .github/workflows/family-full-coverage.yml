@@ -67,6 +67,7 @@ jobs:
         run: |
           python scripts/validate_github_actions_zero_cost.py
           python scripts/validate_github_app_policy.py
+          python scripts/validate_hybrid_alternative_policy.py
 
       - name: Upload full coverage receipt
         if: always()

@@ -109,3 +109,12 @@ The App policy now distinguishes Marketplace Apps from the first-party Operation
 Static App-token workflow validation is now part of policy enforcement. Every `actions/create-github-app-token` use must use the project Operations App credentials, explicit Operations repository scope, `permission-contents: read`, and an immutable Action ref. Dynamic arbitrary-repository App scoping is outside the canonical boundary.
 
 GitHub's current documentation confirms that App installation grants requested permissions and lets installations select repositories; installation access tokens can be explicitly scoped and expire after one hour. Webhooks should use a secret, HTTPS, minimum event subscriptions, signature validation, event/action validation, and delivery identifiers.
+
+
+## Hybrid & Alternative capability-mining model
+
+The 1,408 supplied App entries are now treated as a capability research corpus rather than an install/no-install decision list. Paid plans and payment-dependent installations remain outside the $0 runtime boundary, but their publicly documented capabilities are explicitly eligible for analysis and safe reimplementation.
+
+This means a premium AI reviewer can reveal useful review contracts; a security SaaS App can reveal detection/reporting workflows; a project-management App can reveal synchronization semantics; and an observability App can reveal event, incident and telemetry structures. The project then reproduces the useful mechanics with existing first-party GitHub/Cloudflare/open-source capabilities where evidence supports equivalence.
+
+The governing distinction is: `researchable` does not mean `installable`; `feature-reimplementable` does not mean `paid dependency allowed`; `free equivalent proven` is required before runtime promotion.

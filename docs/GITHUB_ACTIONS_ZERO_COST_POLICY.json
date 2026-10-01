@@ -54,5 +54,13 @@
     "marketplace_is_discovery_only": true,
     "allowlist_changes_require_code_review_and_live_validation": true,
     "policy_is_conservative_and_does_not_claim_external_services_are_free_without_evidence": true
+  },
+  "hybrid_alternative": {
+    "research_paid_capabilities": true,
+    "direct_paid_runtime_dependency_allowed": false,
+    "paid_feature_reimplementation_allowed": true,
+    "public_behavior_and_architecture_analysis_allowed": true,
+    "proprietary_source_or_assets_without_license_allowed": false,
+    "feature_mining_reference": "docs/HYBRID_ALTERNATIVE_ECOSYSTEM_AUDIT_2026-10-01.json"
   }
 }

@@ -129,5 +129,13 @@
       "must_request_minimum_permissions": true,
       "must_not_use_user_authorization_for_automation": true
     }
+  },
+  "hybrid_alternative": {
+    "research_paid_apps": true,
+    "direct_paid_runtime_dependency_allowed": false,
+    "paid_feature_reimplementation_allowed": true,
+    "public_behavior_and_architecture_analysis_allowed": true,
+    "proprietary_source_or_assets_without_license_allowed": false,
+    "feature_mining_reference": "docs/HYBRID_ALTERNATIVE_ECOSYSTEM_AUDIT_2026-10-01.json"
   }
 }

@@ -132,3 +132,10 @@ Future Marketplace-derived improvements follow:
 10k extraction -> complete classification -> project gap analysis -> native capability where possible -> full-SHA pin -> least privilege -> timeout/concurrency -> deterministic test -> live validation -> baseline review
 
 The Marketplace is a discovery source, not a runtime authority.
+
+
+## Hybrid & Alternative $0 implementation model
+
+The 9,999 supplied Marketplace Action entries are a feature-discovery corpus as well as a dependency list. Paid or SaaS-backed Actions are not ignored: their workflow structure, input/output contracts, matrices, caching, release gates, security checks, attestations, retries, notifications, observability and other public behavior are researchable.
+
+Direct paid dependencies remain outside canonical runtime. The useful capability is mapped to existing GitHub primitives, Cloudflare capabilities, open-source tooling, or a bounded free-quota route and then subjected to deterministic tests, security/resource/provenance checks and runtime evidence. The immutable Action allowlist remains the gate for anything actually executed as an Action.
