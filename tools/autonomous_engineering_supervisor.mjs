@@ -142,7 +142,7 @@ async function callPlanner(missionId, cycle, context) {
   const payload = {
     chat_id: missionId,
     request_id: `autonomous-plan:${missionId}:${cycle}`,
-    message: 'AUTONOMOUS_ENGINEERING_PLAN_V1\nReturn JSON only. You are a bounded planner, not an execution authority. For component_improvement, target_component is mandatory and the action must come from that component allowlist. Treat this as an action_plan candidate and choose one next step that maximizes useful evidence while avoiding repeated known failures. '+JSON.stringify(context),
+    message: 'AUTONOMOUS_ENGINEERING_PLAN_V1\nReturn JSON only. You are a bounded planner, not an execution authority. For component_improvement, target_component is mandatory and every action must come from that component allowlist. The plan may contain up to 3 independent actions; use multiple actions when they can run safely in parallel and materially advance separate evidence lanes. Do not duplicate workflows, do not dispatch production release, do not mutate credentials/policy/Cloudflare, and never use a second action merely to duplicate the first. Prefer 2-3 independent allowlisted workflows when they are non-overlapping; otherwise return the single highest-value action. '+JSON.stringify(context),
     mode:'chat', operation:'knowledge', strict_zero_cost_only:true, require_model_generation:true,
     metadata:{autonomous:'true',plan_version:'v1'},
   };
