@@ -463,3 +463,26 @@ No current native Google Merchant XML URL has been recovered for the 17 true-unk
 The unresolved targets remain divided into evidence categories: current clean negatives for tested deterministic paths, family hypotheses that terminate without a populated feed, and persistent transport-limited sites that remain unverified.
 
 Do not claim global feed absence or final recovery completion from these results alone. Future work should start from new public/current evidence or a newly discovered family grammar, not from another blind filename matrix.
+
+
+## 14. V10B persistent blocked-target recovery — 2026-10-01
+
+Run: 36822925864.
+
+The ten V7 transport-limited targets were retried one-at-a-time through the ten already-researched family representative URLs, with slow retry and inter-probe spacing.
+
+Result:
+- 0/10 current native Google Merchant XML feeds verified.
+- 2/10 changed from the earlier transport state to public reachability without producing a native feed: Aarna Computers and GamesNComps.
+- 8/10 remain transport-limited: Cosmic Byte, ithunt, KC Computers, KRG KART, PC Kumar Infotech, PCHubShop, SCL Gaming, Theproaudio.
+- Aarna returned 9 HTTP 200 responses, but the family URLs resolved to ordinary HTML/category content; no useful family-specific feed signal.
+- GamesNComps returned one 200 ordinary HTML response for the WooCommerce GPF query and 404s/blocked responses for the remaining family URLs; no native feed or family signal.
+- No target generated a new family-specific expansion gate.
+
+Interpretation: the slower recovery materially reduced false transport conclusions for two targets, but did not recover a current native Merchant XML feed. The eight persistent blockers remain unverified rather than negative.
+
+No CAPTCHA solving, Cloudflare challenge bypass, clearance-cookie replay, authentication bypass, proxy rotation/evasion, random token enumeration, Store API extraction, plugin extraction, or browser/XHR discovery was used.
+
+### Current completion boundary after V10B
+
+All ten previously researched family representatives have now been exercised against the persistent blocked cohort under a slow public-only transport strategy. Further work requires genuinely new public/current evidence or a newly corroborated feed-family grammar. Do not restart a blind cross-family matrix merely because native hits remain zero.
