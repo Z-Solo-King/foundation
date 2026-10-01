@@ -1,6 +1,7 @@
 import pytest
 
 from backend.intelligence.authority import ClaimField, FieldAuthority, evaluate_authority, independent_sources
+from tests.policy_test_support import AUTHORITY_RULES
 from backend.intelligence.lineage import SourceLineage, origin_fingerprint
 
 
@@ -17,23 +18,23 @@ from backend.intelligence.lineage import SourceLineage, origin_fingerprint
     ],
 )
 def test_allowed_field_authority(field, authority):
-    assert evaluate_authority(field, authority).accepted
+    assert evaluate_authority(field, authority, allowed_authorities=AUTHORITY_RULES).accepted
 
 
 def test_manufacturer_declaration_cannot_be_used_as_independent_measurement():
-    decision = evaluate_authority(ClaimField.MEASUREMENT, FieldAuthority.MANUFACTURER_DECLARATION)
+    decision = evaluate_authority(ClaimField.MEASUREMENT, FieldAuthority.MANUFACTURER_DECLARATION, allowed_authorities=AUTHORITY_RULES)
     assert not decision.accepted
 
 
 def test_price_cannot_be_qualified_from_community_experience():
-    assert not evaluate_authority(ClaimField.PRICE, FieldAuthority.COMMUNITY_EXPERIENCE).accepted
+    assert not evaluate_authority(ClaimField.PRICE, FieldAuthority.COMMUNITY_EXPERIENCE, allowed_authorities=AUTHORITY_RULES).accepted
 
 
 def test_unknown_field_or_authority_rejected():
     with pytest.raises(ValueError):
-        evaluate_authority("not-a-field", FieldAuthority.RETAILER_CURRENT_STATE)
+        evaluate_authority("not-a-field", FieldAuthority.RETAILER_CURRENT_STATE, allowed_authorities=AUTHORITY_RULES)
     with pytest.raises(ValueError):
-        evaluate_authority(ClaimField.PRICE, "not-an-authority")
+        evaluate_authority(ClaimField.PRICE, "not-an-authority", allowed_authorities=AUTHORITY_RULES)
 
 
 def test_independence_rejects_same_origin_even_with_different_sources():

@@ -4,6 +4,9 @@ import pytest
 
 from backend.intelligence.contracts import ResearchContract
 from backend.intelligence.planning import create_plan
+TEST_PLANNING_POLICY={"base_source_families":["web_search","retailers","oem"],"category_required_source_families":{"best_product":["amazon","flipkart","reddit","retailers","professional_reviews"],"buying_guide":["amazon","flipkart","reddit","retailers","oem"]},"keyword_groups":{},"temporal_terms":["latest","revision","2024"],"quick_stages":["define_question","discover_sources","collect_observations","verify_evidence","synthesize_answer"],"standard_stages":["define_question","assess_constraints","discover_sources","collect_observations","map_evidence","verify_evidence","check_independence","synthesize_answer"]}
+
+
 
 
 def test_research_contract_accepts_category_and_explicit_families() -> None:
@@ -14,7 +17,7 @@ def test_research_contract_accepts_category_and_explicit_families() -> None:
         required_source_families=("reddit", "  flipkart  "),
     )
     contract.validate()
-    plan = create_plan(contract)
+    plan = create_plan(contract, planning_policy=TEST_PLANNING_POLICY)
     families = set(plan.metadata["required_source_families"].split(","))
     assert {"amazon", "flipkart", "reddit", "retailers", "professional_reviews"} <= families
     assert plan.metadata["required_source_families_origin"] == "explicit+category+question"
@@ -47,12 +50,8 @@ def test_planner_handles_missing_category_and_normalizes_explicit_entries() -> N
 
 
 def test_planner_category_and_temporal_metadata_are_independent() -> None:
-    category_plan = create_plan(
-        ResearchContract(question="buying guide", query_category="buying_guide")
-    )
-    temporal_plan = create_plan(
-        ResearchContract(question="latest revision versus 2024", query_category=None)
-    )
+    category_plan = create_plan(ResearchContract(question="buying guide", query_category="buying_guide"), planning_policy=TEST_PLANNING_POLICY)
+    temporal_plan = create_plan(ResearchContract(question="latest revision versus 2024", query_category=None, freshness_requirement="recent"), planning_policy=TEST_PLANNING_POLICY)
     assert "amazon" in category_plan.metadata["required_source_families"]
     assert category_plan.metadata["temporal_reconciliation"] == "false"
     assert temporal_plan.metadata["temporal_reconciliation"] == "true"

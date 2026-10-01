@@ -27,7 +27,7 @@ def readiness_endpoint() -> dict[str, Any]:
     return {"ready": health.status == "ok", "version": health.version}
 
 
-def submit_research(request: ResearchRequest) -> APIResponse:
+def submit_research(request: ResearchRequest, planning_policy: dict[str, object] | None = None) -> APIResponse:
     try:
         request.validate()
         contract = ResearchContract(
@@ -39,7 +39,7 @@ def submit_research(request: ResearchRequest) -> APIResponse:
         )
         contract.validate()
         run_id = str(uuid.uuid4())
-        run = start_run(contract, run_id=run_id)
+        run = start_run(contract, run_id=run_id, planning_policy=planning_policy)
         return APIResponse(
             ok=True,
             run_id=run.run_id,

@@ -9,8 +9,8 @@ from backend.intelligence.contracts import ResearchContract
 from backend.intelligence.planning import create_plan
 
 
-def create_run(run_id: str, contract: ResearchContract) -> ResearchRun:
-    return create_engine_run(run_id, contract, create_plan(contract))
+def create_run(run_id: str, contract: ResearchContract, planning_policy: dict[str, object] | None = None) -> ResearchRun:
+    return create_engine_run(run_id, contract, create_plan(contract, planning_policy=planning_policy))
 
 
 def transition(run: ResearchRun, status: str) -> ResearchRun:
