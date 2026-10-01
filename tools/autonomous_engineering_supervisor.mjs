@@ -7,7 +7,6 @@ const repo = process.env.GITHUB_REPOSITORY?.split('/')[1];
 const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
 const workerUrl = (process.env.PUBLIC_WORKER_URL || 'https://ai-cio.pages.dev').replace(/\/$/, '');
 const dryRun = process.env.DRY_RUN === 'true';
-if (!process.env.AUTH_TOKEN) throw new Error('AUTH_TOKEN is required for autonomous planner');
 const maxCycles = Number(process.env.MAX_PLANNING_CYCLES || 6);
 const maxWorkflowAttempts = Number(process.env.MAX_WORKFLOW_ATTEMPTS || 3);
 
@@ -119,6 +118,7 @@ async function callPlanner(missionId, cycle, context) {
 }
 
 async function main() {
+  if (!process.env.AUTH_TOKEN) throw new Error('AUTH_TOKEN is required for autonomous planner');
   if (!owner || !repo || !token) throw new Error('GitHub repository/token environment is required');
   if (!process.env.AUTH_TOKEN) throw new Error('AUTH_TOKEN is required for autonomous planner');
   const foundationSha = process.env.FOUNDATION_SHA;
