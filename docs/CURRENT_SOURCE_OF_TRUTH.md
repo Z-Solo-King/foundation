@@ -2,16 +2,16 @@
 
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
-Checked: 2026-10-01 17:45 UTC.
-Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `9538b83e95314141ec262b7f691bbbe7ee4fd521`.
+Checked: 2026-10-01 18:00 UTC.
+Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `f548a468b4dcd9e7c03263a130ce76e95eafc228`.
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: current main is read live from GitHub; last verified commit `9538b83e95314141ec262b7f691bbbe7ee4fd521`.
+Foundation main code checkpoint: current main is read live from GitHub; last verified commit `f548a468b4dcd9e7c03263a130ce76e95eafc228`.
 Operations main checkpoint: current main is read live from GitHub; last verified main commit `3c780e33772c87ec6c3b6df75a857e5404f0b861`. Research and migration jobs use explicit immutable pins below.
 Production Operations pin: `da86e92d4e0fdb68912efb54ef95c69281a7d613`.
 Provider fleet runtime probe pin: `b95e419254a9071beaeef57a1b0da22ba7dd2c4f`.
 Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`.
-Live issue and PR counts must be read from GitHub; this file never serves as a mutable queue. Current checkpoint: 8 open issues total (7 Foundation, 1 Operations) and no open pull requests.
+Live issue and PR counts must be read from GitHub; this file never serves as a mutable queue. Current checkpoint: 6 open issues total (5 Foundation, 1 Operations) and no open pull requests.
 
 ## Public architecture
 
@@ -157,7 +157,7 @@ Foundation main `68aff623472af4df03688ddb24f33259d1fe5532` and Operations main `
 Foundation main `2239ae23706e5ab14c61869022eca93618b74cb9` contains the repaired Operations private integrity guard. The workflow now constructs its validator input with `jq -n`, preventing empty-stdin JSON generation and preserving the fail-closed comparison against the immutable approved Operations production revision. The repair changes no authority, credential, policy, or deployment boundary.
 
 ## 2026-10-01 final live reconciliation
-Foundation main is `9538b83e95314141ec262b7f691bbbe7ee4fd521`; Operations main is `3c780e33772c87ec6c3b6df75a857e5404f0b861`. Foundation has one open PR (#1791), a feed-only workflow-trigger change; no non-feed Foundation or Operations PRs remain open. Superseded autonomous missions and stale feed recovery PRs were retired; runtime/evidence issues remain open until their stated gates are actually satisfied. The current live WooCommerce V18 and emergency 30-way recovery runs are evidence work and are not treated as completed merely because their workflows started.
+Foundation main is `f548a468b4dcd9e7c03263a130ce76e95eafc228`; Operations main is `3c780e33772c87ec6c3b6df75a857e5404f0b861`. No Foundation or Operations pull requests remain open. Superseded autonomous missions and stale feed recovery PRs were retired; runtime/evidence issues remain open until their stated gates are actually satisfied. The current live WooCommerce V18 and emergency 30-way recovery runs are evidence work and are not treated as completed merely because their workflows started.
 
 ## Unified AI navigation and observability
 
