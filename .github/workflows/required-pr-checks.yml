@@ -79,6 +79,13 @@ jobs:
         run: python -m compileall -q foundation_core
       - name: Verify package installation
         run: python -c "import foundation_core; print(foundation_core.__all__)"
+      - name: Verify public test collection
+        run: |
+          set -euo pipefail
+          test -s tests/test_outcome.py
+          python -m pytest --collect-only -q tests/test_outcome.py
+          python -m pytest -q tests/test_outcome.py
+
       - name: Run public product tests with complete foundation_core coverage
         run: |
           set -euo pipefail
