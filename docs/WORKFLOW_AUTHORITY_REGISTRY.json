@@ -52,6 +52,10 @@
       "family_full_coverage"
     ],
     [
+      ".github/workflows/family-hygiene-sync.yml",
+      "private_audit"
+    ],
+    [
       ".github/workflows/family-integrity-gate.yml",
       "family_governance"
     ],
@@ -136,11 +140,11 @@
       "private_feed_extraction"
     ],
     [
-      ".github/workflows/woocommerce-native-xml-recovery-v18.yml",
+      ".github/workflows/woocommerce-google-xml-recovery-v19.yml",
       "private_feed_extraction"
     ],
     [
-      ".github/workflows/woocommerce-google-xml-recovery-v19.yml",
+      ".github/workflows/woocommerce-native-xml-recovery-v18.yml",
       "private_feed_extraction"
     ],
     [
