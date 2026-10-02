@@ -56,8 +56,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
-      - name: Mint read-only Operations App token
+      - name: Mint read-only Operations App token (trusted manual run only)
         id: operations-app
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
@@ -65,7 +66,9 @@ jobs:
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Checkout Operations (trusted manual run only)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
           ref: ${{ needs.resolve.outputs.operations_ref }}
@@ -79,13 +82,14 @@ jobs:
         run: |
           mkdir -p .runtime
           node tools/migration_factory.mjs --root . --lane "${{ matrix.lane }}" --out ".runtime/foundation-${{ matrix.lane }}.json"
-      - name: Run Operations lens
+      - name: Run Operations lens (trusted manual run only)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           mkdir -p operations/.runtime
           node tools/migration_factory.mjs --root operations --lane "${{ matrix.lane }}" --out "operations/.runtime/operations-${{ matrix.lane }}.json"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: migration-factory-${{ matrix.lane }}
+          name: migration-factory-${{ github.event_name }}-${{ matrix.lane }}
           path: |
             .runtime/
             operations/.runtime/
@@ -107,8 +111,9 @@ jobs:
         run: |
           set -euo pipefail
           files=$(find .runtime/crossfire -name '*.json' -type f | wc -l)
-          test "$files" -ge 12
-          echo "CrossFire complete: $files independent reports"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then expected=12; else expected=6; fi
+          test "$files" -eq "$expected"
+          echo "CrossFire complete: $files independent reports (expected $expected)"
           node --input-type=module <<'NODE'
           import fs from "node:fs";
           const root=".runtime/crossfire";
