@@ -425,7 +425,7 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     assert 'PIN_MANIFEST="docs/OPERATIONS_PIN_MANIFEST.json"' in deployment
     assert 'manifest["pins"]["production_runtime"]["sha"]' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
-    expected = "OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || '" + CANONICAL_PRODUCTION_OPERATIONS_REF + "' }}"
+    expected = "OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || '" + CANONICAL_RESEARCH_OPERATIONS_REF + "' }}"
     assert expected in nightly
 
 def test_coverage_runtime_matrix_uses_versioned_validation_tests():
@@ -492,7 +492,7 @@ def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
     auxiliary = {
         "live-chatbot-production-smoke.yml": expected_production,
         "coverage-driven-runtime-matrix.yml": expected_nightly,
-        "polyglot-governance-audit.yml": expected_nightly,
+        "polyglot-governance-audit.yml": expected_production,
         "live-nightly-research-canary.yml": CANONICAL_PRODUCTION_OPERATIONS_REF,
         "nightly-research-provider-preflight.yml": CANONICAL_PRODUCTION_OPERATIONS_REF,
     }
