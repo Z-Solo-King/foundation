@@ -202,7 +202,7 @@ export function deterministicFallbackPlan(context) {
     if (/woocommerce|feed|merchant/.test(issueText)) { missionType = 'feed_recovery'; workflows = MISSION_WORKFLOWS.feed_recovery; }
     else if (/migration|polyglot|mapper/.test(issueText)) { missionType = 'migration'; workflows = MISSION_WORKFLOWS.migration; }
     else if (/research|nightly|provider/.test(issueText)) { missionType = 'nightly_research'; workflows = MISSION_WORKFLOWS.nightly_research; }
-    else if (/audit|security|integrity/.test(issueText)) { missionType = 'audit'; workflows = MISSION_WORKFLOWS.audit; }
+    else if (/audit|security|integrity|governance/.test(issueText)) { missionType = 'audit'; workflows = MISSION_WORKFLOWS.audit; }
   }
   const workflowKey = (run) => String(run.path || '').split('/').pop() || String(run.name || '');
   const active = new Set((context?.recent_runs || []).filter((run) => ['queued','in_progress','waiting','requested','pending'].includes(run.status)).map(workflowKey));
@@ -266,12 +266,19 @@ async function main() {
   const allIssues = await listIssues('open', 50);
   const mode = process.env.MISSION_MODE || 'standard';
   const missionPrefix = mode === 'component_improvement' ? '[autonomous-improvement]' : '[autonomous-mission]';
-  const activeMissions = allIssues.filter((i) => !i.pull_request && String(i.title || '').startsWith(missionPrefix));
-  const openIssues = allIssues.filter((i) => !i.pull_request && !String(i.title || '').startsWith('[autonomous-mission]') && !String(i.title || '').startsWith('[autonomous-improvement]')).slice(0,20);
+  const activeMissions = allIssues
+    .filter((i) => !i.pull_request && String(i.title || '').startsWith(missionPrefix))
+    .map((issue) => ({issue, state:parseState(issue.body)}));
+  const openIssues = allIssues
+    .filter((i) => !i.pull_request && !String(i.title || '').startsWith('[autonomous-mission]') && !String(i.title || '').startsWith('[autonomous-improvement]'))
+    .slice(0,20);
   const recentRuns = (await listRuns(35)).slice(0,35);
 
-  let missionIssue = mode === 'governance_sweep' ? null : activeMissions[0] || null;
-  let state = missionIssue ? parseState(missionIssue.body) : null;
+  const resumable = activeMissions.find(({state:missionState}) => (
+    missionState && !(missionState.state === 'blocked' && missionState.retriable === false)
+  ));
+  let missionIssue = mode === 'governance_sweep' ? null : (resumable?.issue || null);
+  let state = resumable?.state || null;
   if (!missionIssue || !state) {
     const missionId = `mission-${process.env.GITHUB_RUN_ID}`;
     const created = await createMission(missionId, foundationSha);
