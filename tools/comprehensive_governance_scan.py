@@ -208,9 +208,9 @@ def main():
         gates=set(quality.get("hard_gates") or [])
         if not {"security_policy","provenance"}.issubset(gates):
             add(fs,"quality_learning_evolution","quality","critical","quality_hard_gate_incomplete","Quality authority is missing the required security_policy/provenance hard gates.",{"hard_gates":sorted(gates)})
-        for p in ("private/evolution_score.py","private/evolution_engine.py","private/evolution_integration.py","private/self_evolution_boundary.py","private/strategy_matrix.py","private/ai_maintainability_policy.py","private/language_fit_policy.py","private/migration_artifact_policy.py","private/audit_rule_catalog.py"):
-            if not (a.operations/p).exists():add(fs,"quality_learning_evolution","evolution","critical","missing_evolution_policy_anchor","Canonical evolution/policy anchor is missing.",paths=[p])
-        if not (a.operations/"docs/FEATURE_SURFACE_GOVERNANCE_POLICY.json").exists():add(fs,"quality_learning_evolution","feature_policy","attention","feature_policy_matrix_missing","Feature/function/policy comparison contract is missing.")
+        required_evolution_surfaces=("private/evolution_score.py","private/evolution_engine.py","private/evolution_integration.py","private/self_evolution_boundary.py","private/strategy_matrix.py","private/ai_maintainability_policy.py","private/language_fit_policy.py","private/migration_artifact_policy.py","private/audit_rule_catalog.py","private/chatbot/chat_learning.py","private/chatbot/chat_learning_index.py","private/chatbot/feedback_evaluation_bridge.py","docs/PROJECT_OBSERVABILITY_AND_EVOLUTION.md","docs/FEATURE_SURFACE_GOVERNANCE_POLICY.json")
+        for p in required_evolution_surfaces:
+            if not (a.operations/p).exists():add(fs,"quality_learning_evolution","evolution","critical","missing_evolution_policy_anchor","Canonical evolution/learning/score policy anchor is missing.",paths=[p])
 
     if lane in ("all","performance_resources"):
         rows_run=[]
