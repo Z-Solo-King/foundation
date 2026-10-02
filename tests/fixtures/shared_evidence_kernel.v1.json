@@ -1,0 +1,15 @@
+{
+  "schema_version":"shared-evidence-kernel/v1",
+  "operations":[
+    {"id":"clamp","purpose":"bounded numeric normalization","deterministic":true},
+    {"id":"positive","purpose":"positive numeric fallback","deterministic":true},
+    {"id":"stable_json","purpose":"canonical recursive JSON serialization","deterministic":true},
+    {"id":"sha256","purpose":"stable content digest","deterministic":true},
+    {"id":"fingerprint","purpose":"short evidence fingerprint","deterministic":true},
+    {"id":"inventory","purpose":"ordered file inventory","deterministic":true},
+    {"id":"timestamp","purpose":"ISO-8601 parsing and normalization","deterministic":true},
+    {"id":"freshness","purpose":"bounded observation freshness","deterministic":true}
+  ],
+  "disposition_states":["SCANNED","DELEGATED","NOT_APPLICABLE"],
+  "authority":"mechanics_only"
+}

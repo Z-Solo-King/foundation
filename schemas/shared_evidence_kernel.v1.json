@@ -1,0 +1,13 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://github.com/Z-Solo-King/foundation/schemas/shared_evidence_kernel.v1.json",
+  "title":"Shared Evidence Kernel Contract",
+  "type":"object",
+  "required":["schema_version","operations","disposition_states"],
+  "properties":{
+    "schema_version":{"const":"shared-evidence-kernel/v1"},
+    "operations":{"type":"array","items":{"type":"object","required":["id","purpose","deterministic"],"properties":{"id":{"type":"string"},"purpose":{"type":"string"},"deterministic":{"type":"boolean"}}}},
+    "disposition_states":{"type":"array","items":{"enum":["SCANNED","DELEGATED","NOT_APPLICABLE"]}},
+    "authority":"mechanics_only"
+  }
+}
