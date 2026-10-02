@@ -1,7 +1,6 @@
 import json
 import pathlib
 
-
 ROOT = pathlib.Path(__file__).parents[1] / ".github" / "workflows"
 
 
@@ -13,9 +12,9 @@ def test_fresh_nightly_identity_is_dispatchable_and_uses_current_operations():
     assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
     assert "OPERATIONS_RESEARCH_REF:" in text
     manifest = json.loads(
-        (pathlib.Path(__file__).parents[1] / "docs" / "OPERATIONS_PIN_MANIFEST.json").read_text(
-            encoding="utf-8"
-        )
+        (
+            pathlib.Path(__file__).parents[1] / "docs" / "OPERATIONS_PIN_MANIFEST.json"
+        ).read_text(encoding="utf-8")
     )
     assert manifest["pins"]["research_runtime"]["sha"] in text
     assert "private.multi_agent.runner" in text
@@ -59,7 +58,9 @@ def test_nightly_dry_run_selects_mode_before_live_only_runtime_probe():
     probe_start = text.index("      - name: Verify exact deployed research runtime")
     assert mode_start < probe_start
     probe_block = text[
-        probe_start : text.index("      - name: Authenticate private research source", probe_start)
+        probe_start : text.index(
+            "      - name: Authenticate private research source", probe_start
+        )
     ]
     assert "if: ${{ steps.mode.outputs.mode == 'live' }}" in probe_block
     assert "node scripts/nightly_runtime_contract_probe.mjs" in probe_block
