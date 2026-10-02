@@ -1,0 +1,153 @@
+name: Current live runtime smoke
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: current-live-runtime-smoke
+  cancel-in-progress: true
+
+env:
+  PUBLIC_WORKER_URL: https://heroic-ai.pages.dev
+  OPERATIONS_REF: 11f592116d9ef57b6189bf8bf0ff0e95ec3d410f
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Probe public HTTP surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p smoke
+          for item in root health readiness; do
+            case "$item" in
+              root) path="/" ;;
+              health) path="/health" ;;
+              readiness) path="/readiness" ;;
+            esac
+            status=$(curl -sS --max-time 20 -D "smoke/$item.headers" -o "smoke/$item.body" -w "%{http_code}" "$PUBLIC_WORKER_URL$path" || true)
+            printf '%s' "$status" > "smoke/$item.status"
+            echo "$item HTTP $status"
+          done
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          root=Path("smoke")
+          out={"ok":True,"checks":{}}
+          for name in ("root","health","readiness"):
+              status=int((root/(name+".status")).read_text().strip() or "0")
+              body=(root/(name+".body")).read_text(errors="replace")[:4000]
+              item={"status":status,"body":body}
+              try:
+                  parsed=json.loads(body)
+                  item["json"]=parsed
+              except Exception:
+                  pass
+              out["checks"][name]=item
+              if status != 200:
+                  out["ok"]=False
+          print(json.dumps(out,indent=2))
+          (root/"http-receipt.json").write_text(json.dumps(out,indent=2)+"\n")
+          raise SystemExit(0 if out["ok"] else 1)
+          PY
+
+      - name: Probe authenticated JSON chat
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, sys, uuid, urllib.request
+          base=os.environ["PUBLIC_WORKER_URL"].rstrip("/")
+          token=os.environ.get("AUTH_TOKEN","")
+          if not token:
+              print("AUTH_TOKEN missing")
+              sys.exit(1)
+          rid="live-current-"+uuid.uuid4().hex
+          payload=json.dumps({
+              "chat_id":rid,
+              "request_id":rid,
+              "message":"Return one short sentence confirming the current production chatbot is reachable.",
+              "mode":"chat",
+              "strict_zero_cost_only":True,
+              "require_model_generation":True,
+          }).encode()
+          req=urllib.request.Request(
+              base+"/api/v1/chat",
+              data=payload,
+              method="POST",
+              headers={
+                  "Authorization":"Bearer "+token,
+                  "Content-Type":"application/json",
+                  "Idempotency-Key":rid,
+                  "X-Heroic-Research-Proof":"1",
+              },
+          )
+          with urllib.request.urlopen(req,timeout=120) as res:
+              body=json.loads(res.read())
+              print(json.dumps({"status":res.status,"body":body},indent=2))
+              response=body.get("response") or {}
+              assert res.status == 200
+              assert body.get("ok") is True
+              assert response.get("generation_status") == "model_generated"
+              assert response.get("provider") == "cloudflare_workers_ai"
+              assert isinstance(response.get("text"),str) and response["text"].strip()
+          PY
+
+      - name: Probe authenticated SSE chat
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rid="live-current-sse-$(openssl rand -hex 8)"
+          body=$(printf '%s' "{\"chat_id\":\"$rid\",\"request_id\":\"$rid\",\"message\":\"Reply with one short sentence proving SSE works.\",\"mode\":\"chat\",\"strict_zero_cost_only\":true,\"require_model_generation\":true}")
+          curl -sS --max-time 120             -H "Authorization: Bearer $AUTH_TOKEN"             -H 'Content-Type: application/json'             -H 'Accept: text/event-stream'             -H "Idempotency-Key: $rid"             --data "$body"             "$PUBLIC_WORKER_URL/api/v1/chat/stream" | tee smoke/chat-stream.txt
+          grep -q 'event: start' smoke/chat-stream.txt
+          grep -q 'event: done' smoke/chat-stream.txt
+          grep -q 'model_generated\|status":"completed' smoke/chat-stream.txt
+
+      - name: Probe authenticated research
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, sys, time, uuid, urllib.request
+          base=os.environ["PUBLIC_WORKER_URL"].rstrip("/")
+          token=os.environ["AUTH_TOKEN"]
+          headers={"Authorization":"Bearer "+token,"Content-Type":"application/json"}
+          payload=json.dumps({
+              "question":"Verify that example.com is reachable and report only observed facts.",
+              "depth":"quick",
+              "require_citations":True,
+              "max_sources":1,
+              "max_evidence_items":4,
+              "strict_zero_cost_only":True,
+              "source_urls":["https://example.com/"],
+          }).encode()
+          req=urllib.request.Request(base+"/api/v1/research",data=payload,method="POST",headers=headers|{"Idempotency-Key":"live-current-research-"+uuid.uuid4().hex})
+          with urllib.request.urlopen(req,timeout=120) as res:
+              body=json.loads(res.read())
+          print(json.dumps({"submit_status":res.status,"body":body},indent=2))
+          assert res.status == 200 and body.get("ok") is True
+          run_id=body.get("run_id")
+          assert run_id
+          for _ in range(20):
+              r=urllib.request.Request(base+"/api/v1/research/"+run_id,headers={"Authorization":"Bearer "+token})
+              with urllib.request.urlopen(r,timeout=30) as res:
+                  data=json.loads(res.read())
+              print(json.dumps({"read_status":res.status,"status":data.get("status")},indent=2))
+              if str(data.get("status","")).lower() in {"completed","complete","success","failed","error","blocked","cancelled"}:
+                  break
+              time.sleep(3)
+          PY
