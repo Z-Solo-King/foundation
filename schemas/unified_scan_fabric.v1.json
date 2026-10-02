@@ -1,0 +1,28 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://github.com/Z-Solo-King/foundation/schemas/unified_scan_fabric.v1.json",
+  "title":"Unified Scan Fabric Run Packet",
+  "type":"object",
+  "required":["schema_version","run_id","revisions","inventory","lanes","findings"],
+  "properties":{
+    "schema_version":{"const":"unified-scan-fabric/v1"},
+    "run_id":{"type":"string","minLength":8},
+    "revisions":{"type":"object","required":["foundation","operations"],"additionalProperties":{"type":"string"}},
+    "inventory":{"type":"object","required":["total","covered","dispositions"],"properties":{
+      "total":{"type":"integer","minimum":0},"covered":{"type":"integer","minimum":0},
+      "dispositions":{"type":"array","items":{"type":"object","required":["path","status"],"properties":{
+        "path":{"type":"string"},"status":{"enum":["SCANNED","DELEGATED","NOT_APPLICABLE"]}
+      }}}
+    }},
+    "lanes":{"type":"array","items":{"type":"object","required":["id","role","status"],"properties":{
+      "id":{"type":"string"},"role":{"type":"string"},
+      "status":{"enum":["READY","RUNNING","PASS","WARN","FAIL","NOT_APPLICABLE"]}
+    }}},
+    "findings":{"type":"array","items":{"type":"object","required":["id","severity","source"],"properties":{
+      "id":{"type":"string"},"severity":{"enum":["info","warning","critical"]},
+      "source":{"type":"string"},"path":{"type":"string"},
+      "corroboration":{"type":"array","items":{"type":"string"}}
+    }}}
+  },
+  "additionalProperties":false
+}
