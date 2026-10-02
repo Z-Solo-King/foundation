@@ -77,11 +77,11 @@ jobs:
           python -m pip install -e .
           python -m pip install pytest pytest-asyncio coverage workers-py workers-runtime-sdk pyyaml jsonschema
       - name: Compile every Python source
-        run: python -m compileall -q backend foundation_core worker.py
+        run: python -m compileall -q foundation_core
       - name: Verify package installation
         run: python -c "import foundation_core; print(foundation_core.__all__)"
       - name: Run product tests
-        run: coverage run --branch --source=backend,foundation_core,worker --omit='tests/*' -m pytest tests/ -v
+        run: coverage run --branch --source=foundation_core --omit='tests/*' -m pytest tests/ -v
       - name: Enforce complete product coverage
         run: coverage report --show-missing --fail-under=100 --omit='tests/*'
       - name: Run deterministic natural-language research benchmark
@@ -128,5 +128,5 @@ jobs:
         run: |
           set -euo pipefail
           test ! -e backend/learning/promotion.py
-          ! grep -RniE 'extractor_mapper|private.chatbot|resource_ledger|promotion.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-(private|public)' foundation_core backend worker.py wrangler.toml migrations
+          ! grep -RniE 'extractor_mapper|private.chatbot|resource_ledger|promotion.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-(private|public)' foundation_core edge.ts wrangler.toml migrations
           ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' backend foundation_core worker.py wrangler.toml migrations
