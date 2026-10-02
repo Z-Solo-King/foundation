@@ -81,9 +81,32 @@ jobs:
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
           OPERATIONS_CROSSFIRE_RUNNER: ${{ github.workspace }}/operations-provider-benchmark/private/benchmark/ai_provider_crossfire.py
         run: |
-          set -euo pipefail
+          set +e
           mkdir -p .runtime/live-ai-crossfire
-          python benchmark/ai_provider_crossfire.py --providers-max 6 --repeats 3 --workers 12 --output .runtime/live-ai-crossfire/private.json
+          python benchmark/ai_provider_crossfire.py --providers-max 6 --repeats 3 --workers 12 --output .runtime/live-ai-crossfire/private.json > .runtime/live-ai-crossfire/runner.log 2>&1
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
+            if grep -q '^need at least 2 configured AI providers for cross-fire;' .runtime/live-ai-crossfire/runner.log; then
+              provider_count=$(sed -n 's/.*found \([0-9][0-9]*\)$/\1/p' .runtime/live-ai-crossfire/runner.log | tail -1)
+              provider_count="${provider_count:-0}"
+              jq -n --argjson provider_count "$provider_count" '{
+                schema:"live-ai-provider-crossfire-summary/v1",
+                generated_at:(now|todate),
+                comparison_state:"comparison_unavailable",
+                limitation:"fewer than two configured direct providers; comparative cross-fire is not claimed",
+                provider_count:$provider_count,
+                providers:[],
+                call_count:0,
+                batch_wall_ms:null
+              }' > .runtime/live-ai-crossfire/private.json
+              echo "Provider cross-fire comparison unavailable; recorded bounded non-comparative receipt."
+            else
+              cat .runtime/live-ai-crossfire/runner.log
+              exit "$status"
+            fi
+          fi
+          test -s .runtime/live-ai-crossfire/private.json
 
       - name: Create public-safe summary
         if: always()
