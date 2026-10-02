@@ -233,3 +233,7 @@ The strict change gate is implemented by `tools/repository_hygiene.py` and `tool
 This machine layer is subordinate to this document's authority/evidence hierarchy: it detects structural drift, formatting divergence and missing documentation deltas, but it does not convert source or CI results into runtime/production certification.
 
 Formatting policy is deliberately ratcheted. Existing historical debt is reported without a repository-wide mass rewrite; newly changed files must satisfy the strict gate.
+
+## Release-publication boundary — 2026-10-02
+
+Foundation treats GitHub Releases as a separate privileged publication surface from normal CI artifacts. WooCommerce/Google feed recovery is explicitly artifact-only. The policy implementation is scripts/validate_release_publication_policy.mjs, enforced by the required PR checks and reinforced by .github/workflows/feed-release-governance.yml.
