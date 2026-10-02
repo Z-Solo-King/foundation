@@ -34,7 +34,7 @@
       "description": "Produces per-observation transport and structural signals such as latency, response bytes, product-candidate hints and JSON-LD counts. These are not field-level correctness evidence."
     },
     {
-      "path": "benchmark/autonomous_scorecard.py",
+      "path": "benchmark/autonomous_scorecard.mjs",
       "kind": "performance_scorecard",
       "reusable_evidence": false,
       "research_value": "High",
