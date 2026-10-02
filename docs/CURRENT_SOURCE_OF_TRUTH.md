@@ -3,19 +3,19 @@
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
 Checked: 2026-10-02 10:24 UTC.
-Main verification checkpoint: current Foundation main is read live from GitHub; the current observed main commit is `4d54a85944ad28f8c22e80909dec874692d4dd4b`.
+Main verification checkpoint: current Foundation main is read live from GitHub; the current observed main commit is `a29ecf986fe02de70533b6def35ba583da9ff2da`.
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: current main is read live from GitHub; current observed commit `4d54a85944ad28f8c22e80909dec874692d4dd4b`.
-Operations main checkpoint: current main is read live from GitHub; current observed main commit `5cf716b8c8d9be4691f2544f2799dfd95cc29d4a`. Research and migration jobs use explicit immutable pins below.
-Production Operations pin: `da86e92d4e0fdb68912efb54ef95c69281a7d613`.
+Foundation main code checkpoint: current main is read live from GitHub; current observed commit `a29ecf986fe02de70533b6def35ba583da9ff2da`.
+Operations main checkpoint: current main is read live from GitHub; current observed main commit `adc600221169cc4dadee0bdd7d68be30c58e6727`. Research and migration jobs use explicit immutable pins below.
+Production Operations pin: `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f`.
 Provider fleet runtime probe pin: `b95e419254a9071beaeef57a1b0da22ba7dd2c4f`.
 Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`.
 Live issue and PR counts must be read from GitHub; this file never serves as a mutable queue. Synchronization checkpoint: 5 acceptance-track issues remain open (Foundation #58/#157/#1247/#1249 and Operations #603) and Foundation PR #1846 is the active documentation synchronization PR.
 
 ## Public architecture
 
-ai-cio.pages.dev is the canonical public front door.
+heroic-ai.pages.dev is the canonical public front door.
 Foundation owns public-safe contracts/core, the public edge/API, GitHub Actions, frontend and deployment orchestration.
 The protected Operations side owns private runtime policy, provider control, resource governance, memory, recovery and protected tooling.
 The retired extractor-mapper repository is historical material, not a runtime owner.
@@ -130,7 +130,7 @@ Foundation is the sole hosted Actions authority. Operations remains the private 
 
 ## 2026-10-01 canonical Operations production pin promotion
 
-The production Operations pin is now the merged revision `da86e92d4e0fdb68912efb54ef95c69281a7d613`, which includes the bounded D1 persistence-sentinel optimization from Operations PR #1437. Operations main remains a separate moving branch and is not production authority. The pin change is a cost-efficiency/control-plane change only; a fresh production deployment and runtime certification remain required before claiming production acceptance.
+The production Operations pin is now the merged revision `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f`, which includes the bounded D1 persistence-sentinel optimization from Operations PR #1437. Operations main remains a separate moving branch and is not production authority. The pin change is a cost-efficiency/control-plane change only; a fresh production deployment and runtime certification remain required before claiming production acceptance.
 
 ## 2026-10-01 final cohesion checkpoint
 
@@ -165,11 +165,11 @@ The canonical human/AI navigation entrypoint is `docs/AI_SYSTEM_DIRECTORY.md`, b
 
 ## 2026-10-02 repository hygiene and documentation synchronization
 
-Foundation now carries a machine-enforced repository hygiene and code-documentation synchronization system. The canonical contract is `docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json`; changed files are checked by `tools/repository_hygiene.mjs` and mapped contract/document relationships by `tools/code_documentation_sync.mjs`. Foundation's family coordinator compares the shared contract against Operations without publishing private source contents. This is a source/CI governance capability, not runtime certification.
+Foundation now carries a machine-enforced repository hygiene and code-documentation synchronization system. The canonical contract is `docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json`; changed files are checked by `tools/repository_hygiene.py` and mapped contract/document relationships by `tools/code_documentation_sync.py`. Foundation's family coordinator compares the shared contract against Operations without publishing private source contents. This is a source/CI governance capability, not runtime certification.
 
 
 ## 2026-10-02 current-main reconciliation
-Foundation main `092495175d56111a3ab337b7dff8ae5e78fc93e4` includes the public/private runtime migration, N4 cross-system equivalence, six-lane CrossFire, chat/SSE hardening, platform-access validation, and the project-wide verification fabric. Operations main is `7ea7d708f880492d52d36cbaf4a0da4982d19894`. Production Operations remains pinned to immutable `da86e92d4e0fdb68912efb54ef95c69281a7d613`; main/pin drift is intentionally fail-closed and is not automatic promotion. The acceptance queue is Foundation #58/#157/#1247/#1249 and Operations #603; autonomous/integrity issues remain execution/incident state. Recent main-push verification recorded successful repository hygiene, secret scan, App governance, verification fabric, nightly contract and canonical dispatch bridge checks; follow-up failures are being repaired in this reconciliation PR.
+Foundation main `092495175d56111a3ab337b7dff8ae5e78fc93e4` includes the public/private runtime migration, N4 cross-system equivalence, six-lane CrossFire, chat/SSE hardening, platform-access validation, and the project-wide verification fabric. Operations main is `7ea7d708f880492d52d36cbaf4a0da4982d19894`. Production Operations remains pinned to immutable `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f`; main/pin drift is intentionally fail-closed and is not automatic promotion. The acceptance queue is Foundation #58/#157/#1247/#1249 and Operations #603; autonomous/integrity issues remain execution/incident state. Recent main-push verification recorded successful repository hygiene, secret scan, App governance, verification fabric, nightly contract and canonical dispatch bridge checks; follow-up failures are being repaired in this reconciliation PR.
 
 
 ## 2026-10-02 autonomous incident cleanup
@@ -180,9 +180,11 @@ Autonomous mission records #1828 and #1804 were superseded and closed as `not_pl
 
 At the latest GitHub reconciliation, Foundation main is `4d54a85944ad28f8c22e80909dec874692d4dd4b` and Operations main is `5cf716b8c8d9be4691f2544f2799dfd95cc29d4a`. These are moving repository heads, not production certification values.
 
-Foundation PR #1846 is documentation-only: it refreshes family synchronization metadata and preserves the immutable production Operations pin `da86e92d4e0fdb68912efb54ef95c69281a7d613`. The obsolete Audit/Monitor/Extractor consolidation PR #1845 is closed, and the superseded Operations consolidation PR #1512 is closed; their applicable mechanics are already represented on current Operations main.
+Foundation PR #1846 is documentation-only: it refreshes family synchronization metadata and preserves the immutable production Operations pin `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f`. The obsolete Audit/Monitor/Extractor consolidation PR #1845 is closed, and the superseded Operations consolidation PR #1512 is closed; their applicable mechanics are already represented on current Operations main.
 
 Repository hygiene and code-documentation synchronization remain machine-enforced. The current synchronization change is being validated through the normal pull-request gate; no direct main-branch mutation or gate weakening is permitted.
 
-## 2026-10-02 governance tooling migration
-Foundation governance gates for source-surface auditing, code-to-document synchronization, and repository hygiene now execute through Node implementations. Python semantic/runtime authority is unchanged.
+
+## Live reconciliation — 2026-10-02
+
+The canonical public front door is `https://heroic-ai.pages.dev`. The GitHub-backed Cloudflare Pages project `heroic-ai` serves the frontend and routes `/health`, `/readiness`, and `/api/*` through `HEROIC_BACKEND` to the production `heroic` Worker. The immutable production Operations runtime is revision `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f`; Operations `main` remains the separate moving branch at `adc600221169cc4dadee0bdd7d68be30c58e6727`.
