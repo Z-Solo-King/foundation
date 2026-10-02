@@ -336,3 +336,17 @@ def test_public_chat_sse_preserves_output_digest():
     import worker
     body = worker._chat_sse_body({"response": {"response_id":"digest-1","result_state":"COMPLETE","text":"hello","generation_status":"model_generated","output_digest":"digest-abc"}})
     assert '"output_digest":"digest-abc"' in body
+
+
+def test_chat_sse_body_rejects_unknown_result_state():
+    import pytest
+    import worker
+
+    with pytest.raises(ValueError, match="invalid_chat_result_state"):
+        worker._chat_sse_body({
+            "response": {
+                "response_id": "r",
+                "result_state": "MADE_UP_STATE",
+                "text": "x",
+            }
+        })
