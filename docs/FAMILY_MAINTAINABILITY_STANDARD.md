@@ -58,7 +58,6 @@ AI agents should resolve work in this order:
 
 Prefer one canonical source plus short indexed references over repeated explanations in multiple documents. Generated maps are navigation aids, not independent authorities.
 
-
 ## Change methodology
 
 Before implementing a material change:
