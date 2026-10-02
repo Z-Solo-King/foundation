@@ -98,7 +98,7 @@ export async function main() {
   const model = args.model;
   if (!url || !token || !model) throw new Error("--url, --token and --model are required");
 
-  const base = url.replace(//+$/, "");
+  const base = url.replace(/\/+$/, "");
   const readiness = await jsonRequest(base + "/readiness", {
     method: "GET",
     headers: {
