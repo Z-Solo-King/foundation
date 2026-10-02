@@ -42,6 +42,7 @@ jobs:
           npm install --ignore-scripts --no-audit --no-fund
           npm run typecheck
           npm test
+          mkdir -p .runtime
           npm run differential
           npm run differential:python
           npm run differential:compare
