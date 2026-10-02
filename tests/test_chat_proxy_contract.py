@@ -695,3 +695,17 @@ def test_public_chat_sse_preserves_output_digest():
         }
     })
     assert '"output_digest":"digest-abc"' in body
+
+
+def test_chat_sse_body_rejects_blank_response_id():
+    import pytest
+    import worker
+
+    with pytest.raises(ValueError, match="stream_execution_identity_missing"):
+        worker._chat_sse_body({
+            "response": {
+                "response_id": "   ",
+                "result_state": "PARTIAL",
+                "text": "x",
+            }
+        })
