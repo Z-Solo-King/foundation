@@ -1,17 +1,32 @@
 # Shared Code Architecture
 
-## Core rule
+## Family model
 
-Do not copy identical mechanics into Audit, Monitor, Planner, Benchmark, CrossFire, Automation, Runtime, or AI tools. Extract the mechanic once, then keep consumer-specific policy at the edge.
+Audit, Monitor, and Extractor are one **mechanics family**, not one authority.
 
 ```text
-Audit system  ─────┐
-Monitor system ────┤
-Planner system ────┤──> Shared deterministic kernel
-Benchmark ─────────┤
-CrossFire ─────────┤
-Automation ────────┤
-Runtime adapters ──┘
+Audit system ─────┐
+Monitor system ───┤
+Extractor system ─┤
+                  └──> shared deterministic mechanics / contracts
+                    \_> system-specific policy, authority and execution
+```
+
+The objective is to combine code when the semantics are genuinely identical, while trimming duplicate implementations and leaving unique behavior at the consumer boundary.
+
+## Core rule
+
+Do not copy identical mechanics into Audit, Monitor, Extractor, Planner, Benchmark, CrossFire, Automation, Runtime, or AI tools. Extract the mechanic once, then keep consumer-specific policy at the edge.
+
+```text
+Audit ────────────┐
+Monitor ──────────┤
+Extractor ────────┤
+Planner ──────────┤──> Shared deterministic kernel / contracts
+Benchmark ────────┤
+CrossFire ────────┤
+Automation ───────┤
+Runtime adapters ─┘
 ```
 
 ## Four levels of reuse
@@ -21,34 +36,84 @@ Runtime adapters ──┘
 3. Shared domain engines: provider runtime, AI task fabric, resource governance, mapper/extractor contracts and evidence reconciliation.
 4. Shared orchestration: existing workflows, reusable actions and schedulers consume the engines; they do not duplicate their internals.
 
-## Cross-language rule
+## Cross-language family rule
 
-Do not force one language implementation to serve every runtime. Share the contract and fixtures. Implement the same contract natively in TypeScript, Python, Rust or Go when a measured runtime reason exists. Differential tests compare normalized outputs against the shared vectors.
+Source code does not need to be identical across TypeScript, Python, Rust or Go. The family boundary is established by:
+
+- one semantic contract;
+- one set of deterministic test vectors;
+- equivalent normalized outputs;
+- no duplicated authority.
+
+A language-specific implementation is valid when there is a measured runtime or deployment reason. It must remain contract-equivalent and must not introduce a competing policy owner.
 
 ## Authority rule
 
-A shared kernel may define mechanics but may not silently become policy authority. Provider eligibility stays in provider runtime; policy stays in protected policy; deployment stays in canonical Actions; Cloudflare production state remains runtime evidence; AI remains advisory.
+A shared kernel may define mechanics but may not silently become policy authority. Provider eligibility stays in provider runtime; extraction policy stays in extractor contracts/strategies; audit authority stays in audit controls; monitoring remains read-only telemetry quality; deployment stays in canonical Actions; Cloudflare production state remains runtime evidence; AI remains advisory.
 
-## Extraction test
+## Extraction decision table
 
-A candidate function belongs in a shared kernel when at least two independent consumers need identical semantics and changing the function should imply the same correctness test for both. Do not extract merely because names look similar.
+| Situation | Action |
+|---|---|
+| Same algorithm, same inputs/outputs, same invariant | Extract shared mechanic |
+| Same data shape, different meaning | Share schema/fixture only |
+| Same mechanic, different policy/authority | Shared core + thin adapter |
+| Different lifecycle/security boundary | Keep separate |
+| One implementation only | Do not extract prematurely |
+| Wrapper adds no invariant/boundary | Trim it |
 
-## Consolidation targets
+## Family handoff
 
-Current first wave:
-- Foundation: `tools/evidence_kernel.mjs` shared by verification, observability audit and multi-lens planner.
-- Operations: `private/shared_evidence_kernel.py` shared by project observability, limitation refresh and provider runtime.
-- Operations provider runtime remains the common provider selection mechanism for chatbot/task-fabric/CrossFire callers.
-- AI task fabric remains the common AI execution surface for research, extraction assistance, audit assistance, scan triage, action planning, workflow assistance and Cloudflare diagnostics.
+The preferred flow is:
 
-Later waves should migrate workflow boilerplate to reusable actions only where the permissions, secrets and failure semantics are identical.
+`Extractor observation -> shared evidence mechanics -> Monitor/Audit consumers`
+
+The shared layer should carry deterministic identity, timestamps, canonical serialization, digests and provenance metadata. It must not decide whether a finding is accepted, whether a site method is selected, or whether production state is healthy.
+
+## Existing implementation
+
+Foundation:
+- `tools/evidence_kernel.mjs` provides shared deterministic primitives.
+- Verification and observability audit consume the kernel.
+- Multi-lens planning consumes bounded numeric primitives from the kernel.
+
+Operations:
+- `private/shared_evidence_kernel.py` provides the same mechanics for the Python runtime.
+- Project observability, limitation refresh, provider runtime and extractor/mapper evidence consumers reuse it.
+- Extractor observation, checkpoint state, resource envelopes and image observations now reuse canonical digest mechanics.
+
+Cross-repo contract:
+- share schemas and fixtures rather than importing private implementation across repositories;
+- differential tests are the parity gate;
+- policy and production authority stay with their canonical owners.
+
+## Duplication cleanup rule
+
+Before deleting or replacing a duplicate:
+
+1. Identify every consumer.
+2. Prove identical semantics, not merely identical names.
+3. Compare edge cases and error behavior.
+4. Add or reuse a common regression vector.
+5. Switch consumers.
+6. Re-scan for the old implementation.
+7. Only then remove the duplicate.
+
+This makes trimming monotonic: no consumer loses its invariant while the number of implementations decreases.
+
+## Verification
+
+Acceptance for consolidation requires deterministic focused tests, stable digest behavior, acyclic imports, explicit authority boundaries, and a clean duplicate scan for the targeted surface.
+
+CrossFire / AI can review candidate equivalence and surface edge cases, but AI output is advisory. Deterministic tests and existing authority gates remain the acceptance criteria.
 
 ## Anti-patterns
 
-- same invariant implemented independently in audit and monitor;
+- same invariant implemented independently in audit, monitor and extractor;
 - same provider selection reimplemented in benchmark code;
 - same freshness calculation in provider and limitation code;
 - same canonical JSON/digest procedure in multiple evidence producers;
 - wrappers that add no new invariant or boundary;
 - multiple schedulers deciding the same maintenance job;
-- language rewrites promoted only because a benchmark or score is higher.
+- cross-language rewrites promoted only because a benchmark or model preference is higher;
+- deleting a duplicate before its consumers and parity vectors are identified.
