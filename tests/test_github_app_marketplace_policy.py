@@ -24,7 +24,9 @@ def test_first_party_operations_app_contract_is_bounded() -> None:
     assert app["marketplace_app"] is False
     assert app["repository_scope"] == ["Z-Solo-King/operations"]
     assert app["minimum_permissions"] == {"contents": "read"}
-    assert app["maximum_permissions"] == {"contents": "read"}
+    assert app["maximum_permissions"] == {"contents": "read", "issues": "write"}
+    assert app["scoped_write_exceptions"][0]["workflow"] == ".github/workflows/twice-daily-governance-sweep.yml"
+    assert app["scoped_write_exceptions"][0]["permissions"] == {"issues": "write"}
     assert app["token_max_ttl_seconds"] == 3600
 
 
@@ -64,3 +66,12 @@ def test_github_app_policy_limits_repository_scope() -> None:
         "pull_requests": "read",
         "actions": "read",
     }
+
+
+def test_operations_app_write_scope_is_exactly_governance_issue_only() -> None:
+    policy = validate_policy()
+    app = policy["integration_contract"]["known_first_party_apps"]["operations_repository_access"]
+    exceptions = app["scoped_write_exceptions"]
+    assert len(exceptions) == 1
+    assert exceptions[0]["repository_scope"] == ["Z-Solo-King/operations"]
+    assert exceptions[0]["permissions"] == {"issues": "write"}
