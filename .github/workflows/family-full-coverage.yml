@@ -77,7 +77,7 @@ jobs:
       - name: Run existing Action/App policy validators
         working-directory: foundation
         run: |
-          python scripts/validate_github_actions_zero_cost.py
+          node scripts/validate_github_actions_zero_cost.mjs
           python scripts/validate_github_app_policy.py
           python scripts/validate_hybrid_alternative_policy.py
           python tools/validate_system_integration.py --foundation-root . --strict

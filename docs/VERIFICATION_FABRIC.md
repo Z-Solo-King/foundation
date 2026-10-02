@@ -66,3 +66,6 @@ The public-core synchronizer was migrated from Python to Node as repository tool
 ## 2026-10-02 Migration Factory token-step correction
 
 The trusted-main Migration Factory resolve job has one canonical read-only Operations GitHub App token step. Duplicate token-step definitions are prohibited because they can create conflicting step identifiers and violate the single-provider-credential boundary. The workflow remains trusted-main/manual-only and private Operations access remains `contents:read`.
+## Node tooling migration — nightly/runtime gates — 2026-10-02
+
+Foundation-only nightly runtime probing, loopback research transport, GitHub Actions zero-cost validation, and benchmark-finding publication now execute through Node tooling. The superseded Python scripts/tests were removed; protected Python research and governance authorities are unchanged. Workflow changes remain contract-tested and do not constitute live runtime/provider acceptance.
