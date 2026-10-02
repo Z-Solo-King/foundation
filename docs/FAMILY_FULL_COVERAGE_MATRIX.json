@@ -160,6 +160,26 @@
       [
         "wrangler.toml",
         "cloudflare_runtime"
+      ],
+      [
+        ".editorconfig",
+        "repository_configuration"
+      ],
+      [
+        ".gitattributes",
+        "repository_configuration"
+      ],
+      [
+        ".prettierrc.json",
+        "repository_configuration"
+      ],
+      [
+        ".prettierignore",
+        "repository_configuration"
+      ],
+      [
+        ".markdownlint.json",
+        "repository_configuration"
       ]
     ],
     "operations": [
