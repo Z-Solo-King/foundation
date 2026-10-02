@@ -1,0 +1,61 @@
+name: CrossFire automation coverage gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/CROSSFIRE_AUTOMATION_POLICY.json'
+      - 'docs/CROSSFIRE_AUTOMATION_COVERAGE_STANDARD.md'
+      - 'docs/PROJECT_IMPROVEMENT_MATRIX.json'
+      - 'tools/crossfire_surface_audit.py'
+      - 'tests/test_crossfire_surface_audit.py'
+      - 'tools/autonomous_mission_router.mjs'
+      - '.github/workflows/**'
+  schedule:
+    - cron: '37 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crossfire-automation-coverage
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    name: Repository-wide CrossFire contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+
+      - name: Validate CrossFire automation coverage
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime/crossfire
+          python tools/crossfire_surface_audit.py             --root .             --output .runtime/crossfire/surface-audit.json
+
+      - name: Run CrossFire contract tests
+        run: |
+          set -euo pipefail
+          python -m pytest -q tests/test_crossfire_workflows.py tests/test_crossfire_surface_audit.py
+
+      - name: Upload CrossFire coverage receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: crossfire-automation-coverage
+          path: .runtime/crossfire/surface-audit.json
+          if-no-files-found: error
+          retention-days: 14

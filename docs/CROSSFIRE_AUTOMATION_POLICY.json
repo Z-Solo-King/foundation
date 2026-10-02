@@ -1,0 +1,55 @@
+{
+  "schema": "crossfire-automation-policy/v1",
+  "status": "normative",
+  "scope": [
+    "automation",
+    "scanning",
+    "audit",
+    "migration",
+    "extraction",
+    "runtime_reconciliation",
+    "governance",
+    "release_readiness"
+  ],
+  "target_ai_lanes": 6,
+  "strong_ai_lane_threshold": 5,
+  "adaptive_ai_lane_counts": [
+    0,
+    2,
+    4,
+    6
+  ],
+  "deterministic_lenses": [
+    "structure",
+    "boundary",
+    "runtime",
+    "security",
+    "quality",
+    "provenance"
+  ],
+  "independence": true,
+  "shared_result_feedback": false,
+  "lane_failure_isolation": true,
+  "mutations_after_evidence_only": true,
+  "raw_ai_output": "excluded_by_default",
+  "authority": "existing_canonical_deterministic_or_policy_runtime",
+  "ai_usage": "only_when_ambiguity_or_expected_evidence_gain_justifies_dedicated_budget",
+  "coverage_rule": "every project-improvement component must be covered by this contract and reference at least one concrete workflow surface",
+  "required_automation_surfaces": [
+    ".github/workflows/exhaustive-six-lane-audit.yml",
+    ".github/workflows/live-ai-provider-crossfire.yml",
+    ".github/workflows/twice-daily-governance-sweep.yml"
+  ],
+  "covered_components": [
+    "chatbot",
+    "cloudflare_runtime",
+    "extractor",
+    "feed_recovery",
+    "mapper",
+    "provider_fleet",
+    "research",
+    "runtime_governance",
+    "security_ci",
+    "storage_b2"
+  ]
+}
