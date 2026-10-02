@@ -10,9 +10,11 @@ The route is:
 
 `private runtime -> Foundation GitHub App installation token (Actions: write) -> workflow_dispatch on Foundation canonical router -> canonical Foundation workflow`.
 
-The external caller supplies the same constrained inputs as the public bridge: `target`, optional nightly `dry_run`, optional production `confirm_production`, and optional `operations_ref` for centralized Operations validation.
+The current v3 bridge accepts one input: `target`. Its allowlist is limited to the Foundation control-plane probe and the canonical nightly research workflow. It does not accept or forward `dry_run`, `confirm_production`, or `operations_ref`; those values belong to the target workflow contracts and must not be implied as bridge inputs.
 
-GitHub documents that GitHub App installation tokens can create workflow-dispatch events when the app has the repository Actions: write permission. citeturn780911search4turn480911search6
+For nightly research, `dry_run=true` is a Foundation-owned deterministic acceptance mode on the nightly workflow itself. The production-live launch remains the canonical production-release workflow, which supplies the exact released Foundation SHA, production release run ID, and Operations research revision.
+
+GitHub documents that GitHub App installation tokens can create workflow-dispatch events when the app has the repository `Actions: write` permission. citeturn136297search9turn136297search1
 
 ## Allowlisted Foundation targets
 
