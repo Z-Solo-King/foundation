@@ -38,8 +38,8 @@ For hard paths use `input -> auth/trust -> route -> budget -> provider/tool -> s
 Run the hygiene and code-documentation gates for every material change:
 
 ```text
-python tools/repository_hygiene.mjs --changed-from <base-sha> --format-check --strict
-python tools/code_documentation_sync.mjs --changed-from <base-sha> --strict
+python tools/repository_hygiene.py --changed-from <base-sha> --format-check --strict
+python tools/code_documentation_sync.py --changed-from <base-sha> --strict
 ```
 
 Use the canonical shared format contract and sync map. Mapped code changes require the owning documentation update unless a reviewed `sync_exemption_reason` is present.
