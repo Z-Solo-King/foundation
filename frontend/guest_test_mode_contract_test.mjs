@@ -22,8 +22,14 @@ assert(start >= 0 && end > start, 'guest test function boundaries are missing');
 const guest = app.slice(start, end);
 assert(!guest.includes('fetch('), 'guest test mode must not make network requests');
 assert(!guest.includes('Authorization'), 'guest test mode must not construct Authorization headers');
-assert(/result_state:\s*['"]TEST_ONLY['"]/.test(guest), 'guest responses must be marked TEST_ONLY');
-assert(/generation_status:\s*['"]deterministic_test['"]/.test(guest), 'guest responses must identify deterministic test generation');
+assert(
+  /result_state:\s*['"]TEST_ONLY['"]/.test(guest),
+  'guest responses must be marked TEST_ONLY',
+);
+assert(
+  /generation_status:\s*['"]deterministic_test['"]/.test(guest),
+  'guest responses must identify deterministic test generation',
+);
 assert(guest.includes('pending: false'), 'guest lifecycle must clear pending state');
 assert(guest.includes('streaming: false'), 'guest lifecycle must terminate streaming state');
 assert(guest.includes('normalizedText.slice(0, 1200)'), 'guest echo must cap normalized user text');
