@@ -2,7 +2,7 @@ name: nightly multi-agent research
 run-name: >-
   Nightly research — ${{ inputs.dry_run == true && 'contract-dry-run' || 'production-live' }}
 
-'on':
+on:
   workflow_dispatch:
     inputs:
       dry_run:
@@ -997,7 +997,6 @@ jobs:
         if: ${{ always() }}
         shell: bash
         run: rm -rf "$RUNNER_TEMP/operations-research" "$RUNNER_TEMP/operations-summary-app.pem" "$RUNNER_TEMP/operations-summary-jwt.txt" "$RUNNER_TEMP/operations-summary-installation.json" "$RUNNER_TEMP/operations-summary-token.txt" "$RUNNER_TEMP/git-askpass-operations-summary.sh"
-
 
   final-gate:
     name: Preserve truthful nightly result
