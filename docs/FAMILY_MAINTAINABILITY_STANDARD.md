@@ -43,6 +43,21 @@ For every non-trivial production module, the owning source or its immediately ad
 
 Use a stable vocabulary for states and boundaries. Do not make an AI infer critical ownership or failure semantics from control-flow alone.
 
+## AI navigation contract
+
+AI agents should resolve work in this order:
+
+1. repository role and boundary;
+2. canonical ownership registry/map;
+3. capability/module entrypoint;
+4. governing contract/policy;
+5. implementation;
+6. owner-level tests;
+7. cross-repository contract tests;
+8. live/runtime evidence when required.
+
+Prefer one canonical source plus short indexed references over repeated explanations in multiple documents. Generated maps are navigation aids, not independent authorities.
+
 ## Change methodology
 
 Before implementing a material change:

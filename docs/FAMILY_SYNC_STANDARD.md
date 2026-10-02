@@ -233,5 +233,3 @@ The strict change gate is implemented by `tools/repository_hygiene.py` and `tool
 This machine layer is subordinate to this document's authority/evidence hierarchy: it detects structural drift, formatting divergence and missing documentation deltas, but it does not convert source or CI results into runtime/production certification.
 
 Formatting policy is deliberately ratcheted. Existing historical debt is reported without a repository-wide mass rewrite; newly changed files must satisfy the strict gate.
-
-The current live head observations are maintained in `docs/FAMILY_SYNC_STATE.json` and must be refreshed after merged cross-system changes; immutable production pins remain separate from moving `main` heads.

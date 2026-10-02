@@ -66,22 +66,24 @@ python -m pip install --upgrade pip
 python -m pip install -e .
 python -m pip install pytest pytest-asyncio coverage workers-py workers-runtime-sdk uv PyYAML jsonschema
 uv --version
-python -m compileall -q backend foundation_core worker.py
+python -m compileall -q foundation_core
 python -c "import foundation_core; print(foundation_core.__all__)"
-coverage run --branch --source=backend,foundation_core,worker --omit='tests/*' -m pytest tests/ -v
+coverage run --branch --source=foundation_core --omit='tests/*' -m pytest tests/ -v
 coverage report --show-missing --fail-under=100 --omit='tests/*'
 python -m benchmark.chatbot_query_benchmark --input benchmark/chatbot-query-corpus.json --output .runtime/chatbot-query-benchmark.json
 python -m pytest -q tests/test_workflow_policy.py
 node --experimental-strip-types tests/public_edge_ts_test.mjs
 python scripts/public_security_lint.py --strict
 
-test ! -e backend/learning/promotion.py
+test ! -e backend
+# Private runtime implementation is owned exclusively by Operations.
 # The public Worker intentionally references the abstract OPERATIONS service binding.
 # Scan production source for private implementation markers and concrete private
 # service topology instead of the generic binding identifier.
-! grep -RniE 'extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE' foundation_core backend wrangler.toml migrations
-! grep -nE 'extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE' worker.py edge.ts
-! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' foundation_core backend worker.py wrangler.toml migrations tests
+legacy_research_marker="$(printf 'research-%s' 'intelligence-engine-(private|public)')"
+! grep -RniE "extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE|$legacy_research_marker" foundation_core edge.ts wrangler.toml tests
+! grep -nE "extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE|$legacy_research_marker" edge.ts
+! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' foundation_core edge.ts wrangler.toml tests
 
 token_verify_status=$(curl -sS -o "$RUNNER_TEMP/cloudflare-token-verify.json" -w '%{http_code}' \
   -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' \
@@ -339,7 +341,7 @@ grep -q '"workers_ai_neurons":100' "$RUNNER_TEMP/operations/wrangler.toml"
 grep -q '"model_calls":100' "$RUNNER_TEMP/operations/wrangler.toml"
 grep -q '"search_calls":500' "$RUNNER_TEMP/operations/wrangler.toml"
 grep -q 'CHAT_BACKEND_TOKEN' "$RUNNER_TEMP/operations/private/chat_auth.py"
-grep -q 'from private.chat_auth import authorized_chat_request' "$RUNNER_TEMP/operations/worker.py"
+grep -q 'from private.chat_auth import authorized_chat_request' "$RUNNER_TEMP/operations/foundation_worker.py"
 
 # Fail before deployment if the pinned Operations tree contains any Python syntax error.
 python -m compileall -q "$RUNNER_TEMP/operations"
@@ -361,18 +363,30 @@ echo "Cross-repository audit acceptance: PASS"
 # than resolve a Git URL package during the Worker build.
 python "$RUNNER_TEMP/operations/scripts/sync_public_core.py"
 test -f "$RUNNER_TEMP/operations/foundation_core/__init__.py"
+rm -rf "$RUNNER_TEMP/operations/foundation_frontend"
+cp -a "$GITHUB_WORKSPACE/frontend" "$RUNNER_TEMP/operations/foundation_frontend"
+python - "$RUNNER_TEMP/operations/wrangler.foundation-core.toml" "$database_name" "$database_id" "$B2_BUCKET" "$B2_ENDPOINT" <<'PY2'
+from pathlib import Path
+import sys
+p=Path(sys.argv[1]); t=p.read_text(encoding="utf-8")
+for old,new in {"REPLACE_WITH_OPERATIONS_RESOLVED_DATABASE_NAME":sys.argv[2],"REPLACE_WITH_OPERATIONS_RESOLVED_DATABASE_ID":sys.argv[3],"REPLACE_WITH_B2_BUCKET":sys.argv[4],"REPLACE_WITH_B2_ENDPOINT":sys.argv[5]}.items(): t=t.replace(old,new)
+p.write_text(t,encoding="utf-8")
+PY2
+test -f "$RUNNER_TEMP/operations/foundation_worker.py"
+test -f "$RUNNER_TEMP/operations/backend/api/main.py"
+test -f "$RUNNER_TEMP/operations/foundation_frontend/index.html"
 
 
 printf '%s\n' \
   'name = "heroic-core"' \
-  'main = "worker.py"' \
+  'main = "foundation_worker.py"' \
   'compatibility_date = "2026-09-09"' \
   'compatibility_flags = ["python_workers", "enable_request_signal", "request_signal_passthrough"]' \
   'workers_dev = false' \
   'preview_urls = false' \
   '' \
   '[assets]' \
-  'directory = "./frontend"' \
+  'directory = "./foundation_frontend"' \
   'binding = "ASSETS"' \
   'not_found_handling = "single-page-application"' \
   '' \
@@ -398,8 +412,8 @@ printf '%s\n' \
   > wrangler.python-core.generated.toml
 
 grep -q '^name = "heroic-core"$' wrangler.python-core.generated.toml
-grep -q '^main = "worker.py"$' wrangler.python-core.generated.toml
-grep -q '^directory = "./frontend"$' wrangler.python-core.generated.toml
+grep -q '^main = "foundation_worker.py"
+grep -q '^directory = "./foundation_frontend"
 grep -q '^binding = "ASSETS"$' wrangler.python-core.generated.toml
 grep -q "^service = \"${OPERATIONS_EDGE_SERVICE_NAME}\"$" wrangler.python-core.generated.toml
 
@@ -510,9 +524,9 @@ printf '%s\n' \
 # D1 migration call when the repository schema content differs from that verified production set.
 D1_MIGRATIONS_FINGERPRINT="b4b3362c78a4231bd256702826089812211d02f20f7771906990114f8614c9d7"
 current_d1_migrations_fingerprint="$(
-  for file in "$GITHUB_WORKSPACE"/migrations/*.sql; do
+  for file in "$RUNNER_TEMP/operations"/migrations/*.sql; do
     digest="$(sha256sum "$file" | awk '{print $1}')"
-    printf '%s\t%s\n' "${file#"$GITHUB_WORKSPACE/"}" "$digest"
+    printf '%s\t%s\n' "${file#"$RUNNER_TEMP/operations/"}" "$digest"
   done |
     LC_ALL=C sort |
     sha256sum | awk '{print $1}'
@@ -532,7 +546,7 @@ fi
 python_core_default_backup="$RUNNER_TEMP/foundation-js-wrangler.toml"
 cp wrangler.toml "$python_core_default_backup"
 cp wrangler.python-core.generated.toml wrangler.toml
-pywrangler deploy --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}:python-core"
+(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.foundation-core.toml --secrets-file "$public_secret_file" --message "github:${OPERATIONS_REF}:python-core")
 mv -f "$python_core_default_backup" wrangler.toml
 
 (cd "$GITHUB_WORKSPACE" && npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}:typescript-edge")

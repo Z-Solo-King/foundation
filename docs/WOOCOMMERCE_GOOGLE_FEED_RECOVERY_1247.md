@@ -1,8 +1,8 @@
 # Public Feed Recovery Methodology — Issue #1247
 
-Date: 2026-09-27
+Date: 2026-10-02
 
-The public Foundation repository retains methodology only. Live retailer identities, target URLs, AI-discovered candidate paths, raw responses and recovery output are maintained on the private Operations surface.
+The public Foundation repository retains methodology and public contracts only. Live retailer identities, target URLs, AI-discovered candidate paths, raw responses, credentials and recovery output are maintained on the private Operations surface.
 
 ## Method
 
@@ -12,10 +12,23 @@ A result is considered a native Google Merchant feed only when the response cont
 
 A Store API reconstruction is recorded separately and is never presented as the retailer's native Merchant feed.
 
-## Acquisition modes
+## Acquisition boundary
 
-The recovery system may select direct HTTP, browser retrieval, public API/feed endpoints, structured page data, or another configured acquisition route for the target. A transport failure is not a feed-negative result; the selected route and resulting evidence must be recorded.
+The public repository defines candidate-generation and evidence semantics only. Live acquisition, browser/network retrieval, target registries, adaptive retry, provider-assisted hypothesis generation and retailer-specific recovery logic belong to Operations.
+
+A transport failure is not a feed-negative result; the selected route and resulting evidence must be recorded.
+
+## AI / Cross-Fire boundary
+
+AI may generate candidate feed hypotheses in independent Cross-Fire lanes. Those lanes are candidate-only and must not claim that a path exists. Deterministic live retrieval and feed validation remain authoritative.
 
 ## Evidence boundary
 
 The public repository does not contain the live target registry or target-specific recovery output. Actual recovery remains an evidence-gated private execution task.
+
+## Migration ownership gate — 2026-10-02
+
+- **Foundation:** public feed methodology, contracts, validation semantics and safe orchestration metadata only.
+- **Operations:** live retailer registry, acquisition/extraction execution, provider-assisted candidate generation, target-specific recovery state and production recovery authority.
+- **CrossFire:** independent AI lanes may propose hypotheses, but deterministic retrieval/validation remains the acceptance authority.
+- **Status discipline:** unresolved targets remain open or evidence-gated until current execution evidence satisfies their written acceptance criteria; historical receipts are never reused as closure evidence.
