@@ -1,0 +1,257 @@
+name: WooCommerce Final Least-Tried Native Recovery
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/woocommerce-final-least-tried-native-recovery.yml"
+      - "docs/feed-lab/WOOCOMMERCE_FEED_RECOVERY_CROSS_CHAT_HANDOFF_2026-10-01.md"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: foundation-wc-final-least-tried-native
+  cancel-in-progress: false
+
+jobs:
+  crossfire:
+    name: Prepare queue + six-provider crossfire
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production-secret-sync
+    outputs:
+      operations_ref: ${{ steps.resolve.outputs.ref }}
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Resolve immutable Operations revision
+        id: resolve
+        env:
+          GH_TOKEN: ${{ steps.operations-app.outputs.token }}
+        run: |
+          set -euo pipefail
+          ref="$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]]
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ steps.resolve.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Validate final queue ledger
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node --check private/feed_recovery/woocommerce_final_queue_v1.mjs
+          node --check private/feed_recovery/woocommerce_final_native_runner_v1.mjs
+          node tests/test_woocommerce_final_queue_v1.mjs
+
+      - name: Build least-tried six-shard queue
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          rm -rf out/final-queue
+          node private/feed_recovery/woocommerce_final_queue_v1.mjs \
+            data/feed_lab/woocommerce_30_registry_v18.json \
+            private/feed_recovery/woocommerce_final_attempt_ledger_v1.json \
+            out/final-queue
+
+      - name: Run six-provider candidate crossfire
+        working-directory: operations
+        continue-on-error: true
+        env:
+          PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          AI_CROSSFIRE_MAX_PROVIDERS: "6"
+          AI_CROSSFIRE_TIMEOUT_MS: "18000"
+          AI_CROSSFIRE_PROVIDERS: "heroic_worker,cloudflare_workers_ai,siliconflow,gemini,openrouter_free,groq"
+        run: |
+          set -euo pipefail
+          node private/feed_recovery/ai_crossfire.mjs \
+            data/feed_lab/woocommerce_30_registry_v18.json \
+            out/ai-crossfire.json || true
+          test -s out/ai-crossfire.json || printf '{"retailers":[]}' > out/ai-crossfire.json
+
+      - name: Upload queue + AI evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: foundation-wc-final-queue-and-crossfire
+          path: |
+            operations/out/final-queue/
+            operations/out/ai-crossfire.json
+          retention-days: 30
+
+  recovery:
+    name: Final recovery shard ${{ matrix.shard }}
+    needs: crossfire
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: production-secret-sync
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        shard: [1,2,3,4,5,6]
+    steps:
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.crossfire.outputs.operations_ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Download queue + crossfire
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: foundation-wc-final-queue-and-crossfire
+          path: operations/out
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Run final native-only recovery
+        working-directory: operations
+        env:
+          WC_FINAL_FAST_TIMEOUT_MS: "30000"
+          WC_FINAL_SLOW_TIMEOUT_MS: "90000"
+          WC_FINAL_MAX_CANDIDATES: "40"
+          WC_FINAL_MIN_HOST_INTERVAL_MS: "2500"
+        run: |
+          set -euo pipefail
+          rm -rf "out/final-native-shard-${{ matrix.shard }}"
+          node private/feed_recovery/woocommerce_final_native_runner_v1.mjs \
+            "out/final-queue/shard-${{ matrix.shard }}.json" \
+            "out/ai-crossfire.json" \
+            "out/final-native-shard-${{ matrix.shard }}"
+
+      - name: Upload shard evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: foundation-wc-final-native-shard-${{ matrix.shard }}
+          path: operations/out/final-native-shard-${{ matrix.shard }}/
+          if-no-files-found: error
+          retention-days: 30
+
+  aggregate:
+    name: Aggregate and validate 30-site evidence
+    needs: recovery
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Download all shard evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: foundation-wc-final-native-shard-*
+          path: out/shards
+          merge-multiple: false
+
+      - name: Validate complete 30-site result
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require("fs");
+          const path = require("path");
+          const root = "out/shards";
+          const rows = [];
+          const walk = d => {
+            if (!fs.existsSync(d)) return;
+            for (const e of fs.readdirSync(d,{withFileTypes:true})) {
+              const p = path.join(d,e.name);
+              if (e.isDirectory()) walk(p);
+              else if (e.name === "results.json") {
+                const x = JSON.parse(fs.readFileSync(p,"utf8"));
+                rows.push(...(Array.isArray(x.rows) ? x.rows : []));
+              }
+            }
+          };
+          walk(root);
+          if (rows.length !== 30) throw new Error("expected exactly 30 site results, got "+rows.length);
+          const names = rows.map(x => String(x.site || "").trim().toLowerCase());
+          if (names.some(x => !x)) throw new Error("blank site result");
+          if (new Set(names).size !== 30) throw new Error("duplicate/missing site result");
+          for (const row of rows) {
+            if (!["NATIVE_FEED_VERIFIED","CURRENT_CANDIDATES_REJECTED_BY_PAYLOAD","TRANSPORT_UNVERIFIED","NO_NATIVE_FEED_FOUND"].includes(row.final_state)) {
+              throw new Error("invalid terminal state for "+row.site);
+            }
+            if (row.final_state === "NATIVE_FEED_VERIFIED" && !row.feed?.url) {
+              throw new Error("native result missing feed URL for "+row.site);
+            }
+            if (row.final_state !== "NATIVE_FEED_VERIFIED" && row.feed) {
+              throw new Error("non-native result carries feed claim for "+row.site);
+            }
+          }
+          const by = rows.reduce((m,x) => (m[x.final_state]=(m[x.final_state]||0)+1,m),{});
+          fs.mkdirSync("out/release",{recursive:true});
+          fs.writeFileSync("out/release/final-summary.json", JSON.stringify({
+            schema:"woocommerce-final-native-pass-aggregate/v1",
+            generated_at:new Date().toISOString(),
+            target_count:30,
+            complete:true,
+            status_counts:by,
+            native_verified:rows.filter(x=>x.final_state==="NATIVE_FEED_VERIFIED").map(x=>x.feed.url),
+            sites:rows.map(x=>({site:x.site,base:x.base,final_state:x.final_state,feed:x.feed||null,candidate_count:(x.candidates||[]).length}))
+          },null,2)+"\n");
+          NODE
+
+      - name: Upload final evidence bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: foundation-wc-final-native-evidence
+          path: out/release/final-summary.json
+          if-no-files-found: error
+          retention-days: 90
