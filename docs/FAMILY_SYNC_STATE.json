@@ -1,7 +1,7 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-10-02T08:30:00Z",
+  "audited_at": "2026-10-02T08:40:00Z",
   "public_safe": true,
   "live_main": {
     "foundation": "READ_LIVE_FROM_GITHUB",
@@ -35,7 +35,7 @@
   },
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
-    "observed_at": "2026-10-02T08:30:00Z",
+    "observed_at": "2026-10-02T08:40:00Z",
     "open_issue_count": 5,
     "foundation": [
       58,
@@ -103,7 +103,7 @@
     "open_pr_count": 0,
     "foundation": [],
     "operations": [],
-    "source": "GitHub live PR API"
+    "source": "GitHub live PR API at synchronization checkpoint"
   },
   "foundation_open_prs": [],
   "operations_open_prs": [],
@@ -126,11 +126,11 @@
     "authority": "scheduling_only"
   },
   "post_merge_sync": {
-    "checked_at": "2026-10-02T08:30:00Z",
+    "checked_at": "2026-10-02T08:40:00Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "092495175d56111a3ab337b7dff8ae5e78fc93e4",
-      "operations": "7ea7d708f880492d52d36cbaf4a0da4982d19894"
+      "foundation": "afa15e90942f0fb01399fab31d94ad2e0ad3e606",
+      "operations": "48c78c95e71ab0ef6ce0baa23e9957dc06b9b3a3"
     },
     "operations_last_sync_commits": [
       "6071508a8cf5e24001f2238f0b581003d2300865",
@@ -161,13 +161,13 @@
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "092495175d56111a3ab337b7dff8ae5e78fc93e4",
-    "operations": "7ea7d708f880492d52d36cbaf4a0da4982d19894"
+    "foundation": "afa15e90942f0fb01399fab31d94ad2e0ad3e606",
+    "operations": "48c78c95e71ab0ef6ce0baa23e9957dc06b9b3a3"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "092495175d56111a3ab337b7dff8ae5e78fc93e4",
-    "operations": "7ea7d708f880492d52d36cbaf4a0da4982d19894"
+    "foundation": "afa15e90942f0fb01399fab31d94ad2e0ad3e606",
+    "operations": "48c78c95e71ab0ef6ce0baa23e9957dc06b9b3a3"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",
