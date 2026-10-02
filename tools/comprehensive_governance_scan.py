@@ -67,6 +67,22 @@ def main():
                     if not re.fullmatch(r"[0-9a-fA-F]{40}",m.group(2)):add(fs,"structure_hygiene","workflow","critical","unpinned_action",f"Workflow {r['path']} contains an unpinned action.",{"action":m.group(1),"ref":m.group(2)},[r["path"]])
                 if re.search(r"cron:\s*[\"']?0(?:\s|$)",t):add(fs,"structure_hygiene","workflow","attention","hour_boundary_schedule",f"Workflow {r['path']} is scheduled at the top of an hour.",paths=[r["path"]])
 
+    if lane in ("all","structure_hygiene"):
+        allow = {".editorconfig",".gitattributes",".prettierrc.json",".prettierignore",".markdownlint.json","docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json"}
+        f_by_sha=collections.defaultdict(list); o_by_sha=collections.defaultdict(list)
+        for r in F:
+            if Path(r["path"]).suffix.lower() in SOURCE and not hist(r["path"]) and r["path"] not in allow:f_by_sha[r["sha"]].append(r["path"])
+        for r in O:
+            if Path(r["path"]).suffix.lower() in SOURCE and not hist(r["path"]) and r["path"] not in allow:o_by_sha[r["sha"]].append(r["path"])
+        for shared_sha in sorted(set(f_by_sha) & set(o_by_sha)):
+            add(fs,"structure_hygiene","duplicate","attention","cross_repo_duplicate_content","Foundation and Operations contain identical live source content, creating possible duplicate authority.",{"hash":shared_sha},f_by_sha[shared_sha][:12]+o_by_sha[shared_sha][:12])
+        registry=j(a.foundation/"docs/WORKFLOW_AUTHORITY_REGISTRY.json") or {}
+        registered={pair[0] for pair in registry.get("explicit_privileged_workflows",[]) if isinstance(pair,list) and pair}
+        for r in F:
+            if not r["path"].startswith(".github/workflows/") or not r["path"].endswith((".yml",".yaml")): continue
+            t=r["text"] or ""
+            if ("secrets." in t or "actions/create-github-app-token" in t or "Z-Solo-King/operations" in t) and r["path"] not in registered:
+                add(fs,"structure_hygiene","workflow","critical","unregistered_privileged_workflow","Privileged workflow is not present in the machine-checkable authority registry.",paths=[r["path"]])
     if lane in ("all","migration_boundary"):
         cnt={repo:collections.Counter(Path(r["path"]).suffix.lower() for r in rs if Path(r["path"]).suffix.lower() in SOURCE and not hist(r["path"])) for repo,rs in rows.items()}
         add(fs,"migration_boundary","language","info","language_distribution","Current source-language distribution captured.",{k:dict(v) for k,v in cnt.items()})
