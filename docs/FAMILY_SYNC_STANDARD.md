@@ -114,6 +114,16 @@ Every material PR should state:
 
 A stale base SHA must be called out and must prevent a PR from being treated as merge-ready until reconciled.
 
+## Cross-system autonomous governance sweep
+
+The Foundation autonomous supervisor is the family scheduler/decision coordinator; it does not replace component authorities. A dedicated Foundation workflow invokes it twice daily at **02:17 and 14:17 UTC** after deterministic, aggregate-only hygiene/code-document synchronization checks across Foundation and Operations.
+
+The sweep uses the existing `audit_assist` task family through the canonical Operations provider runtime. Provider/model choice remains runtime-driven and zero-cost governed. The planner may dispatch only workflows represented in the mission router and project-improvement matrix.
+
+The sweep may create or update GitHub issue/comment records with evidence references. Code changes are produced only by deterministic, explicitly allowlisted repair workflows that open review PRs; the AI planner cannot write source directly and cannot merge. Operations private runtime code remains under its existing protected authority and is not mutated by the public sweep.
+
+A sweep finding is a candidate governance record until the referenced CI/runtime/evidence gate confirms it.
+
 ## Uniform issue format
 
 Material issues should contain:
@@ -203,3 +213,13 @@ A family synchronization pass is complete only when:
 - stale or contradictory records are corrected or explicitly marked historical;
 - unresolved gates are explicit;
 - no claim exceeds its evidence level.
+
+## Machine-enforced hygiene and format coordination
+
+Repository formatting is governed by the identical machine contract in `docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json` in both repositories.
+
+The strict change gate is implemented by `tools/repository_hygiene.py` and `tools/code_documentation_sync.py`. Foundation also runs a read-only family coordinator to compare the shared contract/configuration bytes against Operations `main`.
+
+This machine layer is subordinate to this document's authority/evidence hierarchy: it detects structural drift, formatting divergence and missing documentation deltas, but it does not convert source or CI results into runtime/production certification.
+
+Formatting policy is deliberately ratcheted. Existing historical debt is reported without a repository-wide mass rewrite; newly changed files must satisfy the strict gate.

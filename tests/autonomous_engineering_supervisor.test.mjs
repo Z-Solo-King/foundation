@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { deterministicFallbackPlan, dispatchPlanActions, parseState, reconcileChildState, sanitize } from '../tools/autonomous_engineering_supervisor.mjs';
+import { deterministicFallbackPlan, dispatchPlanActions, parseState, reconcileChildState, sanitize, selectResumableMission } from '../tools/autonomous_engineering_supervisor.mjs';
 
 test('mission state parser reads durable issue marker', () => {
   const body = '<!-- autonomous-mission-state:start -->\n```json\n{"schema":"autonomous-mission-state/v1","state":"executing"}\n```\n<!-- autonomous-mission-state:end -->';
@@ -109,4 +109,38 @@ test('fallback avoids recently successful workflow and selects the next independ
     workflow_attempts:{},
   });
   assert.deepEqual(plan.actions.map((a)=>a.workflow), ['live-extractor-benchmark.yml','operations-centralized-validation.yml']);
+});
+
+
+test('deterministic governance fallback selects cross-system evidence lanes', () => {
+  const plan = deterministicFallbackPlan({mode:'governance_sweep',open_issues:[],recent_runs:[],workflow_attempts:{}});
+  assert.equal(plan.mission_type,'governance_sweep');
+  assert.ok(plan.actions.length >= 1 && plan.actions.length <= 3);
+  assert.ok(plan.actions.every((action) => action.inputs && Object.keys(action.inputs).length === 0));
+});
+
+test('governance fallback prioritizes mechanical hygiene PR when aggregate foundation hygiene fails', () => {
+  const plan = deterministicFallbackPlan({mode:'governance_sweep',open_issues:[],recent_runs:[],workflow_attempts:{},governance_audit:{foundation:{hygiene:{passed:false}}}});
+  assert.equal(plan.mission_type,'governance_sweep');
+  assert.equal(plan.actions[0].workflow,'repository-hygiene-autofix.yml');
+});
+test('terminal blocked mission does not starve autonomous scheduler', () => {
+  const blocked = {
+    issue: {number: 1804, body: '<!-- autonomous-mission-state:start -->\n```json\n{"state":"blocked","retriable":false}\n```\n<!-- autonomous-mission-state:end -->'},
+  };
+  const active = {
+    issue: {number: 1805, body: '<!-- autonomous-mission-state:start -->\n```json\n{"state":"planning","retriable":true}\n```\n<!-- autonomous-mission-state:end -->'},
+  };
+  const result = selectResumableMission([
+    {...blocked, state: parseState(blocked.issue.body)},
+    {...active, state: parseState(active.issue.body)},
+  ]);
+  assert.equal(result.issue.number, 1805);
+  assert.equal(result.state.state, 'planning');
+});
+
+test('governance sweep never reuses an autonomous mission issue', () => {
+  const result = selectResumableMission([{issue:{number:1},state:{state:'planning',retriable:true}}], 'governance_sweep');
+  assert.equal(result.issue, null);
+  assert.equal(result.state, null);
 });

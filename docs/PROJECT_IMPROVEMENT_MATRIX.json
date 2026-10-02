@@ -374,7 +374,20 @@
       "forbidden": [
         "acceptance authority",
         "policy mutation",
-        "production authority"
+        "production authority",
+        "direct code mutation by AI planner",
+        "auto-merge"
+      ],
+      "cadence": "twice_daily_governance_plus_existing_autonomous_schedules",
+      "governance_entrypoint": "tools/autonomous_engineering_supervisor.mjs",
+      "governance_workflow": ".github/workflows/twice-daily-governance-sweep.yml",
+      "task_family": "audit_assist",
+      "coverage": "all project-improvement components plus family hygiene/format/code-document synchronization and current GitHub workflow evidence",
+      "outputs": [
+        "bounded workflow dispatch decisions",
+        "mission receipts",
+        "deduplicated issue/comment findings",
+        "review PRs only through deterministic mechanical repair workflow"
       ]
     },
     "ai_api": {

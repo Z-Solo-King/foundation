@@ -1,0 +1,7 @@
+**/.runtime/**
+**/coverage/**
+**/htmlcov/**
+**/node_modules/**
+**/__pycache__/**
+docs/history/**
+docs/HISTORY/**

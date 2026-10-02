@@ -69,3 +69,19 @@ test('accepts live AI provider cross-fire workflow as runtime reconciliation', (
   ]}));
   assert.equal(result.actions[0].workflow, 'live-ai-provider-crossfire.yml');
 });
+
+
+test('accepts governance sweep actions and bounded findings', () => {
+  const result = validatePlan(base({
+    mission_type:'governance_sweep',
+    summary:'twice daily family governance sweep',
+    actions:[{id:'a1',kind:'dispatch_workflow',workflow:'family-integrity-gate.yml',inputs:{},reason:'refresh family queue integrity evidence',retry_policy:'bounded'}],
+    findings:[{id:'f1',severity:'warning',disposition:'create_issue',title:'Hygiene drift',summary:'Deterministic hygiene summary reported a failure.',evidence_refs:['audit:foundation_hygiene']}],
+  }));
+  assert.equal(result.mission_type,'governance_sweep');
+  assert.equal(result.findings[0].disposition,'create_issue');
+});
+
+test('rejects findings without evidence references', () => {
+  assert.throws(() => validatePlan(base({mission_type:'governance_sweep',actions:[{id:'a1',kind:'dispatch_workflow',workflow:'family-integrity-gate.yml',inputs:{},reason:'audit',retry_policy:'bounded'}],findings:[{id:'f1',severity:'error',disposition:'create_issue',title:'x',summary:'y',evidence_refs:[]}]})), /invalid finding evidence/);
+});

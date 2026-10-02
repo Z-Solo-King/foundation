@@ -1,6 +1,6 @@
 {
   "schema": "workflow-authority-registry/v1",
-  "policy_version": "2026-09-30",
+  "policy_version": "2026-10-02",
   "default_class": "public_ci",
   "public_feed_workflows": {
     ".github/workflows/native-google-feed-hunt.yml": true,
@@ -50,6 +50,10 @@
     [
       ".github/workflows/family-full-coverage.yml",
       "family_full_coverage"
+    ],
+    [
+      ".github/workflows/family-hygiene-sync.yml",
+      "private_audit"
     ],
     [
       ".github/workflows/family-integrity-gate.yml",
@@ -124,8 +128,20 @@
       "private_runtime_state"
     ],
     [
+      ".github/workflows/repository-hygiene-autofix.yml",
+      "repository_hygiene_autofix"
+    ],
+    [
+      ".github/workflows/repository-hygiene.yml",
+      "repository_hygiene"
+    ],
+    [
       ".github/workflows/sync-secrets.yml",
       "secret_sync"
+    ],
+    [
+      ".github/workflows/twice-daily-governance-sweep.yml",
+      "autonomous_governance_sweep"
     ],
     [
       ".github/workflows/woocommerce-32-plugin-feed-hunt.yml",
@@ -136,11 +152,11 @@
       "private_feed_extraction"
     ],
     [
-      ".github/workflows/woocommerce-native-xml-recovery-v18.yml",
+      ".github/workflows/woocommerce-google-xml-recovery-v19.yml",
       "private_feed_extraction"
     ],
     [
-      ".github/workflows/woocommerce-google-xml-recovery-v19.yml",
+      ".github/workflows/woocommerce-native-xml-recovery-v18.yml",
       "private_feed_extraction"
     ],
     [
@@ -167,6 +183,18 @@
     "trusted_workflow_run_sources": {
       ".github/workflows/live-nightly-research-canary.yml": [
         "nightly multi-agent research"
+      ]
+    },
+    "repository_hygiene_autofix": {
+      "mode": "mechanical_formatter_only",
+      "entry": "workflow_dispatch from trusted main",
+      "writes": "review branch + pull request only",
+      "forbidden": [
+        "lint auto-fix",
+        "merge",
+        "deployment",
+        "credential mutation",
+        "policy mutation"
       ]
     }
   }
