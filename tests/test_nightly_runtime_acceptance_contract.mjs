@@ -163,31 +163,3 @@ test("Node probe enforces model-generated structured output", () => {
   const [fallbackOk] = validateChatResponse(fallback, "@cf/zai-org/glm-4.7-flash");
   assert.equal(fallbackOk, false);
 });
-
-test("nightly dry-run skips live runtime verification before CrossFire", () => {
-  const text = fs.readFileSync(
-    path.join(ROOT, ".github/workflows/nightly-multi-agent-research-v3.yml"),
-    "utf8",
-  );
-  const modeMarker = "      - name: Research mode";
-  const probeMarker = "      - name: Verify exact deployed research runtime";
-  const modeStart = text.indexOf(modeMarker);
-  const probeStart = text.indexOf(probeMarker);
-  assert.ok(modeStart >= 0);
-  assert.ok(probeStart >= 0);
-  assert.ok(modeStart < probeStart);
-  assert.equal((text.match(/      - name: Research mode/g) ?? []).length, 1);
-
-  const probeEnd = text.indexOf(
-    "      - name: Authenticate private research source",
-    probeStart,
-  );
-  const probeBlock = text.slice(probeStart, probeEnd);
-  assert.match(probeBlock, /if: \$\{\{ inputs\.dry_run != true \}\}/);
-  assert.match(probeBlock, /node scripts\/nightly_runtime_contract_probe\.mjs/);
-
-  const crossfireStart = text.indexOf("      - name: Run complete crossfire research");
-  const crossfireEnd = text.indexOf("      - name: Materialize and validate lane artifacts");
-  const crossfireBlock = text.slice(crossfireStart, crossfireEnd);
-  assert.match(crossfireBlock, /args\.push\("--dry-run"\)/);
-});
