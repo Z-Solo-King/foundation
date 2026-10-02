@@ -121,6 +121,17 @@ async function applyFindings({findings, missionIssue, openIssues}) {
   return applied;
 }
 
+export function selectResumableMission(activeMissions, mode = 'standard') {
+  if (mode === 'governance_sweep') return {issue:null,state:null};
+  for (const item of Array.isArray(activeMissions) ? activeMissions : []) {
+    const state = item?.state || parseState(item?.issue?.body);
+    if (state && !(state.state === 'blocked' && state.retriable === false)) {
+      return {issue:item.issue || null,state};
+    }
+  }
+  return {issue:null,state:null};
+}
+
 function improvementComponentForRun() {
   const digits = String(process.env.GITHUB_RUN_NUMBER || process.env.GITHUB_RUN_ID || '0').replace(/[^0-9]/g, '') || '0';
   return IMPROVEMENT_COMPONENTS[Number(BigInt(digits) % BigInt(IMPROVEMENT_COMPONENTS.length))];
@@ -274,11 +285,9 @@ async function main() {
     .slice(0,20);
   const recentRuns = (await listRuns(35)).slice(0,35);
 
-  const resumable = activeMissions.find(({state:missionState}) => (
-    missionState && !(missionState.state === 'blocked' && missionState.retriable === false)
-  ));
-  let missionIssue = mode === 'governance_sweep' ? null : (resumable?.issue || null);
-  let state = resumable?.state || null;
+  const resumable = selectResumableMission(activeMissions, mode);
+  let missionIssue = resumable.issue;
+  let state = resumable.state;
   if (!missionIssue || !state) {
     const missionId = `mission-${process.env.GITHUB_RUN_ID}`;
     const created = await createMission(missionId, foundationSha);
