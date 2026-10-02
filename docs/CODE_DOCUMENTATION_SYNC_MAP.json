@@ -100,6 +100,21 @@
         "docs/FAMILY_SYNC_STANDARD.md"
       ],
       "require_doc_update": true
+    },
+    {
+      "id": "autonomous-governance-sweep",
+      "code_paths": [
+        "tools/comprehensive_governance_scan.py",
+        "tools/publish_governance_findings.py",
+        ".github/workflows/twice-daily-autonomous-governance-sweep.yml"
+      ],
+      "docs": [
+        "docs/AUTONOMOUS_GOVERNANCE_SCAN_CONTRACT.json",
+        "docs/AI_AUDIT_SYSTEM.md",
+        "docs/SYSTEM_INTEGRATION_CONTRACT.json",
+        "docs/AI_SYSTEM_MAP.json"
+      ],
+      "require_doc_update": true
     }
   ]
 }
