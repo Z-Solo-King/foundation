@@ -612,7 +612,7 @@
   },
   "automation_overlay": {
     "canonical_supervisor": "tools/autonomous_engineering_supervisor.mjs",
-    "observation": "tools/comprehensive_governance_scan.py",
+    "observation": "tools/comprehensive_governance_scan.mjs",
     "publication": "tools/publish_governance_findings.py",
     "schedule": ".github/workflows/twice-daily-governance-sweep.yml",
     "lanes": [
