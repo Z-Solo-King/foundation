@@ -45,6 +45,8 @@ AMD documents CrossFire as multi-GPU rendering in which application/driver suppo
 
 Required rule: two lanes that merely repeat the same search are not independent.
 
+For provider/LLM cross-fire, the runtime may use up to six independent lanes. Lane count is adaptive (0/2/4/6) and must be bounded by ambiguity, expected evidence gain, and a dedicated maintenance token budget. AI consensus is corroborative only; current first-party/runtime evidence and hard policy remain authoritative.
+
 Best four-lane topology:
 `forward | reverse | contract-first | evidence-first`.
 
