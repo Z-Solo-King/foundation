@@ -133,6 +133,13 @@ def main():
     if lane in ("all","maps_docs_policy"):
         matrix=j(a.foundation/"docs/PROJECT_IMPROVEMENT_MATRIX.json") or {}; contract=j(a.foundation/"docs/SYSTEM_INTEGRATION_CONTRACT.json") or {}
         comps=matrix.get("components") or {}; controls=sorted((contract.get("cross_cutting_controls") or {}).keys())
+        fabric=j(a.operations/"docs/AI_PROVIDER_TASK_FABRIC_2026-09-30.json") or {}
+        fabric_tasks=set(fabric.get("task_families") or [])
+        matrix_tasks=set().union(*(set(v.get("ai_task_families") or []) for v in comps.values()))
+        missing_tasks=sorted(matrix_tasks-fabric_tasks)
+        if missing_tasks:add(fs,"maps_docs_policy","ai_task_family","critical","task_family_parity","Project matrix task families are missing from the Operations task fabric.",{"missing":missing_tasks})
+        product_space=len(comps)*len(controls)*max(len(fabric_tasks),1)
+        add(fs,"maps_docs_policy","cross_product","info","bounded_feature_policy_cross_product","Bounded component×control×task-family review space.",{"components":len(comps),"controls":len(controls),"task_families":len(fabric_tasks),"review_cells":product_space})
         pairs=covered=0
         for name,d in comps.items():
             for p in d.get("canonical_paths") or []:
@@ -151,6 +158,11 @@ def main():
             if not exists(a.operations,p):add(fs,"maps_docs_policy","integration","critical","missing_operations_anchor","Required Operations anchor is missing.",paths=[p])
 
     if lane in ("all","quality_learning_evolution"):
+        contract=j(a.foundation/"docs/SYSTEM_INTEGRATION_CONTRACT.json") or {}
+        quality=(contract.get("cross_cutting_controls") or {}).get("quality") or {}
+        gates=set(quality.get("hard_gates") or [])
+        if not {"security_policy","provenance"}.issubset(gates):
+            add(fs,"quality_learning_evolution","quality","critical","quality_hard_gate_incomplete","Quality authority is missing the required security_policy/provenance hard gates.",{"hard_gates":sorted(gates)})
         for p in ("private/evolution_score.py","private/evolution_engine.py","private/evolution_integration.py","private/self_evolution_boundary.py","private/strategy_matrix.py","private/ai_maintainability_policy.py","private/language_fit_policy.py","private/migration_artifact_policy.py","private/audit_rule_catalog.py"):
             if not (a.operations/p).exists():add(fs,"quality_learning_evolution","evolution","critical","missing_evolution_policy_anchor","Canonical evolution/policy anchor is missing.",paths=[p])
         if not (a.operations/"docs/FEATURE_SURFACE_GOVERNANCE_POLICY.json").exists():add(fs,"quality_learning_evolution","feature_policy","attention","feature_policy_matrix_missing","Feature/function/policy comparison contract is missing.")
