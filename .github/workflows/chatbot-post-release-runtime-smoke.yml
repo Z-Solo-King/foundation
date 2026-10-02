@@ -8,9 +8,6 @@ on:
         required: false
         default: ""
         type: string
-  workflow_run:
-    workflows: ["Heroic AI production release"]
-    types: [completed]
 
 permissions:
   contents: read
@@ -22,11 +19,10 @@ concurrency:
 env:
   PUBLIC_WORKER_URL: https://heroic-ai.pages.dev
   OPERATIONS_REF: 11f592116d9ef57b6189bf8bf0ff0e95ec3d410f
-  TARGET_FOUNDATION_SHA: ${{ inputs.target_sha || github.event.workflow_run.head_sha || github.sha }}
+  TARGET_FOUNDATION_SHA: ${{ inputs.target_sha || github.sha }}
 
 jobs:
   smoke:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
