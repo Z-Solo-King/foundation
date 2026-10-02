@@ -36,3 +36,8 @@ When a new capability is added:
 - add at least one deterministic regression test
 - add a documented owner/boundary
 - avoid creating a new workflow when an existing workflow family can be extended
+
+
+## Release-publication verification — 2026-10-02
+
+The verification fabric treats GitHub Release publication as a privileged boundary. Feed outputs stay workflow artifacts, and release/tag publication primitives are rejected by deterministic policy before merge.
