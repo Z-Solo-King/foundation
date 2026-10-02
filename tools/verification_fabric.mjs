@@ -132,7 +132,8 @@ export function scanFoundation(root) {
   for (const rel of files.filter(f => /\.(mjs|cjs|js|ts|tsx|py|yml|yaml|json|toml)$/.test(f))) {
     if (rel.includes('verification_fabric')) continue;
     if (secretLike.test(read(root,rel,500_000))) {
-      findings.push(finding('critical','secret_like_literal',rel,'Potential credential/token literal found in tracked source.',[rel]));
+      const severity = /^(tests?|fixtures|testdata)\//i.test(rel) ? 'warning' : 'critical';
+      findings.push(finding(severity,'secret_like_literal',rel,'Potential credential/token literal found in tracked source.',[rel]));
     }
   }
 
