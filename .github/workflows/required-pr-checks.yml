@@ -49,6 +49,8 @@ jobs:
         with:
           node-version: '22'
           package-manager-cache: false
+      - name: Enforce release publication policy
+        run: node scripts/validate_release_publication_policy.mjs
       - name: Validate multi-lens planner contract
         run: |
           set -euo pipefail
