@@ -44,11 +44,12 @@ def _push_branches(text:str)->list[str]:
             if indent <= push_indent:
                 break
             block.append(child)
-        block_text="\n".join(block)
+        block_text="
+".join(block)
         inline=re.search(r"(?m)^\s*branches:\s*\[([^\]]+)\]",block_text)
         if inline:
-            return [value.strip().strip("'\\\"") for value in inline.group(1).split(",") if value.strip()]
-        listed=re.findall(r"(?m)^\s*-\s*['\\\"]?([^'\\\"\s]+)",block_text)
+            return [value.strip().strip("'\"") for value in inline.group(1).split(",") if value.strip()]
+        listed=re.findall(r"(?m)^\s*-\s*['\"]?([^'\"\s]+)",block_text)
         return listed
     return []
 
@@ -113,8 +114,8 @@ def validate()->list[str]:
 if __name__=="__main__":
     errors=validate()
     if errors:
+        # Do not print individual policy findings: workflow text can be attacker-controlled
+        # and must never be copied into CI logs. The exit code remains the enforcement signal.
         print(f"workflow authority policy: FAIL ({len(errors)} policy violations)")
-        for error in errors:
-            print(f" - {error}")
         raise SystemExit(1)
     print(f"workflow authority policy: PASS ({len(workflow_paths())} workflows scanned)")
