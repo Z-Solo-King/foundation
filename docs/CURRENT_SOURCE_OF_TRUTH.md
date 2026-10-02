@@ -170,3 +170,7 @@ Foundation now carries a machine-enforced repository hygiene and code-documentat
 
 ## 2026-10-02 current-main reconciliation
 Foundation main `092495175d56111a3ab337b7dff8ae5e78fc93e4` includes the public/private runtime migration, N4 cross-system equivalence, six-lane CrossFire, chat/SSE hardening, platform-access validation, and the project-wide verification fabric. Operations main is `7ea7d708f880492d52d36cbaf4a0da4982d19894`. Production Operations remains pinned to immutable `da86e92d4e0fdb68912efb54ef95c69281a7d613`; main/pin drift is intentionally fail-closed and is not automatic promotion. The acceptance queue is Foundation #58/#157/#1247/#1249 and Operations #603; autonomous/integrity issues remain execution/incident state. Recent main-push verification recorded successful repository hygiene, secret scan, App governance, verification fabric, nightly contract and canonical dispatch bridge checks; follow-up failures are being repaired in this reconciliation PR.
+
+
+## 2026-10-02 autonomous incident cleanup
+Autonomous mission records #1828 and #1804 were superseded and closed as `not_planned`; this does not close Foundation acceptance #58/#157/#1247/#1249 or Operations #603. The scheduler and dispatch-target regression coverage remain active.
