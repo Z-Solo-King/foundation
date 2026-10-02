@@ -120,8 +120,8 @@ jobs:
           }
           foundation_hygiene="$(run_summary foundation_hygiene node tools/repository_hygiene.mjs --all --format-check --summary-only)"
           foundation_sync="$(run_summary foundation_sync node tools/code_documentation_sync.mjs --all --strict --summary-only)"
-          operations_hygiene="$(run_summary operations_hygiene node tools/repository_hygiene.mjs --root operations --root operations --all --format-check --summary-only)"
-          operations_sync="$(run_summary operations_sync node tools/code_documentation_sync.mjs --root operations --root operations --all --strict --summary-only)"
+          operations_hygiene="$(run_summary operations_hygiene node tools/repository_hygiene.mjs --root operations --all --format-check --summary-only)"
+          operations_sync="$(run_summary operations_sync node tools/code_documentation_sync.mjs --root operations --all --strict --summary-only)"
           python - "$foundation_hygiene" "$foundation_sync" "$operations_hygiene" "$operations_sync" > "$GOVERNANCE_AUDIT_FILE" <<'PY'
           import json, sys
           def unwrap(raw):
