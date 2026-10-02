@@ -234,8 +234,27 @@
     }
   }, true);
 
-  new MutationObserver(observe).observe(document.documentElement, { childList: true, subtree: true });
-  document.addEventListener('DOMContentLoaded', observe);
-  window.setInterval(observe, 250);
-  observe();
+  let observeScheduled = false;
+
+  function scheduleObserve() {
+    if (observeScheduled) return;
+    observeScheduled = true;
+    queueMicrotask(() => {
+      observeScheduled = false;
+      observe();
+    });
+  }
+
+  function start() {
+    observe();
+    document.addEventListener('rie:chat-updated', scheduleObserve);
+    document.addEventListener('rie:session-changed', scheduleObserve);
+    document.addEventListener('rie:mode-changed', scheduleObserve);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, { once: true });
+  } else {
+    start();
+  }
 })();
