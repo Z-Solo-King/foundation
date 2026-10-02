@@ -96,7 +96,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           INSTRUCTION_REPORT: .runtime/instruction-audit.json
           AGGREGATE_REPORT: .runtime/aggregate-ai-agent-benchmark.json
-        run: python3 scripts/publish_benchmark_findings.py --instruction-report "$INSTRUCTION_REPORT" --aggregate-report "$AGGREGATE_REPORT"
+        run: python3 scripts/publish_benchmark_findings.mjs --instruction-report "$INSTRUCTION_REPORT" --aggregate-report "$AGGREGATE_REPORT"
       - name: Require all 20 job packets
         run: |
           set -euo pipefail
