@@ -67,3 +67,10 @@ Do not route runtime work to the retired standalone extractor-mapper repository.
 ## Shared AI instructions
 
 GitHub supports repository-wide, path-specific, and agent instructions. Keep this directory as the semantic router and keep path-specific instructions focused on local constraints rather than duplicating the whole architecture.
+
+### Autonomous governance sweep
+- Contract: `docs/AUTONOMOUS_GOVERNANCE_SCAN_CONTRACT.json`
+- Observation: `tools/comprehensive_governance_scan.py`
+- Publication: `tools/publish_governance_findings.py`
+- Scheduler: `.github/workflows/twice-daily-autonomous-governance-sweep.yml`
+- AI remediation authority: `tools/autonomous_engineering_supervisor.mjs`
