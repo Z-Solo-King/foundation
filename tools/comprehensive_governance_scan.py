@@ -84,6 +84,24 @@ def main():
             if ("secrets." in t or "actions/create-github-app-token" in t or "Z-Solo-King/operations" in t) and r["path"] not in registered:
                 add(fs,"structure_hygiene","workflow","critical","unregistered_privileged_workflow","Privileged workflow is not present in the machine-checkable authority registry.",paths=[r["path"]])
     if lane in ("all","migration_boundary"):
+        registry=j(a.operations/"polyglot/REGISTRY.json") or {}
+        evidence_matrix=j(a.operations/"docs/MIGRATION_EVIDENCE_MATRIX.json") or {}
+        required=list(evidence_matrix.get("required_gates") or [])
+        evidence_by_id={item.get("id"):item for item in evidence_matrix.get("candidates",[]) if isinstance(item,dict) and item.get("id")}
+        for candidate in registry.get("candidates",[]):
+            cid=candidate.get("id") if isinstance(candidate,dict) else None
+            if not cid: continue
+            item=evidence_by_id.get(cid)
+            if not item:
+                add(fs,"migration_boundary","evidence","critical","migration_candidate_missing_evidence","Registered migration candidate has no matching evidence-matrix record.",{"candidate_id":cid})
+                continue
+            evidence=item.get("evidence") or {}
+            missing=[gate for gate in required if evidence.get(gate) is not True and gate not in {"frozen corpus"}]
+            if missing and str(item.get("status","")).lower() in {"evidence_complete","candidate_ready","recorded"}:
+                add(fs,"migration_boundary","evidence","attention","migration_gate_incomplete","Migration candidate is marked active/recorded while required promotion gates remain incomplete.",{"candidate_id":cid,"status":item.get("status"),"missing_gates":missing[:20]})
+        runtime_set=((registry.get("registry_policy") or {}).get("active_diversity") or {}).get("current_runtime_set") or []
+        if "python" not in runtime_set:
+            add(fs,"migration_boundary","authority","critical","python_runtime_authority_missing","Migration registry no longer declares Python in the protected current runtime set.",{"current_runtime_set":runtime_set})
         cnt={repo:collections.Counter(Path(r["path"]).suffix.lower() for r in rs if Path(r["path"]).suffix.lower() in SOURCE and not hist(r["path"])) for repo,rs in rows.items()}
         add(fs,"migration_boundary","language","info","language_distribution","Current source-language distribution captured.",{k:dict(v) for k,v in cnt.items()})
         priv=[r["path"] for r in F if r["path"].startswith("private/")]
