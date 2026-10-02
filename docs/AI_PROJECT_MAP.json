@@ -893,7 +893,7 @@
     ],
     "foundation_open_pr_count": 0,
     "foundation_open_prs": [],
-    "operations_main": "7ea7d708f880492d52d36cbaf4a0da4982d19894",
+    "operations_main": "48c78c95e71ab0ef6ce0baa23e9957dc06b9b3a3",
     "operations_open_issue_count": 1,
     "operations_open_issues": [
       603
@@ -907,7 +907,7 @@
     "live_issue_source": "operations/benchmark/polyglot/current_open_issue_inventory.json",
     "last_verified_heads": {
       "foundation": "092495175d56111a3ab337b7dff8ae5e78fc93e4",
-      "operations": "7ea7d708f880492d52d36cbaf4a0da4982d19894"
+      "operations": "48c78c95e71ab0ef6ce0baa23e9957dc06b9b3a3"
     },
     "open_pr_classification": {
       "foundation": {
@@ -926,7 +926,14 @@
       "heroic_core": "deployed Foundation Python core verified live",
       "operations": "approved immutable production pin verified live",
       "operations_edge": "approved immutable production pin verified live"
-    }
+    },
+    "open_issues": [
+      "foundation#58",
+      "foundation#157",
+      "foundation#1247",
+      "foundation#1249",
+      "operations#603"
+    ]
   },
   "navigation_overlay": {
     "entrypoint": "docs/AI_SYSTEM_DIRECTORY.md",
