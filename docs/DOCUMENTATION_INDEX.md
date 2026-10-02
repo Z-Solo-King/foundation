@@ -47,3 +47,8 @@ When contracts, ownership, workflows, dependencies or production gates change, u
 ## Canonical feed boundary
 
 Public feed documentation is methodology-only. Live target state and recovery execution belong to Operations. docs/WOOCOMMERCE_GOOGLE_FEED_RECOVERY_1247.md is the public contract/method reference; it is not a live target registry or completion certificate.
+
+
+20. docs/PUBLIC_RELEASE_GOVERNANCE.md
+
+The public feed recovery boundary and release-publication safety rule are defined by docs/PUBLIC_RELEASE_GOVERNANCE.md and docs/WOOCOMMERCE_GOOGLE_FEED_RECOVERY_1247.md; implementation enforcement is scripts/validate_release_publication_policy.mjs.
