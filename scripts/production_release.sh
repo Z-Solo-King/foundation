@@ -358,6 +358,40 @@ jq -e '.schema == "cross-repository-audit-receipt/v1" and .passed == true' \
 cp "$RUNNER_TEMP/cross-repository-audit-receipt.json" .runtime/cross-repository-audit-receipt.json
 echo "Cross-repository audit acceptance: PASS"
 
+# Build-time package safety: audit the exact Pywrangler input tree before any generated overlay is added.
+# This prevents stale local environments, tests, backups, experiments and credential files from becoming
+# accidental Worker modules. The audit uses Pywrangler's real dry-run packaging path and fails closed.
+git -C "$RUNNER_TEMP/operations" clean -ffdx
+tracked_private_extras="$(git -C "$RUNNER_TEMP/operations" ls-files --others --exclude-standard -- private | sed '/^$/d')"
+test -z "$tracked_private_extras" || {
+  echo 'Refusing Operations deployment: untracked files exist under private/';
+  printf '%s\n' "$tracked_private_extras";
+  exit 1;
+}
+
+operations_bundle_audit_dir="$RUNNER_TEMP/operations-bundle-dry-run"
+rm -rf "$operations_bundle_audit_dir"
+mkdir -p "$operations_bundle_audit_dir"
+(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --dry-run --outdir "$operations_bundle_audit_dir" --message "github:${OPERATIONS_REF}:package-audit-${ACCEPTANCE_RUN_ID}")
+
+for forbidden_path in tests backup experiments .venv-workers; do
+  if find "$operations_bundle_audit_dir" -type f -path "*/$forbidden_path/*" -print -quit | grep -q .; then
+    echo "Refusing Operations deployment: forbidden package content detected ($forbidden_path)";
+    exit 1;
+  fi
+done
+if find "$operations_bundle_audit_dir" -type f \
+    \( -iname '*PROVIDER_KEYS*' -o -iname '*SILICONFLOW_API_KEY*' -o -iname '*SECRET*' -o -iname '*PRIVATE_KEY*' -o -iname '*.pem' \) \
+    -print -quit | grep -q .; then
+  echo 'Refusing Operations deployment: secret-like package file detected';
+  exit 1;
+fi
+if grep -RIlE 'sk-[A-Za-z0-9_-]{20,}|gsk_[A-Za-z0-9_-]{20,}|hf_[A-Za-z0-9_-]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----' "$operations_bundle_audit_dir" >/dev/null 2>&1; then
+  echo 'Refusing Operations deployment: credential-like content detected in dry-run bundle';
+  exit 1;
+fi
+echo 'Operations Worker package audit: PASS (tracked-only source; no dev/test/credential payloads)'
+
 # Materialize the pinned public Foundation deterministic core locally.
 # Cloudflare Python Workers must bundle local Worker-compatible modules rather
 # than resolve a Git URL package during the Worker build.
@@ -438,6 +472,18 @@ public_secret_file="$RUNNER_TEMP/public-secrets.env"
 printf 'AUTH_TOKEN=%s\nB2_KEY_ID=%s\nB2_APPLICATION_KEY=%s\n' "$AUTH_TOKEN" "$B2_KEY_ID" "$B2_APPLICATION_KEY" > "$public_secret_file"
 chmod 600 "$public_secret_file"
 
+# Never reuse a Pywrangler-mutated source tree for another production deployment.
+# Each Python Worker deployment starts from the exact immutable Operations SHA.
+prepare_operations_runtime_tree() {
+  local destination="$1"
+  rm -rf "$destination"
+  mkdir -p "$destination"
+  git -C "$RUNNER_TEMP/operations" archive --format=tar "$OPERATIONS_REF" | tar -x -C "$destination"
+  test -f "$destination/worker.py"
+  test -f "$destination/pyproject.toml"
+  test -f "$destination/wrangler.toml"
+}
+
 # Rename-safe Cloudflare deployment sequence.
 # Foundation and Operations have reciprocal Service Bindings. Cloudflare requires the
 # target Worker to exist before deploying the caller, so first create the Operations
@@ -455,8 +501,10 @@ fi
 secret_file="$RUNNER_TEMP/operations-secrets.env"
 printf 'AUTH_TOKEN=%s\nCHAT_BACKEND_TOKEN=%s\n' "$AUTH_TOKEN" "$AUTH_TOKEN" > "$secret_file"
 chmod 600 "$secret_file"
-bootstrap_config="$RUNNER_TEMP/operations/wrangler.bootstrap.toml"
-cp "$RUNNER_TEMP/operations/wrangler.toml" "$bootstrap_config"
+bootstrap_operations_dir="$RUNNER_TEMP/operations-deploy-bootstrap"
+prepare_operations_runtime_tree "$bootstrap_operations_dir"
+bootstrap_config="$bootstrap_operations_dir/wrangler.bootstrap.toml"
+cp "$bootstrap_operations_dir/wrangler.toml" "$bootstrap_config"
 python - "$bootstrap_config" <<'PY'
 from pathlib import Path
 import sys
@@ -487,7 +535,7 @@ PY
 # Always bootstrap the Operations target without its reciprocal Foundation binding.
 # Cloudflare service-binding deployment fails closed when the target Worker is absent;
 # making this idempotent removes the unreliable existence-probe dependency.
-(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config" --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:bootstrap-${ACCEPTANCE_RUN_ID}")
+(cd "$bootstrap_operations_dir" && pywrangler deploy --config "$bootstrap_config" --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:bootstrap-${ACCEPTANCE_RUN_ID}")
 echo "Operations binding-free bootstrap deployment: PASS"
 
 # Deploy the TypeScript edge Worker before Foundation so the public OPERATIONS binding
@@ -546,7 +594,12 @@ fi
 python_core_default_backup="$RUNNER_TEMP/foundation-js-wrangler.toml"
 cp wrangler.toml "$python_core_default_backup"
 cp wrangler.python-core.generated.toml wrangler.toml
-(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.foundation-core.toml --secrets-file "$public_secret_file" --message "github:${OPERATIONS_REF}:python-core")
+heroic_core_operations_dir="$RUNNER_TEMP/operations-deploy-heroic-core"
+prepare_operations_runtime_tree "$heroic_core_operations_dir"
+cp -a "$RUNNER_TEMP/operations/foundation_core" "$heroic_core_operations_dir/foundation_core"
+cp -a "$RUNNER_TEMP/operations/foundation_frontend" "$heroic_core_operations_dir/foundation_frontend"
+cp "$GITHUB_WORKSPACE/wrangler.python-core.generated.toml" "$heroic_core_operations_dir/wrangler.foundation-core.toml"
+(cd "$heroic_core_operations_dir" && pywrangler deploy --config wrangler.foundation-core.toml --secrets-file "$public_secret_file" --message "github:${OPERATIONS_REF}:python-core")
 mv -f "$python_core_default_backup" wrangler.toml
 
 (cd "$GITHUB_WORKSPACE" && npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}:typescript-edge")
@@ -598,7 +651,9 @@ done
 # Redeploy Operations against the new Foundation Worker, proving the final private binding.
 # The canonical schema is applied exactly once above through the pinned migrations directory;
 # do not re-run the raw DDL here because D1 DDL can consume row-read/write budget.
-(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:foundation-binding-${ACCEPTANCE_RUN_ID}")
+operations_foundation_binding_dir="$RUNNER_TEMP/operations-deploy-foundation-binding"
+prepare_operations_runtime_tree "$operations_foundation_binding_dir"
+(cd "$operations_foundation_binding_dir" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:foundation-binding-${ACCEPTANCE_RUN_ID}")
 
 operations_deployments_status=$(curl -sS -o "$RUNNER_TEMP/operations-deployments.json" -w '%{http_code}' \
   -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
@@ -667,7 +722,9 @@ test "$chat_rollover_status" = "200"
 jq -e '.ok == true and (.response.result_state == "COMPLETE" or .response.result_state == "PARTIAL") and (.response.response_id | type == "string" and length > 0)' "$RUNNER_TEMP/chat-rollover-before.json" >/dev/null
 
 # Create an additional Operations version, then verify the durable chat/persistence state survives it.
-(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:persistence-boundary-${ACCEPTANCE_RUN_ID}")
+operations_persistence_boundary_dir="$RUNNER_TEMP/operations-deploy-persistence-boundary"
+prepare_operations_runtime_tree "$operations_persistence_boundary_dir"
+(cd "$operations_persistence_boundary_dir" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:persistence-boundary-${ACCEPTANCE_RUN_ID}")
 boundary_deployments_status=$(curl -sS -o "$RUNNER_TEMP/operations-boundary-deployments.json" -w '%{http_code}' -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments" || true)
 test "$boundary_deployments_status" = "200"
 boundary_version_id=$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id' "$RUNNER_TEMP/operations-boundary-deployments.json" | head -n1)
