@@ -1,4 +1,4 @@
-name: Live AI provider cross-fire benchmark # branch live test 2026-10-03
+name: Live AI provider cross-fire benchmark
 
 on:
   push:
@@ -53,7 +53,7 @@ jobs:
         run: |
           set -euo pipefail
           ref="${REQUESTED_OPERATIONS_REF:-}"
-          if [ -z "$ref" ]; then ref="$(python -c 'import json; print(json.load(open("docs/OPERATIONS_PIN_MANIFEST.json", encoding="utf-8"))["pins"]["production_runtime"]["sha"])')"; fi
+          if [ -z "$ref" ]; then ref="c34d80abc872034def98cbe38891520f92f574c3"; fi
           [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Operations revision must be a 40-hex immutable SHA"; exit 1; }
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
       - name: Checkout private Operations benchmark
@@ -66,7 +66,7 @@ jobs:
           persist-credentials: false
 
       - name: Validate platform access cross-fire contract
-        working-directory: ${{ runner.temp }}/operations-provider-benchmark
+        working-directory: operations-provider-benchmark
         run: |
           set -euo pipefail
           python - <<'PY'
