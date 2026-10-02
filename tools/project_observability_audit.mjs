@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import {exists} from './evidence_kernel.mjs';
 
 const ROOT = new URL('..', import.meta.url);
 const MATRIX_URL = new URL('./docs/PROJECT_IMPROVEMENT_MATRIX.json', ROOT);
@@ -10,10 +11,6 @@ const MAP = JSON.parse(fs.readFileSync(MAP_URL, 'utf8'));
 
 const REQUIRED_CONTROLS = new Set(['audit', 'quality', 'learning', 'ai_automation']);
 const REQUIRED_FIELDS = CONTRACT.required_for_each_matrix_component;
-
-function exists(relativePath) {
-  return fs.existsSync(new URL(relativePath, ROOT));
-}
 
 function navigationMapErrors(matrix, map) {
   const errors = [];
@@ -69,7 +66,7 @@ export function buildReport(matrix = MATRIX, contract = CONTRACT, map = MAP) {
   for (const [name, item] of components) {
     const missingFields = REQUIRED_FIELDS.filter((field) => !(field in item));
     const missingWorkflows = (item.workflows ?? []).filter(
-      (workflow) => !exists('./.github/workflows/' + workflow)
+      (workflow) => !exists(ROOT, './.github/workflows/' + workflow)
     );
     const controls = new Set(item.cross_cutting_controls ?? []);
     const controlComplete = [...REQUIRED_CONTROLS].every((control) => controls.has(control));
@@ -104,7 +101,7 @@ export function buildReport(matrix = MATRIX, contract = CONTRACT, map = MAP) {
     contract.observation_schema,
     contract.universal_evolution_adapter,
   ];
-  const missingAnchors = requiredAnchors.filter((path) => !exists('./' + path));
+  const missingAnchors = requiredAnchors.filter((path) => !exists(ROOT, './' + path));
   if (missingAnchors.length) errors.push('contract:missing_anchors:' + missingAnchors.join(','));
 
   if (contract.cloudflare?.r2_enabled !== false) errors.push('cloudflare_r2:must_remain_excluded');

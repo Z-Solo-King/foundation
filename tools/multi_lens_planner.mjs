@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 "use strict";
 
+import {clamp, positive} from './evidence_kernel.mjs';
+
+
 /**
  * Deterministic, non-authoritative multi-lens planner.
  *
@@ -8,14 +11,6 @@
  * Usage:
  *   node tools/multi_lens_planner.mjs < input.json
  */
-
-function clamp(value, min = 0, max = 1) {
-  return Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
-}
-
-function positive(value, fallback = 0) {
-  return Number.isFinite(value) && value > 0 ? value : fallback;
-}
 
 function scoreLane(lane, target, history, selectedFamilies) {
   const h = history[lane.id] || {};
