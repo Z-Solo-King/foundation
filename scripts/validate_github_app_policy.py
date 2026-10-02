@@ -116,7 +116,7 @@ def validate_first_party_app_workflows() -> None:
                 raise ValueError(f"first-party App repository scope drift in {path}")
             if not re.search(r"permission-contents:\s*read\b", block):
                 raise ValueError(f"first-party App contents permission drift in {path}")
-            write_permissions = dict(re.findall(r"permission-([A-Za-z0-9_-]+):\s*write\b", block))
+            write_permissions = set(re.findall(r"permission-([A-Za-z0-9_-]+):\s*write\b", block))
             if write_permissions:
                 exceptions = policy["integration_contract"]["known_first_party_apps"]["operations_repository_access"].get("scoped_write_exceptions", [])
                 workflow_name = str(path.relative_to(ROOT))
