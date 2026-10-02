@@ -8,7 +8,9 @@ on:
     paths:
       - ".github/workflows/autonomous-engineering-supervisor.yml"
       - "tools/autonomous_engineering_supervisor.mjs"
+      - "tools/validate_operations_main_guard.mjs"
       - "tests/autonomous_engineering_supervisor.test.mjs"
+      - "tests/validate_operations_main_guard.test.mjs"
       - "docs/PROJECT_IMPROVEMENT_MATRIX.json"
       - "docs/AUTONOMOUS_MISSION_CONTRACT.json"
   workflow_dispatch:
@@ -50,7 +52,7 @@ jobs:
           node-version: "22"
           package-manager-cache: false
       - name: Validate supervisor
-        run: node --check tools/autonomous_engineering_supervisor.mjs && node --test tests/autonomous_mission_router.test.mjs tests/autonomous_engineering_supervisor.test.mjs
+        run: node --check tools/autonomous_engineering_supervisor.mjs && node --test tests/autonomous_mission_router.test.mjs tests/autonomous_engineering_supervisor.test.mjs tests/validate_operations_main_guard.test.mjs
       - name: Run independent autonomous supervisor
         env:
           GH_TOKEN: ${{ github.token }}
