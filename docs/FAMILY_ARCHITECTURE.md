@@ -79,3 +79,7 @@ Move between repositories only when ownership requires it. Preserve contracts an
 ## Historical migration record
 
 The former `extractor-mapper` repository was consolidated into Operations and deleted. Its migration facts are retained in current documentation only. The retired repository and any former `operations/archive/extractor-mapper/` snapshot are not active runtime, CI, package, import or ownership boundaries and must not be recreated.
+
+## Microscope branch retirement
+
+Foundation owns the public-side branch-retirement workflow at `.github/workflows/microscope-branch-retirement.yml`. It may execute only with explicit authorization and only against branches proven eligible by `tools/retire_microscope_branches.mjs`; default/protected/active-PR/release-tag/live-reference and divergent branches remain protected, and expected branch SHAs are revalidated immediately before deletion.

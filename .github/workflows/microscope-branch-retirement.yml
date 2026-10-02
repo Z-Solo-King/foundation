@@ -1,0 +1,58 @@
+name: Microscope branch retirement
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      execute:
+        description: Execute eligible branch deletions
+        required: true
+        type: boolean
+        default: false
+      min_age_hours:
+        description: Minimum age for merged or exact-duplicate branches
+        required: false
+        default: "24"
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  retire:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'push' &&
+        contains(github.event.head_commit.message, '[microscope-retirement-authorized]')
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      - name: Fetch all branch refs
+        run: git fetch origin '+refs/heads/*:refs/remotes/origin/*' --prune
+
+      - name: Run microscope retirement audit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MICROSCOPE_MIN_AGE_HOURS: ${{ github.event_name == 'workflow_dispatch' && inputs.min_age_hours || '24' }}
+        run: |
+          set -euo pipefail
+          args=(--report microscope-branch-retirement-report.json)
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.execute }}" == "true" ]]; then
+            args+=(--execute)
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            args+=(--execute)
+          fi
+          node tools/retire_microscope_branches.mjs "${args[@]}"
+
+      - name: Upload retirement receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: microscope-branch-retirement-receipt
+          path: microscope-branch-retirement-report.json
