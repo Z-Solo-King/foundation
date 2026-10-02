@@ -1,11 +1,11 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-10-02T11:31:00Z",
+  "audited_at": "2026-10-02T12:01:07.106Z",
   "public_safe": true,
   "live_main": {
-    "foundation": "1195d4a9ccdb51688bf9e1086b9cdb7dd99512c0",
-    "operations": "10dc9eff134609494ebb034df824616bbbcc7c97"
+    "foundation": "f364a39d79ce30e8f1b63b67c623c41a898af320",
+    "operations": "43ccf7b4379863fa3a8112194d1b3c6b68181378"
   },
   "runtime_pins": {
     "foundation_runtime": null,
@@ -35,7 +35,7 @@
   },
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
-    "observed_at": "2026-10-02T11:31:00Z",
+    "observed_at": "2026-10-02T12:01:07.106Z",
     "open_issue_count": 5,
     "foundation": [
       58,
@@ -101,7 +101,7 @@
     "open_pr_count": 0,
     "foundation": [],
     "operations": [],
-    "source": "GitHub live PR API at 2026-10-02T11:31:00Z"
+    "source": "GitHub live PR API"
   },
   "foundation_open_prs": [],
   "operations_open_prs": [],
@@ -124,11 +124,11 @@
     "authority": "scheduling_only"
   },
   "post_merge_sync": {
-    "checked_at": "2026-10-02T11:31:00Z",
+    "checked_at": "2026-10-02T12:01:07.106Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "1195d4a9ccdb51688bf9e1086b9cdb7dd99512c0",
-      "operations": "10dc9eff134609494ebb034df824616bbbcc7c97"
+      "foundation": "f364a39d79ce30e8f1b63b67c623c41a898af320",
+      "operations": "43ccf7b4379863fa3a8112194d1b3c6b68181378"
     },
     "operations_last_sync_commits": [
       "6071508a8cf5e24001f2238f0b581003d2300865",
@@ -159,13 +159,13 @@
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "1195d4a9ccdb51688bf9e1086b9cdb7dd99512c0",
-    "operations": "10dc9eff134609494ebb034df824616bbbcc7c97"
+    "foundation": "f364a39d79ce30e8f1b63b67c623c41a898af320",
+    "operations": "43ccf7b4379863fa3a8112194d1b3c6b68181378"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "1195d4a9ccdb51688bf9e1086b9cdb7dd99512c0",
-    "operations": "10dc9eff134609494ebb034df824616bbbcc7c97"
+    "foundation": "f364a39d79ce30e8f1b63b67c623c41a898af320",
+    "operations": "43ccf7b4379863fa3a8112194d1b3c6b68181378"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",
@@ -271,21 +271,21 @@
   },
   "microscope_consolidation_2026_10_02": {
     "status": "live_checkpoint",
-    "audited_at": "2026-10-02T11:31:00Z",
+    "audited_at": "2026-10-02T12:01:07.106Z",
     "initial_branch_counts": {
       "foundation": 1664,
       "operations": 1267,
       "total": 2931
     },
     "current_branch_counts": {
-      "foundation": 1564,
-      "operations": 1000,
-      "total": 2564
+      "foundation": 1319,
+      "operations": 991,
+      "total": 2310
     },
     "retired_by_cleanup": {
-      "foundation": 100,
-      "operations": 267,
-      "total": 367
+      "foundation": 345,
+      "operations": 276,
+      "total": 621
     },
     "method": "fail-closed retirement workflow; protected/default/active-PR/release-tag/live-reference and divergent refs retained; expected SHAs revalidated before deletion",
     "merged_architecture_prs": [
@@ -298,6 +298,8 @@
       "operations#1530"
     ],
     "redundant_pr_closed": "foundation#1855",
-    "evidence_limit": "Connector does not expose the push-triggered retirement workflow artifact/run listing; current branch-count deltas are verified from live GitHub refs."
+    "evidence_limit": "Connector does not expose the push-triggered retirement workflow artifact/run listing; current branch-count deltas are verified from live GitHub refs.",
+    "total_branches": 2310,
+    "note": "Current counts are live GitHub pagination boundaries; retirement executor remains fail-closed."
   }
 }
