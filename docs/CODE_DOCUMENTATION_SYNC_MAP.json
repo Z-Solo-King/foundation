@@ -15,7 +15,9 @@
         "pyproject.toml",
         ".github/pull_request_template.md",
         ".github/workflows/repository-hygiene.yml",
-        ".github/workflows/family-hygiene-sync.yml"
+        ".github/workflows/family-hygiene-sync.yml",
+        "tools/repository_hygiene.mjs",
+        "tools/code_documentation_sync.mjs"
       ],
       "docs": [
         "docs/REPOSITORY_HYGIENE_AND_FORMAT_STANDARD.md",
