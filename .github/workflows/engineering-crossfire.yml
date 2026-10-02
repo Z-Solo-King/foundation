@@ -1,0 +1,137 @@
+name: engineering CrossFire
+
+on:
+  workflow_dispatch:
+    inputs:
+      include_private_operations:
+        description: "Include the current private Operations checkout"
+        required: false
+        default: true
+        type: boolean
+  schedule:
+    - cron: "17 3 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: engineering-crossfire
+  cancel-in-progress: true
+
+jobs:
+  crossfire:
+    name: Six-lane engineering CrossFire
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OPERATIONS_APP_ID: \${{ secrets.OPERATIONS_APP_ID }}
+      OPERATIONS_APP_PRIVATE_KEY: \${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          package-manager-cache: false
+
+      - name: Validate CrossFire profile and scanner
+        run: |
+          set -euo pipefail
+          node --check tools/engineering_crossfire.mjs
+          node --test tests/engineering_crossfire.test.mjs
+          test "$(node -e 'console.log(JSON.parse(require("fs").readFileSync("docs/ENGINEERING_CROSSFIRE_PROFILE.json")).required_lanes.length)')" = "6"
+
+      - name: Checkout private Operations when authorized
+        if: \${{ (github.event_name == 'schedule' || inputs.include_private_operations == true) && env.OPERATIONS_APP_ID != '' && env.OPERATIONS_APP_PRIVATE_KEY != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          key_file="$RUNNER_TEMP/operations-crossfire-app.pem"
+          jwt_file="$RUNNER_TEMP/operations-crossfire-jwt.txt"
+          installation_file="$RUNNER_TEMP/operations-crossfire-installation.txt"
+          umask 077
+          printf '%s\n' "$OPERATIONS_APP_PRIVATE_KEY" > "$key_file"
+          chmod 600 "$key_file"
+          python - "$OPERATIONS_APP_ID" "$key_file" > "$jwt_file" <<'PY'
+          import base64
+          import json
+          import subprocess
+          import sys
+          import time
+
+          app_id, key_file = sys.argv[1:]
+          encode = lambda value: base64.urlsafe_b64encode(value).rstrip(b"=").decode("ascii")
+          now = int(time.time())
+          header = {"alg": "RS256", "typ": "JWT"}
+          payload = {"iat": now - 60, "exp": now + 540, "iss": app_id}
+          unsigned = (
+              encode(json.dumps(header, separators=(",", ":")).encode())
+              + "."
+              + encode(json.dumps(payload, separators=(",", ":")).encode())
+          ).encode()
+          signed = subprocess.run(
+              ["openssl", "dgst", "-sha256", "-sign", key_file],
+              input=unsigned,
+              stdout=subprocess.PIPE,
+              stderr=subprocess.PIPE,
+              check=True,
+          )
+          print(unsigned.decode() + "." + encode(signed.stdout))
+          PY
+          OPERATIONS_APP_JWT="$(cat "$jwt_file")"
+          OPERATIONS_APP_JWT="$OPERATIONS_APP_JWT" python scripts/resolve_operations_installation.py > "$installation_file"
+          installation_id="$(tr -d '\r\n' < "$installation_file")"
+          test -n "$installation_id"
+          curl -fsS -X POST \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $OPERATIONS_APP_JWT" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/app/installations/$installation_id/access_tokens" \
+            > "$RUNNER_TEMP/operations-crossfire-token.json"
+          token="$(python - "$RUNNER_TEMP/operations-crossfire-token.json" <<'PY'
+          import json, sys
+          print(json.load(open(sys.argv[1], encoding="utf-8"))["token"])
+          PY
+          )"
+          echo "::add-mask::$token"
+          git config --global credential.helper "!f() { echo username=x-access-token; echo password=$token; }; f"
+          rm -rf "$RUNNER_TEMP/operations"
+          git clone --depth=1 https://github.com/Z-Solo-King/operations.git "$RUNNER_TEMP/operations"
+
+      - name: Run deterministic six-lane CrossFire
+        run: |
+          set -euo pipefail
+          if [ -d "$RUNNER_TEMP/operations/private" ]; then
+            node tools/engineering_crossfire.mjs --operations-root "$RUNNER_TEMP/operations" --output .runtime/engineering-crossfire.json
+          else
+            node tools/engineering_crossfire.mjs --output .runtime/engineering-crossfire.json
+          fi
+
+      - name: Verify receipt
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          const r = JSON.parse(fs.readFileSync(".runtime/engineering-crossfire.json", "utf8"));
+          if (r.schema !== "engineering-crossfire-receipt/v1") throw new Error("invalid receipt schema");
+          if (r.authority !== "diagnostic_only") throw new Error("unexpected authority");
+          if (r.crossfire.lanes_expected !== 6) throw new Error("six-lane target missing");
+          if (r.crossfire.shared_lane_feedback !== false) throw new Error("lane isolation violated");
+          if (r.crossfire.mutation_phase !== "separate") throw new Error("mutation boundary violated");
+          if (r.lanes.length !== 6) throw new Error("incorrect lane count");
+          if (!["full_6", "strong_5", "limited", "insufficient"].includes(r.crossfire.strength)) throw new Error("invalid CrossFire strength");
+          NODE
+
+      - name: Upload compact evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: engineering-crossfire-evidence
+          path: .runtime/engineering-crossfire.json
+          if-no-files-found: error
+          retention-days: 14
