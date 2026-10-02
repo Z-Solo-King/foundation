@@ -4,20 +4,20 @@ on:
   push:
     branches: [main]
     paths:
-      - 'docs/FAMILY_FULL_COVERAGE_MATRIX.json'
-      - 'docs/FAMILY_FULL_COVERAGE_STANDARD.md'
-      - 'tools/validate_family_full_coverage.py'
-      - 'tools/cross_system_equivalence.py'
-      - 'tests/test_family_full_coverage.py'
-      - 'tests/test_cross_system_equivalence.py'
-      - '.github/workflows/family-full-coverage.yml'
-      - '.github/workflows/**'
-      - 'docs/PROJECT_IMPROVEMENT_MATRIX.json'
-      - 'docs/SYSTEM_INTEGRATION_CONTRACT.json'
-      - 'tools/validate_system_integration.py'
-      - 'tools/source_surface_audit.mjs'
-      - 'tests/test_system_integration.py'
-      - 'tests/test_source_surface_audit.mjs'
+      - "docs/FAMILY_FULL_COVERAGE_MATRIX.json"
+      - "docs/FAMILY_FULL_COVERAGE_STANDARD.md"
+      - "tools/validate_family_full_coverage.py"
+      - "tools/cross_system_equivalence.py"
+      - "tests/test_family_full_coverage.py"
+      - "tests/test_cross_system_equivalence.py"
+      - ".github/workflows/family-full-coverage.yml"
+      - ".github/workflows/**"
+      - "docs/PROJECT_IMPROVEMENT_MATRIX.json"
+      - "docs/SYSTEM_INTEGRATION_CONTRACT.json"
+      - "tools/validate_system_integration.py"
+      - "tools/source_surface_audit.mjs"
+      - "tests/test_system_integration.py"
+      - "tests/test_source_surface_audit.mjs"
   schedule:
     - cron: "55 2 * * *"
   workflow_dispatch:
