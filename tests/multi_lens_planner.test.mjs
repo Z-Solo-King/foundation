@@ -180,3 +180,61 @@ test("reports an infeasible required exclusive conflict", () => {
   assert.equal(out.feasible, false);
   assert.ok(out.errors.some((e) => e.code === "required_exclusive_conflict"));
 });
+
+test("adaptive execution caps optional lanes by evidence need and dedicated token budget", () => {
+  const base = {
+    target: "demo",
+    max_lanes: 8,
+    cost_budget: 20,
+    latency_budget: 100,
+    quota_budget: 100,
+    execution_policy: {
+      mode: "adaptive",
+      lane_levels: [0, 2, 4, 6, 8],
+      ambiguity: 0.9,
+      evidence_gain: 0.9,
+      token_budget: 1024,
+      tokens_per_lane: 256,
+    },
+    lanes: Array.from({ length: 8 }, (_, i) => ({
+      id: "lane-" + i,
+      family: "family-" + i,
+      coverage_gain: 0.8,
+      failure_detection: 0.8,
+      confidence_gain: 0.8,
+      execution_cost: 1,
+      latency_cost: 1,
+      quota_cost: 0,
+    })),
+  };
+  const out = run(base);
+  assert.equal(out.execution_policy.candidate_lane_cap, 4);
+  assert.equal(out.totals.lanes, 4);
+});
+
+test("adaptive mode records an explicit no-new-work decision without hiding required lanes", () => {
+  const out = run({
+    target: "demo",
+    max_lanes: 6,
+    cost_budget: 10,
+    latency_budget: 50,
+    quota_budget: 50,
+    execution_policy: {
+      mode: "adaptive",
+      lane_levels: [0, 2, 4, 6],
+      ambiguity: 0.1,
+      evidence_gain: 0.1,
+      token_budget: 1024,
+      tokens_per_lane: 256,
+    },
+    required_ids: ["required"],
+    lanes: [
+      { id: "required", family: "security", required: true, coverage_gain: 0.2, failure_detection: 1, confidence_gain: 1, execution_cost: 1, latency_cost: 1, quota_cost: 0 },
+      { id: "optional", family: "search", coverage_gain: 0.9, failure_detection: 0.9, confidence_gain: 0.9, execution_cost: 1, latency_cost: 1, quota_cost: 0 },
+    ],
+  });
+  assert.equal(out.execution_policy.candidate_lane_cap, 0);
+  assert.equal(out.totals.lanes, 1);
+  assert.equal(out.selected[0].selection, "required");
+  assert.equal(out.skipped.find((x) => x.id === "optional").skip_reason, "adaptive_lane_cap");
+});

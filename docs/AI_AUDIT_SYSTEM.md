@@ -84,3 +84,14 @@ AI planners can prioritize and cross-check evidence but cannot certify productio
 ## Six-lane CrossFire standard
 
 For difficult audits, use independent ownership/policy, TypeScript, Rust, Go, Cloudflare/runtime, and security/evidence lenses. Each lane works from the same immutable input snapshot and emits bounded evidence. Intermediate findings are not treated as shared truth until deterministic reconciliation completes. A provider comparison is meaningful only when enough independently configured providers actually execute; unavailable providers are reported as limitations rather than simulated.
+
+
+## Universal automation/scanning contract
+
+Every automation or scanner should use the same control sequence:
+
+`observe → normalize → capability/policy gate → plan lanes → reserve bounded resources → fan out only independent work → normalize evidence → deduplicate/contradiction-check → evidence-gain stop/continue → emit receipt → learn from verified outcomes`.
+
+Use the existing multi-lens planner as the Work Director. Adaptive fan-out is allowed only when ambiguity/evidence value justifies it and a dedicated budget exists. Required lanes/dependencies remain hard constraints; optional lanes may be reduced or skipped with an explicit reason. No scheduler, benchmark, AI provider or external tool becomes an acceptance authority merely because it produced a high-quality result.
+
+The shared contract is machine-readable in `docs/UNIVERSAL_EXECUTION_CONTRACT.json`.

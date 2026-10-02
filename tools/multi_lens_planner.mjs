@@ -69,10 +69,62 @@ function scoreLane(lane, target, history, selectedFamilies) {
   };
 }
 
+
+function adaptiveExecutionPolicy(input, defaults) {
+  const policy = input.execution_policy && typeof input.execution_policy === "object"
+    ? input.execution_policy
+    : (defaults.execution_policy && typeof defaults.execution_policy === "object" ? defaults.execution_policy : {});
+  const mode = String(policy.mode || "static");
+  const adaptive = mode === "adaptive";
+  const rawLevels = Array.isArray(policy.lane_levels) ? policy.lane_levels : [0, 2, 4, 6, 8];
+  const laneLevels = [...new Set(rawLevels.map((x) => Math.max(0, Math.floor(Number(x) || 0))))]
+    .filter((x) => x >= 0 && x <= 32)
+    .sort((a, b) => a - b);
+  const ambiguity = clamp(policy.ambiguity ?? 0);
+  const evidenceGain = clamp(policy.evidence_gain ?? 0);
+  const tokenBudget = Math.max(0, Math.floor(Number(policy.token_budget) || 0));
+  const tokensPerLane = Math.max(1, Math.floor(Number(policy.tokens_per_lane) || 256));
+  const requestedMax = Math.max(1, Number(input.max_lanes ?? defaults.max_lanes) || 6);
+  if (!adaptive) {
+    return {
+      mode: "static",
+      ambiguity,
+      evidence_gain: evidenceGain,
+      token_budget: tokenBudget,
+      tokens_per_lane: tokensPerLane,
+      candidate_lane_cap: Math.max(0, Math.floor(requestedMax)),
+      lane_cap_reason: "static-planner-budget",
+      stop: policy.stop && typeof policy.stop === "object" ? policy.stop : {},
+    };
+  }
+  let desired;
+  if (ambiguity < 0.35 || evidenceGain < 0.35) desired = 0;
+  else if (ambiguity >= 0.80 && evidenceGain >= 0.70) desired = 6;
+  else if (ambiguity >= 0.60 || evidenceGain >= 0.60) desired = 4;
+  else desired = 2;
+  const availableByTokenBudget = tokenBudget > 0 ? Math.floor(tokenBudget / tokensPerLane) : 0;
+  const effective = Math.min(requestedMax, desired, availableByTokenBudget);
+  const snapped = laneLevels.filter((x) => x <= effective).pop() ?? 0;
+  let reason = "adaptive-evidence-and-budget";
+  if (tokenBudget <= 0) reason = "adaptive-token-budget-zero";
+  else if (snapped === 0) reason = "adaptive-signal-or-budget-insufficient";
+  return {
+    mode: "adaptive",
+    ambiguity,
+    evidence_gain: evidenceGain,
+    token_budget: tokenBudget,
+    tokens_per_lane: tokensPerLane,
+    candidate_lane_cap: snapped,
+    lane_cap_reason: reason,
+    stop: policy.stop && typeof policy.stop === "object" ? policy.stop : {},
+  };
+}
+
 function plan(input) {
   const defaults = input.target_defaults && typeof input.target_defaults === "object"
     ? input.target_defaults
     : {};
+  const execution = adaptiveExecutionPolicy(input, defaults);
   const target = {
     max_lanes: Math.max(1, Number(input.max_lanes ?? defaults.max_lanes) || 6),
     cost_budget: Math.max(1, Number(input.cost_budget ?? defaults.cost_budget) || 6),
@@ -189,10 +241,15 @@ function plan(input) {
   let cost = 0;
   let latency = 0;
   let quota = 0;
+  let adaptiveSelected = 0;
 
-  function canFit(row) {
+  function canFit(row, selection = "adaptive") {
+    const candidateCapacity = selection === "required"
+      ? Number.POSITIVE_INFINITY
+      : execution.candidate_lane_cap;
     return (
       selected.length < target.max_lanes &&
+      adaptiveSelected < candidateCapacity &&
       cost + row.estimated.cost <= target.cost_budget &&
       latency + row.estimated.latency <= target.latency_budget &&
       quota + row.estimated.quota <= target.quota_budget
@@ -215,6 +272,7 @@ function plan(input) {
     const batch = dependencyBatches.length ? Math.max(...dependencyBatches) + 1 : 0;
     const materialized = { ...row, selection, required: requiredIds.has(row.id), batch };
     selected.push(materialized);
+    if (selection !== "required") adaptiveSelected += 1;
     families.add(row.family);
     if (row.exclusive_group) exclusiveGroups.add(row.exclusive_group);
     cost += row.estimated.cost;
@@ -404,6 +462,23 @@ function plan(input) {
       cost,
       latency,
       quota,
+    },
+    execution_policy: {
+      mode: execution.mode,
+      candidate_lane_cap: execution.candidate_lane_cap,
+      lane_cap_reason: execution.lane_cap_reason,
+      ambiguity: execution.ambiguity,
+      evidence_gain: execution.evidence_gain,
+      token_budget: execution.token_budget,
+      tokens_per_lane: execution.tokens_per_lane,
+      declared_stop: {
+        mode: "evidence_gain",
+        required_families: [...requiredFamilies].sort(),
+        minimum_novel_evidence_gain: Number(execution.stop.minimum_novel_evidence_gain ?? 0.05),
+        no_novel_rounds_before_stop: Math.max(1, Math.floor(Number(execution.stop.no_novel_rounds_before_stop) || 1)),
+        required_constraints_must_complete: true,
+        preserve_skipped_reasons: true,
+      },
     },
   };
 }

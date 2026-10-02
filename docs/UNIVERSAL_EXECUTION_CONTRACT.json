@@ -1,0 +1,99 @@
+{
+  "schema": "universal-execution-contract/v1",
+  "status": "active",
+  "authority": "scheduling_only",
+  "purpose": "Reusable control model for GitHub Actions automation, repository scans, audits, benchmarks, migration and maintenance.",
+  "planning": {
+    "required_task_fields": [
+      "task_id",
+      "owner",
+      "feature",
+      "mutation_surface",
+      "dependencies",
+      "expected_cost",
+      "expected_latency",
+      "evidence_tier",
+      "lane_role",
+      "retrieval_budget",
+      "state",
+      "priority",
+      "revision"
+    ],
+    "ordering": [
+      "readiness",
+      "dependency_closure",
+      "information_gain",
+      "cost",
+      "latency",
+      "quota",
+      "deadline"
+    ],
+    "adaptive_lane_levels": [
+      0,
+      2,
+      4,
+      6,
+      8
+    ],
+    "crossfire_rule": "Use multiple independent lanes only when the additional evidence value exceeds coordination/retrieval cost.",
+    "diversity_rule": "A second lane is independent only when it uses a distinct boundary, evidence class, runtime, language, provider or failure mode."
+  },
+  "gates": {
+    "capability": "Identify supported capabilities/limits before selecting a tool, provider, runtime, browser, language or extraction method.",
+    "policy": "Apply security, privacy, access, billing, zero-cost and authority policy before capability ranking.",
+    "resources": "Reserve a separate bounded budget; never borrow user-serving or protected reserves for background work.",
+    "provenance": "Pin immutable revisions for cross-repository execution and preserve artifact/receipt lineage.",
+    "failure": "Classify failures explicitly; bounded retry/backoff is allowed, infinite retry is not."
+  },
+  "execution": {
+    "topology": "normalize -> plan -> bounded fan-out -> barrier -> evidence normalization -> dedupe -> contradiction check",
+    "work_stealing": "Completed/blocked lanes may pull the next independent task only when mutation surfaces and dependencies permit it.",
+    "serialization": "Shared mutation surfaces and promotion/merge operations remain serialized.",
+    "receipts": "Every lane records status, limitation, revision, timing and bounded evidence references."
+  },
+  "stopping": {
+    "required_coverage": true,
+    "unresolved_contradictions": true,
+    "freshness_compliance": true,
+    "failure_coverage": true,
+    "marginal_evidence_gain": true,
+    "budget_exhaustion": true,
+    "explicit_skip_reasons": true
+  },
+  "learning": {
+    "inputs": [
+      "verified receipts",
+      "accepted evidence",
+      "novel_finding_rate",
+      "false_positive_rate",
+      "latency",
+      "resource_use"
+    ],
+    "updates": [
+      "lane priority",
+      "provider/task fit",
+      "compatibility-profile confidence",
+      "retrieval ordering"
+    ],
+    "forbidden_updates": [
+      "policy",
+      "security boundary",
+      "canonical owner",
+      "acceptance authority",
+      "billing authorization"
+    ]
+  },
+  "ai_crossfire": {
+    "max_lanes": 6,
+    "preferred_levels": [
+      0,
+      2,
+      4,
+      6
+    ],
+    "dedicated_budget_required": true,
+    "first_party_runtime_fact_precedence": true,
+    "consensus_is_corrobative": true,
+    "no_raw_model_output_in_scheduler_receipts": true
+  }
+}

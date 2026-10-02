@@ -976,7 +976,7 @@
     "authority": "Operations runtime types remain canonical; Foundation consumes audit evidence only.",
     "promotion_rule": "Type parity is necessary but never sufficient; differential, serialization, security/policy, provenance, resource, shadow, canary and rollback gates remain required."
   },
-  "updated_at": "2026-10-01",
+  "updated_at": "2026-10-02",
   "extractor_mapper_status": {
     "standalone_repository_status": "retired/deleted",
     "operations_private_runtime_path": "operations/extractor_mapper/",
@@ -1124,5 +1124,71 @@
     "storage_b2": "Foundation-owned backup evidence; archive size/restore/retention",
     "cloudflare_r2": "excluded",
     "ai_map_role": "navigation overlay only"
+  },
+  "universal_execution_contract": {
+    "schema": "universal-execution-contract/v1",
+    "authority": "scheduling_only",
+    "planner": "tools/multi_lens_planner.mjs",
+    "sequence": [
+      "observe",
+      "normalize",
+      "capability_gate",
+      "policy_gate",
+      "plan",
+      "reserve",
+      "fan_out",
+      "normalize_evidence",
+      "deduplicate",
+      "contradiction_check",
+      "stop_or_continue",
+      "receipt",
+      "learn"
+    ],
+    "task_fields": [
+      "task_id",
+      "owner",
+      "feature",
+      "mutation_surface",
+      "dependencies",
+      "expected_cost",
+      "expected_latency",
+      "evidence_tier",
+      "lane_role",
+      "retrieval_budget",
+      "state",
+      "priority",
+      "revision"
+    ],
+    "adaptive_lane_levels": [
+      0,
+      2,
+      4,
+      6,
+      8
+    ],
+    "adaptive_inputs": [
+      "ambiguity",
+      "evidence_gain",
+      "deduplication_pressure",
+      "freshness_need",
+      "token_budget",
+      "quota_budget",
+      "latency_budget"
+    ],
+    "hard_constraints": [
+      "canonical_owner",
+      "required_lanes",
+      "dependency_closure",
+      "protected_policy",
+      "privacy",
+      "budget",
+      "revision_provenance"
+    ],
+    "stop_rule": "acceptance-required coverage complete + no unresolved material contradiction/freshness/failure gap + marginal evidence gain below threshold",
+    "skip_rule": "never silently drop work; preserve lane-level machine-readable skip reason",
+    "concurrency_rule": "parallelize only independent read-only or isolated mutation surfaces; shared mutation surfaces serialize",
+    "learning_rule": "update scheduler priors only from verified observations/receipts; learned priority never changes policy or acceptance gates",
+    "ai_rule": "AI consensus is corroboration only; it cannot override policy, runtime facts, first-party evidence, security or deployment authority",
+    "contract_file": "docs/UNIVERSAL_EXECUTION_CONTRACT.json"
   }
 }

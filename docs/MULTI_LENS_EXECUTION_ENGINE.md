@@ -258,3 +258,14 @@ Current runtime + logs/receipts + historical replay + provider differential + bo
 10. Periodically recalibrate scheduling from verified receipts.
 
 This is deliberately additive: existing audit systems remain valid and become lenses under the common execution model.
+
+
+## Universal execution contract
+
+The execution engine is the common substrate for repository audits, extractor scans, browser matrices, provider differential tests, migration work and maintenance jobs. Consumers should emit the following bounded metadata before launching work:
+
+`task_id, owner, mutation_surface, dependencies, evidence_tier, capability_requirements, expected_cost, expected_latency, quota_cost, retrieval_budget, lane_role, stop_policy, revision`.
+
+The planner may adapt optional lane count at 0/2/4/6/8 depending on declared ambiguity, expected evidence gain and dedicated token/resource budgets. Required dependency closure is evaluated separately, so low-ambiguity conditions never suppress acceptance-critical required work. Skipped lanes remain visible with machine-readable reasons.
+
+Stopping is evidence-driven: stop when acceptance-required dimensions are complete and additional work is no longer producing material novel evidence; continue when required dimensions, contradictions, freshness or failure coverage remain unresolved. This is a scheduling contract, not an acceptance authority.
