@@ -6,11 +6,7 @@ on:
       - fix/nightly-dry-run-foundation-clean-2026-10-03
 
 permissions:
-  contents: write
-
-concurrency:
-  group: temporary-nightly-prettier-normalization
-  cancel-in-progress: false
+  contents: read
 
 jobs:
   format:
@@ -31,6 +27,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npx --yes prettier@3.9.9 --write .github/workflows/nightly-multi-agent-research-v3.yml
-          git diff -- .github/workflows/nightly-multi-agent-research-v3.yml
-          git diff --check -- .github/workflows/nightly-multi-agent-research-v3.yml
+          files=(
+            .github/workflows/nightly-multi-agent-research-v3.yml
+            docs/GITHUB_ACTIONS_NIGHTLY_DISPATCH.md
+            REPOSITORY_MAP.json
+            tests/test_nightly_runtime_acceptance_contract.mjs
+          )
+          npx --yes prettier@3.9.9 --write "${files[@]}"
+          git diff -- "${files[@]}"
+          git diff --check -- "${files[@]}"
