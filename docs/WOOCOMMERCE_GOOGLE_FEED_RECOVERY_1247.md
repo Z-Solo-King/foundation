@@ -32,3 +32,8 @@ The public repository does not contain the live target registry or target-specif
 - **Operations:** live retailer registry, acquisition/extraction execution, provider-assisted candidate generation, target-specific recovery state and production recovery authority.
 - **CrossFire:** independent AI lanes may propose hypotheses, but deterministic retrieval/validation remains the acceptance authority.
 - **Status discipline:** unresolved targets remain open or evidence-gated until current execution evidence satisfies their written acceptance criteria; historical receipts are never reused as closure evidence.
+
+
+## Distribution safety rule — 2026-10-02
+
+Recovery output is evidence, not a public GitHub Release. Generated indexes must not contain release download URLs, and `wc-google-feed-latest` is a prohibited public feed release identifier.
