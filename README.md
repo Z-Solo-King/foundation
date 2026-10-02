@@ -18,7 +18,7 @@ Live repository state and fresh GitHub evidence override dated continuity notes.
 
 ## Current AI engineering architecture — September 2026
 
-The canonical public entrypoint is the Cloudflare Pages project `ai` at the assigned hostname `https://ai-cio.pages.dev`. Its backend Worker identity is `heroic`; private chatbot/provider execution remains in Operations through the `FOUNDATION`/service-binding boundary.
+The canonical public entrypoint is the Cloudflare Pages project `ai` at the assigned hostname `https://heroic-ai.pages.dev`. Its backend Worker identity is `heroic`; private chatbot/provider execution remains in Operations through the `FOUNDATION`/service-binding boundary.
 
 The project is strict-$0 by policy. Provider selection is runtime-aware and fail-closed on unknown billing/quota state. The current provider-control policy is documented in Operations at `docs/AI_PROVIDER_CONTROL_POLICY_2026-09-25.md`. GitHub Models is retired and is not a provider path.
 

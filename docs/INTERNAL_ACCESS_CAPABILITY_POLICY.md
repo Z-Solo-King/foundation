@@ -27,7 +27,7 @@ Internal access is capability-scoped. Autonomous AI can request approved operati
 
 Live Cloudflare annotations:
 - public Foundation revision: `f43028ca6c6a4f4d3cecbfdb99ae4602330228b4`;
-- deployed Operations production pin: `da86e92d4e0fdb68912efb54ef95c69281a7d613`.
+- deployed Operations production pin: `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f`.
 
 No secret values belong in this document.
 

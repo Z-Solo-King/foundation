@@ -9,7 +9,7 @@
   },
   "runtime_pins": {
     "foundation_runtime": null,
-    "production_operations": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
+    "production_operations": "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f",
     "research_operations": "1a91efa53b9202f1624ddde892b0e86bd6b360f0",
     "foundation_runtime_status": "no independent immutable Foundation runtime pin; deployed Foundation provenance is release-receipt owned",
     "migration_tools": "f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791",
@@ -17,7 +17,7 @@
   },
   "cloudflare": {
     "pages_project": "ai",
-    "canonical_public_url": "https://ai-cio.pages.dev",
+    "canonical_public_url": "https://heroic-ai.pages.dev",
     "public_worker": "heroic",
     "private_edge_worker": "operations-edge",
     "private_core_worker": "operations",
@@ -78,7 +78,7 @@
   },
   "privacy_rule": "Do not publish protected worker origins, account/resource identifiers, private revisions, secret values, private issue details, or internal operational state.",
   "migration_topology": {
-    "public_front_door": "https://ai-cio.pages.dev",
+    "public_front_door": "https://heroic-ai.pages.dev",
     "public_worker": "heroic",
     "private_edge_worker": "operations-edge",
     "private_core_worker": "operations",
@@ -163,7 +163,7 @@
       ],
       "total": 5
     },
-    "production_operations_pin": "da86e92d4e0fdb68912efb54ef95c69281a7d613"
+    "production_operations_pin": "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f"
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {

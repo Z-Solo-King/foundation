@@ -47,3 +47,10 @@ Do not infer production state from historical docs, branch names, or GitHub `mai
 ## Public-core synchronization tooling — 2026-10-02
 
 The production release boundary now materializes the immutable Foundation public core through the Node-based Operations tool `scripts/sync_public_core.mjs`. The migration changes only build-time synchronization tooling; runtime service-binding and authentication authority remain unchanged.
+
+
+## Public front door reconciliation — 2026-10-02
+
+The canonical public frontend is the GitHub-backed Cloudflare Pages project `heroic-ai` at `https://heroic-ai.pages.dev`. It serves the existing Foundation frontend and routes `/health`, `/readiness`, and `/api/*` through the `HEROIC_BACKEND` service binding to the production `heroic` Worker.
+
+The retired `ai-cio.pages.dev` Pages project is not the canonical public front door and must not be used by production release or live-probe configuration.

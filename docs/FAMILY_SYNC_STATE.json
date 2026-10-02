@@ -1,23 +1,23 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-10-02T12:01:07.106Z",
+  "audited_at": "2026-10-02T12:50:00.000Z",
   "public_safe": true,
   "live_main": {
-    "foundation": "f364a39d79ce30e8f1b63b67c623c41a898af320",
-    "operations": "43ccf7b4379863fa3a8112194d1b3c6b68181378"
+    "foundation": "a29ecf986fe02de70533b6def35ba583da9ff2da",
+    "operations": "adc600221169cc4dadee0bdd7d68be30c58e6727"
   },
   "runtime_pins": {
     "foundation_runtime": null,
-    "production_operations": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
+    "production_operations": "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f",
     "research_operations": "1a91efa53b9202f1624ddde892b0e86bd6b360f0",
     "foundation_runtime_status": "no independent immutable Foundation runtime pin; deployed Foundation provenance is release-receipt owned",
     "migration_tools": "f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791",
     "provider_fleet_runtime": "b95e419254a9071beaeef57a1b0da22ba7dd2c4f"
   },
   "cloudflare": {
-    "pages_project": "ai",
-    "canonical_public_url": "https://ai-cio.pages.dev",
+    "pages_project": "heroic-ai",
+    "canonical_public_url": "https://heroic-ai.pages.dev",
     "public_worker": "heroic",
     "private_edge_worker": "operations-edge",
     "private_core_worker": "operations",
@@ -66,7 +66,7 @@
     "feed_recovery": "QUALIFICATION COMPLETE: verified feeds retained; blocked/unverified targets are not misclassified.",
     "d1_schema": "verified_live_2026-09-29",
     "production_signing_root": "provisioned_live_2026-09-29",
-    "production_runtime": "Current repository main is not itself production certification; production Operations remains pinned at da86e92d4e0fdb68912efb54ef95c69281a7d613 until a fresh approved deployment/runtime receipt.",
+    "production_runtime": "Operations production runtime is deployed at immutable revision 11f592116d9ef57b6189bf8bf0ff0e95ec3d410f; production provenance and fresh public acceptance remain separately evidenced.",
     "post_release_dispatch": "live nightly research uses typed GitHub workflow inputs; production smoke and research preflight preserve purpose-scoped Operations pins",
     "post_release_provider_proof": "Fresh provider and 24-program production evidence remains required for L4/runtime closure.",
     "provider_diagnostic_status": "Foundation PR #1562 fixes the dedicated provider_runtime_verify health calculation so a valid Operations {ok:true,runtime_checks:[...]} receipt is returned as HTTP 200 without requiring the generic chatbot.allowed field.",
@@ -82,7 +82,7 @@
   },
   "privacy_rule": "Do not publish protected worker origins, account/resource identifiers, private revisions, secret values, private issue details, or internal operational state.",
   "migration_topology": {
-    "public_front_door": "https://ai-cio.pages.dev",
+    "public_front_door": "https://heroic-ai.pages.dev",
     "public_worker": "heroic",
     "private_edge_worker": "operations-edge",
     "private_core_worker": "operations",
@@ -124,11 +124,11 @@
     "authority": "scheduling_only"
   },
   "post_merge_sync": {
-    "checked_at": "2026-10-02T12:01:07.106Z",
+    "checked_at": "2026-10-02T12:50:00.000Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "f364a39d79ce30e8f1b63b67c623c41a898af320",
-      "operations": "43ccf7b4379863fa3a8112194d1b3c6b68181378"
+      "foundation": "a29ecf986fe02de70533b6def35ba583da9ff2da",
+      "operations": "adc600221169cc4dadee0bdd7d68be30c58e6727"
     },
     "operations_last_sync_commits": [
       "6071508a8cf5e24001f2238f0b581003d2300865",
@@ -155,12 +155,12 @@
       ],
       "total": 5
     },
-    "production_operations_pin": "da86e92d4e0fdb68912efb54ef95c69281a7d613"
+    "production_operations_pin": "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f"
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "f364a39d79ce30e8f1b63b67c623c41a898af320",
-    "operations": "43ccf7b4379863fa3a8112194d1b3c6b68181378"
+    "foundation": "a29ecf986fe02de70533b6def35ba583da9ff2da",
+    "operations": "adc600221169cc4dadee0bdd7d68be30c58e6727"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
@@ -248,8 +248,8 @@
   "integrity_guard": {
     "workflow": ".github/workflows/operations-private-freeplan-guard.yml",
     "policy": "fail closed on Operations main drift from approved immutable production pin",
-    "approved_production_pin": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
-    "observed_main": "5cf716b8c8d9be4691f2544f2799dfd95cc29d4a",
+    "approved_production_pin": "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f",
+    "observed_main": "adc600221169cc4dadee0bdd7d68be30c58e6727",
     "observed_state": "DRIFT"
   },
   "ai_navigation": {
