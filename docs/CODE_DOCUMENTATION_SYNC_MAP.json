@@ -90,29 +90,18 @@
         ".github/workflows/repository-hygiene-autofix.yml",
         "docs/PROJECT_IMPROVEMENT_MATRIX.json",
         "docs/SYSTEM_INTEGRATION_CONTRACT.json",
-        "docs/WORKFLOW_AUTHORITY_REGISTRY.json"
+        "docs/WORKFLOW_AUTHORITY_REGISTRY.json",
+        "tools/comprehensive_governance_scan.py",
+        "tools/publish_governance_findings.py",
+        "tests/test_comprehensive_governance_scan.py"
       ],
       "docs": [
         "docs/AI_AUDIT_SYSTEM.md",
         "docs/PROJECT_IMPROVEMENT_MATRIX.json",
         "docs/SYSTEM_INTEGRATION_CONTRACT.json",
         "docs/PRIVILEGED_WORKFLOW_TRUST_BOUNDARY.md",
-        "docs/FAMILY_SYNC_STANDARD.md"
-      ],
-      "require_doc_update": true
-    },
-    {
-      "id": "autonomous-governance-sweep",
-      "code_paths": [
-        "tools/comprehensive_governance_scan.py",
-        "tools/publish_governance_findings.py",
-        ".github/workflows/twice-daily-autonomous-governance-sweep.yml",
-        "tests/test_comprehensive_governance_scan.py"
-      ],
-      "docs": [
+        "docs/FAMILY_SYNC_STANDARD.md",
         "docs/AUTONOMOUS_GOVERNANCE_SCAN_CONTRACT.json",
-        "docs/AI_AUDIT_SYSTEM.md",
-        "docs/SYSTEM_INTEGRATION_CONTRACT.json",
         "docs/AI_SYSTEM_MAP.json"
       ],
       "require_doc_update": true
