@@ -668,6 +668,20 @@ def test_live_chatbot_smoke_requires_real_model_generation():
     assert 'chat_response.get("provider") != "cloudflare_workers_ai"' in workflow
     assert 'not chat_response.get("text", "").strip()' in workflow
 
+def test_operations_package_audit_and_isolated_runtime_trees_are_required():
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'pywrangler deploy --config wrangler.toml --dry-run --outdir' in deployment
+    assert 'git -C "$RUNNER_TEMP/operations" clean -ffdx' in deployment
+    assert 'prepare_operations_runtime_tree()' in deployment
+    assert 'operations-deploy-bootstrap' in deployment
+    assert 'operations-deploy-heroic-core' in deployment
+    assert 'operations-deploy-foundation-binding' in deployment
+    assert 'operations-deploy-persistence-boundary' in deployment
+    assert 'SILICONFLOW_API_KEY' in deployment
+    assert 'PROVIDER_KEYS' in deployment
+    assert '.venv-workers' in deployment
+    assert 'credential-like content detected in dry-run bundle' in deployment
+
 def test_production_bootstrap_precedes_foundation_deploy_and_is_unconditional():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     start = deployment.index("# Rename-safe Cloudflare deployment sequence.")
