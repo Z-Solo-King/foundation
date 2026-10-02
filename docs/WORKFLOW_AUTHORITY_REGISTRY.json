@@ -28,6 +28,14 @@
       "revision_maintenance"
     ],
     [
+      ".github/workflows/chatbot-post-release-crossfire.yml",
+      "ai_provider_crossfire"
+    ],
+    [
+      ".github/workflows/chatbot-post-release-runtime-smoke.yml",
+      "private_production_smoke"
+    ],
+    [
       ".github/workflows/commerce-feed-product-crawl.yml",
       "private_registry_feed_crawl"
     ],
@@ -68,10 +76,6 @@
       "private_benchmark"
     ],
     [
-      ".github/workflows/migration-factory.yml",
-      "private_audit"
-    ],
-    [
       ".github/workflows/live-ai-agent-benchmark.yml",
       "live_benchmark"
     ],
@@ -90,6 +94,14 @@
     [
       ".github/workflows/live-nightly-research-canary.yml",
       "private_research_canary"
+    ],
+    [
+      ".github/workflows/microscope-branch-retirement.yml",
+      "microscope_branch_retirement"
+    ],
+    [
+      ".github/workflows/migration-factory.yml",
+      "private_audit"
     ],
     [
       ".github/workflows/nightly-multi-agent-research-v3.yml",
@@ -132,12 +144,12 @@
       "private_runtime_state"
     ],
     [
-      ".github/workflows/repository-hygiene-autofix.yml",
-      "repository_hygiene_autofix"
-    ],
-    [
       ".github/workflows/release-quality-regression.yml",
       "release_quality_regression"
+    ],
+    [
+      ".github/workflows/repository-hygiene-autofix.yml",
+      "repository_hygiene_autofix"
     ],
     [
       ".github/workflows/repository-hygiene.yml",
@@ -152,11 +164,19 @@
       "autonomous_governance_sweep"
     ],
     [
+      ".github/workflows/verification-fabric.yml",
+      "verification_fabric"
+    ],
+    [
       ".github/workflows/woocommerce-32-plugin-feed-hunt.yml",
       "private_registry_feed_crawl"
     ],
     [
       ".github/workflows/woocommerce-emergency-xml-recovery.yml",
+      "private_feed_extraction"
+    ],
+    [
+      ".github/workflows/woocommerce-final-least-tried-native-recovery.yml",
       "private_feed_extraction"
     ],
     [
@@ -170,18 +190,6 @@
     [
       ".github/workflows/woocommerce-v175-22-plugin-extraction.yml",
       "private_feed_extraction"
-    ],
-    [
-      ".github/workflows/woocommerce-final-least-tried-native-recovery.yml",
-      "private_feed_extraction"
-    ],
-    [
-      ".github/workflows/verification-fabric.yml",
-      "verification_fabric"
-    ],
-    [
-      ".github/workflows/microscope-branch-retirement.yml",
-      "microscope_branch_retirement"
     ]
   ],
   "policy": {
