@@ -16,7 +16,7 @@ on:
       operations_research_ref:
         description: "Exact Operations revision deployed to the private production runtime"
         required: false
-        default: "5a5ae97ff83c60d755cc964bd1ac639565e2f298"
+        default: "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f"
         type: string
 
 permissions:
@@ -32,13 +32,13 @@ jobs:
     env:
       PUBLIC_WORKER_URL: "https://heroic-ai.pages.dev"
       TARGET_FOUNDATION_SHA: ${{ inputs.target_sha || github.sha }}
-      OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || '5a5ae97ff83c60d755cc964bd1ac639565e2f298' }}
+      OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || '11f592116d9ef57b6189bf8bf0ff0e95ec3d410f' }}
       RESEARCH_LLM_MODEL: "@cf/zai-org/glm-4.7-flash"
     steps:
       - name: Checkout Foundation probe
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ inputs.target_sha || github.ref_name }}
           persist-credentials: false
 
       - name: Setup Python
