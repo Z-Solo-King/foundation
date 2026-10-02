@@ -41,3 +41,8 @@ When a new capability is added:
 ## Release-publication verification — 2026-10-02
 
 The verification fabric treats GitHub Release publication as a privileged boundary. Feed outputs stay workflow artifacts, and release/tag publication primitives are rejected by deterministic policy before merge.
+
+
+## Final WooCommerce recovery workflow — 2026-10-02
+
+The final least-tried WooCommerce recovery is a privileged Foundation workflow because it uses the read-only Operations GitHub App and provider credentials. It is restricted to workflow_dispatch and trusted main pushes and is registered in docs/WORKFLOW_AUTHORITY_REGISTRY.json. The workflow produces evidence artifacts only; it does not publish retailer feed URLs as releases.
