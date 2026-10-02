@@ -150,7 +150,7 @@
         "tools_audit_automation"
       ],
       [
-        "worker.py",
+        "edge.ts",
         "cloudflare_runtime"
       ],
       [
@@ -252,7 +252,7 @@
         "backup_storage"
       ],
       [
-        "worker.py",
+        "edge.ts",
         "cloudflare_runtime"
       ],
       [
@@ -320,7 +320,7 @@
         ],
         [
           "foundation",
-          "tests/test_public_chatbot_diagnostic.py"
+          "tests/test_chat_ui_contract.py"
         ],
         [
           "operations",
@@ -376,11 +376,11 @@
         ],
         [
           "foundation",
-          "tests/test_woocommerce_feed_extraction_v3.py"
+          ".github/workflows/native-google-feed-hunt.yml"
         ],
         [
           "foundation",
-          "docs/feed-lab/WOO_V3_API_FIRST_2026-09-30.md"
+          "docs/WOOCOMMERCE_GOOGLE_FEED_RECOVERY_1247.md"
         ],
         [
           "operations",
@@ -398,11 +398,11 @@
       "anchors": [
         [
           "foundation",
-          "backend/sources/search.py"
+          "docs/SEARCH_PROVIDER_EXECUTION_MATRIX_2026-09-20.md"
         ],
         [
           "foundation",
-          "tests/test_sources.py"
+          ".github/workflows/nightly-research-provider-preflight.yml"
         ],
         [
           "operations",
@@ -424,11 +424,11 @@
       "anchors": [
         [
           "foundation",
-          "backend/intelligence/evidence.py"
+          "docs/EVIDENCE_VALIDATION_CONTRACT.md"
         ],
         [
           "foundation",
-          "backend/evidence_certificate.py"
+          "benchmark/research_artifact_validator.py"
         ],
         [
           "foundation",
@@ -484,7 +484,7 @@
       "anchors": [
         [
           "foundation",
-          "backend/api/main.py"
+          "docs/AI_PROVIDER_FLEET_2026-09-30.json"
         ],
         [
           "foundation",
@@ -518,7 +518,7 @@
       "anchors": [
         [
           "foundation",
-          "worker.py"
+          "edge.ts"
         ],
         [
           "foundation",
@@ -556,7 +556,7 @@
         ],
         [
           "foundation",
-          "docs/CREDENTIAL_AND_BACKUP_AUTHORITY.md"
+          ".github/workflows/b2-repository-backup.yml"
         ],
         [
           "operations",
@@ -608,11 +608,11 @@
         ],
         [
           "foundation",
-          "backend/artifacts/manifest.py"
+          "benchmark/research_artifact_validator.py"
         ],
         [
           "foundation",
-          "tests/test_artifact_manifest.py"
+          "tests/test_research_artifacts.py"
         ],
         [
           "operations",
@@ -624,7 +624,7 @@
         ],
         [
           "operations",
-          "tests/test_artifact_manifest.py"
+          "tests/test_research_artifacts.py"
         ]
       ]
     },
@@ -698,15 +698,15 @@
       "anchors": [
         [
           "foundation",
-          "backend/admission.py"
+          "docs/PUBLIC_API_AUTH_CONTRACT.md"
         ],
         [
           "foundation",
-          "backend/worker_auth.py"
+          "docs/WORKER_IDENTITY_2026-09-25.md"
         ],
         [
           "foundation",
-          "tests/test_public_auth_contract.py"
+          "tests/test_workflow_authority_policy.py"
         ],
         [
           "operations",
@@ -736,11 +736,11 @@
       "anchors": [
         [
           "foundation",
-          "backend/intelligence/knowledge.py"
+          "frontend/feedback_bridge.js"
         ],
         [
           "foundation",
-          "tests/test_completeness.py"
+          "schemas/chat-feedback/v1.schema.json"
         ],
         [
           "operations",
