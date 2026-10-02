@@ -1,0 +1,33 @@
+name: Temporary scorecard formatter
+
+on:
+  push:
+    branches:
+      - migration/node-autonomous-scorecard-2026-10-02
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Format scorecard files
+        run: |
+          set -euo pipefail
+          mkdir -p formatted/benchmark formatted/workflow
+          npx --yes prettier@3.9.9 --write benchmark/autonomous_scorecard.mjs benchmark/test_autonomous_scorecard.mjs benchmark/research_artifact_catalog.json >/dev/null
+          cp benchmark/autonomous_scorecard.mjs formatted/benchmark/
+          cp benchmark/test_autonomous_scorecard.mjs formatted/benchmark/
+          npx --yes prettier@3.9.9 --write .github/workflows/autonomous-scorecard.yml >/dev/null
+          cp .github/workflows/autonomous-scorecard.yml formatted/workflow/
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: scorecard-formatted
+          path: formatted
+          if-no-files-found: error
