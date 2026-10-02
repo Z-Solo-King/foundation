@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: foundation-required-pr-checks-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   analyze:
@@ -39,6 +39,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -48,6 +51,27 @@ jobs:
         with:
           node-version: '22'
           package-manager-cache: false
+      - name: Determine repository change base
+        id: hygiene_base
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "sha=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            git fetch origin main --depth=1
+            echo "sha=$(git rev-parse FETCH_HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install pinned hygiene tools
+        run: python -m pip install --disable-pip-version-check ruff==0.16.9
+      - name: Repository hygiene and format gate
+        run: |
+          set -euo pipefail
+          python tools/repository_hygiene.py             --changed-from "${{ steps.hygiene_base.outputs.sha }}"             --format-check             --strict             --report .runtime/hygiene.json
+      - name: Code-documentation synchronization gate
+        run: |
+          set -euo pipefail
+          python tools/code_documentation_sync.py             --changed-from "${{ steps.hygiene_base.outputs.sha }}"             --strict             --report .runtime/code-doc-sync.json
       - name: Validate multi-lens planner contract
         run: |
           set -euo pipefail
@@ -107,7 +131,6 @@ jobs:
         run: python tools/validate_system_integration.py --foundation-root . --strict
       - name: Source surface maintainability audit
         run: python tools/source_surface_audit.py --root . --output .runtime/source-surface-audit.json
-
       - name: Public PR metadata security scan
         if: "${{ github.event_name == 'pull_request' }}"
         env:
@@ -128,5 +151,5 @@ jobs:
         run: |
           set -euo pipefail
           test ! -e backend/learning/promotion.py
-          ! grep -RniE 'extractor_mapper|private.chatbot|resource_ledger|promotion.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-(private|public)' foundation_core backend worker.py wrangler.toml migrations
+          ! grep -RniE 'operations|extractor_mapper|private.chatbot|resource_ledger|promotion.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-(private|public)' foundation_core backend worker.py wrangler.toml migrations
           ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' backend foundation_core worker.py wrangler.toml migrations
