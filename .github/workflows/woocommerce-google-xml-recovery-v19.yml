@@ -185,7 +185,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: write
+      contents: read
       actions: read
     steps:
       - name: Download all shard evidence
@@ -223,19 +223,15 @@ jobs:
             fs.copyFileSync(f,path.join(release,r.filename)); ok++;
           }
           if(ok!==30) throw new Error("expected 30 usable feeds, got "+ok);
-          fs.writeFileSync(path.join(release,"feeds-index.json"),JSON.stringify({schema_version:"woocommerce-google-xml-anyhow-v2/published-index",generated_on:new Date().toISOString(),target_count:30,release_tag:"wc-google-feed-latest",feeds:rows},null,2)+"\n");
+          fs.writeFileSync(path.join(release,"feeds-index.json"),JSON.stringify({schema_version:"woocommerce-google-xml-anyhow-v2/artifact-index",generated_on:new Date().toISOString(),target_count:30,distribution:"github_actions_artifact",artifact_name:"foundation-wc-google-xml-v19-feed-bundle",feeds:rows},null,2)+"\n");
           NODE
-      - name: Publish release
-        env:
-          GH_REPO: ${{ github.repository }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          TAG=wc-google-feed-latest
-          if ! gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
-            gh release create "$TAG" --repo "$GH_REPO" --title "WooCommerce Google XML Feeds — Latest" --notes "30-site public recovery feeds. Native feeds are labeled separately from synthetic/archive-backed feeds."
-          fi
-          gh release upload "$TAG" --repo "$GH_REPO" out/release/*.xml out/release/feeds-index.json --clobber
+      - name: Upload feed bundle as workflow artifact only
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: foundation-wc-google-xml-v19-feed-bundle
+          path: out/release/
+          if-no-files-found: error
+          retention-days: 30
 
 # fresh validation marker
 
