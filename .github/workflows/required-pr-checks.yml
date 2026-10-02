@@ -49,11 +49,6 @@ jobs:
         with:
           node-version: "22"
           package-manager-cache: false
-      - name: Temporary Prettier diagnosis
-        run: |
-          set -euo pipefail
-          npx --yes prettier@3.9.9 --write .github/workflows/heroic-ai-production-release.yml docs/WORKFLOW_AUTHORITY_REGISTRY.json docs/PRIVILEGED_WORKFLOW_TRUST_BOUNDARY.md
-          git diff -- .github/workflows/heroic-ai-production-release.yml docs/WORKFLOW_AUTHORITY_REGISTRY.json docs/PRIVILEGED_WORKFLOW_TRUST_BOUNDARY.md
       - name: Enforce release publication policy
         run: node scripts/validate_release_publication_policy.mjs
       - name: Validate multi-lens planner contract
