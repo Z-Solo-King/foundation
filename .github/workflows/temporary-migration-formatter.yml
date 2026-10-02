@@ -11,8 +11,8 @@ permissions:
 jobs:
   format:
     if: >-
-      ${ !startsWith(github.event.head_commit.message, 'chore: migration format pass')
-      && !startsWith(github.event.head_commit.message, 'chore: remove migration formatter') }
+      ${{ !startsWith(github.event.head_commit.message, 'chore: migration format pass')
+      && !startsWith(github.event.head_commit.message, 'chore: remove migration formatter') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -34,7 +34,7 @@ jobs:
             git diff --name-only origin/main...HEAD |
             grep -E '\.(cjs|js|mjs|ts|tsx|json|jsonc|md|yml|yaml)$' || true
           )
-          if ( ${#prettier_files[@]} ); then
+          if [ "${#prettier_files[@]}" -gt 0 ]; then
             npx --yes prettier@3.9.9 --write "${prettier_files[@]}"
           fi
 
@@ -42,7 +42,7 @@ jobs:
             git diff --name-only origin/main...HEAD |
             grep -E '\.md$' || true
           )
-          if ( ${#markdown_files[@]} ); then
+          if [ "${#markdown_files[@]}" -gt 0 ]; then
             npx --yes markdownlint-cli2@0.23.3 --fix "${markdown_files[@]}" || true
           fi
 
