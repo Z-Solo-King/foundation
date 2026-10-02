@@ -4,9 +4,54 @@ import argparse
 import json
 from collections import Counter
 from pathlib import Path
+from dataclasses import dataclass
 
-from backend.intelligence.contracts import ResearchContract
-from backend.intelligence.planning import create_plan
+DEFAULT_STAGES = (
+    "define_question",
+    "assess_constraints",
+    "discover_sources",
+    "collect_observations",
+    "map_evidence",
+    "verify_evidence",
+    "check_independence",
+    "synthesize_answer",
+)
+
+
+@dataclass(frozen=True)
+class ResearchContract:
+    question: str
+    depth: str = "standard"
+    require_citations: bool = True
+    max_sources: int = 20
+    max_evidence_items: int = 100
+    query_category: str | None = None
+    required_source_families: tuple[str, ...] = ()
+    freshness_requirement: str | None = None
+
+    def validate(self) -> None:
+        if not self.question.strip():
+            raise ValueError("question must not be empty")
+        if self.depth not in {"quick", "standard", "deep"}:
+            raise ValueError("unsupported depth")
+        if self.max_sources < 1 or self.max_evidence_items < 1:
+            raise ValueError("budgets must be positive")
+        if len(set(self.required_source_families)) != len(self.required_source_families):
+            raise ValueError("required_source_families must not contain duplicates")
+
+
+def create_plan(contract: ResearchContract):
+    contract.validate()
+    stages = DEFAULT_STAGES if contract.depth == "deep" else DEFAULT_STAGES
+    families = tuple(sorted({family.strip() for family in contract.required_source_families if family.strip()}))
+    temporal = bool(contract.freshness_requirement)
+    metadata = {
+        "depth": contract.depth,
+        "require_citations": str(contract.require_citations).lower(),
+        "required_source_families": ",".join(families),
+        "temporal_reconciliation": str(temporal).lower(),
+    }
+    return type("ResearchPlan", (), {"stages": stages, "metadata": metadata})()
 from benchmark.evidence_tier import EvidenceTier, parse_evidence_tier
 
 REQUIRED_DEEP_STAGES = {
