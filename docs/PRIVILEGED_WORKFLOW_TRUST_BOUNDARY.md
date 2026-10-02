@@ -41,3 +41,8 @@ This contract therefore prevents the repository workflows from intentionally gra
 The Foundation/Operations migration removes private runtime and feed-execution implementation from the public tree while retaining public contracts, deterministic core behavior, hosted CI and release boundaries. Migration changes must preserve the privileged/unprivileged separation above.
 
 The migration is considered structurally synchronized only when the protected PR checks, workflow-authority validator, public-surface scan, full-history secret scan and cross-system ownership/equivalence gates all evaluate the exact reconciled PR head.
+
+
+## Public release prohibition — 2026-10-02
+
+Feed-recovery workflows are never release publishers. Their GitHub token must remain read-only; feed bundles are retained as workflow artifacts only. The merge gate rejects release creation/upload actions, release APIs, release download URLs and tag-push publication primitives. A separate governance sweep removes the specifically prohibited public feed release if it reappears.
