@@ -106,7 +106,8 @@
       "code_paths": [
         "tools/comprehensive_governance_scan.py",
         "tools/publish_governance_findings.py",
-        ".github/workflows/twice-daily-autonomous-governance-sweep.yml"
+        ".github/workflows/twice-daily-autonomous-governance-sweep.yml",
+        "tests/test_comprehensive_governance_scan.py"
       ],
       "docs": [
         "docs/AUTONOMOUS_GOVERNANCE_SCAN_CONTRACT.json",
