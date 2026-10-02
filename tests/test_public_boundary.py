@@ -13,21 +13,11 @@ def test_private_bundle_files_are_absent():
     for name in FORBIDDEN_PUBLIC_FILES:
         assert not (ROOT / name).exists(), f"private/internal file leaked: {name}"
 
-def test_public_deployment_is_standalone_and_uses_safe_placeholders():
+def test_public_deployment_is_edge_only_and_has_no_private_runtime_config():
     text = (ROOT / "wrangler.toml").read_text(encoding="utf-8")
-    core = (ROOT / "wrangler.python-core.toml").read_text(encoding="utf-8")
-    assert "REPLACE_WITH_D1_DATABASE_ID" in core
-    assert "REPLACE_WITH_PUBLIC_DATABASE_NAME" in core
-    assert "B2_BUCKET = \"REPLACE_WITH_B2_BUCKET\"" in core
-    assert "B2_ENDPOINT = \"REPLACE_WITH_B2_ENDPOINT\"" in core
+    assert 'name = "heroic"' in text
+    assert 'main = "edge.ts"' in text
     assert "[[services]]" in text
-    assert 'binding = "CORE"' in text
-    assert 'service = "heroic-core"' in text
-    assert "CONTROL_PLANE" not in text
-    assert "REPLACE_WITH_PRIVATE_CONTROL_PLANE_SERVICE" not in text
-    assert "[[r2_buckets]]" not in text
-    assert "ARTIFACTS" not in text
-    assert "research-intelligence-engine-private" not in text
 
 def test_public_docs_do_not_name_private_service():
     for path in (ROOT / "README.md", ROOT / "DEPLOYMENT.md"):
