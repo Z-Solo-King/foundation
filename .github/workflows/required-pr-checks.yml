@@ -127,6 +127,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test ! -e backend/learning/promotion.py
-          ! grep -RniE 'extractor_mapper|private.chatbot|resource_ledger|promotion.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-(private|public)' foundation_core edge.ts wrangler.toml migrations
-          ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' backend foundation_core worker.py wrangler.toml migrations
+          test ! -d backend
+          test ! -e worker.py
+          test ! -d migrations
+          ! grep -RniE 'extractor_mapper|private.chatbot|resource_ledger|promotion.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-(private|public)' foundation_core edge.ts wrangler.toml
+          ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' foundation_core edge.ts wrangler.toml
