@@ -1,6 +1,6 @@
 {
   "schema": "workflow-authority-registry/v1",
-  "policy_version": "2026-09-30",
+  "policy_version": "2026-10-02",
   "default_class": "public_ci",
   "public_feed_workflows": {
     ".github/workflows/native-google-feed-hunt.yml": true,
@@ -150,6 +150,18 @@
     [
       ".github/workflows/woocommerce-v175-22-plugin-extraction.yml",
       "private_feed_extraction"
+    ],
+    [
+      ".github/workflows/repository-hygiene.yml",
+      "repository_hygiene"
+    ],
+    [
+      ".github/workflows/repository-hygiene-autofix.yml",
+      "repository_hygiene_autofix"
+    ],
+    [
+      ".github/workflows/twice-daily-governance-sweep.yml",
+      "autonomous_governance_sweep"
     ]
   ],
   "policy": {
@@ -171,6 +183,18 @@
     "trusted_workflow_run_sources": {
       ".github/workflows/live-nightly-research-canary.yml": [
         "nightly multi-agent research"
+      ]
+    },
+    "repository_hygiene_autofix": {
+      "mode": "mechanical_formatter_only",
+      "entry": "workflow_dispatch from trusted main",
+      "writes": "review branch + pull request only",
+      "forbidden": [
+        "lint auto-fix",
+        "merge",
+        "deployment",
+        "credential mutation",
+        "policy mutation"
       ]
     }
   }

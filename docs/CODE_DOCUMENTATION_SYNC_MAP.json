@@ -78,6 +78,28 @@
         "docs/DOCUMENTATION_INDEX.md"
       ],
       "require_doc_update": true
+    },
+    {
+      "id": "autonomous-governance",
+      "code_paths": [
+        "tools/autonomous_engineering_supervisor.mjs",
+        "tools/autonomous_mission_router.mjs",
+        "tests/autonomous_engineering_supervisor.test.mjs",
+        "tests/autonomous_mission_router.test.mjs",
+        ".github/workflows/twice-daily-governance-sweep.yml",
+        ".github/workflows/repository-hygiene-autofix.yml",
+        "docs/PROJECT_IMPROVEMENT_MATRIX.json",
+        "docs/SYSTEM_INTEGRATION_CONTRACT.json",
+        "docs/WORKFLOW_AUTHORITY_REGISTRY.json"
+      ],
+      "docs": [
+        "docs/AI_AUDIT_SYSTEM.md",
+        "docs/PROJECT_IMPROVEMENT_MATRIX.json",
+        "docs/SYSTEM_INTEGRATION_CONTRACT.json",
+        "docs/PRIVILEGED_WORKFLOW_TRUST_BOUNDARY.md",
+        "docs/FAMILY_SYNC_STANDARD.md"
+      ],
+      "require_doc_update": true
     }
   ]
 }

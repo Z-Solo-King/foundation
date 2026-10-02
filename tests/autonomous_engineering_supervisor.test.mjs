@@ -110,3 +110,17 @@ test('fallback avoids recently successful workflow and selects the next independ
   });
   assert.deepEqual(plan.actions.map((a)=>a.workflow), ['live-extractor-benchmark.yml','operations-centralized-validation.yml']);
 });
+
+
+test('deterministic governance fallback selects cross-system evidence lanes', () => {
+  const plan = deterministicFallbackPlan({mode:'governance_sweep',open_issues:[],recent_runs:[],workflow_attempts:{}});
+  assert.equal(plan.mission_type,'governance_sweep');
+  assert.ok(plan.actions.length >= 1 && plan.actions.length <= 3);
+  assert.ok(plan.actions.every((action) => action.inputs && Object.keys(action.inputs).length === 0));
+});
+
+test('governance fallback prioritizes mechanical hygiene PR when aggregate foundation hygiene fails', () => {
+  const plan = deterministicFallbackPlan({mode:'governance_sweep',open_issues:[],recent_runs:[],workflow_attempts:{},governance_audit:{foundation:{hygiene:{passed:false}}}});
+  assert.equal(plan.mission_type,'governance_sweep');
+  assert.equal(plan.actions[0].workflow,'repository-hygiene-autofix.yml');
+});

@@ -51,5 +51,13 @@ AI extraction_assist is candidate assistance only. It cannot create evidence, se
 New defect -> existing owner/issue when possible; blind spot -> rule/test; false positive -> detector refinement; stale data -> freshness rule; tool limit -> retrieval/lane change.
 Stop on a definitive finding, concrete blocker, protected runtime boundary, or no new information. Never close runtime/production acceptance from static inspection or deterministic CI alone.
 
+## Twice-daily governance control loop
+
+The autonomous supervisor is also the scheduled governance coordinator. At 02:17 and 14:17 UTC, the Foundation workflow gathers deterministic family hygiene/code-document synchronization summaries, then calls the canonical `audit_assist` task family with aggregate Operations state. The planner chooses up to three non-overlapping existing evidence workflows.
+
+Each run has a bounded mission issue. Candidate findings can be deduplicated into issue comments or new issues, but findings never close acceptance gates. Mechanical formatter drift may dispatch the deterministic hygiene autofix workflow, which creates a review PR rather than merging it. Runtime, provider, Cloudflare, migration and production claims still require their existing execution/evidence authorities.
+
+Cross-fire remains mandatory: the sweep combines repository/contract evidence with independent workflow/runtime evidence rather than asking one model to validate its own plan.
+
 ## Current GitHub state
 Read active main heads, open issue inventory and open PRs from GitHub live state at audit start. Dated state documents are synchronization evidence, not mutable queue authorities.

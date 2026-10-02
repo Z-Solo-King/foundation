@@ -11,9 +11,14 @@ export const MISSION_WORKFLOWS = {
   nightly_research: ['nightly-multi-agent-research-v3.yml'],
   audit: ['exhaustive-six-lane-audit.yml', 'cross-repository-contract-drift.yml'],
   runtime_reconciliation: ['provider-fleet-runtime-state.yml', 'live-ai-provider-crossfire.yml', 'nightly-invariants.yml', 'operations-centralized-validation.yml'],
+  governance_sweep: ['repository-hygiene.yml', 'repository-hygiene-autofix.yml', 'family-hygiene-sync.yml', 'family-integrity-gate.yml', 'family-full-coverage.yml', 'cross-repository-contract-drift.yml', 'provider-fleet-runtime-state.yml', 'live-ai-provider-crossfire.yml'],
   component_improvement: [...new Set(Object.values(COMPONENT_WORKFLOWS).flat())],
 };
 export const FORBIDDEN_WORKFLOWS = new Set(['heroic-ai-production-release.yml']);
+
+const FINDING_DISPOSITIONS = new Set(['none', 'comment_existing', 'create_issue']);
+const FINDING_SEVERITIES = new Set(['info', 'warning', 'error']);
+const FINDING_EVIDENCE_RE = /^(?:issue|run|audit|contract):[A-Za-z0-9._:-]{1,100}$/;
 
 function stripFence(value) {
   const text = String(value ?? '').trim();
@@ -29,6 +34,31 @@ export function parsePlanDocument(document) {
   return JSON.parse(stripFence(raw));
 }
 
+function normalizeFinding(finding, index) {
+  if (!finding || typeof finding !== 'object') throw new Error(`invalid finding ${index}`);
+  const id = String(finding.id || `f${index + 1}`).trim();
+  if (!/^f[0-9a-z._:-]{1,63}$/i.test(id)) throw new Error(`invalid finding id: ${id}`);
+  const severity = String(finding.severity || 'info').trim();
+  if (!FINDING_SEVERITIES.has(severity)) throw new Error(`invalid finding severity: ${severity}`);
+  const disposition = String(finding.disposition || 'none').trim();
+  if (!FINDING_DISPOSITIONS.has(disposition)) throw new Error(`invalid finding disposition: ${disposition}`);
+  const title = String(finding.title || '').trim();
+  const summary = String(finding.summary || '').trim();
+  if (!title || title.length > 180) throw new Error(`invalid finding title: ${id}`);
+  if (!summary || summary.length > 2000) throw new Error(`invalid finding summary: ${id}`);
+  const evidence = Array.isArray(finding.evidence_refs) ? finding.evidence_refs.map((item) => String(item).trim()).filter(Boolean) : [];
+  if (evidence.length < 1 || evidence.length > 3 || evidence.some((item) => !FINDING_EVIDENCE_RE.test(item))) throw new Error(`invalid finding evidence: ${id}`);
+  const issueNumber = finding.issue_number == null ? null : Number(finding.issue_number);
+  if (issueNumber !== null && (!Number.isInteger(issueNumber) || issueNumber < 1)) throw new Error(`invalid finding issue number: ${id}`);
+  if (disposition === 'comment_existing' && issueNumber === null) throw new Error(`comment_existing finding requires issue_number: ${id}`);
+  if (disposition === 'create_issue' && issueNumber !== null) throw new Error(`create_issue finding cannot target issue_number: ${id}`);
+  if (disposition === 'none' && issueNumber !== null) throw new Error(`report-only finding cannot target issue_number: ${id}`);
+  return {
+    id, severity, disposition, title: title.slice(0, 180), summary: summary.slice(0, 2000),
+    evidence_refs: evidence, issue_number: issueNumber,
+  };
+}
+
 export function validatePlan(plan) {
   if (!plan || typeof plan !== 'object') throw new Error('plan must be an object');
   if (plan.schema !== 'autonomous-mission-plan/v1') throw new Error('invalid schema');
@@ -42,6 +72,15 @@ export function validatePlan(plan) {
   if (plan.terminal !== null && plan.actions.length !== 0) throw new Error('terminal plan cannot contain actions');
   const ids = new Set();
   const workflows = new Set();
+  const rawFindings = plan.findings == null ? [] : plan.findings;
+  if (!Array.isArray(rawFindings) || rawFindings.length > 5) throw new Error('invalid finding count');
+  const findingIds = new Set();
+  const findings = rawFindings.map((finding, index) => {
+    const normalized = normalizeFinding(finding, index);
+    if (findingIds.has(normalized.id)) throw new Error(`duplicate finding id: ${normalized.id}`);
+    findingIds.add(normalized.id);
+    return normalized;
+  });
   for (const action of plan.actions) {
     if (!action || action.kind !== 'dispatch_workflow') throw new Error('unsupported action kind');
     if (typeof action.id !== 'string' || !/^a[0-9a-z._:-]{1,63}$/i.test(action.id)) throw new Error('invalid action id');
@@ -62,6 +101,7 @@ export function validatePlan(plan) {
     summary: plan.summary.trim().slice(0, 2000),
     terminal: plan.terminal,
     actions: plan.actions.map((action) => ({id:action.id,kind:action.kind,workflow:action.workflow,inputs:{},reason:action.reason.trim().slice(0,2000),retry_policy:action.retry_policy})),
+    findings,
     next_state: plan.next_state,
     stop_reason: plan.stop_reason == null ? null : String(plan.stop_reason).slice(0,2000),
   };
