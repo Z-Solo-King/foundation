@@ -36,11 +36,22 @@ function checkSize(full,rel,changedMode){const ext=path.extname(rel).toLowerCase
 function buildReport(root,selected,changedMode){const violations=[],counts={files_checked:0,files_with_errors:0,warnings:0};for(const rel of selected){const full=path.join(root,rel);if(!fs.statSync(full,{throwIfNoEntry:false})?.isFile())continue;counts.files_checked++;if(isText(rel))violations.push(...checkBytes(full,rel));if(forbidden(rel))violations.push({rule:"tracked-artifact",path:rel,severity:"error"});violations.push(...checkMarkdownName(rel));violations.push(...checkSize(full,rel,changedMode));}counts.files_with_errors=new Set(violations.filter(x=>x.severity==="error").map(x=>x.path)).size;counts.warnings=violations.filter(x=>x.severity==="warning").length;return{schema_version:"repository-hygiene-report/v1",repository:path.basename(root),mode:changedMode?"changed":"all",files:counts,violations,passed:!violations.some(x=>x.severity==="error")};}
 function formatter(root,selected){const py=selected.filter(p=>path.extname(p)===".py"),pre=selected.filter(p=>[".js",".mjs",".cjs",".ts",".tsx",".json",".jsonc",".md",".yml",".yaml"].includes(path.extname(p).toLowerCase())),md=selected.filter(p=>path.extname(p).toLowerCase()===".md");const cmds=[];if(py.length){cmds.push([["ruff","format","--check",...py],"ruff-format"],[["ruff","check",...py],"ruff-lint"]);}if(pre.length)cmds.push([["npx","--yes","prettier@3.9.9","--check",...pre],"prettier"]);if(md.length)cmds.push([["npx","--yes","markdownlint-cli2@0.23.3",...md],"markdownlint"]);const failures=[];for(const [cmd,rule] of cmds){const r=spawnSync(cmd[0],cmd.slice(1),{cwd:root,encoding:"utf8",stdio:["ignore","pipe","pipe"]});if(r.status)failures.push({rule,severity:"error",path:"<formatter>",exit_code:r.status,output:(r.stdout||"")+(r.stderr||"").slice(-2000)});}return failures;}
 if(fileURLToPath(import.meta.url)===process.argv[1]){
-  const a=Object.fromEntries(process.argv.slice(2).reduce((acc,v,i,arr)=>{if(v.startsWith("--"))acc.push([v.slice(2),arr[i+1]??""]);return acc;},[])); const root=path.resolve(a.root??".");
+  const valueFlags=new Set(["root","changed-from","report"]);
+  const boolFlags=new Set(["all","format-check","strict","summary-only"]);
+  const a={};
+  for(let i=2;i<process.argv.length;i++){
+    const token=process.argv[i];
+    if(!token.startsWith("--")) continue;
+    const key=token.slice(2);
+    if(boolFlags.has(key)) a[key]=true;
+    else if(valueFlags.has(key)) a[key]=process.argv[++i]??"";
+    else a[key]=process.argv[++i]??"";
+  }
+  const root=path.resolve(a.root??".");
   const contract=path.join(root,CONTRACT_REL);if(!fs.existsSync(contract))throw new Error("missing hygiene contract: "+CONTRACT_REL);JSON.parse(fs.readFileSync(contract,"utf8"));
-  const [files,changedMode]=select(root,a.all==="true",a["changed-from"]);const report=buildReport(root,files,changedMode);
-  if(a["format-check"]==="true"){report.violations.push(...formatter(root,files.filter(isFormatter)));report.passed=report.passed&&!report.violations.some(x=>x.severity==="error");}
+  const [files,changedMode]=select(root,Boolean(a.all),a["changed-from"]);const report=buildReport(root,files,changedMode);
+  if(a["format-check"]){report.violations.push(...formatter(root,files.filter(isFormatter)));report.passed=report.passed&&!report.violations.some(x=>x.severity==="error");}
   if(a.report){fs.mkdirSync(path.dirname(path.resolve(a.report)),{recursive:true});fs.writeFileSync(path.resolve(a.report),JSON.stringify(report,null,2)+"\n");}
-  console.log(a["summary-only"]==="true"?JSON.stringify({...report.files,passed:report.passed},null,2):JSON.stringify(report,null,2));
-  process.exitCode=(report.passed||a.strict!=="true")?0:1;
+  console.log(a["summary-only"]?JSON.stringify({...report.files,passed:report.passed},null,2):JSON.stringify(report,null,2));
+  process.exitCode=(report.passed||!a.strict)?0:1;
 }
