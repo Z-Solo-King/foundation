@@ -1,0 +1,40 @@
+name: Open microscope consolidation PR
+
+on:
+  push:
+    branches:
+      - chore/microscope-consolidation-20261002
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open-pr:
+    if: github.repository == 'Z-Solo-King/foundation'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open consolidation PR when absent
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          existing="$(gh pr list --repo "$GITHUB_REPOSITORY" --base main --head "$HEAD_BRANCH" --state open --json number --jq '.[0].number')"
+          if [ -n "$existing" ]; then
+            echo "Consolidation PR already exists: #$existing"
+            exit 0
+          fi
+          body_file="$RUNNER_TEMP/microscope-pr-body.md"
+          cat > "$body_file" <<'EOF'
+          Microscope consolidation standard and one-shot branch retirement guard.
+
+          Scope:
+          - one-owner consolidation contract;
+          - explicit KEEP/COMBINE/SPLIT/TRIM/RETIRE/ARCHIVE/REVIEW dispositions;
+          - governed branch-retirement workflow;
+          - no production deployment or Cloudflare mutation.
+
+          This PR must pass the repository's canonical required checks. No direct main ref mutation is used.
+          EOF
+          gh pr create             --repo "$GITHUB_REPOSITORY"             --base main             --head "$HEAD_BRANCH"             --title "chore: establish microscope consolidation controls"             --body-file "$body_file"
