@@ -359,9 +359,11 @@ def _public_sse_response(upstream):
     )
 
 
-def _chat_sse_body(body):
-    """Build bounded public SSE frames without collapsing truthful terminal states."""
-    response = body.get("response") if isinstance(body, dict) else None
+def _chat_sse_body(payload):
+    """Frame a proven private JSON chat result as bounded, truthful public SSE."""
+    if not isinstance(payload, dict):
+        raise ValueError("invalid_private_chat_response")
+    response = payload.get("response")
     if not isinstance(response, dict):
         raise ValueError("invalid_private_chat_response")
     response_id = str(response.get("response_id", "")).strip()
@@ -378,20 +380,26 @@ def _chat_sse_body(body):
     if result_state not in status_map:
         raise ValueError("invalid_chat_result_state")
     text = str(response.get("text", ""))
-    events = [
-        f"event: start\ndata: {json.dumps({'response_id': response_id, 'status': 'streaming', 'generation': response.get('generation_status', 'unknown')}, separators=(',', ':'))}\n\n"
-    ]
+    start_payload = json.dumps({
+        "response_id": response_id,
+        "status": "streaming",
+        "generation": response.get("generation_status", "unknown"),
+    }, separators=(",", ":"))
+    events = [f"event: start\ndata: {start_payload}\n\n"]
     for offset in range(0, len(text), 256):
         chunk = text[offset:offset + 256]
-        events.append(
-            f"event: delta\ndata: {json.dumps({'text': chunk}, separators=(',', ':'))}\n\n"
-        )
+        delta_payload = json.dumps({"text": chunk}, separators=(",", ":"))
+        events.append(f"event: delta\ndata: {delta_payload}\n\n")
     usage = response.get("usage")
     if isinstance(usage, dict):
-        events.append(
-            f"event: usage\ndata: {json.dumps({'input_tokens': usage.get('input_tokens'), 'output_tokens': usage.get('output_tokens')}, separators=(',', ':'))}\n\n"
-        )
-    output_digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        usage_payload = json.dumps({
+            "input_tokens": usage.get("input_tokens"),
+            "output_tokens": usage.get("output_tokens"),
+        }, separators=(",", ":"))
+        events.append(f"event: usage\ndata: {usage_payload}\n\n")
+    output_digest = str(response.get("output_digest") or "").strip()
+    if not output_digest:
+        output_digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
     done_payload = {
         "response_id": response_id,
         "status": str(response.get("status") or status_map[result_state]),
@@ -399,13 +407,12 @@ def _chat_sse_body(body):
         "generation_status": response.get("generation_status"),
         "output_digest": output_digest,
     }
-    events.append(
-        f"event: done\ndata: {json.dumps(done_payload, separators=(',', ':'))}\n\n"
-    )
-    payload = "".join(events)
-    if len(payload.encode("utf-8")) > MAX_PUBLIC_JSON_BODY_BYTES:
+    done_json = json.dumps(done_payload, separators=(",", ":"))
+    events.append(f"event: done\ndata: {done_json}\n\n")
+    body = "".join(events)
+    if len(body.encode("utf-8")) > MAX_PUBLIC_JSON_BODY_BYTES:
         raise ValueError("stream response exceeds supported size")
-    return payload
+    return body
 
 
 async def _operations_chat_stream(env, payload, request):
