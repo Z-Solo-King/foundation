@@ -38,7 +38,7 @@ def validate_policy() -> dict:
         raise ValueError("Operations App must not be classified as Marketplace")
     if ops_app["repository_scope"] != ["Z-Solo-King/operations"]:
         raise ValueError("Operations App repository scope drift")
-    if ops_app["minimum_permissions"] != {"contents": "read"} or ops_app["maximum_permissions"] != {"contents": "read"}:
+    if ops_app["minimum_permissions"] != {"contents": "read"} or ops_app["maximum_permissions"] != {"contents": "read", "issues": "write"}:
         raise ValueError("Operations App permission boundary drift")
     if ops_app["token_max_ttl_seconds"] != 3600 or contract["runtime_app_token_rules"]["maximum_token_ttl_seconds"] != 3600:
         raise ValueError("Operations App token lifetime drift")
@@ -92,6 +92,7 @@ def validate_first_party_app_workflows() -> None:
     """Validate every Foundation use of the first-party Operations App token action."""
     import re
 
+    policy = json.loads(POLICY.read_text(encoding="utf-8"))
     workflows = ROOT / ".github" / "workflows"
     token_pattern = re.compile(r"actions/create-github-app-token@([0-9a-f]{40})")
 
@@ -115,8 +116,18 @@ def validate_first_party_app_workflows() -> None:
                 raise ValueError(f"first-party App repository scope drift in {path}")
             if not re.search(r"permission-contents:\s*read\b", block):
                 raise ValueError(f"first-party App contents permission drift in {path}")
-            if re.search(r"permission-[A-Za-z0-9_-]+:\s*write\b", block):
-                raise ValueError(f"first-party App write permission in {path}")
+            write_permissions = dict(re.findall(r"permission-([A-Za-z0-9_-]+):\s*write\b", block))
+            if write_permissions:
+                exceptions = policy["integration_contract"]["known_first_party_apps"]["operations_repository_access"].get("scoped_write_exceptions", [])
+                workflow_name = str(path.relative_to(ROOT))
+                allowed = next((item for item in exceptions if item.get("workflow") == workflow_name), None)
+                expected = set((allowed or {}).get("permissions", {}).keys())
+                if allowed is None or set(write_permissions) != expected:
+                    raise ValueError(f"unapproved first-party App write permission in {path}")
+                if "permission-issues" not in write_permissions or len(write_permissions) != 1:
+                    raise ValueError(f"invalid first-party App write scope in {path}")
+                if (allowed.get("repository_scope") or []) != ["Z-Solo-King/operations"]:
+                    raise ValueError(f"write exception repository scope drift in {path}")
 
 if __name__ == "__main__":
     validate_policy()
