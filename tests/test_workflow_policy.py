@@ -764,3 +764,22 @@ def test_unified_ai_system_directory_is_part_of_agent_navigation():
     navigation_map = ROOT / "docs" / "AI_SYSTEM_MAP.json"
     assert directory.is_file()
     assert navigation_map.is_file()
+
+def test_foundation_dispatch_bridge_contract_matches_documentation_and_map():
+    workflow = _workflow_texts()["foundation-canonical-workflow-bridge-v3.yml"]
+    docs = (ROOT / "docs" / "GITHUB_ACTIONS_NIGHTLY_DISPATCH.md").read_text(encoding="utf-8")
+    repository_map = json.loads((ROOT / "REPOSITORY_MAP.json").read_text(encoding="utf-8"))
+
+    assert "target:" in workflow
+    assert "main-push-actions-control-plane-probe-v2.yml" in workflow
+    assert "nightly-multi-agent-research-v3.yml" in workflow
+    assert "dry_run:" not in workflow
+    assert "confirm_production" not in workflow
+    assert "operations_ref:" not in workflow
+
+    assert repository_map["maintenance"]["foundation_app_dispatch_targets"] == [
+        ".github/workflows/main-push-actions-control-plane-probe-v2.yml",
+        ".github/workflows/nightly-multi-agent-research-v3.yml",
+    ]
+    assert "does not accept or forward `dry_run`, `confirm_production`, or `operations_ref`" in docs
+    assert "The production-live launch remains the canonical production-release workflow" in docs
