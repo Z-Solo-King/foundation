@@ -56,3 +56,9 @@ Feed-recovery workflows must never create or upload GitHub Releases or publish r
 ## Public endpoint reconciliation — 2026-10-02
 
 Credential-bearing workflows that probe or release the public application must target the canonical GitHub-backed Pages project `https://heroic-ai.pages.dev`. The public hostname change does not change the trust boundary: privileged workflows still require trusted `main` or explicit manual dispatch, and private Operations credentials remain inaccessible to pull-request code.
+
+## Post-release chatbot verification — 2026-10-02
+
+- `.github/workflows/chatbot-post-release-runtime-smoke.yml` is a privileged production smoke workflow because it exercises the canonical public endpoint with the protected application authentication token. It accepts manual dispatch or a successful canonical production-release completion and fails closed on Foundation/Operations provenance mismatch.
+- `.github/workflows/chatbot-post-release-crossfire.yml` is a privileged post-release benchmark because it reads protected provider configuration and private Operations source. It validates the six independent analytical lanes and runs up to six configured provider transports concurrently; comparative agreement remains descriptive evidence only.
+- Both workflows use immutable action references and read-only repository permissions; they do not alter deployment state, provider configuration, policy, or promotion authority.
