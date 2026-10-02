@@ -69,3 +69,5 @@ The trusted-main Migration Factory resolve job has one canonical read-only Opera
 ## Node tooling migration — nightly/runtime gates — 2026-10-02
 
 Foundation-only nightly runtime probing, loopback research transport, GitHub Actions zero-cost validation, and benchmark-finding publication now execute through Node tooling. The superseded Python scripts/tests were removed; protected Python research and governance authorities are unchanged. Workflow changes remain contract-tested and do not constitute live runtime/provider acceptance.
+## Open-issue deep-scan Node migration — 2026-10-02
+The canonical four-lane open-issue deep scan now uses the Operations Node scanner and Node-native provenance/coverage validation. The frozen Operations revision, historical regression set, active issue×lane coverage contract, and report-only authority boundary are unchanged.
