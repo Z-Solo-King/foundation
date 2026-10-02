@@ -14,14 +14,14 @@ on:
       - .github/workflows/autonomous-scorecard.yml
   workflow_dispatch:
   schedule:
-    - cron: '15 20 * * *' # 01:45 Asia/Kolkata
+    - cron: "15 20 * * *" # 01:45 Asia/Kolkata
 
 permissions:
   contents: read
   actions: read
 
 concurrency:
-  group: foundation-autonomous-scorecard-${{ github.ref }}
+  group: foundation-autonomous-scorecard-\${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -35,13 +35,13 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: "22"
           package-manager-cache: false
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: '3.14'
+          python-version: "3.14"
       - name: Run scorecard tests
         run: node --test benchmark/test_autonomous_scorecard.mjs
       - name: Validate research artifact boundary
@@ -55,28 +55,29 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          python-version: '3.14'
+          node-version: "22"
+          package-manager-cache: false
       - name: Find latest successful autonomous benchmark
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: \${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          run_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/autonomous-benchmark.yml/runs?status=success&per_page=20" --jq '.workflow_runs[0].id // empty')"
+          run_id="$(gh api "repos/\${GITHUB_REPOSITORY}/actions/workflows/autonomous-benchmark.yml/runs?status=success&per_page=20" --jq '.workflow_runs[0].id // empty')"
           test -n "$run_id"
           echo "AUTONOMOUS_RUN_ID=$run_id" >> "$GITHUB_ENV"
-          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/$run_id" --jq '{id,head_sha,event,created_at,updated_at,conclusion}' | tee .runtime-autonomous-run.json
+          gh api "repos/\${GITHUB_REPOSITORY}/actions/runs/$run_id" --jq '{id,head_sha,event,created_at,updated_at,conclusion}' | tee .runtime-autonomous-run.json
       - name: Download benchmark artifacts
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: \${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p .runtime/autonomous-artifacts
-          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${AUTONOMOUS_RUN_ID}/artifacts?per_page=100" \
+          gh api "repos/\${GITHUB_REPOSITORY}/actions/runs/\${AUTONOMOUS_RUN_ID}/artifacts?per_page=100" \
             --jq '.artifacts[] | select(.expired == false) | .name' \
             | while IFS= read -r name; do
                 test -n "$name"
@@ -86,7 +87,7 @@ jobs:
       - name: Build scorecard
         run: |
           mkdir -p .runtime/scorecard
-          python -m benchmark.autonomous_scorecard \
+          node benchmark/autonomous_scorecard.mjs \
             --root .runtime/autonomous-artifacts \
             --json-output .runtime/scorecard/research-scorecard.json \
             --markdown-output .runtime/scorecard/research-scorecard.md
