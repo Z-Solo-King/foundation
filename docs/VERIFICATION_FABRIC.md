@@ -16,7 +16,7 @@ These are analysis roles, not six independent authorities. AI may be attached as
 
 ## Where it runs
 
-The fabric runs on pull requests, pushes to main, every six hours, and manual dispatch. It produces a deterministic plan that the hourly autonomous engineering supervisor can consume.
+The fabric runs on trusted pushes to main, every six hours, and manual dispatch. Because it reads the private Operations repository with a read-only GitHub App credential, it is a privileged audit workflow and intentionally does not run from untrusted pull-request code. Pull requests retain the existing required verification gates; the fabric provides additional cross-repository evidence on trusted revisions.
 
 Operations remains free of GitHub Actions. Foundation remains the workflow authority.
 
