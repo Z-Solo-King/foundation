@@ -142,7 +142,6 @@ jobs:
             echo "mode=live" >> "$GITHUB_OUTPUT"
             echo "Dispatch/live research mode selected."
           fi
-
       - name: Verify exact deployed research runtime
         if: ${{ steps.mode.outputs.mode == 'live' }}
         env:
