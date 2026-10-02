@@ -339,10 +339,7 @@ jobs:
           console.log(JSON.stringify(aggregate, null, 2));
           JS
 
-      - name: Aggregate and publish 30 Google XML feeds
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
+      - name: Aggregate and validate 30 Google XML feeds
         run: |
           set -euo pipefail
           mkdir -p out/google-xml-release

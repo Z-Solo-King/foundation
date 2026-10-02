@@ -49,4 +49,4 @@ The current GitHub workflow surface is treated as configuration under the same t
 
 ## Public release prohibition — 2026-10-02
 
-Feed-recovery workflows are never release publishers. Their GitHub token remains read-only; feed bundles are retained as workflow artifacts only. The merge gate rejects release creation/upload mechanisms and release download publication paths.
+Feed-recovery workflows must never create or upload GitHub Releases or publish release download URLs. Normal feed jobs are read-only; the separate cleanup job is narrowly scoped to delete the prohibited feed release/tag.

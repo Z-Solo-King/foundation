@@ -236,4 +236,4 @@ Formatting policy is deliberately ratcheted. Existing historical debt is reporte
 
 ## Release-publication boundary — 2026-10-02
 
-Foundation treats GitHub Releases as a separate privileged publication surface. WooCommerce/Google feed recovery is explicitly artifact-only, enforced by the release-publication policy and the feed governance workflow.
+Foundation feed-recovery workflows are artifact-only. Feed workflows do not receive repository write permission; the separate governance workflow has only the narrow permission required to remove the specifically prohibited `wc-google-feed-latest` release/tag if recreated.

@@ -196,9 +196,6 @@ jobs:
           path: out/shards
           merge-multiple: false
       - name: Hard completion gate
-        env:
-          GH_REPO: ${{ github.repository }}
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           rm -rf out/release

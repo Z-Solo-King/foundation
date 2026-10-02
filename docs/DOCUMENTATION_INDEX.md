@@ -49,6 +49,6 @@ When contracts, ownership, workflows, dependencies or production gates change, u
 Public feed documentation is methodology-only. Live target state and recovery execution belong to Operations. docs/WOOCOMMERCE_GOOGLE_FEED_RECOVERY_1247.md is the public contract/method reference; it is not a live target registry or completion certificate.
 
 
-20. docs/PUBLIC_RELEASE_GOVERNANCE.md
+## Public release governance — 2026-10-02
 
-The public feed recovery boundary and release-publication safety rule are defined by docs/PUBLIC_RELEASE_GOVERNANCE.md and docs/WOOCOMMERCE_GOOGLE_FEED_RECOVERY_1247.md; enforcement is scripts/validate_release_publication_policy.mjs.
+Feed recovery output is workflow evidence, not a GitHub Release. The executable policy is `scripts/validate_release_publication_policy.mjs`; see `docs/PUBLIC_RELEASE_GOVERNANCE.md` for the boundary and cleanup rule.
