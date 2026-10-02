@@ -1,4 +1,4 @@
-import crypto from 'node:crypto';
+import {sha256} from './evidence_kernel.mjs';
 import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { IMPROVEMENT_COMPONENTS, MISSION_WORKFLOWS, PROJECT_IMPROVEMENT_MATRIX, validatePlan } from './autonomous_mission_router.mjs';
@@ -102,7 +102,7 @@ function loadGovernanceAudit() {
 }
 
 function findingFingerprint(finding) {
-  return crypto.createHash('sha256').update(JSON.stringify({title:finding.title,summary:finding.summary,evidence_refs:finding.evidence_refs})).digest('hex').slice(0,16);
+  return sha256(JSON.stringify({title:finding.title,summary:finding.summary,evidence_refs:finding.evidence_refs})).slice(0,16);
 }
 
 async function applyFindings({findings, missionIssue, openIssues}) {
@@ -404,7 +404,7 @@ async function main() {
     return;
   }
 
-  const digest = crypto.createHash('sha256').update(JSON.stringify(plan)).digest('hex');
+  const digest = sha256(JSON.stringify(plan));
   state = {...state, mission_type:plan.mission_type, target_component:plan.target_component || state.target_component || null, cycle, last_plan_digest:digest, last_provider:planner?.response?.provider || null, last_summary:plan.summary, failure_class:plannerFallback ? 'transient_provider' : null};
 
   const appliedFindings = mode === 'governance_sweep' ? [] : await applyFindings({findings:plan.findings || [], missionIssue, openIssues:allIssues.filter((i)=>!i.pull_request)});
