@@ -69,6 +69,3 @@ The trusted-main Migration Factory resolve job has one canonical read-only Opera
 ## Node tooling migration — nightly/runtime gates — 2026-10-02
 
 Foundation-only nightly runtime probing, loopback research transport, GitHub Actions zero-cost validation, and benchmark-finding publication now execute through Node tooling. The superseded Python scripts/tests were removed; protected Python research and governance authorities are unchanged. Workflow changes remain contract-tested and do not constitute live runtime/provider acceptance.
-
-## Governance tooling migration — 2026-10-02
-Shared Foundation hygiene, documentation-sync, source-surface and comprehensive governance analysis tooling now runs through Node implementations. The Python authorities for semantic/runtime/policy behavior remain unchanged.
