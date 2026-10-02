@@ -36,11 +36,6 @@ jobs:
           python-version: "3.14"
       - name: Install pinned hygiene tools
         run: python -m pip install --disable-pip-version-check ruff==0.16.9
-      - name: Temporary format diagnostic
-        run: |
-          set -euo pipefail
-          npx --yes prettier@3.9.9 --write frontend/ux_enhancements.js
-          cat frontend/ux_enhancements.js
       - name: Run strict changed-file hygiene gate
         shell: bash
         run: |
