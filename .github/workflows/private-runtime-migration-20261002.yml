@@ -1,0 +1,159 @@
+name: One-shot private runtime migration
+
+on:
+  push:
+    branches:
+      - migration/move-private-work-into-operations-20261002
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: private-runtime-migration-20261002
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: migration/move-private-work-into-operations-20261002
+          fetch-depth: 1
+
+      - name: Mint scoped Operations write token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: $${{ secrets.OPERATIONS_APP_ID }}
+          private-key: $${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: write
+
+      - name: Checkout private Operations migration branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: migration/foundation-private-surface-20261002
+          token: $${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Transfer private runtime and feed implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p operations/backend
+          rsync -a --delete backend/ operations/backend/
+          cp worker.py operations/foundation_worker.py
+          cp wrangler.python-core.toml operations/wrangler.foundation-core.toml
+          find tools -maxdepth 1 -type f \( -name 'commerce_feed_product_crawl.mjs' -o -name 'custom_feed_product_crawl.mjs' -o -name 'woocommerce_*.mjs' -o -name 'woocommerce_*.py' \) -print0 |
+            xargs -0 -r -I{} cp "{}" "operations/{}"
+
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+          src = Path('tests')
+          dst = Path('operations/tests')
+          move = set()
+          for path in src.rglob('*'):
+              if not path.is_file() or path.suffix not in {'.py', '.mjs'}:
+                  continue
+              try:
+                  text = path.read_text(encoding='utf-8')
+              except Exception:
+                  continue
+              if 'import backend' in text or 'from backend' in text or 'import worker' in text:
+                  move.add(path)
+          changed = True
+          while changed:
+              changed = False
+              for path in list(move):
+                  if path.suffix != '.py':
+                      continue
+                  try:
+                      tree = ast.parse(path.read_text(encoding='utf-8'))
+                  except Exception:
+                      continue
+                  for node in ast.walk(tree):
+                      names = []
+                      if isinstance(node, ast.ImportFrom) and node.module:
+                          names.append(node.module)
+                      elif isinstance(node, ast.Import):
+                          names.extend(alias.name for alias in node.names)
+                      for name in names:
+                          if name.startswith('tests.'):
+                              candidate = src / (name.replace('.', '/') + '.py')
+                              if candidate.exists() and candidate not in move:
+                                  move.add(candidate)
+                                  changed = True
+          for path in sorted(move):
+              target = dst / path.relative_to(src)
+              target.parent.mkdir(parents=True, exist_ok=True)
+              target.write_bytes(path.read_bytes())
+              path.unlink()
+          print(f'moved_backend_dependent_tests={len(move)}')
+          PY
+
+      - name: Update Operations package inventory
+        working-directory: operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('pyproject.toml')
+          text=p.read_text(encoding='utf-8')
+          if '"backend*"' not in text:
+              text=text.replace('include = ["private*", "extractor_mapper*", "foundation_core*"]','include = ["private*", "extractor_mapper*", "foundation_core*", "backend*"]')
+          p.write_text(text,encoding='utf-8')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('wrangler.foundation-core.toml')
+          text=p.read_text(encoding='utf-8')
+          text=text.replace('main = "worker.py"','main = "foundation_worker.py"',1)
+          text=text.replace('directory = "./frontend"','directory = "./foundation_frontend"',1)
+          p.write_text(text,encoding='utf-8')
+          PY
+          grep -q '^main = "foundation_worker.py"$' wrangler.foundation-core.toml
+          grep -q '^directory = "./foundation_frontend"$' wrangler.foundation-core.toml
+
+      - name: Verify private runtime
+        working-directory: operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q backend foundation_worker.py
+          python -c "import backend.api.main, backend.execution.engine, backend.worker_research"
+          ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' backend foundation_worker.py
+          ! grep -RniE 'from private\\.|import private\\.' backend foundation_worker.py
+
+      - name: Stage public frontend for private-core packaging
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf operations/foundation_frontend
+          cp -a frontend operations/foundation_frontend
+          test -f operations/foundation_frontend/index.html
+
+      - name: Commit Operations migration
+        working-directory: operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf foundation_frontend
+          git add backend foundation_worker.py wrangler.foundation-core.toml tools tests pyproject.toml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git diff --cached --quiet; then
+            echo 'Operations migration already present'
+          else
+            git commit -m 'feat: move Foundation runtime into private Operations'
+            git push origin HEAD:migration/foundation-private-surface-20261002
+          fi
