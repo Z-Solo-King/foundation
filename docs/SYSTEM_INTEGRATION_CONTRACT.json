@@ -104,7 +104,7 @@
         "bounded workflow dispatch decisions",
         "mission receipts"
       ],
-      "observation": "tools/comprehensive_governance_scan.py",
+      "observation": "tools/comprehensive_governance_scan.mjs",
       "publication": "tools/publish_governance_findings.py",
       "schedule": ".github/workflows/twice-daily-governance-sweep.yml",
       "receipt_contract": "docs/AUTONOMOUS_GOVERNANCE_SCAN_CONTRACT.json",
