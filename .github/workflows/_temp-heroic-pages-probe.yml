@@ -1,4 +1,4 @@
-name: Temporary Heroic Pages network probe
+name: Temporary Heroic Pages network probe # postfix-browser-regression
 
 on:
   push:
