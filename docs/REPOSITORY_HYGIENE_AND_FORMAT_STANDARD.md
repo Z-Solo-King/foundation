@@ -188,3 +188,7 @@ The hygiene/synchronization system is considered installed when:
 - markdownlint-cli2 documentation: github.com/DavidAnson/markdownlint-cli2
 - GitHub CODEOWNERS documentation: docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 - GitHub Actions path filters: docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow
+
+
+## 2026-10-02 current-main reconciliation
+The post-migration GitHub reconciliation keeps repository hygiene fail-closed while adapting the merge gate to the current public surface. The required PR workflow now validates the full workflow YAML set and compiles the retained `foundation_core` Python surface rather than retired legacy runtime paths. Family hygiene receipts are emitted as explicit JSON report files so downstream synchronization logic consumes structured evidence rather than redirected console text.
