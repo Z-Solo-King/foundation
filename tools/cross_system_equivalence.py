@@ -111,7 +111,7 @@ def pair_features(f,o):
             "unpaired_foundation":[x.get("id") for x in left if x.get("id") not in matched_f],
             "unpaired_operations":[x.get("id") for x in right if x.get("id") not in matched_o]}
 
-def pair_functions(fi,oi):
+def pair_declarations(fi,oi):
     l,r=defaultdict(list),defaultdict(list)
     for x in fi["declarations"]: l[x["name"].casefold()].append(x)
     for x in oi["declarations"]: r[x["name"].casefold()].append(x)
@@ -149,7 +149,7 @@ def main():
     fi,oi=inventory(a.foundation_root),inventory(a.operations_root)
     fm,om=load_map(a.foundation_root),load_map(a.operations_root)
     policies,features=pair_policies(fm,om),pair_features(fm,om)
-    functions,files=pair_functions(fi,oi),pair_files(fi,oi)
+    functions,files=pair_declarations(fi,oi),pair_files(fi,oi)
     arch=architecture(fm,om)
     counts={"foundation":{"files":fi["tracked_file_count"],"functions":fm.get("function_metrics",{}).get("canonical_surface_declarations",len(fi["declarations"])),"features":len(fm.get("feature_domains",[])),"policies":len(fm.get("policy_catalog",{}))},
             "operations":{"files":oi["tracked_file_count"],"functions":om.get("function_metrics",{}).get("canonical_surface_declarations",len(oi["declarations"])),"features":len(om.get("feature_domains",[])),"policies":len(om.get("policy_catalog",{}))}}
