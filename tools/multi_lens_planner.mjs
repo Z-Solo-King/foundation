@@ -372,11 +372,13 @@ function plan(input) {
           continue;
         }
 
-        if (!canFit(row)) {
+        if (!canFit(row, "adaptive")) {
           skipped.push({
             ...row,
             selection: "candidate",
-            skip_reason: "budget_or_lane_limit",
+            skip_reason: execution.mode === "adaptive" && adaptiveSelected >= execution.candidate_lane_cap
+              ? "adaptive_lane_cap"
+              : "budget_or_lane_limit",
           });
           continue;
         }
