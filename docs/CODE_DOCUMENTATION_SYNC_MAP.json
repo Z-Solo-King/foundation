@@ -93,7 +93,10 @@
         "docs/WORKFLOW_AUTHORITY_REGISTRY.json",
         "tools/comprehensive_governance_scan.py",
         "tools/publish_governance_findings.py",
-        "tests/test_comprehensive_governance_scan.py"
+        "tests/test_comprehensive_governance_scan.py",
+        "scripts/validate_github_app_policy.py",
+        "tests/test_github_app_marketplace_policy.py",
+        "docs/GITHUB_APP_INTEGRATION_POLICY.json"
       ],
       "docs": [
         "docs/AI_AUDIT_SYSTEM.md",
@@ -102,7 +105,8 @@
         "docs/PRIVILEGED_WORKFLOW_TRUST_BOUNDARY.md",
         "docs/FAMILY_SYNC_STANDARD.md",
         "docs/AUTONOMOUS_GOVERNANCE_SCAN_CONTRACT.json",
-        "docs/AI_SYSTEM_MAP.json"
+        "docs/AI_SYSTEM_MAP.json",
+        "docs/GITHUB_APP_INTEGRATION_POLICY.json"
       ],
       "require_doc_update": true
     }
