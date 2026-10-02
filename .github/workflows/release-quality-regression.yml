@@ -1,13 +1,8 @@
 name: release quality regression contract
 
 on:
-  pull_request:
+  push:
     branches: [main]
-    paths:
-      - 'docs/OPERATIONS_PIN_MANIFEST.json'
-      - '.github/workflows/release-quality-regression.yml'
-  merge_group:
-    types: [checks_requested]
   workflow_dispatch:
 
 permissions:
