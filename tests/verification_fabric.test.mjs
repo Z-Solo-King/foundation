@@ -30,7 +30,7 @@ test('scanner catches unpinned action and secret-like literals as findings', () 
   fs.mkdirSync(path.join(root,'.github','workflows'),{recursive:true});
   fs.writeFileSync(path.join(root,'.github','workflows','x.yml'),'name: x\non:\n  push:\njobs:\n  x:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v7\n');
   fs.writeFileSync(path.join(root,'REPOSITORY_MAP.json'),'{}\n');
-  for (const f of ['docs/CODE_OWNERSHIP_AND_PLACEMENT.md','docs/CURRENT_SOURCE_OF_TRUTH.md','polyglot/REGISTRY.json','.github/workflows/autonomous-engineering-supervisor.yml']) {
+  for (const f of ['docs/AI_PROJECT_MAP.json','docs/CURRENT_SOURCE_OF_TRUTH.md','docs/CROSS_SYSTEM_CROSSFIRE_STANDARD.md','.github/workflows/required-pr-checks.yml']) {
     fs.mkdirSync(path.dirname(path.join(root,f)),{recursive:true});
     fs.writeFileSync(path.join(root,f),'ok\n');
   }
@@ -42,7 +42,7 @@ test('scanner catches unpinned action and secret-like literals as findings', () 
 
 test('scanner is non-authoritative for warnings', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(),'verification-fabric-'));
-  for (const f of ['REPOSITORY_MAP.json','docs/CODE_OWNERSHIP_AND_PLACEMENT.md','docs/CURRENT_SOURCE_OF_TRUTH.md','polyglot/REGISTRY.json','.github/workflows/autonomous-engineering-supervisor.yml']) {
+  for (const f of ['REPOSITORY_MAP.json','docs/AI_PROJECT_MAP.json','docs/CURRENT_SOURCE_OF_TRUTH.md','docs/CROSS_SYSTEM_CROSSFIRE_STANDARD.md','.github/workflows/required-pr-checks.yml']) {
     fs.mkdirSync(path.dirname(path.join(root,f)),{recursive:true});
     fs.writeFileSync(path.join(root,f),'ok\n');
   }
