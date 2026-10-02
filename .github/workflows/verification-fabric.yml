@@ -84,9 +84,10 @@ jobs:
 
       - name: Render GitHub summary
         if: always()
-        shell: node
+        shell: bash
         run: |
-          const fs = await import('node:fs');
+          node <<'NODE'
+          const fs = require('node:fs');
           const body = JSON.parse(fs.readFileSync('.runtime-verification-fabric.json','utf8'));
           const s = body.report.summary;
           const lines = [
@@ -99,7 +100,8 @@ jobs:
             'Findings: ' + s.findings + ' (critical=' + s.critical_count + ', warning=' + s.warning_count + ')',
           ];
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n')+'\n');
-          
+          NODE
+
       - name: Upload verification evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
