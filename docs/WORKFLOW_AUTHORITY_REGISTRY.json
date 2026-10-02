@@ -130,7 +130,11 @@
     [
       ".github/workflows/repository-hygiene-autofix.yml",
       "repository_hygiene_autofix"
+    ],    [
+      ".github/workflows/release-quality-regression.yml",
+      "release_quality_regression"
     ],
+
     [
       ".github/workflows/repository-hygiene.yml",
       "repository_hygiene"

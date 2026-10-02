@@ -1,12 +1,12 @@
 {
   "schema": "operations-pin-manifest/v1",
-  "generated_at": "2026-10-01",
+  "generated_at": "2026-10-02",
   "authority": "single public-safe immutable Operations revision manifest; runtime code remains authoritative",
   "pins": {
     "production_runtime": {
       "sha": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
       "purpose": "Cloudflare Operations production runtime and Foundation public production release",
-      "status": "canonical production runtime pin; promoted Operations D1 persistence-sentinel optimization"
+      "status": "canonical production runtime pin; preserved until independently promoted and runtime-certified"
     },
     "provider_fleet_runtime": {
       "sha": "2a4a49d2c11bd9ff2b9290bc780eb0da97c73ecb",
@@ -15,9 +15,9 @@
       "status": "immutable provider-fleet probe revision; captures sanitized request/token limit and reset headers"
     },
     "research_runtime": {
-      "sha": "1a91efa53b9202f1624ddde892b0e86bd6b360f0",
+      "sha": "8b6909ac213e01d310362627d12772950601adf6",
       "purpose": "nightly research executor source checkout",
-      "status": "immutable research-agent runtime reference with structured JSON output contract; independently promoted from production"
+      "status": "canonical Operations research/runtime baseline after private migration merge"
     },
     "secret_sync_utility": {
       "sha": "b95e419254a9071beaeef57a1b0da22ba7dd2c4f",

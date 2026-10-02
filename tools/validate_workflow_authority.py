@@ -113,6 +113,7 @@ def validate()->list[str]:
 if __name__=="__main__":
     errors=validate()
     if errors:
+        # Workflow contents are untrusted input; never copy individual findings into CI logs.
         print(f"workflow authority policy: FAIL ({len(errors)} policy violations)")
         raise SystemExit(1)
     print(f"workflow authority policy: PASS ({len(workflow_paths())} workflows scanned)")

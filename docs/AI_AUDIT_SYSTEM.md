@@ -61,6 +61,26 @@ Cross-fire remains mandatory: the sweep combines repository/contract evidence wi
 
 ## Current GitHub state
 Read active main heads, open issue inventory and open PRs from GitHub live state at audit start. Dated state documents are synchronization evidence, not mutable queue authorities.
-## Comprehensive twice-daily governance sweep
 
+## Comprehensive twice-daily governance sweep
 This scheduled control scans the combined family across eight disjoint observation lanes: structure/hygiene, migration/public-private boundary, research/feed, provider/runtime, work items/workflow, maps/docs/policy, quality/learning/evolution, and performance/resources. It is observation and triage telemetry, not a second authority. The sweep publishes deterministic findings, comments on affected open PRs, and wakes the existing autonomous engineering supervisor for bounded remediation.
+
+## Migration completion gate — 2026-10-02
+
+The public/private migration is an ownership change, not a test-deletion exercise. Independent audit lenses must verify that removed private implementation is represented by one canonical Operations owner and that the retained Foundation surface remains public-safe.
+
+The migration pass sequence is:
+
+1. compare current Foundation and Operations maps;
+2. enumerate changed tracked files and matched documentation groups;
+3. scan workflow authority and public-surface policy;
+4. run cross-system equivalence and duplicate-content detection;
+5. run focused tests and protected PR checks;
+6. verify exact production/runtime revisions when a live claim is made;
+7. update only the canonical owning repository/document.
+
+AI planners can prioritize and cross-check evidence but cannot certify production truth, change policy, promote a provider, or replace a runtime receipt.
+
+## Six-lane CrossFire standard
+
+For difficult audits, use independent ownership/policy, TypeScript, Rust, Go, Cloudflare/runtime, and security/evidence lenses. Each lane works from the same immutable input snapshot and emits bounded evidence. Intermediate findings are not treated as shared truth until deterministic reconciliation completes. A provider comparison is meaningful only when enough independently configured providers actually execute; unavailable providers are reported as limitations rather than simulated.
