@@ -1,0 +1,97 @@
+name: Verification fabric
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Verification mode"
+        required: false
+        default: "manual"
+        type: choice
+        options: [manual, scheduled, release_gate]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: verification-fabric-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: Deterministic project verification fabric
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+          package-manager-cache: false
+
+      - name: Determine changed paths
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            test -n "${BASE_REF:-}"
+            git fetch origin "$BASE_REF" --depth=1
+            git diff --name-only "origin/$BASE_REF...HEAD" > changed-paths.txt
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" > changed-paths.txt || git diff-tree --no-commit-id --name-only -r "${{ github.sha }}" > changed-paths.txt
+          else
+            : > changed-paths.txt
+          fi
+          cat changed-paths.txt
+
+      - name: Run verification fabric
+        env:
+          VERIFICATION_ROOT: ${{ github.workspace }}
+          VERIFICATION_MODE: ${{ inputs.mode || github.event_name }}
+        run: |
+          export VERIFICATION_CHANGED_FILES="$(cat changed-paths.txt)"
+          node tools/verification_fabric.mjs
+
+      - name: Render GitHub summary
+        if: always()
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const body = JSON.parse(fs.readFileSync('.runtime-verification-fabric.json','utf8'));
+          const s = body.report.summary;
+          const lines = [
+            '## Verification Fabric',
+            '',
+            'Status: **' + s.status + '**',
+            'Domains: ' + s.domains.join(', '),
+            'Crossfire lanes: ' + s.lane_count,
+            'Existing checks selected: ' + s.planned_checks,
+            'Findings: ' + s.findings + ' (critical=' + s.critical_count + ', warning=' + s.warning_count + ')',
+          ];
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n')+'\n');
+          NODE
+
+      - name: Upload verification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: verification-fabric-${{ github.run_id }}
+          path: |
+            .runtime-verification-fabric.json
+            changed-paths.txt
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30

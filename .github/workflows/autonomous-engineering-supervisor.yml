@@ -11,6 +11,8 @@ on:
       - "tests/autonomous_engineering_supervisor.test.mjs"
       - "docs/PROJECT_IMPROVEMENT_MATRIX.json"
       - "docs/AUTONOMOUS_MISSION_CONTRACT.json"
+      - "tools/verification_fabric.mjs"
+      - "docs/VERIFICATION_FABRIC.md"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -50,9 +52,15 @@ jobs:
           node-version: "22"
           package-manager-cache: false
       - name: Validate supervisor
-        run: node --check tools/autonomous_engineering_supervisor.mjs && node --test tests/autonomous_mission_router.test.mjs tests/autonomous_engineering_supervisor.test.mjs
+        run: node --check tools/autonomous_engineering_supervisor.mjs && node --check tools/verification_fabric.mjs && node --test tests/autonomous_mission_router.test.mjs tests/autonomous_engineering_supervisor.test.mjs
+      - name: Generate deterministic verification fabric context
+        env:
+          VERIFICATION_ROOT: ${{ github.workspace }}
+          VERIFICATION_MODE: supervisor
+        run: node tools/verification_fabric.mjs
       - name: Run independent autonomous supervisor
         env:
           GH_TOKEN: ${{ github.token }}
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          VERIFICATION_FABRIC_FILE: .runtime-verification-fabric.json
         run: node tools/autonomous_engineering_supervisor.mjs
