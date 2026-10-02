@@ -50,7 +50,7 @@ assert.match(app, /\/api\/v1\/chat\/stream/);
 assert.match(app, /Idempotency-Key/);
 assert.match(app, /consumeChatStream/);
 assert.match(app, /event === ['\"]delta['\"]/);
-assert.match(app, /event === 'done'/);
+assert.match(app, /event === ['\"]done['\"]);
 assert.doesNotMatch(app, /async function submitResearch|async function pollResearch|function renderResearch|function processQueue/, 'app.js must not own research lifecycle');
 assert.match(app, /api\.chatView\.render/);
 assert.match(app, /api\.chatStore\.exportData/);
