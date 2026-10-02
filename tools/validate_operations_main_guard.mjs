@@ -1,13 +1,28 @@
 import fs from 'node:fs';
 
+function observedMainSha(mainBranch) {
+  return mainBranch?.sha || mainBranch?.commit?.sha || '';
+}
+
 export function validateOperationsGuard({repository, mainBranch, workflowsPresent, approvedSha}) {
   if (!repository || repository.private !== true) throw new Error('Operations repository must remain private');
   if (repository.default_branch !== 'main') throw new Error('Operations default branch must remain main');
   if (!mainBranch || mainBranch.name !== 'main') throw new Error('Operations main branch lookup failed');
-  if (!/^[0-9a-f]{40}$/.test(mainBranch.sha || '')) throw new Error('Operations main SHA is invalid');
+
+  const mainSha = observedMainSha(mainBranch);
+  if (!/^[0-9a-f]{40}$/.test(mainSha)) throw new Error('Operations main SHA is invalid');
   if (workflowsPresent) throw new Error('Private Operations must not contain .github/workflows');
   if (!/^[0-9a-f]{40}$/.test(approvedSha || '')) throw new Error('approved Operations SHA is invalid');
-  return {schema:'operations-main-integrity-receipt/v1',repository:repository.full_name,private:true,default_branch:repository.default_branch,observed_main_sha:mainBranch.sha,approved_sha:approvedSha,status:mainBranch.sha===approvedSha?'APPROVED':'DRIFT'};
+
+  return {
+    schema:'operations-main-integrity-receipt/v1',
+    repository:repository.full_name,
+    private:true,
+    default_branch:repository.default_branch,
+    observed_main_sha:mainSha,
+    approved_sha:approvedSha,
+    status:mainSha===approvedSha?'APPROVED':'DRIFT'
+  };
 }
 
 if (process.argv[1]?.endsWith('validate_operations_main_guard.mjs')) {
