@@ -44,14 +44,26 @@
     } else if (!api.API_BASE) {
       api.state.backendOk = false;
       api.state.backendText = 'API not configured';
+    } else if (!api.token()) {
+      api.state.backendOk = false;
+      api.state.backendText = 'Session token required for live chat';
     } else {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 10_000);
       try {
-        const response = await fetch(api.apiUrl('/readiness'), { headers: api.authHeaders() });
+        const response = await fetch(api.apiUrl('/readiness'), {
+          headers: api.authHeaders(),
+          signal: controller.signal,
+        });
         api.state.backendOk = response.ok;
         api.state.backendText = response.ok ? 'Backend reachable' : `Backend ${response.status}`;
-      } catch {
+      } catch (error) {
         api.state.backendOk = false;
-        api.state.backendText = 'Backend unavailable';
+        api.state.backendText = error?.name === 'AbortError'
+          ? 'Backend check timed out'
+          : 'Backend unavailable';
+      } finally {
+        window.clearTimeout(timeout);
       }
     }
     if (connectionPill) {
