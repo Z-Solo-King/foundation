@@ -148,7 +148,7 @@ jobs:
           WC_ANY_MAX_PRODUCTS: "10000"
           WC_ANY_MAX_PRODUCT_URLS: "120"
           WC_ANY_LIVE_PAGE_LIMIT: "60"
-          WC_ANY_CC_PAGE_LIMIT: "30"
+          WC_ANY_CC_PAGE_LIMIT: "80"
           SHARD: ${{ matrix.shard }}
         run: |
           set -euo pipefail
