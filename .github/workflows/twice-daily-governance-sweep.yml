@@ -142,7 +142,7 @@ jobs:
         run: |
           set -euo pipefail
           for lane in structure_hygiene migration_boundary research_feed provider_runtime; do
-            python tools/comprehensive_governance_scan.py \
+            node tools/comprehensive_governance_scan.mjs \
               --foundation . \
               --operations operations \
               --snapshot .runtime/governance/github-snapshot.json \
@@ -155,7 +155,7 @@ jobs:
         run: |
           set -euo pipefail
           for lane in work_items_workflow maps_docs_policy quality_learning_evolution performance_resources; do
-            python tools/comprehensive_governance_scan.py \
+            node tools/comprehensive_governance_scan.mjs \
               --foundation . \
               --operations operations \
               --snapshot .runtime/governance/github-snapshot.json \
