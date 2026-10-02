@@ -51,8 +51,9 @@ def test_research_first_use_fallback_remains_present():
 def test_ux_bootstrap_is_parse_safe_and_event_driven():
     text = (ROOT / "frontend/ux_enhancements.js").read_text(encoding="utf-8")
     assert "document.readyState === 'loading'" in text
-    assert "document.addEventListener('DOMContentLoaded', start, { once: true })" in text
+    assert (
+        "document.addEventListener('DOMContentLoaded', start, { once: true })" in text
+    )
     assert "rie:chat-updated" in text
     assert "new MutationObserver" not in text
     assert "window.setInterval(observe, 250)" not in text
-
