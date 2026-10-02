@@ -1,0 +1,17 @@
+{
+  "schema":"unified-scan-composition/v1",
+  "canonical_scanner":"tools/verification_fabric.mjs",
+  "canonical_scheduler":"tools/multi_lens_planner.mjs",
+  "mission_router":"tools/autonomous_mission_router.mjs",
+  "remediation_supervisor":"tools/autonomous_engineering_supervisor.mjs",
+  "governance_observer":"tools/comprehensive_governance_scan.py",
+  "analytical_lenses":6,
+  "ai_provider_target":6,
+  "ai_provider_strong_threshold":5,
+  "shared_snapshot":true,
+  "shared_inventory":true,
+  "independent_ai_answers":true,
+  "writes_serialized":true,
+  "ai_authority":"advisory_only",
+  "production_authority":"existing_canonical_authorities"
+}
