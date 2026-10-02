@@ -2,12 +2,12 @@
 
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
-Checked: 2026-10-02 10:24 UTC.
+Checked: 2026-10-02 16:21 UTC.
 Main verification checkpoint: current Foundation main is read live from GitHub; the current observed main commit is `a29ecf986fe02de70533b6def35ba583da9ff2da`.
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
 Foundation main code checkpoint: current main is read live from GitHub; current observed commit `a29ecf986fe02de70533b6def35ba583da9ff2da`.
-Operations main checkpoint: current main is read live from GitHub; current observed main commit `adc600221169cc4dadee0bdd7d68be30c58e6727`. Research and migration jobs use explicit immutable pins below.
+Operations main checkpoint: current main is read live from GitHub; current observed main commit `5a5ae97ff83c60d755cc964bd1ac639565e2f298`. Research and migration jobs use explicit immutable pins below.
 Production Operations pin: `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f`.
 Provider fleet runtime probe pin: `b95e419254a9071beaeef57a1b0da22ba7dd2c4f`.
 Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`.
@@ -178,11 +178,18 @@ Autonomous mission records #1828 and #1804 were superseded and closed as `not_pl
 
 ## 2026-10-02 GitHub synchronization checkpoint
 
-At the latest GitHub reconciliation, Foundation main is `4d54a85944ad28f8c22e80909dec874692d4dd4b` and Operations main is `5cf716b8c8d9be4691f2544f2799dfd95cc29d4a`. These are moving repository heads, not production certification values.
+At the latest GitHub reconciliation before the current PR state, Foundation main is `45c59fef2f34f3d945e59ef1c8a02debdb890bad` and Operations main is `5a5ae97ff83c60d755cc964bd1ac639565e2f298`. These are moving repository heads, not production certification values.
 
 Foundation PR #1846 is documentation-only: it refreshes family synchronization metadata and preserves the immutable production Operations pin `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f`. The obsolete Audit/Monitor/Extractor consolidation PR #1845 is closed, and the superseded Operations consolidation PR #1512 is closed; their applicable mechanics are already represented on current Operations main.
 
 Repository hygiene and code-documentation synchronization remain machine-enforced. The current synchronization change is being validated through the normal pull-request gate; no direct main-branch mutation or gate weakening is permitted.
+
+
+## 2026-10-02 Operations public-core sync repair
+
+Operations PR #1559 was merged into Operations main at `5a5ae97ff83c60d755cc964bd1ac639565e2f298`. The repair adds the canonical Foundation `foundation_core/url_identity.py` blob (`ca01f70a50eef57ca2ebe8cd52312b946ef7c28c`) to the immutable public-core synchronization manifest and extends its Node regression coverage to the complete eleven-file manifest. This closes a concrete generated-package/import gap; it does not alter provider, policy, resource, credential, extractor, mapper, or deployment authority.
+
+The immutable production Operations pin remains `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f` until the canonical Foundation production-release workflow independently promotes and runtime-certifies the merged revision. This distinction is intentional: a merged fix is source-level evidence, not production acceptance.
 
 
 ## Live reconciliation — 2026-10-02
