@@ -29,7 +29,8 @@ This contract therefore prevents the repository workflows from intentionally gra
 - The autonomous planner receives aggregate Operations findings before external AI use; private source paths and protected values are not sent as planner context.
 - AI output remains candidate assistance. Repository/code ownership, acceptance evidence, deployment, production promotion and rollback remain with their existing authorities.
 
-- `.github/workflows/microscope-branch-retirement.yml` is a privileged maintenance workflow. It runs only from trusted `main` pushes carrying the explicit `[microscope-retirement-authorized]` marker or from explicit manual dispatch; branch eligibility is recomputed from live refs and protected/active-PR/release/tag/live-reference/divergent refs remain non-executable.\n
+- `.github/workflows/microscope-branch-retirement.yml` is a privileged maintenance workflow. It runs only from trusted `main` pushes carrying the explicit `[microscope-retirement-authorized]` marker or from explicit manual dispatch; branch eligibility is recomputed from live refs and protected/active-PR/release/tag/live-reference/divergent refs remain non-executable.
+
 ## Live AI provider cross-fire
 
 - `.github/workflows/live-ai-provider-crossfire.yml` remains a manual-dispatch privileged benchmark because it reads protected provider configuration and a read-only private Operations App token.
@@ -43,16 +44,20 @@ The Foundation/Operations migration removes private runtime and feed-execution i
 
 The migration is considered structurally synchronized only when the protected PR checks, workflow-authority validator, public-surface scan, full-history secret scan and cross-system ownership/equivalence gates all evaluate the exact reconciled PR head.
 
-
 ## 2026-10-02 workflow reconciliation
-The current GitHub workflow surface is treated as configuration under the same trust boundary as code: workflow YAML is syntax/structure-validated in the required merge gate, privileged workflows remain restricted to trusted triggers, and autonomous dispatch targets are allowlisted by the mission router. A workflow that exists in a historical mission record but does not expose `workflow_dispatch` is not a valid autonomous execution target.
 
+The current GitHub workflow surface is treated as configuration under the same trust boundary as code: workflow YAML is syntax/structure-validated in the required merge gate, privileged workflows remain restricted to trusted triggers, and autonomous dispatch targets are allowlisted by the mission router. A workflow that exists in a historical mission record but does not expose `workflow_dispatch` is not a valid autonomous execution target.
 
 ## Public release prohibition — 2026-10-02
 
 Feed-recovery workflows must never create or upload GitHub Releases or publish release download URLs. Normal feed jobs are read-only; the separate cleanup job is narrowly scoped to delete the prohibited feed release/tag.
 
-
 ## Public endpoint reconciliation — 2026-10-02
 
 Credential-bearing workflows that probe or release the public application must target the canonical GitHub-backed Pages project `https://heroic-ai.pages.dev`. The public hostname change does not change the trust boundary: privileged workflows still require trusted `main` or explicit manual dispatch, and private Operations credentials remain inaccessible to pull-request code.
+
+## Post-release chatbot verification — 2026-10-02
+
+- `.github/workflows/chatbot-post-release-runtime-smoke.yml` is a privileged production smoke workflow because it exercises the canonical public endpoint with the protected application authentication token. It is manual-dispatch only and is launched by the trusted production-release workflow after a successful release; it fails closed on Foundation/Operations provenance mismatch.
+- `.github/workflows/chatbot-post-release-crossfire.yml` is a privileged post-release benchmark because it reads protected provider configuration and private Operations source. It is manual-dispatch only and is launched by the trusted production-release workflow; it validates the six independent analytical lanes and runs up to six configured provider transports concurrently. Comparative agreement remains descriptive evidence only.
+- Both workflows use immutable action references and read-only repository permissions; they do not alter deployment state, provider configuration, policy, or promotion authority.

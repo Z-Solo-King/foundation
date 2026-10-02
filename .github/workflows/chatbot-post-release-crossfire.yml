@@ -1,0 +1,144 @@
+name: Chatbot post-release CrossFire
+
+on:
+  workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: "Optional immutable Operations revision"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chatbot-post-release-crossfire
+  cancel-in-progress: true
+
+jobs:
+  crossfire:
+    runs-on: ubuntu-latest
+    environment: production-secret-sync
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Mint read-only Operations App token
+        id: operations-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: operations
+          permission-contents: read
+
+      - name: Resolve canonical production Operations pin
+        id: operations
+        shell: bash
+        env:
+          REQUESTED_OPERATIONS_REF: ${{ inputs.operations_ref }}
+        run: |
+          set -euo pipefail
+          ref="${REQUESTED_OPERATIONS_REF:-}"
+          if [ -z "$ref" ]; then
+            ref="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          print(json.loads(Path("docs/OPERATIONS_PIN_MANIFEST.json").read_text(encoding="utf-8"))["pins"]["production_runtime"]["sha"])
+          PY
+            )"
+          fi
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Operations revision must be a 40-hex immutable SHA"; exit 1; }
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout pinned Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ steps.operations.outputs.ref }}
+          token: ${{ steps.operations-token.outputs.token }}
+          path: ${{ runner.temp }}/operations
+          persist-credentials: false
+
+      - name: Validate six-lane CrossFire contract
+        working-directory: ${{ runner.temp }}/operations
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from private.chatbot.platform_access import validate_platform_matrix, crossfire_lanes
+          platforms = validate_platform_matrix()
+          lanes = crossfire_lanes()
+          assert len(platforms) == 22
+          assert len(lanes) == 6
+          assert all(lane.independent for lane in lanes)
+          print({"platforms": len(platforms), "independent_lanes": len(lanes)})
+          PY
+
+      - name: Run up-to-six-provider AI CrossFire
+        env:
+          PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+          HEROIC_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        run: |
+          set +e
+          mkdir -p .runtime/chatbot-crossfire
+          python "${{ runner.temp }}/operations/private/benchmark/ai_provider_crossfire.py"             --providers-max 6 --repeats 3 --workers 12             --output .runtime/chatbot-crossfire/private.json             > .runtime/chatbot-crossfire/runner.log 2>&1
+          status=$?
+          set -e
+
+          if [ "$status" -ne 0 ]; then
+            if grep -q '^need at least 2 configured AI providers for cross-fire;' .runtime/chatbot-crossfire/runner.log; then
+              provider_count="$(sed -n 's/.*found \\([0-9][0-9]*\\)$/\\1/p' .runtime/chatbot-crossfire/runner.log | tail -1)"
+              provider_count="${provider_count:-0}"
+              jq -n --argjson provider_count "$provider_count" '{
+                schema:"live-ai-provider-crossfire-summary/v1",
+                generated_at:(now|todate),
+                comparison_state:"comparison_unavailable",
+                limitation:"fewer than two configured direct providers; comparative cross-fire is not claimed",
+                provider_count:$provider_count,
+                providers:[],
+                call_count:0,
+                batch_wall_ms:null
+              }' > .runtime/chatbot-crossfire/private.json
+            else
+              cat .runtime/chatbot-crossfire/runner.log
+              exit "$status"
+            fi
+          fi
+
+          test -s .runtime/chatbot-crossfire/private.json
+
+      - name: Produce public-safe CrossFire receipt
+        if: always()
+        run: |
+          set -euo pipefail
+          test -s .runtime/chatbot-crossfire/private.json
+          jq '{
+            schema:"live-ai-provider-crossfire-summary/v1",
+            generated_at,
+            comparison_state:(.comparison_state // "complete"),
+            limitation:(.limitation // null),
+            provider_count:(.providers|length),
+            call_count,
+            batch_wall_ms,
+            successful_calls:([.providers[]?.successes]|add // 0),
+            failed_calls:([.providers[]?.failures]|add // 0),
+            quality_passes:([.providers[]?.quality_passes]|add // 0),
+            quality_total:([.providers[]?.quality_total]|add // 0)
+          }' .runtime/chatbot-crossfire/private.json > .runtime/chatbot-crossfire/summary.json
+
+      - name: Upload CrossFire evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: chatbot-post-release-crossfire-${{ github.run_id }}
+          path: .runtime/chatbot-crossfire/
+          retention-days: 30
+          if-no-files-found: error

@@ -11,178 +11,54 @@
       ".github/workflows/autonomous-engineering-supervisor.yml",
       "autonomous_engineering_supervisor"
     ],
-    [
-      ".github/workflows/b2-repository-backup.yml",
-      "backup"
-    ],
-    [
-      ".github/workflows/b2-restore-verification.yml",
-      "backup_restore"
-    ],
-    [
-      ".github/workflows/browser-engine-runtime-evidence.yml",
-      "private_benchmark"
-    ],
-    [
-      ".github/workflows/canonical-nightly-pin-repair.yml",
-      "revision_maintenance"
-    ],
-    [
-      ".github/workflows/commerce-feed-product-crawl.yml",
-      "private_registry_feed_crawl"
-    ],
-    [
-      ".github/workflows/coverage-driven-runtime-matrix.yml",
-      "runtime_matrix"
-    ],
-    [
-      ".github/workflows/cross-repository-contract-drift.yml",
-      "private_audit"
-    ],
-    [
-      ".github/workflows/exhaustive-six-lane-audit.yml",
-      "private_audit"
-    ],
-    [
-      ".github/workflows/extractor-surface-governance.yml",
-      "private_audit"
-    ],
-    [
-      ".github/workflows/family-full-coverage.yml",
-      "family_full_coverage"
-    ],
-    [
-      ".github/workflows/family-hygiene-sync.yml",
-      "private_audit"
-    ],
-    [
-      ".github/workflows/family-integrity-gate.yml",
-      "family_governance"
-    ],
-    [
-      ".github/workflows/heroic-ai-production-release.yml",
-      "production_deployment"
-    ],
-    [
-      ".github/workflows/hybrid-language-pilots.yml",
-      "private_benchmark"
-    ],
-    [
-      ".github/workflows/migration-factory.yml",
-      "private_audit"
-    ],
-    [
-      ".github/workflows/live-ai-agent-benchmark.yml",
-      "live_benchmark"
-    ],
-    [
-      ".github/workflows/live-ai-provider-crossfire.yml",
-      "ai_provider_crossfire"
-    ],
-    [
-      ".github/workflows/live-chatbot-production-smoke.yml",
-      "private_production_smoke"
-    ],
-    [
-      ".github/workflows/live-extractor-benchmark.yml",
-      "live_extractor_benchmark"
-    ],
-    [
-      ".github/workflows/live-nightly-research-canary.yml",
-      "private_research_canary"
-    ],
-    [
-      ".github/workflows/nightly-multi-agent-research-v3.yml",
-      "research_public_frontdoor"
-    ],
-    [
-      ".github/workflows/nightly-research-provider-preflight.yml",
-      "private_research_preflight"
-    ],
-    [
-      ".github/workflows/observation-contract-shadow.yml",
-      "private_benchmark"
-    ],
-    [
-      ".github/workflows/open-issue-polyglot-deep-scan.yml",
-      "private_audit"
-    ],
-    [
-      ".github/workflows/operations-centralized-validation.yml",
-      "private_validation"
-    ],
-    [
-      ".github/workflows/operations-private-freeplan-guard.yml",
-      "private_integrity_guard"
-    ],
-    [
-      ".github/workflows/polyglot-governance-audit.yml",
-      "private_audit"
-    ],
-    [
-      ".github/workflows/polyglot-migration-review.yml",
-      "private_benchmark"
-    ],
-    [
-      ".github/workflows/project-improvement-supervisor.yml",
-      "autonomous_component_improvement"
-    ],
-    [
-      ".github/workflows/provider-fleet-runtime-state.yml",
-      "private_runtime_state"
-    ],
-    [
-      ".github/workflows/repository-hygiene-autofix.yml",
-      "repository_hygiene_autofix"
-    ],
-    [
-      ".github/workflows/release-quality-regression.yml",
-      "release_quality_regression"
-    ],
-    [
-      ".github/workflows/repository-hygiene.yml",
-      "repository_hygiene"
-    ],
-    [
-      ".github/workflows/sync-secrets.yml",
-      "secret_sync"
-    ],
-    [
-      ".github/workflows/twice-daily-governance-sweep.yml",
-      "autonomous_governance_sweep"
-    ],
-    [
-      ".github/workflows/woocommerce-32-plugin-feed-hunt.yml",
-      "private_registry_feed_crawl"
-    ],
-    [
-      ".github/workflows/woocommerce-emergency-xml-recovery.yml",
-      "private_feed_extraction"
-    ],
-    [
-      ".github/workflows/woocommerce-google-xml-recovery-v19.yml",
-      "private_feed_extraction"
-    ],
-    [
-      ".github/workflows/woocommerce-native-xml-recovery-v18.yml",
-      "private_feed_extraction"
-    ],
-    [
-      ".github/workflows/woocommerce-v175-22-plugin-extraction.yml",
-      "private_feed_extraction"
-    ],
+    [".github/workflows/b2-repository-backup.yml", "backup"],
+    [".github/workflows/b2-restore-verification.yml", "backup_restore"],
+    [".github/workflows/browser-engine-runtime-evidence.yml", "private_benchmark"],
+    [".github/workflows/canonical-nightly-pin-repair.yml", "revision_maintenance"],
+    [".github/workflows/chatbot-post-release-crossfire.yml", "ai_provider_crossfire"],
+    [".github/workflows/chatbot-post-release-runtime-smoke.yml", "private_production_smoke"],
+    [".github/workflows/commerce-feed-product-crawl.yml", "private_registry_feed_crawl"],
+    [".github/workflows/coverage-driven-runtime-matrix.yml", "runtime_matrix"],
+    [".github/workflows/cross-repository-contract-drift.yml", "private_audit"],
+    [".github/workflows/exhaustive-six-lane-audit.yml", "private_audit"],
+    [".github/workflows/extractor-surface-governance.yml", "private_audit"],
+    [".github/workflows/family-full-coverage.yml", "family_full_coverage"],
+    [".github/workflows/family-hygiene-sync.yml", "private_audit"],
+    [".github/workflows/family-integrity-gate.yml", "family_governance"],
+    [".github/workflows/heroic-ai-production-release.yml", "production_deployment"],
+    [".github/workflows/hybrid-language-pilots.yml", "private_benchmark"],
+    [".github/workflows/migration-factory.yml", "private_audit"],
+    [".github/workflows/live-ai-agent-benchmark.yml", "live_benchmark"],
+    [".github/workflows/live-ai-provider-crossfire.yml", "ai_provider_crossfire"],
+    [".github/workflows/live-chatbot-production-smoke.yml", "private_production_smoke"],
+    [".github/workflows/live-extractor-benchmark.yml", "live_extractor_benchmark"],
+    [".github/workflows/live-nightly-research-canary.yml", "private_research_canary"],
+    [".github/workflows/nightly-multi-agent-research-v3.yml", "research_public_frontdoor"],
+    [".github/workflows/nightly-research-provider-preflight.yml", "private_research_preflight"],
+    [".github/workflows/observation-contract-shadow.yml", "private_benchmark"],
+    [".github/workflows/open-issue-polyglot-deep-scan.yml", "private_audit"],
+    [".github/workflows/operations-centralized-validation.yml", "private_validation"],
+    [".github/workflows/operations-private-freeplan-guard.yml", "private_integrity_guard"],
+    [".github/workflows/polyglot-governance-audit.yml", "private_audit"],
+    [".github/workflows/polyglot-migration-review.yml", "private_benchmark"],
+    [".github/workflows/project-improvement-supervisor.yml", "autonomous_component_improvement"],
+    [".github/workflows/provider-fleet-runtime-state.yml", "private_runtime_state"],
+    [".github/workflows/repository-hygiene-autofix.yml", "repository_hygiene_autofix"],
+    [".github/workflows/release-quality-regression.yml", "release_quality_regression"],
+    [".github/workflows/repository-hygiene.yml", "repository_hygiene"],
+    [".github/workflows/sync-secrets.yml", "secret_sync"],
+    [".github/workflows/twice-daily-governance-sweep.yml", "autonomous_governance_sweep"],
+    [".github/workflows/woocommerce-32-plugin-feed-hunt.yml", "private_registry_feed_crawl"],
+    [".github/workflows/woocommerce-emergency-xml-recovery.yml", "private_feed_extraction"],
+    [".github/workflows/woocommerce-google-xml-recovery-v19.yml", "private_feed_extraction"],
+    [".github/workflows/woocommerce-native-xml-recovery-v18.yml", "private_feed_extraction"],
+    [".github/workflows/woocommerce-v175-22-plugin-extraction.yml", "private_feed_extraction"],
     [
       ".github/workflows/woocommerce-final-least-tried-native-recovery.yml",
       "private_feed_extraction"
     ],
-    [
-      ".github/workflows/verification-fabric.yml",
-      "verification_fabric"
-    ],
-    [
-      ".github/workflows/microscope-branch-retirement.yml",
-      "microscope_branch_retirement"
-    ]
+    [".github/workflows/verification-fabric.yml", "verification_fabric"],
+    [".github/workflows/microscope-branch-retirement.yml", "microscope_branch_retirement"]
   ],
   "policy": {
     "privileged_markers": [
@@ -193,17 +69,11 @@
       "OPERATIONS_APP_PRIVATE_KEY",
       "operations-app.outputs.token"
     ],
-    "forbidden_events": [
-      "pull_request",
-      "pull_request_target",
-      "merge_group"
-    ],
+    "forbidden_events": ["pull_request", "pull_request_target", "merge_group"],
     "privileged_push_branch": "main",
     "principle": "workflow authority is a machine-enforced boundary; documentation alone is insufficient",
     "trusted_workflow_run_sources": {
-      ".github/workflows/live-nightly-research-canary.yml": [
-        "nightly multi-agent research"
-      ]
+      ".github/workflows/live-nightly-research-canary.yml": ["nightly multi-agent research"]
     },
     "repository_hygiene_autofix": {
       "mode": "mechanical_formatter_only",

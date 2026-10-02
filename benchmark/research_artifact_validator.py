@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-
 PROJECT_CATEGORIES = {
     "project_architecture",
     "project_status",
@@ -28,7 +27,7 @@ REQUIRED_CATALOG_PATHS = {
     "benchmark/nightly/NIGHTLY_RESEARCH_PLAN.json",
     "benchmark/nightly/research-ledger.schema.json",
     "benchmark/nightly/research_ledger.py",
-    "benchmark/autonomous_scorecard.py",
+    "benchmark/autonomous_scorecard.mjs",
     "benchmark/multi_agent/baseline.py",
 }
 
@@ -60,7 +59,9 @@ def _find_named_artifacts(root: Path, filename: str) -> list[Path]:
     candidates: set[Path] = set()
     runtime_dir = root / ".runtime"
     if runtime_dir.is_dir():
-        candidates.update(path for path in runtime_dir.rglob(filename) if path.is_file())
+        candidates.update(
+            path for path in runtime_dir.rglob(filename) if path.is_file()
+        )
     candidates.update(path for path in root.rglob(filename) if path.is_file())
     return sorted(candidates)
 
@@ -105,11 +106,16 @@ def _nightly_artifact_errors(root: Path) -> list[str]:
 
     errors: list[str] = []
     missing_lanes = sorted(set(range(NIGHTLY_LANE_COUNT)) - set(discovered_lane_paths))
-    errors.extend(f"nightly artifact bundle missing lane status: lane {lane}" for lane in missing_lanes)
+    errors.extend(
+        f"nightly artifact bundle missing lane status: lane {lane}"
+        for lane in missing_lanes
+    )
     if missing_lanes:
         return errors
 
-    statuses = [_load(discovered_lane_paths[lane]) for lane in range(NIGHTLY_LANE_COUNT)]
+    statuses = [
+        _load(discovered_lane_paths[lane]) for lane in range(NIGHTLY_LANE_COUNT)
+    ]
     schemas = {str(item.get("schema", "")) for item in statuses}
     if schemas != {"nightly-research-lane-status/v1"}:
         errors.append(f"unexpected nightly lane status schemas: {sorted(schemas)}")
@@ -120,11 +126,17 @@ def _nightly_artifact_errors(root: Path) -> list[str]:
 
     modes = {str(item.get("mode", "")) for item in statuses}
     if len(modes) != 1 or not modes.issubset({"live", "dry-run"}):
-        errors.append(f"nightly lane statuses must share one valid mode: {sorted(modes)}")
+        errors.append(
+            f"nightly lane statuses must share one valid mode: {sorted(modes)}"
+        )
 
-    operations_revisions = {str(item.get("operations_revision", "")) for item in statuses}
+    operations_revisions = {
+        str(item.get("operations_revision", "")) for item in statuses
+    }
     if len(operations_revisions) != 1 or "" in operations_revisions:
-        errors.append("nightly lane statuses must share one non-empty Operations revision")
+        errors.append(
+            "nightly lane statuses must share one non-empty Operations revision"
+        )
 
     for lane, status in enumerate(statuses):
         if int(status.get("lane", -1)) != lane:
@@ -134,11 +146,17 @@ def _nightly_artifact_errors(root: Path) -> list[str]:
             errors.append(f"nightly lane {lane} has unknown state: {state}")
         program_count = int(status.get("program_count", 0) or 0)
         if program_count != NIGHTLY_PROGRAMS_PER_LANE:
-            errors.append(f"nightly lane {lane} must report exactly 8 programs, got {program_count}")
+            errors.append(
+                f"nightly lane {lane} must report exactly 8 programs, got {program_count}"
+            )
         programs = {str(program) for program in (status.get("programs") or [])}
-        expected = {f"lane{lane}-slot{slot}" for slot in range(NIGHTLY_PROGRAMS_PER_LANE)}
+        expected = {
+            f"lane{lane}-slot{slot}" for slot in range(NIGHTLY_PROGRAMS_PER_LANE)
+        }
         if state in {"live_research_executed", "dry_run"} and programs != expected:
-            errors.append(f"nightly lane {lane} program IDs do not exactly match the 8-slot contract")
+            errors.append(
+                f"nightly lane {lane} program IDs do not exactly match the 8-slot contract"
+            )
         if str(status.get("mode")) == "live" and state == "dry_run":
             errors.append(f"nightly lane {lane} cannot be dry_run while mode=live")
 
@@ -146,16 +164,22 @@ def _nightly_artifact_errors(root: Path) -> list[str]:
     if diagnosis_paths:
         diagnosis = _load(diagnosis_paths[0])
         if diagnosis.get("schema") != "nightly-research-diagnosis/v1":
-            errors.append(f"unsupported nightly diagnosis schema: {diagnosis.get('schema')!r}")
+            errors.append(
+                f"unsupported nightly diagnosis schema: {diagnosis.get('schema')!r}"
+            )
         if str(diagnosis.get("run_id")) not in run_ids:
             errors.append("nightly diagnosis run_id does not match lane statuses")
         lane_state_set = {str(item.get("state")) for item in statuses}
         expected_aggregate = (
-            "lane_specific_failure" if "lane_failure" in lane_state_set else
-            "blocked_before_execution" if "blocked_before_execution" in lane_state_set else
-            "dry_run" if lane_state_set == {"dry_run"} else
-            "live_research_executed" if lane_state_set == {"live_research_executed"} else
-            "partial_or_mixed"
+            "lane_specific_failure"
+            if "lane_failure" in lane_state_set
+            else "blocked_before_execution"
+            if "blocked_before_execution" in lane_state_set
+            else "dry_run"
+            if lane_state_set == {"dry_run"}
+            else "live_research_executed"
+            if lane_state_set == {"live_research_executed"}
+            else "partial_or_mixed"
         )
         if diagnosis.get("aggregate_state") != expected_aggregate:
             errors.append(
@@ -163,46 +187,87 @@ def _nightly_artifact_errors(root: Path) -> list[str]:
                 f"got {diagnosis.get('aggregate_state')!r}"
             )
         allowed_findings = bool(diagnosis.get("real_research_findings_allowed"))
-        should_allow = expected_aggregate == "live_research_executed" and modes == {"live"}
+        should_allow = expected_aggregate == "live_research_executed" and modes == {
+            "live"
+        }
         if allowed_findings != should_allow:
-            errors.append("nightly diagnosis real_research_findings_allowed violates execution/evidence boundary")
+            errors.append(
+                "nightly diagnosis real_research_findings_allowed violates execution/evidence boundary"
+            )
         if diagnosis.get("historical_dry_run_findings_are_real_research") is not False:
-            errors.append("nightly diagnosis must mark dry-run findings as non-research")
+            errors.append(
+                "nightly diagnosis must mark dry-run findings as non-research"
+            )
 
         blockers = diagnosis.get("blockers", [])
         if not isinstance(blockers, list) or any(
             str(item) not in NIGHTLY_DIAGNOSIS_BLOCKERS for item in blockers
         ):
-            errors.append("nightly diagnosis blockers must use the bounded blocker vocabulary")
+            errors.append(
+                "nightly diagnosis blockers must use the bounded blocker vocabulary"
+            )
         elif len(blockers) != len(set(blockers)) or len(blockers) > 8:
-            errors.append("nightly diagnosis blockers must be unique and bounded to 8 entries")
+            errors.append(
+                "nightly diagnosis blockers must be unique and bounded to 8 entries"
+            )
 
     project_paths = _find_named_artifacts(root, "nightly-project-improvement.json")
     if project_paths:
         project = _load(project_paths[0])
         if project.get("schema") != "project-improvement-research/v1":
-            errors.append(f"unsupported project-improvement schema: {project.get('schema')!r}")
+            errors.append(
+                f"unsupported project-improvement schema: {project.get('schema')!r}"
+            )
         if str(project.get("research_mode")) != "project_improvement":
-            errors.append("nightly project-improvement artifact must declare research_mode=project_improvement")
+            errors.append(
+                "nightly project-improvement artifact must declare research_mode=project_improvement"
+            )
         if int(project.get("program_count", 0) or 0) != NIGHTLY_PROGRAM_COUNT:
-            errors.append("nightly project-improvement artifact must contain all 24 programs")
+            errors.append(
+                "nightly project-improvement artifact must contain all 24 programs"
+            )
         if not (project.get("project_snapshot") or {}).get("revision"):
-            errors.append("nightly project-improvement artifact must carry a project revision")
+            errors.append(
+                "nightly project-improvement artifact must carry a project revision"
+            )
         evidence_policy = project.get("evidence_policy") or {}
-        if evidence_policy.get("llm_findings") != "candidate_only_until_acquisition_receipt":
-            errors.append("nightly project-improvement artifact violates the LLM evidence policy")
-        if "live_research_executed" not in {str(item.get("state")) for item in statuses}:
-            errors.append("nightly project-improvement artifact requires live research lane execution")
+        if (
+            evidence_policy.get("llm_findings")
+            != "candidate_only_until_acquisition_receipt"
+        ):
+            errors.append(
+                "nightly project-improvement artifact violates the LLM evidence policy"
+            )
+        if "live_research_executed" not in {
+            str(item.get("state")) for item in statuses
+        }:
+            errors.append(
+                "nightly project-improvement artifact requires live research lane execution"
+            )
 
     baseline_paths = _find_named_artifacts(root, "nightly-baseline.json")
     if baseline_paths:
         baseline = _load(baseline_paths[0])
         if baseline.get("schema") != "project-improvement-baseline/v1":
-            errors.append(f"unsupported nightly baseline schema: {baseline.get('schema')!r}")
-        if baseline.get("decision") not in {"NO_BASELINE", "IMPROVED", "REGRESSED", "STABLE"}:
-            errors.append(f"invalid nightly baseline decision: {baseline.get('decision')!r}")
+            errors.append(
+                f"unsupported nightly baseline schema: {baseline.get('schema')!r}"
+            )
+        if baseline.get("decision") not in {
+            "NO_BASELINE",
+            "IMPROVED",
+            "REGRESSED",
+            "STABLE",
+        }:
+            errors.append(
+                f"invalid nightly baseline decision: {baseline.get('decision')!r}"
+            )
         if baseline.get("available") is True:
-            for field in ("current_research_id", "previous_research_id", "current_revision", "previous_revision"):
+            for field in (
+                "current_research_id",
+                "previous_research_id",
+                "current_revision",
+                "previous_revision",
+            ):
                 if not baseline.get(field):
                     errors.append(f"available nightly baseline is missing {field}")
 
@@ -226,9 +291,15 @@ def validate_repository(root: Path) -> dict[str, Any]:
     if catalog.get("schema") != "research-artifact-catalog/v1":
         errors.append(f"unsupported catalog schema: {catalog.get('schema')!r}")
 
-    artifacts = {str(row.get("path")): row for row in catalog.get("artifacts", []) if isinstance(row, dict)}
+    artifacts = {
+        str(row.get("path")): row
+        for row in catalog.get("artifacts", [])
+        if isinstance(row, dict)
+    }
     missing_catalog_entries = sorted(REQUIRED_CATALOG_PATHS - artifacts.keys())
-    errors.extend(f"catalog missing required artifact: {path}" for path in missing_catalog_entries)
+    errors.extend(
+        f"catalog missing required artifact: {path}" for path in missing_catalog_entries
+    )
     for path, row in artifacts.items():
         if not (root / path).exists():
             errors.append(f"catalog points to missing path: {path}")
@@ -254,21 +325,29 @@ def validate_repository(root: Path) -> dict[str, Any]:
     errors.extend(f"duplicate query id: {query_id}" for query_id in duplicate_ids)
 
     project_rows = [
-        row for row in queries
+        row
+        for row in queries
         if isinstance(row, dict) and row.get("category") in PROJECT_CATEGORIES
     ]
     categories = {row.get("category") for row in project_rows}
     missing_categories = sorted(PROJECT_CATEGORIES - categories)
-    errors.extend(f"missing project research category: {category}" for category in missing_categories)
+    errors.extend(
+        f"missing project research category: {category}"
+        for category in missing_categories
+    )
     for row in project_rows:
         sources = {str(source) for source in row.get("required_sources", [])}
         if "github" not in sources:
-            errors.append(f"project query without github source family: {row.get('id')}")
+            errors.append(
+                f"project query without github source family: {row.get('id')}"
+            )
     if not any(row.get("temporal") == "old_vs_new" for row in project_rows):
         errors.append("project corpus has no old_vs_new query")
 
     if len(project_rows) < len(PROJECT_CATEGORIES):
-        warnings.append("multiple project categories are not represented by distinct queries")
+        warnings.append(
+            "multiple project categories are not represented by distinct queries"
+        )
 
     benchmark_paths = _find_named_artifacts(root, "chatbot-query-benchmark.json")
     if benchmark_paths:
@@ -278,10 +357,14 @@ def validate_repository(root: Path) -> dict[str, Any]:
             errors.append(f"unsupported benchmark artifact schema: {schema!r}")
         failed = int(benchmark.get("failed") or 0)
         if failed:
-            warnings.append(f"benchmark artifact reports {failed} failed query contracts")
+            warnings.append(
+                f"benchmark artifact reports {failed} failed query contracts"
+            )
         coverage = benchmark.get("corpus_coverage") or {}
         if int(coverage.get("project_query_count") or 0) < len(PROJECT_CATEGORIES):
-            errors.append("benchmark artifact reports incomplete project-query coverage")
+            errors.append(
+                "benchmark artifact reports incomplete project-query coverage"
+            )
 
     scorecard_paths = _find_named_artifacts(root, "research-scorecard.json")
     if scorecard_paths:
@@ -307,9 +390,15 @@ def _report(errors: list[str], warnings: list[str]) -> dict[str, Any]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Validate the research artifact/evidence boundary.")
+    parser = argparse.ArgumentParser(
+        description="Validate the research artifact/evidence boundary."
+    )
     parser.add_argument("--root", type=Path, default=Path("."))
-    parser.add_argument("--strict", action="store_true", help="also fail when benchmark artifacts report query failures")
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="also fail when benchmark artifacts report query failures",
+    )
     args = parser.parse_args()
     report = validate_repository(args.root)
     print(json.dumps(report, indent=2, sort_keys=True))
