@@ -13,7 +13,23 @@ const LANES = ["structure_hygiene","migration_boundary","research_feed","provide
 
 function sha256(value) { return crypto.createHash("sha256").update(value).digest("hex"); }
 function sh(cmd, cwd) { const r = spawnSync(cmd[0], cmd.slice(1), {cwd, encoding:"utf8", stdio:["ignore","pipe","pipe"]}); if (r.status !== 0) throw new Error(String(r.stderr || "command failed").trim()); return String(r.stdout || ""); }
-export function tracked(root) { return sh(["git","ls-files","-z"], root).split("\0").filter(Boolean); }
+export function tracked(root) {
+  try {
+    return sh(["git","ls-files","-z"], root).split("\0").filter(Boolean);
+  } catch {
+    const files = [];
+    const visit = dir => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if ([".git","node_modules","dist","build","target","__pycache__"].includes(entry.name)) continue;
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) visit(full);
+        else if (entry.isFile()) files.push(path.relative(root, full).replaceAll("\\","/"));
+      }
+    };
+    visit(root);
+    return files.sort();
+  }
+}
 export function inventory(root) {
   const out = [];
   for (const rel of tracked(root)) {
