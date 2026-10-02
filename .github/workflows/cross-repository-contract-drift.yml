@@ -8,6 +8,7 @@ name: cross-repository contract drift
       - 'REPOSITORY_MAP.json'
       - 'wrangler.toml'
       - 'edge.ts'
+      - 'pyproject.toml'
       - 'foundation_core/**'
       - 'frontend/**'
       - 'polyglot/**'
