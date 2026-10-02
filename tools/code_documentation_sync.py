@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import fnmatch
 import json
 import subprocess
 from pathlib import Path
@@ -66,7 +65,22 @@ def validate(root: Path, changed_paths: set[str] | None = None, strict: bool = F
             issues.append({"rule": "code-pattern-no-match", "group": gid, "severity": "error"})
         changed_code = [p for p in (changed_paths or set()) if any(matches(p, pat) for pat in code_paths)]
         changed_docs = [p for p in (changed_paths or set()) if p in docs]
-        needs_docs = bool(group.get("require_doc_update", False)) and bool(changed_code)
+        require_doc_update = group.get("require_doc_update", True)
+        if not isinstance(require_doc_update, bool):
+            issues.append({
+                "rule": "boolean-require-doc-update",
+                "group": gid,
+                "severity": "error",
+            })
+            require_doc_update = True
+        exemption_reason = str(group.get("sync_exemption_reason", "")).strip()
+        if require_doc_update is False and not exemption_reason:
+            issues.append({
+                "rule": "sync-exemption-reason-required",
+                "group": gid,
+                "severity": "error",
+            })
+        needs_docs = require_doc_update and bool(changed_code)
         if needs_docs and not changed_docs:
             issues.append({
                 "rule": "code-change-missing-documentation",
@@ -79,7 +93,8 @@ def validate(root: Path, changed_paths: set[str] | None = None, strict: bool = F
             "matched_code_count": len(matched_code),
             "changed_code_count": len(changed_code),
             "changed_doc_count": len(changed_docs),
-            "require_doc_update": bool(group.get("require_doc_update", False)),
+            "require_doc_update": require_doc_update,
+            "has_sync_exemption": bool(exemption_reason),
         })
 
     return {
