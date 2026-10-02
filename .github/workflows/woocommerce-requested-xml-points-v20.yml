@@ -1,0 +1,147 @@
+name: WooCommerce Requested XML Points V20
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feed-recovery-v20-all-google-xml-families-2026-10-02]
+    paths:
+      - ".github/workflows/woocommerce-requested-xml-points-v20.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foundation-wc-requested-xml-v20
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: XML points shard ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production-secret-sync
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        shard: [1,2,3,4,5,6]
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations V20 audit branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: feed-recovery-v20-all-google-xml-families-2026-10-02
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Validate requested-point harness
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node --check tools/woocommerce_requested_xml_points_audit_v1.mjs
+          node -e 'const r=require("./data/feed_lab/woocommerce_30_registry_v18.json"); const m=require("./docs/feed-lab/WOOCOMMERCE_PLUGIN_FAMILY_GUESS_MANIFEST_2026-09-30.json"); if(r.sites.length!==30 || m.sites.length!==30) process.exit(1)'
+          node -e 'const x=require("fs").readFileSync("tools/woocommerce_requested_xml_points_audit_v1.mjs","utf8"); for (const p of ["/googlemerchantcenter.xml","/google-merchant-feed.xml","/shoppingfeed.xml","/merchant-feed.xml","/google-feed.xml","/api/feed","/google-shopping.xml"]) if(!x.includes(p)) process.exit(1)'
+      - name: Run seven requested XML points
+        working-directory: operations
+        env:
+          XML_POINT_TIMEOUT_MS: "12000"
+          SHARD: ${{ matrix.shard }}
+          SHARDS: "6"
+        run: |
+          set -euo pipefail
+          mkdir -p out/requested-xml-points
+          node tools/woocommerce_requested_xml_points_audit_v1.mjs \
+            data/feed_lab/woocommerce_30_registry_v18.json \
+            docs/feed-lab/WOOCOMMERCE_PLUGIN_FAMILY_GUESS_MANIFEST_2026-09-30.json \
+            out/requested-xml-points \
+            --shard "$SHARD" --shards "$SHARDS"
+      - name: Upload shard evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: foundation-wc-requested-xml-v20-shard-${{ matrix.shard }}
+          path: operations/out/requested-xml-points/shard-${{ matrix.shard }}.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  merge:
+    name: Merge 30-site endpoint evidence
+    needs: audit
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download shard evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        continue-on-error: true
+        with:
+          pattern: foundation-wc-requested-xml-v20-shard-*
+          path: out/shards
+          merge-multiple: false
+      - name: Validate complete 30-site endpoint matrix
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs=require("fs"), path=require("path");
+          const files=[];
+          const walk=d=>{if(!fs.existsSync(d))return;for(const e of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,e.name);if(e.isDirectory())walk(p);else if(/^shard-\d+\.json$/.test(e.name))files.push(p);}};
+          walk("out/shards");
+          const docs=files.map(p=>JSON.parse(fs.readFileSync(p,"utf8")));
+          const rows=docs.flatMap(x=>x.results||[]);
+          if(rows.length!==30) throw new Error("expected 30 result rows, got "+rows.length);
+          if(new Set(rows.map(x=>x.site.toLowerCase())).size!==30) throw new Error("duplicate/missing site rows");
+          const expected=["/googlemerchantcenter.xml","/google-merchant-feed.xml","/shoppingfeed.xml","/merchant-feed.xml","/google-feed.xml","/api/feed","/google-shopping.xml"];
+          for(const r of rows){
+            const got=(r.requested_points||[]).map(x=>x.path);
+            for(const p of expected) if(!got.includes(p)) throw new Error("missing "+p+" for "+r.site);
+          }
+          const native=rows.flatMap(r=>r.requested_points.filter(x=>x.native_valid).map(x=>({site:r.site,path:x.path,item_count:x.item_count,feed_kind:x.feed_kind})));
+          const blocked=rows.reduce((n,r)=>n+(r.transport_blocked||[]).length,0);
+          const out={
+            schema_version:"woocommerce-requested-xml-points-audit/merged-v1",
+            target_count:rows.length,
+            requested_points_per_site:expected.length,
+            requested_points_total:rows.length*expected.length,
+            native_endpoint_hits:native.length,
+            native_hits:native,
+            transport_blocked_points:blocked,
+            plugin_live_signature_sites:rows.filter(r=>(r.plugin?.live_signature_families||[]).length).length,
+            sites:rows.map(r=>({site:r.site,root:r.root,plugin:r.plugin,homepage:r.homepage,native_verified:r.native_verified,transport_blocked:r.transport_blocked,points:r.requested_points}))
+          };
+          fs.mkdirSync("out/release",{recursive:true});
+          fs.writeFileSync("out/release/requested-xml-points-30-site.json",JSON.stringify(out,null,2)+"\n");
+          console.log(JSON.stringify({
+            target_count:out.target_count,
+            requested_points_total:out.requested_points_total,
+            native_endpoint_hits:out.native_endpoint_hits,
+            transport_blocked_points:out.transport_blocked_points,
+            plugin_live_signature_sites:out.plugin_live_signature_sites
+          },null,2));
+          NODE
+      - name: Upload merged evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: foundation-wc-requested-xml-v20-merged
+          path: out/release/requested-xml-points-30-site.json
+          if-no-files-found: warn
+          retention-days: 30
