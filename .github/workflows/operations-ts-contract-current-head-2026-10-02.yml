@@ -62,10 +62,14 @@ jobs:
           test ! -e tests/test_observation_contract.py
           test ! -e tests/test_observation_contract_architecture.py
           test ! -e tests/test_v175_v18_replay_bridge.py
-          if git grep -n -E '(^|[[:space:]\(\[\"])(from|import)[[:space:]]+extractor_mapper\.(observation_contract|replay_bridge)|python(3)?[^[:space:]]*[[:space:]]+-m[[:space:]]+extractor_mapper\.feed_candidate_cli|feed_candidate_cli\.py["'\) ]?$)' -- extractor_mapper private tools tests polyglot ':(exclude)polyglot/observation-contract-strict/test/authority-retirement.test.ts'; then
-            echo "active source reference to retired Python boundary found"
-            exit 1
-          fi
+          found=0
+          for pattern in             "from extractor_mapper.observation_contract"             "import extractor_mapper.observation_contract"             "from extractor_mapper.replay_bridge"             "import extractor_mapper.replay_bridge"             "python3 -m extractor_mapper.feed_candidate_cli"             "python -m extractor_mapper.feed_candidate_cli"
+          do
+            if git grep -n -F "$pattern" -- extractor_mapper private tools tests polyglot ':(exclude)polyglot/observation-contract-strict/test/authority-retirement.test.ts'; then
+              found=1
+            fi
+          done
+          test "$found" -eq 0
 
       - name: Run mapper/extractor cross-audit
         working-directory: operations
