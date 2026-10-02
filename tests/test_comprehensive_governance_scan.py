@@ -22,6 +22,10 @@ def test_scanner_contains_requested_control_surfaces():
         "bounded_feature_policy_cross_product",
         "unregistered_privileged_workflow",
         "slow_workflow_runs",
+        "migration_candidate_missing_evidence",
+        "canonical_policy_surface_missing",
+        "canonical_runtime_surface_missing",
+        "attention_source_size",
     ):
         assert needle in source
 
