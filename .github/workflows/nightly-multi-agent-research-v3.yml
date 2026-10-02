@@ -20,10 +20,15 @@ run-name: >-
         required: false
         default: ""
         type: string
-      operations_research_ref:
-        description: "Exact Operations revision deployed to the private production runtime"
+      operations_runtime_ref:
+        description: "Exact Operations revision expected in the deployed private production runtime"
         required: false
-        default: "8b6909ac213e01d310362627d12772950601adf6"
+        default: ""
+        type: string
+      operations_research_ref:
+        description: "Exact Operations revision used for the private research executor source checkout"
+        required: false
+        default: ""
         type: string
 permissions:
   actions: read
@@ -43,14 +48,11 @@ env:
   RESEARCH_LLM_API_KEY: "local-worker-proxy"
   RESEARCH_LLM_MODEL: "@cf/zai-org/glm-4.7-flash"
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || '8b6909ac213e01d310362627d12772950601adf6' }}
-  OPERATIONS_MIGRATION_TOOLS_REF: f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791
+  INPUT_OPERATIONS_RUNTIME_REF: ${{ inputs.operations_runtime_ref }}
+  INPUT_OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref }}
   NIGHTLY_RESEARCH_CONTRACT: nightly-research-contract/v2
   MAPPER_RUNTIME_EVIDENCE_CONTRACT: mapper-migration-runtime-receipt/v1
   MODEL_PORTABILITY_EVIDENCE_CONTRACT: model-portability-runtime-receipt/v1
-  # Keep the orchestration semaphore aligned with the loopback proxy upstream semaphore.
-  # This prevents 20 coordinator slots from queueing behind 6 proxy slots for 180s.
-  RESEARCH_MAX_CONCURRENCY: "3"
 
 jobs:
   production_gate:
@@ -131,6 +133,23 @@ jobs:
         with:
           node-version: "22"
           package-manager-cache: false
+      - name: Resolve immutable Operations runtime and research revisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          production_ref="$(jq -r '.pins.production_runtime.sha' docs/OPERATIONS_PIN_MANIFEST.json)"
+          research_ref="$(jq -r '.pins.research_runtime.sha' docs/OPERATIONS_PIN_MANIFEST.json)"
+          runtime_ref="${INPUT_OPERATIONS_RUNTIME_REF:-$production_ref}"
+          source_ref="${INPUT_OPERATIONS_RESEARCH_REF:-$research_ref}"
+          printf '%s' "$runtime_ref" | grep -Eq '^[0-9a-f]{40}$'
+          printf '%s' "$source_ref" | grep -Eq '^[0-9a-f]{40}$'
+          {
+            echo "OPERATIONS_RUNTIME_REF=$runtime_ref"
+            echo "OPERATIONS_RESEARCH_REF=$source_ref"
+          } >> "$GITHUB_ENV"
+          echo "immutable Operations runtime revision: $runtime_ref"
+          echo "immutable Operations research-source revision: $source_ref"
+
       - name: Verify exact deployed research runtime
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
@@ -143,7 +162,7 @@ jobs:
             --token "$AUTH_TOKEN" \
             --model "$RESEARCH_LLM_MODEL" \
             --expected-foundation-sha "$TARGET_FOUNDATION_SHA" \
-            --expected-operations-ref "$OPERATIONS_RESEARCH_REF" > "$RUNNER_TEMP/nightly-runtime-contract.json"
+            --expected-operations-ref "$OPERATIONS_RUNTIME_REF" > "$RUNNER_TEMP/nightly-runtime-contract.json"
           cat "$RUNNER_TEMP/nightly-runtime-contract.json"
 
       - name: Authenticate private research source
@@ -408,7 +427,9 @@ jobs:
           PREFLIGHT: ${{ steps.preflight.outcome || 'skipped' }}
           RUN_CROSSFIRE: ${{ steps.run_crossfire.outcome || 'skipped' }}
           FOUNDATION_REVISION: ${{ env.TARGET_FOUNDATION_SHA }}
-          OPERATIONS_REVISION: ${{ env.OPERATIONS_RESEARCH_REF }}
+          OPERATIONS_RUNTIME_REVISION: ${{ env.OPERATIONS_RUNTIME_REF }}
+          OPERATIONS_RESEARCH_REVISION: ${{ env.OPERATIONS_RESEARCH_REF }}
+          RESEARCH_MAX_CONCURRENCY: ${{ env.RESEARCH_MAX_CONCURRENCY }}
           NIGHTLY_RUN_ID: ${{ github.run_id }}
         run: |
           import json, os
@@ -425,7 +446,8 @@ jobs:
               'contract':'nightly-research-contract/v2',
               'run_id':os.environ['NIGHTLY_RUN_ID'],
               'foundation_revision':os.environ['FOUNDATION_REVISION'],
-              'operations_revision':os.environ['OPERATIONS_REVISION'],
+              'operations_runtime_revision':os.environ['OPERATIONS_RUNTIME_REVISION'],
+              'operations_research_revision':os.environ['OPERATIONS_RESEARCH_REVISION'],
               'mode':mode,
               'expected_program_count':24,
               'observed_program_count':len(rows),
@@ -463,7 +485,8 @@ jobs:
               validation='success' if valid else 'failed'
               state='blocked_before_execution' if mode=='live' and preflight!='success' else ('lane_failure' if runner!='success' else ('dry_run' if mode=='dry-run' else ('live_research_executed' if valid else 'lane_failure')))
               if mode=='live' and (preflight!='success' or runner!='success' or not valid): errors.append(f'lane{lane}')
-              status={'schema':'nightly-research-lane-status/v1','contract':'nightly-research-contract/v2','run_id':os.environ['NIGHTLY_RUN_ID'],'foundation_revision':os.environ['FOUNDATION_REVISION'],'lane':lane,'mode':mode,'state':state,'preflight':preflight,'runner':runner,'validation':validation,'program_count':len(lane_rows),'programs':[r.get('program_id') for r in lane_rows],'operations_revision':os.environ['OPERATIONS_REVISION'],'execution_strategy':'crossfire','global_capacity':20}
+              status={'schema':'nightly-research-lane-status/v1','contract':'nightly-research-contract/v2','run_id':os.environ['NIGHTLY_RUN_ID'],'foundation_revision':os.environ['FOUNDATION_REVISION'],'lane':lane,'mode':mode,'state':state,'preflight':preflight,'runner':runner,'validation':validation,'program_count':len(lane_rows),'programs':[r.get('program_id') for r in lane_rows],'operations_runtime_revision':os.environ['OPERATIONS_RUNTIME_REVISION'],
+              'operations_research_revision':os.environ['OPERATIONS_RESEARCH_REVISION'],'execution_strategy':'crossfire','global_capacity':20}
               (root/f'nightly-lane-{lane}-status.json').write_text(json.dumps(status,indent=2,sort_keys=True)+'\n',encoding='utf-8')
           if mode=='live' and errors: raise SystemExit('Live CrossFire research did not satisfy the 24-program evidence contract')
       - name: Upload nightly research acceptance manifests
