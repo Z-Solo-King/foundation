@@ -1,7 +1,7 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-10-01T18:04:00Z",
+  "audited_at": "2026-10-02T07:53:11Z",
   "public_safe": true,
   "live_main": {
     "foundation": "READ_LIVE_FROM_GITHUB",
@@ -62,7 +62,7 @@
     "feed_recovery": "QUALIFICATION COMPLETE: verified feeds retained; blocked/unverified targets are not misclassified.",
     "d1_schema": "verified_live_2026-09-29",
     "production_signing_root": "provisioned_live_2026-09-29",
-    "production_runtime": "Foundation PR #1603 is merged at f5909b8c432c73d31a746303d109738944b3d1a9; fresh production deployment/runtime certification remains separate.",
+    "production_runtime": "Foundation main now includes the cross-system equivalence/CrossFire and platform-access changes; fresh production deployment/runtime certification remains a separate gate.",
     "post_release_dispatch": "live nightly research uses typed GitHub workflow inputs; production smoke and research preflight preserve purpose-scoped Operations pins",
     "post_release_provider_proof": "Current production provider certification remains pending fresh post-merge deployment and research evidence.",
     "provider_diagnostic_status": "Foundation PR #1562 fixes the dedicated provider_runtime_verify health calculation so a valid Operations {ok:true,runtime_checks:[...]} receipt is returned as HTTP 200 without requiring the generic chatbot.allowed field.",
@@ -120,11 +120,11 @@
     "authority": "scheduling_only"
   },
   "post_merge_sync": {
-    "checked_at": "2026-10-01T18:04:00Z",
+    "checked_at": "2026-10-02T07:53:11Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "f548a468b4dcd9e7c03263a130ce76e95eafc228",
-      "operations": "3c780e33772c87ec6c3b6df75a857e5404f0b861"
+      "foundation": "c0613abf1af872ec171081685973e4e337639bcb",
+      "operations": "6eccd9241026bc386e71f099a4129f0200bdebfc"
     },
     "operations_last_sync_commits": [
       "6071508a8cf5e24001f2238f0b581003d2300865",
@@ -155,13 +155,13 @@
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "f548a468b4dcd9e7c03263a130ce76e95eafc228",
-    "operations": "3c780e33772c87ec6c3b6df75a857e5404f0b861"
+    "foundation": "c0613abf1af872ec171081685973e4e337639bcb",
+    "operations": "6eccd9241026bc386e71f099a4129f0200bdebfc"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "f548a468b4dcd9e7c03263a130ce76e95eafc228",
-    "operations": "3c780e33772c87ec6c3b6df75a857e5404f0b861"
+    "foundation": "c0613abf1af872ec171081685973e4e337639bcb",
+    "operations": "6eccd9241026bc386e71f099a4129f0200bdebfc"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",
