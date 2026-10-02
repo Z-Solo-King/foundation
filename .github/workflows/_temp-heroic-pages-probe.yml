@@ -1,0 +1,41 @@
+name: Temporary Heroic Pages network probe
+
+on:
+  push:
+    branches: [probe/heroic-pages-live-2026-10-02]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe public Pages endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://heroic-ai.pages.dev"
+          curl -fsS --max-time 20 -D /tmp/root.headers -o /tmp/root.html "$base/"
+          grep -qi '^content-type: text/html' /tmp/root.headers
+          grep -q '<title>Heroic AI' /tmp/root.html
+          for asset in ./styles.css ./ui_overrides.css ./dashboard.css ./frontend_state.js ./generated/feedback.js ./generated/lifecycle.js ./markdown_renderer.js ./chat_store.js ./chat_view.js ./workspace_view.js ./composer.js ./app.js ./dashboard.js ./generated/ui_guards.js ./lifecycle_controller.js ./generated/lifecycle_queue_controls.js ./feedback_bridge.js ./ux_enhancements.js; do
+            curl -fsS --max-time 20 -o /dev/null "$base/$asset"
+          done
+          echo "PUBLIC_PAGES_ROOT_AND_ASSETS=PASS"
+          echo "ROOT_BYTES=$(wc -c < /tmp/root.html)"
+      - name: Probe public backend route shape
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://heroic-ai.pages.dev"
+          code="$(curl -sS --max-time 20 -o /tmp/health.body -w '%{http_code}' "$base/health" || true)"
+          echo "HEALTH_HTTP=$code"
+          test "$code" != "000"
+          code="$(curl -sS --max-time 20 -o /tmp/readiness.body -w '%{http_code}' "$base/readiness" || true)"
+          echo "READINESS_HTTP=$code"
+          test "$code" != "000"
+          code="$(curl -sS --max-time 20 -o /tmp/chat.body -w '%{http_code}' -H 'Content-Type: application/json' -d '{"chat_id":"public-probe","request_id":"public-probe","message":"ping","mode":"chat","strict_zero_cost_only":true}' "$base/api/v1/chat" || true)"
+          echo "CHAT_HTTP=$code"
+          test "$code" != "000"
