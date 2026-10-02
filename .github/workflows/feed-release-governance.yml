@@ -1,0 +1,56 @@
+name: Feed release governance
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foundation-feed-release-governance
+  cancel-in-progress: true
+
+jobs:
+  policy:
+    name: Release publication policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Enforce release publication policy
+        run: node scripts/validate_release_publication_policy.mjs
+
+  cleanup:
+    name: Remove prohibited public feed release
+    if: ${{ github.event_name != 'pull_request' }}
+    needs: policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Delete prohibited release and tag if present
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if gh release view wc-google-feed-latest --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release delete wc-google-feed-latest --repo "$GH_REPO" --yes
+          fi
+          if gh api "repos/$GH_REPO/git/ref/tags/wc-google-feed-latest" >/dev/null 2>&1; then
+            gh api --method DELETE "repos/$GH_REPO/git/refs/tags/wc-google-feed-latest"
+          fi
