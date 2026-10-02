@@ -52,10 +52,7 @@
     [".github/workflows/woocommerce-v175-22-plugin-extraction.yml", "private_feed_extraction"],
     [".github/workflows/woocommerce-final-least-tried-native-recovery.yml", "private_feed_extraction"],
     [".github/workflows/verification-fabric.yml", "verification_fabric"],
-    [
-      ".github/workflows/microscope-branch-retirement.yml",
-      "microscope_branch_retirement"
-    ]
+    [".github/workflows/microscope-branch-retirement.yml", "microscope_branch_retirement"]
   ],
   "policy": {
     "privileged_markers": [
