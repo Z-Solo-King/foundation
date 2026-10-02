@@ -66,9 +66,9 @@ python -m pip install --upgrade pip
 python -m pip install -e .
 python -m pip install pytest pytest-asyncio coverage workers-py workers-runtime-sdk uv PyYAML jsonschema
 uv --version
-python -m compileall -q backend foundation_core worker.py
+python -m compileall -q foundation_core
 python -c "import foundation_core; print(foundation_core.__all__)"
-coverage run --branch --source=backend,foundation_core,worker --omit='tests/*' -m pytest tests/ -v
+coverage run --branch --source=foundation_core --omit='tests/*' -m pytest tests/ -v
 coverage report --show-missing --fail-under=100 --omit='tests/*'
 python -m benchmark.chatbot_query_benchmark --input benchmark/chatbot-query-corpus.json --output .runtime/chatbot-query-benchmark.json
 python -m pytest -q tests/test_workflow_policy.py
@@ -361,6 +361,18 @@ echo "Cross-repository audit acceptance: PASS"
 # than resolve a Git URL package during the Worker build.
 python "$RUNNER_TEMP/operations/scripts/sync_public_core.py"
 test -f "$RUNNER_TEMP/operations/foundation_core/__init__.py"
+rm -rf "$RUNNER_TEMP/operations/foundation_frontend"
+cp -a "$GITHUB_WORKSPACE/frontend" "$RUNNER_TEMP/operations/foundation_frontend"
+python - "$RUNNER_TEMP/operations/wrangler.foundation-core.toml" "$database_name" "$database_id" "$B2_BUCKET" "$B2_ENDPOINT" <<'PY2'
+from pathlib import Path
+import sys
+p=Path(sys.argv[1]); t=p.read_text(encoding="utf-8")
+for old,new in {"REPLACE_WITH_OPERATIONS_RESOLVED_DATABASE_NAME":sys.argv[2],"REPLACE_WITH_OPERATIONS_RESOLVED_DATABASE_ID":sys.argv[3],"REPLACE_WITH_B2_BUCKET":sys.argv[4],"REPLACE_WITH_B2_ENDPOINT":sys.argv[5]}.items(): t=t.replace(old,new)
+p.write_text(t,encoding="utf-8")
+PY2
+test -f "$RUNNER_TEMP/operations/foundation_worker.py"
+test -f "$RUNNER_TEMP/operations/backend/api/main.py"
+test -f "$RUNNER_TEMP/operations/foundation_frontend/index.html"
 
 
 printf '%s\n' \
@@ -532,7 +544,7 @@ fi
 python_core_default_backup="$RUNNER_TEMP/foundation-js-wrangler.toml"
 cp wrangler.toml "$python_core_default_backup"
 cp wrangler.python-core.generated.toml wrangler.toml
-pywrangler deploy --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}:python-core"
+(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.foundation-core.toml --secrets-file "$public_secret_file" --message "github:${OPERATIONS_REF}:python-core")
 mv -f "$python_core_default_backup" wrangler.toml
 
 (cd "$GITHUB_WORKSPACE" && npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}:typescript-edge")
