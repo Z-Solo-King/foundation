@@ -98,7 +98,7 @@
     return (chat.messages || [])
       .filter((message) => (message.role === 'user' || message.role === 'assistant') && message.text)
       .slice(-20)
-      .map((message) => ({ role: message.role, text: String(message.text).slice(0, 12000) }));
+      .map((message) => ({ role: message.role, content: String(message.text).slice(0, 12000) }));
   }
 
   function sleep(ms) {
@@ -269,21 +269,24 @@
       await consumeChatStream(response, (event, payload) => {
         if (event === 'start') {
           responseId = payload.response_id || null;
-          api.updateMessage(assistantMessage.id, { meta: { ...assistantMessage.meta, response_id: responseId, status: 'streaming', pending: true, streaming: true } });
+          api.updateMessage(assistantMessage.id, { meta: { ...assistantMessage.meta, response_id: responseId, status: 'streaming', pending: true, streaming: true, generation_status: payload.generation || null } });
         } else if (event === 'delta') {
           answer += String(payload.text || '');
-          api.updateMessage(assistantMessage.id, { text: answer, meta: { ...assistantMessage.meta, response_id: responseId, status: 'streaming', pending: true, streaming: true } });
+          api.updateMessage(assistantMessage.id, { text: answer, meta: { ...assistantMessage.meta, response_id: responseId, status: 'streaming', pending: true, streaming: true, generation_status: payload.generation || assistantMessage.meta?.generation_status || null } });
           api.chatView.renderConversation();
+        } else if (event === 'usage') {
+          api.updateMessage(assistantMessage.id, { meta: { ...assistantMessage.meta, usage: { input_tokens: payload.input_tokens ?? null, output_tokens: payload.output_tokens ?? null } } });
         } else if (event === 'done') {
           terminal = true;
           responseId = payload.response_id || responseId;
-          api.updateMessage(assistantMessage.id, { text: answer, meta: { ...assistantMessage.meta, response_id: responseId, status: payload.status || 'completed', pending: false, streaming: false } });
+          api.updateMessage(assistantMessage.id, { text: answer, meta: { ...assistantMessage.meta, response_id: responseId, status: payload.status || 'completed', result_state: payload.result_state || null, generation_status: payload.generation_status || assistantMessage.meta?.generation_status || null, output_digest: payload.output_digest || null, pending: false, streaming: false } });
           api.updateMessage(userMessage.id, { meta: { ...(userMessage.meta || {}), pending: false } });
         }
       }, abortController.signal);
       if (abortController.signal.aborted) throw new DOMException('Chat stream was cancelled', 'AbortError');
       if (!terminal) throw new Error('Heroic AI stream ended without a completion event');
-      const body = { ok: true, request_id: requestId, chat_id: chatId, response: { response_id: responseId, status: 'completed', text: answer } };
+      const finalMeta = api.activeChat()?.messages?.find((message) => message.id === assistantMessage.id)?.meta || assistantMessage.meta || {};
+      const body = { ok: true, request_id: requestId, chat_id: chatId, response: { response_id: responseId, status: finalMeta.status || 'completed', result_state: finalMeta.result_state || null, generation_status: finalMeta.generation_status || null, output_digest: finalMeta.output_digest || null, text: answer } };
       document.dispatchEvent(new CustomEvent('rie:chat-response', { detail: { chatId, requestId, body } }));
       return body;
     } catch (error) {

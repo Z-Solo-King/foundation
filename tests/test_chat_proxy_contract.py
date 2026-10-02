@@ -77,8 +77,9 @@ def test_chat_sse_body_rejects_invalid_private_response():
     with pytest.raises(ValueError, match="stream_execution_identity_missing"):
         worker._chat_sse_body({"response": {"result_state": "PARTIAL", "text": "x"}})
 
-    with pytest.raises(ValueError, match="blocked_chat_stream"):
-        worker._chat_sse_body({"response": {"response_id": "r", "result_state": "BLOCKED", "text": "x"}})
+    blocked = worker._chat_sse_body({"response": {"response_id": "r", "result_state": "BLOCKED", "text": "x", "generation_status": "policy_blocked"}})
+    assert '"status":"blocked"' in blocked
+    assert '"result_state":"BLOCKED"' in blocked
 
 
 def test_chat_sse_body_covers_usage_complete_and_bounded_size():
@@ -651,3 +652,67 @@ def test_chat_proxy_does_not_promote_research_without_proof_header():
         worker._authorized = original
     assert status == 200
     assert payload["ok"] is True
+
+
+def test_chat_sse_body_supports_not_attempted_and_failed_states():
+    import worker
+    for state, expected_status in (("NOT_ATTEMPTED", "not_attempted"), ("FAILED", "failed")):
+        body = worker._chat_sse_body({
+            "response": {
+                "response_id": f"{state.lower()}-1",
+                "result_state": state,
+                "text": "",
+                "generation_status": "provider_unavailable",
+            }
+        })
+        assert f'"result_state":"{state}"' in body
+        assert '"generation_status":"provider_unavailable"' in body
+        assert f'"status":"{expected_status}"' in body
+
+
+def test_chat_sse_body_rejects_unknown_result_state():
+    import pytest
+    import worker
+    with pytest.raises(ValueError, match="invalid_chat_result_state"):
+        worker._chat_sse_body({
+            "response": {
+                "response_id": "invalid-state-1",
+                "result_state": "MADE_UP_STATE",
+                "text": "x",
+            }
+        })
+
+
+def test_public_chat_sse_preserves_output_digest():
+    import worker
+    body = worker._chat_sse_body({
+        "response": {
+            "response_id": "digest-1",
+            "result_state": "COMPLETE",
+            "text": "hello",
+            "generation_status": "model_generated",
+            "output_digest": "digest-abc",
+        }
+    })
+    assert '"output_digest":"digest-abc"' in body
+
+
+def test_chat_sse_body_rejects_blank_response_id():
+    import pytest
+    import worker
+
+    with pytest.raises(ValueError, match="stream_execution_identity_missing"):
+        worker._chat_sse_body({
+            "response": {
+                "response_id": "   ",
+                "result_state": "PARTIAL",
+                "text": "x",
+            }
+        })
+
+
+def test_chat_sse_body_rejects_non_object_payload():
+    import pytest
+    import worker
+    with pytest.raises(ValueError, match="invalid_private_chat_response"):
+        worker._chat_sse_body(None)
