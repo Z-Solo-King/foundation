@@ -124,7 +124,7 @@ def validate_first_party_app_workflows() -> None:
                 expected = set((allowed or {}).get("permissions", {}).keys())
                 if allowed is None or set(write_permissions) != expected:
                     raise ValueError(f"unapproved first-party App write permission in {path}")
-                if "permission-issues" not in write_permissions or len(write_permissions) != 1:
+                if "issues" not in write_permissions or len(write_permissions) != 1:
                     raise ValueError(f"invalid first-party App write scope in {path}")
                 if (allowed.get("repository_scope") or []) != ["Z-Solo-King/operations"]:
                     raise ValueError(f"write exception repository scope drift in {path}")
