@@ -1,10 +1,10 @@
 {
   "schema": "operations-pin-manifest/v1",
-  "generated_at": "2026-10-01",
+  "generated_at": "2026-10-02",
   "authority": "single public-safe immutable Operations revision manifest; runtime code remains authoritative",
   "pins": {
     "production_runtime": {
-      "sha": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
+      "sha": "8b6909ac213e01d310362627d12772950601adf6",
       "purpose": "Cloudflare Operations production runtime and Foundation public production release",
       "status": "canonical production runtime pin; promoted Operations D1 persistence-sentinel optimization"
     },
