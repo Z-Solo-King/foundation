@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - migration/node-governance-tooling-v2-2026-10-02
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
@@ -11,8 +13,10 @@ permissions:
 jobs:
   format:
     if: >-
-      ${{ !startsWith(github.event.head_commit.message, 'chore: migration format pass')
-      && !startsWith(github.event.head_commit.message, 'chore: remove migration formatter') }}
+      (github.event_name == 'push' && github.ref_name == 'migration/node-governance-tooling-v2-2026-10-02')
+      || (github.event_name == 'pull_request'
+      && github.event.pull_request.head.ref == 'migration/node-governance-tooling-v2-2026-10-02'
+      && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -28,25 +32,53 @@ jobs:
 
       - name: Format migration files
         shell: bash
+        env:
+          EVENT_NAME: ${GITHUB_EVENT_NAME}}
+          HEAD_COMMIT_MESSAGE: ${GITHUB_HEAD_COMMIT_MESSAGE:-}
+          HEAD_REF: ${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}
         run: |
-          set -u
+          set +e
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            diff_range="origin/main...HEAD"
+          else
+            git fetch --no-tags origin main --depth=1
+            diff_range="origin/main...HEAD"
+          fi
+
           mapfile -t prettier_files < <(
-            git diff --name-only origin/main...HEAD |
+            git diff --name-only "$diff_range" |
             grep -E '\.(cjs|js|mjs|ts|tsx|json|jsonc|md|yml|yaml)$' || true
           )
+          prettier_status=0
           if [ "${#prettier_files[@]}" -gt 0 ]; then
             npx --yes prettier@3.9.9 --write "${prettier_files[@]}"
+            prettier_status=$?
           fi
 
           mapfile -t markdown_files < <(
-            git diff --name-only origin/main...HEAD |
+            git diff --name-only "$diff_range" |
             grep -E '\.md$' || true
           )
+          markdown_status=0
           if [ "${#markdown_files[@]}" -gt 0 ]; then
-            npx --yes markdownlint-cli2@0.23.3 --fix "${markdown_files[@]}" || true
+            npx --yes markdownlint-cli2@0.23.3 --fix "${markdown_files[@]}"
+            markdown_status=$?
           fi
 
+          printf '{"prettier_status":%s,"markdown_status":%s,"files_seen":%s}\n' \
+            "$prettier_status" "$markdown_status" "__LEN_PRETTY__" > formatter-status.json
+
+          case "$HEAD_COMMIT_MESSAGE" in
+            "chore: migration format pass"|"chore: remove migration formatter")
+              exit 0
+              ;;
+          esac
+
           if git diff --quiet; then
+            if [ "$prettier_status" -ne 0 ] || [ "$markdown_status" -ne 0 ]; then
+              cat formatter-status.json
+              exit 1
+            fi
             exit 0
           fi
 
@@ -54,4 +86,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add --all
           git commit -m "chore: migration format pass"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
