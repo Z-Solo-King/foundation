@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
+import {exists, fingerprintObject, readText, walkFiles, digestObject} from './evidence_kernel.mjs';
 
 export const LANES = [
   {id:'structure', role:'Structure analyst', objective:'repository topology, ownership, duplicate authorities, shadow surfaces'},
@@ -54,26 +54,8 @@ const REQUIRED_FOUNDATION_FILES = [
   '.github/workflows/required-pr-checks.yml',
 ];
 
-function walk(root) {
-  const files = [];
-  const stack = [root];
-  while (stack.length) {
-    const current = stack.pop();
-    for (const entry of fs.readdirSync(current,{withFileTypes:true})) {
-      if (entry.name === '.git' || entry.name === 'node_modules' || entry.name === '.venv' || entry.name === '__pycache__') continue;
-      const full = path.join(current,entry.name);
-      if (entry.isDirectory()) stack.push(full);
-      else files.push(path.relative(root,full).replaceAll(path.sep,'/'));
-    }
-  }
-  return files.sort();
-}
-
-function read(root, rel, max = 1_000_000) {
-  try {
-    return fs.readFileSync(path.join(root,rel)).subarray(0,max).toString('utf8');
-  } catch { return ''; }
-}
+const walk = root => walkFiles(root, {skip:new Set(['.git','node_modules','.venv','__pycache__'])});
+const read = readText;
 
 function containsCaseInsensitive(value, needle) {
   return value.toLowerCase().includes(needle.toLowerCase());
@@ -91,9 +73,7 @@ export function classifyPaths(paths) {
 }
 
 function fingerprint(finding) {
-  return crypto.createHash('sha256').update(JSON.stringify({
-    severity:finding.severity,kind:finding.kind,path:finding.path,message:finding.message,
-  })).digest('hex').slice(0,16);
+  return fingerprintObject({severity:finding.severity,kind:finding.kind,path:finding.path,message:finding.message});
 }
 
 function finding(severity, kind, rel, message, evidence = []) {
@@ -165,7 +145,7 @@ export function scanFoundation(root) {
   }
 
   const operationsPath = path.join(root,'..','operations-repo');
-  if (fs.existsSync(path.join(operationsPath,'.github','workflows'))) {
+  if (exists(root,'../operations-repo/.github/workflows')) {
     const opsWorkflows = walk(path.join(operationsPath,'.github','workflows'));
     if (opsWorkflows.some(f=>f.endsWith('.yml')||f.endsWith('.yaml'))) {
       findings.push(finding('critical','operations_workflow_authority','../operations-repo/.github/workflows','Operations contains GitHub Actions workflows despite Foundation ownership contract.'));
@@ -228,7 +208,7 @@ export function summarize(report, plan) {
     status:critical.length ? 'blocked' : warning.length ? 'review' : 'clean',
     security_authority:'dedicated full-history secret scan',
     critical_findings:critical.map(f=>({kind:f.kind,path:f.path,message:f.message,evidence:f.evidence})),
-    report_sha256:crypto.createHash('sha256').update(JSON.stringify(report)).digest('hex'),
+    report_sha256:digestObject(report),
   };
 }
 
