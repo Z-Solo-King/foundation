@@ -35,3 +35,5 @@ The production release workflow is manual-only and remains protected by its exis
 ## Boundary
 
 Foundation remains the sole GitHub Actions execution/dispatch owner. Operations remains the private source/runtime/policy authority. This routing contract adds a single public ingress to the existing bridge; it does not create a second CI/CD owner or deployment path.
+
+The nightly contract is regression-tested in `tests/test_nightly_dry_run_contract.py`: the workflow resolves `dry_run` mode before the live-only runtime probe, while production-live execution remains behind the existing exact-release/runtime evidence gates.
