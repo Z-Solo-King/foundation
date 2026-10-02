@@ -77,8 +77,9 @@ def test_chat_sse_body_rejects_invalid_private_response():
     with pytest.raises(ValueError, match="stream_execution_identity_missing"):
         worker._chat_sse_body({"response": {"result_state": "PARTIAL", "text": "x"}})
 
-    with pytest.raises(ValueError, match="blocked_chat_stream"):
-        worker._chat_sse_body({"response": {"response_id": "r", "result_state": "BLOCKED", "text": "x"}})
+    blocked = worker._chat_sse_body({"response": {"response_id": "r", "result_state": "BLOCKED", "status": "blocked", "text": "x", "generation_status": "deterministic_fallback"}})
+    assert '"status":"blocked"' in blocked
+    assert '"result_state":"BLOCKED"' in blocked
 
 
 def test_chat_sse_body_covers_usage_complete_and_bounded_size():
@@ -106,6 +107,35 @@ def test_chat_sse_body_covers_usage_complete_and_bounded_size():
                 "text": "x" * (worker.MAX_PUBLIC_JSON_BODY_BYTES + 1),
             }
         })
+
+
+def test_chat_sse_body_preserves_not_attempted_and_failed_terminal_states():
+    import worker
+
+    not_attempted = worker._chat_sse_body({
+        "response": {
+            "response_id": "chat-na",
+            "result_state": "NOT_ATTEMPTED",
+            "status": "failed",
+            "text": "provider unavailable",
+            "generation_status": "provider_unavailable",
+        }
+    })
+    assert '"status":"failed"' in not_attempted
+    assert '"result_state":"NOT_ATTEMPTED"' in not_attempted
+    assert '"generation_status":"provider_unavailable"' in not_attempted
+
+    failed = worker._chat_sse_body({
+        "response": {
+            "response_id": "chat-failed",
+            "result_state": "FAILED",
+            "status": "failed",
+            "text": "execution failed",
+            "generation_status": "execution_failed",
+        }
+    })
+    assert '"status":"failed"' in failed
+    assert '"result_state":"FAILED"' in failed
 
 
 def test_chat_sse_body_has_start_delta_and_done_contract():
