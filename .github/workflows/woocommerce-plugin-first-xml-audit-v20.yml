@@ -1,0 +1,96 @@
+name: WooCommerce Plugin-First XML Audit V20
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feed-recovery-v20-all-google-xml-families-2026-10-02]
+    paths:
+      - ".github/workflows/woocommerce-plugin-first-xml-audit-v20.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foundation-wc-plugin-first-audit-v20
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Plugin-first audit — all 30 sites
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: production-secret-sync
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations V20 audit branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: feed-recovery-v20-all-google-xml-families-2026-10-02
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Validate plugin-first audit harness
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          node --check tools/woocommerce_plugin_first_xml_audit_v1.mjs
+          node -e 'const r=require("./data/feed_lab/woocommerce_30_registry_v18.json"); const m=require("./docs/feed-lab/WOOCOMMERCE_PLUGIN_FAMILY_GUESS_MANIFEST_2026-09-30.json"); if(r.sites.length!==30 || m.sites.length!==30) process.exit(1)'
+          node -e 'const x=require("fs").readFileSync("tools/woocommerce_plugin_first_xml_audit_v1.mjs","utf8"); for (const p of ["/googlemerchantcenter.xml","/google-merchant-feed.xml","/shoppingfeed.xml","/merchant-feed.xml","/google-feed.xml","/api/feed","/google-shopping.xml"]) if(!x.includes(p)) process.exit(1)'
+
+      - name: Run plugin-first native XML audit
+        working-directory: operations
+        env:
+          WC_PLUGIN_FAST_TIMEOUT_MS: "12000"
+          WC_PLUGIN_SLOW_TIMEOUT_MS: "30000"
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          node tools/woocommerce_plugin_first_xml_audit_v1.mjs             data/feed_lab/woocommerce_30_registry_v18.json             docs/feed-lab/WOOCOMMERCE_PLUGIN_FAMILY_GUESS_MANIFEST_2026-09-30.json             out/plugin-first-feed-audit.json
+          test -s out/plugin-first-feed-audit.json
+          node <<'NODE'
+          const fs=require("fs");
+          const x=JSON.parse(fs.readFileSync("out/plugin-first-feed-audit.json","utf8"));
+          if(x.summary?.target_count!==30) throw new Error("expected 30 audited sites");
+          if(x.results?.length!==30) throw new Error("expected 30 result records");
+          const states=x.results.map(r=>r.result?.state);
+          console.log(JSON.stringify({
+            target_count:x.summary.target_count,
+            native_verified:x.summary.native_verified,
+            transport_unverified:x.summary.transport_unverified,
+            no_native_feed_found:x.summary.no_native_feed_found,
+            plugin_live_signature_sites:x.summary.plugin_live_signature_sites,
+            state_counts:Object.fromEntries([...new Set(states)].map(s=>[s,states.filter(x=>x===s).length]))
+          },null,2));
+          NODE
+
+      - name: Upload complete audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: foundation-wc-plugin-first-xml-audit-v20
+          path: operations/out/plugin-first-feed-audit.json
+          if-no-files-found: warn
+          retention-days: 30
