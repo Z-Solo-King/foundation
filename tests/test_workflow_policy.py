@@ -655,14 +655,14 @@ def test_production_sync_guard_accepts_current_operations_family_state_shape():
 
 def test_public_live_probe_fails_closed_on_dns_or_http_failure():
     workflow = _workflow_texts()["public-worker-live-probe.yml"]
-    assert 'URL:' in workflow and 'ai-cio.pages.dev' in workflow
+    assert 'URL:' in workflow and 'heroic-ai.pages.dev' in workflow
     assert 'raise SystemExit(0 if out["ok"] else 1)' in workflow
     assert 'if status != 200:' in workflow
     assert 'item.get("ready") is not True' in workflow
 
 def test_live_chatbot_smoke_requires_real_model_generation():
     workflow = _workflow_texts()["live-chatbot-production-smoke.yml"]
-    assert 'PUBLIC_WORKER_URL:' in workflow and 'ai-cio.pages.dev' in workflow
+    assert 'PUBLIC_WORKER_URL:' in workflow and 'heroic-ai.pages.dev' in workflow
     assert '"require_model_generation": True' in workflow
     assert 'chat_response.get("generation_status") != "model_generated"' in workflow
     assert 'chat_response.get("provider") != "cloudflare_workers_ai"' in workflow
@@ -695,12 +695,12 @@ def test_current_public_runtime_identity_is_heroic_typescript_edge():
     assert "python_workers" not in wrangler
     assert '[[routes]]' not in wrangler
     assert 'custom_domain = true' not in wrangler
-    assert 'BASE_URL=' in deployment and 'ai-cio.pages.dev' in deployment
+    assert 'BASE_URL=' in deployment and 'heroic-ai.pages.dev' in deployment
     assert 'OPERATIONS_SERVICE_NAME="operations"' in deployment
     assert 'OPERATIONS_EDGE_SERVICE_NAME="operations-edge"' in deployment
 def test_public_pages_front_door_is_documented_without_exposing_backend_origin():
     docs = (ROOT / "docs" / "WORKER_IDENTITY_2026-09-25.md").read_text(encoding="utf-8")
-    assert "ai-cio.pages.dev/" in docs
+    assert "heroic-ai.pages.dev/" in docs
     assert "workers.dev" not in docs
     assert "heroic.heroic-ai.workers.dev/" not in docs
 
