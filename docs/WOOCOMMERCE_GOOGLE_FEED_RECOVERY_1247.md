@@ -36,4 +36,4 @@ The public repository does not contain the live target registry or target-specif
 
 ## Distribution safety rule — 2026-10-02
 
-Recovery output is an evidence artifact, not a public GitHub Release. Feed indexes must not point to release download URLs, and feed-recovery workflows must not create or upload release assets.
+Recovery output is evidence, not a public GitHub Release. Generated indexes must not contain release download URLs, and `wc-google-feed-latest` is a prohibited public feed release identifier.
