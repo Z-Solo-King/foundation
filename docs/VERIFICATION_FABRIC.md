@@ -40,4 +40,4 @@ When a new capability is added:
 
 ## Release-publication verification — 2026-10-02
 
-Release publication is a verification invariant for feed recovery. Workflows that create/upload releases, publish feed release tags or download URLs, or grant unnecessary repository write access must fail the merge gate.
+The verification fabric treats GitHub Release publication as a privileged boundary. Feed outputs stay workflow artifacts, and release/tag publication primitives are rejected by deterministic policy before merge.
