@@ -1,7 +1,10 @@
 from __future__ import annotations
+
 import json
 import re
 from pathlib import Path
+
+
 ROOT = Path(__file__).parents[1]
 WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
@@ -39,7 +42,7 @@ def test_all_third_party_actions_are_sha_pinned():
                 continue
             ref = stripped.split("@", 1)[-1].split("#", 1)[0].strip()
             action = stripped.split("uses:", 1)[1].split("@", 1)[0].strip()
-            if action.startswith("./") or action.startswith("docker://"):
+            if action.startswith(("./", "docker://")):
                 continue
             if not SHA_REF.fullmatch(ref):
                 violations.append(f"{name}:{line_no}:{action}@{ref}")
@@ -424,7 +427,7 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'PIN_MANIFEST="docs/OPERATIONS_PIN_MANIFEST.json"' in deployment
     assert 'manifest["pins"]["production_runtime"]["sha"]' in deployment
-    nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
+    nightly = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
     expected = "OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || '" + CANONICAL_RESEARCH_OPERATIONS_REF + "' }}"
     assert expected in nightly
 
