@@ -4,7 +4,7 @@ This repository contains the public contract/Worker boundary. Production control
 
 ## Current verified production state
 
-Historical production verification is retained as historical evidence only. It is not current certification.
+Historical production verification is retained as historical evidence only. It is not current certification. The current production Operations revision is intentionally maintained in `docs/OPERATIONS_PIN_MANIFEST.json`; newer Operations `main` commits are drift until explicitly reviewed and promoted by the canonical release workflow.
 
 Current production authority is the immutable Operations pin in `docs/OPERATIONS_PIN_MANIFEST.json`. The research runtime pin is deliberately independent. Fresh acceptance requires successful evidence from the canonical GitHub deployment path and live Cloudflare runtime checks.
 
@@ -12,15 +12,13 @@ The public Worker is deployed with Python Worker tooling (`pywrangler`), not pla
 
 ## Canonical production workflow
 
-The canonical Foundation production deployment workflow is `.github/workflows/heroic-ai-production-release.yml`. It contains the single `pywrangler deploy` production owner and runs the public deployment only after `Public tests` succeeds on a push to `main`.
+The canonical Foundation production deployment workflow is `.github/workflows/heroic-ai-production-release.yml`. It contains the single production deployment owner and runs only from an explicit `workflow_dispatch` on `main`. A `main` push does not implicitly deploy production.
 
 The same workflow performs the public post-deployment smoke checks. There is no second public production deployment workflow.
 
 The workflow dynamically resolves the live D1 database ID and writes a runner-only Wrangler configuration. Generated configuration is removed during cleanup. Credentials are never committed.
 
-The workflow also owns the protected Operations handoff. Production is pinned to the explicitly approved immutable Operations revision:
-
-`068c3cff76f194dd0188f704fda191388e6694cb`
+The workflow also owns the protected Operations handoff. Production is pinned to the explicitly approved immutable Operations revision recorded in `docs/OPERATIONS_PIN_MANIFEST.json`. The manifest is the single source of truth; this document intentionally does not duplicate a mutable or historical SHA.
 
 The private Operations checkout uses the purpose-specific GitHub App installation credential set:
 
@@ -65,7 +63,7 @@ Do not infer credential purpose from the fact that multiple secrets are consumed
 
 Before the private Operations checkout, the workflow must fail closed unless the GitHub App credentials are present, the App JWT is valid, the installation-token exchange succeeds, and the resulting installation token can read `Z-Solo-King/operations`.
 
-The checkout must then fetch and verify the exact approved revision `068c3cff76f194dd0188f704fda191388e6694cb`. Before Worker packaging, the deployment materializes the pinned public `foundation_core` package through `operations/scripts/sync_public_core.py`; the generated directory is ignored and never committed. The workflow must not silently track `operations/main`, substitute an older pin, or deploy a mutable branch reference.
+The checkout must then fetch and verify the exact immutable revision read from `docs/OPERATIONS_PIN_MANIFEST.json`. Before Worker packaging, the deployment materializes the pinned public `foundation_core` package through `operations/scripts/sync_public_core.py`; the generated directory is ignored and never committed. The workflow must not silently track `operations/main`, substitute an older pin, or deploy a mutable branch reference.
 
 A successful public Worker deployment does not prove that Operations was deployed. Operations deployment, D1 governance application, protected configuration and private runtime verification remain separately evidenced.
 

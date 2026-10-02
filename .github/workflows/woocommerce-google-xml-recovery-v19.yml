@@ -114,11 +114,20 @@ jobs:
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
+      - name: Resolve current Operations main for this shard
+        id: shard-operations
+        env:
+          GH_TOKEN: ${{ steps.operations-app.outputs.token }}
+        run: |
+          set -euo pipefail
+          ref="$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]]
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
       - name: Checkout Operations
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ needs.crossfire.outputs.operations_ref }}
+          ref: ${{ steps.shard-operations.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
           fetch-depth: 1
@@ -139,6 +148,8 @@ jobs:
         run: |
           set -euo pipefail
           node --check private/feed_recovery/google_xml_feed_builder_30_v2.mjs
+          node -e 'const fs=require("fs"); const x=fs.readFileSync("private/feed_recovery/google_xml_feed_builder_30_v2.mjs","utf8"); if(!x.includes("function normalize(")||!x.includes("let ccCollectionPromise;")) process.exit(1)'
+          node -e 'const fs=require("fs"); const x=fs.readFileSync("private/feed_recovery/google_xml_feed_builder_30_v2.mjs","utf8"); if(!x.includes("let ccCollectionPromise;")) process.exit(1)'
           node -e 'const x=require("./data/feed_lab/woocommerce_30_registry_v18.json"); if(x.sites.length!==30) process.exit(1)'
       - name: Run recovery shard
         working-directory: operations
@@ -146,9 +157,12 @@ jobs:
           WC_ANY_FAST_TIMEOUT_MS: "12000"
           WC_ANY_SLOW_TIMEOUT_MS: "60000"
           WC_ANY_MAX_PRODUCTS: "10000"
-          WC_ANY_MAX_PRODUCT_URLS: "120"
-          WC_ANY_LIVE_PAGE_LIMIT: "60"
+          WC_ANY_MAX_PRODUCT_URLS: "240"
+          WC_ANY_LIVE_PAGE_LIMIT: "90"
           WC_ANY_CC_PAGE_LIMIT: "30"
+          WC_JINA_SLOT_MS: "5000"
+          WC_JINA_TIMEOUT_MS: "30000"
+          JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
           SHARD: ${{ matrix.shard }}
         run: |
           set -euo pipefail
