@@ -29,5 +29,9 @@ This contract therefore prevents the repository workflows from intentionally gra
 - The autonomous planner receives aggregate Operations findings before external AI use; private source paths and protected values are not sent as planner context.
 - AI output remains candidate assistance. Repository/code ownership, acceptance evidence, deployment, production promotion and rollback remain with their existing authorities.
 
-- `cross-repository-contract-drift.yml` explicitly watches the public `edge.ts` runtime boundary in addition to canonical workflow/core/frontend/polyglot surfaces; this is drift observation only, not deployment authority.
-- The private provider cross-fire may use the existing authenticated Heroic Worker path as a second benchmark transport when only one direct provider credential is configured; this does not grant the benchmark deployment or provider-promotion authority.
+## Live AI provider cross-fire
+
+- `.github/workflows/live-ai-provider-crossfire.yml` remains a manual-dispatch privileged benchmark because it reads protected provider configuration and a read-only private Operations App token.
+- The workflow resolves an immutable Operations revision before executing the private benchmark and uses `persist-credentials: false` for the private checkout.
+- The workflow validates the canonical platform-access cross-fire contract before provider execution, then runs up to six configured provider lanes concurrently through the existing private benchmark runner.
+- The public Foundation bridge contains no provider keys or provider endpoints; credential-bearing provider configuration remains in private Operations/runtime context.
