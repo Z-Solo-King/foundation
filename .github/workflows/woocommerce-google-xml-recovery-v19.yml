@@ -1,4 +1,4 @@
-name: WooCommerce Google XML Feed Recovery V19
+name: WooCommerce Google XML Feed Recovery V20
 # Production trigger marker: 2026-10-02
 
 on:
@@ -14,7 +14,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: foundation-wc-google-xml-v19
+  group: foundation-wc-google-xml-v20
   cancel-in-progress: true
 
 jobs:
@@ -74,7 +74,7 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
           CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
-          AI_CROSSFIRE_MAX_PROVIDERS: "5"
+          AI_CROSSFIRE_MAX_PROVIDERS: "6"
           AI_CROSSFIRE_TIMEOUT_MS: "18000"
           AI_CROSSFIRE_PROVIDERS: "heroic_worker,cloudflare_workers_ai,siliconflow,gemini,openrouter_free,groq,cerebras"
         run: |
@@ -85,7 +85,7 @@ jobs:
       - name: Upload AI candidate pool
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: foundation-wc-google-xml-v19-ai-candidates
+          name: foundation-wc-google-xml-v20-ai-candidates
           path: operations/out/ai-crossfire.json
           retention-days: 7
 
@@ -147,9 +147,9 @@ jobs:
         working-directory: operations
         run: |
           set -euo pipefail
-          node --check private/feed_recovery/google_xml_feed_builder_30_v2.mjs
-          node -e 'const fs=require("fs"); const x=fs.readFileSync("private/feed_recovery/google_xml_feed_builder_30_v2.mjs","utf8"); if(!x.includes("function normalize(")||!x.includes("let ccCollectionPromise;")) process.exit(1)'
-          node -e 'const fs=require("fs"); const x=fs.readFileSync("private/feed_recovery/google_xml_feed_builder_30_v2.mjs","utf8"); if(!x.includes("let ccCollectionPromise;")) process.exit(1)'
+          node --check private/feed_recovery/google_xml_feed_builder_30_v20.mjs
+          node --test tests/test_google_xml_feed_builder_30_v20.mjs
+          node -e 'const fs=require("fs"); const x=fs.readFileSync("private/feed_recovery/google_xml_feed_builder_30_v20.mjs","utf8"); if(!x.includes("function normalize(")||!x.includes("let ccCollectionPromise;")||!x.includes("function xmlFeedKind(")) process.exit(1)'
           node -e 'const x=require("./data/feed_lab/woocommerce_30_registry_v18.json"); if(x.sites.length!==30) process.exit(1)'
       - name: Run recovery shard
         working-directory: operations
@@ -168,12 +168,12 @@ jobs:
           set -euo pipefail
           mkdir -p out
           test -f out/ai-crossfire.json || printf '{"retailers":[]}\n' > out/ai-crossfire.json
-          node private/feed_recovery/google_xml_feed_builder_30_v2.mjs             data/feed_lab/woocommerce_30_registry_v18.json             out/google-xml-v19             --shard "$SHARD" --shards 6 --ai out/ai-crossfire.json
+          node private/feed_recovery/google_xml_feed_builder_30_v20.mjs             data/feed_lab/woocommerce_30_registry_v18.json             out/google-xml-v20             --shard "$SHARD" --shards 6 --ai out/ai-crossfire.json
       - name: Upload shard evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: foundation-wc-google-xml-v19-shard-${{ matrix.shard }}
+          name: foundation-wc-google-xml-v20-shard-${{ matrix.shard }}
           path: operations/out/google-xml-v19/
           if-no-files-found: warn
           retention-days: 30
@@ -220,7 +220,7 @@ jobs:
             fs.copyFileSync(f,path.join(release,r.filename)); ok++;
           }
           if(ok!==30) throw new Error("expected 30 usable feeds, got "+ok);
-          fs.writeFileSync(path.join(release,"feeds-index.json"),JSON.stringify({schema_version:"woocommerce-google-xml-anyhow-v2/artifact-index",generated_on:new Date().toISOString(),target_count:30,distribution:"github_actions_artifact",artifact_name:"foundation-wc-google-xml-v19-feed-bundle",feeds:rows},null,2)+"\n");
+          fs.writeFileSync(path.join(release,"feeds-index.json"),JSON.stringify({schema_version:"woocommerce-google-xml-anyhow-v2/artifact-index",generated_on:new Date().toISOString(),target_count:30,distribution:"github_actions_artifact",artifact_name:"foundation-wc-google-xml-v20-feed-bundle",feeds:rows},null,2)+"\n");
           NODE
       - name: Upload feed bundle as workflow artifact only
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
