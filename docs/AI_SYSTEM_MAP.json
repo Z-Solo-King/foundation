@@ -15,7 +15,8 @@
     "foundation_detail_map": "docs/AI_PROJECT_MAP.json",
     "operations_detail_map": "operations/docs/AI_PROJECT_MAP.json",
     "family_integration_graph": "docs/FAMILY_INTEGRATION_GRAPH.json",
-    "workflow_authority": "docs/WORKFLOW_AUTHORITY_REGISTRY.json"
+    "workflow_authority": "docs/WORKFLOW_AUTHORITY_REGISTRY.json",
+    "autonomous_governance_scan": "docs/AUTONOMOUS_GOVERNANCE_SCAN_CONTRACT.json"
   },
   "navigation_algorithm": [
     "classify user/task intent",
@@ -64,109 +65,334 @@
     {
       "id": "interaction_ai",
       "label": "Interaction + AI",
-      "components": ["chatbot", "provider_fleet"],
-      "route_when": ["chat", "answer", "model", "provider", "quota", "AI API", "streaming"]
+      "components": [
+        "chatbot",
+        "provider_fleet"
+      ],
+      "route_when": [
+        "chat",
+        "answer",
+        "model",
+        "provider",
+        "quota",
+        "AI API",
+        "streaming"
+      ]
     },
     {
       "id": "acquisition_extraction",
       "label": "Acquisition + Extraction",
-      "components": ["extractor", "feed_recovery", "mapper"],
-      "route_when": ["scrape", "crawl", "HTTP", "HTML", "API", "XML", "browser", "WooCommerce feed"]
+      "components": [
+        "extractor",
+        "feed_recovery",
+        "mapper"
+      ],
+      "route_when": [
+        "scrape",
+        "crawl",
+        "HTTP",
+        "HTML",
+        "API",
+        "XML",
+        "browser",
+        "WooCommerce feed"
+      ]
     },
     {
       "id": "research_evidence",
       "label": "Research + Evidence",
-      "components": ["research", "mapper"],
-      "route_when": ["research", "claims", "evidence", "crossfire", "publication", "benchmark"]
+      "components": [
+        "research",
+        "mapper"
+      ],
+      "route_when": [
+        "research",
+        "claims",
+        "evidence",
+        "crossfire",
+        "publication",
+        "benchmark"
+      ]
     },
     {
       "id": "runtime_resources",
       "label": "Runtime + Resources",
-      "components": ["cloudflare_runtime", "runtime_governance", "storage_b2"],
-      "route_when": ["Workers", "D1", "Browser Run", "resource", "quota", "budget", "backup", "restore"]
+      "components": [
+        "cloudflare_runtime",
+        "runtime_governance",
+        "storage_b2"
+      ],
+      "route_when": [
+        "Workers",
+        "D1",
+        "Browser Run",
+        "resource",
+        "quota",
+        "budget",
+        "backup",
+        "restore"
+      ]
     },
     {
       "id": "governance_security",
       "label": "Governance + Security",
-      "components": ["security_ci", "runtime_governance", "provider_fleet"],
-      "route_when": ["policy", "secret", "auth", "provenance", "gate", "security", "drift"]
+      "components": [
+        "security_ci",
+        "runtime_governance",
+        "provider_fleet"
+      ],
+      "route_when": [
+        "policy",
+        "secret",
+        "auth",
+        "provenance",
+        "gate",
+        "security",
+        "drift"
+      ]
     },
     {
       "id": "automation_evolution",
       "label": "Automation + Audit + Evolution",
-      "components": ["security_ci", "research", "chatbot", "extractor", "mapper"],
-      "route_when": ["workflow", "audit", "scan", "score", "learning", "self-evolve", "autonomous"]
+      "components": [
+        "security_ci",
+        "research",
+        "chatbot",
+        "extractor",
+        "mapper"
+      ],
+      "route_when": [
+        "workflow",
+        "audit",
+        "scan",
+        "score",
+        "learning",
+        "self-evolve",
+        "autonomous"
+      ]
     }
   ],
   "components": {
     "chatbot": {
       "owner": "operations",
-      "paths": ["private/chatbot/", "private/chatbot/router.py", "private/chatbot/provider_runtime.py", "worker.py"],
-      "task_families": ["chatbot", "action_plan", "workflow_assist", "audit_assist"],
-      "evidence": ["functional", "security", "policy", "provenance", "runtime"],
+      "paths": [
+        "private/chatbot/",
+        "private/chatbot/router.py",
+        "private/chatbot/provider_runtime.py",
+        "worker.py"
+      ],
+      "task_families": [
+        "chatbot",
+        "action_plan",
+        "workflow_assist",
+        "audit_assist"
+      ],
+      "evidence": [
+        "functional",
+        "security",
+        "policy",
+        "provenance",
+        "runtime"
+      ],
       "next": "private/chatbot/"
     },
     "provider_fleet": {
       "owner": "operations",
-      "paths": ["private/chatbot/provider_runtime.py", "private/dashboard_ai.py", "private/dashboard_ai_provider_matrix.py", "tools/provider_fleet_runtime_probe.py"],
-      "task_families": ["provider_selection", "quota_monitoring", "crossfire", "ai_model_evaluation"],
-      "evidence": ["runtime", "rate_limit_headers", "cost_verification", "evolution"],
+      "paths": [
+        "private/chatbot/provider_runtime.py",
+        "private/dashboard_ai.py",
+        "private/dashboard_ai_provider_matrix.py",
+        "tools/provider_fleet_runtime_probe.py"
+      ],
+      "task_families": [
+        "provider_selection",
+        "quota_monitoring",
+        "crossfire",
+        "ai_model_evaluation"
+      ],
+      "evidence": [
+        "runtime",
+        "rate_limit_headers",
+        "cost_verification",
+        "evolution"
+      ],
       "next": "private/chatbot/provider_runtime.py"
     },
     "extractor": {
       "owner": "operations",
-      "paths": ["extractor_mapper/", "polyglot/browser-acquisition/", "polyglot/acquisition-planner/"],
-      "task_families": ["extraction_assist", "scan_triage", "audit_assist"],
-      "evidence": ["differential", "security", "policy", "provenance", "performance"],
+      "paths": [
+        "extractor_mapper/",
+        "polyglot/browser-acquisition/",
+        "polyglot/acquisition-planner/"
+      ],
+      "task_families": [
+        "extraction_assist",
+        "scan_triage",
+        "audit_assist"
+      ],
+      "evidence": [
+        "differential",
+        "security",
+        "policy",
+        "provenance",
+        "performance"
+      ],
       "next": "extractor_mapper/"
     },
     "feed_recovery": {
       "owner": "foundation+operations",
-      "paths": ["operations/private/feed_recovery/", "operations/data/feed_lab/", ".github/workflows/native-google-feed-hunt.yml", ".github/workflows/woocommerce-clean-recovery.yml"],
-      "task_families": ["feed_recovery", "feed_hunt", "public_source_discovery"],
-      "evidence": ["current_payload", "native_namespace", "provenance", "strict_validation"],
+      "paths": [
+        "operations/private/feed_recovery/",
+        "operations/data/feed_lab/",
+        ".github/workflows/native-google-feed-hunt.yml",
+        ".github/workflows/woocommerce-clean-recovery.yml"
+      ],
+      "task_families": [
+        "feed_recovery",
+        "feed_hunt",
+        "public_source_discovery"
+      ],
+      "evidence": [
+        "current_payload",
+        "native_namespace",
+        "provenance",
+        "strict_validation"
+      ],
       "next": "operations/private/feed_recovery/"
     },
     "mapper": {
       "owner": "foundation+operations",
-      "paths": ["foundation_core/", "operations/extractor_mapper/mapping/", "operations/extractor_mapper/observation_contract.py"],
-      "task_families": ["mapping", "normalization", "identity", "migration"],
-      "evidence": ["differential", "errors", "security", "policy", "provenance", "shadow", "canary"],
+      "paths": [
+        "foundation_core/",
+        "operations/extractor_mapper/mapping/",
+        "operations/extractor_mapper/observation_contract.py"
+      ],
+      "task_families": [
+        "mapping",
+        "normalization",
+        "identity",
+        "migration"
+      ],
+      "evidence": [
+        "differential",
+        "errors",
+        "security",
+        "policy",
+        "provenance",
+        "shadow",
+        "canary"
+      ],
       "next": "foundation_core/"
     },
     "research": {
       "owner": "foundation+operations",
-      "paths": ["backend/intelligence/", "operations/private/multi_agent/", ".github/workflows/nightly-multi-agent-research-v3.yml"],
-      "task_families": ["research", "crossfire", "evidence_adjudication", "publication"],
-      "evidence": ["coverage", "lane_validation", "provenance", "runtime"],
+      "paths": [
+        "backend/intelligence/",
+        "operations/private/multi_agent/",
+        ".github/workflows/nightly-multi-agent-research-v3.yml"
+      ],
+      "task_families": [
+        "research",
+        "crossfire",
+        "evidence_adjudication",
+        "publication"
+      ],
+      "evidence": [
+        "coverage",
+        "lane_validation",
+        "provenance",
+        "runtime"
+      ],
       "next": "backend/intelligence/"
     },
     "cloudflare_runtime": {
       "owner": "operations",
-      "paths": ["operations/worker.py", "operations/private/dashboard_cloudflare_usage.py", "operations/private/dashboard_ai.py", "operations/private/dashboard_cloudflare_ai_gateway.py", "wrangler.toml"],
-      "task_families": ["worker_runtime", "d1", "workers_ai", "browser_run", "ai_gateway"],
-      "evidence": ["GraphQL", "runtime", "billing_when_authorized"],
+      "paths": [
+        "operations/worker.py",
+        "operations/private/dashboard_cloudflare_usage.py",
+        "operations/private/dashboard_ai.py",
+        "operations/private/dashboard_cloudflare_ai_gateway.py",
+        "wrangler.toml"
+      ],
+      "task_families": [
+        "worker_runtime",
+        "d1",
+        "workers_ai",
+        "browser_run",
+        "ai_gateway"
+      ],
+      "evidence": [
+        "GraphQL",
+        "runtime",
+        "billing_when_authorized"
+      ],
       "next": "operations/private/dashboard_cloudflare_usage.py"
     },
     "runtime_governance": {
       "owner": "operations",
-      "paths": ["operations/private/resource_ledger.py", "operations/private/durable_resource_ledger.py", "operations/private/resource_governance_scheduler.py", "operations/private/protected_execution.py"],
-      "task_families": ["quota", "reservation", "lease", "reconciliation", "cost_guard"],
-      "evidence": ["resource_receipt", "D1", "conservation", "freshness"],
+      "paths": [
+        "operations/private/resource_ledger.py",
+        "operations/private/durable_resource_ledger.py",
+        "operations/private/resource_governance_scheduler.py",
+        "operations/private/protected_execution.py"
+      ],
+      "task_families": [
+        "quota",
+        "reservation",
+        "lease",
+        "reconciliation",
+        "cost_guard"
+      ],
+      "evidence": [
+        "resource_receipt",
+        "D1",
+        "conservation",
+        "freshness"
+      ],
       "next": "operations/private/durable_resource_ledger.py"
     },
     "storage_b2": {
       "owner": "foundation",
-      "paths": [".github/workflows/b2-repository-backup.yml", "scripts/cleanup_b2_backup_generations.py", "backup/"],
-      "task_families": ["backup", "restore", "retention", "archive_size"],
-      "evidence": ["SHA-256", "remote_size", "remote_restore", "git_fsck", "retention"],
+      "paths": [
+        ".github/workflows/b2-repository-backup.yml",
+        "scripts/cleanup_b2_backup_generations.py",
+        "backup/"
+      ],
+      "task_families": [
+        "backup",
+        "restore",
+        "retention",
+        "archive_size"
+      ],
+      "evidence": [
+        "SHA-256",
+        "remote_size",
+        "remote_restore",
+        "git_fsck",
+        "retention"
+      ],
       "next": ".github/workflows/b2-repository-backup.yml"
     },
     "security_ci": {
       "owner": "foundation+operations",
-      "paths": ["tools/project_observability_audit.mjs", "operations/tools/master_audit.py", "operations/tools/evolution_audit.py", ".github/workflows/"],
-      "task_families": ["audit", "workflow_governance", "security", "autonomous_improvement"],
-      "evidence": ["static", "CI", "runtime_when_required", "provenance"],
+      "paths": [
+        "tools/project_observability_audit.mjs",
+        "operations/tools/master_audit.py",
+        "operations/tools/evolution_audit.py",
+        ".github/workflows/"
+      ],
+      "task_families": [
+        "audit",
+        "workflow_governance",
+        "security",
+        "autonomous_improvement"
+      ],
+      "evidence": [
+        "static",
+        "CI",
+        "runtime_when_required",
+        "provenance"
+      ],
       "next": "tools/project_observability_audit.mjs"
     }
   },
@@ -175,47 +401,173 @@
       "path": "operations/private/project_observability.py",
       "dimensions": {
         "availability": 0.25,
-        "freshness": 0.20,
-        "provenance": 0.20,
-        "integrity": 0.20,
+        "freshness": 0.2,
+        "provenance": 0.2,
+        "integrity": 0.2,
         "coverage": 0.15
       },
       "score_type": "telemetry_quality_not_acceptance_authority"
     },
     "evolution": {
-      "paths": ["operations/private/evolution_score.py", "operations/private/evolution_engine.py", "operations/private/evolution_integration.py"],
-      "dimensions": ["correctness", "reliability", "coverage", "latency", "cost", "security_policy", "provenance", "maintainability", "portability"],
-      "hard_gates": ["security_policy", "provenance"]
+      "paths": [
+        "operations/private/evolution_score.py",
+        "operations/private/evolution_engine.py",
+        "operations/private/evolution_integration.py"
+      ],
+      "dimensions": [
+        "correctness",
+        "reliability",
+        "coverage",
+        "latency",
+        "cost",
+        "security_policy",
+        "provenance",
+        "maintainability",
+        "portability"
+      ],
+      "hard_gates": [
+        "security_policy",
+        "provenance"
+      ]
     },
     "autonomous_control": {
-      "paths": ["tools/autonomous_engineering_supervisor.mjs", "tools/autonomous_mission_router.mjs"],
-      "flow": ["observe", "audit", "evaluate", "score", "learn", "bounded_candidate", "policy_gate", "shadow_or_canary", "promotion", "monitor", "rollback_or_supersede"],
-      "forbidden": ["policy_mutation", "credential_mutation", "resource_grant", "production_self_promotion"]
+      "paths": [
+        "tools/autonomous_engineering_supervisor.mjs",
+        "tools/autonomous_mission_router.mjs"
+      ],
+      "flow": [
+        "observe",
+        "audit",
+        "evaluate",
+        "score",
+        "learn",
+        "bounded_candidate",
+        "policy_gate",
+        "shadow_or_canary",
+        "promotion",
+        "monitor",
+        "rollback_or_supersede"
+      ],
+      "forbidden": [
+        "policy_mutation",
+        "credential_mutation",
+        "resource_grant",
+        "production_self_promotion"
+      ]
     }
   },
   "routing": [
-    {"intent": "chat or model answer", "category": "interaction_ai", "primary": "chatbot"},
-    {"intent": "AI provider health/quota/rate limit", "category": "interaction_ai", "primary": "provider_fleet"},
-    {"intent": "scrape/crawl website", "category": "acquisition_extraction", "primary": "extractor", "secondary": ["browser"]},
-    {"intent": "WooCommerce/Google Merchant feed", "category": "acquisition_extraction", "primary": "feed_recovery", "secondary": ["extractor", "mapper"]},
-    {"intent": "product normalization/identity mapping", "category": "acquisition_extraction", "primary": "mapper"},
-    {"intent": "research/evidence/claims", "category": "research_evidence", "primary": "research"},
-    {"intent": "Cloudflare Worker/D1/Browser Run/AI Gateway", "category": "runtime_resources", "primary": "cloudflare_runtime"},
-    {"intent": "resource quota/budget/lease/reservation", "category": "runtime_resources", "primary": "runtime_governance"},
-    {"intent": "B2 backup/restore/retention/archive size", "category": "runtime_resources", "primary": "storage_b2"},
-    {"intent": "audit/scan/security/drift", "category": "governance_security", "primary": "security_ci"},
-    {"intent": "score/learning/self-evolution/candidate", "category": "automation_evolution", "primary": "evolution"},
-    {"intent": "workflow/CI/autonomous mission", "category": "automation_evolution", "primary": "autonomous_control"},
-    {"intent": "migration/polyglot/portability", "category": "automation_evolution", "primary": "mapper", "secondary": ["security_ci", "evolution"]}
+    {
+      "intent": "chat or model answer",
+      "category": "interaction_ai",
+      "primary": "chatbot"
+    },
+    {
+      "intent": "AI provider health/quota/rate limit",
+      "category": "interaction_ai",
+      "primary": "provider_fleet"
+    },
+    {
+      "intent": "scrape/crawl website",
+      "category": "acquisition_extraction",
+      "primary": "extractor",
+      "secondary": [
+        "browser"
+      ]
+    },
+    {
+      "intent": "WooCommerce/Google Merchant feed",
+      "category": "acquisition_extraction",
+      "primary": "feed_recovery",
+      "secondary": [
+        "extractor",
+        "mapper"
+      ]
+    },
+    {
+      "intent": "product normalization/identity mapping",
+      "category": "acquisition_extraction",
+      "primary": "mapper"
+    },
+    {
+      "intent": "research/evidence/claims",
+      "category": "research_evidence",
+      "primary": "research"
+    },
+    {
+      "intent": "Cloudflare Worker/D1/Browser Run/AI Gateway",
+      "category": "runtime_resources",
+      "primary": "cloudflare_runtime"
+    },
+    {
+      "intent": "resource quota/budget/lease/reservation",
+      "category": "runtime_resources",
+      "primary": "runtime_governance"
+    },
+    {
+      "intent": "B2 backup/restore/retention/archive size",
+      "category": "runtime_resources",
+      "primary": "storage_b2"
+    },
+    {
+      "intent": "audit/scan/security/drift",
+      "category": "governance_security",
+      "primary": "security_ci"
+    },
+    {
+      "intent": "score/learning/self-evolution/candidate",
+      "category": "automation_evolution",
+      "primary": "evolution"
+    },
+    {
+      "intent": "workflow/CI/autonomous mission",
+      "category": "automation_evolution",
+      "primary": "autonomous_control"
+    },
+    {
+      "intent": "migration/polyglot/portability",
+      "category": "automation_evolution",
+      "primary": "mapper",
+      "secondary": [
+        "security_ci",
+        "evolution"
+      ]
+    }
   ],
   "execution_classes": {
-    "direct_http": ["HTTP", "HTML", "JSON", "XML", "public APIs"],
-    "rendered": ["rendered HTTP", "JS-heavy HTTP acquisition"],
-    "browser": ["Playwright", "Cloudflare Browser Run"],
-    "batch": ["GitHub Actions", "bounded scheduled jobs"],
-    "control_plane": ["policy", "resource", "routing", "evidence", "promotion/recovery"]
+    "direct_http": [
+      "HTTP",
+      "HTML",
+      "JSON",
+      "XML",
+      "public APIs"
+    ],
+    "rendered": [
+      "rendered HTTP",
+      "JS-heavy HTTP acquisition"
+    ],
+    "browser": [
+      "Playwright",
+      "Cloudflare Browser Run"
+    ],
+    "batch": [
+      "GitHub Actions",
+      "bounded scheduled jobs"
+    ],
+    "control_plane": [
+      "policy",
+      "resource",
+      "routing",
+      "evidence",
+      "promotion/recovery"
+    ]
   },
-  "evidence_ladder": ["SOURCE", "TESTED", "RUNTIME", "PRODUCTION"],
+  "evidence_ladder": [
+    "SOURCE",
+    "TESTED",
+    "RUNTIME",
+    "PRODUCTION"
+  ],
   "authority_map": {
     "navigation": "this map/directory",
     "observation": "component runtime",
@@ -226,15 +578,53 @@
     "runtime": "Cloudflare deployed runtime"
   },
   "forbidden_routes": [
-    {"route": "retired standalone extractor-mapper repository", "reason": "historical only"},
-    {"route": "Cloudflare R2", "reason": "not used by the active project"},
-    {"route": "dashboard as promotion authority", "reason": "read-only observation"},
-    {"route": "telemetry-quality score as production-acceptance score", "reason": "descriptive telemetry measurement only"},
-    {"route": "AI-generated response as evidence authority", "reason": "AI is planner/interpreter, not evidence authority"}
+    {
+      "route": "retired standalone extractor-mapper repository",
+      "reason": "historical only"
+    },
+    {
+      "route": "Cloudflare R2",
+      "reason": "not used by the active project"
+    },
+    {
+      "route": "dashboard as promotion authority",
+      "reason": "read-only observation"
+    },
+    {
+      "route": "telemetry-quality score as production-acceptance score",
+      "reason": "descriptive telemetry measurement only"
+    },
+    {
+      "route": "AI-generated response as evidence authority",
+      "reason": "AI is planner/interpreter, not evidence authority"
+    }
   ],
   "sync_contract": {
-    "update_when": ["ownership changes", "canonical path changes", "workflow changes", "new cross-cutting authority", "evidence contract changes"],
+    "update_when": [
+      "ownership changes",
+      "canonical path changes",
+      "workflow changes",
+      "new cross-cutting authority",
+      "evidence contract changes"
+    ],
     "live_state_rule": "read current GitHub/Cloudflare state before runtime claims",
     "production_rule": "moving Operations main is drift until separately validated/promoted"
+  },
+  "automation_overlay": {
+    "canonical_supervisor": "tools/autonomous_engineering_supervisor.mjs",
+    "observation": "tools/comprehensive_governance_scan.py",
+    "publication": "tools/publish_governance_findings.py",
+    "schedule": ".github/workflows/twice-daily-autonomous-governance-sweep.yml",
+    "lanes": [
+      "structure_hygiene",
+      "migration_boundary",
+      "research_feed",
+      "provider_runtime",
+      "work_items_workflow",
+      "maps_docs_policy",
+      "quality_learning_evolution",
+      "performance_resources"
+    ],
+    "authority_rule": "scan is descriptive; existing component/policy/evidence/promotion/release authorities remain canonical"
   }
 }
