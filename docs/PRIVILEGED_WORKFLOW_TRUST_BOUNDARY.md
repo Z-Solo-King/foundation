@@ -51,3 +51,8 @@ The current GitHub workflow surface is treated as configuration under the same t
 ## Public release prohibition — 2026-10-02
 
 Feed-recovery workflows must never create or upload GitHub Releases or publish release download URLs. Normal feed jobs are read-only; the separate cleanup job is narrowly scoped to delete the prohibited feed release/tag.
+
+
+## Public endpoint reconciliation — 2026-10-02
+
+Credential-bearing workflows that probe or release the public application must target the canonical GitHub-backed Pages project `https://heroic-ai.pages.dev`. The public hostname change does not change the trust boundary: privileged workflows still require trusted `main` or explicit manual dispatch, and private Operations credentials remain inaccessible to pull-request code.
