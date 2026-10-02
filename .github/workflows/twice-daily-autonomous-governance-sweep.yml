@@ -71,9 +71,30 @@ jobs:
           GH_TOKEN="$OPERATIONS_GH_TOKEN" gh api "repos/Z-Solo-King/operations/actions/runs?per_page=100" --jq '[.workflow_runs[] | {id,name,path,status,conclusion,created_at,run_started_at,updated_at,head_sha,event}]' > .runtime/governance/operations-runs.json
           GH_TOKEN="$OPERATIONS_GH_TOKEN" gh api repos/Z-Solo-King/operations/commits/main --jq .sha > .runtime/governance/operations-main-sha
 
+      - name: Build consolidated live GitHub snapshot
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path(".runtime/governance")
+          payload={
+            "schema":"governance-github-snapshot/v1",
+            "foundation":{
+              "issues":json.loads((root/"foundation-issues.json").read_text()),
+              "prs":json.loads((root/"foundation-prs.json").read_text()),
+              "runs":json.loads((root/"foundation-runs.json").read_text()),
+            },
+            "operations":{
+              "issues":json.loads((root/"operations-issues.json").read_text()),
+              "prs":json.loads((root/"operations-prs.json").read_text()),
+              "runs":json.loads((root/"operations-runs.json").read_text()),
+            },
+          }
+          (root/"github-snapshot.json").write_text(json.dumps(payload)+"\n")
+          PY
+
       - name: Launch eight cross-fire observation lanes
-        env:
-          SNAPSHOT_DIR: .runtime/governance
         run: |
           set -euo pipefail
           lanes=(
