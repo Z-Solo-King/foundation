@@ -2,7 +2,6 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { IMPROVEMENT_COMPONENTS, MISSION_WORKFLOWS, PROJECT_IMPROVEMENT_MATRIX, validatePlan } from './autonomous_mission_router.mjs';
-import { planVerification, scanFoundation } from './verification_fabric.mjs';
 
 const owner = process.env.GITHUB_REPOSITORY?.split('/')[0];
 const repo = process.env.GITHUB_REPOSITORY?.split('/')[1];
@@ -73,20 +72,6 @@ async function addIssueComment(number, body) {
   return github(`/repos/${owner}/${repo}/issues/${number}/comments`, {method:'POST', body:{body}});
 }
 
-function loadVerificationFabric() {
-  const filename = process.env.VERIFICATION_FABRIC_FILE;
-  if (!filename) return null;
-  try {
-    const raw = fs.readFileSync(filename, 'utf8');
-    if (raw.length > 24000) throw new Error('verification fabric context too large');
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed : null;
-  } catch (error) {
-    console.warn(`verification fabric context unavailable: ${String(error).slice(0,240)}`);
-    return null;
-  }
-}
-
 function loadGovernanceAudit() {
   const filename = process.env.GOVERNANCE_AUDIT_FILE;
   if (!filename) return null;
@@ -134,17 +119,6 @@ async function applyFindings({findings, missionIssue, openIssues}) {
   }
   if (applied.length) await addIssueComment(missionIssue.number, `Governance findings processed: ${applied.map((item)=>`${item.id}->${item.disposition}${item.issue_number ? ` #${item.issue_number}` : ''}`).join(', ')}.`);
   return applied;
-}
-
-export function selectResumableMission(activeMissions, mode = 'standard') {
-  if (mode === 'governance_sweep') return {issue:null,state:null};
-  for (const item of Array.isArray(activeMissions) ? activeMissions : []) {
-    const state = item?.state || parseState(item?.issue?.body);
-    if (state && !(state.state === 'blocked' && state.retriable === false)) {
-      return {issue:item.issue || null,state};
-    }
-  }
-  return {issue:null,state:null};
 }
 
 function improvementComponentForRun() {
@@ -228,7 +202,7 @@ export function deterministicFallbackPlan(context) {
     if (/woocommerce|feed|merchant/.test(issueText)) { missionType = 'feed_recovery'; workflows = MISSION_WORKFLOWS.feed_recovery; }
     else if (/migration|polyglot|mapper/.test(issueText)) { missionType = 'migration'; workflows = MISSION_WORKFLOWS.migration; }
     else if (/research|nightly|provider/.test(issueText)) { missionType = 'nightly_research'; workflows = MISSION_WORKFLOWS.nightly_research; }
-    else if (/audit|security|integrity|governance/.test(issueText)) { missionType = 'audit'; workflows = MISSION_WORKFLOWS.audit; }
+    else if (/audit|security|integrity/.test(issueText)) { missionType = 'audit'; workflows = MISSION_WORKFLOWS.audit; }
   }
   const workflowKey = (run) => String(run.path || '').split('/').pop() || String(run.name || '');
   const active = new Set((context?.recent_runs || []).filter((run) => ['queued','in_progress','waiting','requested','pending'].includes(run.status)).map(workflowKey));
@@ -257,7 +231,7 @@ async function callPlanner(missionId, cycle, context) {
   const payload = {
     chat_id: missionId,
     request_id: `autonomous-plan:${missionId}:${cycle}`,
-    message: 'AUTONOMOUS_ENGINEERING_PLAN_V1\nReturn JSON only. You are a bounded planner, not an execution authority. For component_improvement, target_component is mandatory and every action must come from that component allowlist. For governance_sweep, inspect every provided vertical/control summary and prioritize independent cross-fire lanes. Governance findings are already published by the deterministic governance publisher, so return zero findings; only select bounded allowlisted remediation workflows. Never assert runtime/production truth beyond the provided evidence. Do not duplicate workflows, do not dispatch production release, do not mutate credentials/policy/Cloudflare, and never use a second action merely to duplicate the first. Prefer 2-3 independent allowlisted workflows when they are non-overlapping; otherwise return the single highest-value action. '+JSON.stringify(context),
+    message: 'AUTONOMOUS_ENGINEERING_PLAN_V1\nReturn JSON only. You are a bounded planner, not an execution authority. For component_improvement, target_component is mandatory and every action must come from that component allowlist. For governance_sweep, inspect every provided vertical/control summary and prioritize independent cross-fire lanes; findings are candidate work items only. You may return up to 3 independent allowlisted actions and up to 5 findings. Each finding must cite 1-3 evidence_refs supplied in context, use disposition none/comment_existing/create_issue, and never assert runtime/production truth beyond the provided evidence. Do not duplicate workflows, do not dispatch production release, do not mutate credentials/policy/Cloudflare, and never use a second action merely to duplicate the first. Prefer 2-3 independent allowlisted workflows when they are non-overlapping; otherwise return the single highest-value action. '+JSON.stringify(context),
     mode:'chat', operation:'knowledge', task_family:'audit_assist', strict_zero_cost_only:true, require_model_generation:true,
     metadata:{autonomous:'true',plan_version:'v1',task_family:'audit_assist'},
   };
@@ -292,17 +266,12 @@ async function main() {
   const allIssues = await listIssues('open', 50);
   const mode = process.env.MISSION_MODE || 'standard';
   const missionPrefix = mode === 'component_improvement' ? '[autonomous-improvement]' : '[autonomous-mission]';
-  const activeMissions = allIssues
-    .filter((i) => !i.pull_request && String(i.title || '').startsWith(missionPrefix))
-    .map((issue) => ({issue, state:parseState(issue.body)}));
-  const openIssues = allIssues
-    .filter((i) => !i.pull_request && !String(i.title || '').startsWith('[autonomous-mission]') && !String(i.title || '').startsWith('[autonomous-improvement]'))
-    .slice(0,20);
+  const activeMissions = allIssues.filter((i) => !i.pull_request && String(i.title || '').startsWith(missionPrefix));
+  const openIssues = allIssues.filter((i) => !i.pull_request && !String(i.title || '').startsWith('[autonomous-mission]') && !String(i.title || '').startsWith('[autonomous-improvement]')).slice(0,20);
   const recentRuns = (await listRuns(35)).slice(0,35);
 
-  const resumable = selectResumableMission(activeMissions, mode);
-  let missionIssue = resumable.issue;
-  let state = resumable.state;
+  let missionIssue = mode === 'governance_sweep' ? null : activeMissions[0] || null;
+  let state = missionIssue ? parseState(missionIssue.body) : null;
   if (!missionIssue || !state) {
     const missionId = `mission-${process.env.GITHUB_RUN_ID}`;
     const created = await createMission(missionId, foundationSha);
@@ -339,7 +308,6 @@ async function main() {
   }
 
   const governanceAudit = mode === 'governance_sweep' ? loadGovernanceAudit() : null;
-  const verificationFabric = loadVerificationFabric();
   const context = {
     mission:state,
     foundation_sha:foundationSha,
@@ -351,21 +319,6 @@ async function main() {
     workflow_attempts:state.workflow_attempts || {},
     child_runs:childResults.map((r)=>({id:r.id,name:r.name,status:r.status,conclusion:r.conclusion,head_sha:r.head_sha,event:r.event,url:r.html_url})),
     governance_audit: governanceAudit,
-    verification_fabric: verificationFabric ? {
-      summary: verificationFabric.report?.summary || verificationFabric.summary || null,
-      domains: verificationFabric.plan?.domains || [],
-      lanes: (verificationFabric.plan?.lanes || []).map((lane) => lane.id).slice(0, 6),
-      checks: (verificationFabric.plan?.checks || []).map((check) => check.workflow).slice(0, 12),
-      deterministic: true,
-    } : (() => {
-      try {
-        const report = scanFoundation(process.cwd());
-        const plan = planVerification({domains: report.domains, mode: 'supervisor'});
-        return {summary: plan ? {findings: report.findings.length} : null, domains: report.domains, lanes: plan.lanes.map((lane) => lane.id), checks: plan.checks.map((check) => check.workflow), deterministic: true};
-      } catch (error) {
-        return {summary: null, domains: [], lanes: [], checks: [], deterministic: false, unavailable: String(error).slice(0,240)};
-      }
-    })(),
     hard_constraints:{production_release_allowed:false,secrets_or_credentials_mutation:false,policy_changes:false,workflow_inputs:{},max_same_workflow_dispatches:maxWorkflowAttempts,cloudflare_destructive_mutation_allowed:false},
   };
 
@@ -405,9 +358,16 @@ async function main() {
   }
 
   const digest = crypto.createHash('sha256').update(JSON.stringify(plan)).digest('hex');
+  const previousDigest = String(state.last_plan_digest || '');
+  if (previousDigest && digest === previousDigest && !plannerFallback) {
+    state = {...state, state:'blocked', cycle, last_plan_digest:digest, last_provider:planner?.response?.provider || null, last_summary:'Identical planner output repeated; stopping to prevent mission-loop churn.', terminal_reason:'repeated_plan_digest', failure_class:'policy_blocked', retriable:false};
+    await updateIssue(missionIssue.number,{body:missionBody(state,state.last_summary)});
+    console.log(JSON.stringify({mission_id:state.mission_id,state:'blocked',reason:'repeated_plan_digest',digest}));
+    return;
+  }
   state = {...state, mission_type:plan.mission_type, target_component:plan.target_component || state.target_component || null, cycle, last_plan_digest:digest, last_provider:planner?.response?.provider || null, last_summary:plan.summary, failure_class:plannerFallback ? 'transient_provider' : null};
 
-  const appliedFindings = mode === 'governance_sweep' ? [] : await applyFindings({findings:plan.findings || [], missionIssue, openIssues:allIssues.filter((i)=>!i.pull_request)});
+  const appliedFindings = await applyFindings({findings:plan.findings || [], missionIssue, openIssues:allIssues.filter((i)=>!i.pull_request)});
   if (appliedFindings.length) state = {...state, last_summary:`${plan.summary} Findings processed: ${appliedFindings.length}.`};
 
   if (plan.terminal === 'complete') {
