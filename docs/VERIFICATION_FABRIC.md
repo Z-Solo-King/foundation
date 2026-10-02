@@ -56,3 +56,8 @@ The Migration Factory workflow extends the verification fabric with six read-onl
 ## Nightly workflow duplicate reconciliation — 2026-10-02
 
 The canonical 24-program nightly workflow was restored to the last known-good single-definition revision after a duplicated merge artifact produced repeated job identifiers and invalid YAML. The workflow now contains one `production_gate`, one `research`, one `migration_review`, one `project-summary`, and one `final-gate`. Subsequent changes must modify that canonical workflow rather than append duplicate job blocks.
+
+
+## Node tooling migration — public-core synchronization
+
+The public-core synchronizer was migrated from Python to Node as repository tooling. Foundation-owned validation now executes its Node contract test; the migration does not change public/runtime authority or the immutable Foundation core pin.
