@@ -46,9 +46,12 @@ When contracts, ownership, workflows, dependencies or production gates change, u
 
 ## Canonical feed boundary
 
-Public feed documentation is methodology-only. Live target state and recovery execution belong to Operations. docs/WOOCOMMERCE_GOOGLE_FEED_RECOVERY_1247.md is the public contract/method reference; it is not a live target registry or completion certificate.
-
+Public feed documentation is methodology-only. Live target state and recovery execution belong to Operations. `docs/WOOCOMMERCE_GOOGLE_FEED_RECOVERY_1247.md` is the public contract/method reference; it is not a live target registry or completion certificate.
 
 ## Public release governance — 2026-10-02
 
 Feed recovery output is workflow evidence, not a GitHub Release. The executable policy is `scripts/validate_release_publication_policy.mjs`; see `docs/PUBLIC_RELEASE_GOVERNANCE.md` for the boundary and cleanup rule.
+
+## Final least-tried WooCommerce recovery — 2026-10-02
+
+The final recovery workflow is the controlled evidence-generation path for the 30-site WooCommerce learning corpus. It uses a read-only Operations GitHub App checkout, six independent recovery shards, candidate-only AI cross-fire and deterministic native-feed validation; it does not publish retailer feed URLs as releases.
