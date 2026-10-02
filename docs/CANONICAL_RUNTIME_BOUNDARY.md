@@ -35,3 +35,10 @@ The public Worker boundary remains thin and public-safe. Public readiness must r
 A release is valid only when the approved immutable Operations revision, current Foundation revision, Cloudflare bindings, protected policy values, D1 schema, deployment provenance and post-deployment runtime checks agree.
 
 Do not infer production state from historical docs, branch names, or GitHub `main` position alone.
+
+## Migration integrity gate — 2026-10-02
+
+- The public Foundation tree is the consumer-facing contract and deterministic-core surface; private execution behavior moved out of Foundation is owned by Operations.
+- A compatibility surface must remain thin, contract-based and non-authoritative. It must not recreate private policy, routing, provider, resource or execution algorithms.
+- Cross-repository workflows use purpose-scoped immutable Operations revisions. Production pins are separate from Operations main and must not be advanced implicitly.
+- Runtime claims require live evidence at the appropriate level; source files and historical synchronization documents are not production certificates.
