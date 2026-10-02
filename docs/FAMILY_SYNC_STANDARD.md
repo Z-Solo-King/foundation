@@ -40,6 +40,8 @@ A lower layer must not override a higher layer.
 
 The current-state documents must therefore record both the observed branch SHA and the audit timestamp. A stale recorded SHA is a documentation synchronization finding, not evidence that the branch has reverted.
 
+For the 2026-10-02 reconciliation, the Family Sync State records the live Foundation `main` head `4d54a85944ad28f8c22e80909dec874692d4dd4b` and live Operations `main` head `5cf716b8c8d9be4691f2544f2799dfd95cc29d4a` as observations. The immutable production Operations pin `da86e92d4e0fdb68912efb54ef95c69281a7d613` remains a separate production-authority value and is not replaced by the moving `main` head.
+
 ## Required current-state record
 
 Every current-state document that records repository or family state should use these sections in this order when applicable:
