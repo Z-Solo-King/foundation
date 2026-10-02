@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
-          ref: main
+          ref: migration/ops-ts-observation-contract-authority-2026-10-02
           path: operations
           token: ${{ steps.operations-app.outputs.token }}
           persist-credentials: false
@@ -53,6 +53,33 @@ jobs:
           npm run differential:python
           npm run differential:compare
           npm run benchmark
+      - name: Verify retired Python observation boundary is absent
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          test ! -e extractor_mapper/observation_contract.py
+          test ! -e extractor_mapper/replay_bridge.py
+          test ! -e tests/test_observation_contract.py
+          test ! -e tests/test_observation_contract_architecture.py
+          test ! -e tests/test_v175_v18_replay_bridge.py
+          if git grep -n -E 'extractor_mapper\.observation_contract|extractor_mapper\.replay_bridge|feed_candidate_cli\.py' -- extractor_mapper private tools tests polyglot | grep -v 'differential_reference.py'; then
+            echo "active source reference to retired Python boundary found"
+            exit 1
+          fi
+
+      - name: Run mapper/extractor cross-audit
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime
+          python tools/mapper_extractor_cross_audit.py             --foundation "${{ github.workspace }}"             --operations "${{ github.workspace }}/operations"             --output .runtime/mapper-extractor-cross-audit.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          payload=json.loads(Path(".runtime/mapper-extractor-cross-audit.json").read_text())
+          assert payload["status"] == "PASS", payload
+          PY
+
       - name: Typecheck and test Operations edge
         working-directory: operations/polyglot/edge-worker
         run: |
