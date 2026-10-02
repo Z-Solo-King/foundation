@@ -9,8 +9,6 @@ on:
       - "benchmark/chatbot-query-corpus.json"
       - "benchmark/chatbot_query_benchmark.py"
       - "benchmark/nightly/**"
-      - "backend/intelligence/planning.py"
-      - "backend/intelligence/contracts.py"
       - ".github/workflows/autonomous-benchmark.yml"
       - ".github/workflows/nightly-ai-research-20jobs.yml"
       - "scripts/build_nightly_ai_research_report.js"
