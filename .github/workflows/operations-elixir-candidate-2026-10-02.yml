@@ -1,0 +1,179 @@
+name: Temporary Operations Elixir candidate gate
+
+on:
+  push:
+    branches:
+      - audit/operations-elixir-candidate-2026-10-02
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    name: Elixir bounded fanout repeat ${{ matrix.repeat }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        repeat: [1, 2, 3]
+
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: candidate/elixir-bounded-fanout-2026-10-02
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+
+      - name: Setup BEAM
+        uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124
+        with:
+          otp-version: "28.5.0.7"
+          elixir-version: "1.20.4"
+          version-type: strict
+
+      - name: Verify toolchain
+        working-directory: operations/polyglot/elixir-bounded-fanout
+        run: |
+          set -euo pipefail
+          elixir --version
+          erl -noshell -eval 'io:format("OTP=~s~n", [erlang:system_info(otp_release)]), halt().'
+
+      - name: Format and test
+        working-directory: operations/polyglot/elixir-bounded-fanout
+        run: |
+          set -euo pipefail
+          mix format --check-formatted
+          mix compile --warnings-as-errors
+          mix test
+
+      - name: Exact Node reference
+        working-directory: operations/polyglot/elixir-bounded-fanout
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime
+          node reference.mjs corpus.jsonl .runtime/reference.jsonl
+
+      - name: Exact Elixir differential
+        working-directory: operations/polyglot/elixir-bounded-fanout
+        run: |
+          set -euo pipefail
+          mix run reference_compare.exs .runtime/reference.jsonl > .runtime/differential.json
+          grep -q '"exact":true' .runtime/differential.json
+
+      - name: Benchmark
+        working-directory: operations/polyglot/elixir-bounded-fanout
+        env:
+          BENCHMARK_ITERATIONS: "100"
+          BENCHMARK_WARMUPS: "20"
+          BENCHMARK_CONCURRENCY: "8"
+        run: |
+          set -euo pipefail
+          mix run bench.exs > .runtime/benchmark.json
+          grep -q '"production_authority":false' .runtime/benchmark.json
+          grep -q '"network":false' .runtime/benchmark.json
+          grep -q '"policy":false' .runtime/benchmark.json
+
+      - name: Emit repeat receipt
+        working-directory: operations/polyglot/elixir-bounded-fanout
+        env:
+          REPEAT: ${{ matrix.repeat }}
+          OPS_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          const bench = JSON.parse(fs.readFileSync(".runtime/benchmark.json", "utf8"));
+          const diff = JSON.parse(fs.readFileSync(".runtime/differential.json", "utf8"));
+          const receipt = {
+            schema: "elixir-bounded-fanout-runtime-receipt/v1",
+            candidate: "elixir-bounded-fanout",
+            repeat: Number(process.env.REPEAT),
+            operations_sha: process.env.OPS_SHA,
+            exact_differential: diff.exact === true,
+            corpus_cases: diff.corpus_cases,
+            benchmark: bench,
+            authority_transfer: false
+          };
+          fs.writeFileSync(".runtime/receipt.json", JSON.stringify(receipt, null, 2) + "\n");
+          console.log(JSON.stringify(receipt, null, 2));
+          NODE
+
+      - name: Upload repeat evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: elixir-bounded-fanout-repeat-${{ matrix.repeat }}
+          path: operations/polyglot/elixir-bounded-fanout/.runtime/**
+          if-no-files-found: error
+          retention-days: 30
+
+  aggregate:
+    name: Aggregate three Elixir repeats
+    needs: candidate
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Download repeat evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          pattern: elixir-bounded-fanout-repeat-*
+          path: artifacts
+          merge-multiple: false
+
+      - name: Verify three independent repeats
+        run: |
+          set -euo pipefail
+          files=(artifacts/*/receipt.json)
+          test "${#files[@]}" -eq 3
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          const files = fs.readdirSync("artifacts", {withFileTypes:true})
+            .filter(x => x.isDirectory())
+            .map(x => "artifacts/" + x.name + "/receipt.json")
+            .sort();
+          const receipts = files.map(x => JSON.parse(fs.readFileSync(x, "utf8")));
+          if (receipts.length !== 3) throw new Error("expected three receipts");
+          if (!receipts.every(x => x.exact_differential === true)) throw new Error("differential failure");
+          if (!receipts.every(x => x.authority_transfer === false)) throw new Error("authority transfer detected");
+          if (new Set(receipts.map(x => x.repeat)).size !== 3) throw new Error("repeat IDs not unique");
+          const payload = {
+            schema: "elixir-bounded-fanout-three-repeat-summary/v1",
+            candidate: "elixir-bounded-fanout",
+            repeats: receipts.map(x => x.repeat).sort((a,b)=>a-b),
+            exact_differential_passes: receipts.filter(x => x.exact_differential).length,
+            authority_transfer: false,
+            benchmark: receipts.map(x => ({repeat:x.repeat, wall_ms:x.benchmark.wall_ms, reductions:x.benchmark.reductions, memory_delta_bytes:x.benchmark.memory_delta_bytes}))
+          };
+          fs.mkdirSync("summary", {recursive:true});
+          fs.writeFileSync("summary/receipt.json", JSON.stringify(payload, null, 2) + "\n");
+          console.log(JSON.stringify(payload, null, 2));
+          NODE
+
+      - name: Upload aggregate evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: elixir-bounded-fanout-three-repeat-summary
+          path: summary/receipt.json
+          if-no-files-found: error
+          retention-days: 30
