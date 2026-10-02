@@ -13,10 +13,10 @@ on:
         required: false
         default: ""
         type: string
-      operations_research_ref:
-        description: "Exact Operations revision deployed to the private production runtime"
+      operations_runtime_ref:
+        description: "Exact Operations revision expected in the deployed private production runtime"
         required: false
-        default: "5a5ae97ff83c60d755cc964bd1ac639565e2f298"
+        default: ""
         type: string
 
 permissions:
@@ -32,13 +32,13 @@ jobs:
     env:
       PUBLIC_WORKER_URL: "https://heroic-ai.pages.dev"
       TARGET_FOUNDATION_SHA: ${{ inputs.target_sha || github.sha }}
-      OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || '5a5ae97ff83c60d755cc964bd1ac639565e2f298' }}
+      REQUESTED_OPERATIONS_RUNTIME_REF: ${{ inputs.operations_runtime_ref }}
       RESEARCH_LLM_MODEL: "@cf/zai-org/glm-4.7-flash"
     steps:
       - name: Checkout Foundation probe
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ inputs.target_sha || github.sha }}
           persist-credentials: false
 
       - name: Setup Python
@@ -51,6 +51,81 @@ jobs:
         with:
           node-version: "22"
           package-manager-cache: false
+
+      - name: Resolve immutable Operations runtime revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest_ref="$(jq -r '.pins.production_runtime.sha' docs/OPERATIONS_PIN_MANIFEST.json)"
+          runtime_ref="${REQUESTED_OPERATIONS_RUNTIME_REF:-$manifest_ref}"
+          printf '%s' "$runtime_ref" | grep -Eq '^[0-9a-f]{40}
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
+          OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${AUTH_TOKEN:-}" || { echo "Missing AUTH_TOKEN"; exit 1; }
+          test -n "${OPERATIONS_APP_ID:-}" || { echo "Missing OPERATIONS_APP_ID"; exit 1; }
+          test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo "Missing OPERATIONS_APP_PRIVATE_KEY"; exit 1; }
+          printf "%s" "$OPERATIONS_RESEARCH_REF" | grep -Eq "^[0-9a-f]{40}$"
+          printf "%s" "$TARGET_FOUNDATION_SHA" | grep -Eq "^[0-9a-f]{40}$"
+
+      - name: Verify exact deployed research contract
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/nightly_runtime_contract_probe.mjs \
+            --url "$PUBLIC_WORKER_URL" \
+            --token "$AUTH_TOKEN" \
+            --model "$RESEARCH_LLM_MODEL" \
+            --expected-foundation-sha "$TARGET_FOUNDATION_SHA" \
+            --expected-operations-ref "$OPERATIONS_RUNTIME_REF" | tee preflight-probe.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("preflight-probe.json").read_text(encoding="utf-8"))
+          assert isinstance(data, dict)
+          assert data.get("schema") == "nightly-runtime-contract-probe/v2"
+          print("preflight receipt: exactly one JSON object")
+          PY
+
+      - name: Publish preflight receipt
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp preflight-probe.json preflight.json 2>/dev/null || printf "%s\n" '{"ok":false,"classification":"probe_not_created"}' > preflight.json
+          cat preflight.json
+
+      - name: Comment preflight receipt
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="$(python - <<'PY'
+          from pathlib import Path
+          print("Nightly exact runtime preflight receipt:")
+          print(Path("preflight.json").read_text(encoding="utf-8"))
+          PY
+          )"
+          gh api "repos/$GITHUB_REPOSITORY/issues/157/comments" -f body="$body" || true
+
+      - name: Upload preflight receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: live-nightly-preflight-${{ github.run_id }}
+          path: preflight.json
+          retention-days: 30
+
+          echo "OPERATIONS_RUNTIME_REF=$runtime_ref" >> "$GITHUB_ENV"
+          echo "immutable Operations runtime revision: $runtime_ref"
 
       - name: Verify required credentials
         env:
