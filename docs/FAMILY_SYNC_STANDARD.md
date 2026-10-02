@@ -235,3 +235,7 @@ This machine layer is subordinate to this document's authority/evidence hierarch
 Formatting policy is deliberately ratcheted. Existing historical debt is reported without a repository-wide mass rewrite; newly changed files must satisfy the strict gate.
 
 The current live head observations are maintained in `docs/FAMILY_SYNC_STATE.json` and must be refreshed after merged cross-system changes; immutable production pins remain separate from moving `main` heads.
+
+## Autonomous-governance synchronization note — 2026-10-02
+
+The migration synchronization pass treats autonomous governance as an existing control loop, not a new authority. Changes to the autonomous supervisor/coordinator surface remain subordinate to the family contract: issue/workflow mutations are bounded and reviewable, deterministic repository policy remains authoritative, and model output remains candidate assistance. This companion note records the autonomous-governance documentation delta required by the machine synchronization gate.
