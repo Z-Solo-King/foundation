@@ -73,15 +73,8 @@
     "ai_automation": {
       "owner": "foundation",
       "canonical": "tools/autonomous_engineering_supervisor.mjs",
-      "consumes": [
-        "project-improvement-matrix",
-        "evidence/results",
-        "mission state"
-      ],
-      "produces": [
-        "bounded workflow dispatch decisions",
-        "mission receipts"
-      ],
+      "consumes": ["project-improvement-matrix", "evidence/results", "mission state"],
+      "produces": ["bounded workflow dispatch decisions", "mission receipts"],
       "forbidden": [
         "acceptance authority",
         "policy mutation",
@@ -100,11 +93,8 @@
         "current GitHub issue and workflow state",
         "mission state"
       ],
-      "outputs": [
-        "bounded workflow dispatch decisions",
-        "mission receipts"
-      ],
-      "observation": "tools/comprehensive_governance_scan.py",
+      "outputs": ["bounded workflow dispatch decisions", "mission receipts"],
+      "observation": "tools/comprehensive_governance_scan.mjs",
       "publication": "tools/publish_governance_findings.py",
       "schedule": ".github/workflows/twice-daily-governance-sweep.yml",
       "receipt_contract": "docs/AUTONOMOUS_GOVERNANCE_SCAN_CONTRACT.json",
@@ -113,23 +103,10 @@
     },
     "ai_api": {
       "owner": "operations",
-      "canonical": [
-        "private/chatbot/provider_runtime.py",
-        "private/multi_agent/governed_llm.py"
-      ],
-      "consumes": [
-        "request/task contract",
-        "resource policy",
-        "provider capability state"
-      ],
-      "produces": [
-        "provider/model result",
-        "runtime/economic evidence"
-      ],
-      "forbidden": [
-        "self-authorized provider promotion",
-        "billing bypass"
-      ]
+      "canonical": ["private/chatbot/provider_runtime.py", "private/multi_agent/governed_llm.py"],
+      "consumes": ["request/task contract", "resource policy", "provider capability state"],
+      "produces": ["provider/model result", "runtime/economic evidence"],
+      "forbidden": ["self-authorized provider promotion", "billing bypass"]
     },
     "audit": {
       "owner": "foundation+operations",
@@ -139,19 +116,9 @@
         "tools/master_audit.py",
         "tools/exhaustive_audit.py"
       ],
-      "consumes": [
-        "repository state",
-        "canonical maps",
-        "live evidence where permitted"
-      ],
-      "produces": [
-        "findings",
-        "receipts",
-        "candidate work items"
-      ],
-      "forbidden": [
-        "direct production promotion"
-      ]
+      "consumes": ["repository state", "canonical maps", "live evidence where permitted"],
+      "produces": ["findings", "receipts", "candidate work items"],
+      "forbidden": ["direct production promotion"]
     },
     "quality": {
       "owner": "operations",
@@ -160,20 +127,9 @@
         "operations/private/evolution_engine.py",
         "operations/private/evolution_integration.py"
       ],
-      "consumes": [
-        "versioned observations"
-      ],
-      "produces": [
-        "domain-aware scores",
-        "confidence",
-        "uncertainty",
-        "trend",
-        "learning actions"
-      ],
-      "hard_gates": [
-        "security_policy",
-        "provenance"
-      ]
+      "consumes": ["versioned observations"],
+      "produces": ["domain-aware scores", "confidence", "uncertainty", "trend", "learning actions"],
+      "hard_gates": ["security_policy", "provenance"]
     },
     "learning": {
       "owner": "operations",
@@ -182,50 +138,23 @@
         "private/chatbot/chat_learning_index.py",
         "private/chatbot/feedback_evaluation_bridge.py"
       ],
-      "consumes": [
-        "bounded conversation feedback"
-      ],
-      "produces": [
-        "candidate learning signals",
-        "evaluation case candidates"
-      ],
-      "forbidden": [
-        "authoritative evidence",
-        "policy mutation"
-      ]
+      "consumes": ["bounded conversation feedback"],
+      "produces": ["candidate learning signals", "evaluation case candidates"],
+      "forbidden": ["authoritative evidence", "policy mutation"]
     },
     "self_evolution": {
       "owner": "operations",
       "canonical": "private/self_evolution_boundary.py",
-      "consumes": [
-        "candidate configuration + evaluation evidence"
-      ],
-      "produces": [
-        "candidate/shadow/canary authorization decision"
-      ],
-      "forbidden": [
-        "protected authority mutation",
-        "production-stage self-promotion"
-      ]
+      "consumes": ["candidate configuration + evaluation evidence"],
+      "produces": ["candidate/shadow/canary authorization decision"],
+      "forbidden": ["protected authority mutation", "production-stage self-promotion"]
     },
     "mapper_extractor": {
       "owner": "operations+foundation",
-      "canonical": [
-        "operations/extractor_mapper/",
-        "foundation/foundation_core/"
-      ],
-      "consumes": [
-        "source acquisition observations",
-        "mapping contracts"
-      ],
-      "produces": [
-        "bounded observations",
-        "deterministic canonical mapping"
-      ],
-      "forbidden": [
-        "duplicate mapper authority",
-        "mapping without provenance"
-      ]
+      "canonical": ["operations/extractor_mapper/", "foundation/foundation_core/"],
+      "consumes": ["source acquisition observations", "mapping contracts"],
+      "produces": ["bounded observations", "deterministic canonical mapping"],
+      "forbidden": ["duplicate mapper authority", "mapping without provenance"]
     },
     "evidence": {
       "owner": "operations",
@@ -238,13 +167,8 @@
         "baseline/candidate/corpus identity",
         "optional universal quality metrics"
       ],
-      "produces": [
-        "verifiable evaluation receipt"
-      ],
-      "feeds": [
-        "quality",
-        "promotion"
-      ]
+      "produces": ["verifiable evaluation receipt"],
+      "feeds": ["quality", "promotion"]
     }
   },
   "integration_requirements": {
@@ -342,11 +266,7 @@
       "source_bytes": 25000,
       "source_lines": 500
     },
-    "exceptions": [
-      "historical archives",
-      "evidence datasets",
-      "generated corpora"
-    ],
+    "exceptions": ["historical archives", "evidence datasets", "generated corpora"],
     "split_rule": "critical production/code/workflow files require decomposition; compatibility facades are allowed."
   }
 }

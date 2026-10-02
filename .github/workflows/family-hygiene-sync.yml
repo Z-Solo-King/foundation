@@ -44,6 +44,11 @@ jobs:
           path: operations
           fetch-depth: 1
           persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          package-manager-cache: false
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
@@ -52,14 +57,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .runtime
-          python tools/repository_hygiene.py --all --report .runtime/foundation-hygiene-report.json --summary-only
-          python tools/code_documentation_sync.py --all --strict --report .runtime/foundation-sync-report.json --summary-only
+          node tools/repository_hygiene.mjs --all --report .runtime/foundation-hygiene-report.json --summary-only
+          node tools/code_documentation_sync.mjs --all --strict --report .runtime/foundation-sync-report.json --summary-only
       - name: Run Operations audit
         run: |
           set -euo pipefail
           mkdir -p .runtime
-          python tools/repository_hygiene.py --root operations --all --report .runtime/operations-hygiene-report.json --summary-only
-          python tools/code_documentation_sync.py --root operations --all --strict --report .runtime/operations-sync-report.json --summary-only
+          node tools/repository_hygiene.mjs --root operations --all --report .runtime/operations-hygiene-report.json --summary-only
+          node tools/code_documentation_sync.mjs --root operations --all --strict --report .runtime/operations-sync-report.json --summary-only
       - name: Verify family format contract parity
         run: |
           set -euo pipefail
