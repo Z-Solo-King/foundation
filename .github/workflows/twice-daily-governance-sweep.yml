@@ -118,8 +118,8 @@ jobs:
           print(json.dumps({"label": label, "result": payload}, sort_keys=True))
           PY
           }
-          foundation_hygiene="$(run_summary foundation_hygiene python tools/repository_hygiene.py --all --format-check --summary-only)"
-          foundation_sync="$(run_summary foundation_sync python tools/code_documentation_sync.py --all --strict --summary-only)"
+          foundation_hygiene="$(run_summary foundation_hygiene node tools/repository_hygiene.mjs --all --format-check --summary-only)"
+          foundation_sync="$(run_summary foundation_sync node tools/code_documentation_sync.mjs --all --strict --summary-only)"
           operations_hygiene="$(run_summary operations_hygiene python operations/tools/repository_hygiene.py --root operations --all --format-check --summary-only)"
           operations_sync="$(run_summary operations_sync python operations/tools/code_documentation_sync.py --root operations --all --strict --summary-only)"
           python - "$foundation_hygiene" "$foundation_sync" "$operations_hygiene" "$operations_sync" > "$GOVERNANCE_AUDIT_FILE" <<'PY'
