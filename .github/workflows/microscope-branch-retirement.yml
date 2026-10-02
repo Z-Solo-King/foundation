@@ -1,6 +1,8 @@
 name: Microscope branch retirement
 
 on:
+  push:
+    branches: [main]
   pull_request:
     types: [closed]
   workflow_dispatch:
@@ -25,6 +27,11 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (
+        github.event_name == 'push' &&
+        contains(github.event.head_commit.message, 'microscope consolidation')
+      ) ||
+      (
+        github.event_name == 'pull_request' &&
         github.event.pull_request.merged == true &&
         github.event.pull_request.base.ref == github.event.repository.default_branch &&
         github.event.pull_request.head.ref == 'chore/microscope-consolidation-20261002' &&
@@ -47,10 +54,8 @@ jobs:
           set -euo pipefail
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.execute }}" == "true" ]]; then
             node tools/retire_microscope_branches.mjs --execute --report microscope-branch-retirement-report.json
-          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            node tools/retire_microscope_branches.mjs --execute --report microscope-branch-retirement-report.json
           else
-            node tools/retire_microscope_branches.mjs --report microscope-branch-retirement-report.json
+            node tools/retire_microscope_branches.mjs --execute --report microscope-branch-retirement-report.json
           fi
 
       - name: Upload retirement receipt
