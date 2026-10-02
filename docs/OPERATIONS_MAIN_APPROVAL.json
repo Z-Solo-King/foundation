@@ -5,15 +5,16 @@
   "approved_sha": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
   "purpose": "Only this immutable Operations revision is approved as production/runtime authority.",
   "update_rule": "Change only through reviewed Foundation promotion PR after runtime/evidence validation.",
-  "observed_main_sha": "3c780e33772c87ec6c3b6df75a857e5404f0b861",
+  "observed_main_sha": "6eccd9241026bc386e71f099a4129f0200bdebfc",
   "observed_state": "DRIFT",
   "production_observed_sha": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
   "native_private_branch_protection_available": false,
   "promotion_evidence": {
     "source_operations_merge": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
     "change": "current main contains reviewed observability, Worker Issues, security-sync and AI-navigation changes; production pin remains immutable until separate runtime certification",
-    "current_operations_main": "3c780e33772c87ec6c3b6df75a857e5404f0b861",
+    "current_operations_main": "6eccd9241026bc386e71f099a4129f0200bdebfc",
     "main_is_authority": false,
     "production_certification_required_after_pin_change": true
-  }
+  },
+  "current_operations_main": "6eccd9241026bc386e71f099a4129f0200bdebfc"
 }
