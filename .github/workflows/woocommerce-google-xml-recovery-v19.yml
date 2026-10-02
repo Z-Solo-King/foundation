@@ -160,6 +160,9 @@ jobs:
           WC_ANY_MAX_PRODUCT_URLS: "240"
           WC_ANY_LIVE_PAGE_LIMIT: "90"
           WC_ANY_CC_PAGE_LIMIT: "30"
+          WC_JINA_SLOT_MS: "5000"
+          WC_JINA_TIMEOUT_MS: "30000"
+          JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
           SHARD: ${{ matrix.shard }}
         run: |
           set -euo pipefail
