@@ -139,6 +139,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check private/feed_recovery/google_xml_feed_builder_30_v2.mjs
+          node -e 'const fs=require("fs"); const x=fs.readFileSync("private/feed_recovery/google_xml_feed_builder_30_v2.mjs","utf8"); if(!x.includes("let ccCollectionPromise;")) process.exit(1)'
           node -e 'const x=require("./data/feed_lab/woocommerce_30_registry_v18.json"); if(x.sites.length!==30) process.exit(1)'
       - name: Run recovery shard
         working-directory: operations
@@ -146,7 +147,7 @@ jobs:
           WC_ANY_FAST_TIMEOUT_MS: "12000"
           WC_ANY_SLOW_TIMEOUT_MS: "60000"
           WC_ANY_MAX_PRODUCTS: "10000"
-          WC_ANY_MAX_PRODUCT_URLS: "120"
+          WC_ANY_MAX_PRODUCT_URLS: "180"
           WC_ANY_LIVE_PAGE_LIMIT: "60"
           WC_ANY_CC_PAGE_LIMIT: "30"
           SHARD: ${{ matrix.shard }}
