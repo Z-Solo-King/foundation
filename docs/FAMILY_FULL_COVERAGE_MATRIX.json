@@ -150,10 +150,6 @@
         "tools_audit_automation"
       ],
       [
-        "edge.ts",
-        "cloudflare_runtime"
-      ],
-      [
         "wrangler.python-core.toml",
         "cloudflare_runtime"
       ],
