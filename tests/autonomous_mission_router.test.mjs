@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parsePlanDocument, validatePlan } from '../tools/autonomous_mission_router.mjs';
+import { MISSION_WORKFLOWS, parsePlanDocument, validatePlan } from '../tools/autonomous_mission_router.mjs';
 
 const base = (overrides = {}) => ({
   schema: 'autonomous-mission-plan/v1',
@@ -84,4 +84,8 @@ test('accepts governance sweep actions and bounded findings', () => {
 
 test('rejects findings without evidence references', () => {
   assert.throws(() => validatePlan(base({mission_type:'governance_sweep',actions:[{id:'a1',kind:'dispatch_workflow',workflow:'family-integrity-gate.yml',inputs:{},reason:'audit',retry_policy:'bounded'}],findings:[{id:'f1',severity:'error',disposition:'create_issue',title:'x',summary:'y',evidence_refs:[]}]})), /invalid finding evidence/);
+});
+
+test('does not allow a non-dispatchable feed workflow target', () => {
+  assert.equal(MISSION_WORKFLOWS.feed_recovery.includes('woocommerce-identified-family-exhaustive-v5.yml'), false);
 });

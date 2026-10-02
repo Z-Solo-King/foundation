@@ -1,9 +1,9 @@
 {
   "schema": "family-issue-acceptance-matrix/v1",
-  "audited_at": "2026-10-01T18:04:00Z",
+  "audited_at": "2026-10-02T08:30:00Z",
   "repository_heads": {
-    "foundation": "f548a468b4dcd9e7c03263a130ce76e95eafc228",
-    "operations": "3c780e33772c87ec6c3b6df75a857e5404f0b861"
+    "foundation": "092495175d56111a3ab337b7dff8ae5e78fc93e4",
+    "operations": "7ea7d708f880492d52d36cbaf4a0da4982d19894"
   },
   "open_issue_count": 5,
   "issues": [

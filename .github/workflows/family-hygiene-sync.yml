@@ -52,14 +52,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .runtime
-          python tools/repository_hygiene.py --all --summary-only > .runtime/foundation-hygiene-summary.json
-          python tools/code_documentation_sync.py --all --strict --summary-only > .runtime/foundation-sync-summary.json
+          python tools/repository_hygiene.py --all --report .runtime/foundation-hygiene-report.json --summary-only
+          python tools/code_documentation_sync.py --all --strict --report .runtime/foundation-sync-report.json --summary-only
       - name: Run Operations audit
         run: |
           set -euo pipefail
           mkdir -p .runtime
-          python tools/repository_hygiene.py --root operations --all --summary-only > .runtime/operations-hygiene-summary.json
-          python tools/code_documentation_sync.py --root operations --all --strict --summary-only > .runtime/operations-sync-summary.json
+          python tools/repository_hygiene.py --root operations --all --report .runtime/operations-hygiene-report.json --summary-only
+          python tools/code_documentation_sync.py --root operations --all --strict --report .runtime/operations-sync-report.json --summary-only
       - name: Verify family format contract parity
         run: |
           set -euo pipefail
@@ -84,10 +84,10 @@ jobs:
 
           out = {
             "schema_version": "family-hygiene-summary/v1",
-            "foundation": json.loads(Path(".runtime/foundation-hygiene-summary.json").read_text()),
-            "foundation_sync": json.loads(Path(".runtime/foundation-sync-summary.json").read_text()),
-            "operations": json.loads(Path(".runtime/operations-hygiene-summary.json").read_text()),
-            "operations_sync": json.loads(Path(".runtime/operations-sync-summary.json").read_text()),
+            "foundation": json.loads(Path(".runtime/foundation-hygiene-report.json").read_text()),
+            "foundation_sync": json.loads(Path(".runtime/foundation-sync-report.json").read_text()),
+            "operations": json.loads(Path(".runtime/operations-hygiene-report.json").read_text()),
+            "operations_sync": json.loads(Path(".runtime/operations-sync-report.json").read_text()),
             "contract_parity_checked": True,
           }
           Path(".runtime/family-hygiene-summary.json").write_text(
@@ -99,5 +99,5 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: family-hygiene-summary-${{ github.run_id }}
-          path: .runtime/*-summary.json
+          path: .runtime/*-report.json
           retention-days: 14

@@ -84,3 +84,7 @@ AI planners can prioritize and cross-check evidence but cannot certify productio
 ## Six-lane CrossFire standard
 
 For difficult audits, use independent ownership/policy, TypeScript, Rust, Go, Cloudflare/runtime, and security/evidence lenses. Each lane works from the same immutable input snapshot and emits bounded evidence. Intermediate findings are not treated as shared truth until deterministic reconciliation completes. A provider comparison is meaningful only when enough independently configured providers actually execute; unavailable providers are reported as limitations rather than simulated.
+
+
+## 2026-10-02 current-main reconciliation
+Cross-system audit now includes deterministic Foundation/Operations N4 structural comparison, six-lane CrossFire provider/verification surfaces, current issue/PR synchronization semantics, and dispatch-target validation. Repeated autonomous failures must produce a new strategy or a terminal state; stale/non-dispatchable workflow references are configuration defects, not evidence of successful execution. Runtime and production conclusions still require their dedicated live receipts.

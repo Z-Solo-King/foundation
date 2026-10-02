@@ -750,5 +750,29 @@
       ],
       "evidence_tier_required": "R1"
     }
-  ]
+  ],
+  "current_issue_targets": {
+    "foundation": [
+      58,
+      157,
+      1247,
+      1249
+    ],
+    "operations": [
+      603
+    ]
+  },
+  "current_issue_snapshot": {
+    "observed_at": "2026-10-02T08:16:27Z",
+    "semantics": "acceptance_queue_only",
+    "excluded_open_issue_classes": [
+      "autonomous-mission",
+      "autonomous-improvement",
+      "integrity"
+    ],
+    "all_open_issue_count": {
+      "foundation": 7,
+      "operations": 1
+    }
+  }
 }

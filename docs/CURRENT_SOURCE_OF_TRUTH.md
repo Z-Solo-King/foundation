@@ -2,16 +2,16 @@
 
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
-Checked: 2026-10-01 18:00 UTC.
-Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `f548a468b4dcd9e7c03263a130ce76e95eafc228`.
+Checked: 2026-10-02 08:30 UTC.
+Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `092495175d56111a3ab337b7dff8ae5e78fc93e4`.
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
-Foundation main code checkpoint: current main is read live from GitHub; last verified commit `f548a468b4dcd9e7c03263a130ce76e95eafc228`.
-Operations main checkpoint: current main is read live from GitHub; last verified main commit `3c780e33772c87ec6c3b6df75a857e5404f0b861`. Research and migration jobs use explicit immutable pins below.
+Foundation main code checkpoint: current main is read live from GitHub; last verified commit `092495175d56111a3ab337b7dff8ae5e78fc93e4`.
+Operations main checkpoint: current main is read live from GitHub; last verified main commit `7ea7d708f880492d52d36cbaf4a0da4982d19894`. Research and migration jobs use explicit immutable pins below.
 Production Operations pin: `da86e92d4e0fdb68912efb54ef95c69281a7d613`.
 Provider fleet runtime probe pin: `b95e419254a9071beaeef57a1b0da22ba7dd2c4f`.
 Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`.
-Live issue and PR counts must be read from GitHub; this file never serves as a mutable queue. Current checkpoint: 6 open issues total (5 Foundation, 1 Operations) and no open pull requests.
+Live issue and PR counts must be read from GitHub; this file never serves as a mutable queue. Current checkpoint: 8 open issues total (7 Foundation, 1 Operations), with 5 acceptance-track issues and 3 autonomous/integrity state records; no open pull requests at audit time.
 
 ## Public architecture
 
@@ -166,3 +166,11 @@ The canonical human/AI navigation entrypoint is `docs/AI_SYSTEM_DIRECTORY.md`, b
 ## 2026-10-02 repository hygiene and documentation synchronization
 
 Foundation now carries a machine-enforced repository hygiene and code-documentation synchronization system. The canonical contract is `docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json`; changed files are checked by `tools/repository_hygiene.py` and mapped contract/document relationships by `tools/code_documentation_sync.py`. Foundation's family coordinator compares the shared contract against Operations without publishing private source contents. This is a source/CI governance capability, not runtime certification.
+
+
+## 2026-10-02 current-main reconciliation
+Foundation main `092495175d56111a3ab337b7dff8ae5e78fc93e4` includes the public/private runtime migration, N4 cross-system equivalence, six-lane CrossFire, chat/SSE hardening, platform-access validation, and the project-wide verification fabric. Operations main is `7ea7d708f880492d52d36cbaf4a0da4982d19894`. Production Operations remains pinned to immutable `da86e92d4e0fdb68912efb54ef95c69281a7d613`; main/pin drift is intentionally fail-closed and is not automatic promotion. The acceptance queue is Foundation #58/#157/#1247/#1249 and Operations #603; autonomous/integrity issues remain execution/incident state. Recent main-push verification recorded successful repository hygiene, secret scan, App governance, verification fabric, nightly contract and canonical dispatch bridge checks; follow-up failures are being repaired in this reconciliation PR.
+
+
+## 2026-10-02 autonomous incident cleanup
+Autonomous mission records #1828 and #1804 were superseded and closed as `not_planned`; this does not close Foundation acceptance #58/#157/#1247/#1249 or Operations #603. The scheduler and dispatch-target regression coverage remain active.
