@@ -1,10 +1,12 @@
 name: Migration Factory CrossFire
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       operations_ref:
-        description: Immutable Operations revision to audit; blank uses main at run start
+        description: Immutable Operations revision to audit; blank resolves current Operations main
         required: false
         default: ""
         type: string
@@ -25,16 +27,25 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
+      - name: Mint read-only Operations App token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
       - id: resolve
         env:
           REQUESTED: ${{ inputs.operations_ref }}
+          GH_TOKEN: ${{ steps.operations-app.outputs.token }}
         run: |
           set -euo pipefail
           if [ -n "${REQUESTED}" ]; then
             ref="${REQUESTED}"
           else
-            echo 'operations_ref is required for a private cross-repository run' >&2
-            exit 1
+            ref="$(git -c http.extraheader="AUTHORIZATION: Bearer ${GH_TOKEN}" ls-remote https://github.com/Z-Solo-King/operations.git refs/heads/main | cut -f1)"
           fi
           [[ "${ref}" =~ ^[0-9a-f]{40}$ ]]
           echo "ref=${ref}" >> "$GITHUB_OUTPUT"

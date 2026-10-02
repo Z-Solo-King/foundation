@@ -46,3 +46,8 @@ The verification fabric treats GitHub Release publication as a privileged bounda
 ## Final WooCommerce recovery workflow — 2026-10-02
 
 The final least-tried WooCommerce recovery is a privileged Foundation workflow because it uses the read-only Operations GitHub App and provider credentials. It is restricted to workflow_dispatch and trusted main pushes and is registered in docs/WORKFLOW_AUTHORITY_REGISTRY.json. The workflow produces evidence artifacts only; it does not publish retailer feed URLs as releases.
+
+
+## Migration Factory CrossFire — 2026-10-02
+
+The Migration Factory workflow extends the verification fabric with six read-only migration lenses: runtime frontier, dependency frontier, tooling/CI, tests/benchmarks, target-language disposition, and retirement readiness. On trusted Foundation revisions it audits an immutable Operations SHA and produces independent evidence without changing production authority.
