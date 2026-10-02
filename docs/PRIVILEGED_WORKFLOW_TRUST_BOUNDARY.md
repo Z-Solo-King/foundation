@@ -35,3 +35,7 @@ This contract therefore prevents the repository workflows from intentionally gra
 - The workflow resolves an immutable Operations revision before executing the private benchmark and uses `persist-credentials: false` for the private checkout.
 - The workflow validates the canonical platform-access cross-fire contract before provider execution, then runs up to six configured provider lanes concurrently through the existing private benchmark runner.
 - The public Foundation bridge contains no provider keys or provider endpoints; credential-bearing provider configuration remains in private Operations/runtime context.
+
+## Migration synchronization note — 2026-10-02
+
+The current migration branch changes the workflow-governance surface by removing obsolete public-runtime/feed workflow paths and retaining only the canonical public-boundary, validation, and privileged bridge workflows. The live provider CrossFire workflow remains a manually invoked privileged benchmark with an immutable Operations revision and a maximum of six independently executed provider lanes. This note is the companion documentation delta for the workflow-governance change group; it does not create another workflow authority.
