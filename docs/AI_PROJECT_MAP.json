@@ -76,7 +76,7 @@
         "foundation_core/normalization.py",
         "foundation_core/field_routing.py"
       ],
-      "functions": 21,
+      "functions": 20,
       "key": [
         "identity_matches",
         "map_product",
@@ -98,7 +98,7 @@
         },
         {
           "path": "foundation_core/product_mapping.py",
-          "declarations": 10
+          "declarations": 9
         },
         {
           "path": "foundation_core/normalization.py",
