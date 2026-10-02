@@ -128,8 +128,24 @@
       "private_runtime_state"
     ],
     [
+      ".github/workflows/repository-hygiene-autofix.yml",
+      "repository_hygiene_autofix"
+    ],
+    [
+      ".github/workflows/repository-hygiene.yml",
+      "repository_hygiene"
+    ],
+    [
       ".github/workflows/sync-secrets.yml",
       "secret_sync"
+    ],
+    [
+      ".github/workflows/twice-daily-autonomous-governance-sweep.yml",
+      "autonomous_governance_sweep"
+    ],
+    [
+      ".github/workflows/twice-daily-governance-sweep.yml",
+      "autonomous_governance_sweep"
     ],
     [
       ".github/workflows/woocommerce-32-plugin-feed-hunt.yml",
@@ -150,18 +166,6 @@
     [
       ".github/workflows/woocommerce-v175-22-plugin-extraction.yml",
       "private_feed_extraction"
-    ],
-    [
-      ".github/workflows/repository-hygiene.yml",
-      "repository_hygiene"
-    ],
-    [
-      ".github/workflows/repository-hygiene-autofix.yml",
-      "repository_hygiene_autofix"
-    ],
-    [
-      ".github/workflows/twice-daily-governance-sweep.yml",
-      "autonomous_governance_sweep"
     ]
   ],
   "policy": {
