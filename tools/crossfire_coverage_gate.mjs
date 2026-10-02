@@ -25,9 +25,9 @@ export const CROSSFIRE_SURFACES = Object.freeze({
 });
 
 export const CROSSFIRE_CONTRACTS = Object.freeze({
-  "docs/CROSS_SYSTEM_CROSSFIRE_STANDARD.md": ["fan-out", "contradiction", "receipt-backed"],
-  "docs/MULTI_LENS_EXECUTION_ENGINE.md": ["adaptive lane", "negative-space-audit", "mutation-audit"],
-  "docs/AI_AUDIT_SYSTEM.md": ["independent checks", "CrossFire"],
+  "docs/CROSS_SYSTEM_CROSSFIRE_STANDARD.md": ["CrossFire lanes", "AI provider cross-fire", "live runtime facts"],
+  "docs/MULTI_LENS_EXECUTION_ENGINE.md": ["adaptive scheduling", "contradiction check", "Learning rule"],
+  "docs/AI_AUDIT_SYSTEM.md": ["independent checks", "Cross-fire remains mandatory", "Adaptive parallelism"],
 });
 
 function readText(root, relativePath) {
