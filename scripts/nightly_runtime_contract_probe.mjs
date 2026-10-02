@@ -163,18 +163,14 @@ export async function main() {
           ? "invalid_json_response"
           : "research_contract_rejected";
 
-  if (!ok) {
-    process.stdout.write(JSON.stringify({
-      probe_failure_diagnostics: {
-        readiness_status: readiness.status,
-        readiness_release: release,
-        expected_foundation_sha: args["expected-foundation-sha"] || "",
-        expected_operations_ref: args["expected-operations-ref"] || "",
-        chat_status: chatStatus,
-        chat_details: chatDetails,
-      },
-    }) + "\n");
-  }
+  const failureDiagnostics = ok ? null : {
+    readiness_status: readiness.status,
+    readiness_release: release,
+    expected_foundation_sha: args["expected-foundation-sha"] || "",
+    expected_operations_ref: args["expected-operations-ref"] || "",
+    chat_status: chatStatus,
+    chat_details: chatDetails,
+  };
 
   process.stdout.write(JSON.stringify({
     schema: "nightly-runtime-contract-probe/v2",
@@ -190,6 +186,7 @@ export async function main() {
     chat_http_status: chatStatus,
     expected_model: model,
     ...chatDetails,
+    failure_diagnostics: failureDiagnostics,
     request_contract: {
       operation: "knowledge",
       proof_header: true,
