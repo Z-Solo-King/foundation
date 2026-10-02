@@ -66,9 +66,9 @@ jobs:
           persist-credentials: false
 
       - name: Validate platform access cross-fire contract
-        working-directory: operations-provider-benchmark
         run: |
           set -euo pipefail
+          cd operations-provider-benchmark
           python - <<'PY'
           from private.chatbot.platform_access import validate_platform_matrix, crossfire_lanes
           platforms = validate_platform_matrix()
