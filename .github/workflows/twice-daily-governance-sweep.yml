@@ -263,7 +263,7 @@ jobs:
         run: |
           node --check tools/autonomous_mission_router.mjs
           node --check tools/autonomous_engineering_supervisor.mjs
-          node --test tests/autonomous_mission_router.test.mjs tests/autonomous_engineering_supervisor.test.mjs
+          node --test tests/autonomous_mission_router.test.mjs tests/autonomous_engineering_supervisor.test.mjs tests/governance_finding_contract.test.mjs
 
       - name: Run governed autonomous sweep
         env:
