@@ -68,6 +68,10 @@
       "private_benchmark"
     ],
     [
+      ".github/workflows/migration-factory.yml",
+      "private_audit"
+    ],
+    [
       ".github/workflows/live-ai-agent-benchmark.yml",
       "live_benchmark"
     ],
