@@ -1,0 +1,80 @@
+{
+  "schema_version": "code-doc-sync/v1",
+  "repository": "Z-Solo-King/foundation",
+  "groups": [
+    {
+      "id": "hygiene-governance",
+      "code_paths": [
+        "tools/repository_hygiene.py",
+        "tools/code_documentation_sync.py",
+        ".editorconfig",
+        ".prettierrc.json",
+        ".prettierignore",
+        ".markdownlint.json",
+        ".github/workflows/repository-hygiene.yml",
+        ".github/workflows/family-hygiene-sync.yml"
+      ],
+      "docs": [
+        "docs/REPOSITORY_HYGIENE_AND_FORMAT_STANDARD.md",
+        "docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json",
+        "docs/CODE_DOCUMENTATION_SYNC_MAP.json"
+      ],
+      "require_doc_update": true
+    },
+    {
+      "id": "runtime-boundary",
+      "code_paths": [
+        "edge.ts",
+        "worker.py",
+        "wrangler.toml",
+        "wrangler.python-core.toml",
+        "scripts/production_release.sh"
+      ],
+      "docs": [
+        "docs/CANONICAL_RUNTIME_BOUNDARY.md",
+        "docs/WORKER_IDENTITY_2026-09-25.md",
+        "docs/FAMILY_SYNC_STANDARD.md"
+      ],
+      "require_doc_update": true
+    },
+    {
+      "id": "workflow-governance",
+      "code_paths": [
+        ".github/workflows/*.yml",
+        "docs/WORKFLOW_AUTHORITY_REGISTRY.json"
+      ],
+      "docs": [
+        "docs/PRIVILEGED_WORKFLOW_TRUST_BOUNDARY.md",
+        "docs/FAMILY_SYNC_STANDARD.md"
+      ],
+      "require_doc_update": true
+    },
+    {
+      "id": "family-state-navigation",
+      "code_paths": [
+        "docs/FAMILY_SYNC_STATE.json",
+        "docs/AI_SYSTEM_MAP.json",
+        "docs/AI_SYSTEM_DIRECTORY.md"
+      ],
+      "docs": [
+        "docs/FAMILY_SYNC_STANDARD.md",
+        "docs/CURRENT_SOURCE_OF_TRUTH.md"
+      ],
+      "require_doc_update": true
+    },
+    {
+      "id": "feed-recovery-contract",
+      "code_paths": [
+        ".github/workflows/woocommerce-*.yml",
+        "scripts/*feed*.py",
+        "scripts/*feed*.sh",
+        "tools/*feed*.py"
+      ],
+      "docs": [
+        "docs/WOOCOMMERCE_GOOGLE_FEED_RECOVERY_1247.md",
+        "docs/DOCUMENTATION_INDEX.md"
+      ],
+      "require_doc_update": true
+    }
+  ]
+}

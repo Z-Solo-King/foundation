@@ -1,0 +1,56 @@
+name: Repository hygiene
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repository-hygiene-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hygiene:
+    name: Hygiene and format
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Determine comparison base
+        id: base
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "sha=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=${{ github.event.before }}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Run hygiene and formatter gate
+        run: |
+          set -euo pipefail
+          python tools/repository_hygiene.py             --changed-from "${{ steps.base.outputs.sha }}"             --format-check             --strict             --report .runtime/hygiene.json
+      - name: Run code-documentation synchronization gate
+        run: |
+          set -euo pipefail
+          python tools/code_documentation_sync.py             --changed-from "${{ steps.base.outputs.sha }}"             --strict             --report .runtime/code-doc-sync.json
+      - name: Upload sanitized hygiene reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: repository-hygiene-report-${{ github.run_id }}
+          path: .runtime/*.json
+          retention-days: 14

@@ -1,0 +1,150 @@
+{
+  "schema_version": "repository-hygiene-format/v1",
+  "contract_version": "2026-10-02",
+  "purpose": "One deterministic formatting, source hygiene, documentation, and code-document synchronization contract.",
+  "authority": {
+    "canonical_contract": "docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json",
+    "family_sync_rule": "The contract file and formatter configs must be byte-identical across Foundation and Operations.",
+    "implementation": "tools/repository_hygiene.py",
+    "code_documentation_sync": "tools/code_documentation_sync.py"
+  },
+  "encoding": {
+    "charset": "UTF-8",
+    "line_ending": "LF",
+    "final_newline": true,
+    "trailing_whitespace": false,
+    "tabs_in_indentation": false
+  },
+  "formatters": {
+    "python": {
+      "tool": "ruff",
+      "version": "0.16.9",
+      "commands": [
+        "ruff format --check",
+        "ruff check"
+      ]
+    },
+    "javascript_typescript_json_yaml": {
+      "tool": "prettier",
+      "version": "3.9.9",
+      "command": "prettier --check"
+    },
+    "markdown": {
+      "tool": "prettier",
+      "version": "3.9.9",
+      "command": "prettier --check"
+    },
+    "markdown_lint": {
+      "tool": "markdownlint-cli2",
+      "version": "0.23.3",
+      "command": "markdownlint-cli2"
+    },
+    "editor": {
+      "tool": "EditorConfig",
+      "contract_file": ".editorconfig"
+    }
+  },
+  "style": {
+    "prettier": {
+      "printWidth": 100,
+      "tabWidth": 2,
+      "useTabs": false,
+      "semi": true,
+      "singleQuote": false,
+      "trailingComma": "all",
+      "proseWrap": "preserve",
+      "endOfLine": "lf"
+    },
+    "python": {
+      "indentWidth": 4,
+      "quoteStyle": "double",
+      "lineLength": 100
+    },
+    "markdown": {
+      "lineLengthRule": "disabled; formatter preserves prose wrapping",
+      "headings": "ATX"
+    },
+    "json_yaml": {
+      "indentWidth": 2,
+      "finalNewline": true
+    }
+  },
+  "scopes": {
+    "formatted": [
+      "*.js",
+      "*.mjs",
+      "*.cjs",
+      "*.ts",
+      "*.tsx",
+      "*.json",
+      "*.jsonc",
+      "*.yml",
+      "*.yaml",
+      "*.md",
+      "*.py"
+    ],
+    "excluded_from_formatter": [
+      "docs/history/**",
+      "docs/HISTORY/**",
+      "**/node_modules/**",
+      "**/.runtime/**",
+      "**/coverage/**",
+      "**/__pycache__/**"
+    ],
+    "always_hygiene_checked": [
+      "all tracked text files"
+    ]
+  },
+  "hygiene": {
+    "tracked_artifacts_forbidden": [
+      "**/__pycache__/**",
+      "*.pyc",
+      "*.pyo",
+      "*.coverage",
+      "coverage.xml",
+      "htmlcov/**",
+      "**/.pytest_cache/**",
+      "**/node_modules/**",
+      ".DS_Store"
+    ],
+    "changed_doc_filename_policy": {
+      "canonical_docs_are_date_free": true,
+      "historical_directories": [
+        "docs/history/**",
+        "docs/HISTORY/**",
+        "docs/feed-lab/**",
+        "docs/runtime/**"
+      ]
+    },
+    "source_size": {
+      "attention_lines": 500,
+      "critical_lines": 1000,
+      "critical_bytes": 50000
+    },
+    "mode": "ratchet",
+    "ratchet_rule": "Existing debt may be reported without blocking; new or modified files must satisfy strict hygiene and format checks."
+  },
+  "synchronization": {
+    "map_schema": "code-doc-sync/v1",
+    "code_change_requires_document_update": true,
+    "document_change_requires_code_change": false,
+    "exemption": "Only an explicitly declared sync-exemption reason in the change contract may suppress a required document update.",
+    "required_change_set": [
+      "source/code change",
+      "canonical documentation update",
+      "focused test/update",
+      "evidence recorded in PR"
+    ],
+    "sha_semantics": "Documented SHAs are observations, never aliases for live branch state."
+  },
+  "workflow": {
+    "pull_request": "changed-files strict gate",
+    "main_push": "same strict gate runs through merge result",
+    "family_coordinator": "Foundation-hosted read-only cross-repository contract parity and hygiene audit",
+    "privileged_coordinator_events": [
+      "push on main",
+      "schedule",
+      "workflow_dispatch"
+    ]
+  }
+}

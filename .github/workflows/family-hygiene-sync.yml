@@ -1,0 +1,103 @@
+name: Family hygiene and format synchronization
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: family-hygiene-sync
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Foundation + Operations hygiene parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production-secret-sync
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Checkout Operations main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: main
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Run Foundation audit
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime
+          python tools/repository_hygiene.py --all --summary-only > .runtime/foundation-hygiene-summary.json
+          python tools/code_documentation_sync.py --all --strict --summary-only > .runtime/foundation-sync-summary.json
+      - name: Run Operations audit
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime
+          python tools/repository_hygiene.py --root operations --all --summary-only > .runtime/operations-hygiene-summary.json
+          python tools/code_documentation_sync.py --root operations --all --strict --summary-only > .runtime/operations-sync-summary.json
+      - name: Verify family format contract parity
+        run: |
+          set -euo pipefail
+          for file in .editorconfig .prettierrc.json .prettierignore .markdownlint.json docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json; do
+            cmp -s "$file" "operations/$file"
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          left = json.loads(Path("docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json").read_text())
+          right = json.loads(Path("operations/docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json").read_text())
+          assert left["schema_version"] == right["schema_version"] == "repository-hygiene-format/v1"
+          assert left["contract_version"] == right["contract_version"] == "2026-10-02"
+          PY
+      - name: Publish summary receipt
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          out = {
+            "schema_version": "family-hygiene-summary/v1",
+            "foundation": json.loads(Path(".runtime/foundation-hygiene-summary.json").read_text()),
+            "foundation_sync": json.loads(Path(".runtime/foundation-sync-summary.json").read_text()),
+            "operations": json.loads(Path(".runtime/operations-hygiene-summary.json").read_text()),
+            "operations_sync": json.loads(Path(".runtime/operations-sync-summary.json").read_text()),
+            "contract_parity_checked": True,
+          }
+          Path(".runtime/family-hygiene-summary.json").write_text(
+            json.dumps(out, indent=2, sort_keys=True) + "\n"
+          )
+          PY
+      - name: Upload summary receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: family-hygiene-summary-${{ github.run_id }}
+          path: .runtime/*-summary.json
+          retention-days: 14
