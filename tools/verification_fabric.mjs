@@ -18,7 +18,7 @@ export const DOMAINS = {
   provider:['provider','model','llm','ai-agent'],
   runtime:['worker','runtime','browser','resource','durable'],
   security:['security','secret','auth','trust','moderation','prompt'],
-  repository:['REPOSITORY_MAP.json','docs/CODE_OWNERSHIP_AND_PLACEMENT.md','.github'],
+  repository:['REPOSITORY_MAP.json','docs/AI_PROJECT_MAP.json','.github'],
   polyglot:['polyglot','language','migration','rust','typescript'],
   documentation:['docs/','README.md','.md'],
   dependencies:['package.json','requirements','pyproject.toml','uv.lock','poetry.lock'],
@@ -47,8 +47,11 @@ const PROVIDER_HOSTS = [
 ];
 
 const REQUIRED_FOUNDATION_FILES = [
-  'REPOSITORY_MAP.json','docs/CODE_OWNERSHIP_AND_PLACEMENT.md','docs/CURRENT_SOURCE_OF_TRUTH.md',
-  'polyglot/REGISTRY.json','.github/workflows/autonomous-engineering-supervisor.yml',
+  'REPOSITORY_MAP.json',
+  'docs/AI_PROJECT_MAP.json',
+  'docs/CURRENT_SOURCE_OF_TRUTH.md',
+  'docs/CROSS_SYSTEM_CROSSFIRE_STANDARD.md',
+  '.github/workflows/required-pr-checks.yml',
 ];
 
 function walk(root) {
