@@ -61,3 +61,6 @@ Cross-fire remains mandatory: the sweep combines repository/contract evidence wi
 
 ## Current GitHub state
 Read active main heads, open issue inventory and open PRs from GitHub live state at audit start. Dated state documents are synchronization evidence, not mutable queue authorities.
+## Comprehensive twice-daily governance sweep
+
+This scheduled control scans the combined family across eight disjoint observation lanes: structure/hygiene, migration/public-private boundary, research/feed, provider/runtime, work items/workflow, maps/docs/policy, quality/learning/evolution, and performance/resources. It is observation and triage telemetry, not a second authority. The sweep publishes deterministic findings, comments on affected open PRs, and wakes the existing autonomous engineering supervisor for bounded remediation.
