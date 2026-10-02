@@ -25,6 +25,10 @@ User
 
 Worker-to-Worker transport uses Cloudflare Service Binding HTTP at language boundaries. Custom Python/JavaScript RPC is not required for the canonical transport path.
 
+## Public chat streaming boundary
+
+The public chat stream is an adapter over the private JSON chat result. It must preserve the canonical execution identity and truthful terminal state across `COMPLETE`, `PARTIAL`, `BLOCKED`, `NOT_ATTEMPTED`, and `FAILED`; it must not collapse non-success outcomes into completion or reject a legitimate blocked terminal outcome at the public edge. `generation_status` and the output digest are transport metadata, not provider-identity exposure or policy authority.
+
 ## Public boundary
 
 - `heroic` is the canonical public backend Worker identity.
