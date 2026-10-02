@@ -299,7 +299,7 @@
       if (!terminal) throw new Error('Heroic AI stream ended without a completion event');
       const finalMeta = api.activeChat()?.messages?.find((message) => message.id === assistantMessage.id)?.meta || assistantMessage.meta || {};
       const body = { ok: true, request_id: requestId, chat_id: activeChatId, response: { response_id: responseId, status: finalMeta.status || 'completed', result_state: finalMeta.result_state || null, generation_status: finalMeta.generation_status || null, output_digest: finalMeta.output_digest || null, text: answer } };
-      document.dispatchEvent(new CustomEvent('rie:chat-response', { detail: { activeChatId, requestId, body } }));
+      document.dispatchEvent(new CustomEvent('rie:chat-response', { detail: { chatId: activeChatId, requestId, body } }));
       return body;
     } catch (error) {
       if (error?.name === 'AbortError' || abortController.signal.aborted) {
@@ -317,7 +317,7 @@
           text: answer || 'Chat streaming was cancelled in the browser. Backend completion state is unknown; reconnect or retry to observe it.',
         });
         document.dispatchEvent(new CustomEvent('rie:chat-stream-cancelled', {
-          detail: { activeChatId, requestId, responseId, partial: Boolean(answer) },
+          detail: { chatId: activeChatId, requestId, responseId, partial: Boolean(answer) },
         }));
         return {
           ok: false,
