@@ -1,0 +1,44 @@
+name: Temporary Operations TypeScript contract current-head gate
+
+on:
+  push:
+    branches:
+      - audit/operations-ts-contract-current-head-2026-10-02
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: main
+          path: operations
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Typecheck and test Operations observation contract
+        working-directory: operations/polyglot/observation-contract-strict
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          npm test
+          npm run differential
+          npm run differential:python
+          npm run differential:compare
+          npm run benchmark
+      - name: Typecheck and test Operations edge
+        working-directory: operations/polyglot/edge-worker
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          npm test
