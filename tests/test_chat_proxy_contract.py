@@ -709,3 +709,10 @@ def test_chat_sse_body_rejects_blank_response_id():
                 "text": "x",
             }
         })
+
+
+def test_chat_sse_body_rejects_non_object_payload():
+    import pytest
+    import worker
+    with pytest.raises(ValueError, match="invalid_private_chat_response"):
+        worker._chat_sse_body(None)
