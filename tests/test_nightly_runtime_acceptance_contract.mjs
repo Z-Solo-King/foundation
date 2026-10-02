@@ -2,9 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { validateChatResponse } from "../scripts/nightly_runtime_contract_probe.mjs";
 
-const ROOT = path.resolve(new URL("..", import.meta.url));
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 test("nightly v3 is dispatch-only and uses Node runtime probe/proxy", () => {
   const text = fs.readFileSync(path.join(ROOT, ".github/workflows/nightly-multi-agent-research-v3.yml"), "utf8");
