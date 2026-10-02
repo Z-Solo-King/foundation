@@ -104,7 +104,6 @@ jobs:
             --field target_sha="$GITHUB_SHA" \
             --field production_release_run_id="$GITHUB_RUN_ID"
 
-
       - name: Reconcile post-release chatbot validation
         if: ${{ steps.production_release.outcome == 'success' }}
         env:
@@ -118,89 +117,7 @@ jobs:
           print(json.loads(Path("docs/OPERATIONS_PIN_MANIFEST.json").read_text(encoding="utf-8"))["pins"]["production_runtime"]["sha"])
           PY
           )"
-          printf '%s' "$operations_ref" | grep -Eq '^[0-9a-f]{40}
-
-          runtime_id=""
-          crossfire_id=""
-          for _ in $(seq 1 180); do
-            if [ -z "$runtime_id" ]; then
-              runs="$(gh run list --workflow chatbot-post-release-runtime-smoke.yml --repo "$GITHUB_REPOSITORY" --limit 20 --json databaseId,createdAt,status,conclusion,headSha,event)"
-              runtime_id="$(jq -r --arg sha "$GITHUB_SHA" --argjson started "$dispatch_started" '[.[] | select(.event == "workflow_dispatch" and .headSha == $sha and ((.createdAt | fromdateiso8601) >= $started))] | sort_by(.createdAt) | last | .databaseId // empty' <<<"$runs")"
-            fi
-            if [ -z "$crossfire_id" ]; then
-              runs="$(gh run list --workflow chatbot-post-release-crossfire.yml --repo "$GITHUB_REPOSITORY" --limit 20 --json databaseId,createdAt,status,conclusion,headSha,event)"
-              crossfire_id="$(jq -r --arg sha "$GITHUB_SHA" --argjson started "$dispatch_started" '[.[] | select(.event == "workflow_dispatch" and .headSha == $sha and ((.createdAt | fromdateiso8601) >= $started))] | sort_by(.createdAt) | last | .databaseId // empty' <<<"$runs")"
-            fi
-
-            completed=0
-            if [ -n "$runtime_id" ]; then
-              status="$(gh run view "$runtime_id" --repo "$GITHUB_REPOSITORY" --json status --jq '.status')"
-              conclusion="$(gh run view "$runtime_id" --repo "$GITHUB_REPOSITORY" --json conclusion --jq '.conclusion // empty')"
-              if [ "$status" = "completed" ]; then
-                [ "$conclusion" = "success" ] || { echo "Runtime smoke failed: $conclusion"; exit 1; }
-                completed=$((completed + 1))
-              fi
-            fi
-            if [ -n "$crossfire_id" ]; then
-              status="$(gh run view "$crossfire_id" --repo "$GITHUB_REPOSITORY" --json status --jq '.status')"
-              conclusion="$(gh run view "$crossfire_id" --repo "$GITHUB_REPOSITORY" --json conclusion --jq '.conclusion // empty')"
-              if [ "$status" = "completed" ]; then
-                [ "$conclusion" = "success" ] || { echo "CrossFire failed: $conclusion"; exit 1; }
-                completed=$((completed + 1))
-              fi
-            fi
-            [ "$completed" -eq 2 ] && exit 0
-            sleep 5
-          done
-          echo "Timed out reconciling post-release chatbot validation workflows" >&2
-          exit 1
-
-      - name: Upload cross-repository audit receipt
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: cross-repository-audit-receipt
-          path: .runtime/cross-repository-audit-receipt.json
-          if-no-files-found: warn
-
-      - name: Upload runtime acceptance receipts
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: production-runtime-acceptance-receipts
-          path: .runtime/*.json
-          if-no-files-found: error
-          include-hidden-files: true
-      - name: Publish sanitized production receipt
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          outcome="${{ steps.production_release.outcome }}"
-          operations_ref="$(sed -n 's/^OPERATIONS_REF="\([0-9a-f]\{40\}\)"$/\1/p' scripts/production_release.sh | head -n1)"
-          mkdir -p .runtime
-          {
-            echo "# Canonical production release receipt"
-            echo
-            echo "- Workflow run: ${GITHUB_RUN_ID}"
-            echo "- Foundation revision: ${GITHUB_SHA}"
-            echo "- Operations revision: ${operations_ref:-unknown}"
-            echo "- Release step outcome: ${outcome}"
-            echo "- Repository: ${GITHUB_REPOSITORY}"
-            echo "- Trigger: ${GITHUB_EVENT_NAME}"
-            echo
-            echo "## Runtime receipt files"
-            if compgen -G '.runtime/*.json' > /dev/null; then
-              find .runtime -maxdepth 1 -type f -name '*.json' -printf '%f\n' | sort | sed 's/^/- /'
-            else
-              echo '- none produced'
-            fi
-            echo
-            echo "This receipt is a sanitized index only; secret values and provider responses are not included."
-          } > .runtime/production-release-tracker-receipt.md
-          gh issue comment 58 --repo "$GITHUB_REPOSITORY" --body-file .runtime/production-release-tracker-receipt.md
-
+          printf '%s' "$operations_ref" | grep -Eq '^[0-9a-f]{40}$'
           dispatch_started="$(date +%s)"
 
           gh workflow run chatbot-post-release-runtime-smoke.yml --repo "$GITHUB_REPOSITORY" --ref main \
