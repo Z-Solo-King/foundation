@@ -267,7 +267,7 @@ jobs:
     needs: crawl
     if: always()
     permissions:
-      contents: write
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -339,10 +339,7 @@ jobs:
           console.log(JSON.stringify(aggregate, null, 2));
           JS
 
-      - name: Aggregate and publish 30 Google XML feeds
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
+      - name: Aggregate and validate 30 Google XML feeds
         run: |
           set -euo pipefail
           mkdir -p out/google-xml-release
@@ -354,15 +351,10 @@ jobs:
           const items=manifests.flatMap(p=>{try{return [JSON.parse(fs.readFileSync(p,"utf8"))]}catch{return[]}}).flatMap(x=>x.items||[]);
           if(items.length!==30)throw new Error("Expected 30 Google XML site records, found "+items.length);
           for(const x of items){const matches=xmls.filter(p=>path.basename(p)===x.filename);if(matches.length!==1)throw new Error("Expected exactly one XML for "+x.site+"; found "+matches.length);fs.copyFileSync(matches[0],path.join(dest,x.filename));}
-          const index={schema_version:"woocommerce-google-xml-anyhow-v1/published-index",generated_on:new Date().toISOString(),target_count:30,release_tag:"wc-google-feed-latest",feeds:items.map(x=>({site:x.site,filename:x.filename,item_count:x.item_count,feed_kind:x.feed_kind,native_url:x.native_url||null,download_url:"https://github.com/"+process.env.GH_REPO+"/releases/download/wc-google-feed-latest/"+x.filename,validation:x.validation||null}))};
+          const index={schema_version:"woocommerce-google-xml-anyhow-v1/artifact-index",generated_on:new Date().toISOString(),target_count:30,distribution:"github_actions_artifact",artifact_name:"commerce-feed-product-crawl",feeds:items.map(x=>({site:x.site,filename:x.filename,item_count:x.item_count,feed_kind:x.feed_kind,native_url:x.native_url||null,validation:x.validation||null}))};
           fs.writeFileSync(path.join(dest,"feeds-index.json"),JSON.stringify(index,null,2)+"\n");
           console.log(JSON.stringify({target_count:30,total_xml_files:xmls.length,non_empty:items.filter(x=>x.item_count>0).length,total_items:items.reduce((n,x)=>n+x.item_count,0)},null,2));
           JS
-          TAG=wc-google-feed-latest
-          if ! gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
-            gh release create "$TAG" --repo "$GH_REPO" --title "WooCommerce Google XML Feeds — Latest" --notes "30-site public catalog recovery feeds. Native feeds are preserved when independently observed; otherwise feeds are synthetic Google Merchant RSS/XML generated from current public product observations."
-          fi
-          gh release upload "$TAG" --repo "$GH_REPO" out/google-xml-release/*.xml out/google-xml-release/feeds-index.json --clobber
           cat out/google-xml-release/feeds-index.json
 
       - name: Upload aggregate evidence
