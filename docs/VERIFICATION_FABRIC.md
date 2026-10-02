@@ -69,3 +69,7 @@ The trusted-main Migration Factory resolve job has one canonical read-only Opera
 ## Node tooling migration — nightly/runtime gates — 2026-10-02
 
 Foundation-only nightly runtime probing, loopback research transport, GitHub Actions zero-cost validation, and benchmark-finding publication now execute through Node tooling. The superseded Python scripts/tests were removed; protected Python research and governance authorities are unchanged. Workflow changes remain contract-tested and do not constitute live runtime/provider acceptance.
+
+## Node scorecard migration — 2026-10-02
+
+The report-only autonomous research scorecard workflow now executes the Node implementation (`benchmark/autonomous_scorecard.mjs`) and its Node contract tests. Existing artifact/evidence boundaries remain unchanged; this migration does not transfer provider, resource, policy, or promotion authority.
