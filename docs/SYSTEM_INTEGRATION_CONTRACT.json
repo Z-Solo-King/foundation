@@ -105,7 +105,12 @@
         "mission receipts",
         "deduplicated issue/comment findings",
         "mechanical formatter PRs when deterministic drift is repairable"
-      ]
+      ],
+      "observation": "tools/comprehensive_governance_scan.py",
+      "publication": "tools/publish_governance_findings.py",
+      "schedule": ".github/workflows/twice-daily-autonomous-governance-sweep.yml",
+      "receipt_contract": "docs/AUTONOMOUS_GOVERNANCE_SCAN_CONTRACT.json",
+      "execution_rule": "The scan observes all declared verticals; the existing autonomous supervisor remains the sole AI remediation planner."
     },
     "ai_api": {
       "owner": "operations",
