@@ -82,4 +82,4 @@ The former `extractor-mapper` repository was consolidated into Operations and de
 
 ## Microscope branch retirement
 
-Foundation owns the public-side branch-retirement workflow at `.github/workflows/microscope-branch-retirement.yml`. It may execute only with explicit authorization and only against branches proven eligible by `tools/retire_microscope_branches.mjs`; default/protected/active-PR/release-tag/live-reference and divergent branches remain protected, and expected branch SHAs are revalidated immediately before deletion.
+Foundation owns the public-side branch-retirement workflow at `.github/workflows/microscope-branch-retirement.yml`. It may execute only with explicit authorization and only against branches proven eligible by `tools/retire_microscope_branches.mjs`; default/protected/active-PR/release-tag/live-reference and divergent branches remain protected, and expected branch SHAs are revalidated immediately before deletion. The workflow is activated by a subsequent trusted-main authorization push or explicit manual dispatch; installing the workflow itself is not considered a retirement run.
