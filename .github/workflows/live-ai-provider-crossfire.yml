@@ -1,4 +1,4 @@
-name: Live AI provider cross-fire benchmark
+name: Live AI provider cross-fire benchmark # branch live test 2026-10-03
 
 on:
   push:
