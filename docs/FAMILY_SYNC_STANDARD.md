@@ -253,3 +253,8 @@ The family sync ledger was refreshed from live GitHub state on 2026-10-02. Found
 ## 2026-10-02 continuous Migration Factory
 
 The Migration Factory CrossFire is a trusted-main automation surface. It may read the private Operations repository only through the purpose-scoped read-only GitHub App token; pull-request and other untrusted execution remains excluded. Trusted pushes resolve a single immutable Operations SHA before the six independent lanes start, preserving the CrossFire snapshot invariant.
+
+
+## Live reconciliation 2026-10-02T12:00:31.000Z
+
+Current live GitHub heads: Foundation `43ccf7b4379863fa3a8112194d1b3c6b68181378`, Operations `f364a39d79ce30e8f1b63b67c623c41a898af320`. Current branch counts are Foundation 1319, Operations 991, total 2310; 621 refs have been retired from the initial 2,931-ref microscope baseline. Open pull requests are 0 in both repositories. The Migration Factory remains Foundation-owned; Operations remains free of competing hosted GitHub Actions authority.
