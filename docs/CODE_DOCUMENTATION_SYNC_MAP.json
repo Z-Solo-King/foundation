@@ -5,8 +5,8 @@
     {
       "id": "hygiene-governance",
       "code_paths": [
-        "tools/repository_hygiene.py",
-        "tools/code_documentation_sync.py",
+        "tools/repository_hygiene.mjs",
+        "tools/code_documentation_sync.mjs",
         ".editorconfig",
         ".gitattributes",
         ".prettierrc.json",
@@ -42,10 +42,7 @@
     },
     {
       "id": "workflow-governance",
-      "code_paths": [
-        ".github/workflows/*.yml",
-        "docs/WORKFLOW_AUTHORITY_REGISTRY.json"
-      ],
+      "code_paths": [".github/workflows/*.yml", "docs/WORKFLOW_AUTHORITY_REGISTRY.json"],
       "docs": [
         "docs/PRIVILEGED_WORKFLOW_TRUST_BOUNDARY.md",
         "docs/FAMILY_SYNC_STANDARD.md",
@@ -60,10 +57,7 @@
         "docs/AI_SYSTEM_MAP.json",
         "docs/AI_SYSTEM_DIRECTORY.md"
       ],
-      "docs": [
-        "docs/FAMILY_SYNC_STANDARD.md",
-        "docs/CURRENT_SOURCE_OF_TRUTH.md"
-      ],
+      "docs": ["docs/FAMILY_SYNC_STANDARD.md", "docs/CURRENT_SOURCE_OF_TRUTH.md"],
       "require_doc_update": true
     },
     {
@@ -74,10 +68,7 @@
         "scripts/*feed*.sh",
         "tools/*feed*.py"
       ],
-      "docs": [
-        "docs/WOOCOMMERCE_GOOGLE_FEED_RECOVERY_1247.md",
-        "docs/DOCUMENTATION_INDEX.md"
-      ],
+      "docs": ["docs/WOOCOMMERCE_GOOGLE_FEED_RECOVERY_1247.md", "docs/DOCUMENTATION_INDEX.md"],
       "require_doc_update": true
     },
     {

@@ -1,0 +1,96 @@
+name: Temporary migration formatter
+
+on:
+  push:
+    branches:
+      - migration/node-governance-tooling-v2-2026-10-02
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: >-
+      (github.event_name == 'push' && github.ref_name == 'migration/node-governance-tooling-v2-2026-10-02')
+      || (github.event_name == 'pull_request'
+      && github.event.pull_request.head.ref == 'migration/node-governance-tooling-v2-2026-10-02'
+      && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+          package-manager-cache: false
+
+      - name: Format migration files
+        shell: bash
+        run: |
+          set +e
+          diff_range="origin/main...HEAD"
+
+          rm -rf formatter-output
+          mkdir -p formatter-output
+
+          mapfile -t formatter_files < <(
+            git diff --name-only "$diff_range" |
+            grep -E '\.(cjs|js|mjs|ts|tsx|json|jsonc|md|yml|yaml)$' |
+            grep -v '^\.github/workflows/' || true
+          )
+
+          prettier_status=0
+          if [ "${#formatter_files[@]}" -gt 0 ]; then
+            npx --yes prettier@3.9.9 --write "${formatter_files[@]}"
+            prettier_status=$?
+          fi
+
+          mapfile -t markdown_files < <(
+            git diff --name-only "$diff_range" |
+            grep -E '\.md$' || true
+          )
+
+          markdown_status=0
+          if [ "${#markdown_files[@]}" -gt 0 ]; then
+            npx --yes markdownlint-cli2@0.23.3 --fix "${markdown_files[@]}"
+            markdown_status=$?
+          fi
+
+          mapfile -t workflow_files < <(
+            git diff --name-only "$diff_range" |
+            grep -E '^\.github/workflows/.*\.(yml|yaml)$' || true
+          )
+
+          workflow_status=0
+          for file in "${workflow_files[@]}"; do
+            out="formatter-output/$file"
+            mkdir -p "$(dirname "$out")"
+            npx --yes prettier@3.9.9 "$file" > "$out"
+            status=$?
+            if [ "$status" -ne 0 ]; then
+              workflow_status=$status
+            fi
+          done
+
+          printf '{"prettier_status":%s,"markdown_status":%s,"workflow_preview_status":%s,"files_seen":%s}\n' \
+            "$prettier_status" "$markdown_status" "$workflow_status" "__LEN_FORMATTER_FILES__" > formatter-status.json
+
+          if git diff --quiet && [ -z "$(git status --short -- formatter-output formatter-status.json)" ]; then
+            if [ "$prettier_status" -ne 0 ] || [ "$markdown_status" -ne 0 ] || [ "$workflow_status" -ne 0 ]; then
+              cat formatter-status.json
+              exit 1
+            fi
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          git commit -m "chore: migration format pass"
+          git push origin "HEAD:${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
