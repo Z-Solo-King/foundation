@@ -20,6 +20,14 @@ The fabric runs on trusted pushes to main, every six hours, and manual dispatch.
 
 Operations remains free of GitHub Actions. Foundation remains the workflow authority.
 
+## Shared family mechanics
+
+Audit, Monitor and Extractor are treated as one mechanics family. Their domain policy remains separate, but deterministic mechanics are centralized where their semantics and correctness invariants are identical.
+
+The shared kernel covers canonical evidence serialization, SHA-256 hashing, bounded numeric normalization, time parsing/freshness and related evidence primitives. Consumer modules retain their own authority, acceptance, acquisition, parsing and telemetry decisions.
+
+This boundary is also used when the autonomous supervisor or verification fabric needs the same raw hashing mechanic. The refactor deliberately preserves existing digest byte-order semantics when replacing local hashing calls with the shared primitive.
+
 ## Promotion rules
 
 Critical findings block the fabric. Warnings require review and produce evidence. The scanner never mutates credentials, protected policy, production releases, or Cloudflare configuration.
