@@ -38,11 +38,9 @@ jobs:
           node-version: 22
       - name: Materialize Operations pinned Foundation public core
         working-directory: operations
-        env:
-          FOUNDATION_CORE_GIT: ${{ github.workspace }}
         run: |
           set -euo pipefail
-          node scripts/sync_public_core.mjs
+          env -u FOUNDATION_CORE_GIT -u FOUNDATION_CORE_SOURCE node scripts/sync_public_core.mjs
           test -f foundation_core/__init__.py
       - name: Typecheck and test Operations observation contract
         working-directory: operations/polyglot/observation-contract-strict
