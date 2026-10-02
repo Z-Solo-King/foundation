@@ -84,3 +84,11 @@ AI planners can prioritize and cross-check evidence but cannot certify productio
 ## Six-lane CrossFire standard
 
 For difficult audits, use independent ownership/policy, TypeScript, Rust, Go, Cloudflare/runtime, and security/evidence lenses. Each lane works from the same immutable input snapshot and emits bounded evidence. Intermediate findings are not treated as shared truth until deterministic reconciliation completes. A provider comparison is meaningful only when enough independently configured providers actually execute; unavailable providers are reported as limitations rather than simulated.
+
+## Governance finding lifecycle
+
+Deterministic scanners emit observations only. Every finding is normalized into a stable deduplication key, risk class, evidence level, evidence sufficiency and mutation policy before AI planning. Repeated observations converge on the same finding identity; stronger evidence can replace weaker evidence, but weaker evidence never downgrades a finding.
+
+The adaptive controller uses previous yield plus current material findings to prioritize the next independent lane or verification target. Priority is deterministic and bounded by cost/latency/quota budgets. AI receives the normalized, sanitized result and may select only existing allowlisted workflows. Critical findings remain blocked from autonomous mutation until the required evidence level is reached.
+
+Automation follows this order: observe -> normalize -> deduplicate -> prioritize -> plan -> allowlist-check -> execute -> verify -> reconcile. A failed execution becomes new evidence, not an automatic success or closure.
