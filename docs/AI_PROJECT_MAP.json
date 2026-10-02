@@ -612,8 +612,7 @@
       "language",
       "files",
       "where",
-      "why",
-      "how",
+      "why",      "how",
       "policies"
     ],
     "feature_record_required": [
@@ -979,3 +978,5 @@
     "storage_b2": "Foundation-owned backup evidence; archive size/restore/retention",
     "cloudflare_r2": "excluded",
     "ai_map_role": "navigation overlay only"
+  }
+}
