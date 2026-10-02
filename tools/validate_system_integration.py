@@ -56,18 +56,28 @@ def validate_production_pin_consistency(foundation: Path, errors: list[str]) -> 
         errors.append("production-pin:approval drift")
     if ((sync.get("runtime_pins") or {}).get("production_operations")) != canonical:
         errors.append("production-pin:family-sync drift")
-    consumers = (
+    production_consumers = (
         ".github/workflows/nightly-research-provider-preflight.yml",
         ".github/workflows/live-chatbot-production-smoke.yml",
         ".github/workflows/live-nightly-research-canary.yml",
-        ".github/workflows/nightly-multi-agent-research-v3.yml",
         "docs/CURRENT_SOURCE_OF_TRUTH.md",
         "docs/CONTINUE_MIGRATION_2026-10-01.md",
         "docs/INTERNAL_ACCESS_CAPABILITY_POLICY.md",
         "tests/operations_main_guard.test.mjs",
     )
-    for rel in consumers:
+    for rel in production_consumers:
         require_text(foundation / rel, [canonical], errors, "production-pin:" + rel)
+
+    research = (((manifest.get("pins") or {}).get("research_runtime") or {}).get("sha"))
+    if not isinstance(research, str) or len(research) != 40:
+        errors.append("research-pin:manifest invalid")
+    else:
+        require_text(
+            foundation / ".github/workflows/nightly-multi-agent-research-v3.yml",
+            [research],
+            errors,
+            "research-pin:.github/workflows/nightly-multi-agent-research-v3.yml",
+        )
 
 def main() -> int:
     parser = argparse.ArgumentParser()

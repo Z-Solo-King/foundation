@@ -10,7 +10,7 @@
 5. `docs/AI_AUDIT_SYSTEM.md`
 6. `docs/AI_COMPUTE_INSPIRED_PATTERNS.md`
 7. `docs/DOCUMENTATION_INDEX.md`
-7. `docs/DOCUMENTATION_HYGIENE.md`
+8. `docs/DOCUMENTATION_HYGIENE.md`
 8. `docs/REPOSITORY_HYGIENE_AND_FORMAT_STANDARD.md`
 9. `docs/FAMILY_FULL_COVERAGE_STANDARD.md`
 10. `docs/FAMILY_CONTRACT.json`
@@ -21,7 +21,7 @@
 15. `docs/REQUIREMENT_COVERAGE_RECONCILIATION_2026-09-17.md`
 16. `docs/PUBLIC_DETERMINISTIC_CORE.md`
 17. `docs/RUN_RECORD_PUBLIC_BOUNDARY.md`
-18. `DEPLOYMENT.md`
+19. `DEPLOYMENT.md`
 
 ## Authority
 The live `main` tree, current PR/workflow state and fresh execution evidence outrank dated plans, handoffs and chat notes. `FAMILY_SYNC_STATE.json` is an audit snapshot, not a live queue or production certificate.
@@ -43,3 +43,7 @@ When contracts, ownership, workflows, dependencies or production gates change, u
 
 ## Current cross-system snapshot
 `docs/CROSS_REPO_CLOUDFLARE_SYNC.md` is the 2026-09-28 dated synchronization record. Do not use it to infer mutable issue counts or current runtime status later.
+
+## Canonical feed boundary
+
+Public feed documentation is methodology-only. Live target state and recovery execution belong to Operations. docs/WOOCOMMERCE_GOOGLE_FEED_RECOVERY_1247.md is the public contract/method reference; it is not a live target registry or completion certificate.
