@@ -61,3 +61,10 @@ def test_dashboard_styles_cover_provenance_and_errors():
     assert ".dashboard-provenance" in css
     assert ".dashboard-provider-resource" in css
     assert ".dashboard-error" in css
+
+def test_frontend_chat_history_uses_public_chat_request_content_field():
+    text = (ROOT / "frontend" / "app.js").read_text(encoding="utf-8")
+    assert ".map((message) => ({ role: message.role, content:" in text
+    assert ".map((message) => ({ role: message.role, text:" not in text
+    assert "result_state: payload.result_state || null" in text
+    assert "generation_status: payload.generation_status" in text
