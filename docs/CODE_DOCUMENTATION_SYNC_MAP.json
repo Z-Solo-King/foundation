@@ -48,7 +48,8 @@
       ],
       "docs": [
         "docs/PRIVILEGED_WORKFLOW_TRUST_BOUNDARY.md",
-        "docs/FAMILY_SYNC_STANDARD.md"
+        "docs/FAMILY_SYNC_STANDARD.md",
+        "docs/VERIFICATION_FABRIC.md"
       ],
       "require_doc_update": true
     },
@@ -106,7 +107,22 @@
         "docs/FAMILY_SYNC_STANDARD.md",
         "docs/AUTONOMOUS_GOVERNANCE_SCAN_CONTRACT.json",
         "docs/AI_SYSTEM_MAP.json",
-        "docs/GITHUB_APP_INTEGRATION_POLICY.json"
+        "docs/GITHUB_APP_INTEGRATION_POLICY.json",
+        "docs/VERIFICATION_FABRIC.md"
+      ],
+      "require_doc_update": true
+    },
+    {
+      "id": "verification-fabric",
+      "code_paths": [
+        "tools/verification_fabric.mjs",
+        "tests/verification_fabric.test.mjs",
+        ".github/workflows/verification-fabric.yml"
+      ],
+      "docs": [
+        "docs/VERIFICATION_FABRIC.md",
+        "docs/CROSS_SYSTEM_CROSSFIRE_STANDARD.md",
+        "docs/FAMILY_SYNC_STANDARD.md"
       ],
       "require_doc_update": true
     }
