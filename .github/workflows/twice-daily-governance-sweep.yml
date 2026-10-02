@@ -43,6 +43,7 @@ jobs:
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
+          permission-issues: write
 
       - name: Checkout Operations main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -67,6 +68,32 @@ jobs:
 
       - name: Install pinned hygiene tool
         run: python -m pip install --disable-pip-version-check ruff==0.16.9
+
+      - name: Snapshot live work and execution state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OPERATIONS_GH_TOKEN: ${{ steps.operations-app.outputs.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime/governance
+          gh api "repos/Z-Solo-King/foundation/issues?state=open&per_page=100" --jq '[.[] | {number,title,updatedAt:.updated_at,createdAt:.created_at,labels:[.labels[].name],url:.html_url}]' > .runtime/governance/foundation-issues.json
+          gh api "repos/Z-Solo-King/foundation/pulls?state=open&per_page=100" --jq '[.[] | {number,title,updatedAt:.updated_at,createdAt:.created_at,headSha:.head.sha,headRef:.head.ref,url:.html_url}]' > .runtime/governance/foundation-prs.json
+          gh api "repos/Z-Solo-King/foundation/actions/runs?per_page=100" --jq '[.workflow_runs[] | {id,name,path,status,conclusion,created_at,run_started_at,updated_at,head_sha,event}]' > .runtime/governance/foundation-runs.json
+          GH_TOKEN="$OPERATIONS_GH_TOKEN" gh api "repos/Z-Solo-King/operations/issues?state=open&per_page=100" --jq '[.[] | {number,title,updatedAt:.updated_at,createdAt:.created_at,labels:[.labels[].name],url:.html_url}]' > .runtime/governance/operations-issues.json
+          GH_TOKEN="$OPERATIONS_GH_TOKEN" gh api "repos/Z-Solo-King/operations/pulls?state=open&per_page=100" --jq '[.[] | {number,title,updatedAt:.updated_at,createdAt:.created_at,headSha:.head.sha,headRef:.head.ref,url:.html_url}]' > .runtime/governance/operations-prs.json
+          GH_TOKEN="$OPERATIONS_GH_TOKEN" gh api "repos/Z-Solo-King/operations/actions/runs?per_page=100" --jq '[.workflow_runs[] | {id,name,path,status,conclusion,created_at,run_started_at,updated_at,head_sha,event}]' > .runtime/governance/operations-runs.json
+          GH_TOKEN="$OPERATIONS_GH_TOKEN" gh api repos/Z-Solo-King/operations/commits/main --jq .sha > .runtime/governance/operations-main-sha
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path(".runtime/governance")
+          payload={
+              "schema":"governance-github-snapshot/v1",
+              "foundation":{"issues":json.loads((root/"foundation-issues.json").read_text()),"prs":json.loads((root/"foundation-prs.json").read_text()),"runs":json.loads((root/"foundation-runs.json").read_text())},
+              "operations":{"issues":json.loads((root/"operations-issues.json").read_text()),"prs":json.loads((root/"operations-prs.json").read_text()),"runs":json.loads((root/"operations-runs.json").read_text())},
+          }
+          (root/"github-snapshot.json").write_text(json.dumps(payload)+"\n")
+          PY
 
       - name: Collect deterministic family audit summaries
         env:
@@ -111,6 +138,93 @@ jobs:
           PY
           cat "$GOVERNANCE_AUDIT_FILE"
 
+      - name: Cross-fire observation batch 1
+        run: |
+          set -euo pipefail
+          for lane in structure_hygiene migration_boundary research_feed provider_runtime; do
+            python tools/comprehensive_governance_scan.py \
+              --foundation . \
+              --operations operations \
+              --snapshot .runtime/governance/github-snapshot.json \
+              --lane "$lane" \
+              --output ".runtime/governance/$lane.json" &
+          done
+          wait
+
+      - name: Cross-fire observation batch 2
+        run: |
+          set -euo pipefail
+          for lane in work_items_workflow maps_docs_policy quality_learning_evolution performance_resources; do
+            python tools/comprehensive_governance_scan.py \
+              --foundation . \
+              --operations operations \
+              --snapshot .runtime/governance/github-snapshot.json \
+              --lane "$lane" \
+              --output ".runtime/governance/$lane.json" &
+          done
+          wait
+
+      - name: Reconcile and publish governance findings
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OPERATIONS_GH_TOKEN: ${{ steps.operations-app.outputs.token }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+          root=Path(".runtime/governance")
+          findings={}
+          ignored={"github-snapshot.json","merged.json","public.json","foundation-hygiene.json","foundation-sync.json","operations-hygiene.json","operations-sync.json"}
+          for path in root.glob("*.json"):
+              if path.name in ignored:
+                  continue
+              payload=json.loads(path.read_text(encoding="utf-8"))
+              for finding in payload.get("findings",[]):
+                  findings[finding["finding_id"]]=finding
+          snapshot=json.loads((root/"github-snapshot.json").read_text(encoding="utf-8"))
+          merged={
+              "schema":"comprehensive-governance-scan/v1",
+              "generated_at":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),
+              "lane":"crossfire",
+              "repos":{repo:{kind:len(value) for kind,value in data.items()} for repo,data in snapshot.items()},
+              "coverage":{
+                  "finding_count":len(findings),
+                  "critical_findings":sum(x["severity"]=="critical" for x in findings.values()),
+                  "attention_findings":sum(x["severity"]=="attention" for x in findings.values()),
+                  "info_findings":sum(x["severity"]=="info" for x in findings.values()),
+                  "telemetry_status":"descriptive_only",
+              },
+              "findings":list(findings.values()),
+              "cross_fire_lanes":["structure_hygiene","migration_boundary","research_feed","provider_runtime","work_items_workflow","maps_docs_policy","quality_learning_evolution","performance_resources"],
+              "authority_note":"Observation/governance overlay only.",
+          }
+          (root/"merged.json").write_text(json.dumps(merged,indent=2)+"\n",encoding="utf-8")
+          top=sorted([
+              {"finding_id":x["finding_id"],"lane":x["lane"],"severity":x["severity"],"code":x["code"],"summary":x["summary"],"paths":x.get("paths",[])[:8]}
+              for x in findings.values() if x["severity"]!="info"
+          ],key=lambda x:({"critical":0,"attention":1,"warning":2}.get(x["severity"],9),x["finding_id"]))[:20]
+          audit={
+              "schema":"twice-daily-governance-audit/v2",
+              "generated_at":merged["generated_at"],
+              "coverage":merged["coverage"],
+              "top_findings":top,
+              "privacy_boundary":"Private Operations source remains on trusted runner; AI receives only bounded governance summaries.",
+              "ai_remediation_authority":"tools/autonomous_engineering_supervisor.mjs",
+              "deterministic_finding_publication_authority":"tools/publish_governance_findings.py",
+          }
+          Path(".runtime/governance-audit.json").write_text(json.dumps(audit,indent=2)+"\n",encoding="utf-8")
+          safe=[]
+          for finding in merged["findings"]:
+              item={key:finding[key] for key in ("finding_id","lane","category","severity","code","summary") if key in finding}
+              paths=[path for path in finding.get("paths",[]) if Path(path).exists()]
+              if paths:item["paths"]=paths
+              safe.append(item)
+          (root/"public.json").write_text(json.dumps({**merged,"findings":safe,"privacy":"Foundation-safe metadata; private Operations paths/details removed."},indent=2)+"\n",encoding="utf-8")
+          PY
+          python tools/publish_governance_findings.py --repo Z-Solo-King/foundation --report .runtime/governance/public.json
+          GH_TOKEN="$OPERATIONS_GH_TOKEN" python tools/publish_governance_findings.py --repo Z-Solo-King/operations --report .runtime/governance/merged.json
       - name: Validate supervisor contract
         run: |
           node --check tools/autonomous_mission_router.mjs
