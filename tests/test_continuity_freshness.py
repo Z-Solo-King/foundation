@@ -48,10 +48,10 @@ def test_continuity_workflow_uses_full_history_for_merge_commits():
 def test_continuity_workflow_watches_canonical_surfaces():
     workflow = (Path(__file__).parents[1] / ".github" / "workflows" / "cross-repository-contract-drift.yml").read_text(encoding="utf-8")
     for path in (
-        "backend/**",
         "foundation_core/**",
+        "edge.ts",
+        "pyproject.toml",
         "frontend/**",
-        "migrations/**",
         "polyglot/**",
         ".github/workflows/**",
         "docs/CURRENT_SOURCE_OF_TRUTH.md",

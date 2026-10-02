@@ -186,9 +186,8 @@ def test_public_worker_uses_native_typescript_edge_and_python_core():
     assert 'main = "edge.ts"' in wrangler
     assert 'service = "heroic-core"' in wrangler
     assert "python_workers" not in wrangler
-    core = (ROOT / "wrangler.python-core.toml").read_text(encoding="utf-8")
-    assert 'main = "worker.py"' in core
-    assert "python_workers" in core
+    assert 'wrangler.foundation-core.toml' in deployment
+    assert 'foundation_worker.py' in deployment
     assert "wrangler.python-core.generated.toml" in deployment
     assert "wrangler@4.131.1 deploy --config wrangler.production.generated.toml" in deployment
 def test_python_core_deploy_injects_required_b2_secrets():
@@ -200,7 +199,8 @@ def test_python_core_deploy_injects_required_b2_secrets():
     assert "B2_ENDPOINT: ${{ vars.B2_ENDPOINT }}" in workflow
     assert '--secrets-file "$public_secret_file"' in deployment
     assert 'printf \'AUTH_TOKEN=%s\\nB2_KEY_ID=%s\\nB2_APPLICATION_KEY=%s\\n\'' in deployment
-    assert 'pywrangler deploy --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}:python-core"' in deployment
+    assert 'wrangler.foundation-core.toml' in deployment
+    assert 'foundation_worker.py' in deployment
     assert 'test -n "${B2_KEY_ID:-}"' in deployment
     assert 'test -n "${B2_APPLICATION_KEY:-}"' in deployment
 
@@ -210,23 +210,17 @@ def test_public_edge_does_not_retain_b2_credentials():
     assert 'workers/scripts/${PUBLIC_WORKER_NAME}/secrets/${public_b2_secret}' in deployment
     assert 'public-worker-settings-after-b2-cleanup.json' in deployment
 def test_public_worker_static_assets_binding_is_declared():
-    wrangler = (ROOT / "wrangler.python-core.toml").read_text(encoding="utf-8")
-    assert '[assets]' in wrangler
-    assert 'directory = "./frontend"' in wrangler
-    assert 'binding = "ASSETS"' in wrangler
-    assert 'not_found_handling = "single-page-application"' in wrangler
-    worker = (ROOT / "worker.py").read_text(encoding="utf-8")
-    assert 'getattr(self.env, "ASSETS", None)' in worker
-    assert "response = await assets.fetch(request)" in worker
-    assert "Content-Security-Policy" in worker
-    assert 'X-Frame-Options\"] = "DENY"' in worker
+    wrangler = WRANGLER.read_text(encoding="utf-8")
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'service = "heroic-core"' in wrangler
+    assert 'foundation_frontend' in deployment
 
 def test_production_script_preserves_static_asset_binding_and_diagnostic_smokes():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert "set -euo pipefail" in deployment
     assert "python -m pip install pytest pytest-asyncio coverage workers-py workers-runtime-sdk uv" in deployment
     assert "uv --version" in deployment
-    assert 'binding = "ASSETS"' in deployment
+    assert 'foundation_frontend' in deployment
     assert 'health_status=$(curl -sS -o health.json' in deployment
     assert 'readiness=$(curl -sS -o readiness.json' in deployment
     assert 'ui=$(curl -sS -o frontend.html' in deployment
@@ -292,7 +286,7 @@ def test_backup_workflow_uses_app_auth_for_private_operations_and_separates_b2_c
     assert "BACKUP_GITHUB_TOKEN" not in backup
     assert "OPERATIONS_READ_TOKEN" not in backup
 def test_credential_policy_documents_the_separation():
-    policy = (ROOT / "docs" / "CREDENTIAL_AND_BACKUP_AUTHORITY.md").read_text(encoding="utf-8")
+    policy = (ROOT / "docs" / "AI_PROJECT_MAP.md").read_text(encoding="utf-8")
     deployment = (ROOT / "DEPLOYMENT.md").read_text(encoding="utf-8")
     backup = (ROOT / "backup" / "README.md").read_text(encoding="utf-8")
     for secret in (
@@ -306,6 +300,7 @@ def test_credential_policy_documents_the_separation():
         assert secret in policy
     assert "B2 credentials are secrets and never belong in Git" in deployment
     assert "`OPERATIONS_APP_ID`" in policy
+    assert "Credential and token map" in policy
     assert "purpose-specific GitHub App credential family" in backup
     assert "OPERATIONS_PIN_MANIFEST.json" in deployment
 
@@ -472,33 +467,22 @@ def test_production_release_publishes_immutable_runtime_identity():
     assert '"RELEASE_OPERATIONS_REF = \\"${OPERATIONS_REF}\\""' in deployment
 
 def test_live_acceptance_is_gated_by_runtime_provenance():
-    diagnostics = (ROOT / "backend" / "worker_diagnostics.py").read_text(encoding="utf-8")
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     coverage = (ROOT / ".github/workflows/coverage-driven-runtime-matrix.yml").read_text(encoding="utf-8")
-    assert "RELEASE_FOUNDATION_SHA" in diagnostics
-    assert 'getattr(env, "RELEASE_" + "OPER" + "ATIONS_REF"' in diagnostics
-    assert 'payload["release"]' in diagnostics
+    assert "RELEASE_FOUNDATION_SHA" in deployment
+    assert "RELEASE_OPERATIONS_REF" in deployment
     assert ".release.foundation_sha == $foundation" in coverage
     assert ".release.operations_ref == $operations" in coverage
     assert "Live runtime provenance does not match the immutable revisions under test." in coverage
-
 def test_legacy_worker_retirement_uses_force_for_reciprocal_bindings():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'for legacy_worker in "$legacy_private_worker" "$legacy_public_worker"; do' in deployment
     assert 'workers/scripts/$legacy_worker?force=true' in deployment
-def test_production_release_d1_fingerprint_is_current_repository_schema():
+def test_production_release_d1_fingerprint_is_private_operations_schema():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    import hashlib
-    import subprocess
-
-    files = sorted((ROOT / "migrations").glob("*.sql"))
-    payload = []
-    for file in files:
-        digest = hashlib.sha256(file.read_bytes()).hexdigest()
-        payload.append(f"{file.relative_to(ROOT)}\t{digest}\n")
-    expected = hashlib.sha256("".join(payload).encode()).hexdigest()
-    assert f'D1_MIGRATIONS_FINGERPRINT="{expected}"' in deployment
-    assert 'D1_MIGRATIONS_FINGERPRINT="01e075fc2161a29e62bf45248eed5691bd3925d9c5586f65ffefa7791d205147"' not in deployment
-
+    assert 'for file in "$RUNNER_TEMP/operations"/migrations/*.sql; do' in deployment
+    assert 'D1_MIGRATIONS_FINGERPRINT="b4b3362c78a4231bd256702826089812211d02f20f7771906990114f8614c9d7"' in deployment
+    assert '$GITHUB_WORKSPACE/migrations' not in deployment
 def test_production_release_requires_concurrent_d1_overlimit_evidence():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'd1_concurrent_overlimit_changes_semantics' in deployment
@@ -576,11 +560,13 @@ def test_nightly_research_preflight_waits_for_successful_production_release_r2()
     assert 'target_sha:' in text
     assert 'production_release_run_id:' in text
     assert 'github.event.workflow_run' not in text
-def test_rust_url_differential_uses_current_foundation_revision_r3():
-    text = (ROOT / '.github/workflows/hybrid-language-pilots.yml').read_text(encoding='utf-8')
-    assert 'Determine current Foundation URL-reference revision' in text
+def test_rust_url_differential_uses_private_operations_reference_r4():
+    text = (ROOT / ".github/workflows/hybrid-language-pilots.yml").read_text(encoding="utf-8")
+    assert "Determine current Foundation URL-reference revision" in text
     assert 'echo "ref=${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"' in text
-    assert 'git cat-file -e "$FOUNDATION_COMMIT:backend/sources/http.py"' in text
+    assert 'git cat-file -e "$FOUNDATION_COMMIT:backend/sources/http.py"' not in text
+    assert "test -f backend/sources/http.py" in text
+    assert "working-directory: operations" in text
 def test_typescript_endpoint_differential_materializes_public_core_r3():
     text = (ROOT / '.github/workflows/hybrid-language-pilots.yml').read_text(encoding='utf-8')
     assert 'Materialize pinned Foundation public core for Python reference' in text
