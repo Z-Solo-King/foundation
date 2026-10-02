@@ -63,7 +63,7 @@ jobs:
       - name: Verify family format contract parity
         run: |
           set -euo pipefail
-          for file in .editorconfig .prettierrc.json .prettierignore .markdownlint.json docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json; do
+          for file in .editorconfig .gitattributes .prettierrc.json .prettierignore .markdownlint.json docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json; do
             cmp -s "$file" "operations/$file"
           done
           python - <<'PY'

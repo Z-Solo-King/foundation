@@ -21,4 +21,5 @@ dev = [
   "coverage",
   "jsonschema",
   "PyYAML",
+  "ruff==0.16.9",
 ]

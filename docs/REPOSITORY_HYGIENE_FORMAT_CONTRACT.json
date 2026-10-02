@@ -8,6 +8,13 @@
     "implementation": "tools/repository_hygiene.py",
     "code_documentation_sync": "tools/code_documentation_sync.py"
   },
+  "configuration_files": [
+    ".editorconfig",
+    ".gitattributes",
+    ".prettierrc.json",
+    ".prettierignore",
+    ".markdownlint.json"
+  ],
   "encoding": {
     "charset": "UTF-8",
     "line_ending": "LF",
@@ -128,7 +135,7 @@
     "map_schema": "code-doc-sync/v1",
     "code_change_requires_document_update": true,
     "document_change_requires_code_change": false,
-    "exemption": "Only an explicitly declared sync-exemption reason in the change contract may suppress a required document update.",
+    "exemption": "A group may set require_doc_update=false only when sync_exemption_reason is present and reviewed in the same change.",
     "required_change_set": [
       "source/code change",
       "canonical documentation update",

@@ -8,9 +8,12 @@
         "tools/repository_hygiene.py",
         "tools/code_documentation_sync.py",
         ".editorconfig",
+        ".gitattributes",
         ".prettierrc.json",
         ".prettierignore",
         ".markdownlint.json",
+        "pyproject.toml",
+        ".github/pull_request_template.md",
         ".github/workflows/repository-hygiene.yml",
         ".github/workflows/family-hygiene-sync.yml"
       ],
