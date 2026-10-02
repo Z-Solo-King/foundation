@@ -143,15 +143,15 @@ This system adds machine enforcement; it does not replace those human-readable c
 From either repository:
 
 ```text
-python tools/repository_hygiene.mjs --changed-from <base-sha> --format-check --strict
-python tools/code_documentation_sync.mjs --changed-from <base-sha> --strict
+python tools/repository_hygiene.py --changed-from <base-sha> --format-check --strict
+python tools/code_documentation_sync.py --changed-from <base-sha> --strict
 ```
 
 For a repository-wide audit:
 
 ```text
-python tools/repository_hygiene.mjs --all --report .runtime/hygiene.json
-python tools/code_documentation_sync.mjs --all --report .runtime/code-doc-sync.json
+python tools/repository_hygiene.py --all --report .runtime/hygiene.json
+python tools/code_documentation_sync.py --all --report .runtime/code-doc-sync.json
 ```
 
 The formatter versions are pinned in the canonical contract. Use the exact versions in CI rather than unpinned `latest` downloads.
