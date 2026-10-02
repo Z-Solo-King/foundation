@@ -255,6 +255,7 @@
           message: text,
           mode: 'chat',
           strict_zero_cost_only: true,
+          timezone_offset_minutes: -new Date().getTimezoneOffset(),
           history: conversationHistory(chatId),
         }),
       });
