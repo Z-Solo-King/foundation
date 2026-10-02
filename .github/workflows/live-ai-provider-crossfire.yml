@@ -93,8 +93,10 @@ jobs:
         run: |
           set +e
           mkdir -p .runtime/live-ai-crossfire
-          cd operations-provider-benchmark
-          python private/benchmark/ai_provider_crossfire.py --providers-max 6 --repeats 3 --workers 12 --output ../.runtime/live-ai-crossfire/private.json > ../.runtime/live-ai-crossfire/runner.log 2>&1
+          (
+            cd operations-provider-benchmark
+            python private/benchmark/ai_provider_crossfire.py --providers-max 6 --repeats 3 --workers 12 --output ../.runtime/live-ai-crossfire/private.json > ../.runtime/live-ai-crossfire/runner.log 2>&1
+          )
           status=$?
           set -e
           if [ "$status" -ne 0 ]; then
