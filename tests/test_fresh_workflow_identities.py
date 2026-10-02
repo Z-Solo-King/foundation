@@ -62,7 +62,7 @@ def test_nightly_dry_run_selects_mode_before_live_only_runtime_probe():
             "      - name: Authenticate private research source", probe_start
         )
     ]
-    assert "if: ${{ steps.mode.outputs.mode == 'live' }}" in probe_block
+    assert 'if [[ "${{ steps.mode.outputs.mode }}" != "live" ]]; then' in probe_block
     assert "node scripts/nightly_runtime_contract_probe.mjs" in probe_block
     crossfire_block = text[
         text.index("      - name: Run complete crossfire research") : text.index(
