@@ -6,12 +6,9 @@ name: cross-repository contract drift
     paths:
       - 'CAPABILITIES.json'
       - 'REPOSITORY_MAP.json'
-      - 'worker.py'
       - 'wrangler.toml'
-      - 'backend/**'
       - 'foundation_core/**'
       - 'frontend/**'
-      - 'migrations/**'
       - 'polyglot/**'
       - 'tools/check_cross_repo_drift.py'
       - 'tools/validate_language_fit_inventory.py'
