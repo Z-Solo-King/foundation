@@ -2,12 +2,12 @@
 
 This document is the public continuity authority for Foundation. Dated status/audit snapshots are historical evidence only.
 
-Checked: 2026-10-02 08:30 UTC.
+Checked: 2026-10-02 08:40 UTC.
 Main verification checkpoint: current Foundation main is read live from GitHub; the last verified main commit is `092495175d56111a3ab337b7dff8ae5e78fc93e4`.
 Continuity CI uses a full-depth Foundation checkout so merge-commit parent resolution remains valid.
 Release continuity note: production acceptance namespaces are derived from GitHub's authoritative run-attempt value to prevent rerun receipt collisions.
 Foundation main code checkpoint: current main is read live from GitHub; last verified commit `092495175d56111a3ab337b7dff8ae5e78fc93e4`.
-Operations main checkpoint: current main is read live from GitHub; last verified main commit `7ea7d708f880492d52d36cbaf4a0da4982d19894`. Research and migration jobs use explicit immutable pins below.
+Operations main checkpoint: current main is read live from GitHub; last verified main commit `48c78c95e71ab0ef6ce0baa23e9957dc06b9b3a3`. Research and migration jobs use explicit immutable pins below.
 Production Operations pin: `da86e92d4e0fdb68912efb54ef95c69281a7d613`.
 Provider fleet runtime probe pin: `b95e419254a9071beaeef57a1b0da22ba7dd2c4f`.
 Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`.
