@@ -140,10 +140,6 @@
       "secret_sync"
     ],
     [
-      ".github/workflows/twice-daily-autonomous-governance-sweep.yml",
-      "autonomous_governance_sweep"
-    ],
-    [
       ".github/workflows/twice-daily-governance-sweep.yml",
       "autonomous_governance_sweep"
     ],
