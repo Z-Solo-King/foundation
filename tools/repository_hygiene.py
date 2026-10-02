@@ -17,21 +17,32 @@ from typing import Iterable
 
 CONTRACT_REL = Path("docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json")
 TEXT_EXTENSIONS = {
+    ".bash",
     ".cjs",
+    ".conf",
     ".css",
+    ".cfg",
+    ".fish",
     ".html",
+    ".ini",
     ".json",
     ".jsonc",
     ".mjs",
     ".md",
+    ".properties",
+    ".ps1",
     ".py",
     ".scss",
+    ".sh",
+    ".sql",
+    ".svg",
+    ".toml",
     ".ts",
     ".tsx",
-    ".toml",
     ".txt",
-    ".yml",
+    ".xml",
     ".yaml",
+    ".yml",
 }
 FORMATTER_EXTENSIONS = {
     ".cjs",
@@ -47,12 +58,14 @@ FORMATTER_EXTENSIONS = {
     ".yml",
 }
 FORBIDDEN_TRACKED = (
-    "__pycache__/",
-    ".coverage",
-    ".pytest_cache/",
+    "**/__pycache__/**",
+    "*.coverage",
+    "*.pyc",
+    "*.pyo",
+    ".pytest_cache/**",
     "coverage.xml",
-    "htmlcov/",
-    "node_modules/",
+    "htmlcov/**",
+    "node_modules/**",
     ".DS_Store",
 )
 DATE_NAME_RE = re.compile(r"(?:19|20)\d{2}[-_]\d{2}[-_]\d{2}")
@@ -99,6 +112,11 @@ def normalize_selection(
 def is_text_path(path: str) -> bool:
     return Path(path).suffix.lower() in TEXT_EXTENSIONS or Path(path).name in {
         "AGENTS.md",
+        "Caddyfile",
+        "Containerfile",
+        "Dockerfile",
+        "GNUmakefile",
+        "Makefile",
         "README.md",
     }
 
@@ -109,7 +127,10 @@ def is_formatter_path(path: str) -> bool:
 
 def is_forbidden_artifact(path: str) -> bool:
     normalized = path.replace("\\", "/")
-    return any(token in normalized or normalized.endswith(token) for token in FORBIDDEN_TRACKED)
+    return any(
+        fnmatch.fnmatchcase(normalized, pattern) or normalized == pattern
+        for pattern in FORBIDDEN_TRACKED
+    )
 
 
 def check_bytes(full_path: Path, relative: str) -> list[dict[str, object]]:
@@ -318,7 +339,3 @@ def main() -> int:
         print(json.dumps(report, indent=2, sort_keys=True))
 
     return 0 if (report["passed"] or not args.strict) else 1
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
