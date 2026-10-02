@@ -161,13 +161,13 @@
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "afa15e90942f0fb01399fab31d94ad2e0ad3e606",
-    "operations": "48c78c95e71ab0ef6ce0baa23e9957dc06b9b3a3"
+    "foundation": "4d54a85944ad28f8c22e80909dec874692d4dd4b",
+    "operations": "5cf716b8c8d9be4691f2544f2799dfd95cc29d4a"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "afa15e90942f0fb01399fab31d94ad2e0ad3e606",
-    "operations": "48c78c95e71ab0ef6ce0baa23e9957dc06b9b3a3"
+    "foundation": "4d54a85944ad28f8c22e80909dec874692d4dd4b",
+    "operations": "5cf716b8c8d9be4691f2544f2799dfd95cc29d4a"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",
