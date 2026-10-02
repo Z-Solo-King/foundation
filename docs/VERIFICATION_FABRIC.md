@@ -36,3 +36,8 @@ When a new capability is added:
 - add at least one deterministic regression test
 - add a documented owner/boundary
 - avoid creating a new workflow when an existing workflow family can be extended
+
+
+## Release-publication verification — 2026-10-02
+
+The verification fabric includes release-publication policy as a safety invariant for feed recovery. Verification must reject any workflow or executable that creates/uploads a GitHub Release, publishes a feed via a release tag/download URL, or grants feed workflows unnecessary repository write permission. Feed outputs remain workflow artifacts.
