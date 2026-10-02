@@ -89,19 +89,19 @@ jobs:
         run: |
           set +e
           mkdir -p .runtime/chatbot-crossfire
-          python "${{ runner.temp }}/operations/private/benchmark/ai_provider_crossfire.py"             --providers-max 6 --repeats 3 --workers 12             --output .runtime/chatbot-crossfire/private.json             > .runtime/chatbot-crossfire/runner.log 2>&1
+          python "${{ runner.temp }}/operations/private/benchmark/ai_provider_crossfire.py"             --providers-max 6 --min-providers 5 --repeats 3 --workers 12             --output .runtime/chatbot-crossfire/private.json             > .runtime/chatbot-crossfire/runner.log 2>&1
           status=$?
           set -e
 
           if [ "$status" -ne 0 ]; then
-            if grep -q '^need at least 2 configured AI providers for cross-fire;' .runtime/chatbot-crossfire/runner.log; then
+            if grep -q '^need at least 5 configured AI providers for comparative cross-fire;' .runtime/chatbot-crossfire/runner.log; then
               provider_count="$(sed -n 's/.*found \\([0-9][0-9]*\\)$/\\1/p' .runtime/chatbot-crossfire/runner.log | tail -1)"
               provider_count="${provider_count:-0}"
               jq -n --argjson provider_count "$provider_count" '{
                 schema:"live-ai-provider-crossfire-summary/v1",
                 generated_at:(now|todate),
-                comparison_state:"comparison_unavailable",
-                limitation:"fewer than two configured direct providers; comparative cross-fire is not claimed",
+                comparison_state:"blocked",
+                limitation:"fewer than five configured direct providers; comparative cross-fire evidence gate is blocked",
                 provider_count:$provider_count,
                 providers:[],
                 call_count:0,
@@ -114,6 +114,13 @@ jobs:
           fi
 
           test -s .runtime/chatbot-crossfire/private.json
+
+      - name: Enforce comparative provider minimum
+        if: always()
+        run: |
+          set -euo pipefail
+          state="$(jq -r '.comparison_state // "complete"' .runtime/chatbot-crossfire/private.json)"
+          test "$state" = "complete" || { echo "Comparative cross-fire gate blocked: fewer than five live providers were available."; exit 1; }
 
       - name: Produce public-safe CrossFire receipt
         if: always()
