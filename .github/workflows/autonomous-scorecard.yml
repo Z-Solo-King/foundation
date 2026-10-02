@@ -52,6 +52,9 @@ jobs:
           ruff format benchmark/research_artifact_validator.py tests/test_research_artifacts.py
           echo '--- RUFF FORMAT DIFF ---'
           git diff -- benchmark/research_artifact_validator.py tests/test_research_artifacts.py
+          ruff check --select I --fix benchmark/research_artifact_validator.py tests/test_research_artifacts.py
+          echo '--- RUFF IMPORT FIX DIFF ---'
+          git diff -- benchmark/research_artifact_validator.py tests/test_research_artifacts.py
           npx --yes prettier@3.9.9 --write .github/workflows/autonomous-scorecard.yml
           echo '--- PRETTIER WORKFLOW DIFF ---'
           git diff -- .github/workflows/autonomous-scorecard.yml
@@ -88,7 +91,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .runtime/autonomous-artifacts
-          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/\${AUTONOMOUS_RUN_ID}/artifacts?per_page=100" \
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${AUTONOMOUS_RUN_ID}/artifacts?per_page=100" \
             --jq '.artifacts[] | select(.expired == false) | .name' \
             | while IFS= read -r name; do
                 test -n "$name"
