@@ -1,6 +1,9 @@
 from pathlib import Path
 
 
+ROOT = Path(__file__).resolve().parents[1]
+
+
 def test_frontend_uses_same_origin_api_by_default():
     source = Path("frontend/frontend_state.js").read_text(encoding="utf-8")
     assert "window.location.origin" in source
@@ -15,6 +18,10 @@ def test_chat_ui_calls_canonical_chat_route_and_clears_pending_state():
     assert "pending: false" in app
     assert "Request failed" in view
     assert "Heroic AI" in view
+    assert "message-result-state" in view
+    assert "message-generation-status" in view
+    assert "data-result-state" in view
+    assert "data-generation-status" in view
 
 
 def test_guest_test_mode_is_explicit_and_network_free():
@@ -61,3 +68,11 @@ def test_dashboard_styles_cover_provenance_and_errors():
     assert ".dashboard-provenance" in css
     assert ".dashboard-provider-resource" in css
     assert ".dashboard-error" in css
+
+
+def test_frontend_chat_history_uses_public_chat_request_content_field():
+    text = (ROOT / "frontend" / "app.js").read_text(encoding="utf-8")
+    assert ".map((message) => ({ role: message.role, content:" in text
+    assert ".map((message) => ({ role: message.role, text:" not in text
+    assert "result_state: payload.result_state || null" in text
+    assert "generation_status: payload.generation_status" in text
