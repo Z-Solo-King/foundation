@@ -23,13 +23,7 @@
     "product_mapping": "foundation_core/product_mapping.py",
     "normalization": "foundation_core/normalization.py",
     "field_routing": "foundation_core/field_routing.py",
-    "evidence_certificates": "backend/evidence_certificate.py",
-    "evidence_selection": "backend/evidence_selection.py",
-    "claims": "backend/intelligence/claims.py",
-    "execution": "Z-Solo-King/operations:backend/execution/",
-    "research_pipeline": "Z-Solo-King/operations:backend/execution/pipeline.py",
     "public_worker_boundary": "edge.ts",
-    "artifacts": "backend/artifacts/manifest.py",
     "benchmarks": "benchmark/",
     "family_integration_graph": "docs/FAMILY_INTEGRATION_GRAPH.json",
     "family_integration_architecture": "docs/FAMILY_INTEGRATION_ARCHITECTURE_2026-09-25.md",
@@ -37,7 +31,9 @@
     "python_core_worker_config": "Z-Solo-King/operations:wrangler.foundation-core.toml",
     "python_runtime_backend": "Z-Solo-King/operations:backend/",
     "public_chat_contract": "docs/FAMILY_CONTRACT.json",
-    "public_research_contract": "docs/FAMILY_CONTRACT.json"
+    "public_research_contract": "docs/FAMILY_CONTRACT.json",
+    "execution": "Z-Solo-King/operations:backend/execution/",
+    "research_pipeline": "Z-Solo-King/operations:backend/execution/pipeline.py"
   },
   "boundary": {
     "private_operations": "Z-Solo-King/operations",
