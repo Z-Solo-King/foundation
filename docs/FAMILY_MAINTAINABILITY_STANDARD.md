@@ -26,6 +26,23 @@ A non-trivial module should make its purpose and contract discoverable from its 
 
 Do not add comments that merely restate code. Explain non-obvious reasoning, invariants and ownership.
 
+## Logic explanation standard
+
+For every non-trivial production module, the owning source or its immediately adjacent canonical documentation must answer these questions in compact form:
+
+1. **Why does this module exist?**
+2. **What owns the decision it implements?**
+3. **What enters and leaves the module?**
+4. **What invariants must always hold?**
+5. **What happens on success, rejection, failure, timeout, unknown or partial evidence?**
+6. **What state or side effects can it change?**
+7. **Which modules are allowed to call it?**
+8. **Which tests prove the contract?**
+9. **What is deliberately not implemented here?**
+10. **What is the removal/migration path?**
+
+Use a stable vocabulary for states and boundaries. Do not make an AI infer critical ownership or failure semantics from control-flow alone.
+
 ## Change methodology
 
 Before implementing a material change:
@@ -44,6 +61,8 @@ Before implementing a material change:
 Split a module when responsibilities, lifecycle, ownership or change frequency are materially independent. Do not split only to reduce line count.
 
 Move code between repositories only when ownership requires the move. Before moving, identify imports, entrypoints, state, tests, contracts and compatibility requirements. After migration, remove the old implementation once parity evidence shows it is no longer required.
+
+A migration is not complete while the old implementation remains an alternative authority unless it is explicitly marked as a compatibility or rollback surface.
 
 ## Duplicate-prevention rules
 
@@ -78,6 +97,8 @@ Remove only after checking imports, runtime entrypoints, tests and documented de
 ## Documentation rule
 
 Do not create a new plan, policy or guide merely because a new conversation occurred. Update the canonical owner document when possible. Deferred, experimental, rejected and future-use material must have an explicit lifecycle state and revisit condition.
+
+Operational live-state records, credentials/identifiers, deployment details and private topology belong in Operations, not in the public Foundation documentation surface.
 
 ## Completion standard
 

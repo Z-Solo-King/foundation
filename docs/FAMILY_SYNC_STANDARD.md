@@ -124,6 +124,16 @@ The sweep may create or update GitHub issue/comment records with evidence refere
 
 A sweep finding is a candidate governance record until the referenced CI/runtime/evidence gate confirms it.
 
+## Cross-system equivalence and CrossFire gate
+
+The family CrossFire audit compares Foundation and Operations without merging their authorities. Its deterministic receipt materializes typed Cartesian comparisons for policy catalogs, feature domains, function declarations, tracked-file content and architecture flows; the symbolic model is N² × N² = N⁴, while execution remains bounded and evidence-producing.
+
+Six semantic lenses are defined for independent review: ownership/policy, TypeScript edge/application, Rust deterministic kernels, Go concurrency/network, Cloudflare/runtime/deployment, and security/evidence/provenance. Parallel lanes may work independently, but mutations remain serialized through the canonical repository owner.
+
+The live AI provider cross-fire may exercise up to six configured direct providers with bounded repeats/concurrency. Fewer than two configured providers produces an explicit non-comparative receipt rather than an inferred or fabricated provider comparison. Provider/model results remain supporting evidence and cannot transfer policy, correctness or deployment authority.
+
+The family workflow treats full tracked-file classification, shared-policy divergence, focused differential evidence and fresh runtime receipts as separate gates. A 100% inventory result establishes coverage of the supplied tree; it does not by itself establish semantic equivalence or production readiness.
+
 ## Uniform issue format
 
 Material issues should contain:
