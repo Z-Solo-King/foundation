@@ -162,3 +162,7 @@ Foundation main is `f548a468b4dcd9e7c03263a130ce76e95eafc228`; Operations main i
 ## Unified AI navigation and observability
 
 The canonical human/AI navigation entrypoint is `docs/AI_SYSTEM_DIRECTORY.md`, backed by `docs/AI_SYSTEM_MAP.json`. Detailed Foundation and Operations AI project maps remain detailed architecture views linked into the unified overlay. Navigation uses overlapping orthogonal axes—functional plane, execution class, authority layer, evidence class and resource class—so one capability can be found from multiple useful directions without creating duplicate ownership. The map/directory is non-authoritative; policy, resource, provider, evidence, deployment, promotion and rollback authorities remain canonical.
+
+## 2026-10-02 repository hygiene and documentation synchronization
+
+Foundation now carries a machine-enforced repository hygiene and code-documentation synchronization system. The canonical contract is `docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json`; changed files are checked by `tools/repository_hygiene.py` and mapped contract/document relationships by `tools/code_documentation_sync.py`. Foundation's family coordinator compares the shared contract against Operations without publishing private source contents. This is a source/CI governance capability, not runtime certification.

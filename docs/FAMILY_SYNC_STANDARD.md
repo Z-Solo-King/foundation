@@ -203,3 +203,13 @@ A family synchronization pass is complete only when:
 - stale or contradictory records are corrected or explicitly marked historical;
 - unresolved gates are explicit;
 - no claim exceeds its evidence level.
+
+## Machine-enforced hygiene and format coordination
+
+Repository formatting is governed by the identical machine contract in `docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json` in both repositories.
+
+The strict change gate is implemented by `tools/repository_hygiene.py` and `tools/code_documentation_sync.py`. Foundation also runs a read-only family coordinator to compare the shared contract/configuration bytes against Operations `main`.
+
+This machine layer is subordinate to this document's authority/evidence hierarchy: it detects structural drift, formatting divergence and missing documentation deltas, but it does not convert source or CI results into runtime/production certification.
+
+Formatting policy is deliberately ratcheted. Existing historical debt is reported without a repository-wide mass rewrite; newly changed files must satisfy the strict gate.
