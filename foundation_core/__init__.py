@@ -1,5 +1,6 @@
 """Public deterministic utilities for observed data and bounded execution."""
 
+from .family_common import (Sha256Accumulator, canonical_json_bytes, dedupe_exact_preserve_order, dedupe_preserve_order, is_sha256, is_sha256_lowercase, normalize_casefold_text, normalize_unicode_casefold_text, require_sha256, require_sha256_lowercase, sha256_bytes, sha256_content, sha256_file, sha256_json, sha256_text)
 from .field_routing import FIELD_ALIASES, FIELD_FAMILIES, RoutedField, route_field, route_fields
 from .normalization import normalize_specs, normalize_stock
 from .outcome import RETRYABLE_OUTCOMES, TERMINAL_OUTCOMES, StageOutcome, is_retryable, is_terminal, validate_outcome
@@ -11,6 +12,21 @@ from .stage_receipt import StageReceipt, can_resume, fingerprint, validate_chain
 from .token_efficiency import EfficiencyGate, TokenEfficiencyObservation, compare_efficiency
 
 __all__ = [
+    "Sha256Accumulator",
+    "canonical_json_bytes",
+    "dedupe_exact_preserve_order",
+    "dedupe_preserve_order",
+    "is_sha256",
+    "is_sha256_lowercase",
+    "normalize_casefold_text",
+    "normalize_unicode_casefold_text",
+    "require_sha256",
+    "require_sha256_lowercase",
+    "sha256_bytes",
+    "sha256_content",
+    "sha256_file",
+    "sha256_json",
+    "sha256_text",
     "FIELD_ALIASES",
     "FIELD_FAMILIES",
     "PlausibilitySignal",
