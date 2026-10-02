@@ -124,17 +124,18 @@ Actions should use least-privilege permissions and immutable Action SHAs. The wo
 
 ## 10. Language map
 
-| Language | Current surface | Why used | How AI should audit it |
-|---|---|---|---|
-| Python | 332 files | canonical public semantics/deterministic core | reference behavior, policy/contract analysis, tests |
-| TypeScript | 18 files | typed contract/edge/tooling candidates | shadow/differential against canonical behavior |
-| JavaScript/MJS | 30 files | browser/client/runtime-native logic | lifecycle, cancellation, boundary behavior |
-| SQL | 10 files | D1 schema and data contract | migration order, constraints, idempotency, query bounds |
-| YAML | 46 files | GitHub Actions declarative control plane | triggers, permissions, refs, secret flow, artifacts |
-| Shell | 4 files | release/deployment glue | bounded commands, secret handling, failure semantics |
-| JSON/TOML/HTML/CSS | configuration/data/UI surfaces | machine-readable contracts and product presentation | schema/config consistency and ownership |
+The following is a **live indexed implementation-file census** from GitHub code search on current `main`. It is directional and is intentionally kept separate from the older recursive structural snapshot in `AI_PROJECT_MAP.json`.
 
-Language does not determine authority. Authority comes from the family ownership map and policy.
+| Language / extension | Indexed files | Share of checked implementation files | Role |
+|---|---:|---:|---|
+| Python | 143 | 64.13% | canonical public deterministic/reference surfaces |
+| JavaScript | 19 | 8.52% | browser/frontend/tooling |
+| MJS | 42 | 18.83% | Node tooling / automation |
+| TypeScript | 19 | 8.52% | typed boundary/tooling candidates |
+
+Combined JavaScript + MJS: **27.35%** of the checked implementation-file subset. The checked subset is 223 files across the queried implementation extensions; it is not a full repository language-statistics replacement.
+
+Language does not determine authority. Migration requires applicable differential, security/policy/provenance, resource, shadow, canary and rollback evidence before authority changes.
 
 ## 11. Feature/function/policy relationship
 
