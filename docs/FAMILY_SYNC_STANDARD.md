@@ -12,12 +12,12 @@ The rule is simple: **one canonical fact, one owner, one format, one current rev
 
 ## Repository identity
 
-| Field | Foundation | Operations |
-| --- | --- | --- |
-| Role | public-safe contract, deterministic/evidence core, public Worker, CI and deployment/backup workflow | private Heroic AI control plane/runtime |
-| Dependency direction | independent of Operations internals | may consume Foundation public contracts/core |
-| Production deployment owner | canonical | receives explicitly approved revision |
-| Private runtime CI | not applicable | intentionally external/private; no GitHub-hosted private runtime |
+| Field                       | Foundation                                                                                          | Operations                                                       |
+| --------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Role                        | public-safe contract, deterministic/evidence core, public Worker, CI and deployment/backup workflow | private Heroic AI control plane/runtime                          |
+| Dependency direction        | independent of Operations internals                                                                 | may consume Foundation public contracts/core                     |
+| Production deployment owner | canonical                                                                                           | receives explicitly approved revision                            |
+| Private runtime CI          | not applicable                                                                                      | intentionally external/private; no GitHub-hosted private runtime |
 
 Exactly two repositories are active. Former extractor/mapper repositories are historical only.
 
@@ -90,14 +90,14 @@ Claims must never exceed their evidence level.
 
 Every canonical subsystem record should identify:
 
-| Field | Meaning |
-| --- | --- |
-| `owner` | repository + canonical implementation |
-| `contract` | stable consumer-facing interface/schema |
-| `authority` | policy/state/data authority used by the subsystem |
-| `non_authority` | responsibilities it explicitly cannot own |
-| `tests` | focused suites protecting the contract |
-| `compatibility` | facade/deprecation state, if any |
+| Field           | Meaning                                           |
+| --------------- | ------------------------------------------------- |
+| `owner`         | repository + canonical implementation             |
+| `contract`      | stable consumer-facing interface/schema           |
+| `authority`     | policy/state/data authority used by the subsystem |
+| `non_authority` | responsibilities it explicitly cannot own         |
+| `tests`         | focused suites protecting the contract            |
+| `compatibility` | facade/deprecation state, if any                  |
 
 A compatibility facade is not a second owner.
 
@@ -244,7 +244,6 @@ Formatting policy is deliberately ratcheted. Existing historical debt is reporte
 
 Foundation feed-recovery workflows are artifact-only. Feed workflows do not receive repository write permission; the separate governance workflow has only the narrow permission required to remove the specifically prohibited `wc-google-feed-latest` release/tag if recreated.
 
-
 ## 2026-10-02 Migration Factory CrossFire
 
 The six-lane Migration Factory CrossFire workflow is an unprivileged read-only CI capability. It inventories Python across Foundation and an immutable Operations revision, produces independent runtime/dependency/tooling/test/language/retirement observations, and aggregates them without changing production authority. Migration promotion still requires the existing evidence and authority-transfer gates.
@@ -253,11 +252,9 @@ The six-lane Migration Factory CrossFire workflow is an unprivileged read-only C
 
 The family sync ledger was refreshed from live GitHub state on 2026-10-02. Foundation main is `1195d4a9ccdb51688bf9e1086b9cdb7dd99512c0` and Operations main is `10dc9eff134609494ebb034df824616bbbcc7c97`. The microscope cleanup checkpoint records 2,931 initial branches, 2,564 current branches, and 367 refs retired by the fail-closed retirement workflows. Remaining refs are not assumed safe for deletion; protected, active-PR, release/tag, live-reference, young, and diverged branches remain governed by the retirement rules.
 
-
 ## 2026-10-02 continuous Migration Factory
 
 The Migration Factory CrossFire is a trusted-main automation surface. It may read the private Operations repository only through the purpose-scoped read-only GitHub App token; pull-request and other untrusted execution remains excluded. Trusted pushes resolve a single immutable Operations SHA before the six independent lanes start, preserving the CrossFire snapshot invariant.
-
 
 ## Live reconciliation 2026-10-02T12:01:07.106Z
 

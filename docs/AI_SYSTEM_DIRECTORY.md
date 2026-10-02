@@ -16,25 +16,25 @@ The older AI_PROJECT_MAP.md/.json files remain detailed compatibility views. Thi
 
 ## Where things go
 
-| Task | Go first | Then |
-|---|---|---|
-| Chat / model execution | operations/private/chatbot/ | provider runtime, resource governance, run receipts |
-| AI provider health/quota | operations/private/chatbot/provider_runtime.py | dashboard/provider matrix, fleet probe |
-| Scraping / crawling | operations/extractor_mapper/ | acquisition planner, browser acquisition |
-| Browser / JS-heavy acquisition | operations/polyglot/browser-acquisition/ | browser evolution evidence |
-| WooCommerce / Merchant feed | operations/private/feed_recovery/ | Foundation public feed workflows, mapper |
-| Product mapping / normalization | foundation_core/ | Operations mapper/observation contract |
-| Research / evidence | backend/intelligence/ | Operations multi-agent runtime, research workflows |
-| Cloudflare Worker / D1 / Workers AI | operations/private/dashboard_cloudflare_usage.py | operations/worker.py, Cloudflare bindings |
-| Browser Run / AI Gateway | operations/private/dashboard_cloudflare_usage.py | operations/private/dashboard_cloudflare_ai_gateway.py |
-| Quota / reservation / lease | operations/private/durable_resource_ledger.py | reconciliation + protected execution |
-| B2 backup / restore / retention | .github/workflows/b2-repository-backup.yml | scripts/cleanup_b2_backup_generations.py |
-| Audit / scan / drift | tools/project_observability_audit.mjs | Operations tools/master_audit.py / tools/evolution_audit.py |
-| Quality telemetry | operations/private/project_observability.py | dashboard + D1 maintenance receipt |
-| Evolution / candidate learning | operations/private/evolution_engine.py | private/evolution_score.py and integration bridge |
-| Autonomous engineering | tools/autonomous_engineering_supervisor.mjs | deterministic mission router + allowlisted workflow |
-| Migration / portability | operations/polyglot/ | Foundation migration workflows + evolution evidence |
-| Current state | docs/CURRENT_SOURCE_OF_TRUTH.md | live GitHub/Cloudflare evidence |
+| Task                                | Go first                                         | Then                                                        |
+| ----------------------------------- | ------------------------------------------------ | ----------------------------------------------------------- |
+| Chat / model execution              | operations/private/chatbot/                      | provider runtime, resource governance, run receipts         |
+| AI provider health/quota            | operations/private/chatbot/provider_runtime.py   | dashboard/provider matrix, fleet probe                      |
+| Scraping / crawling                 | operations/extractor_mapper/                     | acquisition planner, browser acquisition                    |
+| Browser / JS-heavy acquisition      | operations/polyglot/browser-acquisition/         | browser evolution evidence                                  |
+| WooCommerce / Merchant feed         | operations/private/feed_recovery/                | Foundation public feed workflows, mapper                    |
+| Product mapping / normalization     | foundation_core/                                 | Operations mapper/observation contract                      |
+| Research / evidence                 | backend/intelligence/                            | Operations multi-agent runtime, research workflows          |
+| Cloudflare Worker / D1 / Workers AI | operations/private/dashboard_cloudflare_usage.py | operations/worker.py, Cloudflare bindings                   |
+| Browser Run / AI Gateway            | operations/private/dashboard_cloudflare_usage.py | operations/private/dashboard_cloudflare_ai_gateway.py       |
+| Quota / reservation / lease         | operations/private/durable_resource_ledger.py    | reconciliation + protected execution                        |
+| B2 backup / restore / retention     | .github/workflows/b2-repository-backup.yml       | scripts/cleanup_b2_backup_generations.py                    |
+| Audit / scan / drift                | tools/project_observability_audit.mjs            | Operations tools/master_audit.py / tools/evolution_audit.py |
+| Quality telemetry                   | operations/private/project_observability.py      | dashboard + D1 maintenance receipt                          |
+| Evolution / candidate learning      | operations/private/evolution_engine.py           | private/evolution_score.py and integration bridge           |
+| Autonomous engineering              | tools/autonomous_engineering_supervisor.mjs      | deterministic mission router + allowlisted workflow         |
+| Migration / portability             | operations/polyglot/                             | Foundation migration workflows + evolution evidence         |
+| Current state                       | docs/CURRENT_SOURCE_OF_TRUTH.md                  | live GitHub/Cloudflare evidence                             |
 
 ## Category model
 
@@ -69,6 +69,7 @@ Do not route runtime work to the retired standalone extractor-mapper repository.
 GitHub supports repository-wide, path-specific, and agent instructions. Keep this directory as the semantic router and keep path-specific instructions focused on local constraints rather than duplicating the whole architecture.
 
 ### Autonomous governance sweep
+
 - Contract: `docs/AUTONOMOUS_GOVERNANCE_SCAN_CONTRACT.json`
 - Observation: `tools/comprehensive_governance_scan.mjs`
 - Publication: `tools/publish_governance_findings.py`
