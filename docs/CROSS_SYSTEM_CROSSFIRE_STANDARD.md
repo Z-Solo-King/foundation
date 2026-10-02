@@ -55,3 +55,16 @@ The audit closes only after:
 - shared policy divergence is absent;
 - required focused differential/runtime evidence is green; and
 - live runtime facts have fresh receipts where production claims are made.
+
+## Execution discipline
+
+CrossFire is intentionally fail-closed and evidence-separated:
+
+1. parallel analytical lanes may read the same repository state independently;
+2. lanes do not share intermediate conclusions before their individual checks finish;
+3. deterministic validators reconcile the independent outputs;
+4. only the canonical owner may perform a mutation;
+5. required GitHub checks must pass on the reconciled PR head before merge;
+6. live Cloudflare verification is performed after deployment, not inferred from source state.
+
+The six-provider target is an execution target, not a requirement to fabricate providers that are unavailable. A strong comparison requires at least five independent provider lanes; otherwise the receipt records the limitation explicitly.
