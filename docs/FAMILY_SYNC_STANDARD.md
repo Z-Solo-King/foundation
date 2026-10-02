@@ -233,3 +233,7 @@ The strict change gate is implemented by `tools/repository_hygiene.py` and `tool
 This machine layer is subordinate to this document's authority/evidence hierarchy: it detects structural drift, formatting divergence and missing documentation deltas, but it does not convert source or CI results into runtime/production certification.
 
 Formatting policy is deliberately ratcheted. Existing historical debt is reported without a repository-wide mass rewrite; newly changed files must satisfy the strict gate.
+
+## Release-publication boundary — 2026-10-02
+
+Foundation feed-recovery workflows are artifact-only. Feed workflows do not receive repository write permission; the separate governance workflow has only the narrow permission required to remove the specifically prohibited `wc-google-feed-latest` release/tag if recreated.
