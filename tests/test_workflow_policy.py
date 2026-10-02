@@ -571,7 +571,7 @@ def test_typescript_endpoint_differential_materializes_public_core_r3():
     text = (ROOT / '.github/workflows/hybrid-language-pilots.yml').read_text(encoding='utf-8')
     assert 'Materialize pinned Foundation public core for Python reference' in text
     assert 'FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core' in text
-    assert 'python scripts/sync_public_core.mjs' in text
+    assert 'node scripts/sync_public_core.mjs' in text
 def test_live_probe_acceptance_does_not_depend_on_issue_comment_permissions():
     texts = _workflow_texts()
     assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["public-worker-live-probe.yml"]
