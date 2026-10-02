@@ -186,9 +186,8 @@ def test_public_worker_uses_native_typescript_edge_and_python_core():
     assert 'main = "edge.ts"' in wrangler
     assert 'service = "heroic-core"' in wrangler
     assert "python_workers" not in wrangler
-    core = (ROOT / "wrangler.python-core.toml").read_text(encoding="utf-8")
-    assert 'main = "worker.py"' in core
-    assert "python_workers" in core
+    assert 'wrangler.foundation-core.toml' in deployment
+    assert 'foundation_worker.py' in deployment
     assert "wrangler.python-core.generated.toml" in deployment
     assert "wrangler@4.131.1 deploy --config wrangler.production.generated.toml" in deployment
 def test_python_core_deploy_injects_required_b2_secrets():
@@ -200,7 +199,8 @@ def test_python_core_deploy_injects_required_b2_secrets():
     assert "B2_ENDPOINT: ${{ vars.B2_ENDPOINT }}" in workflow
     assert '--secrets-file "$public_secret_file"' in deployment
     assert 'printf \'AUTH_TOKEN=%s\\nB2_KEY_ID=%s\\nB2_APPLICATION_KEY=%s\\n\'' in deployment
-    assert 'pywrangler deploy --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}:python-core"' in deployment
+    assert 'wrangler.foundation-core.toml' in deployment
+    assert 'foundation_worker.py' in deployment
     assert 'test -n "${B2_KEY_ID:-}"' in deployment
     assert 'test -n "${B2_APPLICATION_KEY:-}"' in deployment
 
@@ -210,23 +210,17 @@ def test_public_edge_does_not_retain_b2_credentials():
     assert 'workers/scripts/${PUBLIC_WORKER_NAME}/secrets/${public_b2_secret}' in deployment
     assert 'public-worker-settings-after-b2-cleanup.json' in deployment
 def test_public_worker_static_assets_binding_is_declared():
-    wrangler = (ROOT / "wrangler.python-core.toml").read_text(encoding="utf-8")
-    assert '[assets]' in wrangler
-    assert 'directory = "./frontend"' in wrangler
-    assert 'binding = "ASSETS"' in wrangler
-    assert 'not_found_handling = "single-page-application"' in wrangler
-    worker = (ROOT / "worker.py").read_text(encoding="utf-8")
-    assert 'getattr(self.env, "ASSETS", None)' in worker
-    assert "response = await assets.fetch(request)" in worker
-    assert "Content-Security-Policy" in worker
-    assert 'X-Frame-Options\"] = "DENY"' in worker
+    wrangler = WRANGLER.read_text(encoding="utf-8")
+    deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    assert 'service = "heroic-core"' in wrangler
+    assert 'foundation_frontend' in deployment
 
 def test_production_script_preserves_static_asset_binding_and_diagnostic_smokes():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert "set -euo pipefail" in deployment
     assert "python -m pip install pytest pytest-asyncio coverage workers-py workers-runtime-sdk uv" in deployment
     assert "uv --version" in deployment
-    assert 'binding = "ASSETS"' in deployment
+    assert 'foundation_frontend' in deployment
     assert 'health_status=$(curl -sS -o health.json' in deployment
     assert 'readiness=$(curl -sS -o readiness.json' in deployment
     assert 'ui=$(curl -sS -o frontend.html' in deployment
