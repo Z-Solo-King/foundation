@@ -209,7 +209,7 @@ jobs:
               probe_upstream_provider="$(jq -r '.error.upstream_provider // empty' "$RUNNER_TEMP/research-worker-probe.json" 2>/dev/null | head -c 120 || true)"
             fi
             python - "$summary_file" "$failure_stage" "$JOB_STATUS" "$probe_http_status" "$probe_error_code" "$probe_error_message" "$probe_upstream_status" "$probe_upstream_error" "$probe_upstream_generation_status" "$probe_upstream_provider" <<'PY'
-          import json, sys
+          import json, os, sys
           from pathlib import Path
           out, stage, job_status, http_status, error_code, error_message, upstream_status, upstream_error, upstream_generation_status, upstream_provider = sys.argv[1:]
           data = {
