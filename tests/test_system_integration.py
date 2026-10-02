@@ -22,7 +22,13 @@ def test_production_pin_manifest_is_consistent():
     approval = json.loads((ROOT/"docs/OPERATIONS_MAIN_APPROVAL.json").read_text())
     sync = json.loads((ROOT/"docs/FAMILY_SYNC_STATE.json").read_text())
     canonical = manifest["pins"]["production_runtime"]["sha"]
+    status = manifest["pins"]["production_runtime"].get("status", "").lower()
     assert len(canonical) == 40
-    assert approval["approved_sha"] == canonical
-    assert approval["production_observed_sha"] == canonical
-    assert sync["runtime_pins"]["production_operations"] == canonical
+    if "candidate" in status:
+        assert approval["approved_sha"] == approval["production_observed_sha"]
+        assert sync["runtime_pins"]["production_operations"] == approval["production_observed_sha"]
+        assert approval["approved_sha"] != canonical
+    else:
+        assert approval["approved_sha"] == canonical
+        assert approval["production_observed_sha"] == canonical
+        assert sync["runtime_pins"]["production_operations"] == canonical

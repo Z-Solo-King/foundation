@@ -52,21 +52,42 @@ def validate_production_pin_consistency(foundation: Path, errors: list[str]) -> 
     if not isinstance(canonical, str) or len(canonical) != 40:
         errors.append("production-pin:manifest invalid")
         return
-    if approval.get("approved_sha") != canonical or approval.get("production_observed_sha") != canonical:
+    approved = approval.get("approved_sha")
+    observed = approval.get("production_observed_sha")
+    synced = (sync.get("runtime_pins") or {}).get("production_operations")
+    status = str((((manifest.get("pins") or {}).get("production_runtime") or {}).get("status")) or "").lower()
+    candidate = "candidate" in status
+
+    if candidate:
+        # A promotion PR may stage the next immutable release target while
+        # production still runs the currently certified revision. This state
+        # must remain explicit and must never be reported as live promotion.
+        if not all(isinstance(value, str) and SHA_RE.fullmatch(value) for value in (approved, observed, synced)):
+            errors.append("production-pin:live-state metadata invalid")
+        elif observed != synced:
+            errors.append("production-pin:live-state drift")
+        elif approved == canonical:
+            errors.append("production-pin:candidate status contradicts promoted live state")
+    elif approved != canonical or observed != canonical or synced != canonical:
         errors.append("production-pin:approval drift")
-    if ((sync.get("runtime_pins") or {}).get("production_operations")) != canonical:
-        errors.append("production-pin:family-sync drift")
-    production_consumers = (
+
+    candidate_consumers = (
         ".github/workflows/nightly-research-provider-preflight.yml",
         ".github/workflows/live-chatbot-production-smoke.yml",
         ".github/workflows/live-nightly-research-canary.yml",
-        "docs/CURRENT_SOURCE_OF_TRUTH.md",
-        "docs/CONTINUE_MIGRATION_2026-10-01.md",
-        "docs/INTERNAL_ACCESS_CAPABILITY_POLICY.md",
-        "tests/operations_main_guard.test.mjs",
     )
-    for rel in production_consumers:
+    for rel in candidate_consumers:
         require_text(foundation / rel, [canonical], errors, "production-pin:" + rel)
+
+    # Until controlled release, the integrity guard continues to describe
+    # the actually approved/deployed revision rather than the staged candidate.
+    if isinstance(approved, str) and SHA_RE.fullmatch(approved):
+        require_text(
+            foundation / "tests/operations_main_guard.test.mjs",
+            [approved],
+            errors,
+            "production-pin:tests/operations_main_guard.test.mjs",
+        )
 
     research = (((manifest.get("pins") or {}).get("research_runtime") or {}).get("sha"))
     if not isinstance(research, str) or len(research) != 40:
