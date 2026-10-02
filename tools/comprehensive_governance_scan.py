@@ -50,10 +50,12 @@ def main():
             for r in rs:
                 dup[r["sha"]].append(r["path"])
                 if Path(r["path"]).suffix.lower() in SOURCE and not hist(r["path"]) and ((r["lines"] or 0)>1000 or r["bytes"]>50000): big.append(r)
+            attention_big=[r for r in rs if Path(r["path"]).suffix.lower() in SOURCE and not hist(r["path"]) and ((r["lines"] or 0)>500 or r["bytes"]>25000)]
             for paths in dup.values():
                 paths=[p for p in paths if Path(p).suffix.lower() in SOURCE|{".md"} and not hist(p)]
                 if len(paths)>1:add(fs,"structure_hygiene","duplicate","attention","exact_duplicate_content",f"{repo} has exact duplicate tracked content.",paths=paths)
             if big:add(fs,"structure_hygiene","large_code","critical","critical_source_size",f"{repo} has source beyond the critical size threshold.",{"count":len(big)},[x["path"] for x in big])
+            if attention_big and not big:add(fs,"structure_hygiene","large_code","attention","attention_source_size",f"{repo} has source beyond the attention size threshold.",{"count":len(attention_big)},[x["path"] for x in attention_big[:50]])
             names=collections.defaultdict(list)
             for r in rs:
                 if Path(r["path"]).suffix.lower() in SOURCE and not hist(r["path"]) and Path(r["path"]).name!="__init__.py":names[Path(r["path"]).name].append(r["path"])
@@ -127,6 +129,26 @@ def main():
         for p in ("private/search_provider_catalog.py","private/search_provider_capabilities.py","private/search_rate_limit.py","private/search_route_policy.py","private/search_provider_execution.py"):
             if not (a.operations/p).exists():add(fs,"provider_runtime","search","critical","search_authority_missing",f"Search/evidence authority missing: {p}",paths=[p])
         if not (a.operations/"private/chatbot/chat_endpoint.py").exists():add(fs,"provider_runtime","chatbot","critical","chatbot_boundary_missing","Canonical chatbot endpoint is missing.")
+        required_runtime_surfaces=[
+            ".github/workflows/provider-fleet-runtime-state.yml",
+            ".github/workflows/browser-engine-runtime-evidence.yml",
+            ".github/workflows/live-chatbot-production-smoke.yml",
+            ".github/workflows/live-extractor-benchmark.yml",
+            ".github/workflows/b2-repository-backup.yml",
+            ".github/workflows/b2-restore-verification.yml",
+        ]
+        missing_runtime_surfaces=[path for path in required_runtime_surfaces if not (a.foundation/path).exists()]
+        if missing_runtime_surfaces:add(fs,"provider_runtime","integration","attention","canonical_runtime_surface_missing","One or more declared Cloudflare/B2/browser/chatbot/extractor runtime surfaces are missing.",paths=missing_runtime_surfaces)
+        required_policy_surfaces=[
+            "private/search_provider_catalog.py",
+            "private/search_provider_capabilities.py",
+            "private/search_rate_limit.py",
+            "private/audit_rule_catalog.py",
+            "private/language_governance_policy.py",
+            "private/runtime_language_policy.py",
+        ]
+        missing_policy_surfaces=[path for path in required_policy_surfaces if not (a.operations/path).exists()]
+        if missing_policy_surfaces:add(fs,"provider_runtime","policy","critical","canonical_policy_surface_missing","Canonical search/rules/language policy surfaces are missing.",paths=missing_policy_surfaces)
         for label,tokens in {"cloudflare":["cloudflare","workers ai","browser run","d1"],"b2":["backblaze","b2"],"api":["api_provider","provider_runtime"],"search":["search_provider","search_rate_limit"]}.items():
             hits=[r["path"] for r in O if r["text"] and any(q in r["text"].lower() for q in tokens)]
             if not hits:add(fs,"provider_runtime",label,"attention","runtime_surface_missing",f"No tracked Operations text surface references the {label} plane.")
