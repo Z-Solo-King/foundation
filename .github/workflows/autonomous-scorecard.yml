@@ -4,8 +4,8 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - benchmark/autonomous_scorecard.py
-      - benchmark/test_autonomous_scorecard.py
+      - benchmark/autonomous_scorecard.mjs
+      - benchmark/test_autonomous_scorecard.mjs
       - benchmark/public_chatbot_runner.py
       - benchmark/chatbot_query_benchmark.py
       - benchmark/chatbot-query-corpus.json
@@ -32,17 +32,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          python-version: '3.14'
-      - name: Install package and test tools
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e .
-          python -m pip install pytest
+          node-version: '22'
+          package-manager-cache: false
       - name: Run scorecard tests
-        run: python -m pytest -q benchmark/test_autonomous_scorecard.py --confcutdir=benchmark
+        run: node --test benchmark/test_autonomous_scorecard.mjs
       - name: Validate research artifact boundary
         run: python -m benchmark.research_artifact_validator
 
@@ -58,10 +54,6 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.14'
-      - name: Install package
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e .
       - name: Find latest successful autonomous benchmark
         env:
           GH_TOKEN: ${{ github.token }}
