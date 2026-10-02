@@ -1,0 +1,46 @@
+{
+  "schema":"autonomous-governance-scan/v1",
+  "version":"2026-10-02",
+  "purpose":"Comprehensive twice-daily cross-fire observation over the combined Foundation + Operations family without creating a second authority.",
+  "authority":{
+    "scheduler":"Foundation GitHub Actions",
+    "ai_execution":"existing project-improvement-supervisor.yml and existing governed Operations provider runtime",
+    "provider_selection":"Operations private/chatbot/provider_runtime.py",
+    "quality_learning":"Operations evolution/learning authorities",
+    "promotion_release":"existing canonical promotion/release authority"
+  },
+  "cadence":{"frequency":"twice_daily","cron_utc":["17 6 * * *","17 18 * * *"]},
+  "lanes":{
+    "structure_hygiene":["big code/files","exact duplicates","scattered source","workflow permissions","action pinning","schedule hygiene"],
+    "migration_boundary":["language distribution","polyglot registry","public/private leakage","secret-like public files"],
+    "research_feed":["24-program research","nightly research","native Merchant feeds","feed workflow coverage"],
+    "provider_runtime":["AI APIs","chatbot","search","Cloudflare","Browser Run","Workers AI","B2"],
+    "work_items_workflow":["open issues","open PRs","stale work","failed/active automation","workflow sprawl"],
+    "maps_docs_policy":["AI map","directory","code-doc synchronization","contracts","component/control cross-product"],
+    "quality_learning_evolution":["quality authority","learning","self-evolution","feature/function/policy cross-product"],
+    "performance_resources":["workflow runtime","execution-time outliers","automation resource efficiency"]
+  },
+  "cross_product":{
+    "dimensions":["component","cross_cutting_control","task_family","workflow","evidence_type","policy_gate","execution_class","resource_class"],
+    "rule":"Compare declared relationships pairwise/bounded across dimensions; missing edges become findings for the existing canonical owner.",
+    "n2xn2":"Use bounded declared cross-products, not unbounded combinatorial runtime execution."
+  },
+  "ai":{
+    "input":"sanitized deterministic findings and live work metadata",
+    "selection":"existing governed provider runtime selects an eligible zero-cost provider using current capability, freshness, quota and cost state",
+    "parallelism":"eight deterministic observation lanes; existing AI supervisor chooses bounded remediation workflows",
+    "forbidden":["new provider router","billing bypass","credential mutation","policy mutation","production self-promotion","evidence fabrication"]
+  },
+  "mutation":{
+    "issues":"deduplicated deterministic findings",
+    "comments":"only affected open PRs and changed finding states",
+    "pr_creation":"only existing remediation workflows may create implementation branches/PRs",
+    "merge":"normal CI/review/branch-protection authority"
+  },
+  "privacy":{
+    "operations":"raw private issue bodies and private source content stay inside the read-only family checkout",
+    "ai_context":"sanitized summaries only",
+    "credentials":"never serialized into reports, comments or AI context"
+  },
+  "non_authority":"The scanner is descriptive governance telemetry. It must never replace source, test, runtime, production, policy, evolution, promotion or rollback authorities."
+}
