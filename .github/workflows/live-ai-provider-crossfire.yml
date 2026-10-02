@@ -113,7 +113,7 @@ jobs:
         run: |
           set -euo pipefail
           test -s .runtime/live-ai-crossfire/private.json
-          jq '{schema:"live-ai-provider-crossfire-summary/v1",generated_at,provider_count:(.providers|length),call_count,batch_wall_ms,successful_calls:([.providers[].successes]|add),failed_calls:([.providers[].failures]|add),quality_passes:([.providers[].quality_passes]|add),quality_total:([.providers[].quality_total]|add)}' .runtime/live-ai-crossfire/private.json > .runtime/live-ai-crossfire/summary.json
+          jq '{schema:"live-ai-provider-crossfire-summary/v1",generated_at,comparison_state:(.comparison_state // "complete"),limitation:(.limitation // null),provider_count:(.providers|length),call_count,batch_wall_ms,successful_calls:([.providers[]?.successes]|add // 0),failed_calls:([.providers[]?.failures]|add // 0),quality_passes:([.providers[]?.quality_passes]|add // 0),quality_total:([.providers[]?.quality_total]|add // 0)}' .runtime/live-ai-crossfire/private.json > .runtime/live-ai-crossfire/summary.json
 
       - name: Upload public-safe evidence
         if: always()
