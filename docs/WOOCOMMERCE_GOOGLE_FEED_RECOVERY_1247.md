@@ -25,3 +25,10 @@ AI may generate candidate feed hypotheses in independent Cross-Fire lanes. Those
 ## Evidence boundary
 
 The public repository does not contain the live target registry or target-specific recovery output. Actual recovery remains an evidence-gated private execution task.
+
+## Migration ownership gate — 2026-10-02
+
+- **Foundation:** public feed methodology, contracts, validation semantics and safe orchestration metadata only.
+- **Operations:** live retailer registry, acquisition/extraction execution, provider-assisted candidate generation, target-specific recovery state and production recovery authority.
+- **CrossFire:** independent AI lanes may propose hypotheses, but deterministic retrieval/validation remains the acceptance authority.
+- **Status discipline:** unresolved targets remain open or evidence-gated until current execution evidence satisfies their written acceptance criteria; historical receipts are never reused as closure evidence.
