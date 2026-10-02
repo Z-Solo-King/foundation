@@ -1,42 +1,44 @@
 # Canonical Runtime Boundary
 
-## Current topology
+## Current repository/runtime ownership
+
+Foundation is the public contract and deterministic-core repository. Operations is the private control-plane and execution repository.
+
+The migration target is:
 
 ```
-User
-  -> Cloudflare Pages: ai
-  -> Service Binding: HEROIC_BACKEND -> Worker: heroic (JavaScript edge)
-  -> Service Binding: CORE -> Worker: heroic-core (Python application core)
-  -> Service Binding: OPERATIONS -> Worker: operations-edge (JavaScript edge)
-  -> Service Binding: CORE -> Worker: operations (Python control plane)
-  -> D1: research-intelligence
-  -> Backblaze B2: artifacts/backups
+Public client
+  -> Cloudflare public edge: heroic
+  -> private/control execution boundary
+  -> Operations: private policy, provider execution, acquisition, chatbot orchestration,
+     resources, evaluation, promotion/rollback and private runtime state
 ```
+
+Foundation no longer needs to carry a second copy of the private application runtime. During migration, legacy public-runtime paths are removed only after parity and regression evidence.
 
 ## Authority
 
-- Foundation owns the public contract, deterministic core, frontend, GitHub Actions and canonical release orchestration.
-- `heroic` is a thin native JavaScript ingress gateway.
-- `heroic-core` retains the Python application/runtime implementation and its D1, artifact and Operations bindings.
-- Operations owns private chatbot orchestration, protected policy/resource governance, provider execution, private memory and promotion.
-- Cloudflare is the runtime authority for deployed Worker versions, bindings, schedules and live resource state.
+- Foundation owns public-safe contracts, deterministic observed-data primitives, the public edge/request boundary, public CI, and public release workflows.
+- Operations owns protected policy/resource governance, acquisition/extraction, private adapters and execution planning, verification/evaluation, private chatbot orchestration, provider runtime, promotion/canary/rollback, deployment/recovery and private telemetry.
+- Cloudflare is the live runtime authority for deployed Worker versions, bindings, schedules and current resource state.
 
 ## Transport rule
 
-Worker-to-Worker transport uses Cloudflare Service Binding HTTP at language boundaries. Custom Python/JavaScript RPC is not required for the canonical transport path.
-
-## Public chat streaming boundary
-
-The public chat stream is an adapter over the private JSON chat result. It must preserve the canonical execution identity and truthful terminal state across `COMPLETE`, `PARTIAL`, `BLOCKED`, `NOT_ATTEMPTED`, and `FAILED`; it must not collapse non-success outcomes into completion or reject a legitimate blocked terminal outcome at the public edge. `generation_status` and the output digest are transport metadata, not provider-identity exposure or policy authority.
+Cross-repository application reuse is contract-based. Foundation public application/runtime code must not import Operations source or private state. Privileged Foundation workflows may execute a purpose-specific Operations utility only through the documented immutable-commit bridge.
 
 ## Public boundary
 
-- `heroic` is the canonical public backend Worker identity.
-- The `heroic` workers.dev subdomain remains disabled.
-- `ai-cio.pages.dev` remains the canonical public Pages front door.
+The public Worker boundary remains thin and public-safe. Public readiness must remain independently testable and must not require private control-plane state.
 
 ## Release invariant
 
 A release is valid only when the approved immutable Operations revision, current Foundation revision, Cloudflare bindings, protected policy values, D1 schema, deployment provenance and post-deployment runtime checks agree.
 
 Do not infer production state from historical docs, branch names, or GitHub `main` position alone.
+
+## Migration integrity gate — 2026-10-02
+
+- The public Foundation tree is the consumer-facing contract and deterministic-core surface; private execution behavior moved out of Foundation is owned by Operations.
+- A compatibility surface must remain thin, contract-based and non-authoritative. It must not recreate private policy, routing, provider, resource or execution algorithms.
+- Cross-repository workflows use purpose-scoped immutable Operations revisions. Production pins are separate from Operations main and must not be advanced implicitly.
+- Runtime claims require live evidence at the appropriate level; source files and historical synchronization documents are not production certificates.
