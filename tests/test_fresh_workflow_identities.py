@@ -15,9 +15,11 @@ def test_fresh_nightly_identity_is_dispatchable_and_uses_current_operations():
     assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
     assert "OPERATIONS_RESEARCH_REF:" in text
     manifest = json.loads(
-        (pathlib.Path(__file__).parents[1] / "docs" / "OPERATIONS_PIN_MANIFEST.json").read_text(
-            encoding="utf-8"
-        )
+        (
+            pathlib.Path(__file__).parents[1]
+            / "docs"
+            / "OPERATIONS_PIN_MANIFEST.json"
+        ).read_text(encoding="utf-8")
     )
     assert manifest["pins"]["research_runtime"]["sha"] in text
     assert "private.multi_agent.runner" in text
@@ -43,16 +45,20 @@ def test_fresh_acceptance_workflow_dispatches_both_identities():
     assert "gh workflow run nightly-multi-agent-research-v3.yml" in text
     assert "-f dry_run=true" in text
     assert "jobs?per_page=100" in text
-    assert 'jobs_status="$(curl -sS -o "$RUNNER_TEMP/bridge-jobs.json" -w \'%{http_code}\'' in text
-    assert 'jobs_status="$(curl -sS -o "$RUNNER_TEMP/nightly-jobs.json" -w \'%{http_code}\'' in text
+    assert (
+        'jobs_status="$(curl -sS -o "$RUNNER_TEMP/bridge-jobs.json" -w \'%{http_code}\''
+        in text
+    )
+    assert (
+        'jobs_status="$(curl -sS -o "$RUNNER_TEMP/nightly-jobs.json" -w \'%{http_code}\''
+        in text
+    )
     assert "404) jobs=0" in text
     assert "Unexpected bridge jobs HTTP status" in text
     assert "Unexpected nightly jobs HTTP status" in text
 
 def test_nightly_dry_run_selects_mode_before_live_only_runtime_probe():
-    text = (
-        ROOT / "nightly-multi-agent-research-v3.yml"
-    ).read_text(encoding="utf-8")
+    text = (ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
     mode_start = text.index("      - name: Research mode")
     probe_start = text.index("      - name: Verify exact deployed research runtime")
     assert mode_start < probe_start
