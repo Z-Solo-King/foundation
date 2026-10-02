@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 import pathlib
 
@@ -15,11 +13,9 @@ def test_fresh_nightly_identity_is_dispatchable_and_uses_current_operations():
     assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
     assert "OPERATIONS_RESEARCH_REF:" in text
     manifest = json.loads(
-        (
-            pathlib.Path(__file__).parents[1]
-            / "docs"
-            / "OPERATIONS_PIN_MANIFEST.json"
-        ).read_text(encoding="utf-8")
+        (pathlib.Path(__file__).parents[1] / "docs" / "OPERATIONS_PIN_MANIFEST.json").read_text(
+            encoding="utf-8"
+        )
     )
     assert manifest["pins"]["research_runtime"]["sha"] in text
     assert "private.multi_agent.runner" in text
