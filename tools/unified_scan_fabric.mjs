@@ -25,7 +25,7 @@ export function disposition(file){
 }
 export function buildPlan(files,{changedPaths=[]}={}){
   const changed=new Set(changedPaths);
-  const rows=files.map(file=>{const risk=changed.has(file.path)||/(^|\\/)(.github|private|security|auth|worker|runtime|polyglot|extractor_mapper|foundation_core)(\\/|$)/i.test(file.path);return{path:file.path,status:disposition(file),priority:risk?'deep':'standard',lenses:risk?LENSES.map(x=>x.id):['typescript-breadth','policy-reconciler']};});
+  const rows=files.map(file=>{const risk=changed.has(file.path)||/(^|\/)(.github|private|security|auth|worker|runtime|polyglot|extractor_mapper|foundation_core)(\/|$)/i.test(file.path);return{path:file.path,status:disposition(file),priority:risk?'deep':'standard',lenses:risk?LENSES.map(x=>x.id):['typescript-breadth','policy-reconciler']};});
   return {schema_version:'unified-scan-fabric/v1',total:rows.length,covered:rows.length,rows};
 }
 export function reconcile(findings){const groups=new Map();for(const f of findings){const key=f.invariant||f.id||f.message;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(f);}return[...groups.entries()].map(([key,rows])=>({key,observations:rows.length,sources:[...new Set(rows.map(x=>x.source))].sort(),corroborated:new Set(rows.map(x=>x.source)).size>1,disagreements:rows.filter(x=>x.disposition==='disputed').length}));}
