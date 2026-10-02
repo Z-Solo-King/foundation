@@ -356,26 +356,16 @@ jobs:
           set -euo pipefail
           [[ "${GITHUB_SHA}" =~ ^[0-9a-f]{40}$ ]]
           echo "ref=${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
-      - name: Checkout Foundation URL-reference repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: Z-Solo-King/foundation
-          token: ${{ github.token }}
-          path: foundation-reference
-          fetch-depth: 1
-      - name: Select exact pinned Foundation URL-reference commit
-        working-directory: foundation-reference
+      - name: Verify Operations Python URL reference
+        working-directory: operations
         shell: bash
         env:
-          FOUNDATION_COMMIT: ${{ steps.foundation-url-ref.outputs.ref }}
+          OPERATIONS_REF: ${{ needs.resolve_operations_ref.outputs.ref }}
         run: |
           set -euo pipefail
-          FOUNDATION_COMMIT="$(printf "%s" "$FOUNDATION_COMMIT" | tr -d "\r\n" | xargs)"
-          test -n "$FOUNDATION_COMMIT"
-          git fetch --no-tags --depth=1 origin "$FOUNDATION_COMMIT"
-          git cat-file -e "$FOUNDATION_COMMIT^{commit}"
-          git cat-file -e "$FOUNDATION_COMMIT:backend/sources/http.py"
-          git checkout --detach "$FOUNDATION_COMMIT"
+          test -n "$OPERATIONS_REF"
+          git cat-file -e "$OPERATIONS_REF^{commit}"
+          test -f backend/sources/http.py
       - name: Build corpus with adversarial URL cases
         working-directory: operations
         run: |
@@ -393,7 +383,7 @@ jobs:
       - name: Generate Python canonical outputs
         working-directory: operations
         env:
-          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations:${{ github.workspace }}/foundation-reference
+          PYTHONPATH: ${{ github.workspace }}/operations:${{ github.workspace }}
 
         run: |
           python - <<'PY'
@@ -414,7 +404,7 @@ jobs:
       - name: Verify URL Python reference import
         working-directory: operations
         env:
-          PYTHONPATH: ${{ github.workspace }}/foundation-reference
+          PYTHONPATH: ${{ github.workspace }}/operations
         run: python -c "from backend.sources.http import canonicalize_url; assert callable(canonicalize_url)"
       - name: Generate Rust candidate outputs
         working-directory: operations
