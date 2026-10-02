@@ -95,6 +95,13 @@ jobs:
           }
           if (new Set(plan.selected.map((lane) => lane.family)).size < 3) throw new Error("insufficient lane diversity");
           NODE
+      - name: Validate CrossFire coverage
+        run: |
+          set -euo pipefail
+          node --check tools/crossfire_coverage_gate.mjs
+          node --test tests/crossfire_coverage_gate.test.mjs
+          mkdir -p .runtime
+          node tools/crossfire_coverage_gate.mjs > .runtime/crossfire-coverage.json
       - name: Install test tools and package
         run: |
           python -m pip install --upgrade pip
