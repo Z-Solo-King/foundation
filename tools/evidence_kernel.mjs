@@ -11,9 +11,17 @@ export function positive(value, fallback = 0) {
 }
 
 export function stableJson(value) {
+  if (value === undefined) throw new TypeError('undefined is not canonical JSON');
+  if (typeof value === 'number' && !Number.isFinite(value)) {
+    throw new TypeError('non-finite number is not canonical JSON');
+  }
   if (Array.isArray(value)) return '[' + value.map(stableJson).join(',') + ']';
-  if (value && typeof value === 'object') return '{' + Object.keys(value).sort().map(key => JSON.stringify(key) + ':' + stableJson(value[key])).join(',') + '}';
-  return JSON.stringify(value);
+  if (value && typeof value === 'object') {
+    return '{' + Object.keys(value).sort().map(key => JSON.stringify(key) + ':' + stableJson(value[key])).join(',') + '}';
+  }
+  const encoded = JSON.stringify(value);
+  if (encoded === undefined) throw new TypeError('unsupported value is not canonical JSON');
+  return encoded;
 }
 
 export function sha256(value) {
