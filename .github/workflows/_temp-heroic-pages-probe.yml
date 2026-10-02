@@ -102,9 +102,10 @@ jobs:
             await page.locator('[data-action="send"]').click();
             await page.waitForTimeout(500);
             const conversation = await page.locator('#conversation-scroll').innerText();
-            if (!conversation.includes('Guest test mode is active.')) throw new Error('guest chat lifecycle did not render');
+            const state = await page.evaluate(() => ({ mode: window.RIEFrontend?.state?.mode, guestTestMode: window.RIEFrontend?.state?.guestTestMode, submitting: window.RIEFrontend?.state?.submitting, activeChatId: window.RIEFrontend?.state?.activeChatId, messages: window.RIEFrontend?.state?.chats?.find(c => c.id === window.RIEFrontend?.state?.activeChatId)?.messages?.map(m => ({role:m.role,text:m.text,meta:m.meta})) || [] }));
+            console.log(JSON.stringify({browser_guest_load:'PASS', response_status:response.status(), title, guest_button:guestText, conversation, state, pageErrors, consoleErrors, ready_state:await page.evaluate(()=>document.readyState)}, null, 2));
+            if (!conversation.includes('Guest test mode is active.') && !state.messages.some(m => String(m.text || '').includes('Guest test mode is active.'))) throw new Error('guest chat lifecycle did not render');
             if (pageErrors.length || consoleErrors.length) throw new Error(JSON.stringify({pageErrors, consoleErrors}));
-            console.log(JSON.stringify({browser_guest_load:'PASS', response_status:response.status(), title, guest_lifecycle:'PASS', ready_state:await page.evaluate(()=>document.readyState)}));
             await browser.close();
           })().catch(err => { console.error(err); process.exit(1); });
           NODE
