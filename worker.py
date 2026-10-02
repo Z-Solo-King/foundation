@@ -379,17 +379,23 @@ def _chat_sse_body(body):
         raise ValueError("invalid_chat_result_state")
     text = str(response.get("text", ""))
     events = [
-        f"event: start\ndata: {json.dumps({'response_id': response_id, 'status': 'streaming', 'generation': response.get('generation_status', 'unknown')}, separators=(',', ':'))}\\n\\n"
+        f"event: start\ndata: {json.dumps({'response_id': response_id, 'status': 'streaming', 'generation': response.get('generation_status', 'unknown')}, separators=(',', ':'))}
+
+"
     ]
     for offset in range(0, len(text), 256):
         chunk = text[offset:offset + 256]
         events.append(
-            f"event: delta\ndata: {json.dumps({'text': chunk}, separators=(',', ':'))}\\n\\n"
+            f"event: delta\ndata: {json.dumps({'text': chunk}, separators=(',', ':'))}
+
+"
         )
     usage = response.get("usage")
     if isinstance(usage, dict):
         events.append(
-            f"event: usage\ndata: {json.dumps({'input_tokens': usage.get('input_tokens'), 'output_tokens': usage.get('output_tokens')}, separators=(',', ':'))}\\n\\n"
+            f"event: usage\ndata: {json.dumps({'input_tokens': usage.get('input_tokens'), 'output_tokens': usage.get('output_tokens')}, separators=(',', ':'))}
+
+"
         )
     output_digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
     done_payload = {
@@ -400,7 +406,9 @@ def _chat_sse_body(body):
         "output_digest": output_digest,
     }
     events.append(
-        f"event: done\ndata: {json.dumps(done_payload, separators=(',', ':'))}\\n\\n"
+        f"event: done\ndata: {json.dumps(done_payload, separators=(',', ':'))}
+
+"
     )
     payload = "".join(events)
     if len(payload.encode("utf-8")) > MAX_PUBLIC_JSON_BODY_BYTES:
