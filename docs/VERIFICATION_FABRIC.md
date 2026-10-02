@@ -5,6 +5,7 @@ The project uses a reusable deterministic verification fabric across Foundation 
 ## Crossfire model
 
 Every verification plan carries six orthogonal lanes:
+
 1. structure — ownership, topology, duplicate authorities, shadow surfaces
 2. contract — schemas, APIs, types and compatibility boundaries
 3. behavior — tests and deterministic runtime behavior
@@ -31,44 +32,37 @@ The extractor-specific six-lane crossfire remains domain-specific. The project-w
 ## Evolution rule
 
 When a new capability is added:
+
 - add its domain classification
 - map it to an existing canonical workflow
 - add at least one deterministic regression test
 - add a documented owner/boundary
 - avoid creating a new workflow when an existing workflow family can be extended
 
-
 ## Release-publication verification — 2026-10-02
 
 The verification fabric treats GitHub Release publication as a privileged boundary. Feed outputs stay workflow artifacts, and release/tag publication primitives are rejected by deterministic policy before merge.
-
 
 ## Final WooCommerce recovery workflow — 2026-10-02
 
 The final least-tried WooCommerce recovery is a privileged Foundation workflow because it uses the read-only Operations GitHub App and provider credentials. It is restricted to workflow_dispatch and trusted main pushes and is registered in docs/WORKFLOW_AUTHORITY_REGISTRY.json. The workflow produces evidence artifacts only; it does not publish retailer feed URLs as releases.
 
-
 ## Migration Factory CrossFire — 2026-10-02
 
 The Migration Factory workflow extends the verification fabric with six read-only migration lenses: runtime frontier, dependency frontier, tooling/CI, tests/benchmarks, target-language disposition, and retirement readiness. On trusted Foundation revisions it audits an immutable Operations SHA and produces independent evidence without changing production authority.
-
 
 ## Nightly workflow duplicate reconciliation — 2026-10-02
 
 The canonical 24-program nightly workflow was restored to the last known-good single-definition revision after a duplicated merge artifact produced repeated job identifiers and invalid YAML. The workflow now contains one `production_gate`, one `research`, one `migration_review`, one `project-summary`, and one `final-gate`. Subsequent changes must modify that canonical workflow rather than append duplicate job blocks.
 
-
 ## Node tooling migration — public-core synchronization
 
 The public-core synchronizer was migrated from Python to Node as repository tooling. Foundation-owned validation now executes its Node contract test; the migration does not change public/runtime authority or the immutable Foundation core pin.
 
-
 ## 2026-10-02 Migration Factory token-step correction
 
 The trusted-main Migration Factory resolve job has one canonical read-only Operations GitHub App token step. Duplicate token-step definitions are prohibited because they can create conflicting step identifiers and violate the single-provider-credential boundary. The workflow remains trusted-main/manual-only and private Operations access remains `contents:read`.
+
 ## Node tooling migration — nightly/runtime gates — 2026-10-02
 
 Foundation-only nightly runtime probing, loopback research transport, GitHub Actions zero-cost validation, and benchmark-finding publication now execute through Node tooling. The superseded Python scripts/tests were removed; protected Python research and governance authorities are unchanged. Workflow changes remain contract-tested and do not constitute live runtime/provider acceptance.
-## Node scorecard migration — 2026-10-02
-
-The report-only autonomous research scorecard workflow now executes the Node implementation (`benchmark/autonomous_scorecard.mjs`) and its Node contract tests. Existing artifact/evidence boundaries remain unchanged; this migration does not transfer provider, resource, policy, or promotion authority.
