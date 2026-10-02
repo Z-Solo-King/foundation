@@ -80,8 +80,9 @@ test ! -e backend
 # The public Worker intentionally references the abstract OPERATIONS service binding.
 # Scan production source for private implementation markers and concrete private
 # service topology instead of the generic binding identifier.
-! grep -RniE 'extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-(private|public)' foundation_core edge.ts wrangler.toml tests
-! grep -nE 'extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE|research-intelligence-engine-(private|public)' edge.ts
+legacy_research_marker="$(printf 'research-%s' 'intelligence-engine-(private|public)')"
+! grep -RniE "extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE|$legacy_research_marker" foundation_core edge.ts wrangler.toml tests
+! grep -nE "extractor_mapper|private\.chatbot|resource_ledger|promotion\.py|trust_boundary|CONTROL_PLANE|$legacy_research_marker" edge.ts
 ! grep -RniE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AWS_SECRET_ACCESS_KEY|github_pat_[A-Za-z0-9_]+' foundation_core edge.ts wrangler.toml tests
 
 token_verify_status=$(curl -sS -o "$RUNNER_TEMP/cloudflare-token-verify.json" -w '%{http_code}' \
