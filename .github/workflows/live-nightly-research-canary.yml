@@ -17,7 +17,7 @@ concurrency:
 
 env:
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_REF: 5a5ae97ff83c60d755cc964bd1ac639565e2f298
+  OPERATIONS_REF: 11f592116d9ef57b6189bf8bf0ff0e95ec3d410f
   PUBLIC_WORKER_URL: "https://heroic-ai.pages.dev"
   RESEARCH_LLM_ENDPOINT: "http://127.0.0.1:8765"
   RESEARCH_LLM_API_KEY: "local-worker-proxy"
@@ -28,7 +28,7 @@ jobs:
     permissions:
       contents: read
       issues: write
-    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.display_title == 'Nightly research — production-live') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -93,10 +93,10 @@ jobs:
           }
           trap cleanup_proxy EXIT INT TERM
 
-          nohup python scripts/research_worker_proxy.py \
+          nohup node "${GITHUB_WORKSPACE}/scripts/research_worker_proxy.mjs" \
             --public-worker-url "${PUBLIC_WORKER_URL}" \
             --port 8765 \
-            --max-upstream-concurrency 8 \
+            --max-upstream-concurrency 6 \
             > "$RUNNER_TEMP/research-worker-proxy.log" 2>&1 &
           proxy_pid=$!
           echo "$proxy_pid" > "$RUNNER_TEMP/research-worker-proxy.pid"
@@ -135,7 +135,7 @@ jobs:
           ' "$probe_response_file" >/dev/null
 
           mkdir -p .runtime/live-nightly-canary
-          PYTHONPATH=. python -m private.multi_agent.runner --start-slot 0 --slots 2 --global-capacity 8 --output .runtime/live-nightly-canary/research.jsonl
+          PYTHONPATH=. python -m private.multi_agent.runner --start-slot 0 --slots 2 --global-capacity 6 --output .runtime/live-nightly-canary/research.jsonl
           python - <<'PY'
           import json, os
           from pathlib import Path
@@ -183,7 +183,7 @@ jobs:
               probe_upstream_provider="$(jq -r '.error.upstream_provider // empty' "$RUNNER_TEMP/research-worker-probe.json" 2>/dev/null | head -c 120 || true)"
             fi
             python - "$summary_file" "$failure_stage" "$JOB_STATUS" "$probe_http_status" "$probe_error_code" "$probe_error_message" "$probe_upstream_status" "$probe_upstream_error" "$probe_upstream_generation_status" "$probe_upstream_provider" <<'PY'
-          import json, sys
+          import json, os, sys
           from pathlib import Path
           out, stage, job_status, http_status, error_code, error_message, upstream_status, upstream_error, upstream_generation_status, upstream_provider = sys.argv[1:]
           data = {
