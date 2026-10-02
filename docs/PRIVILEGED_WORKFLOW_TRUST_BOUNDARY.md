@@ -61,3 +61,7 @@ Credential-bearing workflows that probe or release the public application must t
 - `.github/workflows/chatbot-post-release-runtime-smoke.yml` is a privileged production smoke workflow because it exercises the canonical public endpoint with the protected application authentication token. It is manual-dispatch only and is launched by the trusted production-release workflow after a successful release; it fails closed on Foundation/Operations provenance mismatch.
 - `.github/workflows/chatbot-post-release-crossfire.yml` is a privileged post-release benchmark because it reads protected provider configuration and private Operations source. It is manual-dispatch only and is launched by the trusted production-release workflow; it validates the six independent analytical lanes and runs up to six configured provider transports concurrently. Comparative agreement remains descriptive evidence only.
 - Both workflows use immutable action references and read-only repository permissions; they do not alter deployment state, provider configuration, policy, or promotion authority.
+
+## 2026-10-02 controlled Operations pin promotion staging
+
+The promotion PR may stage the next immutable Operations revision in post-release workflow consumers before production deployment. Those workflows fail closed on readiness/provenance mismatch. The manifest marks the revision as a candidate until the controlled production release and fresh runtime evidence complete; approval and live-state records continue to identify the currently deployed revision during that interval.

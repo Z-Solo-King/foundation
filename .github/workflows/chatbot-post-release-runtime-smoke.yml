@@ -18,7 +18,6 @@ concurrency:
 
 env:
   PUBLIC_WORKER_URL: https://heroic-ai.pages.dev
-  OPERATIONS_REF: 11f592116d9ef57b6189bf8bf0ff0e95ec3d410f
   TARGET_FOUNDATION_SHA: ${{ inputs.target_sha || github.sha }}
 
 jobs:
@@ -26,14 +25,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Resolve immutable Operations revision
+        id: operations
+        run: |
+          set -euo pipefail
+          operations_ref="$(python -c 'import json; from pathlib import Path; print(json.loads(Path("docs/OPERATIONS_PIN_MANIFEST.json").read_text())["pins"]["production_runtime"]["sha"])' )"
+          test "${#operations_ref}" -eq 40
+          echo "operations_ref=$operations_ref" >> "$GITHUB_OUTPUT"
+
       - name: Wait for exact released revision
         env:
           EXPECTED_FOUNDATION: ${{ env.TARGET_FOUNDATION_SHA }}
+          EXPECTED_OPERATIONS: ${{ steps.operations.outputs.operations_ref }}
         run: |
           set -euo pipefail
           for _ in {1..30}; do
             body=$(curl -sS --max-time 10 "$PUBLIC_WORKER_URL/readiness" || true)
-            if echo "$body" | jq -e --arg f "$EXPECTED_FOUNDATION" --arg o "$OPERATIONS_REF" '.ready == true and .database == true and .release.foundation_sha == $f and .release.operations_ref == $o' >/dev/null 2>&1; then
+            if echo "$body" | jq -e --arg f "$EXPECTED_FOUNDATION" --arg o "$EXPECTED_OPERATIONS" '.ready == true and .database == true and .release.foundation_sha == $f and .release.operations_ref == $o' >/dev/null 2>&1; then
               echo "$body" | jq '{ready,database,release}'
               exit 0
             fi
