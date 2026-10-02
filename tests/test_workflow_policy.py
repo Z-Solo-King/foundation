@@ -327,8 +327,8 @@ def test_operations_installation_discovery_surfaces_failures():
 
 def test_operations_public_core_is_materialized_before_worker_deploy():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'scripts/sync_public_core.py' in deployment
-    assert 'python "$RUNNER_TEMP/operations/scripts/sync_public_core.py"' in deployment
+    assert 'scripts/sync_public_core.mjs' in deployment
+    assert 'node "$RUNNER_TEMP/operations/scripts/sync_public_core.mjs"' in deployment
     assert 'test -f "$RUNNER_TEMP/operations/foundation_core/__init__.py"' in deployment
 
 def test_foundation_bridge_records_run_and_job_creation_control_plane_evidence():
@@ -571,7 +571,7 @@ def test_typescript_endpoint_differential_materializes_public_core_r3():
     text = (ROOT / '.github/workflows/hybrid-language-pilots.yml').read_text(encoding='utf-8')
     assert 'Materialize pinned Foundation public core for Python reference' in text
     assert 'FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core' in text
-    assert 'python scripts/sync_public_core.py' in text
+    assert 'python scripts/sync_public_core.mjs' in text
 def test_live_probe_acceptance_does_not_depend_on_issue_comment_permissions():
     texts = _workflow_texts()
     assert 'gh api "repos/$GITHUB_REPOSITORY/issues/197/comments"' not in texts["public-worker-live-probe.yml"]

@@ -24,7 +24,7 @@ The private repository remains authoritative for acquisition, extraction strateg
 
 ## Package contract
 
-Operations consumes an explicitly pinned Foundation commit through `scripts/sync_public_core.py`. The deployment path materializes that exact revision into an ignored generated package; Operations does not depend on a floating branch and does not use a Git URL dependency in Worker metadata.
+Operations consumes an explicitly pinned Foundation commit through `scripts/sync_public_core.mjs`. The deployment path materializes that exact revision into an ignored generated package; Operations does not depend on a floating branch and does not use a Git URL dependency in Worker metadata.
 
 The public package exposes only deterministic data functions. It treats input as observed data and must never invent a missing fact.
 

@@ -115,20 +115,12 @@ jobs:
       - name: Determine pinned Foundation public-core revision
         id: foundation-core-pin
         working-directory: operations
-        shell: python
+        shell: bash
         run: |
-          import ast
-          import os
-          from pathlib import Path
-          tree = ast.parse(Path("scripts/sync_public_core.py").read_text(encoding="utf-8"))
-          output = Path(os.environ["GITHUB_OUTPUT"])
-          for node in tree.body:
-              if isinstance(node, ast.Assign):
-                  for target in node.targets:
-                      if isinstance(target, ast.Name) and target.id == "FOUNDATION_COMMIT":
-                          output.write_text(f"ref={node.value.value}\n", encoding="utf-8")
-                          raise SystemExit
-          raise SystemExit("FOUNDATION_COMMIT not found")
+          set -euo pipefail
+          ref="$(node scripts/sync_public_core.mjs --print-commit)"
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]]
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
 
       - name: Checkout exact pinned Foundation public core
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -155,7 +147,7 @@ jobs:
           FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core
         run: |
           set -euo pipefail
-          python scripts/sync_public_core.py
+          node scripts/sync_public_core.mjs
           test -f foundation_core/__init__.py
 
       - name: Setup Python

@@ -98,7 +98,7 @@ jobs:
         working-directory: operations
         run: |
           set -euo pipefail
-          FOUNDATION_CORE_GIT="$GITHUB_WORKSPACE" python scripts/sync_public_core.py
+          FOUNDATION_CORE_GIT="$GITHUB_WORKSPACE" node scripts/sync_public_core.mjs
           test -f foundation_core/__init__.py
 
       - name: Run focused extractor regression tests

@@ -75,7 +75,7 @@ jobs:
 
       - name: Materialize pinned public Foundation core
         working-directory: operations
-        run: python scripts/sync_public_core.py
+        run: node scripts/sync_public_core.mjs
 
       - name: Install Operations test dependencies
         working-directory: operations

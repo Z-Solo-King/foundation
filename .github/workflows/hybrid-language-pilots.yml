@@ -520,20 +520,12 @@ jobs:
       - name: Determine pinned Foundation public-core revision
         id: foundation-core-pin
         working-directory: operations
-        shell: python
+        shell: bash
         run: |
-          import ast
-          import os
-          from pathlib import Path
-          tree = ast.parse(Path("scripts/sync_public_core.py").read_text(encoding="utf-8"))
-          output = Path(os.environ["GITHUB_OUTPUT"])
-          for node in tree.body:
-              if isinstance(node, ast.Assign):
-                  for target in node.targets:
-                      if isinstance(target, ast.Name) and target.id == "FOUNDATION_COMMIT":
-                          output.write_text(f"ref={node.value.value}\n", encoding="utf-8")
-                          raise SystemExit
-          raise SystemExit("FOUNDATION_COMMIT not found")
+          set -euo pipefail
+          ref="$(node scripts/sync_public_core.mjs --print-commit)"
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]]
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
 
       - name: Checkout Foundation public core repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -564,7 +556,7 @@ jobs:
           FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core
         run: |
           set -euo pipefail
-          python scripts/sync_public_core.py
+          node scripts/sync_public_core.mjs
           test -f foundation_core/__init__.py
 
       - name: Setup Python
@@ -875,20 +867,12 @@ jobs:
       - name: Determine pinned Foundation public-core revision
         id: foundation-core-pin
         working-directory: operations
-        shell: python
+        shell: bash
         run: |
-          import ast
-          import os
-          from pathlib import Path
-          tree = ast.parse(Path("scripts/sync_public_core.py").read_text(encoding="utf-8"))
-          output = Path(os.environ["GITHUB_OUTPUT"])
-          for node in tree.body:
-              if isinstance(node, ast.Assign):
-                  for target in node.targets:
-                      if isinstance(target, ast.Name) and target.id == "FOUNDATION_COMMIT":
-                          output.write_text(f"ref={node.value.value}\n", encoding="utf-8")
-                          raise SystemExit
-          raise SystemExit("FOUNDATION_COMMIT not found")
+          set -euo pipefail
+          ref="$(node scripts/sync_public_core.mjs --print-commit)"
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]]
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
 
       - name: Checkout exact pinned Foundation public core
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -916,7 +900,7 @@ jobs:
           FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core
         run: |
           set -euo pipefail
-          python scripts/sync_public_core.py
+          node scripts/sync_public_core.mjs
           test -f foundation_core/__init__.py
 
       - name: Setup Python
@@ -989,7 +973,7 @@ jobs:
 
       - name: Materialize pinned Foundation public core
         working-directory: operations
-        run: python scripts/sync_public_core.py
+        run: node scripts/sync_public_core.mjs
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
@@ -1055,7 +1039,7 @@ jobs:
           path: operations
       - name: Materialize pinned Foundation public core
         working-directory: operations
-        run: python scripts/sync_public_core.py
+        run: node scripts/sync_public_core.mjs
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
@@ -1117,7 +1101,7 @@ jobs:
           path: operations
       - name: Materialize pinned Foundation public core
         working-directory: operations
-        run: python scripts/sync_public_core.py
+        run: node scripts/sync_public_core.mjs
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
@@ -1179,7 +1163,7 @@ jobs:
           path: operations
       - name: Materialize pinned Foundation public core
         working-directory: operations
-        run: python scripts/sync_public_core.py
+        run: node scripts/sync_public_core.mjs
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
@@ -1270,7 +1254,7 @@ jobs:
           path: operations
       - name: Materialize pinned Foundation public core
         working-directory: operations
-        run: python scripts/sync_public_core.py
+        run: node scripts/sync_public_core.mjs
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
@@ -1379,18 +1363,12 @@ jobs:
       - name: Determine pinned Foundation public-core revision
         id: foundation-core-pin
         working-directory: operations
-        shell: python
+        shell: bash
         run: |
-          import ast, os
-          from pathlib import Path
-          tree = ast.parse(Path("scripts/sync_public_core.py").read_text(encoding="utf-8"))
-          for node in tree.body:
-              if isinstance(node, ast.Assign):
-                  for target in node.targets:
-                      if isinstance(target, ast.Name) and target.id == "FOUNDATION_COMMIT":
-                          Path(os.environ["GITHUB_OUTPUT"]).write_text(f"ref={node.value.value}\n", encoding="utf-8")
-                          raise SystemExit
-          raise SystemExit("FOUNDATION_COMMIT not found")
+          set -euo pipefail
+          ref="$(node scripts/sync_public_core.mjs --print-commit)"
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]]
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
 
       - name: Checkout exact pinned Foundation public core
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -1418,7 +1396,7 @@ jobs:
           FOUNDATION_CORE_GIT: ${{ github.workspace }}/foundation-core
         run: |
           set -euo pipefail
-          python scripts/sync_public_core.py
+          node scripts/sync_public_core.mjs
           test -f foundation_core/__init__.py
 
       - name: Generate Python reference
