@@ -5,8 +5,8 @@
     {
       "id": "hygiene-governance",
       "code_paths": [
-        "tools/repository_hygiene.py",
-        "tools/code_documentation_sync.py",
+        "tools/repository_hygiene.mjs",
+        "tools/code_documentation_sync.mjs",
         ".editorconfig",
         ".gitattributes",
         ".prettierrc.json",
