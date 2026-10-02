@@ -35,3 +35,9 @@ This contract therefore prevents the repository workflows from intentionally gra
 - The workflow resolves an immutable Operations revision before executing the private benchmark and uses `persist-credentials: false` for the private checkout.
 - The workflow validates the canonical platform-access cross-fire contract before provider execution, then runs up to six configured provider lanes concurrently through the existing private benchmark runner.
 - The public Foundation bridge contains no provider keys or provider endpoints; credential-bearing provider configuration remains in private Operations/runtime context.
+
+## Migration synchronization — 2026-10-02
+
+The Foundation/Operations migration removes private runtime and feed-execution implementation from the public tree while retaining public contracts, deterministic core behavior, hosted CI and release boundaries. Migration changes must preserve the privileged/unprivileged separation above.
+
+The migration is considered structurally synchronized only when the protected PR checks, workflow-authority validator, public-surface scan, full-history secret scan and cross-system ownership/equivalence gates all evaluate the exact reconciled PR head.
