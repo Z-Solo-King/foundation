@@ -22,6 +22,9 @@ export function normalizeFinding(finding) {
     ? finding.evidence_level
     : SEVERITY_TO_EVIDENCE[severity] ?? 'L1';
   const riskClass = SEVERITY_TO_RISK[severity] ?? 'medium';
+  const freshRuntime = finding.requires_fresh_runtime_evidence == null
+    ? severity === 'critical'
+    : Boolean(finding.requires_fresh_runtime_evidence);
   return {
     ...finding,
     risk_class: riskClass,
@@ -29,11 +32,7 @@ export function normalizeFinding(finding) {
     evidence_sufficiency: evidenceLevel === 'L4' ? 'production' : evidenceLevel === 'L3' ? 'execution' : evidenceLevel === 'L2' ? 'repository' : 'source',
     mutation_policy: MUTATION_BY_SEVERITY[severity] ?? 'review',
     dedupe_key: String(finding.dedupe_key || stableDedupeKey(finding)),
-    requires_fresh_runtime_evidence: Boolean(
-      finding.requires_fresh_runtime_evidence
-      ?? ['critical'].includes(severity)
-      ?? false,
-    ),
+    requires_fresh_runtime_evidence: freshRuntime,
   };
 }
 
@@ -60,7 +59,7 @@ export function buildAdaptivePriority(findings, lanes) {
   const material = new Set(
     (findings ?? [])
       .filter((f) => f.risk_class === 'critical' || f.risk_class === 'high')
-      .map((f) => f.lane),
+      .flatMap((f) => [f.lane, f.family].filter(Boolean)),
   );
   return [...(lanes ?? [])]
     .map((lane) => {
