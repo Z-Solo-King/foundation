@@ -7,7 +7,9 @@ on:
       - 'docs/FAMILY_FULL_COVERAGE_MATRIX.json'
       - 'docs/FAMILY_FULL_COVERAGE_STANDARD.md'
       - 'tools/validate_family_full_coverage.py'
+      - 'tools/cross_system_equivalence.py'
       - 'tests/test_family_full_coverage.py'
+      - 'tests/test_cross_system_equivalence.py'
       - '.github/workflows/family-full-coverage.yml'
       - '.github/workflows/**'
       - 'docs/PROJECT_IMPROVEMENT_MATRIX.json'
@@ -68,6 +70,10 @@ jobs:
         working-directory: foundation
         run: python tools/validate_family_full_coverage.py --foundation-root . --operations-root ../operations --output .runtime/family-full-coverage.json --strict
 
+      - name: Cross-system N4 equivalence and CrossFire inventory
+        working-directory: foundation
+        run: python tools/cross_system_equivalence.py --foundation-root . --operations-root ../operations --output .runtime/cross-system-equivalence.json --strict
+
       - name: Run existing Action/App policy validators
         working-directory: foundation
         run: |
@@ -86,5 +92,6 @@ jobs:
           path: |
             foundation/.runtime/family-full-coverage.json
             foundation/.runtime/source-surface-audit.json
+            foundation/.runtime/cross-system-equivalence.json
           if-no-files-found: error
           retention-days: 30
