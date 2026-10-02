@@ -18,7 +18,7 @@ test("nightly dry-run gates live runtime verification after mode selection", () 
 
   const probeEnd = text.indexOf("      - name: Authenticate private research source", probeStart);
   const probeBlock = text.slice(probeStart, probeEnd);
-  assert.match(probeBlock, /if: \\$\\{\\{ inputs\\.dry_run != true \\}\\}/);
+  assert.match(probeBlock, /if: \$\{\{ inputs\.dry_run != true \}\}/);
   assert.match(probeBlock, /node scripts\\/nightly_runtime_contract_probe\\.mjs/);
 
   const crossfireStart = text.indexOf("      - name: Run complete crossfire research");
