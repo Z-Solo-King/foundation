@@ -165,7 +165,7 @@ The canonical human/AI navigation entrypoint is `docs/AI_SYSTEM_DIRECTORY.md`, b
 
 ## 2026-10-02 repository hygiene and documentation synchronization
 
-Foundation now carries a machine-enforced repository hygiene and code-documentation synchronization system. The canonical contract is `docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json`; changed files are checked by `tools/repository_hygiene.py` and mapped contract/document relationships by `tools/code_documentation_sync.py`. Foundation's family coordinator compares the shared contract against Operations without publishing private source contents. This is a source/CI governance capability, not runtime certification.
+Foundation now carries a machine-enforced repository hygiene and code-documentation synchronization system. The canonical contract is `docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json`; changed files are checked by `tools/repository_hygiene.mjs` and mapped contract/document relationships by `tools/code_documentation_sync.mjs`. Foundation's family coordinator compares the shared contract against Operations without publishing private source contents. This is a source/CI governance capability, not runtime certification.
 
 
 ## 2026-10-02 current-main reconciliation
@@ -183,3 +183,6 @@ At the latest GitHub reconciliation, Foundation main is `4d54a85944ad28f8c22e809
 Foundation PR #1846 is documentation-only: it refreshes family synchronization metadata and preserves the immutable production Operations pin `da86e92d4e0fdb68912efb54ef95c69281a7d613`. The obsolete Audit/Monitor/Extractor consolidation PR #1845 is closed, and the superseded Operations consolidation PR #1512 is closed; their applicable mechanics are already represented on current Operations main.
 
 Repository hygiene and code-documentation synchronization remain machine-enforced. The current synchronization change is being validated through the normal pull-request gate; no direct main-branch mutation or gate weakening is permitted.
+
+## 2026-10-02 governance tooling migration
+Foundation governance gates for source-surface auditing, code-to-document synchronization, and repository hygiene now execute through Node implementations. Python semantic/runtime authority is unchanged.
