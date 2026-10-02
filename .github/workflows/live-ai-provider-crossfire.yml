@@ -88,22 +88,22 @@ jobs:
       - name: Run private provider cross-fire
         env:
           PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
-          NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
-          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
-          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
-          GROQ_MODEL: ${{ secrets.GROQ_MODEL }}
-          CEREBRAS_MODEL: ${{ secrets.CEREBRAS_MODEL }}
-          OPENROUTER_MODEL: ${{ secrets.OPENROUTER_MODEL }}
-          HF_MODEL: ${{ secrets.HF_MODEL }}
-          SILICONFLOW_MODEL: ${{ secrets.SILICONFLOW_MODEL }}
-          NVIDIA_NIM_MODEL: ${{ secrets.NVIDIA_NIM_MODEL }}
-          COHERE_MODEL: ${{ secrets.COHERE_MODEL }}
+          GEMINI_API_KEY: ${{ secrets.RESEARCH_GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.RESEARCH_GROQ_API_KEY }}
+          CEREBRAS_API_KEY: ${{ secrets.RESEARCH_CEREBRAS_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.RESEARCH_OPENROUTER_API_KEY }}
+          HF_TOKEN: ${{ secrets.RESEARCH_HUGGINGFACE_API_KEY }}
+          SILICONFLOW_API_KEY: ${{ secrets.RESEARCH_SILICONFLOW_API_KEY }}
+          NVIDIA_NIM_API_KEY: ${{ secrets.RESEARCH_NVIDIA_NIM_API_KEY }}
+          COHERE_API_KEY: ${{ secrets.RESEARCH_COHERE_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.RESEARCH_GEMINI_MODEL }}
+          GROQ_MODEL: ${{ secrets.RESEARCH_GROQ_MODEL }}
+          CEREBRAS_MODEL: ${{ secrets.RESEARCH_CEREBRAS_MODEL }}
+          OPENROUTER_MODEL: ${{ secrets.RESEARCH_OPENROUTER_MODEL }}
+          HF_MODEL: ${{ secrets.RESEARCH_HUGGINGFACE_MODEL }}
+          SILICONFLOW_MODEL: ${{ secrets.RESEARCH_SILICONFLOW_MODEL }}
+          NVIDIA_NIM_MODEL: ${{ secrets.RESEARCH_NVIDIA_NIM_MODEL }}
+          COHERE_MODEL: ${{ secrets.RESEARCH_COHERE_MODEL }}
           HEROIC_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
           OPERATIONS_CROSSFIRE_RUNNER: ${{ github.workspace }}/operations-provider-benchmark/private/benchmark/ai_provider_crossfire.py
         run: |
