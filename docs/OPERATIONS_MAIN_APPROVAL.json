@@ -2,17 +2,17 @@
   "schema": "operations-main-approval/v1",
   "repository": "Z-Solo-King/operations",
   "branch": "main",
-  "approved_sha": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
+  "approved_sha": "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f",
   "purpose": "Only this immutable Operations revision is approved as production/runtime authority.",
   "update_rule": "Change only through reviewed Foundation promotion PR after runtime/evidence validation.",
-  "observed_main_sha": "3c780e33772c87ec6c3b6df75a857e5404f0b861",
+  "observed_main_sha": "adc600221169cc4dadee0bdd7d68be30c58e6727",
   "observed_state": "DRIFT",
-  "production_observed_sha": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
+  "production_observed_sha": "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f",
   "native_private_branch_protection_available": false,
   "promotion_evidence": {
-    "source_operations_merge": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
-    "change": "current main contains reviewed observability, Worker Issues, security-sync and AI-navigation changes; production pin remains immutable until separate runtime certification",
-    "current_operations_main": "3c780e33772c87ec6c3b6df75a857e5404f0b861",
+    "source_operations_merge": "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f",
+    "change": "reviewed Operations PR #1549 fixes native Workers AI selection isolation; production runtime is deployed at the immutable approved revision while Operations main remains independently moving",
+    "current_operations_main": "adc600221169cc4dadee0bdd7d68be30c58e6727",
     "main_is_authority": false,
     "production_certification_required_after_pin_change": true
   }
