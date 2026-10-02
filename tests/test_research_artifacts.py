@@ -24,7 +24,7 @@ def test_research_artifact_catalog_is_structured_and_truthful() -> None:
         "benchmark/nightly/NIGHTLY_RESEARCH_PLAN.json",
         "benchmark/nightly/research-ledger.schema.json",
         "benchmark/nightly/research_ledger.py",
-        "benchmark/autonomous_scorecard.py",
+        "benchmark/autonomous_scorecard.mjs",
     }
     assert required <= artifacts.keys()
     for path, row in artifacts.items():

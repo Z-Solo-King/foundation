@@ -28,7 +28,7 @@ REQUIRED_CATALOG_PATHS = {
     "benchmark/nightly/NIGHTLY_RESEARCH_PLAN.json",
     "benchmark/nightly/research-ledger.schema.json",
     "benchmark/nightly/research_ledger.py",
-    "benchmark/autonomous_scorecard.py",
+    "benchmark/autonomous_scorecard.mjs",
     "benchmark/multi_agent/baseline.py",
 }
 
