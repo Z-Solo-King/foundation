@@ -23,10 +23,10 @@
     }
   },
   "function_metrics": {
-    "canonical_surface_declarations": 0,
+    "canonical_surface_declarations": 20,
     "whole_repo_exact": false,
     "refresh": "language-aware current-main surface scanner",
-    "count_reconciliation": "Navigation counts are current-tree structural baselines where measured; they are not semantic proof or runtime authority."
+    "count_reconciliation": "Exact declarations are currently measured for FND.identity_mapping (20); other current public domains are intentionally navigation-only until their source-surface scanner records deterministic declaration baselines."
   },
   "policy_catalog": {
     "P001": "one owner",
@@ -447,9 +447,9 @@
   "language_domains": [
     {
       "language": "Python",
-      "files": 332,
-      "where": "backend/, foundation_core/, worker.py, tests, benchmarks",
-      "why": "canonical public semantic/deterministic reference; rich domain implementation and existing test authority",
+      "files": 164,
+      "where": "foundation_core/, tests/, benchmark/, scripts/, tools/",
+      "why": "current public deterministic/reference and automation language; private semantic/provider authority remains in Operations",
       "how": "normal source implementation and reference behavior",
       "policies": [
         "P001",
@@ -460,8 +460,8 @@
     },
     {
       "language": "TypeScript",
-      "files": 18,
-      "where": "public typed/observation and migration surfaces",
+      "files": 19,
+      "where": "edge/runtime observation and typed public boundary surfaces",
       "why": "static typing for JavaScript-facing boundary and safer contract evolution",
       "how": "contract/shadow/candidate implementation only unless explicitly promoted",
       "policies": [
@@ -562,19 +562,6 @@
     "extractor_type_contract": "Foundation workflow consumes the Operations M11 source/inventory parity artifact; no public implementation authority is created."
   },
   "credential_observations": [
-    {
-      "id": "OBS-FND-EVIDENCE-SIGNING",
-      "surface": "Foundation/Cloudflare Worker source vs live binding inventory",
-      "status": "VERIFY_RUNTIME",
-      "finding": "worker.py references EVIDENCE_PACKAGE_SIGNING_SECRET for evidence publication, but the 2026-09-28 live binding inventory did not show that secret.",
-      "action": "Dedicated Cloudflare runtime verification required before treating evidence publication as production-ready; do not infer missing secret value or alter credentials from this map.",
-      "policies": [
-        "P003",
-        "P004",
-        "P007",
-        "P015"
-      ]
-    },
     {
       "id": "OBS-NAME-NOT-IDENTITY",
       "surface": "all repos/workers",
