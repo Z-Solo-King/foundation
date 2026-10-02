@@ -1,0 +1,126 @@
+name: Migration Factory CrossFire
+
+on:
+  workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: Immutable Operations revision to audit; blank uses main at run start
+        required: false
+        default: ""
+        type: string
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migration-factory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      operations_ref: ${{ steps.resolve.outputs.ref }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - id: resolve
+        env:
+          REQUESTED: ${{ inputs.operations_ref }}
+        run: |
+          set -euo pipefail
+          if [ -n "${REQUESTED}" ]; then
+            echo "ref=$REQUESTED" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=$(git ls-remote origin refs/heads/main | cut -f1)" >> "$GITHUB_OUTPUT"
+          fi
+
+  crossfire:
+    needs: resolve
+    strategy:
+      fail-fast: false
+      matrix:
+        lane:
+          - runtime-frontier
+          - dependency-frontier
+          - tooling-ci
+          - tests-benchmarks
+          - target-language
+          - retirement-readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ needs.resolve.outputs.operations_ref }}
+          token: ${{ github.token }}
+          path: operations
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Run Foundation lens
+        run: |
+          mkdir -p .runtime
+          node tools/migration_factory.mjs --root . --lane "${{ matrix.lane }}" --out ".runtime/foundation-${{ matrix.lane }}.json"
+      - name: Run Operations lens
+        run: |
+          mkdir -p operations/.runtime
+          node tools/migration_factory.mjs --root operations --lane "${{ matrix.lane }}" --out "operations/.runtime/operations-${{ matrix.lane }}.json"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: migration-factory-${{ matrix.lane }}
+          path: |
+            .runtime/
+            operations/.runtime/
+          if-no-files-found: error
+          retention-days: 14
+
+  aggregate:
+    needs: crossfire
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: migration-factory-*
+          path: .runtime/crossfire
+          merge-multiple: false
+      - name: Aggregate
+        run: |
+          set -euo pipefail
+          files=$(find .runtime/crossfire -name '*.json' -type f | wc -l)
+          test "$files" -ge 12
+          echo "CrossFire complete: $files independent reports"
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          const root=".runtime/crossfire";
+          const reports=[];
+          for (const dir of fs.readdirSync(root,{withFileTypes:true})) {
+            if (!dir.isDirectory()) continue;
+            for (const f of fs.readdirSync(root+"/"+dir.name).filter(x=>x.endsWith(".json"))) {
+              try { reports.push(JSON.parse(fs.readFileSync(root+"/"+dir.name+"/"+f,"utf8"))); } catch {}
+            }
+          }
+          const summary={schema:"migration-factory-crossfire-summary/v1",reports:reports.length,by_repo:{}};
+          for (const r of reports) {
+            summary.by_repo[r.repository] ??=[];
+            summary.by_repo[r.repository].push({lane:r.lane,python:r.total_python_files,counts:r.counts,blockers:r.blockers});
+          }
+          fs.mkdirSync(".runtime",{recursive:true});
+          fs.writeFileSync(".runtime/migration-factory-summary.json",JSON.stringify(summary,null,2)+"\n");
+          console.log(JSON.stringify(summary,null,2));
+          NODE
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: migration-factory-summary
+          path: .runtime/migration-factory-summary.json
+          if-no-files-found: error
+          retention-days: 30
