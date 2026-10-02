@@ -52,14 +52,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .runtime
-          python tools/repository_hygiene.py --all --report .runtime/foundation-hygiene-report.json --summary-only
-          python tools/code_documentation_sync.py --all --strict --report .runtime/foundation-sync-report.json --summary-only
+          node tools/repository_hygiene.mjs --all --report .runtime/foundation-hygiene-report.json --summary-only
+          node tools/code_documentation_sync.mjs --all --strict --report .runtime/foundation-sync-report.json --summary-only
       - name: Run Operations audit
         run: |
           set -euo pipefail
           mkdir -p .runtime
-          python tools/repository_hygiene.py --root operations --all --report .runtime/operations-hygiene-report.json --summary-only
-          python tools/code_documentation_sync.py --root operations --all --strict --report .runtime/operations-sync-report.json --summary-only
+          node tools/repository_hygiene.mjs --root operations --all --report .runtime/operations-hygiene-report.json --summary-only
+          node tools/code_documentation_sync.mjs --root operations --all --strict --report .runtime/operations-sync-report.json --summary-only
       - name: Verify family format contract parity
         run: |
           set -euo pipefail
