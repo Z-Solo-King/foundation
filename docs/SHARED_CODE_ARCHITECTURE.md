@@ -47,6 +47,12 @@ Source code does not need to be identical across TypeScript, Python, Rust or Go.
 
 A language-specific implementation is valid when there is a measured runtime or deployment reason. It must remain contract-equivalent and must not introduce a competing policy owner.
 
+### Cryptographic canonicalization boundary
+
+Deterministic serialization inside one runtime is not the same guarantee as byte-for-byte canonical JSON across different runtimes. JavaScript and Python can serialize some valid JSON numbers differently even when both are deterministic.
+
+Therefore the current family contract claims **per-runtime deterministic digests plus shared test-vector parity**, not universal cross-language digest equality for every possible JSON value. Any signature or hash that must be reproduced byte-for-byte across TypeScript/Python/Rust/Go must adopt one explicit canonicalization profile (for example RFC 8785/JCS) and restrict the value domain accordingly.
+
 ## Authority rule
 
 A shared kernel may define mechanics but may not silently become policy authority. Provider eligibility stays in provider runtime; extraction policy stays in extractor contracts/strategies; audit authority stays in audit controls; monitoring remains read-only telemetry quality; deployment stays in canonical Actions; Cloudflare production state remains runtime evidence; AI remains advisory.
@@ -76,11 +82,12 @@ Foundation:
 - `tools/evidence_kernel.mjs` provides shared deterministic primitives.
 - Verification and observability audit consume the kernel.
 - Multi-lens planning consumes bounded numeric primitives from the kernel.
+- Autonomous supervisor consumes the same raw SHA-256 primitive without changing its existing digest payload semantics.
 
 Operations:
 - `private/shared_evidence_kernel.py` provides the same mechanics for the Python runtime.
 - Project observability, limitation refresh, provider runtime and extractor/mapper evidence consumers reuse it.
-- Extractor observation, checkpoint state, resource envelopes and image observations now reuse canonical digest mechanics.
+- Extractor observation, checkpoint state, resource envelopes and image observations reuse canonical digest mechanics.
 
 Cross-repo contract:
 - share schemas and fixtures rather than importing private implementation across repositories;
@@ -115,5 +122,5 @@ CrossFire / AI can review candidate equivalence and surface edge cases, but AI o
 - same canonical JSON/digest procedure in multiple evidence producers;
 - wrappers that add no new invariant or boundary;
 - multiple schedulers deciding the same maintenance job;
-- cross-language rewrites promoted only because a benchmark or model preference is higher;
+- cross-language rewrites promoted only because a benchmark or score is higher;
 - deleting a duplicate before its consumers and parity vectors are identified.
