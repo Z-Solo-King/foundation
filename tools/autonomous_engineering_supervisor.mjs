@@ -242,7 +242,7 @@ async function callPlanner(missionId, cycle, context) {
   const payload = {
     chat_id: missionId,
     request_id: `autonomous-plan:${missionId}:${cycle}`,
-    message: 'AUTONOMOUS_ENGINEERING_PLAN_V1\nReturn JSON only. You are a bounded planner, not an execution authority. For component_improvement, target_component is mandatory and every action must come from that component allowlist. For governance_sweep, inspect every provided vertical/control summary and prioritize independent cross-fire lanes; findings are candidate work items only. You may return up to 3 independent allowlisted actions and up to 5 findings. Each finding must cite 1-3 evidence_refs supplied in context, use disposition none/comment_existing/create_issue, and never assert runtime/production truth beyond the provided evidence. Do not duplicate workflows, do not dispatch production release, do not mutate credentials/policy/Cloudflare, and never use a second action merely to duplicate the first. Prefer 2-3 independent allowlisted workflows when they are non-overlapping; otherwise return the single highest-value action. '+JSON.stringify(context),
+    message: 'AUTONOMOUS_ENGINEERING_PLAN_V1\nReturn JSON only. You are a bounded planner, not an execution authority. For component_improvement, target_component is mandatory and every action must come from that component allowlist. For governance_sweep, inspect every provided vertical/control summary and prioritize independent cross-fire lanes. Governance findings are already published by the deterministic governance publisher, so return zero findings; only select bounded allowlisted remediation workflows. Never assert runtime/production truth beyond the provided evidence. Do not duplicate workflows, do not dispatch production release, do not mutate credentials/policy/Cloudflare, and never use a second action merely to duplicate the first. Prefer 2-3 independent allowlisted workflows when they are non-overlapping; otherwise return the single highest-value action. '+JSON.stringify(context),
     mode:'chat', operation:'knowledge', task_family:'audit_assist', strict_zero_cost_only:true, require_model_generation:true,
     metadata:{autonomous:'true',plan_version:'v1',task_family:'audit_assist'},
   };
@@ -376,7 +376,7 @@ async function main() {
   const digest = crypto.createHash('sha256').update(JSON.stringify(plan)).digest('hex');
   state = {...state, mission_type:plan.mission_type, target_component:plan.target_component || state.target_component || null, cycle, last_plan_digest:digest, last_provider:planner?.response?.provider || null, last_summary:plan.summary, failure_class:plannerFallback ? 'transient_provider' : null};
 
-  const appliedFindings = await applyFindings({findings:plan.findings || [], missionIssue, openIssues:allIssues.filter((i)=>!i.pull_request)});
+  const appliedFindings = mode === 'governance_sweep' ? [] : await applyFindings({findings:plan.findings || [], missionIssue, openIssues:allIssues.filter((i)=>!i.pull_request)});
   if (appliedFindings.length) state = {...state, last_summary:`${plan.summary} Findings processed: ${appliedFindings.length}.`};
 
   if (plan.terminal === 'complete') {
