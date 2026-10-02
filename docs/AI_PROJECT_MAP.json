@@ -862,7 +862,7 @@
     "authority": "Operations runtime types remain canonical; Foundation consumes audit evidence only.",
     "promotion_rule": "Type parity is necessary but never sufficient; differential, serialization, security/policy, provenance, resource, shadow, canary and rollback gates remain required."
   },
-  "updated_at": "2026-10-01",
+  "updated_at": "2026-10-02",
   "extractor_mapper_status": {
     "standalone_repository_status": "retired/deleted",
     "operations_private_runtime_path": "operations/extractor_mapper/",
@@ -882,8 +882,8 @@
     }
   },
   "live_synchronization": {
-    "checked_at": "2026-10-01T01:55:00+05:30",
-    "foundation_main": "94a5b5dfeb17f18239ac5defba72021aeb542ce2",
+    "checked_at": "2026-10-02T08:30:00Z",
+    "foundation_main": "092495175d56111a3ab337b7dff8ae5e78fc93e4",
     "foundation_open_issue_count": 4,
     "foundation_open_issues": [
       58,
@@ -891,61 +891,42 @@
       1247,
       1249
     ],
-    "foundation_open_pr_count": 7,
-    "foundation_open_prs": [
-      1663,
-      1660,
-      1658,
-      1657,
-      1656,
-      1653,
-      1652
-    ],
-    "operations_main": "7fe60d4630b30f38bfe30eff6666c9588cf2059f",
-    "operations_open_issue_count": 2,
+    "foundation_open_pr_count": 0,
+    "foundation_open_prs": [],
+    "operations_main": "7ea7d708f880492d52d36cbaf4a0da4982d19894",
+    "operations_open_issue_count": 1,
     "operations_open_issues": [
-      597,
       603
     ],
-    "operations_open_pr_count": 2,
-    "operations_open_prs": [
-      1400,
-      1361
-    ],
-    "production_operations_revision": "ca3864a954569f6f8ce9a94793c53a0ef9ff03ec",
+    "operations_open_pr_count": 0,
+    "operations_open_prs": [],
+    "production_operations_revision": "da86e92d4e0fdb68912efb54ef95c69281a7d613",
     "source": "live GitHub + live Cloudflare",
     "note": "Navigation metadata only; runtime and promotion authority remain with live receipts and canonical deployment manifests.",
-    "open_issue_count": 6,
+    "open_issue_count": 5,
     "live_issue_source": "operations/benchmark/polyglot/current_open_issue_inventory.json",
     "last_verified_heads": {
-      "foundation": "94a5b5dfeb17f18239ac5defba72021aeb542ce2",
-      "operations": "7fe60d4630b30f38bfe30eff6666c9588cf2059f"
+      "foundation": "092495175d56111a3ab337b7dff8ae5e78fc93e4",
+      "operations": "7ea7d708f880492d52d36cbaf4a0da4982d19894"
     },
     "open_pr_classification": {
       "foundation": {
         "non_feed": [],
-        "feed_only": [
-          1663,
-          1660,
-          1658,
-          1657,
-          1656,
-          1653,
-          1652
-        ],
+        "feed_only": [],
         "mixed": []
       },
       "operations": {
         "non_feed": [],
-        "feed_only": [
-          1361
-        ],
-        "mixed": [
-          1400
-        ]
+        "feed_only": [],
+        "mixed": []
       }
     },
-    "cloudflare_provenance_rule": "Exact production Operations SHA is retained only in the dedicated pin field; public map does not store provider-formatted revision provenance literals."
+    "cloudflare_runtime": {
+      "heroic": "deployed Foundation release verified live; exact public runtime revision is release-receipt authority",
+      "heroic_core": "deployed Foundation Python core verified live",
+      "operations": "approved immutable production pin verified live",
+      "operations_edge": "approved immutable production pin verified live"
+    }
   },
   "navigation_overlay": {
     "entrypoint": "docs/AI_SYSTEM_DIRECTORY.md",
