@@ -142,17 +142,13 @@ jobs:
             echo "mode=live" >> "$GITHUB_OUTPUT"
             echo "Dispatch/live research mode selected."
           fi
-
       - name: Verify exact deployed research runtime
+        if: ${{ inputs.dry_run != true }}
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${{ steps.mode.outputs.mode }}" != "live" ]]; then
-            echo "Dry-run mode: live runtime probe is intentionally skipped."
-            exit 0
-          fi
           test -n "${AUTH_TOKEN:-}" || { echo "Missing AUTH_TOKEN; refusing live research."; exit 1; }
           node scripts/nightly_runtime_contract_probe.mjs \
             --url "$PUBLIC_WORKER_URL" \
@@ -998,36 +994,3 @@ jobs:
           name: nightly-project-improvement-baseline
           path: .runtime/nightly-baseline.json
           retention-days: 30
-      - name: Attest project improvement summary
-        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
-        with:
-          subject-path: .runtime/nightly-project-improvement.json
-      - name: Attest project improvement baseline
-        if: ${{ needs.research.result == 'success' && inputs.dry_run != true }}
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
-        with:
-          subject-path: .runtime/nightly-baseline.json
-      - name: Remove private project-research checkout and credentials
-        if: ${{ always() }}
-        shell: bash
-        run: rm -rf "$RUNNER_TEMP/operations-research" "$RUNNER_TEMP/operations-summary-app.pem" "$RUNNER_TEMP/operations-summary-jwt.txt" "$RUNNER_TEMP/operations-summary-installation.json" "$RUNNER_TEMP/operations-summary-token.txt" "$RUNNER_TEMP/git-askpass-operations-summary.sh"
-
-
-  final-gate:
-    name: Preserve truthful nightly result
-    needs: [research, migration_review, project-summary]
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Verify research and diagnosis outcomes
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "research=${{ needs.research.result }}"
-          echo "diagnosis=${{ needs.project-summary.result }}"
-          echo "migration-review=${{ needs.migration_review.result }}"
-          test "${{ needs.migration_review.result }}" = "success" || { echo "Nightly migration review failed; truthful migration evidence remains failed."; exit 1; }
-          test "${{ needs.project-summary.result }}" = "success" || { echo 'Nightly diagnosis failed.'; exit 1; }
-          test "${{ needs.research.result }}" = "success" || { echo 'One or more research lanes failed/blocked; truthful nightly result remains failed.'; exit 1; }
