@@ -35,7 +35,7 @@
   },
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
-    "observed_at": "2026-10-01T18:04:00Z",
+    "observed_at": "2026-10-02T08:30:00Z",
     "open_issue_count": 5,
     "foundation": [
       58,
@@ -211,7 +211,7 @@
     "license_ip_gate": true,
     "single_authority_preserved": true
   },
-  "open_issue_count": 6,
+  "open_issue_count": 8,
   "system_integration": {
     "schema": "system-integration-receipt/v1",
     "foundation_contract": "docs/SYSTEM_INTEGRATION_CONTRACT.json",
