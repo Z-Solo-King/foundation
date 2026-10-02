@@ -1,4 +1,5 @@
 """Fail-closed cross-repository cohesion validator."""
+
 from __future__ import annotations
 
 import argparse
@@ -49,7 +50,9 @@ def validate_production_pin_consistency(foundation: Path, errors: list[str]) -> 
     except (OSError, json.JSONDecodeError) as exc:
         errors.append(f"production-pin:metadata:{exc}")
         return
-    canonical = ((manifest.get("pins") or {}).get("production_runtime") or {}).get("sha")
+    canonical = ((manifest.get("pins") or {}).get("production_runtime") or {}).get(
+        "sha"
+    )
     if not isinstance(canonical, str) or len(canonical) != 40:
         errors.append("production-pin:manifest invalid")
         return
@@ -127,7 +130,10 @@ def main() -> int:
 
     if contract.get("schema_version") != "system-integration-contract/v1":
         errors.append("contract schema mismatch")
-    if matrix.get("system_integration_contract") != "docs/SYSTEM_INTEGRATION_CONTRACT.json":
+    if (
+        matrix.get("system_integration_contract")
+        != "docs/SYSTEM_INTEGRATION_CONTRACT.json"
+    ):
         errors.append("project matrix not bound to integration contract")
 
     controls = matrix.get("cross_cutting_controls", {})
