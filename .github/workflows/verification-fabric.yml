@@ -62,11 +62,14 @@ jobs:
           package-manager-cache: false
 
       - name: Determine changed paths
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
           set -euo pipefail
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            git fetch origin "${{ github.base_ref }}" --depth=1
-            git diff --name-only "origin/${{ github.base_ref }}...HEAD" > changed-paths.txt
+            test -n "${BASE_REF:-}"
+            git fetch origin "$BASE_REF" --depth=1
+            git diff --name-only "origin/$BASE_REF...HEAD" > changed-paths.txt
           elif [[ "${{ github.event_name }}" == "push" ]]; then
             git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" > changed-paths.txt || git diff-tree --no-commit-id --name-only -r "${{ github.sha }}" > changed-paths.txt
           else
