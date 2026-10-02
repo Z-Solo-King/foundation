@@ -1,6 +1,9 @@
 name: Live AI provider cross-fire benchmark
 
 on:
+  push:
+    branches:
+      - migration/move-private-work-into-operations-20261002
   workflow_dispatch:
     inputs:
       operations_ref:
@@ -70,7 +73,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .runtime/live-ai-crossfire
-          python benchmark/ai_provider_crossfire.py --providers-max 5 --repeats 3 --workers 12 --output .runtime/live-ai-crossfire/private.json
+          python benchmark/ai_provider_crossfire.py --providers-max 6 --repeats 3 --workers 12 --output .runtime/live-ai-crossfire/private.json
 
       - name: Create public-safe summary
         if: always()
