@@ -626,13 +626,13 @@ def test_research_worker_proxy_keeps_auth_token_out_of_command_line_and_logs():
     proxy = (ROOT / "scripts" / "research_worker_proxy.mjs").read_text(encoding="utf-8")
     workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
     canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
-    assert 'os.environ.get("RESEARCH_PROXY_AUTH_TOKEN", "")' in proxy
-    assert "server.serve_forever()" in proxy
-    assert 'ThreadingHTTPServer((args.bind, args.port), Handler)' in proxy
+    assert "RESEARCH_PROXY_AUTH_TOKEN" in proxy
+    assert "server.listen(port, bind" in proxy
+    assert "http.createServer" in proxy
     assert '--auth-token' not in workflow
     assert '--auth-token' not in canary
-    assert 'Authorization": "Bearer " + self.server.auth_token' in proxy
-    assert 'log_message(self, fmt: str, *args: object) -> None:' in proxy
+    assert 'Authorization: "Bearer " + server.authToken' in proxy
+    assert "process.stderr.write" in proxy
 def test_production_release_enforces_cloudflare_free_neuron_cap():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert '"d1_reads":50000' in deployment
