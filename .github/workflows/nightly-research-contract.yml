@@ -19,13 +19,12 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          python-version: "3.14"
-      - name: Install test dependencies
-        run: python -m pip install --disable-pip-version-check pytest workers-py workers-runtime-sdk
+          node-version: "22"
+          package-manager-cache: false
       - name: Verify matrix and failure isolation
-        run: python -m pytest tests/test_nightly_research_workflow_contract.py -q
+        run: node --test tests/test_nightly_runtime_acceptance_contract.mjs
 
   diagnosis-contract:
     name: Diagnosis and always-run contract
@@ -33,13 +32,12 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          python-version: "3.14"
-      - name: Install test dependencies
-        run: python -m pip install --disable-pip-version-check pytest workers-py workers-runtime-sdk
+          node-version: "22"
+          package-manager-cache: false
       - name: Verify summary and truthful failure handling
-        run: python -m pytest tests/test_nightly_research_workflow_contract.py -q
+        run: node --test tests/test_nightly_runtime_acceptance_contract.mjs
 
   dry-run-contract:
     name: Dry-run and truthful evidence contract
@@ -47,10 +45,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          python-version: "3.14"
-      - name: Install test dependencies
-        run: python -m pip install --disable-pip-version-check pytest workers-py workers-runtime-sdk
+          node-version: "22"
+          package-manager-cache: false
       - name: Verify scheduled live mode and explicit dry-run boundary
-        run: python -m pytest tests/test_nightly_research_workflow_contract.py -q
+        run: node --test tests/test_nightly_runtime_acceptance_contract.mjs
