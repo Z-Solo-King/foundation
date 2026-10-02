@@ -78,3 +78,33 @@ jobs:
             if (state !== 'evaluate_ok') process.exit(1);
           })().catch(err => { console.error(err); process.exit(1); });
           NODE
+      - name: Browser guest lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch({headless:true});
+            const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+            const consoleErrors = [];
+            const pageErrors = [];
+            page.on('console', msg => { if (msg.type() === 'error' && !msg.text().includes("frame-ancestors")) consoleErrors.push(msg.text()); });
+            page.on('pageerror', err => pageErrors.push(String(err)));
+            const response = await page.goto('https://heroic-ai.pages.dev/?browser_probe=guest', { waitUntil: 'domcontentloaded', timeout: 30000 });
+            const title = await page.title();
+            if (!response || response.status() !== 200) throw new Error('root HTTP status was not 200');
+            if (title !== 'Heroic AI — Chat & Research') throw new Error('unexpected title: ' + title);
+            await page.locator('.guest-test-button').click();
+            const guestText = await page.locator('.guest-test-button').innerText();
+            if (guestText !== 'Exit guest test mode') throw new Error('guest mode did not activate');
+            await page.locator('#prompt').fill('browser guest lifecycle probe');
+            await page.locator('[data-action="send"]').click();
+            await page.waitForTimeout(500);
+            const conversation = await page.locator('#conversation-scroll').innerText();
+            if (!conversation.includes('Guest test mode is active.')) throw new Error('guest chat lifecycle did not render');
+            if (pageErrors.length || consoleErrors.length) throw new Error(JSON.stringify({pageErrors, consoleErrors}));
+            console.log(JSON.stringify({browser_guest_load:'PASS', response_status:response.status(), title, guest_lifecycle:'PASS', ready_state:await page.evaluate(()=>document.readyState)}));
+            await browser.close();
+          })().catch(err => { console.error(err); process.exit(1); });
+          NODE
