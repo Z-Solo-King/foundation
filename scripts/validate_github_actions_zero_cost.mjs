@@ -98,10 +98,10 @@ export function validatePolicyDocument(policy = loadPolicy()) {
     if (!/.+\/[^@]+@[0-9a-fA-F]{40}$/.test(ref)) throw new Error("invalid allowlisted Action ref: " + ref);
   }
 
-  if (actions.special_constraints.zizmorcore["zizmor-action"].advanced-security !== false) {
+  if (actions.special_constraints["zizmorcore/zizmor-action"].advanced-security !== false) {
     throw new Error("zizmor paid Advanced Security path must remain disabled");
   }
-  if (actions.special_constraints.ossf["scorecard-action"].publish_results !== false) {
+  if (actions.special_constraints["ossf/scorecard-action"].publish_results !== false) {
     throw new Error("Scorecard publishing must remain disabled");
   }
   if (policy.provenance.marketplace_is_discovery_only !== true) {
