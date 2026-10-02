@@ -143,12 +143,15 @@ jobs:
             echo "Dispatch/live research mode selected."
           fi
       - name: Verify exact deployed research runtime
-        if: ${{ steps.mode.outputs.mode == 'live' }}
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ steps.mode.outputs.mode }}" != "live" ]]; then
+            echo "Dry-run mode: live runtime probe is intentionally skipped."
+            exit 0
+          fi
           test -n "${AUTH_TOKEN:-}" || { echo "Missing AUTH_TOKEN; refusing live research."; exit 1; }
           node scripts/nightly_runtime_contract_probe.mjs \
             --url "$PUBLIC_WORKER_URL" \
