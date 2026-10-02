@@ -35,3 +35,10 @@ This contract therefore prevents the repository workflows from intentionally gra
 - The workflow resolves an immutable Operations revision before executing the private benchmark and uses `persist-credentials: false` for the private checkout.
 - The workflow validates the canonical platform-access cross-fire contract before provider execution, then runs up to six configured provider lanes concurrently through the existing private benchmark runner.
 - The public Foundation bridge contains no provider keys or provider endpoints; credential-bearing provider configuration remains in private Operations/runtime context.
+
+
+## Cross-fire automation gate
+
+The twice-daily governance sweep may dispatch `.github/workflows/live-ai-provider-crossfire.yml` only after the deterministic scanner emits `ai_escalation_required=true`. The sweep checks for an already queued/in-progress CrossFire run before dispatch, and explicit dry-runs never dispatch providers.
+
+This is an escalation path into an existing benchmark, not a second AI scheduler or provider router. The benchmark remains independently bounded to six provider/API lanes, preserves private responses, and reports evidence strength without changing acceptance, policy or deployment authority.

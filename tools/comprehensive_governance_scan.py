@@ -9,6 +9,35 @@ SOURCE={".py",".pyi",".js",".mjs",".cjs",".ts",".tsx",".jsx",".rs",".go",".php",
 TEXT=SOURCE|{".md",".rst",".txt",".json",".jsonc",".yaml",".yml",".toml",".ini",".cfg",".xml",".html",".css",".scss",".sql"}
 HIST=("/history/","/feed-lab/","/runtime/")
 LANES=("structure_hygiene","migration_boundary","research_feed","provider_runtime","work_items_workflow","maps_docs_policy","quality_learning_evolution","performance_resources")
+CROSSFIRE_PROVIDER_TARGET=6
+CROSSFIRE_STRONG_THRESHOLD=5
+AI_ESCALATION_CODES=frozenset({
+    "component_contract_incomplete",
+    "task_family_parity",
+    "quality_hard_gate_incomplete",
+    "feed_workflow_scatter",
+    "workflow_sprawl",
+    "duplicate_basename_family",
+    "dangling_canonical_path",
+})
+
+def crossfire_policy(findings):
+    reasons=sorted({f["code"] for f in findings if f.get("code") in AI_ESCALATION_CODES})
+    critical_reasons=sorted({f["code"] for f in findings if f.get("severity")=="critical" and f.get("code") in AI_ESCALATION_CODES})
+    required=bool(reasons)
+    return {
+        "deterministic_first":True,
+        "read_only_parallel":True,
+        "mutations_serialized":True,
+        "provider_target":CROSSFIRE_PROVIDER_TARGET,
+        "provider_strong_threshold":CROSSFIRE_STRONG_THRESHOLD,
+        "provider_lanes_requested":CROSSFIRE_PROVIDER_TARGET if required else 0,
+        "ai_escalation_required":required,
+        "ai_escalation_reason_codes":reasons,
+        "critical_ai_escalation_reason_codes":critical_reasons,
+        "ai_task_family":"audit_assist" if required else None,
+        "authority":"canonical deterministic/policy owners",
+    }
 
 def sh(cmd,cwd): return subprocess.run(cmd,cwd=cwd,text=True,capture_output=True,check=True).stdout
 def tracked(root): return [x for x in sh(["git","ls-files","-z"],root).split("\0") if x]
@@ -232,7 +261,7 @@ def main():
     result={"schema":"comprehensive-governance-scan/v1","generated_at":now.isoformat().replace("+00:00","Z"),"lane":lane,
             "repos":{"foundation":{"tracked_files":len(F)},"operations":{"tracked_files":len(O)}},
             "coverage":{"finding_count":len(fs),"critical_findings":sum(x["severity"]=="critical" for x in fs),"attention_findings":sum(x["severity"]=="attention" for x in fs),"telemetry_status":"descriptive_only"},
-            "findings":fs,"cross_fire_lanes":list(LANES),
+            "findings":fs,"cross_fire_lanes":list(LANES),"crossfire_policy":crossfire_policy(fs),
             "authority_note":"Observation/governance overlay only. Existing component, policy, evidence, promotion and release authorities remain canonical."}
     a.output.parent.mkdir(parents=True,exist_ok=True); a.output.write_text(json.dumps(result,indent=2)+"\n",encoding="utf-8")
     print(json.dumps(result["coverage"]))

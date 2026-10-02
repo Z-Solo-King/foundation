@@ -196,8 +196,41 @@ jobs:
                   "info_findings":sum(x["severity"]=="info" for x in findings.values()),
                   "telemetry_status":"descriptive_only",
               },
+          crossfire_reasons=set()
+          crossfire_critical_reasons=set()
+          provider_target=6
+          provider_strong_threshold=5
+          for payload in (json.loads(path.read_text(encoding="utf-8")) for path in root.glob("*.json") if path.name not in ignored):
+              policy=payload.get("crossfire_policy") or {}
+              crossfire_reasons.update(policy.get("ai_escalation_reason_codes") or [])
+              crossfire_critical_reasons.update(policy.get("critical_ai_escalation_reason_codes") or [])
+          merged={
+              "schema":"comprehensive-governance-scan/v1",
+              "generated_at":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),
+              "lane":"crossfire",
+              "repos":{repo:{kind:len(value) for kind,value in data.items()} for repo,data in snapshot.items()},
+              "coverage":{
+                  "finding_count":len(findings),
+                  "critical_findings":sum(x["severity"]=="critical" for x in findings.values()),
+                  "attention_findings":sum(x["severity"]=="attention" for x in findings.values()),
+                  "info_findings":sum(x["severity"]=="info" for x in findings.values()),
+                  "telemetry_status":"descriptive_only",
+              },
               "findings":list(findings.values()),
               "cross_fire_lanes":["structure_hygiene","migration_boundary","research_feed","provider_runtime","work_items_workflow","maps_docs_policy","quality_learning_evolution","performance_resources"],
+              "crossfire_policy":{
+                  "deterministic_first":True,
+                  "read_only_parallel":True,
+                  "mutations_serialized":True,
+                  "provider_target":provider_target,
+                  "provider_strong_threshold":provider_strong_threshold,
+                  "provider_lanes_requested":provider_target if crossfire_reasons else 0,
+                  "ai_escalation_required":bool(crossfire_reasons),
+                  "ai_escalation_reason_codes":sorted(crossfire_reasons),
+                  "critical_ai_escalation_reason_codes":sorted(crossfire_critical_reasons),
+                  "ai_task_family":"audit_assist" if crossfire_reasons else None,
+                  "authority":"canonical deterministic/policy owners",
+              },
               "authority_note":"Observation/governance overlay only.",
           }
           (root/"merged.json").write_text(json.dumps(merged,indent=2)+"\n",encoding="utf-8")
@@ -225,6 +258,50 @@ jobs:
           PY
           python tools/publish_governance_findings.py --repo Z-Solo-King/foundation --report .runtime/governance/public.json
           GH_TOKEN="$OPERATIONS_GH_TOKEN" python tools/publish_governance_findings.py --repo Z-Solo-King/operations --report .runtime/governance/merged.json
+      - name: Cross-fire AI escalation decision
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          merged=json.loads(Path(".runtime/governance/merged.json").read_text(encoding="utf-8"))
+          policy=merged.get("crossfire_policy") or {}
+          request={
+              "schema":"crossfire-escalation-request/v1",
+              "required":bool(policy.get("ai_escalation_required")),
+              "provider_target":int(policy.get("provider_target",6)),
+              "provider_strong_threshold":int(policy.get("provider_strong_threshold",5)),
+              "provider_lanes_requested":int(policy.get("provider_lanes_requested",0)),
+              "reason_codes":sorted(policy.get("ai_escalation_reason_codes") or []),
+              "critical_reason_codes":sorted(policy.get("critical_ai_escalation_reason_codes") or []),
+              "task_family":policy.get("ai_task_family"),
+              "deterministic_first":bool(policy.get("deterministic_first",True)),
+              "read_only_parallel":bool(policy.get("read_only_parallel",True)),
+              "mutations_serialized":bool(policy.get("mutations_serialized",True)),
+          }
+          Path(".runtime/governance/crossfire-escalation-request.json").write_text(json.dumps(request,indent=2)+"\n",encoding="utf-8")
+          PY
+          cat .runtime/governance/crossfire-escalation-request.json
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "Explicit dry-run: no AI provider benchmark dispatch."
+            exit 0
+          fi
+          required=$(jq -r '.required' .runtime/governance/crossfire-escalation-request.json)
+          if [ "$required" != "true" ]; then
+            echo "No ambiguous/high-information finding requires provider cross-fire."
+            exit 0
+          fi
+          active=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/live-ai-provider-crossfire.yml/runs?per_page=30" --jq '[.workflow_runs[] | select(.status == "queued" or .status == "in_progress")] | length')
+          if [ "$active" -gt 0 ]; then
+            echo "Provider cross-fire already queued/running; no duplicate dispatch."
+            exit 0
+          fi
+          gh workflow run live-ai-provider-crossfire.yml             --repo "$GITHUB_REPOSITORY"             --ref main             -f operations_ref="$(cat .runtime/governance/operations-main-sha)"
+          echo "Triggered governed six-slot provider cross-fire from trusted main."
+
       - name: Validate supervisor contract
         run: |
           node --check tools/autonomous_mission_router.mjs

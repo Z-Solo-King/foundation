@@ -64,3 +64,16 @@ Read active main heads, open issue inventory and open PRs from GitHub live state
 ## Comprehensive twice-daily governance sweep
 
 This scheduled control scans the combined family across eight disjoint observation lanes: structure/hygiene, migration/public-private boundary, research/feed, provider/runtime, work items/workflow, maps/docs/policy, quality/learning/evolution, and performance/resources. It is observation and triage telemetry, not a second authority. The sweep publishes deterministic findings, comments on affected open PRs, and wakes the existing autonomous engineering supervisor for bounded remediation.
+
+
+## Cross-fire escalation policy
+
+Cross-fire is used throughout the GitHub automation as an adaptive evidence technique, not as a universal six-model tax. Deterministic scans run first; only findings that are ambiguous, high-similarity, contract-incomplete, or otherwise information-rich are eligible to escalate to provider cross-fire.
+
+The scanner emits a machine-readable `crossfire_policy` with a six-provider target and a five-provider strong-evidence threshold. The twice-daily sweep consumes that decision and may dispatch the existing `live-ai-provider-crossfire.yml` workflow only when escalation is required and no equivalent run is already queued or running.
+
+The provider benchmark is bounded to six independent lanes. Provider responses remain private; only sanitized evidence summaries are surfaced. Model agreement is descriptive evidence, disagreement is preserved, and deterministic/policy owners adjudicate the result. This keeps the existing autonomous supervisor, multi-lens planner, provider task fabric, and evidence authorities as the single canonical components instead of creating parallel orchestration.
+
+### Logical loop
+
+`deterministic inventory -> disjoint lenses -> disagreement/ambiguity detection -> targeted 5-6 provider cross-fire -> normalized comparison -> canonical adjudication -> minimal repair -> focused verification -> reconciliation`

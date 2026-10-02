@@ -33,3 +33,19 @@ def test_publisher_has_stable_deduplication_markers():
     source = (ROOT / "tools/publish_governance_findings.py").read_text(encoding="utf-8")
     assert "governance-finding:" in source
     assert "governance-digest:" in source
+
+
+def test_scanner_declares_adaptive_crossfire_policy():
+    source = (ROOT / "tools/comprehensive_governance_scan.py").read_text(encoding="utf-8")
+    assert "CROSSFIRE_PROVIDER_TARGET=6" in source
+    assert "CROSSFIRE_STRONG_THRESHOLD=5" in source
+    assert "def crossfire_policy" in source
+    assert '"ai_escalation_required"' in source
+
+
+def test_governance_sweep_uses_existing_provider_crossfire_without_duplicate_dispatch():
+    workflow = (ROOT / ".github/workflows/twice-daily-governance-sweep.yml").read_text(encoding="utf-8")
+    assert "Cross-fire AI escalation decision" in workflow
+    assert "live-ai-provider-crossfire.yml" in workflow
+    assert "already queued/running" in workflow
+    assert "DRY_RUN" in workflow
