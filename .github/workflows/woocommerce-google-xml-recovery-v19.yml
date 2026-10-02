@@ -185,7 +185,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: write
+      contents: read
       actions: read
     steps:
       - name: Download all shard evidence
@@ -196,9 +196,6 @@ jobs:
           path: out/shards
           merge-multiple: false
       - name: Hard completion gate
-        env:
-          GH_REPO: ${{ github.repository }}
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           rm -rf out/release
@@ -223,7 +220,7 @@ jobs:
             fs.copyFileSync(f,path.join(release,r.filename)); ok++;
           }
           if(ok!==30) throw new Error("expected 30 usable feeds, got "+ok);
-          fs.writeFileSync(path.join(release,"feeds-index.json"),JSON.stringify({schema_version:"woocommerce-google-xml-anyhow-v2/published-index",generated_on:new Date().toISOString(),target_count:30,release_tag:"wc-google-feed-latest",feeds:rows},null,2)+"\n");
+          fs.writeFileSync(path.join(release,"feeds-index.json"),JSON.stringify({schema_version:"woocommerce-google-xml-anyhow-v2/artifact-index",generated_on:new Date().toISOString(),target_count:30,distribution:"github_actions_artifact",artifact_name:"foundation-wc-google-xml-v19-feed-bundle",feeds:rows},null,2)+"\n");
           NODE
       - name: Publish release
         env:
