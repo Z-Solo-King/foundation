@@ -27,7 +27,7 @@ test("scorecard aggregates shards and keeps contract separate from acquisition",
       cycles: 3,
       evidence: { tier: TIER.LIVE_SOURCE_ACQUISITION },
       status_counts: { ok: 5, blocked: 1, error: 0, empty: 0, resource_limited: 0 },
-      http_status_counts: { "200": 5, "403": 1 },
+      http_status_counts: { 200: 5, 403: 1 },
       diagnostic_counts: { "attempts-1": 6 },
       measurement: {
         observations: 6,
@@ -38,14 +38,16 @@ test("scorecard aggregates shards and keeps contract separate from acquisition",
         observations_with_jsonld: 2,
         field_level_correctness_oracle: false,
       },
-      targets_with_failures: [{
-        url: "https://blocked.example/",
-        observations: 1,
-        failures: 1,
-        status_counts: { ok: 0, blocked: 1 },
-        http_status_counts: { "403": 1 },
-        diagnostics: { "attempts-1": 1 },
-      }],
+      targets_with_failures: [
+        {
+          url: "https://blocked.example/",
+          observations: 1,
+          failures: 1,
+          status_counts: { ok: 0, blocked: 1 },
+          http_status_counts: { 403: 1 },
+          diagnostics: { "attempts-1": 1 },
+        },
+      ],
     });
     writeJson(root, "shard-1/benchmark-summary.json", {
       schema: "autonomous-public-benchmark-summary/v10",
@@ -55,7 +57,7 @@ test("scorecard aggregates shards and keeps contract separate from acquisition",
       cycles: 2,
       evidence: { tier: TIER.LIVE_SOURCE_ACQUISITION },
       status_counts: { ok: 4, blocked: 0, error: 1, empty: 0, resource_limited: 0 },
-      http_status_counts: { "200": 4 },
+      http_status_counts: { 200: 4 },
       diagnostic_counts: { "attempts-1": 5 },
       measurement: {
         observations: 5,
@@ -91,10 +93,10 @@ test("scorecard aggregates shards and keeps contract separate from acquisition",
       acquisition_clean: "FAIL",
     });
     assert.equal(scorecard.evidence.minimum_tier, TIER.DETERMINISTIC_CONTRACT);
-    assert.deepEqual(new Set(scorecard.evidence.component_tiers), new Set([
-      TIER.DETERMINISTIC_CONTRACT,
-      TIER.LIVE_SOURCE_ACQUISITION,
-    ]));
+    assert.deepEqual(
+      new Set(scorecard.evidence.component_tiers),
+      new Set([TIER.DETERMINISTIC_CONTRACT, TIER.LIVE_SOURCE_ACQUISITION]),
+    );
     assert.equal(scorecard.evidence.live_provider_claim_allowed, false);
     assert.equal(scorecard.evidence.integration_runtime_claim_allowed, false);
     assert.equal(scorecard.evidence.production_readiness_claim_allowed, false);
@@ -110,7 +112,10 @@ test("scorecard aggregates shards and keeps contract separate from acquisition",
     assert.equal(scorecard.structural_signals.jsonld_blocks_total, 7);
     assert.equal(scorecard.structural_signals.field_level_correctness_oracle, false);
     assert.equal(scorecard.targets_with_failures[0].health_class, "blocked");
-    assert.equal(scorecard.targets_with_failures[0].recommended_action, "quarantine_until_manual_recheck");
+    assert.equal(
+      scorecard.targets_with_failures[0].recommended_action,
+      "quarantine_until_manual_recheck",
+    );
     const markdown = renderMarkdown(scorecard);
     assert.match(markdown, /Overall: \*\*WARN\*\*/);
     assert.match(markdown, /Research contract: \*\*PASS\*\* \(14\/14 passed\)/);

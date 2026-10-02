@@ -8,9 +8,7 @@
       "reusable_evidence": false,
       "research_value": "High",
       "description": "Deep research prompts covering product research plus project-specific architecture, status, artifact, CI, extraction, evidence and acceptance questions.",
-      "feeds": [
-        "benchmark/chatbot_query_benchmark.py"
-      ]
+      "feeds": ["benchmark/chatbot_query_benchmark.py"]
     },
     {
       "path": "benchmark/chatbot_query_benchmark.py",

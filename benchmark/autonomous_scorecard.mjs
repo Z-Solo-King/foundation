@@ -38,19 +38,29 @@ export function weightedAverage(values) {
 
 export function collectSummaryFiles(root) {
   const found = [];
-  const visit = dir => {
+  const visit = (dir) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) visit(full);
-      else if (entry.isFile() && (entry.name === "benchmark-summary.json" || /^summary-.*\.json$/.test(entry.name))) found.push(full);
+      else if (
+        entry.isFile() &&
+        (entry.name === "benchmark-summary.json" || /^summary-.*\.json$/.test(entry.name))
+      )
+        found.push(full);
     }
   };
   visit(root);
-  return [...new Set(found.map(file => path.resolve(file)))].sort();
+  return [...new Set(found.map((file) => path.resolve(file)))].sort();
 }
 
 export function tierRank(value) {
-  return EVIDENCE_ORDER.get(String(value || "").trim().toLowerCase()) ?? -1;
+  return (
+    EVIDENCE_ORDER.get(
+      String(value || "")
+        .trim()
+        .toLowerCase(),
+    ) ?? -1
+  );
 }
 
 export function targetHealth(observations, failures, statusCounts, httpStatusCounts) {
@@ -61,7 +71,8 @@ export function targetHealth(observations, failures, statusCounts, httpStatusCou
   const errors = Number(statusCounts.error || 0);
   if (blocked / observations >= 0.95) return ["blocked", "quarantine_until_manual_recheck"];
   if (limited / observations >= 0.95) return ["rate_limited", "exponential_backoff_and_quarantine"];
-  if (errors / observations >= 0.95 && Object.keys(httpStatusCounts).length === 0) return ["transport_error", "investigate_dns_tls_or_network_path"];
+  if (errors / observations >= 0.95 && Object.keys(httpStatusCounts).length === 0)
+    return ["transport_error", "investigate_dns_tls_or_network_path"];
   if (failureRate === 0) return ["healthy", "retain_normal_sampling"];
   if (failureRate >= 0.5) return ["degraded", "retain_for_targeted_recheck"];
   return ["intermittent", "retain_with_failure_aware_retry"];
@@ -88,7 +99,8 @@ export function buildScorecard(root) {
     target[key][delta[0]] = Number(target[key][delta[0]] || 0) + Number(delta[1] || 0);
   };
   const mergeCounts = (into, source) => {
-    for (const [key, value] of Object.entries(source || {})) into[key] = Number(into[key] || 0) + Number(value || 0);
+    for (const [key, value] of Object.entries(source || {}))
+      into[key] = Number(into[key] || 0) + Number(value || 0);
   };
 
   for (const file of summaryPaths) {
@@ -98,10 +110,15 @@ export function buildScorecard(root) {
     const evidence = row.evidence;
     if (evidence && typeof evidence === "object" && typeof evidence.tier === "string") {
       if (EVIDENCE_ORDER.has(evidence.tier)) componentTiers.add(evidence.tier);
-      else measurementGaps.add("benchmark artifact declares unsupported evidence tier: " + evidence.tier);
+      else
+        measurementGaps.add(
+          "benchmark artifact declares unsupported evidence tier: " + evidence.tier,
+        );
     } else {
       componentTiers.add("legacy_untyped");
-      measurementGaps.add("one or more acquisition artifacts predate the explicit evidence-tier contract");
+      measurementGaps.add(
+        "one or more acquisition artifacts predate the explicit evidence-tier contract",
+      );
     }
 
     const runId = String(row.run_id || "");
@@ -113,10 +130,16 @@ export function buildScorecard(root) {
     mergeCounts(httpCounts, row.http_status_counts);
     mergeCounts(diagnosticCounts, row.diagnostic_counts);
 
-    if (row.measurement && typeof row.measurement === "object") measurementRows.push(row.measurement);
-    else measurementGaps.add("sanitized benchmark summary does not expose structural or latency measurements");
+    if (row.measurement && typeof row.measurement === "object")
+      measurementRows.push(row.measurement);
+    else
+      measurementGaps.add(
+        "sanitized benchmark summary does not expose structural or latency measurements",
+      );
 
-    for (const target of Array.isArray(row.targets_with_failures) ? row.targets_with_failures : []) {
+    for (const target of Array.isArray(row.targets_with_failures)
+      ? row.targets_with_failures
+      : []) {
       if (!target || typeof target !== "object") continue;
       const url = String(target.url || "");
       const entry = targets.get(url) || {
@@ -136,18 +159,34 @@ export function buildScorecard(root) {
     }
   }
 
-  const measurementObservations = measurementRows.reduce((sum, row) => sum + Number(row.observations || 0), 0);
-  const productCandidates = measurementRows.reduce((sum, row) => sum + Number(row.product_candidates_total || 0), 0);
-  const jsonldBlocks = measurementRows.reduce((sum, row) => sum + Number(row.jsonld_blocks_total || 0), 0);
-  const productObservations = measurementRows.reduce((sum, row) => sum + Number(row.observations_with_product_candidates || 0), 0);
-  const jsonldObservations = measurementRows.reduce((sum, row) => sum + Number(row.observations_with_jsonld || 0), 0);
+  const measurementObservations = measurementRows.reduce(
+    (sum, row) => sum + Number(row.observations || 0),
+    0,
+  );
+  const productCandidates = measurementRows.reduce(
+    (sum, row) => sum + Number(row.product_candidates_total || 0),
+    0,
+  );
+  const jsonldBlocks = measurementRows.reduce(
+    (sum, row) => sum + Number(row.jsonld_blocks_total || 0),
+    0,
+  );
+  const productObservations = measurementRows.reduce(
+    (sum, row) => sum + Number(row.observations_with_product_candidates || 0),
+    0,
+  );
+  const jsonldObservations = measurementRows.reduce(
+    (sum, row) => sum + Number(row.observations_with_jsonld || 0),
+    0,
+  );
   const latencyMeans = [];
   const p95Values = [];
 
   for (const row of measurementRows) {
     const latency = row.elapsed_ms;
     if (!latency || typeof latency !== "object") continue;
-    if (typeof latency.median === "number" && Number(row.observations || 0)) latencyMeans.push([Number(latency.median), Number(row.observations)]);
+    if (typeof latency.median === "number" && Number(row.observations || 0))
+      latencyMeans.push([Number(latency.median), Number(row.observations)]);
     if (typeof latency.p95 === "number") p95Values.push(Number(latency.p95));
   }
 
@@ -156,13 +195,25 @@ export function buildScorecard(root) {
     measurementGaps.add("sanitized benchmark artifacts do not expose product-candidate counts");
     measurementGaps.add("sanitized benchmark artifacts do not expose JSON-LD counts");
   }
-  if (measurementRows.length && measurementRows.every(row => !row.field_level_correctness_oracle)) {
-    measurementGaps.add("no oracle-backed product-field recall/precision score is present in this run");
+  if (
+    measurementRows.length &&
+    measurementRows.every((row) => !row.field_level_correctness_oracle)
+  ) {
+    measurementGaps.add(
+      "no oracle-backed product-field recall/precision score is present in this run",
+    );
   }
-  measurementGaps.add("product-candidate and JSON-LD counts are structural hints, not correctness judgments");
-  measurementGaps.add("live benchmark validates transport/content structure, not field-level product correctness");
+  measurementGaps.add(
+    "product-candidate and JSON-LD counts are structural hints, not correctness judgments",
+  );
+  measurementGaps.add(
+    "live benchmark validates transport/content structure, not field-level product correctness",
+  );
 
-  const totalObservations = Object.values(statusCounts).reduce((sum, value) => sum + Number(value || 0), 0);
+  const totalObservations = Object.values(statusCounts).reduce(
+    (sum, value) => sum + Number(value || 0),
+    0,
+  );
   const ok = Number(statusCounts.ok || 0);
   const empty = Number(statusCounts.empty || 0);
   const blocked = Number(statusCounts.blocked || 0);
@@ -173,11 +224,12 @@ export function buildScorecard(root) {
 
   let queryResult = null;
   const queryPaths = [];
-  const visitQuery = dir => {
+  const visitQuery = (dir) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) visitQuery(full);
-      else if (entry.isFile() && entry.name === "chatbot-query-benchmark.json") queryPaths.push(full);
+      else if (entry.isFile() && entry.name === "chatbot-query-benchmark.json")
+        queryPaths.push(full);
     }
   };
   visitQuery(root);
@@ -187,49 +239,80 @@ export function buildScorecard(root) {
   const queryTotal = Number(queryResult?.queries || 0);
   const queryPassed = Number(queryResult?.passed || 0);
   const queryFailed = Number(queryResult?.failed || 0);
-  const corpusCoverage = queryResult?.corpus_coverage && typeof queryResult.corpus_coverage === "object" ? queryResult.corpus_coverage : {};
+  const corpusCoverage =
+    queryResult?.corpus_coverage && typeof queryResult.corpus_coverage === "object"
+      ? queryResult.corpus_coverage
+      : {};
   const querySchema = String(queryResult?.schema || "");
   const queryEvidence = queryResult?.evidence;
   let queryTier = null;
 
-  if (queryEvidence && typeof queryEvidence === "object" && typeof queryEvidence.tier === "string") {
+  if (
+    queryEvidence &&
+    typeof queryEvidence === "object" &&
+    typeof queryEvidence.tier === "string"
+  ) {
     if (EVIDENCE_ORDER.has(queryEvidence.tier)) {
       queryTier = queryEvidence.tier;
       componentTiers.add(queryTier);
     } else {
-      measurementGaps.add("query benchmark declares unsupported evidence tier: " + queryEvidence.tier);
+      measurementGaps.add(
+        "query benchmark declares unsupported evidence tier: " + queryEvidence.tier,
+      );
     }
   } else {
     componentTiers.add("legacy_untyped");
-    measurementGaps.add("deep-query benchmark artifact predates the explicit evidence-tier contract");
+    measurementGaps.add(
+      "deep-query benchmark artifact predates the explicit evidence-tier contract",
+    );
   }
 
-  if (!queryResult) measurementGaps.add("deep-query benchmark artifact was not published with this run");
-  else if (!querySchema.startsWith("chatbot-research-query-benchmark/")) measurementGaps.add("deep-query benchmark artifact uses an unexpected schema");
+  if (!queryResult)
+    measurementGaps.add("deep-query benchmark artifact was not published with this run");
+  else if (!querySchema.startsWith("chatbot-research-query-benchmark/"))
+    measurementGaps.add("deep-query benchmark artifact uses an unexpected schema");
 
-  const shardExpected = [...new Set(shards)].sort((a,b) => a-b);
+  const shardExpected = [...new Set(shards)].sort((a, b) => a - b);
   const executionPass = totalObservations > 0 && shardExpected.length > 0;
-  const contractStatus = queryResult && queryTotal > 0 && queryFailed === 0 && queryPassed === queryTotal ? "PASS" : "FAIL";
+  const contractStatus =
+    queryResult && queryTotal > 0 && queryFailed === 0 && queryPassed === queryTotal
+      ? "PASS"
+      : "FAIL";
   const acquisitionCleanStatus = cleanFailures === 0 ? "PASS" : "FAIL";
-  const overallStatus = executionPass && contractStatus === "PASS" && acquisitionCleanStatus === "PASS" ? "PASS" : "WARN";
+  const overallStatus =
+    executionPass && contractStatus === "PASS" && acquisitionCleanStatus === "PASS"
+      ? "PASS"
+      : "WARN";
 
-  const typedTiers = [...componentTiers].filter(tier => tier !== "legacy_untyped").sort((a,b) => tierRank(a)-tierRank(b));
+  const typedTiers = [...componentTiers]
+    .filter((tier) => tier !== "legacy_untyped")
+    .sort((a, b) => tierRank(a) - tierRank(b));
   const minimumTier = typedTiers.length ? typedTiers[0] : "legacy_untyped";
 
-  const targetRows = [...targets.values()].map(entry => {
-    const [healthClass, recommendedAction] = targetHealth(entry.observations, entry.failures, entry.statusCounts, entry.httpStatusCounts);
-    return {
-      url: entry.url,
-      observations: entry.observations,
-      failures: entry.failures,
-      failure_rate: ratio(entry.failures, entry.observations),
-      status_counts: Object.fromEntries(Object.entries(entry.statusCounts).sort()),
-      http_status_counts: Object.fromEntries(Object.entries(entry.httpStatusCounts).sort()),
-      diagnostics: Object.fromEntries(Object.entries(entry.diagnostics).sort()),
-      health_class: healthClass,
-      recommended_action: recommendedAction,
-    };
-  }).sort((a,b) => Number(b.failure_rate || 0)-Number(a.failure_rate || 0) || a.url.localeCompare(b.url));
+  const targetRows = [...targets.values()]
+    .map((entry) => {
+      const [healthClass, recommendedAction] = targetHealth(
+        entry.observations,
+        entry.failures,
+        entry.statusCounts,
+        entry.httpStatusCounts,
+      );
+      return {
+        url: entry.url,
+        observations: entry.observations,
+        failures: entry.failures,
+        failure_rate: ratio(entry.failures, entry.observations),
+        status_counts: Object.fromEntries(Object.entries(entry.statusCounts).sort()),
+        http_status_counts: Object.fromEntries(Object.entries(entry.httpStatusCounts).sort()),
+        diagnostics: Object.fromEntries(Object.entries(entry.diagnostics).sort()),
+        health_class: healthClass,
+        recommended_action: recommendedAction,
+      };
+    })
+    .sort(
+      (a, b) =>
+        Number(b.failure_rate || 0) - Number(a.failure_rate || 0) || a.url.localeCompare(b.url),
+    );
 
   return {
     schema: "autonomous-research-scorecard/v3",
@@ -264,7 +347,10 @@ export function buildScorecard(root) {
       project_query_rate: corpusCoverage.project_query_rate ?? null,
       category_count: Number(corpusCoverage.category_count || 0),
       source_family_count: Number(corpusCoverage.source_family_count || 0),
-      temporal_modes: corpusCoverage.temporal_modes && typeof corpusCoverage.temporal_modes === "object" ? corpusCoverage.temporal_modes : {},
+      temporal_modes:
+        corpusCoverage.temporal_modes && typeof corpusCoverage.temporal_modes === "object"
+          ? corpusCoverage.temporal_modes
+          : {},
     },
     acquisition: {
       usable_observation_rate: ratio(ok, totalObservations),
@@ -277,7 +363,12 @@ export function buildScorecard(root) {
       status_counts: Object.fromEntries(Object.entries(statusCounts).sort()),
       http_status_counts: Object.fromEntries(Object.entries(httpCounts).sort()),
       diagnostic_counts: Object.fromEntries(Object.entries(diagnosticCounts).sort()),
-      health_class_counts: Object.fromEntries([...targetRows].reduce((map, item) => { map[item.health_class] = Number(map[item.health_class] || 0) + 1; return map; }, new Map())),
+      health_class_counts: Object.fromEntries(
+        [...targetRows].reduce((map, item) => {
+          map[item.health_class] = Number(map[item.health_class] || 0) + 1;
+          return map;
+        }, new Map()),
+      ),
     },
     structural_signals: {
       observations_measured: measurementObservations,
@@ -289,7 +380,9 @@ export function buildScorecard(root) {
       jsonld_blocks_total: jsonldBlocks,
       weighted_median_latency_ms: weightedAverage(latencyMeans),
       max_shard_p95_latency_ms: p95Values.length ? Math.max(...p95Values) : null,
-      evidence_scope: measurementRows.length ? "transport_and_structural_signals_only" : "transport_only",
+      evidence_scope: measurementRows.length
+        ? "transport_and_structural_signals_only"
+        : "transport_only",
       field_level_correctness_oracle: false,
     },
     targets_with_failures: targetRows,
@@ -308,7 +401,13 @@ export function renderMarkdown(scorecard) {
     "",
     "Overall: **" + status.overall + "**",
     "Execution: **" + status.execution + "**",
-    "Research contract: **" + status.research_contract + "** (" + contract.passed + "/" + contract.queries + " passed)",
+    "Research contract: **" +
+      status.research_contract +
+      "** (" +
+      contract.passed +
+      "/" +
+      contract.queries +
+      " passed)",
     "Acquisition clean: **" + status.acquisition_clean + "**",
     "",
     "## Evidence tier",
@@ -353,13 +452,31 @@ export function renderMarkdown(scorecard) {
     "## Measurement gaps",
     "",
   ];
-  lines.push(...scorecard.measurement_gaps.map(gap => "- " + gap));
+  lines.push(...scorecard.measurement_gaps.map((gap) => "- " + gap));
   lines.push("", "## Targets with failures", "");
   if (scorecard.targets_with_failures.length) {
-    lines.push("| Target | Observations | Failures | Failure rate | HTTP statuses |", "|---|---:|---:|---:|---|");
+    lines.push(
+      "| Target | Observations | Failures | Failure rate | HTTP statuses |",
+      "|---|---:|---:|---:|---|",
+    );
     for (const target of scorecard.targets_with_failures) {
-      const http = Object.entries(target.http_status_counts).map(([k,v]) => k + ":" + v).join(", ") || "-";
-      lines.push("| " + target.url + " | " + target.observations + " | " + target.failures + " | " + target.failure_rate + " | " + http + " |");
+      const http =
+        Object.entries(target.http_status_counts)
+          .map(([k, v]) => k + ":" + v)
+          .join(", ") || "-";
+      lines.push(
+        "| " +
+          target.url +
+          " | " +
+          target.observations +
+          " | " +
+          target.failures +
+          " | " +
+          target.failure_rate +
+          " | " +
+          http +
+          " |",
+      );
     }
   } else {
     lines.push("No target-level failures were recorded.");
@@ -368,16 +485,19 @@ export function renderMarkdown(scorecard) {
 }
 
 export function main(argv = process.argv.slice(2)) {
-  const args = Object.fromEntries(argv.reduce((acc, value, i, all) => {
-    if (value.startsWith("--")) acc.push([value.slice(2), all[i + 1] || ""]);
-    return acc;
-  }, []));
-  if (!args.root || !args["json-output"] || !args["markdown-output"]) throw new Error("--root, --json-output and --markdown-output are required");
+  const args = Object.fromEntries(
+    argv.reduce((acc, value, i, all) => {
+      if (value.startsWith("--")) acc.push([value.slice(2), all[i + 1] || ""]);
+      return acc;
+    }, []),
+  );
+  if (!args.root || !args["json-output"] || !args["markdown-output"])
+    throw new Error("--root, --json-output and --markdown-output are required");
   const scorecard = buildScorecard(path.resolve(args.root));
   const jsonOutput = path.resolve(args["json-output"]);
   const markdownOutput = path.resolve(args["markdown-output"]);
-  fs.mkdirSync(path.dirname(jsonOutput), {recursive:true});
-  fs.mkdirSync(path.dirname(markdownOutput), {recursive:true});
+  fs.mkdirSync(path.dirname(jsonOutput), { recursive: true });
+  fs.mkdirSync(path.dirname(markdownOutput), { recursive: true });
   fs.writeFileSync(jsonOutput, JSON.stringify(scorecard, null, 2) + "\n", "utf8");
   fs.writeFileSync(markdownOutput, renderMarkdown(scorecard), "utf8");
   process.stdout.write(JSON.stringify(scorecard, null, 2) + "\n");
@@ -385,5 +505,10 @@ export function main(argv = process.argv.slice(2)) {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  try { main(); } catch (error) { process.stderr.write(String(error?.message || error) + "\n"); process.exitCode = 1; }
+  try {
+    main();
+  } catch (error) {
+    process.stderr.write(String(error?.message || error) + "\n");
+    process.exitCode = 1;
+  }
 }
