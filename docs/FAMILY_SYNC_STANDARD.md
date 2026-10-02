@@ -248,3 +248,8 @@ The six-lane Migration Factory CrossFire workflow is an unprivileged read-only C
 ## 2026-10-02 live microscope reconciliation
 
 The family sync ledger was refreshed from live GitHub state on 2026-10-02. Foundation main is `1195d4a9ccdb51688bf9e1086b9cdb7dd99512c0` and Operations main is `10dc9eff134609494ebb034df824616bbbcc7c97`. The microscope cleanup checkpoint records 2,931 initial branches, 2,564 current branches, and 367 refs retired by the fail-closed retirement workflows. Remaining refs are not assumed safe for deletion; protected, active-PR, release/tag, live-reference, young, and diverged branches remain governed by the retirement rules.
+
+
+## 2026-10-02 continuous Migration Factory
+
+The Migration Factory CrossFire is a trusted-main automation surface. It may read the private Operations repository only through the purpose-scoped read-only GitHub App token; pull-request and other untrusted execution remains excluded. Trusted pushes resolve a single immutable Operations SHA before the six independent lanes start, preserving the CrossFire snapshot invariant.
