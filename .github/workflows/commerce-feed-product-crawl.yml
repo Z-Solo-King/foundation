@@ -355,11 +355,6 @@ jobs:
           fs.writeFileSync(path.join(dest,"feeds-index.json"),JSON.stringify(index,null,2)+"\n");
           console.log(JSON.stringify({target_count:30,total_xml_files:xmls.length,non_empty:items.filter(x=>x.item_count>0).length,total_items:items.reduce((n,x)=>n+x.item_count,0)},null,2));
           JS
-          TAG=wc-google-feed-latest
-          if ! gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
-            gh release create "$TAG" --repo "$GH_REPO" --title "WooCommerce Google XML Feeds — Latest" --notes "30-site public catalog recovery feeds. Native feeds are preserved when independently observed; otherwise feeds are synthetic Google Merchant RSS/XML generated from current public product observations."
-          fi
-          gh release upload "$TAG" --repo "$GH_REPO" out/google-xml-release/*.xml out/google-xml-release/feeds-index.json --clobber
           cat out/google-xml-release/feeds-index.json
 
       - name: Upload aggregate evidence
