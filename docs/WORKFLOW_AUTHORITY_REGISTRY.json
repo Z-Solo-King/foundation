@@ -130,11 +130,11 @@
     [
       ".github/workflows/repository-hygiene-autofix.yml",
       "repository_hygiene_autofix"
-    ],    [
+    ],
+    [
       ".github/workflows/release-quality-regression.yml",
       "release_quality_regression"
     ],
-
     [
       ".github/workflows/repository-hygiene.yml",
       "repository_hygiene"
@@ -166,6 +166,10 @@
     [
       ".github/workflows/woocommerce-v175-22-plugin-extraction.yml",
       "private_feed_extraction"
+    ],
+    [
+      ".github/workflows/verification-fabric.yml",
+      "verification_fabric"
     ]
   ],
   "policy": {
