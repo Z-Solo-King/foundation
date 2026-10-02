@@ -605,10 +605,10 @@ def test_nightly_research_uses_authenticated_worker_ai_adapter():
     assert 'RESEARCH_LLM_ENDPOINT: "http://127.0.0.1:8765"' in workflow
     assert 'RESEARCH_LLM_API_KEY: "local-worker-proxy"' in workflow
     assert 'RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in workflow
-    assert "scripts/research_worker_proxy.py" in workflow
+    assert "scripts/research_worker_proxy.mjs" in workflow
     assert 'PUBLIC_WORKER_URL' in workflow
     assert 'AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in preflight
-    assert "nightly_runtime_contract_probe.py" in preflight
+    assert "nightly_runtime_contract_probe.mjs" in preflight
     assert "expected-foundation-sha" in preflight
     assert "expected-operations-ref" in preflight
     assert 'RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in canary
@@ -623,7 +623,7 @@ def test_research_proxy_probe_preserves_non_2xx_response_diagnostics():
         assert "probe_response=$(curl -fsS" not in text
         assert 'jq -c \'.\' "$probe_response_file" 2>/dev/null || true' in text
 def test_research_worker_proxy_keeps_auth_token_out_of_command_line_and_logs():
-    proxy = (ROOT / "scripts" / "research_worker_proxy.py").read_text(encoding="utf-8")
+    proxy = (ROOT / "scripts" / "research_worker_proxy.mjs").read_text(encoding="utf-8")
     workflow = (WORKFLOW_ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
     canary = (WORKFLOW_ROOT / "live-nightly-research-canary.yml").read_text(encoding="utf-8")
     assert 'os.environ.get("RESEARCH_PROXY_AUTH_TOKEN", "")' in proxy
@@ -706,8 +706,8 @@ def test_public_pages_front_door_is_documented_without_exposing_backend_origin()
 
 def test_nightly_research_preflight_has_network_failure_classification():
     preflight = (WORKFLOW_ROOT / "nightly-research-provider-preflight.yml").read_text(encoding="utf-8")
-    probe = (ROOT / "scripts" / "nightly_runtime_contract_probe.py").read_text(encoding="utf-8")
-    assert "nightly_runtime_contract_probe.py" in preflight
+    probe = (ROOT / "scripts" / "nightly_runtime_contract_probe.mjs").read_text(encoding="utf-8")
+    assert "nightly_runtime_contract_probe.mjs" in preflight
     assert "probe_transport_error" in probe
     assert "runtime_revision_mismatch" in probe
     assert "invalid_json_response" in probe
@@ -742,7 +742,7 @@ def test_crossfire_research_proxy_lifecycle_is_colocated_with_consumer():
     start = workflow.index("      - name: Run complete crossfire research")
     materialize = workflow.index("      - name: Materialize and validate lane artifacts", start)
     block = workflow[start:materialize]
-    assert "research_worker_proxy.py" in block
+    assert "research_worker_proxy.mjs" in block
     assert "http://127.0.0.1:8765/health" in block
     assert "cleanup_proxy()" in block
     assert "trap cleanup_proxy EXIT INT TERM" in block
