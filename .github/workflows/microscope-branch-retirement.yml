@@ -1,0 +1,59 @@
+name: Microscope branch retirement
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      execute:
+        description: Execute eligible branch deletions
+        required: true
+        type: boolean
+        default: false
+      min_age_hours:
+        description: Minimum age for merged non-duplicate branches
+        required: false
+        default: "24"
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  retire:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.pull_request.merged == true &&
+        github.event.pull_request.base.ref == github.event.repository.default_branch &&
+        github.event.pull_request.head.ref == 'chore/microscope-consolidation-20261002'
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch all branch refs
+        run: git fetch origin '+refs/heads/*:refs/remotes/origin/*' --prune
+
+      - name: Run microscope retirement audit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MICROSCOPE_MIN_AGE_HOURS: ${{ github.event_name == 'workflow_dispatch' && inputs.min_age_hours || '24' }}
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.execute }}" == "true" ]]; then
+            node tools/retire_microscope_branches.mjs --execute --report microscope-branch-retirement-report.json
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            node tools/retire_microscope_branches.mjs --execute --report microscope-branch-retirement-report.json
+          else
+            node tools/retire_microscope_branches.mjs --report microscope-branch-retirement-report.json
+          fi
+
+      - name: Upload retirement receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: microscope-branch-retirement-receipt
+          path: microscope-branch-retirement-report.json
