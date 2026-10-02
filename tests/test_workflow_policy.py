@@ -286,7 +286,7 @@ def test_backup_workflow_uses_app_auth_for_private_operations_and_separates_b2_c
     assert "BACKUP_GITHUB_TOKEN" not in backup
     assert "OPERATIONS_READ_TOKEN" not in backup
 def test_credential_policy_documents_the_separation():
-    policy = (ROOT / "docs" / "CREDENTIAL_AND_BACKUP_AUTHORITY.md").read_text(encoding="utf-8")
+    policy = (ROOT / "docs" / "AI_PROJECT_MAP.md").read_text(encoding="utf-8")
     deployment = (ROOT / "DEPLOYMENT.md").read_text(encoding="utf-8")
     backup = (ROOT / "backup" / "README.md").read_text(encoding="utf-8")
     for secret in (
@@ -300,6 +300,7 @@ def test_credential_policy_documents_the_separation():
         assert secret in policy
     assert "B2 credentials are secrets and never belong in Git" in deployment
     assert "`OPERATIONS_APP_ID`" in policy
+    assert "Credential and token map" in policy
     assert "purpose-specific GitHub App credential family" in backup
     assert "OPERATIONS_PIN_MANIFEST.json" in deployment
 
