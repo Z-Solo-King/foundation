@@ -39,3 +39,41 @@ jobs:
           code="$(curl -sS --max-time 20 -o /tmp/chat.body -w '%{http_code}' -H 'Content-Type: application/json' -d '{"chat_id":"public-probe","request_id":"public-probe","message":"ping","mode":"chat","strict_zero_cost_only":true}' "$base/api/v1/chat" || true)"
           echo "CHAT_HTTP=$code"
           test "$code" != "000"
+      - name: Browser-load and guest lifecycle test
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install chromium --with-deps >/dev/null 2>&1
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch({headless:true});
+            const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+            const consoleErrors = [];
+            const pageErrors = [];
+            page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
+            page.on('pageerror', err => pageErrors.push(String(err)));
+            const response = await page.goto('https://heroic-ai.pages.dev/?browser_probe=1', { waitUntil: 'domcontentloaded', timeout: 30000 });
+            await page.waitForTimeout(2000);
+            const title = await page.title();
+            const connection = await page.locator('#connection-pill').innerText();
+            const promptVisible = await page.locator('#prompt').isVisible();
+            const sendVisible = await page.locator('[data-action="send"]').isVisible();
+            if (!response || response.status() !== 200) throw new Error('root HTTP status was not 200');
+            if (title !== 'Heroic AI — Chat & Research') throw new Error('unexpected title: ' + title);
+            if (!promptVisible || !sendVisible) throw new Error('composer did not initialize');
+            if (pageErrors.length || consoleErrors.length) throw new Error(JSON.stringify({pageErrors, consoleErrors}));
+            const guest = page.locator('.guest-test-button');
+            await guest.click();
+            if ((await guest.innerText()) !== 'Exit guest test mode') throw new Error('guest mode did not activate');
+            await page.locator('#prompt').fill('browser lifecycle probe');
+            await page.locator('[data-action="send"]').click();
+            await page.waitForTimeout(500);
+            const conversation = await page.locator('#conversation-scroll').innerText();
+            if (!conversation.includes('Guest test mode is active.')) throw new Error('guest chat lifecycle did not render');
+            console.log(JSON.stringify({browser_load:'PASS', title, connection, guest_lifecycle:'PASS', response_status:response.status()}));
+            await browser.close();
+          })().catch(err => { console.error(err); process.exit(1); });
+          NODE
