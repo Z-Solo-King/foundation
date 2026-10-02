@@ -21,7 +21,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: foundation-autonomous-scorecard-\${{ github.ref }}
+  group: foundation-autonomous-scorecard-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -62,22 +62,22 @@ jobs:
           package-manager-cache: false
       - name: Find latest successful autonomous benchmark
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          run_id="$(gh api "repos/\${GITHUB_REPOSITORY}/actions/workflows/autonomous-benchmark.yml/runs?status=success&per_page=20" --jq '.workflow_runs[0].id // empty')"
+          run_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/autonomous-benchmark.yml/runs?status=success&per_page=20" --jq '.workflow_runs[0].id // empty')"
           test -n "$run_id"
           echo "AUTONOMOUS_RUN_ID=$run_id" >> "$GITHUB_ENV"
-          gh api "repos/\${GITHUB_REPOSITORY}/actions/runs/$run_id" --jq '{id,head_sha,event,created_at,updated_at,conclusion}' | tee .runtime-autonomous-run.json
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/$run_id" --jq '{id,head_sha,event,created_at,updated_at,conclusion}' | tee .runtime-autonomous-run.json
       - name: Download benchmark artifacts
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p .runtime/autonomous-artifacts
-          gh api "repos/\${GITHUB_REPOSITORY}/actions/runs/\${AUTONOMOUS_RUN_ID}/artifacts?per_page=100" \
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/\${AUTONOMOUS_RUN_ID}/artifacts?per_page=100" \
             --jq '.artifacts[] | select(.expired == false) | .name' \
             | while IFS= read -r name; do
                 test -n "$name"
