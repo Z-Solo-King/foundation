@@ -116,6 +116,10 @@ Every material PR should state:
 
 A stale base SHA must be called out and must prevent a PR from being treated as merge-ready until reconciled.
 
+## Governance tooling migration — 2026-10-02
+
+Foundation hygiene, source-surface, documentation-sync, and cross-system governance scanners are now implemented in Node and invoked through the Foundation CI/governance workflows. These tools remain report-only; protected Python semantic, policy, provenance, resource, replay, persistence, provider, and promotion authorities remain canonical.
+
 ## Cross-system autonomous governance sweep
 
 The Foundation autonomous supervisor is the family scheduler/decision coordinator; it does not replace component authorities. A dedicated Foundation workflow invokes it twice daily at **02:17 and 14:17 UTC** after deterministic, aggregate-only hygiene/code-document synchronization checks across Foundation and Operations.
