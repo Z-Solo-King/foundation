@@ -54,11 +54,21 @@ export function validate(root,changedPaths=null,strict=false){
   return {schema_version:"code-doc-sync-report/v1",repository:path.basename(root),groups:rows,issues,passed:!issues.some(x=>x.severity==="error"),strict};
 }
 if(fileURLToPath(import.meta.url)===process.argv[1]){
-  const a=Object.fromEntries(process.argv.slice(2).reduce((acc,v,i,arr)=>{if(v.startsWith("--"))acc.push([v.slice(2),arr[i+1]??""]);return acc;},[]));
+  const valueFlags=new Set(["root","changed-from","report"]);
+  const boolFlags=new Set(["all","strict","summary-only"]);
+  const a={};
+  for(let i=2;i<process.argv.length;i++){
+    const token=process.argv[i];
+    if(!token.startsWith("--")) continue;
+    const key=token.slice(2);
+    if(boolFlags.has(key)) a[key]=true;
+    else if(valueFlags.has(key)) a[key]=process.argv[++i]??"";
+    else a[key]=process.argv[++i]??"";
+  }
   const root=path.resolve(a.root??"."); let changedPaths=null; if(a["changed-from"]&&!a.all) changedPaths=new Set(changed(root,a["changed-from"]));
-  const report=validate(root,changedPaths,a.strict==="true");
+  const report=validate(root,changedPaths,Boolean(a.strict));
   if(a.report){fs.mkdirSync(path.dirname(path.resolve(a.report)),{recursive:true});fs.writeFileSync(path.resolve(a.report),JSON.stringify(report,null,2)+"\n");}
-  if(a["summary-only"]==="true") console.log(JSON.stringify({groups:report.groups.length,issues:report.issues.length,passed:report.passed},null,2));
+  if(a["summary-only"]) console.log(JSON.stringify({groups:report.groups.length,issues:report.issues.length,passed:report.passed},null,2));
   else console.log(JSON.stringify(report,null,2));
-  process.exitCode=(report.passed||a.strict!=="true")?0:1;
+  process.exitCode=(report.passed||!a.strict)?0:1;
 }
