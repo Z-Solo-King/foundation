@@ -72,5 +72,5 @@ GitHub supports repository-wide, path-specific, and agent instructions. Keep thi
 - Contract: `docs/AUTONOMOUS_GOVERNANCE_SCAN_CONTRACT.json`
 - Observation: `tools/comprehensive_governance_scan.py`
 - Publication: `tools/publish_governance_findings.py`
-- Scheduler: `.github/workflows/twice-daily-autonomous-governance-sweep.yml`
+- Scheduler: `.github/workflows/twice-daily-governance-sweep.yml`
 - AI remediation authority: `tools/autonomous_engineering_supervisor.mjs`
