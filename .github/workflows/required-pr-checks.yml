@@ -94,6 +94,15 @@ jobs:
           set -euo pipefail
           tests=(tests/test_outcome.py tests/test_public_core.py tests/test_domain_packs_port.py tests/test_text_normalization_port.py tests/test_token_efficiency.py tests/test_product_identity.py tests/test_url_identity_core.py tests/test_stage_receipt_recovery.py tests/test_public_boundary.py)
           python -m pytest -q "${tests[@]}"
+      - name: Run migrated Node tooling contracts
+        run: |
+          set -euo pipefail
+          node --check scripts/nightly_runtime_contract_probe.mjs
+          node --check scripts/research_worker_proxy.mjs
+          node --check scripts/validate_github_actions_zero_cost.mjs
+          node --check scripts/publish_benchmark_findings.mjs
+          node --test tests/test_nightly_runtime_acceptance_contract.mjs tests/test_publish_benchmark_findings.mjs tests/test_validate_github_actions_zero_cost.mjs tests/test_github_actions_zero_cost_policy.mjs
+
       - name: Run public workflow/security contracts
         run: |
           set -euo pipefail
