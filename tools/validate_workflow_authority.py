@@ -114,5 +114,7 @@ if __name__=="__main__":
     errors=validate()
     if errors:
         print(f"workflow authority policy: FAIL ({len(errors)} policy violations)")
+        for error in errors:
+            print(f" - {error}")
         raise SystemExit(1)
     print(f"workflow authority policy: PASS ({len(workflow_paths())} workflows scanned)")
