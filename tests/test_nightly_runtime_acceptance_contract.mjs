@@ -73,3 +73,93 @@ test("Node probe output path contains no response-body or token dump", () => {
   assert.match(text, /generationStatus === "model_generated"/);
   assert.equal(text.includes("rawResponseBody"), false);
 });
+
+test("nightly preserves exact production-release and CrossFire controls", () => {
+  const text = fs.readFileSync(path.join(ROOT, ".github/workflows/nightly-multi-agent-research-v3.yml"), "utf8");
+  for (const token of [
+    "heroic-ai-production-release.yml", ".headBranch", '= "main"', "TARGET_FOUNDATION_SHA",
+    "RELEASE_RUN_ID", "gh run view", "workflowName", "headSha", "conclusion",
+    "select(.name == \"Canonical Heroic AI production release\")",
+    "select(.name == \"Run canonical production release\")",
+    "timeout-minutes: 5", "short reconciliation", "seq 1 12",
+    "name: Nightly research CrossFire (24-program global scheduler)",
+    '--crossfire --global-capacity "$RESEARCH_MAX_CONCURRENCY"',
+  ]) assert.ok(text.includes(token), token);
+  assert.equal(text.includes("workflow_run:"), false);
+  assert.equal(text.includes("seq 1 240"), false);
+});
+
+test("production release explicitly requests live nightly mode", () => {
+  const release = fs.readFileSync(path.join(ROOT, ".github/workflows/heroic-ai-production-release.yml"), "utf8");
+  for (const token of [
+    "Preflight exact nightly runtime before research dispatch",
+    "--field dry_run=false",
+    '--field target_sha="$GITHUB_SHA"',
+    '--field production_release_run_id="$GITHUB_RUN_ID"',
+    "gh workflow run nightly-multi-agent-research-v3.yml",
+  ]) assert.ok(release.includes(token), token);
+  assert.equal(release.includes("dry_run:false"), false);
+});
+
+test("private Operations pin and permissions remain explicit", () => {
+  const text = fs.readFileSync(path.join(ROOT, ".github/workflows/nightly-multi-agent-research-v3.yml"), "utf8");
+  const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, "docs/OPERATIONS_PIN_MANIFEST.json"), "utf8"));
+  const researchPin = manifest.pins.research_runtime.sha;
+  for (const token of [
+    "OPERATIONS_RESEARCH_REF:", researchPin,
+    "private.multi_agent.runner",
+    "OPERATIONS_APP_ID: " + "$" + "{{ secrets.OPERATIONS_APP_ID }}",
+    "OPERATIONS_APP_PRIVATE_KEY: " + "$" + "{{ secrets.OPERATIONS_APP_PRIVATE_KEY }}",
+  ]) assert.ok(text.includes(token), token);
+  assert.equal(text.includes("OPERATIONS_READ_TOKEN"), false);
+  const top = text.split("jobs:", 1)[0];
+  assert.equal(top.includes("id-token: write"), false);
+  assert.equal(top.includes("attestations: write"), false);
+});
+
+test("nightly structured contract, coverage and acceptance gates remain present", () => {
+  const text = fs.readFileSync(path.join(ROOT, ".github/workflows/nightly-multi-agent-research-v3.yml"), "utf8");
+  for (const token of [
+    "nightly-research-contract/v2", "fromjson", 'has("findings")',
+    'has("follow_up_questions")', 'has("note")', "max_tokens:96",
+    "nightly-research-coverage/v1", "expected_program_count", "missing_program_ids",
+    "unexpected_program_ids", "duplicate_program_ids",
+    "nightly-research-acceptance-requirements/v1", "'foundation_58'", "'foundation_157'",
+    "'operations_597'", "'operations_603'", "pending_external_runtime",
+    "'cases'", "'repeats_min'", "shadow", "canary", "rollback",
+  ]) assert.ok(text.includes(token), token);
+});
+
+test("Node proxy preserves bounded recovery and request proof requirements", () => {
+  const proxy = fs.readFileSync(path.join(ROOT, "scripts/research_worker_proxy.mjs"), "utf8");
+  for (const token of [
+    "MAX_UPSTREAM_ATTEMPTS = 3", "RETRYABLE_UPSTREAM_STATUS",
+    "retry-after", "bounded_3_attempts", '"X-Heroic-Research-Proof: 1"',
+    "MAX_BODY_BYTES", "MAX_QUEUE_WAIT_SECONDS", "require_model_generation: true",
+  ]) assert.ok(proxy.includes(token), token);
+  assert.equal(proxy.includes('"research_agent": true'), false);
+});
+
+test("Node probe enforces model-generated structured output", () => {
+  const payload = {
+    ok: true,
+    response: {
+      response_id: "probe",
+      provider: "cloudflare_workers_ai",
+      generation_status: "model_generated",
+      text: JSON.stringify({ findings: [], follow_up_questions: [], note: "probe" }),
+    },
+  };
+  const [ok] = validateChatResponse(payload, "@cf/zai-org/glm-4.7-flash");
+  assert.equal(ok, true);
+  const fallback = {
+    ok: true,
+    response: {
+      response_id: "probe",
+      generation_status: "deterministic_fallback",
+      text: JSON.stringify({ findings: [], follow_up_questions: [], note: "fallback" }),
+    },
+  };
+  const [fallbackOk] = validateChatResponse(fallback, "@cf/zai-org/glm-4.7-flash");
+  assert.equal(fallbackOk, false);
+});
