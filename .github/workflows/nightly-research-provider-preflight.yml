@@ -81,11 +81,23 @@ jobs:
 
       - name: Publish preflight receipt
         if: always()
-        shell: bash
+        shell: python
         run: |
-          set -euo pipefail
-          cp preflight-probe.json preflight.json 2>/dev/null || printf "%s\n" '{"ok":false,"classification":"probe_not_created"}' > preflight.json
-          cat preflight.json
+          import json
+          from pathlib import Path
+          source=Path("preflight-probe.json")
+          parsed=[]
+          if source.exists():
+              for line in source.read_text(encoding="utf-8").splitlines():
+                  if not line.strip(): continue
+                  try: value=json.loads(line)
+                  except json.JSONDecodeError: continue
+                  if isinstance(value,dict): parsed.append(value)
+          probe=parsed[-1] if parsed else {"schema":"nightly-runtime-contract-probe/v2","ok":False,"classification":"probe_not_created"}
+          receipt={"schema":"nightly-preflight-receipt/v1","ok":probe.get("ok") is True,"probe":probe}
+          if len(parsed)>1: receipt["legacy_diagnostics"]=parsed[:-1]
+          Path("preflight.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(receipt,indent=2,sort_keys=True))
 
       - name: Comment preflight receipt
         if: always()
