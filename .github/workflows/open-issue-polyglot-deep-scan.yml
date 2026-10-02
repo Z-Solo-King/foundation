@@ -83,92 +83,77 @@ jobs:
           ref: ${{ github.sha }}
           path: foundation
 
-      - name: Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          python-version: "3.14"
+          node-version: "22"
+          package-manager-cache: false
 
       - name: Validate scan matrix contract
         id: validate-scan-contract
         working-directory: operations
-        run: |
-          python - <<'PY'
-          from tests.test_open_issue_polyglot_scan import (
-              test_open_issue_matrix_covers_all_issues_and_four_lanes,
-              test_open_issue_scan_methods_are_broader_than_language_only_checks,
-              test_all_open_issue_policies_have_lane_coverage_and_requirements,
-              test_open_issue_surface_map_matches_scan_contract,
-          )
-          test_open_issue_matrix_covers_all_issues_and_four_lanes()
-          test_open_issue_scan_methods_are_broader_than_language_only_checks()
-          test_all_open_issue_policies_have_lane_coverage_and_requirements()
-          test_open_issue_surface_map_matches_scan_contract()
-          print("scan matrix contract: PASS")
-          PY
-
+        run: node --test tests/test_open_issue_polyglot_scan.mjs
       # Cross-repo source coverage includes Foundation-owned acceptance validators when an issue spans the family.
       - name: Run lane ${{ matrix.lane }}
         id: run-lane
         working-directory: operations
         run: |
           mkdir -p .runtime/open-issue-deep-scan
-          python tools/open_issue_polyglot_scan.py             --foundation "$GITHUB_WORKSPACE/foundation"             --operations "$GITHUB_WORKSPACE/operations"             --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_52.json"             --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json"             --lane "${{ matrix.lane }}"             --output ".runtime/open-issue-deep-scan/${{ matrix.lane }}.json"
+          node tools/open_issue_polyglot_scan.mjs             --foundation "$GITHUB_WORKSPACE/foundation"             --operations "$GITHUB_WORKSPACE/operations"             --matrix "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_matrix_52.json"             --surface-map "$GITHUB_WORKSPACE/operations/benchmark/polyglot/open_issue_surface_map.json"             --lane "${{ matrix.lane }}"             --output ".runtime/open-issue-deep-scan/${{ matrix.lane }}.json"
 
       - name: Add provenance
         working-directory: operations
+        env:
+          LANE: ${{ matrix.lane }}
+          FOUNDATION_REVISION: ${{ github.sha }}
         run: |
-          python - <<'PY'
-          import json
-          import os
-          import subprocess
-          import re
-          from pathlib import Path
-
-          lane = "${{ matrix.lane }}"
-          workspace = Path(os.environ["GITHUB_WORKSPACE"])
-          operations_root = workspace / "operations"
-          path = Path(".runtime/open-issue-deep-scan") / f"{lane}.json"
-          payload = json.loads(path.read_text())
-          payload["foundation_revision"] = os.environ["GITHUB_SHA"]
-          payload["operations_revision"] = subprocess.check_output(
-              ["git", "-C", str(operations_root), "rev-parse", "HEAD"], text=True
-          ).strip()
-          if not re.fullmatch(r"[0-9a-f]{40}", payload["operations_revision"]):
-              raise SystemExit("Operations provenance is not an immutable SHA")
-          path.write_text(json.dumps(payload, indent=2) + "\n")
-          PY
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          import { execFileSync } from "node:child_process";
+          const lane = process.env.LANE;
+          const receiptPath = ".runtime/open-issue-deep-scan/" + lane + ".json";
+          const payload = JSON.parse(fs.readFileSync(receiptPath, "utf8"));
+          const operationsRevision = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+          if (!/^[0-9a-f]{40}$/.test(operationsRevision)) throw new Error("Operations provenance is not an immutable SHA");
+          payload.foundation_revision = process.env.FOUNDATION_REVISION;
+          payload.operations_revision = operationsRevision;
+          fs.writeFileSync(receiptPath, JSON.stringify(payload, null, 2) + "\\n");
+          NODE
 
       - name: Emit sanitized lane summary
         if: always()
         working-directory: operations
-        shell: bash
         env:
+          LANE: ${{ matrix.lane }}
           VALIDATE_OUTCOME: ${{ steps.validate-scan-contract.outcome }}
           RUN_OUTCOME: ${{ steps.run-lane.outcome }}
         run: |
           set +e
-          python - <<'PY'
-          import json, os
-          from pathlib import Path
-          lane = "${{ matrix.lane }}"
-          receipt = Path('.runtime/open-issue-deep-scan') / f'{lane}.json'
-          payload = {
-              'schema': 'open-issue-deep-scan/summary/v1',
-              'lane': lane,
-              'validate_outcome': os.environ.get('VALIDATE_OUTCOME'),
-              'run_outcome': os.environ.get('RUN_OUTCOME'),
-              'receipt_present': receipt.exists(),
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          const lane = process.env.LANE;
+          const receipt = ".runtime/open-issue-deep-scan/" + lane + ".json";
+          const payload = {
+            schema: "open-issue-deep-scan/summary/v1",
+            lane,
+            validate_outcome: process.env.VALIDATE_OUTCOME,
+            run_outcome: process.env.RUN_OUTCOME,
+            receipt_present: fs.existsSync(receipt),
+          };
+          if (payload.receipt_present) {
+            try {
+              const r = JSON.parse(fs.readFileSync(receipt, "utf8"));
+              for (const key of ["case_count","expected_case_count","issue_count","failed_cases","review_cases","missing_cases","operations_revision"]) payload[key] = r[key];
+            } catch {
+              payload.receipt_parse_error = true;
+            }
           }
-          if receipt.exists():
-              try:
-                  r = json.loads(receipt.read_text(encoding='utf-8'))
-                  for key in ('case_count','expected_case_count','issue_count','failed_cases','review_cases','missing_cases','operations_revision'):
-                      payload[key] = r.get(key)
-              except Exception:
-                  payload['receipt_parse_error'] = True
-          Path('.runtime/open-issue-deep-scan').joinpath(f'{lane}-summary.json').write_text(json.dumps(payload, indent=2, sort_keys=True)+'\n', encoding='utf-8')
-          print(json.dumps(payload, sort_keys=True))
-          PY
+          fs.mkdirSync(".runtime/open-issue-deep-scan", { recursive: true });
+          fs.writeFileSync(".runtime/open-issue-deep-scan/" + lane + "-summary.json", JSON.stringify(payload, null, 2) + "\\n");
+          console.log(JSON.stringify(payload));
+          NODE
+
       - name: Upload sanitized lane summary
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -211,85 +196,74 @@ jobs:
           path: .runtime/open-issue-deep-scan
           merge-multiple: true
 
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          package-manager-cache: false
+
       - name: Validate complete four-lane coverage
-        shell: python
         env:
           EXPECTED_OPERATIONS_SHA: ${{ needs.snapshot.outputs.operations_sha }}
         run: |
-          import json
-          import os
-          import re
-          from pathlib import Path
-
-          root = Path(".runtime/open-issue-deep-scan")
-          receipts = [json.loads(path.read_text()) for path in sorted(root.glob("L?.json"))]
-          assert len(receipts) == 4
-          assert {r["lane"] for r in receipts} == {"L1", "L2", "L3", "L4"}
-
-          expected_ops = os.environ["EXPECTED_OPERATIONS_SHA"]
-          assert re.fullmatch(r"[0-9a-f]{40}", expected_ops)
-          assert {r["operations_revision"] for r in receipts} == {expected_ops}
-
-          matrix = json.loads(Path("operations/benchmark/polyglot/open_issue_matrix_52.json").read_text(encoding="utf-8"))
-          active_pairs_expected = {
-              (case["issue"], case["lane"])
-              for case in matrix["cases"]
-              if case.get("active", True)
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          import path from "node:path";
+          const root = ".runtime/open-issue-deep-scan";
+          const receipts = fs.readdirSync(root).filter(name => /^L[1-4]\\.json$/.test(name)).sort().map(name => JSON.parse(fs.readFileSync(path.join(root, name), "utf8")));
+          if (receipts.length !== 4) throw new Error("expected exactly four lane receipts");
+          if (new Set(receipts.map(r => r.lane)).size !== 4) throw new Error("lane identifiers are not unique");
+          const expectedOps = process.env.EXPECTED_OPERATIONS_SHA;
+          if (!/^[0-9a-f]{40}$/.test(expectedOps)) throw new Error("expected Operations SHA is not immutable");
+          if (new Set(receipts.map(r => r.operations_revision)).size !== 1 || receipts[0].operations_revision !== expectedOps) throw new Error("lane receipts do not share the frozen Operations revision");
+          const matrix = JSON.parse(fs.readFileSync("operations/benchmark/polyglot/open_issue_matrix_52.json", "utf8"));
+          const activePairsExpected = new Set(matrix.cases.filter(c => c.active !== false).map(c => c.issue + "|" + c.lane));
+          const activeIssues = new Set([...activePairsExpected].map(x => x.split("|")[0]));
+          const historicalIssues = new Set(["foundation#1264","foundation#1267","foundation#1281","operations#197"]);
+          const activeObserved = new Set();
+          const historicalObserved = new Set();
+          for (const receipt of receipts) {
+            const lane = receipt.lane;
+            const expectedLane = new Set([...activePairsExpected].filter(key => key.endsWith("|" + lane)));
+            const observedActive = new Set(receipt.results.filter(r => activeIssues.has(r.issue)).map(r => r.issue + "|" + r.lane));
+            const observedHistorical = new Set(receipt.results.filter(r => historicalIssues.has(r.issue)).map(r => r.issue + "|" + r.lane));
+            if (JSON.stringify([...observedActive].sort()) !== JSON.stringify([...expectedLane].sort())) throw new Error("active issue/lane mismatch in " + lane);
+            const expectedHistorical = new Set([...historicalIssues].map(issue => issue + "|" + lane));
+            if (JSON.stringify([...observedHistorical].sort()) !== JSON.stringify([...expectedHistorical].sort())) throw new Error("historical issue/lane mismatch in " + lane);
+            if (Number(receipt.active_case_count) !== expectedLane.size) throw new Error("active case count mismatch in " + lane);
+            if (Number(receipt.expected_active_case_count) !== Number(matrix.active_case_count)) throw new Error("active matrix count mismatch in " + lane);
+            if (Number(receipt.case_count) !== expectedLane.size + historicalIssues.size) throw new Error("case count mismatch in " + lane);
+            if (Number(receipt.expected_case_count) !== Number(receipt.case_count)) throw new Error("expected case count mismatch in " + lane);
+            if (Number(receipt.historical_issue_count) !== historicalIssues.size) throw new Error("historical issue count mismatch in " + lane);
+            if ((receipt.missing_cases || []).length) throw new Error("missing cases in " + lane);
+            if (Number(receipt.failed_cases) !== 0) throw new Error("failed cases in " + lane);
+            if (receipt.results.some(r => r.status === "FAIL")) throw new Error("FAIL result present in " + lane);
+            for (const key of observedActive) activeObserved.add(key);
+            for (const key of observedHistorical) historicalObserved.add(key);
           }
-          active_matrix_issues = {issue for issue, _ in active_pairs_expected}
-          historical_issues = {"foundation#1264", "foundation#1267", "foundation#1281", "operations#197"}
-
-          active_pairs_observed = set()
-          historical_pairs = set()
-          for receipt in receipts:
-              lane = receipt["lane"]
-              expected_lane_pairs = {pair for pair in active_pairs_expected if pair[1] == lane}
-              observed_active = {
-                  (result["issue"], result["lane"])
-                  for result in receipt["results"]
-                  if result["issue"] in active_matrix_issues
-              }
-              observed_historical = {
-                  (result["issue"], result["lane"])
-                  for result in receipt["results"]
-                  if result["issue"] in historical_issues
-              }
-              assert observed_active == expected_lane_pairs
-              assert observed_historical == {(issue, lane) for issue in historical_issues}
-              assert int(receipt["active_case_count"]) == len(expected_lane_pairs)
-              assert int(receipt["expected_active_case_count"]) == int(matrix["active_case_count"])
-              assert int(receipt["case_count"]) == len(expected_lane_pairs) + len(historical_issues)
-              assert int(receipt["expected_case_count"]) == int(receipt["case_count"])
-              assert int(receipt["historical_issue_count"]) == len(historical_issues)
-              assert receipt["missing_cases"] == []
-              assert int(receipt["failed_cases"]) == 0
-              assert all(result["status"] != "FAIL" for result in receipt["results"])
-              active_pairs_observed |= observed_active
-              historical_pairs |= observed_historical
-
-          assert active_pairs_observed == active_pairs_expected
-          assert historical_pairs == {(issue, lane) for issue in historical_issues for lane in ("L1", "L2", "L3", "L4")}
-          assert len(active_pairs_observed) == int(matrix["active_case_count"])
-          assert len(historical_pairs) == 16
-
-          aggregate = {
-              "schema": "open-issue-polyglot-deep-scan/v3",
-              "lane_count": 4,
-              "matrix_issue_count": int(matrix["issue_count"]),
-              "active_issue_count": int(matrix["active_issue_count"]),
-              "matrix_case_count": int(matrix["case_count"]),
-              "active_case_count": int(matrix["active_case_count"]),
-              "historical_regression_issue_count": len(historical_issues),
-              "executed_active_case_count": len(active_pairs_observed),
-              "executed_historical_case_count": len(historical_pairs),
-              "executed_case_count": len(active_pairs_observed) + len(historical_pairs),
-              "status": "PASS",
-              "foundation_revisions": sorted({r["foundation_revision"] for r in receipts}),
-              "operations_revisions": sorted({r["operations_revision"] for r in receipts}),
-              "review_cases": sum(r["review_cases"] for r in receipts),
-          }
-          Path(".runtime/open-issue-deep-scan/aggregate.json").write_text(json.dumps(aggregate, indent=2) + "\n", encoding="utf-8")
-          print(json.dumps(aggregate, indent=2))
+          const fullHistorical = new Set([...historicalIssues].flatMap(issue => ["L1","L2","L3","L4"].map(lane => issue + "|" + lane)));
+          if (JSON.stringify([...activeObserved].sort()) !== JSON.stringify([...activePairsExpected].sort())) throw new Error("active coverage is incomplete");
+          if (JSON.stringify([...historicalObserved].sort()) !== JSON.stringify([...fullHistorical].sort())) throw new Error("historical coverage is incomplete");
+          const aggregate = {
+            schema: "open-issue-polyglot-deep-scan/v3",
+            lane_count: 4,
+            matrix_issue_count: Number(matrix.issue_count),
+            active_issue_count: Number(matrix.active_issue_count),
+            matrix_case_count: Number(matrix.case_count),
+            active_case_count: Number(matrix.active_case_count),
+            historical_regression_issue_count: historicalIssues.size,
+            executed_active_case_count: activeObserved.size,
+            executed_historical_case_count: historicalObserved.size,
+            executed_case_count: activeObserved.size + historicalObserved.size,
+            status: "PASS",
+            foundation_revisions: [...new Set(receipts.map(r => r.foundation_revision))].sort(),
+            operations_revisions: [...new Set(receipts.map(r => r.operations_revision))].sort(),
+            review_cases: receipts.reduce((sum, r) => sum + Number(r.review_cases || 0), 0),
+          };
+          fs.writeFileSync(path.join(root, "aggregate.json"), JSON.stringify(aggregate, null, 2) + "\\n");
+          console.log(JSON.stringify(aggregate, null, 2));
+          NODE
 
       - name: Upload aggregate receipt
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
