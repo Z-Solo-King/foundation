@@ -614,7 +614,7 @@
     "canonical_supervisor": "tools/autonomous_engineering_supervisor.mjs",
     "observation": "tools/comprehensive_governance_scan.py",
     "publication": "tools/publish_governance_findings.py",
-    "schedule": ".github/workflows/twice-daily-autonomous-governance-sweep.yml",
+    "schedule": ".github/workflows/twice-daily-governance-sweep.yml",
     "lanes": [
       "structure_hygiene",
       "migration_boundary",
@@ -625,6 +625,7 @@
       "quality_learning_evolution",
       "performance_resources"
     ],
-    "authority_rule": "scan is descriptive; existing component/policy/evidence/promotion/release authorities remain canonical"
+    "authority_rule": "scan is descriptive; existing component/policy/evidence/promotion/release authorities remain canonical",
+    "canonical_workflow": ".github/workflows/twice-daily-governance-sweep.yml"
   }
 }
