@@ -39,7 +39,7 @@ jobs:
           code="$(curl -sS --max-time 20 -o /tmp/chat.body -w '%{http_code}' -H 'Content-Type: application/json' -d '{"chat_id":"public-probe","request_id":"public-probe","message":"ping","mode":"chat","strict_zero_cost_only":true}' "$base/api/v1/chat" || true)"
           echo "CHAT_HTTP=$code"
           test "$code" != "000"
-      - name: Browser-load and guest lifecycle test
+      - name: Browser-load diagnostic
         shell: bash
         run: |
           set -euo pipefail
@@ -51,29 +51,30 @@ jobs:
           (async () => {
             const browser = await chromium.launch({headless:true});
             const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-            const consoleErrors = [];
-            const pageErrors = [];
-            page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
-            page.on('pageerror', err => pageErrors.push(String(err)));
-            const response = await page.goto('https://heroic-ai.pages.dev/?browser_probe=1', { waitUntil: 'domcontentloaded', timeout: 30000 });
-            await page.waitForTimeout(2000);
-            const title = await page.title();
-            const connection = await page.locator('#connection-pill').innerText();
-            const promptVisible = await page.locator('#prompt').isVisible();
-            const sendVisible = await page.locator('[data-action="send"]').isVisible();
-            if (!response || response.status() !== 200) throw new Error('root HTTP status was not 200');
-            if (title !== 'Heroic AI — Chat & Research') throw new Error('unexpected title: ' + title);
-            if (!promptVisible || !sendVisible) throw new Error('composer did not initialize');
-            if (pageErrors.length || consoleErrors.length) throw new Error(JSON.stringify({pageErrors, consoleErrors}));
-            const guest = page.locator('.guest-test-button');
-            await guest.click();
-            if ((await guest.innerText()) !== 'Exit guest test mode') throw new Error('guest mode did not activate');
-            await page.locator('#prompt').fill('browser lifecycle probe');
-            await page.locator('[data-action="send"]').click();
-            await page.waitForTimeout(500);
-            const conversation = await page.locator('#conversation-scroll').innerText();
-            if (!conversation.includes('Guest test mode is active.')) throw new Error('guest chat lifecycle did not render');
-            console.log(JSON.stringify({browser_load:'PASS', title, connection, guest_lifecycle:'PASS', response_status:response.status()}));
+            const events = [];
+            page.on('request', r => { if (/\.js(?:\?|$)|\.css(?:\?|$)|\/$/.test(r.url())) events.push({type:'request',url:r.url()}); });
+            page.on('requestfinished', r => { if (/\.js(?:\?|$)|\.css(?:\?|$)|\/$/.test(r.url())) events.push({type:'finished',url:r.url()}); });
+            page.on('requestfailed', r => { if (/\.js(?:\?|$)|\.css(?:\?|$)|\/$/.test(r.url())) events.push({type:'failed',url:r.url(),error:r.failure()?.errorText}); });
+            page.on('console', msg => { if (msg.type() === 'error') events.push({type:'console_error',text:msg.text()}); });
+            page.on('pageerror', err => events.push({type:'pageerror',text:String(err)}));
+            const response = await page.goto('https://heroic-ai.pages.dev/?browser_probe=diagnostic', { waitUntil: 'commit', timeout: 30000 });
+            await page.waitForTimeout(5000);
+            let state = 'evaluate_timeout';
+            let details = null;
+            try {
+              details = await page.evaluate(() => ({
+                readyState: document.readyState,
+                title: document.title,
+                prompt: Boolean(document.querySelector('#prompt')),
+                appShell: Boolean(document.querySelector('.app-shell')),
+                appState: window.RIEFrontend?.state || null,
+              }), { timeout: 5000 });
+              state = 'evaluate_ok';
+            } catch (err) {
+              details = {error:String(err)};
+            }
+            console.log(JSON.stringify({status: state, http_status: response?.status(), details, events}, null, 2));
             await browser.close();
+            if (state !== 'evaluate_ok') process.exit(1);
           })().catch(err => { console.error(err); process.exit(1); });
           NODE
