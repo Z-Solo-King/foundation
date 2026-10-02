@@ -239,3 +239,8 @@ Formatting policy is deliberately ratcheted. Existing historical debt is reporte
 ## Release-publication boundary — 2026-10-02
 
 Foundation feed-recovery workflows are artifact-only. Feed workflows do not receive repository write permission; the separate governance workflow has only the narrow permission required to remove the specifically prohibited `wc-google-feed-latest` release/tag if recreated.
+
+
+## 2026-10-02 Migration Factory CrossFire
+
+The six-lane Migration Factory CrossFire workflow is an unprivileged read-only CI capability. It inventories Python across Foundation and an immutable Operations revision, produces independent runtime/dependency/tooling/test/language/retirement observations, and aggregates them without changing production authority. Migration promotion still requires the existing evidence and authority-transfer gates.
