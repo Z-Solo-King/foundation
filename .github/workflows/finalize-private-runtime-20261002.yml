@@ -16,263 +16,64 @@ concurrency:
 jobs:
   finalize:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
-      - name: Checkout Foundation
+      - name: Checkout Foundation migration branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: migration/move-private-work-into-operations-20261002
           fetch-depth: 1
 
-      - name: Mint Operations write token
-        id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796da409d3eb1
-        with:
-          client-id: ${{ secrets.OPERATIONS_APP_ID }}
-          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
-          owner: Z-Solo-King
-          repositories: operations
-          permission-contents: write
-
-      - name: Checkout Operations migration branch
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: Z-Solo-King/operations
-          ref: migration/foundation-private-surface-20261002
-          token: ${{ steps.operations-app.outputs.token }}
-          path: operations
-          fetch-depth: 1
-          persist-credentials: false
-
-      - name: Transfer remaining private benchmark implementation
+      - name: Remove private runtime from public tree
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p operations/benchmark
-          for f in benchmark/release_quality_gate.py benchmark/vector_scorecard.py benchmark/performance_workloads.py; do
-            test -f "$f" && cp "$f" "operations/$f"
-          done
-          test -f operations/benchmark/release_quality_gate.py
-          test -f operations/benchmark/performance_workloads.py
+          rm -rf backend
+          rm -f worker.py wrangler.python-core.toml
+          find tests -type f \( -name '*.py' -o -name '*.mjs' \) -print0 |
+            while IFS= read -r -d '' f; do
+              if grep -qE '(^|[[:space:]])(from|import)[[:space:]]+backend([.]|[[:space:]]|$)|(^|[[:space:]])import[[:space:]]+worker([[:space:]]|$)' "$f"; then
+                rm -f "$f"
+              fi
+            done
+          find tests -type d -empty -delete 2>/dev/null || true
 
-      - name: Rewrite Foundation public/private ownership boundary
+      - name: Remove migration trigger artifacts
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          import json
-          import shutil
-          from pathlib import Path
-
-          # Production release now consumes the private Python core from Operations.
-          p = Path('scripts/production_release.sh')
-          text = p.read_text(encoding='utf-8')
-          text = text.replace(
-              'python -m compileall -q backend foundation_core worker.py',
-              'python -m compileall -q foundation_core',
-          )
-          text = text.replace(
-              "coverage run --branch --source=backend,foundation_core,worker --omit='tests/*' -m pytest tests/ -v",
-              "coverage run --branch --source=foundation_core --omit='tests/*' -m pytest tests/ -v",
-          )
-          old = 'pywrangler deploy --secrets-file "$public_secret_file" --message "github:${GITHUB_SHA}:python-core"'
-          new = '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.foundation-core.toml --secrets-file "$public_secret_file" --message "github:${OPERATIONS_REF}:python-core")'
-          if old in text:
-              text = text.replace(old, new)
-          elif 'wrangler.foundation-core.toml' not in text:
-              raise SystemExit('private heroic-core deployment command missing from production_release.sh')
-          anchor = 'python "$RUNNER_TEMP/operations/scripts/sync_public_core.py"\ntest -f "$RUNNER_TEMP/operations/foundation_core/__init__.py"'
-          if anchor in text and 'foundation_frontend' not in text:
-              text = text.replace(anchor, anchor + '''
-          rm -rf "$RUNNER_TEMP/operations/foundation_frontend"
-          cp -a "$GITHUB_WORKSPACE/frontend" "$RUNNER_TEMP/operations/foundation_frontend"
-          python - "$RUNNER_TEMP/operations/wrangler.foundation-core.toml" "$database_name" "$database_id" "$B2_BUCKET" "$B2_ENDPOINT" <<'PY2'
-          from pathlib import Path
-          import sys
-          p = Path(sys.argv[1])
-          t = p.read_text(encoding='utf-8')
-          for old, new in {
-              'REPLACE_WITH_OPERATIONS_RESOLVED_DATABASE_NAME': sys.argv[2],
-              'REPLACE_WITH_OPERATIONS_RESOLVED_DATABASE_ID': sys.argv[3],
-              'REPLACE_WITH_B2_BUCKET': sys.argv[4],
-              'REPLACE_WITH_B2_ENDPOINT': sys.argv[5],
-          }.items():
-              t = t.replace(old, new)
-          p.write_text(t, encoding='utf-8')
-          PY2
-          test -f "$RUNNER_TEMP/operations/foundation_worker.py"
-          test -f "$RUNNER_TEMP/operations/backend/api/main.py"
-          test -f "$RUNNER_TEMP/operations/foundation_frontend/index.html"
-          ''')
-          p.write_text(text, encoding='utf-8')
-
-          # Public CI compiles/tests only the intentionally public Foundation surface.
-          p = Path('.github/workflows/required-pr-checks.yml')
-          text = p.read_text(encoding='utf-8')
-          text = text.replace(
-              'python -m compileall -q backend foundation_core worker.py',
-              'python -m compileall -q foundation_core',
-          )
-          text = text.replace(
-              "coverage run --branch --source=backend,foundation_core,worker --omit='tests/*' -m pytest tests/ -v",
-              "coverage run --branch --source=foundation_core --omit='tests/*' -m pytest tests/ -v",
-          )
-          text = text.replace(
-              'foundation_core backend worker.py wrangler.toml migrations',
-              'foundation_core edge.ts wrangler.toml migrations',
-          )
-          p.write_text(text, encoding='utf-8')
-
-          # Move private performance regression implementation to Operations access.
-          p = Path('.github/workflows/release-quality-regression.yml')
-          text = p.read_text(encoding='utf-8')
-          if 'id: operations-app' not in text:
-              marker = '      - name: Setup Python\n'
-              block = '''      - name: Create read-only Operations token
-        id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796da409d3eb1
-        with:
-          client-id: ${{ secrets.OPERATIONS_APP_ID }}
-          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
-          owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: Z-Solo-King/operations
-          ref: main
-          token: ${{ steps.operations-app.outputs.token }}
-          path: operations
-          fetch-depth: 1
-          persist-credentials: false
-
-'''
-              if marker not in text:
-                  raise SystemExit('release-quality workflow setup marker missing')
-              text = text.replace(marker, block + marker, 1)
-          text = text.replace(
-              "      - name: Install test runner\n        run: python -m pip install --disable-pip-version-check pytest\n\n      - name: Run deterministic release-quality and performance contracts\n        run: |\n          python -m pytest -q             tests/test_release_quality_gate.py             tests/test_performance_metrics.py             tests/test_performance_report.py             tests/test_performance_workloads.py\n\n      - name: Emit reproducible performance workload report\n        run: |\n          python -m benchmark.performance_workloads",
-              "      - name: Install test runner\n        working-directory: operations\n        run: python -m pip install --disable-pip-version-check pytest\n\n      - name: Run deterministic release-quality and performance contracts\n        working-directory: operations\n        run: |\n          python -m pytest -q tests/test_release_quality_gate.py tests/test_performance_metrics.py tests/test_performance_report.py tests/test_performance_workloads.py\n\n      - name: Emit reproducible performance workload report\n        working-directory: operations\n        run: |\n          python -m benchmark.performance_workloads"
-          )
-          p.write_text(text, encoding='utf-8')
-
-          # Update machine-readable ownership map.
-          p = Path('REPOSITORY_MAP.json')
-          mapping = json.loads(p.read_text(encoding='utf-8'))
-          c = mapping.setdefault('canonical', {})
-          c['public_worker_boundary'] = 'edge.ts'
-          c['python_application_core'] = 'Z-Solo-King/operations:foundation_worker.py'
-          c['python_runtime_backend'] = 'Z-Solo-King/operations:backend/'
-          c['python_core_worker_config'] = 'Z-Solo-King/operations:wrangler.foundation-core.toml'
-          c['execution'] = 'Z-Solo-King/operations:backend/execution/'
-          c['research_pipeline'] = 'Z-Solo-King/operations:backend/execution/pipeline.py'
-          for stale in ('public_chat_contract_module', 'public_research_api', 'request_model'):
-              c.pop(stale, None)
-          mapping['canonical'] = c
-          mapping.setdefault('boundary', {})['foundation_runtime_external'] = 'Z-Solo-King/operations'
-          mapping.setdefault('maintenance', {})['private_runtime_checkout'] = 'Foundation GitHub App short-lived installation token'
-          p.write_text(json.dumps(mapping, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
-
-          # Update public workflow-policy expectations.
-          p = Path('tests/test_workflow_policy.py')
-          text = p.read_text(encoding='utf-8')
-          text = text.replace(
-              "    assert 'python -m compileall -q backend foundation_core worker.py' in deployment\n",
-              "    assert 'python -m compileall -q foundation_core' in deployment\n",
-          )
-          text = text.replace(
-              '    core = (ROOT / "wrangler.python-core.toml").read_text(encoding="utf-8")\n    assert \'main = "worker.py"\' in core\n    assert "python_workers" in core\n',
-              "    assert 'wrangler.foundation-core.toml' in deployment\n    assert 'foundation_worker.py' in deployment\n",
-          )
-          text = text.replace(
-              '    worker = (ROOT / "worker.py").read_text(encoding="utf-8")\n    assert \'getattr(self.env, "ASSETS", None)\' in worker\n    assert "response = await assets.fetch(request)" in worker\n    assert "Content-Security-Policy" in worker\n    assert \'X-Frame-Options"] = "DENY"\' in worker\n',
-              "    assert 'binding = \"CORE\"' in wrangler\n    assert 'foundation_frontend' in deployment\n",
-          )
-          text = text.replace('    assert \'binding = "ASSETS"\' in deployment\n', "    assert 'foundation_frontend' in deployment\n")
-          p.write_text(text, encoding='utf-8')
-
-          # Delete the private runtime from the public tree only after the private copy exists.
-          for rel in ('backend', 'worker.py', 'wrangler.python-core.toml'):
-              target = Path(rel)
-              if target.is_dir():
-                  shutil.rmtree(target)
-              elif target.exists():
-                  target.unlink()
-          src = Path('tests')
-          for path in list(src.rglob('*')):
-              if not path.is_file() or path.suffix not in {'.py', '.mjs'}:
-                  continue
-              try:
-                  t = path.read_text(encoding='utf-8')
-              except Exception:
-                  continue
-              if 'import backend' in t or 'from backend' in t or 'import worker' in t:
-                  path.unlink()
-          for d in sorted((x for x in src.rglob('*') if x.is_dir()), reverse=True):
-              try: d.rmdir()
-              except OSError: pass
-
-          Path('docs/PRIVATE_RUNTIME_BOUNDARY_2026-10-02.md').write_text('''# Private runtime boundary
-
-Foundation remains the public GitHub Actions and public contract/application repository.
-
-The executable Python heroic-core runtime is owned by private Operations. Foundation Actions use a short-lived scoped GitHub App token, pin an immutable Operations revision, checkout the private source, stage the public frontend, and deploy heroic-core from Operations.
-
-Retained in Foundation:
-- edge.ts
-- foundation_core/
-- frontend/
-- public schemas/contracts
-- public-safe documentation
-- GitHub Actions orchestration
-
-Moved to Operations:
-- backend/
-- foundation_worker.py
-- private feed/recovery implementation
-- runtime-dependent tests
-
-Runtime chain:
-Pages -> heroic -> heroic-core -> operations-edge -> operations
-''', encoding='utf-8')
-          print('Foundation private runtime deletion staged')
-          PY
-
-      - name: Validate final repository boundaries
-        shell: bash
-        run: |
-          set -euo pipefail
+          rm -f docs/PRIVATE_RUNTIME_MIGRATION_TRIGGER_2026-10-02.md
+          rm -f docs/PRIVATE_RUNTIME_FINALIZE_TRIGGER_2026-10-02.md
+          rm -f .github/workflows/private-runtime-migration-20261002.yml
+          rm -f .github/workflows/finalize-private-runtime-20261002.yml
           test ! -d backend
           test ! -f worker.py
           test ! -f wrangler.python-core.toml
-          test -f edge.ts
-          test -d foundation_core
-          test -f docs/PRIVATE_RUNTIME_BOUNDARY_2026-10-02.md
-          python -m compileall -q foundation_core
 
-      - name: Commit Operations
-        working-directory: operations
+      - name: Verify public boundary
         shell: bash
         run: |
           set -euo pipefail
-          git add backend foundation_worker.py wrangler.foundation-core.toml benchmark pyproject.toml tests tools
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          if ! git diff --cached --quiet; then
-            git commit -m 'feat: finalize Foundation runtime ownership in private Operations'
-            git push origin HEAD:migration/foundation-private-surface-20261002
+          test -f edge.ts
+          test -d foundation_core
+          test -f REPOSITORY_MAP.json
+          test -f docs/PRIVATE_RUNTIME_BOUNDARY_2026-10-02.md || true
+          python -m compileall -q foundation_core
+          if grep -RniE 'from backend|import backend|(^|[[:space:]/])worker\.py([[:space:]"'\''/]|$)|wrangler\.python-core\.toml' .github/workflows tests docs README.md REPOSITORY_MAP.json 2>/dev/null; then
+            echo "stale public runtime reference detected"
+            exit 1
           fi
 
-      - name: Commit Foundation
+      - name: Commit Foundation cleanup
         shell: bash
         run: |
           set -euo pipefail
           git add -A
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          if ! git diff --cached --quiet; then
-            git commit -m 'refactor: keep Foundation public and move runtime private'
+          if git diff --cached --quiet; then
+            echo 'Foundation boundary already clean'
+          else
+            git commit -m 'refactor: complete public Foundation runtime boundary'
             git push origin HEAD:migration/move-private-work-into-operations-20261002
           fi
