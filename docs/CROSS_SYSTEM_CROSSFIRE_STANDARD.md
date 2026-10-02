@@ -3,23 +3,23 @@
 ## Purpose
 
 The family audit compares Foundation and Operations as one system without collapsing
-their ownership boundaries. The audit model treats `N² x N² = N⁴` as typed
+their ownership boundaries. The audit model treats N² x N² = N⁴ as typed
 Cartesian comparison: policies, feature domains, functions, files, and architecture
 edges are compared independently.
 
 ## Evidence model
 
-`exact` means the compared contract text is identical.
+exact means the compared contract text is identical.
 
-`scope-only` means a responsibility exists in one repository by design and is not
+scope-only means a responsibility exists in one repository by design and is not
 expected in the other.
 
-`overlap` means two surfaces appear related and need authority review; it is not
+overlap means two surfaces appear related and need authority review; it is not
 proof that either implementation is wrong.
 
-`divergent` is a shared contract with conflicting definitions and is a strict gate.
+divergent is a shared contract with conflicting definitions and is a strict gate.
 
-`runtime-unverified` remains the state whenever repository evidence cannot establish
+runtime-unverified remains the state whenever repository evidence cannot establish
 a live Cloudflare/runtime fact.
 
 ## CrossFire lanes
@@ -38,7 +38,7 @@ through the canonical owner.
 
 The provider benchmark permits up to six configured direct providers, with three
 repeats and bounded concurrency. Fewer than two configured direct providers is a valid
-`comparison_unavailable` receipt, not a false comparative result.
+comparison_unavailable receipt, not a false comparative result.
 
 AI output is supporting evidence only. Provider ranking, benchmark scores, or language
 scores cannot transfer policy or correctness authority.
@@ -68,3 +68,7 @@ CrossFire is intentionally fail-closed and evidence-separated:
 6. live Cloudflare verification is performed after deployment, not inferred from source state.
 
 The six-provider target is an execution target, not a requirement to fabricate providers that are unavailable. A strong comparison requires at least five independent provider lanes; otherwise the receipt records the limitation explicitly.
+
+## CI reconciliation rule
+
+Every protected migration commit must be evaluated on its exact PR head after the branch is synchronized with the latest base. Low-level Git ref manipulation is not considered equivalent to a completed CI cycle; the repository's protected PR checks remain the merge authority.
