@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
 """Fail-closed cross-repository cohesion validator."""
 from __future__ import annotations
 
 import argparse
 import ast
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +24,6 @@ def require_text(path: Path, needles: list[str], errors: list[str], label: str) 
     for needle in needles:
         if needle not in text:
             errors.append(f"{label}:missing-anchor:{needle}")
-
 
 
 def require_python_syntax(path: Path, errors: list[str], label: str) -> None:
@@ -48,26 +47,34 @@ def validate_production_pin_consistency(foundation: Path, errors: list[str]) -> 
     except (OSError, json.JSONDecodeError) as exc:
         errors.append(f"production-pin:metadata:{exc}")
         return
-    canonical = (((manifest.get("pins") or {}).get("production_runtime") or {}).get("sha"))
+    canonical = ((manifest.get("pins") or {}).get("production_runtime") or {}).get("sha")
     if not isinstance(canonical, str) or len(canonical) != 40:
         errors.append("production-pin:manifest invalid")
         return
     approved = approval.get("approved_sha")
     observed = approval.get("production_observed_sha")
     synced = (sync.get("runtime_pins") or {}).get("production_operations")
-    status = str((((manifest.get("pins") or {}).get("production_runtime") or {}).get("status")) or "").lower()
+    status = str(
+        (((manifest.get("pins") or {}).get("production_runtime") or {}).get("status"))
+        or ""
+    ).lower()
     candidate = "candidate" in status
 
     if candidate:
         # A promotion PR may stage the next immutable release target while
         # production still runs the currently certified revision. This state
         # must remain explicit and must never be reported as live promotion.
-        if not all(isinstance(value, str) and SHA_RE.fullmatch(value) for value in (approved, observed, synced)):
+        if not all(
+            isinstance(value, str) and SHA_RE.fullmatch(value)
+            for value in (approved, observed, synced)
+        ):
             errors.append("production-pin:live-state metadata invalid")
         elif observed != synced:
             errors.append("production-pin:live-state drift")
         elif approved == canonical:
-            errors.append("production-pin:candidate status contradicts promoted live state")
+            errors.append(
+                "production-pin:candidate status contradicts promoted live state"
+            )
     elif approved != canonical or observed != canonical or synced != canonical:
         errors.append("production-pin:approval drift")
 
@@ -89,7 +96,7 @@ def validate_production_pin_consistency(foundation: Path, errors: list[str]) -> 
             "production-pin:tests/operations_main_guard.test.mjs",
         )
 
-    research = (((manifest.get("pins") or {}).get("research_runtime") or {}).get("sha"))
+    research = ((manifest.get("pins") or {}).get("research_runtime") or {}).get("sha")
     if not isinstance(research, str) or len(research) != 40:
         errors.append("research-pin:manifest invalid")
     else:
@@ -99,6 +106,7 @@ def validate_production_pin_consistency(foundation: Path, errors: list[str]) -> 
             errors,
             "research-pin:.github/workflows/nightly-multi-agent-research-v3.yml",
         )
+
 
 def main() -> int:
     parser = argparse.ArgumentParser()
