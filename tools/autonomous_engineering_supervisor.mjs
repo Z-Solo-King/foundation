@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { IMPROVEMENT_COMPONENTS, MISSION_WORKFLOWS, PROJECT_IMPROVEMENT_MATRIX, validatePlan } from './autonomous_mission_router.mjs';
+import { planVerification, scanFoundation } from './verification_fabric.mjs';
 
 const owner = process.env.GITHUB_REPOSITORY?.split('/')[0];
 const repo = process.env.GITHUB_REPOSITORY?.split('/')[1];
@@ -70,6 +71,20 @@ async function updateIssue(number, patch) {
 
 async function addIssueComment(number, body) {
   return github(`/repos/${owner}/${repo}/issues/${number}/comments`, {method:'POST', body:{body}});
+}
+
+function loadVerificationFabric() {
+  const filename = process.env.VERIFICATION_FABRIC_FILE;
+  if (!filename) return null;
+  try {
+    const raw = fs.readFileSync(filename, 'utf8');
+    if (raw.length > 24000) throw new Error('verification fabric context too large');
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch (error) {
+    console.warn(`verification fabric context unavailable: ${String(error).slice(0,240)}`);
+    return null;
+  }
 }
 
 function loadGovernanceAudit() {
@@ -324,6 +339,7 @@ async function main() {
   }
 
   const governanceAudit = mode === 'governance_sweep' ? loadGovernanceAudit() : null;
+  const verificationFabric = loadVerificationFabric();
   const context = {
     mission:state,
     foundation_sha:foundationSha,
@@ -335,6 +351,21 @@ async function main() {
     workflow_attempts:state.workflow_attempts || {},
     child_runs:childResults.map((r)=>({id:r.id,name:r.name,status:r.status,conclusion:r.conclusion,head_sha:r.head_sha,event:r.event,url:r.html_url})),
     governance_audit: governanceAudit,
+    verification_fabric: verificationFabric ? {
+      summary: verificationFabric.report?.summary || verificationFabric.summary || null,
+      domains: verificationFabric.plan?.domains || [],
+      lanes: (verificationFabric.plan?.lanes || []).map((lane) => lane.id).slice(0, 6),
+      checks: (verificationFabric.plan?.checks || []).map((check) => check.workflow).slice(0, 12),
+      deterministic: true,
+    } : (() => {
+      try {
+        const report = scanFoundation(process.cwd());
+        const plan = planVerification({domains: report.domains, mode: 'supervisor'});
+        return {summary: plan ? {findings: report.findings.length} : null, domains: report.domains, lanes: plan.lanes.map((lane) => lane.id), checks: plan.checks.map((check) => check.workflow), deterministic: true};
+      } catch (error) {
+        return {summary: null, domains: [], lanes: [], checks: [], deterministic: false, unavailable: String(error).slice(0,240)};
+      }
+    })(),
     hard_constraints:{production_release_allowed:false,secrets_or_credentials_mutation:false,policy_changes:false,workflow_inputs:{},max_same_workflow_dispatches:maxWorkflowAttempts,cloudflare_destructive_mutation_allowed:false},
   };
 
