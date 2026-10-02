@@ -28,3 +28,6 @@ This contract therefore prevents the repository workflows from intentionally gra
 - `.github/workflows/repository-hygiene-autofix.yml` is a narrowly scoped write workflow. It runs only from trusted `main` by explicit dispatch, changes only mechanically formatted tracked files, opens a review PR, and never merges, deploys, changes policy, or accesses protected credentials.
 - The autonomous planner receives aggregate Operations findings before external AI use; private source paths and protected values are not sent as planner context.
 - AI output remains candidate assistance. Repository/code ownership, acceptance evidence, deployment, production promotion and rollback remain with their existing authorities.
+
+- `cross-repository-contract-drift.yml` explicitly watches the public `edge.ts` runtime boundary in addition to canonical workflow/core/frontend/polyglot surfaces; this is drift observation only, not deployment authority.
+- The private provider cross-fire may use the existing authenticated Heroic Worker path as a second benchmark transport when only one direct provider credential is configured; this does not grant the benchmark deployment or provider-promotion authority.
