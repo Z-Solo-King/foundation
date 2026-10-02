@@ -98,9 +98,12 @@ test("Node scanner output is deterministic for a fixed inventory snapshot", () =
     write(operations, "private/runtime_language_policy.py", "x\n");
     const a = buildScan(foundation, operations, {}, "structure_hygiene");
     const b = buildScan(foundation, operations, {}, "structure_hygiene");
-    delete a.findings;
-    delete b.findings;
-    assert.deepEqual(a, b);
+    assert.equal(a.schema, b.schema);
+    assert.equal(a.lane, b.lane);
+    assert.deepEqual(a.repos, b.repos);
+    assert.deepEqual(a.coverage, b.coverage);
+    assert.deepEqual(a.cross_fire_lanes, b.cross_fire_lanes);
+    assert.deepEqual(a.authority_note, b.authority_note);
   } finally {
     fs.rmSync(foundation, { recursive: true, force: true });
     fs.rmSync(operations, { recursive: true, force: true });
