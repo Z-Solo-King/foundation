@@ -6,7 +6,7 @@ on:
       - migration/node-autonomous-scorecard-2026-10-02
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   format:
@@ -18,16 +18,15 @@ jobs:
           node-version: "22"
           package-manager-cache: false
       - name: Format scorecard files
+        shell: bash
         run: |
           set -euo pipefail
-          mkdir -p formatted/benchmark formatted/workflow
           npx --yes prettier@3.9.9 --write benchmark/autonomous_scorecard.mjs benchmark/test_autonomous_scorecard.mjs benchmark/research_artifact_catalog.json >/dev/null
-          cp benchmark/autonomous_scorecard.mjs formatted/benchmark/
-          cp benchmark/test_autonomous_scorecard.mjs formatted/benchmark/
-          npx --yes prettier@3.9.9 --write .github/workflows/autonomous-scorecard.yml >/dev/null
-          cp .github/workflows/autonomous-scorecard.yml formatted/workflow/
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: scorecard-formatted
-          path: formatted
-          if-no-files-found: error
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- benchmark/autonomous_scorecard.mjs benchmark/test_autonomous_scorecard.mjs benchmark/research_artifact_catalog.json; then
+            exit 0
+          fi
+          git add benchmark/autonomous_scorecard.mjs benchmark/test_autonomous_scorecard.mjs benchmark/research_artifact_catalog.json
+          git commit -m "chore: scorecard format pass"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
