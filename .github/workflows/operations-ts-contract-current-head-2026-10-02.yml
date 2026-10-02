@@ -62,7 +62,7 @@ jobs:
           test ! -e tests/test_observation_contract.py
           test ! -e tests/test_observation_contract_architecture.py
           test ! -e tests/test_v175_v18_replay_bridge.py
-          if git grep -n -E '(^|[[:space:]\(\[\"])(from|import)[[:space:]]+extractor_mapper\.(observation_contract|replay_bridge)|python(3)?[^[:space:]]*[[:space:]]+-m[[:space:]]+extractor_mapper\.feed_candidate_cli|feed_candidate_cli\.py["'\) ]?$)' -- extractor_mapper private tools tests polyglot; then
+          if git grep -n -E '(^|[[:space:]\(\[\"])(from|import)[[:space:]]+extractor_mapper\.(observation_contract|replay_bridge)|python(3)?[^[:space:]]*[[:space:]]+-m[[:space:]]+extractor_mapper\.feed_candidate_cli|feed_candidate_cli\.py["'\) ]?$)' -- extractor_mapper private tools tests polyglot ':(exclude)polyglot/observation-contract-strict/test/authority-retirement.test.ts'; then
             echo "active source reference to retired Python boundary found"
             exit 1
           fi
