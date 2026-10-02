@@ -51,3 +51,8 @@ The final least-tried WooCommerce recovery is a privileged Foundation workflow b
 ## Migration Factory CrossFire — 2026-10-02
 
 The Migration Factory workflow extends the verification fabric with six read-only migration lenses: runtime frontier, dependency frontier, tooling/CI, tests/benchmarks, target-language disposition, and retirement readiness. On trusted Foundation revisions it audits an immutable Operations SHA and produces independent evidence without changing production authority.
+
+
+## Nightly workflow duplicate reconciliation — 2026-10-02
+
+The canonical 24-program nightly workflow was restored to the last known-good single-definition revision after a duplicated merge artifact produced repeated job identifiers and invalid YAML. The workflow now contains one `production_gate`, one `research`, one `migration_review`, one `project-summary`, and one `final-gate`. Subsequent changes must modify that canonical workflow rather than append duplicate job blocks.
