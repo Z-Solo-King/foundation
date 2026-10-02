@@ -157,6 +157,7 @@ jobs:
             --expected-foundation-sha "$TARGET_FOUNDATION_SHA" \
             --expected-operations-ref "$OPERATIONS_RESEARCH_REF" > "$RUNNER_TEMP/nightly-runtime-contract.json"
           cat "$RUNNER_TEMP/nightly-runtime-contract.json"
+
       - name: Authenticate private research source
         shell: bash
         env:
