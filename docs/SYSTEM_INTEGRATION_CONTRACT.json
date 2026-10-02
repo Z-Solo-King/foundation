@@ -333,7 +333,7 @@
     ]
   },
   "maintainability": {
-    "source_audit": "tools/source_surface_audit.py",
+    "source_audit": "tools/source_surface_audit.mjs",
     "critical_thresholds": {
       "source_bytes": 50000,
       "source_lines": 1000
