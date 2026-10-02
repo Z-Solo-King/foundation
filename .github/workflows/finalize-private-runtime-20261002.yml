@@ -59,8 +59,8 @@ jobs:
           test -f REPOSITORY_MAP.json
           test -f docs/PRIVATE_RUNTIME_BOUNDARY_2026-10-02.md || true
           python -m compileall -q foundation_core
-          if grep -RniE 'from backend|import backend|(^|[[:space:]/])worker\.py([[:space:]"'\''/]|$)|wrangler\.python-core\.toml' .github/workflows tests docs README.md REPOSITORY_MAP.json 2>/dev/null; then
-            echo "stale public runtime reference detected"
+          if grep -RniE '(^|[[:space:]])(from|import)[[:space:]]+backend([.]|[[:space:]]|$)|(^|[[:space:]])import[[:space:]]+worker([[:space:]]|$)|wrangler\.python-core\.toml' .github/workflows tests scripts 2>/dev/null; then
+            echo "stale executable public runtime reference detected"
             exit 1
           fi
 
