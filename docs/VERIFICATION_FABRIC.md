@@ -51,3 +51,7 @@ The final least-tried WooCommerce recovery is a privileged Foundation workflow b
 ## Migration Factory CrossFire — 2026-10-02
 
 The Migration Factory workflow extends the verification fabric with six read-only migration lenses: runtime frontier, dependency frontier, tooling/CI, tests/benchmarks, target-language disposition, and retirement readiness. On trusted Foundation revisions it audits an immutable Operations SHA and produces independent evidence without changing production authority.
+
+## 2026-10-02 Migration Factory token-step correction
+
+The trusted-main Migration Factory resolve job has one canonical read-only Operations GitHub App token step. Duplicate token-step definitions are prohibited because they can create conflicting step identifiers and violate the single-provider-credential boundary. The workflow remains trusted-main/manual-only and private Operations access remains `contents:read`.
