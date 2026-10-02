@@ -15,6 +15,7 @@ def test_scanner_contains_requested_control_surfaces():
         "exact_duplicate_content",
         "cross_repo_duplicate_content",
         "private_tree_in_public_repo",
+        "migration_gate_incomplete",
         "critical_source_size",
         "task_family_parity",
         "quality_hard_gate_incomplete",
