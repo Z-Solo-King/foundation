@@ -30,7 +30,7 @@ Operations main:
 Important state change from the previous handoff:
 - The previously certified Operations production pin `ca3864a954569f6f8ce9a94793c53a0ef9ff03ec` has now been explicitly advanced.
 - Current `docs/OPERATIONS_PIN_MANIFEST.json` production_runtime pin is:
-  da86e92d4e0fdb68912efb54ef95c69281a7d613
+  11f592116d9ef57b6189bf8bf0ff0e95ec3d410f
 - Operations `main` is currently ahead of the production pin; the immutable production pin remains the only production authority and must be explicitly promoted and then runtime-verified.
 
 The Foundation head `55f06767...` is the promotion commit that advanced the public-safe Operations pin to the syntax-corrected persistence diagnostic runtime.
@@ -43,7 +43,7 @@ The Operations head `90fa37df...` corrects the persistence diagnostic logger syn
 `ec8b1fa5f3cac2e4aa4cf25059fb4ee0967e4aa7`
 
 Current purpose-scoped immutable pins:
-- production_runtime: da86e92d4e0fdb68912efb54ef95c69281a7d613
+- production_runtime: 11f592116d9ef57b6189bf8bf0ff0e95ec3d410f
 - provider_fleet_runtime: `b95e419254a9071beaeef57a1b0da22ba7dd2c4f`
 - research_runtime: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`
 - secret_sync_utility: `b95e419254a9071beaeef57a1b0da22ba7dd2c4f`
