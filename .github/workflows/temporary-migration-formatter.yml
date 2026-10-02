@@ -32,26 +32,22 @@ jobs:
 
       - name: Format migration files
         shell: bash
-        env:
-          EVENT_NAME: ${GITHUB_EVENT_NAME}}
-          HEAD_COMMIT_MESSAGE: ${GITHUB_HEAD_COMMIT_MESSAGE:-}
-          HEAD_REF: ${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}
         run: |
           set +e
-          if [ "$EVENT_NAME" = "pull_request" ]; then
-            diff_range="origin/main...HEAD"
-          else
-            git fetch --no-tags origin main --depth=1
-            diff_range="origin/main...HEAD"
-          fi
+          diff_range="origin/main...HEAD"
 
-          mapfile -t prettier_files < <(
+          rm -rf formatter-output
+          mkdir -p formatter-output
+
+          mapfile -t formatter_files < <(
             git diff --name-only "$diff_range" |
-            grep -E '\.(cjs|js|mjs|ts|tsx|json|jsonc|md|yml|yaml)$' || true
+            grep -E '\.(cjs|js|mjs|ts|tsx|json|jsonc|md|yml|yaml)$' |
+            grep -v '^\.github/workflows/' || true
           )
+
           prettier_status=0
-          if [ "${#prettier_files[@]}" -gt 0 ]; then
-            npx --yes prettier@3.9.9 --write "${prettier_files[@]}"
+          if [ "${#formatter_files[@]}" -gt 0 ]; then
+            npx --yes prettier@3.9.9 --write "${formatter_files[@]}"
             prettier_status=$?
           fi
 
@@ -59,23 +55,34 @@ jobs:
             git diff --name-only "$diff_range" |
             grep -E '\.md$' || true
           )
+
           markdown_status=0
           if [ "${#markdown_files[@]}" -gt 0 ]; then
             npx --yes markdownlint-cli2@0.23.3 --fix "${markdown_files[@]}"
             markdown_status=$?
           fi
 
-          printf '{"prettier_status":%s,"markdown_status":%s,"files_seen":%s}\n' \
-            "$prettier_status" "$markdown_status" "__LEN_PRETTY__" > formatter-status.json
+          mapfile -t workflow_files < <(
+            git diff --name-only "$diff_range" |
+            grep -E '^\.github/workflows/.*\.(yml|yaml)$' || true
+          )
 
-          case "$HEAD_COMMIT_MESSAGE" in
-            "chore: migration format pass"|"chore: remove migration formatter")
-              exit 0
-              ;;
-          esac
+          workflow_status=0
+          for file in "${workflow_files[@]}"; do
+            out="formatter-output/$file"
+            mkdir -p "$(dirname "$out")"
+            npx --yes prettier@3.9.9 "$file" > "$out"
+            status=$?
+            if [ "$status" -ne 0 ]; then
+              workflow_status=$status
+            fi
+          done
 
-          if git diff --quiet; then
-            if [ "$prettier_status" -ne 0 ] || [ "$markdown_status" -ne 0 ]; then
+          printf '{"prettier_status":%s,"markdown_status":%s,"workflow_preview_status":%s,"files_seen":%s}\n' \
+            "$prettier_status" "$markdown_status" "$workflow_status" "__LEN_FORMATTER_FILES__" > formatter-status.json
+
+          if git diff --quiet && [ -z "$(git status --short -- formatter-output formatter-status.json)" ]; then
+            if [ "$prettier_status" -ne 0 ] || [ "$markdown_status" -ne 0 ] || [ "$workflow_status" -ne 0 ]; then
               cat formatter-status.json
               exit 1
             fi
