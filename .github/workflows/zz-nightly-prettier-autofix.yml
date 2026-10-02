@@ -1,0 +1,43 @@
+name: Temporary nightly Prettier normalization
+
+on:
+  push:
+    branches:
+      - fix/nightly-dry-run-foundation-clean-2026-10-03
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-nightly-prettier-normalization
+  cancel-in-progress: false
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: fix/nightly-dry-run-foundation-clean-2026-10-03
+          fetch-depth: 1
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Apply exact repository Prettier
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes prettier@3.9.9 --write .github/workflows/nightly-multi-agent-research-v3.yml
+          if git diff --quiet -- .github/workflows/nightly-multi-agent-research-v3.yml; then
+            echo "Prettier reports no changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/nightly-multi-agent-research-v3.yml
+          git commit -m "style: normalize nightly workflow with repository Prettier"
+          git push origin HEAD:fix/nightly-dry-run-foundation-clean-2026-10-03
