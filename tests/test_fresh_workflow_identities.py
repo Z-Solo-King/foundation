@@ -52,6 +52,7 @@ def test_fresh_acceptance_workflow_dispatches_both_identities():
     assert "Unexpected bridge jobs HTTP status" in text
     assert "Unexpected nightly jobs HTTP status" in text
 
+
 def test_nightly_dry_run_selects_mode_before_live_only_runtime_probe():
     text = (ROOT / "nightly-multi-agent-research-v3.yml").read_text(encoding="utf-8")
     mode_start = text.index("      - name: Research mode")
