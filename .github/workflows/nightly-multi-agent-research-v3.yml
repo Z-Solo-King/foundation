@@ -142,6 +142,7 @@ jobs:
             echo "mode=live" >> "$GITHUB_OUTPUT"
             echo "Dispatch/live research mode selected."
           fi
+
       - name: Verify exact deployed research runtime
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
