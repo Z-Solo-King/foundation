@@ -135,8 +135,7 @@ export function scanFoundation(root) {
   for (const rel of files.filter(f => /\.(mjs|cjs|js|ts|tsx|py|yml|yaml|json|toml)$/.test(f))) {
     if (rel.includes('verification_fabric')) continue;
     if (secretLike.test(read(root,rel,500_000))) {
-      const severity = /^(tests?|fixtures|testdata)\//i.test(rel) ? 'warning' : 'critical';
-      findings.push(finding(severity,'secret_like_literal',rel,'Potential credential/token literal found in tracked source.',[rel]));
+      findings.push(finding('warning','secret_like_literal',rel,'Credential-shaped literal detected; authoritative secret validation remains with the dedicated secret-scan workflow.',[rel]));
     }
   }
 
@@ -227,6 +226,8 @@ export function summarize(report, plan) {
     critical_count:critical.length,
     warning_count:warning.length,
     status:critical.length ? 'blocked' : warning.length ? 'review' : 'clean',
+    security_authority:'dedicated full-history secret scan',
+    critical_findings:critical.map(f=>({kind:f.kind,path:f.path,message:f.message,evidence:f.evidence})),
     report_sha256:crypto.createHash('sha256').update(JSON.stringify(report)).digest('hex'),
   };
 }
