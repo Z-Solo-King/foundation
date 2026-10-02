@@ -44,20 +44,7 @@ jobs:
           python-version: "3.14"
       - name: Run scorecard tests
         run: node --test benchmark/test_autonomous_scorecard.mjs
-      - name: Diagnostic formatter output
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m pip install --disable-pip-version-check ruff==0.16.9
-          ruff format benchmark/research_artifact_validator.py tests/test_research_artifacts.py
-          echo '--- RUFF FORMAT DIFF ---'
-          git diff -- benchmark/research_artifact_validator.py tests/test_research_artifacts.py
-          ruff check --select I --fix benchmark/research_artifact_validator.py tests/test_research_artifacts.py
-          echo '--- RUFF IMPORT FIX DIFF ---'
-          git diff -- benchmark/research_artifact_validator.py tests/test_research_artifacts.py
-          npx --yes prettier@3.9.9 --write .github/workflows/autonomous-scorecard.yml
-          echo '--- PRETTIER WORKFLOW DIFF ---'
-          git diff -- .github/workflows/autonomous-scorecard.yml
+      - name: Validate research artifact boundary
       - name: Validate research artifact boundary
         run: python -m benchmark.research_artifact_validator
 
