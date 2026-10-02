@@ -15,9 +15,9 @@ on:
       - 'docs/PROJECT_IMPROVEMENT_MATRIX.json'
       - 'docs/SYSTEM_INTEGRATION_CONTRACT.json'
       - 'tools/validate_system_integration.py'
-      - 'tools/source_surface_audit.py'
+      - 'tools/source_surface_audit.mjs'
       - 'tests/test_system_integration.py'
-      - 'tests/test_source_surface_audit.py'
+      - 'tests/test_source_surface_audit.mjs'
   schedule:
     - cron: "55 2 * * *"
   workflow_dispatch:
@@ -61,6 +61,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          package-manager-cache: false
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -82,7 +87,7 @@ jobs:
           python scripts/validate_hybrid_alternative_policy.py
           python tools/validate_system_integration.py --foundation-root . --strict
           python tools/validate_system_integration.py --foundation-root . --operations-root ../operations --strict
-          python tools/source_surface_audit.py --root . --root ../operations --output .runtime/source-surface-audit.json
+          node tools/source_surface_audit.mjs --root . --root ../operations --output .runtime/source-surface-audit.json
 
       - name: Upload full coverage receipt
         if: always()
