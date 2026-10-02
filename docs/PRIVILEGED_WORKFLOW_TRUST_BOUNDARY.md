@@ -45,6 +45,7 @@ The Foundation/Operations migration removes private runtime and feed-execution i
 The migration is considered structurally synchronized only when the protected PR checks, workflow-authority validator, public-surface scan, full-history secret scan and cross-system ownership/equivalence gates all evaluate the exact reconciled PR head.
 
 ## 2026-10-02 workflow reconciliation
+
 The current GitHub workflow surface is treated as configuration under the same trust boundary as code: workflow YAML is syntax/structure-validated in the required merge gate, privileged workflows remain restricted to trusted triggers, and autonomous dispatch targets are allowlisted by the mission router. A workflow that exists in a historical mission record but does not expose `workflow_dispatch` is not a valid autonomous execution target.
 
 ## Public release prohibition — 2026-10-02
