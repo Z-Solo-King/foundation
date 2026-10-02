@@ -4,15 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'benchmark/release_quality_gate.py'
-      - 'benchmark/vector_scorecard.py'
-      - 'benchmark/performance_workloads.py'
-      - 'backend/performance_metrics.py'
-      - 'backend/performance_report.py'
-      - 'tests/test_release_quality_gate.py'
-      - 'tests/test_performance_metrics.py'
-      - 'tests/test_performance_report.py'
-      - 'tests/test_performance_workloads.py'
+      - 'docs/OPERATIONS_PIN_MANIFEST.json'
       - '.github/workflows/release-quality-regression.yml'
   merge_group:
     types: [checks_requested]
@@ -31,6 +23,38 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Resolve certified Operations revision
+        id: operations-ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          ref="$(python - <<'PY'
+          import json, re
+          value=json.load(open("docs/OPERATIONS_PIN_MANIFEST.json", encoding="utf-8"))["pins"]["production_runtime"]["sha"]
+          if not re.fullmatch(r"[0-9a-f]{40}", value):
+              raise SystemExit("invalid Operations production pin")
+          print(value)
+          PY
+          )"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+      - name: Checkout private Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ steps.operations-ref.outputs.ref }}
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+          persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.14'
