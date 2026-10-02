@@ -100,7 +100,7 @@ def main() -> int:
             "case_count": len(python_rows),
             "rejected_case_count": rejected,
             "accepted_case_count": len(python_rows) - rejected,
-            "foundation_http_sha256": sha256(ROOT / "backend/sources/http.py"),
+            "operations_http_sha256": sha256(OPERATIONS / "backend/sources/http.py"),
             "operations_lib_sha256": sha256(OPERATIONS / "benchmark/polyglot/rust_url_identity/src/lib.rs"),
             "operations_main_sha256": sha256(OPERATIONS / "benchmark/polyglot/rust_url_identity/src/main.rs"),
             "corpus_sha256": sha256(CORPUS),
