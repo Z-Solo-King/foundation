@@ -131,7 +131,20 @@ jobs:
         with:
           node-version: "22"
           package-manager-cache: false
+      - name: Research mode
+        id: mode
+        shell: bash
+        run: |
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            echo "mode=dry-run" >> "$GITHUB_OUTPUT"
+            echo "Manual explicit dry-run requested; no live findings are being produced."
+          else
+            echo "mode=live" >> "$GITHUB_OUTPUT"
+            echo "Dispatch/live research mode selected."
+          fi
+
       - name: Verify exact deployed research runtime
+        if: ${{ steps.mode.outputs.mode == 'live' }}
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
         shell: bash
@@ -254,17 +267,6 @@ jobs:
           git -C "$RUNNER_TEMP/operations-research" fetch --no-tags --depth=1 origin "$OPERATIONS_RESEARCH_REF"
           git -C "$RUNNER_TEMP/operations-research" checkout --detach "$OPERATIONS_RESEARCH_REF"
           test "$(git -C "$RUNNER_TEMP/operations-research" rev-parse HEAD)" = "$OPERATIONS_RESEARCH_REF"
-      - name: Research mode
-        id: mode
-        shell: bash
-        run: |
-          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
-            echo "mode=dry-run" >> "$GITHUB_OUTPUT"
-            echo "Manual explicit dry-run requested; no live findings are being produced."
-          else
-            echo "mode=live" >> "$GITHUB_OUTPUT"
-            echo "Dispatch/live research mode selected."
-          fi
       - name: Validate pinned Operations research contract
         working-directory: ${{ runner.temp }}/operations-research
         shell: bash
