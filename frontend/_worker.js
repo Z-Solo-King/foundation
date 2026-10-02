@@ -1,16 +1,11 @@
-export interface Env {
-  ASSETS: { fetch(request: Request): Promise<Response> };
-  HEROIC_BACKEND: { fetch(request: Request): Promise<Response> };
-}
-
-function isBackendPath(pathname: string): boolean {
+function isBackendPath(pathname) {
   return pathname === "/health" ||
     pathname === "/readiness" ||
     pathname.startsWith("/api/");
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request, env) {
     const url = new URL(request.url);
 
     if (isBackendPath(url.pathname)) {
