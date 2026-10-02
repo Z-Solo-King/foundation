@@ -7,6 +7,8 @@
       "code_paths": [
         "tools/repository_hygiene.py",
         "tools/code_documentation_sync.py",
+        "tools/repository_hygiene.mjs",
+        "tools/code_documentation_sync.mjs",
         ".editorconfig",
         ".gitattributes",
         ".prettierrc.json",
@@ -15,9 +17,7 @@
         "pyproject.toml",
         ".github/pull_request_template.md",
         ".github/workflows/repository-hygiene.yml",
-        ".github/workflows/family-hygiene-sync.yml",
-        "tools/repository_hygiene.mjs",
-        "tools/code_documentation_sync.mjs"
+        ".github/workflows/family-hygiene-sync.yml"
       ],
       "docs": [
         "docs/REPOSITORY_HYGIENE_AND_FORMAT_STANDARD.md",
