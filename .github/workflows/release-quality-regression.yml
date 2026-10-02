@@ -38,13 +38,12 @@ jobs:
         run: |
           set -euo pipefail
           ref="$(python - <<'PY'
-          import json, re
-          value=json.load(open("docs/OPERATIONS_PIN_MANIFEST.json", encoding="utf-8"))["pins"]["production_runtime"]["sha"]
-          if not re.fullmatch(r"[0-9a-f]{40}", value):
-              raise SystemExit("invalid Operations production pin")
-          print(value)
-          PY
-          )"
+import json, re
+value=json.load(open("docs/OPERATIONS_PIN_MANIFEST.json", encoding="utf-8"))["pins"]["production_runtime"]["sha"]
+if not re.fullmatch(r"[0-9a-f]{40}", value): raise SystemExit("invalid Operations production pin")
+print(value)
+PY
+)"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
       - name: Checkout private Operations
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -58,16 +57,12 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.14'
-      - name: Install test runner
+      - name: Install Operations test/runtime dependencies
         working-directory: operations
-        run: python -m pip install --disable-pip-version-check pytest
-
+        run: python -m pip install --disable-pip-version-check pytest pytest-asyncio workers-py workers-runtime-sdk
       - name: Run deterministic release-quality and performance contracts
         working-directory: operations
-        run: |
-          python -m pytest -q tests/test_release_quality_gate.py tests/test_performance_metrics.py tests/test_performance_report.py tests/test_performance_workloads.py
-
+        run: python -m pytest -q tests/test_release_quality_gate.py tests/test_performance_metrics.py tests/test_performance_report.py tests/test_performance_workloads.py
       - name: Emit reproducible performance workload report
         working-directory: operations
-        run: |
-          python -m benchmark.performance_workloads
+        run: python -m benchmark.performance_workloads
