@@ -1,0 +1,160 @@
+name: Temporary Operations feed candidate live migration gate
+
+on:
+  push:
+    branches:
+      - audit/ops-feed-candidate-live-2026-10-02
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-migration-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations migration branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: migration/ops-feed-candidate-mjs-live-2026-10-02
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+
+      - name: Install Operations test dependencies
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -e ".[test]"
+          node --check extractor_mapper/feed_candidate_cli.mjs
+          node --check private/feed_recovery/woocommerce_google_feed_rescue_fast.mjs
+          node --check private/feed_recovery/woocommerce_final_native_runner_v1.mjs
+          node --check tools/canonical_four_target_feed_hunt.mjs
+
+      - name: Prove Python consumers are cut over
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          ! grep -R --exclude-dir=.git -n "extractor_mapper.feed_candidate_cli" private tools | grep -E "\\.(mjs|ts)$" | grep -v "extractor_mapper/feed_candidate_cli.mjs$"
+          ! grep -R --exclude-dir=.git -n "PYTHON_BIN.*python3|python3.*extractor_mapper.feed_candidate_cli" private tools
+
+      - name: Live Python-vs-MJS differential and benchmark
+        working-directory: operations
+        env:
+          OPERATIONS_PYTHON_FEED_BENCH_REPEATS: "3"
+          OPERATIONS_LIVE_TIMEOUT_MS: "15000"
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { performance } from "node:perf_hooks";
+          import { spawnSync } from "node:child_process";
+          import { mkdir, writeFile } from "node:fs/promises";
+          import { buildFeedCandidatePlan } from "./extractor_mapper/feed_candidate_cli.mjs";
+
+          const targets = [
+            ["PC Studio","https://www.pcstudio.in/"],
+            ["Quickin Computers","https://quickincomputers.com/"],
+            ["Avikaretails","https://avikaretails.com/"],
+            ["IT Gadgets Online","https://itgadgetsonline.com/"],
+            ["Aarna Computers","https://aarnacomputers.com/"],
+            ["Ads Store","https://adsstore.in/"],
+            ["EZPZ Solutions","https://www.ezpzsolutions.in/"],
+            ["KC Computers","https://kccomputers.co.in/"],
+            ["KRG KART","https://krgkart.com/"],
+            ["PCHubShop","https://www.pchubshop.com/"],
+            ["Meckeys","https://www.meckeys.com/"],
+            ["StacksKB","https://stackskb.com/"]
+          ];
+          const repeats = Number(process.env.OPERATIONS_PYTHON_FEED_BENCH_REPEATS || "3");
+          const timeout = Number(process.env.OPERATIONS_LIVE_TIMEOUT_MS || "15000");
+          const out = [];
+          const percentile = (a,p) => {
+            const s=[...a].sort((x,y)=>x-y);
+            return s[Math.min(s.length-1, Math.floor((p/100)*s.length))];
+          };
+          const runPython = (root,body) => {
+            const started=performance.now();
+            const r=spawnSync("python3",["-m","extractor_mapper.feed_candidate_cli",root],{
+              input:body,encoding:"utf8",timeout:8000,maxBuffer:2*1024*1024
+            });
+            const ms=performance.now()-started;
+            if(r.error || r.status!==0) throw new Error("python bridge failed: "+String(r.error||r.stderr||r.status));
+            return {plan:JSON.parse(r.stdout),ms};
+          };
+
+          for(const [name,url] of targets){
+            let body="";
+            let fetchStatus=0;
+            let fetchError=null;
+            try{
+              const r=await fetch(url,{redirect:"follow",signal:AbortSignal.timeout(timeout),headers:{
+                "User-Agent":"Mozilla/5.0 (compatible; FeedCandidateMigrationGate/2026.10)",
+                "Accept":"text/html,application/xhtml+xml,*/*;q=0.8","Accept-Language":"en-IN,en;q=0.9"
+              }});
+              fetchStatus=r.status;
+              body=await r.text();
+            }catch(e){fetchError=String(e);}
+            const pyTimes=[],jsTimes=[];
+            let baseline=null;
+            for(let i=0;i<repeats;i++){
+              const py=runPython(url.replace(/\/$/,""),body);
+              const t=performance.now();
+              const js=buildFeedCandidatePlan(url.replace(/\/$/,""),body);
+              const jms=performance.now()-t;
+              pyTimes.push(py.ms); jsTimes.push(jms);
+              if(!baseline) baseline=py.plan;
+              if(JSON.stringify(py.plan)!==JSON.stringify(js))
+                throw new Error("DIFFERENTIAL MISMATCH: "+name);
+            }
+            out.push({
+              site:name,url,fetch_status:fetchStatus,fetch_error:fetchError,body_bytes:Buffer.byteLength(body),
+              repeats,differential_pass:true,
+              python_ms:{p50:percentile(pyTimes,50),p95:percentile(pyTimes,95),p99:percentile(pyTimes,99),all:pyTimes},
+              mjs_ms:{p50:percentile(jsTimes,50),p95:percentile(jsTimes,95),p99:percentile(jsTimes,99),all:jsTimes},
+              planner_sizes:{plugin_paths:baseline.plugin_paths.length,generic_paths:baseline.generic_paths.length,guessed_paths:baseline.guessed_paths.length}
+            });
+          }
+
+          const summary={
+            schema:"feed-candidate-live-migration-gate/v1",
+            operations_ref:"migration/ops-feed-candidate-mjs-live-2026-10-02",
+            target_count:out.length,
+            differential_passes:out.filter(x=>x.differential_pass).length,
+            generated_at:new Date().toISOString(),
+            targets:out
+          };
+          await mkdir("../feed-candidate-gate", {recursive:true});
+          await writeFile("../feed-candidate-gate/receipt.json",JSON.stringify(summary,null,2)+"\n");
+          console.log(JSON.stringify(summary,null,2));
+          NODE
+
+      - name: Upload live migration receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: operations-feed-candidate-live-migration-gate
+          path: feed-candidate-gate/receipt.json
+          if-no-files-found: error
+          retention-days: 14
