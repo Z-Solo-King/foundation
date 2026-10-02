@@ -66,3 +66,5 @@ The public-core synchronizer was migrated from Python to Node as repository tool
 ## 2026-10-02 Migration Factory token-step correction
 
 The trusted-main Migration Factory resolve job has one canonical read-only Operations GitHub App token step. Duplicate token-step definitions are prohibited because they can create conflicting step identifiers and violate the single-provider-credential boundary. The workflow remains trusted-main/manual-only and private Operations access remains `contents:read`.
+## 2026-10-02 open-issue deep-scan runtime
+The canonical Foundation four-lane open-issue deep scan now invokes the Operations Node scanner and Node contract suite. Operations revision selection, immutable provenance, lane coverage and aggregate evidence semantics remain unchanged. The scanner remains report-only and does not become a policy or promotion authority.
