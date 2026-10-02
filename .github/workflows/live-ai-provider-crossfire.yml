@@ -62,14 +62,14 @@ jobs:
           repository: Z-Solo-King/operations
           ref: ${{ steps.operations.outputs.ref }}
           token: ${{ steps.operations-token.outputs.token }}
-          path: ${{ runner.temp }}/operations-provider-benchmark
+          path: operations-provider-benchmark
           persist-credentials: false
 
       - name: Run private provider cross-fire
         env:
           PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
           HEROIC_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          OPERATIONS_CROSSFIRE_RUNNER: ${{ runner.temp }}/operations-provider-benchmark/private/benchmark/ai_provider_crossfire.py
+          OPERATIONS_CROSSFIRE_RUNNER: ${{ github.workspace }}/operations-provider-benchmark/private/benchmark/ai_provider_crossfire.py
         run: |
           set -euo pipefail
           mkdir -p .runtime/live-ai-crossfire
