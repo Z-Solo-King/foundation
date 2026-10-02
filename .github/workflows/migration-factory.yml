@@ -36,6 +36,15 @@ jobs:
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
+      - name: Mint read-only Operations App token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
       - id: resolve
         env:
           REQUESTED: ${{ inputs.operations_ref }}
@@ -45,7 +54,7 @@ jobs:
           if [ -n "${REQUESTED}" ]; then
             ref="${REQUESTED}"
           else
-            ref="$(git -c http.extraheader="AUTHORIZATION: Bearer ${GH_TOKEN}" ls-remote https://github.com/Z-Solo-King/operations.git refs/heads/main | cut -f1)"
+            ref="$(gh api repos/Z-Solo-King/operations/commits/main --jq .sha)"
           fi
           [[ "${ref}" =~ ^[0-9a-f]{40}$ ]]
           echo "ref=${ref}" >> "$GITHUB_OUTPUT"
