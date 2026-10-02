@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -24,7 +23,7 @@ def test_research_artifact_catalog_is_structured_and_truthful() -> None:
         "benchmark/nightly/NIGHTLY_RESEARCH_PLAN.json",
         "benchmark/nightly/research-ledger.schema.json",
         "benchmark/nightly/research_ledger.py",
-        "benchmark/autonomous_scorecard.py",
+        "benchmark/autonomous_scorecard.mjs",
     }
     assert required <= artifacts.keys()
     for path, row in artifacts.items():
@@ -56,7 +55,10 @@ def test_project_research_corpus_has_broad_project_coverage() -> None:
     }
     assert project_categories <= categories
     project_rows = [row for row in queries if row["category"] in project_categories]
-    project_category_counts = {category: sum(1 for row in project_rows if row["category"] == category) for category in project_categories}
+    project_category_counts = {
+        category: sum(1 for row in project_rows if row["category"] == category)
+        for category in project_categories
+    }
     assert all(count >= 1 for count in project_category_counts.values())
     assert len(project_rows) >= len(project_categories)
     assert all("github" in row["required_sources"] for row in project_rows)
