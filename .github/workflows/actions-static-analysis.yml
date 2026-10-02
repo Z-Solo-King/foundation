@@ -12,7 +12,7 @@ on:
       - "docs/HYBRID_ALTERNATIVE_ECOSYSTEM_AUDIT_2026-10-01.json"
       - "scripts/validate_hybrid_alternative_policy.py"
       - "tests/test_hybrid_alternative_policy.py"
-      - "scripts/validate_github_actions_zero_cost.py"
+      - "scripts/validate_github_actions_zero_cost.mjs"
       - "tests/test_github_actions_zero_cost_policy.py"
   push:
     branches: [main]
@@ -21,7 +21,7 @@ on:
       - ".github/zizmor.yml"
       - "tests/test_workflow_static_analysis_policy.py"
       - "docs/GITHUB_ACTIONS_ZERO_COST_POLICY.json"
-      - "scripts/validate_github_actions_zero_cost.py"
+      - "scripts/validate_github_actions_zero_cost.mjs"
       - "tests/test_github_actions_zero_cost_policy.py"
   schedule:
     - cron: "41 3 * * 6"
@@ -97,7 +97,7 @@ jobs:
           set -euo pipefail
           test "$(gh api repos/${{ github.repository }} --jq '.private')" = "false"
       - name: Validate $0 policy
-        run: python scripts/validate_github_actions_zero_cost.py
+        run: node scripts/validate_github_actions_zero_cost.mjs
       - name: Install test runner
         run: python -m pip install --disable-pip-version-check --timeout 120 --retries 5 "pytest"
       - name: Run $0 policy tests
