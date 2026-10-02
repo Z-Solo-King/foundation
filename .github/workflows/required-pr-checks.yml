@@ -106,7 +106,8 @@ jobs:
       - name: Run public workflow/security contracts
         run: |
           set -euo pipefail
-          python -m pytest -q tests/test_workflow_policy.py tests/test_production_release_boundary_policy.py tests/test_public_security_lint.py tests/test_public_surface_policy.py tests/test_operations_pin_manifest.py tests/test_github_app_marketplace_policy.py tests/test_github_actions_zero_cost_policy.py tests/test_hybrid_alternative_policy.py tests/test_project_map_live_sync.py tests/test_family_full_coverage.py tests/test_continuity_freshness.py
+          python -m pytest -q tests/test_workflow_policy.py tests/test_production_release_boundary_policy.py tests/test_public_security_lint.py tests/test_public_surface_policy.py tests/test_operations_pin_manifest.py tests/test_github_app_marketplace_policy.py tests/test_hybrid_alternative_policy.py tests/test_project_map_live_sync.py tests/test_family_full_coverage.py tests/test_continuity_freshness.py
+          node --test tests/test_github_actions_zero_cost_policy.mjs
       - name: Run deterministic natural-language research benchmark
         run: python -m benchmark.chatbot_query_benchmark --input benchmark/chatbot-query-corpus.json --output .runtime/chatbot-query-benchmark.json
       - name: Run frontend UI contract
