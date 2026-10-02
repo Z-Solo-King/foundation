@@ -16,9 +16,7 @@ The governing rule is:
 
 ## 1. Canonical format contract
 
-The machine-readable authority is:
-
-- `docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json`
+The machine-readable authority is `docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json`.
 
 Foundation and Operations must carry the same contract version and the same contract bytes. The Foundation family coordinator checks this parity.
 
@@ -29,7 +27,7 @@ The project uses:
 - **Prettier** for JavaScript, TypeScript, JSON, YAML and Markdown formatting.
 - **markdownlint-cli2** for Markdown structural/style linting.
 
-Prettier intentionally uses a repository-local configuration rather than a global configuration so formatter behavior follows the repository with the code. Ruff provides a fast Python formatter/linter and supports `--check` for non-mutating CI validation. citeturn133518search0turn133518search1turn622704search0turn622704search3
+Prettier supports repository-local configuration and a non-mutating `--check` mode. Ruff provides `ruff format --check` and `ruff check`. markdownlint-cli2 provides configuration-based Markdown linting suitable for CI.
 
 ## 2. Universal hygiene
 
@@ -39,7 +37,7 @@ All tracked text files must:
 - use LF line endings;
 - end with exactly one final newline;
 - contain no trailing whitespace;
-- avoid tab indentation;
+- avoid tab indentation except Makefile recipe syntax;
 - not contain generated/cache artifacts that are forbidden by the contract.
 
 The hygiene checker works on tracked Git files so ignored local artifacts do not become accidental repository policy.
@@ -54,7 +52,7 @@ This prevents a formatter rollout from producing an enormous unrelated diff whil
 
 ## 4. Code-size hygiene
 
-Source-size thresholds remain responsibility-based rather than arbitrary:
+Source-size thresholds remain responsibility-based:
 
 - **attention:** more than 500 lines;
 - **critical:** more than 1,000 lines or more than 50,000 bytes.
@@ -78,9 +76,7 @@ Every canonical document should have:
 
 ## 6. Code–documentation synchronization
 
-The machine-readable map is:
-
-- `docs/CODE_DOCUMENTATION_SYNC_MAP.json`
+The machine-readable map is `docs/CODE_DOCUMENTATION_SYNC_MAP.json`.
 
 A sync group maps high-coupling code/configuration paths to their canonical documents.
 
@@ -94,7 +90,7 @@ The coordinator validates:
 - every important code pattern resolves to at least one tracked path;
 - no sync group is structurally stale;
 - changed code paths have the required documentation delta;
-- the current repository status is expressed using the uniform status/evidence vocabulary.
+- current status/evidence vocabulary remains explicit.
 
 ## 7. Cross-repository synchronization
 
@@ -185,10 +181,10 @@ The hygiene/synchronization system is considered installed when:
 - the existing Family Synchronization Standard remains the higher-level ownership/evidence contract;
 - existing documentation debt is measurable and can be reduced without creating a mass unrelated diff.
 
-## References
+## Tooling references
 
-- Prettier configuration and CLI documentation: repository-local configuration, `--check`, and ignore files. citeturn133518search0turn133518search1turn133518search5
-- Ruff formatter/linter documentation: `ruff format --check` and `ruff check`. citeturn622704search0turn622704search3
-- markdownlint-cli2 documentation: configuration-based Markdown linting and CI/pre-commit integration. citeturn880103search0
-- GitHub CODEOWNERS documentation: code ownership can be defined in `.github/CODEOWNERS` and can be enforced through protected-branch review rules. citeturn752774search0
-- GitHub Actions path filters: changes can be scoped to selected paths, with path filtering evaluated alongside branch filters. citeturn752774search1
+- Prettier configuration and CLI documentation: prettier.io/docs/configuration and prettier.io/docs/cli
+- Ruff formatter/linter documentation: docs.astral.sh/ruff/formatter and docs.astral.sh/ruff/linter
+- markdownlint-cli2 documentation: github.com/DavidAnson/markdownlint-cli2
+- GitHub CODEOWNERS documentation: docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+- GitHub Actions path filters: docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow
