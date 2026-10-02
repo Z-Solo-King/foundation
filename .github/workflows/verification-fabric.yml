@@ -114,4 +114,5 @@ jobs:
             .runtime-verification-fabric.json
             changed-paths.txt
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 30
