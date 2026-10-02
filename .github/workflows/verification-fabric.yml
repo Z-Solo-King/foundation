@@ -85,10 +85,8 @@ jobs:
       - name: Render GitHub summary
         if: always()
         shell: node
-        env:
-          NODE_OPTIONS: "--experimental-default-type=module"
         run: |
-          const fs = require('fs');
+          const fs = await import('node:fs');
           const body = JSON.parse(fs.readFileSync('.runtime-verification-fabric.json','utf8'));
           const s = body.report.summary;
           const lines = [
