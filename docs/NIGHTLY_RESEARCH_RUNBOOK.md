@@ -12,7 +12,7 @@ The complete run remains bounded by its workflow timeout and the existing execut
 
 ## Coverage
 
-There are 24 nightly programs: 8 programs in each of three logical lanes. They execute through one work-conserving **CrossFire** scheduler with a single global capacity of 20 active agents. This removes lane-local capacity fragmentation and lets newly free agent slots immediately serve another program, including while a prior program is synthesizing. After execution, the workflow materializes the same three lane artifacts and validates each exact eight-program set; the summary validates all 24.
+There are 24 nightly programs: 8 programs in each of three logical lanes. They execute through one work-conserving **CrossFire** scheduler with a single global capacity of 6 active agents. This removes lane-local capacity fragmentation and lets newly free agent slots immediately serve another program, including while a prior program is synthesizing. After execution, the workflow materializes the same three lane artifacts and validates each exact eight-program set; the summary validates all 24.
 
 No silent deterministic dry-run is permitted for a live dispatch; missing live executor configuration is a hard failure.
 

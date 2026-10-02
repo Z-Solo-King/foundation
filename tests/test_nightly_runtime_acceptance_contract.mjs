@@ -12,6 +12,7 @@ test("nightly v3 is dispatch-only and uses Node runtime probe/proxy", () => {
   assert.equal(text.includes("schedule:"), false);
   assert.match(text, /workflow_dispatch:/);
   assert.match(text, /production_release_run_id/);
+  assert.match(text, /operations_runtime_ref/);
   assert.match(text, /operations_research_ref/);
   assert.match(text, /node scripts\/nightly_runtime_contract_probe\.mjs/);
   assert.match(text, /node scripts\/research_worker_proxy\.mjs/);
@@ -72,6 +73,8 @@ test("Node probe output path contains no response-body or token dump", () => {
   assert.match(text, /validateChatResponse/);
   assert.match(text, /generationStatus === "model_generated"/);
   assert.equal(text.includes("rawResponseBody"), false);
+  assert.equal((text.match(/process\.stdout\.write\(JSON\.stringify\(/g) || []).length, 1);
+  assert.match(text, /failure_diagnostics/);
 });
 
 test("nightly preserves exact production-release and CrossFire controls", () => {
@@ -105,12 +108,14 @@ test("private Operations pin and permissions remain explicit", () => {
   const text = fs.readFileSync(path.join(ROOT, ".github/workflows/nightly-multi-agent-research-v3.yml"), "utf8");
   const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, "docs/OPERATIONS_PIN_MANIFEST.json"), "utf8"));
   const researchPin = manifest.pins.research_runtime.sha;
+  const productionPin = manifest.pins.production_runtime.sha;
   for (const token of [
-    "OPERATIONS_RESEARCH_REF:", researchPin,
+    "OPERATIONS_RUNTIME_REF:", "OPERATIONS_RESEARCH_REF:", researchPin,
     "private.multi_agent.runner",
     "OPERATIONS_APP_ID: " + "$" + "{{ secrets.OPERATIONS_APP_ID }}",
     "OPERATIONS_APP_PRIVATE_KEY: " + "$" + "{{ secrets.OPERATIONS_APP_PRIVATE_KEY }}",
   ]) assert.ok(text.includes(token), token);
+  assert.ok(productionPin);
   assert.equal(text.includes("OPERATIONS_READ_TOKEN"), false);
   const top = text.split("jobs:", 1)[0];
   assert.equal(top.includes("id-token: write"), false);

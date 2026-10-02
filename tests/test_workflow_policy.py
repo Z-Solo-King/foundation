@@ -425,8 +425,9 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     assert 'PIN_MANIFEST="docs/OPERATIONS_PIN_MANIFEST.json"' in deployment
     assert 'manifest["pins"]["production_runtime"]["sha"]' in deployment
     nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
-    expected = "OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || '" + CANONICAL_RESEARCH_OPERATIONS_REF + "' }}"
-    assert expected in nightly
+    assert "OPERATIONS_RUNTIME_REF" in nightly
+    assert "INPUT_OPERATIONS_RUNTIME_REF" in nightly
+    assert "INPUT_OPERATIONS_RESEARCH_REF" in nightly
 
 def test_coverage_runtime_matrix_uses_versioned_validation_tests():
     workflow = _workflow_texts()["coverage-driven-runtime-matrix.yml"]
@@ -611,6 +612,7 @@ def test_nightly_research_uses_authenticated_worker_ai_adapter():
     assert "nightly_runtime_contract_probe.mjs" in preflight
     assert "expected-foundation-sha" in preflight
     assert "expected-operations-ref" in preflight
+    assert "operations_runtime_ref" in preflight
     assert 'RESEARCH_PROXY_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}' in canary
     assert "Checkout Foundation research adapter" in canary
     assert "uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in canary

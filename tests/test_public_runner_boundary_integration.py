@@ -10,6 +10,7 @@ SHA_REF=re.compile(r"OPERATIONS_RESEARCH_REF:\s*([0-9a-f]{40})")
 def test_nightly_private_checkout_boundary_is_explicit():
     text=WORKFLOW.read_text(encoding="utf-8")
     assert "OPERATIONS_RESEARCH_REF:" in text
+    assert "operations_runtime_ref" in text
     assert "operations_research_ref" in text
     assert "OPERATIONS_REPOSITORY: Z-Solo-King/operations" in text
     assert 'test -n "${OPERATIONS_APP_PRIVATE_KEY:-}"' in text
