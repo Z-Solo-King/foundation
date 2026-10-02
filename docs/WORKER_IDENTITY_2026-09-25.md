@@ -2,11 +2,11 @@
 
 ## Public front door
 
-Cloudflare Pages project: `ai`.
+Cloudflare Pages project: `heroic-ai`.
 
 Cloudflare-assigned public Pages hostname:
 
-`https://ai-cio.pages.dev/`
+`https://heroic-ai.pages.dev/`
 
 ## Backend Worker
 
@@ -29,3 +29,7 @@ The Pages front door remains a public routing layer only.
 The public `heroic` Worker contains no Python compatibility requirement, application D1 binding, or provider-secret binding. Those capabilities remain behind `heroic-core`.
 
 Rollback must restore a previously accepted version of the canonical Worker pair through the canonical production release/rollback process; do not delete `heroic` or `heroic-core` during migration.
+
+## Reconciliation — 2026-10-02
+
+The canonical public hostname is now `https://heroic-ai.pages.dev/`. The Pages project is GitHub-backed from `Z-Solo-King/foundation` and routes `/health`, `/readiness`, and `/api/*` through `HEROIC_BACKEND` to the production `heroic` Worker.
