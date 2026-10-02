@@ -65,6 +65,12 @@ jobs:
           path: operations-provider-benchmark
           persist-credentials: false
 
+      - name: Materialize pinned public core for benchmark
+        run: |
+          set -euo pipefail
+          cd operations-provider-benchmark
+          node scripts/sync_public_core.mjs
+
       - name: Validate platform access cross-fire contract
         run: |
           set -euo pipefail
