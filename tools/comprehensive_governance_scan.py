@@ -151,6 +151,11 @@ def main():
     if lane in ("all","maps_docs_policy"):
         matrix=j(a.foundation/"docs/PROJECT_IMPROVEMENT_MATRIX.json") or {}; contract=j(a.foundation/"docs/SYSTEM_INTEGRATION_CONTRACT.json") or {}
         comps=matrix.get("components") or {}; controls=sorted((contract.get("cross_cutting_controls") or {}).keys())
+        required_component_fields=("owner","canonical_paths","workflows","ai_task_families","evidence","cross_cutting_controls","evidence_contract")
+        for name,component in comps.items():
+            missing_fields=[field for field in required_component_fields if not component.get(field)]
+            if missing_fields:
+                add(fs,"maps_docs_policy","matrix","critical","component_contract_incomplete",f"Project component {name} is missing required improvement-matrix fields.",{"missing_fields":missing_fields})
         fabric=j(a.operations/"docs/AI_PROVIDER_TASK_FABRIC_2026-09-30.json") or {}
         fabric_tasks=set(fabric.get("task_families") or [])
         matrix_tasks=set().union(*(set(v.get("ai_task_families") or []) for v in comps.values()))
