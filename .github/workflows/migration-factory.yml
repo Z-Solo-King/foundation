@@ -8,8 +8,6 @@ on:
         required: false
         default: ""
         type: string
-  push:
-    branches: [main]
 
 permissions:
   contents: read
@@ -33,10 +31,13 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "${REQUESTED}" ]; then
-            echo "ref=$REQUESTED" >> "$GITHUB_OUTPUT"
+            ref="${REQUESTED}"
           else
-            echo "ref=$(git ls-remote origin refs/heads/main | cut -f1)" >> "$GITHUB_OUTPUT"
+            echo 'operations_ref is required for a private cross-repository run' >&2
+            exit 1
           fi
+          [[ "${ref}" =~ ^[0-9a-f]{40}$ ]]
+          echo "ref=${ref}" >> "$GITHUB_OUTPUT"
 
   crossfire:
     needs: resolve
@@ -56,9 +57,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
-      - name: Mint read-only Operations App token (trusted manual run only)
+      - name: Mint read-only Operations App token
         id: operations-app
-        if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
@@ -66,8 +66,7 @@ jobs:
           owner: Z-Solo-King
           repositories: operations
           permission-contents: read
-      - name: Checkout Operations (trusted manual run only)
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+      - name: Checkout Operations
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
@@ -82,14 +81,13 @@ jobs:
         run: |
           mkdir -p .runtime
           node tools/migration_factory.mjs --root . --lane "${{ matrix.lane }}" --out ".runtime/foundation-${{ matrix.lane }}.json"
-      - name: Run Operations lens (trusted manual run only)
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+      - name: Run Operations lens
         run: |
           mkdir -p operations/.runtime
           node tools/migration_factory.mjs --root operations --lane "${{ matrix.lane }}" --out "operations/.runtime/operations-${{ matrix.lane }}.json"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: migration-factory-${{ github.event_name }}-${{ matrix.lane }}
+          name: migration-factory-${{ matrix.lane }}
           path: |
             .runtime/
             operations/.runtime/
@@ -111,9 +109,8 @@ jobs:
         run: |
           set -euo pipefail
           files=$(find .runtime/crossfire -name '*.json' -type f | wc -l)
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then expected=12; else expected=6; fi
-          test "$files" -eq "$expected"
-          echo "CrossFire complete: $files independent reports (expected $expected)"
+          test "$files" -eq 12
+          echo "CrossFire complete: $files independent reports (expected 12)"
           node --input-type=module <<'NODE'
           import fs from "node:fs";
           const root=".runtime/crossfire";
@@ -124,13 +121,19 @@ jobs:
               try { reports.push(JSON.parse(fs.readFileSync(root+"/"+dir.name+"/"+f,"utf8"))); } catch {}
             }
           }
-          const summary={schema:"migration-factory-crossfire-summary/v1",reports:reports.length,by_repo:{}};
+          if (reports.length !== 12) throw new Error("expected 12 reports");
+          const repositories = new Set(reports.map(r => r.repository));
+          if (repositories.size !== 2) throw new Error("expected both repositories in aggregation");
+          const lanes = new Set(reports.map(r => r.lane));
+          if (lanes.size !== 6) throw new Error("expected six independent lanes");
+          const summary={schema:"migration-factory-crossfire-summary/v1",reports:reports.length,lanes:[...lanes].sort(),repositories:[...repositories].sort(),by_repo:{}};
           for (const r of reports) {
             summary.by_repo[r.repository] ??=[];
             summary.by_repo[r.repository].push({lane:r.lane,python:r.total_python_files,counts:r.counts,blockers:r.blockers});
           }
           fs.mkdirSync(".runtime",{recursive:true});
-          fs.writeFileSync(".runtime/migration-factory-summary.json",JSON.stringify(summary,null,2)+"\n");
+          fs.writeFileSync(".runtime/migration-factory-summary.json",JSON.stringify(summary,null,2)+"
+");
           console.log(JSON.stringify(summary,null,2));
           NODE
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
