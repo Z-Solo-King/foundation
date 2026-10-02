@@ -50,7 +50,7 @@ jobs:
         run: |
           set -euo pipefail
           ref="${REQUESTED_OPERATIONS_REF:-}"
-          if [ -z "$ref" ]; then ref="$(gh api repos/Z-Solo-King/operations/commits/main --jq '.sha')"; fi
+          if [ -z "$ref" ]; then ref="$(python -c 'import json; print(json.load(open("docs/OPERATIONS_PIN_MANIFEST.json", encoding="utf-8"))["pins"]["production_runtime"]["sha"])')"; fi
           [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Operations revision must be a 40-hex immutable SHA"; exit 1; }
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
       - name: Checkout private Operations benchmark
