@@ -23,7 +23,7 @@ run-name: >-
       operations_research_ref:
         description: "Exact Operations revision deployed to the private production runtime"
         required: false
-        default: ""
+        default: "8b6909ac213e01d310362627d12772950601adf6"
         type: string
 permissions:
   actions: read
