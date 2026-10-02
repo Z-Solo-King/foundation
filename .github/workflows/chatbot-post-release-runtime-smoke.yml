@@ -1,0 +1,76 @@
+name: Chatbot post-release runtime smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_sha:
+        description: "Exact Foundation SHA to smoke-test"
+        required: false
+        default: ""
+        type: string
+  workflow_run:
+    workflows: ["Heroic AI production release"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chatbot-post-release-runtime-smoke
+  cancel-in-progress: true
+
+env:
+  PUBLIC_WORKER_URL: https://heroic-ai.pages.dev
+  OPERATIONS_REF: 11f592116d9ef57b6189bf8bf0ff0e95ec3d410f
+  TARGET_FOUNDATION_SHA: ${{ inputs.target_sha || github.event.workflow_run.head_sha || github.sha }}
+
+jobs:
+  smoke:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Wait for exact released revision
+        env:
+          EXPECTED_FOUNDATION: ${{ env.TARGET_FOUNDATION_SHA }}
+        run: |
+          set -euo pipefail
+          for _ in {1..30}; do
+            body=$(curl -sS --max-time 10 "$PUBLIC_WORKER_URL/readiness" || true)
+            if echo "$body" | jq -e --arg f "$EXPECTED_FOUNDATION" --arg o "$OPERATIONS_REF" '.ready == true and .database == true and .release.foundation_sha == $f and .release.operations_ref == $o' >/dev/null 2>&1; then
+              echo "$body" | jq '{ready,database,release}'
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "$body"
+          exit 1
+
+      - name: Verify authenticated chatbot JSON path
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$AUTH_TOKEN"
+          rid="post-release-chat-${GITHUB_RUN_ID}"
+          response=$(curl -sS --max-time 90 -w '\n%{http_code}'             -H "Authorization: Bearer $AUTH_TOKEN"             -H 'Content-Type: application/json'             -H "Idempotency-Key: $rid"             -H 'X-Heroic-Research-Proof: 1'             -d "{\"chat_id\":\"$rid\",\"request_id\":\"$rid\",\"message\":\"Return one short sentence confirming the production chatbot is reachable.\",\"mode\":\"chat\",\"strict_zero_cost_only\":true,\"require_model_generation\":true}"             "$PUBLIC_WORKER_URL/api/v1/chat")
+          status=$(printf '%s' "$response" | tail -n1)
+          body=$(printf '%s' "$response" | sed '$d')
+          test "$status" = 200
+          echo "$body" | jq -e '.ok == true and .response.generation_status == "model_generated" and .response.provider == "cloudflare_workers_ai" and ((.response.text // "") | length > 0)' >/dev/null
+          echo "$body" | jq '{ok,response:{result_state,generation_status,provider,response_id}}'
+
+      - name: Verify authenticated chatbot SSE path
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$AUTH_TOKEN"
+          rid="post-release-sse-${GITHUB_RUN_ID}"
+          curl -sS --no-buffer --max-time 90             -D /tmp/stream.headers             -o /tmp/stream.body             -H "Authorization: Bearer $AUTH_TOKEN"             -H 'Content-Type: application/json'             -H 'Accept: text/event-stream'             -H "Idempotency-Key: $rid"             -d "{\"chat_id\":\"$rid\",\"request_id\":\"$rid\",\"message\":\"Return one short sentence confirming the production chatbot stream is reachable.\",\"mode\":\"chat\",\"strict_zero_cost_only\":true,\"require_model_generation\":true}"             "$PUBLIC_WORKER_URL/api/v1/chat/stream"             -w '%{http_code}' > /tmp/stream.status
+          test "$(cat /tmp/stream.status)" = 200
+          grep -qi '^content-type: text/event-stream' /tmp/stream.headers
+          grep -q '^event: start' /tmp/stream.body
+          grep -q '^event: done' /tmp/stream.body
+          grep -q '"result_state":' /tmp/stream.body
+          echo "SSE start/done/result_state contract: PASS"
