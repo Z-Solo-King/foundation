@@ -57,6 +57,7 @@ jobs:
           if [ -z "$ref" ]; then ref="$(gh api repos/Z-Solo-King/operations/commits/main --jq '.sha')"; fi
           [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Operations revision must be a 40-hex immutable SHA"; exit 1; }
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
       - name: Checkout private Operations benchmark
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -88,13 +89,18 @@ jobs:
           set -e
           if [ "$status" -ne 0 ]; then
             if grep -q '^need at least 2 configured AI providers for cross-fire;' .runtime/live-ai-crossfire/runner.log; then
-              provider_count=$(sed -n 's/.*found \([0-9][0-9]*\)$/\1/p' .runtime/live-ai-crossfire/runner.log | tail -1)
+              provider_count=$(sed -n 's/.*found \\([0-9][0-9]*\\)$/\\1/p' .runtime/live-ai-crossfire/runner.log | tail -1)
               provider_count="${provider_count:-0}"
               jq -n --argjson provider_count "$provider_count" '{
                 schema:"live-ai-provider-crossfire-summary/v1",
                 generated_at:(now|todate),
                 comparison_state:"comparison_unavailable",
                 limitation:"fewer than two configured direct providers; comparative cross-fire is not claimed",
+                provider_target:6,
+                provider_strong_threshold:5,
+                crossfire_strength:"limited",
+                independent_execution:true,
+                shared_result_feedback:false,
                 provider_count:$provider_count,
                 providers:[],
                 call_count:0,
@@ -113,7 +119,24 @@ jobs:
         run: |
           set -euo pipefail
           test -s .runtime/live-ai-crossfire/private.json
-          jq '{schema:"live-ai-provider-crossfire-summary/v1",generated_at,comparison_state:(.comparison_state // "complete"),limitation:(.limitation // null),provider_count:(.providers|length),call_count,batch_wall_ms,successful_calls:([.providers[]?.successes]|add // 0),failed_calls:([.providers[]?.failures]|add // 0),quality_passes:([.providers[]?.quality_passes]|add // 0),quality_total:([.providers[]?.quality_total]|add // 0)}' .runtime/live-ai-crossfire/private.json > .runtime/live-ai-crossfire/summary.json
+          jq '{
+            schema:"live-ai-provider-crossfire-summary/v1",
+            generated_at,
+            comparison_state:(.comparison_state // "complete"),
+            limitation:(.limitation // null),
+            provider_target:(.provider_target // 6),
+            provider_strong_threshold:(.provider_strong_threshold // 5),
+            crossfire_strength:(.crossfire_strength // "unknown"),
+            independent_execution:(.independent_execution // null),
+            shared_result_feedback:(.shared_result_feedback // null),
+            provider_count:(.providers|length),
+            call_count,
+            batch_wall_ms,
+            successful_calls:([.providers[]?.successes]|add // 0),
+            failed_calls:([.providers[]?.failures]|add // 0),
+            quality_passes:([.providers[]?.quality_passes]|add // 0),
+            quality_total:([.providers[]?.quality_total]|add // 0)
+          }' .runtime/live-ai-crossfire/private.json > .runtime/live-ai-crossfire/summary.json
 
       - name: Upload public-safe evidence
         if: always()
