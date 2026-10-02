@@ -361,7 +361,7 @@ echo "Cross-repository audit acceptance: PASS"
 # Materialize the pinned public Foundation deterministic core locally.
 # Cloudflare Python Workers must bundle local Worker-compatible modules rather
 # than resolve a Git URL package during the Worker build.
-python "$RUNNER_TEMP/operations/scripts/sync_public_core.py"
+node "$RUNNER_TEMP/operations/scripts/sync_public_core.mjs"
 test -f "$RUNNER_TEMP/operations/foundation_core/__init__.py"
 rm -rf "$RUNNER_TEMP/operations/foundation_frontend"
 cp -a "$GITHUB_WORKSPACE/frontend" "$RUNNER_TEMP/operations/foundation_frontend"

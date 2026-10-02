@@ -42,3 +42,8 @@ Do not infer production state from historical docs, branch names, or GitHub `mai
 - A compatibility surface must remain thin, contract-based and non-authoritative. It must not recreate private policy, routing, provider, resource or execution algorithms.
 - Cross-repository workflows use purpose-scoped immutable Operations revisions. Production pins are separate from Operations main and must not be advanced implicitly.
 - Runtime claims require live evidence at the appropriate level; source files and historical synchronization documents are not production certificates.
+
+
+## Public-core synchronization tooling — 2026-10-02
+
+The production release boundary now materializes the immutable Foundation public core through the Node-based Operations tool `scripts/sync_public_core.mjs`. The migration changes only build-time synchronization tooling; runtime service-binding and authentication authority remain unchanged.

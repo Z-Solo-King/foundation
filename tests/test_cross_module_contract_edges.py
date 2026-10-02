@@ -6,7 +6,7 @@ def test_operations_public_core_materialization_contract():
     operations = ROOT / 'operations'
     if not operations.exists():
         return
-    sync = operations / 'scripts' / 'sync_public_core.py'
+    sync = operations / 'scripts' / 'sync_public_core.mjs'
     core = operations / 'foundation_core' / '__init__.py'
     assert sync.exists()
     assert 'FOUNDATION_COMMIT' in sync.read_text(encoding='utf-8')
