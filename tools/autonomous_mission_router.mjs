@@ -7,7 +7,7 @@ const COMPONENT_WORKFLOWS = Object.fromEntries(IMPROVEMENT_COMPONENTS.map((compo
 
 export const MISSION_WORKFLOWS = {
   migration: ['polyglot-migration-review.yml', 'open-issue-polyglot-deep-scan.yml', 'hybrid-language-pilots.yml'],
-  feed_recovery: ['woocommerce-clean-recovery.yml', 'native-google-feed-hunt.yml', 'woocommerce-identified-family-exhaustive-v5.yml'],
+  feed_recovery: ['woocommerce-clean-recovery.yml', 'native-google-feed-hunt.yml'],
   nightly_research: ['nightly-multi-agent-research-v3.yml'],
   audit: ['exhaustive-six-lane-audit.yml', 'cross-repository-contract-drift.yml'],
   runtime_reconciliation: ['provider-fleet-runtime-state.yml', 'live-ai-provider-crossfire.yml', 'nightly-invariants.yml', 'operations-centralized-validation.yml'],
