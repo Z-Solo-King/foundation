@@ -15,7 +15,7 @@ Each lane scans the full tracked Python surface of both Foundation and the exact
 
 ## Trust boundary
 
-The workflow is privileged because it reads the private Operations repository through a read-only GitHub App token. It is intentionally manual-dispatch only. No pull-request or untrusted trigger may execute private Operations checkout logic.
+The workflow is privileged because it reads the private Operations repository through a read-only GitHub App token. It runs only from trusted Foundation main pushes or manual dispatch. No pull-request or untrusted trigger may execute private Operations checkout logic. On a trusted main push, the workflow resolves the current Operations main SHA through the read-only Operations App token and then uses that immutable SHA for every lane.
 
 Foundation remains the sole GitHub Actions and deployment authority.
 
