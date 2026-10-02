@@ -306,7 +306,7 @@ function plan(input) {
         continue;
       }
 
-      if (!canFit(row)) {
+      if (!canFit(row, "required")) {
         skipped.push({
           ...row,
           selection: "required-but-blocked",
