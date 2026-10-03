@@ -8,7 +8,7 @@
       "purpose": "Cloudflare Operations production runtime and Foundation public production release",
       "status": "candidate: 621fc8aa536b60bbc6f9e686c4ce0a769d8cab56; validated Operations main revision staged for controlled production promotion; live production remains separately certified until the release transaction completes",
       "updated_at": "2026-10-04",
-      "source": "Z-Solo-King/operations main"
+      "source": "Z-Solo-King/operations commit 621fc8aa536b60bbc6f9e686c4ce0a769d8cab56 (validated candidate; Operations main may advance independently)"
     },
     "provider_fleet_runtime": {
       "sha": "2a4a49d2c11bd9ff2b9290bc780eb0da97c73ecb",
