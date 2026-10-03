@@ -150,3 +150,13 @@ def test_operations_bootstrap_config_lives_with_entrypoint_checkout():
     assert 'operations_bootstrap_stage="$RUNNER_TEMP/operations-worker-bootstrap"' in text
     assert '(cd "$operations_bootstrap_stage" && pywrangler deploy --config wrangler.toml --secrets-file' in text
 # fmt: on
+
+
+def test_production_release_receipt_publication_cannot_mask_release_outcome() -> None:
+    text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
+    workflow = (ROOT / ".github/workflows/heroic-ai-production-release.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "if-no-files-found: warn" in workflow
+    assert 'gh issue comment 58 --repo "$GITHUB_REPOSITORY" --body-file .runtime/production-release-tracker-receipt.md ||' in workflow
+    assert "artifact remains authoritative" in workflow
