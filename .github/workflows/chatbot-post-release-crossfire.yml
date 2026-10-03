@@ -96,18 +96,25 @@ jobs:
           repository: Z-Solo-King/operations
           ref: ${{ steps.operations.outputs.ref }}
           token: ${{ steps.operations-token.outputs.token }}
-          path: ${{ runner.temp }}/operations
+          path: operations
           persist-credentials: false
 
+      - name: Sync pinned public deterministic core
+        working-directory: operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/sync_public_core.mjs
+
       - name: Install pinned Operations runtime
-        working-directory: ${{ runner.temp }}/operations
+        working-directory: operations
         shell: bash
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check -e .
 
       - name: Validate six-lane CrossFire contract
-        working-directory: ${{ runner.temp }}/operations
+        working-directory: operations
         run: |
           set -euo pipefail
           python - <<'PY'
@@ -135,7 +142,7 @@ jobs:
         run: |
           set +e
           mkdir -p .runtime/chatbot-crossfire
-          python "${{ runner.temp }}/operations/private/benchmark/ai_provider_crossfire.py"             --providers-max 6 --repeats 3 --workers 12             --output .runtime/chatbot-crossfire/private.json             > .runtime/chatbot-crossfire/runner.log 2>&1
+          python "operations/private/benchmark/ai_provider_crossfire.py"             --providers-max 6 --repeats 3 --workers 12             --output .runtime/chatbot-crossfire/private.json             > .runtime/chatbot-crossfire/runner.log 2>&1
           status=$?
           set -e
 
