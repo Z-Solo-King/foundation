@@ -1,13 +1,14 @@
 name: Nightly benchmark AI cross-fire
 on:
-  workflow_run:
-    workflows: ["autonomous benchmark"]
-    types: [completed]
+  schedule:
+    # 22:30 IST, after the 21:15 IST autonomous benchmark window.
+    - cron: "0 17 * * *"
   workflow_dispatch:
     inputs:
       run_id:
-        description: "Completed autonomous benchmark run ID to analyze"
-        required: true
+        description: "Optional completed autonomous benchmark run ID; blank uses latest run"
+        required: false
+        default: ""
         type: string
 
 permissions:
@@ -38,17 +39,21 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
-      - name: Resolve run
+      - name: Resolve benchmark run
         id: run
         env:
-          EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
           MANUAL_RUN_ID: ${{ inputs.run_id }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          run_id="${MANUAL_RUN_ID:-${EVENT_RUN_ID:-}}"
+          if [ -n "$MANUAL_RUN_ID" ]; then
+            run_id="$MANUAL_RUN_ID"
+          else
+            run_id="$(gh run list --workflow autonomous-benchmark.yml --repo "$GITHUB_REPOSITORY" --limit 1 --json databaseId --jq ".[0].databaseId // empty")"
+          fi
+          test -n "$run_id"
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
       - name: Download final evidence
-        if: steps.run.outputs.run_id != ""
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ steps.run.outputs.run_id }}
@@ -56,7 +61,8 @@ jobs:
           set -euo pipefail
           mkdir -p .runtime/input
           gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name autonomous-nightly-benchmark-final --dir .runtime/input
-      - name: Build and execute bounded AI lane
+          test -s .runtime/input/autonomous-nightly-benchmark-final.json
+      - name: Run bounded AI lane
         env:
           MODEL: ${{ matrix.model }}
           RUN_ID: ${{ steps.run.outputs.run_id }}
@@ -66,18 +72,18 @@ jobs:
           python - <<PY
           import hashlib, json, os, time, urllib.request
           from pathlib import Path
-          final_path=Path(".runtime/input/autonomous-nightly-benchmark-final.json")
-          if final_path.exists():
-              final=json.loads(final_path.read_text())
-              payload={"schema":"nightly-benchmark-ai-input/v1","final":{k:final.get(k) for k in ("finalization_status","research_feed_state","benchmark_job_result","research_feed_job_result","shards_found","selected_targets","total_observations","usable_observations","operational_failures","operational_failure_rate","validation_errors")}}
-          else:
-              payload={"schema":"nightly-benchmark-ai-input/v1","final":{"finalization_status":"TEST_FIXTURE","shards_found":4,"total_observations":120,"operational_failures":8,"validation_errors":[]}}
+          final=json.loads(Path(".runtime/input/autonomous-nightly-benchmark-final.json").read_text())
+          keys=("finalization_status","research_feed_state","benchmark_job_result","research_feed_job_result","shards_found","selected_targets","total_observations","usable_observations","operational_failures","operational_failure_rate","validation_errors")
+          payload={"schema":"nightly-benchmark-ai-input/v1","final":{k:final.get(k) for k in keys}}
           data=json.dumps(payload,separators=(",",":"))
-          instruction=("NIGHTLY_BENCHMARK_AI_CROSSFIRE_V1\nReturn JSON only with keys advisory_assessment, reason, flags.\nAdvisory only: never certify correctness, production health, or research completion.\nDo not propose credential, policy, deployment, Cloudflare mutation, or workflow-dispatch actions.\nEvaluate only supplied evidence. advisory_assessment must be pass, attention, or blocked. flags must be an array.\n"+data)
-          body=json.dumps({"model":os.environ["MODEL"],"input":{"messages":[{"role":"user","content":instruction}],"max_tokens":96,"temperature":0}}).encode()
-          url="https://api.cloudflare.com/client/v4/accounts/"+os.environ["CLOUDFLARE_ACCOUNT_ID"]+"/ai/run"
-          req=urllib.request.Request(url,data=body,headers={"Authorization":"Bearer "+os.environ["CLOUDFLARE_API_TOKEN"],"Content-Type":"application/json"})
-          receipt={"schema":"nightly-benchmark-ai-crossfire-result/v1","run_id":os.environ["RUN_ID"] or "manual-test","model":os.environ["MODEL"],"transport_ok":False,"elapsed_ms":None,"advisory_schema_compliant":False,"advisory_assessment":None,"reason":"","flags":[],"neurons":None,"input_sha256":hashlib.sha256(data.encode()).hexdigest(),"authority":"advisory_only_no_acceptance_or_mutation_authority"}
+          if len(data)>12000: raise SystemExit("ai_input_too_large")
+          prompt=("NIGHTLY_BENCHMARK_AI_CROSSFIRE_V1\nReturn JSON only with advisory_assessment, reason, flags.\n"
+                  "Advisory only: never certify correctness, production health, or research completion.\n"
+                  "Do not propose credential, policy, deployment, Cloudflare mutation, or workflow-dispatch actions.\n"
+                  "Evaluate only supplied evidence. assessment must be pass, attention, or blocked. flags must be an array.\n"+data)
+          body=json.dumps({"model":os.environ["MODEL"],"input":{"messages":[{"role":"user","content":prompt}],"max_tokens":96,"temperature":0}}).encode()
+          req=urllib.request.Request("https://api.cloudflare.com/client/v4/accounts/"+os.environ["CLOUDFLARE_ACCOUNT_ID"]+"/ai/run",data=body,headers={"Authorization":"Bearer "+os.environ["CLOUDFLARE_API_TOKEN"],"Content-Type":"application/json"})
+          receipt={"schema":"nightly-benchmark-ai-crossfire-result/v1","run_id":os.environ["RUN_ID"],"model":os.environ["MODEL"],"transport_ok":False,"elapsed_ms":None,"advisory_schema_compliant":False,"advisory_assessment":None,"reason":"","flags":[],"neurons":None,"input_sha256":hashlib.sha256(data.encode()).hexdigest(),"authority":"advisory_only_no_acceptance_or_mutation_authority"}
           started=time.time()
           try:
               with urllib.request.urlopen(req,timeout=90) as response: raw=json.loads(response.read())
@@ -86,10 +92,8 @@ jobs:
               receipt["neurons"]=(result.get("usage") or {}).get("neurons")
               value=result.get("response")
               if not isinstance(value,str): value=((result.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
-              cleaned=str(value).replace("```json","").replace("```","").strip()
-              try: obj=json.loads(cleaned)
-              except Exception: obj=None
-              if isinstance(obj,dict) and obj.get("advisory_assessment") in {"pass","attention","blocked"} and isinstance(obj.get("reason"),str) and isinstance(obj.get("flags"),list):
+              obj=json.loads(str(value).replace("```json","").replace("```","").strip())
+              if obj.get("advisory_assessment") in {"pass","attention","blocked"} and isinstance(obj.get("reason"),str) and isinstance(obj.get("flags"),list):
                   receipt["advisory_schema_compliant"]=True
                   receipt["advisory_assessment"]=obj["advisory_assessment"]
                   receipt["reason"]=obj["reason"][:500]
