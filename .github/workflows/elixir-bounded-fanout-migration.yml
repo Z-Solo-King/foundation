@@ -1,0 +1,53 @@
+name: Elixir bounded fan-out migration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "polyglot/**"
+      - ".github/workflows/elixir-bounded-fanout-migration.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/elixir-bounded-fanout-migration.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  elixir_bounded_fanout:
+    name: Elixir bounded fan-out candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Operations read token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: main
+          token: ${{ steps.operations-app.outputs.token }}
+          path: operations
+
+      - name: Setup Elixir and Erlang
+        uses: erlef/setup-beam@ee09b1e59bb240681c382eb1f0abc6a04af72764
+        with:
+          elixir-version: "1.20.x"
+          otp-version: "28.x"
+
+      - name: Run ExUnit
+        working-directory: operations/polyglot/elixir-bounded-fanout
+        run: mix test
+
+      - name: Run deterministic benchmark
+        working-directory: operations/polyglot/elixir-bounded-fanout
+        run: mix run bench/benchmark.exs
