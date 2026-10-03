@@ -91,3 +91,10 @@ The Operations scraper execution fabric now consumes the canonical evidence time
 Live inventory before this cleanup pass: Foundation 1,383 branches and Operations 1,050 branches. Exact same-tip duplication is currently zero in both repositories.
 
 The retirement executor is authorized only through the existing fail-closed workflow. Eligible refs must be merged into the default branch or be exact same-tip duplicates, satisfy the 24-hour age floor, have no active pull request, protection, release/tag, or live-tree reference, and pass expected-SHA revalidation immediately before deletion.
+
+## Retirement evidence expansion — 2026-10-03
+
+The canonical retirement engine also recognizes branches whose resulting Git tree is identical to the default branch, even when their commit histories diverge. Those refs remain subject to the 24-hour age floor, active pull-request, protection, release/tag, live-reference, and immediate SHA-revalidation checks.
+
+Operations consumes the engine from a pinned Foundation revision instead of maintaining a second implementation.
+
