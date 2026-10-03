@@ -1,9 +1,5 @@
 name: Nightly benchmark AI cross-fire
 on:
-  push:
-    branches: [fix/live-crossfire-workflow-hardening-2026-10-03]
-    paths:
-      - ".github/workflows/nightly-benchmark-ai-crossfire.yml"
   schedule:
     # 22:30 IST, after the 21:15 IST autonomous benchmark window.
     - cron: "0 17 * * *"
@@ -24,26 +20,6 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  _temporary_prettier_capture:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/fix/live-crossfire-workflow-hardening-2026-10-03'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: "22"
-          package-manager-cache: false
-      - name: Apply pinned Prettier
-        run: npx --yes prettier@3.9.9 --write .github/workflows/nightly-benchmark-ai-crossfire.yml
-      - name: Upload formatted workflow
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: nightly-prettier-capture
-          path: .github/workflows/nightly-benchmark-ai-crossfire.yml
-          retention-days: 1
-          if-no-files-found: error
-
   crossfire:
     name: "AI ${{ matrix.id }}"
     runs-on: ubuntu-latest
