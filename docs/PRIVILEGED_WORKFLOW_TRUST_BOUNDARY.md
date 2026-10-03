@@ -67,3 +67,10 @@ Credential-bearing workflows that probe or release the public application must t
 ## 2026-10-02 controlled Operations pin promotion staging
 
 The promotion PR may stage the next immutable Operations revision in post-release workflow consumers before production deployment. Those workflows fail closed on readiness/provenance mismatch. The manifest marks the revision as a candidate until the controlled production release and fresh runtime evidence complete; approval and live-state records continue to identify the currently deployed revision during that interval.
+
+## 2026-10-03 current CrossFire and browser/nightly synchronization
+
+- `.github/workflows/live-ai-provider-crossfire.yml` is a privileged scheduled/manual benchmark. It checks private Operations out below `GITHUB_WORKSPACE`, uses a read-only Operations App token, and fails closed when comparative provider evidence is unavailable.
+- `.github/workflows/browser-engine-runtime-evidence.yml` is a privileged scheduled/manual runtime-evidence workflow. It resolves the immutable Operations production pin when no explicit revision is supplied, targets the canonical Heroic AI Pages origin, and keeps Chromium, Firefox and WebKit as independent evidence lanes.
+- `.github/workflows/nightly-benchmark-ai-crossfire.yml` is an advisory-only scheduled/manual workflow using six analytical lanes and the approved zero-cost Workers AI model contract. It records lane identity and deterministic receipts and has no production/promotion authority.
+- Privileged workflows retain trusted triggers only; live validation may be performed through an explicit trusted/manual execution path. No privileged workflow uses a non-main push trigger.
