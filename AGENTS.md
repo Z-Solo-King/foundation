@@ -46,3 +46,15 @@ Use the canonical shared format contract and sync map. Mapped code changes requi
 
 ## Completion
 Remaining issues must be explicit runtime/external/admin blockers, duplicates/superseded items or roadmap work, with owner and missing proof recorded.
+
+## Security protocol
+Treat privileged automation as a trust boundary, not a convenience mechanism.
+
+1. Any `workflow_run` workflow is privileged because it can access secrets and elevated tokens. Never execute pull-request, fork, merge-group, or otherwise untrusted code in that privilege domain. Checkout only trusted `main` or an explicitly verified immutable SHA.
+2. Grant `GITHUB_TOKEN` and GitHub App tokens the minimum permissions required. Private Operations checkout for Foundation workflows is read-only unless a separately owned workflow explicitly requires a write permission.
+3. AI automation, CrossFire, benchmarks, research synthesis and model outputs are evidence/advisory inputs only. They cannot self-authorize, self-promote, merge, deploy, alter policy, or establish production truth.
+4. Production Cloudflare Workers, bindings, secrets and deployment pins are changed only through the canonical Foundation production-release workflow on protected `main`. Direct connector mutation is inspection-only except for a separately documented break-glass procedure with explicit authorization.
+5. Never publish raw private GitHub/Cloudflare API responses, credentials, private revision metadata or provider payloads into public issues, logs or artifacts. Store private inspection data transiently, sanitize receipts, then delete the raw material before upload.
+6. Treat immutable pins as lineage controls. A newer Operations `main` commit is not itself an integrity failure when the approved revision is an ancestor; fail only on divergence, invalid identity, or an unauthorized authority change.
+7. Do not bypass required checks, protection rules, security scans or release gates to make a run green. Record unresolved external/admin credential failures as `EXTERNAL/ADMIN` blockers.
+8. Parallelism is for independent read-only investigation. Serialize repository writes, production changes and merges.
