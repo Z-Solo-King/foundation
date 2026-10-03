@@ -120,7 +120,7 @@ jobs:
       - name: Generate family language-fit coverage
         working-directory: foundation
         env:
-          PYTHONPATH: ../operations/repo
+          PYTHONPATH: .:../operations/repo
         run: |
           set -euo pipefail
           mkdir -p .runtime
