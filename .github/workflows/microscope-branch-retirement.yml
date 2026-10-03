@@ -16,18 +16,13 @@ on:
         default: "24"
         type: string
 
-permissions:
-  contents: write
-  pull-requests: read
-
 jobs:
-  retire:
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (
-        github.event_name == 'push' &&
-        contains(github.event.head_commit.message, '[microscope-retirement-authorized]')
-      )
+  scan:
+    # Normal pushes are evidence-only. This job has no write permission.
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      pull-requests: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -37,19 +32,42 @@ jobs:
       - name: Fetch all branch refs
         run: git fetch origin '+refs/heads/*:refs/remotes/origin/*' --prune
 
-      - name: Run microscope retirement audit
+      - name: Run microscope retirement scan
         env:
           GH_TOKEN: ${{ github.token }}
-          MICROSCOPE_MIN_AGE_HOURS: ${{ github.event_name == 'workflow_dispatch' && inputs.min_age_hours || '24' }}
+          MICROSCOPE_MIN_AGE_HOURS: "24"
         run: |
           set -euo pipefail
-          args=(--report microscope-branch-retirement-report.json)
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.execute }}" == "true" ]]; then
-            args+=(--execute)
-          elif [[ "${{ github.event_name }}" == "push" ]]; then
-            args+=(--execute)
-          fi
-          node tools/retire_microscope_branches.mjs "${args[@]}"
+          node tools/retire_microscope_branches.mjs --report microscope-branch-retirement-report.json
+
+      - name: Upload scan receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: microscope-branch-scan-receipt
+          path: microscope-branch-retirement-report.json
+
+  retire:
+    # Destructive execution is available only from an explicit manual dispatch.
+    if: github.event_name == 'workflow_dispatch' && inputs.execute == true
+    permissions:
+      contents: write
+      pull-requests: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      - name: Fetch all branch refs
+        run: git fetch origin '+refs/heads/*:refs/remotes/origin/*' --prune
+
+      - name: Run microscope retirement execution
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MICROSCOPE_MIN_AGE_HOURS: ${{ inputs.min_age_hours || '24' }}
+        run: |
+          set -euo pipefail
+          node tools/retire_microscope_branches.mjs --report microscope-branch-retirement-report.json --execute
 
       - name: Upload retirement receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
