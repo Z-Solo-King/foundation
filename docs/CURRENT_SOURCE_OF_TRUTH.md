@@ -224,4 +224,3 @@ The last fully verified branch inventory was 2,440 refs across Foundation and Op
 ## Cross-repository overlap validator — 2026-10-03
 
 The canonical cross-repository contract workflow invokes the overlap validator from the disposable Operations checkout. Foundation remains the workflow authority; Operations supplies the validator implementation used for exhaustive cross-repository overlap verification.
-
