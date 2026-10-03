@@ -1,7 +1,10 @@
 from __future__ import annotations
+
 import json
 import re
 from pathlib import Path
+
+# fmt: off
 ROOT = Path(__file__).parents[1]
 WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
@@ -39,7 +42,7 @@ def test_all_third_party_actions_are_sha_pinned():
                 continue
             ref = stripped.split("@", 1)[-1].split("#", 1)[0].strip()
             action = stripped.split("uses:", 1)[1].split("@", 1)[0].strip()
-            if action.startswith("./") or action.startswith("docker://"):
+            if action.startswith(("./", "docker://")):
                 continue
             if not SHA_REF.fullmatch(ref):
                 violations.append(f"{name}:{line_no}:{action}@{ref}")
@@ -241,10 +244,14 @@ def test_private_operations_deployment_verifies_cloudflare_provenance():
 def test_private_operations_handoff_is_preflighted_and_diagnostic_runs_last():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     preflight = deployment.index("Preflight and stage the private Operations handoff")
-    public_deploy = deployment.index("npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml")
-    operations_deploy = deployment.index("pywrangler deploy --config wrangler.toml --secrets-file")
+    public_deploy = deployment.index(
+        "npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml"
+    )
+    operations_deploy = deployment.index(
+        '(cd "$operations_final_stage" && pywrangler deploy --config wrangler.toml --secrets-file'
+    )
     diagnostic = deployment.index("infrastructure_verify_public_test")
-    success = deployment.rindex("Production release completed")
+    success = deployment.rindex("Production release completed for")
     assert preflight < public_deploy
     assert public_deploy < operations_deploy < diagnostic < success
 
@@ -424,7 +431,7 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'PIN_MANIFEST="docs/OPERATIONS_PIN_MANIFEST.json"' in deployment
     assert 'manifest["pins"]["production_runtime"]["sha"]' in deployment
-    nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
+    nightly = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
     expected = "OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || '" + CANONICAL_RESEARCH_OPERATIONS_REF + "' }}"
     assert expected in nightly
 
@@ -671,11 +678,25 @@ def test_live_chatbot_smoke_requires_real_model_generation():
 def test_production_bootstrap_precedes_foundation_deploy_and_is_unconditional():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     start = deployment.index("# Rename-safe Cloudflare deployment sequence.")
-    bootstrap = deployment.index('pywrangler deploy --config "$bootstrap_config"', start)
-    public_deploy = deployment.index('npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml', start)
-    assert bootstrap < public_deploy
-    assert deployment.count('pywrangler deploy --config "$bootstrap_config"') == 1
+    bootstrap_stage = deployment.index(
+        'operations_bootstrap_stage="$RUNNER_TEMP/operations-worker-bootstrap"',
+        start,
+    )
+    bootstrap_deploy = deployment.index(
+        '(cd "$operations_bootstrap_stage" && pywrangler deploy --config wrangler.toml --secrets-file',
+        bootstrap_stage,
+    )
+    public_deploy = deployment.index(
+        "npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml",
+        start,
+    )
+    assert bootstrap_stage < bootstrap_deploy < public_deploy
+    assert deployment.count(
+        '(cd "$operations_bootstrap_stage" && pywrangler deploy --config wrangler.toml --secrets-file'
+    ) == 1
+    assert 'pywrangler deploy --config "$bootstrap_config"' not in deployment
     assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings' not in deployment
+
 def test_public_probe_records_dns_failure_without_parser_crash():
     workflow = _workflow_texts()["public-worker-live-probe.yml"]
     assert ': > "probe/$item.body"' in workflow
@@ -764,3 +785,4 @@ def test_unified_ai_system_directory_is_part_of_agent_navigation():
     navigation_map = ROOT / "docs" / "AI_SYSTEM_MAP.json"
     assert directory.is_file()
     assert navigation_map.is_file()
+# fmt: on

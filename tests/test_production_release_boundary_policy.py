@@ -1,5 +1,6 @@
-from pathlib import Path
+# fmt: off
 import subprocess
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PRODUCTION_SCRIPT = ROOT / "scripts" / "production_release.sh"
@@ -26,7 +27,7 @@ def test_d1_migration_config_uses_resolved_database_values():
     assert '"database_name = \\"\\${database_name}\\""' not in text
     assert '"database_id = \\"\\${database_id}\\""' not in text
 def test_production_release_shell_syntax_is_valid():
-    result = subprocess.run(["bash", "-n", str(PRODUCTION_SCRIPT)], capture_output=True, text=True)
+    result = subprocess.run(["bash", "-n", str(PRODUCTION_SCRIPT)], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 def test_production_release_uses_migrations_once_and_does_not_reexecute_raw_d1_schema():
@@ -115,17 +116,37 @@ def test_release_d1_commands_do_not_repeat_global_config_flag():
             continue
     assert '  --config="$d1_migrations_config"' not in text
 
+def test_operations_deploy_staging_is_allowlisted_and_bundle_audited():
+    text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
+    assert "stage_operations_worker()" in text
+    assert "audit_operations_worker_bundle()" in text
+    assert 'cp "$RUNNER_TEMP/operations/worker.py"' in text
+    assert 'for runtime_dir in private extractor_mapper foundation_core backend' in text
+    assert "forbidden in tests tools backup .venv-workers CONTINUE_MIGRATION_2026-10-01.md" in text
+    assert 'test ! -e "$stage_dir/$forbidden"' in text
+    assert '--dry-run --outdir "$out_dir"' in text
+    assert 'PROVIDER_KEYS_JSON.txt' in text
+    assert 'SILICONFLOW_API_KEY.txt' in text
+    assert 'OPENROUTER_API_KEY.txt' in text
+    assert 'CONTINUE_MIGRATION_2026-10-01.md' in text
+    assert '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config"' not in text
+    assert '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml' not in text
+
 def test_reciprocal_service_bindings_use_binding_free_bootstrap():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
     assert "Operations binding-free bootstrap deployment: PASS" in text
     assert 'bootstrap_config="$RUNNER_TEMP/operations/wrangler.bootstrap.toml"' in text
     assert '[[services]]' in text
-    assert '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config"' in text
-    assert text.count('(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config"') == 1
+    assert 'operations_bootstrap_stage="$RUNNER_TEMP/operations-worker-bootstrap"' in text
+    assert '(cd "$operations_bootstrap_stage" && pywrangler deploy --config wrangler.toml --secrets-file' in text
+    assert text.count('(cd "$operations_bootstrap_stage" && pywrangler deploy --config wrangler.toml --secrets-file') == 1
     assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings' not in text
 
 def test_operations_bootstrap_config_lives_with_entrypoint_checkout():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
     assert 'bootstrap_config="$RUNNER_TEMP/operations/wrangler.bootstrap.toml"' in text
     assert 'cp "$RUNNER_TEMP/operations/wrangler.toml" "$bootstrap_config"' in text
-    assert '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config"' in text
+    assert 'operations_bootstrap_stage="$RUNNER_TEMP/operations-worker-bootstrap"' in text
+    assert 'operations_bootstrap_stage="$RUNNER_TEMP/operations-worker-bootstrap"' in text
+    assert '(cd "$operations_bootstrap_stage" && pywrangler deploy --config wrangler.toml --secrets-file' in text
+# fmt: on

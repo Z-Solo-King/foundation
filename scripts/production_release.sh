@@ -39,6 +39,60 @@ RELEASE_SUBJECT_HEADERS=(
   -H "X-Heroic-Release-Signature: ${RELEASE_SUBJECT_SIGNATURE}"
 )
 
+
+stage_operations_worker() {
+  local config_source="$1"
+  local stage_dir="$2"
+  local extra_config="${3:-}"
+  rm -rf "$stage_dir"
+  mkdir -p "$stage_dir"
+  cp "$RUNNER_TEMP/operations/worker.py" "$stage_dir/worker.py"
+  cp "$RUNNER_TEMP/operations/pyproject.toml" "$stage_dir/pyproject.toml"
+  if [ -f "$RUNNER_TEMP/operations/uv.lock" ]; then
+    cp "$RUNNER_TEMP/operations/uv.lock" "$stage_dir/uv.lock"
+  fi
+  cp "$config_source" "$stage_dir/wrangler.toml"
+  if [ -n "$extra_config" ] && [ -f "$extra_config" ]; then
+    cp "$extra_config" "$stage_dir/$(basename "$extra_config")"
+  fi
+  for runtime_dir in private extractor_mapper foundation_core backend; do
+    test -d "$RUNNER_TEMP/operations/$runtime_dir" || {
+      echo "Missing required Operations runtime directory: $runtime_dir"
+      exit 1
+    }
+    cp -a "$RUNNER_TEMP/operations/$runtime_dir" "$stage_dir/$runtime_dir"
+  done
+  for forbidden in tests tools backup .venv-workers CONTINUE_MIGRATION_2026-10-01.md; do
+    test ! -e "$stage_dir/$forbidden" || {
+      echo "Forbidden non-runtime artifact entered Operations deployment stage: $forbidden"
+      exit 1
+    }
+  done
+  if find "$stage_dir" -type f \( -name 'PROVIDER_KEYS_JSON.txt' -o -name 'SILICONFLOW_API_KEY.txt' -o -name 'OPENROUTER_API_KEY.txt' \) -print -quit | grep -q .; then
+    echo "Provider credential file entered Operations deployment stage"
+    exit 1
+  fi
+}
+
+audit_operations_worker_bundle() {
+  local stage_dir="$1"
+  local label="$2"
+  local out_dir="$RUNNER_TEMP/operations-bundle-$label"
+  local log_file="$RUNNER_TEMP/operations-bundle-$label.log"
+  rm -rf "$out_dir"
+  mkdir -p "$out_dir"
+  echo "Auditing exact Operations Worker bundle: $label"
+  (cd "$stage_dir" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --dry-run --outdir "$out_dir") > "$log_file" 2>&1
+  if grep -RnaE '(^|[/\\])tests[/\\]|(^|[/\\])tools[/\\]|(^|[/\\])backup[/\\]|\.venv-workers|CONTINUE_MIGRATION_2026-10-01\.md|PROVIDER_KEYS_JSON\.txt|SILICONFLOW_API_KEY\.txt|OPENROUTER_API_KEY\.txt' "$out_dir" >/dev/null 2>&1; then
+    echo "Operations Worker dry-run bundle contains a forbidden source/artifact path: $label"
+    grep -RnaE '(^|[/\\])tests[/\\]|(^|[/\\])tools[/\\]|(^|[/\\])backup[/\\]|\.venv-workers|CONTINUE_MIGRATION_2026-10-01\.md|PROVIDER_KEYS_JSON\.txt|SILICONFLOW_API_KEY\.txt|OPENROUTER_API_KEY\.txt' "$out_dir" || true
+    exit 1
+  fi
+  bundle_digest="$(find "$out_dir" -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
+  jq -n --arg label "$label" --arg digest "$bundle_digest" --arg outdir "$out_dir" '{schema:"operations-worker-bundle-audit/v1",label:$label,outdir:$outdir,bundle_sha256:$digest,forbidden_paths:[]}' > "$RUNNER_TEMP/operations-bundle-$label.json"
+  echo "Operations Worker bundle audit: PASS ($label; sha256=$bundle_digest)"
+}
+
 cleanup() {
   if [ -f "$RUNNER_TEMP/foundation-js-wrangler.toml" ]; then
     mv -f "$RUNNER_TEMP/foundation-js-wrangler.toml" wrangler.toml 2>/dev/null || true
@@ -487,7 +541,10 @@ PY
 # Always bootstrap the Operations target without its reciprocal Foundation binding.
 # Cloudflare service-binding deployment fails closed when the target Worker is absent;
 # making this idempotent removes the unreliable existence-probe dependency.
-(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config" --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:bootstrap-${ACCEPTANCE_RUN_ID}")
+operations_bootstrap_stage="$RUNNER_TEMP/operations-worker-bootstrap"
+stage_operations_worker "$bootstrap_config" "$operations_bootstrap_stage"
+audit_operations_worker_bundle "$operations_bootstrap_stage" "bootstrap"
+(cd "$operations_bootstrap_stage" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:bootstrap-${ACCEPTANCE_RUN_ID}")
 echo "Operations binding-free bootstrap deployment: PASS"
 
 # Deploy the TypeScript edge Worker before Foundation so the public OPERATIONS binding
@@ -543,11 +600,10 @@ fi
 # the TypeScript edge config before its own deployment. This avoids a false
 # "python_workers compat flag not specified" rejection while keeping both deployment
 # configs explicit for their respective Worker.
-python_core_default_backup="$RUNNER_TEMP/foundation-js-wrangler.toml"
-cp wrangler.toml "$python_core_default_backup"
-cp wrangler.python-core.generated.toml wrangler.toml
-(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.foundation-core.toml --secrets-file "$public_secret_file" --message "github:${OPERATIONS_REF}:python-core")
-mv -f "$python_core_default_backup" wrangler.toml
+operations_core_stage="$RUNNER_TEMP/operations-worker-core"
+stage_operations_worker "$RUNNER_TEMP/operations/wrangler.foundation-core.toml" "$operations_core_stage" "$RUNNER_TEMP/operations/wrangler.foundation-core.toml"
+audit_operations_worker_bundle "$operations_core_stage" "python-core"
+(cd "$operations_core_stage" && pywrangler deploy --config wrangler.foundation-core.toml --secrets-file "$public_secret_file" --message "github:${OPERATIONS_REF}:python-core")
 
 (cd "$GITHUB_WORKSPACE" && npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml --message "github:${GITHUB_SHA}:typescript-edge")
 
@@ -598,7 +654,9 @@ done
 # Redeploy Operations against the new Foundation Worker, proving the final private binding.
 # The canonical schema is applied exactly once above through the pinned migrations directory;
 # do not re-run the raw DDL here because D1 DDL can consume row-read/write budget.
-(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:foundation-binding-${ACCEPTANCE_RUN_ID}")
+operations_final_stage="$RUNNER_TEMP/operations-worker-final"
+stage_operations_worker "$RUNNER_TEMP/operations/wrangler.toml" "$operations_final_stage"
+(cd "$operations_final_stage" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:foundation-binding-${ACCEPTANCE_RUN_ID}")
 
 operations_deployments_status=$(curl -sS -o "$RUNNER_TEMP/operations-deployments.json" -w '%{http_code}' \
   -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
@@ -667,7 +725,7 @@ test "$chat_rollover_status" = "200"
 jq -e '.ok == true and (.response.result_state == "COMPLETE" or .response.result_state == "PARTIAL") and (.response.response_id | type == "string" and length > 0)' "$RUNNER_TEMP/chat-rollover-before.json" >/dev/null
 
 # Create an additional Operations version, then verify the durable chat/persistence state survives it.
-(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:persistence-boundary-${ACCEPTANCE_RUN_ID}")
+(cd "$operations_final_stage" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --message "github:${OPERATIONS_REF}" --tag "github:${OPERATIONS_REF}:persistence-boundary-${ACCEPTANCE_RUN_ID}")
 boundary_deployments_status=$(curl -sS -o "$RUNNER_TEMP/operations-boundary-deployments.json" -w '%{http_code}' -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${OPERATIONS_SERVICE_NAME}/deployments" || true)
 test "$boundary_deployments_status" = "200"
 boundary_version_id=$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id' "$RUNNER_TEMP/operations-boundary-deployments.json" | head -n1)
