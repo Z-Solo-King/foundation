@@ -67,7 +67,7 @@ stage_operations_worker() {
       exit 1
     }
   done
-  if find "$stage_dir" -type f \( -name 'PROVIDER_KEYS_JSON.txt' -o -name 'SILICONFLOW_API_KEY.txt' -o -name 'OPENROUTER_API_KEY.txt' \) -print -quit | grep -q .; then
+  if find "$stage_dir" -type f \( -name "PROVIDER_KEYS_JSON.txt" -o -name "SILICONFLOW_API_KEY.txt" -o -name "OPENROUTER_API_KEY.txt" \) -print -quit | grep -q .; then
     echo "Provider credential file entered Operations deployment stage"
     exit 1
   fi
@@ -83,7 +83,7 @@ audit_operations_worker_bundle() {
   mkdir -p "$out_dir"
   echo "Auditing exact Operations Worker bundle: $label"
   (cd "$stage_dir" && pywrangler deploy --config wrangler.toml --secrets-file "$secret_file" --dry-run --outdir "$out_dir") > "$log_file" 2>&1
-  find "$out_dir" -type f -printf '%P\n' | sort > "$manifest_file"
+  find "$out_dir" -type f -printf "%P\n" | sort > "$manifest_file"
   if grep -nE '^(tests/|tools/|backup/|benchmark/|experiments/|polyglot/|\.venv-workers/|CONTINUE_MIGRATION_2026-10-01\.md|foundation_worker\.py)|(^|/)PROVIDER_KEYS_JSON\.txt$|(^|/)SILICONFLOW_API_KEY\.txt$|(^|/)OPENROUTER_API_KEY\.txt  if [ -f "$RUNNER_TEMP/foundation-js-wrangler.toml" ]; then
     mv -f "$RUNNER_TEMP/foundation-js-wrangler.toml" wrangler.toml 2>/dev/null || true
   fi
