@@ -83,7 +83,6 @@ The model fan-out executes inside the authenticated Operations runtime through i
 
 The aggregate is invalid unless all six configured models return transport-successful, schema-compliant advisory results and the returned Operations pin equals the Foundation production pin. AI output cannot authorize acceptance, production promotion, credentials, policy changes, Cloudflare mutation, or workflow dispatch.
 
-
 ## Session-independent automation and trigger reconciliation — 2026-10-03
 
 Autonomous and credential-bearing automation is independent of ChatGPT or any interactive client session. Scheduled execution, trusted `main` execution, and explicit workflow dispatch are the only scheduler inputs; workflow-run IDs, immutable commit SHAs, and artifacts provide durable correlation. Application `chat_id` and `request_id` values are correlation metadata only and are never derived from conversational session state.
