@@ -1,5 +1,9 @@
 name: Nightly benchmark AI cross-fire
 on:
+  push:
+    branches: ["fix/nightly-ai-crossfire-20261003"]
+    paths:
+      - ".github/workflows/nightly-benchmark-ai-crossfire.yml"
   schedule:
     # 22:30 IST, after the 21:15 IST autonomous benchmark window.
     - cron: "0 17 * * *"
@@ -29,15 +33,16 @@ jobs:
       max-parallel: 6
       matrix:
         include:
-          - { id: "llama-3.2-1b", model: "@cf/meta/llama-3.2-1b-instruct" }
-          - { id: "llama-3.2-3b", model: "@cf/meta/llama-3.2-3b-instruct" }
-          - { id: "granite-4-micro", model: "@cf/ibm-granite/granite-4.0-h-micro" }
-          - { id: "qwen2.5-coder-32b", model: "@cf/qwen/qwen2.5-coder-32b-instruct" }
-          - { id: "llama-3.1-8b", model: "@cf/meta/llama-3.1-8b-instruct-fp8" }
-          - { id: "mistral-7b", model: "@cf/mistral/mistral-7b-instruct-v0.2-lora" }
+          - { id: "glm-4.7-flash", model: "@cf/zai-org/glm-4.7-flash" }
+          - { id: "gemma-4-26b-a4b-it", model: "@cf/google/gemma-4-26b-a4b-it" }
+          - { id: "nemotron-3-120b-a12b", model: "@cf/nvidia/nemotron-3-120b-a12b" }
+          - { id: "gpt-oss-20b", model: "@cf/openai/gpt-oss-20b" }
+          - { id: "gpt-oss-120b", model: "@cf/openai/gpt-oss-120b" }
+          - { id: "qwen3.8-27b", model: "@cf/qwen/qwen3.8-27b" }
     env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_AI_API_TOKEN: ${{ secrets.CLOUDFLARE_AI_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     steps:
       - name: Resolve benchmark run
         id: run
@@ -69,40 +74,140 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .runtime/result
-          python - <<PY
-          import hashlib, json, os, time, urllib.request
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import time
+          import urllib.error
+          import urllib.request
           from pathlib import Path
-          final=json.loads(Path(".runtime/input/autonomous-nightly-benchmark-final.json").read_text())
-          keys=("finalization_status","research_feed_state","benchmark_job_result","research_feed_job_result","shards_found","selected_targets","total_observations","usable_observations","operational_failures","operational_failure_rate","validation_errors")
-          payload={"schema":"nightly-benchmark-ai-input/v1","final":{k:final.get(k) for k in keys}}
-          data=json.dumps(payload,separators=(",",":"))
-          if len(data)>12000: raise SystemExit("ai_input_too_large")
-          prompt=("NIGHTLY_BENCHMARK_AI_CROSSFIRE_V1\nReturn JSON only with advisory_assessment, reason, flags.\n"
-                  "Advisory only: never certify correctness, production health, or research completion.\n"
-                  "Do not propose credential, policy, deployment, Cloudflare mutation, or workflow-dispatch actions.\n"
-                  "Evaluate only supplied evidence. assessment must be pass, attention, or blocked. flags must be an array.\n"+data)
-          body=json.dumps({"model":os.environ["MODEL"],"input":{"messages":[{"role":"user","content":prompt}],"max_tokens":96,"temperature":0}}).encode()
-          req=urllib.request.Request("https://api.cloudflare.com/client/v4/accounts/"+os.environ["CLOUDFLARE_ACCOUNT_ID"]+"/ai/run",data=body,headers={"Authorization":"Bearer "+os.environ["CLOUDFLARE_API_TOKEN"],"Content-Type":"application/json"})
-          receipt={"schema":"nightly-benchmark-ai-crossfire-result/v1","run_id":os.environ["RUN_ID"],"model":os.environ["MODEL"],"transport_ok":False,"elapsed_ms":None,"advisory_schema_compliant":False,"advisory_assessment":None,"reason":"","flags":[],"neurons":None,"input_sha256":hashlib.sha256(data.encode()).hexdigest(),"authority":"advisory_only_no_acceptance_or_mutation_authority"}
-          started=time.time()
+
+          final = json.loads(Path(".runtime/input/autonomous-nightly-benchmark-final.json").read_text(encoding="utf-8"))
+          keys = (
+              "finalization_status",
+              "research_feed_state",
+              "benchmark_job_result",
+              "research_feed_job_result",
+              "shards_found",
+              "selected_targets",
+              "total_observations",
+              "usable_observations",
+              "operational_failures",
+              "operational_failure_rate",
+              "validation_errors",
+          )
+          payload = {"schema": "nightly-benchmark-ai-input/v1", "final": {k: final.get(k) for k in keys}}
+          data = json.dumps(payload, separators=(",", ":"))
+          if len(data) > 12000:
+              raise SystemExit("ai_input_too_large")
+
+          prompt = (
+              "NIGHTLY_BENCHMARK_AI_CROSSFIRE_V1\n"
+              "Return exactly one JSON object with only these keys: advisory_assessment, reason, flags.\n"
+              "advisory_assessment must be exactly one of: pass, attention, blocked.\n"
+              "reason must be a short string. flags must be an array of strings.\n"
+              "Do not use Markdown or code fences.\n"
+              "Advisory only: never certify correctness, production health, or research completion.\n"
+              "Do not propose credential, policy, deployment, Cloudflare mutation, or workflow-dispatch actions.\n"
+              "Evaluate only supplied evidence.\n" + data
+          )
+
+          token = (os.environ.get("CLOUDFLARE_AI_API_TOKEN") or os.environ.get("CLOUDFLARE_API_TOKEN") or "").strip()
+          account_id = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
+          model = os.environ["MODEL"]
+          receipt = {
+              "schema": "nightly-benchmark-ai-crossfire-result/v1",
+              "run_id": os.environ["RUN_ID"],
+              "model": model,
+              "transport_ok": False,
+              "elapsed_ms": None,
+              "advisory_schema_compliant": False,
+              "advisory_assessment": None,
+              "reason": "",
+              "flags": [],
+              "neurons": None,
+              "input_sha256": hashlib.sha256(data.encode("utf-8")).hexdigest(),
+              "authority": "advisory_only_no_acceptance_or_mutation_authority",
+          }
+
+          started = time.time()
           try:
-              with urllib.request.urlopen(req,timeout=90) as response: raw=json.loads(response.read())
-              receipt["transport_ok"]=True
-              result=raw.get("result") or {}
-              receipt["neurons"]=(result.get("usage") or {}).get("neurons")
-              value=result.get("response")
-              if not isinstance(value,str): value=((result.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
-              obj=json.loads(str(value).replace("```json","").replace("```","").strip())
-              if obj.get("advisory_assessment") in {"pass","attention","blocked"} and isinstance(obj.get("reason"),str) and isinstance(obj.get("flags"),list):
-                  receipt["advisory_schema_compliant"]=True
-                  receipt["advisory_assessment"]=obj["advisory_assessment"]
-                  receipt["reason"]=obj["reason"][:500]
-                  receipt["flags"]=[str(x)[:160] for x in obj["flags"][:8]]
+              if not token or not account_id:
+                  raise RuntimeError("cloudflare_ai_credentials_missing")
+
+              url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{model}"
+              body = json.dumps({
+                  "messages": [{"role": "user", "content": prompt}],
+                  "max_tokens": 192,
+                  "temperature": 0,
+                  "seed": 42,
+                  "chat_template_kwargs": {"enable_thinking": False},
+              }).encode("utf-8")
+              req = urllib.request.Request(
+                  url,
+                  data=body,
+                  headers={
+                      "Authorization": "Bearer " + token,
+                      "Content-Type": "application/json",
+                  },
+              )
+              with urllib.request.urlopen(req, timeout=90) as response:
+                  raw = json.loads(response.read())
+
+              receipt["transport_ok"] = raw.get("success") is True
+              result = raw.get("result") or {}
+              receipt["neurons"] = (result.get("usage") or {}).get("neurons")
+              choices = result.get("choices") or []
+              choice = choices[0] if choices and isinstance(choices[0], dict) else {}
+              value = result.get("response")
+              if not isinstance(value, str):
+                  message = choice.get("message") or {}
+                  value = message.get("content") or choice.get("text") or ""
+              value = str(value).strip()
+              obj = json.loads(value)
+              if (
+                  isinstance(obj, dict)
+                  and set(obj) == {"advisory_assessment", "reason", "flags"}
+                  and obj.get("advisory_assessment") in {"pass", "attention", "blocked"}
+                  and isinstance(obj.get("reason"), str)
+                  and isinstance(obj.get("flags"), list)
+                  and all(isinstance(flag, str) for flag in obj["flags"])
+              ):
+                  receipt["advisory_schema_compliant"] = True
+                  receipt["advisory_assessment"] = obj["advisory_assessment"]
+                  receipt["reason"] = obj["reason"][:500]
+                  receipt["flags"] = [flag[:160] for flag in obj["flags"][:8]]
+              receipt["finish_reason"] = choice.get("finish_reason")
+          except urllib.error.HTTPError as exc:
+              receipt["error_type"] = "http_error"
+              receipt["http_status"] = int(exc.code)
+              try:
+                  error_body = json.loads(exc.read().decode("utf-8", errors="replace"))
+                  receipt["provider_error_codes"] = [
+                      str(item.get("code"))[:40]
+                      for item in error_body.get("errors", [])
+                      if isinstance(item, dict)
+                  ]
+                  receipt["provider_error_messages"] = [
+                      str(item.get("message"))[:200]
+                      for item in error_body.get("errors", [])
+                      if isinstance(item, dict)
+                  ]
+              except Exception:
+                  pass
           except Exception as exc:
-              receipt["error"]=str(exc)[:500]
-          receipt["elapsed_ms"]=int((time.time()-started)*1000)
-          Path(".runtime/result/receipt.json").write_text(json.dumps(receipt,indent=2)+"\n")
-          print(json.dumps(receipt,indent=2))
+              receipt["error_type"] = type(exc).__name__
+              receipt["error"] = str(exc)[:500]
+          finally:
+              receipt["elapsed_ms"] = int((time.time() - started) * 1000)
+
+          Path(".runtime/result/receipt.json").write_text(
+              json.dumps(receipt, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(receipt, indent=2))
+          raise SystemExit(0 if receipt["transport_ok"] and receipt["advisory_schema_compliant"] else 1)
           PY
       - name: Upload lane receipt
         if: always()
@@ -125,24 +230,62 @@ jobs:
         with:
           pattern: nightly-benchmark-ai-crossfire-*
           path: .runtime/lanes
-          merge-multiple: true
+          merge-multiple: false
       - name: Build deterministic aggregate
         shell: python
         run: |
           import json
           from collections import Counter
           from pathlib import Path
-          rows=[]
+
+          rows = []
           for p in sorted(Path(".runtime/lanes").glob("**/receipt.json")):
-              try: rows.append(json.loads(p.read_text()))
-              except Exception: pass
-          valid=[r for r in rows if r.get("advisory_schema_compliant") is True]
-          counts=Counter(r.get("advisory_assessment") for r in valid)
-          top=counts.most_common(1)[0] if counts else (None,0)
-          report={"schema":"nightly-benchmark-ai-crossfire/v1","lane_count":len(rows),"schema_compliant_lanes":len(valid),"agreement":(top[1]/len(valid) if valid else 0),"consensus":top[0],"models":[{"model":r.get("model"),"transport_ok":r.get("transport_ok"),"schema_compliant":r.get("advisory_schema_compliant"),"assessment":r.get("advisory_assessment"),"elapsed_ms":r.get("elapsed_ms"),"neurons":r.get("neurons"),"reason":r.get("reason"),"flags":r.get("flags")} for r in rows],"authority":"advisory_only_no_acceptance_or_mutation_authority"}
+              try:
+                  rows.append(json.loads(p.read_text(encoding="utf-8")))
+              except Exception:
+                  rows.append({"model": None, "transport_ok": False, "advisory_schema_compliant": False, "error": "invalid_receipt_json"})
+
+          models = [r.get("model") for r in rows]
+          valid = [r for r in rows if r.get("advisory_schema_compliant") is True]
+          counts = Counter(r.get("advisory_assessment") for r in valid)
+          top = counts.most_common(1)[0] if counts else (None, 0)
+          duplicate_models = sorted({m for m in models if m and models.count(m) > 1})
+          report = {
+              "schema": "nightly-benchmark-ai-crossfire/v1",
+              "expected_lane_count": 6,
+              "lane_count": len(rows),
+              "schema_compliant_lanes": len(valid),
+              "transport_ok_lanes": sum(r.get("transport_ok") is True for r in rows),
+              "duplicate_models": duplicate_models,
+              "coverage_complete": len(rows) == 6 and len(set(models)) == 6 and all(models),
+              "quality_complete": len(valid) == 6 and all(r.get("transport_ok") is True for r in valid),
+              "agreement": top[1] / len(valid) if valid else 0,
+              "consensus": top[0],
+              "models": [
+                  {
+                      "model": r.get("model"),
+                      "transport_ok": r.get("transport_ok"),
+                      "schema_compliant": r.get("advisory_schema_compliant"),
+                      "assessment": r.get("advisory_assessment"),
+                      "elapsed_ms": r.get("elapsed_ms"),
+                      "neurons": r.get("neurons"),
+                      "http_status": r.get("http_status"),
+                      "error_type": r.get("error_type"),
+                      "reason": r.get("reason"),
+                      "flags": r.get("flags"),
+                  }
+                  for r in rows
+              ],
+              "authority": "advisory_only_no_acceptance_or_mutation_authority",
+          }
           Path(".runtime").mkdir(exist_ok=True)
-          Path(".runtime/nightly-benchmark-ai-crossfire.json").write_text(json.dumps(report,indent=2)+"\n")
-          print(json.dumps(report,indent=2))
+          Path(".runtime/nightly-benchmark-ai-crossfire.json").write_text(
+              json.dumps(report, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(report, indent=2))
+          raise SystemExit(0 if report["coverage_complete"] and report["quality_complete"] else 1)
+
       - name: Publish aggregate
         if: always()
         run: cat .runtime/nightly-benchmark-ai-crossfire.json >> "$GITHUB_STEP_SUMMARY"
