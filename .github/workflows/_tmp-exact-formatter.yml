@@ -26,6 +26,18 @@ jobs:
           npx --yes prettier@3.9.9 --write .github/workflows/browser-engine-runtime-evidence.yml .github/workflows/live-ai-provider-crossfire.yml .github/workflows/nightly-benchmark-ai-crossfire.yml .github/workflows/repository-hygiene.yml
           git diff --check
 
+      - name: Emit exact formatted files
+        run: |
+          set -euo pipefail
+          for f in .github/workflows/browser-engine-runtime-evidence.yml .github/workflows/live-ai-provider-crossfire.yml .github/workflows/nightly-benchmark-ai-crossfire.yml .github/workflows/repository-hygiene.yml tests/test_crossfire_workflows.py; do
+            echo "FILE:$f"
+            base64 -w0 "$f"
+            echo
+          done
+
+      - name: Stop after artifact emission
+        run: exit 0
+
       - name: Commit exact formatting
         run: |
           set -euo pipefail
@@ -37,11 +49,4 @@ jobs:
           fi
           git add .github/workflows/browser-engine-runtime-evidence.yml .github/workflows/live-ai-provider-crossfire.yml .github/workflows/nightly-benchmark-ai-crossfire.yml .github/workflows/repository-hygiene.yml tests/test_crossfire_workflows.py
           git commit -m "style: normalize current crossfire workflow formatting"
-          git push
-
-      - name: Remove temporary formatter
-        if: success()
-        run: |
-          git rm .github/workflows/_tmp-exact-formatter.yml
-          git commit -m "chore: remove temporary formatter"
           git push
