@@ -1,0 +1,49 @@
+
+name: Temporary Operations cross-fire contract test
+
+on:
+  push:
+    branches: ["fix/nightly-ai-crossfire-20261003"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Mint read-only Operations App token
+        id: operations-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout Operations PR branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Z-Solo-King/operations
+          ref: fix/cloudflare-native-nightly-crossfire-20261003
+          token: ${{ steps.operations-token.outputs.token }}
+          path: operations
+          persist-credentials: false
+
+      - name: Install Operations test dependencies
+        working-directory: operations
+        run: python -m pip install --disable-pip-version-check -e '.[test]'
+
+      - name: Run AI cross-fire unit and boundary tests
+        working-directory: operations
+        run: python -m pytest tests/test_ai_crossfire.py -q
