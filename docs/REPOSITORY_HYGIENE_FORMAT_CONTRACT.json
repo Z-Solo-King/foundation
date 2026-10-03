@@ -5,8 +5,8 @@
   "authority": {
     "canonical_contract": "docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json",
     "family_sync_rule": "The contract file and formatter configs must be byte-identical across Foundation and Operations.",
-    "implementation": "tools/repository_hygiene.py",
-    "code_documentation_sync": "tools/code_documentation_sync.py"
+    "implementation": "tools/repository_hygiene.mjs",
+    "code_documentation_sync": "tools/code_documentation_sync.mjs"
   },
   "configuration_files": [
     ".editorconfig",

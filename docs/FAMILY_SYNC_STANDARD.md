@@ -234,7 +234,7 @@ A family synchronization pass is complete only when:
 
 Repository formatting is governed by the identical machine contract in `docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json` in both repositories.
 
-The strict change gate is implemented by `tools/repository_hygiene.py` and `tools/code_documentation_sync.py`. Foundation also runs a read-only family coordinator to compare the shared contract/configuration bytes against Operations `main`.
+The strict change gate is implemented by `tools/repository_hygiene.mjs` and `tools/code_documentation_sync.mjs`. Foundation also runs a read-only family coordinator to compare the shared contract/configuration bytes against Operations `main`.
 
 This machine layer is subordinate to this document's authority/evidence hierarchy: it detects structural drift, formatting divergence and missing documentation deltas, but it does not convert source or CI results into runtime/production certification.
 

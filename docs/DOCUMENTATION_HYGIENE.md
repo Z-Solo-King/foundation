@@ -33,7 +33,7 @@ At milestones, deduplicate by semantic ownership rather than filename. Add a new
 The document lifecycle is now backed by a strict changed-file hygiene gate.
 
 - `docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json` is the canonical formatting contract.
-- `tools/repository_hygiene.py` enforces UTF-8, LF, final newline, trailing-whitespace, indentation, artifact and source-size hygiene.
-- `tools/code_documentation_sync.py` enforces mapped code-to-document deltas.
+- `tools/repository_hygiene.mjs` enforces UTF-8, LF, final newline, trailing-whitespace, indentation, artifact and source-size hygiene.
+- `tools/code_documentation_sync.mjs` enforces mapped code-to-document deltas.
 - Full-repository debt is reported rather than mass-reformatted.
 - The family coordinator checks Foundation/Operations contract parity without exposing private source contents.

@@ -21,7 +21,7 @@ Repository-side migration architecture is complete for the current wave:
 - Operations #603 remains open only for a future candidate-specific authority-promotion envelope; no current language/model/tooling authority transfer is claimed.
 
 ## Workflow finding
-The previously observed nightly research runner failure due to missing `httpx` is already fixed in the current Foundation workflow: `.github/workflows/nightly-multi-agent-research-v3.yml` installs `httpx>=0.27,<1` immediately after Python setup and before `scripts/research_worker_proxy.py`.
+The previously observed nightly research runner failure due to missing `httpx` is already fixed in the current Foundation workflow: `.github/workflows/nightly-multi-agent-research-v3.yml` installs `httpx>=0.27,<1` immediately after Python setup and before `scripts/research_worker_proxy.mjs`.
 
 Therefore the next acceptance action is a fresh execution, not another dependency patch.
 
