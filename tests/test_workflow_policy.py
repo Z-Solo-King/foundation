@@ -242,8 +242,10 @@ def test_private_operations_handoff_is_preflighted_and_diagnostic_runs_last():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     preflight = deployment.index("Preflight and stage the private Operations handoff")
     public_deploy = deployment.index("npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml")
+    deployment_stage = deployment.index('operations_final_stage="$RUNNER_TEMP/operations-worker-final"')
     operations_deploy = deployment.index(
-        '(cd "$RUNNER_TEMP/operations-worker-final" && pywrangler deploy --config wrangler.toml --secrets-file'
+        '(cd "$operations_final_stage" && pywrangler deploy --config wrangler.toml --secrets-file',
+        deployment_stage,
     )
     diagnostic = deployment.index("infrastructure_verify_public_test")
     success = deployment.rindex("Production release completed")
@@ -674,13 +676,13 @@ def test_production_bootstrap_precedes_foundation_deploy_and_is_unconditional():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     start = deployment.index("# Rename-safe Cloudflare deployment sequence.")
     bootstrap = deployment.index(
-        '(cd "$RUNNER_TEMP/operations-worker-bootstrap" && pywrangler deploy --config wrangler.toml',
+        '(cd "$operations_bootstrap_stage" && pywrangler deploy --config wrangler.toml',
         start,
     )
     public_deploy = deployment.index('npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml', start)
     assert bootstrap < public_deploy
     assert deployment.count(
-        '(cd "$RUNNER_TEMP/operations-worker-bootstrap" && pywrangler deploy --config wrangler.toml'
+        '(cd "$operations_bootstrap_stage" && pywrangler deploy --config wrangler.toml'
     ) == 1
     assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings' not in deployment
 def test_public_probe_records_dns_failure_without_parser_crash():
