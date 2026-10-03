@@ -24,6 +24,7 @@ jobs:
   crossfire:
     name: Private provider speed-quality cross-fire
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
     environment: production-secret-sync
     timeout-minutes: 12
     steps:
