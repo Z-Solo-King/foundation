@@ -18,12 +18,12 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin main --depth=1
-          files="$(git diff --name-only origin/main...HEAD -- '*.yml' '*.yaml' '*.md' '*.json' '*.js' '*.mjs' '*.ts' '*.tsx' | grep -v '^\.github/workflows/_tmp-' | tr '\n' ' ')"
+          files="$(git diff --diff-filter=ACMRTUXB --name-only origin/main...HEAD -- '*.yml' '*.yaml' '*.md' '*.json' '*.js' '*.mjs' '*.ts' '*.tsx' | grep -v '^\.github/workflows/_tmp-' | tr '\n' ' ')"
           if [ -n "$files" ]; then
             npx --yes prettier --write $files
           fi
           python -m pip install --disable-pip-version-check ruff==0.16.9
-          pyfiles="$(git diff --name-only origin/main...HEAD -- '*.py' | tr '\n' ' ')"
+          pyfiles="$(git diff --diff-filter=ACMRTUXB --name-only origin/main...HEAD -- '*.py' | tr '\n' ' ')"
           if [ -n "$pyfiles" ]; then
             ruff format $pyfiles
           fi
@@ -37,4 +37,5 @@ jobs:
           git add -A
           git diff --cached --quiet && exit 0
           git commit -m "style: normalize project formatting"
-          git push
+          git pull --rebase origin feat/chatbot-github-ui-2026-10-03
+          git push --force-with-lease origin HEAD:feat/chatbot-github-ui-2026-10-03
