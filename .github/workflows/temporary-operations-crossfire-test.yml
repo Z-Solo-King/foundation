@@ -49,3 +49,5 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations
         run: python -m pytest tests/test_ai_crossfire.py -q
+
+# rerun after Operations test syntax repair
