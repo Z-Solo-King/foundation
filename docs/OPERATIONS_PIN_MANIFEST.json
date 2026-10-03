@@ -4,9 +4,11 @@
   "authority": "single public-safe immutable Operations revision manifest; runtime code remains authoritative",
   "pins": {
     "production_runtime": {
-      "sha": "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f",
+      "sha": "6daf91a6e586beea1d5a24bb19aa5a43b5b17518",
       "purpose": "Cloudflare Operations production runtime and Foundation public production release",
-      "status": "deployed production runtime pin observed in Cloudflare; Operations main remains a separate moving branch and fresh runtime certification remains separately evidenced"
+      "status": "current Operations main; contains authenticated admission forwarding and no competing Operations Actions authority",
+      "updated_at": "2026-10-04",
+      "source": "Z-Solo-King/operations main"
     },
     "provider_fleet_runtime": {
       "sha": "2a4a49d2c11bd9ff2b9290bc780eb0da97c73ecb",
