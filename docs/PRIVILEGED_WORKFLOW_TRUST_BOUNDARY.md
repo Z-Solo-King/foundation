@@ -110,3 +110,9 @@ The cross-repository drift regression test resolves its Python imports from both
 ## Nightly research evidence-capacity reconciliation — 2026-10-04
 
 The live nightly research workflow's coordinator capacity is configured by `RESEARCH_MAX_CONCURRENCY`. The lane acceptance manifest derives `global_capacity` from that same environment value rather than recording a separate constant, so evidence reflects the scheduler that actually executed the run. The current production runner dependency bootstrap remains the existing Operations `httpx` installation; this change does not duplicate or relocate runtime dependency ownership.
+
+## Operations runtime pin and benchmark consumer reconciliation — 2026-10-04
+
+The canonical production Operations revision is now resolved from the immutable Foundation pin manifest. Runtime smoke, browser-engine evidence, chatbot provider CrossFire, and live extractor benchmark consumers must use that same immutable revision unless an explicitly supplied immutable override is part of the workflow contract.
+
+The current validated Operations main is `621fc8aa536b60bbc6f9e686c4ce0a769d8cab56`. This revision contains the centralized validation-contract repair and hardened standalone GitHub workspace bridge. Promotion into Cloudflare production remains a separate controlled release transaction; changing the manifest does not itself certify or deploy production runtime state.
