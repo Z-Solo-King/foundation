@@ -82,7 +82,10 @@ jobs:
           }
 
           same_host() {
-            python3 - "$1" "$root" <<'PY'
+            local candidate="$1"
+            local base="$root"
+            if [ -n "${2:-}" ]; then base="$2"; fi
+            python3 - "$candidate" "$base" <<'PY'
           import sys
           from urllib.parse import urlsplit
           a=urlsplit(sys.argv[1]); b=urlsplit(sys.argv[2])
@@ -98,8 +101,8 @@ jobs:
             final=$(curl -ksSIL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0' "$u" 2>/dev/null |               awk 'tolower($1)=="location:"{print $2}' | tail -1 | tr -d '\r')
             [ -z "$final" ] && final="$u"
             if [ "$code" = "200" ] && [ "$(same_host "$final")" = "1" ] && valid "$body"; then
-              printf '%s\t%s\n' "$site" "$final" >> "$output"
-              printf '%s\t%s\t%s\n' "$site" "$final" "$code" > "out/${site// /_}.hit"
+              printf '%s\t%s\tpath_guess\n' "$site" "$final" >> "$output"
+              printf '%s\t%s\t%s\tpath_guess\n' "$site" "$final" "$code" > "out/${site// /_}.hit"
               rm -f "$hdr" "$body"
               exit 0
             fi
@@ -122,16 +125,17 @@ jobs:
                 /*) u="${root}${ref}" ;;
                 *) u="${root}${dir}${ref}" ;;
               esac
-              [ "$(same_host "$u")" = "1" ] || continue
               case "$u" in
                 *.xml|*.xml.gz|*.XML|*.XML.GZ) ;;
                 *) continue ;;
               esac
               body=$(mktemp)
               curl -ksSL -4 --connect-timeout 4 --max-time 4 -A 'Mozilla/5.0' -o "$body" "$u" >/dev/null 2>&1 || { rm -f "$body"; continue; }
-              if valid "$body"; then
-                printf '%s\t%s\n' "$site" "$u" >> "$output"
-                printf '%s\t%s\t200\n' "$site" "$u" > "out/${site// /_}.hit"
+              linked_final=$(curl -ksSIL -4 --connect-timeout 4 --max-time 4 -A 'Mozilla/5.0' "$u" 2>/dev/null | awk 'tolower($1)=="location:"{print $2}' | tail -1 | tr -d '\r')
+              [ -z "$linked_final" ] && linked_final="$u"
+              if same_host "$linked_final" "$u" && valid "$body"; then
+                printf '%s\t%s\tdirectory_index_link\n' "$site" "$linked_final" >> "$output"
+                printf '%s\t%s\t200\tdirectory_index_link\n' "$site" "$linked_final" > "out/${site// /_}.hit"
                 rm -f "$body" "$idx"
                 exit 0
               fi
@@ -150,16 +154,17 @@ jobs:
             curl -ksSL -4 --connect-timeout 4 --max-time 4 -A 'Mozilla/5.0' -o "$html" "${root}${page}" >/dev/null 2>&1 || true
             while IFS= read -r u; do
               [ -z "$u" ] && continue
-              [ "$(same_host "$u")" = "1" ] || continue
               case "$u" in
                 *.xml|*.xml.gz|*.XML|*.XML.GZ) ;;
                 *) continue ;;
               esac
               body=$(mktemp)
               curl -ksSL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0' -o "$body" "$u" >/dev/null 2>&1 || { rm -f "$body"; continue; }
-              if valid "$body"; then
-                printf '%s\t%s\n' "$site" "$u" >> "$output"
-                printf '%s\t%s\t200\n' "$site" "$u" > "out/${site// /_}.hit"
+              linked_final=$(curl -ksSIL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0' "$u" 2>/dev/null | awk 'tolower($1)=="location:"{print $2}' | tail -1 | tr -d '\r')
+              [ -z "$linked_final" ] && linked_final="$u"
+              if same_host "$linked_final" "$u" && valid "$body"; then
+                printf '%s\t%s\texplicit_page_reference\n' "$site" "$linked_final" >> "$output"
+                printf '%s\t%s\t200\texplicit_page_reference\n' "$site" "$linked_final" > "out/${site// /_}.hit"
                 rm -f "$body" "$html"
                 exit 0
               fi
