@@ -2,6 +2,8 @@ name: Nightly benchmark AI cross-fire
 on:
   push:
     branches: ["bench/nightly-ai-crossfire-live-20261003"]
+    paths:
+      - ".github/workflows/nightly-benchmark-ai-crossfire.yml"
 
   schedule:
     # 22:30 IST, after the 21:15 IST autonomous benchmark window.
@@ -16,7 +18,7 @@ on:
 
 permissions:
   actions: read
-  contents: read
+  contents: write
 
 concurrency:
   group: nightly-benchmark-ai-crossfire
@@ -146,6 +148,21 @@ jobs:
           Path(".runtime").mkdir(exist_ok=True)
           Path(".runtime/nightly-benchmark-ai-crossfire.json").write_text(json.dumps(report,indent=2)+"\n")
           print(json.dumps(report,indent=2))
+      - name: Publish branch-local live receipt
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p benchmark/live-results
+          cp .runtime/nightly-benchmark-ai-crossfire.json benchmark/live-results/latest.json
+          git add benchmark/live-results/latest.json
+          git diff --cached --quiet || git commit -m "test: record nightly AI cross-fire live receipt"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
       - name: Publish aggregate
         if: always()
         run: cat .runtime/nightly-benchmark-ai-crossfire.json >> "$GITHUB_STEP_SUMMARY"
