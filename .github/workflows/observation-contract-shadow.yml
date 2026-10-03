@@ -52,7 +52,7 @@ jobs:
           contract_version="$(sed -n 's/^CONTRACT_VERSION = "\([^"]*\)".*/\1/p' extractor_mapper/contracts.py | head -n 1)"
           test "$contract_version" = "1"
           echo "reference contract version: $contract_version"
-          
+
       - name: Verify differential harness
         working-directory: operations/polyglot/observation-contract-strict
         run: |
