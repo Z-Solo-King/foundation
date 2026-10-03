@@ -1,5 +1,6 @@
-from pathlib import Path
+# fmt: off
 import subprocess
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PRODUCTION_SCRIPT = ROOT / "scripts" / "production_release.sh"
@@ -26,7 +27,7 @@ def test_d1_migration_config_uses_resolved_database_values():
     assert '"database_name = \\"\\${database_name}\\""' not in text
     assert '"database_id = \\"\\${database_id}\\""' not in text
 def test_production_release_shell_syntax_is_valid():
-    result = subprocess.run(["bash", "-n", str(PRODUCTION_SCRIPT)], capture_output=True, text=True)
+    result = subprocess.run(["bash", "-n", str(PRODUCTION_SCRIPT)], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 def test_production_release_uses_migrations_once_and_does_not_reexecute_raw_d1_schema():
@@ -156,3 +157,4 @@ def test_operations_bootstrap_config_lives_with_entrypoint_checkout():
     assert 'cp "$RUNNER_TEMP/operations/wrangler.toml" "$bootstrap_config"' in text
     assert 'operations_bootstrap_stage="$RUNNER_TEMP/operations-worker-bootstrap"' in text
     assert '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config"' in text
+# fmt: on
