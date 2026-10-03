@@ -1,3 +1,4 @@
+# prettier-ignore
 name: Project-wide autonomous improvement sweep
 
 on:
@@ -23,10 +24,11 @@ concurrency:
 jobs:
   improve:
     name: Rotate one canonical component
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
-      PUBLIC_WORKER_URL: https://ai-cio.pages.dev
+      PUBLIC_WORKER_URL: https://heroic-ai.pages.dev
       MAX_PLANNING_CYCLES: '6'
       MAX_WORKFLOW_ATTEMPTS: '3'
       FOUNDATION_SHA: ${{ github.sha }}
