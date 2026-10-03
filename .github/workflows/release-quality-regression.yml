@@ -34,11 +34,11 @@ jobs:
         run: |
           set -euo pipefail
           ref="$(python - <<'PY'
-import json, re
-value=json.load(open("docs/OPERATIONS_PIN_MANIFEST.json", encoding="utf-8"))["pins"]["production_runtime"]["sha"]
-if not re.fullmatch(r"[0-9a-f]{40}", value): raise SystemExit("invalid Operations production pin")
-print(value)
-PY
+          import json, re
+          value=json.load(open("docs/OPERATIONS_PIN_MANIFEST.json", encoding="utf-8"))["pins"]["production_runtime"]["sha"]
+          if not re.fullmatch(r"[0-9a-f]{40}", value): raise SystemExit("invalid Operations production pin")
+          print(value)
+          PY
 )"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
       - name: Checkout private Operations
