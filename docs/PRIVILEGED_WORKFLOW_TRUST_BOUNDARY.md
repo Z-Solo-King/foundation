@@ -110,3 +110,9 @@ The cross-repository drift regression test resolves its Python imports from both
 ## Nightly research evidence-capacity reconciliation — 2026-10-04
 
 The live nightly research workflow's coordinator capacity is configured by `RESEARCH_MAX_CONCURRENCY`. The lane acceptance manifest derives `global_capacity` from that same environment value rather than recording a separate constant, so evidence reflects the scheduler that actually executed the run. The current production runner dependency bootstrap remains the existing Operations `httpx` installation; this change does not duplicate or relocate runtime dependency ownership.
+
+## Native feed discovery provenance — 2026-10-04
+
+The legacy manual .github/workflows/native-google-feed-hunt.yml remains a read-only fallback and does not hold production or provider credentials. Its candidate classes are intentionally different: guessed feed paths must remain on the site's own host, while XML URLs explicitly exposed by public directory indexes, HTML, robots declarations or sitemap documents may be cross-origin. An explicitly discovered feed may redirect, but the redirect must remain on the discovered feed host. Accepted evidence records its discovery provenance (path_guess, directory_index_link or explicit_page_reference) so transport failures are not conflated with candidate-negative results.
+
+This boundary does not permit authentication, challenge/CAPTCHA bypass, clearance-cookie replay, or arbitrary cross-origin expansion. The current canonical execution remains the WooCommerce Native XML Recovery V18 path; the manual hunter is evidence-recovery fallback only.
