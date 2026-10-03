@@ -151,8 +151,8 @@ def test_operations_bootstrap_config_lives_with_entrypoint_checkout():
     assert '(cd "$operations_bootstrap_stage" && pywrangler deploy --config wrangler.toml --secrets-file' in text
 def test_production_release_uses_current_operations_auth_boundary():
     text = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
-    assert 'grep -Eq '^from backend\\.worker_auth import .*\\bauthorized\\b' "$RUNNER_TEMP/operations/foundation_worker.py"' in text
-    assert 'from private.chat_auth import authorized_chat_request' not in text
+    assert "grep -Eq '^from backend\\.worker_auth import .*\\bauthorized\\b' \"$RUNNER_TEMP/operations/foundation_worker.py\"" in text
+    assert "from private.chat_auth import authorized_chat_request" not in text
 
 
 # fmt: on
