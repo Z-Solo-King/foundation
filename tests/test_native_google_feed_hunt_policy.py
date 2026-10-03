@@ -1,6 +1,5 @@
 import pathlib
 
-
 WORKFLOW = pathlib.Path(".github/workflows/native-google-feed-hunt.yml")
 
 
