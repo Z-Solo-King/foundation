@@ -65,6 +65,9 @@ function isAncestor(sha) {
 function commitEpoch(sha) {
   return Number(exec("git", ["show", "-s", "--format=%ct", sha]));
 }
+function treeSha(sha) {
+  return exec("git", ["rev-parse", sha + "^{tree}"]);
+}
 function referencedInLiveTree(branch) {
   try {
     const raw = exec("git", [
@@ -109,6 +112,7 @@ for (const branch of branches) {
   groups.get(branch.sha).push(branch);
 }
 const now = Math.floor(Date.now() / 1000);
+const defaultTreeSha = treeSha("origin/" + defaultBranch);
 const decisions = [];
 
 function keeperFor(group) {
@@ -135,6 +139,7 @@ for (const branch of branches) {
 
   const sameTip = groups.get(branch.sha) ?? [];
   const keeper = sameTip.length > 1 ? keeperFor(sameTip) : null;
+  const treeIsCanonical = treeSha(branch.sha) === defaultTreeSha;
 
   const ageHours = (now - commitEpoch(branch.sha)) / 3600;
 
@@ -146,20 +151,23 @@ for (const branch of branches) {
     } else {
       reasons.push(`younger-than-${minAgeHours}h`);
     }
-  } else if (!reasons.length && isAncestor(branch.sha) && branch.sha !== exec("git", ["rev-parse", `origin/${defaultBranch}`])) {
+  } else if (
+    !reasons.length &&
+    (isAncestor(branch.sha) || treeIsCanonical) &&
+    branch.sha !== exec("git", ["rev-parse", "origin/" + defaultBranch])
+  ) {
     if (ageHours >= minAgeHours) {
       const refs = referencedInLiveTree(branch.name);
       if (refs.length) reasons.push(`live-reference:${refs.join(",")}`);
       else {
-        disposition = "RETIRE_MERGED";
+        disposition = treeIsCanonical ? "RETIRE_TREE_DUPLICATE" : "RETIRE_MERGED";
         executable = true;
-        reasons.push("tip-contained-in-default");
+        reasons.push(treeIsCanonical ? "tree-identical-to-default" : "tip-contained-in-default");
       }
     } else {
       reasons.push(`younger-than-${minAgeHours}h`);
     }
   }
-
   if (reasons.includes("active-pr-head") || reasons.includes("protected") ||
       reasons.includes("default-branch") || reasons.includes("tag-target") ||
       reasons.includes("release-target")) {
@@ -209,6 +217,7 @@ const report = {
   default_branch: defaultBranch,
   branch_count: branches.length,
   exact_same_tip_groups: [...groups.values()].filter(group => group.length > 1).length,
+  tree_equivalent_to_default: decisions.filter(row => row.reasons.includes("tree-identical-to-default")).length,
   min_age_hours: minAgeHours,
   execute,
   decisions,
@@ -220,6 +229,7 @@ console.log(JSON.stringify({
   repository,
   branches: branches.length,
   exact_duplicate_groups: report.exact_same_tip_groups,
+  tree_equivalent_candidates: report.tree_equivalent_to_default,
   executable_candidates: decisions.filter(row => row.executable).length,
   deleted: execution.filter(row => row.action === "deleted").length,
   dry_run: execution.filter(row => row.action === "dry-run").length,
