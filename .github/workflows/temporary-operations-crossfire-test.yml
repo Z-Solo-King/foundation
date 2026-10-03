@@ -46,4 +46,6 @@ jobs:
 
       - name: Run AI cross-fire unit and boundary tests
         working-directory: operations
+        env:
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations
         run: python -m pytest tests/test_ai_crossfire.py -q
