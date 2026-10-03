@@ -220,3 +220,8 @@ The public deterministic Foundation core remains the source of truth. Operations
 The nightly research workflow now has an explicit private-runner dependency installation boundary for `httpx`. The six-model Cloudflare Workers AI CrossFire remains advisory-only, while the 24-program nightly research CrossFire continues to require a genuine provider-backed run with complete lane artifacts before issue #157 can be closed.
 
 The last fully verified branch inventory was 2,440 refs across Foundation and Operations. Branch retirement remains fail-closed and evidence-gated; remote ref deletion is not exposed by the connected GitHub write surface. Do not infer that the remaining branches are duplicates from their names alone.
+
+## Cross-repository overlap validator — 2026-10-03
+
+The canonical cross-repository contract workflow invokes the overlap validator from the disposable Operations checkout. Foundation remains the workflow authority; Operations supplies the validator implementation used for exhaustive cross-repository overlap verification.
+
