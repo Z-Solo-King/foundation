@@ -564,4 +564,3 @@
   void checkBackend();
   document.getElementById("prompt")?.focus();
 })();
-
