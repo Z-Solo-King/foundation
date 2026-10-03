@@ -2,11 +2,11 @@
 
 ## Purpose
 
-The canonical autonomous benchmark remains deterministic and authoritative. This workflow adds a separate six-lane AI cross-fire that observes the benchmark receipt and produces advisory diagnostics.
+The canonical autonomous benchmark remains deterministic and authoritative. This workflow adds a separate six-model AI cross-fire that observes the benchmark receipt and produces advisory diagnostics.
 
 ## Execution
 
-Six current Workers AI models receive the same bounded evidence payload in parallel, with one lane per model and a maximum parallelism of six:
+GitHub Actions resolves the latest successful autonomous benchmark receipt and sends a bounded evidence envelope to the canonical public front door at `https://heroic-ai.pages.dev/api/v1/benchmark/ai-crossfire`. The authenticated Operations runtime then fans the request out across six current Workers AI models in parallel through the native AI binding:
 
 - `@cf/zai-org/glm-4.7-flash`
 - `@cf/google/gemma-4-26b-a4b-it`
@@ -15,32 +15,34 @@ Six current Workers AI models receive the same bounded evidence payload in paral
 - `@cf/openai/gpt-oss-120b`
 - `@cf/qwen/qwen3.8-27b`
 
-Each lane uses the current Workers AI REST contract: the model is in the URL and the model input is sent directly in the request body. Thinking is explicitly disabled for deterministic advisory output, with a 192-token output bound.
+This removes the GitHub-to-Cloudflare API-token dependency from the benchmark path. GitHub supplies only its existing application authentication token and bounded evidence. Cloudflare performs the model execution locally under the Workers AI binding.
 
-Each lane writes exactly one receipt. Artifact download keeps the six artifacts separate so identically named `receipt.json` files cannot overwrite one another. The aggregate requires six distinct model receipts and six schema-compliant successful transports; missing or duplicate evidence fails closed.
+Each model lane uses deterministic temperature, a 192-token output limit, and thinking disabled. The runtime returns one bounded aggregate containing all six lane receipts.
 
-## Credential boundary
+## Coverage and quality gates
 
-The workflow prefers `CLOUDFLARE_AI_API_TOKEN` and falls back to `CLOUDFLARE_API_TOKEN`. A dedicated Workers AI token is preferred because Cloudflare's current REST documentation requires a Workers AI-capable API token. Authentication failures are recorded explicitly and cannot be misclassified as model failures or successful lanes.
+The aggregate requires exactly six distinct model receipts. It fails closed when any lane is missing, duplicated, transport-failed, or schema-invalid. Transport success and advisory schema compliance are recorded independently.
+
+GitHub Actions also verifies `model_count_expected == 6`, `model_count_observed == 6`, six successful transports, six schema-compliant advisories, `coverage_complete == true`, and `quality_complete == true`.
 
 ## Evidence boundary
 
-Only the deterministic final benchmark receipt is sent to the AI lanes. The workflow does not execute downloaded artifacts, check out untrusted artifact code, dispatch another workflow, mutate GitHub, mutate Cloudflare, modify credentials or policy, or certify production/research completion.
+Only the deterministic final benchmark receipt is sent to the AI lanes. The cross-fire does not execute downloaded artifacts, mutate GitHub, mutate Cloudflare configuration, modify credentials or policy, dispatch workflows, or certify production/research completion.
 
-Every receipt contains a SHA-256 digest of the bounded AI input and an explicit advisory-only authority marker. Transport success and schema compliance are separate acceptance dimensions.
+Every aggregate carries an evidence SHA-256 and the authority marker `advisory_only_no_acceptance_or_mutation_authority`.
 
 ## Live validation
 
-A live six-model Cloudflare cross-fire was executed through the authorized Cloudflare account connector using six-way parallel model lanes, three tasks, and three repeats per model: 54 calls total. All 54 transports succeeded and all 54 exact-output quality checks passed, using 209.575 reported Neurons.
+A six-way parallel Cloudflare connector test executed 54 calls: six models × three task contracts × three repeats. All 54 transports succeeded and all 54 exact-output quality checks passed, using 209.575 reported Neurons.
 
-A focused nine-call rerun of the GPT-OSS 120B lane also passed 9/9 after the full matrix, confirming the earlier one-off formatting miss was not persistent under six-way model parallelism and deterministic settings.
+A focused nine-call GPT-OSS 120B rerun also passed 9/9.
 
-## CI defects found and corrected
-
-The previous workflow used an unquoted Python heredoc, allowing shell command substitution inside the Python expression. It also used `merge-multiple: true`, which collapsed six artifacts containing the same `receipt.json` path into one receipt. Finally, it called the legacy generic `/ai/run` wrapper instead of the current model-path Workers AI REST endpoint. All three workflow correctness defects are corrected.
-
-The existing repository `CLOUDFLARE_API_TOKEN` was observed in the prior live GitHub run to return HTTP 401. The implementation cannot manufacture or replace that secret. The dedicated Workers AI secret fallback separates the AI permission boundary from the general deployment credential while preserving fail-closed behavior.
+The subsequent GitHub-hosted execution reached all six lane jobs and correctly preserved all six receipts, but the repository's existing `CLOUDFLARE_API_TOKEN` returned HTTP 401. That failure is intentionally eliminated by routing the production benchmark through the native Workers AI endpoint above.
 
 ## Cost and authority
 
-The cross-fire remains advisory and does not replace deterministic acceptance gates. Current Workers AI pricing documents a 10,000-Neuron daily Free allocation; the run stays bounded well below that in ordinary operation. AI agreement never becomes correctness, production health, or research-completion authority.
+Cloudflare currently documents a 10,000-Neuron daily Free allocation for Workers AI, with usage above that requiring a Paid plan. The cross-fire remains bounded and records reported Neurons. The AI advisory layer never becomes acceptance authority.
+
+## Relationship to the canonical benchmark
+
+The project-native benchmark remains the authoritative deterministic system. AI cross-fire is a diagnostic/advisory layer over its receipts and does not replace its 24-program execution or evidence gates.
