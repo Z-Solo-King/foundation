@@ -33,9 +33,10 @@ concurrency:
 jobs:
   supervise:
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
     timeout-minutes: 12
     env:
-      PUBLIC_WORKER_URL: https://ai-cio.pages.dev
+      PUBLIC_WORKER_URL: https://heroic-ai.pages.dev
       MAX_PLANNING_CYCLES: "6"
       MAX_WORKFLOW_ATTEMPTS: "3"
       FOUNDATION_SHA: ${{ github.sha }}
