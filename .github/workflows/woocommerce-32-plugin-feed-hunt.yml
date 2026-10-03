@@ -28,15 +28,14 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Create read-only Operations token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
+          repository: operations
       - name: Resolve Operations revision
         id: resolve-operations
         env:
@@ -50,15 +49,15 @@ jobs:
           fi
           [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "operations_ref must be an immutable 40-hex commit"; exit 1; }
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
-      - name: Checkout Operations source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ steps.resolve-operations.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ steps.resolve-operations.outputs.ref }}
           path: operations
           fetch-depth: 1
-          persist-credentials: false
       - name: Validate feed-hunt source
         working-directory: operations
         run: |

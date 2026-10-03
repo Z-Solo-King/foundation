@@ -30,16 +30,14 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Mint read-only Operations App token
+      - name: Shared read-only Operations App token
         id: operations-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: operations
-          permission-contents: read
-
+          owner: Z-Solo-King
+          repository: operations
       - name: Resolve immutable Operations revision
         id: operations
         shell: bash
@@ -52,15 +50,15 @@ jobs:
           [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Operations revision must be a 40-hex immutable SHA"; exit 1; }
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout private Operations benchmark
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ steps.operations.outputs.ref }}
           token: ${{ steps.operations-token.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ steps.operations.outputs.ref }}
           path: ${{ runner.temp }}/operations-agent-benchmark
-          persist-credentials: false
-
+          fetch-depth: 1
       - name: Verify private benchmark credentials
         shell: bash
         env:
