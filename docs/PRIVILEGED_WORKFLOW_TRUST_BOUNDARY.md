@@ -74,3 +74,13 @@ The promotion PR may stage the next immutable Operations revision in post-releas
 - `.github/workflows/browser-engine-runtime-evidence.yml` is a privileged scheduled/manual runtime-evidence workflow. It resolves the immutable Operations production pin when no explicit revision is supplied, targets the canonical Heroic AI Pages origin, and keeps Chromium, Firefox and WebKit as independent evidence lanes.
 - `.github/workflows/nightly-benchmark-ai-crossfire.yml` is an advisory-only scheduled/manual workflow using six analytical lanes and the approved zero-cost Workers AI model contract. It records lane identity and deterministic receipts and has no production/promotion authority.
 - Privileged workflows retain trusted triggers only; live validation may be performed through an explicit trusted/manual execution path. No privileged workflow uses a non-main push trigger.
+
+## Nightly AI cross-fire trust boundary — 2026-10-03
+
+The nightly benchmark AI cross-fire workflow is advisory-only. GitHub Actions selects only a successful autonomous benchmark run from `main`, validates its provenance, reads the immutable Operations production pin from `docs/OPERATIONS_PIN_MANIFEST.json`, and sends only a bounded evidence envelope to the canonical `heroic-ai.pages.dev` boundary.
+
+The model fan-out executes inside the authenticated Operations runtime through its native Workers AI binding. The workflow does not hold or use a Cloudflare API token for model execution. Operations verifies the expected immutable runtime pin before invoking the six-model cross-fire.
+
+The aggregate is invalid unless all six configured models return transport-successful, schema-compliant advisory results and the returned Operations pin equals the Foundation production pin. AI output cannot authorize acceptance, production promotion, credentials, policy changes, Cloudflare mutation, or workflow dispatch.
+
+
