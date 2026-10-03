@@ -256,6 +256,16 @@
     const assistantMessage = api.addMessage('assistant', '', { request_id: requestId, pending: true, streaming: true }, activeChatId);
     api.state.submitting = true;
     api.chatView.render();
+    if (!api.token()) {
+      const message = 'This backend requires a session token. Open Settings to enter one, or enable Guest test mode to try Heroic AI locally without credentials.';
+      api.updateMessage(userMessage.id, { meta: { ...(userMessage.meta || {}), pending: false } });
+      api.updateMessage(assistantMessage.id, {
+        meta: { ...(assistantMessage.meta || {}), pending: false, streaming: false, error: true, ui_state: 'AUTH_REQUIRED' },
+        text: message,
+      });
+      api.chatView.render();
+      return { ok: false, request_id: requestId, chat_id: activeChatId, response: { status: 'auth_required', result_state: 'UNKNOWN', text: message } };
+    }
     try {
       const response = await fetch(api.apiUrl('/api/v1/chat/stream'), {
         method: 'POST',
