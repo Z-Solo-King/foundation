@@ -52,3 +52,12 @@ def test_nightly_ai_crossfire_uses_canonical_worker_boundary_and_truthful_gates(
     assert "coverage_complete" in text
     assert "python - <<'PY'" in text
     assert "max-parallel: 6" not in text
+
+def test_nightly_ai_crossfire_validates_manual_run_provenance():
+    text = (ROOT / ".github/workflows/nightly-benchmark-ai-crossfire.yml").read_text(
+        encoding="utf-8"
+    )
+    assert 'gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json name,status,conclusion,headSha' in text
+    assert '.status == "completed"' in text
+    assert '.conclusion == "success"' in text
+    assert 'jq -e' in text
