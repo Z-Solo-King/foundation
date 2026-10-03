@@ -48,11 +48,9 @@ Every aggregate carries an evidence SHA-256 and the authority marker `advisory_o
 
 ## Live validation
 
-A six-way parallel Cloudflare connector cross-fire executed 54 calls: six models × three task contracts × three repeats. All 54 transports succeeded and all 54 exact-output quality checks passed, using 209.575 reported Neurons.
+A live model-fleet qualification was rerun against the current Workers AI account. The original fleet produced transport success but exposed output-contract failures in GPT-OSS and GLM lanes. Four replacement candidates were then tested three times each; all 12 runs produced stop-completed, parseable JSON. The implementation now uses six current stable lanes and a bounded recovery attempt for any invalid/incomplete response.
 
-A focused nine-call GPT-OSS 120B rerun also passed 9/9.
-
-A real GitHub Actions cross-repo regression then minted the read-only Operations App token, checked out the private Operations branch, installed its Workers runtime dependencies, and completed the cross-fire regression test successfully in run `37104924105`.
+The protected GitHub workflow additionally validates exact benchmark run identity, artifact revision, finalization status, and the immutable Operations production pin before invoking AI.
 
 ## Production pin reconciliation
 
