@@ -23,6 +23,7 @@ jobs:
   crossfire:
     name: "AI ${{ matrix.id }}"
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
     timeout-minutes: 8
     strategy:
       fail-fast: false
@@ -57,19 +58,30 @@ jobs:
           if [ -n "$MANUAL_RUN_ID" ]; then
             run_id="$MANUAL_RUN_ID"
           else
-            run_id="$(gh run list --workflow autonomous-benchmark.yml --repo "$GITHUB_REPOSITORY" --limit 1 --json databaseId --jq ".[0].databaseId // empty")"
+            run_id="$(gh run list --workflow autonomous-benchmark.yml --status completed --repo "$GITHUB_REPOSITORY" --limit 20 --json databaseId,status,conclusion,headBranch,event,headSha,createdAt --jq '[.[] | select(.status=="completed" and .headBranch=="main")] | .[0].databaseId // empty')"
           fi
           test -n "$run_id"
+          run_json="$(gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --json databaseId,name,status,conclusion,headBranch,event,headSha,createdAt)"
+          echo "$run_json" | jq -e --arg id "$run_id" '.databaseId == ($id|tonumber) and .name == "autonomous benchmark" and .status == "completed" and .headBranch == "main" and (.headSha|type) == "string" and (.headSha|length) == 40' >/dev/null
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(jq -r '.headSha' <<<"$run_json")" >> "$GITHUB_OUTPUT"
+          echo "created_at=$(jq -r '.createdAt' <<<"$run_json")" >> "$GITHUB_OUTPUT"
+          echo "event=$(jq -r '.event' <<<"$run_json")" >> "$GITHUB_OUTPUT"
+          echo "conclusion=$(jq -r '.conclusion' <<<"$run_json")" >> "$GITHUB_OUTPUT"
       - name: Download final evidence
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ steps.run.outputs.run_id }}
+          SOURCE_SHA: ${{ steps.run.outputs.head_sha }}
+          SOURCE_CREATED_AT: ${{ steps.run.outputs.created_at }}
+          SOURCE_EVENT: ${{ steps.run.outputs.event }}
+          SOURCE_CONCLUSION: ${{ steps.run.outputs.conclusion }}
         run: |
           set -euo pipefail
           mkdir -p .runtime/input
           gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name autonomous-nightly-benchmark-final --dir .runtime/input
           test -s .runtime/input/autonomous-nightly-benchmark-final.json
+          jq -e --arg run_id "$RUN_ID" --arg source_sha "$SOURCE_SHA" '.schema == "autonomous-nightly-benchmark-final/v2" and (.run_id|tostring) == $run_id and .repository_revision == $source_sha' .runtime/input/autonomous-nightly-benchmark-final.json >/dev/null
       - name: Run bounded AI lane
         env:
           MODEL: ${{ matrix.model }}
@@ -129,6 +141,7 @@ jobs:
     needs: [crossfire]
     if: always()
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
     timeout-minutes: 5
     steps:
       - name: Download lane receipts
@@ -150,7 +163,7 @@ jobs:
           valid=[r for r in rows if r.get("advisory_schema_compliant") is True]
           counts=Counter(r.get("advisory_assessment") for r in valid)
           top=counts.most_common(1)[0] if counts else (None,0)
-          report={"schema":"nightly-benchmark-ai-crossfire/v1","lane_count":len(rows),"schema_compliant_lanes":len(valid),"agreement":(top[1]/len(valid) if valid else 0),"consensus":top[0],"models":[{"lane_id":r.get("lane_id"),"role":r.get("role"),"model":r.get("model"),"transport_ok":r.get("transport_ok"),"schema_compliant":r.get("advisory_schema_compliant"),"assessment":r.get("advisory_assessment"),"elapsed_ms":r.get("elapsed_ms"),"neurons":r.get("neurons"),"reason":r.get("reason"),"flags":r.get("flags")} for r in rows],"authority":"advisory_only_no_acceptance_or_mutation_authority"}
+          report={"schema":"nightly-benchmark-ai-crossfire/v1","lane_count":len(rows),"source_runs":sorted({(r.get("run_id"),r.get("source_repository_revision"),r.get("source_created_at"),r.get("source_event"),r.get("source_conclusion")) for r in rows if r.get("run_id")}),"schema_compliant_lanes":len(valid),"agreement":(top[1]/len(valid) if valid else 0),"consensus":top[0],"models":[{"lane_id":r.get("lane_id"),"role":r.get("role"),"model":r.get("model"),"transport_ok":r.get("transport_ok"),"schema_compliant":r.get("advisory_schema_compliant"),"assessment":r.get("advisory_assessment"),"elapsed_ms":r.get("elapsed_ms"),"neurons":r.get("neurons"),"reason":r.get("reason"),"flags":r.get("flags")} for r in rows],"authority":"advisory_only_no_acceptance_or_mutation_authority"}
           Path(".runtime").mkdir(exist_ok=True)
           Path(".runtime/nightly-benchmark-ai-crossfire.json").write_text(json.dumps(report,indent=2)+"\n")
           print(json.dumps(report,indent=2))
