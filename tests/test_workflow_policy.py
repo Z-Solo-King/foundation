@@ -510,11 +510,11 @@ def test_runtime_and_nightly_auxiliary_pins_are_not_stale():
             assert "production_runtime" in workflow
             assert 'default: ""' in workflow
         else:
-            if filename == "live-chatbot-production-smoke.yml":
+            if filename in {"live-chatbot-production-smoke.yml", "live-nightly-research-canary.yml"}:
                 assert "docs/OPERATIONS_PIN_MANIFEST.json" in workflow
                 assert "production_runtime" in workflow
                 assert 'echo "OPERATIONS_REF=$ref" >> "$GITHUB_ENV"' in workflow
-                assert expected not in workflow or "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f" not in workflow
+                assert "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f" not in workflow
             else:
                 assert expected in workflow
         assert "50e642dfb05846963a82fe76f4f5fe085d4b9a8c" not in workflow
