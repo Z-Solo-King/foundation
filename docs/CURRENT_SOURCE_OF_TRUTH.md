@@ -242,3 +242,12 @@ Foundation PR #1934 was merged after exact-head Public tests, Analyze python, Co
 The native feed provenance hardening is already present on Foundation main. Foundation and Operations currently have no open pull requests. The live acceptance queue remains Foundation #58, #157, #1249 plus Operations #603; #1679 and #1906 remain separate integrity/autonomous execution state.
 
 The canonical cross-repository workflow still owns hosted CI in Foundation. Operations main currently contains no `.github/workflows/` directory, and the post-merge language-fit inventory continues to report 100% of inventoried engineering artifacts covered.
+
+## 2026-10-04 production-release migration boundary repair
+
+The canonical Foundation production release now runs a migration-aligned public test suite: private Operations runtime imports are no longer required from the Foundation checkout. Cross-repository drift validation is implemented as a public-safe contract validator, while private runtime tests remain owned by Operations.
+
+The release receipt artifact is authoritative. Issue #58 comments are best-effort because GitHub disables new comments after the repository's issue-comment limit is reached. This failure cannot invalidate a successful production release.
+
+Live heads for this checkpoint are Foundation `b4ca561e19e5de5a9b5b9a805fc2cc925d265d0c` and Operations `51756272e0a161ca6367e981481b17b65e61d5c9`. Cloudflare production remains separately authoritative until the canonical release run completes.
+
