@@ -143,8 +143,7 @@ jobs:
             summary.by_repo[r.repository].push({lane:r.lane,python:r.total_python_files,counts:r.counts,blockers:r.blockers});
           }
           fs.mkdirSync(".runtime",{recursive:true});
-          fs.writeFileSync(".runtime/migration-factory-summary.json",JSON.stringify(summary,null,2)+"
-");
+          fs.writeFileSync(".runtime/migration-factory-summary.json",JSON.stringify(summary,null,2)+"\n");
           console.log(JSON.stringify(summary,null,2));
           NODE
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
