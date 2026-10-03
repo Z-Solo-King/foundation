@@ -30,6 +30,7 @@ concurrency:
 
 jobs:
   ai-crossfire:
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production-secret-sync
@@ -65,7 +66,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           HEROIC_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          HEROIC_WORKER_URL: https://ai-cio.pages.dev
+          HEROIC_WORKER_URL: https://heroic-ai.pages.dev
           AI_CROSSFIRE_MAX_PROVIDERS: "6"
           AI_CROSSFIRE_TIMEOUT_MS: "18000"
           AI_CROSSFIRE_PROVIDERS: "heroic_worker,cloudflare_workers_ai,gemini,groq,cerebras,siliconflow,openrouter_free,nvidia_nim,cohere_free,huggingface_free"
@@ -83,6 +84,7 @@ jobs:
 
   crawl:
     needs: ai-crossfire
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
@@ -242,7 +244,7 @@ jobs:
 
   aggregate:
     needs: crawl
-    if: always()
+    if: ${{ always() && github.ref == 'refs/heads/main' }}
     permissions:
       contents: read
     runs-on: ubuntu-latest

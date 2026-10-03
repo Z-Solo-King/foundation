@@ -24,6 +24,7 @@ concurrency:
 jobs:
   governance:
     name: Cross-system governance and hygiene
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 18
     steps:
@@ -233,7 +234,7 @@ jobs:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
           GOVERNANCE_AUDIT_FILE: .runtime/governance-audit.json
           MISSION_MODE: governance_sweep
-          PUBLIC_WORKER_URL: https://ai-cio.pages.dev
+          PUBLIC_WORKER_URL: https://heroic-ai.pages.dev
           MAX_PLANNING_CYCLES: "3"
           MAX_WORKFLOW_ATTEMPTS: "2"
           FOUNDATION_SHA: ${{ github.sha }}
