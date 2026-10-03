@@ -34,12 +34,13 @@ jobs:
       - name: Checkout Foundation research adapter
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Resolve production Operations pin
+        id: operations
         shell: bash
         run: |
           set -euo pipefail
           ref="$(jq -er '.pins.production_runtime.sha' docs/OPERATIONS_PIN_MANIFEST.json)"
           [[ "$ref" =~ ^[0-9a-f]{40}$ ]]
-          echo "OPERATIONS_REF=$ref" >> "$GITHUB_ENV"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
 
       - name: Wait for canonical production revision
         env:
@@ -49,7 +50,7 @@ jobs:
           set -euo pipefail
           for _ in {1..60}; do
             status=$(curl -sS --max-time 20 -o "$RUNNER_TEMP/live-nightly-readiness.json" -w '%{http_code}' "$PUBLIC_WORKER_URL/readiness" || true)
-            if [ "$status" = "200" ] && jq -e --arg f "$EXPECTED_FOUNDATION" --arg o "$OPERATIONS_REF" '.ready == true and .database == true and .release.foundation_sha == $f and .release.operations_ref == $o' "$RUNNER_TEMP/live-nightly-readiness.json" >/dev/null 2>&1; then
+            if [ "$status" = "200" ] && jq -e --arg f "$EXPECTED_FOUNDATION" --arg o "${{ steps.operations.outputs.ref }}" '.ready == true and .database == true and .release.foundation_sha == $f and .release.operations_ref == $o' "$RUNNER_TEMP/live-nightly-readiness.json" >/dev/null 2>&1; then
               jq '{ready,database,release}' "$RUNNER_TEMP/live-nightly-readiness.json"
               exit 0
             fi
@@ -70,7 +71,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ env.OPERATIONS_REPOSITORY }}
-          ref: ${{ env.OPERATIONS_REF }}
+          ref: ${{ steps.operations.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
       - name: Verify research executor configuration
@@ -149,7 +150,7 @@ jobs:
           rows=[json.loads(line) for line in Path('.runtime/live-nightly-canary/research.jsonl').read_text().splitlines() if line.strip()]
           expected={f'lane{lane}-slot{slot}' for lane in range(3) for slot in range(2)}
           completed={row.get('program_id') for row in rows if row.get('status') == 'completed'}
-          summary={'schema':'live-nightly-canary/v1','ok':completed == expected,'programs_expected':len(expected),'programs_completed':len(completed),'program_ids':sorted(completed),'operations_ref':os.environ['OPERATIONS_REF']}
+          summary={'schema':'live-nightly-canary/v1','ok':completed == expected,'programs_expected':len(expected),'programs_completed':len(completed),'program_ids':sorted(completed),'operations_ref': '${{ steps.operations.outputs.ref }}'}
           Path('.runtime/live-nightly-canary/summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True)+'\\n')
           print(json.dumps(summary,indent=2,sort_keys=True))
           raise SystemExit(0 if summary['ok'] else 1)
@@ -205,7 +206,7 @@ jobs:
               "probe_upstream_error": upstream_error,
               "probe_upstream_generation_status": upstream_generation_status,
               "probe_upstream_provider": upstream_provider,
-              "operations_ref": os.environ.get("OPERATIONS_REF", "unknown"),
+              "operations_ref": "${{ steps.operations.outputs.ref }}",
           }
           Path(out).write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
           print(json.dumps(data, indent=2, sort_keys=True))
