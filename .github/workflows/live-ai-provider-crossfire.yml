@@ -30,14 +30,14 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout Foundation
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.14"
       - name: Mint read-only Operations App token
         id: operations-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
@@ -57,7 +57,7 @@ jobs:
           [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Operations revision must be a 40-hex immutable SHA"; exit 1; }
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
       - name: Checkout private Operations benchmark
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Z-Solo-King/operations
           ref: ${{ steps.operations.outputs.ref }}
@@ -73,7 +73,7 @@ jobs:
       - name: Validate six-provider matrix
         working-directory: operations-provider-benchmark
         env:
-          PYTHONPATH: ${{ github.workspace }}/operations-provider-benchmark
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations-provider-benchmark
         run: |
           set -euo pipefail
           python - <<'PY'
@@ -93,7 +93,7 @@ jobs:
         working-directory: operations-provider-benchmark
         env:
           PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
-          PYTHONPATH: ${{ github.workspace }}/operations-provider-benchmark
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations-provider-benchmark
         run: |
           set -euo pipefail
           mkdir -p ../.runtime/live-ai-crossfire
@@ -104,7 +104,7 @@ jobs:
           jq -e 'all(.providers[]; .calls==9)' ../.runtime/live-ai-crossfire/private.json
       - name: Upload live benchmark evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: live-ai-provider-crossfire-2026-10-03
           path: .runtime/live-ai-crossfire
