@@ -1,19 +1,19 @@
-import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
-const read = (name) => readFileSync(new URL(`./${name}`, import.meta.url), 'utf8');
-const html = read('index.html');
-const app = read('app.js');
-const state = read('frontend_state.js');
-const store = read('chat_store.js');
-const view = read('chat_view.js');
-const dashboard = read('dashboard.js');
-const workspace = read('workspace_view.js');
-const composer = read('composer.js');
-const lifecycle = read('lifecycle_controller.js');
-const queue = read('generated/lifecycle_queue_controls.js');
-const styles = read('styles.css');
-const guards = read('generated/ui_guards.js');
+const read = (name) => readFileSync(new URL(`./${name}`, import.meta.url), "utf8");
+const html = read("index.html");
+const app = read("app.js");
+const state = read("frontend_state.js");
+const store = read("chat_store.js");
+const view = read("chat_view.js");
+const dashboard = read("dashboard.js");
+const workspace = read("workspace_view.js");
+const composer = read("composer.js");
+const lifecycle = read("lifecycle_controller.js");
+const queue = read("generated/lifecycle_queue_controls.js");
+const styles = read("styles.css");
+const guards = read("generated/ui_guards.js");
 
 assert.match(html, /Heroic AI/);
 assert.match(html, /Content-Security-Policy/);
@@ -21,24 +21,92 @@ assert.match(html, /default-src 'self'/);
 assert.match(html, /script-src 'self'/);
 assert.match(html, /object-src 'none'/);
 assert.match(html, /frame-ancestors 'none'/);
-for (const module of ['frontend_state.js', 'chat_store.js', 'chat_view.js', 'workspace_view.js', 'composer.js', 'app.js', 'dashboard.js', 'lifecycle_controller.js', 'generated/lifecycle_queue_controls.js']) assert.ok(html.includes(`./${module}`), `missing script: ${module}`);
-for (const viewName of ['chats', 'projects', 'saved', 'settings']) assert.ok(html.includes(`data-view=\"${viewName}\"`));
-for (const action of ['new-chat', 'backend-check', 'open-queue', 'toggle-workspace', 'voice', 'queue', 'send']) assert.ok(html.includes(`data-action=\"${action}\"`));
-assert.doesNotMatch(html, /data-action=\"attachments\"|attachment-list|Add local file/, 'the UI must not expose a non-functional attachment control');
+for (const module of [
+  "frontend_state.js",
+  "chat_store.js",
+  "chat_view.js",
+  "workspace_view.js",
+  "composer.js",
+  "app.js",
+  "dashboard.js",
+  "lifecycle_controller.js",
+  "generated/lifecycle_queue_controls.js",
+])
+  assert.ok(html.includes(`./${module}`), `missing script: ${module}`);
+for (const viewName of ["chats", "projects", "saved", "settings"])
+  assert.ok(html.includes(`data-view=\"${viewName}\"`));
+for (const action of [
+  "new-chat",
+  "backend-check",
+  "open-queue",
+  "toggle-workspace",
+  "voice",
+  "queue",
+  "send",
+])
+  assert.ok(html.includes(`data-action=\"${action}\"`));
+assert.doesNotMatch(
+  html,
+  /data-action=\"attachments\"|attachment-list|Add local file/,
+  "the UI must not expose a non-functional attachment control",
+);
 assert.match(html, /id=\"queue-button\"/);
-for (const mode of ['chat', 'research']) assert.ok(html.includes(`data-mode=\"${mode}\"`));
-for (const element of ['queue-count', 'workspace', 'message-queue', 'workspace-body', 'conversation-scroll']) assert.ok(html.includes(`id=\"${element}\"`));
+for (const mode of ["chat", "research"]) assert.ok(html.includes(`data-mode=\"${mode}\"`));
+for (const element of [
+  "queue-count",
+  "workspace",
+  "message-queue",
+  "workspace-body",
+  "conversation-scroll",
+])
+  assert.ok(html.includes(`id=\"${element}\"`));
 
-for (const contract of ['rie.frontend.chats.v2', 'rie.frontend.projects.v1', 'rie.frontend.saved.v1', 'rie.frontend.sessionToken.v1', 'localStorage', 'sessionStorage']) assert.ok(state.includes(contract), `missing state contract: ${contract}`);
-for (const contract of ['strict_zero_cost_only', 'max_sources', 'max_evidence_items', '/api/v1/research', '/api/v1/research/']) assert.ok(lifecycle.includes(contract), `missing research contract: ${contract}`);
-for (const behavior of ['createProject', 'assignCurrentChat', 'saveMessage', 'exportData', 'importData', 'clearData']) assert.ok(store.includes(`function ${behavior}`), `missing store behavior: ${behavior}`);
-for (const behavior of ['renderSidebar', 'renderConversation', 'renderProjects', 'renderSaved', 'renderSettings']) assert.ok(view.includes(`function ${behavior}`), `missing view behavior: ${behavior}`);
-for (const behavior of ['selectMode', 'handleVoice', 'send', 'queue']) assert.ok(composer.includes(`function ${behavior}`), `missing composer behavior: ${behavior}`);
-assert.doesNotMatch(composer, /handleAttachments|data-action=\"attachments\"/, 'composer must not retain the removed attachment action');
+for (const contract of [
+  "rie.frontend.chats.v2",
+  "rie.frontend.projects.v1",
+  "rie.frontend.saved.v1",
+  "rie.frontend.sessionToken.v1",
+  "localStorage",
+  "sessionStorage",
+])
+  assert.ok(state.includes(contract), `missing state contract: ${contract}`);
+for (const contract of [
+  "strict_zero_cost_only",
+  "max_sources",
+  "max_evidence_items",
+  "/api/v1/research",
+  "/api/v1/research/",
+])
+  assert.ok(lifecycle.includes(contract), `missing research contract: ${contract}`);
+for (const behavior of [
+  "createProject",
+  "assignCurrentChat",
+  "saveMessage",
+  "exportData",
+  "importData",
+  "clearData",
+])
+  assert.ok(store.includes(`function ${behavior}`), `missing store behavior: ${behavior}`);
+for (const behavior of [
+  "renderSidebar",
+  "renderConversation",
+  "renderProjects",
+  "renderSaved",
+  "renderSettings",
+])
+  assert.ok(view.includes(`function ${behavior}`), `missing view behavior: ${behavior}`);
+for (const behavior of ["selectMode", "handleVoice", "send", "queue"])
+  assert.ok(composer.includes(`function ${behavior}`), `missing composer behavior: ${behavior}`);
+assert.doesNotMatch(
+  composer,
+  /handleAttachments|data-action=\"attachments\"/,
+  "composer must not retain the removed attachment action",
+);
 assert.match(composer, /queueButton\.hidden = !researchMode/);
 assert.match(composer, /queueButton\.disabled = !researchMode/);
 assert.match(lifecycle, /event\.detail\?\.mode !== 'research'/);
-for (const behavior of ['render', 'resultText', 'sourceRows']) assert.ok(workspace.includes(`function ${behavior}`), `missing view behavior: ${behavior}`);
+for (const behavior of ["render", "resultText", "sourceRows"])
+  assert.ok(workspace.includes(`function ${behavior}`), `missing view behavior: ${behavior}`);
 
 assert.match(view, /const safeSourceUrl =/);
 assert.match(view, /url\.protocol === 'http:' \|\| url\.protocol === 'https:'/);
@@ -49,9 +117,16 @@ assert.match(dashboard, /const safeLink =/);
 assert.match(app, /\/api\/v1\/chat\/stream/);
 assert.match(app, /Idempotency-Key/);
 assert.match(app, /consumeChatStream/);
-assert.match(app, /event === 'delta'/);
-assert.match(app, /event === 'done'/);
-assert.doesNotMatch(app, /async function submitResearch|async function pollResearch|function renderResearch|function processQueue/, 'app.js must not own research lifecycle');
+assert.match(app, /event === [\"']delta[\"']/);
+assert.match(app, /event === [\"']done[\"']/);
+assert.match(app, /const activeChatId = chatId \|\| api\.ensureChat\(\)\.id/);
+assert.match(app, /if \(!api\.token\(\)\)/);
+assert.match(app, /status: [\"']auth_required[\"']/);
+assert.doesNotMatch(
+  app,
+  /async function submitResearch|async function pollResearch|function renderResearch|function processQueue/,
+  "app.js must not own research lifecycle",
+);
 assert.match(app, /api\.chatView\.render/);
 assert.match(app, /api\.chatStore\.exportData/);
 assert.match(lifecycle, /Idempotency-Key/);
@@ -64,9 +139,12 @@ assert.match(lifecycle, /MAX_POLL_MS/);
 assert.match(lifecycle, /rie:composer-send/);
 assert.match(lifecycle, /rie:queue-clear-requested/);
 assert.match(queue, /queue-changed|rie:queue-remove-requested/);
-assert.ok(!queue.includes("localStorage.setItem(QUEUE_KEY, JSON.stringify(items))"), 'queue controls must not become a second queue authority');
+assert.ok(
+  !queue.includes("localStorage.setItem(QUEUE_KEY, JSON.stringify(items))"),
+  "queue controls must not become a second queue authority",
+);
 assert.match(styles, /focus-visible/);
 assert.match(styles, /prefers-reduced-motion/);
 assert.match(guards, /repairSavedOwnership/);
 
-console.log('Heroic AI frontend architecture and contract checks passed');
+console.log("Heroic AI frontend architecture and contract checks passed");
