@@ -25,4 +25,4 @@ def test_feed_redirects_are_host_pinned_and_public_validated():
 
 def test_guess_paths_remain_same_host_only():
     text = WORKFLOW.read_text(encoding="utf-8")
-    assert 'same_host "$final")" = "1"' in text
+    assert '[ "$(same_host "$final")" = "1" ]' in text
