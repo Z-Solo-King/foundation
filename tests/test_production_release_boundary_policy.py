@@ -115,6 +115,24 @@ def test_release_d1_commands_do_not_repeat_global_config_flag():
             continue
     assert '  --config="$d1_migrations_config"' not in text
 
+def test_operations_deploy_staging_is_allowlisted_and_bundle_audited():
+    text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
+    assert "stage_operations_worker()" in text
+    assert "audit_operations_worker_bundle()" in text
+    assert 'cp "$RUNNER_TEMP/operations/worker.py"' in text
+    assert 'for runtime_dir in private extractor_mapper foundation_core backend' in text
+    assert 'test ! -e "$stage_dir/tests"' in text
+    assert 'test ! -e "$stage_dir/tools"' in text
+    assert 'test ! -e "$stage_dir/backup"' in text
+    assert 'test ! -e "$stage_dir/.venv-workers"' in text
+    assert '--dry-run --outdir "$out_dir"' in text
+    assert 'PROVIDER_KEYS_JSON.txt' in text
+    assert 'SILICONFLOW_API_KEY.txt' in text
+    assert 'OPENROUTER_API_KEY.txt' in text
+    assert 'CONTINUE_MIGRATION_2026-10-01.md' in text
+    assert '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config"' not in text
+    assert '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config wrangler.toml' not in text
+
 def test_reciprocal_service_bindings_use_binding_free_bootstrap():
     text = (ROOT / "scripts/production_release.sh").read_text(encoding="utf-8")
     assert "Operations binding-free bootstrap deployment: PASS" in text
