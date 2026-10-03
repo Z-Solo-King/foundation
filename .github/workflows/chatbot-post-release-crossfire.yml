@@ -160,6 +160,16 @@ jobs:
               try: payload=json.loads(raw)
               except json.JSONDecodeError: payload={}
           order=["openrouter_free","groq","gemini","cerebras","nvidia_nim","cohere_free","huggingface_free","siliconflow"]
+          import hashlib, importlib.util
+          runner_path="private/benchmark/ai_provider_crossfire.py"
+          print("CrossFire runner sha256:", hashlib.sha256(open(runner_path,"rb").read()).hexdigest())
+          modspec=importlib.util.spec_from_file_location("crossfire_runner", runner_path)
+          mod=importlib.util.module_from_spec(modspec)
+          modspec.loader.exec_module(mod)
+          loaded=mod.load_config()
+          print("CrossFire loader admitted:", sorted(loaded))
+          print("CrossFire provider order:", list(mod.PROVIDER_ORDER))
+          print("CrossFire provider cap from workflow: 6")
           for name in order:
               spec=specs[name]
               issues=[]
