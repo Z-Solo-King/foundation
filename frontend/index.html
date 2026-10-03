@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="./ui_overrides.css" />
     <link rel="stylesheet" href="./dashboard.css" />
+    <link rel="stylesheet" href="./github.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -21,6 +22,7 @@
           <button class="nav-item active" data-view="chats" aria-current="page">◌ <span>Chats</span></button>
           <button class="nav-item" data-view="projects" aria-current="false">▣ <span>Projects</span></button>
           <button class="nav-item" data-view="saved" aria-current="false">☆ <span>Saved</span></button>
+          <button class="nav-item" data-view="github" aria-current="false"><span class="ux-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 19c-4 1-4-2-6-2m12 4v-3.9c0-1.1-.4-1.7-1-2 3.3-.4 6.7-1.6 6.7-7A5.4 5.4 0 0 0 18 4.4 5 5 0 0 0 17.9 1S16.8.6 14 2.4a13.5 13.5 0 0 0-7.4 0C3.8.6 2.7 1 2.6 4.4a5.4 5.4 0 0 0-1.7 3.7c0 5.4 3.4 6.6 6.7 7-.6.3-1 .9-1 2V21"></path></svg></span><span>GitHub</span></button>
           <button class="nav-item" data-action="open-system-dashboard">▤ <span>System dashboard</span></button>
         </nav>
         <div class="sidebar-label">Recent</div>
@@ -56,6 +58,7 @@
     <script src="./markdown_renderer.js"></script>
     <script src="./chat_store.js"></script>
     <script src="./chat_view.js"></script>
+    <script src="./github_view.js"></script>
     <script src="./workspace_view.js"></script>
     <script src="./composer.js"></script>
     <script src="./app.js"></script>

@@ -69,6 +69,11 @@
     return `<div class="message view-panel"><div class="view-heading"><div><span class="eyebrow">Configuration</span><h2>Settings</h2><p>Browser-local controls for this frontend surface.</p></div></div><section class="workspace-card"><div class="card-head"><strong>Backend</strong><span class="status-dot ${api.state.backendOk ? 'ok' : ''}">${api.escapeHtml(api.state.backendText)}</span></div><p class="mono">${api.escapeHtml(api.API_BASE || 'Not configured')}</p><p class="muted">Session authentication is held only in session storage for this browser session.</p><label class="field-label" for="session-token">Session token</label><input id="session-token" type="password" placeholder="${tokenPresent ? 'Token already set for this session' : 'Optional short-lived token'}" autocomplete="off" value=""><div class="card-actions"><button class="secondary" data-action="save-session-token">Use for this tab</button><button class="secondary" data-action="clear-session-token">Clear</button><button class="secondary" data-action="backend-check">Check backend</button></div></section><section class="workspace-card"><div class="card-head"><strong>Local data</strong><span>${api.state.chats.length} chats · ${api.state.projects.length} projects · ${api.state.saved.length} saved</span></div><p class="muted">Exports are versioned local data only. Imports are schema-validated before replacing local state.</p><div class="card-actions"><button class="secondary" data-action="export-data">Export</button><button class="secondary" data-action="import-data">Import</button><button class="danger" data-action="clear-data">Clear local data</button></div></section></div>`;
   }
   function renderView() {
+    if (api.state.view === 'github' && api.githubView) {
+      if (el.emptyState) el.emptyState.hidden = true;
+      if (el.conversation) el.conversation.innerHTML = api.githubView.render();
+      return;
+    }
     if (api.state.view === 'chats') return renderConversation();
     if (el.mobileTitle) el.mobileTitle.textContent = api.state.view[0].toUpperCase() + api.state.view.slice(1);
     if (el.emptyState) el.emptyState.hidden = true;
