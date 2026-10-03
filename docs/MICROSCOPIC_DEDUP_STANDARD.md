@@ -4,76 +4,84 @@
 
 Keep one canonical implementation for each shared mechanic and keep variants limited to policy, configuration, or genuinely unique behavior.
 
-## Trunk → group → leaf
+## Trunk -> Group -> Leaf
 
 ```text
 unique implementations
-        │
-        ▼
+        |
+        v
 shared group mechanics
-        │
-        ▼
+        |
+        v
 cross-project common mechanics
-        │
-        ▼
+        |
+        v
 configuration / policy / unique hooks
 ```
 
 ### Trunk
+
 Use one canonical implementation for mechanics such as:
+
 - time normalization and freshness
 - canonical serialization and hashing
-- shared error/receipt shapes
+- shared error and receipt shapes
 - common retry, I/O, logging, and validation primitives
 - workflow orchestration that is identical across consumers
 
 ### Group
+
 Use a group module when several consumers share mechanics but differ by domain:
-- provider/API adapters
-- extraction/parsing
-- benchmark/crossfire execution
-- runtime/edge adapters
+
+- provider and API adapters
+- extraction and parsing
+- benchmark and CrossFire execution
+- runtime and edge adapters
 - persistence or resource-gating mechanics
 
 ### Leaf
+
 Leaves contain only:
-- unique provider/domain behavior
+
+- unique provider or domain behavior
 - policy decisions owned by that subsystem
 - configuration
 - small adapter hooks
 - tests for genuinely unique behavior
 
-## Deduplication evidence
+## Deduplication Evidence
 
 A consolidation is safe only after checking:
-1. semantic equivalence, not just matching names;
-2. input/output and error-contract compatibility;
-3. authority, security, privacy, and resource-policy boundaries;
-4. current call sites and tests;
-5. branch/PR ancestry and whether the candidate contains unique work;
-6. live or focused validation after migration.
 
-Never delete historical branches merely because names look repetitive. Prefer ancestry/content/reference evidence.
+1. semantic equivalence, not just matching names
+2. input/output and error-contract compatibility
+3. authority, security, privacy, and resource-policy boundaries
+4. current call sites and tests
+5. branch and pull-request ancestry and whether the candidate contains unique work
+6. live or focused validation after migration
 
-## Branch hygiene
+Never delete historical branches merely because names look repetitive. Prefer ancestry, content, reference, and dependency evidence.
+
+## Branch Hygiene
 
 Branches are classified as:
-- canonical/active: retain;
-- active unique work: retain until integrated;
-- superseded duplicate: eligible for retirement after evidence review;
-- historical evidence: retain when it is the provenance record;
-- abandoned scratch/retry: eligible for retirement after reference checks.
 
-The default branch and release/provenance branches are never retired by an automated name-only rule.
+- canonical or active: retain
+- active unique work: retain until integrated
+- superseded duplicate: eligible for retirement after evidence review
+- historical evidence: retain when it is the provenance record
+- abandoned scratch or retry: eligible for retirement after reference checks
 
-## Cross-language rule
+The default branch and release or provenance branches are never retired by an automated name-only rule.
 
-Share schemas, fixtures, contracts and evidence vectors across languages. Do not copy source code solely for symmetry. A language-specific implementation must justify its own runtime or maintenance boundary.
+## Cross-Language Rule
 
-## Migration sequence
+Share schemas, fixtures, contracts, and evidence vectors across languages. Do not copy source code solely for symmetry. A language-specific implementation must justify its own runtime or maintenance boundary.
 
-shared primitive → parity tests → migrate one consumer → focused validation → migrate next consumer → remove dead duplicate → refresh maps/docs.
+## Migration Sequence
 
-## Current implementation note
+`shared primitive -> parity tests -> migrate one consumer -> focused validation -> migrate next consumer -> remove dead duplicate -> refresh maps/docs`
+
+## Current Implementation Note
 
 The Operations scraper execution fabric now consumes the canonical evidence timestamp parser from `private/shared_evidence_kernel.py` instead of maintaining a second parser, with parity tests preserving legacy UTC normalization behavior.
