@@ -1,5 +1,6 @@
 # fmt: off
 from __future__ import annotations
+
 import json
 import re
 from pathlib import Path
@@ -40,7 +41,7 @@ def test_all_third_party_actions_are_sha_pinned():
                 continue
             ref = stripped.split("@", 1)[-1].split("#", 1)[0].strip()
             action = stripped.split("uses:", 1)[1].split("@", 1)[0].strip()
-            if action.startswith("./") or action.startswith("docker://"):
+            if action.startswith(("./", "docker://")):
                 continue
             if not SHA_REF.fullmatch(ref):
                 violations.append(f"{name}:{line_no}:{action}@{ref}")
@@ -429,7 +430,7 @@ def test_canonical_operations_pin_matches_latest_migration_head():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     assert 'PIN_MANIFEST="docs/OPERATIONS_PIN_MANIFEST.json"' in deployment
     assert 'manifest["pins"]["production_runtime"]["sha"]' in deployment
-    nightly = texts = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
+    nightly = _workflow_texts()["nightly-multi-agent-research-v3.yml"]
     expected = "OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || '" + CANONICAL_RESEARCH_OPERATIONS_REF + "' }}"
     assert expected in nightly
 
@@ -693,7 +694,7 @@ def test_production_bootstrap_precedes_foundation_deploy_and_is_unconditional():
         '(cd "$operations_bootstrap_stage" && pywrangler deploy --config wrangler.toml --secrets-file'
     ) == 1
     assert 'pywrangler deploy --config "$bootstrap_config"' not in deployment
-    assert '/workers/scripts/\${OPERATIONS_SERVICE_NAME}/settings' not in deployment
+    assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings' not in deployment
 
 def test_public_probe_records_dns_failure_without_parser_crash():
     workflow = _workflow_texts()["public-worker-live-probe.yml"]
