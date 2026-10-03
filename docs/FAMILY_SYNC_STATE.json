@@ -277,10 +277,7 @@
   },
   "continuity_refresh_2026_10_03": {
     "canonical_workflow": "cross-repository-contract-drift.yml",
-    "docs": [
-      "docs/CURRENT_SOURCE_OF_TRUTH.md",
-      "docs/FAMILY_SYNC_STATE.json"
-    ],
+    "docs": ["docs/CURRENT_SOURCE_OF_TRUTH.md", "docs/FAMILY_SYNC_STATE.json"],
     "reason": "keeps continuity metadata synchronized with the canonical overlap-validator path change"
   }
 }
