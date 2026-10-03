@@ -621,26 +621,22 @@ async function main() {
     target_component_definition: state.target_component
       ? PROJECT_IMPROVEMENT_MATRIX.components[state.target_component]
       : null,
-    open_issues: openIssues
-      .slice(0, 10)
-      .map((i) => ({
-        number: i.number,
-        title: sanitize(i.title).slice(0, 240),
-        body: sanitize(i.body).slice(0, 650),
-        updatedAt: i.updated_at,
-      })),
-    recent_runs: recentRuns
-      .slice(0, 20)
-      .map((r) => ({
-        id: r.id,
-        name: sanitize(r.name).slice(0, 160),
-        path: sanitize(r.path).slice(0, 240),
-        status: r.status,
-        conclusion: r.conclusion,
-        head_sha: r.head_sha,
-        event: r.event,
-        created_at: r.created_at,
-      })),
+    open_issues: openIssues.slice(0, 10).map((i) => ({
+      number: i.number,
+      title: sanitize(i.title).slice(0, 240),
+      body: sanitize(i.body).slice(0, 650),
+      updatedAt: i.updated_at,
+    })),
+    recent_runs: recentRuns.slice(0, 20).map((r) => ({
+      id: r.id,
+      name: sanitize(r.name).slice(0, 160),
+      path: sanitize(r.path).slice(0, 240),
+      status: r.status,
+      conclusion: r.conclusion,
+      head_sha: r.head_sha,
+      event: r.event,
+      created_at: r.created_at,
+    })),
     workflow_attempts: state.workflow_attempts || {},
     child_runs: childResults.map((r) => ({
       id: r.id,
