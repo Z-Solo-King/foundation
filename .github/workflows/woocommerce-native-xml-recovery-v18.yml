@@ -308,7 +308,7 @@ jobs:
   build-anyhow-feeds:
     name: Build 30 usable Google XML feeds
     needs: recover
-    if: ${{ always() }}
+    if: ${{ always() && github.ref == 'refs/heads/main' }}
     permissions:
       contents: read
       actions: read
