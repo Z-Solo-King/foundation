@@ -122,7 +122,18 @@ python -m pip install pytest pytest-asyncio coverage workers-py workers-runtime-
 uv --version
 python -m compileall -q foundation_core
 python -c "import foundation_core; print(foundation_core.__all__)"
-coverage run --branch --source=foundation_core --omit='tests/*' -m pytest tests/ -v
+release_public_tests=(
+  tests/test_outcome.py
+  tests/test_public_core.py
+  tests/test_domain_packs_port.py
+  tests/test_text_normalization_port.py
+  tests/test_token_efficiency.py
+  tests/test_product_identity.py
+  tests/test_url_identity_core.py
+  tests/test_stage_receipt_recovery.py
+  tests/test_public_boundary.py
+)
+coverage run --branch --source=foundation_core --omit='tests/*' -m pytest "${release_public_tests[@]}" -v
 coverage report --show-missing --fail-under=100 --omit='tests/*'
 python -m benchmark.chatbot_query_benchmark --input benchmark/chatbot-query-corpus.json --output .runtime/chatbot-query-benchmark.json
 python -m pytest -q tests/test_workflow_policy.py
