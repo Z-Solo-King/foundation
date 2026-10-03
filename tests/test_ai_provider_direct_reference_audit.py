@@ -1,7 +1,11 @@
-from tools.ai_provider_direct_reference_audit import ALLOWED_RELATIVE_PATHS, direct_provider_references
+from tools.ai_provider_direct_reference_audit import (
+    ALLOWED_RELATIVE_PATHS,
+    direct_provider_references,
+)
 
 
 def test_public_ai_provider_audit_has_explicit_adapter_allowlist() -> None:
+    assert "tools/verification_fabric.mjs" in ALLOWED_RELATIVE_PATHS
     assert "tools/woocommerce_v175_plugin_fingerprint_22.py" in ALLOWED_RELATIVE_PATHS
 
 
