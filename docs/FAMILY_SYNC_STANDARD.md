@@ -293,3 +293,8 @@ The Migration Factory CrossFire now preserves its hidden runtime reports during 
 The centralized Operations validation workflow treats the live custom website product-feed workflow as the sole sanctioned Operations workflow exception. Private runtime workflows remain governed by the Foundation authority boundary.
 
 The nightly multi-agent research workflow installs the private research runner's HTTP client dependency before execution. This repairs the live runner dependency boundary without weakening the production gate or treating deterministic dry-run output as real research evidence.
+
+## Cross-repository overlap validation — 2026-10-03
+
+The cross-repository contract workflow executes the exhaustive overlap validator from the disposable Operations checkout. Foundation remains the authority for the workflow, while the overlap implementation is supplied by Operations as part of the cross-repository validation toolkit.
+
