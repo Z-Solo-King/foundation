@@ -127,6 +127,7 @@ def test_all_foundation_workflow_surfaces_are_chat_session_independent():
                 f"{path} contains interactive-session coupling: {term}"
             )
 
+
 def test_autonomous_supervisor_ids_are_run_scoped_not_interactive_session_scoped():
     value = (ROOT / "tools/autonomous_engineering_supervisor.mjs").read_text(
         encoding="utf-8"
