@@ -57,3 +57,19 @@ def test_nightly_ai_crossfire_has_six_current_parallel_models_and_truthful_gates
     assert 'coverage_complete": len(rows) == 6' in text
     assert 'quality_complete": len(valid) == 6' in text
     assert 'raise SystemExit(0 if report["coverage_complete"] and report["quality_complete"] else 1)' in text
+
+
+
+def test_nightly_ai_crossfire_uses_canonical_worker_boundary():
+    text = (ROOT / ".github/workflows/nightly-benchmark-ai-crossfire.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "PUBLIC_WORKER_URL: https://heroic-ai.pages.dev" in text
+    assert "AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}" in text
+    assert "CLOUDFLARE_API_TOKEN" not in text
+    assert "CLOUDFLARE_ACCOUNT_ID" not in text
+    assert "/api/v1/benchmark/ai-crossfire" in text
+    assert "nightly-benchmark-ai-crossfire-request/v2" in text
+    assert "model_count_expected" in text
+    assert "quality_complete" in text
+    assert "coverage_complete" in text
