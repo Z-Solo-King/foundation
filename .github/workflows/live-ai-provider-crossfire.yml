@@ -31,10 +31,12 @@ jobs:
     steps:
       - name: Checkout Foundation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
+
       - name: Mint read-only Operations App token
         id: operations-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
@@ -44,6 +46,7 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: operations
           permission-contents: read
+
       - name: Resolve immutable Operations revision
         id: operations
         shell: bash
@@ -53,9 +56,15 @@ jobs:
         run: |
           set -euo pipefail
           ref="${REQUESTED_OPERATIONS_REF:-}"
-          if [ -z "$ref" ]; then ref="$(gh api repos/Z-Solo-King/operations/commits/main --jq '.sha')"; fi
-          [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Operations revision must be a 40-hex immutable SHA"; exit 1; }
+          if [ -z "$ref" ]; then
+            ref="$(gh api repos/Z-Solo-King/operations/commits/main --jq '.sha')"
+          fi
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "Operations revision must be a 40-hex immutable SHA"
+            exit 1
+          }
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
       - name: Checkout private Operations benchmark
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -64,12 +73,14 @@ jobs:
           token: ${{ steps.operations-token.outputs.token }}
           path: operations-provider-benchmark
           persist-credentials: false
+
       - name: Install private benchmark
         working-directory: operations-provider-benchmark
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
           python -m pip install -e .
+
       - name: Validate six-provider matrix
         working-directory: operations-provider-benchmark
         env:
@@ -80,67 +91,151 @@ jobs:
           import json
           from pathlib import Path
           from private.chatbot.platform_access import validate_platform_matrix, crossfire_lanes
-          catalog = json.loads(Path("private/chatbot/provider_transport_catalog.json").read_text())
-          required = {"openrouter_free","groq","gemini","cerebras","nvidia_nim","cohere_free"}
+
+          catalog = json.loads(Path("private/chatbot/provider_transport_catalog.json").read_text(encoding="utf-8"))
+          required = {"openrouter_free", "groq", "gemini", "cerebras", "nvidia_nim", "cohere_free"}
           ids = {item["id"] for item in catalog["providers"]}
           assert required <= ids
           assert len(validate_platform_matrix()) == 22
           lanes = crossfire_lanes()
           assert len(lanes) == 6 and all(lane.independent for lane in lanes)
-          print({"selected_provider_cap":6,"platforms":22,"lanes":6})
+          print({"provider_target": 6, "platforms": 22, "lanes": 6})
           PY
-      - name: Diagnose aggregate provider secret
+
+      - name: Assemble canonical provider credentials
         working-directory: operations-provider-benchmark
         env:
           PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+          RESEARCH_OPENROUTER_API_KEY: ${{ secrets.RESEARCH_OPENROUTER_API_KEY }}
+          RESEARCH_GROQ_API_KEY: ${{ secrets.RESEARCH_GROQ_API_KEY }}
+          RESEARCH_GEMINI_API_KEY: ${{ secrets.RESEARCH_GEMINI_API_KEY }}
+          RESEARCH_CEREBRAS_API_KEY: ${{ secrets.RESEARCH_CEREBRAS_API_KEY }}
+          RESEARCH_NVIDIA_NIM_API_KEY: ${{ secrets.RESEARCH_NVIDIA_NIM_API_KEY }}
+          RESEARCH_COHERE_API_KEY: ${{ secrets.RESEARCH_COHERE_API_KEY }}
         run: |
           set -euo pipefail
           python - <<'PY'
           import json, os
           from pathlib import Path
-          catalog = json.loads(Path("private/chatbot/provider_transport_catalog.json").read_text())
-          targets = ["openrouter_free","groq","gemini","cerebras","nvidia_nim","cohere_free"]
-          raw = os.environ.get("PROVIDER_KEYS_JSON","").strip()
-          print({"aggregate_secret_present": bool(raw), "aggregate_length": len(raw)})
-          if not raw:
-              raise SystemExit("PROVIDER_KEYS_JSON is empty in this job environment")
-          try:
-              payload = json.loads(raw)
-          except json.JSONDecodeError as exc:
-              raise SystemExit(f"PROVIDER_KEYS_JSON is not valid JSON: {exc.msg}") from exc
-          if not isinstance(payload, dict):
-              raise SystemExit("PROVIDER_KEYS_JSON must be a JSON object keyed by provider id")
-          for name in targets:
-              value = payload.get(name)
-              spec = catalog["providers"][next(i for i,x in enumerate(catalog["providers"]) if x["id"] == name)]
-              if not isinstance(value, dict):
-                  print({"provider":name,"present":False,"shape":"missing_or_nonobject"})
-                  continue
-              endpoint_ok = value.get("endpoint") == spec["endpoint"]
-              model_ok = value.get("model") == spec["model"]
-              key_ok = isinstance(value.get("api_key"), str) and bool(value["api_key"].strip())
-              zero_cost_ok = value.get("zero_cost") is not False
-              print({"provider":name,"present":True,"api_key_present":key_ok,"endpoint_matches_catalog":endpoint_ok,"model_matches_catalog":model_ok,"zero_cost_admissible":zero_cost_ok})
+
+          catalog = {
+              item["id"]: item
+              for item in json.loads(
+                  Path("private/chatbot/provider_transport_catalog.json").read_text(encoding="utf-8")
+              )["providers"]
+          }
+          targets = {
+              "openrouter_free": "RESEARCH_OPENROUTER_API_KEY",
+              "groq": "RESEARCH_GROQ_API_KEY",
+              "gemini": "RESEARCH_GEMINI_API_KEY",
+              "cerebras": "RESEARCH_CEREBRAS_API_KEY",
+              "nvidia_nim": "RESEARCH_NVIDIA_NIM_API_KEY",
+              "cohere_free": "RESEARCH_COHERE_API_KEY",
+          }
+
+          result = {}
+          raw = os.environ.get("PROVIDER_KEYS_JSON", "").strip()
+          aggregate_valid = False
+          if raw:
+              try:
+                  payload = json.loads(raw)
+              except json.JSONDecodeError as exc:
+                  print(f"aggregate credential JSON invalid; using canonical RESEARCH_* fallbacks (line={exc.lineno}, column={exc.colno})")
+                  payload = {}
+              if isinstance(payload, dict):
+                  aggregate_valid = True
+                  for name in targets:
+                      value = payload.get(name)
+                      spec = catalog[name]
+                      if not isinstance(value, dict):
+                          continue
+                      endpoint = value.get("endpoint")
+                      api_key = value.get("api_key")
+                      model = value.get("model")
+                      if not all(isinstance(v, str) and v.strip() for v in (endpoint, api_key, model)):
+                          continue
+                      if endpoint != spec["endpoint"] or model != spec["model"] or value.get("zero_cost") is False:
+                          continue
+                      result[name] = {
+                          "endpoint": spec["endpoint"],
+                          "api_key": api_key,
+                          "model": spec["model"],
+                          "zero_cost": True,
+                      }
+
+          for provider, secret_name in targets.items():
+              api_key = os.environ.get(secret_name, "").strip()
+              if api_key:
+                  spec = catalog[provider]
+                  result[provider] = {
+                      "endpoint": spec["endpoint"],
+                      "api_key": api_key,
+                      "model": spec["model"],
+                      "zero_cost": True,
+                  }
+
+          target = Path(os.environ["RUNNER_TEMP"]) / "provider_keys.json"
+          target.write_text(json.dumps(result, separators=(",", ":")), encoding="utf-8")
+          target.chmod(0o600)
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as handle:
+              handle.write(f"PROVIDER_KEYS_JSON_FILE={target}\n")
+
+          print({
+              "aggregate_secret_present": bool(raw),
+              "aggregate_secret_valid_object": aggregate_valid,
+              "configured_provider_count": len(result),
+              "configured_providers": sorted(result),
+              "credential_values_logged": False,
+          })
+          if len(result) < 2:
+              raise SystemExit(
+                  "fewer than two usable provider credentials are available after "
+                  "aggregate validation and RESEARCH_* fallback assembly"
+              )
           PY
+
       - name: Run live six-provider cross-fire
         working-directory: operations-provider-benchmark
         env:
-          PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
-          NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
-          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
           PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations-provider-benchmark
         run: |
           set -euo pipefail
           mkdir -p ../.runtime/live-ai-crossfire
-          python private/benchmark/ai_provider_crossfire.py --providers-max 6 --repeats 3 --workers 18 --output ../.runtime/live-ai-crossfire/private.json
-          jq '{schema,generated_at,concurrency_workers,providers_tested,provider_target,crossfire_strength,independent_execution,shared_result_feedback,task_count,repeats,call_count,batch_wall_ms,providers:[.providers[]|{provider,model,calls,successes,failures,quality_passes,quality_total,quality_score,latency_ms,provider_batch_ms,errors}],task_agreement}' ../.runtime/live-ai-crossfire/private.json > ../.runtime/live-ai-crossfire/public-summary.json
-          jq -e '.providers_tested|length==6' ../.runtime/live-ai-crossfire/private.json
-          jq -e '.call_count==54' ../.runtime/live-ai-crossfire/private.json
-          jq -e 'all(.providers[]; .calls==9)' ../.runtime/live-ai-crossfire/private.json
+          python private/benchmark/ai_provider_crossfire.py             --providers-max 6             --repeats 3             --workers 18             --output ../.runtime/live-ai-crossfire/private.json
+
+          jq '{
+            schema,
+            generated_at,
+            concurrency_workers,
+            providers_tested,
+            provider_target,
+            crossfire_strength,
+            independent_execution,
+            shared_result_feedback,
+            task_count,
+            repeats,
+            call_count,
+            batch_wall_ms,
+            providers: [.providers[] | {
+              provider,
+              model,
+              calls,
+              successes,
+              failures,
+              quality_passes,
+              quality_total,
+              quality_score,
+              latency_ms,
+              provider_batch_ms,
+              errors
+            }],
+            task_agreement
+          }' ../.runtime/live-ai-crossfire/private.json > ../.runtime/live-ai-crossfire/public-summary.json
+
+          jq -e '.providers_tested | length == 6' ../.runtime/live-ai-crossfire/private.json
+          jq -e '.call_count == 54' ../.runtime/live-ai-crossfire/private.json
+          jq -e 'all(.providers[]; .calls == 9)' ../.runtime/live-ai-crossfire/private.json
+
       - name: Upload live benchmark evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -149,6 +244,7 @@ jobs:
           path: .runtime/live-ai-crossfire
           retention-days: 30
           if-no-files-found: error
+
       - name: Print sanitized result
         if: always()
         run: cat .runtime/live-ai-crossfire/public-summary.json
