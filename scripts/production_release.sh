@@ -411,7 +411,7 @@ grep -q '"workers_ai_neurons":100' "$RUNNER_TEMP/operations/wrangler.toml"
 grep -q '"model_calls":100' "$RUNNER_TEMP/operations/wrangler.toml"
 grep -q '"search_calls":500' "$RUNNER_TEMP/operations/wrangler.toml"
 grep -q 'CHAT_BACKEND_TOKEN' "$RUNNER_TEMP/operations/private/chat_auth.py"
-grep -q 'from private.chat_auth import authorized_chat_request' "$RUNNER_TEMP/operations/foundation_worker.py"
+grep -Eq '^from backend\.worker_auth import .*\bauthorized\b' "$RUNNER_TEMP/operations/foundation_worker.py"
 
 # Fail before deployment if the pinned Operations tree contains any Python syntax error.
 python -m compileall -q "$RUNNER_TEMP/operations"
