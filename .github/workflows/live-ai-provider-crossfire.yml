@@ -2,7 +2,12 @@ name: Live AI provider cross-fire benchmark
 run-name: Live AI provider cross-fire — ${{ github.event_name }}
 
 on:
+  push:
+    branches: [fix/chatbot-live-crossfire-browser-2026-10-03]
+    paths:
+      - ".github/workflows/live-ai-provider-crossfire.yml"
   schedule:
+    # 22:00 IST target; GitHub may delay scheduled runs during load.
     - cron: "30 16 * * *"
   workflow_dispatch:
     inputs:
@@ -56,20 +61,17 @@ jobs:
           if [ -z "$ref" ]; then ref="$(gh api repos/Z-Solo-King/operations/commits/main --jq '.sha')"; fi
           [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Operations revision must be a 40-hex immutable SHA"; exit 1; }
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
-
       - name: Checkout private Operations benchmark
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
           ref: ${{ steps.operations.outputs.ref }}
           token: ${{ steps.operations-token.outputs.token }}
-          path: operations-provider-benchmark
+          path: ${{ runner.temp }}/operations-provider-benchmark
           persist-credentials: false
 
       - name: Validate platform access cross-fire contract
-        working-directory: operations-provider-benchmark
-        env:
-          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations-provider-benchmark
+        working-directory: ${{ runner.temp }}/operations-provider-benchmark
         run: |
           set -euo pipefail
           python - <<'PY'
@@ -131,23 +133,16 @@ jobs:
           test -s .runtime/live-ai-crossfire/private.json
           jq '{schema:"live-ai-provider-crossfire-summary/v1",generated_at,comparison_state:(.comparison_state // "complete"),limitation:(.limitation // null),provider_count:(.providers|length),call_count,batch_wall_ms,successful_calls:([.providers[]?.successes]|add // 0),failed_calls:([.providers[]?.failures]|add // 0),quality_passes:([.providers[]?.quality_passes]|add // 0),quality_total:([.providers[]?.quality_total]|add // 0)}' .runtime/live-ai-crossfire/private.json > .runtime/live-ai-crossfire/summary.json
 
-      - name: Enforce comparative benchmark availability
+      - name: Enforce comparative availability
         if: always()
         shell: bash
         run: |
           set -euo pipefail
-          summary=.runtime/live-ai-crossfire/summary.json
-          test -s "$summary"
-          comparison_state="$(jq -r '.comparison_state // "complete"' "$summary")"
-          provider_count="$(jq -r '.provider_count // 0' "$summary")"
-          if [ "$comparison_state" = "comparison_unavailable" ]; then
-            echo "Provider CrossFire unavailable: fewer than two configured providers."
-            exit 1
-          fi
-          if [ "$provider_count" -lt 5 ]; then
-            echo "Provider CrossFire requires at least 5 live providers for this acceptance lane; observed $provider_count."
-            exit 1
-          fi
+          test -s .runtime/live-ai-crossfire/summary.json
+          comparison_state="$(jq -r '.comparison_state // "complete"' .runtime/live-ai-crossfire/summary.json)"
+          provider_count="$(jq -r '.provider_count // 0' .runtime/live-ai-crossfire/summary.json)"
+          test "$comparison_state" != "comparison_unavailable"
+          test "$provider_count" -ge 5
 
       - name: Upload public-safe evidence
         if: always()
