@@ -65,7 +65,6 @@ Production Worker deployment is a controlled release operation, not a general-pu
 - Public receipts contain only sanitized deployment/evidence metadata. Raw private GitHub/Cloudflare responses, credentials, provider payloads and private source identifiers are removed before artifact publication.
 - Immutable production pins are lineage controls. Moving Operations `main` ahead of an approved revision is ordinary repository progression; integrity failure requires invalid identity, divergence, or an unauthorized authority transition.
 
-
 ## Production release validation boundary — 2026-10-04
 
 The canonical production release validates the public Foundation surface before touching deployment state. Its pre-deployment coverage run is intentionally scoped to the public Foundation test set; private runtime, cross-repository and Operations-owned implementation tests are exercised by the later exact-revision Operations audit after the authenticated private checkout is established. This preserves the public/private migration boundary while retaining separate validation of private runtime ownership.
