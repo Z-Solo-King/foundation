@@ -1,1 +1,35 @@
-The requested file reference is not currently visible. Use files.search or files.list to rediscover the file, then retry with a returned ref_id or file_id.
+{
+  "schema": "operations-pin-manifest/v1",
+  "generated_at": "2026-10-03",
+  "authority": "single public-safe immutable Operations revision manifest; runtime code remains authoritative",
+  "pins": {
+    "production_runtime": {
+      "sha": "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f",
+      "purpose": "Cloudflare Operations production runtime and Foundation public production release",
+      "status": "deployed production runtime pin observed in Cloudflare; Operations main remains a separate moving branch and fresh runtime certification remains separately evidenced"
+    },
+    "provider_fleet_runtime": {
+      "sha": "2a4a49d2c11bd9ff2b9290bc780eb0da97c73ecb",
+      "purpose": "immutable provider fleet runtime probe entrypoint with standardized rate-limit telemetry",
+      "path": "tools/provider_fleet_runtime_probe.py",
+      "status": "immutable provider-fleet probe revision; captures sanitized request/token limit and reset headers"
+    },
+    "research_runtime": {
+      "sha": "8b6909ac213e01d310362627d12772950601adf6",
+      "purpose": "nightly research executor source checkout",
+      "status": "canonical Operations research/runtime baseline after private migration merge"
+    },
+    "secret_sync_utility": {
+      "sha": "b95e419254a9071beaeef57a1b0da22ba7dd2c4f",
+      "purpose": "private provider-secret synchronization utility",
+      "path": "tools/sync_provider_secrets.py",
+      "status": "immutable utility revision; separately certified before controlled use"
+    }
+  },
+  "rules": {
+    "sha_format": "40 lowercase hexadecimal characters",
+    "mutable_refs_forbidden": true,
+    "branch_or_tag_refs_forbidden": true,
+    "purpose_scoped": true
+  }
+}
