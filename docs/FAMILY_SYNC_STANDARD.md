@@ -297,4 +297,3 @@ The nightly multi-agent research workflow installs the private research runner's
 ## Cross-repository overlap validation — 2026-10-03
 
 The cross-repository contract workflow executes the exhaustive overlap validator from the disposable Operations checkout. Foundation remains the authority for the workflow, while the overlap implementation is supplied by Operations as part of the cross-repository validation toolkit.
-
