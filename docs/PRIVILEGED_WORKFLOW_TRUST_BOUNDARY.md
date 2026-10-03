@@ -88,3 +88,10 @@ The aggregate is invalid unless all six configured models return transport-succe
 Autonomous and credential-bearing automation is independent of ChatGPT or any interactive client session. Scheduled execution, trusted `main` execution, and explicit workflow dispatch are the only scheduler inputs; workflow-run IDs, immutable commit SHAs, and artifacts provide durable correlation. Application `chat_id` and `request_id` values are correlation metadata only and are never derived from conversational session state.
 
 The autonomous supervisor, governance sweep, provider cross-fire, benchmark cross-fire, coverage matrix, and privileged WooCommerce recovery paths are guarded to `refs/heads/main` before execution. Registered `workflow_run` chains remain explicitly allowlisted by the workflow authority registry and validate trusted upstream success; they are runtime chaining, not ChatGPT-session dependencies.
+
+## Required merge-gate context reconciliation — 2026-10-03
+
+The canonical `.github/workflows/required-pr-checks.yml` remains the source of the protected `Public tests` and `Analyze python` status contexts. The explicit context comment in that workflow records the two repository-rule contexts and does not change execution or authority.
+
+Documentation-only continuity changes are not exempt from the protected merge rule: the required contexts must materialize and succeed on the exact PR head before merge. The repository ruleset remains the authority for this requirement.
+
