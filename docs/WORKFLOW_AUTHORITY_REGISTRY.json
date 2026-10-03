@@ -1,6 +1,6 @@
 {
   "schema": "workflow-authority-registry/v1",
-  "policy_version": "2026-10-02",
+  "policy_version": "2026-10-03",
   "default_class": "public_ci",
   "public_feed_workflows": {
     ".github/workflows/native-google-feed-hunt.yml": true,
@@ -33,6 +33,7 @@
     [".github/workflows/live-chatbot-production-smoke.yml", "private_production_smoke"],
     [".github/workflows/live-extractor-benchmark.yml", "live_extractor_benchmark"],
     [".github/workflows/live-nightly-research-canary.yml", "private_research_canary"],
+    [".github/workflows/nightly-benchmark-ai-crossfire.yml", "ai_benchmark_advisory_crossfire"],
     [".github/workflows/nightly-multi-agent-research-v3.yml", "research_public_frontdoor"],
     [".github/workflows/nightly-research-provider-preflight.yml", "private_research_preflight"],
     [".github/workflows/observation-contract-shadow.yml", "private_benchmark"],

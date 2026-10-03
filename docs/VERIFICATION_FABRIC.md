@@ -53,7 +53,7 @@ The Migration Factory workflow extends the verification fabric with six read-onl
 
 ## Nightly workflow duplicate reconciliation — 2026-10-02
 
-The canonical 24-program nightly workflow was restored to the last known-good single-definition revision after a duplicated merge artifact produced repeated job identifiers and invalid YAML. The workflow now contains one `production_gate`, one `research`, one `migration_review`, one `project-summary`, and one `final-gate`. Subsequent changes must modify that canonical workflow rather than append duplicate job blocks.
+The canonical 24-program nightly workflow was restored to the last known-good single-definition revision after a duplicated merge artifact produced repeated job identifiers and invalid YAML. The workflow now contains one production_gate, one research, one migration_review, one project-summary, and one final-gate. Subsequent changes must modify that canonical workflow rather than append duplicate job blocks.
 
 ## Node tooling migration — public-core synchronization
 
@@ -61,7 +61,7 @@ The public-core synchronizer was migrated from Python to Node as repository tool
 
 ## 2026-10-02 Migration Factory token-step correction
 
-The trusted-main Migration Factory resolve job has one canonical read-only Operations GitHub App token step. Duplicate token-step definitions are prohibited because they can create conflicting step identifiers and violate the single-provider-credential boundary. The workflow remains trusted-main/manual-only and private Operations access remains `contents:read`.
+The trusted-main Migration Factory resolve job has one canonical read-only Operations GitHub App token step. Duplicate token-step definitions are prohibited because they can create conflicting step identifiers and violate the single-provider-credential boundary. The workflow remains trusted-main/manual-only and private Operations access remains contents:read.
 
 ## Node tooling migration — nightly/runtime gates — 2026-10-02
 
@@ -69,4 +69,12 @@ Foundation-only nightly runtime probing, loopback research transport, GitHub Act
 
 ## Nightly dry-run ordering invariant
 
-The canonical nightly workflow establishes `Research mode` before the live-only deployed-runtime verification step. An explicit `dry_run=true` therefore bypasses the production-release gate and the live runtime probe while remaining on the deterministic contract-testing path; production-live execution retains the existing exact-release, preflight, and evidence gates.
+The canonical nightly workflow establishes Research mode before the live-only deployed-runtime verification step. An explicit dry_run=true therefore bypasses the production-release gate and the live runtime probe while remaining on the deterministic contract-testing path; production-live execution retains the existing exact-release, preflight, and evidence gates.
+
+## Nightly benchmark AI cross-fire — 2026-10-03
+
+The nightly benchmark now has a separate six-lane AI cross-fire advisory workflow. It runs on a trusted scheduled trigger or explicit manual dispatch, uses read-only GitHub permissions, and sends only the deterministic final benchmark receipt to six parallel Workers AI model lanes. It records transport status, latency, reported neuron usage, schema compliance, advisory assessment, and input provenance.
+
+The cross-fire is intentionally outside the benchmark acceptance gate. AI output cannot certify benchmark correctness, research completion, production health, credentials, policy, deployment, Cloudflare state, or workflow dispatch. Invalid model formatting is recorded as schema non-compliance rather than converted into success.
+
+The cross-fire is an observability and reasoning layer over the canonical benchmark: deterministic benchmark evidence remains authoritative, while AI disagreement and repeated flags can identify candidates for follow-up reproduction, regression coverage, or future benchmark design.
