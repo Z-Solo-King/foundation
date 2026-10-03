@@ -117,11 +117,11 @@ assert.match(dashboard, /const safeLink =/);
 assert.match(app, /\/api\/v1\/chat\/stream/);
 assert.match(app, /Idempotency-Key/);
 assert.match(app, /consumeChatStream/);
-assert.match(app, /event === 'delta'/);
-assert.match(app, /event === 'done'/);
+assert.match(app, /event === [\"']delta[\"']/);
+assert.match(app, /event === [\"']done[\"']/);
 assert.match(app, /const activeChatId = chatId \|\| api\.ensureChat\(\)\.id/);
 assert.match(app, /if \(!api\.token\(\)\)/);
-assert.match(app, /status: 'auth_required'/);
+assert.match(app, /status: [\"']auth_required[\"']/);
 assert.match(composer, /Session token required for Research/);
 assert.match(composer, /api\.token\(\)/);
 assert.doesNotMatch(
