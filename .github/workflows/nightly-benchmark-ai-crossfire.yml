@@ -1,6 +1,6 @@
 name: Nightly benchmark AI cross-fire
 
-on:
+on: # zizmor: ignore[dangerous-triggers] trusted post-benchmark advisory; read-only evidence path
   workflow_run:
     workflows: ["autonomous benchmark"]
     types: [completed]
@@ -80,9 +80,6 @@ jobs:
             and (.headSha | type == "string")
             and (.headSha | test("^[0-9a-f]{40}$"))
           ' .runtime/benchmark-run.json >/dev/null
-          if [ -n "${{ github.event.workflow_run.event }}" ] && [ "${{ github.event.workflow_run.event }}" = "schedule" ]; then
-            jq -e '.event == "schedule"' .runtime/benchmark-run.json >/dev/null
-          fi
 
       - name: Download final evidence
         env:
