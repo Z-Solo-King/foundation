@@ -101,7 +101,6 @@ Documentation-only continuity changes are not exempt from the protected merge ru
 
 The protected required-status contexts remain `Public tests` and `Analyze python`; this document records their ownership but does not replace the repository ruleset.
 
-
 ## Controlled production-reconcile dispatch bridge — 2026-10-04
 
 The canonical workflow-dispatch acceptance workflow contains a narrowly gated one-shot production-reconcile bridge. Its dispatch capability is scoped at the job level rather than granted workflow-wide. The bridge is activated only by the explicit controlled-reconcile commit title on a trusted `main` push, then dispatches the canonical `heroic-ai-production-release.yml` workflow against `main`; it does not hold provider credentials, alter deployment configuration directly, or bypass the protected production-release workflow.
