@@ -77,7 +77,7 @@ jobs:
 
   controlled-production-reconcile:
     name: One-shot production reconcile bridge
-    if: ${{ github.event_name == 'push' && startsWith(github.event.head_commit.message, 'chore: controlled production reconcile') }}
+    if: "${{ github.event_name == 'push' && startsWith(github.event.head_commit.message, 'chore: controlled production reconcile') }}"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
