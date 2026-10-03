@@ -71,7 +71,7 @@
     const body=payload||(()=>{const raw=document.getElementById('github-payload')?.value||'';try{return JSON.parse(raw)}catch(error){throw new Error('Invalid parameters JSON: '+error.message)}})();
     body.action=action;body.repository=repository;
     if(isWrite(action)){if(!window.confirm('GitHub mutation: '+action+' on '+repository+'. Execute it?')){resultText='Mutation cancelled before any GitHub request was sent.';api.chatView?.renderView();return;}body.confirm=true;}
-    try{const response=await fetch(api.apiUrl('/api/v1/github'),{method:'POST',headers:{...api.authHeaders(true),'X-GitHub-Access-Token':githubToken},body:JSON.stringify(body)});const data=await response.json().catch(()=>({ok:false,error:'HTTP '+response.status}));resultText=JSON.stringify(data,null,2);}
+    try{const response=await fetch(api.apiUrl('/api/v1/github'),{method:'POST',headers:{Accept:'application/json','Content-Type':'application/json','X-GitHub-Access-Token':githubToken},body:JSON.stringify(body)});const data=await response.json().catch(()=>({ok:false,error:'HTTP '+response.status}));resultText=JSON.stringify(data,null,2);}
     catch(error){resultText='Request failed: '+(error.message||error);}
     api.chatView?.renderView();
   }
