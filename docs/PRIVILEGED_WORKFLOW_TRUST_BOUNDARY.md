@@ -134,3 +134,10 @@ Validation note: protected CI must evaluate the exact PR head after every runtim
 ## Production receipt publication fallback — 2026-10-04
 
 The canonical production release retains a sanitized receipt artifact as the durable evidence record. Publication of that receipt as a comment on issue #58 is best-effort because GitHub limits an issue to 2,500 comments; a comment-publication failure must not invalidate an otherwise successful release or remove the retained artifact evidence. The workflow does not treat issue-comment availability as deployment state or promotion authority.
+
+## 2026-10-04 migration test-boundary reconciliation
+
+Foundation no longer owns private Operations runtime modules removed by the public/private migration. Public release tests validate the current public/JavaScript boundary; private runtime implementation tests remain in Operations. The Foundation cross-repository drift validator is self-contained and validates only the public family contract.
+
+The canonical production release retains its full Foundation pytest and coverage gate. Release receipt artifacts are authoritative; issue #58 comments are best-effort because GitHub can reject new comments after the issue comment limit is reached. A comment-publication failure must not mask a successful release.
+
