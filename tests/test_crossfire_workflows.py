@@ -91,3 +91,20 @@ def test_active_automation_uses_canonical_public_front_door():
         value = path.read_text(encoding="utf-8")
         assert "ai-cio.pages.dev" not in value
         assert "heroic-ai.pages.dev" in value
+
+
+def test_all_foundation_workflow_surfaces_are_chat_session_independent():
+    workflow_root = ROOT / ".github/workflows"
+    forbidden = ("CHATGPT", "ChatGPT", "api.openai.com", "OPENAI_API_KEY", "conversation_id", "session_id", "chat_session")
+    for path in sorted(workflow_root.glob("*.yml")):
+        value = path.read_text(encoding="utf-8")
+        for term in forbidden:
+            assert term not in value, f"{path} contains interactive-session coupling: {term}"
+
+
+def test_autonomous_supervisor_ids_are_run_scoped_not_interactive_session_scoped():
+    value = (ROOT / "tools/autonomous_engineering_supervisor.mjs").read_text(encoding="utf-8")
+    assert "mission-${process.env.GITHUB_RUN_ID}" in value
+    assert "request_id: `autonomous-plan:${missionId}:${cycle}`" in value
+    assert "session_id" not in value
+    assert "conversation_id" not in value
