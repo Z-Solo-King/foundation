@@ -42,3 +42,8 @@ Recovery output is evidence, not a public GitHub Release. Generated indexes must
 ## Final least-tried campaign — 2026-10-02
 
 The final campaign orders the complete 30-site learning corpus by historical meaningful-attempt count, lowest first, with a deterministic name tie-break. It runs six independent AI candidate lanes and six parallel recovery shards. AI remains candidate-only; native acceptance still requires a current public same-origin Google Merchant XML/RSS/Atom payload with the required Google namespace and product fields. Sites already heavily attempted are not given another broad matrix pass.
+
+
+## Automation boundary reconciliation — 2026-10-03
+
+WooCommerce recovery workflows execute as GitHub Actions jobs, not as interactive ChatGPT tasks. Credential-bearing recovery is restricted to trusted `main`; downstream jobs preserve the same trusted-main condition. The public Heroic endpoint used by active recovery/cross-fire automation is `https://heroic-ai.pages.dev`. Historical `ai-cio.pages.dev` references are retained only where they document prior runtime state.
