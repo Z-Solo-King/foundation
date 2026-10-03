@@ -204,4 +204,12 @@ jobs:
             echo
             echo "This receipt is a sanitized index only; secret values and provider responses are not included."
           } > .runtime/production-release-tracker-receipt.md
+          # Issue #58 has exceeded GitHub's 2,500-comment limit. Receipt publication
+          # must never turn an otherwise valid production release into a failed deployment.
+          set +e
           gh issue comment 58 --repo "$GITHUB_REPOSITORY" --body-file .runtime/production-release-tracker-receipt.md
+          comment_status=$?
+          set -e
+          if [ "$comment_status" -ne 0 ]; then
+            echo "Production tracker issue comment unavailable; sanitized receipt remains in workflow artifacts." >&2
+          fi

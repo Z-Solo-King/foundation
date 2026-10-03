@@ -130,3 +130,7 @@ The canonical production Operations revision is resolved from the immutable Foun
 The validated Operations main is `51756272e0a161ca6367e981481b17b65e61d5c9`. This revision contains the centralized validation-contract repair and hardened standalone GitHub workspace bridge. Promotion into Cloudflare production remains a separate controlled release transaction; changing the manifest does not itself certify or deploy production runtime state.
 
 Validation note: protected CI must evaluate the exact PR head after every runtime-pin or workflow-governance change; stale successful runs are not accepted as current-head evidence.
+
+## Production receipt publication on high-volume issues — 2026-10-04
+
+The canonical production release always writes its sanitized receipt to workflow artifacts. Publishing a copy to issue #58 is best-effort because GitHub disables comments after an issue exceeds 2,500 comments. A comment-publication failure must not convert a successful release transaction into a deployment failure; the artifact receipt remains the machine-readable evidence surface.
