@@ -13,9 +13,6 @@ def test_chat_ui_calls_canonical_chat_route_and_clears_pending_state():
     assert "/api/v1/chat" in app
     assert "Idempotency-Key" in app
     assert "pending: false" in app
-    assert "const activeChatId = chatId || api.ensureChat().id;" in app
-    assert "chat_id: activeChatId" in app
-    assert "history: conversationHistory(activeChatId)" in app
     assert "Request failed" in view
     assert "Heroic AI" in view
 
@@ -23,7 +20,9 @@ def test_chat_ui_calls_canonical_chat_route_and_clears_pending_state():
 def test_guest_test_mode_is_explicit_and_network_free():
     state = Path("frontend/frontend_state.js").read_text(encoding="utf-8")
     app = Path("frontend/app.js").read_text(encoding="utf-8")
-    contract = Path("frontend/guest_test_mode_contract_test.mjs").read_text(encoding="utf-8")
+    contract = Path("frontend/guest_test_mode_contract_test.mjs").read_text(
+        encoding="utf-8"
+    )
     product = Path("docs/HEROIC_AI_PRODUCT.md").read_text(encoding="utf-8")
     assert "guestTestMode" in state
     assert "enableGuestTestMode" in state

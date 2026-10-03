@@ -252,8 +252,8 @@
     activeChatAbortController = abortController;
     activeChatRequestId = requestId;
     cancelButton.hidden = false;
-    const userMessage = api.addMessage('user', text, { request_id: requestId, pending: true }, chatId);
-    const assistantMessage = api.addMessage('assistant', '', { request_id: requestId, pending: true, streaming: true }, chatId);
+    const userMessage = api.addMessage('user', text, { request_id: requestId, pending: true }, activeChatId);
+    const assistantMessage = api.addMessage('assistant', '', { request_id: requestId, pending: true, streaming: true }, activeChatId);
     api.state.submitting = true;
     api.chatView.render();
     try {
