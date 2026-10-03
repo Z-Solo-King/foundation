@@ -96,3 +96,9 @@ The canonical `.github/workflows/required-pr-checks.yml` remains the source of t
 Documentation-only continuity changes are not exempt from the protected merge rule: the required contexts must materialize and succeed on the exact PR head before merge. The repository ruleset remains the authority for this requirement.
 
 The protected required-status contexts remain `Public tests` and `Analyze python`; this document records their ownership but does not replace the repository ruleset.
+
+## Post-merge CrossFire path reconciliation — 2026-10-03
+
+The Migration Factory CrossFire writes each Operations-lens receipt relative to the Operations root, avoiding the previous double-prefixed `operations/operations/.runtime/` path. The artifact aggregation contract remains twelve reports across six independent lanes and two repositories.
+
+The cross-repository drift regression test resolves its Python imports from both the Foundation checkout and the authenticated Operations checkout. Foundation remains the authority for the drift policy; Operations-owned governance mechanics are consumed as a compatibility dependency rather than copied into Foundation.

@@ -95,7 +95,7 @@ jobs:
       - name: Run Operations lens
         run: |
           mkdir -p operations/.runtime
-          node tools/migration_factory.mjs --root operations --lane "${{ matrix.lane }}" --out "operations/.runtime/operations-${{ matrix.lane }}.json"
+          node tools/migration_factory.mjs --root operations --lane "${{ matrix.lane }}" --out ".runtime/operations-${{ matrix.lane }}.json"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: migration-factory-${{ matrix.lane }}
