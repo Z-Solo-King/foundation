@@ -37,7 +37,7 @@ jobs:
           fetch-depth: 1
 
       - name: Resolve production Operations pin
-        # Immutable candidate anchor: 51756272e0a161ca6367e981481b17b65e61d5c9
+        # Immutable candidate anchor: 27bbce915f30751e32096de75905a2919f232d93
         id: operations
         shell: bash
         run: |

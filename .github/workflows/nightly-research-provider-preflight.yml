@@ -16,7 +16,7 @@ on:
       operations_research_ref:
         description: "Exact immutable Operations revision being validated for the private production runtime"
         required: false
-        default: "51756272e0a161ca6367e981481b17b65e61d5c9"
+        default: "27bbce915f30751e32096de75905a2919f232d93"
         type: string
 
 permissions:
@@ -32,7 +32,7 @@ jobs:
     env:
       PUBLIC_WORKER_URL: "https://heroic-ai.pages.dev"
       TARGET_FOUNDATION_SHA: ${{ inputs.target_sha || github.sha }}
-      OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || '51756272e0a161ca6367e981481b17b65e61d5c9' }}
+      OPERATIONS_RESEARCH_REF: ${{ inputs.operations_research_ref || '27bbce915f30751e32096de75905a2919f232d93' }}
       RESEARCH_LLM_MODEL: "@cf/zai-org/glm-4.7-flash"
     steps:
       - name: Checkout Foundation probe

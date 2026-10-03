@@ -235,9 +235,9 @@ The Operations hosted-Actions boundary is reconciled: Operations `main` contains
 
 ## 2026-10-04 post-runtime-promotion continuity reconciliation
 
-Foundation main is now `8071e1f79065fae613783d11cc801aff2b827333`. Operations main is now `51756272e0a161ca6367e981481b17b65e61d5c9`. These are live moving repository heads, not production certification values.
+Foundation main is now `8071e1f79065fae613783d11cc801aff2b827333`. Operations main is now `27bbce915f30751e32096de75905a2919f232d93`. These are live moving repository heads, not production certification values.
 
-Foundation PR #1934 was merged after exact-head Public tests, Analyze python, CodeQL, security, hygiene, provenance, and governance checks all succeeded. The canonical Operations production candidate staged by that release-path change is now `51756272e0a161ca6367e981481b17b65e61d5c9`; the separately observed Cloudflare production runtime remains `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f` until the controlled production release transaction completes.
+Foundation PR #1934 was merged after exact-head Public tests, Analyze python, CodeQL, security, hygiene, provenance, and governance checks all succeeded. The canonical Operations production candidate staged by that release-path change is now `27bbce915f30751e32096de75905a2919f232d93`; the separately observed Cloudflare production runtime remains `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f` until the controlled production release transaction completes.
 
 The native feed provenance hardening is already present on Foundation main. Foundation and Operations currently have no open pull requests. The live acceptance queue remains Foundation #58, #157, #1249 plus Operations #603; #1679 and #1906 remain separate integrity/autonomous execution state.
 
