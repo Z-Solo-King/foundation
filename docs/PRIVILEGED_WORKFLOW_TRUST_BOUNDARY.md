@@ -33,7 +33,9 @@ This contract therefore prevents the repository workflows from intentionally gra
 
 ## Live AI provider cross-fire
 
-- `.github/workflows/live-ai-provider-crossfire.yml` remains a manual-dispatch privileged benchmark because it reads protected provider configuration and a read-only private Operations App token.
+- `.github/workflows/live-ai-provider-crossfire.yml` is a privileged benchmark with an autonomous nightly schedule plus explicit manual dispatch. It reads protected provider configuration and a read-only private Operations App token.
+- The nightly benchmark is GitHub-hosted and session-independent: execution is driven by the GitHub Actions scheduler/runner, not by ChatGPT, an interactive agent session, or a chat session staying open.
+- Manual dispatch remains available for operator-selected runs; scheduled runs resolve their own immutable Operations revision and publish the same public-safe summary artifact.
 - The workflow resolves an immutable Operations revision before executing the private benchmark and uses `persist-credentials: false` for the private checkout.
 - The workflow validates the canonical platform-access cross-fire contract before provider execution, then runs up to six configured provider lanes concurrently through the existing private benchmark runner.
 - The public Foundation bridge contains no provider keys or provider endpoints; credential-bearing provider configuration remains in private Operations/runtime context.
