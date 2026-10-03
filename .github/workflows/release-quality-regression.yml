@@ -32,6 +32,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # prettier-ignore
           ref="$(python - <<'PY'
           import json, re
           value=json.load(open("docs/OPERATIONS_PIN_MANIFEST.json", encoding="utf-8"))["pins"]["production_runtime"]["sha"]
