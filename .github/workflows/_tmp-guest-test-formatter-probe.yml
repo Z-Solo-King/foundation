@@ -1,0 +1,27 @@
+name: Temporary Guest Test formatter probe
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Format Guest Test contract
+        run: npx --yes prettier@3.9.9 --write frontend/guest_test_mode_contract_test.mjs
+      - name: Upload formatted copy
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: guest-test-formatter-probe
+          path: frontend/guest_test_mode_contract_test.mjs
+          if-no-files-found: error
+
