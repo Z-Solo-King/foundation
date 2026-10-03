@@ -72,6 +72,8 @@ jobs:
 
       - name: Validate platform access cross-fire contract
         working-directory: operations-provider-benchmark
+        env:
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations-provider-benchmark
         run: |
           set -euo pipefail
           python - <<'PY'
