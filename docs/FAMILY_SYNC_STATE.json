@@ -4,8 +4,8 @@
   "audited_at": "2026-10-04T00:09:00+05:30",
   "public_safe": true,
   "live_main": {
-    "foundation": "906da6a1664b36fa5c89d47300b2d179f69c8aca",
-    "operations": "621fc8aa536b60bbc6f9e686c4ce0a769d8cab56"
+    "foundation": "8071e1f79065fae613783d11cc801aff2b827333",
+    "operations": "51756272e0a161ca6367e981481b17b65e61d5c9"
   },
   "runtime_pins": {
     "foundation_runtime": null,
@@ -151,7 +151,7 @@
     "repository": "Z-Solo-King/foundation",
     "foundation_is_canonical": true,
     "operations_workflow_directory": "absent",
-    "operations_main": "621fc8aa536b60bbc6f9e686c4ce0a769d8cab56",
+    "operations_main": "51756272e0a161ca6367e981481b17b65e61d5c9",
     "feed_hunt_capability": "Operations tools/woocommerce_32_plugin_feed_hunt.mjs",
     "hosted_workflow": ".github/workflows/woocommerce-32-plugin-feed-hunt.yml",
     "execution": "Foundation-hosted, Operations source at immutable commit",
@@ -186,7 +186,7 @@
     "license_ip_gate": true,
     "single_authority_preserved": true
   },
-  "open_issue_count": 11,
+  "open_issue_count": 6,
   "live_branch_inventory_2026_10_03": {
     "foundation": 1400,
     "operations": 1040,
@@ -232,7 +232,7 @@
     "workflow": ".github/workflows/operations-private-freeplan-guard.yml",
     "policy": "fail closed on Operations main drift from approved immutable production pin",
     "approved_production_pin": "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f",
-    "observed_main": "670e65ee168b64f34156623dea88549d7fa72a52",
+    "observed_main": "51756272e0a161ca6367e981481b17b65e61d5c9",
     "observed_state": "DRIFT"
   },
   "ai_navigation": {
@@ -283,8 +283,8 @@
   "continuity_refresh_2026_10_04": {
     "canonical_workflow": ".github/workflows/microscope-branch-retirement.yml",
     "docs": ["docs/CURRENT_SOURCE_OF_TRUTH.md", "docs/FAMILY_SYNC_STATE.json"],
-    "reason": "synchronize continuity metadata with the fail-closed microscope trigger hardening and live family heads",
-    "foundation_head": "906da6a1664b36fa5c89d47300b2d179f69c8aca",
-    "operations_head": "621fc8aa536b60bbc6f9e686c4ce0a769d8cab56"
+    "reason": "synchronize continuity metadata after Foundation runtime-promotion merge and live Operations main movement",
+    "foundation_head": "8071e1f79065fae613783d11cc801aff2b827333",
+    "operations_head": "51756272e0a161ca6367e981481b17b65e61d5c9"
   }
 }
