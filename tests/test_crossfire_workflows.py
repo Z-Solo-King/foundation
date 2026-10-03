@@ -32,3 +32,47 @@ def test_live_provider_crossfire_has_autonomous_nightly_trigger():
     assert "cancel-in-progress: false" in text
     assert "CHATGPT" not in text
     assert "session_id" not in text
+
+
+def test_nightly_ai_crossfire_uses_canonical_worker_boundary_and_truthful_gates():
+    text = (ROOT / ".github/workflows/nightly-benchmark-ai-crossfire.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "PUBLIC_WORKER_URL: https://heroic-ai.pages.dev" in text
+    assert "AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}" in text
+    assert "CLOUDFLARE_API_TOKEN" not in text
+    assert "CLOUDFLARE_ACCOUNT_ID" not in text
+    assert "/api/v1/benchmark/ai-crossfire" in text
+    assert "nightly-benchmark-ai-crossfire-request/v2" in text
+    assert "nightly-benchmark-ai-crossfire-result/v2" in text
+    assert "Resolve expected Operations production pin" in text
+    assert "expected_operations_ref" in text
+    assert "model_count_expected" in text
+    assert "model_count_observed" in text
+    assert "quality_complete" in text
+    assert "coverage_complete" in text
+    assert "python - <<'PY'" in text
+    assert "max-parallel: 6" not in text
+
+
+def test_nightly_ai_crossfire_validates_manual_run_provenance():
+    text = (ROOT / ".github/workflows/nightly-benchmark-ai-crossfire.yml").read_text(
+        encoding="utf-8"
+    )
+    assert 'gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json name,status,conclusion,headSha,headBranch,event' in text
+    assert '.status == "completed"' in text
+    assert '.conclusion == "success"' in text
+    assert 'jq -e' in text
+    assert 'gh run list --workflow autonomous-benchmark.yml --repo "$GITHUB_REPOSITORY" --branch main' in text
+    assert ".headBranch == \"main\"" in text
+    assert "operations_ref" in text
+    assert 'response.get("operations_ref")' in text
+
+
+def test_nightly_ai_crossfire_keeps_production_pin_guard_in_request_path():
+    text = (ROOT / ".github/workflows/nightly-benchmark-ai-crossfire.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "EXPECTED_OPERATIONS_REF" in text
+    assert '"expected_operations_ref": os.environ["EXPECTED_OPERATIONS_REF"]' in text
+    assert 'response.get("operations_ref") != os.environ["EXPECTED_OPERATIONS_REF"]' in text
