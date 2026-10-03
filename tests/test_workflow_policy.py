@@ -241,8 +241,12 @@ def test_private_operations_deployment_verifies_cloudflare_provenance():
 def test_private_operations_handoff_is_preflighted_and_diagnostic_runs_last():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     preflight = deployment.index("Preflight and stage the private Operations handoff")
-    public_deploy = deployment.index("npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml")
-    operations_deploy = deployment.index("pywrangler deploy --config wrangler.toml --secrets-file")
+    public_deploy = deployment.index(
+        "npx --yes wrangler@4.1311 deploy --config wrangler.production.generated.toml"
+    )
+    operations_deploy = deployment.index(
+        '(cd "$operations_final_stage" && pywrangler deploy --config wrangler.toml --secrets-file'
+    )
     diagnostic = deployment.index("infrastructure_verify_public_test")
     success = deployment.rindex("Production release completed")
     assert preflight < public_deploy
@@ -671,11 +675,25 @@ def test_live_chatbot_smoke_requires_real_model_generation():
 def test_production_bootstrap_precedes_foundation_deploy_and_is_unconditional():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     start = deployment.index("# Rename-safe Cloudflare deployment sequence.")
-    bootstrap = deployment.index('pywrangler deploy --config "$bootstrap_config"', start)
-    public_deploy = deployment.index('npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml', start)
-    assert bootstrap < public_deploy
-    assert deployment.count('pywrangler deploy --config "$bootstrap_config"') == 1
-    assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings' not in deployment
+    bootstrap_stage = deployment.index(
+        'operations_bootstrap_stage="$RUNNER_TEMP/operations-worker-bootstrap"',
+        start,
+    )
+    bootstrap_deploy = deployment.index(
+        '(cd "$operations_bootstrap_stage" && pywrangler deploy --config wrangler.toml --secrets-file',
+        bootstrap_stage,
+    )
+    public_deploy = deployment.index(
+        "npx --yes wrangler@4.1311 deploy --config wrangler.production.generated.toml",
+        start,
+    )
+    assert bootstrap_stage < bootstrap_deploy < public_deploy
+    assert deployment.count(
+        '(cd "$operations_bootstrap_stage" && pywrangler deploy --config wrangler.toml --secrets-file'
+    ) == 1
+    assert 'pywrangler deploy --config "$bootstrap_config"' not in deployment
+    assert '/workers/scripts/\${OPERATIONS_SERVICE_NAME}/settings' not in deployment
+
 def test_public_probe_records_dns_failure_without_parser_crash():
     workflow = _workflow_texts()["public-worker-live-probe.yml"]
     assert ': > "probe/$item.body"' in workflow
