@@ -33,12 +33,14 @@ The public repository does not contain the live target registry or target-specif
 - **CrossFire:** independent AI lanes may propose hypotheses, but deterministic retrieval/validation remains the acceptance authority.
 - **Status discipline:** unresolved targets remain open or evidence-gated until current execution evidence satisfies their written acceptance criteria; historical receipts are never reused as closure evidence.
 
-
 ## Distribution safety rule — 2026-10-02
 
 Recovery output is evidence, not a public GitHub Release. Generated indexes must not contain release download URLs, and `wc-google-feed-latest` is a prohibited public feed release identifier.
 
-
 ## Final least-tried campaign — 2026-10-02
 
 The final campaign orders the complete 30-site learning corpus by historical meaningful-attempt count, lowest first, with a deterministic name tie-break. It runs six independent AI candidate lanes and six parallel recovery shards. AI remains candidate-only; native acceptance still requires a current public same-origin Google Merchant XML/RSS/Atom payload with the required Google namespace and product fields. Sites already heavily attempted are not given another broad matrix pass.
+
+## Automation boundary reconciliation — 2026-10-03
+
+WooCommerce recovery workflows execute as GitHub Actions jobs, not as interactive ChatGPT tasks. Credential-bearing recovery is restricted to trusted `main`; downstream jobs preserve the same trusted-main condition. Active recovery/cross-fire automation uses the canonical Heroic AI public front door. Historical hostname references are retained only where they document prior runtime state.
