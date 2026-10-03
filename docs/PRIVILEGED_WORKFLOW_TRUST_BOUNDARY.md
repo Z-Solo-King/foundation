@@ -68,7 +68,6 @@ Credential-bearing workflows that probe or release the public application must t
 
 The promotion PR may stage the next immutable Operations revision in post-release workflow consumers before production deployment. Those workflows fail closed on readiness/provenance mismatch. The manifest marks the revision as a candidate until the controlled production release and fresh runtime evidence complete; approval and live-state records continue to identify the currently deployed revision during that interval.
 
-
 ## 2026-10-03 provider CrossFire credential recovery boundary
 
 The privileged provider CrossFire workflow assembles runtime credentials from the protected aggregate provider secret when valid and from canonical direct provider secrets when present. Aggregate JSON parse failure is reported as configuration evidence and does not suppress valid direct credentials. Provider endpoint/model values remain catalog-owned; secrets provide credentials only.
