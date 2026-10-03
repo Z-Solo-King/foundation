@@ -267,3 +267,22 @@ The open-issue deep-scan workflow now invokes the Node scanner contract while pr
 ## 2026-10-03 microscopic deduplication gate
 
 Cross-repository implementation overlap is audited through the existing `tools/check_repo_overlap.py` engine from the canonical contract-drift workflow. Normal CI performs the repository overlap audit; scheduled and manual contract-drift runs use exhaustive function/method comparison. This gate exists to keep the trunk → family/shared layer → leaf implementation model from regressing into repeated code or parallel workflow implementations.
+
+## Live blocker reconciliation — 2026-10-03
+
+The current deduplication branch reconciles the family state against live GitHub heads rather than historical snapshots. Foundation and Operations are both accessible through the connected GitHub installation with administrative repository permissions; private Operations reads remain purpose-scoped to the integration boundary.
+
+The current evidence-backed acceptance queue is Foundation issues 58, 157, and 1249 plus Operations issue 603. Autonomous-mission and integrity issues remain separate classes and are not silently folded into acceptance completion.
+
+The repository now has a machine-enforced microscopic deduplication standard: shared mechanics belong in canonical common kernels, domain policy remains in group/leaf consumers, and branch retirement requires ancestry, content, dependency, security, provenance, and validation evidence. The Operations scraper execution fabric demonstrates this by consuming the shared evidence timestamp parser instead of maintaining a second implementation.
+
+The CI repair also preserves the existing cross-repository authority model. The Foundation contract-drift workflow obtains a read-only Operations token using the canonical GitHub App token action, while the single live Operations feed workflow remains an explicitly classified exception rather than an undocumented private-runtime workflow.
+
+The nightly AI CrossFire remains advisory-only. Its existing Operations implementation executes six Workers AI models in parallel and emits schema, transport, latency, neuron, consensus, and provenance evidence; it does not acquire mutation or promotion authority.
+\n
+
+## Post-merge CI boundary reconciliation — 2026-10-03
+
+Family-wide validation materializes the disposable Foundation public core into the Operations test checkout from the validated Foundation revision. This keeps Foundation as the sole owner while satisfying legacy Operations test fixtures that require the generated compatibility tree.
+
+Cross-repository language-fit generation runs with both repository roots on `PYTHONPATH`, allowing Operations compatibility imports to resolve the same Foundation public core without copying source ownership into Operations.

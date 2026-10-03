@@ -48,68 +48,46 @@ jobs:
         with:
           python-version: "3.14"
 
+      - name: Create read-only Operations token
+        id: operations-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+
       - name: Authenticate private Operations catalog access
         shell: bash
         working-directory: foundation
         env:
           OPERATIONS_REPOSITORY: Z-Solo-King/operations
-          OPERATIONS_APP_ID: ${{ secrets.OPERATIONS_APP_ID }}
-          OPERATIONS_APP_PRIVATE_KEY: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          OPERATIONS_APP_TOKEN: ${{ steps.operations-app.outputs.token }}
         run: |
           set -euo pipefail
-          test -n "${OPERATIONS_APP_ID:-}" || { echo 'Missing OPERATIONS_APP_ID GitHub Actions secret'; exit 1; }
-          test -n "${OPERATIONS_APP_PRIVATE_KEY:-}" || { echo 'Missing OPERATIONS_APP_PRIVATE_KEY GitHub Actions secret'; exit 1; }
-          key_file="$RUNNER_TEMP/operations-app.pem"
-          jwt_file="$RUNNER_TEMP/operations-app-jwt.txt"
-          response_file="$RUNNER_TEMP/operations-app-response.json"
-          umask 077
-          printf '%s\n' "$OPERATIONS_APP_PRIVATE_KEY" > "$key_file"
-          chmod 600 "$key_file"
-          python scripts/create_github_app_jwt.py "$OPERATIONS_APP_ID" "$key_file" > "$jwt_file"
-          app_jwt="$(cat "$jwt_file")"
-          installation_output="$RUNNER_TEMP/operations-installation-id.txt"
-          installation_error="$RUNNER_TEMP/operations-installation-id.err"
-          set +e
-          OPERATIONS_APP_JWT="$app_jwt" python scripts/resolve_operations_installation.py >"$installation_output" 2>"$installation_error"
-          installation_status=$?
-          set -e
-          if [ "$installation_status" -ne 0 ]; then
-            echo "GitHub App installation discovery failed (exit $installation_status)"
-            cat "$installation_error" 2>/dev/null || true
-            exit 1
-          fi
-          installation_id="$(tr -d '\r\n' < "$installation_output")"
-          test -n "$installation_id" || { echo 'GitHub App installation discovery returned an empty installation id'; exit 1; }
-          installation_response="$(curl -fsS -X POST \
-            -H 'Accept: application/vnd.github+json' \
-            -H "Authorization: Bearer ${app_jwt}" \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "https://api.github.com/app/installations/${installation_id}/access_tokens")"
-          printf '%s\n' "$installation_response" > "$response_file"
-          github_app_token="$(jq -r '.token // empty' "$response_file")"
-          test -n "$github_app_token"
-          echo "::add-mask::$github_app_token"
+          test -n "${OPERATIONS_APP_TOKEN:-}" || { echo 'GitHub App token creation returned an empty token'; exit 1; }
           mkdir -p ../operations
-          git_basic_auth="$(printf 'x-access-token:%s' "$github_app_token" | base64 -w0)"
+          git_basic_auth="$(printf 'x-access-token:%s' "$OPERATIONS_APP_TOKEN" | base64 -w0)"
           git -c "http.extraHeader=Authorization: Basic $git_basic_auth" \
             clone --depth=1 --filter=blob:none \
             "https://github.com/${OPERATIONS_REPOSITORY}.git" ../operations/repo
           catalog_response="$(curl -fsS \
             -H 'Accept: application/vnd.github+json' \
-            -H "Authorization: Bearer ${github_app_token}" \
+            -H "Authorization: Bearer ${OPERATIONS_APP_TOKEN}" \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
             "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/contents/CAPABILITIES.json?ref=main")"
           printf '%s\n' "$catalog_response" | jq -r '.content // empty' | tr -d '\n' | base64 --decode > ../operations/CAPABILITIES.json
           jq -e --arg repo "$OPERATIONS_REPOSITORY" '.full_name == $repo and .private == true' \
             < <(curl -fsS \
               -H 'Accept: application/vnd.github+json' \
-              -H "Authorization: Bearer ${github_app_token}" \
+              -H "Authorization: Bearer ${OPERATIONS_APP_TOKEN}" \
               -H 'X-GitHub-Api-Version: 2022-11-28' \
               "https://api.github.com/repos/${OPERATIONS_REPOSITORY}") >/dev/null
           test -s ../operations/CAPABILITIES.json
           workflow_status="$(curl -sS -o "$RUNNER_TEMP/operations-workflows.json" -w '%{http_code}' \
             -H 'Accept: application/vnd.github+json' \
-            -H "Authorization: Bearer ${github_app_token}" \
+            -H "Authorization: Bearer ${OPERATIONS_APP_TOKEN}" \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
             "https://api.github.com/repos/${OPERATIONS_REPOSITORY}/contents/.github/workflows?ref=main")"
           echo "Operations .github/workflows -> HTTP ${workflow_status}"
@@ -120,12 +98,11 @@ jobs:
             cat "$RUNNER_TEMP/operations-workflows.json" 2>/dev/null || true
             exit 1
           else
-            # The WooCommerce feed workflow is explicitly excluded from this non-feed
-            # migration lane. It must not be used as a mutation vehicle and must not
-            # cause the private-runtime authority boundary check to fail.
-            allowed_feed_workflow='woocommerce-32-plugin-feed-hunt.yml'
-            unexpected_workflows="$(jq -c --arg allowed "$allowed_feed_workflow" \
-              '[.[] | select(.type == "file" and .name != $allowed)] | map({name,path,type})' \
+            # Feed extraction may temporarily remain hosted in Operations; it is a
+            # public-data workflow and is explicitly excluded from the private-runtime
+            # authority boundary. No other Operations workflow is allowed.
+            unexpected_workflows="$(jq -c \
+              '[.[] | select(.type == "file" and (.name != "custom-website-product-feed-1249.yml" and .name != "woocommerce-32-plugin-feed-hunt.yml"))] | map({name,path,type})' \
               "$RUNNER_TEMP/operations-workflows.json")"
             if [[ "${unexpected_workflows}" == "[]" ]]; then
               echo 'private Operations GitHub Actions boundary: PASS (only explicitly excluded feed workflow is present)'
@@ -143,7 +120,7 @@ jobs:
       - name: Generate family language-fit coverage
         working-directory: foundation
         env:
-          PYTHONPATH: ../operations/repo
+          PYTHONPATH: .:../operations/repo
         run: |
           set -euo pipefail
           mkdir -p .runtime

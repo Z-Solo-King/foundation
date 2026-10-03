@@ -71,6 +71,16 @@ jobs:
         with:
           python-version: "3.14"
 
+      - name: Materialize pinned Foundation public core
+        working-directory: operations
+        env:
+          FOUNDATION_CORE_GIT: ../foundation
+        run: |
+          set -euo pipefail
+          node scripts/sync_public_core.mjs
+          test -f foundation_core/__init__.py
+          test -f foundation_core/quality_rules.json
+
       - name: Full family coverage
         working-directory: foundation
         run: python tools/validate_family_full_coverage.py --foundation-root . --operations-root ../operations --output .runtime/family-full-coverage.json --strict

@@ -570,7 +570,9 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED"
       - name: Install Operations package
         working-directory: operations
-        run: python -m pip install --disable-pip-version-check -e . --no-deps
+        run: |
+          python -m pip install --disable-pip-version-check -e . --no-deps
+          python -m pip install --disable-pip-version-check httpx
       - name: Run deterministic migration review sweep
         env:
           PYTHONPATH: ${{ github.workspace }}/operations
