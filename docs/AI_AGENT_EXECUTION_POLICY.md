@@ -41,3 +41,13 @@ Security controls are part of the execution contract.
 - Production pin checks are lineage checks: an approved revision may legitimately remain an ancestor of a moving `main`. Do not interpret ordinary forward advancement as integrity drift.
 - Required security, hygiene, provenance and release gates are fail-closed. Never weaken or bypass them merely to obtain a green status. External credential/token-health failures remain explicitly classified as `EXTERNAL/ADMIN`.
 - Use parallel lanes for independent investigation only; serialize writes, production changes and merges.
+
+## 15. Connector action routing
+
+A connector-generated confirmation/form screen is an interaction mechanism of that connector, not a new repository policy or acceptance gate.
+
+When the user has already explicitly authorized the repository operation and an active alternate GitHub connector exposes an equivalent write action, the agent may use that alternate authorized connector rather than waiting on a redundant form from the first connector.
+
+This exception applies only to connector UX. It does **not** bypass repository branch protection, required reviews, CI checks, security controls, provenance validation, production gates, or other canonical acceptance rules. The agent must still inspect the resulting repository state and preserve the normal PR/merge authority boundary.
+
+For cross-system work, keep GitHub and Cloudflare as separate evidence surfaces and use each connector only for the system it controls. A connector error that proves missing/invalid credentials remains `EXTERNAL/ADMIN`; do not weaken security policy to work around it.
