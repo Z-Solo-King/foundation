@@ -2,9 +2,6 @@ name: Live AI provider cross-fire benchmark
 run-name: Live AI provider cross-fire — ${{ github.event_name }}
 
 on:
-  push:
-    branches:
-      - fix/provider-crossfire-connector-blockers-20261003
   schedule:
     # 22:00 IST target; GitHub may delay scheduled runs during load.
     - cron: "30 16 * * *"
