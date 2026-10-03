@@ -11,14 +11,14 @@ permissions:
 
 env:
   PUBLIC_WORKER_URL: https://heroic-ai.pages.dev
-  OPERATIONS_REF: 11f592116d9ef57b6189bf8bf0ff0e95ec3d410f
+  OPERATIONS_REF: aaf502e8fbda6adc4d98d877a12df23c0c678ea9
 
 jobs:
   provider-crossfire:
     name: Six-provider AI CrossFire
     uses: ./.github/workflows/chatbot-post-release-crossfire.yml
     with:
-      operations_ref: 11f592116d9ef57b6189bf8bf0ff0e95ec3d410f
+      operations_ref: aaf502e8fbda6adc4d98d877a12df23c0c678ea9
     secrets: inherit
 
   browser:
@@ -58,6 +58,13 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97b1
         with:
           python-version: "3.14"
+
+      - name: Sync pinned public deterministic core
+        working-directory: operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/sync_public_core.mjs
 
       - name: Install browser adapter
         working-directory: operations
@@ -164,4 +171,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh issue comment 58 --repo "$GITHUB_REPOSITORY" --body "Ad-hoc live validation run $GITHUB_RUN_ID on remediation branch: provider-crossfire=${{ needs.provider-crossfire.result }}, browser=${{ needs.browser.result }}, smoke=${{ needs.smoke.result }}. Six-provider CrossFire target=6; browser matrix=Chromium/Firefox/WebKit; Operations pin=11f592116d9ef57b6189bf8bf0ff0e95ec3d410f."
+          gh issue comment 58 --repo "$GITHUB_REPOSITORY" --body "Ad-hoc live validation run $GITHUB_RUN_ID on remediation branch: provider-crossfire=${{ needs.provider-crossfire.result }}, browser=${{ needs.browser.result }}, smoke=${{ needs.smoke.result }}. Six-provider CrossFire target=6; browser matrix=Chromium/Firefox/WebKit; Operations pin=aaf502e8fbda6adc4d98d877a12df23c0c678ea9."
