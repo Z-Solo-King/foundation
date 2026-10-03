@@ -210,7 +210,12 @@ async function applyFindings({ findings, missionIssue, openIssues }) {
   return applied;
 }
 
-export function selectResumableMission(activeMissions, mode = "standard") {
+export function selectResumableMission(
+  activeMissions,
+  mode = "standard",
+  reusableMissions = [],
+  expectedMissionType = null,
+) {
   if (mode === "governance_sweep") return { issue: null, state: null };
   for (const item of Array.isArray(activeMissions) ? activeMissions : []) {
     const state = item?.state || parseState(item?.issue?.body);
@@ -218,6 +223,37 @@ export function selectResumableMission(activeMissions, mode = "standard") {
       return { issue: item.issue || null, state };
     }
   }
+
+  // Reuse the newest terminal mission for the same mode/mission class instead
+  // of creating another issue for the same autonomous work stream.
+  for (const item of Array.isArray(reusableMissions) ? reusableMissions : []) {
+    const state = item?.state || parseState(item?.issue?.body);
+    if (
+      state &&
+      state.mode === mode &&
+      state.mission_type &&
+      (!expectedMissionType || state.mission_type === expectedMissionType) &&
+      state.state === "blocked" &&
+      state.retriable === false
+    ) {
+      return {
+        issue: item.issue || null,
+        state: {
+          ...state,
+          state: "planning",
+          cycle: 0,
+          workflow_attempts: {},
+          child_runs: [],
+          last_plan_digest: null,
+          last_provider: null,
+          last_summary: "Reusing the canonical autonomous mission issue for a fresh governed planning cycle.",
+          terminal_reason: null,
+          retriable: true,
+        },
+      };
+    }
+  }
+
   return { issue: null, state: null };
 }
 
@@ -501,6 +537,20 @@ export function reconcileChildState(state, childResults) {
     retriable: true,
   };
 }
+function inferMissionType(issues) {
+  const issueText = (Array.isArray(issues) ? issues : [])
+    .map((item) => String(item.title || "") + " " + String(item.body || ""))
+    .join(" ")
+    .toLowerCase();
+  if (/woocommerce|feed|merchant/.test(issueText)) return "feed_recovery";
+  if (/migration|polyglot|mapper/.test(issueText)) return "migration";
+  if (/(provider.{0,40}(cross.?fire|benchmark)|cross.?fire.{0,40}provider)/.test(issueText))
+    return "runtime_reconciliation";
+  if (/research|nightly/.test(issueText)) return "nightly_research";
+  if (/audit|security|integrity|governance/.test(issueText)) return "audit";
+  return "runtime_reconciliation";
+}
+
 async function main() {
   if (!process.env.AUTH_TOKEN) throw new Error("AUTH_TOKEN is required for autonomous planner");
   if (!owner || !repo || !token) throw new Error("GitHub repository/token environment is required");
@@ -517,6 +567,7 @@ async function main() {
     }));
   if (!foundationSha) throw new Error("FOUNDATION_SHA is required");
   const allIssues = await listIssues("open", 50);
+  const closedIssues = await listIssues("closed", 50);
   const mode = process.env.MISSION_MODE || "standard";
   const missionPrefix =
     mode === "component_improvement" ? "[autonomous-improvement]" : "[autonomous-mission]";
@@ -533,7 +584,16 @@ async function main() {
     .slice(0, 20);
   const recentRuns = (await listRuns(35)).slice(0, 35);
 
-  const resumable = selectResumableMission(activeMissions, mode);
+  const inferredMissionType = inferMissionType(openIssues);
+  const reusableMissions = closedIssues
+    .filter((issue) => !issue.pull_request && String(issue.title || "").startsWith(missionPrefix))
+    .map((issue) => ({ issue, state: parseState(issue.body) }));
+  const resumable = selectResumableMission(
+    activeMissions,
+    mode,
+    reusableMissions,
+    inferredMissionType,
+  );
   let missionIssue = resumable.issue;
   let state = resumable.state;
   if (!missionIssue || !state) {
@@ -541,6 +601,15 @@ async function main() {
     const created = await createMission(missionId, foundationSha);
     missionIssue = created.issue;
     state = created.state;
+  } else if (state.state === "planning" && state.last_summary?.startsWith("Reusing the canonical autonomous mission issue")) {
+    await updateIssue(missionIssue.number, {
+      body: missionBody(
+        state,
+        state.last_summary,
+        `Canonical mission reuse: ${inferredMissionType}. Previous terminal evidence remains in this issue history.`,
+      ),
+      state: "open",
+    });
   }
 
   const childResults = [];
