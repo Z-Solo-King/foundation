@@ -4,11 +4,11 @@
   "authority": "single public-safe immutable Operations revision manifest; runtime code remains authoritative",
   "pins": {
     "production_runtime": {
-      "sha": "621fc8aa536b60bbc6f9e686c4ce0a769d8cab56",
+      "sha": "51756272e0a161ca6367e981481b17b65e61d5c9",
       "purpose": "Cloudflare Operations production runtime and Foundation public production release",
-      "status": "candidate: 621fc8aa536b60bbc6f9e686c4ce0a769d8cab56; validated Operations main revision staged for controlled production promotion; live production remains separately certified until the release transaction completes",
+      "status": "candidate: 51756272e0a161ca6367e981481b17b65e61d5c9; current Operations main revision staged for controlled production promotion; live production remains separately certified until the release transaction completes",
       "updated_at": "2026-10-04",
-      "source": "Z-Solo-King/operations commit 621fc8aa536b60bbc6f9e686c4ce0a769d8cab56 (validated candidate; Operations main may advance independently)"
+      "source": "Z-Solo-King/operations main"
     },
     "provider_fleet_runtime": {
       "sha": "2a4a49d2c11bd9ff2b9290bc780eb0da97c73ecb",
@@ -34,5 +34,5 @@
     "branch_or_tag_refs_forbidden": true,
     "purpose_scoped": true
   },
-  "validation_note": "2026-10-04: production pin advanced only after immutable Operations main validation and live runtime evidence; required PR checks remain mandatory before merge."
+  "validation_note": "2026-10-04: candidate advanced to the current Operations main after immutable ancestry validation; production promotion remains gated by the canonical controlled release workflow and post-release runtime evidence."
 }
