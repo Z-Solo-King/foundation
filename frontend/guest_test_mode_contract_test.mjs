@@ -34,23 +34,23 @@ assert(
   !guest.includes("Authorization"),
   "guest test mode must not construct Authorization headers",
 );
-assert.match(guest, /result_state: ["']TEST_ONLY["']/, "guest responses must be marked TEST_ONLY");
-assert.match(
-  guest,
-  /generation_status: ["']deterministic_test["']/,
+assert(
+  /result_state: ["']TEST_ONLY["']/.test(guest),
+  "guest responses must be marked TEST_ONLY",
+);
+assert(
+  /generation_status: ["']deterministic_test["']/.test(guest),
   "guest responses must identify deterministic test generation",
 );
 assert(guest.includes("pending: false"), "guest lifecycle must clear pending state");
 assert(guest.includes("streaming: false"), "guest lifecycle must terminate streaming state");
 assert(guest.includes("normalizedText.slice(0, 1200)"), "guest echo must cap normalized user text");
-assert.match(
-  app,
-  /if \(!normalizedText\) throw new Error\(["']Message is required["']\)/,
+assert(
+  /if \(!normalizedText\) throw new Error\(["']Message is required["']\)/.test(app),
   "guest direct-call input guard is missing",
 );
-assert.match(
-  app,
-  /if \(normalizedText\.length > 12_000\) throw new Error\(["']Message exceeds the 12000 character limit["']\)/,
+assert(
+  /if \(normalizedText\.length > 12_000\) throw new Error\(["']Message exceeds the 12000 character limit["']\)/.test(app),
   "guest direct-call length guard is missing",
 );
 assert(state.includes("function newChat()"), "new chat state lifecycle is missing");
