@@ -35,32 +35,7 @@ def test_live_provider_crossfire_has_autonomous_nightly_trigger():
 
 
 
-def test_nightly_ai_crossfire_has_six_current_parallel_models_and_truthful_gates():
-    text = (ROOT / ".github/workflows/nightly-benchmark-ai-crossfire.yml").read_text(encoding="utf-8")
-    expected = (
-        "@cf/zai-org/glm-4.7-flash",
-        "@cf/google/gemma-4-26b-a4b-it",
-        "@cf/nvidia/nemotron-3-120b-a12b",
-        "@cf/openai/gpt-oss-20b",
-        "@cf/openai/gpt-oss-120b",
-        "@cf/qwen/qwen3.8-27b",
-    )
-    for model in expected:
-        assert model in text
-    assert "max-parallel: 6" in text
-    assert "CLOUDFLARE_AI_API_TOKEN" in text
-    assert "python - <<'PY'" in text
-    assert 'chat_template_kwargs": {"enable_thinking": False}' in text
-    assert 'max_tokens": 192' in text
-    assert "merge-multiple: false" in text
-    assert '"expected_lane_count": 6' in text
-    assert 'coverage_complete": len(rows) == 6' in text
-    assert 'quality_complete": len(valid) == 6' in text
-    assert 'raise SystemExit(0 if report["coverage_complete"] and report["quality_complete"] else 1)' in text
-
-
-
-def test_nightly_ai_crossfire_uses_canonical_worker_boundary():
+def test_nightly_ai_crossfire_uses_canonical_worker_boundary_and_truthful_gates():
     text = (ROOT / ".github/workflows/nightly-benchmark-ai-crossfire.yml").read_text(
         encoding="utf-8"
     )
@@ -70,6 +45,10 @@ def test_nightly_ai_crossfire_uses_canonical_worker_boundary():
     assert "CLOUDFLARE_ACCOUNT_ID" not in text
     assert "/api/v1/benchmark/ai-crossfire" in text
     assert "nightly-benchmark-ai-crossfire-request/v2" in text
+    assert "nightly-benchmark-ai-crossfire-result/v2" in text
     assert "model_count_expected" in text
+    assert "model_count_observed" in text
     assert "quality_complete" in text
     assert "coverage_complete" in text
+    assert "python - <<'PY'" in text
+    assert "max-parallel: 6" not in text
