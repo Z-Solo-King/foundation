@@ -78,7 +78,7 @@ jobs:
           repositories: operations
           permission-contents: read
       - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5b1e0c0e5b0e5b0b2b5b6c1d9a3e
         with:
           repository: Z-Solo-King/operations
           ref: ${{ needs.resolve.outputs.operations_ref }}
@@ -125,15 +125,28 @@ jobs:
           echo "CrossFire complete: $files independent reports (expected 12)"
           node --input-type=module <<'NODE'
           import fs from "node:fs";
+          import path from "node:path";
           const root=".runtime/crossfire";
           const reports=[];
-          for (const dir of fs.readdirSync(root,{withFileTypes:true})) {
-            if (!dir.isDirectory()) continue;
-            for (const f of fs.readdirSync(root+"/"+dir.name).filter(x=>x.endsWith(".json"))) {
-              try { reports.push(JSON.parse(fs.readFileSync(root+"/"+dir.name+"/"+f,"utf8"))); } catch {}
+          function walk(dir) {
+            for (const entry of fs.readdirSync(dir,{withFileTypes:true})) {
+              const full=path.join(dir,entry.name);
+              if (entry.isDirectory()) {
+                walk(full);
+                continue;
+              }
+              if (!/^(foundation|operations)-[^/]+\.json$/.test(entry.name)) continue;
+              try {
+                reports.push(JSON.parse(fs.readFileSync(full,"utf8")));
+              } catch (error) {
+                throw new Error(`invalid CrossFire report ${full}: ${error.message}`);
+              }
             }
           }
-          if (reports.length !== 12) throw new Error("expected 12 reports");
+          walk(root);
+          if (reports.length !== 12) throw new Error(`expected 12 reports, found ${reports.length}`);
+          const reportKeys=new Set(reports.map(r => `${r.repository}:${r.lane}`));
+          if (reportKeys.size !== 12) throw new Error(`duplicate or missing CrossFire report keys; unique=${reportKeys.size}, expected=12`);
           const repositories = new Set(reports.map(r => r.repository));
           if (repositories.size !== 2) throw new Error("expected both repositories in aggregation");
           const lanes = new Set(reports.map(r => r.lane));
