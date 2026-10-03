@@ -15,6 +15,7 @@ jobs:
   shadow:
     name: TypeScript observation contract shadow
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
     timeout-minutes: 15
     steps:
       - name: Create Operations read token
