@@ -19,7 +19,7 @@ def test_explicit_cross_origin_feed_policy_is_preserved():
 
 def test_feed_redirects_are_host_pinned_and_public_validated():
     text = WORKFLOW.read_text(encoding="utf-8")
-    assert "public_url \"$u\" || return 1" in text
+    assert 'public_url "$u" || return 1' in text
     assert 'same_host "$linked_final" "$u"' in text
 
 
