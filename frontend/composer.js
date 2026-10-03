@@ -1,129 +1,161 @@
 (() => {
-  'use strict';
+  "use strict";
 
   const api = window.RIEFrontend;
-  if (!api) throw new Error('frontend_state.js must load before composer.js');
+  if (!api) throw new Error("frontend_state.js must load before composer.js");
 
-  const prompt = document.getElementById('prompt');
-  const modeButtons = [...document.querySelectorAll('.mode')];
-  const composerStatus = document.getElementById('composer-status');
-  const queueButton = document.getElementById('queue-button');
-  const workspace = document.getElementById('workspace');
+  const prompt = document.getElementById("prompt");
+  const modeButtons = [...document.querySelectorAll(".mode")];
+  const composerStatus = document.getElementById("composer-status");
+  const queueButton = document.getElementById("queue-button");
+  const workspace = document.getElementById("workspace");
 
-  function setStatus(text, tone = '') {
+  function setStatus(text, tone = "") {
     if (!composerStatus) return;
     composerStatus.textContent = text;
     composerStatus.dataset.tone = tone;
   }
 
   function renderMode() {
-    const researchMode = api.state.mode === 'research';
+    const researchMode = api.state.mode === "research";
     modeButtons.forEach((button) => {
       const active = button.dataset.mode === api.state.mode;
-      button.classList.toggle('active', active);
-      button.setAttribute('aria-selected', active ? 'true' : 'false');
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", active ? "true" : "false");
       button.tabIndex = active ? 0 : -1;
     });
     if (prompt) {
-      prompt.placeholder = researchMode ? 'What should the engine research and verify?' : 'Ask Heroic AI…';
-      prompt.setAttribute('aria-label', researchMode ? 'Research question' : 'Message');
+      prompt.placeholder = researchMode
+        ? "What should the engine research and verify?"
+        : "Ask Heroic AI…";
+      prompt.setAttribute("aria-label", researchMode ? "Research question" : "Message");
     }
     if (queueButton) {
       queueButton.hidden = !researchMode;
       queueButton.disabled = !researchMode;
-      queueButton.setAttribute('aria-hidden', researchMode ? 'false' : 'true');
-      queueButton.title = researchMode ? 'Queue research (Ctrl/Cmd+Enter)' : 'Queue is available in Research mode';
+      queueButton.setAttribute("aria-hidden", researchMode ? "false" : "true");
+      queueButton.title = researchMode
+        ? "Queue research (Ctrl/Cmd+Enter)"
+        : "Queue is available in Research mode";
     }
   }
 
   function selectMode(mode) {
-    if (!['chat', 'research'].includes(mode)) return;
+    if (!["chat", "research"].includes(mode)) return;
     api.state.mode = mode;
     renderMode();
-    if (mode === 'research') workspace?.classList.add('open');
-    setStatus(mode === 'research' ? 'Research uses the canonical backend lifecycle and evidence contract.' : 'Chat uses the authenticated Heroic AI backend and canonical Operations routing.');
-    document.dispatchEvent(new CustomEvent('rie:mode-changed', { detail: { mode } }));
+    if (mode === "research") workspace?.classList.add("open");
+    setStatus(
+      mode === "research"
+        ? "Research uses the canonical backend lifecycle and evidence contract."
+        : "Chat uses the authenticated Heroic AI backend and canonical Operations routing.",
+    );
+    document.dispatchEvent(new CustomEvent("rie:mode-changed", { detail: { mode } }));
   }
 
   function resize() {
     if (!prompt) return;
-    prompt.style.height = 'auto';
+    prompt.style.height = "auto";
     prompt.style.height = `${Math.min(prompt.scrollHeight, 150)}px`;
   }
 
   function handleVoice() {
     const supported = Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
     if (!supported) {
-      setStatus('Voice input is unavailable in this browser.');
+      setStatus("Voice input is unavailable in this browser.");
       return;
     }
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new Recognition();
-    recognition.lang = navigator.language || 'en-IN';
+    recognition.lang = navigator.language || "en-IN";
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
-    setStatus('Listening…');
+    setStatus("Listening…");
     recognition.onresult = (event) => {
-      const text = event.results?.[0]?.[0]?.transcript || '';
-      prompt.value = `${prompt.value}${prompt.value ? ' ' : ''}${text}`;
+      const text = event.results?.[0]?.[0]?.transcript || "";
+      prompt.value = `${prompt.value}${prompt.value ? " " : ""}${text}`;
       resize();
-      setStatus('Voice input inserted locally.');
+      setStatus("Voice input inserted locally.");
     };
-    recognition.onerror = () => setStatus('Voice input failed; no backend request was created.');
+    recognition.onerror = () => setStatus("Voice input failed; no backend request was created.");
     recognition.onend = () => {
-      if (composerStatus?.textContent === 'Listening…') setStatus('Voice input ended.');
+      if (composerStatus?.textContent === "Listening…") setStatus("Voice input ended.");
     };
     recognition.start();
   }
 
   function send() {
-    const text = prompt?.value.trim() || '';
+    const text = prompt?.value.trim() || "";
     if (!text) return;
-    if (api.state.mode === 'research' && !api.token()) {
-      setStatus('Session token required for Research. Open Settings to continue.', 'error');
-      api.chatView?.toast('Session token required. Open Settings to continue.');
+    if (api.state.mode === "research" && !api.token()) {
+      setStatus("Session token required for Research. Open Settings to continue.", "error");
+      api.chatView?.toast("Session token required. Open Settings to continue.");
       return;
     }
-    prompt.value = '';
+    prompt.value = "";
     resize();
-    document.dispatchEvent(new CustomEvent('rie:composer-send', { detail: { text, mode: api.state.mode } }));
+    document.dispatchEvent(
+      new CustomEvent("rie:composer-send", { detail: { text, mode: api.state.mode } }),
+    );
   }
 
   function queue() {
-    if (api.state.mode !== 'research' || queueButton?.disabled) return;
+    if (api.state.mode !== "research" || queueButton?.disabled) return;
     if (!api.token()) {
-      setStatus('Session token required for Research. Queued work was not created.', 'error');
-      api.chatView?.toast('Session token required before queueing Research.');
+      setStatus("Session token required for Research. Queued work was not created.", "error");
+      api.chatView?.toast("Session token required before queueing Research.");
       return;
     }
-    const text = prompt?.value.trim() || '';
+    const text = prompt?.value.trim() || "";
     if (!text) return;
-    prompt.value = '';
+    prompt.value = "";
     resize();
-    document.dispatchEvent(new CustomEvent('rie:composer-queue', { detail: { text, mode: api.state.mode } }));
+    document.dispatchEvent(
+      new CustomEvent("rie:composer-queue", { detail: { text, mode: api.state.mode } }),
+    );
   }
 
-  document.addEventListener('click', (event) => {
-    const mode = event.target.closest('[data-mode]');
-    if (mode) { event.preventDefault(); selectMode(mode.dataset.mode); return; }
-    if (event.target.closest('[data-action="voice"]')) { event.preventDefault(); handleVoice(); return; }
-    if (event.target.closest('[data-action="send"]')) { event.preventDefault(); send(); return; }
-    if (event.target.closest('[data-action="queue"]')) { event.preventDefault(); queue(); return; }
-  }, true);
+  document.addEventListener(
+    "click",
+    (event) => {
+      const mode = event.target.closest("[data-mode]");
+      if (mode) {
+        event.preventDefault();
+        selectMode(mode.dataset.mode);
+        return;
+      }
+      if (event.target.closest('[data-action="voice"]')) {
+        event.preventDefault();
+        handleVoice();
+        return;
+      }
+      if (event.target.closest('[data-action="send"]')) {
+        event.preventDefault();
+        send();
+        return;
+      }
+      if (event.target.closest('[data-action="queue"]')) {
+        event.preventDefault();
+        queue();
+        return;
+      }
+    },
+    true,
+  );
 
-  prompt?.addEventListener('input', resize);
-  prompt?.addEventListener('keydown', (event) => {
+  prompt?.addEventListener("input", resize);
+  prompt?.addEventListener("keydown", (event) => {
     if (event.isComposing) return;
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       if (event.ctrlKey || event.metaKey) queue();
       else send();
     }
   });
 
-  window.addEventListener('keydown', (event) => {
+  window.addEventListener("keydown", (event) => {
     if (!(event.ctrlKey || event.metaKey)) return;
-    if (event.key.toLowerCase() === 'k') {
+    if (event.key.toLowerCase() === "k") {
       event.preventDefault();
       api.newChat();
       api.chatView?.render();
