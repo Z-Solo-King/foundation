@@ -106,3 +106,9 @@ The protected required-status contexts remain `Public tests` and `Analyze python
 The Migration Factory CrossFire writes each Operations-lens receipt relative to the Operations root, avoiding the previous double-prefixed `operations/operations/.runtime/` path. The artifact aggregation contract remains twelve reports across six independent lanes and two repositories.
 
 The cross-repository drift regression test resolves its Python imports from both the Foundation checkout and the authenticated Operations checkout. Foundation remains the authority for the drift policy; Operations-owned governance mechanics are consumed as a compatibility dependency rather than copied into Foundation.
+
+## Nightly research dependency bootstrap — 2026-10-03
+
+The privileged nightly research workflow checks out the exact immutable Operations research revision and installs that revision as an editable package before validating and executing the private research runner. The bootstrap must run `pip check` before research execution so declared runtime dependencies are present on the same runner that will execute the 24-program CrossFire.
+
+The workflow's lane evidence derives `global_capacity` from `RESEARCH_MAX_CONCURRENCY`; this keeps the acceptance manifest consistent with the actual coordinator semaphore and avoids recording a stale capacity value. The dependency bootstrap does not change the Operations runtime authority or the production release path.
