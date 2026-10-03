@@ -1,0 +1,111 @@
+name: One-shot live six-provider crossfire benchmark
+
+on:
+  push:
+    branches:
+      - bench/live-six-provider-crossfire-20261003
+  workflow_dispatch:
+    inputs:
+      operations_ref:
+        description: Immutable Operations SHA (40 hex)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: one-shot-live-six-provider-crossfire
+  cancel-in-progress: false
+
+jobs:
+  crossfire:
+    runs-on: ubuntu-latest
+    environment: production-secret-sync
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Mint read-only Operations App token
+        id: operations-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: operations
+          permission-contents: read
+      - name: Resolve immutable Operations SHA
+        id: operations
+        env:
+          REQUESTED_OPERATIONS_REF: ${{ inputs.operations_ref }}
+          GH_TOKEN: ${{ steps.operations-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          ref="${REQUESTED_OPERATIONS_REF:-}"
+          if [ -z "$ref" ]; then ref="$(gh api repos/Z-Solo-King/operations/commits/main --jq '.sha')"; fi
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]]
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+      - name: Checkout Operations benchmark tree
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ steps.operations.outputs.ref }}
+          token: ${{ steps.operations-token.outputs.token }}
+          path: operations-provider-benchmark
+          persist-credentials: false
+      - name: Install benchmark dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -e operations-provider-benchmark
+      - name: Validate six-provider catalog
+        working-directory: operations-provider-benchmark
+        env:
+          PYTHONPATH: ${{ github.workspace }}/operations-provider-benchmark
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("private/chatbot/provider_transport_catalog.json")
+          data = json.loads(p.read_text())
+          ids = [x["id"] for x in data["providers"]]
+          required = ["openrouter_free","groq","gemini","cerebras","nvidia_nim","cohere_free"]
+          assert all(x in ids for x in required), ids
+          print({"catalog_provider_count": len(ids), "selected": required})
+          PY
+      - name: Run parallel six-provider benchmark
+        working-directory: operations-provider-benchmark
+        env:
+          PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          PYTHONPATH: ${{ github.workspace }}/operations-provider-benchmark
+        run: |
+          set -euo pipefail
+          mkdir -p ../.runtime/live-six-provider
+          python private/benchmark/ai_provider_crossfire.py --providers-max 6 --repeats 3 --workers 18 --output ../.runtime/live-six-provider/crossfire.json
+          jq '{schema,generated_at,concurrency_workers,providers_tested,provider_target,crossfire_strength,independent_execution,shared_result_feedback,task_count,repeats,call_count,batch_wall_ms,providers:[.providers[]|{provider,model,calls,successes,failures,quality_passes,quality_total,quality_score,latency_ms,provider_batch_ms,errors}],task_agreement}' ../.runtime/live-six-provider/crossfire.json > ../.runtime/live-six-provider/public-summary.json
+          jq -e '.providers_tested|length==6' ../.runtime/live-six-provider/crossfire.json
+          jq -e '.call_count==54' ../.runtime/live-six-provider/crossfire.json
+          jq -e 'all(.providers[]; .calls==9)' ../.runtime/live-six-provider/crossfire.json
+      - name: Upload benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: live-six-provider-crossfire-2026-10-03
+          path: .runtime/live-six-provider
+          retention-days: 30
+          if-no-files-found: error
+      - name: Print sanitized summary
+        if: always()
+        run: cat .runtime/live-six-provider/public-summary.json
