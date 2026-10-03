@@ -46,6 +46,8 @@ def test_nightly_ai_crossfire_uses_canonical_worker_boundary_and_truthful_gates(
     assert "/api/v1/benchmark/ai-crossfire" in text
     assert "nightly-benchmark-ai-crossfire-request/v2" in text
     assert "nightly-benchmark-ai-crossfire-result/v2" in text
+    assert "Resolve expected Operations production pin" in text
+    assert "expected_operations_ref" in text
     assert "model_count_expected" in text
     assert "model_count_observed" in text
     assert "quality_complete" in text
