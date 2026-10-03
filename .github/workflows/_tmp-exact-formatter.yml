@@ -1,0 +1,47 @@
+name: Temporary exact formatter
+
+on:
+  push:
+    branches:
+      - fix/live-crossfire-workflow-hardening-2026-10-03
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.ref == 'refs/heads/fix/live-crossfire-workflow-hardening-2026-10-03'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Install Ruff
+        run: python -m pip install --disable-pip-version-check ruff==0.16.9
+
+      - name: Format exact changed files
+        run: |
+          set -euo pipefail
+          ruff format tests/test_crossfire_workflows.py
+          npx --yes prettier@3.9.9 --write .github/workflows/browser-engine-runtime-evidence.yml .github/workflows/live-ai-provider-crossfire.yml .github/workflows/nightly-benchmark-ai-crossfire.yml .github/workflows/repository-hygiene.yml
+          git diff --check
+
+      - name: Commit exact formatting
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "already formatted"
+            exit 0
+          fi
+          git add .github/workflows/browser-engine-runtime-evidence.yml .github/workflows/live-ai-provider-crossfire.yml .github/workflows/nightly-benchmark-ai-crossfire.yml .github/workflows/repository-hygiene.yml tests/test_crossfire_workflows.py
+          git commit -m "style: normalize current crossfire workflow formatting"
+          git push
+
+      - name: Remove temporary formatter
+        if: success()
+        run: |
+          git rm .github/workflows/_tmp-exact-formatter.yml
+          git commit -m "chore: remove temporary formatter"
+          git push
