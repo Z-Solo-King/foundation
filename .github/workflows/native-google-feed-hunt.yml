@@ -82,7 +82,10 @@ jobs:
           }
 
           same_host() {
-            python3 - "$1" "$root" <<'PY'
+            local candidate="$1"
+            local base="$root"
+            if [ -n "${2:-}" ]; then base="$2"; fi
+            python3 - "$candidate" "$base" <<'PY'
           import sys
           from urllib.parse import urlsplit
           a=urlsplit(sys.argv[1]); b=urlsplit(sys.argv[2])
@@ -90,20 +93,80 @@ jobs:
           PY
           }
 
+          resolve_url() {
+            python3 - "$1" "$2" <<'PY'
+          import sys
+          from urllib.parse import urljoin
+          print(urljoin(sys.argv[1], sys.argv[2]))
+          PY
+          }
+
+          public_url() {
+            python3 - "$1" <<'PY'
+          import socket
+          import sys
+          from ipaddress import ip_address
+          from urllib.parse import urlsplit
+          u=urlsplit(sys.argv[1])
+          if u.scheme.lower() not in {"http","https"} or u.username or u.password or not u.hostname:
+              raise SystemExit(1)
+          if u.port not in (None, 80, 443):
+              raise SystemExit(1)
+          try:
+              literal=ip_address(u.hostname)
+              addresses=[literal]
+          except ValueError:
+              try:
+                  addresses=[ip_address(row[4][0]) for row in socket.getaddrinfo(u.hostname, u.port or 443, type=socket.SOCK_STREAM)]
+              except OSError:
+                  raise SystemExit(1)
+          if not addresses or not any(addr.version == 4 and addr.is_global for addr in addresses):
+              raise SystemExit(1)
+          if any(not addr.is_global for addr in addresses):
+              raise SystemExit(1)
+          PY
+          }
+
+          fetch_public() {
+            local start="$1"
+            local body_out="$2"
+            local u="$start"
+            local hop
+            for hop in 0 1 2 3; do
+              public_url "$u" || return 1
+              local hdr
+              hdr=$(mktemp)
+              curl -ksS -4 --connect-timeout 4 --max-time 7 --max-redirs 0 -A 'Mozilla/5.0' -D "$hdr" -o "$body_out" "$u" >/dev/null 2>&1 || { rm -f "$hdr"; return 1; }
+              local code
+              code=$(awk 'tolower($1)=="http/2" || tolower($1)=="http/1.1" {c=$2} END{print c+0}' "$hdr")
+              local location
+              location=$(awk 'tolower($1)=="location:"{print $2}' "$hdr" | tail -1 | tr -d '\r')
+              rm -f "$hdr"
+              if [ "$code" -ge 300 ] && [ "$code" -lt 400 ] && [ -n "$location" ]; then
+                u="$(resolve_url "$u" "$location")" || return 1
+                continue
+              fi
+              FETCH_PUBLIC_FINAL="$u"
+              FETCH_PUBLIC_CODE="$code"
+              return 0
+            done
+            return 1
+          }
+
           for p in "${paths[@]}"; do
             u="${root}${p}"
-            hdr=$(mktemp); body=$(mktemp)
-            curl -ksSL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0'               -D "$hdr" -o "$body" "$u" >/dev/null 2>&1 || { rm -f "$hdr" "$body"; continue; }
-            code=$(awk 'tolower($1)=="http/2" || tolower($1)=="http/1.1" {c=$2} END{print c+0}' "$hdr")
-            final=$(curl -ksSIL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0' "$u" 2>/dev/null |               awk 'tolower($1)=="location:"{print $2}' | tail -1 | tr -d '\r')
-            [ -z "$final" ] && final="$u"
-            if [ "$code" = "200" ] && [ "$(same_host "$final")" = "1" ] && valid "$body"; then
-              printf '%s\t%s\n' "$site" "$final" >> "$output"
-              printf '%s\t%s\t%s\n' "$site" "$final" "$code" > "out/${site// /_}.hit"
-              rm -f "$hdr" "$body"
-              exit 0
+            body=$(mktemp)
+            if fetch_public "$u" "$body"; then
+              final="$FETCH_PUBLIC_FINAL"
+              code="$FETCH_PUBLIC_CODE"
+              if [ "$code" = "200" ] && [ "$(same_host "$final")" = "1" ] && valid "$body"; then
+                printf '%s\t%s\tpath_guess\n' "$site" "$final" >> "$output"
+                printf '%s\t%s\t%s\tpath_guess\n' "$site" "$final" "$code" > "out/${site// /_}.hit"
+                rm -f "$body"
+                exit 0
+              fi
             fi
-            rm -f "$hdr" "$body"
+            rm -f "$body"
           done
           # Discover random/custom feed filenames from public directory indexes.
           for dir in \
@@ -122,18 +185,19 @@ jobs:
                 /*) u="${root}${ref}" ;;
                 *) u="${root}${dir}${ref}" ;;
               esac
-              [ "$(same_host "$u")" = "1" ] || continue
               case "$u" in
                 *.xml|*.xml.gz|*.XML|*.XML.GZ) ;;
                 *) continue ;;
               esac
               body=$(mktemp)
-              curl -ksSL -4 --connect-timeout 4 --max-time 4 -A 'Mozilla/5.0' -o "$body" "$u" >/dev/null 2>&1 || { rm -f "$body"; continue; }
-              if valid "$body"; then
-                printf '%s\t%s\n' "$site" "$u" >> "$output"
-                printf '%s\t%s\t200\n' "$site" "$u" > "out/${site// /_}.hit"
-                rm -f "$body" "$idx"
-                exit 0
+              if fetch_public "$u" "$body"; then
+                linked_final="$FETCH_PUBLIC_FINAL"
+                if same_host "$linked_final" "$u" && [ "$FETCH_PUBLIC_CODE" = "200" ] && valid "$body"; then
+                  printf '%s\t%s\tdirectory_index_link\n' "$site" "$linked_final" >> "$output"
+                  printf '%s\t%s\t200\tdirectory_index_link\n' "$site" "$linked_final" > "out/${site// /_}.hit"
+                  rm -f "$body" "$idx"
+                  exit 0
+                fi
               fi
               rm -f "$body"
             done < <(
@@ -150,18 +214,19 @@ jobs:
             curl -ksSL -4 --connect-timeout 4 --max-time 4 -A 'Mozilla/5.0' -o "$html" "${root}${page}" >/dev/null 2>&1 || true
             while IFS= read -r u; do
               [ -z "$u" ] && continue
-              [ "$(same_host "$u")" = "1" ] || continue
               case "$u" in
                 *.xml|*.xml.gz|*.XML|*.XML.GZ) ;;
                 *) continue ;;
               esac
               body=$(mktemp)
-              curl -ksSL -4 --connect-timeout 4 --max-time 7 -A 'Mozilla/5.0' -o "$body" "$u" >/dev/null 2>&1 || { rm -f "$body"; continue; }
-              if valid "$body"; then
-                printf '%s\t%s\n' "$site" "$u" >> "$output"
-                printf '%s\t%s\t200\n' "$site" "$u" > "out/${site// /_}.hit"
-                rm -f "$body" "$html"
-                exit 0
+              if fetch_public "$u" "$body"; then
+                linked_final="$FETCH_PUBLIC_FINAL"
+                if same_host "$linked_final" "$u" && [ "$FETCH_PUBLIC_CODE" = "200" ] && valid "$body"; then
+                  printf '%s\t%s\texplicit_page_reference\n' "$site" "$linked_final" >> "$output"
+                  printf '%s\t%s\t200\texplicit_page_reference\n' "$site" "$linked_final" > "out/${site// /_}.hit"
+                  rm -f "$body" "$html"
+                  exit 0
+                fi
               fi
               rm -f "$body"
             done < <(
