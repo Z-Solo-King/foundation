@@ -33,5 +33,6 @@
     "mutable_refs_forbidden": true,
     "branch_or_tag_refs_forbidden": true,
     "purpose_scoped": true
-  }
+  },
+  "validation_note": "2026-10-04: production pin advanced only after live candidate/browser evidence; required PR checks remain mandatory before merge."
 }
