@@ -262,3 +262,7 @@ Live GitHub heads: Foundation `f364a39d79ce30e8f1b63b67c623c41a898af320`; Operat
 ## Node open-issue scan migration — 2026-10-02
 
 The open-issue deep-scan workflow now invokes the Node scanner contract while preserving the four-lane parallel coverage model, immutable Operations revision pin, provenance, historical regression coverage, and aggregate validation.
+
+## 2026-10-03 microscopic deduplication gate
+
+Cross-repository implementation overlap is audited through the existing `tools/check_repo_overlap.py` engine from the canonical contract-drift workflow. Normal CI performs the repository overlap audit; scheduled and manual contract-drift runs use exhaustive function/method comparison. This gate exists to keep the trunk → family/shared layer → leaf implementation model from regressing into repeated code or parallel workflow implementations.
