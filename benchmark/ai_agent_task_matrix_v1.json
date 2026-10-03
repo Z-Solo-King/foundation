@@ -85,13 +85,7 @@
       "category": "Planning & architecture",
       "language_lens": "Python/reference",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -113,13 +107,7 @@
       "category": "Planning & architecture",
       "language_lens": "Python/reference",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -141,13 +129,7 @@
       "category": "Planning & architecture",
       "language_lens": "Python/reference",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -169,13 +151,7 @@
       "category": "Planning & architecture",
       "language_lens": "Python/reference",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -197,13 +173,7 @@
       "category": "Code understanding & implementation",
       "language_lens": "TypeScript/Worker",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -225,13 +195,7 @@
       "category": "Code understanding & implementation",
       "language_lens": "TypeScript/Worker",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -253,13 +217,7 @@
       "category": "Code understanding & implementation",
       "language_lens": "TypeScript/Worker",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -281,13 +239,7 @@
       "category": "Code understanding & implementation",
       "language_lens": "TypeScript/Worker",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -309,13 +261,7 @@
       "category": "Testing & verification",
       "language_lens": "Rust/systems",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -337,13 +283,7 @@
       "category": "Testing & verification",
       "language_lens": "Rust/systems",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -365,13 +305,7 @@
       "category": "Testing & verification",
       "language_lens": "Rust/systems",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -393,13 +327,7 @@
       "category": "Testing & verification",
       "language_lens": "Rust/systems",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -421,13 +349,7 @@
       "category": "Research & evidence",
       "language_lens": "YAML/JSON/Markdown",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -449,13 +371,7 @@
       "category": "Research & evidence",
       "language_lens": "YAML/JSON/Markdown",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -477,13 +393,7 @@
       "category": "Research & evidence",
       "language_lens": "YAML/JSON/Markdown",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -505,13 +415,7 @@
       "category": "Research & evidence",
       "language_lens": "YAML/JSON/Markdown",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -533,13 +437,7 @@
       "category": "Security, reliability & recovery",
       "language_lens": "Go/concurrency",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -561,13 +459,7 @@
       "category": "Security, reliability & recovery",
       "language_lens": "Go/concurrency",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -589,13 +481,7 @@
       "category": "Security, reliability & recovery",
       "language_lens": "Go/concurrency",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -617,13 +503,7 @@
       "category": "Security, reliability & recovery",
       "language_lens": "Go/concurrency",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -645,13 +525,7 @@
       "category": "Cross-language & tooling portability",
       "language_lens": "Polyglot",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -673,13 +547,7 @@
       "category": "Cross-language & tooling portability",
       "language_lens": "Polyglot",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -701,13 +569,7 @@
       "category": "Cross-language & tooling portability",
       "language_lens": "Polyglot",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -729,13 +591,7 @@
       "category": "Cross-language & tooling portability",
       "language_lens": "Polyglot",
       "repeat_count": 3,
-      "agent_roles": [
-        "main",
-        "explorer",
-        "worker",
-        "researcher",
-        "advisor"
-      ],
+      "agent_roles": ["main", "explorer", "worker", "researcher", "advisor"],
       "required_outputs": [
         "decision_or_result",
         "evidence_packet",
@@ -752,23 +608,13 @@
     }
   ],
   "current_issue_targets": {
-    "foundation": [
-      58,
-      157,
-      1249
-    ],
-    "operations": [
-      603
-    ]
+    "foundation": [58, 157, 1249],
+    "operations": [603]
   },
   "current_issue_snapshot": {
     "observed_at": "2026-10-02T08:16:27Z",
     "semantics": "acceptance_queue_only",
-    "excluded_open_issue_classes": [
-      "autonomous-mission",
-      "autonomous-improvement",
-      "integrity"
-    ],
+    "excluded_open_issue_classes": ["autonomous-mission", "autonomous-improvement", "integrity"],
     "all_open_issue_count": {
       "foundation": 10,
       "operations": 1
