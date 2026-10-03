@@ -2,16 +2,19 @@
   "schema": "family-issue-acceptance-matrix/v1",
   "audited_at": "2026-10-02T08:30:00Z",
   "repository_heads": {
-    "foundation": "092495175d56111a3ab337b7dff8ae5e78fc93e4",
-    "operations": "7ea7d708f880492d52d36cbaf4a0da4982d19894"
+    "foundation": "3120e142ddb3819a74b6342bc6de3da672dab8e8",
+    "operations": "ce1dc7fe780fdbbcbdf575fd936f5ae61e4ca58a"
   },
-  "open_issue_count": 5,
+  "open_issue_count": 4,
   "issues": [
     {
       "repo": "foundation",
       "number": 58,
       "title": "META: exhaustive Research Intelligence Engine coverage tracker",
-      "required_evidence": ["live child-issue reconciliation", "current family-integrity receipt"]
+      "required_evidence": [
+        "live child-issue reconciliation",
+        "current family-integrity receipt"
+      ]
     },
     {
       "repo": "foundation",
@@ -23,15 +26,6 @@
         "all 24 programs execute and all 3 lane artifacts validate",
         "truthful diagnosis/final-result gate passes",
         "complete artifact provenance"
-      ]
-    },
-    {
-      "repo": "foundation",
-      "number": 1247,
-      "title": "feed: WooCommerce Google Feed Recovery — 21 active unresolved targets",
-      "required_evidence": [
-        "public discovery for unresolved retailers",
-        "strict payload validation"
       ]
     },
     {
@@ -63,7 +57,12 @@
     "pin_selection": "immutable revision must pass the exact consumer contract before promotion; newer is not sufficient"
   },
   "ownership": {
-    "foundation": ["public contracts", "AI navigation", "benchmark", "GitHub Actions/CI"],
+    "foundation": [
+      "public contracts",
+      "AI navigation",
+      "benchmark",
+      "GitHub Actions/CI"
+    ],
     "operations": [
       "private runtime",
       "chatbot",
