@@ -238,3 +238,23 @@ test("provider crossfire findings select the provider benchmark lane", () => {
   assert.equal(plan.actions[0].workflow, "provider-fleet-runtime-state.yml");
   assert.ok(plan.actions.some((action) => action.workflow === "live-ai-provider-crossfire.yml"));
 });
+
+
+test("terminal mission is reused for the same autonomous mission class", () => {
+  const issue = {
+    number: 1906,
+    body: '<!-- autonomous-mission-state:start -->\n```json\n{"state":"blocked","retriable":false,"mode":"standard","mission_type":"feed_recovery","cycle":6}\n```\n<!-- autonomous-mission-state:end -->',
+  };
+  const result = selectResumableMission(
+    [],
+    "standard",
+    [{ issue, state: parseState(issue.body) }],
+    "feed_recovery",
+  );
+  assert.equal(result.issue.number, 1906);
+  assert.equal(result.state.state, "planning");
+  assert.equal(result.state.cycle, 0);
+  assert.deepEqual(result.state.workflow_attempts, {});
+  assert.deepEqual(result.state.child_runs, []);
+  assert.equal(result.state.retriable, true);
+});
