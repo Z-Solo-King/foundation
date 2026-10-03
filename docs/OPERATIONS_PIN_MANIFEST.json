@@ -24,6 +24,11 @@
       "purpose": "private provider-secret synchronization utility",
       "path": "tools/sync_provider_secrets.py",
       "status": "immutable utility revision; separately certified before controlled use"
+    },
+    "promotion_candidate": {
+      "sha": "aaf502e8fbda6adc4d98d877a12df23c0c678ea9",
+      "purpose": "candidate Operations revision containing authenticated public-admission forwarding and public-core sync fixes; not production until protected promotion and fresh runtime certification",
+      "status": "validated by candidate live CrossFire and Chromium/Firefox/WebKit browser smoke; production smoke remains against deployed 11f pin and therefore is not a candidate success signal"
     }
   },
   "rules": {
