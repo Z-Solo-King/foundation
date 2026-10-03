@@ -34,27 +34,23 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Create read-only Operations token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-          permission-issues: write
-
-      - name: Checkout Operations main
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: main
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: main
           path: operations
           fetch-depth: 1
-          persist-credentials: false
-
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:

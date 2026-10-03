@@ -38,17 +38,14 @@ jobs:
           fetch-depth: 0
           path: foundation-repo
 
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-          permission-issues: read
-
+          repository: operations
       - name: Resolve Operations audit revision
         id: resolve
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -66,14 +63,15 @@ jobs:
             // Default to Operations main; an explicit operations_ref may override it.
             core.setOutput("ref", "main");
 
-      - name: Checkout Operations runtime/source revision
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ steps.resolve.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ steps.resolve.outputs.ref }}
           path: operations-repo
-
+          fetch-depth: 1
       - name: Fetch live Operations issue register from main
         id: issue-register
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0

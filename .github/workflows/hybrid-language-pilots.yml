@@ -24,15 +24,14 @@ jobs:
     outputs:
       ref: ${{ steps.resolve.outputs.ref }}
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
+          repository: operations
       - name: Resolve Operations ref
         id: resolve
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
@@ -57,24 +56,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
-
+          fetch-depth: 1
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
         with:
@@ -90,24 +88,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
-
+          fetch-depth: 1
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
@@ -125,24 +122,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
-
+          fetch-depth: 1
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
@@ -163,22 +159,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
         with:
@@ -231,24 +228,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
-
+          fetch-depth: 1
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
@@ -269,24 +265,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
-
+          fetch-depth: 1
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
         with:
@@ -324,22 +319,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
-          client-id: ${{secrets.OPERATIONS_APP_ID}}
-          private-key: ${{secrets.OPERATIONS_APP_PRIVATE_KEY}}
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
+          token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
           ref: ${{needs.resolve_operations_ref.outputs.ref}}
-          token: ${{steps.operations-app.outputs.token}}
           path: operations
+          fetch-depth: 1
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
@@ -436,22 +432,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
         with:
@@ -466,22 +463,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
         with:
@@ -496,22 +494,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
         with:
@@ -660,22 +659,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
         with:
@@ -692,22 +692,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
@@ -724,22 +725,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
@@ -788,22 +790,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
@@ -818,22 +821,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
@@ -848,22 +852,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Determine pinned Foundation public-core revision
         id: foundation-core-pin
         working-directory: operations
@@ -953,24 +958,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
-
+          fetch-depth: 1
       - name: Materialize pinned Foundation public core
         working-directory: operations
         run: node scripts/sync_public_core.mjs
@@ -1021,22 +1025,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Materialize pinned Foundation public core
         working-directory: operations
         run: node scripts/sync_public_core.mjs
@@ -1083,22 +1088,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Materialize pinned Foundation public core
         working-directory: operations
         run: node scripts/sync_public_core.mjs
@@ -1145,22 +1151,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Materialize pinned Foundation public core
         working-directory: operations
         run: node scripts/sync_public_core.mjs
@@ -1203,22 +1210,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
         with:
@@ -1236,22 +1244,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Materialize pinned Foundation public core
         working-directory: operations
         run: node scripts/sync_public_core.mjs
@@ -1294,22 +1303,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
@@ -1330,22 +1340,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
@@ -1424,22 +1435,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
@@ -1460,22 +1472,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
@@ -1493,22 +1506,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-      - name: Checkout Operations
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ needs.resolve_operations_ref.outputs.ref }}
           path: operations
+          fetch-depth: 1
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f
         with:

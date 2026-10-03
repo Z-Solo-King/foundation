@@ -34,44 +34,23 @@ jobs:
     timeout-minutes: 15
     environment: production-secret-sync
     steps:
-      - name: Create Operations read token
+      - name: Shared read-only Operations App token
         id: operations-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-
-      - name: Resolve Operations revision
-        id: resolve
-        env:
-          GH_TOKEN: ${{ steps.operations-app.outputs.token }}
-          REQUESTED_REF: ${{ inputs.registry_ref }}
-        run: |
-          set -euo pipefail
-          ref="${REQUESTED_REF:-}"
-          if [[ -z "$ref" ]]; then
-            ref="$(gh api repos/Z-Solo-King/operations/git/ref/heads/main --jq '.object.sha')"
-          fi
-          [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Operations ref must be a 40-char immutable SHA"; exit 1; }
-          echo "ref=$ref" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+          repository: operations
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ steps.resolve.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ steps.resolve.outputs.ref }}
           path: ai-operations
           fetch-depth: 1
-          persist-credentials: false
-
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v5.0.0
-        with:
-          node-version: "24"
-          package-manager-cache: false
-
       - name: Run multi-provider AI crossfire
         env:
           PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
@@ -132,16 +111,14 @@ jobs:
           npm install --no-package-lock --no-save playwright
           npx playwright install --with-deps chromium
 
-      - name: Authenticate private registry
+      - name: Shared read-only Operations App token
         id: registry-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: ./.github/actions/operations-app-token
         with:
           client-id: ${{ secrets.OPERATIONS_APP_ID }}
           private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
           owner: Z-Solo-King
-          repositories: operations
-          permission-contents: read
-
+          repository: operations
       - name: Resolve private Operations revision
         id: registry-ref
         env:
@@ -156,15 +133,15 @@ jobs:
           [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Operations ref must be a 40-char immutable SHA"; exit 1; }
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout private registry
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Shared read-only Operations checkout
+        uses: ./.github/actions/operations-readonly-checkout
         with:
-          repository: Z-Solo-King/operations
-          ref: ${{ steps.registry-ref.outputs.ref }}
           token: ${{ steps.registry-app.outputs.token }}
-          persist-credentials: false
+          owner: Z-Solo-King
+          repository: operations
+          ref: ${{ steps.registry-ref.outputs.ref }}
           path: registry-source
-
+          fetch-depth: 1
       - name: Materialize private registry
         shell: bash
         env:
