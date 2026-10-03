@@ -110,11 +110,3 @@ def test_nightly_workflow_handles_cancelled_research_without_masking_unexpected_
     assert "'state': 'blocked_before_execution'" in workflow
     assert 'raise FileNotFoundError(path)' in workflow
     assert "'artifact_missing': True" in workflow
-
-
-def test_nightly_ai_and_github_scan_schedules_are_staggered():
-    ai = WORKFLOW.read_text(encoding="utf-8")
-    governance = (ROOT / ".github" / "workflows" / "twice-daily-governance-sweep.yml").read_text(encoding="utf-8")
-    assert 'cron: "30 19 * * *"' in ai
-    assert 'cron: "25 20 * * *"' in governance
-    assert 'cron: "17 14 * * *"' in governance

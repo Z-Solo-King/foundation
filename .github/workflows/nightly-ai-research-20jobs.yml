@@ -2,7 +2,7 @@ name: Nightly AI research — 20 parallel jobs
 
 on:
   schedule:
-    # 01:00 IST = 19:30 UTC on the previous day. Start the distributed AI research window first.
+    # prettier-ignore
     - cron: "30 19 * * *"
   workflow_dispatch:
     inputs:
