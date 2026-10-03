@@ -19,25 +19,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          url="$(gh workflow run live-ai-provider-crossfire.yml --repo "$GITHUB_REPOSITORY" --ref main 2>&1)"
-          printf '%s\n' "$url"
-          run_url="$(printf '%s\n' "$url" | grep -Eo 'https://[^[:space:]]+/actions/runs/[0-9]+' | tail -n1 || true)"
-          run_id="$(printf '%s\n' "$run_url" | sed -n 's#.*/runs/\([0-9][0-9]*\).*#\1#p')"
-          test -n "$run_id"
-          echo "benchmark_run_id=$run_id" >> "$GITHUB_OUTPUT"
-      - name: Wait for benchmark job creation
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          for _ in {1..24}; do
-            json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/${{ steps.dispatch.outputs.benchmark_run_id }}/jobs?per_page=100")"
-            count="$(jq '.total_count // (.jobs|length) // 0' <<<"$json")"
-            if [ "$count" -gt 0 ]; then
-              echo "benchmark_job_count=$count"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "benchmark run created without jobs"
-          exit 1
+          gh workflow run live-ai-provider-crossfire.yml --repo "$GITHUB_REPOSITORY" --ref bench/live-provider-execution-2026-10-03
+          echo "Dispatched live-ai-provider-crossfire.yml from benchmark branch."
