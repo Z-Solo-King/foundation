@@ -139,9 +139,8 @@ jobs:
   aggregate:
     name: Aggregate AI cross-fire
     needs: [crossfire]
-    if: always()
+    if: ${{ always() && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/main' }}
     timeout-minutes: 5
     steps:
       - name: Download lane receipts

@@ -440,10 +440,9 @@ jobs:
   aggregate:
     name: Aggregate 20 orthogonal scenarios
     runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: ${{ always() && github.ref == 'refs/heads/main' }}
     timeout-minutes: 20
     needs: scenario
-    if: always()
     steps:
       - name: Download scenario evidence
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4
