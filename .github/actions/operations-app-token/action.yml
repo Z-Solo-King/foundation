@@ -1,0 +1,33 @@
+name: Operations App token
+description: Mint a short-lived read-only GitHub App installation token for Operations.
+inputs:
+  client-id:
+    description: GitHub App client ID
+    required: true
+  private-key:
+    description: GitHub App private key
+    required: true
+  owner:
+    description: GitHub owner
+    required: false
+    default: Z-Solo-King
+  repository:
+    description: Private repository
+    required: false
+    default: operations
+outputs:
+  token:
+    description: Short-lived read-only GitHub App installation token
+    value: ${{ steps.operations-token.outputs.token }}
+runs:
+  using: composite
+  steps:
+    - name: Mint read-only Operations App token
+      id: operations-token
+      uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+      with:
+        client-id: ${{ inputs.client-id }}
+        private-key: ${{ inputs.private-key }}
+        owner: ${{ inputs.owner }}
+        repositories: ${{ inputs.repository }}
+        permission-contents: read
