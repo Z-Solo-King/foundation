@@ -106,3 +106,8 @@ The protected required-status contexts remain `Public tests` and `Analyze python
 The Migration Factory CrossFire writes each Operations-lens receipt relative to the Operations root, avoiding the previous double-prefixed `operations/operations/.runtime/` path. The artifact aggregation contract remains twelve reports across six independent lanes and two repositories.
 
 The cross-repository drift regression test resolves its Python imports from both the Foundation checkout and the authenticated Operations checkout. Foundation remains the authority for the drift policy; Operations-owned governance mechanics are consumed as a compatibility dependency rather than copied into Foundation.
+
+
+## Nightly research evidence-capacity reconciliation — 2026-10-04
+
+The live nightly research workflow's coordinator capacity is configured by `RESEARCH_MAX_CONCURRENCY`. The lane acceptance manifest derives `global_capacity` from that same environment value rather than recording a separate constant, so evidence reflects the scheduler that actually executed the run. The current production runner dependency bootstrap remains the existing Operations `httpx` installation; this change does not duplicate or relocate runtime dependency ownership.
