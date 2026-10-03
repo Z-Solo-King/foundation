@@ -27,6 +27,7 @@ jobs:
   validate:
     name: Validate private Operations source
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
     timeout-minutes: 45
     steps:
       - name: Create Operations read token
