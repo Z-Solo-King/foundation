@@ -67,11 +67,11 @@ jobs:
           repository: Z-Solo-King/operations
           ref: ${{ steps.operations.outputs.ref }}
           token: ${{ steps.operations-token.outputs.token }}
-          path: ${{ runner.temp }}/operations-provider-benchmark
+          path: operations-provider-benchmark
           persist-credentials: false
 
       - name: Validate platform access cross-fire contract
-        working-directory: ${{ runner.temp }}/operations-provider-benchmark
+        working-directory: operations-provider-benchmark
         run: |
           set -euo pipefail
           python - <<'PY'
