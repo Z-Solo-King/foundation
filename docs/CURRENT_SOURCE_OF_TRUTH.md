@@ -242,3 +242,7 @@ Foundation PR #1934 was merged after exact-head Public tests, Analyze python, Co
 The native feed provenance hardening is already present on Foundation main. Foundation and Operations currently have no open pull requests. The live acceptance queue remains Foundation #58, #157, #1249 plus Operations #603; #1679 and #1906 remain separate integrity/autonomous execution state.
 
 The canonical cross-repository workflow still owns hosted CI in Foundation. Operations main currently contains no `.github/workflows/` directory, and the post-merge language-fit inventory continues to report 100% of inventoried engineering artifacts covered.
+
+## 2026-10-04 controlled production-release retry
+
+The first controlled production release after the Operations pin promotion reached the canonical release workflow but exposed two release-path defects: the pre-deployment Foundation test invocation crossed the public/private migration boundary, and sanitized receipt publication to issue #58 treated GitHub's comment-limit response as fatal. Both defects were corrected and merged in Foundation PR #1939. The next controlled production reconciliation is therefore an execution of the corrected canonical release path; no deployment authority or acceptance gate is changed by the retry.
