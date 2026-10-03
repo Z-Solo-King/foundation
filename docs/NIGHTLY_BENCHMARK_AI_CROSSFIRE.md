@@ -61,3 +61,5 @@ Cloudflare currently documents a 10,000-Neuron daily Workers AI Free allocation.
 ## Relationship to the canonical benchmark
 
 The project-native deterministic benchmark remains authoritative. AI cross-fire is a diagnostic/advisory layer over its receipt and does not replace the 24-program nightly research execution or its acceptance gates.
+
+<!-- CI check request marker -->
