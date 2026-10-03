@@ -19,10 +19,10 @@ def test_family_sync_state_matches_current_main_and_graph():
     queue = state["current_queue"]
     assert queue["schema"] == "live-issue-snapshot/v1"
     assert queue["open_issue_count"] == len(queue["foundation"]) + queue["operations_count"]
-    assert queue["foundation"] == [58, 1247, 1249, 157]
+    assert queue["foundation"] == [58, 157, 1249]
     assert queue["operations_count"] == len(queue.get("operations", []))
     assert queue["operations"] == [603]
-    assert queue["total_open_issue_count"] == 5
+    assert queue["total_open_issue_count"] == 4
     assert queue["operations_issue_numbers_omitted"] is False
 
     assert graph["schema"] == "family-integration-graph/v1"
