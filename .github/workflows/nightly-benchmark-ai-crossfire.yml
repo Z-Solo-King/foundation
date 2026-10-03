@@ -82,7 +82,8 @@ jobs:
           prompt=("NIGHTLY_BENCHMARK_AI_CROSSFIRE_V1\nReturn JSON only with advisory_assessment, reason, flags.\n"
                   "Advisory only: never certify correctness, production health, or research completion.\n"
                   "Do not propose credential, policy, deployment, Cloudflare mutation, or workflow-dispatch actions.\n"
-                  "Evaluate only supplied evidence. assessment must be pass, attention, or blocked. flags must be an array.\n"\n                  "You are the " + os.environ["ROLE"] + ".\n" + data)
+                  "Evaluate only supplied evidence. assessment must be pass, attention, or blocked. flags must be an array.\n"
+                  "You are the " + os.environ["ROLE"] + ".\n" + data)
           body=json.dumps({"model":os.environ["MODEL"],"input":{"messages":[{"role":"user","content":prompt}],"max_tokens":512,"temperature":0,"stream":false}}).encode()
           req=urllib.request.Request("https://api.cloudflare.com/client/v4/accounts/"+os.environ["CLOUDFLARE_ACCOUNT_ID"]+"/ai/run",data=body,headers={"Authorization":"Bearer "+os.environ["CLOUDFLARE_API_TOKEN"],"Content-Type":"application/json"})
           receipt={"schema":"nightly-benchmark-ai-crossfire-result/v1","run_id":os.environ["RUN_ID"],"lane_id":os.environ.get("LANE_ID", ""), "role":os.environ.get("ROLE", ""), "model":os.environ["MODEL"],"transport_ok":False,"elapsed_ms":None,"advisory_schema_compliant":False,"advisory_assessment":None,"reason":"","flags":[],"neurons":None,"input_sha256":hashlib.sha256(data.encode()).hexdigest(),"authority":"advisory_only_no_acceptance_or_mutation_authority"}
