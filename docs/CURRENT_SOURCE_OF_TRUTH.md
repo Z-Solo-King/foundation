@@ -232,3 +232,13 @@ Foundation main is now `906da6a1664b36fa5c89d47300b2d179f69c8aca`; Operations ma
 The microscope retirement workflow is fail-closed on normal pushes: `push` runs an evidence-only scan with read-only permissions, while destructive branch deletion is available only through explicit `workflow_dispatch` with `execute=true`. The former push-message authorization marker is no longer an execution path.
 
 The Operations hosted-Actions boundary is reconciled: Operations `main` contains no `.github/workflows/` directory, leaving Foundation as the hosted Actions authority. A post-merge cross-repository drift run confirmed the Operations workflow directory returns HTTP 404.
+
+## 2026-10-04 post-runtime-promotion continuity reconciliation
+
+Foundation main is now `8071e1f79065fae613783d11cc801aff2b827333`. Operations main is now `51756272e0a161ca6367e981481b17b65e61d5c9`. These are live moving repository heads, not production certification values.
+
+Foundation PR #1934 was merged after exact-head Public tests, Analyze python, CodeQL, security, hygiene, provenance, and governance checks all succeeded. The canonical Operations production candidate staged by that release-path change remains `621fc8aa536b60bbc6f9e686c4ce0a769d8cab56`; the separately observed Cloudflare production runtime remains `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f` until the controlled production release transaction completes.
+
+The native feed provenance hardening is already present on Foundation main. Foundation and Operations currently have no open pull requests. The live acceptance queue remains Foundation #58, #157, #1249 plus Operations #603; #1679 and #1906 remain separate integrity/autonomous execution state.
+
+The canonical cross-repository workflow still owns hosted CI in Foundation. Operations main currently contains no `.github/workflows/` directory, and the post-merge language-fit inventory continues to report 100% of inventoried engineering artifacts covered.
