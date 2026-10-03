@@ -23,3 +23,14 @@ Public feed discovery routes through Foundation public-safe workflows. Do not re
 Privileged workflows that access secrets or private Operations are main/schedule/manual execution surfaces only. They must not execute on pull_request, pull_request_target, or merge_group.
 
 The workflow authority registry is the machine-checkable source for this boundary. If validation fails, stop at routing/acceptance before implementation.
+
+## 14. Security protocol and privileged automation
+Security controls are part of the execution contract.
+
+- `workflow_run` and other privileged triggers must operate only on trusted source. Never check out or execute untrusted pull-request or fork code in a workflow that can access secrets or write-capable tokens. Use least-privilege `GITHUB_TOKEN` permissions and read-only GitHub App installations wherever possible.
+- AI agents and AI-generated benchmark/research output are advisory evidence. They must never gain merge, deploy, policy, provider-promotion or production-authority powers through automation.
+- Cloudflare production Workers, bindings, secrets and immutable deployment pins are production-owned state. Normal changes flow through the canonical Foundation release workflow on protected `main`; direct connector mutation is not a normal deployment mechanism.
+- Private runtime inspection must be separated from public evidence. Raw private API responses, credentials, provider responses and private revision identifiers must never be uploaded to public artifacts or posted to public issues. Sanitize receipts and delete raw inspection data before publication.
+- Production pin checks are lineage checks: an approved revision may legitimately remain an ancestor of a moving `main`. Do not interpret ordinary forward advancement as integrity drift.
+- Required security, hygiene, provenance and release gates are fail-closed. Never weaken or bypass them merely to obtain a green status. External credential/token-health failures remain explicitly classified as `EXTERNAL/ADMIN`.
+- Use parallel lanes for independent investigation only; serialize writes, production changes and merges.
