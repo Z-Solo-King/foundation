@@ -45,7 +45,6 @@ jobs:
           if-no-files-found: error
 
   crossfire:
-  crossfire:
     name: "AI ${{ matrix.id }}"
     runs-on: ubuntu-latest
     timeout-minutes: 8
