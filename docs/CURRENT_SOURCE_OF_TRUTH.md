@@ -26,6 +26,7 @@ Protected runtime revisions, resource identifiers, deployment internals, private
 Fresh production/runtime evidence must be obtained from the protected evidence path before making an L4 claim.
 
 Current evidence classes:
+
 - Nightly 24-program research: no provider-backed closure receipt is currently certified.
 - Extractor/feed evidence: native retailer-hosted feed evidence remains required for #1247/#1249.
 - Polyglot migration: deterministic/structural evidence exists; runtime performance/evidence remains required before promotion.
@@ -54,27 +55,29 @@ The canonical public path is Pages `ai` -> `heroic` -> private `operations-edge`
 ## Continuity
 
 Use this file together with docs/FAMILY_SYNC_STATE.json and docs/PROMPT_TO_CANONICAL_DOC_MAP.md.
-Production diagnostic acceptance passes the explicit `release_acceptance` mode through the public-to-private diagnostic boundary; this path is validated by the canonical production release. 
+Production diagnostic acceptance passes the explicit `release_acceptance` mode through the public-to-private diagnostic boundary; this path is validated by the canonical production release.
 Do not add another competing current-state document.
 
-
 ### 2026-09-29 runtime repair note
+
 The canonical production release runtime now passes the authenticated infrastructure diagnostic on the current production pair. The remaining release failure was in the post-release nightly workflow-dispatch command: GitHub CLI requires JSON workflow inputs on stdin when using --json. Foundation PR #1549 corrects that dispatcher contract and adds regression coverage; runtime authority and feed extraction scope are unchanged.
 
-
 ## 2026-09-29 dispatch contract refresh
+
 The canonical production release dispatches live nightly research with typed string workflow inputs (`dry_run=false`, exact Foundation SHA, exact production release run ID). Production smoke tracks the production Operations pin; research preflight and research execution retain their separate immutable research pin.
 
-
 ## 2026-09-29 authenticated provider-proof repair
+
 The live post-release test exposed a contract distinction: ordinary public chat intentionally redacts provider identity, while the authenticated nightly evidence path must preserve provider provenance. Foundation PR #1559 adds the explicit research-proof header path, supports the existing private `provider_runtime_verify` diagnostic operation at the authenticated boundary, and corrects false-positive preflight classification. Ordinary public responses remain provider-redacted.
 
-
 ## 2026-09-29 provider diagnostic status repair
+
 Foundation PR #1562 aligns the public authenticated diagnostic wrapper with the dedicated `provider_runtime_verify` response contract. A valid provider runtime receipt no longer requires the unrelated generic `chatbot.allowed` field; ordinary infrastructure diagnostics retain that requirement.
 
 ### 2026-09-30 nightly evidence hardening
+
 Foundation PR #1565 hardens nightly research using the feed-recovery evidence pattern: provider capability preflight exercises the actual research-agent structured-output contract; exact 24-program coverage records missing, duplicate, and unexpected IDs; transient upstream transport recovery is bounded and preserves request identity; and machine-readable acceptance manifests map evidence to #58/#157/#597/#603. The migration review pin now uses the merged Operations PR #1109 bridge repair commit `f9f8ce0eb88b92a5d4e2e3ea5f2d397eebac5791` rather than the older pre-repair audit revision.
+
 ## 2026-09-30 research boundary repair
 
 Foundation PR #1573 fixes a live nightly research contract defect exposed by the production-live run: the CI research proxy had placed the private Operations research_agent capability inside the public ChatRequest JSON payload, which correctly failed public schema validation. The corrected boundary keeps ChatRequest closed, uses the authenticated X-Heroic-Research-Proof: 1 header as the capability signal, and adds research_agent=true only when Foundation forwards an authorized knowledge request to private Operations.
@@ -83,10 +86,12 @@ The PR was merged at 732a694cf2e272709640c379d9aed70ea28b2534. The canonical pro
 
 Cross-repository continuity requires this document and docs/FAMILY_SYNC_STATE.json to be refreshed whenever canonical worker/workflow boundaries or integration contracts change.
 
-
 ## 2026-09-30 AI provider fleet
+
 The current Foundation external AI API fleet is defined in `docs/AI_PROVIDER_FLEET_2026-09-30.md` and `docs/AI_PROVIDER_FLEET_2026-09-30.json`: OpenRouter, Groq, Gemini, NVIDIA NIM, Cohere, Hugging Face, and SiliconFlow. Cloudflare Workers AI is the native runtime inference binding. Operations privately supports Cerebras as an additional provider family, but Foundation does not activate it because no Cerebras credential is configured. Mistral is not part of the production provider fleet.
+
 ## 2026-09-30 live-state synchronization model
+
 Current GitHub main revisions and mutable issue/PR counts are live state. This document records the last verified revision but deliberately does not pretend to contain a permanent current SHA. Refresh GitHub before mutation or production claims.
 
 Current family state: Foundation and Operations are the only active repositories. The former standalone extractor-mapper repository is retired/deleted; active private extraction/mapping runtime is Operations `extractor_mapper/`, while Foundation retains the public deterministic mapper core.
@@ -94,18 +99,21 @@ Current family state: Foundation and Operations are the only active repositories
 The adaptive multi-lens engine is active on Foundation and is scheduling-only; it does not transfer acceptance, security, provider, resource, extractor/mapper or promotion authority.
 
 ### 2026-10-01 cohesion + decomposition reconciliation
+
 The project-wide integration contract is now bound to the improvement matrix and explicitly connects audit, quality/evolution, learning, AI automation, AI API governance, evidence, self-evolution, and mapper/extractor without creating duplicate authorities. Operations also restores the evaluation-receipt to universal-evolution bridge and keeps learning candidate-only.
 
 The first large-file decomposition wave split Operations `runtime_language_policy.py` into language-fit, migration-artifact, and AI-maintainability modules while retaining the original import surface. A second split extracted the large Operations infrastructure diagnostics orchestration into `control_plane_infrastructure.py`; the route/compatibility facade remains `control_plane_diagnostics.py`. Source-surface auditing treats >50,000 bytes or >1,000 lines as critical and >25,000 bytes or >500 lines as attention.
 
 ## 2026-10-01 hosted CI authority reconciliation
+
 Foundation remains the sole hosted GitHub Actions authority for the family. The WooCommerce 32-site public feed-hunt capability remains implemented in Operations (`tools/woocommerce_32_plugin_feed_hunt.mjs`), but its hosted CI workflow was retired from Operations and is now executed by the Foundation-owned `.github/workflows/woocommerce-32-plugin-feed-hunt.yml` at an immutable Operations revision. Operations main contains no hosted GitHub Actions workflow after this reconciliation.
 
 ### 2026-10-01 Marketplace App indirect implementation
+
 The 1,408 supplied GitHub Marketplace App records were analyzed as capability patterns rather than installation requests. Foundation now maintains a capability catalog and an App policy v2 boundary: Marketplace installation remains disabled, while the first-party Operations access App is explicitly limited to the Operations repository and `contents: read`. Foundation CI validates its usage across workflows. No external Marketplace App is a runtime dependency.
 
-
 ### 2026-10-01 hybrid & alternative capability-mining reconciliation
+
 The project-wide $0 model now treats paid, premium, hosted and proprietary ecosystems as research inputs rather than exclusion lists. The supplied MCP, GitHub Actions Marketplace, and GitHub Apps datasets are covered by `docs/HYBRID_ALTERNATIVE_ECOSYSTEM_AUDIT_2026-10-01.*`, while direct paid runtime dependencies remain forbidden. Useful public behavior, architecture, policy, resource controls, lifecycle semantics and UX may be reimplemented using native GitHub/Cloudflare capabilities, open-source components, or bounded documented free quotas subject to deterministic, security, resource, provenance, shadow, canary and rollback evidence.
 
 ## 2026-10-01 autonomous control-plane acceptance
@@ -120,13 +128,11 @@ The provider fleet workflow is operational end-to-end. Run 36844955035 generated
 
 The privileged production workflow is now manual-only (workflow_dispatch). Ordinary Foundation main pushes and autonomous merges no longer trigger production deployment. The latest attempted release before that boundary (run 36846407025) deployed the Worker pair and passed Operations provenance/policy checks, but persistence acceptance failed because the Cloudflare account had exhausted the D1 free-tier daily row-read limit. That run is not a production certification.
 
-
 ## 2026-10-01 live family-state reconciliation
 
 Current live issues: Foundation #58, #1247, #1249, #1672 and Operations #603 are the five acceptance-track items. Foundation autonomous mission/improvement issues and the Operations-main integrity drift issue remain live incident/execution state and are not folded into the acceptance matrix.
 
 Foundation is the sole hosted Actions authority. Operations remains the private runtime, provider, resource, memory, extractor/mapper and policy authority. The project integration contract binds each improvement surface to audit, quality/evolution, learning and bounded AI automation while preserving existing security, identity, resource, provenance and promotion authorities.
-
 
 ## 2026-10-01 canonical Operations production pin promotion
 
@@ -143,7 +149,6 @@ The latest maintainability pass split the Foundation WooCommerce V175 harness in
 
 The live GitHub PR queue is the authority for current PR state. Feed-recovery PRs remain a separate evidence track and are intentionally not folded into this cohesion checkpoint.
 
-
 ## 2026-10-01 Operations syntax repair checkpoint
 
 Operations main now includes the syntax repair from PR #1451 after centralized Foundation validation exposed two malformed refactor artifacts. The universal method-effectiveness bridge remains in its dedicated adapter; the legacy method-effectiveness compatibility module is valid again. The exhaustive-audit autofix module no longer contains an incomplete entrypoint stub. This repair is structural and does not change promotion authority.
@@ -157,6 +162,7 @@ Foundation main `68aff623472af4df03688ddb24f33259d1fe5532` and Operations main `
 Foundation main `2239ae23706e5ab14c61869022eca93618b74cb9` contains the repaired Operations private integrity guard. The workflow now constructs its validator input with `jq -n`, preventing empty-stdin JSON generation and preserving the fail-closed comparison against the immutable approved Operations production revision. The repair changes no authority, credential, policy, or deployment boundary.
 
 ## 2026-10-01 final live reconciliation
+
 Foundation main is `f548a468b4dcd9e7c03263a130ce76e95eafc228`; Operations main is `3c780e33772c87ec6c3b6df75a857e5404f0b861`. No Foundation or Operations pull requests remain open. Superseded autonomous missions and stale feed recovery PRs were retired; runtime/evidence issues remain open until their stated gates are actually satisfied. The current live WooCommerce V18 and emergency 30-way recovery runs are evidence work and are not treated as completed merely because their workflows started.
 
 ## Unified AI navigation and observability
@@ -167,14 +173,13 @@ The canonical human/AI navigation entrypoint is `docs/AI_SYSTEM_DIRECTORY.md`, b
 
 Foundation now carries a machine-enforced repository hygiene and code-documentation synchronization system. The canonical contract is `docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json`; changed files are checked by `tools/repository_hygiene.py` and mapped contract/document relationships by `tools/code_documentation_sync.py`. Foundation's family coordinator compares the shared contract against Operations without publishing private source contents. This is a source/CI governance capability, not runtime certification.
 
-
 ## 2026-10-02 current-main reconciliation
+
 Foundation main `092495175d56111a3ab337b7dff8ae5e78fc93e4` includes the public/private runtime migration, N4 cross-system equivalence, six-lane CrossFire, chat/SSE hardening, platform-access validation, and the project-wide verification fabric. Operations main is `7ea7d708f880492d52d36cbaf4a0da4982d19894`. Production Operations remains pinned to immutable `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f`; main/pin drift is intentionally fail-closed and is not automatic promotion. The acceptance queue is Foundation #58/#157/#1247/#1249 and Operations #603; autonomous/integrity issues remain execution/incident state. Recent main-push verification recorded successful repository hygiene, secret scan, App governance, verification fabric, nightly contract and canonical dispatch bridge checks; follow-up failures are being repaired in this reconciliation PR.
 
-
 ## 2026-10-02 autonomous incident cleanup
-Autonomous mission records #1828 and #1804 were superseded and closed as `not_planned`; this does not close Foundation acceptance #58/#157/#1247/#1249 or Operations #603. The scheduler and dispatch-target regression coverage remain active.
 
+Autonomous mission records #1828 and #1804 were superseded and closed as `not_planned`; this does not close Foundation acceptance #58/#157/#1247/#1249 or Operations #603. The scheduler and dispatch-target regression coverage remain active.
 
 ## 2026-10-02 GitHub synchronization checkpoint
 
@@ -184,7 +189,20 @@ Foundation PR #1846 is documentation-only: it refreshes family synchronization m
 
 Repository hygiene and code-documentation synchronization remain machine-enforced. The current synchronization change is being validated through the normal pull-request gate; no direct main-branch mutation or gate weakening is permitted.
 
-
 ## Live reconciliation — 2026-10-02
 
 The canonical public front door is `https://heroic-ai.pages.dev`. The GitHub-backed Cloudflare Pages project `heroic-ai` serves the frontend and routes `/health`, `/readiness`, and `/api/*` through `HEROIC_BACKEND` to the production `heroic` Worker. The immutable production Operations runtime is revision `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f`; Operations `main` remains the separate moving branch at `adc600221169cc4dadee0bdd7d68be30c58e6727`.
+
+## 2026-10-03 live continuity reconciliation
+
+Foundation main is now `919b02679846f3e64b190497a390a2d6e2f968f6` after the validated CI-boundary repair. Operations main is now `92d76decfb69030ba3c2a0d674d3584acc671823` after synchronizing the generated Foundation public core to the current Foundation revision and adding the required `quality_rules.json` contract.
+
+The current acceptance-track issues, read live from GitHub, are Foundation #58, #157, and #1249 plus Operations #603. Foundation autonomous-mission issues and the Operations #1679 integrity drift issue remain separate incident/execution state and are not folded into the acceptance queue.
+
+Cross-repository validation now materializes the canonical Foundation public core into Operations test jobs and uses both repository roots for language-fit generation. This preserves Foundation as the source of truth without vendoring duplicate source ownership in Operations.
+
+The live branch inventory remains 2,440 refs across the two repositories. Branch retirement remains fail-closed and evidence-gated; the connected API surface does not expose direct remote ref deletion, while the repository's explicit microscope-retirement workflow retains the authorization guard.
+
+## 2026-10-03 final synchronization marker
+
+The continuity documents were refreshed from the live GitHub heads after the Foundation and Operations repair merges. This marker exists only to make the final synchronization state explicit; it does not change runtime or authority behavior.
