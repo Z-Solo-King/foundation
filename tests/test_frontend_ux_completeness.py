@@ -57,3 +57,11 @@ def test_ux_bootstrap_is_parse_safe_and_event_driven():
     assert "rie:chat-updated" in text
     assert "new MutationObserver" not in text
     assert "window.setInterval(observe, 250)" not in text
+
+
+def test_chat_submit_creates_first_chat_when_none_is_active():
+    text = (ROOT / "frontend/app.js").read_text(encoding="utf-8")
+    assert "const activeChatId = chatId || api.ensureChat().id;" in text
+    assert "chat_id: activeChatId" in text
+    assert "detail: { chatId: activeChatId, requestId, body }" in text
+    assert "detail: { chatId: activeChatId, requestId, responseId, partial: Boolean(answer) }" in text
