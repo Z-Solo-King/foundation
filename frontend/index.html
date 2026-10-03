@@ -1,54 +1,47 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0b1020" />
-    <meta name="description" content="Heroic AI — evidence-grounded chat, research and capability execution." />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>Heroic AI — Chat & Research</title>
-    <link rel="stylesheet" href="./styles.css" />
-    <link rel="stylesheet" href="./ui_overrides.css" />
-    <link rel="stylesheet" href="./dashboard.css" />
-  </head>
-  <body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1020">
+    <meta name="description" content="Heroic AI - evidence-grounded chat, research and capability execution.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';">
+    <title>Heroic AI - Chat &amp; Research</title>
+    <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./ui_overrides.css">
+    <link rel="stylesheet" href="./dashboard.css">
+    <link rel="stylesheet" href="./github.css">
+</head>
+<body>
     <div class="app-shell">
       <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
-        <div class="sidebar-top"><button class="brand" data-action="new-chat" aria-label="Start a new chat"><span class="brand-mark">✦</span><span>Heroic AI</span></button><button class="icon-button mobile-close" data-action="close-sidebar" aria-label="Close sidebar">×</button></div>
-        <button class="primary new-chat-button" data-action="new-chat">＋ <span>New chat</span><kbd>Ctrl K</kbd></button>
-        <label class="search-box">⌕ <span class="sr-only">Search chats</span><input id="chat-search" type="search" placeholder="Search chats" autocomplete="off" /></label>
+        <div class="sidebar-top"><button class="brand" data-action="new-chat" aria-label="Start a new chat"><span class="brand-mark ux-brand-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5"></path></svg></span><span>Heroic AI</span></button><button class="icon-button mobile-close" data-action="close-sidebar" aria-label="Close sidebar"><span class="ux-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg></span></button></div>
+        <button class="primary new-chat-button" data-action="new-chat"><span class="ux-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14v10H9l-4 3V6Z"></path></svg></span><span>New chat</span><kbd>Ctrl K</kbd></button>
+        <label class="search-box"><span class="ux-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 4 4"></path></svg></span><span class="sr-only">Search chats</span><input id="chat-search" type="search" placeholder="Search chats" autocomplete="off"></label>
         <nav class="nav-section" aria-label="Workspace">
-          <button class="nav-item active" data-view="chats" aria-current="page">◌ <span>Chats</span></button>
-          <button class="nav-item" data-view="projects" aria-current="false">▣ <span>Projects</span></button>
-          <button class="nav-item" data-view="saved" aria-current="false">☆ <span>Saved</span></button>
-          <button class="nav-item" data-action="open-system-dashboard">▤ <span>System dashboard</span></button>
+          <button class="nav-item active" data-view="chats" aria-current="true"><span class="ux-icon">CHAT</span><span>Chats</span></button>
+          <button class="nav-item" data-view="projects" aria-current="false"><span class="ux-icon">FOLDER</span><span>Projects</span></button>
+          <button class="nav-item" data-view="saved" aria-current="false"><span class="ux-icon">SAVE</span><span>Saved</span></button>
+          <button class="nav-item" data-view="github" aria-current="false"><span class="ux-icon">GH</span><span>GitHub</span></button>
+          <button class="nav-item" data-action="open-system-dashboard"><span class="ux-icon">GRID</span><span>System dashboard</span></button>
         </nav>
         <div class="sidebar-label">Recent</div>
-        <div class="chat-list" id="chat-list" aria-live="polite"></div>
-        <div class="sidebar-bottom"><button class="nav-item" data-view="settings" aria-current="false">⚙ <span>Settings</span></button><button class="connection-pill" id="connection-pill" data-action="backend-check" title="Check backend status">Checking backend…</button></div>
+        <div class="chat-list" id="chat-list" aria-live="polite"><div class="sidebar-empty">No matching chats.</div></div>
+        <div class="sidebar-bottom"><button class="nav-item" data-view="settings" aria-current="false"><span class="ux-icon">SET</span><span>Settings</span></button><button class="connection-pill" id="connection-pill" data-action="backend-check" title="Check backend status">Session token required for live chat</button></div>
       </aside>
-
       <main class="main-area">
-        <header class="topbar"><button class="icon-button menu-button" data-action="open-sidebar" aria-label="Open sidebar">☰</button><div class="mobile-title" id="mobile-title">New chat</div><div class="topbar-brand">Heroic AI</div><div class="topbar-actions"><button class="icon-button" data-action="backend-check" aria-label="Check backend status">●</button><button class="icon-button" data-action="open-system-dashboard" aria-label="Open system dashboard">▤</button><button class="icon-button" data-action="toggle-workspace" aria-label="Show research workspace">▥</button><button class="icon-button" data-action="open-queue" aria-label="Open message queue">≡<span class="queue-count" id="queue-count" hidden>0</span></button></div></header>
-
+        <header class="topbar"><button class="icon-button menu-button" data-action="open-sidebar" aria-label="Open sidebar"><span class="ux-icon">MENU</span></button><div class="mobile-title" id="mobile-title">New chat</div><div class="topbar-brand">Heroic AI</div><div class="topbar-actions"><button class="icon-button" data-action="backend-check" aria-label="Check backend status">CHECK</button><button class="icon-button" data-action="open-system-dashboard" aria-label="Open system dashboard">GRID</button><button class="icon-button" data-action="toggle-workspace" aria-label="Show research workspace">WORK</button><button class="icon-button" data-action="open-queue" aria-label="Open message queue">QUEUE</button></div></header>
         <section class="chat-layout">
           <div class="conversation">
-            <div class="conversation-scroll" id="conversation-scroll"><div class="empty-state" id="empty-state"><div class="empty-mark">✦</div><h1>What do you want to ask Heroic AI?</h1><p>Heroic AI routes conversational requests through the governed backend and uses Research mode when evidence collection is required.</p><div class="starter-grid"><button data-starter="Compare two products with verified specs and current prices">Compare products</button><button data-starter="Research the latest information and cite the sources">Research latest</button><button data-starter="Inspect a URL and show observed source records">Inspect a URL</button></div></div></div>
-            <div class="composer-wrap"><div class="mode-switch" role="tablist" aria-label="Conversation mode"><button class="mode active" data-mode="chat" role="tab" aria-selected="true">Chat</button><button class="mode" data-mode="research" role="tab" aria-selected="false" tabindex="-1">Research</button></div><div class="composer"><textarea id="prompt" rows="1" placeholder="Ask Heroic AI…" aria-label="Message" maxlength="12000"></textarea><button class="composer-icon" data-action="voice" aria-label="Voice input">◉</button><button class="queue-send" id="queue-button" data-action="queue" aria-label="Queue research" title="Queue research (Ctrl/Cmd+Enter)" hidden>Queue</button><button class="send-button" data-action="send" aria-label="Send">↑</button></div><div class="composer-hint"><span id="composer-status">Chat uses the governed Heroic AI conversational contract.</span><span>Enter to send · Shift+Enter for new line · Ctrl/Cmd+Enter to queue in Research mode</span></div></div>
+            <div class="conversation-scroll" id="conversation-scroll"><div class="empty-state" id="empty-state"><div class="empty-mark ux-brand-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5"></path></svg></div><h1>What do you want to ask Heroic AI?</h1><p>Heroic AI routes conversational requests through the governed backend and uses Research mode when evidence collection is required.</p><div class="starter-grid"><button data-starter="Compare two products with verified specs and current prices">Compare products</button><button data-starter="Research the latest information and cite the sources">Research latest</button><button data-starter="Inspect a URL and show observed source records">Inspect a URL</button></div></div></div>
+            <div class="composer-wrap"><div class="mode-switch" role="tablist" aria-label="Conversation mode"><button class="mode active" data-mode="chat" role="tab" aria-selected="true" tabindex="0">Chat</button><button class="mode" data-mode="research" role="tab" aria-selected="false" tabindex="-1">Research</button></div><div class="composer"><textarea id="prompt" rows="1" placeholder="Ask Heroic AI…" aria-label="Message" maxlength="12000"></textarea><button class="composer-icon" data-action="voice" aria-label="Voice input">MIC</button><button class="queue-send" id="queue-button" data-action="queue" aria-label="Queue research" title="Queue is available in Research mode" hidden disabled aria-hidden="true">Queue</button><button type="button" class="composer-icon ux-stop" title="Stop response" aria-label="Stop response" hidden>STOP</button><button class="send-button" data-action="send" aria-label="Send">SEND</button></div><div class="composer-hint"><span id="composer-status">Chat uses the governed Heroic AI conversational contract.</span><span>Enter to send · Shift+Enter for new line · Ctrl/Cmd+Enter to queue in Research mode</span><span class="ux-counter" aria-live="polite">0 / 12,000</span></div></div>
           </div>
-
-          <aside class="workspace" id="workspace" aria-label="Research workspace"><div class="workspace-header"><div><span class="eyebrow">Heroic AI</span><h2>Research workspace</h2></div><button class="icon-button" data-action="close-workspace" aria-label="Close workspace">×</button></div><div class="workspace-body" id="workspace-body"><div class="workspace-card"><strong>No active research run</strong><p>Switch to Research mode to submit a real run.</p></div></div></aside>
+          <aside class="workspace" id="workspace" aria-label="Research workspace"><div class="workspace-header"><div><span class="eyebrow">Heroic AI</span><h2>Research workspace</h2></div><button class="icon-button" data-action="close-workspace" aria-label="Close workspace">X</button></div><div class="workspace-body" id="workspace-body"><div class="workspace-card"><strong>No active research run</strong><p>Switch to Research mode to submit a real run.</p></div></div></aside>
         </section>
       </main>
-
-      <aside class="message-queue" id="message-queue" aria-hidden="true"><div class="queue-header"><div><span class="eyebrow">Heroic AI</span><h2>Research queue</h2></div><button class="icon-button" data-action="close-queue" aria-label="Close queue">×</button></div><p class="queue-description">Research follow-ups are durable browser-local queue items. They preserve FIFO order and never interrupt an active backend run.</p><div id="queue-list" class="queue-list"></div><div class="queue-footer"><button class="secondary" data-action="clear-queue">Clear</button><span id="queue-status">Nothing waiting</span></div></aside>
-      <section class="system-dashboard" id="system-dashboard" aria-label="Heroic AI system dashboard" aria-hidden="true">
-        <div class="dashboard-shell">
-          <header class="dashboard-header"><div><span class="eyebrow">Heroic AI</span><h2>System dashboard</h2><p class="dashboard-subtitle">GitHub, Cloudflare, Backblaze B2, jobs, usage, incidents and resource telemetry.</p></div><div class="dashboard-actions"><button class="secondary" data-action="refresh-system-dashboard">Refresh</button><button class="icon-button dashboard-close" data-action="close-system-dashboard" aria-label="Close system dashboard">×</button></div></header>
-          <div id="system-dashboard-body" class="dashboard-refreshing"><p class="dashboard-empty">Loading operational telemetry…</p></div>
-        </div>
-      </section>
-      <div class="queue-overlay" data-action="close-queue"></div><div class="mobile-overlay" data-action="close-sidebar"></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <aside class="message-queue" id="message-queue" aria-hidden="true"><div class="queue-header"><div><span class="eyebrow">Heroic AI</span><h2>Research queue</h2></div><button class="icon-button" data-action="close-queue" aria-label="Close queue">X</button></div><p class="queue-description">Research follow-ups are durable browser-local queue items. They preserve FIFO order and never interrupt an active backend run.</p><div id="queue-list" class="queue-list"><div class="queue-empty">Queue is empty.</div></div><div class="queue-footer"><button class="secondary" data-action="clear-queue">Clear</button><span id="queue-status">Nothing waiting</span></div></aside>
+      <section class="system-dashboard" id="system-dashboard" aria-label="Heroic AI system dashboard" aria-hidden="true"><div class="dashboard-shell"><header class="dashboard-header"><div><span class="eyebrow">Heroic AI</span><h2>System dashboard</h2><p class="dashboard-subtitle">GitHub, Cloudflare, Backblaze B2, jobs, usage, incidents and resource telemetry.</p></div><div class="dashboard-actions"><button class="secondary" data-action="refresh-system-dashboard">Refresh</button><button class="icon-button dashboard-close" data-action="close-system-dashboard" aria-label="Close system dashboard">×</button></div></header><div id="system-dashboard-body" class="dashboard-refreshing"><p class="dashboard-empty">Loading operational telemetry…</p></div></div></section>
+      <div class="queue-overlay" data-action="close-queue">X</div><div class="mobile-overlay" data-action="close-sidebar">X</div><div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>
     <script src="./generated/feedback.js"></script>
     <script src="./frontend_state.js"></script>
@@ -56,7 +49,7 @@
     <script src="./markdown_renderer.js"></script>
     <script src="./chat_store.js"></script>
     <script src="./chat_view.js"></script>
-    <script src="./workspace_view.js"></script>
+    <script src="./github_view.js"></script>
     <script src="./composer.js"></script>
     <script src="./app.js"></script>
     <script src="./dashboard.js"></script>
@@ -65,5 +58,5 @@
     <script src="./generated/lifecycle_queue_controls.js"></script>
     <script src="./feedback_bridge.js"></script>
     <script src="./ux_enhancements.js"></script>
-  </body>
+</body>
 </html>
