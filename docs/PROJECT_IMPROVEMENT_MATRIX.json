@@ -4,90 +4,40 @@
   "components": {
     "chatbot": {
       "owner": "operations",
-      "canonical_paths": [
-        "private/chatbot/"
-      ],
+      "canonical_paths": ["private/chatbot/"],
       "workflows": [
         "live-chatbot-production-smoke.yml",
         "nightly-invariants.yml",
         "operations-centralized-validation.yml"
       ],
-      "ai_task_families": [
-        "chatbot",
-        "action_plan",
-        "workflow_assist",
-        "audit_assist"
-      ],
-      "evidence": [
-        "functional",
-        "security",
-        "policy",
-        "provenance",
-        "runtime"
-      ],
-      "cross_cutting_controls": [
-        "audit",
-        "quality",
-        "learning",
-        "ai_automation"
-      ],
-      "evidence_contract": [
-        "observation",
-        "evaluation",
-        "provenance"
-      ]
+      "ai_task_families": ["chatbot", "action_plan", "workflow_assist", "audit_assist"],
+      "evidence": ["functional", "security", "policy", "provenance", "runtime"],
+      "cross_cutting_controls": ["audit", "quality", "learning", "ai_automation"],
+      "evidence_contract": ["observation", "evaluation", "provenance"]
     },
     "extractor": {
       "owner": "operations",
-      "canonical_paths": [
-        "extractor_mapper/"
-      ],
+      "canonical_paths": ["extractor_mapper/"],
       "workflows": [
         "extractor-surface-governance.yml",
         "live-extractor-benchmark.yml",
         "operations-centralized-validation.yml"
       ],
-      "ai_task_families": [
-        "extraction_assist",
-        "scan_triage",
-        "audit_assist"
-      ],
-      "evidence": [
-        "differential",
-        "security",
-        "policy",
-        "provenance",
-        "performance"
-      ],
-      "cross_cutting_controls": [
-        "audit",
-        "quality",
-        "learning",
-        "ai_automation"
-      ],
-      "evidence_contract": [
-        "observation",
-        "evaluation",
-        "provenance"
-      ]
+      "ai_task_families": ["extraction_assist", "scan_triage", "audit_assist"],
+      "evidence": ["differential", "security", "policy", "provenance", "performance"],
+      "cross_cutting_controls": ["audit", "quality", "learning", "ai_automation"],
+      "evidence_contract": ["observation", "evaluation", "provenance"]
     },
     "mapper": {
       "owner": "foundation+operations",
-      "canonical_paths": [
-        "foundation_core/",
-        "extractor_mapper/"
-      ],
+      "canonical_paths": ["foundation_core/", "extractor_mapper/"],
       "workflows": [
         "observation-contract-shadow.yml",
         "hybrid-language-pilots.yml",
         "polyglot-migration-review.yml",
         "exhaustive-six-lane-audit.yml"
       ],
-      "ai_task_families": [
-        "extraction_assist",
-        "audit_assist",
-        "action_plan"
-      ],
+      "ai_task_families": ["extraction_assist", "audit_assist", "action_plan"],
       "evidence": [
         "differential",
         "errors",
@@ -101,51 +51,21 @@
         "canary",
         "rollback"
       ],
-      "cross_cutting_controls": [
-        "audit",
-        "quality",
-        "learning",
-        "ai_automation"
-      ],
-      "evidence_contract": [
-        "observation",
-        "evaluation",
-        "provenance"
-      ]
+      "cross_cutting_controls": ["audit", "quality", "learning", "ai_automation"],
+      "evidence_contract": ["observation", "evaluation", "provenance"]
     },
     "research": {
       "owner": "foundation+operations",
-      "canonical_paths": [
-        "nightly research executor",
-        "private/research/"
-      ],
+      "canonical_paths": ["nightly research executor", "private/research/"],
       "workflows": [
         "nightly-research-provider-preflight.yml",
         "nightly-multi-agent-research-v3.yml",
         "live-nightly-research-canary.yml"
       ],
-      "ai_task_families": [
-        "research",
-        "search_synthesis",
-        "action_plan"
-      ],
-      "evidence": [
-        "provider",
-        "coverage",
-        "diagnosis",
-        "provenance"
-      ],
-      "cross_cutting_controls": [
-        "audit",
-        "quality",
-        "learning",
-        "ai_automation"
-      ],
-      "evidence_contract": [
-        "observation",
-        "evaluation",
-        "provenance"
-      ]
+      "ai_task_families": ["research", "search_synthesis", "action_plan"],
+      "evidence": ["provider", "coverage", "diagnosis", "provenance"],
+      "cross_cutting_controls": ["audit", "quality", "learning", "ai_automation"],
+      "evidence_contract": ["observation", "evaluation", "provenance"]
     },
     "provider_fleet": {
       "owner": "operations",
@@ -159,47 +79,20 @@
         "operations-centralized-validation.yml",
         "live-ai-provider-crossfire.yml"
       ],
-      "ai_task_families": [
-        "action_plan",
-        "audit_assist",
-        "workflow_assist"
-      ],
-      "evidence": [
-        "capability",
-        "quota",
-        "privacy",
-        "runtime",
-        "errors",
-        "cost"
-      ],
-      "cross_cutting_controls": [
-        "audit",
-        "quality",
-        "learning",
-        "ai_automation"
-      ],
-      "evidence_contract": [
-        "observation",
-        "evaluation",
-        "provenance"
-      ]
+      "ai_task_families": ["action_plan", "audit_assist", "workflow_assist"],
+      "evidence": ["capability", "quota", "privacy", "runtime", "errors", "cost"],
+      "cross_cutting_controls": ["audit", "quality", "learning", "ai_automation"],
+      "evidence_contract": ["observation", "evaluation", "provenance"]
     },
     "runtime_governance": {
       "owner": "operations",
-      "canonical_paths": [
-        "private/resource_governance*",
-        "private/runtime_policy*"
-      ],
+      "canonical_paths": ["private/resource_governance*", "private/runtime_policy*"],
       "workflows": [
         "nightly-invariants.yml",
         "operations-centralized-validation.yml",
         "cross-repository-contract-drift.yml"
       ],
-      "ai_task_families": [
-        "audit_assist",
-        "action_plan",
-        "workflow_assist"
-      ],
+      "ai_task_families": ["audit_assist", "action_plan", "workflow_assist"],
       "evidence": [
         "admission",
         "reservation",
@@ -208,154 +101,60 @@
         "policy",
         "resource"
       ],
-      "cross_cutting_controls": [
-        "audit",
-        "quality",
-        "learning",
-        "ai_automation"
-      ],
-      "evidence_contract": [
-        "observation",
-        "evaluation",
-        "provenance"
-      ]
+      "cross_cutting_controls": ["audit", "quality", "learning", "ai_automation"],
+      "evidence_contract": ["observation", "evaluation", "provenance"]
     },
     "cloudflare_runtime": {
       "owner": "foundation+operations",
-      "canonical_paths": [
-        "worker/",
-        "operations control-plane"
-      ],
-      "workflows": [
-        "public-worker-live-probe.yml",
-        "live-chatbot-production-smoke.yml"
-      ],
-      "ai_task_families": [
-        "cloudflare_diagnostic",
-        "audit_assist",
-        "workflow_assist"
-      ],
-      "evidence": [
-        "topology",
-        "binding",
-        "auth",
-        "runtime",
-        "receipt"
-      ],
+      "canonical_paths": ["worker/", "operations control-plane"],
+      "workflows": ["public-worker-live-probe.yml", "live-chatbot-production-smoke.yml"],
+      "ai_task_families": ["cloudflare_diagnostic", "audit_assist", "workflow_assist"],
+      "evidence": ["topology", "binding", "auth", "runtime", "receipt"],
       "mutation_policy": "read_or_existing_authority_only",
-      "cross_cutting_controls": [
-        "audit",
-        "quality",
-        "learning",
-        "ai_automation"
-      ],
-      "evidence_contract": [
-        "observation",
-        "evaluation",
-        "provenance"
-      ]
+      "cross_cutting_controls": ["audit", "quality", "learning", "ai_automation"],
+      "evidence_contract": ["observation", "evaluation", "provenance"]
     },
     "storage_b2": {
       "owner": "foundation+operations",
-      "canonical_paths": [
-        "Backblaze B2 artifact/backup boundary"
-      ],
+      "canonical_paths": ["Backblaze B2 artifact/backup boundary"],
       "workflows": [
         "b2-repository-backup.yml",
         "b2-restore-verification.yml",
         "live-chatbot-production-smoke.yml"
       ],
-      "ai_task_families": [
-        "cloudflare_diagnostic",
-        "audit_assist"
-      ],
-      "evidence": [
-        "authorization",
-        "integrity",
-        "restore",
-        "provenance"
-      ],
+      "ai_task_families": ["cloudflare_diagnostic", "audit_assist"],
+      "evidence": ["authorization", "integrity", "restore", "provenance"],
       "mutation_policy": "controlled_backup_or_restore_verification_only",
-      "cross_cutting_controls": [
-        "audit",
-        "quality",
-        "learning",
-        "ai_automation"
-      ],
-      "evidence_contract": [
-        "observation",
-        "evaluation",
-        "provenance"
-      ]
+      "cross_cutting_controls": ["audit", "quality", "learning", "ai_automation"],
+      "evidence_contract": ["observation", "evaluation", "provenance"]
     },
     "security_ci": {
       "owner": "foundation",
-      "canonical_paths": [
-        ".github/workflows/",
-        "tools/validate_workflow_authority.py"
-      ],
+      "canonical_paths": [".github/workflows/", "tools/validate_workflow_authority.py"],
       "workflows": [
         "full-history-secret-scan.yml",
         "actions-static-analysis.yml",
         "codeql.yml",
         "release-quality-regression.yml"
       ],
-      "ai_task_families": [
-        "audit_assist",
-        "scan_triage",
-        "action_plan"
-      ],
-      "evidence": [
-        "secret_scan",
-        "workflow_security",
-        "static_analysis",
-        "regression"
-      ],
-      "cross_cutting_controls": [
-        "audit",
-        "quality",
-        "learning",
-        "ai_automation"
-      ],
-      "evidence_contract": [
-        "observation",
-        "evaluation",
-        "provenance"
-      ]
+      "ai_task_families": ["audit_assist", "scan_triage", "action_plan"],
+      "evidence": ["secret_scan", "workflow_security", "static_analysis", "regression"],
+      "cross_cutting_controls": ["audit", "quality", "learning", "ai_automation"],
+      "evidence_contract": ["observation", "evaluation", "provenance"]
     },
     "feed_recovery": {
       "owner": "foundation+operations",
-      "canonical_paths": [
-        "private/feed_recovery/"
-      ],
+      "canonical_paths": ["private/feed_recovery/"],
       "workflows": [
         "woocommerce-clean-recovery.yml",
         "native-google-feed-hunt.yml",
         "woocommerce-identified-family-exhaustive-v5.yml"
       ],
-      "ai_task_families": [
-        "extraction_assist",
-        "scan_triage",
-        "audit_assist"
-      ],
-      "evidence": [
-        "current_payload",
-        "native_namespace",
-        "product_fields",
-        "provenance"
-      ],
+      "ai_task_families": ["extraction_assist", "scan_triage", "audit_assist"],
+      "evidence": ["current_payload", "native_namespace", "product_fields", "provenance"],
       "mutation_policy": "public_acquisition_only_no_bypass",
-      "cross_cutting_controls": [
-        "audit",
-        "quality",
-        "learning",
-        "ai_automation"
-      ],
-      "evidence_contract": [
-        "observation",
-        "evaluation",
-        "provenance"
-      ]
+      "cross_cutting_controls": ["audit", "quality", "learning", "ai_automation"],
+      "evidence_contract": ["observation", "evaluation", "provenance"]
     }
   },
   "system_integration_contract": "docs/SYSTEM_INTEGRATION_CONTRACT.json",
@@ -363,15 +162,8 @@
     "ai_automation": {
       "owner": "foundation",
       "canonical": "tools/autonomous_engineering_supervisor.mjs",
-      "consumes": [
-        "project-improvement-matrix",
-        "evidence/results",
-        "mission state"
-      ],
-      "produces": [
-        "bounded workflow dispatch decisions",
-        "mission receipts"
-      ],
+      "consumes": ["project-improvement-matrix", "evidence/results", "mission state"],
+      "produces": ["bounded workflow dispatch decisions", "mission receipts"],
       "forbidden": [
         "acceptance authority",
         "policy mutation",
@@ -393,23 +185,10 @@
     },
     "ai_api": {
       "owner": "operations",
-      "canonical": [
-        "private/chatbot/provider_runtime.py",
-        "private/multi_agent/governed_llm.py"
-      ],
-      "consumes": [
-        "request/task contract",
-        "resource policy",
-        "provider capability state"
-      ],
-      "produces": [
-        "provider/model result",
-        "runtime/economic evidence"
-      ],
-      "forbidden": [
-        "self-authorized provider promotion",
-        "billing bypass"
-      ]
+      "canonical": ["private/chatbot/provider_runtime.py", "private/multi_agent/governed_llm.py"],
+      "consumes": ["request/task contract", "resource policy", "provider capability state"],
+      "produces": ["provider/model result", "runtime/economic evidence"],
+      "forbidden": ["self-authorized provider promotion", "billing bypass"]
     },
     "audit": {
       "owner": "foundation+operations",
@@ -419,40 +198,16 @@
         "tools/master_audit.py",
         "tools/exhaustive_audit.py"
       ],
-      "consumes": [
-        "repository state",
-        "canonical maps",
-        "live evidence where permitted"
-      ],
-      "produces": [
-        "findings",
-        "receipts",
-        "candidate work items"
-      ],
-      "forbidden": [
-        "direct production promotion"
-      ]
+      "consumes": ["repository state", "canonical maps", "live evidence where permitted"],
+      "produces": ["findings", "receipts", "candidate work items"],
+      "forbidden": ["direct production promotion"]
     },
     "quality": {
       "owner": "operations",
-      "canonical": [
-        "private/evolution_score.py",
-        "private/evolution_engine.py"
-      ],
-      "consumes": [
-        "versioned observations"
-      ],
-      "produces": [
-        "domain-aware scores",
-        "confidence",
-        "uncertainty",
-        "trend",
-        "learning actions"
-      ],
-      "hard_gates": [
-        "security_policy",
-        "provenance"
-      ]
+      "canonical": ["private/evolution_score.py", "private/evolution_engine.py"],
+      "consumes": ["versioned observations"],
+      "produces": ["domain-aware scores", "confidence", "uncertainty", "trend", "learning actions"],
+      "hard_gates": ["security_policy", "provenance"]
     },
     "learning": {
       "owner": "operations",
@@ -461,50 +216,23 @@
         "private/chatbot/chat_learning_index.py",
         "private/chatbot/feedback_evaluation_bridge.py"
       ],
-      "consumes": [
-        "bounded conversation feedback"
-      ],
-      "produces": [
-        "candidate learning signals",
-        "evaluation case candidates"
-      ],
-      "forbidden": [
-        "authoritative evidence",
-        "policy mutation"
-      ]
+      "consumes": ["bounded conversation feedback"],
+      "produces": ["candidate learning signals", "evaluation case candidates"],
+      "forbidden": ["authoritative evidence", "policy mutation"]
     },
     "self_evolution": {
       "owner": "operations",
       "canonical": "private/self_evolution_boundary.py",
-      "consumes": [
-        "candidate configuration + evaluation evidence"
-      ],
-      "produces": [
-        "candidate/shadow/canary authorization decision"
-      ],
-      "forbidden": [
-        "protected authority mutation",
-        "production-stage self-promotion"
-      ]
+      "consumes": ["candidate configuration + evaluation evidence"],
+      "produces": ["candidate/shadow/canary authorization decision"],
+      "forbidden": ["protected authority mutation", "production-stage self-promotion"]
     },
     "mapper_extractor": {
       "owner": "operations+foundation",
-      "canonical": [
-        "operations/extractor_mapper/",
-        "foundation/foundation_core/"
-      ],
-      "consumes": [
-        "source acquisition observations",
-        "mapping contracts"
-      ],
-      "produces": [
-        "bounded observations",
-        "deterministic canonical mapping"
-      ],
-      "forbidden": [
-        "duplicate mapper authority",
-        "mapping without provenance"
-      ]
+      "canonical": ["operations/extractor_mapper/", "foundation/foundation_core/"],
+      "consumes": ["source acquisition observations", "mapping contracts"],
+      "produces": ["bounded observations", "deterministic canonical mapping"],
+      "forbidden": ["duplicate mapper authority", "mapping without provenance"]
     },
     "evidence": {
       "owner": "operations",
@@ -514,13 +242,8 @@
         "baseline/candidate/corpus identity",
         "optional universal quality metrics"
       ],
-      "produces": [
-        "verifiable evaluation receipt"
-      ],
-      "feeds": [
-        "quality",
-        "promotion"
-      ]
+      "produces": ["verifiable evaluation receipt"],
+      "feeds": ["quality", "promotion"]
     }
   },
   "integration_flow": [
