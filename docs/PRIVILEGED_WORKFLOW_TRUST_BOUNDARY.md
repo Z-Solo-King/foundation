@@ -106,3 +106,8 @@ The protected required-status contexts remain `Public tests` and `Analyze python
 The Migration Factory CrossFire writes each Operations-lens receipt relative to the Operations root, avoiding the previous double-prefixed `operations/operations/.runtime/` path. The artifact aggregation contract remains twelve reports across six independent lanes and two repositories.
 
 The cross-repository drift regression test resolves its Python imports from both the Foundation checkout and the authenticated Operations checkout. Foundation remains the authority for the drift policy; Operations-owned governance mechanics are consumed as a compatibility dependency rather than copied into Foundation.
+## Native feed discovery provenance — 2026-10-04
+
+The legacy manual .github/workflows/native-google-feed-hunt.yml remains a read-only fallback and does not hold production or provider credentials. Its candidate classes are intentionally different: guessed feed paths must remain on the site's own host, while XML URLs explicitly exposed by public directory indexes, HTML, robots declarations or sitemap documents may be cross-origin. An explicitly discovered feed may redirect, but the redirect must remain on the discovered feed host. Accepted evidence records its discovery provenance (path_guess, directory_index_link or explicit_page_reference) so transport failures are not conflated with candidate-negative results.
+
+This boundary does not permit authentication, challenge/CAPTCHA bypass, clearance-cookie replay, or arbitrary cross-origin expansion. The current canonical execution remains the WooCommerce Native XML Recovery V18 path; the manual hunter is evidence-recovery fallback only.
