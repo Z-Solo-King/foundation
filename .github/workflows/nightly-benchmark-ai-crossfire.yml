@@ -32,9 +32,17 @@ jobs:
           - { id: "schema-auditor", role: "schema auditor", model: "@cf/zai-org/glm-4.7-flash" }
           - { id: "schema-skeptic", role: "schema skeptic", model: "@cf/google/gemma-4-26b-a4b-it" }
           - { id: "coverage-auditor", role: "coverage auditor", model: "@cf/zai-org/glm-4.7-flash" }
-          - { id: "coverage-skeptic", role: "coverage skeptic", model: "@cf/google/gemma-4-26b-a4b-it" }
+          - {
+              id: "coverage-skeptic",
+              role: "coverage skeptic",
+              model: "@cf/google/gemma-4-26b-a4b-it",
+            }
           - { id: "failure-auditor", role: "failure auditor", model: "@cf/zai-org/glm-4.7-flash" }
-          - { id: "evidence-skeptic", role: "evidence skeptic", model: "@cf/google/gemma-4-26b-a4b-it" }
+          - {
+              id: "evidence-skeptic",
+              role: "evidence skeptic",
+              model: "@cf/google/gemma-4-26b-a4b-it",
+            }
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
