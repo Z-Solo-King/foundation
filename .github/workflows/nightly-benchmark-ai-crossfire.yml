@@ -43,6 +43,21 @@ jobs:
           test -n "$run_id"
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
+      - name: Validate benchmark run provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.run.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json name,status,conclusion,headSha > .runtime/benchmark-run.json
+          jq -e '
+            (.name == "Autonomous benchmark"
+              or .name == "Autonomous Benchmark"
+              or .name == "autonomous-benchmark")
+            and .status == "completed"
+            and .conclusion == "success"
+          ' .runtime/benchmark-run.json >/dev/null
+
       - name: Download final evidence
         env:
           GH_TOKEN: ${{ github.token }}
