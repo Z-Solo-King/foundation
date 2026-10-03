@@ -258,3 +258,7 @@ The protected public acceptance contract and the privileged production-release v
 ## 2026-10-04 final production reconcile after auth-boundary fix
 
 The certified Operations authorization assertion is aligned with `backend.worker_auth.authorized`, and the guarded production release path is ready for its final controlled execution. This commit is only the one-shot `chore:` trigger; it introduces no deployment authority or provider configuration change.
+
+## 2026-10-04 final controlled production reconcile after audit correction
+
+Operations PR #1589 corrected the cross-repository audit tooling to match the current two-repository architecture and was promoted to the immutable production pin. Foundation PR #1954 synchronized all production/research pin consumers to `27bbce915f30751e32096de75905a2919f232d93`. This commit is the one-shot controlled production-release trigger; no deployment authority, provider credential set, or acceptance policy is changed by the trigger itself.
