@@ -28,6 +28,20 @@ jobs:
       PUBLIC_WORKER_URL: https://heroic-ai.pages.dev
       PYTHONUNBUFFERED: "1"
     steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Resolve expected Operations production pin
+        id: operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          ref="$(jq -er '.pins.production_runtime.sha' docs/OPERATIONS_PIN_MANIFEST.json)"
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]]
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
       - name: Resolve benchmark run
         id: run
         env:
@@ -47,6 +61,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ steps.run.outputs.run_id }}
+          EXPECTED_OPERATIONS_REF: ${{ steps.operations.outputs.ref }}
         run: |
           set -euo pipefail
           gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json name,status,conclusion,headSha,headBranch,event > .runtime/benchmark-run.json
@@ -109,6 +124,7 @@ jobs:
               {
                   "schema": "nightly-benchmark-ai-crossfire-request/v2",
                   "run_id": os.environ["RUN_ID"],
+                  "expected_operations_ref": os.environ["EXPECTED_OPERATIONS_REF"],
                   "evidence": evidence,
               },
               separators=(",", ":"),
