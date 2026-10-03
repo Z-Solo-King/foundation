@@ -1,4 +1,4 @@
-# Canonical merge-gate workflow; required by the repository main ruleset.
+# Canonical merge-gate workflow; required by the repository main ruleset. Required status contexts: Public tests, Analyze python.
 name: required PR checks
 
 on:
