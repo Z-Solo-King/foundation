@@ -63,11 +63,13 @@ jobs:
           repository: Z-Solo-King/operations
           ref: ${{ steps.operations.outputs.ref }}
           token: ${{ steps.operations-token.outputs.token }}
-          path: ${{ runner.temp }}/operations-provider-benchmark
+          path: operations-provider-benchmark
           persist-credentials: false
 
       - name: Validate platform access cross-fire contract
-        working-directory: ${{ runner.temp }}/operations-provider-benchmark
+        working-directory: operations-provider-benchmark
+        env:
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations-provider-benchmark
         run: |
           set -euo pipefail
           python - <<'PY'
@@ -83,8 +85,17 @@ jobs:
       - name: Run private provider cross-fire
         env:
           PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
           HEROIC_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          OPERATIONS_CROSSFIRE_RUNNER: ${{ runner.temp }}/operations-provider-benchmark/private/benchmark/ai_provider_crossfire.py
+          OPERATIONS_CROSSFIRE_RUNNER: ${{ github.workspace }}/operations-provider-benchmark/private/benchmark/ai_provider_crossfire.py
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations-provider-benchmark
         run: |
           set +e
           mkdir -p .runtime/live-ai-crossfire
@@ -92,19 +103,10 @@ jobs:
           status=$?
           set -e
           if [ "$status" -ne 0 ]; then
-            if grep -q '^need at least 2 configured AI providers for cross-fire;' .runtime/live-ai-crossfire/runner.log; then
-              provider_count=$(sed -n 's/.*found \([0-9][0-9]*\)$/\1/p' .runtime/live-ai-crossfire/runner.log | tail -1)
+            if grep -q "^need at least 2 configured AI providers for cross-fire;" .runtime/live-ai-crossfire/runner.log; then
+              provider_count=$(sed -n "s/.*found \([0-9][0-9]*\)$/\1/p" .runtime/live-ai-crossfire/runner.log | tail -1)
               provider_count="${provider_count:-0}"
-              jq -n --argjson provider_count "$provider_count" '{
-                schema:"live-ai-provider-crossfire-summary/v1",
-                generated_at:(now|todate),
-                comparison_state:"comparison_unavailable",
-                limitation:"fewer than two configured direct providers; comparative cross-fire is not claimed",
-                provider_count:$provider_count,
-                providers:[],
-                call_count:0,
-                batch_wall_ms:null
-              }' > .runtime/live-ai-crossfire/private.json
+              jq -n --argjson provider_count "$provider_count" '{schema:"live-ai-provider-crossfire-summary/v1",generated_at:(now|todate),comparison_state:"comparison_unavailable",limitation:"fewer than two configured direct providers; comparative cross-fire is not claimed",provider_count:$provider_count,providers:[],call_count:0,batch_wall_ms:null}' > .runtime/live-ai-crossfire/private.json
               echo "Provider cross-fire comparison unavailable; recorded bounded non-comparative receipt."
             else
               cat .runtime/live-ai-crossfire/runner.log
@@ -120,9 +122,20 @@ jobs:
           test -s .runtime/live-ai-crossfire/private.json
           jq '{schema:"live-ai-provider-crossfire-summary/v1",generated_at,comparison_state:(.comparison_state // "complete"),limitation:(.limitation // null),provider_count:(.providers|length),call_count,batch_wall_ms,successful_calls:([.providers[]?.successes]|add // 0),failed_calls:([.providers[]?.failures]|add // 0),quality_passes:([.providers[]?.quality_passes]|add // 0),quality_total:([.providers[]?.quality_total]|add // 0)}' .runtime/live-ai-crossfire/private.json > .runtime/live-ai-crossfire/summary.json
 
+      - name: Enforce comparative benchmark availability
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          comparison_state="$(jq -r '.comparison_state // "complete"' .runtime/live-ai-crossfire/summary.json)"
+          if [ "$comparison_state" = "comparison_unavailable" ]; then
+            echo "Provider CrossFire incomplete: fewer than two configured providers; benchmark result remains non-comparative."
+            exit 1
+          fi
+
       - name: Upload public-safe evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v7.0.1
         with:
           name: live-ai-provider-crossfire
           path: .runtime/live-ai-crossfire/summary.json
