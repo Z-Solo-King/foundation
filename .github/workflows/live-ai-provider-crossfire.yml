@@ -19,6 +19,7 @@ permissions:
 jobs:
   crossfire:
     name: Private provider speed-quality cross-fire
+    if: ${{ github.ref == 'refs/heads/main' }}
     uses: ./.github/workflows/chatbot-post-release-crossfire.yml
     with:
       operations_ref: ${{ inputs.operations_ref }}
