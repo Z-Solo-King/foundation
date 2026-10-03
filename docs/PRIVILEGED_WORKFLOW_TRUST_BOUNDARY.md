@@ -101,6 +101,12 @@ Documentation-only continuity changes are not exempt from the protected merge ru
 
 The protected required-status contexts remain `Public tests` and `Analyze python`; this document records their ownership but does not replace the repository ruleset.
 
+## Controlled production-reconcile dispatch bridge — 2026-10-04
+
+The canonical workflow-dispatch acceptance workflow contains a narrowly gated one-shot production-reconcile bridge. Its dispatch capability is scoped at the job level rather than granted workflow-wide. The bridge is activated only by the explicit controlled-reconcile commit title on a trusted `main` push, then dispatches the canonical `heroic-ai-production-release.yml` workflow against `main`; it does not hold provider credentials, alter deployment configuration directly, or bypass the protected production-release workflow.
+
+The corresponding PR is required to pass the normal protected contexts before merge. A squash merge is used for this one-shot path so the controlled-reconcile commit-title gate is preserved on the resulting `main` push. The bridge itself is execution plumbing, not a new production authority: `heroic-ai-production-release.yml` remains the sole production-release authority.
+
 ## Post-merge CrossFire path reconciliation — 2026-10-03
 
 The Migration Factory CrossFire writes each Operations-lens receipt relative to the Operations root, avoiding the previous double-prefixed `operations/operations/.runtime/` path. The artifact aggregation contract remains twelve reports across six independent lanes and two repositories.
@@ -121,6 +127,6 @@ This boundary does not permit authentication, challenge/CAPTCHA bypass, clearanc
 
 The canonical production Operations revision is resolved from the immutable Foundation pin manifest. Runtime smoke, browser-engine evidence, chatbot provider CrossFire, nightly canary, and live extractor benchmark consumers must use that same immutable revision unless an explicitly supplied immutable override is part of the workflow contract.
 
-The validated Operations main is `621fc8aa536b60bbc6f9e686c4ce0a769d8cab56`. This revision contains the centralized validation-contract repair and hardened standalone GitHub workspace bridge. Promotion into Cloudflare production remains a separate controlled release transaction; changing the manifest does not itself certify or deploy production runtime state.
+The validated Operations main is `51756272e0a161ca6367e981481b17b65e61d5c9`. This revision contains the centralized validation-contract repair and hardened standalone GitHub workspace bridge. Promotion into Cloudflare production remains a separate controlled release transaction; changing the manifest does not itself certify or deploy production runtime state.
 
 Validation note: protected CI must evaluate the exact PR head after every runtime-pin or workflow-governance change; stale successful runs are not accepted as current-head evidence.
