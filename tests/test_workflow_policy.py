@@ -1,9 +1,10 @@
-# fmt: off
 from __future__ import annotations
 
 import json
 import re
 from pathlib import Path
+
+# fmt: off
 ROOT = Path(__file__).parents[1]
 WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 SHA_REF = re.compile(r"^[0-9a-f]{40}$")
