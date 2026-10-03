@@ -22,6 +22,7 @@ jobs:
   recover:
     name: Governed 30-site native XML recovery
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
     environment: production-secret-sync
     timeout-minutes: 40
     steps:
@@ -106,7 +107,7 @@ jobs:
           CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
           HEROIC_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          HEROIC_WORKER_URL: https://ai-cio.pages.dev
+          HEROIC_WORKER_URL: https://heroic-ai.pages.dev
           AI_CROSSFIRE_MAX_PROVIDERS: "5"
           AI_CROSSFIRE_TIMEOUT_MS: "18000"
           AI_CROSSFIRE_PROVIDERS: "heroic_worker,cloudflare_workers_ai,siliconflow,gemini,openrouter_free,groq,cerebras,nvidia_nim,cohere_free,huggingface_free"
@@ -307,7 +308,7 @@ jobs:
   build-anyhow-feeds:
     name: Build 30 usable Google XML feeds
     needs: recover
-    if: ${{ always() }}
+    if: ${{ always() && github.ref == 'refs/heads/main' }}
     permissions:
       contents: read
       actions: read
