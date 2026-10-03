@@ -62,7 +62,9 @@ def test_ux_bootstrap_is_parse_safe_and_event_driven():
 
 def test_chat_submit_creates_first_chat_when_none_is_active():
     text = (ROOT / "frontend/app.js").read_text(encoding="utf-8")
-    assert re.search(r"const activeChatId = chatId \\|\\| api\\.ensureChat\\(\\)\\.id;", text)
+    assert re.search(
+        r"const activeChatId = chatId \\|\\| api\\.ensureChat\\(\\)\\.id;", text
+    )
     assert text.count("chat_id: activeChatId") >= 2
     assert text.count("detail: { chatId: activeChatId, requestId, body }") == 1
     assert text.count("detail: { chatId, requestId, body }") == 1
