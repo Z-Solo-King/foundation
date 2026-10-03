@@ -2,11 +2,11 @@ name: Project-wide autonomous improvement sweep
 
 on:
   schedule:
-    - cron: '17 */4 * * *'
+    - cron: "17 */4 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Plan/validate only; never dispatch a child workflow'
+        description: "Plan/validate only; never dispatch a child workflow"
         required: false
         default: false
         type: boolean
@@ -28,8 +28,8 @@ jobs:
     timeout-minutes: 12
     env:
       PUBLIC_WORKER_URL: https://heroic-ai.pages.dev
-      MAX_PLANNING_CYCLES: '6'
-      MAX_WORKFLOW_ATTEMPTS: '3'
+      MAX_PLANNING_CYCLES: "6"
+      MAX_WORKFLOW_ATTEMPTS: "3"
       FOUNDATION_SHA: ${{ github.sha }}
       MISSION_MODE: component_improvement
       DRY_RUN: ${{ inputs.dry_run || false }}
@@ -42,7 +42,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: "22"
           package-manager-cache: false
       - name: Validate project observability contract
         run: node tools/project_observability_audit.mjs
