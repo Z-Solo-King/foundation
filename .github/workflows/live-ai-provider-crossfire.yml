@@ -24,6 +24,7 @@ jobs:
   crossfire:
     name: Private provider speed-quality cross-fire
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
     environment: production-secret-sync
     timeout-minutes: 12
     steps:
@@ -63,11 +64,11 @@ jobs:
           repository: Z-Solo-King/operations
           ref: ${{ steps.operations.outputs.ref }}
           token: ${{ steps.operations-token.outputs.token }}
-          path: ${{ runner.temp }}/operations-provider-benchmark
+          path: operations-provider-benchmark
           persist-credentials: false
 
       - name: Validate platform access cross-fire contract
-        working-directory: ${{ runner.temp }}/operations-provider-benchmark
+        working-directory: operations-provider-benchmark
         run: |
           set -euo pipefail
           python - <<'PY'
@@ -84,7 +85,8 @@ jobs:
         env:
           PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
           HEROIC_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          OPERATIONS_CROSSFIRE_RUNNER: ${{ runner.temp }}/operations-provider-benchmark/private/benchmark/ai_provider_crossfire.py
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations-provider-benchmark
+          OPERATIONS_CROSSFIRE_RUNNER: ${{ github.workspace }}/operations-provider-benchmark/private/benchmark/ai_provider_crossfire.py
         run: |
           set +e
           mkdir -p .runtime/live-ai-crossfire
