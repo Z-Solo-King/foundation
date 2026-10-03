@@ -91,7 +91,7 @@
     "probes": 11
   },
   "current_runtime": {
-    "public_front_door": "https://ai-cio.pages.dev",
+    "public_front_door": "https://heroic-ai.pages.dev",
     "public_worker": "heroic",
     "private_edge_worker": "operations-edge",
     "private_core_worker": "operations",
