@@ -16,7 +16,7 @@ Snapshot: 2026-09-30 (Asia/Kolkata)
 - Research Operations pin: `1a91efa53b9202f1624ddde892b0e86bd6b360f0`
 - Operations contains no `.github/workflows`; Foundation owns automation.
 
-## Current Cloudflare topology
+## 2026-09-30 Cloudflare topology snapshot
 - Pages project: `ai` -> `ai-cio.pages.dev`
 - Public Worker: `heroic`, workers.dev disabled
 - Private edge Worker: `operations-edge`
@@ -25,6 +25,15 @@ Snapshot: 2026-09-30 (Asia/Kolkata)
 - Legacy `foundation` Worker: retired
 - Retired Pages aliases: `heroic`, `heroic-ai`
 - Dated probe Workers and their temporary Queue consumer: retired
+
+## Current Cloudflare topology — 2026-10-03
+- Pages project: `heroic-ai` -> `heroic-ai.pages.dev`
+- Public Worker: `heroic`, workers.dev disabled
+- Private edge Worker: `operations-edge`
+- Private core Worker: `operations`
+- D1: `research-intelligence`
+- Legacy `foundation` Worker: retired
+- Retired Pages project: `ai` -> `ai-cio.pages.dev`
 
 ## D1 verification — 2026-09-29
 - `d1_migrations` exists and migrations 1–10 are applied.
