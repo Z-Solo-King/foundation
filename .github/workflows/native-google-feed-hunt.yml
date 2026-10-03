@@ -82,7 +82,10 @@ jobs:
           }
 
           same_host() {
-            python3 - "$1" "$root" <<'PY'
+            local candidate="$1"
+            local base="$root"
+            if [ -n "${2:-}" ]; then base="$2"; fi
+            python3 - "$candidate" "$base" <<'PY'
           import sys
           from urllib.parse import urlsplit
           a=urlsplit(sys.argv[1]); b=urlsplit(sys.argv[2])
