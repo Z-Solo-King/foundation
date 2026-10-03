@@ -296,10 +296,6 @@
         "developer_tooling"
       ],
       [
-        "GEMINI.md",
-        "developer_tooling"
-      ],
-      [
         ".editorconfig",
         "repository_configuration"
       ],
@@ -338,6 +334,10 @@
       [
         "wrangler.foundation-core.toml",
         "cloudflare_runtime"
+      ],
+      [
+        "GEMINI.md",
+        "developer_tooling"
       ]
     ]
   },
