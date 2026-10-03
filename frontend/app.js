@@ -323,7 +323,7 @@
         return {
           ok: false,
           request_id: requestId,
-          chat_id: chatId,
+          chat_id: activeChatId,
           response: {
             response_id: responseId,
             status: 'cancelled',
