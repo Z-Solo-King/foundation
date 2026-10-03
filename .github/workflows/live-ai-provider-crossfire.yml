@@ -169,7 +169,7 @@ jobs:
                   }
 
           if not config:
-              raise SystemExit("no usable provider credentials were available from aggregate JSON or direct provider secrets")
+              print("provider configuration assembly: no usable credentials; benchmark will emit comparison_unavailable")
 
           target = Path(os.environ["RUNNER_TEMP"]) / "provider_keys.json"
           target.write_text(json.dumps(config, separators=(",", ":")), encoding="utf-8")
@@ -187,7 +187,8 @@ jobs:
               ) + "\n",
               encoding="utf-8",
           )
-          print(f"provider configuration assembly: PASS ({len(config)} providers; aggregate_json_valid={aggregate_valid})")
+          status = "PASS" if config else "DEFERRED"
+          print(f"provider configuration assembly: {status} ({len(config)} providers; aggregate_json_valid={aggregate_valid})")
           PY
           echo "config_file=${RUNNER_TEMP}/provider_keys.json" >> "$GITHUB_OUTPUT"
 
