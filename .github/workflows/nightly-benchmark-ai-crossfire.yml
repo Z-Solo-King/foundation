@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       run_id:
-        description: "Optional completed autonomous benchmark run ID; blank uses the triggering nightly run"
+        description: "Optional completed autonomous benchmark run ID; required for manual dispatch"
         required: false
         default: ""
         type: string
@@ -23,7 +23,7 @@ concurrency:
 jobs:
   crossfire:
     name: AI cross-fire
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'schedule') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
