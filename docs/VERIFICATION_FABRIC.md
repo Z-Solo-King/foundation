@@ -66,3 +66,7 @@ The trusted-main Migration Factory resolve job has one canonical read-only Opera
 ## Node tooling migration — nightly/runtime gates — 2026-10-02
 
 Foundation-only nightly runtime probing, loopback research transport, GitHub Actions zero-cost validation, and benchmark-finding publication now execute through Node tooling. The superseded Python scripts/tests were removed; protected Python research and governance authorities are unchanged. Workflow changes remain contract-tested and do not constitute live runtime/provider acceptance.
+
+## Nightly dry-run ordering invariant
+
+The canonical nightly workflow establishes `Research mode` before the live-only deployed-runtime verification step. An explicit `dry_run=true` therefore bypasses the production-release gate and the live runtime probe while remaining on the deterministic contract-testing path; production-live execution retains the existing exact-release, preflight, and evidence gates.
