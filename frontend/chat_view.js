@@ -70,6 +70,11 @@
   }
   function renderView() {
     if (api.state.view === 'chats') return renderConversation();
+    if (api.state.view === 'github' && api.githubView) {
+      if (el.emptyState) el.emptyState.hidden = true;
+      if (el.conversation) el.conversation.innerHTML = api.githubView.render();
+      return;
+    }
     if (el.mobileTitle) el.mobileTitle.textContent = api.state.view[0].toUpperCase() + api.state.view.slice(1);
     if (el.emptyState) el.emptyState.hidden = true;
     const html = api.state.view === 'projects' ? renderProjects() : api.state.view === 'saved' ? renderSaved() : renderSettings();
