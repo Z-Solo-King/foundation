@@ -6,7 +6,7 @@ Foundation is the public contract and deterministic-core repository. Operations 
 
 The migration target is:
 
-```
+```text
 Public client
   -> Cloudflare public edge: heroic
   -> private/control execution boundary
