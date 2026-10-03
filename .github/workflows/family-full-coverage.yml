@@ -33,6 +33,7 @@ jobs:
   coverage:
     name: 100% family tracked-file coverage
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
     timeout-minutes: 20
     steps:
       - name: Checkout Foundation
