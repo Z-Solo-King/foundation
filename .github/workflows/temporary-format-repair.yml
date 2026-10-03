@@ -21,6 +21,8 @@ jobs:
         run: |
           set -euo pipefail
           npx --yes prettier@3.9.9 --write .github/workflows/operations-centralized-validation.yml
+      - name: Show canonical diff
+        run: git diff --unified=8 -- .github/workflows/operations-centralized-validation.yml
       - name: Upload canonical output
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
