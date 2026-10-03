@@ -1,0 +1,167 @@
+name: Ad-hoc live validation (remediation branch)
+
+on:
+  push:
+    branches:
+      - fix/autonomous-integrity-allowlist-2026-10-03
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  PUBLIC_WORKER_URL: https://heroic-ai.pages.dev
+  OPERATIONS_REF: 11f592116d9ef57b6189bf8bf0ff0e95ec3d410f
+
+jobs:
+  provider-crossfire:
+    name: Six-provider AI CrossFire
+    uses: ./.github/workflows/chatbot-post-release-crossfire.yml
+    with:
+      operations_ref: 11f592116d9ef57b6189bf8bf0ff0e95ec3d410f
+    secrets: inherit
+
+  browser:
+    name: Browser engine ${{ matrix.engine }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, firefox, webkit]
+    steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Mint read-only Operations App token
+        id: operations-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: operations
+          permission-contents: read
+
+      - name: Checkout pinned Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ env.OPERATIONS_REF }}
+          token: ${{ steps.operations-token.outputs.token }}
+          path: operations
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97b1
+        with:
+          python-version: "3.14"
+
+      - name: Install browser adapter
+        working-directory: operations
+        run: |
+          python -m pip install --disable-pip-version-check -e ".[test,browser]"
+          python -m pip install --disable-pip-version-check workers-py workers-runtime-sdk
+
+      - name: Install browser runtime
+        working-directory: operations
+        run: python -m playwright install --with-deps ${{ matrix.engine }}
+
+      - name: Run real browser-engine smoke
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          python scripts/browser_engine_smoke.py --engine "${{ matrix.engine }}" --url "$PUBLIC_WORKER_URL/" | tee "browser-engine-${{ matrix.engine }}-receipt.json"
+
+      - name: Publish engine result
+        if: always()
+        env:
+          ENGINE: ${{ matrix.engine }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          status="${{ job.status }}"
+          gh issue comment 58 --repo "$GITHUB_REPOSITORY" --body "Live browser-engine validation run $GITHUB_RUN_ID: $ENGINE job result=$status; target=$PUBLIC_WORKER_URL; Operations=$OPERATIONS_REF."
+
+  smoke:
+    name: Production chatbot smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97b1
+        with:
+          python-version: "3.14"
+
+      - name: Install HTTP client
+        run: python -m pip install --disable-pip-version-check httpx
+
+      - name: Run live production smoke
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, uuid, httpx
+          base = os.environ["PUBLIC_WORKER_URL"].rstrip("/")
+          token = os.environ["AUTH_TOKEN"].strip()
+          if not token:
+              raise SystemExit("AUTH_TOKEN missing")
+          out = {"ok": True, "checks": {}}
+          headers = {"Authorization": f"Bearer {token}"}
+          with httpx.Client(timeout=90.0, follow_redirects=True) as client:
+              for name,path in [("root","/"),("health","/health"),("readiness","/readiness")]:
+                  r=client.get(base+path,headers=headers)
+                  body=r.json() if "application/json" in r.headers.get("content-type","") else {"raw":r.text[:500]}
+                  out["checks"][name]={"status":r.status_code,"body":body}
+                  if r.status_code != 200:
+                      out["ok"]=False
+              rid="adhoc-live-"+uuid.uuid4().hex
+              payload={
+                  "chat_id":rid,"request_id":rid,
+                  "message":"Return one short sentence confirming the production chatbot is reachable.",
+                  "mode":"chat","strict_zero_cost_only":True,"require_model_generation":True,
+              }
+              r=client.post(
+                  base+"/api/v1/chat",
+                  headers={**headers,"Content-Type":"application/json","Idempotency-Key":rid,"X-Heroic-Research-Proof":"1"},
+                  json=payload,
+              )
+              body=r.json() if "application/json" in r.headers.get("content-type","") else {"raw":r.text[:500]}
+              out["checks"]["chat"]={"status":r.status_code,"body":body}
+              response=body.get("response") if isinstance(body,dict) else {}
+              if (
+                  r.status_code != 200 or body.get("ok") is not True or
+                  response.get("generation_status") != "model_generated" or
+                  response.get("provider") != "cloudflare_workers_ai" or
+                  not isinstance(response.get("text"),str) or not response["text"].strip()
+              ):
+                  out["ok"]=False
+          print(json.dumps(out,indent=2))
+          with open("smoke-receipt.json","w",encoding="utf-8") as fh:
+              json.dump(out,fh,indent=2)
+          raise SystemExit(0 if out["ok"] else 1)
+
+      - name: Publish smoke result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          summary="$(jq -c '{ok,checks:(.checks|with_entries(.value |= {status}))}' smoke-receipt.json 2>/dev/null || echo '{"ok":false,"checks":"receipt unavailable"}')"
+          gh issue comment 58 --repo "$GITHUB_REPOSITORY" --body "Live production chatbot smoke run $GITHUB_RUN_ID: $summary"
+
+  report:
+    name: Publish validation summary
+    needs: [provider-crossfire, browser, smoke]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment aggregate results
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh issue comment 58 --repo "$GITHUB_REPOSITORY" --body "Ad-hoc live validation run $GITHUB_RUN_ID on remediation branch: provider-crossfire=${{ needs.provider-crossfire.result }}, browser=${{ needs.browser.result }}, smoke=${{ needs.smoke.result }}. Six-provider CrossFire target=6; browser matrix=Chromium/Firefox/WebKit; Operations pin=11f592116d9ef57b6189bf8bf0ff0e95ec3d410f."
