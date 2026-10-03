@@ -9,9 +9,7 @@ const ROOT = process.cwd();
 const readJson = (p) => JSON.parse(fs.readFileSync(path.join(ROOT, p), "utf8"));
 const gh = (repo, api) => {
   const token =
-    repo === "foundation"
-      ? process.env.FOUNDATION_GH_TOKEN
-      : process.env.OPERATIONS_GH_TOKEN;
+    repo === "foundation" ? process.env.FOUNDATION_GH_TOKEN : process.env.OPERATIONS_GH_TOKEN;
   if (!token) throw new Error("missing GitHub token for " + repo);
   return JSON.parse(
     cp.execFileSync("gh", ["api", api, "--paginate"], {
@@ -41,20 +39,16 @@ const governanceWorkflow = fs.readFileSync(
   "utf8",
 );
 
-if (graph.schema !== "family-integration-graph/v1")
-  fail("family graph schema mismatch");
+if (graph.schema !== "family-integration-graph/v1") fail("family graph schema mismatch");
 if (graph.status !== "CURRENT") fail("family graph is not CURRENT");
 if (Object.keys(graph.material_registry || {}).length !== 20)
   fail("family graph material registry is not 20");
-if ((graph.benchmark_probes || []).length !== 11)
-  fail("family graph probe count is not 11");
+if ((graph.benchmark_probes || []).length !== 11) fail("family graph probe count is not 11");
 
 const normalizeIssueNumbers = (value) =>
   [
     ...new Set(
-      (Array.isArray(value) ? value : [])
-        .map(Number)
-        .filter((value) => Number.isInteger(value)),
+      (Array.isArray(value) ? value : []).map(Number).filter((value) => Number.isInteger(value)),
     ),
   ].sort((a, b) => a - b);
 
@@ -99,21 +93,14 @@ if (snapshotPath) {
   }
 } else {
   for (const repo of ["foundation", "operations"]) {
-    const rows = gh(
-      repo,
-      `repos/Z-Solo-King/${repo}/issues?state=open&per_page=100`,
-    );
+    const rows = gh(repo, `repos/Z-Solo-King/${repo}/issues?state=open&per_page=100`);
     activeIssues[repo] = normalizeIssueNumbers(
-      rows
-        .filter((x) => !x.pull_request && isAcceptanceIssue(x))
-        .map((x) => x.number),
+      rows.filter((x) => !x.pull_request && isAcceptanceIssue(x)).map((x) => x.number),
     );
   }
 }
 
-const matrixIssues = normalizeIssueKeys(
-  matrix.issues.map((x) => [x.repo, x.number]),
-);
+const matrixIssues = normalizeIssueKeys(matrix.issues.map((x) => [x.repo, x.number]));
 
 const liveIssuePairs = [
   ...activeIssues.foundation.map((n) => ["foundation", n]),
@@ -133,37 +120,27 @@ const currentIssueSet = new Set(liveIssues);
 for (const probe of graph.benchmark_probes || []) {
   for (const target of probe.targets || []) {
     if (!currentIssueSet.has(target))
-      fail(
-        `benchmark probe ${probe.id} targets closed/nonexistent issue ${target}`,
-      );
+      fail(`benchmark probe ${probe.id} targets closed/nonexistent issue ${target}`);
   }
 }
 
 if (
-  JSON.stringify(
-    normalizeIssueNumbers((taskMatrix.current_issue_targets || {}).foundation),
-  ) !== JSON.stringify(activeIssues.foundation)
+  JSON.stringify(normalizeIssueNumbers((taskMatrix.current_issue_targets || {}).foundation)) !==
+  JSON.stringify(activeIssues.foundation)
 ) {
-  fail(
-    "benchmark current Foundation issue targets differ from live open issues",
-  );
+  fail("benchmark current Foundation issue targets differ from live open issues");
 }
 if (
-  JSON.stringify(
-    normalizeIssueNumbers((taskMatrix.current_issue_targets || {}).operations),
-  ) !== JSON.stringify(activeIssues.operations)
+  JSON.stringify(normalizeIssueNumbers((taskMatrix.current_issue_targets || {}).operations)) !==
+  JSON.stringify(activeIssues.operations)
 ) {
-  fail(
-    "benchmark current Operations issue targets differ from live open issues",
-  );
+  fail("benchmark current Operations issue targets differ from live open issues");
 }
 
 if (workflow.split("seed_repos:").length - 1 !== 20)
   fail("nightly research does not contain exactly 20 seed-repository rows");
-if (!workflow.includes("max-parallel: 20"))
-  fail("nightly research parallelism is not 20");
-if (!workflow.includes('cron: "30 19 * * *"'))
-  fail("distributed AI research schedule changed");
+if (!workflow.includes("max-parallel: 20")) fail("nightly research parallelism is not 20");
+if (!workflow.includes('cron: "30 19 * * *"')) fail("distributed AI research schedule changed");
 if (!governanceWorkflow.includes('cron: "25 20 * * *"')) {
   fail("GitHub governance scan schedule changed");
 }
@@ -172,10 +149,8 @@ if (!governanceWorkflow.includes('cron: "17 14 * * *"')) {
 }
 
 const staleCorpus = JSON.stringify(taskMatrix);
-if (staleCorpus.includes("Foundation #282"))
-  fail("stale Foundation #282 benchmark target exists");
-if (staleCorpus.includes("Foundation #154"))
-  fail("closed Foundation #154 benchmark target exists");
+if (staleCorpus.includes("Foundation #282")) fail("stale Foundation #282 benchmark target exists");
+if (staleCorpus.includes("Foundation #154")) fail("closed Foundation #154 benchmark target exists");
 
 if (
   !familyState.live_main ||
