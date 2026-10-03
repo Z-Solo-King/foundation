@@ -17,7 +17,6 @@ concurrency:
 
 env:
   OPERATIONS_REPOSITORY: Z-Solo-King/operations
-  OPERATIONS_REF: 11f592116d9ef57b6189bf8bf0ff0e95ec3d410f
   PUBLIC_WORKER_URL: "https://heroic-ai.pages.dev"
   RESEARCH_LLM_ENDPOINT: "http://127.0.0.1:8765"
   RESEARCH_LLM_API_KEY: "local-worker-proxy"
@@ -34,6 +33,14 @@ jobs:
     steps:
       - name: Checkout Foundation research adapter
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Resolve production Operations pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          ref="$(jq -er '.pins.production_runtime.sha' docs/OPERATIONS_PIN_MANIFEST.json)"
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]]
+          echo "OPERATIONS_REF=$ref" >> "$GITHUB_ENV"
+
       - name: Wait for canonical production revision
         env:
           EXPECTED_FOUNDATION: ${{ github.event.workflow_run.head_sha || github.sha }}
