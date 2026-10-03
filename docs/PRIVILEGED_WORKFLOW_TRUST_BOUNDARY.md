@@ -67,3 +67,9 @@ Credential-bearing workflows that probe or release the public application must t
 ## 2026-10-02 controlled Operations pin promotion staging
 
 The promotion PR may stage the next immutable Operations revision in post-release workflow consumers before production deployment. Those workflows fail closed on readiness/provenance mismatch. The manifest marks the revision as a candidate until the controlled production release and fresh runtime evidence complete; approval and live-state records continue to identify the currently deployed revision during that interval.
+
+## Session-independent automation — 2026-10-03
+
+All credential-bearing autonomous workflows must execute from trusted `main` or an explicit trusted manual dispatch. No workflow may depend on a ChatGPT/mobile conversation, ChatGPT session identifier, interactive agent lifetime, or OpenAI ChatGPT API session. Manual AI benchmark review additionally validates that its source benchmark run is completed, belongs to the canonical `autonomous benchmark` workflow, and has `headBranch == main` before consuming its artifact.
+
+Application-level `chat_id`/`request_id` values are run-scoped correlation keys only. They are never sourced from ChatGPT session state. If the AI provider is unavailable, deterministic bounded fallback behavior or an explicit blocked state remains authoritative; the automation does not wait for a chat session to resume.

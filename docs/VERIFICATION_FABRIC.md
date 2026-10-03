@@ -78,3 +78,11 @@ The nightly benchmark now has a separate six-lane AI cross-fire advisory workflo
 The cross-fire is intentionally outside the benchmark acceptance gate. AI output cannot certify benchmark correctness, research completion, production health, credentials, policy, deployment, Cloudflare state, or workflow dispatch. Invalid model formatting is recorded as schema non-compliance rather than converted into success.
 
 The cross-fire is an observability and reasoning layer over the canonical benchmark: deterministic benchmark evidence remains authoritative, while AI disagreement and repeated flags can identify candidates for follow-up reproduction, regression coverage, or future benchmark design.
+
+## Session-independent execution boundary — 2026-10-03
+
+Durable engineering missions and benchmarks are hosted execution, not ChatGPT-session work. A GitHub Actions schedule, trusted-main push, explicit workflow dispatch, or an explicitly allowlisted trusted workflow event is the trigger; the GitHub runner owns execution and artifacts own cross-job/run handoff. A closed ChatGPT app, a new conversation, connector unavailability, or conversation context exhaustion must not stop or invalidate a scheduled task.
+
+Internal `chat_id` and `request_id` values are application correlation identifiers derived from the mission or workflow run. They are not ChatGPT conversation/session identifiers and must never be populated from interactive chat state.
+
+AI advisory lanes consume deterministic evidence and cannot become a hidden trigger, acceptance gate, credential authority, deployment authority, or Cloudflare mutation path. Scheduled AI benchmark review therefore remains a separate workflow with its own trigger, bounded input, immutable source-run validation, and deterministic receipt aggregation.
