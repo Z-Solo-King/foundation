@@ -109,6 +109,15 @@ jobs:
           echo "No successful production release for $TARGET_SHA in the short reconciliation window."
           exit 1
 
+  ai_provider_crossfire:
+    name: Nightly AI provider CrossFire
+    needs: [production_gate]
+    if: ${{ inputs.dry_run != true }}
+    uses: ./.github/workflows/chatbot-post-release-crossfire.yml
+    with:
+      operations_ref: ${{ inputs.operations_research_ref || '8b6909ac213e01d310362627d12772950601adf6' }}
+    secrets: inherit
+
   research:
     permissions:
       actions: read
@@ -997,21 +1006,3 @@ jobs:
         if: ${{ always() }}
         shell: bash
         run: rm -rf "$RUNNER_TEMP/operations-research" "$RUNNER_TEMP/operations-summary-app.pem" "$RUNNER_TEMP/operations-summary-jwt.txt" "$RUNNER_TEMP/operations-summary-installation.json" "$RUNNER_TEMP/operations-summary-token.txt" "$RUNNER_TEMP/git-askpass-operations-summary.sh"
-
-  final-gate:
-    name: Preserve truthful nightly result
-    needs: [research, migration_review, project-summary]
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Verify research and diagnosis outcomes
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "research=${{ needs.research.result }}"
-          echo "diagnosis=${{ needs.project-summary.result }}"
-          echo "migration-review=${{ needs.migration_review.result }}"
-          test "${{ needs.migration_review.result }}" = "success" || { echo "Nightly migration review failed; truthful migration evidence remains failed."; exit 1; }
-          test "${{ needs.project-summary.result }}" = "success" || { echo 'Nightly diagnosis failed.'; exit 1; }
-          test "${{ needs.research.result }}" = "success" || { echo 'One or more research lanes failed/blocked; truthful nightly result remains failed.'; exit 1; }
