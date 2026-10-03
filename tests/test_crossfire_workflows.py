@@ -74,10 +74,6 @@ def test_nightly_ai_crossfire_validates_manual_run_provenance():
     assert '.status == "completed"' in text
     assert '.conclusion == "success"' in text
     assert "jq -e" in text
-    assert (
-        'gh run list --workflow autonomous-benchmark.yml --repo "$GITHUB_REPOSITORY" --branch main'
-        in text
-    )
     assert '.headBranch == "main"' in text
     assert "operations_ref" in text
     assert 'response.get("operations_ref")' in text

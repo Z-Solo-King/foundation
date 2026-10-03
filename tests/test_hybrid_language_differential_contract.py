@@ -6,7 +6,7 @@ WORKFLOW = Path(__file__).parents[1] / ".github" / "workflows" / "hybrid-languag
 
 def test_pinned_foundation_reference_checkouts_use_manual_sha_fetch():
     text = WORKFLOW.read_text(encoding="utf-8")
-    exact_block = text[text.index("name: Checkout exact pinned Foundation public core"):text.index("name: Materialize pinned public foundation_core", text.index("name: Checkout exact pinned Foundation public core"))]
+    exact_block = text[text.index("name: Select exact pinned Foundation public-core commit"):text.index("name: Materialize pinned Foundation public core for Python reference", text.index("name: Select exact pinned Foundation public-core commit"))]
     assert "ref: ${{ steps.foundation-core-pin.outputs.ref }}" not in exact_block
     assert 'git fetch --no-tags --depth=1 origin "$FOUNDATION_COMMIT"' in exact_block
     assert 'git checkout --detach "$FOUNDATION_COMMIT"' in exact_block
@@ -15,6 +15,7 @@ def test_pinned_foundation_reference_checkouts_use_manual_sha_fetch():
 def test_foundation_ref_output_does_not_emit_literal_backslash_newline():
     text = WORKFLOW.read_text(encoding="utf-8")
     assert 'write_text(f"ref={node.value.value}\\\\n", encoding="utf-8")' not in text
+    assert 'echo "ref=${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"' in text
 
 
 def test_url_reference_uses_foundation_backend_source_not_removed_operations_backend():
@@ -22,7 +23,6 @@ def test_url_reference_uses_foundation_backend_source_not_removed_operations_bac
     start = text.index("name: Rust URL canonicalization Python differential")
     block = text[start:text.index("name: Rust URL identity 32x3 benchmark", start)]
     assert "foundation-url-ref" in block
-    assert "foundation-reference" in block
     assert "backend/sources/http.py" in block
-    assert "PYTHONPATH: ${{ github.workspace }}/foundation-reference" in block
+    assert "PYTHONPATH: ${{ github.workspace }}/operations:${{ github.workspace }}" in block
     assert "pip install --disable-pip-version-check -e operations" not in block

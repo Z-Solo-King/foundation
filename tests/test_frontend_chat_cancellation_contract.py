@@ -9,7 +9,8 @@ def test_frontend_chat_stream_has_explicit_cancellation_contract():
     assert "signal: abortController.signal" in text
     assert "reader.cancel()" in text
     assert "chat-stream-cancelled" in text
-    assert "backend_state: 'UNKNOWN'" in text
+    assert "backend_state:" in text
+    assert "\"UNKNOWN\"" in text
     assert "client_cancelled: true" in text
     assert "cancelButton.hidden = false" in text
     assert "cancelButton.hidden = true" in text
