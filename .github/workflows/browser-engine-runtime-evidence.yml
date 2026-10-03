@@ -1,10 +1,6 @@
 name: Browser engine runtime evidence
 
 on:
-  push:
-    branches: [fix/live-crossfire-workflow-hardening-2026-10-03]
-    paths:
-      - ".github/workflows/browser-engine-runtime-evidence.yml"
   schedule:
     - cron: "15 3 * * 1"
   workflow_dispatch:
