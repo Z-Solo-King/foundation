@@ -46,7 +46,8 @@
       "docs": [
         "docs/PRIVILEGED_WORKFLOW_TRUST_BOUNDARY.md",
         "docs/FAMILY_SYNC_STANDARD.md",
-        "docs/VERIFICATION_FABRIC.md"
+        "docs/VERIFICATION_FABRIC.md",
+        "docs/AI_CONNECTOR_AUTOMATION_BOUNDARY.md"
       ],
       "require_doc_update": true
     },
