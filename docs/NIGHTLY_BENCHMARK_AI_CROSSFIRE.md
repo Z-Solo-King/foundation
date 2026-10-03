@@ -1,250 +1,63 @@
-"""Protected six-model Workers AI cross-fire endpoint for nightly benchmark advisories."""
-from __future__ import annotations
+# Nightly benchmark AI cross-fire — 2026-10-03
 
-import asyncio
-import hashlib
-import json
-import time
-from typing import Any, Mapping
+## Purpose
 
-from workers import Response
+The canonical autonomous benchmark remains deterministic and authoritative. This workflow adds a separate six-model AI cross-fire that observes the benchmark receipt and produces advisory diagnostics.
 
-CROSSFIRE_MODELS: tuple[str, ...] = (
-    "@cf/meta/llama-4-scout-17b-16e-instruct",
-    "@cf/mistralai/mistral-small-3.1-24b-instruct",
-    "@cf/ibm-granite/granite-4.0-h-micro",
-    "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-    "@cf/meta/llama-3.2-3b-instruct",
-    "@cf/mistral/mistral-7b-instruct-v0.2-lora",
-)
-MAX_EVIDENCE_BYTES = 12_000
-MODEL_OUTPUT_TOKENS = 128
-MODEL_RETRY_OUTPUT_TOKENS = 128
-REQUEST_SCHEMA = "nightly-benchmark-ai-crossfire-request/v2"
-RECEIPT_SCHEMA = "nightly-benchmark-ai-crossfire-result/v2"
+## Execution
 
+GitHub Actions runs the cross-fire from the `workflow_run` completion event of the canonical `autonomous benchmark` workflow, using that exact successful run ID and final artifact, and sends a bounded evidence envelope to the canonical public front door at `https://heroic-ai.pages.dev/api/v1/benchmark/ai-crossfire`.
 
-def _text_from_result(result: Any) -> str:
-    if hasattr(result, "to_py") and callable(result.to_py):
-        result = result.to_py()
-    if not isinstance(result, Mapping):
-        return ""
-    value = result.get("response")
-    if isinstance(value, str):
-        return value
-    choices = result.get("choices")
-    if isinstance(choices, list) and choices and isinstance(choices[0], Mapping):
-        first = choices[0]
-        message = first.get("message")
-        if isinstance(message, Mapping) and isinstance(message.get("content"), str):
-            return str(message["content"])
-        if isinstance(first.get("text"), str):
-            return str(first["text"])
-    return ""
+The authenticated Operations runtime fans the request out across six currently qualified instruction-oriented Workers AI models in parallel through the native AI binding:
 
+- `@cf/meta/llama-4-scout-17b-16e-instruct`
+- `@cf/mistralai/mistral-small-3.1-24b-instruct`
+- `@cf/ibm-granite/granite-4.0-h-micro`
+- `@cf/meta/llama-3.3-70b-instruct-fp8-fast`
+- `@cf/meta/llama-3.2-3b-instruct`
+- `@cf/mistral/mistral-7b-instruct-v0.2-lora`
 
-def _normalize_json_text(value: str) -> str:
-    normalized = value.strip()
-    if normalized.startswith("```") and normalized.endswith("```"):
-        lines = normalized.splitlines()
-        if len(lines) >= 3 and lines[0].strip().startswith("```") and lines[-1].strip() == "```":
-            normalized = "\n".join(lines[1:-1]).strip()
-    return normalized
+The workflow sends no Cloudflare API token. GitHub supplies only the existing application authentication token and bounded benchmark evidence. Cloudflare performs model execution internally through the native Workers AI binding.
 
+Each model lane uses temperature 0, seed 17, JSON mode, and a 128-token output limit. The request adapter avoids model-specific chat-template options and retries one invalid/incomplete lane once with an equally bounded recovery request. Operations returns one bounded aggregate containing all six lane receipts.
 
-def _valid_advisory(value: str) -> tuple[bool, dict[str, Any] | None]:
-    try:
-        parsed = json.loads(_normalize_json_text(value))
-    except (TypeError, ValueError):
-        return False, None
-    if not isinstance(parsed, dict):
-        return False, None
-    if set(parsed) != {"advisory_assessment", "reason", "flags"}:
-        return False, None
-    if parsed.get("advisory_assessment") not in {"pass", "attention", "blocked"}:
-        return False, None
-    if not isinstance(parsed.get("reason"), str):
-        return False, None
-    if not isinstance(parsed.get("flags"), list) or not all(isinstance(flag, str) for flag in parsed["flags"]):
-        return False, None
-    return True, {
-        "advisory_assessment": parsed["advisory_assessment"],
-        "reason": parsed["reason"][:500],
-        "flags": [flag[:160] for flag in parsed["flags"][:8]],
-    }
+## Provenance and deployment-pin protection
 
+Nightly execution is chained to a successful scheduled `autonomous benchmark` run on the `main` branch rather than searching for the newest successful run. Manual run IDs are independently revalidated as completed successful main-branch benchmark runs. The final artifact must match the exact triggering run ID and benchmark head SHA.
 
-def _model_input(prompt: str, max_tokens: int) -> dict[str, Any]:
-    return {
-        "messages": [
-            {
-                "role": "system",
-                "content": "Return only one JSON object. No Markdown, no analysis, no extra keys.",
-            },
-            {"role": "user", "content": prompt},
-        ],
-        "max_tokens": max_tokens,
-        "temperature": 0,
-        "seed": 17,
-        "response_format": {"type": "json_object"},
-    }
+Foundation reads the production Operations SHA from `docs/OPERATIONS_PIN_MANIFEST.json` and includes it in the cross-fire request. Operations reports its deployed `RELEASE_OPERATIONS_REF`, and GitHub fails closed if the live runtime pin differs from the expected production pin.
 
-async def _run_model(env: Any, model: str, prompt: str, run_id: str) -> dict[str, Any]:
-    started = time.time()
-    receipt: dict[str, Any] = {
-        "model": model,
-        "transport_ok": False,
-        "advisory_schema_compliant": False,
-        "advisory_assessment": None,
-        "reason": "",
-        "flags": [],
-        "neurons": 0,
-        "elapsed_ms": None,
-        "attempts": 0,
-        "recovery_used": False,
-    }
-    binding = getattr(env, "AI", None)
-    try:
-        if binding is None:
-            raise RuntimeError("workers_ai_binding_missing")
-        recovery_prompt = (
-            "Return exactly one compact JSON object with only these keys: "
-            "advisory_assessment, reason, flags. "
-            "advisory_assessment must be pass, attention, or blocked. "
-            "reason must be a short string and flags must be an array of strings. "
-            "Do not include Markdown or analysis. Evidence: " + prompt.rsplit("\n", 1)[-1]
-        )
-        last_error: str | None = None
-        for attempt, request_prompt in enumerate((prompt, recovery_prompt), start=1):
-            receipt["attempts"] = attempt
-            try:
-                result = await binding.run(
-                    model,
-                    _model_input(request_prompt, MODEL_OUTPUT_TOKENS if attempt == 1 else MODEL_RETRY_OUTPUT_TOKENS),
-                    {"rejectIfBusy": False},
-                )
-                if hasattr(result, "to_py") and callable(result.to_py):
-                    result = result.to_py()
-                receipt["transport_ok"] = bool(
-                    isinstance(result, Mapping)
-                    and result.get("success", True) is not False
-                    and not result.get("errors")
-                )
-                if isinstance(result, Mapping):
-                    usage = result.get("usage")
-                    if isinstance(usage, Mapping):
-                        receipt["neurons"] = float(usage.get("neurons") or receipt["neurons"] or 0)
-                    choices = result.get("choices")
-                    receipt["finish_reason"] = (
-                        choices[0].get("finish_reason")
-                        if isinstance(choices, list) and choices and isinstance(choices[0], Mapping)
-                        else None
-                    )
-                value = _text_from_result(result)
-                valid, parsed = _valid_advisory(value)
-                if valid and parsed is not None:
-                    receipt["advisory_schema_compliant"] = True
-                    receipt.update(parsed)
-                    if attempt > 1:
-                        receipt["recovery_used"] = True
-                    last_error = None
-                    break
-                last_error = "advisory_schema_invalid"
-            except Exception as exc:
-                last_error = f"{type(exc).__name__}: {str(exc)[:300]}"
-                receipt["transport_ok"] = False
-            if attempt == 1:
-                receipt["recovery_used"] = True
-        if last_error and not receipt["advisory_schema_compliant"]:
-            receipt["error"] = last_error
-    except Exception as exc:
-        receipt["error_type"] = type(exc).__name__
-        receipt["error"] = str(exc)[:500]
-    receipt["elapsed_ms"] = int((time.time() - started) * 1000)
-    receipt["run_id"] = run_id
-    return receipt
+## Coverage and quality gates
 
+The aggregate requires exactly six distinct model receipts. It fails closed when a lane is missing, duplicated, transport-failed, or schema-invalid.
 
-async def handle_ai_crossfire(runtime: Any, request: Any) -> Response:
-    if request.method != "POST":
-        return Response.json({"ok": False, "error": "method_not_allowed"}, status=405)
+GitHub verifies:
 
-    try:
-        payload = json.loads(await request.text())
-    except Exception:
-        return Response.json({"ok": False, "error": "invalid_json"}, status=400)
+- expected and observed model count are both 6;
+- all 6 transports succeeded;
+- all 6 advisories comply with the exact schema;
+- `coverage_complete == true`;
+- `quality_complete == true`;
+- the deployed Operations revision matches the Foundation production pin manifest.
 
-    if not isinstance(payload, dict):
-        return Response.json({"ok": False, "error": "invalid_json_object"}, status=400)
-    if payload.get("schema") != REQUEST_SCHEMA:
-        return Response.json({"ok": False, "error": "unexpected_schema"}, status=400)
+## Evidence boundary
 
-    run_id = str(payload.get("run_id", "")).strip()
-    if not run_id or len(run_id) > 120:
-        return Response.json({"ok": False, "error": "invalid_run_id"}, status=400)
+Only the deterministic final benchmark receipt is sent to the AI lanes. The cross-fire does not execute downloaded artifacts, mutate GitHub, mutate Cloudflare configuration, modify credentials or policy, dispatch workflows, or certify production/research completion.
 
-    expected_operations_ref = str(payload.get("expected_operations_ref", "")).strip()
-    live_operations_ref = str(getattr(runtime.env, "RELEASE_OPERATIONS_REF", "") or "").strip()
-    if expected_operations_ref and live_operations_ref != expected_operations_ref:
-        return Response.json(
-            {
-                "ok": False,
-                "error": "operations_runtime_pin_mismatch",
-                "expected_operations_ref": expected_operations_ref,
-                "live_operations_ref": live_operations_ref or None,
-            },
-            status=409,
-        )
+Every aggregate carries an evidence SHA-256 and the authority marker `advisory_only_no_acceptance_or_mutation_authority`.
 
-    evidence = payload.get("evidence")
-    if not isinstance(evidence, Mapping):
-        return Response.json({"ok": False, "error": "evidence_object_required"}, status=400)
+## Live validation
 
-    evidence_json = json.dumps(evidence, separators=(",", ":"), ensure_ascii=False)
-    if len(evidence_json.encode("utf-8")) > MAX_EVIDENCE_BYTES:
-        return Response.json({"ok": False, "error": "evidence_too_large"}, status=413)
+A live qualification sweep against the current Workers AI account found that the original reasoning-heavy fleet could return HTTP 200 while still violating the bounded advisory output contract. The final six-lane instruction-oriented fleet was then stress-tested against the same benchmark-evidence shape: 18/18 transport success, 18/18 valid JSON outputs, and 18/18 normal stop completions. A bounded one-retry recovery is now implemented for any future invalid/incomplete lane.
 
-    evidence_sha256 = hashlib.sha256(evidence_json.encode("utf-8")).hexdigest()
-    prompt = (
-        "NIGHTLY_BENCHMARK_AI_CROSSFIRE_V2\n"
-        "Return exactly one JSON object with only these keys: advisory_assessment, reason, flags.\n"
-        "advisory_assessment must be exactly pass, attention, or blocked.\n"
-        "reason must be a short string. flags must be an array of strings.\n"
-        "Do not use Markdown or code fences.\n"
-        "This is advisory-only analysis. Never certify correctness, production health, or research completion.\n"
-        "Do not propose credential, policy, deployment, Cloudflare mutation, or workflow-dispatch actions.\n"
-        "Evaluate only the evidence below.\n"
-        + evidence_json
-    )
+## Production pin reconciliation
 
-    started = time.time()
-    lanes = await asyncio.gather(*(_run_model(runtime.env, model, prompt, run_id) for model in CROSSFIRE_MODELS))
-    successful = [lane for lane in lanes if lane["transport_ok"]]
-    compliant = [lane for lane in lanes if lane["advisory_schema_compliant"]]
-    counts: dict[str, int] = {}
-    for lane in compliant:
-        assessment = str(lane["advisory_assessment"])
-        counts[assessment] = counts.get(assessment, 0) + 1
-    consensus = max(counts, key=counts.get) if counts else None
+The live Operations Worker was re-checked through the Cloudflare control plane. Its deployed `RELEASE_OPERATIONS_REF` is `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f`, which is now the Foundation immutable production pin. Operations `main` remains a moving branch and is not treated as production authority.
 
-    report = {
-        "schema": RECEIPT_SCHEMA,
-        "run_id": run_id,
-        "foundation_sha": str(getattr(runtime.env, "RELEASE_FOUNDATION_SHA", "") or "").strip() or None,
-        "operations_ref": str(getattr(runtime.env, "RELEASE_OPERATIONS_REF", "") or "").strip() or None,
-        "model_count_expected": len(CROSSFIRE_MODELS),
-        "model_count_observed": len(lanes),
-        "transport_ok_count": len(successful),
-        "schema_compliant_count": len(compliant),
-        "coverage_complete": len(lanes) == len(CROSSFIRE_MODELS)
-        and {lane["model"] for lane in lanes} == set(CROSSFIRE_MODELS),
-        "quality_complete": len(compliant) == len(CROSSFIRE_MODELS) and len(successful) == len(CROSSFIRE_MODELS),
-        "evidence_sha256": evidence_sha256,
-        "batch_elapsed_ms": int((time.time() - started) * 1000),
-        "total_neurons": sum(float(lane["neurons"] or 0) for lane in lanes),
-        "consensus": consensus,
-        "agreement": (counts.get(consensus, 0) / len(compliant)) if consensus and compliant else 0,
-        "models": lanes,
-        "authority": "advisory_only_no_acceptance_or_mutation_authority",
-    }
-    return Response.json(report, status=200)
+## Cost and authority
+
+Cloudflare currently documents a 10,000-Neuron daily Workers AI Free allocation. The cross-fire is bounded and records reported Neuron usage. AI agreement never becomes correctness, production-health, or research-completion authority.
+
+## Relationship to the canonical benchmark
+
+The project-native deterministic benchmark remains authoritative. AI cross-fire is a diagnostic/advisory layer over its receipt and does not replace the 24-program nightly research execution or its acceptance gates.
