@@ -64,4 +64,7 @@ def test_chat_submit_creates_first_chat_when_none_is_active():
     assert "const activeChatId = chatId || api.ensureChat().id;" in text
     assert "chat_id: activeChatId" in text
     assert "detail: { chatId: activeChatId, requestId, body }" in text
-    assert "detail: { chatId: activeChatId, requestId, responseId, partial: Boolean(answer) }" in text
+    assert (
+        "detail: { chatId: activeChatId, requestId, responseId, partial: Boolean(answer) }"
+        in text
+    )
