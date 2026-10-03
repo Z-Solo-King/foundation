@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: repository-hygiene-${{ github.event.pull_request.number || github.ref }}
@@ -38,6 +38,28 @@ jobs:
         run: python -m pip install --disable-pip-version-check ruff==0.16.9
       - name: Render exact Prettier output for changed live workflows
         run: npx --yes prettier@3.9.9 --write .github/workflows/browser-engine-runtime-evidence.yml .github/workflows/live-ai-provider-crossfire.yml .github/workflows/nightly-benchmark-ai-crossfire.yml
+      - name: Commit exact Prettier output
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "${{ github.event.pull_request.head.repo.full_name }}" = "$GITHUB_REPOSITORY"
+          test -n "${{ github.event.pull_request.head.ref }}"
+          if [ "$(git log -1 --pretty=%s)" = "chore: format live CrossFire workflows" ]; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/browser-engine-runtime-evidence.yml .github/workflows/live-ai-provider-crossfire.yml .github/workflows/nightly-benchmark-ai-crossfire.yml
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "chore: format live CrossFire workflows"
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+
       - name: Upload exact Prettier output
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
