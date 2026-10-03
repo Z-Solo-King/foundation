@@ -130,3 +130,10 @@ The canonical production Operations revision is resolved from the immutable Foun
 The validated Operations main is `51756272e0a161ca6367e981481b17b65e61d5c9`. This revision contains the centralized validation-contract repair and hardened standalone GitHub workspace bridge. Promotion into Cloudflare production remains a separate controlled release transaction; changing the manifest does not itself certify or deploy production runtime state.
 
 Validation note: protected CI must evaluate the exact PR head after every runtime-pin or workflow-governance change; stale successful runs are not accepted as current-head evidence.
+
+## 2026-10-04 migration test-boundary reconciliation
+
+Foundation no longer owns the private Operations runtime modules removed by the public/private migration. Public release tests therefore validate the remaining JavaScript/public boundary directly, while private runtime implementation tests remain with Operations. The public cross-repository drift validator is self-contained and validates only the family contract; it does not import private Operations runtime modules.
+
+The canonical production release retains the full Foundation test suite, coverage gate and public-surface checks. A receipt publication failure caused by a GitHub issue comment limit is non-fatal because the machine-readable workflow artifact is the authoritative release evidence; the comment is a convenience index only.
+
