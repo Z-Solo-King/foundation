@@ -59,12 +59,18 @@ def test_nightly_ai_crossfire_validates_manual_run_provenance():
     text = (ROOT / ".github/workflows/nightly-benchmark-ai-crossfire.yml").read_text(
         encoding="utf-8"
     )
-    assert 'gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json name,status,conclusion,headSha,headBranch,event' in text
+    assert (
+        'gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json name,status,conclusion,headSha,headBranch,event'
+        in text
+    )
     assert '.status == "completed"' in text
     assert '.conclusion == "success"' in text
-    assert 'jq -e' in text
-    assert 'gh run list --workflow autonomous-benchmark.yml --repo "$GITHUB_REPOSITORY" --branch main' in text
-    assert ".headBranch == \"main\"" in text
+    assert "jq -e" in text
+    assert (
+        'gh run list --workflow autonomous-benchmark.yml --repo "$GITHUB_REPOSITORY" --branch main'
+        in text
+    )
+    assert '.headBranch == "main"' in text
     assert "operations_ref" in text
     assert 'response.get("operations_ref")' in text
 
@@ -75,4 +81,7 @@ def test_nightly_ai_crossfire_keeps_production_pin_guard_in_request_path():
     )
     assert "EXPECTED_OPERATIONS_REF" in text
     assert '"expected_operations_ref": os.environ["EXPECTED_OPERATIONS_REF"]' in text
-    assert 'response.get("operations_ref") != os.environ["EXPECTED_OPERATIONS_REF"]' in text
+    assert (
+        'response.get("operations_ref") != os.environ["EXPECTED_OPERATIONS_REF"]'
+        in text
+    )
