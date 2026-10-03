@@ -88,3 +88,6 @@ For difficult audits, use independent ownership/policy, TypeScript, Rust, Go, Cl
 
 ## 2026-10-02 current-main reconciliation
 Cross-system audit now includes deterministic Foundation/Operations N4 structural comparison, six-lane CrossFire provider/verification surfaces, current issue/PR synchronization semantics, and dispatch-target validation. Repeated autonomous failures must produce a new strategy or a terminal state; stale/non-dispatchable workflow references are configuration defects, not evidence of successful execution. Runtime and production conclusions still require their dedicated live receipts.
+### Provider benchmark automation routing
+
+Provider CrossFire benchmark findings are routed to the existing `runtime_reconciliation` allowlist before generic nightly-research matching. This keeps provider benchmark work attached to the dedicated `live-ai-provider-crossfire.yml` evidence workflow instead of accidentally dispatching the broader nightly research path.
